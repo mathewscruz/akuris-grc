@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import akurisLogo from "@/assets/akuris-logo.png";
-import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { AkurisPulse } from "@/components/ui/AkurisPulse";
 import { useLandingReveal, useCountUp, useScrolled } from "@/hooks/useLandingAnimations";
