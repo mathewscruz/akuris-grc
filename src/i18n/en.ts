@@ -513,6 +513,11 @@ export const en = {
     pillarGapAnalysis: 'Gap Analysis',
     pillarGapAnalysisDesc: 'Frameworks, scoring and action plans',
     backToSite: 'Back to site',
+    welcomeBack: 'Welcome back',
+    signInToContinue: 'Sign in to your account to continue',
+    emailLabel: 'Email',
+    passwordLabel: 'Password',
+    rememberEmail: 'Remember my email',
   },
   register: {
     createAccount: 'Create your account',
