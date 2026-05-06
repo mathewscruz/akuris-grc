@@ -168,7 +168,7 @@ const LandingPage = () => {
               Governança, riscos e&nbsp;compliance em um <em>único lugar.</em>
             </h1>
             <p className="lede">
-              A Akuris reúne controles, frameworks, evidências e indicadores em
+              O Akuris reúne controles, frameworks, evidências e indicadores em
               uma plataforma só, para que times de compliance e DPOs decidam com
               clareza, não com planilhas.
             </p>
@@ -335,6 +335,66 @@ const LandingPage = () => {
         </div>
       </section>
 
+      {/* AUTONOMIA EM CONFORMIDADE */}
+      <section className="lp-section lp-autonomia">
+        <div className="lp-container">
+          <div className="lp-section-head" data-reveal>
+            <span className="lp-eyebrow">Autonomia em conformidade</span>
+          </div>
+
+          <div className="lp-hero-grid lp-autonomia-grid">
+            <div data-reveal>
+              <h2 className="lp-autonomia-title">
+                Pare de <s>esperar a auditoria externa</s> para descobrir{" "}
+                <em>onde sua empresa está vulnerável.</em>
+              </h2>
+              <p className="lede">
+                Auditoria externa é fotografia: cara, anual e sempre desatualizada.
+                O Akuris é o espelho que sua organização olha todos os dias. Saiba
+                seu nível real de conformidade agora, não daqui a oito meses,
+                quando a não conformidade já virou multa.
+              </p>
+            </div>
+
+            <div
+              className="lp-card lp-posture lp-posture-xl"
+              data-reveal
+              style={{ ["--lp-reveal-delay" as string]: "120ms" }}
+            >
+              <div className="lp-card-title">
+                <span className="t">Postura consolidada</span>
+                <span className="t lp-live">● Atualizado agora</span>
+              </div>
+              <div className="score">
+                87<sup>/100</sup>
+              </div>
+              <p className="lp-posture-sub">
+                +12 pontos vs. último trimestre, sem auditor externo na sala.
+              </p>
+              <div className="bars lp-posture-rows">
+                {[
+                  ["ISO 27001 · Anexo A", 92],
+                  ["LGPD · Art. 50 (boas práticas)", 88],
+                  ["SOC 2 Type II · Segurança", 81],
+                ].map(([lab, v]) => (
+                  <div className="lp-bar-row" key={lab as string}>
+                    <span className="lab">{lab}</span>
+                    <span className="v">
+                      {v}% <span className="chk" aria-hidden="true">✓</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div className="lp-posture-foot">
+                <span>Sem consultor externo</span>
+                <span>Sem planilha</span>
+                <span>Sem espera</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* FRAMEWORKS */}
       <section className="lp-section" id="frameworks">
         <div className="lp-container">
@@ -387,7 +447,7 @@ const LandingPage = () => {
       <section className="lp-section" id="seguranca">
         <div className="lp-container">
           <div className="lp-section-head" data-reveal>
-            <span className="lp-eyebrow">A Akuris pela Akuris</span>
+            <span className="lp-eyebrow">O Akuris por dentro</span>
             <h2>
               Construímos a plataforma que <em>nós mesmos auditaríamos.</em>
             </h2>
@@ -436,8 +496,8 @@ const LandingPage = () => {
           </div>
           <div className="lp-faq-list">
             {[
-              ["Quanto tempo leva para implantar a Akuris?", "A média entre nossos clientes é de 12 semanas até a operação plena, divididas em diagnóstico, configuração de frameworks e adoção orientada. Times menores operam em até 6 semanas."],
-              ["A Akuris substitui meu time de compliance?", "Não. A Akuris substitui as planilhas, e-mails e reuniões que tomam 70% do tempo do time. O que sobra é o que importa: análise crítica e decisão."],
+              ["Quanto tempo leva para implantar o Akuris?", "A média entre nossos clientes é de 12 semanas até a operação plena, divididas em diagnóstico, configuração de frameworks e adoção orientada. Times menores operam em até 6 semanas."],
+              ["O Akuris substitui meu time de compliance?", "Não. O Akuris substitui as planilhas, e-mails e reuniões que tomam 70% do tempo do time. O que sobra é o que importa: análise crítica e decisão."],
               ["Conseguimos importar nossos controles e riscos atuais?", "Sim. Importamos planilhas, exportações de outros GRCs e bases legadas no kickoff. O modelo de dados reflete sua taxonomia atual, não a nossa."],
               ["E se eu adotar um novo framework no futuro?", "Cada novo padrão entra como camada sobre os controles que você já tem. Os controles cruzados são detectados automaticamente."],
               ["Como funciona o modelo comercial?", "Assinatura anual baseada em usuários ativos e módulos contratados. Sem cobrança por framework, sem cobrança por evidência. Detalhes na conversa."],
@@ -462,7 +522,7 @@ const LandingPage = () => {
             <div>
               <span className="lp-eyebrow">Vamos conversar</span>
               <h2>
-                Mostre a sua matriz de risco. <em>Nós mostramos onde a Akuris encaixa.</em>
+                Mostre a sua matriz de risco. <em>Nós mostramos onde o Akuris encaixa.</em>
               </h2>
             </div>
           </div>

@@ -779,6 +779,62 @@ input:-webkit-autofill:focus {
 .lp-timeline .s.pen { color: var(--lp-warn); }
 .lp-timeline .s.rev { color: var(--lp-text-3); }
 
+/* Autonomia em conformidade */
+.lp-autonomia-grid { align-items: center; gap: 64px; }
+.lp-autonomia-title {
+  font-family: var(--lp-serif);
+  font-weight: 300;
+  font-size: clamp(40px, 5vw, 72px);
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+  color: var(--lp-text);
+  margin: 0 0 24px;
+  text-wrap: balance;
+}
+.lp-autonomia-title em { font-style: italic; color: var(--lp-accent-2); font-weight: 300; }
+.lp-autonomia-title s {
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+  text-decoration-color: var(--lp-text-3);
+  color: var(--lp-text-3);
+  font-style: normal;
+}
+.lp-posture-xl { padding: 28px; width: 100%; position: relative; }
+.lp-posture-xl .score { font-size: 104px; margin: 8px 0 12px; }
+.lp-posture-sub {
+  color: var(--lp-text-2);
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0 0 22px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--lp-line);
+}
+.lp-posture-rows { display: grid; gap: 8px; }
+.lp-bar-row {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--lp-ink-0);
+  border: 1px solid var(--lp-line);
+  border-radius: var(--lp-r-2);
+  padding: 12px 14px;
+  font-size: 13px;
+}
+.lp-bar-row .lab { color: var(--lp-text); font-family: var(--lp-mono); font-size: 12px; letter-spacing: 0.02em; }
+.lp-bar-row .v { font-family: var(--lp-mono); color: var(--lp-good); font-size: 12px; display: inline-flex; align-items: center; gap: 8px; }
+.lp-bar-row .chk {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 16px; height: 16px; border-radius: 50%;
+  border: 1px solid var(--lp-good); color: var(--lp-good); font-size: 10px;
+}
+.lp-posture-foot {
+  display: flex; justify-content: space-between; gap: 12px;
+  margin-top: 18px; padding-top: 16px;
+  border-top: 1px solid var(--lp-line);
+  font-family: var(--lp-mono); font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--lp-text-3);
+}
+.lp-live { color: var(--lp-good) !important; }
+
 /* Section shell */
 .lp-section { padding: 120px 0; border-bottom: 1px solid var(--lp-line); }
 .lp-section-head {
