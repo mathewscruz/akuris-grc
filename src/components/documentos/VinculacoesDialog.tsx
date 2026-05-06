@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveTipoVinculacaoTone } from '@/lib/status-tone';
 import { formatStatus } from '@/lib/text-utils';
+import { logger } from '@/lib/logger';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 interface Documento {
@@ -154,7 +155,7 @@ export function VinculacoesDialog({ open, onOpenChange, documento, empresaId }: 
                 break;
             }
           } catch (error) {
-            console.error('Erro ao buscar detalhes do item vinculado:', error);
+            logger.error('Erro ao buscar detalhes do item vinculado', { error: (error as Error)?.message, module: 'documentos' });
           }
 
           return {
@@ -167,7 +168,7 @@ export function VinculacoesDialog({ open, onOpenChange, documento, empresaId }: 
 
       setVinculacoes(vinculacoesComDetalhes);
     } catch (error) {
-      console.error('Erro ao buscar vinculações:', error);
+      logger.error('Erro ao buscar vinculações', { error: (error as Error)?.message, module: 'documentos' });
       toast({
         title: "Erro ao carregar vinculações",
         description: "Tente novamente em alguns instantes.",
@@ -218,7 +219,7 @@ export function VinculacoesDialog({ open, onOpenChange, documento, empresaId }: 
 
       setItemsDisponiveis(data || []);
     } catch (error) {
-      console.error('Erro ao buscar itens disponíveis:', error);
+      logger.error('Erro ao buscar itens disponíveis', { error: (error as Error)?.message, module: 'documentos' });
       setItemsDisponiveis([]);
     }
   };
@@ -260,7 +261,7 @@ export function VinculacoesDialog({ open, onOpenChange, documento, empresaId }: 
       resetForm();
       fetchVinculacoes();
     } catch (error) {
-      console.error('Erro ao criar vinculação:', error);
+      logger.error('Erro ao criar vinculação', { error: (error as Error)?.message, module: 'documentos' });
       toast({
         title: "Erro ao criar vinculação",
         description: error instanceof Error ? error.message : "Tente novamente em alguns instantes.",
@@ -287,7 +288,7 @@ export function VinculacoesDialog({ open, onOpenChange, documento, empresaId }: 
 
       fetchVinculacoes();
     } catch (error) {
-      console.error('Erro ao remover vinculação:', error);
+      logger.error('Erro ao remover vinculação', { error: (error as Error)?.message, module: 'documentos' });
       toast({
         title: "Erro ao remover vinculação",
         description: "Tente novamente em alguns instantes.",

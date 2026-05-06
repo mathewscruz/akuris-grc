@@ -179,7 +179,7 @@ export function ItemAuditoriaFormDialog({
             },
           });
         } catch (notifError) {
-          console.error("Erro ao enviar notificação:", notifError);
+          logger.error("Erro ao enviar notificação", { error: (notifError as Error)?.message, module: 'auditorias' });
         }
       }
 
@@ -201,7 +201,7 @@ export function ItemAuditoriaFormDialog({
       onSuccess();
       onOpenChange(false);
     } catch (error: any) {
-      console.error("Erro ao salvar item:", error);
+      logger.error("Erro ao salvar item de auditoria", { error: error?.message, module: 'auditorias' });
       toast.error(error.message || "Erro ao salvar item");
     } finally {
       setIsSubmitting(false);
