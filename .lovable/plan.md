@@ -1,72 +1,60 @@
-# Plano: Validação completa do fluxo do usuário (QA UX)
+Plano para validar e corrigir o fluxo de MFA com segurança e estabilidade:
 
-## Objetivo
-Executar um walkthrough automatizado da ferramenta inteira usando o browser para identificar inconsistências visuais, navegação quebrada, telas brancas, erros de console e problemas de fluidez. Entregar um **relatório consolidado** com achados priorizados — sem aplicar correções nesta etapa (correções em loop separado, após sua aprovação dos achados).
+1. Corrigir a causa provável do bypass
+- Hoje o MFA só é exigido dentro da página `/auth`, depois de `signInWithPassword`.
+- Como o Supabase mantém sessão persistida em `localStorage` com `autoRefreshToken`, um usuário que fica mais de um dia sem usar a ferramenta pode voltar/clicar em entrar e o app reaproveitar/refrescar a sessão existente sem passar pelo fluxo de login, indo direto para `/dashboard`.
+- Vou mover a validação de MFA para uma camada global no `AuthProvider`, para que qualquer sessão restaurada ou refrescada também seja validada antes de expor `user/session` ao app.
 
-## Escopo da varredura
+2. Criar validação server-side explícita de sessão MFA
+- Ajustar/criar uma Edge Function autenticada para checar se o usuário atual possui `mfa_sessions.expires_at > now()`.
+- Essa checagem usará o JWT do usuário via `getClaims()` e service role internamente, sem confiar em dados enviados pelo frontend.
+- O retorno será simples: `verified: true/false`, `expires_at`, e motivo quando não verificado.
 
-### 1. Autenticação e onboarding
-- `/auth` — login, validação de campos, fluxo MFA (sem disparar código real), "esqueci minha senha"
-- `/registro` e `/definir-senha` — renderização e validações
-- Logout e re-login
+3. Alterar o `AuthProvider` para bloquear sessões sem MFA válido
+- Na inicialização (`getSession`) e nos eventos `SIGNED_IN` / `TOKEN_REFRESHED`, antes de setar `user`, validar MFA no backend.
+- Se não houver MFA válido, o provider mantém `user/session = null`, guarda a sessão Supabase apenas para permitir chamar `send-mfa-code`/`verify-mfa-code`, seta a flag MFA pendente e redireciona para `/auth?mfa=required`.
+- Isso elimina o caminho em que uma sessão antiga/refrescada entra direto no dashboard.
 
-### 2. Dashboard e navegação principal
-- `/dashboard` — Hero Score, KPI Pills, drill-down drawer, GRC maturity bars, AkurIA chatbot
-- Sidebar agrupada — todos os 8 módulos GRC clicáveis, sub-itens (fade stagger), prefetch
-- Header — breadcrumbs, command palette (Cmd+K), changelog, theme toggle, notification center, user profile
-- Mobile bottom nav (375px viewport)
+4. Tornar `/auth` capaz de continuar MFA de sessão restaurada
+- Ajustar `Auth.tsx` para, ao detectar `?mfa=required` ou uma flag de MFA pendente, não limpar a flag automaticamente.
+- Buscar a sessão Supabase atual para obter e-mail/userId, enviar/reutilizar código via `send-mfa-code` e abrir a tela MFA imediatamente.
+- Manter a sessão oculta do app até `verify-mfa-code` confirmar o código.
 
-### 3. Módulos GRC (entrada + 1 ação chave em cada)
-Riscos, Controles, Gap Analysis, Auditorias, Incidentes, Privacidade/LGPD, Continuidade, Due Diligence, Contratos, Ativos, Documentos, Denúncia, Revisão de Acessos, Planos de Ação, Relatórios, Contas Privilegiadas, Sistemas, Governança.
+5. Reduzir janelas de bypass e inconsistências no frontend
+- Garantir que `ProtectedRoute`/`Layout` nunca renderizem conteúdo enquanto o MFA estiver pendente.
+- Centralizar helpers de flag MFA para evitar limpar a flag no momento errado.
+- No logout/inatividade/cancelamento do MFA, limpar flag, estado local e sessão Supabase de forma consistente.
 
-Em cada módulo: abrir lista, abrir um dialog (novo/editar), fechar, validar empty state e loader (`AkurisPulse` único).
+6. Endurecer Edge Functions MFA
+- Ajustar `send-mfa-code` para diferenciar claramente:
+  - `skipped: true` somente quando há sessão MFA válida;
+  - `success: true` quando código foi enviado/reutilizado;
+  - erro explícito quando não puder enviar, sem liberar login.
+- Ajustar `verify-mfa-code` para validação de entrada mais estrita: código com exatamente 6 dígitos, tratamento controlado de JSON inválido e mensagens mais úteis.
+- Manter todos os retornos com CORS e autenticação por JWT.
 
-### 4. Configurações e administração
-- `/configuracoes` — abas, gerenciamento de usuários, permissões, changelog admin
-- Trial banner / créditos de IA esgotados (banners globais)
+7. Corrigir políticas/estrutura de banco que fragilizam MFA
+- Remover as policies que permitem `authenticated` inserir/atualizar `mfa_sessions`; essa tabela deve ser escrita apenas pelas Edge Functions com service role.
+- Manter no máximo SELECT do próprio usuário, se necessário para auditoria/diagnóstico, mas o frontend não deverá depender disso para liberar acesso.
+- Não alterarei `src/integrations/supabase/types.ts` manualmente.
 
-### 5. Responsividade
-- Desktop 1440, tablet 820, mobile 390 — checar dialogs fullscreen mobile, tabelas com scroll horizontal, sidebar colapsada.
+8. Validação do fluxo após correção
+- Testar mentalmente e por inspeção os cenários principais:
+  - login normal sem MFA válido → envia código e exige MFA;
+  - código correto → cria sessão MFA por 24h e libera dashboard;
+  - login dentro de 24h → bypass permitido;
+  - retorno após mais de 24h com sessão Supabase ainda persistida → exige MFA antes do dashboard;
+  - refresh de página no meio do MFA → volta para tela MFA, sem tela branca;
+  - cancelar MFA → logout e retorno limpo ao login;
+  - erro ao enviar/verificar código → não libera acesso.
 
-### 6. Tema e idioma
-- Toggle dark/light em rotas-chave
-- Toggle PT/EN — confirmar que strings traduzem (sem chaves cruas tipo `layout.blockedTitle`)
+Arquivos previstos:
+- `src/components/AuthProvider.tsx`
+- `src/pages/Auth.tsx`
+- `src/components/MFAVerification.tsx` se necessário para mensagens/estado
+- `supabase/functions/send-mfa-code/index.ts`
+- `supabase/functions/verify-mfa-code/index.ts`
+- possivelmente nova função `supabase/functions/check-mfa-session/index.ts` ou reaproveitamento seguro da função existente
+- nova migration para corrigir policies de `mfa_sessions`
 
-## Critérios de inconsistência a registrar
-- Tela branca / Suspense que não resolve / loader infinito
-- Erros no console (`code--read_console_logs` + `browser--read_console_logs`) e requisições 4xx/5xx (`browser--list_network_requests`)
-- React warnings (Fragment props, key duplicada, hydration)
-- Uso de `Loader2`/spinner CSS/Skeleton visível (proibido por memória — só `AkurisPulse`)
-- Badges com `bg-{red,blue,...}-100` cru (proibido — usar `StatusBadge`)
-- Ícones fora do padrão Akuris (stroke != 1.5, ícones lucide onde existe ícone proprietário)
-- Quebra de layout: overflow horizontal indesejado, dialog cortado, texto clipado
-- Navegação: link 404, breadcrumb errado, redirect loop, botão "Voltar" inexistente
-- Toasts: uso de Radix Toast em vez de Sonner / `akurisToast`
-- Falta de `empresa_id` causando lista vazia indevida
-- Acessibilidade básica: foco visível, contraste, aria-labels em botões só-ícone
-
-## Método de execução
-1. `browser--navigate_to_sandbox` para `/auth` → login com a sessão preview já autenticada (sem mexer em credenciais; se cair em login, paro e peço).
-2. Para cada rota: `navigate` → aguardar render → `screenshot` + `read_console_logs` + `list_network_requests` filtrados por erro.
-3. Para dialogs: `observe` → `act` (abrir) → `screenshot` → fechar.
-4. Repetir nos 3 viewports.
-5. Verificar grep no código de padrões proibidos (`Loader2`, `animate-spin`, `bg-red-100` em badges, `useToast` Radix) para complementar achados visuais.
-
-## Entregável
-Relatório markdown em `/mnt/documents/qa-walkthrough-2026-05-06.md` agrupado por:
-- Severidade (Crítico / Alto / Médio / Baixo / Polish)
-- Módulo / rota
-- Evidência (screenshot path, log, snippet)
-- Sugestão de correção
-
-Resumo executivo no chat com top 10 achados e contagem por severidade.
-
-## Fora do escopo
-- Aplicar correções (faremos em loop separado após você priorizar)
-- Testes destrutivos (delete em massa, alterar dados de outras empresas)
-- Pen-test / segurança avançada (tem o scanner dedicado)
-
-## Observações técnicas
-- Browser pode falhar ao iniciar (capacidade) — nesse caso sigo só com leitura de código + console logs do preview e entrego relatório parcial avisando.
-- Se cair na tela de login MFA, paro e aviso (não preencho OTP).
-- Tempo estimado: ~15-20 chamadas de browser + leitura de ~10 arquivos.
+Resultado esperado: MFA deixa de ser um passo apenas do formulário de login e passa a ser um gate global de sessão. Assim, mesmo sessões antigas/refrescadas pelo Supabase não acessam a ferramenta sem uma sessão MFA válida nas últimas 24h.
