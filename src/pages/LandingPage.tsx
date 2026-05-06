@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { AkurisPulse } from "@/components/ui/AkurisPulse";
 import { useLandingReveal, useCountUp, useScrolled } from "@/hooks/useLandingAnimations";
+import { DemoRequestDialog } from "@/components/landing/DemoRequestDialog";
 
 const modules = [
   {
