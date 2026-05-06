@@ -207,7 +207,7 @@ const Auth = () => {
         // Login direto (24h válida).
         markMfaVerified(payload.expires_at);
         try { sessionStorage.removeItem(MFA_PENDING_KEY); } catch { /* ignore */ }
-        try { sessionStorage.setItem('akuris_show_login_toast', '1'); } catch { /* ignore */ }
+        toast.success(t('auth.loginSuccess'));
         setPhase('finalizing');
         return;
       }
@@ -235,7 +235,7 @@ const Auth = () => {
     setPhase('finalizing');
     markMfaVerified(expiresAt);
     try { sessionStorage.removeItem(MFA_PENDING_KEY); } catch { /* ignore */ }
-    try { sessionStorage.setItem('akuris_show_login_toast', '1'); } catch { /* ignore */ }
+    toast.success(t('auth.loginSuccess'));
   };
 
   const handleMFACancel = async () => {
