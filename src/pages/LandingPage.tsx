@@ -454,11 +454,6 @@ const LandingPage = () => {
                 Mostre a sua matriz de risco. <em>Nós mostramos onde a Akuris encaixa.</em>
               </h2>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12, alignItems: "flex-end" }}>
-              <span className="lp-mono" style={{ fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--lp-text-3)" }}>
-                Demonstração · 30 minutos
-              </span>
-            </div>
           </div>
 
           <form className="lp-form" onSubmit={handleSubmit} autoComplete="off">
