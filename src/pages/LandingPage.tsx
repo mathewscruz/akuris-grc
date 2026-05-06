@@ -175,7 +175,7 @@ const LandingPage = () => {
               clareza, não com planilhas.
             </p>
             <div className="lp-hero-cta">
-              <button className="lp-btn lp-btn-primary" onClick={() => scrollTo("contato")}>
+              <button className="lp-btn lp-btn-primary" onClick={() => setDemoOpen(true)}>
                 Solicitar demonstração <span className="arr">→</span>
               </button>
               <button className="lp-btn lp-btn-ghost" onClick={() => scrollTo("modulos")}>
