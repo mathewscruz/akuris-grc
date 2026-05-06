@@ -1,95 +1,90 @@
-## Diagnóstico — o que dá "cara de IA" hoje
 
-Lendo `src/pages/LandingPage.tsx` e `DashboardMockup.tsx`, identifiquei sete sinais clássicos de landing gerada por IA:
+## Objetivo
 
-1. **Hero genérico** — três palavras coloridas em roxo ("Riscos / Compliance / Governança") é o padrão visto em centenas de SaaS gerados. Soa template.
-2. **Mockup 3D rotacionado** com glow roxo atrás — efeito "AI demo" clichê. Pior: ele encolhe e desaparece no scroll (`scale + opacity`), o que é gratuito e quebra a percepção de produto real.
-3. **Strip de frameworks rolando infinito** com 20 pílulas iguais — visual "marketing wall" que diz "olha quantas siglas eu sei".
-4. **Alternância dark/light/dark/light** entre seções (Hero dark → Módulos light → Como funciona dark → Testimonials light → Gap dark → Contato light) cria efeito zebra cansativo e quebra continuidade da marca dark Navy.
-5. **Copy do bloco Gap Analysis** ("Sem depender de ninguém", "sem cobrar hora extra", "qualquer pessoa do time consegue seguir") tem tom informal/vendedor que destoa do resto. Parece prompt de marketing colado.
-6. **Depoimentos anônimos** ("Ana C. — Empresa do setor financeiro") gritam "fake testimonial". Em B2B sério, é melhor remover do que manter genéricos.
-7. **Cards de módulos** com ícone Lucide dentro de quadrado roxo claro — exatamente o padrão de toda landing v0/Lovable. Sem hierarquia, sem editorialização.
+Refazer `src/pages/LandingPage.tsx` reproduzindo fielmente a estrutura, ritmo tipográfico e composição editorial do HTML enviado (Claude), trocando apenas:
+- paleta para Navy oficial Akuris (`#0a1628`) + Purple `#7552FF`,
+- logo SVG genérico pelo logotipo oficial (`src/assets/akuris-logo.png`),
+- tipografia serif do template (Instrument Serif/Poppins) por **DM Serif Display** (headings) + **DM Sans** (já é a fonte do projeto) + **JetBrains Mono** (eyebrows/labels), mantendo a estética "editorial" (não-IA).
 
-Outros pontos menores: header com logo gigante (h-20), gradiente grid no hero muito visível, labels de campos de formulário misturando `text-gray-700` e `text-gray-500` sem motivo, footer com 2 links por coluna (parece vazio).
+Tudo o que envolve dados (form de contato, links de auth) continua usando a infra atual: `supabase.functions.invoke("send-contact-email", …)`, rota `/auth`, etc.
 
----
+## Por que esta abordagem
 
-## Plano de melhorias
+O HTML do anexo tem três traços de design que removem o "cheiro de IA" da versão atual:
+1. Layout com **bordas/grid editorial** (linhas finas separando blocos, módulos em lista numerada `M.01…M.07`, frameworks em grid de células com 1px de gap).
+2. **Hierarquia tipográfica forte**: serif leve (weight 300) em tamanhos grandes, com itálico colorido para dar "voz", e mono em uppercase com tracking largo nos rótulos.
+3. **Composição assimétrica do hero** (3 cards posicionados em absolute) em vez de mockup centralizado.
 
-### 1. Hero — reescrever com hierarquia editorial
-- Trocar headline por uma promessa específica e menos genérica, ex.:  
-  **"A plataforma única de Governança, Riscos e Compliance para empresas que levam conformidade a sério."**  
-  (sem destacar palavras soltas em roxo — usar **um** highlight só, na palavra-chave)
-- Subhead: encurtar para 1 frase de até 140 caracteres.
-- Eyebrow tag acima do H1: pequeno chip "GRC Platform · ISO 27001 · LGPD · SOC 2" em texto, não pílulas coloridas.
-- Adicionar segunda CTA secundária discreta ao lado da principal: "Ver módulos" (scroll suave para `#modulos`).
-- Remover o efeito de scale+fade no mockup (`mockupProgress`). Manter o mockup estático e levemente inclinado, ou substituir por screenshot real do dashboard se disponível.
+A versão atual perde isso porque usa cards genéricos de Tailwind, copy genérico e o mockup central.
 
-### 2. Mockup — desinflacionar
-- Remover rotação 3D (`rotateY -6deg / rotateX 2deg`) e o glow roxo de fundo.
-- Manter mockup reto, com sombra suave (`shadow-2xl shadow-black/40`) e borda sutil.
-- Reduzir saturação do roxo dentro do mockup (usar `#7552FF` apenas em 1-2 pontos focais, não em 5).
+## Mudanças
 
-### 3. Frameworks strip — substituir carrossel por grid estático
-- Remover animação `animate-scroll-left` (efeito "ticker de notícias" passa pouca seriedade).
-- Mostrar **8-10 frameworks principais** num grid de pílulas estático centralizado, com texto monocromático cinza claro. Mais sóbrio.
-- Eyebrow: "Frameworks suportados nativamente".
+### 1. Tipografia (novo)
+Adicionar em `index.html` o `<link>` do Google Fonts para **DM Serif Display** (já carrega DM Sans). Adicionar em `tailwind.config.ts` a família `serif: ['DM Serif Display', 'serif']` e `mono: ['JetBrains Mono', 'monospace']` (carregar JetBrains Mono também).
 
-### 4. Unificar paleta — eliminar zebra dark/light
-- Manter **tudo dark** (Navy `#0A1628` / `#0D1F37`) com variações de superfície (`#0F1B33`, `#111B2E`).  
-  A landing atual da marca é dark; quebrar para `#F1F5F9` em duas seções enfraquece a identidade premium.
-- Cards de módulos: superfície `#111B2E` com borda `#1E2D45`, hover `#7552FF/30`. Ícones em traço fino (`strokeWidth={1.5}`, padrão Akuris).
+### 2. Tokens CSS (novo bloco em `src/index.css`)
+Criar uma camada `@layer components` com classes utilitárias `.lp-*` que espelham as variáveis do template:
 
-### 5. Seção Módulos — editorializar
-- Reduzir grid para 4 colunas em desktop mantendo, mas:
-  - Numerar os módulos discretamente (`01`, `02`...) em cinza no canto superior direito do card.
-  - Remover o caixote roxo claro atrás do ícone — ícone Lucide direto, `text-primary stroke-1.5`.
-  - Tipografia: título mais firme (`font-semibold text-base tracking-tight`), descrição em `text-sm text-white/60 leading-relaxed`.
-  - "Saiba mais" vira um link minimalista com `→` apenas (sem chevron duplo).
+```text
+--lp-ink-0: #0a1628   (bg principal — Navy Akuris)
+--lp-ink-1: #0f1d33   (surface)
+--lp-ink-2: #16243d
+--lp-line:  #1e2d45
+--lp-line-2:#2a3a5a
+--lp-text:  #e7e5e0
+--lp-text-2:#a9a8a3
+--lp-text-3:#71706c
+--lp-accent:    #7552FF   (Purple Akuris)
+--lp-accent-2:  #b9b0fa   (variante clara para itálicos)
+```
 
-### 6. Seção "Como Funciona" — passos editoriais
-- Remover bolinhas roxas com número sobrepostas no topo (visual de tutorial Notion).
-- Layout horizontal com **número grande em outline** (`text-7xl font-bold text-primary/20`) atrás do título de cada passo. Dá ar de revista/editorial.
-- Conector sutil entre os 3 cards (linha tracejada horizontal em desktop).
+E classes: `.lp-eyebrow`, `.lp-btn-primary`, `.lp-btn-ghost`, `.lp-section-head`, `.lp-module`, `.lp-fw-grid`, `.lp-metric`, `.lp-quote`, `.lp-faq`, `.lp-cta`, `.lp-bigmark`, etc., copiadas 1-para-1 do CSS do anexo, apenas substituindo `var(--accent)` pelo Purple.
 
-### 7. Reescrever bloco Gap Analysis
-- Tom hoje é coloquial demais. Reescrever em registro corporativo enxuto:
-  - Headline: "Avalie a aderência da sua empresa a 21 frameworks. Sem consultoria externa."
-  - Subhead: "Da ISO 27001 à LGPD, conduza internamente o seu programa de conformidade com guidance estruturada por requisito e artefatos prontos para auditoria."
-  - 3 bullets: títulos firmes, descrições objetivas (≤120 caracteres cada), sem expressões como "sem cobrar hora extra".
+### 3. `src/pages/LandingPage.tsx` — reescrita completa
+Estrutura em sections idênticas ao anexo:
 
-### 8. Depoimentos — duas opções
-- **Opção A (recomendada):** remover a seção inteira. Em B2B, depoimentos anônimos contam negativamente.
-- **Opção B:** transformar em uma única citação destaque em tipografia grande (estilo editorial, font-serif ou DM Sans light), sem fotos falsas, com atribuição honesta tipo "Cliente do setor financeiro — sob NDA".
+```text
+NAV         logo Akuris (img) + links Produto/Módulos/Frameworks/Clientes/Contato + CTAs
+HERO        copy + 3 cards absolute (Posture 87/100, Matriz 5×5, Timeline)
+PROBLEMA    3 colunas numeradas 01/02/03
+MÓDULOS     lista M.01…M.08 (8 módulos reais do Akuris) com tags
+COMO FUNC.  4 passos com timeline horizontal
+FRAMEWORKS  grid de células com 21 frameworks reais do projeto
+MÉTRICAS    4 métricas grandes (−64%, 3,8×, +42%, 12s)
+CLIENTES    grid 6×2 placeholder (mantém para preencher quando houver)
+DEPOIMENTOS 2 quotes editoriais (texto neutro até ter cliente real)
+SEGURANÇA   3 cards (ISO 27001, dados Brasil, LGPD by design)
+FAQ         <details> com 6 perguntas
+CTA + form  reaproveita form existente (envia para send-contact-email)
+WORDMARK    "AKURIS" gigante em serif como fechamento
+FOOTER      4 colunas + selos LGPD/ISO/SOC2
+```
 
-### 9. Formulário de contato
-- Padronizar todas as labels em `text-white/70` (já que a seção será dark agora).
-- Remover asterisco `*` vermelho — usar apenas "(opcional)" nos não-obrigatórios. Mais limpo.
-- Botão: "Falar com especialista" (mais B2B) em vez de "Enviar Mensagem".
-- Adicionar microcopy abaixo do form: "Resposta em até 1 dia útil. Seus dados ficam protegidos conforme LGPD."
+**Conteúdo dos módulos**: usar os 8 módulos reais do Akuris (Riscos, Gap Analysis, Controles, Contas Privilegiadas, Privacidade & LGPD, Auditoria, Due Diligence, Continuidade) — não os 7 genéricos do template.
 
-### 10. Header & Footer
-- Logo: reduzir para `h-10 sm:h-12` (h-20 atual está desproporcional).
-- Header com `backdrop-blur` suave quando rolar (em vez de `bg-[#0A1628]/95`).
-- Footer: adicionar mais 2-3 links por coluna (ou consolidar em 3 colunas para não parecer vazio). Incluir badges discretos de "Hospedado no Brasil/UE", "LGPD Ready", "Em conformidade com ISO 27001" — cria credibilidade real sem parecer marketing.
+**Frameworks**: usar a lista real já presente em `src/lib/framework-configs.ts` (LGPD, GDPR, ISO 27001, ISO 27701, SOC 2, PCI DSS, NIST CSF 2.0, CIS v8, COBIT, COSO ERM, ISO 31000, ISO 9001, ISO 14001, ISO 37001, etc.).
 
-### 11. Microdetalhes anti-IA
-- Remover gradiente grid muito visível no hero (deixar apenas o radial gradient sutil).
-- Substituir todos os `text-gray-400/500` soltos por escala consistente: `text-white/55` (body), `text-white/40` (meta), `text-white/85` (títulos secundários).
-- Substituir `text-[#7552FF]` hardcoded por token `text-primary` (usa as cores do design system).
+**Logo**: substituir o `<svg>` genérico do anexo por `<img src={akurisLogo} className="h-8 w-auto" />`.
 
----
+**Form de contato**: manter `handleSubmit` atual (chama `send-contact-email`); só re-estilar inputs com classes `.lp-input` (border-bottom único, sem rounded, sem placeholder fofinho — estilo editorial).
 
-## Arquivos a editar
+### 4. `DashboardMockup.tsx` — remover do hero
+O hero do anexo não usa mockup central; usa 3 cards menores posicionados. Componente fica órfão — pode permanecer no repo (não é importado por mais ninguém após a reescrita) ou ser excluído. **Decisão: excluir** para evitar dead code.
 
-- `src/pages/LandingPage.tsx` — refatoração de copy, layout das seções, paleta unificada dark, remoção do scroll-effect do mockup, novo formulário e footer.
-- `src/components/landing/DashboardMockup.tsx` — remover rotação 3D e glow, reduzir saturação interna.
-- (opcional) criar `src/components/landing/SectionEyebrow.tsx` para padronizar o chip uppercase usado em cada seção.
+### 5. Acessibilidade e responsivo
+- Manter todos os `aria-label` do anexo.
+- Adicionar breakpoints: abaixo de `lg`, hero vira 1 coluna (cards em stack), módulos viram cards verticais, frameworks vão para grid 2 colunas, métricas para 2×2.
 
-Sem mudanças em rotas, banco, edge functions ou autenticação. Apenas marketing/visual.
+## Arquivos afetados
 
----
+- `index.html` — adicionar fontes (DM Serif Display, JetBrains Mono)
+- `tailwind.config.ts` — registrar famílias `serif` e `mono`
+- `src/index.css` — bloco novo `@layer components` com tokens e classes `.lp-*`
+- `src/pages/LandingPage.tsx` — reescrita completa
+- `src/components/landing/DashboardMockup.tsx` — remover
 
-## Pergunta antes de implementar
+## Riscos / observações
 
-Quer que eu execute **todas** as 11 mudanças acima, ou prefere priorizar um subconjunto (por exemplo: 1, 2, 4, 7, 8 — que são os que mais reduzem "cara de IA")? Também: prefere **remover** a seção de depoimentos (Opção A) ou **manter editorializada** (Opção B)?
+- **Não toca em `/auth`, AuthProvider, rotas, RLS ou Edge Functions** — apenas a página pública de marketing. O form de contato continua chamando a mesma Edge Function já existente.
+- O CSS do anexo é todo escopado em classes `.lp-*` — não impacta o resto do app (dashboard, módulos internos, etc.).
+- Depoimentos ficam com placeholder (`[Nome do cliente]`) até que você forneça nomes/cargos reais — ou posso remover a seção até lá. **Confirmar na implementação se prefere remover ou manter placeholder.**
