@@ -182,7 +182,7 @@ export function IntegrationLogViewer({ open, onOpenChange }: IntegrationLogViewe
               </SelectContent>
             </Select>
             <Button variant="outline" size="sm" onClick={fetchLogs} disabled={loading} className="h-8">
-              <RefreshCw className={`h-3 w-3 mr-1 ${loading ? 'animate-spin' : ''}`} />
+              {loading ? <AkurisPulse size={12} className="mr-1" /> : <RefreshCw className="h-3 w-3 mr-1" />}
               Atualizar
             </Button>
           </div>
