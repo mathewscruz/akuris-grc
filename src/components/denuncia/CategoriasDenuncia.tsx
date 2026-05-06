@@ -280,9 +280,9 @@ export function CategoriasDenuncia() {
       key: 'nome',
       label: 'Categoria',
       sortable: true,
-      render: (cat) => (
+      render: (_value, cat) => (
         <div className="flex items-center gap-2">
-          <div 
+          <div
             className="w-4 h-4 rounded-full flex-shrink-0"
             style={{ backgroundColor: cat.cor }}
           />
@@ -294,7 +294,7 @@ export function CategoriasDenuncia() {
       key: 'descricao',
       label: 'Descrição',
       sortable: true,
-      render: (cat) => (
+      render: (_value, cat) => (
         <span className="max-w-xs truncate block">{cat.descricao || '-'}</span>
       )
     },
@@ -302,7 +302,7 @@ export function CategoriasDenuncia() {
       key: 'ativo',
       label: 'Status',
       sortable: true,
-      render: (cat) => (
+      render: (_value, cat) => (
         <Button
           variant="ghost"
           size="sm"
@@ -318,12 +318,12 @@ export function CategoriasDenuncia() {
       key: 'created_at',
       label: 'Criado em',
       sortable: true,
-      render: (cat) => formatDateOnly(cat.created_at)
+      render: (_value, cat) => formatDateOnly(cat.created_at)
     },
     {
       key: 'acoes',
       label: 'Ações',
-      render: (cat) => (
+      render: (_value, cat) => (
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
