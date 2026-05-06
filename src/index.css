@@ -489,7 +489,7 @@ input:-webkit-autofill:focus {
   --lp-r-3: 14px;
   --lp-container: 1240px;
   --lp-pad: 32px;
-  --lp-serif: 'DM Serif Display', Georgia, serif;
+  --lp-serif: 'DM Sans', system-ui, sans-serif;
   --lp-sans: 'DM Sans', system-ui, sans-serif;
   --lp-mono: 'JetBrains Mono', ui-monospace, monospace;
 
