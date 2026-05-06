@@ -96,7 +96,9 @@ const Auth = () => {
       setMfaEmail(session.user.email ?? '');
       // Pede o código para o usuário (ou reutiliza o ativo).
       try {
-        const resp = await supabase.functions.invoke('send-mfa-code', { body: {} });
+        const resp = await supabase.functions.invoke('send-mfa-code', {
+          body: { context: 'session_restore' },
+        });
         if (resp.error || !resp.data?.success) {
           logger.error('Falha ao enviar MFA em sessão restaurada', {
             module: 'Auth',
@@ -184,19 +186,16 @@ const Auth = () => {
         localStorage.removeItem('akuris_remember_me');
       }
 
-      // Pergunta ao backend se o MFA pode ser pulado (sessão MFA válida nas últimas 24h).
-      let mfaSkipped = false;
+      // Login fresco por senha SEMPRE exige MFA (sem skip de 24h).
       let mfaSendFailed = false;
       try {
-        const mfaResponse = await supabase.functions.invoke('send-mfa-code', { body: {} });
+        const mfaResponse = await supabase.functions.invoke('send-mfa-code', {
+          body: { context: 'fresh_login' },
+        });
         if (mfaResponse.error) {
           logger.error('Erro ao invocar send-mfa-code', { module: 'Auth', error: String(mfaResponse.error) });
           mfaSendFailed = true;
-        } else if (mfaResponse.data?.success && mfaResponse.data?.skipped) {
-          mfaSkipped = true;
-        } else if (mfaResponse.data?.success) {
-          mfaSkipped = false;
-        } else {
+        } else if (!mfaResponse.data?.success) {
           logger.error('send-mfa-code retornou erro controlado', {
             module: 'Auth',
             error: String(mfaResponse.data?.error || 'desconhecido'),
@@ -216,27 +215,9 @@ const Auth = () => {
         return;
       }
 
-      if (!mfaSkipped) {
-        setMfaUserId(userId);
-        setMfaEmail(email.trim());
-        setPhase('mfa_required');
-        return;
-      }
-
-      // Bypass legítimo: backend confirmou sessão MFA válida.
-      // O AuthProvider acabará liberando o user via check-mfa-session, mas
-      // limpamos a flag e forçamos um refresh para acelerar a propagação.
-      try { sessionStorage.removeItem(MFA_PENDING_KEY); } catch { /* ignore */ }
-      try {
-        await supabase.auth.refreshSession();
-      } catch (refreshError) {
-        logger.warn('Falha ao refrescar sessão pós-bypass MFA', {
-          module: 'Auth',
-          error: String(refreshError),
-        });
-      }
-      toast.success(t('auth.loginSuccess'));
-      setPhase('finalizing');
+      setMfaUserId(userId);
+      setMfaEmail(email.trim());
+      setPhase('mfa_required');
     } catch (error: any) {
       try { sessionStorage.removeItem(MFA_PENDING_KEY); } catch { /* ignore */ }
       logger.warn('Login failed', { module: 'Auth', action: 'login', details: error?.message });
@@ -248,12 +229,13 @@ const Auth = () => {
   const handleMFAVerified = async () => {
     setPhase('finalizing');
     try { sessionStorage.removeItem(MFA_PENDING_KEY); } catch { /* ignore */ }
+    // Sinaliza para o Dashboard exibir o toast quando montar (evita "vazar" sobre o overlay).
+    try { sessionStorage.setItem('akuris_show_login_toast', '1'); } catch { /* ignore */ }
     try {
       await supabase.auth.refreshSession();
     } catch (refreshError) {
       logger.warn('Falha ao refrescar sessão pós-MFA', { module: 'Auth', error: String(refreshError) });
     }
-    toast.success(t('auth.loginSuccess'));
   };
 
   const handleMFACancel = async () => {

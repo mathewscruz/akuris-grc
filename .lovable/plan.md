@@ -1,60 +1,67 @@
-Plano para validar e corrigir o fluxo de MFA com segurança e estabilidade:
+## Diagnóstico
 
-1. Corrigir a causa provável do bypass
-- Hoje o MFA só é exigido dentro da página `/auth`, depois de `signInWithPassword`.
-- Como o Supabase mantém sessão persistida em `localStorage` com `autoRefreshToken`, um usuário que fica mais de um dia sem usar a ferramenta pode voltar/clicar em entrar e o app reaproveitar/refrescar a sessão existente sem passar pelo fluxo de login, indo direto para `/dashboard`.
-- Vou mover a validação de MFA para uma camada global no `AuthProvider`, para que qualquer sessão restaurada ou refrescada também seja validada antes de expor `user/session` ao app.
+**1. MFA sendo pulado no login por senha**
+Os auth logs mostram dois logins consecutivos (`grant_type: password`) de `henrique.mathews@gmail.com` sem qualquer chamada para `send-mfa-code` / `verify-mfa-code`. O bypass acontece dentro de `supabase/functions/send-mfa-code/index.ts`:
 
-2. Criar validação server-side explícita de sessão MFA
-- Ajustar/criar uma Edge Function autenticada para checar se o usuário atual possui `mfa_sessions.expires_at > now()`.
-- Essa checagem usará o JWT do usuário via `getClaims()` e service role internamente, sem confiar em dados enviados pelo frontend.
-- O retorno será simples: `verified: true/false`, `expires_at`, e motivo quando não verificado.
+```text
+linhas 77-92:
+  consulta mfa_sessions com expires_at > now()
+  se existir → retorna { success: true, skipped: true }
+```
 
-3. Alterar o `AuthProvider` para bloquear sessões sem MFA válido
-- Na inicialização (`getSession`) e nos eventos `SIGNED_IN` / `TOKEN_REFRESHED`, antes de setar `user`, validar MFA no backend.
-- Se não houver MFA válido, o provider mantém `user/session = null`, guarda a sessão Supabase apenas para permitir chamar `send-mfa-code`/`verify-mfa-code`, seta a flag MFA pendente e redireciona para `/auth?mfa=required`.
-- Isso elimina o caminho em que uma sessão antiga/refrescada entra direto no dashboard.
+E em `src/pages/Auth.tsx` (linhas 195-238), `skipped: true` faz `handleSignIn` pular a tela de MFA, dar `refreshSession` e mandar para o dashboard.
 
-4. Tornar `/auth` capaz de continuar MFA de sessão restaurada
-- Ajustar `Auth.tsx` para, ao detectar `?mfa=required` ou uma flag de MFA pendente, não limpar a flag automaticamente.
-- Buscar a sessão Supabase atual para obter e-mail/userId, enviar/reutilizar código via `send-mfa-code` e abrir a tela MFA imediatamente.
-- Manter a sessão oculta do app até `verify-mfa-code` confirmar o código.
+O "skip de 24h" foi desenhado para sessões **restauradas** (usuário voltou no dia seguinte sem deslogar), não para login fresco com senha. Hoje os dois caminhos compartilham o mesmo bypass.
 
-5. Reduzir janelas de bypass e inconsistências no frontend
-- Garantir que `ProtectedRoute`/`Layout` nunca renderizem conteúdo enquanto o MFA estiver pendente.
-- Centralizar helpers de flag MFA para evitar limpar a flag no momento errado.
-- No logout/inatividade/cancelamento do MFA, limpar flag, estado local e sessão Supabase de forma consistente.
+**2. Toast "Login realizado com sucesso" aparece sobre o loading**
+Em `Auth.tsx` (linhas 238 e 256), o `toast.success(t('auth.loginSuccess'))` é chamado antes de o `AuthProvider` terminar `check-mfa-session` + `fetchProfile`. Como `LoadingOverlay` (fase `finalizing`) permanece visível até o `user` ser exposto, o usuário vê o toast "vazando" sobre a tela de carregamento e às vezes ainda no primeiro frame do dashboard.
 
-6. Endurecer Edge Functions MFA
-- Ajustar `send-mfa-code` para diferenciar claramente:
-  - `skipped: true` somente quando há sessão MFA válida;
-  - `success: true` quando código foi enviado/reutilizado;
-  - erro explícito quando não puder enviar, sem liberar login.
-- Ajustar `verify-mfa-code` para validação de entrada mais estrita: código com exatamente 6 dígitos, tratamento controlado de JSON inválido e mensagens mais úteis.
-- Manter todos os retornos com CORS e autenticação por JWT.
+---
 
-7. Corrigir políticas/estrutura de banco que fragilizam MFA
-- Remover as policies que permitem `authenticated` inserir/atualizar `mfa_sessions`; essa tabela deve ser escrita apenas pelas Edge Functions com service role.
-- Manter no máximo SELECT do próprio usuário, se necessário para auditoria/diagnóstico, mas o frontend não deverá depender disso para liberar acesso.
-- Não alterarei `src/integrations/supabase/types.ts` manualmente.
+## Mudanças
 
-8. Validação do fluxo após correção
-- Testar mentalmente e por inspeção os cenários principais:
-  - login normal sem MFA válido → envia código e exige MFA;
-  - código correto → cria sessão MFA por 24h e libera dashboard;
-  - login dentro de 24h → bypass permitido;
-  - retorno após mais de 24h com sessão Supabase ainda persistida → exige MFA antes do dashboard;
-  - refresh de página no meio do MFA → volta para tela MFA, sem tela branca;
-  - cancelar MFA → logout e retorno limpo ao login;
-  - erro ao enviar/verificar código → não libera acesso.
+### A. Backend — distinguir "login por senha" de "checagem de skip"
 
-Arquivos previstos:
-- `src/components/AuthProvider.tsx`
-- `src/pages/Auth.tsx`
-- `src/components/MFAVerification.tsx` se necessário para mensagens/estado
-- `supabase/functions/send-mfa-code/index.ts`
-- `supabase/functions/verify-mfa-code/index.ts`
-- possivelmente nova função `supabase/functions/check-mfa-session/index.ts` ou reaproveitamento seguro da função existente
-- nova migration para corrigir policies de `mfa_sessions`
+**`supabase/functions/send-mfa-code/index.ts`**
 
-Resultado esperado: MFA deixa de ser um passo apenas do formulário de login e passa a ser um gate global de sessão. Assim, mesmo sessões antigas/refrescadas pelo Supabase não acessam a ferramenta sem uma sessão MFA válida nas últimas 24h.
+- Aceitar no body um flag `context: 'fresh_login' | 'session_restore'` (default `session_restore` para retrocompatibilidade).
+- Quando `context === 'fresh_login'`: **ignorar** a sessão MFA existente (não retornar `skipped`). Sempre gera/reusa código e envia e-mail.
+- Quando `context === 'session_restore'`: comportamento atual (retorna `skipped: true` se houver `mfa_session` válida).
+- Manter validação de JWT via `getClaims` e a regra de só operar sobre `callerUserId`.
+
+### B. Frontend — sempre exigir MFA no login por senha
+
+**`src/pages/Auth.tsx` — `handleSignIn`**
+
+- Chamar `send-mfa-code` com `body: { context: 'fresh_login' }`.
+- Remover toda a lógica de `mfaSkipped` no caminho de senha: depois do envio bem-sucedido, sempre setar `phase = 'mfa_required'` e abrir `MFAVerification`.
+- Remover o `toast.success(t('auth.loginSuccess'))` daqui (linha 238) e o `await supabase.auth.refreshSession()` do bypass (não é mais necessário).
+- Em caso de falha do `send-mfa-code`, manter o `signOut` + toast de erro + voltar para `idle`.
+
+**`src/pages/Auth.tsx` — `handleMFAVerified`**
+
+- Remover o `toast.success(t('auth.loginSuccess'))` daqui também (linha 256).
+- Manter `setPhase('finalizing')` e `refreshSession` para acelerar a propagação.
+
+**`src/pages/Auth.tsx` — restauração de sessão (useEffect MFA pendente)**
+
+- Continuar chamando `send-mfa-code` mas com `body: { context: 'session_restore' }` (para preservar o skip silencioso quando legítimo — se nesse caminho voltar `skipped: true`, basta tirar o pending e deixar o `AuthProvider` propagar).
+
+### C. Toast de boas-vindas — emitir só quando o dashboard estiver pronto
+
+Para garantir que o toast nunca apareça por cima do loading:
+
+- Em `handleMFAVerified` (e no caminho `fresh_login` finalizado), gravar uma flag `sessionStorage.setItem('akuris_show_login_toast', '1')`.
+- Em `src/pages/Dashboard.tsx`, dentro de um `useEffect` que roda após o primeiro render efetivo (quando `profile` e `company` já estão disponíveis no `useAuth`), checar a flag, disparar `toast.success(t('auth.loginSuccess'))` e remover a flag.
+- Isso garante que o toast só aparece quando a UI do dashboard já está visível, eliminando o "vazamento" durante `LoadingOverlay`.
+
+### D. Validação manual após implementação
+
+1. Login fresco por senha → tela de MFA **sempre** aparece, mesmo se houver `mfa_session` válida no banco.
+2. Inserir código → overlay de finalização → dashboard → toast "Login realizado com sucesso" aparece já no dashboard, não antes.
+3. Fechar aba e reabrir em <24h sem deslogar → sessão restaurada sem pedir MFA novamente (comportamento desejado para UX).
+4. Fechar aba e reabrir em >24h → tela MFA aparece automaticamente (já funciona pelo `MFA_PENDING_KEY`, sem regressão).
+
+### E. Observação de segurança
+
+Forçar MFA em todo login por senha é mais restritivo que o estado atual e está alinhado com a expectativa do usuário e com a memória `auth/mfa-session-isolation-logic`. A janela de 24h continua existindo, mas só beneficia sessões já estabelecidas (refresh/restore), não autenticação por senha — que é o vetor principal de comprometimento.
