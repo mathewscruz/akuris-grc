@@ -1337,8 +1337,8 @@ input:-webkit-autofill:focus {
   .lp-sec-grid { grid-template-columns: 1fr; }
   .lp-problem-grid { grid-template-columns: 1fr; }
   .lp-problem-cell { border-right: 0; border-bottom: 1px solid var(--lp-line); padding: 28px 0 !important; }
-  .lp-cta-inner { grid-template-columns: 1fr; }
-  .lp-form { grid-template-columns: 1fr; }
+  .lp-cta-band-grid { grid-template-columns: 1fr; gap: 32px; }
+  .lp-cta-meta { align-items: flex-start; }
   .lp-foot { grid-template-columns: 1fr 1fr; gap: 32px; }
   .lp-nav-links { display: none; }
 }
