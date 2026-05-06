@@ -34,17 +34,71 @@ interface Company {
   };
 }
 
-// Sinaliza globalmente que o login está aguardando o passo de MFA.
-// Enquanto presente em sessionStorage, o AuthProvider não expõe a sessão
-// como autenticada — evita que páginas protegidas renderizem entre o
-// signInWithPassword e o signOut imediato do fluxo MFA.
+// =============================================================================
+// MFA gate global
+// =============================================================================
+// O MFA é exigido para QUALQUER sessão Supabase exposta ao app — não apenas no
+// fluxo de login. Toda sessão (login novo, restaurada do localStorage ou
+// refrescada automaticamente pelo SDK) é validada via Edge Function
+// `check-mfa-session`. Enquanto a checagem não confirmar uma sessão MFA válida
+// nas últimas 24h, o provider mantém user/session = null e sinaliza pending.
+//
+// MFA_PENDING_KEY (sessionStorage): usado pela tela /auth para reabrir o MFA
+// imediatamente quando a sessão ainda está aguardando o segundo fator.
+// =============================================================================
 export const MFA_PENDING_KEY = 'akuris_mfa_pending';
 
-const isMfaPending = (): boolean => {
+const MFA_VERIFIED_CACHE_KEY = 'akuris_mfa_verified_until';
+
+const setMfaPendingFlag = (pending: boolean) => {
   try {
-    return typeof window !== 'undefined' && sessionStorage.getItem(MFA_PENDING_KEY) === '1';
+    if (typeof window === 'undefined') return;
+    if (pending) sessionStorage.setItem(MFA_PENDING_KEY, '1');
+    else sessionStorage.removeItem(MFA_PENDING_KEY);
   } catch {
-    return false;
+    /* ignore */
+  }
+};
+
+const getCachedMfaUntil = (): number => {
+  try {
+    if (typeof window === 'undefined') return 0;
+    const raw = sessionStorage.getItem(MFA_VERIFIED_CACHE_KEY);
+    return raw ? parseInt(raw, 10) || 0 : 0;
+  } catch {
+    return 0;
+  }
+};
+
+const setCachedMfaUntil = (timestampMs: number) => {
+  try {
+    if (typeof window === 'undefined') return;
+    if (timestampMs > 0) sessionStorage.setItem(MFA_VERIFIED_CACHE_KEY, String(timestampMs));
+    else sessionStorage.removeItem(MFA_VERIFIED_CACHE_KEY);
+  } catch {
+    /* ignore */
+  }
+};
+
+/**
+ * Consulta a Edge Function de verificação MFA.
+ * Retorna `true` somente quando o backend confirma sessão MFA válida.
+ * Em caso de falha de rede, devolve `false` (fail-closed) para não liberar acesso.
+ */
+const checkMfaSessionRemote = async (): Promise<{ verified: boolean; expiresAt?: string }> => {
+  try {
+    const { data, error } = await supabase.functions.invoke('check-mfa-session', { body: {} });
+    if (error) {
+      logger.warn('check-mfa-session falhou', { module: 'auth', error: String(error) });
+      return { verified: false };
+    }
+    if (data?.verified === true) {
+      return { verified: true, expiresAt: data.expires_at };
+    }
+    return { verified: false };
+  } catch (err) {
+    logger.warn('Exceção em check-mfa-session', { module: 'auth', error: String(err) });
+    return { verified: false };
   }
 };
 
@@ -62,6 +116,8 @@ interface AuthContextType {
   forceLogoUpdate: () => void;
   initializeUserPermissions: () => Promise<void>;
   debugAuthState: () => void;
+  /** Marca uma sessão MFA como válida localmente (chamado após verify-mfa-code). */
+  markMfaVerified: (expiresAt?: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -86,7 +142,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchProfile = async (userId: string) => {
     try {
       logger.debug('Fetching profile for user', { userId, module: 'auth' });
-      
+
       const { data, error } = await measurePerformance(
         'fetchProfile',
         () => supabase
@@ -119,33 +175,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       );
 
       if (error) throw error;
-      
-      logger.info('Profile fetched successfully', { 
-        userId, 
-        profileId: data.id, 
+
+      logger.info('Profile fetched successfully', {
+        userId,
+        profileId: data.id,
         empresaId: data.empresa_id,
-        role: data.role 
+        role: data.role
       });
       setProfile(data);
-      
+
       const newCompany = data.empresas ? {
         ...data.empresas,
         status_licenca: (data.empresas.status_licenca || 'em_operacao') as 'trial' | 'em_operacao',
         data_inicio_trial: data.empresas.data_inicio_trial || null,
       } : null;
-      logger.debug('Company updated', { 
-        empresaId: newCompany?.id, 
-        empresaNome: newCompany?.nome 
+      logger.debug('Company updated', {
+        empresaId: newCompany?.id,
+        empresaNome: newCompany?.nome
       });
       setCompany(newCompany);
-      
-      // Incrementar a chave para forçar re-render dos componentes que usam logo
+
       setLogoUpdateKey(prev => prev + 1);
       logger.debug('Logo update key incremented');
     } catch (error) {
-      logger.error('Error fetching profile', { 
-        error: error instanceof Error ? error.message : String(error), 
-        userId 
+      logger.error('Error fetching profile', {
+        error: error instanceof Error ? error.message : String(error),
+        userId
       });
       setProfile(null);
       setCompany(null);
@@ -166,22 +221,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       if (error) {
-        logger.error('Error initializing user permissions', { 
-          error: error.message, 
-          userId: user.id 
+        logger.error('Error initializing user permissions', {
+          error: error.message,
+          userId: user.id
         });
       } else {
         logger.info('User permissions initialized successfully', { userId: user.id });
       }
     } catch (error) {
-      logger.error('Error calling apply_default_permissions_for_user', { 
+      logger.error('Error calling apply_default_permissions_for_user', {
         error: error instanceof Error ? error.message : String(error),
-        userId: user.id 
+        userId: user.id
       });
     }
   };
 
-  // Função para debug do estado de autenticação
   const debugAuthState = () => {
     logger.debug('Current auth state', {
       userId: user?.id,
@@ -194,202 +248,144 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
-
   const checkTemporaryPassword = async () => {
     if (!user) {
-      logger.debug('No user found, setting hasTemporaryPassword to false');
       setHasTemporaryPassword(false);
       return;
     }
-
     try {
-      logger.debug('Checking temporary password for user', { userId: user.id });
-      
-      const { data, error } = await measurePerformance(
-        'checkTemporaryPassword',
-        () => supabase
-          .from('temporary_passwords')
-          .select('is_temporary, created_at, expires_at')
-          .eq('user_id', user.id)
-          .eq('is_temporary', true)
-          .maybeSingle(),
-        { userId: user.id, module: 'auth' }
-      );
+      const { data, error } = await supabase
+        .from('temporary_passwords')
+        .select('is_temporary, created_at, expires_at')
+        .eq('user_id', user.id)
+        .eq('is_temporary', true)
+        .maybeSingle();
 
       if (error) {
-        logger.error('Error checking temporary password', { 
-          error: error.message, 
-          userId: user.id 
-        });
         setHasTemporaryPassword(false);
         return;
       }
-
-      if (!data) {
-        logger.debug('No temporary password record found', { userId: user.id });
-        setHasTemporaryPassword(false);
-        return;
-      }
-
-      logger.debug('Temporary password data retrieved', { 
-        userId: user.id, 
-        hasData: !!data 
-      });
-      
-      // Se is_temporary = true, o usuário DEVE trocar a senha
-      // Mesmo que expires_at tenha passado, a obrigatoriedade da troca permanece
-      if (data.expires_at) {
-        const expirationDate = new Date(data.expires_at);
-        const now = new Date();
-        if (now > expirationDate) {
-          logger.info('Temporary password expired but still requires change', { 
-            userId: user.id,
-            expiredAt: expirationDate.toISOString()
-          });
-          // Continua para forçar a troca de senha mesmo com expiração
-        }
-      }
-
-      const hasTemp = !!data?.is_temporary;
-      logger.info('Temporary password check completed', { 
-        userId: user.id, 
-        hasTemporaryPassword: hasTemp 
-      });
-      setHasTemporaryPassword(hasTemp);
-    } catch (error) {
-      logger.error('Error checking temporary password', { 
-        error: error instanceof Error ? error.message : String(error),
-        userId: user.id 
-      });
+      setHasTemporaryPassword(!!data?.is_temporary);
+    } catch {
       setHasTemporaryPassword(false);
     }
   };
 
   const refetchProfile = async () => {
     if (user) {
-      console.log('Refetching profile...');
       await fetchProfile(user.id);
+    }
+  };
+
+  const markMfaVerified = (expiresAt?: string) => {
+    const expMs = expiresAt ? new Date(expiresAt).getTime() : Date.now() + 24 * 60 * 60 * 1000;
+    setCachedMfaUntil(expMs);
+    setMfaPendingFlag(false);
+  };
+
+  /**
+   * Decide o que expor como sessão "efetiva" para o app.
+   * - Se não há sessão Supabase → expõe null (deslogado).
+   * - Se há sessão e o cache local diz MFA válido → expõe imediatamente.
+   * - Senão chama o backend; se confirmar MFA → expõe; caso contrário marca pending e expõe null.
+   */
+  const evaluateSession = async (rawSession: Session | null) => {
+    if (!rawSession?.user) {
+      setMfaPendingFlag(false);
+      setCachedMfaUntil(0);
+      setSession(null);
+      setUser(null);
+      setProfile(null);
+      setCompany(null);
+      setHasTemporaryPassword(false);
+      return;
+    }
+
+    // Cache local (sessionStorage) — evita refazer a chamada toda hora.
+    const cachedUntil = getCachedMfaUntil();
+    if (cachedUntil > Date.now()) {
+      setMfaPendingFlag(false);
+      setSession(rawSession);
+      setUser(rawSession.user);
+      setTimeout(() => {
+        Promise.all([
+          fetchProfileSafe(rawSession.user.id),
+          checkTemporaryPasswordForUser(rawSession.user.id),
+        ]);
+      }, 0);
+      return;
+    }
+
+    // Sem cache válido → consulta o backend.
+    const { verified, expiresAt } = await checkMfaSessionRemote();
+    if (!verified) {
+      // Bloqueia a exposição da sessão até o MFA ser concluído.
+      setMfaPendingFlag(true);
+      setSession(null);
+      setUser(null);
+      setProfile(null);
+      setCompany(null);
+      setHasTemporaryPassword(false);
+      return;
+    }
+
+    // MFA confirmado pelo backend.
+    if (expiresAt) setCachedMfaUntil(new Date(expiresAt).getTime());
+    setMfaPendingFlag(false);
+    setSession(rawSession);
+    setUser(rawSession.user);
+    setTimeout(() => {
+      Promise.all([
+        fetchProfileSafe(rawSession.user.id),
+        checkTemporaryPasswordForUser(rawSession.user.id),
+      ]);
+    }, 0);
+  };
+
+  // Wrappers para uso interno (necessários antes de declarados acima).
+  const fetchProfileSafe = async (userId: string) => fetchProfile(userId);
+  const checkTemporaryPasswordForUser = async (userId: string) => {
+    try {
+      const { data } = await supabase
+        .from('temporary_passwords')
+        .select('is_temporary')
+        .eq('user_id', userId)
+        .eq('is_temporary', true)
+        .maybeSingle();
+      setHasTemporaryPassword(!!data?.is_temporary);
+    } catch {
+      setHasTemporaryPassword(false);
     }
   };
 
   useEffect(() => {
     let isSubscribed = true;
 
-    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      (event, sess) => {
         if (!isSubscribed) return;
+        logger.info('Auth state changed', { event, userId: sess?.user?.id, module: 'auth' });
 
-        logger.info('Auth state changed', { 
-          event, 
-          userId: session?.user?.id,
-          module: 'auth' 
-        });
-        // Se há um desafio MFA pendente, NÃO expomos a sessão para o app.
-        // Isso impede que rotas protegidas renderizem o dashboard durante
-        // o curto intervalo entre signInWithPassword e signOut() do fluxo MFA.
-        const mfaPending = isMfaPending();
-        const effectiveSession = mfaPending ? null : session;
-
-        setSession(effectiveSession);
-        setUser(effectiveSession?.user ?? null);
-
-        if (effectiveSession?.user) {
-          // Usar setTimeout para evitar deadlock no callback
-          // Verificar senha temporária IMEDIATAMENTE após login
-          setTimeout(async () => {
-            if (isSubscribed) {
-              logger.debug('Iniciando verificação pós-login', { userId: effectiveSession.user.id });
-
-              // Paralelizar: senha temporária + profile ao mesmo tempo
-              await Promise.all([
-                checkTemporaryPasswordForUser(effectiveSession.user.id),
-                fetchProfile(effectiveSession.user.id),
-              ]);
-              await initializeUserPermissions();
-            }
-          }, 0);
-        } else {
-          setProfile(null);
-          setCompany(null);
-          setHasTemporaryPassword(false);
+        // SIGNED_OUT limpa tudo, inclusive cache de MFA.
+        if (event === 'SIGNED_OUT') {
+          setCachedMfaUntil(0);
+          setMfaPendingFlag(false);
         }
 
-        setLoading(false);
+        // Avalia de forma assíncrona para não bloquear o callback.
+        setTimeout(() => {
+          if (isSubscribed) evaluateSession(sess).finally(() => setLoading(false));
+        }, 0);
       }
     );
 
-    // Função auxiliar para verificar senha temporária por userId
-    const checkTemporaryPasswordForUser = async (userId: string) => {
-      try {
-        logger.debug('Verificando senha temporária para usuário', { userId });
-        
-        const { data, error } = await supabase
-          .from('temporary_passwords')
-          .select('is_temporary, created_at, expires_at')
-          .eq('user_id', userId)
-          .eq('is_temporary', true)
-          .maybeSingle();
-
-        if (error) {
-          logger.error('Erro ao verificar senha temporária', { 
-            error: error.message, 
-            userId 
-          });
-          setHasTemporaryPassword(false);
-          return;
-        }
-
-        if (!data) {
-          logger.debug('Nenhum registro de senha temporária encontrado', { userId });
-          setHasTemporaryPassword(false);
-          return;
-        }
-
-        logger.info('Senha temporária encontrada', { 
-          userId, 
-          isTemporary: data.is_temporary,
-          expiresAt: data.expires_at 
-        });
-        
-        setHasTemporaryPassword(true);
-      } catch (error) {
-        logger.error('Erro ao verificar senha temporária', { 
-          error: error instanceof Error ? error.message : String(error),
-          userId 
-        });
-        setHasTemporaryPassword(false);
-      }
-    };
-
-    // Check for existing session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    // Sessão inicial (refresh, navegação direta etc.).
+    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
       if (!isSubscribed) return;
-
-      logger.debug('Initial session check', {
-        userId: session?.user?.id,
-        module: 'auth'
+      logger.debug('Initial session check', { userId: initialSession?.user?.id, module: 'auth' });
+      evaluateSession(initialSession).finally(() => {
+        if (isSubscribed) setLoading(false);
       });
-
-      // Mesma proteção: se MFA está pendente, não exponha a sessão.
-      const mfaPending = isMfaPending();
-      const effectiveSession = mfaPending ? null : session;
-
-      setSession(effectiveSession);
-      setUser(effectiveSession?.user ?? null);
-
-      if (effectiveSession?.user) {
-        await Promise.all([
-          checkTemporaryPasswordForUser(effectiveSession.user.id),
-          fetchProfile(effectiveSession.user.id),
-        ]);
-        setTimeout(async () => {
-          if (isSubscribed) {
-            await initializeUserPermissions();
-          }
-        }, 0);
-      }
-      setLoading(false);
     });
 
     return () => {
@@ -398,7 +394,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
+  // initializeUserPermissions roda quando user fica disponível.
+  useEffect(() => {
+    if (user) {
+      setTimeout(() => {
+        initializeUserPermissions();
+      }, 0);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
   const signOut = async () => {
+    setCachedMfaUntil(0);
+    setMfaPendingFlag(false);
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
   };
@@ -417,6 +425,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     forceLogoUpdate,
     initializeUserPermissions,
     debugAuthState,
+    markMfaVerified,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
