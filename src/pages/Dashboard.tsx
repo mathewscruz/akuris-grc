@@ -3,7 +3,7 @@ import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useAuth } from '@/components/AuthProvider';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
-import { MultiDimensionalRadar } from '@/components/dashboard/MultiDimensionalRadar';
+import { FrameworksOverviewCard } from '@/components/dashboard/FrameworksOverviewCard';
 import { RecentActivities } from '@/components/dashboard/RecentActivities';
 import { RiskScoreTimeline } from '@/components/dashboard/RiskScoreTimeline';
 import AlertsDetailDialog from '@/components/dashboard/AlertsDetailDialog';
