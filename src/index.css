@@ -619,7 +619,7 @@ input:-webkit-autofill:focus {
   color: var(--lp-text);
   text-wrap: balance;
 }
-.lp-hero h1 em { font-style: italic; color: var(--lp-accent-2); font-weight: 400; }
+.lp-hero h1 em { font-style: italic; color: var(--lp-accent-2); font-weight: 300; }
 .lp-hero p.lede {
   font-size: 18px;
   line-height: 1.55;
