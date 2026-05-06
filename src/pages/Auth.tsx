@@ -96,7 +96,9 @@ const Auth = () => {
       setMfaEmail(session.user.email ?? '');
       // Pede o código para o usuário (ou reutiliza o ativo).
       try {
-        const resp = await supabase.functions.invoke('send-mfa-code', { body: {} });
+        const resp = await supabase.functions.invoke('send-mfa-code', {
+          body: { context: 'session_restore' },
+        });
         if (resp.error || !resp.data?.success) {
           logger.error('Falha ao enviar MFA em sessão restaurada', {
             module: 'Auth',
