@@ -199,13 +199,17 @@ const LandingPage = () => {
 
           <div className="lp-hero-vis" aria-hidden="true">
             {/* Posture */}
-            <div className="lp-card lp-vis-a lp-posture">
+            <div
+              className="lp-card lp-vis-a lp-posture"
+              ref={score.ref as React.RefObject<HTMLDivElement>}
+              data-reveal
+            >
               <div className="lp-card-title">
                 <span className="t">Postura · ISO 27001</span>
                 <span className="dot" />
               </div>
               <div className="score">
-                87<sup>/100</sup>
+                {score.value}<sup>/100</sup>
               </div>
               <div className="bars">
                 {[
@@ -213,7 +217,7 @@ const LandingPage = () => {
                   ["Evidências", 78, false],
                   ["Riscos", 84, false],
                   ["Treinamento", 71, true],
-                ].map(([lab, v, warn]) => (
+                ].map(([lab, v, warn], i) => (
                   <div className="bar" key={lab as string}>
                     <span className="lab">{lab}</span>
                     <span className="track">
@@ -222,6 +226,7 @@ const LandingPage = () => {
                         style={{
                           width: `${v}%`,
                           background: warn ? "var(--lp-warn)" : "var(--lp-accent)",
+                          ["--bar-delay" as string]: `${200 + i * 120}ms`,
                         }}
                       />
                     </span>
