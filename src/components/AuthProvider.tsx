@@ -138,6 +138,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [hasTemporaryPassword, setHasTemporaryPassword] = useState(false);
   const [logoUpdateKey, setLogoUpdateKey] = useState(0);
+  // Versão monotônica usada para descartar resultados de evaluateSession
+  // antigos que cheguem após um novo (evita "loga e desloga" por corrida).
+  const evalSeqRef = React.useRef(0);
 
   const fetchProfile = async (userId: string) => {
     try {
@@ -295,7 +298,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
    * - Senão chama o backend; se confirmar MFA → expõe; caso contrário marca pending e expõe null.
    */
   const evaluateSession = async (rawSession: Session | null) => {
+    const seq = ++evalSeqRef.current;
+    const isLatest = () => seq === evalSeqRef.current;
+
     if (!rawSession?.user) {
+      if (!isLatest()) return;
       setMfaPendingFlag(false);
       setCachedMfaUntil(0);
       setSession(null);
@@ -309,6 +316,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Cache local (sessionStorage) — evita refazer a chamada toda hora.
     const cachedUntil = getCachedMfaUntil();
     if (cachedUntil > Date.now()) {
+      if (!isLatest()) return;
       setMfaPendingFlag(false);
       setSession(rawSession);
       setUser(rawSession.user);
@@ -323,6 +331,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Sem cache válido → consulta o backend.
     const { verified, expiresAt } = await checkMfaSessionRemote();
+    if (!isLatest()) return; // descarta resposta antiga
+
     if (!verified) {
       // Bloqueia a exposição da sessão até o MFA ser concluído.
       setMfaPendingFlag(true);
