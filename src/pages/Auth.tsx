@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Navigate, Link } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth, MFA_PENDING_KEY } from '@/components/AuthProvider';
 import { Button } from '@/components/ui/button';
