@@ -154,7 +154,7 @@ const LandingPage = () => {
             <button className="lp-btn lp-btn-ghost" onClick={() => navigate("/auth")}>
               Acessar plataforma
             </button>
-            <button className="lp-btn lp-btn-primary" onClick={() => scrollTo("contato")}>
+            <button className="lp-btn lp-btn-primary" onClick={() => setDemoOpen(true)}>
               Solicitar demo <span className="arr">→</span>
             </button>
           </div>
