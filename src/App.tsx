@@ -246,12 +246,11 @@ function App() {
                 </ProtectedRoute>
               </Layout>
             } />
+            {/* `/denuncia` é dual: público (landing) ou autenticado (módulo). */}
             <Route path="/denuncia" element={
-              <Layout>
-                <ProtectedRoute moduleName="denuncia" fallbackToRoleCheck={false}>
-                  <Denuncia />
-                </ProtectedRoute>
-              </Layout>
+              <Suspense fallback={<RouteFallback />}>
+                <DenunciaRouter />
+              </Suspense>
             } />
             <Route path="/configuracoes" element={
               <Layout>
