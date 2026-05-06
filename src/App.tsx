@@ -47,7 +47,7 @@ const PoliticaPrivacidade = React.lazy(() => import('@/pages/PoliticaPrivacidade
 const PlanosAcao = React.lazy(() => import('@/pages/PlanosAcao'));
 const Relatorios = React.lazy(() => import('@/pages/Relatorios'));
 
-const Registro = React.lazy(() => import('@/pages/Registro'));
+
 const Planos = React.lazy(() => import('@/pages/Planos'));
 const DefinirSenha = React.lazy(() => import('@/pages/DefinirSenha'));
 
@@ -93,7 +93,7 @@ function App() {
             <Route path="/404" element={<Suspense fallback={<RouteFallback />}><NotFound /></Suspense>} />
             <Route path="/" element={<Suspense fallback={<RouteFallback />}><LandingPage /></Suspense>} />
             <Route path="/politica-privacidade" element={<Suspense fallback={<RouteFallback />}><PoliticaPrivacidade /></Suspense>} />
-            <Route path="/registro" element={<Suspense fallback={<RouteFallback />}><Registro /></Suspense>} />
+            <Route path="/registro" element={<Navigate to="/auth" replace />} />
             <Route path="/planos" element={<Suspense fallback={<RouteFallback />}><Planos /></Suspense>} />
             <Route path="/checkout-success" element={<Navigate to="/dashboard" replace />} />
             <Route path="/review/:token" element={<Suspense fallback={<RouteFallback />}><ReviewExterna /></Suspense>} />

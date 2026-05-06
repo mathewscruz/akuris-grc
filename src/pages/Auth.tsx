@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Navigate, Link } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth, MFA_PENDING_KEY } from '@/components/AuthProvider';
 import { Button } from '@/components/ui/button';
@@ -403,12 +403,6 @@ const Auth = () => {
             </Button>
           </form>
 
-          <div className="text-center text-xs text-white/45">
-            {t('auth.noAccount')}{' '}
-            <Link to="/registro" className="text-primary hover:text-primary/80 transition-colors">
-              {t('auth.createFreeAccount')}
-            </Link>
-          </div>
         </div>
 
         <div className="absolute bottom-6 left-0 right-0 text-center text-[11px] text-white/25">
