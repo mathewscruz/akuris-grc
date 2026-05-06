@@ -163,7 +163,7 @@ export default function Dashboard() {
         {/* Vencimentos + Radar + Timeline */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-5 w-full">
           <div className="min-w-0"><UpcomingExpirations /></div>
-          <div className="min-w-0"><MultiDimensionalRadar /></div>
+          <div className="min-w-0"><FrameworksOverviewCard /></div>
           <div className="min-w-0 md:col-span-2 xl:col-span-1"><RiskScoreTimeline /></div>
         </div>
 
