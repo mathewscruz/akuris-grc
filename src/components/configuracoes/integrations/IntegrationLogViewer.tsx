@@ -6,6 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RefreshCw, CheckCircle, XCircle, Clock, Filter } from 'lucide-react';
+import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { formatDateOnly } from '@/lib/date-utils';
 
 interface WebhookLog {
