@@ -499,7 +499,15 @@ const LandingPage = () => {
             </div>
             <div className="full" style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
               <button type="submit" className="lp-btn lp-btn-primary" disabled={isSubmitting}>
-                {isSubmitting ? "Enviando..." : "Solicitar demonstração"} <span className="arr">→</span>
+                {isSubmitting ? (
+                  <>
+                    <AkurisPulse size={18} /> Enviando
+                  </>
+                ) : (
+                  <>
+                    Solicitar demonstração <span className="arr">→</span>
+                  </>
+                )}
               </button>
             </div>
           </form>
