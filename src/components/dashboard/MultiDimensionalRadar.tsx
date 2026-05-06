@@ -127,7 +127,7 @@ export const MultiDimensionalRadar = () => {
             <BarChart3 className="h-4 w-4 text-muted-foreground" /> {t('dashboard.maturity')}
           </CardTitle>
         </CardHeader>
-        <CardContent className="flex-1 pt-0"><Skeleton className="h-full w-full" /></CardContent>
+        <CardContent className="flex-1 pt-0 flex items-center justify-center"><AkurisPulse size={40} /></CardContent>
       </Card>
     );
   }
