@@ -1061,7 +1061,7 @@ input:-webkit-autofill:focus {
   text-transform: uppercase;
   color: var(--lp-text-3);
 }
-.lp-field { position: relative; }
+
 .lp-field input, .lp-field textarea {
   background: transparent;
   border: 0;
