@@ -281,6 +281,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const expMs = expiresAt ? new Date(expiresAt).getTime() : Date.now() + 24 * 60 * 60 * 1000;
     setCachedMfaUntil(expMs);
     setMfaPendingFlag(false);
+    // Reavalia a sessão Supabase atual para expor user/session ao app sem
+    // depender de refreshSession (evita disparar eventos auth duplicados).
+    supabase.auth.getSession().then(({ data: { session: current } }) => {
+      evaluateSession(current);
+    });
   };
 
   /**
