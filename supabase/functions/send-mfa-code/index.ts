@@ -78,24 +78,24 @@ Deno.serve(async (req) => {
     }
     const email = authUserResult.user.email
 
-    // Skip MFA somente em restauração de sessão (não em login fresco por senha).
-    if (context === 'session_restore') {
-      const { data: validSession } = await supabaseAdmin
-        .from('mfa_sessions')
-        .select('id, verified_at, expires_at')
-        .eq('user_id', userId)
-        .gt('expires_at', new Date().toISOString())
-        .order('verified_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
+    // Pula envio se houver sessão MFA válida (até 24h), tanto em fresh_login
+    // quanto em session_restore. Evita disparar e-mail desnecessário quando
+    // o AuthProvider liberará o login direto via check-mfa-session.
+    const { data: validSession } = await supabaseAdmin
+      .from('mfa_sessions')
+      .select('id, verified_at, expires_at')
+      .eq('user_id', userId)
+      .gt('expires_at', new Date().toISOString())
+      .order('verified_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
 
-      if (validSession) {
-        console.log('MFA session válida (session_restore) para userId:', userId, '- pulando MFA')
-        return new Response(JSON.stringify({ success: true, skipped: true }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json', ...corsHeaders },
-        })
-      }
+    if (validSession && !force) {
+      console.log('MFA session válida para userId:', userId, '- pulando envio (context:', context, ')')
+      return new Response(JSON.stringify({ success: true, skipped: true }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      })
     }
 
     // Rate limit apenas em pedidos explícitos de reenvio (botão "Reenviar")

@@ -58,11 +58,11 @@ export const BaseEmailTemplate = ({
           {/* Dark Header with logo image */}
           <Section style={headerSection}>
             <Img
-              src="https://governaii-grc.lovable.app/akuris-logo-email.png"
+              src="https://akuris-grc.lovable.app/akuris-logo-email.png"
               alt="Akuris"
-              width="200"
-              height="60"
-              style={{ display: 'block', margin: '0 auto' }}
+              width="160"
+              height="48"
+              style={{ display: 'block', margin: '0 auto', maxWidth: '160px', height: 'auto' }}
             />
           </Section>
 
