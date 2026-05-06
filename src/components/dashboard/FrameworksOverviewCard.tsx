@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { CornerAccent } from '@/components/identity/CornerAccent';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { StatusBadge } from '@/components/ui/StatusBadge';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { GapAnalysisIcon } from '@/components/icons';
 import { ChevronRight, CheckCircle2, Target } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
