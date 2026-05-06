@@ -454,11 +454,6 @@ const LandingPage = () => {
                 Mostre a sua matriz de risco. <em>Nós mostramos onde a Akuris encaixa.</em>
               </h2>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12, alignItems: "flex-end" }}>
-              <span className="lp-mono" style={{ fontSize: 11, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--lp-text-3)" }}>
-                Demonstração · 30 minutos
-              </span>
-            </div>
           </div>
 
           <form className="lp-form" onSubmit={handleSubmit} autoComplete="off">
@@ -500,10 +495,6 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Big wordmark */}
-      <div className="lp-container">
-        <div className="lp-bigmark">AKURIS</div>
-      </div>
 
       {/* FOOTER */}
       <footer style={{ background: "var(--lp-ink-0)" }}>
@@ -539,12 +530,6 @@ const LandingPage = () => {
           </div>
           <div className="lp-foot-bottom">
             <span>© {new Date().getFullYear()} Akuris · Todos os direitos reservados</span>
-            <div className="lp-seals">
-              <span className="lp-seal">LGPD ready</span>
-              <span className="lp-seal">ISO 27001 aligned</span>
-              <span className="lp-seal">SOC 2 aligned</span>
-              <span className="lp-seal">SLA 99.9%</span>
-            </div>
           </div>
         </div>
       </footer>
