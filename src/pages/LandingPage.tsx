@@ -495,10 +495,6 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Big wordmark */}
-      <div className="lp-container">
-        <div className="lp-bigmark">AKURIS</div>
-      </div>
 
       {/* FOOTER */}
       <footer style={{ background: "var(--lp-ink-0)" }}>
