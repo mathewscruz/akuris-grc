@@ -1,4 +1,5 @@
 import { Skeleton } from '@/components/ui/skeleton';
+import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useAuth } from '@/components/AuthProvider';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
