@@ -516,6 +516,7 @@ export const pt = {
   },
   register: {
     createAccount: 'Criar sua conta',
+    trialBadge: '14 dias de teste grátis · sem cartão de crédito',
     selectedPlan: 'Plano selecionado',
     fullName: 'Nome completo *',
     fullNamePlaceholder: 'Seu nome completo',
