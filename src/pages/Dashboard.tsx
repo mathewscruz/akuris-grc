@@ -32,7 +32,7 @@ import { useQueryClient } from '@tanstack/react-query';
 
 export default function Dashboard() {
   const { profile } = useAuth();
-  useLanguage();
+  const { t } = useLanguage();
   const [alertsDialogOpen, setAlertsDialogOpen] = useState(false);
   const [drillKey, setDrillKey] = useState<DrillDownKey | null>(null);
   const [isFocusMode, setIsFocusMode] = useState<boolean>(() => {
