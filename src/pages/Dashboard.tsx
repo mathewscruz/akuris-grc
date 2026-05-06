@@ -3,7 +3,7 @@ import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useAuth } from '@/components/AuthProvider';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
-import { MultiDimensionalRadar } from '@/components/dashboard/MultiDimensionalRadar';
+import { FrameworksOverviewCard } from '@/components/dashboard/FrameworksOverviewCard';
 import { RecentActivities } from '@/components/dashboard/RecentActivities';
 import { RiskScoreTimeline } from '@/components/dashboard/RiskScoreTimeline';
 import AlertsDetailDialog from '@/components/dashboard/AlertsDetailDialog';
@@ -163,7 +163,7 @@ export default function Dashboard() {
         {/* Vencimentos + Radar + Timeline */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-5 w-full">
           <div className="min-w-0"><UpcomingExpirations /></div>
-          <div className="min-w-0"><MultiDimensionalRadar /></div>
+          <div className="min-w-0"><FrameworksOverviewCard /></div>
           <div className="min-w-0 md:col-span-2 xl:col-span-1"><RiskScoreTimeline /></div>
         </div>
 

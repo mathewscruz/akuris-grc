@@ -58,11 +58,13 @@ export const useRadarChartData = () => {
       return [];
     }
 
+    // Riscos: alinhado com RiskScoreTimeline.computeExposure (peso 4/3/2/1).
+    // Saúde do módulo = 100 - exposição (maior = melhor).
     const scoreRiscos = riscosData.total > 0
-      ? Math.max(0, 100 - (
-          (riscosData.criticos * 100 + riscosData.altos * 75 + riscosData.medios * 50 + riscosData.baixos * 25) /
-          (riscosData.total * 100)
-        ))
+      ? Math.max(0, Math.round(100 - (
+          (riscosData.criticos * 4 + riscosData.altos * 3 + riscosData.medios * 2 + riscosData.baixos * 1) /
+          (riscosData.total * 4)
+        ) * 100))
       : 0;
 
     const scoreControles = controlesData.total > 0
@@ -80,12 +82,12 @@ export const useRadarChartData = () => {
         )
       : 0;
 
-    // Base zero: módulos sem incidentes não pontuam (hasData=false na Maturidade).
+    // Incidentes: mesma lógica de exposição ponderada (crítico=4, alto=3, médio=2, baixo=1).
     const scoreIncidentes = incidentesData.total > 0
-      ? Math.min(100, Math.max(0, 100 - (
-          (incidentesData.criticos * 100 + incidentesData.altos * 75 + incidentesData.medios * 50 + incidentesData.baixos * 25) /
-          (incidentesData.total * 100)
-        )))
+      ? Math.max(0, Math.round(100 - (
+          (incidentesData.criticos * 4 + incidentesData.altos * 3 + incidentesData.medios * 2 + incidentesData.baixos * 1) /
+          (incidentesData.total * 4)
+        ) * 100))
       : 0;
 
     const scoreGapAnalysis = gapData.averageCompliance || 0;
