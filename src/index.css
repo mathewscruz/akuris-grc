@@ -836,7 +836,15 @@ input:-webkit-autofill:focus {
 .lp-live { color: var(--lp-good) !important; }
 
 /* Section shell */
-.lp-section { padding: 120px 0; border-bottom: 1px solid var(--lp-line); }
+.lp-section { padding: 120px 0; border-bottom: 1px solid var(--lp-line); position: relative; background: var(--lp-ink-0); }
+/* Alternância sutil entre seções para separar visualmente os temas */
+.lp-root .lp-section:nth-of-type(even) { background: var(--lp-ink-1); }
+.lp-root .lp-section:nth-of-type(even) .lp-card,
+.lp-root .lp-section:nth-of-type(even) .lp-fw,
+.lp-root .lp-section:nth-of-type(even) .lp-sec-card,
+.lp-root .lp-section:nth-of-type(even) .lp-hero-meta > div { background: var(--lp-ink-2); }
+.lp-root .lp-section + .lp-section { border-top: 0; }
+.lp-root .lp-section.lp-autonomia { background: var(--lp-ink-0); }
 .lp-section-head {
   display: grid;
   grid-template-columns: 1fr 1.6fr;
