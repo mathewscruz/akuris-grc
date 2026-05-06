@@ -22,16 +22,17 @@ type TimeRange = 'daily' | 'weekly' | 'monthly' | 'yearly';
 
 interface PointData {
   date: string;
-  score: number;
+  /** Índice de exposição 0-100 (menor = melhor). null quando o período não tem riscos cadastrados ainda. */
+  score: number | null;
   total: number;
   criticos: number;
   altos: number;
 }
 
 const SEVERITY_WEIGHT = { critico: 4, alto: 3, medio: 2, baixo: 1 } as const;
-const GOAL_VALUE = 80;
+/** Meta máxima recomendada de exposição (quanto menor, melhor). */
+const GOAL_VALUE = 20;
 
-/** Normaliza nivel_risco para chave de peso. */
 const bucketOf = (nivel?: string | null): keyof typeof SEVERITY_WEIGHT | null => {
   if (!nivel) return null;
   const v = nivel.toLowerCase();
@@ -43,19 +44,21 @@ const bucketOf = (nivel?: string | null): keyof typeof SEVERITY_WEIGHT | null =>
 };
 
 /**
- * Score 0–100. Quanto maior, menor exposição.
- * exposição = min(100, (peso_total / total_riscos) × 25); score = 100 − exposição.
+ * Índice de exposição 0–100 (MENOR = MELHOR).
+ * 0% = sem riscos / sem exposição. 100% = totalmente vulnerável.
+ * Quando o período não tem nenhum risco classificado, retorna null (base zero — não plota).
  */
-const computeScore = (counts: Record<keyof typeof SEVERITY_WEIGHT, number>): number => {
+const computeExposure = (counts: Record<keyof typeof SEVERITY_WEIGHT, number>): number | null => {
   const total = counts.critico + counts.alto + counts.medio + counts.baixo;
-  if (total === 0) return 100;
+  if (total === 0) return null;
   const peso =
     counts.critico * SEVERITY_WEIGHT.critico +
     counts.alto * SEVERITY_WEIGHT.alto +
     counts.medio * SEVERITY_WEIGHT.medio +
     counts.baixo * SEVERITY_WEIGHT.baixo;
-  const exposicao = Math.min(100, (peso / total) * 25);
-  return Math.round(100 - exposicao);
+  // peso máximo seria total*4 (todos críticos) → normalizar para 0–100.
+  const exposure = (peso / (total * 4)) * 100;
+  return Math.round(Math.min(100, Math.max(0, exposure)));
 };
 
 export function RiskScoreTimeline() {
@@ -132,25 +135,30 @@ export function RiskScoreTimeline() {
       }
       return {
         date: label,
-        score: computeScore(counts),
+        score: computeExposure(counts),
         total: slice.length,
         criticos: counts.critico,
         altos: counts.alto,
       };
     });
 
-    const last = points[points.length - 1];
-    const prev = points[points.length - 2];
+    // Filtra pontos sem dados para computar last/delta — mas mantém os null no chart (gap visual).
+    const valid = points.filter((p) => p.score !== null) as (PointData & { score: number })[];
+    if (valid.length === 0) return empty;
+
+    const last = valid[valid.length - 1];
+    const prev = valid[valid.length - 2];
     const diff = prev ? last.score - prev.score : 0;
     return {
       displayData: points,
-      latestScore: last?.score ?? null,
+      latestScore: last.score,
+      // Em exposição, queda (diff < 0) é BOM. Invertemos a direção visual.
       delta: !prev
         ? null
         : Math.abs(diff) < 0.5
         ? { value: 0, dir: 'flat' as const }
-        : { value: diff, dir: diff > 0 ? ('up' as const) : ('down' as const) },
-      totalAtual: last?.total ?? 0,
+        : { value: diff, dir: diff < 0 ? ('down' as const) : ('up' as const) },
+      totalAtual: last.total,
     };
   }, [riscos, period]);
 
@@ -175,6 +183,9 @@ export function RiskScoreTimeline() {
       <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 pb-2">
         <div className="space-y-1 min-w-0">
           <CardTitle className="text-base">{t('dashboard.riskEvolution')}</CardTitle>
+          <p className="text-[11px] text-muted-foreground">
+            Índice de exposição · quanto menor, melhor
+          </p>
           {latestScore !== null && (
             <div className="flex items-center gap-2 text-sm flex-wrap">
               <span className="font-bold text-foreground tabular-nums">{latestScore}</span>
@@ -182,15 +193,15 @@ export function RiskScoreTimeline() {
               {delta && (
                 <span
                   className={`inline-flex items-center gap-1 text-xs font-medium ${
-                    delta.dir === 'up'
+                    delta.dir === 'down'
                       ? 'text-success'
-                      : delta.dir === 'down'
+                      : delta.dir === 'up'
                       ? 'text-destructive'
                       : 'text-muted-foreground'
                   }`}
                 >
-                  {delta.dir === 'up' && <TrendingUp className="h-3 w-3" strokeWidth={1.5} />}
                   {delta.dir === 'down' && <TrendingDown className="h-3 w-3" strokeWidth={1.5} />}
+                  {delta.dir === 'up' && <TrendingUp className="h-3 w-3" strokeWidth={1.5} />}
                   {delta.dir === 'flat' && <Minus className="h-3 w-3" strokeWidth={1.5} />}
                   {delta.value > 0 ? '+' : ''}
                   {delta.value.toFixed(0)}
@@ -221,7 +232,7 @@ export function RiskScoreTimeline() {
         </div>
       </CardHeader>
       <CardContent className="pt-3 flex-1 flex flex-col min-h-0">
-        {displayData.length === 0 ? (
+        {displayData.length === 0 || latestScore === null ? (
           <div className="flex flex-col items-center justify-center h-[260px] gap-3 rounded-lg border border-dashed border-border bg-muted/20">
             <div className="flex items-center justify-center h-10 w-10 rounded-full bg-muted">
               <LineChartIcon className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
@@ -229,7 +240,7 @@ export function RiskScoreTimeline() {
             <div className="text-center space-y-1 max-w-[280px]">
               <p className="text-sm font-medium text-foreground">Sem histórico ainda</p>
               <p className="text-xs text-muted-foreground">
-                Cadastre alguns riscos para começar a registrar a evolução do seu score nesse período.
+                Cadastre alguns riscos para começar a registrar a evolução da exposição neste período.
               </p>
             </div>
           </div>
@@ -238,9 +249,9 @@ export function RiskScoreTimeline() {
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={displayData} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
                 <defs>
-                  <linearGradient id="riskScoreFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.35} />
-                    <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.02} />
+                  <linearGradient id="riskExposureFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(var(--destructive))" stopOpacity={0.35} />
+                    <stop offset="100%" stopColor="hsl(var(--destructive))" stopOpacity={0.02} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid
@@ -268,16 +279,16 @@ export function RiskScoreTimeline() {
                   y={GOAL_VALUE}
                   stroke="hsl(var(--success))"
                   strokeDasharray="4 4"
-                  strokeOpacity={0.5}
+                  strokeOpacity={0.6}
                   label={{
-                    value: 'Meta',
+                    value: `Meta ≤ ${GOAL_VALUE}`,
                     position: 'right',
                     fill: 'hsl(var(--success))',
                     fontSize: 10,
                   }}
                 />
                 <Tooltip
-                  cursor={{ stroke: 'hsl(var(--primary))', strokeWidth: 1, strokeDasharray: '3 3' }}
+                  cursor={{ stroke: 'hsl(var(--destructive))', strokeWidth: 1, strokeDasharray: '3 3' }}
                   contentStyle={{
                     backgroundColor: 'hsl(var(--popover))',
                     border: '1px solid hsl(var(--border))',
@@ -291,22 +302,24 @@ export function RiskScoreTimeline() {
                     marginBottom: 4,
                   }}
                   itemStyle={{ color: 'hsl(var(--popover-foreground))', fontSize: 13 }}
-                  formatter={(value: number, _name, item: any) => {
+                  formatter={(value: number | null, _name, item: any) => {
+                    if (value === null || value === undefined) return ['Sem dados', 'Exposição'];
                     const p = item?.payload as PointData | undefined;
                     const extra = p ? ` · ${p.criticos} crít · ${p.altos} altos` : '';
-                    return [`${value}${extra}`, 'Score de risco'];
+                    return [`${value}${extra}`, 'Índice de exposição'];
                   }}
                 />
                 <Area
                   type="monotone"
                   dataKey="score"
-                  stroke="hsl(var(--primary))"
+                  stroke="hsl(var(--destructive))"
                   strokeWidth={2.5}
-                  fill="url(#riskScoreFill)"
-                  dot={{ fill: 'hsl(var(--primary))', r: 3 }}
+                  fill="url(#riskExposureFill)"
+                  connectNulls={false}
+                  dot={{ fill: 'hsl(var(--destructive))', r: 3 }}
                   activeDot={{
                     r: 6,
-                    fill: 'hsl(var(--primary))',
+                    fill: 'hsl(var(--destructive))',
                     stroke: 'hsl(var(--background))',
                     strokeWidth: 2,
                   }}

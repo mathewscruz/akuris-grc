@@ -9,7 +9,8 @@ interface HeroScoreBannerProps {
   maturity: GrcMaturity;
   criticalAlerts: number;
   activeControls: number;
-  complianceScore: number;
+  /** Conformidade média 0–100. null quando a empresa ainda não tem frameworks/avaliações (base zero). */
+  complianceScore: number | null;
   userName: string;
 }
 
@@ -22,6 +23,22 @@ export function HeroScoreBanner({
 }: HeroScoreBannerProps) {
   const { t } = useLanguage();
 
+  const hasCompliance = typeof complianceScore === 'number';
+  const complianceColor = !hasCompliance
+    ? 'text-muted-foreground'
+    : (complianceScore as number) >= 70
+    ? 'text-success'
+    : (complianceScore as number) >= 50
+    ? 'text-warning'
+    : 'text-destructive';
+  const complianceBg = !hasCompliance
+    ? 'bg-muted/40'
+    : (complianceScore as number) >= 70
+    ? 'bg-success/10'
+    : (complianceScore as number) >= 50
+    ? 'bg-warning/10'
+    : 'bg-destructive/10';
+
   const metrics = [
     {
       icon: AlertTriangle,
@@ -29,6 +46,7 @@ export function HeroScoreBanner({
       value: criticalAlerts,
       color: criticalAlerts > 0 ? 'text-destructive' : 'text-success',
       bgColor: criticalAlerts > 0 ? 'bg-destructive/10' : 'bg-success/10',
+      title: undefined as string | undefined,
     },
     {
       icon: Shield,
@@ -36,13 +54,15 @@ export function HeroScoreBanner({
       value: activeControls,
       color: 'text-primary',
       bgColor: 'bg-primary/10',
+      title: undefined as string | undefined,
     },
     {
       icon: Target,
       label: t('dashboard.compliance'),
-      value: `${complianceScore}%`,
-      color: complianceScore >= 70 ? 'text-success' : complianceScore >= 50 ? 'text-warning' : 'text-destructive',
-      bgColor: complianceScore >= 70 ? 'bg-success/10' : complianceScore >= 50 ? 'bg-warning/10' : 'bg-destructive/10',
+      value: hasCompliance ? `${complianceScore}%` : '—',
+      color: complianceColor,
+      bgColor: complianceBg,
+      title: hasCompliance ? undefined : 'Sem frameworks avaliados',
     },
   ];
 
@@ -77,6 +97,7 @@ export function HeroScoreBanner({
             {metrics.map((metric) => (
               <div
                 key={metric.label}
+                title={metric.title}
                 className="flex items-center gap-2.5 px-4 py-2.5 rounded-lg border bg-card/80 backdrop-blur-sm"
               >
                 <div className={`p-1.5 rounded-md ${metric.bgColor}`}>
