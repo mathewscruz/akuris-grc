@@ -87,15 +87,6 @@ const frameworks = [
 
 const LandingPage = () => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    company: "",
-    phone: "",
-    message: "",
-  });
-  const [honeypot, setHoneypot] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [demoOpen, setDemoOpen] = useState(false);
 
   useEffect(() => {
@@ -106,30 +97,6 @@ const LandingPage = () => {
   useLandingReveal();
   const scrolled = useScrolled(64);
   const score = useCountUp(87, 1200);
-
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (honeypot) return;
-    setIsSubmitting(true);
-    try {
-      const { error } = await supabase.functions.invoke("send-contact-email", {
-        body: formData,
-      });
-      if (error) throw error;
-      toast.success("Mensagem enviada. Nosso time retorna em até 1 dia útil.");
-      setFormData({ name: "", email: "", company: "", phone: "", message: "" });
-    } catch {
-      toast.error("Não foi possível enviar agora. Tente novamente em instantes.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   const scrollTo = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
