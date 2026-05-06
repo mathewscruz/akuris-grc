@@ -40,8 +40,8 @@ export function RelatorioPreviewDialog({ open, onOpenChange, relatorio, empresaI
 
         <ScrollArea className="h-[65vh] pr-4">
           {loading ? (
-            <div className="space-y-4">
-              {[1, 2, 3].map(i => <Skeleton key={i} className="h-32 w-full" />)}
+            <div className="flex items-center justify-center py-16">
+              <AkurisPulse size={32} />
             </div>
           ) : !data || data.sections.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
