@@ -2,6 +2,8 @@ import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { resolveCategoriaTone, resolveAtivoTone } from '@/lib/status-tone';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -353,18 +355,7 @@ export function TemplatesManager() {
     }
   };
 
-  const getCategoryColor = (categoria: string) => {
-    const colors: Record<string, string> = {
-      'seguranca': 'bg-red-100 text-red-800',
-      'Segurança': 'bg-red-100 text-red-800', 
-      'Privacidade': 'bg-blue-100 text-blue-800',
-      'compliance': 'bg-blue-100 text-blue-800',
-      'financeiro': 'bg-green-100 text-green-800',
-      'operacional': 'bg-purple-100 text-purple-800',
-      'geral': 'bg-gray-100 text-gray-800'
-    };
-    return colors[categoria] || colors['geral'];
-  };
+  // Categoria agora via resolveCategoriaTone (StatusBadge)
 
   const clearFilters = () => {
     setSearchTerm('');
@@ -558,7 +549,7 @@ export function TemplatesManager() {
             {filteredTemplates.length > 0 ? (
               <div className="space-y-3 p-6 pt-0">
                 {filteredTemplates.map((template) => (
-                  <Card key={template.id} className={`${!template.ativo ? 'opacity-60' : ''} ${template.padrao ? 'border-amber-200 bg-amber-50/50' : ''}`}>
+                  <Card key={template.id} className={`${!template.ativo ? 'opacity-60' : ''} ${template.padrao ? 'border-warning/30 bg-warning/5' : ''}`}>
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div className="flex-1 min-w-0">
@@ -567,14 +558,13 @@ export function TemplatesManager() {
                               <div className="flex items-center gap-2 mb-1">
                                 <h3 className="text-lg font-semibold truncate">{template.nome}</h3>
                                 {template.padrao && (
-                                  <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-300 text-xs">
-                                    <Star className="h-3 w-3 mr-1" />
+                                  <StatusBadge size="sm" tone="warning" icon={<Star className="h-3 w-3" strokeWidth={1.5} />}>
                                     Padrão
-                                  </Badge>
+                                  </StatusBadge>
                                 )}
-                                <Badge className={getCategoryColor(template.categoria)}>
+                                <StatusBadge size="sm" {...resolveCategoriaTone(template.categoria)}>
                                   {template.categoria}
-                                </Badge>
+                                </StatusBadge>
                               </div>
                               <p className="text-sm text-muted-foreground truncate">
                                 {template.descricao || 'Sem descrição'}
@@ -584,14 +574,14 @@ export function TemplatesManager() {
                             <div className="flex items-center gap-4 text-sm text-muted-foreground">
                               <span>{template._count?.questions || 0} perguntas</span>
                               <span>{template._count?.assessments || 0} avaliações</span>
-                              <Badge variant={template.ativo ? "default" : "secondary"} className="whitespace-nowrap">
+                              <StatusBadge size="sm" {...resolveAtivoTone(template.ativo)}>
                                 {template.ativo ? 'Ativo' : 'Inativo'}
-                              </Badge>
+                              </StatusBadge>
                               <span className="text-xs">v{template.versao}</span>
                             </div>
                           </div>
                         </div>
-                        
+
                         <div className="flex items-center gap-1 ml-4">
                           <Tooltip>
                             <TooltipTrigger asChild>
