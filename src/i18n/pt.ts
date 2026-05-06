@@ -513,6 +513,11 @@ export const pt = {
     pillarGapAnalysis: 'Gap Analysis',
     pillarGapAnalysisDesc: 'Frameworks, scoring e planos de ação',
     backToSite: 'Voltar ao site',
+    welcomeBack: 'Bem-vindo de volta',
+    signInToContinue: 'Entre na sua conta para continuar',
+    emailLabel: 'E-mail',
+    passwordLabel: 'Senha',
+    rememberEmail: 'Lembrar meu e-mail',
   },
   register: {
     createAccount: 'Criar sua conta',
