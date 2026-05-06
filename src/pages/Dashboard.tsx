@@ -120,7 +120,11 @@ export default function Dashboard() {
           maturity={maturity}
           criticalAlerts={dashboardData?.criticalAlerts || 0}
           activeControls={controlesStats.data?.ativos || 0}
-          complianceScore={gapStats.data?.averageCompliance || 0}
+          complianceScore={
+            (gapStats.data?.totalFrameworks || 0) > 0 && (gapStats.data?.assessmentsInProgress || 0) > 0
+              ? gapStats.data!.averageCompliance
+              : null
+          }
           userName={profile?.nome || 'Usuário'}
         />
 
