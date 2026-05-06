@@ -1033,7 +1033,7 @@ input:-webkit-autofill:focus {
 /* Big wordmark */
 .lp-bigmark {
   font-family: var(--lp-serif);
-  font-weight: 400;
+  font-weight: 300;
   font-size: clamp(120px, 22vw, 320px);
   line-height: 0.85;
   letter-spacing: -0.05em;
