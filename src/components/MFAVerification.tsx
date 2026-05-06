@@ -38,6 +38,7 @@ export const MFAVerification: React.FC<MFAVerificationProps> = ({
   onCancel,
 }) => {
   const { t } = useLanguage();
+  const { markMfaVerified } = useAuth();
   const [code, setCode] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
   const [isResending, setIsResending] = useState(false);
@@ -69,6 +70,8 @@ export const MFAVerification: React.FC<MFAVerificationProps> = ({
 
       const data = response.data;
       if (data.success) {
+        // Marca a sessão MFA como válida no AuthProvider (cache local + libera flag).
+        markMfaVerified();
         onVerified();
       } else {
         toast.error(data.error || t('mfaScreen.invalidCode'));
