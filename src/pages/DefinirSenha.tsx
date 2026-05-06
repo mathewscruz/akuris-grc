@@ -9,6 +9,7 @@ import { Eye, EyeOff, Lock, CheckCircle2, AlertCircle } from 'lucide-react';
 import logoImage from '@/assets/akuris-logo.png';
 import { z } from 'zod';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { logger } from '@/lib/logger';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 const buildPasswordSchema = (t: (k: string) => string) => z.object({
@@ -57,7 +58,7 @@ const DefinirSenha = () => {
           });
           
           if (error) {
-            console.error('Erro ao definir sessão:', error);
+            logger.error('Erro ao definir sessão', { error: error.message, module: 'auth' });
             setIsTokenValid(false);
           } else {
             setIsTokenValid(true);
@@ -70,7 +71,7 @@ const DefinirSenha = () => {
           });
 
           if (error) {
-            console.error('Erro ao verificar token:', error);
+            logger.error('Erro ao verificar token', { error: error.message, module: 'auth' });
             setIsTokenValid(false);
           } else {
             setIsTokenValid(true);
@@ -85,7 +86,7 @@ const DefinirSenha = () => {
           }
         }
       } catch (e) {
-        console.error('Erro na verificação:', e);
+        logger.error('Erro na verificação do token', { error: (e as Error)?.message, module: 'auth' });
         setIsTokenValid(false);
       } finally {
         setIsVerifying(false);

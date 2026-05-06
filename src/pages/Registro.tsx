@@ -139,7 +139,7 @@ const Registro = () => {
           <img src={logoImage} alt="Akuris" className="h-14 mx-auto object-contain mb-4" />
           <h1 className="text-2xl font-bold text-white">{t('register.createAccount')}</h1>
           <p className="text-white/50 text-sm mt-1">
-            14 dias de teste grátis · sem cartão de crédito
+            {t('register.trialBadge')}
           </p>
         </div>
 

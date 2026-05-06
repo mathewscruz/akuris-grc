@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Upload, FileText, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from '@/lib/logger';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 interface Categoria {
@@ -64,7 +65,7 @@ export function UploadMultiplosDialog({ open, onOpenChange, onSuccess, categoria
 
           if (storageError) {
             // Se o bucket não existe, criar registro sem arquivo
-            console.warn('Erro no storage, criando registro sem arquivo:', storageError.message);
+            logger.warn('Erro no storage, criando registro sem arquivo', { error: storageError.message, module: 'documentos' });
           }
 
           const { data: publicUrl } = supabase.storage
@@ -89,13 +90,13 @@ export function UploadMultiplosDialog({ open, onOpenChange, onSuccess, categoria
 
           if (dbError) {
             errorCount++;
-            console.error('Erro ao criar documento:', dbError);
+            logger.error('Erro ao criar documento', { error: dbError.message, module: 'documentos' });
           } else {
             successCount++;
           }
         } catch (fileError) {
           errorCount++;
-          console.error(`Erro no arquivo ${file.name}:`, fileError);
+          logger.error(`Erro no arquivo ${file.name}`, { error: (fileError as Error)?.message, module: 'documentos' });
         }
       }
 
@@ -115,7 +116,7 @@ export function UploadMultiplosDialog({ open, onOpenChange, onSuccess, categoria
         });
       }
     } catch (error) {
-      console.error('Erro geral no upload:', error);
+      logger.error('Erro geral no upload', { error: (error as Error)?.message, module: 'documentos' });
       toast({
         title: "Erro no upload",
         description: "Tente novamente em alguns instantes.",

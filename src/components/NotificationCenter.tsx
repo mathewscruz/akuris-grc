@@ -17,6 +17,7 @@ import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { resolveNotificationModule } from '@/lib/notification-icons';
 import { cn } from '@/lib/utils';
 import { formatStatus } from '@/lib/text-utils';
+import { logger } from '@/lib/logger';
 
 interface Notification {
   id: string;
@@ -46,7 +47,7 @@ const markAutomaticNotificationAsRead = (notificationId: string) => {
     readNotifications.add(notificationId);
     localStorage.setItem(STORAGE_KEY, JSON.stringify([...readNotifications]));
   } catch (error) {
-    console.error('Erro ao salvar notificação como lida:', error);
+    logger.error('Erro ao salvar notificação como lida', { error: (error as Error)?.message, module: 'notifications' });
   }
 };
 

@@ -30,6 +30,7 @@ import { formatDateForInput, parseDateForDB } from "@/lib/date-utils";
 import { ControleSelect } from "./ControleSelect";
 import { AreaSistemaSelect } from "./AreaSistemaSelect";
 import { useIntegrationNotify } from "@/hooks/useIntegrationNotify";
+import { logger } from "@/lib/logger";
 
 const formSchema = z.object({
   codigo: z.string().min(1, "Código é obrigatório"),
@@ -179,7 +180,7 @@ export function ItemAuditoriaFormDialog({
             },
           });
         } catch (notifError) {
-          console.error("Erro ao enviar notificação:", notifError);
+          logger.error("Erro ao enviar notificação", { error: (notifError as Error)?.message, module: 'auditorias' });
         }
       }
 
@@ -201,7 +202,7 @@ export function ItemAuditoriaFormDialog({
       onSuccess();
       onOpenChange(false);
     } catch (error: any) {
-      console.error("Erro ao salvar item:", error);
+      logger.error("Erro ao salvar item de auditoria", { error: error?.message, module: 'auditorias' });
       toast.error(error.message || "Erro ao salvar item");
     } finally {
       setIsSubmitting(false);
