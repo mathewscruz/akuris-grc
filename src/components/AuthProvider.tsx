@@ -385,6 +385,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (event === 'SIGNED_OUT') {
           setCachedMfaUntil(0);
           setMfaPendingFlag(false);
+          try { sessionStorage.removeItem('akuris_show_login_toast'); } catch { /* ignore */ }
         }
 
         // Avalia de forma assíncrona para não bloquear o callback.
@@ -422,6 +423,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signOut = async () => {
     setCachedMfaUntil(0);
     setMfaPendingFlag(false);
+    try { sessionStorage.removeItem('akuris_show_login_toast'); } catch { /* ignore */ }
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
   };

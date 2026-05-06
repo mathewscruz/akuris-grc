@@ -36,19 +36,9 @@ export default function Dashboard() {
   const { t } = useLanguage();
   const [alertsDialogOpen, setAlertsDialogOpen] = useState(false);
 
-  // Toast de boas-vindas pós-login: só dispara quando o dashboard já montou
-  // (sinalizado pelo Auth.tsx via sessionStorage), evitando "vazar" sobre o overlay.
-  useEffect(() => {
-    try {
-      if (sessionStorage.getItem('akuris_show_login_toast') === '1') {
-        sessionStorage.removeItem('akuris_show_login_toast');
-        // Import dinâmico para evitar adicionar import no topo se já não existir.
-        import('sonner').then(({ toast }) => {
-          toast.success(t('auth.loginSuccess'));
-        });
-      }
-    } catch { /* ignore */ }
-  }, [t]);
+  // O toast de boas-vindas é disparado em /auth (Auth.tsx) antes do redirect
+  // para o dashboard. Não disparamos aqui para evitar reaparecer ao navegar
+  // de volta para o dashboard a partir de outras páginas.
   const [drillKey, setDrillKey] = useState<DrillDownKey | null>(null);
   const [isFocusMode, setIsFocusMode] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;

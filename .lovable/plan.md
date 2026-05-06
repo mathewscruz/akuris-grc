@@ -1,43 +1,43 @@
-Plano para corrigir de forma definitiva o fluxo MFA e as referências quebradas do logotipo Akuris.
+Vou ajustar o fluxo de autenticação para que o toast “Login realizado com sucesso” apareça somente uma vez, imediatamente após um login real/MFA concluído, e nunca ao apenas navegar de volta ao Dashboard.
 
-1. Simplificar o MFA para não haver “loga e desloga”
-- Ajustar o `AuthProvider` para separar sessão Supabase bruta de sessão liberada para o app, impedindo que rotas internas recebam `user` antes do MFA estar confirmado.
-- Evitar múltiplas avaliações concorrentes do MFA causadas por `INITIAL_SESSION`, `SIGNED_IN`, `TOKEN_REFRESHED` e `refreshSession()`.
-- Criar uma proteção contra resultados antigos sobrescreverem o estado mais recente.
-- Manter o gate seguro: sem MFA confirmado, o app não expõe `user/session`.
+Plano de correção:
 
-2. Corrigir o comportamento de login + MFA
-- No login com senha, decidir uma regra única e simples:
-  - Se já existe `mfa_session` válida dentro de 24h: entrar direto, sem enviar código.
-  - Se não existe sessão válida: enviar/reutilizar código e abrir a tela MFA.
-- Parar de tratar `skipped: true` como erro ou fluxo ambíguo.
-- Remover `signOut()` automático em falha transitória de envio/checagem do MFA sempre que possível; em vez disso, mostrar uma tela de MFA estável com opção de reenviar/cancelar.
-- Após validar o código, fazer o app liberar o usuário com base no retorno confiável do backend, sem depender de um refresh que pode disparar eventos duplicados.
+1. Centralizar o toast pós-login fora do Dashboard
+- Remover do `Dashboard.tsx` a lógica que lê `sessionStorage.akuris_show_login_toast`.
+- Criar/usar uma chave de intenção pós-login com validade curta e consumo único.
+- Exibir o toast a partir do fluxo de `/auth` quando o `AuthProvider` efetivamente expuser o usuário autenticado, evitando que qualquer montagem futura do Dashboard dispare o toast novamente.
 
-3. Fortalecer Edge Functions do MFA
-- Atualizar `verify-mfa-code` para retornar `expires_at` da sessão MFA criada, permitindo cache local preciso de 24h.
-- Atualizar `send-mfa-code` para retornar claramente `{ success, skipped, expires_at }` quando já houver sessão MFA válida.
-- Manter validação por JWT em todas as funções e uso de service role apenas no backend.
-- Remover logs com `console.*` desses arquivos e usar respostas controladas, reduzindo ruído e comportamento inesperado.
+2. Eliminar a causa do toast reaparecer na navegação
+- Não deixar uma flag persistente no `sessionStorage` aguardando o Dashboard montar.
+- Limpar a flag em todos os caminhos críticos: login inválido, cancelamento do MFA, logout, sessão expirada, MFA pendente e sessão restaurada.
+- Garantir que o toast só seja armado nos dois casos corretos:
+  - MFA validado com sucesso.
+  - Login direto porque já existe sessão MFA válida dentro das 24h.
 
-4. Ajustar mensagens e tela MFA
-- Garantir que toasts de “falha no login” só apareçam em falha real de credenciais ou falha definitiva.
-- Garantir que sucesso de login só apareça depois que o MFA/checagem de 24h estiver concluído.
-- Validar a tela MFA: envio inicial, reenvio forçado, código inválido, código expirado, cancelar e retorno ao login.
+3. Revisar o `AuthProvider` para evitar reavaliações ambíguas
+- Manter a proteção de sequência monotônica já adicionada, mas adicionar proteções para não refazer `fetchProfile`, `temporary_passwords` e permissões quando o mesmo usuário/sessão já foi promovido.
+- Garantir que `SIGNED_OUT` limpe também a flag do toast pós-login, não apenas MFA.
+- Manter o padrão correto do Supabase: `onAuthStateChange` sem `await` direto e `getSession()` para restauração inicial.
 
-5. Padronizar o logotipo Akuris no sistema
-- Trocar todas as URLs antigas `governaii-grc.lovable.app` por uma URL pública atual e estável do Akuris.
-- Corrigir `src/lib/brand-logo.ts`, `supabase/functions/_shared/constants.ts` e os templates/Edge Functions que usam HTML inline de e-mail.
-- Padronizar cabeçalhos de e-mail para usar o mesmo logo: `https://akuris-grc.lovable.app/akuris-logo-email.png` ou o domínio público atual quando apropriado.
-- Revisar itens citados como notícias/campanhas, templates de e-mail, notificações de risco, contratos, incidentes, due diligence, revisão de acessos e outros envios.
+4. Revisar a tela `/auth` e MFA
+- Ajustar a máquina de estados para finalizar o login sem depender do Dashboard.
+- No retorno para `/auth` quando já existe usuário autenticado, redirecionar silenciosamente para `/dashboard`, sem toast.
+- Manter MFA simples: se não há sessão MFA válida, envia/mostra código; se há sessão MFA válida em 24h, entra direto sem e-mail e sem tela MFA.
 
-6. Reduzir risco de regressão
-- Fazer buscas finais por URLs antigas e por chamadas conflitantes de logout no fluxo MFA.
-- Testar mentalmente os cenários principais:
-  - primeiro login do dia recebe código;
-  - login dentro de 24h entra direto e não envia e-mail;
-  - sessão restaurada dentro de 24h entra direto;
-  - sessão restaurada após expirar MFA pede código;
-  - código correto libera sem logout/toast de erro;
-  - código errado mantém usuário na tela MFA.
-- Atualizar a memória do fluxo MFA se a regra final mudar de “fresh login sempre exige MFA” para “24h vale também para login novo”, pois essa parece ser a expectativa atual.
+5. Corrigir pontos de sessão que podem gerar mensagens indevidas
+- Revisar logout por sidebar, logout por inatividade e cancelamento de MFA para limpar flags temporárias.
+- Evitar que “Falha no login”/erros genéricos apareçam em transições normais de MFA ou em navegação entre páginas.
+- Corrigir `console.error` remanescente no componente de perfil para usar `logger.ts`, mantendo o padrão do projeto.
+
+6. Validação final do fluxo
+- Validar por leitura/execução estática os cenários:
+  - Login com senha + MFA: toast aparece uma vez.
+  - Navegar para outra página e voltar ao Dashboard: nenhum toast de login.
+  - Login dentro das 24h: entra direto, sem código por e-mail, toast uma vez.
+  - Sessão restaurada ao abrir o app: sem toast de login.
+  - Logout/cancelamento MFA/inatividade: flags limpas e sem toast indevido.
+
+Detalhes técnicos:
+- A causa provável é que `Dashboard.tsx` consome uma flag global (`akuris_show_login_toast`) no `sessionStorage`. Como ela é definida no fluxo de `/auth` e só é removida quando o Dashboard monta, qualquer falha/interrupção ou remount posterior pode fazer o Dashboard exibir “Login realizado com sucesso” fora de contexto.
+- A correção será transformar isso em um evento/intenção de login de consumo imediato no próprio fluxo de autenticação, com limpeza defensiva no `AuthProvider.signOut()` e nos estados de erro/cancelamento.
+- Não há necessidade de alteração no banco para este ajuste.
