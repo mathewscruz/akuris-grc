@@ -314,9 +314,9 @@ const Auth = () => {
 
         <div className="w-full max-w-sm space-y-7 landing-fade-in-2">
           <div className="space-y-2 text-center lg:text-left">
-            <h2 className="text-2xl lg:text-[28px] font-semibold text-white tracking-tight">
+            <h1 className="text-2xl lg:text-[28px] font-semibold text-white tracking-tight">
               {t('auth.welcomeBack')}
-            </h2>
+            </h1>
             <p className="text-sm text-white/55">{t('auth.signInToContinue')}</p>
           </div>
 
