@@ -157,7 +157,7 @@ const LandingPage = () => {
       <section className="lp-hero" id="produto">
         <div className="lp-container lp-hero-grid">
           <div>
-            <span className="lp-eyebrow">Plataforma GRC · Edição 2026</span>
+            
             <h1>
               Governança, riscos e&nbsp;compliance em um <em>único lugar.</em>
             </h1>
