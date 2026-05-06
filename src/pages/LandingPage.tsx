@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import akurisLogo from "@/assets/akuris-logo.png";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { AkurisPulse } from "@/components/ui/AkurisPulse";
+import { useLandingReveal, useCountUp, useScrolled } from "@/hooks/useLandingAnimations";
 
 const modules = [
   {
@@ -99,6 +101,10 @@ const LandingPage = () => {
     return () => document.documentElement.classList.remove("lp-html");
   }, []);
 
+  useLandingReveal();
+  const scrolled = useScrolled(64);
+  const score = useCountUp(87, 1200);
+
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -130,7 +136,7 @@ const LandingPage = () => {
   return (
     <div className="lp-root">
       {/* NAV */}
-      <header className="lp-nav">
+      <header className={`lp-nav ${scrolled ? "scrolled" : ""}`}>
         <div className="lp-container lp-nav-inner">
           <a href="#topo" className="flex items-center gap-3" aria-label="Akuris">
             <img src={akurisLogo} alt="Akuris" className="h-8 w-auto" />
@@ -193,13 +199,17 @@ const LandingPage = () => {
 
           <div className="lp-hero-vis" aria-hidden="true">
             {/* Posture */}
-            <div className="lp-card lp-vis-a lp-posture">
+            <div
+              className="lp-card lp-vis-a lp-posture"
+              ref={score.ref as React.RefObject<HTMLDivElement>}
+              data-reveal
+            >
               <div className="lp-card-title">
                 <span className="t">Postura · ISO 27001</span>
                 <span className="dot" />
               </div>
               <div className="score">
-                87<sup>/100</sup>
+                {score.value}<sup>/100</sup>
               </div>
               <div className="bars">
                 {[
@@ -207,7 +217,7 @@ const LandingPage = () => {
                   ["Evidências", 78, false],
                   ["Riscos", 84, false],
                   ["Treinamento", 71, true],
-                ].map(([lab, v, warn]) => (
+                ].map(([lab, v, warn], i) => (
                   <div className="bar" key={lab as string}>
                     <span className="lab">{lab}</span>
                     <span className="track">
@@ -216,6 +226,7 @@ const LandingPage = () => {
                         style={{
                           width: `${v}%`,
                           background: warn ? "var(--lp-warn)" : "var(--lp-accent)",
+                          ["--bar-delay" as string]: `${200 + i * 120}ms`,
                         }}
                       />
                     </span>
@@ -226,7 +237,7 @@ const LandingPage = () => {
             </div>
 
             {/* Matrix */}
-            <div className="lp-card lp-vis-b">
+            <div className="lp-card lp-vis-b" data-reveal style={{ ["--lp-reveal-delay" as string]: "120ms" }}>
               <div className="lp-card-title">
                 <span className="t">Matriz de risco · 5 × 5</span>
                 <span className="dot" />
@@ -248,7 +259,7 @@ const LandingPage = () => {
             </div>
 
             {/* Timeline */}
-            <div className="lp-card lp-vis-c">
+            <div className="lp-card lp-vis-c" data-reveal style={{ ["--lp-reveal-delay" as string]: "240ms" }}>
               <div className="lp-card-title">
                 <span className="t">Atividade recente</span>
                 <span className="t lp-mono" style={{ color: "var(--lp-text-3)" }}>14:32</span>
@@ -275,7 +286,7 @@ const LandingPage = () => {
       {/* MÓDULOS */}
       <section className="lp-section" id="modulos">
         <div className="lp-container">
-          <div className="lp-section-head">
+          <div className="lp-section-head" data-reveal>
             <span className="lp-eyebrow">Módulos</span>
             <h2>
               Uma plataforma única, <em>oito disciplinas conectadas.</em>
@@ -301,7 +312,7 @@ const LandingPage = () => {
       {/* COMO FUNCIONA */}
       <section className="lp-section">
         <div className="lp-container">
-          <div className="lp-section-head">
+          <div className="lp-section-head" data-reveal>
             <span className="lp-eyebrow">Como funciona</span>
             <h2>
               Da implantação ao painel do conselho, <em>em quatro movimentos.</em>
@@ -327,7 +338,7 @@ const LandingPage = () => {
       {/* FRAMEWORKS */}
       <section className="lp-section" id="frameworks">
         <div className="lp-container">
-          <div className="lp-section-head">
+          <div className="lp-section-head" data-reveal>
             <span className="lp-eyebrow">Frameworks &amp; regulações</span>
             <h2>
               Seu mapa, atendido. <em>De LGPD a SOC 2.</em>
@@ -347,7 +358,7 @@ const LandingPage = () => {
       {/* MÉTRICAS */}
       <section className="lp-section">
         <div className="lp-container">
-          <div className="lp-section-head">
+          <div className="lp-section-head" data-reveal>
             <span className="lp-eyebrow">Resultado</span>
             <h2>
               Não é dashboard. <em>É decisão informada, em horas — não em semanas.</em>
@@ -375,7 +386,7 @@ const LandingPage = () => {
       {/* SEGURANÇA */}
       <section className="lp-section" id="seguranca">
         <div className="lp-container">
-          <div className="lp-section-head">
+          <div className="lp-section-head" data-reveal>
             <span className="lp-eyebrow">A Akuris pela Akuris</span>
             <h2>
               Construímos a plataforma que <em>nós mesmos auditaríamos.</em>
@@ -419,7 +430,7 @@ const LandingPage = () => {
       {/* FAQ */}
       <section className="lp-section">
         <div className="lp-container">
-          <div className="lp-section-head">
+          <div className="lp-section-head" data-reveal>
             <span className="lp-eyebrow">Perguntas frequentes</span>
             <h2>O que perguntam <em>antes da demo.</em></h2>
           </div>
@@ -488,7 +499,15 @@ const LandingPage = () => {
             </div>
             <div className="full" style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
               <button type="submit" className="lp-btn lp-btn-primary" disabled={isSubmitting}>
-                {isSubmitting ? "Enviando..." : "Solicitar demonstração"} <span className="arr">→</span>
+                {isSubmitting ? (
+                  <>
+                    <AkurisPulse size={18} /> Enviando
+                  </>
+                ) : (
+                  <>
+                    Solicitar demonstração <span className="arr">→</span>
+                  </>
+                )}
               </button>
             </div>
           </form>
