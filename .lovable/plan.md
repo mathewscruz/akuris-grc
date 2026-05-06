@@ -1,88 +1,72 @@
-## Problema
+# Plano: Validação completa do fluxo do usuário (QA UX)
 
-Quando o usuário tem uma sessão MFA válida nas últimas 24h, o backend retorna `skipped: true` e o login deveria seguir direto para o dashboard. Hoje:
+## Objetivo
+Executar um walkthrough automatizado da ferramenta inteira usando o browser para identificar inconsistências visuais, navegação quebrada, telas brancas, erros de console e problemas de fluidez. Entregar um **relatório consolidado** com achados priorizados — sem aplicar correções nesta etapa (correções em loop separado, após sua aprovação dos achados).
 
-1. Aparece o toast "Login efetuado com sucesso"
-2. Tela fica travada no overlay `<AkurisPulse />` (a marca pulsando)
-3. Só sai dela com um refresh manual da página
+## Escopo da varredura
 
-## Causa raiz
+### 1. Autenticação e onboarding
+- `/auth` — login, validação de campos, fluxo MFA (sem disparar código real), "esqueci minha senha"
+- `/registro` e `/definir-senha` — renderização e validações
+- Logout e re-login
 
-O fluxo em `src/pages/Auth.tsx > handleSignIn` faz, nesta ordem:
+### 2. Dashboard e navegação principal
+- `/dashboard` — Hero Score, KPI Pills, drill-down drawer, GRC maturity bars, AkurIA chatbot
+- Sidebar agrupada — todos os 8 módulos GRC clicáveis, sub-itens (fade stagger), prefetch
+- Header — breadcrumbs, command palette (Cmd+K), changelog, theme toggle, notification center, user profile
+- Mobile bottom nav (375px viewport)
 
-1. `setMfaPendingFlag(true)` — marca `sessionStorage.MFA_PENDING_KEY = '1'` **antes** do login
-2. `supabase.auth.signInWithPassword(...)` — isso dispara `onAuthStateChange('SIGNED_IN', session)` no `AuthProvider`
-3. O `AuthProvider` lê a flag, vê `mfaPending = true`, e força `effectiveSession = null` (correto, para evitar flash do dashboard)
-4. Backend responde `skipped: true` → caminho de bypass
-5. `setMfaPendingFlag(false)` + `setPhase('finalizing')` → renderiza `<LoadingOverlay />`
+### 3. Módulos GRC (entrada + 1 ação chave em cada)
+Riscos, Controles, Gap Analysis, Auditorias, Incidentes, Privacidade/LGPD, Continuidade, Due Diligence, Contratos, Ativos, Documentos, Denúncia, Revisão de Acessos, Planos de Ação, Relatórios, Contas Privilegiadas, Sistemas, Governança.
 
-O problema: o evento `SIGNED_IN` já foi consumido com a flag ativa, e **nenhum novo evento é emitido**. O `AuthProvider` nunca volta a olhar a sessão, então `user` continua `null` e o `<Navigate to="/dashboard">` (linha 97 de `Auth.tsx`) nunca dispara. Refresh resolve porque o `getSession()` inicial roda de novo, agora com a flag limpa.
+Em cada módulo: abrir lista, abrir um dialog (novo/editar), fechar, validar empty state e loader (`AkurisPulse` único).
 
-O caminho "MFA verificado" (`handleMFAVerified`) não tem esse problema porque limpa a flag **antes** de chamar `signInWithPassword` novamente, fazendo o `SIGNED_IN` ser consumido com a flag já desativada.
+### 4. Configurações e administração
+- `/configuracoes` — abas, gerenciamento de usuários, permissões, changelog admin
+- Trial banner / créditos de IA esgotados (banners globais)
 
-## Correção
+### 5. Responsividade
+- Desktop 1440, tablet 820, mobile 390 — checar dialogs fullscreen mobile, tabelas com scroll horizontal, sidebar colapsada.
 
-Aplicar o mesmo padrão do `handleMFAVerified` ao caminho de bypass de 24h: depois de limpar a flag, **forçar uma re-emissão da sessão** para o `AuthProvider` enxergar.
+### 6. Tema e idioma
+- Toggle dark/light em rotas-chave
+- Toggle PT/EN — confirmar que strings traduzem (sem chaves cruas tipo `layout.blockedTitle`)
 
-A forma mais simples e segura, consistente com o resto do código, é chamar `supabase.auth.refreshSession()` logo após limpar a flag. Isso dispara um novo evento `TOKEN_REFRESHED` no `onAuthStateChange`, e dessa vez a flag já estará `false`, então `effectiveSession` recebe a sessão real, `user` é populado, e o `<Navigate to="/dashboard">` executa.
+## Critérios de inconsistência a registrar
+- Tela branca / Suspense que não resolve / loader infinito
+- Erros no console (`code--read_console_logs` + `browser--read_console_logs`) e requisições 4xx/5xx (`browser--list_network_requests`)
+- React warnings (Fragment props, key duplicada, hydration)
+- Uso de `Loader2`/spinner CSS/Skeleton visível (proibido por memória — só `AkurisPulse`)
+- Badges com `bg-{red,blue,...}-100` cru (proibido — usar `StatusBadge`)
+- Ícones fora do padrão Akuris (stroke != 1.5, ícones lucide onde existe ícone proprietário)
+- Quebra de layout: overflow horizontal indesejado, dialog cortado, texto clipado
+- Navegação: link 404, breadcrumb errado, redirect loop, botão "Voltar" inexistente
+- Toasts: uso de Radix Toast em vez de Sonner / `akurisToast`
+- Falta de `empresa_id` causando lista vazia indevida
+- Acessibilidade básica: foco visível, contraste, aria-labels em botões só-ícone
 
-### Mudança em `src/pages/Auth.tsx` (caminho `mfaSkipped`)
+## Método de execução
+1. `browser--navigate_to_sandbox` para `/auth` → login com a sessão preview já autenticada (sem mexer em credenciais; se cair em login, paro e peço).
+2. Para cada rota: `navigate` → aguardar render → `screenshot` + `read_console_logs` + `list_network_requests` filtrados por erro.
+3. Para dialogs: `observe` → `act` (abrir) → `screenshot` → fechar.
+4. Repetir nos 3 viewports.
+5. Verificar grep no código de padrões proibidos (`Loader2`, `animate-spin`, `bg-red-100` em badges, `useToast` Radix) para complementar achados visuais.
 
-Substituir o bloco atual (linhas ~222-228):
+## Entregável
+Relatório markdown em `/mnt/documents/qa-walkthrough-2026-05-06.md` agrupado por:
+- Severidade (Crítico / Alto / Médio / Baixo / Polish)
+- Módulo / rota
+- Evidência (screenshot path, log, snippet)
+- Sugestão de correção
 
-```ts
-// Fluxo direto (sessão MFA válida nas últimas 24h).
-setMfaPendingFlag(false);
-mfaInProgressRef.current = false;
-toast.success(t('auth.loginSuccess'));
-setPhase('finalizing');
-```
+Resumo executivo no chat com top 10 achados e contagem por severidade.
 
-Por:
+## Fora do escopo
+- Aplicar correções (faremos em loop separado após você priorizar)
+- Testes destrutivos (delete em massa, alterar dados de outras empresas)
+- Pen-test / segurança avançada (tem o scanner dedicado)
 
-```ts
-// Fluxo direto (sessão MFA válida nas últimas 24h).
-// A flag MFA estava ativa quando o SIGNED_IN foi disparado, então o
-// AuthProvider descartou aquela sessão. Limpamos a flag e forçamos
-// um refresh para que um novo evento (TOKEN_REFRESHED) seja emitido
-// e o AuthProvider passe a expor a sessão.
-setMfaPendingFlag(false);
-mfaInProgressRef.current = false;
-try {
-  await supabase.auth.refreshSession();
-} catch (refreshError) {
-  logger.warn('Falha ao refrescar sessão pós-bypass MFA', {
-    module: 'Auth',
-    error: String(refreshError),
-  });
-}
-toast.success(t('auth.loginSuccess'));
-setPhase('finalizing');
-```
-
-### Salvaguarda extra (defesa em profundidade)
-
-Para evitar qualquer regressão futura desse tipo, adicionar em `src/pages/Auth.tsx` um `useEffect` que, sempre que `phase === 'finalizing'` e `user` ainda for `null` após 1.5s, dispara um `supabase.auth.refreshSession()` automaticamente. Isso garante que, mesmo que algum caminho futuro esqueça de re-emitir, o usuário não fica preso no overlay.
-
-```ts
-useEffect(() => {
-  if (phase !== 'finalizing' || user) return;
-  const t = setTimeout(() => {
-    supabase.auth.refreshSession().catch(() => {});
-  }, 1500);
-  return () => clearTimeout(t);
-}, [phase, user]);
-```
-
-## Arquivos alterados
-
-- `src/pages/Auth.tsx` — corrigir caminho de bypass MFA 24h + salvaguarda no `finalizing`
-
-Nenhuma mudança em `AuthProvider.tsx`, na Edge Function `send-mfa-code` ou no banco. O comportamento de proteção contra "flash do dashboard" durante o login é preservado integralmente.
-
-## Validação
-
-1. Login com MFA válido nas últimas 24h → deve cair no dashboard direto, sem ficar no pulse
-2. Login com MFA expirado → deve continuar indo para a tela de código
-3. Login com credenciais inválidas → deve voltar para o form com toast de erro
-4. Refresh em `/auth` durante MFA pendente → deve continuar não vazando para o dashboard
+## Observações técnicas
+- Browser pode falhar ao iniciar (capacidade) — nesse caso sigo só com leitura de código + console logs do preview e entrego relatório parcial avisando.
+- Se cair na tela de login MFA, paro e aviso (não preencho OTP).
+- Tempo estimado: ~15-20 chamadas de browser + leitura de ~10 arquivos.
