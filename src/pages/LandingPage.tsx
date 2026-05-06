@@ -96,6 +96,7 @@ const LandingPage = () => {
   });
   const [honeypot, setHoneypot] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [demoOpen, setDemoOpen] = useState(false);
 
   useEffect(() => {
     document.documentElement.classList.add("lp-html");
