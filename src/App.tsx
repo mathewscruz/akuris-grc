@@ -35,6 +35,7 @@ const Assessment = React.lazy(() => import('@/pages/Assessment'));
 const RevisaoAcessos = React.lazy(() => import('@/pages/RevisaoAcessos'));
 const ReviewExterna = React.lazy(() => import('@/pages/ReviewExterna'));
 const Denuncia = React.lazy(() => import('@/pages/Denuncia'));
+const DenunciaRouter = React.lazy(() => import('@/pages/DenunciaRouter'));
 const DenunciaExternaRedirect = React.lazy(() => import('@/pages/DenunciaExternaRedirect'));
 const DenunciaMenu = React.lazy(() => import('@/pages/DenunciaMenu'));
 const DenunciaFormulario = React.lazy(() => import('@/pages/DenunciaFormulario'));
