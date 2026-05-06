@@ -80,11 +80,12 @@ export const useRadarChartData = () => {
         )
       : 0;
 
+    // Base zero: módulos sem incidentes não pontuam (hasData=false na Maturidade).
     const scoreIncidentes = incidentesData.total > 0
       ? Math.min(100, Math.max(0, 100 - (
           (incidentesData.criticos * 100 + incidentesData.altos * 75 + incidentesData.medios * 50 + incidentesData.baixos * 25) /
           (incidentesData.total * 100)
-        )) + (incidentesData.mes < 5 ? 10 : 0))
+        )))
       : 0;
 
     const scoreGapAnalysis = gapData.averageCompliance || 0;
