@@ -91,8 +91,11 @@ Deno.serve(async (req) => {
       .maybeSingle()
 
     if (validSession && !force) {
-      console.log('MFA session válida para userId:', userId, '- pulando envio (context:', context, ')')
-      return new Response(JSON.stringify({ success: true, skipped: true }), {
+      return new Response(JSON.stringify({
+        success: true,
+        skipped: true,
+        expires_at: validSession.expires_at,
+      }), {
         status: 200,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
       })

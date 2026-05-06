@@ -129,6 +129,7 @@ Deno.serve(async (req) => {
       .eq('user_id', userId)
       .single()
 
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
     if (profile?.empresa_id) {
       const { error: sessionError } = await supabaseAdmin
         .from('mfa_sessions')
@@ -136,20 +137,15 @@ Deno.serve(async (req) => {
           user_id: userId,
           empresa_id: profile.empresa_id,
           verified_at: new Date().toISOString(),
-          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          expires_at: expiresAt,
         })
 
       if (sessionError) {
         console.error('Erro ao criar sessão MFA:', sessionError)
-        // Não bloquear o login por causa disso
-      } else {
-        console.log('Sessão MFA criada para userId:', userId, '- válida por 24h')
       }
     }
 
-    console.log('Código MFA verificado com sucesso para userId:', userId)
-
-    return new Response(JSON.stringify({ success: true }), {
+    return new Response(JSON.stringify({ success: true, expires_at: expiresAt }), {
       status: 200,
       headers: { 'Content-Type': 'application/json', ...corsHeaders },
     })
