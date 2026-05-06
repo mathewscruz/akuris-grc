@@ -530,12 +530,6 @@ const LandingPage = () => {
           </div>
           <div className="lp-foot-bottom">
             <span>© {new Date().getFullYear()} Akuris · Todos os direitos reservados</span>
-            <div className="lp-seals">
-              <span className="lp-seal">LGPD ready</span>
-              <span className="lp-seal">ISO 27001 aligned</span>
-              <span className="lp-seal">SOC 2 aligned</span>
-              <span className="lp-seal">SLA 99.9%</span>
-            </div>
           </div>
         </div>
       </footer>
