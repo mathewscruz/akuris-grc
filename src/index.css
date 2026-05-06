@@ -513,19 +513,20 @@ input:-webkit-autofill:focus {
 
 .lp-eyebrow {
   font-family: var(--lp-mono);
-  font-size: 11px;
-  letter-spacing: 0.14em;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--lp-text-3);
+  color: #ffffff;
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 .lp-eyebrow::before {
   content: "";
-  width: 22px;
+  width: 32px;
   height: 1px;
-  background: var(--lp-text-4);
+  background: rgba(255, 255, 255, 0.7);
 }
 .lp-eyebrow.no-bar::before { display: none; }
 
