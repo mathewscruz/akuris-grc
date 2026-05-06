@@ -46,7 +46,7 @@ const handler = async (req: Request): Promise<Response> => {
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #0a1628; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f7fa;">
   <div style="background-color: #ffffff; border-radius: 12px; padding: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow: hidden;">
     <div style="text-align: center; padding: 32px 32px 16px; border-bottom: 1px solid #e2e8f0;">
-      <img src="https://governaii-grc.lovable.app/akuris-logo-email.png" alt="Akuris" width="200" height="60" style="display: block; margin: 0 auto;" />
+      <img src="https://akuris-grc.lovable.app/akuris-logo-email.png" alt="Akuris" width="200" height="60" style="display: block; margin: 0 auto;" />
     </div>
     <div style="padding: 32px;">
       <h1 style="font-size: 22px; color: #0a1628; margin: 0 0 8px; font-weight: 600;">📊 Risco Atribuído a Você</h1>

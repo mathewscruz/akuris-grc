@@ -23,7 +23,7 @@ import { CornerAccent } from '@/components/identity/CornerAccent';
 import { RiscosIcon, ControlesIcon, GapAnalysisIcon } from '@/components/icons';
 
 const Auth = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, markMfaVerified } = useAuth();
   const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -86,7 +86,6 @@ const Auth = () => {
     try { mfaPending = sessionStorage.getItem(MFA_PENDING_KEY) === '1'; } catch { /* ignore */ }
     if (!mfaPending) return;
 
-    // Recupera dados da sessão Supabase (que existe, mas não foi exposta pelo provider).
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session?.user) {
         try { sessionStorage.removeItem(MFA_PENDING_KEY); } catch { /* ignore */ }
@@ -94,7 +93,8 @@ const Auth = () => {
       }
       setMfaUserId(session.user.id);
       setMfaEmail(session.user.email ?? '');
-      // Pede o código para o usuário (ou reutiliza o ativo).
+      // Pede o código (ou reutiliza o ativo). Não derruba a sessão em caso de erro:
+      // o usuário continua na tela MFA e pode usar "Reenviar".
       try {
         const resp = await supabase.functions.invoke('send-mfa-code', {
           body: { context: 'session_restore' },
@@ -104,8 +104,10 @@ const Auth = () => {
             module: 'Auth',
             error: String(resp.error || resp.data?.error || 'desconhecido'),
           });
-          toast.error(t('auth.errorAuth'));
-          await supabase.auth.signOut();
+          toast.error(t('mfaScreen.resendError'));
+        } else if (resp.data?.skipped && resp.data?.expires_at) {
+          // MFA já é válido (24h) — libera direto sem pedir código.
+          markMfaVerified(resp.data.expires_at);
           try { sessionStorage.removeItem(MFA_PENDING_KEY); } catch { /* ignore */ }
           return;
         }
@@ -114,14 +116,11 @@ const Auth = () => {
           module: 'Auth',
           error: String(err),
         });
-        toast.error(t('auth.errorAuth'));
-        await supabase.auth.signOut();
-        try { sessionStorage.removeItem(MFA_PENDING_KEY); } catch { /* ignore */ }
-        return;
+        toast.error(t('mfaScreen.resendError'));
       }
       setPhase('mfa_required');
     });
-  }, [loading, phase, t]);
+  }, [loading, phase, t, markMfaVerified]);
 
   // Só navega quando NÃO está no fluxo MFA.
   if (!loading && user && phase !== 'mfa_required') {
@@ -157,8 +156,8 @@ const Auth = () => {
       return;
     }
 
-    // Marca pending ANTES do signInWithPassword, para que o AuthProvider não
-    // exponha a sessão entre o SIGNED_IN e o resultado da verificação MFA.
+    // Marca pending ANTES do signInWithPassword para o AuthProvider não expor
+    // a sessão entre o evento SIGNED_IN e a decisão final do MFA.
     try { sessionStorage.setItem(MFA_PENDING_KEY, '1'); } catch { /* ignore */ }
     setPhase('authenticating');
 
@@ -171,7 +170,6 @@ const Auth = () => {
 
       const userId = data.user?.id;
       if (!userId) {
-        await supabase.auth.signOut();
         try { sessionStorage.removeItem(MFA_PENDING_KEY); } catch { /* ignore */ }
         toast.error(t('auth.errorAuth'));
         setPhase('idle');
@@ -186,33 +184,40 @@ const Auth = () => {
         localStorage.removeItem('akuris_remember_me');
       }
 
-      // Login fresco por senha SEMPRE exige MFA (sem skip de 24h).
-      let mfaSendFailed = false;
-      try {
-        const mfaResponse = await supabase.functions.invoke('send-mfa-code', {
-          body: { context: 'fresh_login' },
-        });
-        if (mfaResponse.error) {
-          logger.error('Erro ao invocar send-mfa-code', { module: 'Auth', error: String(mfaResponse.error) });
-          mfaSendFailed = true;
-        } else if (!mfaResponse.data?.success) {
-          logger.error('send-mfa-code retornou erro controlado', {
-            module: 'Auth',
-            error: String(mfaResponse.data?.error || 'desconhecido'),
-          });
-          mfaSendFailed = true;
-        }
-      } catch (mfaError) {
-        logger.error('Exceção ao chamar send-mfa-code', { module: 'Auth', error: String(mfaError) });
-        mfaSendFailed = true;
+      // Decide via send-mfa-code:
+      // - skipped:true → existe sessão MFA válida (24h) → entra direto.
+      // - success:true → código enviado → abre tela MFA.
+      // - falha → mantém sessão Supabase (não faz signOut), mostra erro
+      //   e abre a tela MFA com botão de reenviar.
+      const mfaResponse = await supabase.functions.invoke('send-mfa-code', {
+        body: { context: 'fresh_login' },
+      });
+
+      if (mfaResponse.error) {
+        logger.error('Erro ao invocar send-mfa-code', { module: 'Auth', error: String(mfaResponse.error) });
+        toast.error(t('mfaScreen.resendError'));
+        setMfaUserId(userId);
+        setMfaEmail(email.trim());
+        setPhase('mfa_required');
+        return;
       }
 
-      if (mfaSendFailed) {
-        await supabase.auth.signOut();
+      const payload = mfaResponse.data || {};
+      if (payload.skipped && payload.expires_at) {
+        // Login direto (24h válida).
+        markMfaVerified(payload.expires_at);
         try { sessionStorage.removeItem(MFA_PENDING_KEY); } catch { /* ignore */ }
-        toast.error(t('auth.errorAuth'));
-        setPhase('idle');
+        try { sessionStorage.setItem('akuris_show_login_toast', '1'); } catch { /* ignore */ }
+        setPhase('finalizing');
         return;
+      }
+
+      if (!payload.success) {
+        logger.error('send-mfa-code retornou erro controlado', {
+          module: 'Auth',
+          error: String(payload.error || 'desconhecido'),
+        });
+        toast.error(String(payload.error || t('mfaScreen.resendError')));
       }
 
       setMfaUserId(userId);
@@ -226,16 +231,11 @@ const Auth = () => {
     }
   };
 
-  const handleMFAVerified = async () => {
+  const handleMFAVerified = async (expiresAt?: string) => {
     setPhase('finalizing');
+    markMfaVerified(expiresAt);
     try { sessionStorage.removeItem(MFA_PENDING_KEY); } catch { /* ignore */ }
-    // Sinaliza para o Dashboard exibir o toast quando montar (evita "vazar" sobre o overlay).
     try { sessionStorage.setItem('akuris_show_login_toast', '1'); } catch { /* ignore */ }
-    try {
-      await supabase.auth.refreshSession();
-    } catch (refreshError) {
-      logger.warn('Falha ao refrescar sessão pós-MFA', { module: 'Auth', error: String(refreshError) });
-    }
   };
 
   const handleMFACancel = async () => {

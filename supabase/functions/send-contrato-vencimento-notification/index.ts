@@ -69,7 +69,7 @@ const handler = async (req: Request): Promise<Response> => {
       <span style="color: #ffffff; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">${urgencyConfig.icon} Contrato ${isCritical ? 'Vencido' : 'Próximo do Vencimento'}</span>
     </div>
     <div style="text-align: center; padding: 24px 32px 16px;">
-      <img src="https://governaii-grc.lovable.app/akuris-logo-email.png" alt="Akuris" width="200" height="60" style="display: block; margin: 0 auto;" />
+      <img src="https://akuris-grc.lovable.app/akuris-logo-email.png" alt="Akuris" width="200" height="60" style="display: block; margin: 0 auto;" />
     </div>
     <div style="padding: 0 32px 32px;">
       <h1 style="font-size: 22px; color: #0a1628; margin: 0 0 24px; font-weight: 600;">${isCritical ? 'Contrato Vencido!' : 'Contrato Próximo do Vencimento'}</h1>

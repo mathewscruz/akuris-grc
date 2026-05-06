@@ -14,7 +14,7 @@ import { CornerAccent } from '@/components/identity/CornerAccent';
 interface MFAVerificationProps {
   userId: string;
   email: string;
-  onVerified: () => void;
+  onVerified: (expiresAt?: string) => void;
   onCancel: () => void;
 }
 
@@ -71,8 +71,8 @@ export const MFAVerification: React.FC<MFAVerificationProps> = ({
       const data = response.data;
       if (data.success) {
         // Marca a sessão MFA como válida no AuthProvider (cache local + libera flag).
-        markMfaVerified();
-        onVerified();
+        markMfaVerified(data.expires_at);
+        onVerified(data.expires_at);
       } else {
         toast.error(data.error || t('mfaScreen.invalidCode'));
         setCode('');

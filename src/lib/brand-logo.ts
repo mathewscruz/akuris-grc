@@ -11,7 +11,7 @@ export const AKURIS_DEFAULT_LOGO = akurisLogo;
 
 /** URL pública do logo Akuris para contextos externos (PDFs, e-mails). */
 export const AKURIS_DEFAULT_LOGO_URL =
-  'https://governaii-grc.lovable.app/akuris-logo-email.png';
+  'https://akuris-grc.lovable.app/akuris-logo-email.png';
 
 /**
  * Retorna o logo da empresa, ou o logo padrão Akuris quando ausente/inválido.

@@ -29,7 +29,7 @@ const handler = async (req: Request): Promise<Response> => {
     const sysName = 'Akuris';
     let emailContent: { subject: string; html: string };
 
-    const headerHtml = `<div style="text-align: center; margin-bottom: 30px;"><img src="https://governaii-grc.lovable.app/akuris-logo-email.png" alt="Akuris" width="200" height="60" style="display: block; margin: 0 auto;" /></div>`;
+    const headerHtml = `<div style="text-align: center; margin-bottom: 30px;"><img src="https://akuris-grc.lovable.app/akuris-logo-email.png" alt="Akuris" width="200" height="60" style="display: block; margin: 0 auto;" /></div>`;
     const footerHtml = `<hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;"><p style="color: #64748b; font-size: 14px;">Este é um e-mail automático da <strong>Akuris</strong>. Em caso de dúvidas, entre em contato conosco.</p><p style="color: #8898aa; font-size: 12px;">© ${new Date().getFullYear()} Akuris. Todos os direitos reservados.</p>`;
 
     switch (type) {
