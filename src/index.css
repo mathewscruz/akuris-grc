@@ -995,7 +995,7 @@ input:-webkit-autofill:focus {
 .lp-cta-inner { display: grid; grid-template-columns: 1fr auto; gap: 48px; align-items: end; }
 .lp-cta h2 {
   font-family: var(--lp-serif);
-  font-weight: 400;
+  font-weight: 300;
   font-size: clamp(40px, 5.4vw, 72px);
   line-height: 1;
   letter-spacing: -0.025em;
@@ -1003,7 +1003,7 @@ input:-webkit-autofill:focus {
   color: var(--lp-text);
   text-wrap: balance;
 }
-.lp-cta h2 em { font-style: italic; color: var(--lp-accent-2); font-weight: 400; }
+.lp-cta h2 em { font-style: italic; color: var(--lp-accent-2); font-weight: 300; }
 
 /* Form */
 .lp-form { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 24px; margin-top: 40px; }
