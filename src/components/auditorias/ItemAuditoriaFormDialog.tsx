@@ -30,6 +30,7 @@ import { formatDateForInput, parseDateForDB } from "@/lib/date-utils";
 import { ControleSelect } from "./ControleSelect";
 import { AreaSistemaSelect } from "./AreaSistemaSelect";
 import { useIntegrationNotify } from "@/hooks/useIntegrationNotify";
+import { logger } from "@/lib/logger";
 
 const formSchema = z.object({
   codigo: z.string().min(1, "Código é obrigatório"),
