@@ -435,13 +435,13 @@ export function QuestionsManager({ templateId, templateName }: QuestionsManagerP
                     <div className="flex-1 min-w-0 space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <h4 className="font-medium text-sm truncate">{question.titulo}</h4>
-                        <Badge variant="secondary" className="text-xs h-5 px-2">
+                        <StatusBadge size="sm" {...resolveQuestionTypeTone(question.tipo)}>
                           {getTypeLabel(question.tipo)}
-                        </Badge>
+                        </StatusBadge>
                         {question.obrigatoria && (
-                          <Badge variant="destructive" className="text-xs h-5 px-2">Obrigatória</Badge>
+                          <StatusBadge size="sm" tone="destructive">Obrigatória</StatusBadge>
                         )}
-                        <Badge variant="outline" className="text-xs h-5 px-2">Peso: {question.peso}</Badge>
+                        <StatusBadge size="sm" tone="neutral">Peso: {question.peso}</StatusBadge>
                       </div>
                       {question.descricao && (
                         <p className="text-xs text-muted-foreground truncate">{question.descricao}</p>
