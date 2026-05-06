@@ -1,67 +1,102 @@
-## Diagnóstico
+## Plano de correção — QA Walkthrough 2026-05-06
 
-**1. MFA sendo pulado no login por senha**
-Os auth logs mostram dois logins consecutivos (`grant_type: password`) de `henrique.mathews@gmail.com` sem qualquer chamada para `send-mfa-code` / `verify-mfa-code`. O bypass acontece dentro de `supabase/functions/send-mfa-code/index.ts`:
-
-```text
-linhas 77-92:
-  consulta mfa_sessions com expires_at > now()
-  se existir → retorna { success: true, skipped: true }
-```
-
-E em `src/pages/Auth.tsx` (linhas 195-238), `skipped: true` faz `handleSignIn` pular a tela de MFA, dar `refreshSession` e mandar para o dashboard.
-
-O "skip de 24h" foi desenhado para sessões **restauradas** (usuário voltou no dia seguinte sem deslogar), não para login fresco com senha. Hoje os dois caminhos compartilham o mesmo bypass.
-
-**2. Toast "Login realizado com sucesso" aparece sobre o loading**
-Em `Auth.tsx` (linhas 238 e 256), o `toast.success(t('auth.loginSuccess'))` é chamado antes de o `AuthProvider` terminar `check-mfa-session` + `fetchProfile`. Como `LoadingOverlay` (fase `finalizing`) permanece visível até o `user` ser exposto, o usuário vê o toast "vazando" sobre a tela de carregamento e às vezes ainda no primeiro frame do dashboard.
+Organizado em 5 ondas, cada uma autoconsumível. Mantém todas as invariantes (AkurisPulse único, StatusBadge, Sonner, logger, multi-tenant).
 
 ---
 
-## Mudanças
+### Onda 1 — Quick wins de alto impacto visual
 
-### A. Backend — distinguir "login por senha" de "checagem de skip"
+**1.1 Rota pública `/denuncia` (C1)**
+- Em `src/App.tsx`, adicionar rota pública `/denuncia` (sem `:empresa`) que renderiza um novo componente `DenunciaPublicLanding` em `src/pages/DenunciaPublicLanding.tsx`.
+- A landing pede o slug/identificador da empresa (input simples) e redireciona para `/:empresa/denuncia`. Mensagem clara: "Informe o código da empresa fornecido pela organização".
+- Identidade visual padrão (CornerAccent, AkurisMarkPattern, dark theme).
 
-**`supabase/functions/send-mfa-code/index.ts`**
+**1.2 Skeletons → AkurisPulse (A1)** — alavanca em 2 arquivos:
+- `src/components/ui/data-table.tsx` (linhas 113-137): substituir bloco Skeleton por `<AkurisPulse />` centralizado com `<p className="text-sm text-muted-foreground">Carregando…</p>`. Elimina ~70% das ocorrências.
+- `src/pages/Dashboard.tsx` (linhas 82-90): trocar Skeletons da etapa "profile loading" por `<AkurisPulse size={32} />` em wrapper centralizado.
+- Demais arquivos da lista A1 (Riscos, RiscosAceite, MultiDimensionalRadar, RelatorioPreviewDialog, GerenciamentoChangelog, NoticiasTab, Due Diligence): substituições pontuais idênticas.
 
-- Aceitar no body um flag `context: 'fresh_login' | 'session_restore'` (default `session_restore` para retrocompatibilidade).
-- Quando `context === 'fresh_login'`: **ignorar** a sessão MFA existente (não retornar `skipped`). Sempre gera/reusa código e envia e-mail.
-- Quando `context === 'session_restore'`: comportamento atual (retorna `skipped: true` se houver `mfa_session` válida).
-- Manter validação de JWT via `getClaims` e a regra de só operar sobre `callerUserId`.
+**1.3 Spinners CSS (A4)**
+- `IntegrationLogViewer.tsx:185` e `RequirementDetailDialog.tsx:770`: trocar `animate-spin` em ícone Refresh por `<AkurisPulse size={12} className="mr-2" />`.
 
-### B. Frontend — sempre exigir MFA no login por senha
+---
 
-**`src/pages/Auth.tsx` — `handleSignIn`**
+### Onda 2 — Status Badges (A2)
 
-- Chamar `send-mfa-code` com `body: { context: 'fresh_login' }`.
-- Remover toda a lógica de `mfaSkipped` no caminho de senha: depois do envio bem-sucedido, sempre setar `phase = 'mfa_required'` e abrir `MFAVerification`.
-- Remover o `toast.success(t('auth.loginSuccess'))` daqui (linha 238) e o `await supabase.auth.refreshSession()` do bypass (não é mais necessário).
-- Em caso de falha do `send-mfa-code`, manter o `signOut` + toast de erro + voltar para `idle`.
+Criar/estender resolvers em `src/lib/status-tone.tsx`:
+- `denunciaStatusTone(status)` → tons existentes (success, warning, danger, neutral, info).
+- `gravidadeTone(gravidade)` → mapping (baixa/média/alta/crítica).
+- Resolvers para Due Diligence (status de assessment, status de questão).
+- Resolver para `gap-analysis/FrameworkCatalog` (categoria).
 
-**`src/pages/Auth.tsx` — `handleMFAVerified`**
+Substituir em:
+- `src/pages/DenunciaConsulta.tsx` (linhas 212-248) — remover `getStatusColor` / `getGravidadeColor`, usar `<StatusBadge tone={denunciaStatusTone(s)}>`.
+- `src/components/denuncia/DenunciaDialog.tsx` (254-257).
+- `src/components/due-diligence/{TemplatesManager,ReportsView,AssessmentsManager,QuestionsManager}.tsx`.
+- `src/components/gap-analysis/FrameworkCatalog.tsx` (23-25).
 
-- Remover o `toast.success(t('auth.loginSuccess'))` daqui também (linha 256).
-- Manter `setPhase('finalizing')` e `refreshSession` para acelerar a propagação.
+Critério de aceite: zero ocorrências de `bg-{red,blue,green,yellow,amber,orange}-100` em badges (rg de validação ao final).
 
-**`src/pages/Auth.tsx` — restauração de sessão (useEffect MFA pendente)**
+---
 
-- Continuar chamando `send-mfa-code` mas com `body: { context: 'session_restore' }` (para preservar o skip silencioso quando legítimo — se nesse caminho voltar `skipped: true`, basta tirar o pending e deixar o `AuthProvider` propagar).
+### Onda 3 — Toasts unificados (A3)
 
-### C. Toast de boas-vindas — emitir só quando o dashboard estiver pronto
+Estratégia minimamente invasiva:
+- Transformar `src/hooks/use-toast.ts` em **shim** que delega para `sonner` (mapear `variant: 'destructive'` → `toast.error`, default → `toast.success` ou `toast.info` conforme título). Mantém os 86 callsites funcionando sem mudança imediata.
+- Migração explícita (este PR) das 4 páginas principais para `akurisToast({ module, tone, ... })`: `Riscos`, `Incidentes`, `Documentos`, `Contratos`.
+- Demais arquivos seguem usando o shim (migração progressiva em backlog).
 
-Para garantir que o toast nunca apareça por cima do loading:
+Validar que `<Toaster />` Radix legado pode ser removido do tree (somente Sonner permanece).
 
-- Em `handleMFAVerified` (e no caminho `fresh_login` finalizado), gravar uma flag `sessionStorage.setItem('akuris_show_login_toast', '1')`.
-- Em `src/pages/Dashboard.tsx`, dentro de um `useEffect` que roda após o primeiro render efetivo (quando `profile` e `company` já estão disponíveis no `useAuth`), checar a flag, disparar `toast.success(t('auth.loginSuccess'))` e remover a flag.
-- Isso garante que o toast só aparece quando a UI do dashboard já está visível, eliminando o "vazamento" durante `LoadingOverlay`.
+---
 
-### D. Validação manual após implementação
+### Onda 4 — i18n + logging hygiene
 
-1. Login fresco por senha → tela de MFA **sempre** aparece, mesmo se houver `mfa_session` válida no banco.
-2. Inserir código → overlay de finalização → dashboard → toast "Login realizado com sucesso" aparece já no dashboard, não antes.
-3. Fechar aba e reabrir em <24h sem deslogar → sessão restaurada sem pedir MFA novamente (comportamento desejado para UX).
-4. Fechar aba e reabrir em >24h → tela MFA aparece automaticamente (já funciona pelo `MFA_PENDING_KEY`, sem regressão).
+**4.1 i18n /registro (M3)**
+- Em `src/i18n/{pt,en}.ts` adicionar:
+  - `register.trialBadge` (PT: "14 dias de teste grátis · sem cartão de crédito" / EN: "14-day free trial · no credit card required")
+  - `register.taxIdLabelBR` / `register.taxIdLabelIntl`
+  - `register.taxIdPlaceholderBR` / `register.taxIdPlaceholderIntl`
+- `src/pages/Registro.tsx`: substituir literais; ajustar máscara CNPJ apenas quando idioma = PT (em EN usa input livre com label "Tax ID").
 
-### E. Observação de segurança
+**4.2 i18n /auth (M5)**
+- Verificar em `Auth.tsx` que `t('auth.privacyPolicy')`, `t('auth.copyright')` e footer estejam usando `t()`. Adicionar chaves faltantes em ambos idiomas.
 
-Forçar MFA em todo login por senha é mais restritivo que o estado atual e está alinhado com a expectativa do usuário e com a memória `auth/mfa-session-isolation-logic`. A janela de 24h continua existindo, mas só beneficia sessões já estabelecidas (refresh/restore), não autenticação por senha — que é o vetor principal de comprometimento.
+**4.3 Logging (M1, M2)**
+- Sweep nos arquivos listados: `useScoreHistory`, `useRiscosStats`, `useNotifications`, `NotificationCenter`, `documentos/VinculacoesDialog`, `documentos/UploadMultiplosDialog`, `auditorias/ItemAuditoriaFormDialog`, `pages/NotFound`, `pages/DefinirSenha`.
+- Trocar `console.*` por `logger.error|warn|debug` com `module:` adequado.
+- Em `NotFound.tsx:10` usar `logger.warn('404', { path: location.pathname, module: 'router' })`.
+
+---
+
+### Onda 5 — UX polish
+
+**5.1 ErrorBoundary (M4)**
+- `src/components/ErrorBoundary.tsx`: priorizar visualmente o botão "Tentar Novamente" (handleRetry, primário) e rebaixar "Recarregar página" como secundário/link. Manter `window.location.reload()` apenas no botão secundário.
+
+**5.2 NotFound (P1)**
+- Substituir `<a href="/">` por `<Button asChild><Link to="/">Voltar para o início</Link></Button>` (react-router, sem full reload).
+- Manter identidade visual (CornerAccent, AkurisPulse opcional).
+
+**5.3 Header /auth (P2)**
+- Adicionar `<Tooltip>` em "Voltar ao site" e no LanguageSelector "EN/PT". Aumentar contraste no hover.
+
+**5.4 Acessibilidade /auth (P3)**
+- Garantir que o título principal "Bem-vindo de volta" / "Welcome back" seja `<h1>` (já é `h2` hoje em Auth.tsx:335). Manter hierarquia semântica.
+
+---
+
+### Validação final
+
+Antes de fechar cada onda:
+1. `rg -n "<Skeleton" src/` → 0 (Onda 1).
+2. `rg -n "bg-(red|blue|green|yellow|amber|orange)-100" src/` em badges → 0 (Onda 2).
+3. `rg -n "from '@/hooks/use-toast'" src/pages/{Riscos,Incidentes,Documentos,Contratos}.tsx` → 0 (Onda 3).
+4. `rg -n "console\.(log|error|warn)" src/{hooks,pages,components}/` → reduzido ao mínimo aceito (Onda 4).
+5. Browser walkthrough (sandbox autenticado) confirmando: dashboard sem skeleton flicker, módulo Denúncia com badges Akuris, /registro EN coerente.
+
+---
+
+### Ordem de execução recomendada
+
+Fazer **Onda 1 inteira** primeiro (maior impacto visual e desbloqueia o C1 público). Depois validar comigo antes de seguir para Ondas 2-5, que são mais longas e podem ser entregues em PRs separados.
