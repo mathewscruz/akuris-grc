@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Skeleton } from '@/components/ui/skeleton';
+import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { BarChart3, TrendingUp, Users, FileText, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useReportsData } from '@/hooks/useReportsData';
