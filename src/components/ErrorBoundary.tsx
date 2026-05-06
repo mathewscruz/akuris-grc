@@ -75,11 +75,11 @@ export class ErrorBoundary extends Component<Props, State> {
             </Alert>
 
             <div className="flex space-x-2">
-              <Button onClick={this.handleRetry} variant="outline" className="flex-1">
+              <Button onClick={this.handleRetry} className="flex-1">
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Tentar Novamente
               </Button>
-              <Button onClick={this.handleReload} className="flex-1">
+              <Button onClick={this.handleReload} variant="outline" className="flex-1">
                 Recarregar Página
               </Button>
             </div>
