@@ -266,25 +266,9 @@ export function QuestionsManager({ templateId, templateName }: QuestionsManagerP
 
   if (loading) {
     return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <Skeleton className="h-8 w-64" />
-            <Skeleton className="h-4 w-96 mt-2" />
-          </div>
-          <Skeleton className="h-10 w-32" />
-        </div>
-        {[...Array(3)].map((_, i) => (
-          <Card key={i}>
-            <CardHeader>
-              <Skeleton className="h-6 w-48" />
-              <Skeleton className="h-4 w-32" />
-            </CardHeader>
-            <CardContent>
-              <Skeleton className="h-4 w-full" />
-            </CardContent>
-          </Card>
-        ))}
+      <div className="flex flex-col items-center justify-center gap-3 py-24">
+        <AkurisPulse size={40} />
+        <p className="text-sm text-muted-foreground">Carregando…</p>
       </div>
     );
   }
