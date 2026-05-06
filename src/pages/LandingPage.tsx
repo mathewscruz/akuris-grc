@@ -237,7 +237,7 @@ const LandingPage = () => {
             </div>
 
             {/* Matrix */}
-            <div className="lp-card lp-vis-b">
+            <div className="lp-card lp-vis-b" data-reveal style={{ ["--lp-reveal-delay" as string]: "120ms" }}>
               <div className="lp-card-title">
                 <span className="t">Matriz de risco · 5 × 5</span>
                 <span className="dot" />
@@ -259,7 +259,7 @@ const LandingPage = () => {
             </div>
 
             {/* Timeline */}
-            <div className="lp-card lp-vis-c">
+            <div className="lp-card lp-vis-c" data-reveal style={{ ["--lp-reveal-delay" as string]: "240ms" }}>
               <div className="lp-card-title">
                 <span className="t">Atividade recente</span>
                 <span className="t lp-mono" style={{ color: "var(--lp-text-3)" }}>14:32</span>
@@ -286,7 +286,7 @@ const LandingPage = () => {
       {/* MÓDULOS */}
       <section className="lp-section" id="modulos">
         <div className="lp-container">
-          <div className="lp-section-head">
+          <div className="lp-section-head" data-reveal>
             <span className="lp-eyebrow">Módulos</span>
             <h2>
               Uma plataforma única, <em>oito disciplinas conectadas.</em>
@@ -312,7 +312,7 @@ const LandingPage = () => {
       {/* COMO FUNCIONA */}
       <section className="lp-section">
         <div className="lp-container">
-          <div className="lp-section-head">
+          <div className="lp-section-head" data-reveal>
             <span className="lp-eyebrow">Como funciona</span>
             <h2>
               Da implantação ao painel do conselho, <em>em quatro movimentos.</em>
@@ -338,7 +338,7 @@ const LandingPage = () => {
       {/* FRAMEWORKS */}
       <section className="lp-section" id="frameworks">
         <div className="lp-container">
-          <div className="lp-section-head">
+          <div className="lp-section-head" data-reveal>
             <span className="lp-eyebrow">Frameworks &amp; regulações</span>
             <h2>
               Seu mapa, atendido. <em>De LGPD a SOC 2.</em>
@@ -358,7 +358,7 @@ const LandingPage = () => {
       {/* MÉTRICAS */}
       <section className="lp-section">
         <div className="lp-container">
-          <div className="lp-section-head">
+          <div className="lp-section-head" data-reveal>
             <span className="lp-eyebrow">Resultado</span>
             <h2>
               Não é dashboard. <em>É decisão informada, em horas — não em semanas.</em>
@@ -386,7 +386,7 @@ const LandingPage = () => {
       {/* SEGURANÇA */}
       <section className="lp-section" id="seguranca">
         <div className="lp-container">
-          <div className="lp-section-head">
+          <div className="lp-section-head" data-reveal>
             <span className="lp-eyebrow">A Akuris pela Akuris</span>
             <h2>
               Construímos a plataforma que <em>nós mesmos auditaríamos.</em>
@@ -430,7 +430,7 @@ const LandingPage = () => {
       {/* FAQ */}
       <section className="lp-section">
         <div className="lp-container">
-          <div className="lp-section-head">
+          <div className="lp-section-head" data-reveal>
             <span className="lp-eyebrow">Perguntas frequentes</span>
             <h2>O que perguntam <em>antes da demo.</em></h2>
           </div>
