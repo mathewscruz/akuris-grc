@@ -323,13 +323,12 @@ export default function DenunciaConsulta() {
                     </CardDescription>
                   </div>
                   <div className="flex gap-2">
-                    <Badge className={getStatusColor(denuncia.status)}>
-                      {getStatusIcon(denuncia.status)}
-                      <span className="ml-1">{getStatusText(denuncia.status)}</span>
-                    </Badge>
-                    <Badge className={getGravidadeColor(denuncia.gravidade)}>
-                      {denuncia.gravidade.charAt(0).toUpperCase() + denuncia.gravidade.slice(1)}
-                    </Badge>
+                    <StatusBadge {...resolveDenunciaStatusTone(denuncia.status)}>
+                      {getStatusText(denuncia.status)}
+                    </StatusBadge>
+                    <StatusBadge {...resolveGravidadeTone(denuncia.gravidade)}>
+                      {getGravidadeLabel(denuncia.gravidade)}
+                    </StatusBadge>
                   </div>
                 </div>
               </CardHeader>
