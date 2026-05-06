@@ -8,7 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Search, Shield, FileText, Clock, CheckCircle, AlertCircle, Eye, ArrowLeft } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { resolveDenunciaStatusTone, resolveGravidadeTone } from '@/lib/status-tone';
 import { useToast } from '@/hooks/use-toast';
 import { getCompanyLogo } from '@/lib/brand-logo';
 
@@ -206,23 +207,6 @@ export default function DenunciaConsulta() {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'nova':
-        return 'bg-blue-100 text-blue-800';
-      case 'em_analise':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'em_investigacao':
-        return 'bg-orange-100 text-orange-800';
-      case 'concluida':
-        return 'bg-green-100 text-green-800';
-      case 'arquivada':
-        return 'bg-gray-100 text-gray-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
   const getStatusText = (status: string) => {
     const statusMap: { [key: string]: string } = {
       nova: 'Nova',
@@ -234,20 +218,8 @@ export default function DenunciaConsulta() {
     return statusMap[status] || status;
   };
 
-  const getGravidadeColor = (gravidade: string) => {
-    switch (gravidade) {
-      case 'baixa':
-        return 'bg-green-100 text-green-800';
-      case 'media':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'alta':
-        return 'bg-orange-100 text-orange-800';
-      case 'critica':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
+  const getGravidadeLabel = (gravidade: string) =>
+    gravidade ? gravidade.charAt(0).toUpperCase() + gravidade.slice(1) : '-';
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR', {
