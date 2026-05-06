@@ -1061,6 +1061,7 @@ input:-webkit-autofill:focus {
   text-transform: uppercase;
   color: var(--lp-text-3);
 }
+.lp-field { position: relative; }
 .lp-field input, .lp-field textarea {
   background: transparent;
   border: 0;
@@ -1070,9 +1071,20 @@ input:-webkit-autofill:focus {
   font-family: var(--lp-sans);
   font-size: 15px;
   outline: none;
-  transition: border-color .15s ease;
+  transition: border-color .2s ease;
 }
-.lp-field input:focus, .lp-field textarea:focus { border-bottom-color: var(--lp-accent); }
+.lp-field::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 1px;
+  background: var(--lp-accent);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform .35s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+.lp-field:focus-within::after { transform: scaleX(1); }
 .lp-field textarea { resize: vertical; min-height: 96px; }
 
 /* Big wordmark */
