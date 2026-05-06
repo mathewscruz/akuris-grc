@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { resolveDueDiligenceStatusTone } from '@/lib/status-tone';
+import { resolveDueDiligenceStatusTone, resolveCategoriaTone } from '@/lib/status-tone';
 import { formatStatus } from '@/lib/text-utils';
 import { Input } from '@/components/ui/input';
 import { Plus, Search, Mail, Eye, BarChart3, Calendar, Clock } from 'lucide-react';
@@ -128,16 +128,7 @@ export function AssessmentsManager() {
     return 'text-red-600';
   };
 
-  const getCategoryColor = (categoria: string) => {
-    const colors: Record<string, string> = {
-      'seguranca': 'bg-red-100 text-red-800',
-      'compliance': 'bg-blue-100 text-blue-800',
-      'financeiro': 'bg-green-100 text-green-800',
-      'operacional': 'bg-purple-100 text-purple-800',
-      'geral': 'bg-gray-100 text-gray-800'
-    };
-    return colors[categoria] || colors['geral'];
-  };
+  // Categoria badge agora usa resolveCategoriaTone (StatusBadge)
 
   if (loading) {
     return (
@@ -205,9 +196,9 @@ export function AssessmentsManager() {
                     <div className="flex items-center gap-3">
                       <h3 className="font-semibold text-lg">{assessment.fornecedor_nome}</h3>
                       {getStatusBadge(assessment.status)}
-                      <Badge className={getCategoryColor(assessment.template.categoria)}>
+                      <StatusBadge size="sm" {...resolveCategoriaTone(assessment.template.categoria)}>
                         {assessment.template.categoria}
-                      </Badge>
+                      </StatusBadge>
                     </div>
                     
                     <p className="text-sm text-muted-foreground">
