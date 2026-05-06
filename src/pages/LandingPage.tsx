@@ -136,7 +136,7 @@ const LandingPage = () => {
   return (
     <div className="lp-root">
       {/* NAV */}
-      <header className="lp-nav">
+      <header className={`lp-nav ${scrolled ? "scrolled" : ""}`}>
         <div className="lp-container lp-nav-inner">
           <a href="#topo" className="flex items-center gap-3" aria-label="Akuris">
             <img src={akurisLogo} alt="Akuris" className="h-8 w-auto" />
