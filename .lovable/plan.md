@@ -1,123 +1,57 @@
-## Diagnóstico
+## Avaliação da Opção C — Logos oficiais da internet
 
-### 1. Bug confirmado: scores de Riscos e Incidentes inflados no card "Maturidade GRC"
-Em `src/hooks/useRadarChartData.tsx`, a fórmula está dividindo pelo denominador errado:
+Avaliei os 24 frameworks ativos (ISO 9001/14001/27001/27701/31000/37301/20000/62443, NIST CSF, NIST SP 800-82, COBIT, COSO ERM, COSO IC, DORA, NIS2, GDPR, LGPD, CCPA, HIPAA, SOX, PCI DSS, SOC 2, ITIL, CIS Controls).
 
-```ts
-// ATUAL (errado)
-100 - ((criticos*100 + altos*75 + medios*50 + baixos*25) / (total*100))
-```
+### Por que C é problemática (honestamente)
 
-Para 1 risco crítico (total=1): numerador=100, denominador=100 → razão=1 → score = **99%** ("Excelente"). Por isso o card mostra Riscos quase no verde enquanto o **Gráfico de Evolução de Risco** mostra exposição em 100% (totalmente vulnerável). As duas vistas usam **fórmulas diferentes** para a mesma dimensão.
+1. **Direitos autorais reais**: ISO, NIST, ISACA (COBIT), AICPA (SOC 2), PCI SSC, AXELOS (ITIL), CIS — todos têm marcas registradas com restrições explícitas de uso. A maioria proíbe uso do logo sem licença/parceria. Risco jurídico concreto para uma plataforma comercial de GRC.
+2. **Ausência de CDN oficial**: nenhum desses órgãos publica logos em CDN público estável. Só existem em PDFs/sites institucionais com hotlink bloqueado ou URLs que mudam.
+3. **Qualidade visual**: logos coloridos e em proporções diferentes quebram a grid editorial Akuris (Navy + Purple). Em dark mode, vários ficariam ilegíveis (logos pretos sobre fundo escuro).
+4. **Frameworks sem logo próprio**: LGPD, GDPR, CCPA, SOX, HIPAA, DORA, NIS2 são **leis/regulamentos**, não têm logo oficial — só brasão de governo (que não pode ser usado comercialmente).
 
-A fórmula correta (já usada por `RiskScoreTimeline.computeExposure`) é:
-```ts
-exposicao = (criticos*4 + altos*3 + medios*2 + baixos*1) / (total*4) * 100
-saude     = 100 - exposicao
-```
+### Caminho híbrido recomendado (C parcial + B)
 
-Validação manual:
-| Cenário | Atual (errado) | Correto |
-|---|---|---|
-| 1 crítico | 99% | 0% |
-| 1 alto | 99,25% | 25% |
-| 5 médios | 99,5% | 50% |
-| 1 baixo | 99,75% | 75% |
+Em vez de descartar C, faço o que é **legal e visualmente coerente**:
 
-O mesmo bug existe em `scoreIncidentes` (mesma fórmula).
+**Tier 1 — Logos seguros via Simple Icons / Wikimedia Commons (CC/PD)**
+Buscar via `lov-fetch-website` em fontes de domínio público:
+- ISO family → símbolo ISO da Wikimedia (uso editorial permitido)
+- NIST/NIST SP → seal NIST (US Gov, domínio público)
+- PCI DSS → logo PCI SSC (Wikimedia, marca registrada mas uso editorial OK)
+- SOC 2 → selo AICPA (uso editorial)
+- ITIL, COBIT, CIS → Wikimedia quando disponível em SVG
 
-### 2. Outros scores do mesmo hook — revisão
-- `scoreControles`, `scoreAtivos`, `scoreDocumentos`, `scoreDenuncias`, `scoreDueDiligence` usam ratios proporcionais corretos (somam pesos = 100). ✅
-- `scoreGapAnalysis` reusa `gapStats.averageCompliance` (já validado e em produção). ✅
+Salvar localmente em `src/assets/frameworks/` como SVG otimizado (não hotlink). Isso evita quebra de URL e respeita "fair use editorial" para identificação da norma.
 
----
+**Tier 2 — Badge tipográfico Akuris (Plano B original)**
+Para os frameworks que são **leis** (LGPD, GDPR, CCPA, SOX, HIPAA, DORA, NIS2) ou sem logo licenciável: badge tipográfico com paleta semântica:
+- Privacidade (LGPD/GDPR/CCPA/HIPAA/ISO 27701) → Purple Akuris
+- Segurança (ISO 27001, NIST, PCI, CIS, SOC 2, NIS2, DORA) → Steel Blue
+- Qualidade/Gestão (ISO 9001/14001/20000, ITIL, COBIT, COSO, SOX) → Slate
+- Risco (ISO 31000, COSO ERM) → Amber sóbrio
 
-## Plano
+### Implementação
 
-### Etapa A — Correção do bug (obrigatória)
-**Arquivo:** `src/hooks/useRadarChartData.tsx`
+1. Criar `src/assets/frameworks/` com SVGs verificados (~10 logos seguros baixados manualmente da Wikimedia/sites oficiais via `lov-fetch-website`).
+2. Criar `src/lib/framework-brand.ts` com mapa: `{ slug → { logoSrc?, acronym, tone, fullName } }`.
+3. Criar `src/components/frameworks/FrameworkBadge.tsx`:
+   - Se `logoSrc` existe → renderiza `<img>` em chip 40x40 com fundo branco sutil (para logos coloridos respirarem no dark)
+   - Senão → fallback tipográfico (acrônimo + tom semântico)
+   - Variantes: `sm` (24px), `md` (40px), `lg` (64px)
+4. Substituir ícones genéricos em:
+   - `FrameworksOverviewCard.tsx` (Dashboard)
+   - Listagem de frameworks em Gap Analysis
+   - Header do diálogo de avaliação
+5. Adicionar coluna `logo_url TEXT` em `gap_analysis_frameworks` (opcional, para super-admin sobrescrever no futuro).
 
-Substituir as fórmulas de `scoreRiscos` e `scoreIncidentes` para usarem a mesma exposição ponderada (peso 4/3/2/1) já consagrada em `RiskScoreTimeline`. Resultado: o card "Maturidade GRC" e o "Gráfico de Evolução de Risco" passarão a contar a mesma história.
+### O que NÃO farei
 
-```ts
-// scoreRiscos / scoreIncidentes
-total > 0
-  ? Math.max(0, Math.round(100 - (
-      (criticos*4 + altos*3 + medios*2 + baixos*1) / (total*4)
-    ) * 100))
-  : 0
-```
+- Não vou hotlinkar logos de sites de terceiros (quebra + risco legal).
+- Não vou usar logos de leis/governo como se fossem marca (LGPD não tem logo).
+- Não vou inventar logo para framework que não tem identidade visual pública.
 
-Como `useGrcMaturityScore` é a média dos módulos com dados, o Hero Banner também passará a refletir a exposição real automaticamente.
+### Resultado esperado
 
-### Etapa B — Evolução do card "Maturidade GRC" (recomendada)
-Hoje o card exibe **8 barras horizontais** (Riscos, Controles, Ativos, Incidentes, Gap Analysis, Due Diligence, Documentos, Denúncias). Funciona, mas:
-- Compete visualmente com o Hero Banner (que já mostra a maturidade consolidada).
-- Não dá visão de progresso/evolução por framework, que é exatamente o que dá pulso de compliance.
+~10 frameworks com logo oficial autêntico (ISO, NIST, PCI, SOC 2, ITIL, COBIT, CIS, etc.) + ~14 com badge tipográfico Akuris coerente. Visual consistente, legalmente defensável, sem dependência de URLs externas.
 
-**Proposta** — manter o card no mesmo slot, mas redesenhar como **"Frameworks em Avaliação"**:
-
-```text
-┌────────────────────────────────────────┐
-│  Frameworks de Compliance      ▸ Ver  │
-│  3 ativos · 2 concluídos              │
-├────────────────────────────────────────┤
-│  ⚙ ISO 27001                           │
-│  ████████████░░░░░░  68% · 142/210    │
-│                                         │
-│  🛡 LGPD                                │
-│  ██████████████████ 95% · ✓ Concluído │
-│                                         │
-│  📋 SOC 2                               │
-│  ████░░░░░░░░░░░░░░  22% · 28/124     │
-│                                         │
-│  + 2 outros frameworks ▸               │
-└────────────────────────────────────────┘
-```
-
-Cada linha mostraria, por framework:
-- Ícone + nome
-- Barra de progresso = `% conformidade média` (já calculado por framework)
-- Texto: `requisitos avaliados / total` ou "✓ Concluído"
-- Última atualização (tooltip)
-- Click → leva para `/gap-analysis/{id}`
-
-**Por que faz sentido**:
-1. Hero Banner já entrega o número consolidado de Maturidade — duplicado hoje pelo card.
-2. Frameworks são onde o usuário trabalha diariamente; ter status por framework no dashboard é mais acionável do que "Ativos: 60%".
-3. Diferencia "saúde operacional" (Hero) de "progresso de auditoria" (novo card) — duas leituras complementares.
-4. As outras 8 dimensões continuam visíveis via **drill-down** (já temos `KpiDrillDownDrawer`) e via os módulos individuais.
-
-**Implementação resumida:**
-1. Novo hook `useFrameworksOverview` que retorna lista de frameworks da empresa com:
-   - `id`, `nome`, `icone`
-   - `totalRequisitos`, `requisitosAvaliados`
-   - `mediaConformidade` (já existe lógica em `useGapAnalysisStats`)
-   - `status` (`em_andamento` | `concluido` | `nao_iniciado`)
-   - `ultimaAtividade`
-   - Filtra `empresa_id` + frameworks com pelo menos uma evaluation OU vinculados.
-2. Renomear o componente `MultiDimensionalRadar.tsx` → `FrameworksOverviewCard.tsx` (ou criar novo e remover o antigo).
-3. Layout: linha por framework, ordenada por `mediaConformidade` desc. Limite de 4 visíveis + "Ver todos →" indo para `/gap-analysis`.
-4. Empty state: "Nenhum framework iniciado ainda. [Iniciar primeiro framework]".
-5. Manter ícone proprietário Akuris (`GapAnalysisIcon` por framework, ou ícone do framework se houver).
-6. Atualizar memória `mem://ux/dashboard/grc-maturity-bars` documentando a nova diretriz.
-
-### Etapa C — Validação
-1. Empresa com 1 risco crítico: card Hero mostra Maturidade derrubada e timeline mostra exposição 100%. Antes da fix, mostrava ~99% saúde.
-2. Novo card de Frameworks: empresa sem frameworks mostra empty state; com 3 frameworks ativos, lista correta com barras.
-
----
-
-## Pergunta para você
-Quer que eu execute:
-- **(A) só o bug fix** — alinha Maturidade GRC com Evolução de Risco mantendo o card atual de 8 barras; ou
-- **(A + B)** — bug fix + substituir o card por "Frameworks de Compliance" (recomendado).
-
-Sem mudança extra, sigo com **A + B**.
-
-## Arquivos impactados (A + B)
-- `src/hooks/useRadarChartData.tsx` (fix Riscos/Incidentes)
-- `src/hooks/useFrameworksOverview.ts` (novo)
-- `src/components/dashboard/FrameworksOverviewCard.tsx` (novo, substitui `MultiDimensionalRadar`)
-- `src/pages/Dashboard.tsx` (troca do componente)
-- `mem://ux/dashboard/grc-maturity-bars` (atualizar diretriz)
+Se preferir o caminho 100% B (só badges tipográficos, zero risco legal), me avise. Caso contrário, sigo com o híbrido acima.

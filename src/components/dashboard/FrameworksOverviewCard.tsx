@@ -4,6 +4,7 @@ import { CornerAccent } from '@/components/identity/CornerAccent';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { GapAnalysisIcon } from '@/components/icons';
+import { FrameworkBadge } from '@/components/frameworks/FrameworkBadge';
 import { ChevronRight, CheckCircle2, Target } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useFrameworksOverview, type FrameworkOverview } from '@/hooks/useFrameworksOverview';
@@ -45,9 +46,7 @@ const FrameworkRow = ({
           onClick={onClick}
           className="group flex items-center gap-3 w-full px-2 py-2.5 rounded-md hover:bg-muted/40 transition-colors text-left"
         >
-          <div className="flex-shrink-0 h-7 w-7 rounded-md bg-muted/60 flex items-center justify-center group-hover:bg-muted transition-colors">
-            <GapAnalysisIcon className="h-3.5 w-3.5 text-muted-foreground" />
-          </div>
+          <FrameworkBadge name={item.nome} versao={item.versao} size="sm" />
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-2 mb-1.5">
