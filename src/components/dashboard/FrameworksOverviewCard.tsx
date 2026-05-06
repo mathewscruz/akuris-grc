@@ -187,7 +187,7 @@ export const FrameworksOverviewCard = () => {
               <FrameworkRow
                 key={item.id}
                 item={item}
-                onClick={() => navigate(`/gap-analysis/${item.id}`)}
+                onClick={() => navigate(`/gap-analysis/framework/${item.id}`)}
               />
             ))}
             {remaining > 0 && (
