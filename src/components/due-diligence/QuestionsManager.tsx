@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { resolveQuestionTypeTone } from '@/lib/status-tone';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -250,19 +252,7 @@ export function QuestionsManager({ templateId, templateName }: QuestionsManagerP
     return types[type as keyof typeof types] || type;
   };
 
-  const getTypeColor = (type: string) => {
-    const colors = {
-      'text': 'bg-blue-100 text-blue-800',
-      'textarea': 'bg-blue-100 text-blue-800',
-      'select': 'bg-green-100 text-green-800',
-      'radio': 'bg-green-100 text-green-800',
-      'checkbox': 'bg-green-100 text-green-800',
-      'file': 'bg-purple-100 text-purple-800',
-      'score': 'bg-orange-100 text-orange-800',
-      'date': 'bg-gray-100 text-gray-800'
-    };
-    return colors[type as keyof typeof colors] || 'bg-gray-100 text-gray-800';
-  };
+  // Tipo de pergunta agora via resolveQuestionTypeTone (StatusBadge)
 
   if (loading) {
     return (
@@ -445,13 +435,13 @@ export function QuestionsManager({ templateId, templateName }: QuestionsManagerP
                     <div className="flex-1 min-w-0 space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <h4 className="font-medium text-sm truncate">{question.titulo}</h4>
-                        <Badge variant="secondary" className="text-xs h-5 px-2">
+                        <StatusBadge size="sm" {...resolveQuestionTypeTone(question.tipo)}>
                           {getTypeLabel(question.tipo)}
-                        </Badge>
+                        </StatusBadge>
                         {question.obrigatoria && (
-                          <Badge variant="destructive" className="text-xs h-5 px-2">Obrigatória</Badge>
+                          <StatusBadge size="sm" tone="destructive">Obrigatória</StatusBadge>
                         )}
-                        <Badge variant="outline" className="text-xs h-5 px-2">Peso: {question.peso}</Badge>
+                        <StatusBadge size="sm" tone="neutral">Peso: {question.peso}</StatusBadge>
                       </div>
                       {question.descricao && (
                         <p className="text-xs text-muted-foreground truncate">{question.descricao}</p>

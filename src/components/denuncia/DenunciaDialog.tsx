@@ -4,6 +4,8 @@ import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { resolveGravidadeTone } from '@/lib/status-tone';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -250,11 +252,11 @@ export function DenunciaDialog({
     return `${datePart} ${timePart}`;
   };
 
-  const gravidadeMap = {
-    baixa: { label: 'Baixa', color: 'bg-green-100 text-green-800' },
-    media: { label: 'Média', color: 'bg-yellow-100 text-yellow-800' },
-    alta: { label: 'Alta', color: 'bg-orange-100 text-orange-800' },
-    critica: { label: 'Crítica', color: 'bg-red-100 text-red-800' }
+  const gravidadeLabel: Record<string, string> = {
+    baixa: 'Baixa',
+    media: 'Média',
+    alta: 'Alta',
+    critica: 'Crítica',
   };
 
   return (
@@ -297,9 +299,9 @@ export function DenunciaDialog({
                   <div>
                     <Label className="text-xs text-muted-foreground">Gravidade</Label>
                     <div>
-                      <Badge className={gravidadeMap[denuncia.gravidade as keyof typeof gravidadeMap]?.color}>
-                        {gravidadeMap[denuncia.gravidade as keyof typeof gravidadeMap]?.label}
-                      </Badge>
+                      <StatusBadge {...resolveGravidadeTone(denuncia.gravidade)}>
+                        {gravidadeLabel[denuncia.gravidade] || denuncia.gravidade}
+                      </StatusBadge>
                     </div>
                   </div>
 

@@ -1,5 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { StatusBadge, type StatusTone } from '@/components/ui/status-badge';
 import { Progress } from '@/components/ui/progress';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { BarChart3, TrendingUp, Users, FileText, Download } from 'lucide-react';
@@ -183,19 +184,13 @@ export function ReportsView() {
         <CardContent className="space-y-4">
           <div className="space-y-3">
             {reportsData?.categoryPerformance.map((category, index) => {
-              const colors = [
-                'bg-green-100 text-green-800',
-                'bg-blue-100 text-blue-800', 
-                'bg-purple-100 text-purple-800',
-                'bg-orange-100 text-orange-800',
-                'bg-red-100 text-red-800'
-              ];
+              const tones: StatusTone[] = ['success', 'info', 'primary', 'warning', 'destructive'];
               return (
                 <div key={category.category} className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <Badge className={colors[index % colors.length]}>
+                    <StatusBadge size="sm" tone={tones[index % tones.length]}>
                       {category.category}
-                    </Badge>
+                    </StatusBadge>
                     <span className="font-medium">{category.score.toFixed(1)}%</span>
                   </div>
                   <Progress value={category.score} className="w-32" />

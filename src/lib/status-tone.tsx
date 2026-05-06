@@ -490,8 +490,73 @@ export const resolveItemAuditoriaStatusTone = (raw?: string | null): ToneResult 
   }
 };
 
-// Alias semântico — Prioridade (alta/media/baixa)
+// Alias semântico — Prioridade / Gravidade (alta/media/baixa/critica)
 export const resolvePrioridadeTone = resolveCriticidadeTone;
+export const resolveGravidadeTone = resolveCriticidadeTone;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Categoria (seguranca, privacidade, compliance, financeiro, operacional,
+// qualidade, governanca, esg, geral) — categorias semânticas para badges
+// ─────────────────────────────────────────────────────────────────────────────
+export const resolveCategoriaTone = (raw?: string | null): ToneResult => {
+  const v = norm(raw);
+  switch (v) {
+    case 'seguranca':
+    case 'security':
+      return { tone: 'destructive' };
+    case 'privacidade':
+    case 'privacy':
+    case 'lgpd':
+    case 'gdpr':
+      return { tone: 'info' };
+    case 'compliance':
+    case 'conformidade':
+      return { tone: 'info' };
+    case 'financeiro':
+    case 'finance':
+      return { tone: 'success' };
+    case 'operacional':
+    case 'operations':
+      return { tone: 'primary' };
+    case 'qualidade':
+    case 'quality':
+      return { tone: 'warning' };
+    case 'governanca':
+    case 'governance':
+      return { tone: 'primary' };
+    case 'esg':
+      return { tone: 'success' };
+    case 'geral':
+    case 'general':
+    default:
+      return { tone: 'neutral' };
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tipo de pergunta (text, textarea, select, radio, checkbox, file, score, date)
+// ─────────────────────────────────────────────────────────────────────────────
+export const resolveQuestionTypeTone = (raw?: string | null): ToneResult => {
+  const v = norm(raw);
+  switch (v) {
+    case 'text':
+    case 'textarea':
+      return { tone: 'info' };
+    case 'select':
+    case 'radio':
+    case 'checkbox':
+    case 'booleano':
+      return { tone: 'success' };
+    case 'file':
+      return { tone: 'primary' };
+    case 'score':
+      return { tone: 'warning' };
+    case 'date':
+      return { tone: 'neutral' };
+    default:
+      return { tone: 'neutral' };
+  }
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Contratos: status de marco (pendente, concluido, atrasado, cancelado)
