@@ -1163,12 +1163,29 @@ input:-webkit-autofill:focus {
 
 /* DEMO DIALOG */
 .lp-demo-dialog {
-  background: linear-gradient(180deg, var(--lp-ink-1) 0%, var(--lp-ink-0) 100%) !important;
-  color: var(--lp-text);
-  border: 1px solid var(--lp-line) !important;
+  --lp-ink-0: #0a1628;
+  --lp-ink-1: #0f1d33;
+  --lp-ink-2: #16243d;
+  --lp-ink-3: #1d2c4a;
+  --lp-line: #233149;
+  --lp-line-2: #34466a;
+  --lp-text: #f5f7fa;
+  --lp-text-2: #c7cdd6;
+  --lp-text-3: #94a0b3;
+  --lp-text-4: #6b7890;
+  --lp-accent: #7552ff;
+  --lp-accent-2: #cfc4ff;
+  --lp-sans: 'DM Sans', system-ui, sans-serif;
+  --lp-serif: 'DM Sans', system-ui, sans-serif;
+  --lp-mono: 'JetBrains Mono', ui-monospace, monospace;
+  background: linear-gradient(180deg, #0f1d33 0%, #0a1628 100%) !important;
+  color: #f5f7fa;
+  border: 1px solid #233149 !important;
   border-radius: 20px !important;
   padding: 36px !important;
   gap: 0 !important;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  box-shadow: 0 40px 120px -30px rgba(0,0,0,0.6) !important;
 }
 .lp-demo-head { display: flex; flex-direction: column; gap: 12px; margin-bottom: 28px; }
 .lp-demo-title {
