@@ -56,8 +56,13 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const body = await req.json().catch(() => ({})) as { force?: boolean }
+    const body = await req.json().catch(() => ({})) as {
+      force?: boolean;
+      context?: 'fresh_login' | 'session_restore';
+    }
     const force = !!body.force
+    // Default mantém retrocompat (skip de 24h). 'fresh_login' nunca pula.
+    const context = body.context === 'fresh_login' ? 'fresh_login' : 'session_restore'
 
     // Always operate on the caller's own identity. Body-supplied userId/email are ignored.
     const userId = callerUserId
