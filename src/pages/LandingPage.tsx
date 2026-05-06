@@ -1,10 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import akurisLogo from "@/assets/akuris-logo.png";
-import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { AkurisPulse } from "@/components/ui/AkurisPulse";
 import { useLandingReveal, useCountUp, useScrolled } from "@/hooks/useLandingAnimations";
+import { DemoRequestDialog } from "@/components/landing/DemoRequestDialog";
 
 const modules = [
   {
@@ -86,15 +84,7 @@ const frameworks = [
 
 const LandingPage = () => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    company: "",
-    phone: "",
-    message: "",
-  });
-  const [honeypot, setHoneypot] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [demoOpen, setDemoOpen] = useState(false);
 
   useEffect(() => {
     document.documentElement.classList.add("lp-html");
@@ -104,30 +94,6 @@ const LandingPage = () => {
   useLandingReveal();
   const scrolled = useScrolled(64);
   const score = useCountUp(87, 1200);
-
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (honeypot) return;
-    setIsSubmitting(true);
-    try {
-      const { error } = await supabase.functions.invoke("send-contact-email", {
-        body: formData,
-      });
-      if (error) throw error;
-      toast.success("Mensagem enviada. Nosso time retorna em até 1 dia útil.");
-      setFormData({ name: "", email: "", company: "", phone: "", message: "" });
-    } catch {
-      toast.error("Não foi possível enviar agora. Tente novamente em instantes.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   const scrollTo = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -152,7 +118,7 @@ const LandingPage = () => {
             <button className="lp-btn lp-btn-ghost" onClick={() => navigate("/auth")}>
               Acessar plataforma
             </button>
-            <button className="lp-btn lp-btn-primary" onClick={() => scrollTo("contato")}>
+            <button className="lp-btn lp-btn-primary" onClick={() => setDemoOpen(true)}>
               Solicitar demo <span className="arr">→</span>
             </button>
           </div>
@@ -173,7 +139,7 @@ const LandingPage = () => {
               clareza, não com planilhas.
             </p>
             <div className="lp-hero-cta">
-              <button className="lp-btn lp-btn-primary" onClick={() => scrollTo("contato")}>
+              <button className="lp-btn lp-btn-primary" onClick={() => setDemoOpen(true)}>
                 Solicitar demonstração <span className="arr">→</span>
               </button>
               <button className="lp-btn lp-btn-ghost" onClick={() => scrollTo("modulos")}>
@@ -515,64 +481,27 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* CTA + FORM */}
-      <section className="lp-cta" id="contato">
+      {/* CTA BAND */}
+      <section className="lp-cta lp-cta-band" id="contato">
         <div className="lp-container">
-          <div className="lp-cta-inner">
+          <div className="lp-cta-band-grid" data-reveal>
             <div>
               <span className="lp-eyebrow">Vamos conversar</span>
               <h2>
                 Mostre a sua matriz de risco. <em>Nós mostramos onde o Akuris encaixa.</em>
               </h2>
             </div>
-          </div>
-
-          <form className="lp-form" onSubmit={handleSubmit} autoComplete="off">
-            <input
-              type="text"
-              tabIndex={-1}
-              autoComplete="off"
-              value={honeypot}
-              onChange={(e) => setHoneypot(e.target.value)}
-              style={{ position: "absolute", left: "-9999px", opacity: 0 }}
-              aria-hidden="true"
-            />
-            <div className="lp-field">
-              <label htmlFor="lp-name">Nome</label>
-              <input id="lp-name" name="name" required value={formData.name} onChange={handleInputChange} />
-            </div>
-            <div className="lp-field">
-              <label htmlFor="lp-email">E-mail corporativo</label>
-              <input id="lp-email" type="email" name="email" required value={formData.email} onChange={handleInputChange} />
-            </div>
-            <div className="lp-field">
-              <label htmlFor="lp-company">Empresa</label>
-              <input id="lp-company" name="company" required value={formData.company} onChange={handleInputChange} />
-            </div>
-            <div className="lp-field">
-              <label htmlFor="lp-phone">Telefone</label>
-              <input id="lp-phone" name="phone" value={formData.phone} onChange={handleInputChange} />
-            </div>
-            <div className="lp-field full">
-              <label htmlFor="lp-msg">Conte-nos brevemente sobre seu cenário</label>
-              <textarea id="lp-msg" name="message" rows={3} value={formData.message} onChange={handleInputChange} />
-            </div>
-            <div className="full" style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
-              <button type="submit" className="lp-btn lp-btn-primary" disabled={isSubmitting}>
-                {isSubmitting ? (
-                  <>
-                    <AkurisPulse size={18} /> Enviando
-                  </>
-                ) : (
-                  <>
-                    Solicitar demonstração <span className="arr">→</span>
-                  </>
-                )}
+            <div className="lp-cta-meta">
+              <span className="lp-cta-meta-eyebrow">Demonstração · 30 minutos</span>
+              <button type="button" className="lp-btn-pill" onClick={() => setDemoOpen(true)}>
+                Solicitar demonstração <span className="arr">→</span>
               </button>
             </div>
-          </form>
+          </div>
         </div>
       </section>
+
+      <DemoRequestDialog open={demoOpen} onOpenChange={setDemoOpen} />
 
 
       {/* FOOTER */}
