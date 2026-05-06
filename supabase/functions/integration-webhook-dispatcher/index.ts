@@ -162,7 +162,7 @@ function buildTeamsPayload(titulo: string, descricao: string | undefined, evento
     "sections": [{
       "activityTitle": `${grav.emoji} ${titulo}`,
       "activitySubtitle": `${modulo} • ${ts}`,
-      "activityImage": "https://governaii-grc.lovable.app/akuris-logo.png",
+      "activityImage": "https://akuris-grc.lovable.app/akuris-logo.png",
       "facts": facts,
       "text": descricao || '',
       "markdown": true

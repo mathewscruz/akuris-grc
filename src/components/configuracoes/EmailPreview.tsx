@@ -40,7 +40,7 @@ export function EmailPreview({ assunto, conteudoHtml, imagemUrl }: EmailPreviewP
       .footer a{color:#7552ff;text-decoration:none}
     </style></head><body>
       <div class="container">
-        <div class="header"><img src="https://governaii-grc.lovable.app/akuris-logo-email.png" alt="Akuris" /></div>
+        <div class="header"><img src="https://akuris-grc.lovable.app/akuris-logo-email.png" alt="Akuris" /></div>
         <div class="accent"></div>
         <div class="titleSection"><h1>${title}</h1></div>
         <div class="content">${safeImage}${conteudoHtml || '<p style="color:#a0aec0">Conteúdo do e-mail aparecerá aqui…</p>'}</div>
