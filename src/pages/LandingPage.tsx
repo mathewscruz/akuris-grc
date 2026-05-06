@@ -157,7 +157,7 @@ const LandingPage = () => {
       <section className="lp-hero" id="produto">
         <div className="lp-container lp-hero-grid">
           <div>
-            <span className="lp-eyebrow">Plataforma GRC · Edição 2026</span>
+            
             <h1>
               Governança, riscos e&nbsp;compliance em um <em>único lugar.</em>
             </h1>
@@ -268,32 +268,6 @@ const LandingPage = () => {
                 ))}
               </div>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* PROBLEMA */}
-      <section className="lp-section">
-        <div className="lp-container">
-          <div className="lp-section-head">
-            <span className="lp-eyebrow">O problema</span>
-            <h2>
-              Compliance virou uma colcha de retalhos.{" "}
-              <em>A sua organização paga o preço.</em>
-            </h2>
-          </div>
-          <div className="lp-problem-grid">
-            {[
-              ["01 / Operação", "Planilhas que envelhecem rápido demais", "Controles em Excel, evidências em e-mail, riscos em PowerPoint. Quando o auditor chega, ninguém sabe qual versão é a verdadeira."],
-              ["02 / Visibilidade", "O board pergunta, e a resposta demora dias", "“Qual a nossa exposição?” deveria ser uma pergunta de cinco minutos. Sem fonte única entre GRC, jurídico e segurança, vira projeto de duas semanas."],
-              ["03 / Escala", "Cada novo framework é um novo silo", "LGPD, ISO 27001, SOC 2, PCI DSS. Cada padrão chega com sua planilha e seus donos. Os controles se sobrepõem, mas os esforços não."],
-            ].map(([num, h, p]) => (
-              <div className="lp-problem-cell" key={num}>
-                <div className="num">{num}</div>
-                <h3>{h}</h3>
-                <p>{p}</p>
-              </div>
-            ))}
           </div>
         </div>
       </section>

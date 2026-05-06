@@ -489,7 +489,7 @@ input:-webkit-autofill:focus {
   --lp-r-3: 14px;
   --lp-container: 1240px;
   --lp-pad: 32px;
-  --lp-serif: 'DM Serif Display', Georgia, serif;
+  --lp-serif: 'DM Sans', system-ui, sans-serif;
   --lp-sans: 'DM Sans', system-ui, sans-serif;
   --lp-mono: 'JetBrains Mono', ui-monospace, monospace;
 
@@ -611,7 +611,7 @@ input:-webkit-autofill:focus {
 }
 .lp-hero h1 {
   font-family: var(--lp-serif);
-  font-weight: 400;
+  font-weight: 300;
   font-size: clamp(48px, 6vw, 84px);
   line-height: 1.02;
   letter-spacing: -0.025em;
@@ -619,7 +619,7 @@ input:-webkit-autofill:focus {
   color: var(--lp-text);
   text-wrap: balance;
 }
-.lp-hero h1 em { font-style: italic; color: var(--lp-accent-2); font-weight: 400; }
+.lp-hero h1 em { font-style: italic; color: var(--lp-accent-2); font-weight: 300; }
 .lp-hero p.lede {
   font-size: 18px;
   line-height: 1.55;
@@ -753,7 +753,7 @@ input:-webkit-autofill:focus {
 }
 .lp-section-head h2 {
   font-family: var(--lp-serif);
-  font-weight: 400;
+  font-weight: 300;
   font-size: clamp(34px, 4vw, 52px);
   line-height: 1.05;
   letter-spacing: -0.02em;
@@ -761,7 +761,7 @@ input:-webkit-autofill:focus {
   color: var(--lp-text);
   text-wrap: balance;
 }
-.lp-section-head h2 em { font-style: italic; color: var(--lp-accent-2); font-weight: 400; }
+.lp-section-head h2 em { font-style: italic; color: var(--lp-accent-2); font-weight: 300; }
 .lp-section-head p {
   color: var(--lp-text-2);
   font-size: 17px;
@@ -995,7 +995,7 @@ input:-webkit-autofill:focus {
 .lp-cta-inner { display: grid; grid-template-columns: 1fr auto; gap: 48px; align-items: end; }
 .lp-cta h2 {
   font-family: var(--lp-serif);
-  font-weight: 400;
+  font-weight: 300;
   font-size: clamp(40px, 5.4vw, 72px);
   line-height: 1;
   letter-spacing: -0.025em;
@@ -1003,7 +1003,7 @@ input:-webkit-autofill:focus {
   color: var(--lp-text);
   text-wrap: balance;
 }
-.lp-cta h2 em { font-style: italic; color: var(--lp-accent-2); font-weight: 400; }
+.lp-cta h2 em { font-style: italic; color: var(--lp-accent-2); font-weight: 300; }
 
 /* Form */
 .lp-form { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 24px; margin-top: 40px; }
@@ -1033,7 +1033,7 @@ input:-webkit-autofill:focus {
 /* Big wordmark */
 .lp-bigmark {
   font-family: var(--lp-serif);
-  font-weight: 400;
+  font-weight: 300;
   font-size: clamp(120px, 22vw, 320px);
   line-height: 0.85;
   letter-spacing: -0.05em;
