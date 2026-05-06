@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { AkurisPulse } from "@/components/ui/AkurisPulse";
 import { useRadarChartData, RadarDataPoint } from "@/hooks/useRadarChartData";
 import { useGrcMaturityScore } from "@/hooks/useGrcMaturityScore";
 import { useNavigate } from "react-router-dom";
