@@ -101,6 +101,10 @@ const LandingPage = () => {
     return () => document.documentElement.classList.remove("lp-html");
   }, []);
 
+  useLandingReveal();
+  const scrolled = useScrolled(64);
+  const score = useCountUp(87, 1200);
+
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
