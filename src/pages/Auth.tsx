@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth, MFA_PENDING_KEY } from '@/components/AuthProvider';
@@ -21,6 +21,7 @@ import { LoadingOverlay } from '@/components/ui/LoadingOverlay';
 import { AkurisMarkPattern } from '@/components/identity/AkurisMarkPattern';
 import { CornerAccent } from '@/components/identity/CornerAccent';
 import { RiscosIcon, ControlesIcon, GapAnalysisIcon } from '@/components/icons';
+
 const Auth = () => {
   const { user, loading } = useAuth();
   const { t } = useLanguage();
@@ -31,31 +32,18 @@ const Auth = () => {
   const [forgotPasswordDialogOpen, setForgotPasswordDialogOpen] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
 
-  // Máquina de estados única do fluxo de login.
+  // Máquina de estados:
   // - idle: form normal
-  // - authenticating: validando credenciais e decidindo MFA → overlay
-  // - mfa_required: precisa código MFA → tela MFA
-  // - verifying_mfa: validando OTP + restabelecendo sessão → overlay
-  // - finalizing: sessão pronta, aguardando AuthProvider propagar user → overlay
-  type AuthPhase = 'idle' | 'authenticating' | 'mfa_required' | 'verifying_mfa' | 'finalizing';
+  // - authenticating: validando credenciais e enviando código → overlay
+  // - mfa_required: tela MFA visível
+  // - finalizing: MFA validado, aguardando AuthProvider expor o user → overlay
+  type AuthPhase = 'idle' | 'authenticating' | 'mfa_required' | 'finalizing';
   const [phase, setPhase] = useState<AuthPhase>('idle');
   const [mfaUserId, setMfaUserId] = useState('');
   const [mfaEmail, setMfaEmail] = useState('');
 
-  // Trava síncrona — declarada no topo para respeitar a regra de hooks.
-  const mfaInProgressRef = useRef(false);
-
-  const setMfaPendingFlag = (pending: boolean) => {
-    try {
-      if (pending) sessionStorage.setItem(MFA_PENDING_KEY, '1');
-      else sessionStorage.removeItem(MFA_PENDING_KEY);
-    } catch {
-      // ignore
-    }
-  };
-
+  const showOverlay = phase === 'authenticating' || phase === 'finalizing';
   const isBusy = phase !== 'idle';
-  const showOverlay = phase === 'authenticating' || phase === 'verifying_mfa' || phase === 'finalizing';
 
   const loginSchema = z.object({
     email: z.string().min(1, t('auth.validationEmailRequired')).email(t('auth.validationEmailInvalid')),
@@ -78,11 +66,8 @@ const Auth = () => {
     { Icon: GapAnalysisIcon, title: t('auth.pillarGapAnalysis'), desc: t('auth.pillarGapAnalysisDesc') },
   ];
 
+  // Carrega lembrete de e-mail salvo.
   useEffect(() => {
-    // Limpa qualquer flag MFA pendente ao montar a tela de login —
-    // garante que recargas/voltas para /auth não fiquem com sessão escondida.
-    try { sessionStorage.removeItem(MFA_PENDING_KEY); } catch { /* ignore */ }
-
     const savedEmail = localStorage.getItem('akuris_remember_email');
     const savedRemember = localStorage.getItem('akuris_remember_me') === 'true';
     if (savedEmail && savedRemember) {
@@ -91,18 +76,52 @@ const Auth = () => {
     }
   }, []);
 
-  // Salvaguarda: se ficamos em 'finalizing' sem o AuthProvider expor o user,
-  // forçamos um refresh de sessão para destravar o overlay.
+  // Detecta MFA pendente vindo de sessão restaurada (ex.: usuário ficou >24h
+  // sem usar e voltou — Supabase tem sessão persistida, mas check-mfa-session
+  // retornou false, então o AuthProvider marcou MFA_PENDING_KEY).
   useEffect(() => {
-    if (phase !== 'finalizing' || user) return;
-    const timer = setTimeout(() => {
-      supabase.auth.refreshSession().catch(() => { /* ignore */ });
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, [phase, user]);
+    if (loading) return;
+    if (phase !== 'idle') return;
+    let mfaPending = false;
+    try { mfaPending = sessionStorage.getItem(MFA_PENDING_KEY) === '1'; } catch { /* ignore */ }
+    if (!mfaPending) return;
 
-  // Só navega para dashboard quando o fluxo NÃO está aguardando MFA.
-  // Durante 'authenticating', 'verifying_mfa' e 'finalizing' o overlay cobre tudo.
+    // Recupera dados da sessão Supabase (que existe, mas não foi exposta pelo provider).
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!session?.user) {
+        try { sessionStorage.removeItem(MFA_PENDING_KEY); } catch { /* ignore */ }
+        return;
+      }
+      setMfaUserId(session.user.id);
+      setMfaEmail(session.user.email ?? '');
+      // Pede o código para o usuário (ou reutiliza o ativo).
+      try {
+        const resp = await supabase.functions.invoke('send-mfa-code', { body: {} });
+        if (resp.error || !resp.data?.success) {
+          logger.error('Falha ao enviar MFA em sessão restaurada', {
+            module: 'Auth',
+            error: String(resp.error || resp.data?.error || 'desconhecido'),
+          });
+          toast.error(t('auth.errorAuth'));
+          await supabase.auth.signOut();
+          try { sessionStorage.removeItem(MFA_PENDING_KEY); } catch { /* ignore */ }
+          return;
+        }
+      } catch (err) {
+        logger.error('Exceção ao enviar MFA em sessão restaurada', {
+          module: 'Auth',
+          error: String(err),
+        });
+        toast.error(t('auth.errorAuth'));
+        await supabase.auth.signOut();
+        try { sessionStorage.removeItem(MFA_PENDING_KEY); } catch { /* ignore */ }
+        return;
+      }
+      setPhase('mfa_required');
+    });
+  }, [loading, phase, t]);
+
+  // Só navega quando NÃO está no fluxo MFA.
   if (!loading && user && phase !== 'mfa_required') {
     return <Navigate to="/dashboard" replace />;
   }
@@ -122,7 +141,6 @@ const Auth = () => {
     );
   }
 
-
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
@@ -137,11 +155,9 @@ const Auth = () => {
       return;
     }
 
-    // CRÍTICO: marcar MFA como pendente ANTES do signInWithPassword.
-    // Assim, mesmo que o evento SIGNED_IN dispare antes de decidirmos,
-    // o AuthProvider mantém user/session = null e não há flash do dashboard.
-    mfaInProgressRef.current = true;
-    setMfaPendingFlag(true);
+    // Marca pending ANTES do signInWithPassword, para que o AuthProvider não
+    // exponha a sessão entre o SIGNED_IN e o resultado da verificação MFA.
+    try { sessionStorage.setItem(MFA_PENDING_KEY, '1'); } catch { /* ignore */ }
     setPhase('authenticating');
 
     try {
@@ -152,6 +168,13 @@ const Auth = () => {
       if (error) throw error;
 
       const userId = data.user?.id;
+      if (!userId) {
+        await supabase.auth.signOut();
+        try { sessionStorage.removeItem(MFA_PENDING_KEY); } catch { /* ignore */ }
+        toast.error(t('auth.errorAuth'));
+        setPhase('idle');
+        return;
+      }
 
       if (rememberMe) {
         localStorage.setItem('akuris_remember_email', email.trim());
@@ -161,40 +184,19 @@ const Auth = () => {
         localStorage.removeItem('akuris_remember_me');
       }
 
-      if (!userId) {
-        // Caso degenerado — sem userId não há como continuar.
-        await supabase.auth.signOut();
-        setMfaPendingFlag(false);
-        mfaInProgressRef.current = false;
-        toast.error(t('auth.errorAuth'));
-        setPhase('idle');
-        return;
-      }
-
-      // Decide se MFA é necessário. Política: MFA é OBRIGATÓRIO sempre, exceto
-      // quando o backend confirma explicitamente uma sessão MFA válida nas últimas 24h.
-      // Qualquer falha de envio mantém o usuário no fluxo de MFA — nunca libera direto.
+      // Pergunta ao backend se o MFA pode ser pulado (sessão MFA válida nas últimas 24h).
       let mfaSkipped = false;
       let mfaSendFailed = false;
       try {
-        const mfaResponse = await supabase.functions.invoke('send-mfa-code', {
-          body: {},
-        });
-
+        const mfaResponse = await supabase.functions.invoke('send-mfa-code', { body: {} });
         if (mfaResponse.error) {
-          logger.error('Erro ao invocar send-mfa-code', {
-            module: 'Auth',
-            error: String(mfaResponse.error),
-          });
+          logger.error('Erro ao invocar send-mfa-code', { module: 'Auth', error: String(mfaResponse.error) });
           mfaSendFailed = true;
         } else if (mfaResponse.data?.success && mfaResponse.data?.skipped) {
-          // Único caminho legítimo de bypass: sessão MFA válida nas últimas 24h.
           mfaSkipped = true;
         } else if (mfaResponse.data?.success) {
-          // success=true cobre tanto novo envio quanto alreadySent → segue para MFA.
           mfaSkipped = false;
         } else {
-          // Backend retornou erro controlado (ex.: 500). Tratar como falha de envio.
           logger.error('send-mfa-code retornou erro controlado', {
             module: 'Auth',
             error: String(mfaResponse.data?.error || 'desconhecido'),
@@ -202,41 +204,29 @@ const Auth = () => {
           mfaSendFailed = true;
         }
       } catch (mfaError) {
-        logger.error('Exceção ao chamar send-mfa-code', {
-          module: 'Auth',
-          error: String(mfaError),
-        });
+        logger.error('Exceção ao chamar send-mfa-code', { module: 'Auth', error: String(mfaError) });
         mfaSendFailed = true;
       }
 
       if (mfaSendFailed) {
-        // Falha de envio NÃO pode liberar acesso. Aborta o login.
         await supabase.auth.signOut();
-        setMfaPendingFlag(false);
-        mfaInProgressRef.current = false;
+        try { sessionStorage.removeItem(MFA_PENDING_KEY); } catch { /* ignore */ }
         toast.error(t('auth.errorAuth'));
         setPhase('idle');
         return;
       }
 
       if (!mfaSkipped) {
-        // Mantém a sessão ativa (porém oculta via MFA_PENDING_KEY) para que
-        // a Edge Function verify-mfa-code receba um JWT válido e identifique
-        // o usuário pelo claim `sub`. NÃO chamar signOut aqui — quebra o MFA.
         setMfaUserId(userId);
         setMfaEmail(email.trim());
         setPhase('mfa_required');
         return;
       }
 
-      // Fluxo direto (sessão MFA válida nas últimas 24h).
-      // A flag MFA estava ativa quando o SIGNED_IN foi disparado, então o
-      // AuthProvider descartou aquela sessão. Limpamos a flag e forçamos
-      // um refresh para que um novo evento (TOKEN_REFRESHED) seja emitido
-      // e o AuthProvider passe a expor a sessão — sem isso, o usuário
-      // ficaria preso no overlay de "finalizing" até dar refresh manual.
-      setMfaPendingFlag(false);
-      mfaInProgressRef.current = false;
+      // Bypass legítimo: backend confirmou sessão MFA válida.
+      // O AuthProvider acabará liberando o user via check-mfa-session, mas
+      // limpamos a flag e forçamos um refresh para acelerar a propagação.
+      try { sessionStorage.removeItem(MFA_PENDING_KEY); } catch { /* ignore */ }
       try {
         await supabase.auth.refreshSession();
       } catch (refreshError) {
@@ -248,49 +238,27 @@ const Auth = () => {
       toast.success(t('auth.loginSuccess'));
       setPhase('finalizing');
     } catch (error: any) {
-      // Falha no signInWithPassword — limpar flags.
-      setMfaPendingFlag(false);
-      mfaInProgressRef.current = false;
-      logger.warn('Login failed', {
-        module: 'Auth',
-        action: 'login',
-        details: error?.message,
-      });
+      try { sessionStorage.removeItem(MFA_PENDING_KEY); } catch { /* ignore */ }
+      logger.warn('Login failed', { module: 'Auth', action: 'login', details: error?.message });
       toast.error(getErrorMessage(error));
       setPhase('idle');
     }
   };
 
   const handleMFAVerified = async () => {
-    setPhase('verifying_mfa');
+    setPhase('finalizing');
+    try { sessionStorage.removeItem(MFA_PENDING_KEY); } catch { /* ignore */ }
     try {
-      // Sessão já está ativa (foi mantida durante o MFA via flag MFA_PENDING_KEY).
-      // Basta liberar a flag e forçar o AuthProvider a reemitir o evento expondo o user.
-      setMfaPendingFlag(false);
-      mfaInProgressRef.current = false;
-
-      try {
-        await supabase.auth.refreshSession();
-      } catch (refreshError) {
-        logger.warn('Falha ao refrescar sessão pós-MFA', {
-          module: 'Auth',
-          error: String(refreshError),
-        });
-      }
-
-      toast.success(t('auth.loginSuccess'));
-      setPhase('finalizing');
-    } catch (err) {
-      toast.error(t('auth.errorAuth'));
-      setPhase('idle');
+      await supabase.auth.refreshSession();
+    } catch (refreshError) {
+      logger.warn('Falha ao refrescar sessão pós-MFA', { module: 'Auth', error: String(refreshError) });
     }
+    toast.success(t('auth.loginSuccess'));
   };
 
   const handleMFACancel = async () => {
-    // Garantir que nenhuma sessão residual permaneça e limpar a flag MFA.
     try { await supabase.auth.signOut(); } catch { /* ignore */ }
-    setMfaPendingFlag(false);
-    mfaInProgressRef.current = false;
+    try { sessionStorage.removeItem(MFA_PENDING_KEY); } catch { /* ignore */ }
     setMfaUserId('');
     setMfaEmail('');
     setPassword('');
@@ -313,16 +281,13 @@ const Auth = () => {
     <div className="min-h-screen flex flex-col lg:flex-row bg-[hsl(230,25%,7%)]">
       {/* ===== BRAND PANEL (desktop only) ===== */}
       <div className="hidden lg:flex lg:w-[58%] relative flex-col justify-between sidebar-gradient overflow-hidden p-14">
-        {/* Pattern de marca + glow único */}
         <AkurisMarkPattern opacity={0.05} />
         <div className="absolute top-1/3 -left-24 w-[420px] h-[420px] bg-[hsl(252,100%,66%,0.08)] rounded-full blur-[120px] pointer-events-none" />
 
-        {/* Topo: logo */}
         <div className="relative z-10 landing-fade-in-1">
           <img src={logoImage} alt="Akuris" className="h-9 object-contain" />
         </div>
 
-        {/* Centro: narrativa editorial */}
         <div className="relative z-10 max-w-xl space-y-10 landing-fade-in-2">
           <div className="space-y-5">
             <h1 className="text-4xl lg:text-5xl font-semibold text-white leading-[1.05] tracking-tight">
@@ -334,7 +299,6 @@ const Auth = () => {
             </p>
           </div>
 
-          {/* Pilares como lista editorial — sem caixas */}
           <ul className="space-y-5 landing-fade-in-3">
             {pillars.map((p, i) => (
               <li key={i} className="flex items-start gap-4">
@@ -350,7 +314,6 @@ const Auth = () => {
           </ul>
         </div>
 
-        {/* Rodapé: selo de confiança */}
         <div className="relative z-10 landing-fade-in-4">
           <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mb-5" />
           <p className="text-white/35 text-[11px] tracking-[0.18em] uppercase font-medium">
@@ -359,112 +322,122 @@ const Auth = () => {
         </div>
       </div>
 
-      {/* ===== LOGIN PANEL ===== */}
-      <div className="flex-1 flex flex-col items-center justify-center bg-gradient-to-b from-[hsl(230,25%,7%)] to-[hsl(228,20%,9%)] px-6 py-12 relative overflow-hidden">
-        <AkurisMarkPattern opacity={0.04} />
-        <div className="absolute top-0 right-0 w-72 h-72 bg-primary/5 rounded-full blur-[100px] pointer-events-none" />
+      {/* ===== FORM PANEL ===== */}
+      <div className="flex-1 flex flex-col justify-center items-center px-6 py-10 lg:px-14 relative">
+        <div className="absolute top-6 right-6"><LanguageSelector /></div>
 
-        {/* Header utilitário */}
-        <div className="absolute top-4 right-4 z-20 flex items-center gap-3">
-          <Link
-            to="/"
-            className="hidden sm:inline-flex items-center gap-1 text-xs text-white/40 hover:text-white/70 transition-colors"
-          >
-            <ArrowLeft className="w-3 h-3" />
-            {t('auth.backToSite')}
-          </Link>
-          <LanguageSelector variant="dark" />
+        <div className="lg:hidden mb-8">
+          <img src={logoImage} alt="Akuris" className="h-10 mx-auto object-contain" />
         </div>
 
-        <div className="w-full max-w-sm relative z-10 space-y-8">
-          <div className="lg:hidden text-center landing-fade-in-1">
-            <img src={logoImage} alt="Akuris" className="h-12 mx-auto object-contain" />
-            <p className="text-white/40 text-xs mt-2 tracking-wide">{t('auth.mobileSubtitle')}</p>
+        <div className="w-full max-w-sm space-y-7 landing-fade-in-2">
+          <div className="space-y-2 text-center lg:text-left">
+            <h2 className="text-2xl lg:text-[28px] font-semibold text-white tracking-tight">
+              {t('auth.welcomeBack')}
+            </h2>
+            <p className="text-sm text-white/55">{t('auth.signInToContinue')}</p>
           </div>
 
-          <div className="relative rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-md p-8 shadow-2xl space-y-7 landing-fade-in-2 overflow-hidden">
-            <CornerAccent />
-
-            <div className="space-y-2">
-              <span className="block text-primary/70 text-[10px] tracking-[0.22em] font-medium uppercase">
-                {t('auth.eyebrowWelcome')}
-              </span>
-              <h2 className="text-2xl font-semibold text-white tracking-tight">
-                {t('auth.heading')}
-              </h2>
+          <form onSubmit={handleSignIn} className="space-y-5">
+            <div className="space-y-1.5">
+              <Label htmlFor="email" className="text-xs text-white/65 font-medium tracking-wide">
+                {t('auth.emailLabel')}
+              </Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/35" />
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder={t('auth.emailPlaceholder')}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="pl-10 h-11 bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/30 rounded-lg focus:border-primary/50 focus:ring-1 focus:ring-primary/30"
+                  disabled={isBusy}
+                  autoComplete="email"
+                />
+              </div>
+              {errors.email && <p className="text-xs text-destructive mt-1">{errors.email}</p>}
             </div>
 
-            <form onSubmit={handleSignIn} className="space-y-5">
-              <div className="space-y-1.5 landing-fade-in-3">
-                <Label htmlFor="email" className="text-white/65 text-[11px] tracking-wide font-medium uppercase">{t('auth.email')}</Label>
-                <div className="relative group">
-                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/40 group-focus-within:text-primary transition-colors" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder={t('auth.emailPlaceholder')}
-                    value={email}
-                    onChange={(e) => { setEmail(e.target.value); if (errors.email) setErrors(p => ({ ...p, email: undefined })); }}
-                    autoFocus
-                    className={`h-12 pl-10 rounded-lg bg-[hsl(230,25%,9%)] border-white/[0.08] text-white placeholder:text-white/25 focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition-all ${errors.email ? 'border-destructive' : ''}`}
-                  />
-                </div>
-                {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
-              </div>
-
-              <div className="space-y-1.5 landing-fade-in-4">
-                <Label htmlFor="password" className="text-white/65 text-[11px] tracking-wide font-medium uppercase">{t('auth.password')}</Label>
-                <div className="relative group">
-                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-primary/40 group-focus-within:text-primary transition-colors" />
-                  <Input
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => { setPassword(e.target.value); if (errors.password) setErrors(p => ({ ...p, password: undefined })); }}
-                    className={`h-12 pl-10 pr-11 rounded-lg bg-[hsl(230,25%,9%)] border-white/[0.08] text-white placeholder:text-white/25 focus:border-primary/60 focus:ring-1 focus:ring-primary/30 transition-all ${errors.password ? 'border-destructive' : ''}`}
-                  />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/70 transition-colors">
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-                {errors.password && <p className="text-xs text-destructive">{errors.password}</p>}
-              </div>
-
-              <div className="flex items-center justify-between landing-fade-in-5">
-                <div className="flex items-center space-x-2">
-                  <Checkbox id="remember" checked={rememberMe} onCheckedChange={(c) => setRememberMe(c as boolean)} />
-                  <Label htmlFor="remember" className="text-xs text-white/55 cursor-pointer">{t('auth.rememberMe')}</Label>
-                </div>
-                <button type="button" onClick={() => setForgotPasswordDialogOpen(true)} className="text-xs text-primary hover:text-primary/80 hover:underline transition-colors">
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password" className="text-xs text-white/65 font-medium tracking-wide">
+                  {t('auth.passwordLabel')}
+                </Label>
+                <button
+                  type="button"
+                  onClick={() => setForgotPasswordDialogOpen(true)}
+                  className="text-xs text-primary hover:text-primary/80 transition-colors"
+                >
                   {t('auth.forgotPassword')}
                 </button>
               </div>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/35" />
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="pl-10 pr-10 h-11 bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/30 rounded-lg focus:border-primary/50 focus:ring-1 focus:ring-primary/30"
+                  disabled={isBusy}
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((s) => !s)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {errors.password && <p className="text-xs text-destructive mt-1">{errors.password}</p>}
+            </div>
 
-              <Button
-                type="submit"
-                className="group w-full h-12 font-semibold text-sm bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_8px_24px_-8px_hsl(var(--primary)/0.5)] hover:shadow-[0_10px_30px_-8px_hsl(var(--primary)/0.6)] transition-all rounded-lg"
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="remember"
+                checked={rememberMe}
+                onCheckedChange={(checked) => setRememberMe(checked === true)}
                 disabled={isBusy}
-              >
-                <span className="inline-flex items-center justify-center gap-2">
-                  {t('auth.signIn')}
-                  <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
-                </span>
-              </Button>
-            </form>
+              />
+              <Label htmlFor="remember" className="text-xs text-white/55 cursor-pointer">
+                {t('auth.rememberEmail')}
+              </Label>
+            </div>
 
-          </div>
+            <Button
+              type="submit"
+              className="w-full h-11 font-semibold text-sm bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg shadow-[0_8px_24px_-8px_hsl(var(--primary)/0.5)] hover:shadow-[0_10px_30px_-8px_hsl(var(--primary)/0.6)] transition-all"
+              disabled={isBusy}
+            >
+              {isBusy ? (
+                <><AkurisPulse size={16} className="mr-2" />{t('auth.signingIn')}</>
+              ) : (
+                <>{t('auth.signIn')} <ArrowRight className="w-4 h-4 ml-1.5" /></>
+              )}
+            </Button>
+          </form>
 
-          <div className="text-center space-y-2 landing-fade-in-5">
-            <Link to="/politica-privacidade" target="_blank" className="text-white/30 hover:text-primary text-xs transition-colors block">
-              {t('auth.privacyPolicy')}
+          <div className="text-center text-xs text-white/45">
+            {t('auth.noAccount')}{' '}
+            <Link to="/registro" className="text-primary hover:text-primary/80 transition-colors">
+              {t('auth.createAccount')}
             </Link>
-            <p className="text-white/20 text-xs">© {new Date().getFullYear()} Akuris — {t('auth.allRightsReserved')}</p>
           </div>
+        </div>
+
+        <div className="absolute bottom-6 left-0 right-0 text-center text-[11px] text-white/25">
+          © {new Date().getFullYear()} Akuris
         </div>
       </div>
 
-      <ForgotPasswordDialog open={forgotPasswordDialogOpen} onOpenChange={setForgotPasswordDialogOpen} />
+      <ForgotPasswordDialog
+        open={forgotPasswordDialogOpen}
+        onOpenChange={setForgotPasswordDialogOpen}
+      />
     </div>
   );
 };
