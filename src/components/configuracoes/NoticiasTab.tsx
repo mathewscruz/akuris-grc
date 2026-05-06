@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
+import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -106,8 +106,8 @@ export default function NoticiasTab() {
       </div>
 
       {loading ? (
-        <div className="grid gap-3">
-          {[1, 2, 3].map((i) => <Skeleton key={i} className="h-24 w-full" />)}
+        <div className="flex items-center justify-center py-16">
+          <AkurisPulse size={32} />
         </div>
       ) : campanhas.length === 0 ? (
         <Card>

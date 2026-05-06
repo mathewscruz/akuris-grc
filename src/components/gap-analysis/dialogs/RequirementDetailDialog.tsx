@@ -767,7 +767,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                       onClick={() => triggerGuidanceGeneration(true)}
                       disabled={generatingGuidance}
                     >
-                      <RefreshCw className={cn('h-3 w-3 mr-1', generatingGuidance && 'animate-spin')} strokeWidth={1.5} />
+                      {generatingGuidance ? <AkurisPulse size={12} className="mr-1" /> : <RefreshCw className="h-3 w-3 mr-1" strokeWidth={1.5} />}
                       {generatingGuidance ? 'Gerando...' : 'Regenerar'}
                     </Button>
                   </div>

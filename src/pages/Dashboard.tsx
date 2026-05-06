@@ -1,4 +1,5 @@
 import { Skeleton } from '@/components/ui/skeleton';
+import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { useAuth } from '@/components/AuthProvider';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
@@ -92,17 +93,9 @@ export default function Dashboard() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <Skeleton className="h-40 w-full rounded-xl" />
-        <div className="flex gap-2 flex-wrap">
-          {Array.from({ length: 7 }).map((_, i) => (
-            <Skeleton key={i} className="h-10 w-28 rounded-lg" />
-          ))}
-        </div>
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          <Skeleton className="xl:col-span-2 h-80 rounded-lg" />
-          <Skeleton className="h-80 rounded-lg" />
-        </div>
+      <div className="flex flex-col items-center justify-center gap-3 py-24">
+        <AkurisPulse size={48} />
+        <p className="text-sm text-muted-foreground">{t('common.loading')}</p>
       </div>
     );
   }

@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { EmptyState } from "@/components/ui/empty-state"
-import { Skeleton } from "@/components/ui/skeleton"
+import { AkurisPulse } from "@/components/ui/AkurisPulse"
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
 import { Search, Filter, Download, RefreshCw, ChevronDown, ChevronUp } from "lucide-react"
 import { useLanguage } from "@/contexts/LanguageContext"
@@ -106,41 +106,9 @@ export function DataTable<T extends Record<string, any>>({
 
   if (loading) {
     return (
-      <div className={cn("", className)}>
-        {/* Header skeleton with padding */}
-        <div className="p-6 pb-4 space-y-4">
-          <div className="flex items-center justify-between gap-4">
-            <Skeleton className="h-10 w-80" />
-            <div className="flex gap-2">
-              <Skeleton className="h-10 w-24" />
-              <Skeleton className="h-10 w-24" />
-            </div>
-          </div>
-        </div>
-
-        {/* Table skeleton */}
-        <Table>
-          <TableHeader>
-            <TableRow>
-              {columns.map((column, index) => (
-                <TableHead key={index}>
-                  <Skeleton className="h-4 w-20" />
-                </TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {Array.from({ length: 5 }).map((_, index) => (
-              <TableRow key={index}>
-                {columns.map((_, cellIndex) => (
-                  <TableCell key={cellIndex}>
-                    <Skeleton className="h-4 w-full" />
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+      <div className={cn("flex flex-col items-center justify-center gap-3 py-16", className)}>
+        <AkurisPulse size={40} />
+        <p className="text-sm text-muted-foreground">{t('common.loading')}</p>
       </div>
     )
   }

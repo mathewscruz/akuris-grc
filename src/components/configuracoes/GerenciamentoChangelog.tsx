@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
+import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -122,10 +122,8 @@ export default function GerenciamentoChangelog() {
       </div>
 
       {loading ? (
-        <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-32 w-full" />
-          ))}
+        <div className="flex items-center justify-center py-16">
+          <AkurisPulse size={32} />
         </div>
       ) : entries.length === 0 ? (
         <Card>

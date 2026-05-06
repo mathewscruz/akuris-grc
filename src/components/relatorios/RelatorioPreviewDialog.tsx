@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
+import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { fetchTemplateData } from './generateTemplatePDF';
@@ -40,8 +40,8 @@ export function RelatorioPreviewDialog({ open, onOpenChange, relatorio, empresaI
 
         <ScrollArea className="h-[65vh] pr-4">
           {loading ? (
-            <div className="space-y-4">
-              {[1, 2, 3].map(i => <Skeleton key={i} className="h-32 w-full" />)}
+            <div className="flex items-center justify-center py-16">
+              <AkurisPulse size={32} />
             </div>
           ) : !data || data.sections.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
