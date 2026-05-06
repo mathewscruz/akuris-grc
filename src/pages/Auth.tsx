@@ -406,7 +406,7 @@ const Auth = () => {
           <div className="text-center text-xs text-white/45">
             {t('auth.noAccount')}{' '}
             <Link to="/registro" className="text-primary hover:text-primary/80 transition-colors">
-              {t('auth.createAccount')}
+              {t('auth.createFreeAccount')}
             </Link>
           </div>
         </div>
