@@ -47,7 +47,7 @@ const PoliticaPrivacidade = React.lazy(() => import('@/pages/PoliticaPrivacidade
 const PlanosAcao = React.lazy(() => import('@/pages/PlanosAcao'));
 const Relatorios = React.lazy(() => import('@/pages/Relatorios'));
 
-const Registro = React.lazy(() => import('@/pages/Registro'));
+
 const Planos = React.lazy(() => import('@/pages/Planos'));
 const DefinirSenha = React.lazy(() => import('@/pages/DefinirSenha'));
 
