@@ -97,6 +97,7 @@ export function HeroScoreBanner({
             {metrics.map((metric) => (
               <div
                 key={metric.label}
+                title={metric.title}
                 className="flex items-center gap-2.5 px-4 py-2.5 rounded-lg border bg-card/80 backdrop-blur-sm"
               >
                 <div className={`p-1.5 rounded-md ${metric.bgColor}`}>
