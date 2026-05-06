@@ -398,24 +398,9 @@ export function Riscos() {
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div>
-          <Skeleton className="h-8 w-48 mb-2" />
-          <Skeleton className="h-4 w-80" />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Card key={i}><CardContent className="p-6"><Skeleton className="h-4 w-24 mb-3" /><Skeleton className="h-8 w-16 mb-2" /><Skeleton className="h-4 w-32" /></CardContent></Card>
-          ))}
-        </div>
-        <Card className="rounded-lg border overflow-hidden">
-          <CardContent className="p-6 space-y-3">
-            <Skeleton className="h-10 w-full" />
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-12 w-full" />
-            ))}
-          </CardContent>
-        </Card>
+      <div className="flex flex-col items-center justify-center gap-3 py-24">
+        <AkurisPulse size={48} />
+        <p className="text-sm text-muted-foreground">Carregando…</p>
       </div>
     );
   }
