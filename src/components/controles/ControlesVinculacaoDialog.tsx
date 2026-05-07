@@ -260,7 +260,7 @@ export default function ControlesVinculacaoDialog({
       baixo: "secondary"
     } as const;
     
-    return <Badge variant={variants[criticidade as keyof typeof variants] || "default"}>{criticidade}</Badge>;
+    return <Badge variant={variants[criticidade as keyof typeof variants] || "default"}>{formatStatus(criticidade)}</Badge>;
   };
 
   return (
