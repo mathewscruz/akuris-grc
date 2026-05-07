@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { formatDateOnly } from '@/lib/date-utils';
+import { formatStatus } from '@/lib/text-utils';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveNivelRiscoTone } from '@/lib/status-tone';
 import { CheckCircle, User, Calendar, FileText, Clock, AlertTriangle } from 'lucide-react';
