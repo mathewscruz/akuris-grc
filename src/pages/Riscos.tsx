@@ -433,8 +433,14 @@ export function Riscos() {
       key: 'nome',
       label: 'Nome',
       sortable: true,
-      render: (value: any) => (
-        <span className="font-medium">{value}</span>
+      render: (value: any, risco: Risco) => (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); setDrawerRiscoId(risco.id); }}
+          className="font-medium text-left hover:text-primary transition-colors"
+        >
+          {value}
+        </button>
       )
     },
     {
