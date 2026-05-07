@@ -63,7 +63,8 @@ export function AprovacaoRiscoDialog({ open, onOpenChange, risco, onSuccess }: P
           aprovador_id: aprovadorId,
           historico_aprovacao: novoHistorico
         })
-        .eq('id', risco.id);
+        .eq('id', risco.id)
+        .eq('empresa_id', profile!.empresa_id);
 
       if (error) throw error;
 
@@ -107,7 +108,8 @@ export function AprovacaoRiscoDialog({ open, onOpenChange, risco, onSuccess }: P
           comentarios_aprovacao: comentario || null,
           historico_aprovacao: novoHistorico
         })
-        .eq('id', risco.id);
+        .eq('id', risco.id)
+        .eq('empresa_id', profile!.empresa_id);
 
       if (error) throw error;
 
@@ -150,7 +152,8 @@ export function AprovacaoRiscoDialog({ open, onOpenChange, risco, onSuccess }: P
       const { error } = await supabase
         .from('riscos')
         .update(updateData)
-        .eq('id', risco.id);
+        .eq('id', risco.id)
+        .eq('empresa_id', profile!.empresa_id);
 
       if (error) throw error;
 
