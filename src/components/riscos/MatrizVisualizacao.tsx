@@ -1,13 +1,12 @@
 import { logger } from '@/lib/logger';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Grid3X3, Settings } from 'lucide-react';
+import { Grid3X3 } from 'lucide-react';
 
 interface Matriz {
   id: string;
