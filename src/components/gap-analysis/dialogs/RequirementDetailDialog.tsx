@@ -1201,7 +1201,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                               <label key={risco.id} className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 p-1.5 rounded text-sm">
                                 <input type="checkbox" checked={formData.riscos_vinculados.includes(risco.id)} onChange={() => handleToggleRisco(risco.id)} className="rounded" />
                                 <span className="font-medium text-xs">{risco.nome}</span>
-                                <Badge variant="outline" className="ml-auto text-[10px]">{risco.nivel_risco_inicial}</Badge>
+                                <Badge variant="outline" className="ml-auto text-[10px]">{formatStatus(risco.nivel_risco_inicial)}</Badge>
                               </label>
                             ))
                           )}
