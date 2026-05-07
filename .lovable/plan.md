@@ -1,93 +1,60 @@
-## Objetivo
+# Refinos visuais — Riscos
 
-Fechar os gaps remanescentes para que /riscos fique fiel ao design Riscos-2 (`views.jsx`, `drawer.jsx`, `shared.jsx`), sem tocar no `RiscoDialog` (wizard de criação).
+## 1. Barra de tabs (anexo 1 → estilo anexo 2)
 
-## Mudanças
+Hoje `RiscosTabs.tsx` usa `TabsList` com `bg-muted/40` em pílula. Trocar para o padrão "underline" do anexo 2: linha de itens sobre uma borda inferior única, com sublinhado de 2px no item ativo.
 
-### 1. Página `src/pages/Riscos.tsx` — limpar topo e ajustar ritmo
+Editar `src/components/riscos/RiscosTabs.tsx`:
+- `TabsList` → `bg-transparent`, sem padding, `border-b border-border`, `gap-1`, alinhado à esquerda.
+- Cada `TabsTrigger`:
+  - `rounded-none`, `bg-transparent`, sem shadow.
+  - `border-b-2 border-transparent`, `-mb-px` para sobrepor a linha.
+  - Ativo: `data-[state=active]:border-primary`, `text-primary`, `font-semibold`.
+  - Inativo: `text-muted-foreground hover:text-foreground/85`.
+  - Padding `px-3 py-2.5`, ícone `h-3.5 w-3.5` (sem mudar).
 
-- **Remover os 4 StatCards do topo** (`Total`, `Tratamentos Concluídos`, `Riscos Aceitos`, `RiskScoreCard`). No design eles não existem — os KPIs agora vivem dentro das abas (`RiskKpiQuad` na Visão geral, `SeverityKpiRow` na Matriz).
-- **Remover** os imports/funções não usadas após a limpeza (`StatCard`, `RiskScoreCard`, `calcTrend`, `MiniSparkline`).
-- **Espaçamentos**: trocar `space-y-6` por `space-y-5`, alinhar paddings das views internas (`px-0 py-1`) e usar `gap-5` entre tabs e o conteúdo. Toolbar global (Categorias / Matriz / Exportar / Novo Risco) fica logo abaixo do `PageHeader`, antes do `RiscosTabs`.
+Resultado: visual idêntico aos chips de "Todos / Acima do apetite / ..." (anexo 2), porém com cor `primary` no ativo (mantendo a identidade roxa do Akuris e diferenciando da barra de visões salvas que usa `foreground` preto).
 
-### 2. Visão geral (`overview/`)
+## 2. Drawer de detalhe (anexo 3)
 
-- **`RiskKpiQuad`**: aumentar valor herói para `text-[42px]`, usar tons distintos por card — `destructive / warning / amber / success` mapeando para 4 cores diferentes (hoje "amber" reusa `bg-warning`). Garantir min-height consistente.
-- **`AppetiteBanner`**: ajustar para `border-l-[3px]`, padding `px-4 py-3.5`, ícone com `bg-destructive/10` e texto secundário fonte 12.
-- **`RiskWatchlist`**: adicionar chevron direito por linha (`ChevronRight`), trocar dot por `SevDot` (dot + halo soft), reduzir gap interno para 16px.
+Editar `src/components/riscos/RiscoDetailDrawer.tsx`:
 
-### 3. Matriz (`matrix/`)
+### 2.1 Espaçamento das bordas
+- `SheetContent`: adicionar `px` interno deixando o `p-0` apenas no eixo vertical do container raiz, mas como o conteúdo já vive em seções com `px-6`, o problema é o **título "teste"** e os **metadados** colados na lateral. Conferir que `SheetHeader` tem `px-6` (já tem) e adicionar `px-6` no `TabsList` e nos `TabsContent` — alguns hoje estão com `px-5` ou sem padding, gerando o "colado" visto no print.
+- Aumentar respiro vertical: `SheetHeader` `py-5` → `py-6`, `space-y-3` → `space-y-4`.
+- Footer: garantir `px-6 py-4` e `gap-3` entre "Última revisão" e os botões.
 
-- **`RiskHeatmap`**: adicionar legenda topo-direita com 4 chips (Crítico/Alto/Médio/Baixo) e título "Probabilidade × Impacto / Mapa de calor". Trocar header da Card.
-- Remover `Card` interno duplicado da página — `RiskHeatmap` já desenha o card completo (header + grade + legend).
-- **`SeverityKpiRow`**: aumentar valor para `text-[28px]` e padding `px-[18px] py-[14px]`, alinhar com design.
-- **`HeatmapCellPanel`**: header com `bg-{sev}/8` (já temos parcial), corrigir `tone` para `Médio`/`Baixo` real.
+### 2.2 Botão fechar × Editar
+O `SheetContent` do shadcn injeta um `SheetPrimitive.Close` em `absolute right-4 top-4` (X). Hoje o botão "Editar" do nosso header fica em `right-6` aproximadamente, então o X cai por cima/colado.
 
-### 4. Tabela (`table/`) — gap maior, criar componentes novos
+Opções:
+- Mover o "Editar" para a esquerda do X com folga: envolver o cluster de ações em um `div className="flex items-center gap-3 pr-8"` (o `pr-8` reserva espaço para o X nativo).
+- Alternativa mais limpa: esconder o X nativo via `[&>button.absolute]:hidden` no `SheetContent` e renderizar nosso próprio `SheetClose` ao lado do "Editar" com `gap-2`, mantendo ambos com a mesma altura (`h-7`, ícone `h-3.5`).
 
-- **Novo `table/RiscosViewChips.tsx`**: chips/aba inferior `Todos · Acima do apetite · Sem responsável · Revisão vencida · Meus riscos` com counts derivados em tempo real. Visão ativa controla um filtro virtual aplicado antes do `sortedRiscos`.
-- **Refatorar colunas da DataTable** para refletir o design:
-  - `id` (mono pequeno, `R-XXX` derivado) — coluna nova de 72px
-  - `nome` (com `SevDot` antes do texto, click abre drawer — já existe)
-  - `categoria` (texto simples)
-  - `nivel_risco_inicial` (`SevPill` formato "ALTO" caixa-alta)
-  - `pi` (`prob × imp` mono) — coluna nova
-  - `trend` (sparkline 52×18) — coluna nova, baseada em diff inicial→residual
-  - `status` (StatusBadge — já existe)
-  - `responsavel` (avatar 20px + último nome) — ajustar a coluna existente
-  - `updated` (relativo "há Nd") — coluna nova
-  - `sla` (pill "no prazo / atenção / vencido") — coluna nova baseada em `data_proxima_revisao`
-  - `actions` (DropdownMenu — já existe)
-- **Promover `MiniSparkline`** para `table/SparklineCell.tsx` reutilizável.
-- **Remover** as colunas atuais "Tags" e "Tratam." que não aparecem no design da tabela (continuam acessíveis via drawer).
+Vamos pela alternativa 2 (controle total do espaçamento):
+```
+<div className="flex items-center gap-2">
+  <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => onEdit(risco)}>
+    <Edit className="h-3.5 w-3.5 mr-1" /> Editar
+  </Button>
+  <SheetClose asChild>
+    <Button variant="ghost" size="icon" className="h-7 w-7">
+      <X className="h-4 w-4" />
+    </Button>
+  </SheetClose>
+</div>
+```
+E no `SheetContent`: `className="... [&>button.absolute]:hidden"` para esconder o X nativo.
 
-### 5. Drawer (`RiscoDetailDrawer.tsx`)
-
-- **Header**: linha superior com `R-XXX (mono) · SevPill · StatusBadge` + ações `Editar / X` à direita. Embaixo, título e **grid 4-col** com Categoria / Owner / Responsável / Atualizado em estilo "metadata cards" inline (vs. linha de texto atual).
-- **Aba Visão**: trocar texto livre de "Causas/Consequências" por **lista de chips** com tag `CAUSA` / `CONSEQ.` (parseando o texto por linhas, fallback para parágrafo se for um bloco só). Adicionar bloco "Tags" mostrando categoria + nivel_risco residual quando existir.
-- **Aba Tratamentos**: cada item ganha **barra de progresso individual** (status `concluído` = 100% verde, `em andamento` = 60% accent, `pendente` = 0% muted). Manter o resumo agregado no topo.
-- **Aba Controles**: mostrar **% cobertura grande à direita** (de `eficacia_estimada` interpretado: "Eficaz"=100, "Parcial"=60, "Em implantação"=30, default 0), colorida por faixa.
-- **Footer**: à esquerda "Última revisão por X · há Yd" (de `historico` mais recente). À direita: `Aceitar formalmente` + `+ Novo tratamento` (primary).
-
-### 6. Tokens / cores
-
-Sem novos tokens. Mantém `destructive / warning / amber / success` (HSL) com a única ressalva de garantir 4 tons distintos para Críticos/Altos/Médios/Baixos:
-
-| Severidade | Tone |
-|---|---|
-| Crítico | `destructive` |
-| Alto | `warning` |
-| Médio | `amber` (hoje reusa warning — corrigir no `RiskKpiQuad` e `RiskCategoryBars` usando `bg-warning/60`) |
-| Baixo | `success` |
+### 2.3 Grid de metadados
+- `grid grid-cols-4 gap-x-6 gap-y-1` → `gap-x-8` para mais respiro entre Categoria/Responsável/Próx. revisão/SLA, e adicionar `pt-1` para separar do título.
 
 ## Não-mexer
-
-- `RiscoDialog` / `RiscoFormWizard` (wizard de criação/edição).
-- SQL, RLS, edge functions, créditos IA, planos.
-- `MatrizDialog`, `CategoriasDialog`, `TratamentosDialog`, `AprovacaoRiscoDialog`, `HistoricoAvaliacoesDialog`, `TrilhaAuditoriaRiscos`, exports PDF/CSV.
-- `useRiscosStats` (os campos hoje retornados deixam de ser exibidos no topo, mas seguem em uso pelo `useDashboardStats` global / outras telas — manter).
+- Lógica de `?view=` em `RiscosTabs`.
+- Conteúdo das abas, hooks, queries, RLS.
+- `RiscosViewChips` (anexo 2 já está no padrão).
+- Wizard de criação/edição de risco.
 
 ## Arquivos
-
-**Editar**:
-- `src/pages/Riscos.tsx` — remove 4 StatCards e imports órfãos; revisa `space-y` e ordem (PageHeader → Toolbar → RiscosTabs).
-- `src/components/riscos/overview/RiskKpiQuad.tsx` — mapeamento de tons + valor 42px.
-- `src/components/riscos/overview/AppetiteBanner.tsx` — proporções.
-- `src/components/riscos/overview/RiskWatchlist.tsx` — chevron + dot halo.
-- `src/components/riscos/overview/RiskCategoryBars.tsx` — 4ª faixa Médio (hoje sumida).
-- `src/components/riscos/matrix/RiskHeatmap.tsx` — header + legenda interna.
-- `src/components/riscos/matrix/SeverityKpiRow.tsx` — proporções.
-- `src/components/riscos/RiscoDetailDrawer.tsx` — header em grid, causas/conseq como chips, % cobertura nos controles, last-review no footer.
-
-**Criar**:
-- `src/components/riscos/table/RiscosViewChips.tsx`
-- `src/components/riscos/table/SparklineCell.tsx`
-- `src/components/riscos/table/SlaCell.tsx`
-
-## Garantias
-
-- Tudo segue tokens HSL Akuris (DM Sans, dark/light, sem cores Tailwind cruas em badges).
-- `<AkurisPulse/>` permanece como único loader.
-- `<StatusBadge/>` para todas as severidades/status; nada de pílulas com `bg-red-100`.
-- Multi-tenant intacto (queries já com `.eq('empresa_id', ...)`).
-- Mobile: tabela continua com scroll horizontal; chips de visão viram select rolável.
+- Editar `src/components/riscos/RiscosTabs.tsx` (tabs underline com cor primary).
+- Editar `src/components/riscos/RiscoDetailDrawer.tsx` (paddings, X custom, gap entre Editar e X, grid metadados).

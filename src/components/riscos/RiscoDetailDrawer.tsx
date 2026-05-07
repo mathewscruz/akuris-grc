@@ -8,6 +8,7 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
+  SheetClose,
 } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -20,7 +21,7 @@ import {
 import { formatStatus } from '@/lib/text-utils';
 import { formatDateOnly } from '@/lib/date-utils';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
-import { Edit, ShieldCheck, Clock, AlertTriangle, Shield, History, Eye } from 'lucide-react';
+import { Edit, ShieldCheck, Clock, AlertTriangle, Shield, History, Eye, X } from 'lucide-react';
 import {
   initials,
   scoreFromPI,
@@ -90,10 +91,10 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="w-full sm:max-w-[540px] p-0 flex flex-col gap-0"
+        className="w-full sm:max-w-[540px] p-0 flex flex-col gap-0 [&>button.absolute]:hidden"
       >
         {/* Header */}
-        <SheetHeader className="px-6 py-5 border-b border-border space-y-3">
+        <SheetHeader className="px-6 py-6 border-b border-border space-y-4">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-[10.5px] font-mono tracking-wider text-muted-foreground">
@@ -106,20 +107,27 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
                 {formatStatus(risco.status)}
               </StatusBadge>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 px-2 text-xs"
-              onClick={() => onEdit(risco)}
-            >
-              <Edit className="h-3.5 w-3.5 mr-1" strokeWidth={1.5} />
-              Editar
-            </Button>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs"
+                onClick={() => onEdit(risco)}
+              >
+                <Edit className="h-3.5 w-3.5 mr-1" strokeWidth={1.5} />
+                Editar
+              </Button>
+              <SheetClose asChild>
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" aria-label="Fechar">
+                  <X className="h-4 w-4" strokeWidth={1.5} />
+                </Button>
+              </SheetClose>
+            </div>
           </div>
           <SheetTitle className="text-xl leading-tight font-semibold">
             {risco.nome}
           </SheetTitle>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-8 gap-y-2 pt-1">
             {[
               { l: 'Categoria', v: risco.categoria?.nome || '—' },
               { l: 'Responsável', v: risco.responsavel_nome || '—' },
@@ -129,7 +137,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
               },
               { l: 'SLA', v: SLA_LABELS[sla] },
             ].map((m) => (
-              <div key={m.l}>
+              <div key={m.l} className="min-w-0">
                 <div className="text-[10px] font-semibold uppercase tracking-[0.6px] text-muted-foreground">
                   {m.l}
                 </div>
@@ -342,7 +350,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
               ? <>Responsável · <span className="text-foreground/85">{risco.responsavel_nome}</span></>
               : 'Sem revisões registradas'}
           </div>
-          <div className="flex items-center gap-2 ml-auto">
+          <div className="flex items-center gap-3 ml-auto">
             <Button variant="outline" size="sm" onClick={() => onAccept(risco)}>
               <ShieldCheck className="h-3.5 w-3.5 mr-1.5" strokeWidth={1.5} />
               Aceitar formalmente
