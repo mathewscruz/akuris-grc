@@ -16,6 +16,7 @@ import { WizardDialog, WizardTab, WizardTabState } from '@/components/ui/wizard-
 import { WizardSummaryCard, WizardSummaryRow } from '@/components/ui/wizard-summary-card';
 import { FieldHelpTooltip } from '@/components/ui/field-help-tooltip';
 import { useWizardDraft } from '@/hooks/useWizardDraft';
+import { formatStatus } from '@/lib/text-utils';
 
 interface PlanoAcaoDialogProps {
   open: boolean;
