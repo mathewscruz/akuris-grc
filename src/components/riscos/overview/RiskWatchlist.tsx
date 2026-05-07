@@ -2,12 +2,14 @@
  * RiskWatchlist — top 5 riscos prioritários (acima do apetite, ordenados por score desc).
  * Clique abre o RiscoDetailDrawer.
  */
-import { ArrowRight, Clock } from 'lucide-react';
+import { ArrowRight, ChevronRight, Clock } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveNivelRiscoTone, resolveRiscoStatusTone } from '@/lib/status-tone';
 import { formatStatus } from '@/lib/text-utils';
+import { severityFromNivel } from '@/components/riscos/risk-utils';
 import {
   initials,
   isAcimaApetite,
@@ -77,6 +79,15 @@ export function RiskWatchlist({ riscos, totalCount, onOpenRisk, onSeeAll }: Prop
         <ul>
           {watchlist.map((r, idx) => {
             const nivel = r.nivel_risco_residual || r.nivel_risco_inicial;
+            const sev = severityFromNivel(nivel);
+            const sevDot =
+              sev === 'critico' ? 'bg-destructive' :
+              sev === 'alto' ? 'bg-warning' :
+              sev === 'medio' ? 'bg-warning/60' : 'bg-success';
+            const sevHalo =
+              sev === 'critico' ? 'ring-destructive/20' :
+              sev === 'alto' ? 'ring-warning/25' :
+              sev === 'medio' ? 'ring-warning/15' : 'ring-success/25';
             const score = scoreFromPI(
               r.probabilidade_residual || r.probabilidade_inicial,
               r.impacto_residual || r.impacto_inicial,
@@ -85,9 +96,9 @@ export function RiskWatchlist({ riscos, totalCount, onOpenRisk, onSeeAll }: Prop
               <li
                 key={r.id}
                 onClick={() => onOpenRisk(r.id)}
-                className={`grid grid-cols-[auto_1fr_auto_auto_auto] items-center gap-4 px-5 py-3 cursor-pointer hover:bg-muted/40 transition-colors ${idx > 0 ? 'border-t border-border' : ''}`}
+                className={`grid grid-cols-[auto_1fr_auto_auto_auto_auto] items-center gap-4 px-5 py-3.5 cursor-pointer hover:bg-muted/40 transition-colors ${idx > 0 ? 'border-t border-border' : ''}`}
               >
-                <span className="h-2.5 w-2.5 rounded-full bg-destructive flex-shrink-0" />
+                <span className={cn('h-2 w-2 rounded-full flex-shrink-0 ring-[3px]', sevDot, sevHalo)} />
                 <div className="min-w-0">
                   <div className="text-sm font-medium text-foreground truncate">{r.nome}</div>
                   <div className="text-[11px] text-muted-foreground flex items-center gap-2 mt-0.5">
@@ -118,6 +129,7 @@ export function RiskWatchlist({ riscos, totalCount, onOpenRisk, onSeeAll }: Prop
                     {r.responsavel_nome?.split(' ').slice(-1)[0] || '—'}
                   </span>
                 </div>
+                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.5} />
               </li>
             );
           })}
