@@ -149,7 +149,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
 
         {/* Tabs */}
         <Tabs defaultValue="visao" className="flex-1 flex flex-col min-h-0">
-          <TabsList className="mx-6 mt-4 grid grid-cols-4 h-9 gap-1">
+          <TabsList className="mx-8 mt-4 grid grid-cols-4 h-9 gap-1.5">
             <TabsTrigger value="visao" className="text-[11px] px-1.5 gap-1 min-w-0"><Eye className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span className="truncate">Visão</span></TabsTrigger>
             <TabsTrigger value="tratamentos" className="text-[11px] px-1.5 gap-1 min-w-0"><Shield className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span className="truncate">Tratamento</span></TabsTrigger>
             <TabsTrigger value="historico" className="text-[11px] px-1.5 gap-1 min-w-0"><History className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span className="truncate">Histórico</span></TabsTrigger>
