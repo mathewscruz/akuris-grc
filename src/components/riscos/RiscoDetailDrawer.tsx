@@ -95,44 +95,47 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
         {/* Header */}
         <SheetHeader className="px-6 py-5 border-b border-border space-y-3">
           <div className="flex items-center justify-between gap-3">
-            <span className="text-[10.5px] font-mono tracking-wider text-muted-foreground">
-              {shortRiskId(risco.id)}
-            </span>
-            <StatusBadge size="sm" {...resolveRiscoStatusTone(risco.status)}>
-              {formatStatus(risco.status)}
-            </StatusBadge>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[10.5px] font-mono tracking-wider text-muted-foreground">
+                {shortRiskId(risco.id)}
+              </span>
+              <StatusBadge size="sm" {...resolveNivelRiscoTone(risco.nivel_risco_residual || risco.nivel_risco_inicial)}>
+                {formatStatus(risco.nivel_risco_residual || risco.nivel_risco_inicial)}
+              </StatusBadge>
+              <StatusBadge size="sm" {...resolveRiscoStatusTone(risco.status)}>
+                {formatStatus(risco.status)}
+              </StatusBadge>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-xs"
+              onClick={() => onEdit(risco)}
+            >
+              <Edit className="h-3.5 w-3.5 mr-1" strokeWidth={1.5} />
+              Editar
+            </Button>
           </div>
           <SheetTitle className="text-xl leading-tight font-semibold">
             {risco.nome}
           </SheetTitle>
-          <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
-            {risco.categoria && (
-              <span className="inline-flex items-center gap-1.5">
-                {risco.categoria.cor && (
-                  <span className="h-2 w-2 rounded-full" style={{ background: risco.categoria.cor }} />
-                )}
-                {risco.categoria.nome}
-              </span>
-            )}
-            <span>·</span>
-            <span className="inline-flex items-center gap-1.5">
-              <Avatar className="h-5 w-5">
-                {risco.responsavel_foto && <AvatarImage src={risco.responsavel_foto} />}
-                <AvatarFallback className="text-[9px] bg-primary/10 text-primary">
-                  {initials(risco.responsavel_nome)}
-                </AvatarFallback>
-              </Avatar>
-              {risco.responsavel_nome || 'Sem responsável'}
-            </span>
-            {risco.data_proxima_revisao && (
-              <>
-                <span>·</span>
-                <span className="inline-flex items-center gap-1">
-                  <Clock className="h-3 w-3" strokeWidth={1.5} />
-                  Revisão {SLA_LABELS[sla]} ({formatDateOnly(risco.data_proxima_revisao)})
-                </span>
-              </>
-            )}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+            {[
+              { l: 'Categoria', v: risco.categoria?.nome || '—' },
+              { l: 'Responsável', v: risco.responsavel_nome || '—' },
+              {
+                l: 'Próx. revisão',
+                v: risco.data_proxima_revisao ? formatDateOnly(risco.data_proxima_revisao) : '—',
+              },
+              { l: 'SLA', v: SLA_LABELS[sla] },
+            ].map((m) => (
+              <div key={m.l}>
+                <div className="text-[10px] font-semibold uppercase tracking-[0.6px] text-muted-foreground">
+                  {m.l}
+                </div>
+                <div className="text-xs text-foreground mt-1 truncate">{m.v}</div>
+              </div>
+            ))}
           </div>
         </SheetHeader>
 
