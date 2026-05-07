@@ -23,6 +23,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Send, FileText, Download, Save, Plus, History } from 'lucide-react';
 import { AkurisAIIcon } from '@/components/icons';
 import DocLayoutBuilder from './DocLayoutBuilder';
+import { formatStatus } from '@/lib/text-utils';
 import { DocumentoDialog } from '@/components/documentos/DocumentoDialog';
 import jsPDF from 'jspdf';
 import { Document as DocxDocument, Packer, Paragraph, HeadingLevel, TextRun, ImageRun } from 'docx';
