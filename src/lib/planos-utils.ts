@@ -17,6 +17,9 @@ export interface Plano {
   ativo: boolean;
   icone: string;
   cor_primaria: string;
+  preco_setup?: number | null;
+  setup_observacao?: string | null;
+  publico_alvo?: string | null;
 }
 
 export const MODULOS_DISPONIVEIS = [
