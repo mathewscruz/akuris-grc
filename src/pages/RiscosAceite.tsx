@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { CheckCircle, AlertTriangle, Clock, CalendarX, MoreHorizontal, Eye, CalendarClock, XCircle } from 'lucide-react';
 import { formatDateOnly } from '@/lib/date-utils';
+import { formatStatus } from '@/lib/text-utils';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveNivelRiscoTone, resolveRevisaoTone } from '@/lib/status-tone';
 import { differenceInDays } from 'date-fns';
