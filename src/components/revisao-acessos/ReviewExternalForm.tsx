@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { CheckCircle, XCircle, ChevronLeft, ChevronRight, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDateForInput } from "@/lib/date-utils";
+import { formatStatus } from "@/lib/text-utils";
 
 interface ReviewExternalFormProps {
   review: any;
