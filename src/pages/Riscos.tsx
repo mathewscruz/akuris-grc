@@ -303,7 +303,8 @@ export function Riscos() {
       const { error } = await supabase
         .from('riscos')
         .delete()
-        .eq('id', riscoToDelete.id);
+        .eq('id', riscoToDelete.id)
+        .eq('empresa_id', profile!.empresa_id);
 
       if (error) throw error;
 

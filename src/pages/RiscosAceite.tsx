@@ -152,7 +152,8 @@ export default function RiscosAceite() {
       const { error } = await supabase
         .from('riscos')
         .update({ aceito: false, justificativa_aceite: null, data_aceite: null, aprovador_aceite: null, status_aceite: null })
-        .eq('id', risco.id);
+        .eq('id', risco.id)
+        .eq('empresa_id', profile!.empresa_id);
 
       if (error) throw error;
       toast({ title: "Sucesso", description: "Aceite de risco revogado com sucesso." });
@@ -169,7 +170,8 @@ export default function RiscosAceite() {
       const { error } = await supabase
         .from('riscos')
         .update({ data_proxima_revisao: novaData.toISOString().split('T')[0] })
-        .eq('id', risco.id);
+        .eq('id', risco.id)
+        .eq('empresa_id', profile!.empresa_id);
 
       if (error) throw error;
       toast({ title: "Sucesso", description: `Revisão agendada para ${formatDateOnly(novaData.toISOString())}` });
