@@ -1,87 +1,93 @@
 ## Objetivo
 
-Reproduzir fielmente as 4 telas do design Claude no módulo `/riscos`, mantendo o `RiscoDialog` (wizard de criação/edição) intacto e adaptando cores/dados ao sistema Akuris (DM Sans, tokens HSL, dark/light, status-tone, AkurisPulse).
+Fechar os gaps remanescentes para que /riscos fique fiel ao design Riscos-2 (`views.jsx`, `drawer.jsx`, `shared.jsx`), sem tocar no `RiscoDialog` (wizard de criação).
 
-## Telas a reproduzir
+## Mudanças
 
-1. **Visão geral** — banner de apetite + 4 KPIs editoriais clicáveis + gráfico de evolução (área + linha de apetite) + barras de distribuição por categoria + watchlist top 5
-2. **Matriz** — 4 KPIs por severidade (Críticos/Altos/Médios/Baixos com vs mês anterior) + heatmap 5×5 com badges empilhados + painel lateral da célula selecionada + rodapé com apetite
-3. **Tabela** — chips de visões salvas (Todos / Acima do apetite / Sem responsável / Revisão vencida / Meus riscos) + busca + filtros + DataTable com coluna de severidade pill, P×I, sparkline de tendência, status, responsável (avatar+nome), atualizado, SLA
-4. **Drawer lateral 540px** com 4 abas: Visão (descrição, nível inicial × residual, causas/consequências, tags) · Tratamentos (lista com barra de progresso por status) · Histórico (timeline) · Controles (lista com % cobertura). Footer fixo com "Aceitar formalmente" e "Novo tratamento"
+### 1. Página `src/pages/Riscos.tsx` — limpar topo e ajustar ritmo
 
-## Adaptações cromáticas (design → Akuris)
+- **Remover os 4 StatCards do topo** (`Total`, `Tratamentos Concluídos`, `Riscos Aceitos`, `RiskScoreCard`). No design eles não existem — os KPIs agora vivem dentro das abas (`RiskKpiQuad` na Visão geral, `SeverityKpiRow` na Matriz).
+- **Remover** os imports/funções não usadas após a limpeza (`StatCard`, `RiskScoreCard`, `calcTrend`, `MiniSparkline`).
+- **Espaçamentos**: trocar `space-y-6` por `space-y-5`, alinhar paddings das views internas (`px-0 py-1`) e usar `gap-5` entre tabs e o conteúdo. Toolbar global (Categorias / Matriz / Exportar / Novo Risco) fica logo abaixo do `PageHeader`, antes do `RiscosTabs`.
 
-| Design Claude | Akuris |
+### 2. Visão geral (`overview/`)
+
+- **`RiskKpiQuad`**: aumentar valor herói para `text-[42px]`, usar tons distintos por card — `destructive / warning / amber / success` mapeando para 4 cores diferentes (hoje "amber" reusa `bg-warning`). Garantir min-height consistente.
+- **`AppetiteBanner`**: ajustar para `border-l-[3px]`, padding `px-4 py-3.5`, ícone com `bg-destructive/10` e texto secundário fonte 12.
+- **`RiskWatchlist`**: adicionar chevron direito por linha (`ChevronRight`), trocar dot por `SevDot` (dot + halo soft), reduzir gap interno para 16px.
+
+### 3. Matriz (`matrix/`)
+
+- **`RiskHeatmap`**: adicionar legenda topo-direita com 4 chips (Crítico/Alto/Médio/Baixo) e título "Probabilidade × Impacto / Mapa de calor". Trocar header da Card.
+- Remover `Card` interno duplicado da página — `RiskHeatmap` já desenha o card completo (header + grade + legend).
+- **`SeverityKpiRow`**: aumentar valor para `text-[28px]` e padding `px-[18px] py-[14px]`, alinhar com design.
+- **`HeatmapCellPanel`**: header com `bg-{sev}/8` (já temos parcial), corrigir `tone` para `Médio`/`Baixo` real.
+
+### 4. Tabela (`table/`) — gap maior, criar componentes novos
+
+- **Novo `table/RiscosViewChips.tsx`**: chips/aba inferior `Todos · Acima do apetite · Sem responsável · Revisão vencida · Meus riscos` com counts derivados em tempo real. Visão ativa controla um filtro virtual aplicado antes do `sortedRiscos`.
+- **Refatorar colunas da DataTable** para refletir o design:
+  - `id` (mono pequeno, `R-XXX` derivado) — coluna nova de 72px
+  - `nome` (com `SevDot` antes do texto, click abre drawer — já existe)
+  - `categoria` (texto simples)
+  - `nivel_risco_inicial` (`SevPill` formato "ALTO" caixa-alta)
+  - `pi` (`prob × imp` mono) — coluna nova
+  - `trend` (sparkline 52×18) — coluna nova, baseada em diff inicial→residual
+  - `status` (StatusBadge — já existe)
+  - `responsavel` (avatar 20px + último nome) — ajustar a coluna existente
+  - `updated` (relativo "há Nd") — coluna nova
+  - `sla` (pill "no prazo / atenção / vencido") — coluna nova baseada em `data_proxima_revisao`
+  - `actions` (DropdownMenu — já existe)
+- **Promover `MiniSparkline`** para `table/SparklineCell.tsx` reutilizável.
+- **Remover** as colunas atuais "Tags" e "Tratam." que não aparecem no design da tabela (continuam acessíveis via drawer).
+
+### 5. Drawer (`RiscoDetailDrawer.tsx`)
+
+- **Header**: linha superior com `R-XXX (mono) · SevPill · StatusBadge` + ações `Editar / X` à direita. Embaixo, título e **grid 4-col** com Categoria / Owner / Responsável / Atualizado em estilo "metadata cards" inline (vs. linha de texto atual).
+- **Aba Visão**: trocar texto livre de "Causas/Consequências" por **lista de chips** com tag `CAUSA` / `CONSEQ.` (parseando o texto por linhas, fallback para parágrafo se for um bloco só). Adicionar bloco "Tags" mostrando categoria + nivel_risco residual quando existir.
+- **Aba Tratamentos**: cada item ganha **barra de progresso individual** (status `concluído` = 100% verde, `em andamento` = 60% accent, `pendente` = 0% muted). Manter o resumo agregado no topo.
+- **Aba Controles**: mostrar **% cobertura grande à direita** (de `eficacia_estimada` interpretado: "Eficaz"=100, "Parcial"=60, "Em implantação"=30, default 0), colorida por faixa.
+- **Footer**: à esquerda "Última revisão por X · há Yd" (de `historico` mais recente). À direita: `Aceitar formalmente` + `+ Novo tratamento` (primary).
+
+### 6. Tokens / cores
+
+Sem novos tokens. Mantém `destructive / warning / amber / success` (HSL) com a única ressalva de garantir 4 tons distintos para Críticos/Altos/Médios/Baixos:
+
+| Severidade | Tone |
 |---|---|
-| Fundo `#fafaf9` warm | `bg-background` (HSL token, navy no dark) |
-| Cartões `#ffffff` | `bg-card` |
-| Bordas `#e7e5e4` | `border-border` |
-| Acento OKLCH azul | `--primary` (#7552FF) |
-| Severidade crit/high/med/low | tons já definidos: destructive/warning/amber/success via `resolveNivelRiscoTone` |
-| Inter Tight (display) / Inter (body) | DM Sans (toda a UI Akuris) |
-| Status chips coloridos | `<StatusBadge>` + `resolveRiscoStatusTone` |
+| Crítico | `destructive` |
+| Alto | `warning` |
+| Médio | `amber` (hoje reusa warning — corrigir no `RiskKpiQuad` e `RiskCategoryBars` usando `bg-warning/60`) |
+| Baixo | `success` |
 
-## Arquitetura de arquivos
+## Não-mexer
 
-**Novos** (`src/components/riscos/`):
-- `RiscosTabs.tsx` — controla `view` via `?view=overview|matrix|table` (default = `table` para preservar UX atual no primeiro acesso; depois passa a respeitar última escolha via localStorage)
-- `overview/AppetiteBanner.tsx`
-- `overview/RiskKpiQuad.tsx` — os 4 cards "Acima do apetite / Sem responsável / Revisão vencida / Em tratamento" com CTA inline
-- `overview/RiskTrendChart.tsx` — Recharts `ComposedChart` (área + linha + `ReferenceLine` apetite + tabs 3M/6M/12M)
-- `overview/RiskCategoryBars.tsx` — barras stack por severidade dentro de cada categoria
-- `overview/RiskWatchlist.tsx`
-- `matrix/SeverityKpiRow.tsx` — 4 cards com borda lateral colorida e "vs mês anterior"
-- `matrix/RiskHeatmap.tsx` — grade 5×5 lendo `riscos_matriz_configuracao` da empresa; badges empilhados com `R-NNN`; clique seleciona célula
-- `matrix/HeatmapCellPanel.tsx` — painel lateral sticky com riscos da célula
-- `matrix/AppetiteFooter.tsx`
-- `table/RiscosViewChips.tsx` — chips de visões salvas (counts derivados)
-- `table/SparklineCell.tsx` — promove o `MiniSparkline` já existente em `Riscos.tsx`
-- `RiscoDetailDrawer.tsx` — `<Sheet side="right">` 540px desktop, fullscreen mobile, com 4 abas
-- `drawer/DrawerVisaoTab.tsx`
-- `drawer/DrawerTratamentosTab.tsx` — consome `riscos_tratamentos`
-- `drawer/DrawerHistoricoTab.tsx` — consome `riscos_historico_avaliacoes` + auditoria
-- `drawer/DrawerControlesTab.tsx` — consome `controles` vinculados ao risco
-- `useRiscoDetail.ts` — hook React Query que carrega tratamentos + histórico + controles do risco aberto
+- `RiscoDialog` / `RiscoFormWizard` (wizard de criação/edição).
+- SQL, RLS, edge functions, créditos IA, planos.
+- `MatrizDialog`, `CategoriasDialog`, `TratamentosDialog`, `AprovacaoRiscoDialog`, `HistoricoAvaliacoesDialog`, `TrilhaAuditoriaRiscos`, exports PDF/CSV.
+- `useRiscosStats` (os campos hoje retornados deixam de ser exibidos no topo, mas seguem em uso pelo `useDashboardStats` global / outras telas — manter).
 
-**Editados (cirúrgico)**:
-- `src/pages/Riscos.tsx` — envolve conteúdo em `RiscosTabs`; adiciona estado `openRiskId` + `<RiscoDetailDrawer/>` global; clique de linha agora abre drawer (botão "Editar" no drawer abre o `RiscoDialog` existente)
-- `src/hooks/useRiscosStats.tsx` — adiciona: `acimaApetite`, `semResponsavel`, `revisaoVencida`, `emTratamento`, `serieScore` (agregado por mês p/ trend chart), `apetiteScore` (derivado de `riscos_matriz_configuracao.niveis_risco` — limite superior do nível "médio")
-- `src/i18n/pt.ts` + `en.ts` — strings `modules.riscos.views.*` e `modules.riscos.drawer.*`
+## Arquivos
 
-**Não tocar**: `RiscoDialog`, `RiscoFormWizard`, `MatrizDialog`, `MatrizForm`, `CategoriasDialog`, `TratamentosDialog`, `TratamentoForm`, `AprovacaoRiscoDialog`, `HistoricoAvaliacoesDialog`, `TrilhaAuditoriaRiscos`, `ExportRiscosPDF/CSV`, edge functions, RLS, planos, créditos IA.
+**Editar**:
+- `src/pages/Riscos.tsx` — remove 4 StatCards e imports órfãos; revisa `space-y` e ordem (PageHeader → Toolbar → RiscosTabs).
+- `src/components/riscos/overview/RiskKpiQuad.tsx` — mapeamento de tons + valor 42px.
+- `src/components/riscos/overview/AppetiteBanner.tsx` — proporções.
+- `src/components/riscos/overview/RiskWatchlist.tsx` — chevron + dot halo.
+- `src/components/riscos/overview/RiskCategoryBars.tsx` — 4ª faixa Médio (hoje sumida).
+- `src/components/riscos/matrix/RiskHeatmap.tsx` — header + legenda interna.
+- `src/components/riscos/matrix/SeverityKpiRow.tsx` — proporções.
+- `src/components/riscos/RiscoDetailDrawer.tsx` — header em grid, causas/conseq como chips, % cobertura nos controles, last-review no footer.
 
-## Mapeamento de dados (design → Supabase)
-
-| Campo design | Origem real |
-|---|---|
-| `R-014` (ID curto) | derivar dos últimos 3 chars do `riscos.id` (uuid), prefixado por `R-`. Display only |
-| `prob × imp` | `probabilidade_inicial`/`impacto_inicial` (string "1".."5") |
-| Severidade | `nivel_risco_inicial` via `resolveNivelRiscoTone` |
-| `status` (Novo/Em tratamento/Monitorado/Tratado) | `riscos.status` (já existe) |
-| `responsável` (avatar+iniciais) | `responsavel_nome` + `responsavel_foto` |
-| `sla` (no prazo/atenção/vencido) | derivado de `data_proxima_revisao` (já no banco) |
-| `treats` (count) | `riscos_tratamentos` agrupado por `risco_id` |
-| `apetite` linha | `niveis_risco[médio].max` (do `riscos_matriz_configuracao`) |
-| Categoria do design | `categorias.nome` |
-| Owner ("TI", "Jurídico"…) | tag livre — usar `categoria.nome` como fallback se não houver campo "owner" |
-| Histórico (timeline) | `riscos_historico_avaliacoes` + trilha de auditoria |
-| Controles vinculados + % cobertura | `controles_riscos` ↔ `controles.eficacia` |
-| Tags | tabela `riscos_tags` se existir; senão exibir só categoria |
-
-Toda query nova com `.eq('empresa_id', profile.empresa_id)` (Core rule).
+**Criar**:
+- `src/components/riscos/table/RiscosViewChips.tsx`
+- `src/components/riscos/table/SparklineCell.tsx`
+- `src/components/riscos/table/SlaCell.tsx`
 
 ## Garantias
 
-- Zero migração SQL, zero alteração em RLS / edge / MFA / planos.
-- Tabela existente preservada como aba default.
-- Loaders = `<AkurisPulse/>`. Badges = `<StatusBadge/>`. Toasts = Sonner. Sem cores Tailwind cruas em badges.
-- Tema dark/light via tokens HSL — heatmap usa `bg-destructive/10`, `bg-warning/10`, etc.
-- Mobile: drawer vira fullscreen; matriz ganha scroll horizontal; chips de visão viram select.
-- i18n PT/EN para todas as strings novas.
-
-## Entrega em 4 ondas (cada uma testável isoladamente)
-
-1. **RiscosTabs + Tabela refinada** — adiciona as 3 abas (Visão geral e Matriz como placeholders) + chips de visões + coluna de sparkline na tabela atual.
-2. **Visão geral completa** — banner, 4 KPIs CTAs, trend chart, barras por categoria, watchlist.
-3. **Matriz refeita** — KPIs com vs-mês, heatmap 5×5, painel lateral, rodapé apetite.
-4. **RiscoDetailDrawer** — drawer 540px com 4 abas e CTAs; conecta a watchlist, células do heatmap e linhas da tabela.
+- Tudo segue tokens HSL Akuris (DM Sans, dark/light, sem cores Tailwind cruas em badges).
+- `<AkurisPulse/>` permanece como único loader.
+- `<StatusBadge/>` para todas as severidades/status; nada de pílulas com `bg-red-100`.
+- Multi-tenant intacto (queries já com `.eq('empresa_id', ...)`).
+- Mobile: tabela continua com scroll horizontal; chips de visão viram select rolável.
