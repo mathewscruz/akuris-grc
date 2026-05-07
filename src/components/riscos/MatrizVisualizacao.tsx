@@ -136,14 +136,7 @@ export function MatrizVisualizacao({ onNavigate, onConfigure }: Props) {
         icon={<Grid3X3 className="h-10 w-10" strokeWidth={1.5} />}
         title="Nenhuma matriz configurada"
         description="Configure uma matriz de risco para visualizar a distribuição dos seus riscos por probabilidade e impacto."
-        action={
-          onConfigure && (
-            <Button onClick={onConfigure} className="gap-2">
-              <Settings className="h-4 w-4" strokeWidth={1.5} />
-              Configurar agora
-            </Button>
-          )
-        }
+        action={onConfigure ? { label: 'Configurar agora', onClick: onConfigure } : undefined}
       />
     );
   }
