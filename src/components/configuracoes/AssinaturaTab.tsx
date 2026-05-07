@@ -179,6 +179,11 @@ export function AssinaturaTab() {
                 <div>
                   <p className="text-xs text-muted-foreground">Valor mensal</p>
                   <p className="text-sm font-medium">{formatBRL(info.plano.preco_mensal)}/mês</p>
+                  {(info.plano.preco_setup ?? 0) > 0 && (
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      Setup: {info.plano.setup_observacao || `${formatBRL(info.plano.preco_setup ?? 0)} (único)`}
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-2">
