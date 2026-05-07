@@ -102,11 +102,11 @@ export function AceiteDetalheDialog({ open, onOpenChange, risco }: Props) {
             <h3 className="font-semibold text-lg">{risco.nome}</h3>
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">Nível Inicial:</span>
-              <StatusBadge {...resolveNivelRiscoTone(risco.nivel_risco_inicial)}>{risco.nivel_risco_inicial}</StatusBadge>
+              <StatusBadge {...resolveNivelRiscoTone(risco.nivel_risco_inicial)}>{formatStatus(risco.nivel_risco_inicial)}</StatusBadge>
               {risco.nivel_risco_residual && (
                 <>
                   <span className="text-sm text-muted-foreground ml-2">Residual:</span>
-                  <StatusBadge {...resolveNivelRiscoTone(risco.nivel_risco_residual)}>{risco.nivel_risco_residual}</StatusBadge>
+                  <StatusBadge {...resolveNivelRiscoTone(risco.nivel_risco_residual)}>{formatStatus(risco.nivel_risco_residual)}</StatusBadge>
                 </>
               )}
             </div>
