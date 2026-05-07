@@ -149,7 +149,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
 
         {/* Tabs */}
         <Tabs defaultValue="visao" className="flex-1 flex flex-col min-h-0">
-          <TabsList className="mx-8 mt-4 grid grid-cols-4 h-9 gap-1.5">
+          <TabsList className="mx-6 mt-4 mr-10 grid grid-cols-4 h-9 gap-1.5">
             <TabsTrigger value="visao" className="text-[11px] px-1.5 gap-1 min-w-0"><Eye className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span className="truncate">Visão</span></TabsTrigger>
             <TabsTrigger value="tratamentos" className="text-[11px] px-1.5 gap-1 min-w-0"><Shield className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span className="truncate">Tratamento</span></TabsTrigger>
             <TabsTrigger value="historico" className="text-[11px] px-1.5 gap-1 min-w-0"><History className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span className="truncate">Histórico</span></TabsTrigger>
@@ -342,15 +342,15 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
         </Tabs>
 
         {/* Footer fixo */}
-        <div className="border-t border-border px-6 py-3.5 flex items-center justify-between gap-2 bg-card">
-          <div className="text-[11px] text-muted-foreground hidden sm:block min-w-0 truncate">
+        <div className="border-t border-border px-6 py-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-card">
+          <div className="text-[11px] text-muted-foreground min-w-0 leading-snug">
             {detail?.historico?.[0]
               ? <>Última revisão · <span className="text-foreground/85">{formatStatus(detail.historico[0].tipo)}</span> · {formatDateOnly(detail.historico[0].created_at)}</>
               : risco.responsavel_nome
               ? <>Responsável · <span className="text-foreground/85">{risco.responsavel_nome}</span></>
               : 'Sem revisões registradas'}
           </div>
-          <div className="flex items-center gap-3 ml-auto">
+          <div className="flex items-center gap-3 sm:ml-auto">
             <Button variant="outline" size="sm" onClick={() => onAccept(risco)}>
               <ShieldCheck className="h-3.5 w-3.5 mr-1.5" strokeWidth={1.5} />
               Aceitar formalmente
