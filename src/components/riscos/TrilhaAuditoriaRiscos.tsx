@@ -148,12 +148,12 @@ export function TrilhaAuditoriaRiscos({ open, onOpenChange, riscoId, riscoNome }
               <AkurisPulse size={48} />
             </div>
           ) : !auditLogs || auditLogs.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <History className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <div className="text-center py-12 text-muted-foreground px-6">
+              <History className="h-12 w-12 mx-auto mb-4 opacity-50" strokeWidth={1.5} />
               Nenhum histórico de alterações encontrado.
             </div>
           ) : (
-            <ScrollArea className="h-[600px]">
+            <ScrollArea className="h-full px-6 py-5">
               <div className="space-y-4">
                 {auditLogs.map((log) => (
                   <Card key={log.id} className="border-l-4 border-l-primary">
