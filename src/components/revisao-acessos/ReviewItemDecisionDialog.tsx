@@ -23,6 +23,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useReviewData } from "@/hooks/useReviewData";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateForInput, parseDateForDB } from "@/lib/date-utils";
+import { formatStatus } from "@/lib/text-utils";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Info } from "lucide-react";
