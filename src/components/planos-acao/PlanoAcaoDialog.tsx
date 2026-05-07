@@ -302,9 +302,9 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading }: 
       <WizardSummaryRow label="Título" value={titulo || <span className="text-muted-foreground italic">Sem título</span>} highlight />
       <WizardSummaryRow
         label="Prioridade"
-        value={<Badge variant={PRIORIDADE_VARIANT[prioridade]} className="text-[10px] capitalize">{prioridade}</Badge>}
+        value={<Badge variant={PRIORIDADE_VARIANT[prioridade]} className="text-[10px]">{formatStatus(prioridade)}</Badge>}
       />
-      <WizardSummaryRow label="Status" value={<span className="capitalize">{status.replace('_', ' ')}</span>} />
+      <WizardSummaryRow label="Status" value={<span>{formatStatus(status)}</span>} />
       <WizardSummaryRow
         label="Prazo"
         value={prazo ? format(prazo, 'dd/MM/yyyy') : <span className="text-muted-foreground italic">—</span>}
