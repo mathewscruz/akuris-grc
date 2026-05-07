@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -11,7 +11,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CalendarIcon, Copy } from 'lucide-react';
+import { CalendarIcon, Copy, Shield, AlertTriangle, Lightbulb } from 'lucide-react';
 import { AkurisAIIcon } from '@/components/icons';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -41,6 +41,8 @@ interface TratamentoFormProps {
   riscoId: string;
   tratamento?: any;
   onSuccess: () => void;
+  onSubmittingChange?: (submitting: boolean) => void;
+  onDirtyChange?: (dirty: boolean) => void;
   riscoData?: {
     nome: string;
     descricao: string;
@@ -49,7 +51,14 @@ interface TratamentoFormProps {
   };
 }
 
-export function TratamentoForm({ riscoId, tratamento, onSuccess, riscoData }: TratamentoFormProps) {
+export interface TratamentoFormHandle {
+  submit: () => void;
+}
+
+export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormProps>(function TratamentoForm(
+  { riscoId, tratamento, onSuccess, riscoData, onSubmittingChange, onDirtyChange },
+  ref
+) {
   const { profile, company } = useAuth();
   const [loading, setLoading] = useState(false);
   const [iaSuggestionLoading, setIaSuggestionLoading] = useState(false);
