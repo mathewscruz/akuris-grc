@@ -80,6 +80,18 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
     }
   });
 
+  useImperativeHandle(ref, () => ({
+    submit: () => form.handleSubmit(onSubmit)(),
+  }));
+
+  useEffect(() => {
+    onSubmittingChange?.(loading);
+  }, [loading, onSubmittingChange]);
+
+  useEffect(() => {
+    onDirtyChange?.(form.formState.isDirty);
+  }, [form.formState.isDirty, onDirtyChange]);
+
   const onSubmit = async (data: TratamentoFormData) => {
     if (!profile) return;
 
@@ -466,4 +478,5 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
       />
     </form>
   );
-}
+});
+
