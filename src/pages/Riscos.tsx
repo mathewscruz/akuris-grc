@@ -39,6 +39,19 @@ import { MatrizDialog } from '@/components/riscos/MatrizDialog';
 import { CategoriasDialog } from '@/components/riscos/CategoriasDialog';
 import { RiscoAnexosIcone } from '@/components/riscos/RiscoAnexosIcone';
 import { RiskScoreCard } from '@/components/riscos/RiskScoreCard';
+import { RiscosTabs } from '@/components/riscos/RiscosTabs';
+import { RiscoDetailDrawer } from '@/components/riscos/RiscoDetailDrawer';
+import { AppetiteBanner } from '@/components/riscos/overview/AppetiteBanner';
+import { RiskKpiQuad } from '@/components/riscos/overview/RiskKpiQuad';
+import { RiskTrendChart } from '@/components/riscos/overview/RiskTrendChart';
+import { RiskCategoryBars } from '@/components/riscos/overview/RiskCategoryBars';
+import { RiskWatchlist } from '@/components/riscos/overview/RiskWatchlist';
+import { SeverityKpiRow } from '@/components/riscos/matrix/SeverityKpiRow';
+import { RiskHeatmap } from '@/components/riscos/matrix/RiskHeatmap';
+import { HeatmapCellPanel } from '@/components/riscos/matrix/HeatmapCellPanel';
+import { AppetiteFooter } from '@/components/riscos/matrix/AppetiteFooter';
+import { isAcimaApetite, severityFromNivel, slaFromRevisao } from '@/components/riscos/risk-utils';
+
 
 import { TrilhaAuditoriaRiscos } from '@/components/riscos/TrilhaAuditoriaRiscos';
 import { HistoricoAvaliacoesDialog } from '@/components/riscos/HistoricoAvaliacoesDialog';
@@ -110,7 +123,11 @@ export function Riscos() {
   const [auditRisco, setAuditRisco] = useState<Risco | null>(null);
   const [historicoRisco, setHistoricoRisco] = useState<Risco | null>(null);
   const [aprovacaoRisco, setAprovacaoRisco] = useState<Risco | null>(null);
-  
+
+  // Drawer de detalhe
+  const [drawerRiscoId, setDrawerRiscoId] = useState<string | null>(null);
+  const [matrixCell, setMatrixCell] = useState<{ p: number; i: number } | undefined>();
+
   const [sortField, setSortField] = useState<string>('created_at');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
@@ -416,8 +433,14 @@ export function Riscos() {
       key: 'nome',
       label: 'Nome',
       sortable: true,
-      render: (value: any) => (
-        <span className="font-medium">{value}</span>
+      render: (value: any, risco: Risco) => (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); setDrawerRiscoId(risco.id); }}
+          className="font-medium text-left hover:text-primary transition-colors"
+        >
+          {value}
+        </button>
       )
     },
     {
@@ -659,7 +682,7 @@ export function Riscos() {
           })()}
         </div>
 
-        {/* Action Buttons */}
+        {/* Toolbar global */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <div className="flex items-center gap-2 flex-wrap">
             {idsFilter.length > 0 && (
@@ -705,37 +728,141 @@ export function Riscos() {
           </div>
         </div>
 
-        {/* DataTable */}
-        <Card className="rounded-lg border overflow-hidden">
-          <CardContent className="p-0">
-            <DataTable
-              data={sortedRiscos}
-              columns={riscoColumns as Column<Risco>[]}
-              loading={loading}
-              searchable
-              searchPlaceholder="Buscar riscos..."
-              searchValue={searchTerm}
-              onSearchChange={setSearchTerm}
-              filters={filters}
-              sortField={sortField}
-              sortDirection={sortDirection}
-              onSort={handleSort}
-              emptyState={{
-                icon: <AlertTriangle className="h-8 w-8" />,
-                title: searchTerm || statusFilter !== '' || nivelFilter !== '' || aceitoFilter !== ''
-                  ? 'Nenhum risco encontrado'
-                  : 'Nenhum risco cadastrado',
-                description: searchTerm || statusFilter !== '' || nivelFilter !== '' || aceitoFilter !== ''
-                  ? 'Tente ajustar os filtros para encontrar o que procura.'
-                  : 'Comece identificando e cadastrando os riscos da sua organização.',
-                action: !searchTerm && statusFilter === '' && nivelFilter === '' && aceitoFilter === '' ? {
-                  label: 'Cadastrar Primeiro Risco',
-                  onClick: openCreateDialog
-                } : undefined
-              }}
-            />
-          </CardContent>
-        </Card>
+        {(() => {
+          // Derivações compartilhadas para Visão geral e Matriz
+          const acimaApetite = riscos.filter(isAcimaApetite).length;
+          const semResponsavel = riscos.filter((r) => !r.responsavel || !String(r.responsavel).trim()).length;
+          const revisaoVencida = riscos.filter((r) => slaFromRevisao(r.data_proxima_revisao) === 'vencido').length;
+          const emTratamento = riscos.filter((r) => r.status === 'em_tratamento').length;
+
+          // Apetite score derivado da matriz (limite superior do nível "médio")
+          let apetiteScore: number | null = null;
+          if (matrizConfig?.niveis_risco) {
+            const medio = matrizConfig.niveis_risco.find(
+              (n) => n.nivel?.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim() === 'medio',
+            );
+            if (medio) apetiteScore = medio.max;
+          }
+
+          // Counts por severidade (residual||inicial)
+          const sevCounts = riscos.reduce(
+            (acc, r) => {
+              const s = severityFromNivel(r.nivel_risco_residual || r.nivel_risco_inicial);
+              acc[s]++;
+              return acc;
+            },
+            { critico: 0, alto: 0, medio: 0, baixo: 0 } as Record<'critico' | 'alto' | 'medio' | 'baixo', number>,
+          );
+
+          // Risks da célula selecionada
+          const cellRisks = matrixCell
+            ? riscos.filter(
+                (r) => Number(r.probabilidade_inicial) === matrixCell.p && Number(r.impacto_inicial) === matrixCell.i,
+              )
+            : [];
+
+          const overviewNode = (
+            <div className="space-y-5">
+              <AppetiteBanner
+                count={acimaApetite}
+                onSeeMatrix={() => {
+                  const sp = new URLSearchParams(searchParams);
+                  sp.set('view', 'matrix');
+                  setSearchParams(sp);
+                }}
+              />
+              <RiskKpiQuad
+                items={[
+                  { label: 'Acima do apetite', value: acimaApetite, sub: 'Alto ou Crítico', cta: 'Ver na matriz', tone: 'destructive', onClick: () => {
+                    const sp = new URLSearchParams(searchParams); sp.set('view', 'matrix'); setSearchParams(sp);
+                  }},
+                  { label: 'Sem responsável', value: semResponsavel, sub: 'Aguardando atribuição', cta: 'Atribuir agora', tone: 'amber', onClick: () => {
+                    const sp = new URLSearchParams(searchParams); sp.set('view', 'table'); setSearchParams(sp);
+                  }},
+                  { label: 'Revisão vencida', value: revisaoVencida, sub: 'SLA estourado', cta: 'Reavaliar', tone: 'warning', onClick: () => {
+                    const sp = new URLSearchParams(searchParams); sp.set('view', 'table'); setSearchParams(sp);
+                  }},
+                  { label: 'Em tratamento', value: emTratamento, sub: 'Plano em execução', cta: 'Ver tratamentos', tone: 'success', onClick: () => {
+                    const sp = new URLSearchParams(searchParams); sp.set('view', 'table'); setSearchParams(sp);
+                  }},
+                ]}
+              />
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div className="lg:col-span-2"><RiskTrendChart riscos={riscos as any} apetite={apetiteScore} /></div>
+                <RiskCategoryBars riscos={riscos as any} />
+              </div>
+              <RiskWatchlist
+                riscos={riscos as any}
+                totalCount={riscos.length}
+                onOpenRisk={(id) => setDrawerRiscoId(id)}
+                onSeeAll={() => {
+                  const sp = new URLSearchParams(searchParams); sp.set('view', 'table'); setSearchParams(sp);
+                }}
+              />
+            </div>
+          );
+
+          const matrixNode = (
+            <div className="space-y-4">
+              <SeverityKpiRow counts={sevCounts} />
+              <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4 items-start">
+                <Card className="rounded-xl border">
+                  <CardContent className="p-5">
+                    <RiskHeatmap
+                      riscos={riscos as any}
+                      selected={matrixCell}
+                      onSelectCell={(c) => setMatrixCell(c)}
+                      onOpenRisk={(id) => setDrawerRiscoId(id)}
+                    />
+                    <AppetiteFooter apetiteScore={apetiteScore} acimaCount={acimaApetite} />
+                  </CardContent>
+                </Card>
+                {matrixCell && (
+                  <HeatmapCellPanel
+                    cell={matrixCell}
+                    risks={cellRisks as any}
+                    onOpenRisk={(id) => setDrawerRiscoId(id)}
+                  />
+                )}
+              </div>
+            </div>
+          );
+
+          const tableNode = (
+            <Card className="rounded-lg border overflow-hidden">
+              <CardContent className="p-0">
+                <DataTable
+                  data={sortedRiscos}
+                  columns={riscoColumns as Column<Risco>[]}
+                  loading={loading}
+                  searchable
+                  searchPlaceholder="Buscar riscos..."
+                  searchValue={searchTerm}
+                  onSearchChange={setSearchTerm}
+                  filters={filters}
+                  sortField={sortField}
+                  sortDirection={sortDirection}
+                  onSort={handleSort}
+                  emptyState={{
+                    icon: <AlertTriangle className="h-8 w-8" />,
+                    title: searchTerm || statusFilter !== '' || nivelFilter !== '' || aceitoFilter !== ''
+                      ? 'Nenhum risco encontrado'
+                      : 'Nenhum risco cadastrado',
+                    description: searchTerm || statusFilter !== '' || nivelFilter !== '' || aceitoFilter !== ''
+                      ? 'Tente ajustar os filtros para encontrar o que procura.'
+                      : 'Comece identificando e cadastrando os riscos da sua organização.',
+                    action: !searchTerm && statusFilter === '' && nivelFilter === '' && aceitoFilter === '' ? {
+                      label: 'Cadastrar Primeiro Risco',
+                      onClick: openCreateDialog,
+                    } : undefined,
+                  }}
+                />
+              </CardContent>
+            </Card>
+          );
+
+          return <RiscosTabs overview={overviewNode} matrix={matrixNode} table={tableNode} />;
+        })()}
         
         {/* Dialogs */}
         <RiscoDialog
@@ -799,6 +926,16 @@ export function Riscos() {
             onSuccess={() => { setAprovacaoRisco(null); invalidateRiscos(); }}
           />
         )}
+
+        {/* Drawer de detalhe (global, abre via tabela / watchlist / heatmap) */}
+        <RiscoDetailDrawer
+          risco={(riscos.find((r) => r.id === drawerRiscoId) as Risco) || null}
+          open={!!drawerRiscoId}
+          onOpenChange={(o) => !o && setDrawerRiscoId(null)}
+          onEdit={(r) => { setDrawerRiscoId(null); handleEdit(r); }}
+          onAccept={(r) => { setDrawerRiscoId(null); setAprovacaoRisco(r); }}
+          onOpenTratamentos={(r) => { setDrawerRiscoId(null); openTratamentosDialog(r); }}
+        />
 
       </div>
     </TooltipProvider>
