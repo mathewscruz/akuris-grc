@@ -51,7 +51,7 @@ import { RiskHeatmap } from '@/components/riscos/matrix/RiskHeatmap';
 import { HeatmapCellPanel } from '@/components/riscos/matrix/HeatmapCellPanel';
 import { AppetiteFooter } from '@/components/riscos/matrix/AppetiteFooter';
 import { isAcimaApetite, severityFromNivel, slaFromRevisao } from '@/components/riscos/risk-utils';
-import { useMemo } from 'react';
+
 
 import { TrilhaAuditoriaRiscos } from '@/components/riscos/TrilhaAuditoriaRiscos';
 import { HistoricoAvaliacoesDialog } from '@/components/riscos/HistoricoAvaliacoesDialog';
