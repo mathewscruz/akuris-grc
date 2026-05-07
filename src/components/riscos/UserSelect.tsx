@@ -47,7 +47,7 @@ export function UserSelect({ value, onValueChange, placeholder = "Selecionar res
       
       setUsuarios(data || []);
     } catch (error: any) {
-      logger.error('Erro ao buscar usuários:', error);
+      logger.error('Erro ao buscar usuários:', { data: error });
       toast.error('Erro ao carregar lista de usuários');
     } finally {
       setLoading(false);

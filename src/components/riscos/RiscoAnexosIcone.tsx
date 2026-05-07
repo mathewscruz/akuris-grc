@@ -42,7 +42,7 @@ export function RiscoAnexosIcone({ riscoId }: RiscoAnexosIconeProps) {
         if (error) throw error;
         setAnexos(data || []);
       } catch (error) {
-        logger.error('Erro ao buscar anexos:', error);
+        logger.error('Erro ao buscar anexos:', { data: error });
       } finally {
         setLoading(false);
       }

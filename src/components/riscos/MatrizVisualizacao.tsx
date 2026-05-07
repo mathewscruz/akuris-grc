@@ -79,7 +79,7 @@ export function MatrizVisualizacao() {
 
       setRiscos(riscosData || []);
     } catch (error) {
-      logger.error('Erro ao carregar matriz e riscos:', error);
+      logger.error('Erro ao carregar matriz e riscos:', { data: error });
     } finally {
       setLoading(false);
     }

@@ -138,7 +138,7 @@ export function RiscoAnexosUpload({
       });
 
     } catch (error: any) {
-      logger.error('Erro no upload:', error);
+      logger.error('Erro no upload:', { data: error });
       toast({
         title: "Erro no upload",
         description: error.message || "Ocorreu um erro ao enviar o arquivo.",
@@ -177,7 +177,7 @@ export function RiscoAnexosUpload({
       });
 
     } catch (error: any) {
-      logger.error('Erro ao deletar anexo:', error);
+      logger.error('Erro ao deletar anexo:', { data: error });
       toast({
         title: "Erro ao remover arquivo",
         description: error.message || "Ocorreu um erro ao remover o arquivo.",

@@ -179,7 +179,7 @@ export function AprovacaoRiscoDialog({ open, onOpenChange, risco, onSuccess }: P
           }
         });
       } catch (emailError) {
-        logger.warn('Erro ao enviar e-mail de aceite:', emailError);
+        logger.warn('Erro ao enviar e-mail de aceite:', { data: emailError });
       }
 
       toast.success(`Aceite de risco ${decisao === 'aprovado' ? 'aprovado' : 'rejeitado'}!`);
