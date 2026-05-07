@@ -226,7 +226,7 @@ export default function AtivosLicencas() {
       label: 'Tipo',
       sortable: true,
       render: (_: any, licenca: Licenca) => (
-        <Badge variant="outline">{licenca.tipo_licenca}</Badge>
+        <Badge variant="outline">{formatStatus(licenca.tipo_licenca)}</Badge>
       )
     },
     {
