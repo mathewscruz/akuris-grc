@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useLocation } from 'react-router-dom';
-import { Plus, AlertTriangle, TrendingUp, CheckCircle, Shield, Settings, Tag, X, Clock, FileText, Download, MoreHorizontal, Edit, Trash2, History, ShieldCheck, Paperclip } from 'lucide-react';
+import { Plus, AlertTriangle, Shield, Settings, Tag, X, Clock, FileText, Download, MoreHorizontal, Edit, Trash2, History, ShieldCheck, Paperclip } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { DataTable, Column } from '@/components/ui/data-table';
-import { StatCard } from '@/components/ui/stat-card';
 import { PageHeader } from '@/components/ui/page-header';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -38,7 +37,6 @@ import { TratamentosDialog } from '@/components/riscos/TratamentosDialog';
 import { MatrizDialog } from '@/components/riscos/MatrizDialog';
 import { CategoriasDialog } from '@/components/riscos/CategoriasDialog';
 import { RiscoAnexosIcone } from '@/components/riscos/RiscoAnexosIcone';
-import { RiskScoreCard } from '@/components/riscos/RiskScoreCard';
 import { RiscosTabs } from '@/components/riscos/RiscosTabs';
 import { RiscoDetailDrawer } from '@/components/riscos/RiscoDetailDrawer';
 import { AppetiteBanner } from '@/components/riscos/overview/AppetiteBanner';
@@ -50,7 +48,10 @@ import { SeverityKpiRow } from '@/components/riscos/matrix/SeverityKpiRow';
 import { RiskHeatmap } from '@/components/riscos/matrix/RiskHeatmap';
 import { HeatmapCellPanel } from '@/components/riscos/matrix/HeatmapCellPanel';
 import { AppetiteFooter } from '@/components/riscos/matrix/AppetiteFooter';
-import { isAcimaApetite, severityFromNivel, slaFromRevisao } from '@/components/riscos/risk-utils';
+import { RiscosViewChips, type SavedView } from '@/components/riscos/table/RiscosViewChips';
+import { SparklineCell } from '@/components/riscos/table/SparklineCell';
+import { SlaCell } from '@/components/riscos/table/SlaCell';
+import { isAcimaApetite, severityFromNivel, slaFromRevisao, scoreFromPI, shortRiskId, relativeShort } from '@/components/riscos/risk-utils';
 
 
 import { TrilhaAuditoriaRiscos } from '@/components/riscos/TrilhaAuditoriaRiscos';
