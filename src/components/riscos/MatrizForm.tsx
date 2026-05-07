@@ -6,17 +6,57 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { Plus, Trash2, Edit, Grid3X3, AlertTriangle } from 'lucide-react';
+import { Plus, Trash2, Edit, Grid3X3, AlertTriangle, X as XIcon, Calculator } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { toast } from 'sonner';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DialogFooter } from '@/components/ui/dialog';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
+
+const COLOR_PALETTE = ['#22c55e', '#84cc16', '#eab308', '#f97316', '#dc2626', '#6b7280', '#3b82f6', '#7552ff'];
+
+function ColorSwatch({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-label="Selecionar cor do nível"
+          className="h-9 w-9 rounded-md border border-border shadow-sm transition-transform hover:scale-105"
+          style={{ backgroundColor: value }}
+        />
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-3" align="end">
+        <div className="grid grid-cols-4 gap-2 mb-3">
+          {COLOR_PALETTE.map(c => (
+            <button
+              key={c}
+              type="button"
+              onClick={() => onChange(c)}
+              className={cn(
+                'h-7 w-7 rounded-md border transition-all hover:scale-110',
+                value === c ? 'border-foreground ring-2 ring-foreground/20' : 'border-border'
+              )}
+              style={{ backgroundColor: c }}
+              aria-label={`Cor ${c}`}
+            />
+          ))}
+        </div>
+        <Input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="h-8 text-xs font-mono"
+          placeholder="#hex"
+        />
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 const matrizSchema = z.object({
   nome: z.string().min(1, 'Nome é obrigatório'),
