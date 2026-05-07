@@ -395,27 +395,7 @@ export function Riscos() {
     return <StatusBadge size="sm" {...resolveAprovacaoTone(status)}>{labels[status]}</StatusBadge>;
   };
 
-  // Função para calcular variação percentual
-  const calcTrend = (atual: number, antigo: number | null | undefined): { value: number; direction: 'up' | 'down' | 'neutral' } | undefined => {
-    if (antigo === null || antigo === undefined || antigo === 0) return undefined;
-    const diff = ((atual - antigo) / antigo) * 100;
-    const rounded = Math.round(Math.abs(diff));
-    if (rounded === 0) return undefined;
-    return { value: rounded, direction: diff > 0 ? 'up' : 'down' };
-  };
-
-  // Mini sparkline SVG component
-  const MiniSparkline = ({ trend, color }: { trend?: { direction: 'up' | 'down' | 'neutral' }; color: string }) => {
-    const upPath = "M0,14 L4,12 L8,10 L12,8 L16,11 L20,7 L24,5 L28,3";
-    const downPath = "M0,3 L4,5 L8,7 L12,5 L16,8 L20,10 L24,12 L28,14";
-    const flatPath = "M0,8 L4,9 L8,7 L12,8 L16,9 L20,7 L24,8 L28,8";
-    const path = trend?.direction === 'up' ? upPath : trend?.direction === 'down' ? downPath : flatPath;
-    return (
-      <svg width="32" height="16" viewBox="0 0 28 16" className="opacity-60">
-        <path d={path} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
-      </svg>
-    );
-  };
+  // (calcTrend e MiniSparkline removidos com os KPI cards antigos)
 
   if (loading) {
     return (
