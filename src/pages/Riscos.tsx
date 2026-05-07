@@ -528,27 +528,27 @@ export function Riscos() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-              <MoreHorizontal className="h-4 w-4" />
+              <MoreHorizontal className="h-4 w-4" strokeWidth={1.5} />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => handleEdit(risco)}>
-              <Edit className="mr-2 h-4 w-4" /> Editar
+              <Edit className="mr-2 h-4 w-4" strokeWidth={1.5} /> Editar
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => openTratamentosDialog(risco)}>
-              <Shield className="mr-2 h-4 w-4" /> Tratamentos ({risco.tratamentos_count || 0})
+              <Shield className="mr-2 h-4 w-4" strokeWidth={1.5} /> Tratamentos ({risco.tratamentos_count || 0})
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setAprovacaoRisco(risco)}>
-              <ShieldCheck className="mr-2 h-4 w-4" /> Aprovação
+              <ShieldCheck className="mr-2 h-4 w-4" strokeWidth={1.5} /> Aprovação
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setHistoricoRisco(risco)}>
-              <Clock className="mr-2 h-4 w-4" /> Histórico Avaliações
+              <Clock className="mr-2 h-4 w-4" strokeWidth={1.5} /> Histórico Avaliações
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setAuditRisco(risco)}>
-              <History className="mr-2 h-4 w-4" /> Trilha de Auditoria
+              <History className="mr-2 h-4 w-4" strokeWidth={1.5} /> Trilha de Auditoria
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => openDeleteDialog(risco)} className="text-destructive focus:text-destructive">
-              <Trash2 className="mr-2 h-4 w-4" /> Excluir
+              <Trash2 className="mr-2 h-4 w-4" strokeWidth={1.5} /> Excluir
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -629,31 +629,31 @@ export function Riscos() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm">
-                  <Download className="h-4 w-4 sm:mr-2" />
+                  <Download className="h-4 w-4 sm:mr-2" strokeWidth={1.5} />
                   <span className="hidden sm:inline">Exportar</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
                 <DropdownMenuItem onClick={() => exportRiscosCSV(sortedRiscos)}>
-                  <FileText className="mr-2 h-4 w-4" />
+                  <FileText className="mr-2 h-4 w-4" strokeWidth={1.5} />
                   Exportar CSV
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => exportRiscosPDF(sortedRiscos, stats)}>
-                  <FileText className="mr-2 h-4 w-4" />
+                  <FileText className="mr-2 h-4 w-4" strokeWidth={1.5} />
                   Exportar PDF
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
             <Button variant="outline" size="sm" onClick={() => setCategoriasDialogOpen(true)} className="whitespace-nowrap">
-              <Tag className="h-4 w-4 sm:mr-2" />
+              <Tag className="h-4 w-4 sm:mr-2" strokeWidth={1.5} />
               <span className="hidden sm:inline">Categorias</span>
             </Button>
             <Button variant="outline" size="sm" onClick={() => setMatrizDialogOpen(true)} className="whitespace-nowrap">
-              <Settings className="h-4 w-4 sm:mr-2" />
+              <Settings className="h-4 w-4 sm:mr-2" strokeWidth={1.5} />
               <span className="hidden sm:inline">Matriz</span>
             </Button>
             <Button size="sm" onClick={openCreateDialog}>
-              <Plus className="h-4 w-4 sm:mr-2" />
+              <Plus className="h-4 w-4 sm:mr-2" strokeWidth={1.5} />
               <span className="hidden sm:inline">Novo Risco</span>
             </Button>
           </div>
