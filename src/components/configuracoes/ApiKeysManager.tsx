@@ -20,7 +20,7 @@ import { AkurisPulse } from '@/components/ui/AkurisPulse';
 interface ApiKey {
   id: string;
   nome: string;
-  api_key: string;
+  api_key?: string;
   prefixo: string;
   permissoes: string[];
   rate_limit_por_minuto: number;
