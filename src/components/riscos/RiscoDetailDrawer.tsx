@@ -369,3 +369,40 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 function EmptyHint({ text }: { text: string }) {
   return <div className="py-10 text-center text-sm text-muted-foreground">{text}</div>;
 }
+
+function splitLines(text?: string): string[] {
+  if (!text) return [];
+  return text
+    .split(/\r?\n|;|•/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function CauseChip({ kind, text }: { kind: 'CAUSA' | 'CONSEQ.'; text: string }) {
+  return (
+    <div className="flex gap-2.5 px-3 py-2 bg-muted/40 rounded-md text-xs">
+      <span className="text-[10px] font-semibold uppercase tracking-[0.5px] text-muted-foreground pt-0.5 min-w-[52px] flex-shrink-0">
+        {kind}
+      </span>
+      <span className="text-foreground/85">{text}</span>
+    </div>
+  );
+}
+
+function treatmentPct(status: string): number {
+  const s = (status || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  if (s.includes('conclu')) return 100;
+  if (s.includes('andamento') || s.includes('em_andamento') || s.includes('progress')) return 60;
+  return 0;
+}
+
+function coberturaPct(eficacia?: string | null): number {
+  if (!eficacia) return 0;
+  const s = eficacia.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  if (s.includes('eficaz') && !s.includes('parcial') && !s.includes('inef')) return 100;
+  if (s.includes('parcial')) return 60;
+  if (s.includes('implant') || s.includes('implement')) return 30;
+  if (s.includes('inef')) return 10;
+  return 0;
+}
+
