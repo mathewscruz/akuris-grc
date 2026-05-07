@@ -249,7 +249,7 @@ export default function ControlesVinculacaoDialog({
       baixo: "secondary"
     } as const;
     
-    return <Badge variant={variants[nivel as keyof typeof variants] || "default"}>{nivel}</Badge>;
+    return <Badge variant={variants[nivel as keyof typeof variants] || "default"}>{formatStatus(nivel)}</Badge>;
   };
 
   const getCriticidadeBadge = (criticidade: string) => {
