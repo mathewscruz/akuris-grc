@@ -20,7 +20,7 @@ import { AkurisPulse } from '@/components/ui/AkurisPulse';
 interface ApiKey {
   id: string;
   nome: string;
-  api_key: string;
+  api_key?: string;
   prefixo: string;
   permissoes: string[];
   rate_limit_por_minuto: number;
@@ -59,7 +59,7 @@ export function ApiKeysManager() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  const [revealedKeys, setRevealedKeys] = useState<Set<string>>(new Set());
+  const [revealedKeys, setRevealedKeys] = useState<Map<string, string>>(new Map());
   const [newKeyRevealed, setNewKeyRevealed] = useState<string | null>(null);
 
   // Form state
@@ -235,18 +235,33 @@ curl -X POST -H "X-API-Key: gai_sua_chave_aqui" \\
                   <TableCell>
                     <div className="flex items-center gap-1">
                       <code className="text-xs bg-muted px-1.5 py-0.5 rounded">
-                        {revealedKeys.has(key.id) ? key.api_key : maskKey(key.api_key)}
+                        {revealedKeys.get(key.id) ? revealedKeys.get(key.id) : `${key.prefixo}••••••••••••••••••••`}
                       </code>
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => {
-                        setRevealedKeys(prev => {
-                          const next = new Set(prev);
-                          next.has(key.id) ? next.delete(key.id) : next.add(key.id);
-                          return next;
-                        });
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={async () => {
+                        if (revealedKeys.has(key.id)) {
+                          setRevealedKeys(prev => {
+                            const next = new Map(prev);
+                            next.delete(key.id);
+                            return next;
+                          });
+                          return;
+                        }
+                        const { data, error } = await supabase.rpc('get_api_key_full', { _id: key.id });
+                        if (error || !data) {
+                          toast.error('Não foi possível revelar a chave');
+                          return;
+                        }
+                        setRevealedKeys(prev => new Map(prev).set(key.id, data as string));
                       }}>
                         {revealedKeys.has(key.id) ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyKey(key.api_key)}>
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={async () => {
+                        const cached = revealedKeys.get(key.id);
+                        if (cached) { copyKey(cached); return; }
+                        const { data, error } = await supabase.rpc('get_api_key_full', { _id: key.id });
+                        if (error || !data) { toast.error('Não foi possível copiar a chave'); return; }
+                        copyKey(data as string);
+                      }}>
                         <Copy className="h-3 w-3" />
                       </Button>
                     </div>

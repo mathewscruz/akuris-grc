@@ -150,7 +150,7 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
         created_at: usuario.created_at,
         permission_profile_id: usuario.permission_profile_id,
         invitation_sent_at: usuario.invitation_sent_at ?? null,
-        invitation_link: usuario.invitation_link ?? null,
+        invitation_link: null,
         empresas: usuario.empresas,
         permission_profiles: usuario.permission_profiles,
       }));
