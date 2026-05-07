@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Calendar, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { EmptyState } from '@/components/ui/empty-state';
+import { RiscosIcon } from '@/components/icons';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -38,6 +40,7 @@ interface Tratamento {
 interface TratamentosListProps {
   riscoId: string;
   riscoNome?: string;
+  embedded?: boolean;
   riscoData?: {
     nome: string;
     descricao: string;
@@ -46,7 +49,7 @@ interface TratamentosListProps {
   };
 }
 
-export function TratamentosList({ riscoId, riscoNome, riscoData }: TratamentosListProps) {
+export function TratamentosList({ riscoId, riscoNome, embedded = false, riscoData }: TratamentosListProps) {
   const [tratamentos, setTratamentos] = useState<Tratamento[]>([]);
   const [loading, setLoading] = useState(true);
   const [tratamentoDialogOpen, setTratamentoDialogOpen] = useState(false);
@@ -177,132 +180,132 @@ export function TratamentosList({ riscoId, riscoNome, riscoData }: TratamentosLi
     );
   }
 
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-lg">Tratamentos do Risco</CardTitle>
-            {riscoNome && (
-              <p className="text-sm text-muted-foreground mt-1">
-                Risco: <span className="font-medium">{riscoNome}</span>
-              </p>
-            )}
-          </div>
-          <Button onClick={openCreateDialog} size="sm">
-            <Plus className="mr-2 h-4 w-4" />
-            Novo Tratamento
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {tratamentos.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">
-              Nenhum tratamento cadastrado para este risco.
-            </p>
-            <Button onClick={openCreateDialog} className="mt-4" variant="outline">
-              <Plus className="mr-2 h-4 w-4" />
-              Cadastrar Primeiro Tratamento
-            </Button>
-          </div>
-        ) : (
-          <div className="border rounded-lg">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Descrição</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Responsável</TableHead>
-                  <TableHead>Prazo</TableHead>
-                  <TableHead>Custo</TableHead>
-                  <TableHead>Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {tratamentos.map((tratamento) => (
-                  <TableRow key={tratamento.id}>
-                    <TableCell>
-                      <StatusBadge size="sm" {...resolveTratamentoTipoTone(tratamento.tipo_tratamento)}>
-                        {formatStatus(tratamento.tipo_tratamento)}
-                      </StatusBadge>
-                    </TableCell>
-                    <TableCell className="max-w-xs">
-                      <div className="truncate" title={tratamento.descricao}>
-                        {tratamento.descricao}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge size="sm" {...resolveTratamentoStatusTone(tratamento.status)}>
-                        {formatStatus(tratamento.status)}
-                      </StatusBadge>
-                    </TableCell>
-                    <TableCell>
-                      {tratamento.responsavel_profile ? (
-                        <div className="flex items-center gap-2">
-                          <Avatar className="h-6 w-6">
-                            <AvatarImage src={tratamento.responsavel_profile.foto_url || ''} />
-                            <AvatarFallback className="text-xs">
-                              {tratamento.responsavel_profile.nome?.charAt(0)?.toUpperCase() || '?'}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-sm">{tratamento.responsavel_profile.nome}</span>
-                        </div>
-                      ) : tratamento.responsavel ? (
-                        <span className="text-sm text-muted-foreground">{tratamento.responsavel}</span>
-                      ) : (
-                        <span className="text-muted-foreground">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {tratamento.prazo ? (
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {formatDateOnly(tratamento.prazo)}
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {tratamento.custo ? (
-                        <div className="flex items-center gap-1">
-                          <DollarSign className="h-3 w-3" />
-                          {new Intl.NumberFormat('pt-BR', {
-                            style: 'currency',
-                            currency: 'BRL'
-                          }).format(tratamento.custo)}
-                        </div>
-                      ) : (
-                        <span className="text-muted-foreground">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEdit(tratamento)}
-                        >
-                          <Edit className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openDeleteDialog(tratamento)}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+  const count = tratamentos.length;
+
+  const headerSection = (
+    <div className="flex items-center justify-between gap-3 mb-4">
+      <div className="flex items-center gap-2">
+        {!embedded && (
+          <CardTitle className="text-lg">Tratamentos do Risco</CardTitle>
         )}
-      </CardContent>
+        <span className="text-xs text-muted-foreground">
+          {count} {count === 1 ? 'tratamento cadastrado' : 'tratamentos cadastrados'}
+        </span>
+      </div>
+      <Button onClick={openCreateDialog} size="sm">
+        <Plus className="mr-2 h-4 w-4" strokeWidth={1.5} />
+        Novo Tratamento
+      </Button>
+    </div>
+  );
+
+  const body = (
+    <>
+      {headerSection}
+      {tratamentos.length === 0 ? (
+        <EmptyState
+          variant="illustrated"
+          icon={<RiscosIcon className="h-7 w-7" />}
+          title="Nenhum tratamento cadastrado"
+          description="Comece definindo a primeira ação para mitigar, transferir, aceitar ou evitar este risco."
+          action={{
+            label: 'Cadastrar Primeiro Tratamento',
+            onClick: openCreateDialog,
+          }}
+        />
+      ) : (
+        <div className="border rounded-lg overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Tipo</TableHead>
+                <TableHead>Descrição</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Responsável</TableHead>
+                <TableHead>Prazo</TableHead>
+                <TableHead>Custo</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {tratamentos.map((tratamento) => (
+                <TableRow key={tratamento.id}>
+                  <TableCell>
+                    <StatusBadge size="sm" {...resolveTratamentoTipoTone(tratamento.tipo_tratamento)}>
+                      {formatStatus(tratamento.tipo_tratamento)}
+                    </StatusBadge>
+                  </TableCell>
+                  <TableCell className="max-w-xs">
+                    <div className="truncate" title={tratamento.descricao}>
+                      {tratamento.descricao}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <StatusBadge size="sm" {...resolveTratamentoStatusTone(tratamento.status)}>
+                      {formatStatus(tratamento.status)}
+                    </StatusBadge>
+                  </TableCell>
+                  <TableCell>
+                    {tratamento.responsavel_profile ? (
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-6 w-6">
+                          <AvatarImage src={tratamento.responsavel_profile.foto_url || ''} />
+                          <AvatarFallback className="text-xs">
+                            {tratamento.responsavel_profile.nome?.charAt(0)?.toUpperCase() || '?'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm">{tratamento.responsavel_profile.nome}</span>
+                      </div>
+                    ) : tratamento.responsavel ? (
+                      <span className="text-sm text-muted-foreground">{tratamento.responsavel}</span>
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {tratamento.prazo ? (
+                      <div className="flex items-center gap-1.5 text-sm">
+                        <Calendar className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.5} />
+                        {formatDateOnly(tratamento.prazo)}
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {tratamento.custo ? (
+                      <div className="flex items-center gap-1.5 text-sm">
+                        <DollarSign className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.5} />
+                        {new Intl.NumberFormat('pt-BR', {
+                          style: 'currency',
+                          currency: 'BRL',
+                        }).format(tratamento.custo)}
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-2 justify-end">
+                      <Button variant="ghost" size="icon" onClick={() => handleEdit(tratamento)}>
+                        <Edit className="h-3.5 w-3.5" strokeWidth={1.5} />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => openDeleteDialog(tratamento)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" strokeWidth={1.5} />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
 
       <TratamentoDialog
         open={tratamentoDialogOpen}
@@ -317,9 +320,20 @@ export function TratamentosList({ riscoId, riscoNome, riscoData }: TratamentosLi
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
         title="Excluir Tratamento"
-        description={`Tem certeza que deseja excluir este tratamento? Esta ação não pode ser desfeita.`}
+        description="Tem certeza que deseja excluir este tratamento? Esta ação não pode ser desfeita."
         onConfirm={handleDelete}
       />
+    </>
+  );
+
+  if (embedded) {
+    return <div className="space-y-4">{body}</div>;
+  }
+
+  return (
+    <Card>
+      <CardContent className="pt-6">{body}</CardContent>
     </Card>
   );
 }
+

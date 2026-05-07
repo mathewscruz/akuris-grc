@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -11,7 +11,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CalendarIcon, Copy } from 'lucide-react';
+import { CalendarIcon, Copy, Shield, AlertTriangle, Lightbulb } from 'lucide-react';
 import { AkurisAIIcon } from '@/components/icons';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -41,6 +41,8 @@ interface TratamentoFormProps {
   riscoId: string;
   tratamento?: any;
   onSuccess: () => void;
+  onSubmittingChange?: (submitting: boolean) => void;
+  onDirtyChange?: (dirty: boolean) => void;
   riscoData?: {
     nome: string;
     descricao: string;
@@ -49,7 +51,14 @@ interface TratamentoFormProps {
   };
 }
 
-export function TratamentoForm({ riscoId, tratamento, onSuccess, riscoData }: TratamentoFormProps) {
+export interface TratamentoFormHandle {
+  submit: () => void;
+}
+
+export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormProps>(function TratamentoForm(
+  { riscoId, tratamento, onSuccess, riscoData, onSubmittingChange, onDirtyChange },
+  ref
+) {
   const { profile, company } = useAuth();
   const [loading, setLoading] = useState(false);
   const [iaSuggestionLoading, setIaSuggestionLoading] = useState(false);
@@ -70,6 +79,18 @@ export function TratamentoForm({ riscoId, tratamento, onSuccess, riscoData }: Tr
       eficacia: tratamento?.eficacia || ''
     }
   });
+
+  useImperativeHandle(ref, () => ({
+    submit: () => form.handleSubmit(onSubmit)(),
+  }));
+
+  useEffect(() => {
+    onSubmittingChange?.(loading);
+  }, [loading, onSubmittingChange]);
+
+  useEffect(() => {
+    onDirtyChange?.(form.formState.isDirty);
+  }, [form.formState.isDirty, onDirtyChange]);
 
   const onSubmit = async (data: TratamentoFormData) => {
     if (!profile) return;
@@ -171,8 +192,8 @@ export function TratamentoForm({ riscoId, tratamento, onSuccess, riscoData }: Tr
   };
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-7">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div className="space-y-2">
           <Label htmlFor="tipo_tratamento">Tipo de Tratamento *</Label>
           <Select 
@@ -213,50 +234,52 @@ export function TratamentoForm({ riscoId, tratamento, onSuccess, riscoData }: Tr
         </div>
       </div>
 
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="descricao">Descrição do Tratamento *</Label>
-          {riscoData && !tratamento && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleIaSuggestion}
-              disabled={iaSuggestionLoading}
-              className="ml-2"
-            >
-              {iaSuggestionLoading ? (
-                <>
-                  <AkurisPulse size={12} className="mr-2" />
-                  Gerando...
-                </>
-              ) : (
-                <>
-                  <AkurisAIIcon className="mr-2 h-3 w-3" />
-                  <AkurisAIIcon className="mr-1 h-3 w-3" />
-                  Sugerir Tratamento
-                </>
-              )}
-            </Button>
-          )}
-          <AiCostHint className="ml-2" action="cada sugestão de tratamento" />
+      <div className="space-y-3 rounded-lg border border-border/60 bg-muted/20 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <Label htmlFor="descricao" className="text-base font-semibold">
+            Descrição do Tratamento *
+          </Label>
+          <div className="flex items-center gap-2">
+            <AiCostHint action="cada sugestão de tratamento" />
+            {riscoData && !tratamento && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleIaSuggestion}
+                disabled={iaSuggestionLoading}
+              >
+                {iaSuggestionLoading ? (
+                  <>
+                    <AkurisPulse size={14} className="mr-2" />
+                    Gerando...
+                  </>
+                ) : (
+                  <>
+                    <AkurisAIIcon className="mr-2 h-4 w-4" />
+                    Sugerir Tratamento
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
         </div>
         <Textarea
           {...form.register('descricao')}
-          placeholder="Descreva detalhadamente o tratamento proposto... ou use o botão 'Sugerir Tratamento' para obter sugestões automáticas!"
-          rows={4}
+          placeholder="Descreva detalhadamente a ação proposta — escopo, etapas, responsáveis envolvidos e indicadores de sucesso."
+          className="min-h-[140px] resize-y bg-background"
         />
         {form.formState.errors.descricao && (
           <p className="text-sm text-destructive">{form.formState.errors.descricao.message}</p>
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div className="space-y-2">
           <Label htmlFor="responsavel">Responsável</Label>
           <UserSelect
             value={form.watch('responsavel') || ''}
-            onValueChange={(value) => form.setValue('responsavel', value)}
+            onValueChange={(value) => form.setValue('responsavel', value, { shouldDirty: true })}
             placeholder="Selecione o responsável"
           />
         </div>
@@ -272,7 +295,7 @@ export function TratamentoForm({ riscoId, tratamento, onSuccess, riscoData }: Tr
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div className="space-y-2">
           <Label>Data de Início</Label>
           <Popover>
@@ -346,16 +369,8 @@ export function TratamentoForm({ riscoId, tratamento, onSuccess, riscoData }: Tr
         </Select>
       </div>
 
-      <div className="flex justify-between pt-4">
-        <div className="text-sm text-muted-foreground">
-          * Campos obrigatórios
-        </div>
-        <div className="flex gap-2">
-          <Button type="submit" disabled={loading}>
-            {loading ? 'Salvando...' : (tratamento ? 'Atualizar' : 'Criar')} Tratamento
-          </Button>
-        </div>
-      </div>
+      <p className="text-xs text-muted-foreground">* Campos obrigatórios</p>
+
 
       {/* Modal de Sugestões da IA */}
       <Dialog open={suggestionDialogOpen} onOpenChange={setSuggestionDialogOpen}>
@@ -363,7 +378,6 @@ export function TratamentoForm({ riscoId, tratamento, onSuccess, riscoData }: Tr
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AkurisAIIcon className="h-5 w-5" />
-              <AkurisAIIcon className="h-4 w-4" />
               Sugestões Inteligentes de Tratamento
             </DialogTitle>
             <DialogDescription>
@@ -376,8 +390,11 @@ export function TratamentoForm({ riscoId, tratamento, onSuccess, riscoData }: Tr
               {iaSuggestions.mitigacao && (
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg flex items-center justify-between">
-                      🛡️ Plano de Mitigação
+                    <CardTitle className="text-lg flex items-center justify-between gap-3">
+                      <span className="flex items-center gap-2">
+                        <Shield className="h-4 w-4 text-primary" strokeWidth={1.5} />
+                        Plano de Mitigação
+                      </span>
                       <div className="flex gap-2">
                         <Button
                           variant="outline"
@@ -408,8 +425,11 @@ export function TratamentoForm({ riscoId, tratamento, onSuccess, riscoData }: Tr
               {iaSuggestions.contingenciamento && (
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg flex items-center justify-between">
-                      🚨 Plano de Contingenciamento
+                    <CardTitle className="text-lg flex items-center justify-between gap-3">
+                      <span className="flex items-center gap-2">
+                        <AlertTriangle className="h-4 w-4 text-amber-500" strokeWidth={1.5} />
+                        Plano de Contingenciamento
+                      </span>
                       <div className="flex gap-2">
                         <Button
                           variant="outline"
@@ -437,9 +457,10 @@ export function TratamentoForm({ riscoId, tratamento, onSuccess, riscoData }: Tr
                 </Card>
               )}
 
-              <div className="mt-6 p-4 bg-muted rounded-lg">
+              <div className="mt-6 p-4 bg-muted rounded-lg flex gap-3">
+                <Lightbulb className="h-4 w-4 text-primary shrink-0 mt-0.5" strokeWidth={1.5} />
                 <p className="text-sm text-muted-foreground">
-                  💡 <strong>Dica:</strong> Essas sugestões são geradas automaticamente com base nas informações do risco. 
+                  <strong className="text-foreground">Dica:</strong> Essas sugestões são geradas automaticamente com base nas informações do risco.
                   Revise e ajuste conforme necessário para adequar à realidade da sua organização.
                 </p>
               </div>
@@ -457,4 +478,5 @@ export function TratamentoForm({ riscoId, tratamento, onSuccess, riscoData }: Tr
       />
     </form>
   );
-}
+});
+
