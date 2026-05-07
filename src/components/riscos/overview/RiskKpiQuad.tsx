@@ -7,10 +7,11 @@ import { cn } from '@/lib/utils';
 
 type Tone = 'destructive' | 'warning' | 'amber' | 'success';
 
+// 4 tons distintos: destructive (críticos), warning (altos), amber 60% (médios), success (baixos)
 const TONE_DOT: Record<Tone, string> = {
   destructive: 'bg-destructive',
   warning: 'bg-warning',
-  amber: 'bg-warning',
+  amber: 'bg-warning/60',
   success: 'bg-success',
 };
 
@@ -35,7 +36,7 @@ export function RiskKpiQuad({ items }: Props) {
           key={k.label}
           type="button"
           onClick={k.onClick}
-          className="group bg-card border border-border rounded-xl p-5 flex flex-col gap-2.5 text-left hover:border-foreground/20 transition-colors min-h-[148px]"
+          className="group bg-card border border-border rounded-xl px-5 py-4 flex flex-col gap-2.5 text-left hover:border-foreground/20 transition-colors min-h-[156px]"
         >
           <div className="flex items-start justify-between gap-2">
             <span className="text-[10.5px] font-semibold tracking-[1.2px] uppercase text-muted-foreground">
@@ -43,7 +44,7 @@ export function RiskKpiQuad({ items }: Props) {
             </span>
             <span className={cn('h-2 w-2 rounded-full flex-shrink-0', TONE_DOT[k.tone])} />
           </div>
-          <div className="text-4xl font-semibold tracking-tight tabular-nums leading-none text-foreground">
+          <div className="text-[42px] font-semibold tracking-[-0.02em] tabular-nums leading-none text-foreground">
             {k.value}
           </div>
           <div className="text-xs text-muted-foreground">{k.sub}</div>

@@ -95,44 +95,47 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
         {/* Header */}
         <SheetHeader className="px-6 py-5 border-b border-border space-y-3">
           <div className="flex items-center justify-between gap-3">
-            <span className="text-[10.5px] font-mono tracking-wider text-muted-foreground">
-              {shortRiskId(risco.id)}
-            </span>
-            <StatusBadge size="sm" {...resolveRiscoStatusTone(risco.status)}>
-              {formatStatus(risco.status)}
-            </StatusBadge>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[10.5px] font-mono tracking-wider text-muted-foreground">
+                {shortRiskId(risco.id)}
+              </span>
+              <StatusBadge size="sm" {...resolveNivelRiscoTone(risco.nivel_risco_residual || risco.nivel_risco_inicial)}>
+                {formatStatus(risco.nivel_risco_residual || risco.nivel_risco_inicial)}
+              </StatusBadge>
+              <StatusBadge size="sm" {...resolveRiscoStatusTone(risco.status)}>
+                {formatStatus(risco.status)}
+              </StatusBadge>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-xs"
+              onClick={() => onEdit(risco)}
+            >
+              <Edit className="h-3.5 w-3.5 mr-1" strokeWidth={1.5} />
+              Editar
+            </Button>
           </div>
           <SheetTitle className="text-xl leading-tight font-semibold">
             {risco.nome}
           </SheetTitle>
-          <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
-            {risco.categoria && (
-              <span className="inline-flex items-center gap-1.5">
-                {risco.categoria.cor && (
-                  <span className="h-2 w-2 rounded-full" style={{ background: risco.categoria.cor }} />
-                )}
-                {risco.categoria.nome}
-              </span>
-            )}
-            <span>·</span>
-            <span className="inline-flex items-center gap-1.5">
-              <Avatar className="h-5 w-5">
-                {risco.responsavel_foto && <AvatarImage src={risco.responsavel_foto} />}
-                <AvatarFallback className="text-[9px] bg-primary/10 text-primary">
-                  {initials(risco.responsavel_nome)}
-                </AvatarFallback>
-              </Avatar>
-              {risco.responsavel_nome || 'Sem responsável'}
-            </span>
-            {risco.data_proxima_revisao && (
-              <>
-                <span>·</span>
-                <span className="inline-flex items-center gap-1">
-                  <Clock className="h-3 w-3" strokeWidth={1.5} />
-                  Revisão {SLA_LABELS[sla]} ({formatDateOnly(risco.data_proxima_revisao)})
-                </span>
-              </>
-            )}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+            {[
+              { l: 'Categoria', v: risco.categoria?.nome || '—' },
+              { l: 'Responsável', v: risco.responsavel_nome || '—' },
+              {
+                l: 'Próx. revisão',
+                v: risco.data_proxima_revisao ? formatDateOnly(risco.data_proxima_revisao) : '—',
+              },
+              { l: 'SLA', v: SLA_LABELS[sla] },
+            ].map((m) => (
+              <div key={m.l}>
+                <div className="text-[10px] font-semibold uppercase tracking-[0.6px] text-muted-foreground">
+                  {m.l}
+                </div>
+                <div className="text-xs text-foreground mt-1 truncate">{m.v}</div>
+              </div>
+            ))}
           </div>
         </SheetHeader>
 
@@ -186,16 +189,17 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
                 </div>
               </section>
 
-              {risco.causas && (
+              {(risco.causas || risco.consequencias) && (
                 <section>
-                  <SectionLabel>Causas</SectionLabel>
-                  <p className="text-sm text-foreground/85 leading-relaxed whitespace-pre-line">{risco.causas}</p>
-                </section>
-              )}
-              {risco.consequencias && (
-                <section>
-                  <SectionLabel>Consequências</SectionLabel>
-                  <p className="text-sm text-foreground/85 leading-relaxed whitespace-pre-line">{risco.consequencias}</p>
+                  <SectionLabel>Causas e consequências</SectionLabel>
+                  <div className="flex flex-col gap-1.5">
+                    {splitLines(risco.causas).map((line, i) => (
+                      <CauseChip key={`c-${i}`} kind="CAUSA" text={line} />
+                    ))}
+                    {splitLines(risco.consequencias).map((line, i) => (
+                      <CauseChip key={`q-${i}`} kind="CONSEQ." text={line} />
+                    ))}
+                  </div>
                 </section>
               )}
               {risco.controles_existentes && (
@@ -238,21 +242,29 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
                       {tratStats.pendentes > 0 && <div className="bg-muted-foreground/40" style={{ flex: tratStats.pendentes }} />}
                     </div>
                   </div>
-                  {detail!.tratamentos.map((t) => (
-                    <div key={t.id} className="bg-card border border-border rounded-lg p-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="text-sm font-medium leading-snug">{t.descricao}</div>
-                        <StatusBadge size="sm" {...resolveRiscoStatusTone(t.status)}>
-                          {formatStatus(t.status)}
-                        </StatusBadge>
+                  {detail!.tratamentos.map((t) => {
+                    const pct = treatmentPct(t.status);
+                    const barCls =
+                      pct === 100 ? 'bg-success' : pct > 0 ? 'bg-primary' : 'bg-muted-foreground/30';
+                    return (
+                      <div key={t.id} className="bg-card border border-border rounded-lg p-3 space-y-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="text-sm font-medium leading-snug">{t.descricao}</div>
+                          <StatusBadge size="sm" {...resolveRiscoStatusTone(t.status)}>
+                            {formatStatus(t.status)}
+                          </StatusBadge>
+                        </div>
+                        <div className="h-1 bg-muted/60 rounded-full overflow-hidden">
+                          <div className={`h-full ${barCls}`} style={{ width: `${pct}%` }} />
+                        </div>
+                        <div className="text-[11px] text-muted-foreground flex flex-wrap gap-x-3 gap-y-0.5">
+                          <span>Tipo: {formatStatus(t.tipo_tratamento)}</span>
+                          {t.prazo && <span>Prazo: {formatDateOnly(t.prazo)}</span>}
+                          {t.eficacia && <span>Eficácia: {t.eficacia}</span>}
+                        </div>
                       </div>
-                      <div className="text-[11px] text-muted-foreground mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5">
-                        <span>Tipo: {formatStatus(t.tipo_tratamento)}</span>
-                        {t.prazo && <span>Prazo: {formatDateOnly(t.prazo)}</span>}
-                        {t.eficacia && <span>Eficácia: {t.eficacia}</span>}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </>
               )}
             </TabsContent>
@@ -294,56 +306,52 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
               ) : detail?.controles.length === 0 ? (
                 <EmptyHint text="Nenhum controle vinculado." />
               ) : (
-                detail!.controles.map((c) => (
-                  <div key={c.id} className="bg-card border border-border rounded-lg p-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="text-sm font-medium leading-snug">
-                        {c.controle?.nome || 'Controle'}
+                detail!.controles.map((c) => {
+                  const pct = coberturaPct(c.eficacia_estimada);
+                  const cls = pct >= 80 ? 'text-success' : pct >= 50 ? 'text-warning' : 'text-destructive';
+                  return (
+                    <div key={c.id} className="bg-card border border-border rounded-lg p-3 flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium leading-snug truncate">
+                          {c.controle?.nome || 'Controle'}
+                        </div>
+                        <div className="text-[11px] text-muted-foreground mt-1 flex flex-wrap gap-x-3">
+                          {c.controle?.tipo && <span>Tipo: {formatStatus(c.controle.tipo)}</span>}
+                          <span>Vínculo: {formatStatus(c.tipo_vinculacao)}</span>
+                          {c.eficacia_estimada && <span>{c.eficacia_estimada}</span>}
+                        </div>
                       </div>
-                      {c.controle && (
-                        <StatusBadge size="sm" {...resolveRiscoStatusTone(c.controle.status)}>
-                          {formatStatus(c.controle.status)}
-                        </StatusBadge>
-                      )}
+                      <div className="text-right flex-shrink-0">
+                        <div className={`text-lg font-semibold tabular-nums ${cls}`}>{pct}%</div>
+                        <div className="text-[10px] text-muted-foreground">cobertura</div>
+                      </div>
                     </div>
-                    <div className="text-[11px] text-muted-foreground mt-1.5 flex flex-wrap gap-x-3">
-                      {c.controle?.tipo && <span>Tipo: {formatStatus(c.controle.tipo)}</span>}
-                      <span>Vínculo: {formatStatus(c.tipo_vinculacao)}</span>
-                      {c.eficacia_estimada && <span>Eficácia: {c.eficacia_estimada}</span>}
-                    </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </TabsContent>
           </div>
         </Tabs>
 
         {/* Footer fixo */}
-        <div className="border-t border-border px-6 py-4 flex items-center gap-2 bg-card">
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex-1"
-            onClick={() => onAccept(risco)}
-          >
-            <ShieldCheck className="h-3.5 w-3.5 mr-1.5" strokeWidth={1.5} />
-            Aceitar formalmente
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onOpenTratamentos(risco)}
-          >
-            <Shield className="h-3.5 w-3.5 mr-1.5" strokeWidth={1.5} />
-            Tratamentos
-          </Button>
-          <Button
-            size="sm"
-            onClick={() => onEdit(risco)}
-          >
-            <Edit className="h-3.5 w-3.5 mr-1.5" strokeWidth={1.5} />
-            Editar
-          </Button>
+        <div className="border-t border-border px-6 py-3.5 flex items-center justify-between gap-2 bg-card">
+          <div className="text-[11px] text-muted-foreground hidden sm:block min-w-0 truncate">
+            {detail?.historico?.[0]
+              ? <>Última revisão · <span className="text-foreground/85">{formatStatus(detail.historico[0].tipo)}</span> · {formatDateOnly(detail.historico[0].created_at)}</>
+              : risco.responsavel_nome
+              ? <>Responsável · <span className="text-foreground/85">{risco.responsavel_nome}</span></>
+              : 'Sem revisões registradas'}
+          </div>
+          <div className="flex items-center gap-2 ml-auto">
+            <Button variant="outline" size="sm" onClick={() => onAccept(risco)}>
+              <ShieldCheck className="h-3.5 w-3.5 mr-1.5" strokeWidth={1.5} />
+              Aceitar formalmente
+            </Button>
+            <Button size="sm" onClick={() => onOpenTratamentos(risco)}>
+              <Shield className="h-3.5 w-3.5 mr-1.5" strokeWidth={1.5} />
+              Novo tratamento
+            </Button>
+          </div>
         </div>
       </SheetContent>
     </Sheet>
@@ -361,3 +369,40 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 function EmptyHint({ text }: { text: string }) {
   return <div className="py-10 text-center text-sm text-muted-foreground">{text}</div>;
 }
+
+function splitLines(text?: string): string[] {
+  if (!text) return [];
+  return text
+    .split(/\r?\n|;|•/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function CauseChip({ kind, text }: { kind: 'CAUSA' | 'CONSEQ.'; text: string }) {
+  return (
+    <div className="flex gap-2.5 px-3 py-2 bg-muted/40 rounded-md text-xs">
+      <span className="text-[10px] font-semibold uppercase tracking-[0.5px] text-muted-foreground pt-0.5 min-w-[52px] flex-shrink-0">
+        {kind}
+      </span>
+      <span className="text-foreground/85">{text}</span>
+    </div>
+  );
+}
+
+function treatmentPct(status: string): number {
+  const s = (status || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  if (s.includes('conclu')) return 100;
+  if (s.includes('andamento') || s.includes('em_andamento') || s.includes('progress')) return 60;
+  return 0;
+}
+
+function coberturaPct(eficacia?: string | null): number {
+  if (!eficacia) return 0;
+  const s = eficacia.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  if (s.includes('eficaz') && !s.includes('parcial') && !s.includes('inef')) return 100;
+  if (s.includes('parcial')) return 60;
+  if (s.includes('implant') || s.includes('implement')) return 30;
+  if (s.includes('inef')) return 10;
+  return 0;
+}
+

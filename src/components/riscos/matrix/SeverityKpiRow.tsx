@@ -42,7 +42,7 @@ export function SeverityKpiRow({ counts, trends }: Props) {
         <div
           key={sev}
           className={cn(
-            'flex items-center justify-between bg-card border border-border border-l-2 rounded-lg px-4 py-3.5',
+            'flex items-center justify-between bg-card border border-border border-l-[3px] rounded-lg px-[18px] py-[14px]',
             SEV_BORDER[sev],
           )}
         >
@@ -50,7 +50,7 @@ export function SeverityKpiRow({ counts, trends }: Props) {
             <div className="text-[10.5px] font-semibold tracking-[1.2px] uppercase text-muted-foreground">
               {SEV_LABEL[sev]}
             </div>
-            <div className="text-3xl font-semibold tabular-nums leading-none mt-1.5">
+            <div className="text-[28px] font-semibold tabular-nums leading-none mt-1.5">
               {counts[sev] ?? 0}
             </div>
           </div>
