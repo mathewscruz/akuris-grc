@@ -434,14 +434,14 @@ export function Riscos() {
       key: 'nivel_risco_inicial',
       label: 'Nível Inicial',
       render: (value: string) => (
-        <StatusBadge size="sm" {...resolveNivelRiscoTone(value)}>{value}</StatusBadge>
+        <StatusBadge size="sm" {...resolveNivelRiscoTone(value)}>{formatStatus(value)}</StatusBadge>
       )
     },
     {
       key: 'nivel_risco_residual',
       label: 'Nível Residual',
       render: (value: string) => value ? (
-        <StatusBadge size="sm" {...resolveNivelRiscoTone(value)}>{value}</StatusBadge>
+        <StatusBadge size="sm" {...resolveNivelRiscoTone(value)}>{formatStatus(value)}</StatusBadge>
       ) : <StatusBadge size="sm" tone="neutral">Não avaliado</StatusBadge>
     },
     {
