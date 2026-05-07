@@ -108,13 +108,13 @@ export function TrilhaAuditoriaRiscos({ open, onOpenChange, riscoId, riscoNome }
         <div key={field} className="border rounded p-3">
           <h5 className="font-medium mb-2">{translateField(field)}</h5>
           <div className="grid grid-cols-2 gap-2">
-            <div className="bg-red-50 p-2 rounded">
-              <p className="text-xs font-medium text-red-800">Anterior</p>
-              <p className="text-sm text-red-700">{String(oldVal ?? 'N/A')}</p>
+            <div className="rounded-md border border-destructive/30 bg-destructive/10 p-2">
+              <p className="text-xs font-medium text-destructive">Anterior</p>
+              <p className="text-sm text-destructive">{String(oldVal ?? 'N/A')}</p>
             </div>
-            <div className="bg-green-50 p-2 rounded">
-              <p className="text-xs font-medium text-green-800">Novo</p>
-              <p className="text-sm text-green-700">{String(newVal ?? 'N/A')}</p>
+            <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 p-2">
+              <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400">Novo</p>
+              <p className="text-sm text-emerald-700 dark:text-emerald-400">{String(newVal ?? 'N/A')}</p>
             </div>
           </div>
         </div>
@@ -124,13 +124,20 @@ export function TrilhaAuditoriaRiscos({ open, onOpenChange, riscoId, riscoNome }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <History className="h-5 w-5" strokeWidth={1.5} />
-            Trilha de Auditoria - {riscoNome}
+      <DialogContent className="max-w-full sm:max-w-4xl max-h-[100dvh] sm:max-h-[92vh] overflow-hidden flex flex-col p-0 gap-0">
+        <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b">
+          <DialogTitle className="flex items-center gap-3">
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <History className="h-5 w-5" strokeWidth={1.5} />
+            </span>
+            <span className="flex flex-col">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                Trilha de auditoria
+              </span>
+              <span className="text-base font-semibold leading-tight">{riscoNome}</span>
+            </span>
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="pl-[48px]">
             Registro detalhado de todas as alterações realizadas neste risco.
           </DialogDescription>
         </DialogHeader>

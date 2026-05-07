@@ -205,24 +205,31 @@ export function AprovacaoRiscoDialog({ open, onOpenChange, risco, onSuccess }: P
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[85vh] overflow-hidden">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <CheckCircle className="h-5 w-5" strokeWidth={1.5} />
-            Aprovação - {risco?.nome}
+      <DialogContent className="max-w-full sm:max-w-xl max-h-[100dvh] sm:max-h-[88vh] overflow-hidden flex flex-col p-0 gap-0">
+        <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b">
+          <DialogTitle className="flex items-center gap-3">
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <CheckCircle className="h-5 w-5" strokeWidth={1.5} />
+            </span>
+            <span className="flex flex-col">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                Aprovação do risco
+              </span>
+              <span className="text-base font-semibold leading-tight">{risco?.nome}</span>
+            </span>
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="pl-[48px]">
             Revise o risco, registre comentários e aprove ou rejeite o fluxo solicitado.
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[65vh]">
-          <div className="space-y-4 p-1">
+        <ScrollArea className="flex-1">
+          <div className="space-y-4 px-6 py-5">
             {/* === SEÇÃO ACEITE DE RISCO === */}
             {statusAceite === 'pendente' && (
-              <div className="space-y-3 border rounded-lg p-4 border-yellow-200 bg-yellow-50/50">
+              <div className="space-y-3 rounded-lg border border-amber-500/30 bg-amber-500/5 p-4">
                 <div className="flex items-center gap-2">
-                  <ShieldCheck className="h-5 w-5 text-yellow-600" />
+                  <ShieldCheck className="h-5 w-5 text-amber-600" strokeWidth={1.5} />
                   <Label className="text-base font-semibold">Aceite de Risco — Pendente</Label>
                 </div>
                 <p className="text-sm text-muted-foreground">
@@ -260,14 +267,14 @@ export function AprovacaoRiscoDialog({ open, onOpenChange, risco, onSuccess }: P
             )}
 
             {statusAceite === 'aprovado' && (
-              <div className="flex items-center gap-2 p-3 rounded-lg bg-green-50 border border-green-200 text-green-800 text-sm">
-                <CheckCircle className="h-4 w-4" /> Aceite de risco aprovado em {risco?.data_aceite ? format(new Date(risco.data_aceite), "dd/MM/yyyy", { locale: ptBR }) : '-'}
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-400 text-sm">
+                <CheckCircle className="h-4 w-4" strokeWidth={1.5} /> Aceite de risco aprovado em {risco?.data_aceite ? format(new Date(risco.data_aceite), "dd/MM/yyyy", { locale: ptBR }) : '-'}
               </div>
             )}
 
             {statusAceite === 'rejeitado' && (
-              <div className="flex items-center gap-2 p-3 rounded-lg bg-red-50 border border-red-200 text-red-800 text-sm">
-                <XCircle className="h-4 w-4" /> Aceite de risco rejeitado
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-sm">
+                <XCircle className="h-4 w-4" strokeWidth={1.5} /> Aceite de risco rejeitado
               </div>
             )}
 

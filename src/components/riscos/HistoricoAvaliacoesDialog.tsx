@@ -56,20 +56,27 @@ export function HistoricoAvaliacoesDialog({ open, onOpenChange, riscoId, riscoNo
     const nivelOrder: Record<string, number> = { 'muito baixo': 1, 'baixo': 2, 'médio': 3, 'alto': 4, 'muito alto': 5, 'crítico': 6 };
     const curr = nivelOrder[current.toLowerCase()] || 0;
     const prev = nivelOrder[previous.toLowerCase()] || 0;
-    if (curr < prev) return <TrendingDown className="h-4 w-4 text-green-600" />;
-    if (curr > prev) return <TrendingUp className="h-4 w-4 text-red-600" />;
-    return <Minus className="h-4 w-4 text-muted-foreground" />;
+    if (curr < prev) return <TrendingDown className="h-4 w-4 text-emerald-500" strokeWidth={1.5} />;
+    if (curr > prev) return <TrendingUp className="h-4 w-4 text-destructive" strokeWidth={1.5} />;
+    return <Minus className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />;
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" strokeWidth={1.5} />
-            Histórico de Avaliações - {riscoNome}
+      <DialogContent className="max-w-full sm:max-w-2xl max-h-[100dvh] sm:max-h-[88vh] overflow-hidden flex flex-col p-0 gap-0">
+        <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b">
+          <DialogTitle className="flex items-center gap-3">
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <Clock className="h-5 w-5" strokeWidth={1.5} />
+            </span>
+            <span className="flex flex-col">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                Histórico de avaliações
+              </span>
+              <span className="text-base font-semibold leading-tight">{riscoNome}</span>
+            </span>
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="pl-[48px]">
             Linha do tempo das reavaliações de probabilidade, impacto e nível do risco.
           </DialogDescription>
         </DialogHeader>
@@ -79,12 +86,12 @@ export function HistoricoAvaliacoesDialog({ open, onOpenChange, riscoId, riscoNo
             <AkurisPulse size={32} />
           </div>
         ) : !historico || historico.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
+          <div className="text-center py-12 text-muted-foreground px-6">
+            <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" strokeWidth={1.5} />
             Nenhum histórico de reavaliação encontrado.
           </div>
         ) : (
-          <ScrollArea className="h-[500px]">
+          <ScrollArea className="flex-1 px-6 py-5">
             <div className="relative pl-6">
               {/* Timeline line */}
               <div className="absolute left-2.5 top-0 bottom-0 w-0.5 bg-border" />
