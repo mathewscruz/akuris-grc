@@ -493,310 +493,410 @@ export function MatrizForm({ onSuccess }: Props) {
     }
   };
 
+  const SectionHeader = ({ eyebrow, title, action }: { eyebrow: string; title: string; action?: React.ReactNode }) => (
+    <div className="flex items-end justify-between gap-4 mb-4">
+      <div className="flex flex-col gap-0.5">
+        <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{eyebrow}</span>
+        <h4 className="text-sm font-semibold text-foreground">{title}</h4>
+      </div>
+      {action}
+    </div>
+  );
+
   return (
-    <div className="space-y-6">
-      <div className="space-y-6">
-          {/* Formulário para nova/editar matriz */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>
-                {editingMatriz ? 'Editar Matriz de Risco' : 'Nova Matriz de Risco'}
-              </CardTitle>
-              {editingMatriz && (
-                <Button variant="outline" size="sm" onClick={limparFormularioMatriz}>
-                  Cancelar Edição
-                </Button>
-              )}
-            </CardHeader>
-            <CardContent>
-              <Form {...matrizForm}>
-                <form onSubmit={matrizForm.handleSubmit(onSubmitMatriz)} className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={matrizForm.control}
-                      name="nome"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>
-                            Nome da Matriz <span className="text-destructive">*</span>
-                          </FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="Ex: Matriz de Risco Corporativa" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+    <TooltipProvider delayDuration={150}>
+      <div className="space-y-7 pb-2">
+        {/* Seção: Identificação */}
+        <section className="rounded-lg border border-border bg-card p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
+                {editingMatriz ? 'Editando' : 'Nova matriz'}
+              </span>
+              <h4 className="text-sm font-semibold text-foreground">
+                {editingMatriz ? editingMatriz.nome : 'Identificação'}
+              </h4>
+            </div>
+            {editingMatriz && (
+              <Button variant="ghost" size="sm" onClick={limparFormularioMatriz} className="gap-1.5">
+                <XIcon className="h-3.5 w-3.5" strokeWidth={1.5} />
+                Cancelar edição
+              </Button>
+            )}
+          </div>
 
-                  <FormField
-                    control={matrizForm.control}
-                    name="descricao"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Descrição</FormLabel>
-                        <FormControl>
-                          <Textarea {...field} placeholder="Descreva o propósito desta matriz de risco" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+          <Form {...matrizForm}>
+            <form
+              id="matriz-form"
+              onSubmit={matrizForm.handleSubmit(onSubmitMatriz)}
+              className="space-y-7"
+            >
+              <div className="space-y-5">
+                <FormField
+                  control={matrizForm.control}
+                  name="nome"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Nome da matriz <span className="text-destructive">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder="Ex.: Matriz Corporativa 5x5" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-                  <Separator />
+                <FormField
+                  control={matrizForm.control}
+                  name="descricao"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Descrição</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          {...field}
+                          placeholder="Descreva o propósito desta matriz de risco"
+                          rows={3}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-                  {/* Método de Cálculo */}
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-sm font-medium">Método de Cálculo</h4>
-                    </div>
-                    <Select value={metodoCalculo} onValueChange={(value: 'multiplicacao' | 'soma') => setMetodoCalculo(value)}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="multiplicacao">Multiplicação (P × I)</SelectItem>
-                        <SelectItem value="soma">Soma (P + I)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <p className="text-sm text-muted-foreground">
-                      {metodoCalculo === 'multiplicacao' 
-                        ? 'O nível de risco será calculado multiplicando probabilidade por impacto'
-                        : 'O nível de risco será calculado somando probabilidade e impacto'
-                      }
-                    </p>
-                  </div>
+              <div className="border-t border-border/60 pt-6">
+                <SectionHeader eyebrow="Cálculo" title="Método de cálculo do nível de risco" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {[
+                    { value: 'multiplicacao', label: 'Multiplicação', formula: 'P × I', desc: 'Resultado pode variar de 1 a Pmax × Imax' },
+                    { value: 'soma', label: 'Soma', formula: 'P + I', desc: 'Resultado pode variar de 2 a Pmax + Imax' },
+                  ].map(opt => {
+                    const active = metodoCalculo === opt.value;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setMetodoCalculo(opt.value as 'multiplicacao' | 'soma')}
+                        className={cn(
+                          'text-left rounded-lg border p-4 transition-all',
+                          active
+                            ? 'border-primary bg-primary/5 ring-1 ring-primary/30'
+                            : 'border-border bg-card hover:bg-muted/40'
+                        )}
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <Calculator
+                            className={cn('h-4 w-4', active ? 'text-primary' : 'text-muted-foreground')}
+                            strokeWidth={1.5}
+                          />
+                          <span className="text-sm font-semibold">{opt.label}</span>
+                          <span className={cn(
+                            'ml-auto text-xs font-mono px-2 py-0.5 rounded',
+                            active ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                          )}>
+                            {opt.formula}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground leading-snug">{opt.desc}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
-                  <Separator />
-
-                  {/* Configuração de Escalas */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Escala de Probabilidade */}
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-sm font-medium">Escala de Probabilidade</h4>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={adicionarEscalaProbabilidade}
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
+              <div className="border-t border-border/60 pt-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Escala de Probabilidade */}
+                  <div>
+                    <SectionHeader eyebrow="Escala" title="Probabilidade" />
+                    <div className="space-y-2">
                       {escalaProbabilidade.map((item, index) => (
-                        <div key={index} className="flex gap-2">
+                        <div
+                          key={index}
+                          className="flex gap-2 items-center bg-muted/30 hover:bg-muted/50 rounded-md p-2 transition-colors"
+                        >
                           <Input
                             value={item.valor}
                             onChange={(e) => atualizarEscalaProbabilidade(index, 'valor', e.target.value)}
-                            placeholder="Valor"
-                            className="w-20"
+                            placeholder="N°"
+                            className="w-14 text-center font-medium"
+                            aria-label="Valor da probabilidade"
                           />
                           <Input
                             value={item.descricao}
                             onChange={(e) => atualizarEscalaProbabilidade(index, 'descricao', e.target.value)}
-                            placeholder="Descrição"
-                            className="flex-1"
+                            placeholder="Ex.: Muito Provável"
+                            className="flex-1 min-w-0"
+                            aria-label="Descrição da probabilidade"
                           />
                           {escalaProbabilidade.length > 1 && (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => removerEscalaProbabilidade(index)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="shrink-0 h-9 w-9 text-muted-foreground hover:text-destructive"
+                                  onClick={() => removerEscalaProbabilidade(index)}
+                                >
+                                  <Trash2 className="h-4 w-4" strokeWidth={1.5} />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Remover</TooltipContent>
+                            </Tooltip>
                           )}
                         </div>
                       ))}
-                    </div>
-
-                    {/* Escala de Impacto */}
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-sm font-medium">Escala de Impacto</h4>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={adicionarEscalaImpacto}
-                        >
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      {escalaImpacto.map((item, index) => (
-                        <div key={index} className="flex gap-2">
-                          <Input
-                            value={item.valor}
-                            onChange={(e) => atualizarEscalaImpacto(index, 'valor', e.target.value)}
-                            placeholder="Valor"
-                            className="w-20"
-                          />
-                          <Input
-                            value={item.descricao}
-                            onChange={(e) => atualizarEscalaImpacto(index, 'descricao', e.target.value)}
-                            placeholder="Descrição"
-                            className="flex-1"
-                          />
-                          {escalaImpacto.length > 1 && (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => removerEscalaImpacto(index)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <Separator />
-
-                  {/* Níveis de Risco */}
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-sm font-medium">Níveis de Risco</h4>
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={adicionarNivelRisco}
+                        onClick={adicionarEscalaProbabilidade}
+                        className="w-full gap-1.5 border-dashed"
                       >
-                        <Plus className="h-4 w-4" />
+                        <Plus className="h-4 w-4" strokeWidth={1.5} />
+                        Adicionar nível
                       </Button>
                     </div>
-                    
-                    {/* Alerta de validação de faixas */}
-                    {faixasError && (
-                      <Alert variant="destructive">
-                        <AlertTriangle className="h-4 w-4" />
-                        <AlertDescription>{faixasError}</AlertDescription>
-                      </Alert>
-                    )}
-                    
-                    {niveisRisco.map((nivel, index) => (
-                      <div key={index} className="flex gap-2 items-center">
+                  </div>
+
+                  {/* Escala de Impacto */}
+                  <div>
+                    <SectionHeader eyebrow="Escala" title="Impacto" />
+                    <div className="space-y-2">
+                      {escalaImpacto.map((item, index) => (
+                        <div
+                          key={index}
+                          className="flex gap-2 items-center bg-muted/30 hover:bg-muted/50 rounded-md p-2 transition-colors"
+                        >
+                          <Input
+                            value={item.valor}
+                            onChange={(e) => atualizarEscalaImpacto(index, 'valor', e.target.value)}
+                            placeholder="N°"
+                            className="w-14 text-center font-medium"
+                            aria-label="Valor do impacto"
+                          />
+                          <Input
+                            value={item.descricao}
+                            onChange={(e) => atualizarEscalaImpacto(index, 'descricao', e.target.value)}
+                            placeholder="Ex.: Catastrófico"
+                            className="flex-1 min-w-0"
+                            aria-label="Descrição do impacto"
+                          />
+                          {escalaImpacto.length > 1 && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="shrink-0 h-9 w-9 text-muted-foreground hover:text-destructive"
+                                  onClick={() => removerEscalaImpacto(index)}
+                                >
+                                  <Trash2 className="h-4 w-4" strokeWidth={1.5} />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Remover</TooltipContent>
+                            </Tooltip>
+                          )}
+                        </div>
+                      ))}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={adicionarEscalaImpacto}
+                        className="w-full gap-1.5 border-dashed"
+                      >
+                        <Plus className="h-4 w-4" strokeWidth={1.5} />
+                        Adicionar nível
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t border-border/60 pt-6">
+                <SectionHeader
+                  eyebrow="Faixas"
+                  title="Níveis de risco"
+                />
+                {faixasError && (
+                  <Alert variant="destructive" className="mb-3">
+                    <AlertTriangle className="h-4 w-4" strokeWidth={1.5} />
+                    <AlertDescription>{faixasError}</AlertDescription>
+                  </Alert>
+                )}
+                <div className="space-y-2">
+                  {niveisRisco.map((nivel, index) => (
+                    <div
+                      key={index}
+                      className="flex gap-2 items-center bg-muted/30 hover:bg-muted/50 rounded-md p-2 transition-colors"
+                    >
+                      <div className="flex items-center gap-1 shrink-0">
                         <Input
                           type="number"
                           value={nivel.min}
                           onChange={(e) => atualizarNivelRisco(index, 'min', parseInt(e.target.value) || 0)}
                           placeholder="Min"
-                          className="w-20"
+                          className="w-16 text-center"
+                          aria-label="Valor mínimo"
                         />
-                        <span>-</span>
+                        <span className="text-muted-foreground text-sm">–</span>
                         <Input
                           type="number"
                           value={nivel.max}
                           onChange={(e) => atualizarNivelRisco(index, 'max', parseInt(e.target.value) || 0)}
                           placeholder="Max"
-                          className="w-20"
+                          className="w-16 text-center"
+                          aria-label="Valor máximo"
                         />
-                        <Input
-                          value={nivel.nivel}
-                          onChange={(e) => atualizarNivelRisco(index, 'nivel', e.target.value)}
-                          placeholder="Nome do nível"
-                          className="flex-1"
-                        />
-                        <Input
-                          type="color"
-                          value={nivel.cor}
-                          onChange={(e) => atualizarNivelRisco(index, 'cor', e.target.value)}
-                          className="w-16"
-                        />
-                        {niveisRisco.length > 1 && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => removerNivelRisco(index)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
                       </div>
-                    ))}
-                  </div>
-
-                  <div className="flex justify-end">
-                    <Button type="submit" disabled={loading || !!faixasError}>
-                      {loading ? 'Salvando...' : editingMatriz ? 'Atualizar Matriz' : 'Criar Matriz'}
-                    </Button>
-                  </div>
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
-
-          {/* Lista de matrizes existentes */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Matrizes Existentes</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {matrizes.length === 0 ? (
-                <EmptyState
-                  icon={<Grid3X3 className="h-10 w-10" />}
-                  title="Nenhuma matriz cadastrada"
-                  description="Crie sua primeira matriz de risco usando o formulário acima para começar a avaliar seus riscos de forma estruturada."
-                />
-              ) : (
-                <div className="space-y-4">
-                  {matrizes.map((matriz) => (
-                    <div key={matriz.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div>
-                        <h4 className="font-medium">{matriz.nome}</h4>
-                        {matriz.descricao && (
-                          <p className="text-sm text-muted-foreground">{matriz.descricao}</p>
-                        )}
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => carregarMatrizParaEdicao(matriz)}
-                        >
-                          <Edit className="h-4 w-4 mr-1" />
-                          Editar
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDeleteClick(matriz.id)}
-                        >
-                          <Trash2 className="h-4 w-4 mr-1" />
-                          Excluir
-                        </Button>
-                      </div>
+                      <Input
+                        value={nivel.nivel}
+                        onChange={(e) => atualizarNivelRisco(index, 'nivel', e.target.value)}
+                        placeholder="Nome do nível (ex.: Crítico)"
+                        className="flex-1 min-w-0"
+                        aria-label="Nome do nível"
+                      />
+                      <ColorSwatch
+                        value={nivel.cor}
+                        onChange={(v) => atualizarNivelRisco(index, 'cor', v)}
+                      />
+                      {niveisRisco.length > 1 && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="shrink-0 h-9 w-9 text-muted-foreground hover:text-destructive"
+                              onClick={() => removerNivelRisco(index)}
+                            >
+                              <Trash2 className="h-4 w-4" strokeWidth={1.5} />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Remover</TooltipContent>
+                        </Tooltip>
+                      )}
                     </div>
                   ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={adicionarNivelRisco}
+                    className="w-full gap-1.5 border-dashed"
+                  >
+                    <Plus className="h-4 w-4" strokeWidth={1.5} />
+                    Adicionar nível de risco
+                  </Button>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </div>
+            </form>
+          </Form>
+        </section>
+
+        {/* Seção: Matrizes salvas */}
+        <section className="rounded-lg border border-border bg-card p-5">
+          <SectionHeader eyebrow="Persistência" title="Matrizes salvas" />
+          {matrizes.length === 0 ? (
+            <EmptyState
+              icon={<Grid3X3 className="h-10 w-10" strokeWidth={1.5} />}
+              title="Nenhuma matriz cadastrada"
+              description="Crie sua primeira matriz de risco preenchendo o formulário acima."
+            />
+          ) : (
+            <div className="space-y-2">
+              {matrizes.map((matriz) => {
+                const isEditing = editingMatriz?.id === matriz.id;
+                return (
+                  <div
+                    key={matriz.id}
+                    className={cn(
+                      'flex items-center justify-between gap-3 p-3 border rounded-md transition-colors',
+                      isEditing
+                        ? 'border-primary/40 bg-primary/5'
+                        : 'border-border hover:bg-muted/40'
+                    )}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <h5 className="font-medium text-sm truncate">{matriz.nome}</h5>
+                      {matriz.descricao && (
+                        <p className="text-xs text-muted-foreground truncate">{matriz.descricao}</p>
+                      )}
+                    </div>
+                    <div className="flex gap-1 shrink-0">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => carregarMatrizParaEdicao(matriz)}
+                          >
+                            <Edit className="h-4 w-4" strokeWidth={1.5} />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Editar</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                            onClick={() => handleDeleteClick(matriz.id)}
+                          >
+                            <Trash2 className="h-4 w-4" strokeWidth={1.5} />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Excluir</TooltipContent>
+                      </Tooltip>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        {/* Footer sticky */}
+        <div className="sticky bottom-0 -mx-6 px-6 py-4 border-t bg-background/95 backdrop-blur-sm flex items-center justify-between gap-3">
+          <p className="text-xs text-muted-foreground hidden sm:block">
+            Alterações afetam novos cálculos de risco.
+          </p>
+          <div className="flex gap-2 ml-auto">
+            {editingMatriz && (
+              <Button type="button" variant="outline" onClick={limparFormularioMatriz}>
+                Cancelar
+              </Button>
+            )}
+            <Button
+              type="submit"
+              form="matriz-form"
+              disabled={loading || !!faixasError}
+            >
+              {loading ? 'Salvando...' : editingMatriz ? 'Atualizar matriz' : 'Salvar matriz'}
+            </Button>
+          </div>
+        </div>
+
+        <ConfirmDialog
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          title="Excluir Matriz de Risco"
+          description="Tem certeza que deseja excluir esta matriz? Esta ação não pode ser desfeita e pode afetar riscos que utilizam esta matriz."
+          confirmText="Excluir"
+          cancelText="Cancelar"
+          onConfirm={excluirMatriz}
+          loading={deleting}
+          variant="destructive"
+        />
       </div>
-
-      <DialogFooter>
-        <Button type="button" variant="outline" onClick={onSuccess}>
-          Fechar
-        </Button>
-      </DialogFooter>
-
-      {/* ConfirmDialog para exclusão de matriz */}
-      <ConfirmDialog
-        open={deleteDialogOpen}
-        onOpenChange={setDeleteDialogOpen}
-        title="Excluir Matriz de Risco"
-        description="Tem certeza que deseja excluir esta matriz? Esta ação não pode ser desfeita e pode afetar riscos que utilizam esta matriz."
-        confirmText="Excluir"
-        cancelText="Cancelar"
-        onConfirm={excluirMatriz}
-        loading={deleting}
-        variant="destructive"
-      />
-    </div>
+    </TooltipProvider>
   );
 }
