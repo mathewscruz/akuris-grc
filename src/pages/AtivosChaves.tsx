@@ -233,7 +233,7 @@ export default function AtivosChaves() {
       label: 'Tipo',
       sortable: true,
       render: (_: any, chave: ChaveCriptografica) => (
-        <Badge variant="outline">{chave.tipo_chave}</Badge>
+        <Badge variant="outline">{formatStatus(chave.tipo_chave)}</Badge>
       )
     },
     {

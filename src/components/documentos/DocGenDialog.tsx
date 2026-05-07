@@ -23,6 +23,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Send, FileText, Download, Save, Plus, History } from 'lucide-react';
 import { AkurisAIIcon } from '@/components/icons';
 import DocLayoutBuilder from './DocLayoutBuilder';
+import { formatStatus } from '@/lib/text-utils';
 import { DocumentoDialog } from '@/components/documentos/DocumentoDialog';
 import jsPDF from 'jspdf';
 import { Document as DocxDocument, Packer, Paragraph, HeadingLevel, TextRun, ImageRun } from 'docx';
@@ -824,7 +825,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                       <div className="text-sm font-medium truncate">{it.titulo || 'Conversa sem título'}</div>
                       <div className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
                         {it.tipo_documento_identificado && (
-                          <Badge variant="secondary" className="text-[10px] py-0 h-4">{it.tipo_documento_identificado}</Badge>
+                          <Badge variant="secondary" className="text-[10px] py-0 h-4">{formatStatus(it.tipo_documento_identificado)}</Badge>
                         )}
                         <span>{new Date(it.updated_at).toLocaleString()}</span>
                       </div>

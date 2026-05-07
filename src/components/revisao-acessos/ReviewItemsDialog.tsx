@@ -8,6 +8,7 @@ import { useOptimizedQuery } from "@/hooks/useOptimizedQuery";
 import { useReviewData } from "@/hooks/useReviewData";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateForInput } from "@/lib/date-utils";
+import { formatStatus } from "@/lib/text-utils";
 import { CheckCircle, XCircle, Edit, Download } from "lucide-react";
 import { ReviewItemDecisionDialog } from "./ReviewItemDecisionDialog";
 import { Progress } from "@/components/ui/progress";
@@ -163,8 +164,8 @@ export function ReviewItemsDialog({ open, onClose, review, onSuccess }: ReviewIt
                       <h4 className="font-semibold">{item.usuario_beneficiario}</h4>
                       <p className="text-sm text-muted-foreground">{item.email_beneficiario || "-"}</p>
                       <div className="flex gap-2 mt-2">
-                        <Badge>{item.tipo_acesso}</Badge>
-                        <Badge variant="outline">{item.nivel_privilegio}</Badge>
+                        <Badge>{formatStatus(item.tipo_acesso)}</Badge>
+                        <Badge variant="outline">{formatStatus(item.nivel_privilegio)}</Badge>
                         {getDecisionBadge(item.decisao)}
                       </div>
                       {item.data_expiracao && (

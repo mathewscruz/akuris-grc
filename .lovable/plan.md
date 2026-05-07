@@ -1,40 +1,33 @@
-## Popular dados fictícios para Mathews Cruz (Nexure)
+## Padronização global de status (acentuação + capitalização)
 
-**Usuário:** `mathews.cruz@nexure.com.br`  
-**user_id:** `929968a9-886e-4307-82bd-8fd99e94c1ea`  
-**empresa_id:** `6c3ebb8f-c182-4006-8252-5c970ad295a6`  
-**Status atual:** todos os módulos zerados — pronto para popular.
+A imagem mostra badges como "critico", "alto", "medio" — valores brutos do banco renderizados sem passar por `formatStatus()`. O dicionário `STATUS_LABELS` em `src/lib/text-utils.ts` já cobre todas as chaves; o problema é que vários componentes ainda inserem `{value}` cru dentro de `<StatusBadge>` ou `<Badge>`.
 
 ### Estratégia
-Replicar exatamente o mesmo seed bem-sucedido do Halan (CyberMe), trocando apenas `empresa_id` e `created_by/responsavel_id` para os IDs do Mathews. Os volumes, categorias e padrões de dados serão os mesmos para manter consistência demo entre representantes.
+Aplicar `formatStatus()` em **todos** os pontos identificados na auditoria (rg do projeto inteiro). Sem mudanças no banco — apenas camada de apresentação. Garante que "critico" → "Crítico", "alto" → "Alto", "medio" → "Médio", "em_andamento" → "Em Andamento", etc.
 
-### Volume por módulo
+### Arquivos a corrigir
 
-| Módulo | Volume |
-|---|---|
-| Riscos (categorias + riscos) | 5 cat + 10 riscos |
-| Controles (categorias + controles) | 4 cat + 10 controles |
-| Incidentes | 5 |
-| Denúncias (categorias + denúncias) | 5 cat + 4 denúncias |
-| Planos de Ação | 6 |
-| Ativos & TI (locais, ativos, chaves, licenças, manutenção) | 3 + 10 + 3 + 4 + 3 |
-| Fornecedores + Contratos | 5 + 4 |
-| Documentos (categorias + docs) | 4 cat + 10 docs |
-| Auditorias | 2 |
-| Continuidade (planos + testes + tarefas) | 3 + 3 + 6 |
-| LGPD (dados pessoais, fluxos, ROPA, solicitações) | 6 + 4 + 4 + 3 |
-| Due Diligence assessments | 3 |
-| Gap Analysis (assessments + evaluations parciais) | 3 (ISO 27001, LGPD, NIST) |
-| Acessos Privilegiados (sistemas + contas) | 3 + 4 |
+| Arquivo | Linhas | O que ajustar |
+|---|---|---|
+| `src/pages/Riscos.tsx` | 437, 444 | `{value}` → `{formatStatus(value)}` em níveis de risco |
+| `src/pages/RiscosAceite.tsx` | 195, 236 | + import `formatStatus`; aplicar nas duas tabelas |
+| `src/components/riscos/AceiteDetalheDialog.tsx` | 104, 108 | + import; aplicar nos dois badges de nível |
+| `src/components/gap-analysis/dialogs/RequirementDetailDialog.tsx` | 1203 | + import; aplicar em `nivel_risco_inicial` |
+| `src/components/controles/ControlesVinculacaoDialog.tsx` | 252, 263 | aplicar `formatStatus` em `nivel` e `criticidade` (import já existe) |
+| `src/pages/AtivosLicencas.tsx` | 229 | `tipo_licenca` (import já existe) |
+| `src/pages/AtivosChaves.tsx` | 236 | `tipo_chave` (import já existe) |
+| `src/components/due-diligence/FornecedoresManager.tsx` | 387 | + import; aplicar em `categoria` |
+| `src/components/planos-acao/PlanoAcaoDialog.tsx` | 304 | + import; trocar `capitalize` por `formatStatus` em `prioridade` |
+| `src/components/revisao-acessos/ReviewItemsDialog.tsx` | 166–167 | + import; aplicar em `tipo_acesso` e `nivel_privilegio` |
+| `src/components/revisao-acessos/ReviewExternalForm.tsx` | 198–199 | + import; idem |
+| `src/components/revisao-acessos/ReviewItemDecisionDialog.tsx` | 113 | + import; aplicar em `nivel_privilegio` |
+| `src/components/documentos/DocGenDialog.tsx` | 827 | + import; aplicar em `tipo_documento_identificado` |
 
-### Execução técnica
-1. Migração SQL única com `set_config('request.jwt.claims', ...)` para satisfazer triggers de auditoria (mesma técnica usada no seed do Halan).
-2. Todos os inserts com `empresa_id = '6c3ebb8f-c182-4006-8252-5c970ad295a6'`.
-3. `created_by` / `responsavel_id` = `929968a9-886e-4307-82bd-8fd99e94c1ea`.
-4. Datas distribuídas nos últimos 12 meses para alimentar gráficos de tendência.
-5. Nenhuma alteração em outras empresas, schemas ou triggers globais.
+Total: **13 arquivos**, ~20 ocorrências.
 
-### Arquivo a criar
-- `supabase/migrations/<timestamp>_seed_mathews_nexure_demo.sql`
+### Validação
+- DescoberDadosTab.tsx renderiza apenas contagens numéricas dentro de StatusBadge — não é status, fica como está.
+- Badges com `formatStatus()` ou `STATUS_LABELS[...]` aplicado já estão corretos e não serão tocados.
+- Após patch, repetir `rg` para garantir zero `<StatusBadge>` ou `<Badge>` com expressão crua de status/criticidade/nível.
 
-Aprovar para eu executar a migração.
+Aprovar para aplicar.

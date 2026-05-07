@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { formatDateForInput, parseDateForDB } from "@/lib/date-utils";
+import { formatStatus } from "@/lib/text-utils";
 import { PlanoAcaoDialog } from "@/components/planos-acao/PlanoAcaoDialog";
 import { AuditTrailTimeline } from "@/components/gap-analysis/AuditTrailTimeline";
 import { logger } from '@/lib/logger';
@@ -1200,7 +1201,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                               <label key={risco.id} className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 p-1.5 rounded text-sm">
                                 <input type="checkbox" checked={formData.riscos_vinculados.includes(risco.id)} onChange={() => handleToggleRisco(risco.id)} className="rounded" />
                                 <span className="font-medium text-xs">{risco.nome}</span>
-                                <Badge variant="outline" className="ml-auto text-[10px]">{risco.nivel_risco_inicial}</Badge>
+                                <Badge variant="outline" className="ml-auto text-[10px]">{formatStatus(risco.nivel_risco_inicial)}</Badge>
                               </label>
                             ))
                           )}
