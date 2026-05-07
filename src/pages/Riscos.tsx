@@ -129,6 +129,9 @@ export function Riscos() {
   const [drawerRiscoId, setDrawerRiscoId] = useState<string | null>(null);
   const [matrixCell, setMatrixCell] = useState<{ p: number; i: number } | undefined>();
 
+  // Saved view chips (apenas para a aba Tabela)
+  const [savedView, setSavedView] = useState<SavedView>('todos');
+
   const [sortField, setSortField] = useState<string>('created_at');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
