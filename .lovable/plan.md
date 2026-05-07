@@ -1,94 +1,48 @@
-Sim. A validação apontou alguns ajustes pendentes depois da mudança visual, principalmente no menu lateral e em pequenos pontos de consistência/segurança do módulo de riscos.
+## Objetivo
+Padronizar os dois diálogos do fluxo de tratamento de risco (lista e formulário) para o visual editorial Akuris já usado em outros módulos (header com ícone, descrição, footer fixo, mais respiro, micro-acentos).
 
-## O que vou ajustar
+## Mudanças
 
-### 1. Menu lateral: submódulo ativo em roxo
-O submenu ainda não destaca corretamente porque o item filho está recebendo estilos conflitantes: o `SidebarMenuButton` marca `data-active=true`, mas uma classe `data-[active=true]:bg-transparent` neutraliza o fundo roxo do link.
+### 1. `TratamentosDialog.tsx` — Lista de Tratamentos
+- Migrar para o padrão editorial: header com chip de ícone proprietário (`AkurisRiscosIcon` ou `Shield` stroke 1.5) + título + descrição.
+- Remover o `Card` interno duplicado (atualmente o título "Tratamentos do Risco" aparece duas vezes — no header do dialog e no header do Card). A lista será renderizada diretamente, sem Card aninhado.
+- Aumentar largura para `sm:max-w-5xl` e usar paddings `px-8 py-6` para mais respiro.
+- Adicionar `CornerAccent` sutil no canto do header (consistente com outros dialogs editoriais).
+- Empty state ilustrado com `EmptyState` (se já existir no projeto) ou ícone proprietário grande + texto + CTA centralizado, com mais espaçamento vertical (`py-16`).
+- Botão "Novo Tratamento" mantém visual primário roxo.
 
-Vou corrigir em `AppSidebar.tsx`:
-- Remover o conflito de `bg-transparent` nos subitens.
-- Fazer o estado ativo ser controlado de forma explícita pelo `currentPath`, não pela função interna do `NavLink`.
-- Aplicar destaque roxo diretamente no subitem ativo, com texto/ícone coerentes.
-- Garantir destaque exato para `/riscos` e `/riscos/aceite`, sem `/riscos` ficar ativo indevidamente quando estiver em `/riscos/aceite`.
-- Manter o grupo “Gestão de Riscos” aberto quando qualquer subrota estiver ativa.
+### 2. `TratamentosList.tsx` — Ajustes para suportar uso sem Card wrapper
+- Adicionar prop opcional `embedded` que, quando true, remove o Card externo e renderiza apenas header inline + tabela/empty state.
+- Aplicar `useTableDensity` na tabela (já é o padrão Akuris) para herdar densidade global.
+- Header inline com título menor (apenas contador "X tratamento(s)") ao lado do botão "Novo Tratamento", já que o título principal vem do dialog.
 
-Resultado esperado:
-- Em `/riscos`, o subitem “Riscos” fica visualmente ativo em roxo.
-- Em `/riscos/aceite`, o subitem “Aceite de Risco” fica visualmente ativo em roxo.
-- O item pai continua indicando que o módulo Gestão de Riscos está aberto/ativo.
+### 3. `TratamentoDialog.tsx` — Wrapper do formulário
+- Migrar para `DialogShell` (já existente em `src/components/ui/dialog-shell.tsx`) para ganhar:
+  - Header padronizado com ícone (`Shield` ou ícone proprietário de Riscos).
+  - ScrollArea no body.
+  - Footer sticky com Cancelar + Salvar (com Ctrl+S).
+  - Guard de "alterações não salvas".
+- Tamanho `lg`.
 
-### 2. Padronizar abas e transições no módulo
-Hoje `RiscosTabs` já está no novo visual, mas `Aceite de Risco` ainda usa as abas padrão.
+### 4. `TratamentoForm.tsx` — Refino do formulário
+- Remover o footer interno (`flex justify-between pt-4`) — o submit passa a ser controlado pelo footer do `DialogShell` via `onSubmit`. O componente expõe `formRef` ou recebe `onSubmitRef`.
+- Espaçamento: trocar `space-y-6` por `space-y-7` e usar `gap-5` nos grids para mais respiro.
+- Corrigir o botão "Sugerir Tratamento": hoje renderiza dois `AkurisAIIcon` lado a lado por engano (linhas 235-236). Manter apenas um.
+- Trocar o badge "1 crédito de IA" para o componente padrão `AiCostHint` integrado ao botão (visualmente compacto, à direita do label da descrição) — remover o `<AiCostHint>` solto.
+- Realçar o campo "Descrição" como hero do form: label maior (`text-base font-semibold`), textarea com `min-h-[140px]` e placeholder mais limpo.
+- Substituir os emojis (🛡️ 🚨 💡) do dialog de sugestões por ícones Lucide stroke 1.5 (`Shield`, `AlertTriangle`, `Lightbulb`) para alinhar à identidade.
+- Trocar o loader local `AkurisPulse size={12}` no botão por um spinner inline mais discreto (mantendo `AkurisPulse` apenas para overlays/estados grandes — padrão do sistema).
 
-Vou ajustar:
-- `RiscosTabs.tsx`: manter o visual atual e adicionar animação suave nos conteúdos (`animate-fade-in`).
-- `RiscosAceite.tsx`: aplicar o mesmo padrão editorial de abas usado em Gestão de Riscos:
-  - linha inferior;
-  - ativo roxo;
-  - sem fundo pesado;
-  - transição visual entre conteúdos;
-  - ícones com `strokeWidth={1.5}` onde faltar.
+### 5. Acessibilidade & consistência
+- Garantir `strokeWidth={1.5}` em todos os ícones Lucide novos.
+- Garantir que todas as datas usem `formatDateOnly` (já em uso) e selects herdem o estilo padrão.
 
-### 3. Corrigir avisos de acessibilidade dos diálogos
-Os logs mostram warning de Radix: `Missing Description or aria-describedby`.
+## Arquivos editados
+- `src/components/riscos/TratamentosDialog.tsx`
+- `src/components/riscos/TratamentosList.tsx`
+- `src/components/riscos/TratamentoDialog.tsx`
+- `src/components/riscos/TratamentoForm.tsx`
 
-Vou adicionar `DialogDescription` nos diálogos de riscos que ainda não têm descrição:
-- `AprovacaoRiscoDialog.tsx`
-- `AceiteDetalheDialog.tsx`
-- `TrilhaAuditoriaRiscos.tsx`
-- `HistoricoAvaliacoesDialog.tsx`
-
-Isso remove o warning e melhora acessibilidade sem alterar fluxo visual.
-
-### 4. Reforçar isolamento por empresa nas ações de riscos
-Encontrei pontos em que consultas principais já filtram por `empresa_id`, mas algumas ações de update/delete ainda dependem apenas do `id` do registro.
-
-Vou reforçar com `.eq('empresa_id', profile.empresa_id)` onde a tabela tiver esse campo:
-- exclusão de risco em `Riscos.tsx`;
-- revogação de aceite em `RiscosAceite.tsx`;
-- agendamento de revisão em `RiscosAceite.tsx`;
-- decisões/aprovações em `AprovacaoRiscoDialog.tsx`;
-- consultas de `profiles` usadas para nomes/responsáveis;
-- consulta de `audit_logs` e anexos de aceite em `AceiteDetalheDialog.tsx`.
-
-Para tabelas relacionadas que não possuem `empresa_id` direto, vou manter o isolamento via ids já derivados de riscos filtrados por empresa, ou usar join com `riscos` quando for compatível com os relacionamentos existentes.
-
-### 5. Integrar melhor riscos ao sino de notificações
-Existe uma notificação automática de revisão de risco no `NotificationCenter`, mas a consulta de riscos não está filtrando por empresa.
-
-Vou ajustar:
-- adicionar filtro por `empresa_id` nas notificações automáticas de riscos;
-- manter os links direcionando para `/riscos`;
-- preservar a centralização no sino do header.
-
-### 6. Remover resíduos fora do padrão
-Vou revisar os arquivos tocados para:
-- substituir `console.error` restante no hook de estatísticas de riscos por `logger`;
-- remover imports não usados quando surgirem dos ajustes;
-- manter `AkurisPulse` como loader único;
-- manter `StatusBadge` para status/níveis;
-- manter ícones no padrão `strokeWidth={1.5}`.
-
-## Arquivos previstos
-
-- `src/components/AppSidebar.tsx`
-- `src/components/riscos/RiscosTabs.tsx`
-- `src/pages/RiscosAceite.tsx`
-- `src/pages/Riscos.tsx`
-- `src/components/riscos/AprovacaoRiscoDialog.tsx`
-- `src/components/riscos/AceiteDetalheDialog.tsx`
-- `src/components/riscos/TrilhaAuditoriaRiscos.tsx`
-- `src/components/riscos/HistoricoAvaliacoesDialog.tsx`
-- `src/hooks/useRiscosStats.tsx`
-- `src/components/NotificationCenter.tsx`
-
-## Validação após aplicar
-
-Depois da implementação, vou validar:
-- subitem ativo do menu em `/riscos` e `/riscos/aceite`;
-- transição visual entre abas de Gestão de Riscos;
-- transição visual entre abas de Aceite de Risco;
-- ausência do warning de `DialogDescription` nos diálogos de riscos;
-- updates/deletes de riscos sempre com isolamento por empresa;
-- notificações automáticas de revisão de risco filtradas pela empresa atual;
-- ausência de `console.*` restante no escopo do módulo de riscos.
+## Fora do escopo
+- Mudanças no schema do banco ou em Edge Functions.
+- Refatorar lógica de IA (`suggest-risk-treatment`) — apenas o visual do botão/dialog de sugestões.
