@@ -1,4 +1,5 @@
 
+import { logger } from '@/lib/logger';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -78,7 +79,7 @@ export function MatrizVisualizacao() {
 
       setRiscos(riscosData || []);
     } catch (error) {
-      console.error('Erro ao carregar matriz e riscos:', error);
+      logger.error('Erro ao carregar matriz e riscos:', error);
     } finally {
       setLoading(false);
     }

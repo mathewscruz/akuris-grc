@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -129,7 +130,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
 
   useEffect(() => {
     if (risco && matrizes.length > 0) {
-      console.log('📝 Carregando dados do risco para edição:', risco);
+      logger.debug('📝 Carregando dados do risco para edição:', risco);
       
       form.reset({
         nome: risco.nome || '',
@@ -156,7 +157,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
       if (risco.matriz_id) {
         const matriz = matrizes.find(m => m.id === risco.matriz_id);
         if (matriz && matriz.configuracao && matriz.configuracao[0]) {
-          console.log('✅ Matriz carregada automaticamente:', matriz.nome);
+          logger.debug('✅ Matriz carregada automaticamente:', matriz.nome);
           setSelectedMatriz({
             ...matriz,
             configuracao: {
@@ -239,7 +240,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
       
       setAnexosAceite(anexosFormatados);
     } catch (error: any) {
-      console.error('Erro ao buscar anexos:', error);
+      logger.error('Erro ao buscar anexos:', error);
     }
   };
 
@@ -254,7 +255,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
         form.setValue('ativos_vinculados', data.map(av => av.ativo_id));
       }
     } catch (error) {
-      console.error('Erro ao buscar ativos vinculados:', error);
+      logger.error('Erro ao buscar ativos vinculados:', error);
     }
   };
 
@@ -291,7 +292,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
   );
 
   const onSubmit = async (data: RiscoForm) => {
-    console.log('🚀 onSubmit chamado com dados:', data);
+    logger.debug('🚀 onSubmit chamado com dados:', data);
     
     if (!profile?.empresa_id) {
       toast.error('Erro: Empresa não identificada');
@@ -423,7 +424,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                 created_by: profile.user_id
               });
             } catch (anexoError) {
-              console.error('Erro ao salvar anexo:', anexoError);
+              logger.error('Erro ao salvar anexo:', anexoError);
             }
           }
         }
@@ -466,7 +467,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
           }] : [])
         ]);
       } catch (histError) {
-        console.warn('Erro ao registrar histórico de avaliação:', histError);
+        logger.warn('Erro ao registrar histórico de avaliação:', histError);
       }
 
       // Se é um novo aceite, enviar notificação e e-mail ao aprovador
@@ -493,7 +494,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
             }
           });
         } catch (notifError) {
-          console.warn('Erro ao enviar notificação de aceite:', notifError);
+          logger.warn('Erro ao enviar notificação de aceite:', notifError);
         }
       }
 
@@ -504,7 +505,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
       );
       onSuccess();
     } catch (error: any) {
-      console.error('❌ Erro ao salvar risco:', error);
+      logger.error('❌ Erro ao salvar risco:', error);
       toast.error('Erro ao salvar risco: ' + (error.message || 'Erro desconhecido'));
     } finally {
       setLoading(false);
