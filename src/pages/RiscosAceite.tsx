@@ -193,7 +193,7 @@ export default function RiscosAceite() {
 
   const columns: Array<Column<RiscoAceito>> = [
     { key: 'nome', label: 'Risco', sortable: true, render: (value: any) => <span className="font-medium">{value}</span> },
-    { key: 'nivel_risco_inicial', label: 'Nível', render: (value: string) => <StatusBadge size="sm" {...resolveNivelRiscoTone(value)}>{value}</StatusBadge> },
+    { key: 'nivel_risco_inicial', label: 'Nível', render: (value: string) => <StatusBadge size="sm" {...resolveNivelRiscoTone(value)}>{formatStatus(value)}</StatusBadge> },
     { key: 'justificativa_aceite', label: 'Justificativa', render: (value: string) => value ? <span className="text-sm text-muted-foreground line-clamp-2 max-w-[200px]">{value}</span> : '-' },
     { key: 'data_aceite', label: 'Data Aceite', sortable: true, render: (value: string) => value ? formatDateOnly(value) : '-' },
     { key: 'aprovador_nome', label: 'Aprovador', render: (value: string) => value || '-' },
