@@ -2,7 +2,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { TrendingDown, TrendingUp, Minus, Clock, User } from 'lucide-react';
@@ -66,9 +66,12 @@ export function HistoricoAvaliacoesDialog({ open, onOpenChange, riscoId, riscoNo
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
+            <Clock className="h-5 w-5" strokeWidth={1.5} />
             Histórico de Avaliações - {riscoNome}
           </DialogTitle>
+          <DialogDescription>
+            Linha do tempo das reavaliações de probabilidade, impacto e nível do risco.
+          </DialogDescription>
         </DialogHeader>
 
         {isLoading ? (
