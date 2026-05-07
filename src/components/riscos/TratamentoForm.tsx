@@ -369,16 +369,8 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
         </Select>
       </div>
 
-      <div className="flex justify-between pt-4">
-        <div className="text-sm text-muted-foreground">
-          * Campos obrigatórios
-        </div>
-        <div className="flex gap-2">
-          <Button type="submit" disabled={loading}>
-            {loading ? 'Salvando...' : (tratamento ? 'Atualizar' : 'Criar')} Tratamento
-          </Button>
-        </div>
-      </div>
+      <p className="text-xs text-muted-foreground">* Campos obrigatórios</p>
+
 
       {/* Modal de Sugestões da IA */}
       <Dialog open={suggestionDialogOpen} onOpenChange={setSuggestionDialogOpen}>
@@ -386,7 +378,6 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AkurisAIIcon className="h-5 w-5" />
-              <AkurisAIIcon className="h-4 w-4" />
               Sugestões Inteligentes de Tratamento
             </DialogTitle>
             <DialogDescription>
@@ -399,8 +390,11 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
               {iaSuggestions.mitigacao && (
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg flex items-center justify-between">
-                      🛡️ Plano de Mitigação
+                    <CardTitle className="text-lg flex items-center justify-between gap-3">
+                      <span className="flex items-center gap-2">
+                        <Shield className="h-4 w-4 text-primary" strokeWidth={1.5} />
+                        Plano de Mitigação
+                      </span>
                       <div className="flex gap-2">
                         <Button
                           variant="outline"
@@ -431,8 +425,11 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
               {iaSuggestions.contingenciamento && (
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg flex items-center justify-between">
-                      🚨 Plano de Contingenciamento
+                    <CardTitle className="text-lg flex items-center justify-between gap-3">
+                      <span className="flex items-center gap-2">
+                        <AlertTriangle className="h-4 w-4 text-amber-500" strokeWidth={1.5} />
+                        Plano de Contingenciamento
+                      </span>
                       <div className="flex gap-2">
                         <Button
                           variant="outline"
@@ -460,9 +457,10 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
                 </Card>
               )}
 
-              <div className="mt-6 p-4 bg-muted rounded-lg">
+              <div className="mt-6 p-4 bg-muted rounded-lg flex gap-3">
+                <Lightbulb className="h-4 w-4 text-primary shrink-0 mt-0.5" strokeWidth={1.5} />
                 <p className="text-sm text-muted-foreground">
-                  💡 <strong>Dica:</strong> Essas sugestões são geradas automaticamente com base nas informações do risco. 
+                  <strong className="text-foreground">Dica:</strong> Essas sugestões são geradas automaticamente com base nas informações do risco.
                   Revise e ajuste conforme necessário para adequar à realidade da sua organização.
                 </p>
               </div>
