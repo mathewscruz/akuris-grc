@@ -7163,6 +7163,8 @@ export type Database = {
       gerar_protocolo_denuncia: { Args: never; Returns: string }
       gerar_token_publico: { Args: never; Returns: string }
       gerar_token_revisao: { Args: never; Returns: string }
+      get_agent_token: { Args: { _id: string }; Returns: string }
+      get_api_key_full: { Args: { _id: string }; Returns: string }
       get_assessment_empresa_info: {
         Args: { p_token: string }
         Returns: {
