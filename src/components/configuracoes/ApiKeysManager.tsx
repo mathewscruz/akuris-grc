@@ -59,7 +59,7 @@ export function ApiKeysManager() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-  const [revealedKeys, setRevealedKeys] = useState<Set<string>>(new Set());
+  const [revealedKeys, setRevealedKeys] = useState<Map<string, string>>(new Map());
   const [newKeyRevealed, setNewKeyRevealed] = useState<string | null>(null);
 
   // Form state
