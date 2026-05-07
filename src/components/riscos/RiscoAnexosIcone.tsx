@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -41,7 +42,7 @@ export function RiscoAnexosIcone({ riscoId }: RiscoAnexosIconeProps) {
         if (error) throw error;
         setAnexos(data || []);
       } catch (error) {
-        console.error('Erro ao buscar anexos:', error);
+        logger.error('Erro ao buscar anexos:', { data: error });
       } finally {
         setLoading(false);
       }

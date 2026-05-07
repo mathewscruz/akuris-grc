@@ -1,4 +1,5 @@
 
+import { logger } from '@/lib/logger';
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -178,7 +179,7 @@ export function AprovacaoRiscoDialog({ open, onOpenChange, risco, onSuccess }: P
           }
         });
       } catch (emailError) {
-        console.warn('Erro ao enviar e-mail de aceite:', emailError);
+        logger.warn('Erro ao enviar e-mail de aceite:', { data: emailError });
       }
 
       toast.success(`Aceite de risco ${decisao === 'aprovado' ? 'aprovado' : 'rejeitado'}!`);

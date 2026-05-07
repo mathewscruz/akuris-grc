@@ -411,7 +411,8 @@ export function AppSidebar() {
                                 <SidebarMenuButton
                                   key={subItem.title}
                                   asChild
-                                  className="transition-colors duration-200 h-9 animate-fade-in opacity-0 [animation-fill-mode:forwards]"
+                                  isActive={isActive(subItem.url)}
+                                  className="transition-colors duration-200 h-9 animate-fade-in opacity-0 [animation-fill-mode:forwards] data-[active=true]:bg-transparent"
                                   style={{ animationDelay: `${idx * 30}ms`, animationDuration: '220ms' }}
                                 >
                                   <NavLink
@@ -422,6 +423,7 @@ export function AppSidebar() {
                                     }
                                   >
                                     <subItem.icon
+                                      strokeWidth={1.5}
                                       className={`h-4 w-4 mr-3 flex-shrink-0 transition-colors duration-200 ${
                                         isActive(subItem.url) ? 'text-primary-foreground' : ''
                                       }`}
@@ -437,7 +439,8 @@ export function AppSidebar() {
                     ) : (
                       <SidebarMenuButton
                         asChild
-                        className="transition-colors duration-200 h-9 min-w-0 px-3"
+                        isActive={isActive(item.url!)}
+                        className="transition-colors duration-200 h-9 min-w-0 px-3 data-[active=true]:bg-transparent"
                       >
                         <NavLink
                           to={item.url!}

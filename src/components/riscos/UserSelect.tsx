@@ -1,4 +1,5 @@
 
+import { logger } from '@/lib/logger';
 import { useState, useEffect } from 'react';
 import { Check, ChevronsUpDown, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -46,7 +47,7 @@ export function UserSelect({ value, onValueChange, placeholder = "Selecionar res
       
       setUsuarios(data || []);
     } catch (error: any) {
-      console.error('Erro ao buscar usuários:', error);
+      logger.error('Erro ao buscar usuários:', { data: error });
       toast.error('Erro ao carregar lista de usuários');
     } finally {
       setLoading(false);

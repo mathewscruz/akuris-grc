@@ -211,20 +211,20 @@ export default function RiscosAceite() {
       render: (_: any, risco: RiscoAceito) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" strokeWidth={1.5} /></Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => { setSelectedRisco(risco); setDetalheOpen(true); }}>
-              <Eye className="mr-2 h-4 w-4" /> Ver Detalhes
+              <Eye className="mr-2 h-4 w-4" strokeWidth={1.5} /> Ver Detalhes
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => handleAgendarRevisao(risco, 30)}>
-              <CalendarClock className="mr-2 h-4 w-4" /> Agendar Revisão (30d)
+              <CalendarClock className="mr-2 h-4 w-4" strokeWidth={1.5} /> Agendar Revisão (30d)
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => handleAgendarRevisao(risco, 90)}>
-              <CalendarClock className="mr-2 h-4 w-4" /> Agendar Revisão (90d)
+              <CalendarClock className="mr-2 h-4 w-4" strokeWidth={1.5} /> Agendar Revisão (90d)
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => handleRevogarAceite(risco)} className="text-destructive focus:text-destructive">
-              <XCircle className="mr-2 h-4 w-4" /> Revogar Aceite
+              <XCircle className="mr-2 h-4 w-4" strokeWidth={1.5} /> Revogar Aceite
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -242,7 +242,7 @@ export default function RiscosAceite() {
       key: 'actions', label: 'Ações', className: 'w-[60px]',
       render: (_: any, risco: RiscoAceito) => (
         <Button variant="outline" size="sm" onClick={() => { setAprovacaoRisco(risco); setAprovacaoOpen(true); }}>
-          <Eye className="mr-2 h-4 w-4" /> Revisar
+          <Eye className="mr-2 h-4 w-4" strokeWidth={1.5} /> Revisar
         </Button>
       ),
     },
