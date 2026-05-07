@@ -110,8 +110,8 @@ export function ReviewItemDecisionDialog({
             <AlertDescription>
               <div className="space-y-1 text-sm">
                 <p><strong>Email:</strong> {item?.email_beneficiario || "-"}</p>
-                <p><strong>Tipo de Acesso:</strong> {item?.tipo_acesso}</p>
-                <p><strong>Nível:</strong> <Badge>{item?.nivel_privilegio}</Badge></p>
+                <p><strong>Tipo de Acesso:</strong> {formatStatus(item?.tipo_acesso || '')}</p>
+                <p><strong>Nível:</strong> <Badge>{formatStatus(item?.nivel_privilegio || '')}</Badge></p>
                 <p><strong>Data Concessão:</strong> {item?.data_concessao ? formatDateForInput(item.data_concessao) : "-"}</p>
                 <p><strong>Data Expiração:</strong> {item?.data_expiracao ? formatDateForInput(item.data_expiracao) : "-"}</p>
                 {item?.justificativa_original && (
