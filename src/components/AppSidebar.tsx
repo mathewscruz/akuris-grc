@@ -458,20 +458,20 @@ export function AppSidebar() {
                               onMouseEnter={() => prefetchRoute(item.url!)}
                               className={`flex items-center w-full min-w-0 px-3 rounded-md transition-colors duration-200 ${
                                 active
-                                  ? 'bg-primary text-primary-foreground font-semibold shadow-sm hover:bg-primary'
+                                  ? '!bg-primary !text-primary-foreground font-semibold shadow-sm hover:!bg-primary'
                                   : 'hover:bg-sidebar-accent/60 text-sidebar-foreground'
                               }`}
                             >
                               <div className="flex items-center min-w-0">
                                 <item.icon
                                   className={`h-4 w-4 mr-3 flex-shrink-0 transition-colors duration-200 ${
-                                    active ? 'text-primary-foreground' : ''
+                                    active ? '!text-primary-foreground' : ''
                                   }`}
                                 />
                                 {!isCollapsed && (
                                   <span
                                     className={`text-sm font-medium transition-colors duration-200 truncate ${
-                                      active ? 'text-primary-foreground font-semibold' : ''
+                                      active ? '!text-primary-foreground font-semibold' : ''
                                     }`}
                                   >
                                     {item.title}
