@@ -423,17 +423,17 @@ export function AppSidebar() {
                                       onMouseEnter={() => prefetchRoute(subItem.url)}
                                       className={`flex items-center w-full min-w-0 px-3 rounded-md transition-colors duration-200 ${
                                         active
-                                          ? 'bg-primary text-primary-foreground font-semibold shadow-sm hover:bg-primary'
+                                          ? '!bg-primary !text-primary-foreground font-semibold shadow-sm hover:!bg-primary'
                                           : 'hover:bg-sidebar-accent/60 text-sidebar-foreground'
                                       }`}
                                     >
                                       <subItem.icon
                                         strokeWidth={1.5}
                                         className={`h-4 w-4 mr-3 flex-shrink-0 transition-colors duration-200 ${
-                                          active ? 'text-primary-foreground' : ''
+                                          active ? '!text-primary-foreground' : ''
                                         }`}
                                       />
-                                      <span className="text-sm truncate">{subItem.title}</span>
+                                      <span className={`text-sm truncate ${active ? '!text-primary-foreground' : ''}`}>{subItem.title}</span>
                                     </NavLink>
                                   </SidebarMenuButton>
                                 );
