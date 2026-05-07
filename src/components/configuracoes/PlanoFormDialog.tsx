@@ -162,6 +162,15 @@ export const PlanoFormDialog: React.FC<Props> = ({ open, onOpenChange, plano, on
               <Textarea value={form.descricao} onChange={e => setForm(f => ({ ...f, descricao: e.target.value }))} rows={2} placeholder="Para empresas em crescimento" />
             </div>
 
+            <div className="space-y-1.5">
+              <Label>Público-alvo</Label>
+              <Input
+                value={form.publico_alvo}
+                onChange={e => setForm(f => ({ ...f, publico_alvo: e.target.value }))}
+                placeholder="Ex: Médias Empresas (101 - 499)"
+              />
+            </div>
+
             {/* Preços */}
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
@@ -171,6 +180,22 @@ export const PlanoFormDialog: React.FC<Props> = ({ open, onOpenChange, plano, on
               <div className="space-y-1.5">
                 <Label>Preço anual total (R$)</Label>
                 <Input type="number" min={0} step={0.01} value={form.preco_anual} onChange={e => setForm(f => ({ ...f, preco_anual: Number(e.target.value) }))} />
+              </div>
+            </div>
+
+            {/* Setup */}
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>Setup / Implantação (R$)</Label>
+                <Input type="number" min={0} step={0.01} value={form.preco_setup} onChange={e => setForm(f => ({ ...f, preco_setup: Number(e.target.value) }))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Observação do setup</Label>
+                <Input
+                  value={form.setup_observacao}
+                  onChange={e => setForm(f => ({ ...f, setup_observacao: e.target.value }))}
+                  placeholder='Ex: "A partir de R$ 6.000,00"'
+                />
               </div>
             </div>
 
