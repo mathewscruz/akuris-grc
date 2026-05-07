@@ -160,7 +160,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
 
           <div className="flex-1 overflow-y-auto px-6 py-5">
             {/* Visão */}
-            <TabsContent value="visao" className="m-0 space-y-5">
+            <TabsContent value="visao" className="m-0 space-y-5 data-[state=active]:animate-fade-in">
               {risco.descricao && (
                 <section>
                   <SectionLabel>Descrição</SectionLabel>
@@ -231,7 +231,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
             </TabsContent>
 
             {/* Tratamentos */}
-            <TabsContent value="tratamentos" className="m-0 space-y-3">
+            <TabsContent value="tratamentos" className="m-0 space-y-3 data-[state=active]:animate-fade-in">
               {isLoading ? (
                 <div className="flex justify-center py-10"><AkurisPulse size={32} /></div>
               ) : detail?.tratamentos.length === 0 ? (
@@ -280,7 +280,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
             </TabsContent>
 
             {/* Histórico */}
-            <TabsContent value="historico" className="m-0">
+            <TabsContent value="historico" className="m-0 data-[state=active]:animate-fade-in">
               {isLoading ? (
                 <div className="flex justify-center py-10"><AkurisPulse size={32} /></div>
               ) : detail?.historico.length === 0 ? (
@@ -310,7 +310,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
             </TabsContent>
 
             {/* Controles */}
-            <TabsContent value="controles" className="m-0 space-y-2">
+            <TabsContent value="controles" className="m-0 space-y-2 data-[state=active]:animate-fade-in">
               {isLoading ? (
                 <div className="flex justify-center py-10"><AkurisPulse size={32} /></div>
               ) : detail?.controles.length === 0 ? (
