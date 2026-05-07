@@ -149,12 +149,14 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
 
         {/* Tabs */}
         <Tabs defaultValue="visao" className="flex-1 flex flex-col min-h-0">
-          <TabsList className="mx-6 mt-4 mr-10 grid grid-cols-4 h-9 gap-1.5">
-            <TabsTrigger value="visao" className="text-[11px] px-1.5 gap-1 min-w-0"><Eye className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span className="truncate">Visão</span></TabsTrigger>
-            <TabsTrigger value="tratamentos" className="text-[11px] px-1.5 gap-1 min-w-0"><Shield className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span className="truncate">Tratamento</span></TabsTrigger>
-            <TabsTrigger value="historico" className="text-[11px] px-1.5 gap-1 min-w-0"><History className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span className="truncate">Histórico</span></TabsTrigger>
-            <TabsTrigger value="controles" className="text-[11px] px-1.5 gap-1 min-w-0"><ShieldCheck className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span className="truncate">Controles</span></TabsTrigger>
-          </TabsList>
+          <div className="px-6 pt-4">
+            <TabsList className="grid grid-cols-4 h-9 gap-1.5 w-full">
+              <TabsTrigger value="visao" className="text-[11px] px-2 gap-1.5 min-w-0 whitespace-nowrap"><Eye className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>Visão</span></TabsTrigger>
+              <TabsTrigger value="tratamentos" className="text-[11px] px-2 gap-1.5 min-w-0 whitespace-nowrap"><Shield className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>Tratamento</span></TabsTrigger>
+              <TabsTrigger value="historico" className="text-[11px] px-2 gap-1.5 min-w-0 whitespace-nowrap"><History className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>Histórico</span></TabsTrigger>
+              <TabsTrigger value="controles" className="text-[11px] px-2 gap-1.5 min-w-0 whitespace-nowrap"><ShieldCheck className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>Controles</span></TabsTrigger>
+            </TabsList>
+          </div>
 
           <div className="flex-1 overflow-y-auto px-6 py-5">
             {/* Visão */}
