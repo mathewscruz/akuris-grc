@@ -1,13 +1,13 @@
-
 import { logger } from '@/lib/logger';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
-
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Grid3X3 } from 'lucide-react';
+
 interface Matriz {
   id: string;
   nome: string;
@@ -27,7 +27,12 @@ interface Risco {
   nivel_risco_inicial: string;
 }
 
-export function MatrizVisualizacao() {
+interface Props {
+  onNavigate?: () => void;
+  onConfigure?: () => void;
+}
+
+export function MatrizVisualizacao({ onNavigate, onConfigure }: Props) {
   const { profile } = useAuth();
   const navigate = useNavigate();
   const [matriz, setMatriz] = useState<Matriz | null>(null);
@@ -42,7 +47,6 @@ export function MatrizVisualizacao() {
 
   const fetchMatrizAndRiscos = async () => {
     try {
-      // Buscar primeira matriz disponível da empresa
       const { data: matrizData } = await supabase
         .from('riscos_matrizes')
         .select(`
@@ -71,7 +75,6 @@ export function MatrizVisualizacao() {
         });
       }
 
-      // Buscar riscos da empresa
       const { data: riscosData } = await supabase
         .from('riscos')
         .select('id, nome, probabilidade_inicial, impacto_inicial, nivel_risco_inicial')
@@ -95,134 +98,233 @@ export function MatrizVisualizacao() {
 
   const getNivelRisco = (probabilidade: number, impacto: number) => {
     if (!matriz?.configuracao) return null;
-    
     const metodoCalculo = (matriz.configuracao as any).metodo_calculo || 'multiplicacao';
-    const resultado = metodoCalculo === 'multiplicacao' 
+    const resultado = metodoCalculo === 'multiplicacao'
       ? probabilidade * impacto
       : probabilidade + impacto;
-      
-    return matriz.configuracao.niveis_risco.find(n => 
+    return matriz.configuracao.niveis_risco.find(n =>
       resultado >= n.min && resultado <= n.max
     );
   };
 
   const getCorNivel = (nivel: string) => {
     if (!matriz?.configuracao) return '#6b7280';
-    
     const nivelConfig = matriz.configuracao.niveis_risco.find(n => n.nivel === nivel);
     return nivelConfig?.cor || '#6b7280';
   };
 
   const handleCellClick = (riscosNaCelula: Risco[]) => {
     if (riscosNaCelula.length > 0) {
-      // Navegar para a página de riscos com filtro dos IDs
       const riscosIds = riscosNaCelula.map(r => r.id).join(',');
       navigate(`/riscos?ids=${riscosIds}`);
+      onNavigate?.();
     }
   };
 
   if (loading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Matriz de Risco</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-center h-32">
-            <AkurisPulse size={32} />
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-center min-h-[300px]">
+        <AkurisPulse size={32} />
+      </div>
     );
   }
 
   if (!matriz) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Matriz de Risco</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground text-center py-8">
-            Nenhuma matriz de risco configurada. Configure uma matriz no módulo de riscos.
-          </p>
-        </CardContent>
-      </Card>
+      <EmptyState
+        icon={<Grid3X3 className="h-10 w-10" strokeWidth={1.5} />}
+        title="Nenhuma matriz configurada"
+        description="Configure uma matriz de risco para visualizar a distribuição dos seus riscos por probabilidade e impacto."
+        action={onConfigure ? { label: 'Configurar agora', onClick: onConfigure } : undefined}
+      />
     );
   }
 
   const escalaProbabilidade = matriz.configuracao?.escala_probabilidade || [];
   const escalaImpacto = matriz.configuracao?.escala_impacto || [];
-  
-  // Criar cópia do array antes de reverter para não mutar o original
+  const niveis = matriz.configuracao?.niveis_risco || [];
+  const metodo = (matriz.configuracao as any)?.metodo_calculo || 'multiplicacao';
+  const metodoLabel = metodo === 'multiplicacao' ? 'P × I' : 'P + I';
+  const totalPlotados = riscos.filter(r => r.probabilidade_inicial && r.impacto_inicial).length;
+
   const escalaProbabilidadeReversed = [...escalaProbabilidade].reverse();
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base">Matriz de Risco - {matriz.nome}</CardTitle>
-      </CardHeader>
-      <CardContent className="p-3 pt-0">
-        <div className="w-full max-w-md mx-auto">
-          {/* Cabeçalho da matriz */}
-          <div className="grid gap-0.5 mb-1" style={{ gridTemplateColumns: `40px repeat(${escalaImpacto.length}, minmax(0, 1fr))` }}>
-            <div className="p-1 font-medium text-[10px] text-center">Prob.</div>
-            {escalaImpacto.map((impacto) => (
-              <div key={impacto.valor} className="p-1 text-center font-medium text-[10px] bg-muted rounded">
-                {impacto.valor}
-              </div>
-            ))}
+    <TooltipProvider delayDuration={150}>
+      <div className="space-y-6">
+        {/* Header editorial */}
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div className="flex flex-col gap-1">
+            <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
+              Matriz Visual
+            </span>
+            <h3 className="text-base font-semibold text-foreground">
+              {matriz.nome}
+            </h3>
           </div>
-
-          {/* Linhas da matriz */}
-          {escalaProbabilidadeReversed.map((probabilidade) => (
-            <div key={probabilidade.valor} className="grid gap-0.5 mb-0.5" style={{ gridTemplateColumns: `40px repeat(${escalaImpacto.length}, minmax(0, 1fr))` }}>
-              <div className="p-1 font-medium text-[10px] bg-muted rounded flex items-center justify-center">
-                {probabilidade.valor}
-              </div>
-              {escalaImpacto.map((impacto) => {
-                const riscosNaCelula = getRiscosPorCelula(probabilidade.valor, impacto.valor);
-                const nivelRisco = getNivelRisco(probabilidade.valor, impacto.valor);
-                const cor = nivelRisco ? getCorNivel(nivelRisco.nivel) : '#f3f4f6';
-                
-                return (
-                  <div 
-                    key={`${probabilidade.valor}-${impacto.valor}`}
-                    onClick={() => handleCellClick(riscosNaCelula)}
-                    className={`p-0.5 border border-border rounded min-h-[40px] flex flex-col items-center justify-center relative aspect-square transition-all ${
-                      riscosNaCelula.length > 0 ? 'cursor-pointer hover:opacity-80 hover:scale-105 hover:shadow-md' : ''
-                    }`}
-                    style={{ backgroundColor: cor + '20' }}
-                    title={riscosNaCelula.length > 0 ? `Clique para ver ${riscosNaCelula.length} risco(s)` : ''}
-                  >
-                    {nivelRisco && (
-                      <Badge 
-                        className="text-[9px] mb-0.5 px-0.5 py-0 h-auto leading-tight" 
-                        style={{ backgroundColor: cor, color: 'white', borderColor: cor }}
-                      >
-                        {nivelRisco.nivel.charAt(0)}
-                      </Badge>
-                    )}
-                    {riscosNaCelula.length > 0 && (
-                      <div 
-                        className="w-3.5 h-3.5 rounded-full flex items-center justify-center text-[9px] font-bold text-white"
-                        style={{ backgroundColor: cor }}
-                      >
-                        {riscosNaCelula.length}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          ))}
-
-          {/* Legenda do eixo Y */}
-          <div className="text-center mt-1.5">
-            <span className="text-[10px] font-medium text-muted-foreground">Impacto →</span>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-3 py-1 text-xs font-medium text-muted-foreground">
+              Cálculo: <span className="text-foreground">{metodoLabel}</span>
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-3 py-1 text-xs font-medium text-muted-foreground">
+              {totalPlotados} risco{totalPlotados === 1 ? '' : 's'} plotado{totalPlotados === 1 ? '' : 's'}
+            </span>
           </div>
         </div>
-      </CardContent>
-    </Card>
+
+        {/* Matriz */}
+        <div className="rounded-lg border border-border bg-card p-5">
+          <div className="flex gap-3 max-w-3xl mx-auto">
+            {/* Eixo Y label */}
+            <div className="flex items-center justify-center">
+              <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium [writing-mode:vertical-rl] rotate-180">
+                Probabilidade ↑
+              </span>
+            </div>
+
+            <div className="flex-1 min-w-0">
+              {/* Cabeçalho impacto */}
+              <div
+                className="grid gap-1 mb-1"
+                style={{ gridTemplateColumns: `48px repeat(${escalaImpacto.length}, minmax(0, 1fr))` }}
+              >
+                <div className="p-1.5 text-xs font-semibold text-center text-muted-foreground">
+                  P\I
+                </div>
+                {escalaImpacto.map((impacto) => (
+                  <div
+                    key={impacto.valor}
+                    className="p-2 text-center text-xs font-semibold bg-muted/60 rounded text-foreground"
+                    title={impacto.descricao}
+                  >
+                    {impacto.valor}
+                  </div>
+                ))}
+              </div>
+
+              {/* Linhas */}
+              {escalaProbabilidadeReversed.map((probabilidade) => (
+                <div
+                  key={probabilidade.valor}
+                  className="grid gap-1 mb-1"
+                  style={{ gridTemplateColumns: `48px repeat(${escalaImpacto.length}, minmax(0, 1fr))` }}
+                >
+                  <div
+                    className="p-2 text-xs font-semibold bg-muted/60 rounded flex items-center justify-center text-foreground"
+                    title={probabilidade.descricao}
+                  >
+                    {probabilidade.valor}
+                  </div>
+                  {escalaImpacto.map((impacto) => {
+                    const riscosNaCelula = getRiscosPorCelula(probabilidade.valor, impacto.valor);
+                    const nivelRisco = getNivelRisco(probabilidade.valor, impacto.valor);
+                    const cor = nivelRisco ? getCorNivel(nivelRisco.nivel) : '#9ca3af';
+                    const resultado = metodo === 'multiplicacao'
+                      ? probabilidade.valor * impacto.valor
+                      : probabilidade.valor + impacto.valor;
+
+                    const cellInner = (
+                      <div
+                        onClick={() => handleCellClick(riscosNaCelula)}
+                        className={`relative p-1.5 border border-border/60 rounded min-h-[64px] flex flex-col items-center justify-center gap-1 aspect-square transition-all ${
+                          riscosNaCelula.length > 0
+                            ? 'cursor-pointer hover:scale-[1.04] hover:shadow-md hover:border-foreground/20'
+                            : ''
+                        }`}
+                        style={{ backgroundColor: cor + '22' }}
+                      >
+                        {nivelRisco && (
+                          <div
+                            className="px-2 py-0.5 rounded-full text-[10px] font-bold leading-none text-white shadow-sm"
+                            style={{ backgroundColor: cor }}
+                          >
+                            {nivelRisco.nivel.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        {riscosNaCelula.length > 0 && (
+                          <div
+                            className="min-w-5 h-5 px-1.5 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
+                            style={{ backgroundColor: cor }}
+                          >
+                            {riscosNaCelula.length}
+                          </div>
+                        )}
+                      </div>
+                    );
+
+                    return (
+                      <Tooltip key={`${probabilidade.valor}-${impacto.valor}`}>
+                        <TooltipTrigger asChild>{cellInner}</TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs">
+                          <div className="space-y-1.5">
+                            <div className="flex items-center gap-2">
+                              {nivelRisco && (
+                                <span
+                                  className="inline-block w-2.5 h-2.5 rounded-full"
+                                  style={{ backgroundColor: cor }}
+                                />
+                              )}
+                              <span className="font-semibold">
+                                {nivelRisco?.nivel || 'Sem nível'}
+                              </span>
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              P {probabilidade.valor} {metodo === 'multiplicacao' ? '×' : '+'} I {impacto.valor} = <span className="text-foreground font-medium">{resultado}</span>
+                            </div>
+                            {riscosNaCelula.length > 0 ? (
+                              <div className="pt-1 border-t border-border/60 space-y-0.5">
+                                {riscosNaCelula.slice(0, 3).map(r => (
+                                  <div key={r.id} className="text-xs truncate">• {r.nome}</div>
+                                ))}
+                                {riscosNaCelula.length > 3 && (
+                                  <div className="text-xs text-primary font-medium pt-0.5">
+                                    + {riscosNaCelula.length - 3} outros — clique para ver todos
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="text-xs text-muted-foreground italic">Sem riscos nesta célula</div>
+                            )}
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    );
+                  })}
+                </div>
+              ))}
+
+              {/* Eixo X label */}
+              <div className="text-center mt-3">
+                <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
+                  Impacto →
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Legenda dos níveis */}
+        {niveis.length > 0 && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium mr-1">
+              Níveis
+            </span>
+            {niveis.map((n, i) => (
+              <span
+                key={i}
+                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/30 px-3 py-1 text-xs font-medium"
+              >
+                <span
+                  className="inline-block w-2.5 h-2.5 rounded-full"
+                  style={{ backgroundColor: n.cor || '#6b7280' }}
+                />
+                <span className="text-foreground">{n.nivel || `Nível ${i + 1}`}</span>
+                <span className="text-muted-foreground">({n.min}–{n.max})</span>
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+    </TooltipProvider>
   );
 }
