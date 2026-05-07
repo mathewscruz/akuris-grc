@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Plus, Edit2, Trash2, Building, Mail, Phone, Filter, Eye, X, Shield, ClipboardList, MoreHorizontal } from 'lucide-react';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { formatDateOnly } from '@/lib/date-utils';
+import { formatStatus } from '@/lib/text-utils';
 
 interface Fornecedor {
   id: string;
