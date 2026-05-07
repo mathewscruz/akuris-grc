@@ -123,7 +123,11 @@ export function Riscos() {
   const [auditRisco, setAuditRisco] = useState<Risco | null>(null);
   const [historicoRisco, setHistoricoRisco] = useState<Risco | null>(null);
   const [aprovacaoRisco, setAprovacaoRisco] = useState<Risco | null>(null);
-  
+
+  // Drawer de detalhe
+  const [drawerRiscoId, setDrawerRiscoId] = useState<string | null>(null);
+  const [matrixCell, setMatrixCell] = useState<{ p: number; i: number } | undefined>();
+
   const [sortField, setSortField] = useState<string>('created_at');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
