@@ -196,12 +196,12 @@ export function ReviewExternalForm({ review, onComplete }: ReviewExternalFormPro
                   <p className="text-sm text-muted-foreground">{currentItem.email_beneficiario}</p>
                 )}
                 <div className="flex gap-2 flex-wrap">
-                  <Badge>{currentItem.tipo_acesso}</Badge>
-                  <Badge variant="outline">{currentItem.nivel_privilegio}</Badge>
+                  <Badge>{formatStatus(currentItem.tipo_acesso)}</Badge>
+                  <Badge variant="outline">{formatStatus(currentItem.nivel_privilegio)}</Badge>
                 </div>
               </div>
               <Badge variant={currentItem.decisao === "pendente" ? "outline" : "secondary"}>
-                {currentItem.decisao}
+                {formatStatus(currentItem.decisao)}
               </Badge>
             </div>
 
