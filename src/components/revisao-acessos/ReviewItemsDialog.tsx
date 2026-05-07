@@ -8,6 +8,7 @@ import { useOptimizedQuery } from "@/hooks/useOptimizedQuery";
 import { useReviewData } from "@/hooks/useReviewData";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateForInput } from "@/lib/date-utils";
+import { formatStatus } from "@/lib/text-utils";
 import { CheckCircle, XCircle, Edit, Download } from "lucide-react";
 import { ReviewItemDecisionDialog } from "./ReviewItemDecisionDialog";
 import { Progress } from "@/components/ui/progress";
