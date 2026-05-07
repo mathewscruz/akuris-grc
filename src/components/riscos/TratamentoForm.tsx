@@ -234,50 +234,52 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
         </div>
       </div>
 
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="descricao">Descrição do Tratamento *</Label>
-          {riscoData && !tratamento && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleIaSuggestion}
-              disabled={iaSuggestionLoading}
-              className="ml-2"
-            >
-              {iaSuggestionLoading ? (
-                <>
-                  <AkurisPulse size={12} className="mr-2" />
-                  Gerando...
-                </>
-              ) : (
-                <>
-                  <AkurisAIIcon className="mr-2 h-3 w-3" />
-                  <AkurisAIIcon className="mr-1 h-3 w-3" />
-                  Sugerir Tratamento
-                </>
-              )}
-            </Button>
-          )}
-          <AiCostHint className="ml-2" action="cada sugestão de tratamento" />
+      <div className="space-y-3 rounded-lg border border-border/60 bg-muted/20 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <Label htmlFor="descricao" className="text-base font-semibold">
+            Descrição do Tratamento *
+          </Label>
+          <div className="flex items-center gap-2">
+            <AiCostHint action="cada sugestão de tratamento" />
+            {riscoData && !tratamento && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleIaSuggestion}
+                disabled={iaSuggestionLoading}
+              >
+                {iaSuggestionLoading ? (
+                  <>
+                    <AkurisPulse size={14} className="mr-2" />
+                    Gerando...
+                  </>
+                ) : (
+                  <>
+                    <AkurisAIIcon className="mr-2 h-4 w-4" />
+                    Sugerir Tratamento
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
         </div>
         <Textarea
           {...form.register('descricao')}
-          placeholder="Descreva detalhadamente o tratamento proposto... ou use o botão 'Sugerir Tratamento' para obter sugestões automáticas!"
-          rows={4}
+          placeholder="Descreva detalhadamente a ação proposta — escopo, etapas, responsáveis envolvidos e indicadores de sucesso."
+          className="min-h-[140px] resize-y bg-background"
         />
         {form.formState.errors.descricao && (
           <p className="text-sm text-destructive">{form.formState.errors.descricao.message}</p>
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div className="space-y-2">
           <Label htmlFor="responsavel">Responsável</Label>
           <UserSelect
             value={form.watch('responsavel') || ''}
-            onValueChange={(value) => form.setValue('responsavel', value)}
+            onValueChange={(value) => form.setValue('responsavel', value, { shouldDirty: true })}
             placeholder="Selecione o responsável"
           />
         </div>
