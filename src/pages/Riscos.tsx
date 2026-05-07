@@ -414,110 +414,111 @@ export function Riscos() {
     render?: (value: any, risco: Risco) => React.ReactNode;
   }> = [
     {
+      key: 'id',
+      label: 'ID',
+      className: 'w-[72px]',
+      render: (_value: any, risco: Risco) => (
+        <span className="font-mono text-[11px] text-muted-foreground">{shortRiskId(risco.id)}</span>
+      ),
+    },
+    {
       key: 'nome',
-      label: 'Nome',
+      label: 'Risco',
       sortable: true,
-      render: (value: any, risco: Risco) => (
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); setDrawerRiscoId(risco.id); }}
-          className="font-medium text-left hover:text-primary transition-colors"
-        >
-          {value}
-        </button>
-      )
+      render: (value: any, risco: Risco) => {
+        const sev = severityFromNivel(risco.nivel_risco_residual || risco.nivel_risco_inicial);
+        const dot =
+          sev === 'critico' ? 'bg-destructive' :
+          sev === 'alto' ? 'bg-warning' :
+          sev === 'medio' ? 'bg-warning/60' : 'bg-success';
+        return (
+          <div className="flex items-center gap-2 min-w-0">
+            <span className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${dot}`} />
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); setDrawerRiscoId(risco.id); }}
+              className="font-medium text-left hover:text-primary transition-colors truncate"
+            >
+              {value}
+            </button>
+          </div>
+        );
+      },
     },
     {
       key: 'categoria',
       label: 'Categoria',
-      render: (value: any) => value ? (
-        <div className="flex items-center gap-2">
-          {value.cor && <div className="w-3 h-3 rounded-full" style={{ backgroundColor: value.cor }} />}
-          <span className="text-sm">{value.nome}</span>
-        </div>
-      ) : '-'
+      render: (value: any) => value ? <span className="text-xs text-foreground/85">{value.nome}</span> : <span className="text-xs text-muted-foreground">—</span>,
     },
     {
       key: 'nivel_risco_inicial',
-      label: 'Nível Inicial',
+      label: 'Severidade',
       render: (value: string) => (
         <StatusBadge size="sm" {...resolveNivelRiscoTone(value)}>{formatStatus(value)}</StatusBadge>
-      )
+      ),
     },
     {
-      key: 'nivel_risco_residual',
-      label: 'Nível Residual',
-      render: (value: string) => value ? (
-        <StatusBadge size="sm" {...resolveNivelRiscoTone(value)}>{formatStatus(value)}</StatusBadge>
-      ) : <StatusBadge size="sm" tone="neutral">Não avaliado</StatusBadge>
+      key: 'pi',
+      label: 'P × I',
+      className: 'w-[70px]',
+      render: (_v: any, r: Risco) => (
+        <span className="font-mono tabular-nums text-xs text-muted-foreground">
+          {r.probabilidade_inicial || '—'} × {r.impacto_inicial || '—'}
+        </span>
+      ),
+    },
+    {
+      key: 'trend',
+      label: 'Tend.',
+      className: 'w-[60px]',
+      render: (_v: any, r: Risco) => (
+        <SparklineCell
+          probInicial={r.probabilidade_inicial}
+          impInicial={r.impacto_inicial}
+          probResidual={r.probabilidade_residual}
+          impResidual={r.impacto_residual}
+        />
+      ),
     },
     {
       key: 'status',
       label: 'Status',
       render: (value: string) => (
         <StatusBadge size="sm" {...resolveRiscoStatusTone(value)}>{formatStatus(value)}</StatusBadge>
-      )
-    },
-    {
-      key: 'tags',
-      label: 'Tags',
-      render: (_value: any, risco: Risco) => {
-        const tags: React.ReactNode[] = [];
-        const aprovBadge = getAprovacaoBadge(risco.status_aprovacao);
-        if (aprovBadge) tags.push(<span key="aprov">{aprovBadge}</span>);
-        if (risco.aceito) tags.push(<StatusBadge key="aceito" size="sm" tone="warning" icon={<ShieldCheck strokeWidth={1.5} className="h-3 w-3" />}>Aceito</StatusBadge>);
-        const revBadge = getRevisaoBadge(risco.data_proxima_revisao);
-        if (revBadge) tags.push(<span key="rev">{revBadge}</span>);
-
-        if (tags.length === 0) return <span className="text-muted-foreground text-sm">-</span>;
-        
-        const visible = tags.slice(0, 2);
-        const extra = tags.length - 2;
-        
-        return (
-          <div className="flex items-center gap-1 flex-wrap">
-            {visible}
-            {extra > 0 && (
-              <Badge variant="outline" className="text-[10px] px-1.5 py-0">+{extra}</Badge>
-            )}
-          </div>
-        );
-      }
-    },
-    {
-      key: 'tratamentos_count',
-      label: 'Tratam.',
-      className: 'text-center',
-      render: (value: number, risco: Risco) => (
-        <Button variant="ghost" size="sm" className="flex items-center gap-1" onClick={() => openTratamentosDialog(risco)}>
-          <Shield className="h-4 w-4" />
-          <Badge variant={value > 0 ? "default" : "outline"} className="ml-1">{value || 0}</Badge>
-        </Button>
-      )
+      ),
     },
     {
       key: 'responsavel',
       label: 'Resp.',
-      render: (value: string, risco: Risco) => {
-        if (risco.responsavel_nome) {
-          return (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Avatar className="h-8 w-8 cursor-pointer">
-                    {risco.responsavel_foto && <AvatarImage src={risco.responsavel_foto} alt={risco.responsavel_nome} />}
-                    <AvatarFallback className="bg-primary/10 text-primary">
-                      {risco.responsavel_nome.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                    </AvatarFallback>
-                  </Avatar>
-                </TooltipTrigger>
-                <TooltipContent><p>{risco.responsavel_nome}</p></TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          );
-        }
-        return '-';
-      }
+      render: (_value: string, risco: Risco) => {
+        if (!risco.responsavel_nome) return <span className="text-xs text-muted-foreground">—</span>;
+        const last = risco.responsavel_nome.split(' ').slice(-1)[0];
+        return (
+          <div className="inline-flex items-center gap-1.5">
+            <Avatar className="h-5 w-5">
+              {risco.responsavel_foto && <AvatarImage src={risco.responsavel_foto} alt={risco.responsavel_nome} />}
+              <AvatarFallback className="bg-primary/10 text-primary text-[9px]">
+                {risco.responsavel_nome.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+              </AvatarFallback>
+            </Avatar>
+            <span className="text-xs text-foreground/85">{last}</span>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'updated',
+      label: 'Atualizado',
+      className: 'w-[96px]',
+      render: (_v: any, r: Risco) => (
+        <span className="text-[11px] text-muted-foreground">{relativeShort((r as any).updated_at || r.created_at)}</span>
+      ),
+    },
+    {
+      key: 'sla',
+      label: 'SLA',
+      className: 'w-[90px]',
+      render: (_v: any, r: Risco) => <SlaCell dataProximaRevisao={r.data_proxima_revisao} />,
     },
     {
       key: 'actions',
@@ -532,33 +533,27 @@ export function Riscos() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => handleEdit(risco)}>
-              <Edit className="mr-2 h-4 w-4" />
-              Editar
+              <Edit className="mr-2 h-4 w-4" /> Editar
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => openTratamentosDialog(risco)}>
-              <Shield className="mr-2 h-4 w-4" />
-              Tratamentos ({risco.tratamentos_count || 0})
+              <Shield className="mr-2 h-4 w-4" /> Tratamentos ({risco.tratamentos_count || 0})
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setAprovacaoRisco(risco)}>
-              <ShieldCheck className="mr-2 h-4 w-4" />
-              Aprovação
+              <ShieldCheck className="mr-2 h-4 w-4" /> Aprovação
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setHistoricoRisco(risco)}>
-              <Clock className="mr-2 h-4 w-4" />
-              Histórico Avaliações
+              <Clock className="mr-2 h-4 w-4" /> Histórico Avaliações
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setAuditRisco(risco)}>
-              <History className="mr-2 h-4 w-4" />
-              Trilha de Auditoria
+              <History className="mr-2 h-4 w-4" /> Trilha de Auditoria
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => openDeleteDialog(risco)} className="text-destructive focus:text-destructive">
-              <Trash2 className="mr-2 h-4 w-4" />
-              Excluir
+              <Trash2 className="mr-2 h-4 w-4" /> Excluir
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-      )
-    }
+      ),
+    },
   ];
 
   const filters = [
