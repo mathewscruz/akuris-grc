@@ -164,8 +164,8 @@ export function ReviewItemsDialog({ open, onClose, review, onSuccess }: ReviewIt
                       <h4 className="font-semibold">{item.usuario_beneficiario}</h4>
                       <p className="text-sm text-muted-foreground">{item.email_beneficiario || "-"}</p>
                       <div className="flex gap-2 mt-2">
-                        <Badge>{item.tipo_acesso}</Badge>
-                        <Badge variant="outline">{item.nivel_privilegio}</Badge>
+                        <Badge>{formatStatus(item.tipo_acesso)}</Badge>
+                        <Badge variant="outline">{formatStatus(item.nivel_privilegio)}</Badge>
                         {getDecisionBadge(item.decisao)}
                       </div>
                       {item.data_expiracao && (
