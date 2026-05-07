@@ -26,6 +26,9 @@ const initialForm = {
   descricao: '',
   preco_mensal: 0,
   preco_anual: 0,
+  preco_setup: 0,
+  setup_observacao: '',
+  publico_alvo: '',
   creditos_franquia: 10,
   limite_usuarios: '' as string | number,
   modulos_habilitados: [] as string[],
@@ -48,6 +51,9 @@ export const PlanoFormDialog: React.FC<Props> = ({ open, onOpenChange, plano, on
         descricao: plano.descricao || '',
         preco_mensal: Number(plano.preco_mensal) || 0,
         preco_anual: Number(plano.preco_anual) || 0,
+        preco_setup: Number((plano as any).preco_setup) || 0,
+        setup_observacao: (plano as any).setup_observacao || '',
+        publico_alvo: (plano as any).publico_alvo || '',
         creditos_franquia: plano.creditos_franquia || 0,
         limite_usuarios: plano.limite_usuarios ?? '',
         modulos_habilitados: plano.modulos_habilitados || [],
@@ -96,6 +102,9 @@ export const PlanoFormDialog: React.FC<Props> = ({ open, onOpenChange, plano, on
         descricao: form.descricao.trim() || null,
         preco_mensal: Number(form.preco_mensal) || 0,
         preco_anual: Number(form.preco_anual) || 0,
+        preco_setup: Number(form.preco_setup) || 0,
+        setup_observacao: form.setup_observacao.trim() || null,
+        publico_alvo: form.publico_alvo.trim() || null,
         creditos_franquia: Number(form.creditos_franquia) || 0,
         limite_usuarios: form.limite_usuarios === '' ? null : Number(form.limite_usuarios),
         modulos_habilitados: form.modulos_habilitados,
@@ -153,6 +162,15 @@ export const PlanoFormDialog: React.FC<Props> = ({ open, onOpenChange, plano, on
               <Textarea value={form.descricao} onChange={e => setForm(f => ({ ...f, descricao: e.target.value }))} rows={2} placeholder="Para empresas em crescimento" />
             </div>
 
+            <div className="space-y-1.5">
+              <Label>Público-alvo</Label>
+              <Input
+                value={form.publico_alvo}
+                onChange={e => setForm(f => ({ ...f, publico_alvo: e.target.value }))}
+                placeholder="Ex: Médias Empresas (101 - 499)"
+              />
+            </div>
+
             {/* Preços */}
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
@@ -162,6 +180,22 @@ export const PlanoFormDialog: React.FC<Props> = ({ open, onOpenChange, plano, on
               <div className="space-y-1.5">
                 <Label>Preço anual total (R$)</Label>
                 <Input type="number" min={0} step={0.01} value={form.preco_anual} onChange={e => setForm(f => ({ ...f, preco_anual: Number(e.target.value) }))} />
+              </div>
+            </div>
+
+            {/* Setup */}
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>Setup / Implantação (R$)</Label>
+                <Input type="number" min={0} step={0.01} value={form.preco_setup} onChange={e => setForm(f => ({ ...f, preco_setup: Number(e.target.value) }))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Observação do setup</Label>
+                <Input
+                  value={form.setup_observacao}
+                  onChange={e => setForm(f => ({ ...f, setup_observacao: e.target.value }))}
+                  placeholder='Ex: "A partir de R$ 6.000,00"'
+                />
               </div>
             </div>
 

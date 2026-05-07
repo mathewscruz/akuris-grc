@@ -5694,7 +5694,10 @@ export type Database = {
           ordem: number
           preco_anual: number
           preco_mensal: number
+          preco_setup: number | null
+          publico_alvo: string | null
           recursos_destacados: Json
+          setup_observacao: string | null
           updated_at: string
         }
         Insert: {
@@ -5714,7 +5717,10 @@ export type Database = {
           ordem?: number
           preco_anual?: number
           preco_mensal?: number
+          preco_setup?: number | null
+          publico_alvo?: string | null
           recursos_destacados?: Json
+          setup_observacao?: string | null
           updated_at?: string
         }
         Update: {
@@ -5734,7 +5740,10 @@ export type Database = {
           ordem?: number
           preco_anual?: number
           preco_mensal?: number
+          preco_setup?: number | null
+          publico_alvo?: string | null
           recursos_destacados?: Json
+          setup_observacao?: string | null
           updated_at?: string
         }
         Relationships: []
