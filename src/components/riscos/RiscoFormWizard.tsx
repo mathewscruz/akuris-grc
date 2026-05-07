@@ -157,7 +157,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
       if (risco.matriz_id) {
         const matriz = matrizes.find(m => m.id === risco.matriz_id);
         if (matriz && matriz.configuracao && matriz.configuracao[0]) {
-          logger.debug('✅ Matriz carregada automaticamente:', { data: matriz.nome });
+          logger.debug('Matriz carregada automaticamente', { data: matriz.nome });
           setSelectedMatriz({
             ...matriz,
             configuracao: {
