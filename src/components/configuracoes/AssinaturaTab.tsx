@@ -156,6 +156,11 @@ export function AssinaturaTab() {
                 <CardTitle className="text-base">
                   Plano {info.plano?.nome || 'não atribuído'}
                 </CardTitle>
+                {info.plano?.publico_alvo && (
+                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground mt-0.5">
+                    {info.plano.publico_alvo}
+                  </p>
+                )}
                 {info.plano?.descricao && (
                   <p className="text-xs text-muted-foreground mt-0.5">{info.plano.descricao}</p>
                 )}
