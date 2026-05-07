@@ -192,8 +192,8 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
   };
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-7">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div className="space-y-2">
           <Label htmlFor="tipo_tratamento">Tipo de Tratamento *</Label>
           <Select 
@@ -295,7 +295,7 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div className="space-y-2">
           <Label>Data de Início</Label>
           <Popover>
