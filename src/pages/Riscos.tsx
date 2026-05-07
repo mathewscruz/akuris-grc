@@ -927,6 +927,16 @@ export function Riscos() {
           />
         )}
 
+        {/* Drawer de detalhe (global, abre via tabela / watchlist / heatmap) */}
+        <RiscoDetailDrawer
+          risco={(riscos.find((r) => r.id === drawerRiscoId) as Risco) || null}
+          open={!!drawerRiscoId}
+          onOpenChange={(o) => !o && setDrawerRiscoId(null)}
+          onEdit={(r) => { setDrawerRiscoId(null); handleEdit(r); }}
+          onAccept={(r) => { setDrawerRiscoId(null); setAprovacaoRisco(r); }}
+          onOpenTratamentos={(r) => { setDrawerRiscoId(null); openTratamentosDialog(r); }}
+        />
+
       </div>
     </TooltipProvider>
   );
