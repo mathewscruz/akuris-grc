@@ -385,7 +385,7 @@ export function FornecedoresManager() {
                                 <h3 className="text-lg font-semibold truncate">{fornecedor.nome}</h3>
                                 {fornecedor.status === 'inativo' && <Badge variant="secondary">Inativo</Badge>}
                                 {fornecedor.categoria && (
-                                  <Badge variant="outline" className="text-xs">{fornecedor.categoria}</Badge>
+                                  <Badge variant="outline" className="text-xs">{formatStatus(fornecedor.categoria)}</Badge>
                                 )}
                                 {getRiskBadge(fornecedor._assessmentStats)}
                               </div>
