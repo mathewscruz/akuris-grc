@@ -1,7 +1,7 @@
 
 import { logger } from '@/lib/logger';
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveAprovacaoTone } from '@/lib/status-tone';
@@ -63,7 +63,8 @@ export function AprovacaoRiscoDialog({ open, onOpenChange, risco, onSuccess }: P
           aprovador_id: aprovadorId,
           historico_aprovacao: novoHistorico
         })
-        .eq('id', risco.id);
+        .eq('id', risco.id)
+        .eq('empresa_id', profile!.empresa_id);
 
       if (error) throw error;
 
@@ -107,7 +108,8 @@ export function AprovacaoRiscoDialog({ open, onOpenChange, risco, onSuccess }: P
           comentarios_aprovacao: comentario || null,
           historico_aprovacao: novoHistorico
         })
-        .eq('id', risco.id);
+        .eq('id', risco.id)
+        .eq('empresa_id', profile!.empresa_id);
 
       if (error) throw error;
 
@@ -150,7 +152,8 @@ export function AprovacaoRiscoDialog({ open, onOpenChange, risco, onSuccess }: P
       const { error } = await supabase
         .from('riscos')
         .update(updateData)
-        .eq('id', risco.id);
+        .eq('id', risco.id)
+        .eq('empresa_id', profile!.empresa_id);
 
       if (error) throw error;
 
@@ -205,9 +208,12 @@ export function AprovacaoRiscoDialog({ open, onOpenChange, risco, onSuccess }: P
       <DialogContent className="max-w-lg max-h-[85vh] overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <CheckCircle className="h-5 w-5" />
+            <CheckCircle className="h-5 w-5" strokeWidth={1.5} />
             Aprovação - {risco?.nome}
           </DialogTitle>
+          <DialogDescription>
+            Revise o risco, registre comentários e aprove ou rejeite o fluxo solicitado.
+          </DialogDescription>
         </DialogHeader>
 
         <ScrollArea className="max-h-[65vh]">

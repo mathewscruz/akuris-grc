@@ -407,67 +407,81 @@ export function AppSidebar() {
                         {!isCollapsed && (
                           <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
                             <div className="space-y-1 mt-1 ml-6 pl-2 border-l-2 border-sidebar-border/30">
-                              {item.subItems.map((subItem, idx) => (
-                                <SidebarMenuButton
-                                  key={subItem.title}
-                                  asChild
-                                  isActive={isActive(subItem.url)}
-                                  className="transition-colors duration-200 h-9 animate-fade-in opacity-0 [animation-fill-mode:forwards] data-[active=true]:bg-transparent"
-                                  style={{ animationDelay: `${idx * 30}ms`, animationDuration: '220ms' }}
-                                >
-                                  <NavLink
-                                    to={subItem.url}
-                                    onMouseEnter={() => prefetchRoute(subItem.url)}
-                                    className={({ isActive }) =>
-                                      `flex items-center w-full min-w-0 px-3 ${getNavCls({ isActive })}`
-                                    }
+                              {item.subItems.map((subItem, idx) => {
+                                const active = isActive(subItem.url);
+                                return (
+                                  <SidebarMenuButton
+                                    key={subItem.title}
+                                    asChild
+                                    isActive={active}
+                                    className="transition-colors duration-200 h-9 animate-fade-in opacity-0 [animation-fill-mode:forwards] data-[active=true]:bg-transparent"
+                                    style={{ animationDelay: `${idx * 30}ms`, animationDuration: '220ms' }}
                                   >
-                                    <subItem.icon
-                                      strokeWidth={1.5}
-                                      className={`h-4 w-4 mr-3 flex-shrink-0 transition-colors duration-200 ${
-                                        isActive(subItem.url) ? 'text-primary-foreground' : ''
+                                    <NavLink
+                                      to={subItem.url}
+                                      end
+                                      onMouseEnter={() => prefetchRoute(subItem.url)}
+                                      className={`flex items-center w-full min-w-0 px-3 rounded-md transition-colors duration-200 ${
+                                        active
+                                          ? 'bg-primary text-primary-foreground font-semibold shadow-sm hover:bg-primary'
+                                          : 'hover:bg-sidebar-accent/60 text-sidebar-foreground'
                                       }`}
-                                    />
-                                    <span className="text-sm truncate">{subItem.title}</span>
-                                  </NavLink>
-                                </SidebarMenuButton>
-                              ))}
+                                    >
+                                      <subItem.icon
+                                        strokeWidth={1.5}
+                                        className={`h-4 w-4 mr-3 flex-shrink-0 transition-colors duration-200 ${
+                                          active ? 'text-primary-foreground' : ''
+                                        }`}
+                                      />
+                                      <span className="text-sm truncate">{subItem.title}</span>
+                                    </NavLink>
+                                  </SidebarMenuButton>
+                                );
+                              })}
                             </div>
                           </CollapsibleContent>
                         )}
                       </Collapsible>
                     ) : (
-                      <SidebarMenuButton
-                        asChild
-                        isActive={isActive(item.url!)}
-                        className="transition-colors duration-200 h-9 min-w-0 px-3 data-[active=true]:bg-transparent"
-                      >
-                        <NavLink
-                          to={item.url!}
-                          onClick={handleNavClick}
-                          onMouseEnter={() => prefetchRoute(item.url!)}
-                          className={({ isActive }) =>
-                            `flex items-center w-full min-w-0 px-3 ${getNavCls({ isActive })}`
-                          }
-                        >
-                          <div className="flex items-center min-w-0">
-                            <item.icon
-                              className={`h-4 w-4 mr-3 flex-shrink-0 transition-colors duration-200 ${
-                                isActive(item.url!) ? 'text-primary-foreground' : ''
+                      (() => {
+                        const active = isActive(item.url!);
+                        return (
+                          <SidebarMenuButton
+                            asChild
+                            isActive={active}
+                            className="transition-colors duration-200 h-9 min-w-0 px-3 data-[active=true]:bg-transparent"
+                          >
+                            <NavLink
+                              to={item.url!}
+                              end
+                              onClick={handleNavClick}
+                              onMouseEnter={() => prefetchRoute(item.url!)}
+                              className={`flex items-center w-full min-w-0 px-3 rounded-md transition-colors duration-200 ${
+                                active
+                                  ? 'bg-primary text-primary-foreground font-semibold shadow-sm hover:bg-primary'
+                                  : 'hover:bg-sidebar-accent/60 text-sidebar-foreground'
                               }`}
-                            />
-                            {!isCollapsed && (
-                              <span
-                                className={`text-sm font-medium transition-colors duration-200 truncate ${
-                                  isActive(item.url!) ? 'text-primary-foreground font-semibold' : ''
-                                }`}
-                              >
-                                {item.title}
-                              </span>
-                            )}
-                          </div>
-                        </NavLink>
-                      </SidebarMenuButton>
+                            >
+                              <div className="flex items-center min-w-0">
+                                <item.icon
+                                  className={`h-4 w-4 mr-3 flex-shrink-0 transition-colors duration-200 ${
+                                    active ? 'text-primary-foreground' : ''
+                                  }`}
+                                />
+                                {!isCollapsed && (
+                                  <span
+                                    className={`text-sm font-medium transition-colors duration-200 truncate ${
+                                      active ? 'text-primary-foreground font-semibold' : ''
+                                    }`}
+                                  >
+                                    {item.title}
+                                  </span>
+                                )}
+                              </div>
+                            </NavLink>
+                          </SidebarMenuButton>
+                        );
+                      })()
                     )}
                   </SidebarMenuItem>
                 ))}

@@ -152,7 +152,8 @@ export default function RiscosAceite() {
       const { error } = await supabase
         .from('riscos')
         .update({ aceito: false, justificativa_aceite: null, data_aceite: null, aprovador_aceite: null, status_aceite: null })
-        .eq('id', risco.id);
+        .eq('id', risco.id)
+        .eq('empresa_id', profile!.empresa_id);
 
       if (error) throw error;
       toast({ title: "Sucesso", description: "Aceite de risco revogado com sucesso." });
@@ -169,7 +170,8 @@ export default function RiscosAceite() {
       const { error } = await supabase
         .from('riscos')
         .update({ data_proxima_revisao: novaData.toISOString().split('T')[0] })
-        .eq('id', risco.id);
+        .eq('id', risco.id)
+        .eq('empresa_id', profile!.empresa_id);
 
       if (error) throw error;
       toast({ title: "Sucesso", description: `Revisão agendada para ${formatDateOnly(novaData.toISOString())}` });
@@ -293,17 +295,25 @@ export default function RiscosAceite() {
       </div>
 
       <Tabs defaultValue={totalPendentes > 0 ? "pendentes" : "aceitos"} className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="pendentes" className="relative">
+        <TabsList className="h-auto bg-transparent p-0 gap-1 rounded-none border-b border-border w-full justify-start">
+          <TabsTrigger
+            value="pendentes"
+            className="relative text-xs gap-1.5 px-3 py-2.5 -mb-px rounded-none border-b-2 border-transparent bg-transparent shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:font-semibold text-muted-foreground hover:text-foreground/85 transition-colors"
+          >
             Pendentes de Aprovação
             {totalPendentes > 0 && (
               <StatusBadge size="sm" tone="warning" className="ml-2">{totalPendentes}</StatusBadge>
             )}
           </TabsTrigger>
-          <TabsTrigger value="aceitos">Riscos Aceitos ({totalAceitos})</TabsTrigger>
+          <TabsTrigger
+            value="aceitos"
+            className="text-xs gap-1.5 px-3 py-2.5 -mb-px rounded-none border-b-2 border-transparent bg-transparent shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:font-semibold text-muted-foreground hover:text-foreground/85 transition-colors"
+          >
+            Riscos Aceitos ({totalAceitos})
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="pendentes">
+        <TabsContent value="pendentes" className="mt-5 data-[state=active]:animate-fade-in">
           <Card className="rounded-lg border overflow-hidden">
             <CardContent className="p-0">
               <DataTable
@@ -324,7 +334,7 @@ export default function RiscosAceite() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="aceitos">
+        <TabsContent value="aceitos" className="mt-5 data-[state=active]:animate-fade-in">
           <Card className="rounded-lg border overflow-hidden">
             <CardContent className="p-0">
               <DataTable

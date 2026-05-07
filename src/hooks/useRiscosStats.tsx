@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
+import { logger } from "@/lib/logger";
 
 export interface RiscosStats {
   total: number;
@@ -75,7 +76,7 @@ export const useRiscosStats = () => {
         .eq('empresa_id', empresaId!)
         .lte('created_at', seteDiasAtras.toISOString());
 
-      if (riscosAntigosError) console.error('Erro ao buscar riscos antigos:', riscosAntigosError);
+      if (riscosAntigosError) logger.error('Erro ao buscar riscos antigos', { data: riscosAntigosError, module: 'riscos' });
 
       const antiguosTotal = riscosAntigos?.length || 0;
       const antiguosCriticos = riscosAntigos?.filter(r => {
@@ -148,7 +149,7 @@ export const useRiscosStats = () => {
           .in('risco_id', riscos.map(r => r.id));
 
         if (tratamentosError) {
-          console.error('Erro ao buscar tratamentos:', tratamentosError);
+          logger.error('Erro ao buscar tratamentos', { data: tratamentosError, module: 'riscos' });
         } else if (tratamentos) {
           newStats.tratamentos_pendentes = tratamentos.filter(t => t.status === 'pendente').length;
           newStats.tratamentos_andamento = tratamentos.filter(t => t.status === 'em andamento').length;

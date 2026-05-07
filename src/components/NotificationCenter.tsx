@@ -304,6 +304,7 @@ const NotificationCenter: React.FC = () => {
       const { data: riscosRevisao } = await supabase
         .from('riscos')
         .select('id, nome, data_proxima_revisao, nivel_risco_inicial')
+        .eq('empresa_id', userEmpresaId || '')
         .not('data_proxima_revisao', 'is', null);
 
       (riscosRevisao || []).forEach(risco => {

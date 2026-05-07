@@ -2,7 +2,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -127,9 +127,12 @@ export function TrilhaAuditoriaRiscos({ open, onOpenChange, riscoId, riscoNome }
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <History className="h-5 w-5" />
+            <History className="h-5 w-5" strokeWidth={1.5} />
             Trilha de Auditoria - {riscoNome}
           </DialogTitle>
+          <DialogDescription>
+            Registro detalhado de todas as alterações realizadas neste risco.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden">

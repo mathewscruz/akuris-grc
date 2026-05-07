@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { formatDateOnly } from '@/lib/date-utils';
@@ -94,6 +94,9 @@ export function AceiteDetalheDialog({ open, onOpenChange, risco }: Props) {
             <CheckCircle className="h-5 w-5 text-primary" strokeWidth={1.5} />
             Detalhes do Aceite de Risco
           </DialogTitle>
+          <DialogDescription>
+            Informações completas do aceite formal, anexos e histórico de auditoria.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
