@@ -189,16 +189,17 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
                 </div>
               </section>
 
-              {risco.causas && (
+              {(risco.causas || risco.consequencias) && (
                 <section>
-                  <SectionLabel>Causas</SectionLabel>
-                  <p className="text-sm text-foreground/85 leading-relaxed whitespace-pre-line">{risco.causas}</p>
-                </section>
-              )}
-              {risco.consequencias && (
-                <section>
-                  <SectionLabel>Consequências</SectionLabel>
-                  <p className="text-sm text-foreground/85 leading-relaxed whitespace-pre-line">{risco.consequencias}</p>
+                  <SectionLabel>Causas e consequências</SectionLabel>
+                  <div className="flex flex-col gap-1.5">
+                    {splitLines(risco.causas).map((line, i) => (
+                      <CauseChip key={`c-${i}`} kind="CAUSA" text={line} />
+                    ))}
+                    {splitLines(risco.consequencias).map((line, i) => (
+                      <CauseChip key={`q-${i}`} kind="CONSEQ." text={line} />
+                    ))}
+                  </div>
                 </section>
               )}
               {risco.controles_existentes && (
@@ -241,21 +242,29 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
                       {tratStats.pendentes > 0 && <div className="bg-muted-foreground/40" style={{ flex: tratStats.pendentes }} />}
                     </div>
                   </div>
-                  {detail!.tratamentos.map((t) => (
-                    <div key={t.id} className="bg-card border border-border rounded-lg p-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="text-sm font-medium leading-snug">{t.descricao}</div>
-                        <StatusBadge size="sm" {...resolveRiscoStatusTone(t.status)}>
-                          {formatStatus(t.status)}
-                        </StatusBadge>
+                  {detail!.tratamentos.map((t) => {
+                    const pct = treatmentPct(t.status);
+                    const barCls =
+                      pct === 100 ? 'bg-success' : pct > 0 ? 'bg-primary' : 'bg-muted-foreground/30';
+                    return (
+                      <div key={t.id} className="bg-card border border-border rounded-lg p-3 space-y-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="text-sm font-medium leading-snug">{t.descricao}</div>
+                          <StatusBadge size="sm" {...resolveRiscoStatusTone(t.status)}>
+                            {formatStatus(t.status)}
+                          </StatusBadge>
+                        </div>
+                        <div className="h-1 bg-muted/60 rounded-full overflow-hidden">
+                          <div className={`h-full ${barCls}`} style={{ width: `${pct}%` }} />
+                        </div>
+                        <div className="text-[11px] text-muted-foreground flex flex-wrap gap-x-3 gap-y-0.5">
+                          <span>Tipo: {formatStatus(t.tipo_tratamento)}</span>
+                          {t.prazo && <span>Prazo: {formatDateOnly(t.prazo)}</span>}
+                          {t.eficacia && <span>Eficácia: {t.eficacia}</span>}
+                        </div>
                       </div>
-                      <div className="text-[11px] text-muted-foreground mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5">
-                        <span>Tipo: {formatStatus(t.tipo_tratamento)}</span>
-                        {t.prazo && <span>Prazo: {formatDateOnly(t.prazo)}</span>}
-                        {t.eficacia && <span>Eficácia: {t.eficacia}</span>}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </>
               )}
             </TabsContent>
