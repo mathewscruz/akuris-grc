@@ -616,55 +616,7 @@ export function Riscos() {
           description={t('modules.riscos.description')}
         />
 
-        {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {(() => {
-            const totalTrend = calcTrend(stats?.total || 0, stats?.total_7d_atras);
-            const tratConcTrend = calcTrend(stats?.tratamentos_concluidos || 0, stats?.tratamentos_concluidos_7d_atras);
-            const aceitosTrend = calcTrend(stats?.aceitos || 0, stats?.aceitos_7d_atras);
-            return (
-              <>
-                <StatCard
-                  title={t('modules.riscos.total')}
-                  value={stats?.total || 0}
-                  icon={<AlertTriangle />}
-                  variant={stats?.criticos ? "destructive" : "default"}
-                  loading={!stats}
-                  drillDown="riscos"
-                  segments={[
-                    { label: 'críticos', value: stats?.criticos || 0, tone: 'destructive' },
-                    { label: 'altos', value: stats?.altos || 0, tone: 'warning' },
-                    { label: 'demais', value: Math.max(0, (stats?.total || 0) - (stats?.criticos || 0) - (stats?.altos || 0)), tone: 'neutral' },
-                  ]}
-                  trend={totalTrend ? { value: totalTrend.value, direction: totalTrend.direction, period: '7d' } : undefined}
-                  showAccent
-                  emptyHint="Cadastre riscos para começar a monitorar."
-                />
-                <StatCard
-                  title="Tratamentos Concluídos"
-                  value={stats?.tratamentos_concluidos || 0}
-                  description={`${stats?.tratamentos_andamento || 0} em andamento`}
-                  icon={<TrendingUp />}
-                  variant="success"
-                  loading={!stats}
-                  drillDown="planos"
-                  trend={tratConcTrend ? { value: tratConcTrend.value, direction: tratConcTrend.direction, period: '7d' } : undefined}
-                />
-                <StatCard
-                  title="Riscos Aceitos"
-                  value={stats?.aceitos || 0}
-                  description="Aceitos formalmente"
-                  icon={<CheckCircle />}
-                  variant="warning"
-                  loading={!stats}
-                  drillDown="riscos_aceite"
-                  trend={aceitosTrend ? { value: aceitosTrend.value, direction: aceitosTrend.direction, period: '7d' } : undefined}
-                />
-                <RiskScoreCard stats={stats} loading={!stats} />
-              </>
-            );
-          })()}
-        </div>
+        {/* KPI cards antigos removidos — KPIs agora vivem dentro das abas (Visão geral / Matriz). */}
 
         {/* Toolbar global */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
