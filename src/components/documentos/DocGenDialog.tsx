@@ -825,7 +825,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                       <div className="text-sm font-medium truncate">{it.titulo || 'Conversa sem título'}</div>
                       <div className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
                         {it.tipo_documento_identificado && (
-                          <Badge variant="secondary" className="text-[10px] py-0 h-4">{it.tipo_documento_identificado}</Badge>
+                          <Badge variant="secondary" className="text-[10px] py-0 h-4">{formatStatus(it.tipo_documento_identificado)}</Badge>
                         )}
                         <span>{new Date(it.updated_at).toLocaleString()}</span>
                       </div>
