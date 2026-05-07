@@ -605,7 +605,7 @@ export function Riscos() {
 
   return (
     <TooltipProvider>
-      <div className="space-y-6">
+      <div className="space-y-5">
         <PageHeader
           title={t('modules.riscos.title')}
           description={t('modules.riscos.description')}
@@ -737,17 +737,15 @@ export function Riscos() {
             <div className="space-y-4">
               <SeverityKpiRow counts={sevCounts} />
               <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4 items-start">
-                <Card className="rounded-xl border">
-                  <CardContent className="p-5">
-                    <RiskHeatmap
-                      riscos={riscos as any}
-                      selected={matrixCell}
-                      onSelectCell={(c) => setMatrixCell(c)}
-                      onOpenRisk={(id) => setDrawerRiscoId(id)}
-                    />
-                    <AppetiteFooter apetiteScore={apetiteScore} acimaCount={acimaApetite} />
-                  </CardContent>
-                </Card>
+                <div className="space-y-3">
+                  <RiskHeatmap
+                    riscos={riscos as any}
+                    selected={matrixCell}
+                    onSelectCell={(c) => setMatrixCell(c)}
+                    onOpenRisk={(id) => setDrawerRiscoId(id)}
+                  />
+                  <AppetiteFooter apetiteScore={apetiteScore} acimaCount={acimaApetite} />
+                </div>
                 {matrixCell && (
                   <HeatmapCellPanel
                     cell={matrixCell}
@@ -759,37 +757,58 @@ export function Riscos() {
             </div>
           );
 
+          // Saved-view virtual filter para a tabela
+          const meId = profile?.user_id;
+          const viewFilters: Record<SavedView, (r: Risco) => boolean> = {
+            todos: () => true,
+            acima_apetite: (r) => isAcimaApetite(r),
+            sem_responsavel: (r) => !r.responsavel || !String(r.responsavel).trim(),
+            revisao_vencida: (r) => slaFromRevisao(r.data_proxima_revisao) === 'vencido',
+            meus_riscos: (r) => !!meId && r.responsavel === meId,
+          };
+          const viewedRiscos = sortedRiscos.filter(viewFilters[savedView]);
+          const viewItems = [
+            { id: 'todos' as SavedView, label: 'Todos', count: sortedRiscos.length },
+            { id: 'acima_apetite' as SavedView, label: 'Acima do apetite', count: sortedRiscos.filter(viewFilters.acima_apetite).length },
+            { id: 'sem_responsavel' as SavedView, label: 'Sem responsável', count: sortedRiscos.filter(viewFilters.sem_responsavel).length },
+            { id: 'revisao_vencida' as SavedView, label: 'Revisão vencida', count: sortedRiscos.filter(viewFilters.revisao_vencida).length },
+            { id: 'meus_riscos' as SavedView, label: 'Meus riscos', count: sortedRiscos.filter(viewFilters.meus_riscos).length },
+          ];
+
           const tableNode = (
-            <Card className="rounded-lg border overflow-hidden">
-              <CardContent className="p-0">
-                <DataTable
-                  data={sortedRiscos}
-                  columns={riscoColumns as Column<Risco>[]}
-                  loading={loading}
-                  searchable
-                  searchPlaceholder="Buscar riscos..."
-                  searchValue={searchTerm}
-                  onSearchChange={setSearchTerm}
-                  filters={filters}
-                  sortField={sortField}
-                  sortDirection={sortDirection}
-                  onSort={handleSort}
-                  emptyState={{
-                    icon: <AlertTriangle className="h-8 w-8" />,
-                    title: searchTerm || statusFilter !== '' || nivelFilter !== '' || aceitoFilter !== ''
-                      ? 'Nenhum risco encontrado'
-                      : 'Nenhum risco cadastrado',
-                    description: searchTerm || statusFilter !== '' || nivelFilter !== '' || aceitoFilter !== ''
-                      ? 'Tente ajustar os filtros para encontrar o que procura.'
-                      : 'Comece identificando e cadastrando os riscos da sua organização.',
-                    action: !searchTerm && statusFilter === '' && nivelFilter === '' && aceitoFilter === '' ? {
-                      label: 'Cadastrar Primeiro Risco',
-                      onClick: openCreateDialog,
-                    } : undefined,
-                  }}
-                />
-              </CardContent>
-            </Card>
+            <div className="space-y-3">
+              <RiscosViewChips active={savedView} onChange={setSavedView} items={viewItems} />
+              <Card className="rounded-lg border overflow-hidden">
+                <CardContent className="p-0">
+                  <DataTable
+                    data={viewedRiscos}
+                    columns={riscoColumns as Column<Risco>[]}
+                    loading={loading}
+                    searchable
+                    searchPlaceholder="Buscar por nome ou ID…"
+                    searchValue={searchTerm}
+                    onSearchChange={setSearchTerm}
+                    filters={filters}
+                    sortField={sortField}
+                    sortDirection={sortDirection}
+                    onSort={handleSort}
+                    emptyState={{
+                      icon: <AlertTriangle className="h-8 w-8" />,
+                      title: searchTerm || statusFilter || nivelFilter || aceitoFilter || savedView !== 'todos'
+                        ? 'Nenhum risco encontrado'
+                        : 'Nenhum risco cadastrado',
+                      description: searchTerm || statusFilter || nivelFilter || aceitoFilter || savedView !== 'todos'
+                        ? 'Tente ajustar os filtros ou a visão ativa.'
+                        : 'Comece identificando e cadastrando os riscos da sua organização.',
+                      action: !searchTerm && !statusFilter && !nivelFilter && !aceitoFilter && savedView === 'todos' ? {
+                        label: 'Cadastrar Primeiro Risco',
+                        onClick: openCreateDialog,
+                      } : undefined,
+                    }}
+                  />
+                </CardContent>
+              </Card>
+            </div>
           );
 
           return <RiscosTabs overview={overviewNode} matrix={matrixNode} table={tableNode} />;
