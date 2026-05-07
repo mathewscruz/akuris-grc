@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Calendar, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { EmptyState } from '@/components/ui/empty-state';
+import { RiscosIcon } from '@/components/icons';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -38,6 +40,7 @@ interface Tratamento {
 interface TratamentosListProps {
   riscoId: string;
   riscoNome?: string;
+  embedded?: boolean;
   riscoData?: {
     nome: string;
     descricao: string;
@@ -46,7 +49,7 @@ interface TratamentosListProps {
   };
 }
 
-export function TratamentosList({ riscoId, riscoNome, riscoData }: TratamentosListProps) {
+export function TratamentosList({ riscoId, riscoNome, embedded = false, riscoData }: TratamentosListProps) {
   const [tratamentos, setTratamentos] = useState<Tratamento[]>([]);
   const [loading, setLoading] = useState(true);
   const [tratamentoDialogOpen, setTratamentoDialogOpen] = useState(false);
