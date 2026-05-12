@@ -27,6 +27,7 @@ import { AkurisAIIcon } from '@/components/icons';
 import DocLayoutBuilder from './DocLayoutBuilder';
 import { DocGenTemplateGallery } from './DocGenTemplateGallery';
 import { DocGenBriefing } from './DocGenBriefing';
+import { DocGenContextPanel } from './DocGenContextPanel';
 import {
   buildSeedPrompt,
   type BriefingDefaults,
