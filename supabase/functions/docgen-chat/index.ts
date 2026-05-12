@@ -148,6 +148,10 @@ serve(async (req) => {
       doc_type_hint,
       framework_context,
       company_context: company_context_input,
+      // Onda 3
+      document,            // documento gerado completo (para refine_section / quick_adherence)
+      section_index,       // índice da seção a refinar
+      instruction,         // instrução do usuário para refinar a seção
     } = await req.json();
 
     console.log('DocGen Chat request:', { message, conversation_id, action, user_id, empresa_id, framework_context });
