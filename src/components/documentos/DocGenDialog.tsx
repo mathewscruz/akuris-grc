@@ -120,6 +120,24 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
   // AlertDialog de descarte
   const [discardDialogOpen, setDiscardDialogOpen] = useState(false);
 
+  // Fluxo guiado: gallery → briefing → chat
+  type DocGenPhase = 'gallery' | 'briefing' | 'chat';
+  const [phase, setPhase] = useState<DocGenPhase>('gallery');
+  const [selectedTemplate, setSelectedTemplate] = useState<DocGenTemplate | null>(null);
+  const [briefingValue, setBriefingValue] = useState<BriefingDefaults | null>(null);
+
+  const buildDefaultBriefing = (): BriefingDefaults => ({
+    docType: 'politica',
+    frameworks: frameworkName ? [frameworkName] : [],
+    scope: requirementContext
+      ? `Atender ao requisito ${requirementContext.requirementCode} — ${requirementContext.requirementTitle}`
+      : '',
+    audience: 'Todos os colaboradores e prestadores de serviço',
+    tone: 'formal',
+    language: 'pt-BR',
+    length: 'padrao',
+  });
+
   useEffect(() => {
     const fetchUserInfo = async () => {
       const { data: { user } } = await supabase.auth.getUser();
