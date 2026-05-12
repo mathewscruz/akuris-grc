@@ -1050,10 +1050,25 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
         <DocumentoDialog
           open={showCreateDialog}
           onOpenChange={setShowCreateDialog}
+          originSource="docgen"
           onSuccess={() => {
+            const nomeIncorporado = generatedDocument?.titulo || 'Documento';
             onDocumentSaved?.();
             setShowCreateDialog(false);
             onOpenChange(false);
+            // Toast editorial com CTA para o módulo Documentos
+            akurisToast({
+              module: 'documentos',
+              tone: 'success',
+              eyebrow: 'Incorporação concluída',
+              title: 'Documento incorporado',
+              description: `“${nomeIncorporado}” foi criado em Documentos como rascunho.`,
+              action: {
+                label: 'Abrir em Documentos',
+                onClick: () => navigate('/documentos'),
+              },
+              duration: 8000,
+            });
           }}
           // categorias removido - não é mais necessário
           initialFile={initialGeneratedFile}
