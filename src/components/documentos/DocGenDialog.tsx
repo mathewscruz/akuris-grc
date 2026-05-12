@@ -184,6 +184,33 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     }
   }, [open, frameworkName, requirementContext]);
 
+  // Onda 2: carrega contexto da empresa via edge function quando o dialog abre e userInfo está pronto
+  useEffect(() => {
+    if (!open || !userInfo?.empresa_id) return;
+    if (companyContext || companyContextLoading) return;
+    let cancelled = false;
+    (async () => {
+      setCompanyContextLoading(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('docgen-chat', {
+          body: {
+            action: 'load_company_context',
+            user_id: userInfo.user_id,
+            empresa_id: userInfo.empresa_id,
+          },
+        });
+        if (!cancelled && !error && data?.company_context) {
+          setCompanyContext(data.company_context);
+        }
+      } catch (e) {
+        console.error('Erro ao carregar contexto da empresa:', e);
+      } finally {
+        if (!cancelled) setCompanyContextLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [open, userInfo?.empresa_id]);
+
   // Auto scroll para última mensagem (rola só o container do chat).
   // Só rola automaticamente se o usuário já estava perto do fim — assim
   // não interrompe a leitura de mensagens antigas.
