@@ -1,65 +1,74 @@
-## Objetivo
+# Diagnóstico do relato do usuário
 
-Modernizar o popup **Matriz de Riscos** (`MatrizDialog` + `MatrizForm` + `MatrizVisualizacao`) para que tenha o mesmo padrão editorial dos demais dialogs do módulo Riscos (Aprovação, Histórico, Trilha, Tratamento) — sem alterar regras de negócio, queries ou RLS.
+O usuário criou uma "Política Geral de Segurança da Informação" via DocGen (IA), respondeu às perguntas, gerou o documento e clicou em uma opção que ele descreveu como **"incorporar o documento"** — mas depois não conseguiu encontrar o documento no sistema.
 
-Hoje o popup usa `max-w-4xl` com tudo concorrendo no mesmo `overflow-y-auto`, header genérico, escalas em inputs apertados (valor de 20px, descrição cortada como "Muit…"), color picker default e ações inconsistentes com o resto do módulo.
+## O que está acontecendo no código hoje
 
-## Mudanças
+No `DocGenDialog.tsx` (preview do documento gerado), há 3 ações:
+1. **"Editar Layout"**
+2. **"Salvar no Sistema"** ← provavelmente o que o usuário chamou de "incorporar"
+3. **"Exportar" (PDF/DOCX)**
 
-### 1. `MatrizDialog.tsx` — shell editorial e responsivo
-- `DialogContent`: trocar `max-w-4xl max-h-[90vh] overflow-y-auto` por `max-w-full sm:max-w-5xl max-h-[100dvh] sm:max-h-[92vh] flex flex-col p-0 gap-0` (viewport-safe, fullscreen no mobile, padrão alinhado aos outros dialogs do Riscos).
-- `DialogHeader` editorial: `flex-shrink-0 px-6 pt-6 pb-4 border-b` + chip 36px com ícone `Grid3X3` em `bg-primary/10 text-primary` + eyebrow `text-[11px] uppercase tracking-wider text-muted-foreground` ("Configuração de Riscos") + título `text-base font-semibold` ("Matriz de Riscos") + `DialogDescription` muted, com `CornerAccent` opcional.
-- `Tabs` em container `flex-1 min-h-0 flex flex-col`:
-  - `TabsList` sticky no topo da área scrollável (`px-6 pt-4`), com mesmo visual atual mas full-width consistente.
-  - `TabsContent` com `flex-1 overflow-y-auto px-6 py-5` — cada aba tem seu próprio scroll, evitando o duplo scroll atual.
-- `strokeWidth={1.5}` em todos os ícones Lucide para alinhar ao sistema de ícones Akuris.
+O clique em **"Salvar no Sistema"** **não salva** o documento. Ele apenas:
+1. Gera um `.docx` em memória,
+2. Abre **um segundo dialog em cima do primeiro** (`DocumentoDialog` — o wizard de criação de documento),
+3. Pré-preenche nome/tipo/tags e o arquivo,
+4. **Espera o usuário clicar em "Salvar" de novo no wizard** para de fato persistir em `documentos` + Storage.
 
-### 2. `MatrizForm.tsx` — densidade, espaçamento e usabilidade
-- Remover os `Card` aninhados redundantes ("Nova Matriz" e "Matrizes Existentes") quando dentro do dialog → usar seções com `border rounded-lg p-5 bg-card` e títulos editoriais (eyebrow + heading), evitando o efeito "card dentro de card dentro de modal".
-- Espaçamento: `space-y-7` entre seções, `gap-5` em grids; `Separator` substituído por divisórias mais sutis (`border-t border-border/60 pt-6`).
-- **Escala de Probabilidade / Impacto** (problema visível no print "Muit…", "Insig…"):
-  - Layout em linha: `Input` valor `w-16`, `Input` descrição `flex-1 min-w-0`, botão remover `shrink-0`.
-  - Adicionar `placeholder` mais claro ("Ex.: Muito Provável") e `aria-label`.
-  - Botão `+ Adicionar nível` em texto + ícone (não só ícone), no rodapé da lista.
-  - Wrapper das listas com `space-y-2.5` e cada linha com `bg-muted/30 hover:bg-muted/50 rounded-md p-2 transition-colors`.
-- **Níveis de Risco**:
-  - Substituir `<input type="color">` raw por um trigger compacto: swatch 32x32 arredondado com `Popover` contendo paleta sugerida (verde, amarelo, laranja, vermelho, cinza) + input de hex livre.
-  - Layout: `min`/`max` lado a lado em mini-grid, `Nome do nível` `flex-1`, swatch + remove à direita.
-  - Manter o `Alert` de validação de faixas (já existe), com `strokeWidth={1.5}`.
-- **Método de cálculo**: transformar em um par de cards selecionáveis (P × I e P + I) com explicação curta — mais visual que o `Select` atual e ocupa a mesma altura.
-- **Lista de matrizes existentes**: mover para uma segunda seção dentro da própria aba Configuração, com cabeçalho eyebrow "Matrizes salvas". Cada item com hover discreto, ações `Editar`/`Excluir` como ghost icon buttons com tooltip (padrão dos outros módulos do Riscos).
-- Estado vazio: já usa `EmptyState` — manter, ajustando o ícone com `strokeWidth={1.5}`.
-- **Footer sticky**: a aba Configuração ganha um footer fixo `border-t px-6 py-4 bg-background` com:
-  - Esquerda: hint sutil ("Alterações afetam novos cálculos de risco").
-  - Direita: `Cancelar Edição` (quando editando) + `Salvar Matriz` / `Atualizar Matriz` (primary).
-- Remover o `DialogFooter` solto com botão "Fechar" (o X do header já fecha).
+Se o usuário fecha esse segundo dialog (X, ESC, clique fora) ou não percebe que precisa confirmar de novo, **o documento se perde sem nenhum aviso** — o `AlertDialog` de descarte só existe no DocGen pai, não no wizard.
 
-### 3. `MatrizVisualizacao.tsx` — leitura e drill-down
-- Remover wrapper `Card` interno (já está dentro do dialog), usar bloco `space-y-4`.
-- Header da matriz: eyebrow "Matriz Visual" + título com nome da matriz + chip com método de cálculo ("P × I" ou "P + I") e contagem total de riscos plotados.
-- Grid: aumentar `min-h` da célula para `min-h-[64px]` e `max-w-2xl` (dialog agora é `max-w-5xl`), tipografia das letras (B/M/A/C) em `text-xs font-semibold` ao invés de `text-[9px]` — leitura muito melhor que no print atual.
-- Eixo Y/X com labels textuais ("Probabilidade ↑" à esquerda em escrita vertical, "Impacto →" abaixo) e números nas células de cabeçalho com `text-xs`.
-- Tooltip nativo substituído por `Tooltip` do shadcn mostrando: nível, probabilidade × impacto = resultado, lista dos primeiros 3 riscos da célula + "ver todos" se houver mais.
-- Ao clicar numa célula com riscos, manter `navigate('/riscos?ids=...')` e fechar o dialog (passar callback `onClose` opcional via prop).
-- Adicionar uma legenda horizontal abaixo da matriz: chips com cor + nome de cada nível de risco configurado (ex.: ● Baixo  ● Médio  ● Alto  ● Crítico), respeitando as cores da configuração.
-- Loading via `<AkurisPulse/>` (já é) — manter.
-- Empty state ilustrado: usar `EmptyState` quando não houver matriz, com CTA "Configurar agora" que muda para a aba Configuração.
+Além disso:
+- O toast de sucesso diz só "Documento salvo!", **sem link/CTA** para o módulo Documentos. Quem abriu o DocGen de dentro de outro módulo (ex.: Gap Analysis, Controles) não tem pista de onde o documento foi parar.
+- O label "Salvar no Sistema" sugere ação final de 1 clique, mas é na verdade "Abrir formulário de cadastro pré-preenchido". Há descompasso entre expectativa e realidade.
+- Não há indicador de etapa ("Passo 2 de 2: confirmar dados antes de salvar").
 
-### 4. Itens fora de escopo
-- Sem alterações em queries Supabase, RLS, schema ou Edge Functions.
-- Sem mexer no fluxo de categorias (não aparece no print e está em outra tela).
-- Sem trocar `react-hook-form`/`zod`.
+# Mudanças propostas (somente UI/UX, sem mexer em RLS, schema ou Edge Functions)
 
-## Detalhes técnicos
+## 1. Renomear e reposicionar a ação principal
+- Botão **"Salvar no Sistema"** → **"Incorporar ao módulo Documentos"** (alinha ao vocabulário do usuário) com ícone `FileText` + `Save`.
+- Adicionar microcopy abaixo do header de preview: *"Revise o conteúdo. Ao incorporar, o documento será criado em Documentos como rascunho e poderá passar por aprovação."*
 
-- Imports novos: `Popover`, `PopoverTrigger`, `PopoverContent`, `Tooltip*` (shadcn) em `MatrizForm`/`MatrizVisualizacao`; `CornerAccent` em `MatrizDialog`.
-- Paleta sugerida para níveis (constante local): `['#22c55e','#84cc16','#eab308','#f97316','#dc2626','#6b7280']`.
-- `MatrizVisualizacao` recebe nova prop opcional `onNavigate?: () => void` para fechar o dialog ao drill-down.
-- `MatrizDialog` passa `onNavigate={() => onOpenChange(false)}` para `MatrizVisualizacao` e controla a aba ativa via `useState` para permitir o CTA "Configurar agora" do empty state.
-- Manter `strokeWidth={1.5}` em todos os Lucide (regra Akuris).
-- Sem novos toasts/notificações; reutilizar `sonner` já presente.
+## 2. Tornar o segundo dialog inequivocamente "Passo 2 de 2"
+No `DocumentoDialog` quando aberto via DocGen (detectar por presença de `initialFile` + flag opcional `originSource="docgen"`):
+- Eyebrow no header: **"PASSO 2 DE 2 · INCORPORAÇÃO"**
+- Título: **"Confirmar dados antes de incorporar"**
+- Banner discreto no topo: *"O conteúdo gerado pela IA já está anexado. Revise os metadados e clique em **Incorporar** para concluir."*
+- Botão de submit muda de "Salvar" → **"Incorporar documento"**.
 
-## Arquivos editados
-- `src/components/riscos/MatrizDialog.tsx`
-- `src/components/riscos/MatrizForm.tsx`
-- `src/components/riscos/MatrizVisualizacao.tsx`
+## 3. Guard contra fechamento acidental do wizard
+- Se o `DocumentoDialog` foi aberto a partir do DocGen **e ainda não foi submetido**, ao tentar fechar (X / ESC / clique fora), exibir `AlertDialog`:
+  - *"A incorporação ainda não foi concluída. Se sair agora, o documento gerado não será salvo no módulo Documentos."*
+  - Ações: **"Continuar incorporação"** / **"Sair sem incorporar"**.
+- O DocGen pai permanece aberto com o documento gerado intacto, então o usuário pode tentar de novo ou exportar.
+
+## 4. Toast pós-incorporação com CTA de navegação
+Após sucesso (`onSuccess`):
+- Toast Sonner editorial (via `akurisToast`) com:
+  - Título: **"Documento incorporado"**
+  - Descrição: *"'{nome}' foi criado em Documentos como rascunho."*
+  - Action button: **"Abrir em Documentos"** → navega para `/documentos` e (se possível) destaca a linha recém-criada via query param `?highlight={id}`.
+- Funciona em qualquer módulo que tenha aberto o DocGen via `useDocGen().openDocGen(...)`.
+
+## 5. Estado visual no DocGen depois de incorporar
+- Após sucesso, antes de fechar o DocGen, marcar o preview com selo **"✓ Incorporado em Documentos"** por ~1.5s e então fechar — assim o usuário tem confirmação visual além do toast.
+
+## 6. (Bônus pequeno) Tooltip explicativo nos 3 botões do preview
+- "Editar Layout": *"Reorganizar seções, capa e formatação"*
+- "Incorporar ao módulo Documentos": *"Salva como rascunho versionado no módulo Documentos"*
+- "Exportar": *"Baixa um arquivo PDF ou DOCX (não salva no sistema)"*
+
+# Fora de escopo
+- Não mexer em `documentos` schema, RLS, Storage policies, Edge Functions, nem no parser do DocGen.
+- Não alterar o pipeline de geração da IA nem o `DocLayoutBuilder`.
+- Não mexer no fluxo de aprovação/versionamento existente.
+
+# Arquivos a editar
+
+| Arquivo | Mudança |
+|---|---|
+| `src/components/documentos/DocGenDialog.tsx` | Renomear botão, microcopy, selo "incorporado", toast com CTA, propagar `originSource="docgen"` |
+| `src/components/documentos/DocumentoDialog.tsx` | Aceitar `originSource` opcional, header "Passo 2 de 2", label do submit, guard de fechamento sem submissão |
+| `src/pages/Documentos.tsx` (apenas se trivial) | Suportar `?highlight={id}` para destacar linha recém-criada (caso contrário, ficar só com a navegação simples) |
+
+# Resposta para o usuário (depois de implementar)
+Explicar que o "incorporar" era na verdade um fluxo de 2 passos onde o segundo dialog passava despercebido, que reorganizamos a interface para deixar claro e que agora há um link direto pro módulo Documentos no toast de confirmação.
