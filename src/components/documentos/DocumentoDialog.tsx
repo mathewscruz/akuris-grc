@@ -39,6 +39,8 @@ interface DocumentoDialogProps {
     nome: string; descricao: string; tipo: string; classificacao: string;
     tags: string[]; status: string; data_vencimento?: Date | undefined;
   }>;
+  /** Origem do dialog — quando "docgen", reformula textos para o fluxo de incorporação. */
+  originSource?: 'docgen';
 }
 
 const CLASSIF_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
