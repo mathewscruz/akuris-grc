@@ -22,9 +22,16 @@ import { useToast } from '@/hooks/use-toast';
 import { akurisToast } from '@/lib/akuris-toast';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Send, FileText, Download, Save, Plus, History } from 'lucide-react';
+import { Send, FileText, Download, Save, Plus, History, ArrowLeft } from 'lucide-react';
 import { AkurisAIIcon } from '@/components/icons';
 import DocLayoutBuilder from './DocLayoutBuilder';
+import { DocGenTemplateGallery } from './DocGenTemplateGallery';
+import { DocGenBriefing } from './DocGenBriefing';
+import {
+  buildSeedPrompt,
+  type BriefingDefaults,
+  type DocGenTemplate,
+} from '@/lib/docgen-templates';
 import { formatStatus } from '@/lib/text-utils';
 import { DocumentoDialog } from '@/components/documentos/DocumentoDialog';
 import jsPDF from 'jspdf';
@@ -113,6 +120,24 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
   // AlertDialog de descarte
   const [discardDialogOpen, setDiscardDialogOpen] = useState(false);
 
+  // Fluxo guiado: gallery → briefing → chat
+  type DocGenPhase = 'gallery' | 'briefing' | 'chat';
+  const [phase, setPhase] = useState<DocGenPhase>('gallery');
+  const [selectedTemplate, setSelectedTemplate] = useState<DocGenTemplate | null>(null);
+  const [briefingValue, setBriefingValue] = useState<BriefingDefaults | null>(null);
+
+  const buildDefaultBriefing = (): BriefingDefaults => ({
+    docType: 'politica',
+    frameworks: frameworkName ? [frameworkName] : [],
+    scope: requirementContext
+      ? `Atender ao requisito ${requirementContext.requirementCode} — ${requirementContext.requirementTitle}`
+      : '',
+    audience: 'Todos os colaboradores e prestadores de serviço',
+    tone: 'formal',
+    language: 'pt-BR',
+    length: 'padrao',
+  });
+
   useEffect(() => {
     const fetchUserInfo = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -148,20 +173,9 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
         }
       };
       fetchCategorias();
-      // Iniciar conversa com saudação contextualizada (apenas se chat estiver vazio — preserva conversa em andamento)
-      setMessages(prev => {
-        if (prev.length > 0) return prev;
-        let greeting: string;
-        if (requirementContext) {
-          greeting = `Olá! Sou o DocGen, o Gerador de Documentos com IA da Akuris.\n\nVamos trabalhar o requisito **${requirementContext.requirementCode} — ${requirementContext.requirementTitle}**${frameworkName ? ` do framework **${frameworkName}**` : ''}.\n\nPosso gerar uma política, procedimento ou norma sob medida para atender este requisito. Que tipo de documento você quer criar?`;
-        } else if (frameworkName) {
-          greeting = `Olá! Sou o DocGen, o Gerador de Documentos com IA da Akuris.\n\nVejo que você está trabalhando com o framework **${frameworkName}**. Posso ajudá-lo a gerar políticas, procedimentos ou normas alinhados a esse framework, usando os gaps identificados na sua avaliação para garantir que o documento cubra os pontos necessários.\n\nQue tipo de documento você gostaria de criar?`;
-        } else {
-          greeting = 'Olá! Sou o DocGen, o Gerador de Documentos com IA da Akuris. Estou aqui para ajudá-lo a criar qualquer tipo de documento que você precisa.\n\nPode me contar que tipo de documento você gostaria de criar?';
-        }
-        return [{ role: 'assistant', content: greeting, timestamp: new Date() }];
-      });
-      // Foco no input ao abrir
+      // Reset para a galeria ao abrir, exceto se já há conversa em andamento (preserva estado).
+      setPhase(prev => (messages.length > 0 ? 'chat' : 'gallery'));
+      // Foco no input ao abrir (caso já estejamos no chat)
       setTimeout(() => inputRef.current?.focus(), 200);
     }
   }, [open, frameworkName, requirementContext]);
@@ -188,23 +202,22 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     }
   }, [isLoading, open]);
 
-  const sendMessage = async () => {
-    if (!inputMessage.trim() || !userInfo || isLoading) return;
+  const sendMessageInternal = async (text: string) => {
+    if (!text.trim() || !userInfo || isLoading) return;
 
     const userMessage: ChatMessage = {
       role: 'user',
-      content: inputMessage,
+      content: text,
       timestamp: new Date()
     };
 
     setMessages(prev => [...prev, userMessage]);
-    setInputMessage('');
     setIsLoading(true);
 
     try {
       const { data, error } = await supabase.functions.invoke('docgen-chat', {
         body: {
-          message: inputMessage,
+          message: text,
           conversation_id: conversationId,
           user_id: userInfo.user_id,
           empresa_id: userInfo.empresa_id,
@@ -216,7 +229,6 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
 
       if (error) throw error;
 
-      // Verificar se créditos foram esgotados
       if (data?.error === 'CREDITS_EXHAUSTED') {
         setShowCreditsDialog(true);
         return;
@@ -244,6 +256,49 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const sendMessage = async () => {
+    if (!inputMessage.trim()) return;
+    const text = inputMessage;
+    setInputMessage('');
+    await sendMessageInternal(text);
+  };
+
+  /** Compor saudação inicial e disparar prompt-semente automaticamente. */
+  const enterChatPhase = async (briefing: BriefingDefaults, templateHint?: string) => {
+    setBriefingValue(briefing);
+    setPhase('chat');
+    // Saudação curta + contexto do briefing
+    const greeting =
+      `Briefing recebido. Vou propor a estrutura inicial e podemos refinar antes de gerar o documento completo.`;
+    setMessages([{ role: 'assistant', content: greeting, timestamp: new Date() }]);
+    // Aguardar render para focar input
+    setTimeout(() => inputRef.current?.focus(), 100);
+    // Enviar seed prompt automaticamente
+    const seed = buildSeedPrompt(briefing, templateHint);
+    // pequeno atraso para garantir que userInfo esteja carregado se ainda assíncrono
+    setTimeout(() => { sendMessageInternal(seed); }, 50);
+  };
+
+  const handlePickTemplate = (tpl: DocGenTemplate) => {
+    setSelectedTemplate(tpl);
+    // Mescla defaults do template com framework do contexto, se houver
+    const merged: BriefingDefaults = {
+      ...tpl.briefingDefaults,
+      frameworks: Array.from(new Set([
+        ...tpl.briefingDefaults.frameworks,
+        ...(frameworkName ? [frameworkName] : []),
+      ])),
+    };
+    setBriefingValue(merged);
+    setPhase('briefing');
+  };
+
+  const handleStartBlank = () => {
+    setSelectedTemplate(null);
+    setBriefingValue(buildDefaultBriefing());
+    setPhase('briefing');
   };
 
   const generateDocument = async () => {
@@ -683,11 +738,9 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     setIsDocumentSaved(false);
     setIsDocumentExported(false);
     setIsEditingLayout(false);
-    const greeting = frameworkName
-      ? `Olá! Sou o DocGen, seu assistente inteligente para criação de documentos.\n\nVejo que você está trabalhando com o framework **${frameworkName}**. Posso ajudá-lo a gerar políticas, procedimentos ou normas alinhados a esse framework.\n\nQue tipo de documento você gostaria de criar?`
-      : 'Olá! Sou o DocGen, seu assistente inteligente para criação de documentos. Pode me contar que tipo de documento você gostaria de criar?';
-    setMessages([{ role: 'assistant', content: greeting, timestamp: new Date() }]);
-    setTimeout(() => inputRef.current?.focus(), 100);
+    setSelectedTemplate(null);
+    setBriefingValue(null);
+    setPhase('gallery');
   };
 
   const loadHistory = async () => {
@@ -735,6 +788,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
         timestamp: new Date(),
       }]);
       setConversationId(data.id);
+      setPhase('chat');
       setCurrentDocType(data.tipo_documento_identificado || null);
       setCurrentDocName((data.contexto as any)?.documento_nome_identificado || null);
       setGeneratedDocument(null);
@@ -775,23 +829,91 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
       className="h-[100dvh] sm:h-[92vh]"
     >
       <div className="flex flex-col h-full p-4 sm:p-6 gap-4 min-h-0 overflow-hidden">
-        {/* Toolbar de ações da conversa */}
-        <div className="flex items-center justify-between gap-2 border-b pb-2">
-          <div className="text-xs text-muted-foreground">
-            {currentDocName ? <span><strong className="text-foreground">{currentDocName}</strong> · </span> : null}
-            {messages.length} mensagem{messages.length === 1 ? '' : 's'} nesta conversa
+        {/* Toolbar de ações da conversa (só aparece no chat) */}
+        {phase === 'chat' && (
+          <div className="flex items-center justify-between gap-2 border-b pb-2">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground min-w-0">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-1 -ml-2 h-7"
+                onClick={() => setPhase('briefing')}
+                disabled={isLoading || isGeneratingDoc}
+                title="Voltar para o briefing"
+              >
+                <ArrowLeft className="h-3.5 w-3.5" strokeWidth={1.5} />
+                Briefing
+              </Button>
+              <span className="hidden sm:inline">·</span>
+              <span className="truncate">
+                {currentDocName ? <strong className="text-foreground">{currentDocName}</strong> : 'Conversa em andamento'}
+                {' · '}
+                {messages.length} mensagem{messages.length === 1 ? '' : 's'}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-1"
+                onClick={startNewConversation}
+                disabled={isLoading || isGeneratingDoc}
+              >
+                <Plus className="h-4 w-4" />
+                Nova conversa
+              </Button>
+              <Popover
+                open={historyOpen}
+                onOpenChange={(o) => {
+                  setHistoryOpen(o);
+                  if (o) loadHistory();
+                }}
+              >
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="sm" className="gap-1" disabled={isLoading || isGeneratingDoc}>
+                    <History className="h-4 w-4" />
+                    Histórico
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-80 p-0">
+                  <div className="p-3 border-b">
+                    <h4 className="text-sm font-semibold">Conversas anteriores</h4>
+                    <p className="text-xs text-muted-foreground">Suas últimas 20 conversas no DocGen.</p>
+                  </div>
+                  <div className="max-h-72 overflow-y-auto">
+                    {historyLoading && (
+                      <div className="p-4 text-sm text-muted-foreground flex items-center gap-2">
+                        <AkurisPulse size={16} /> Carregando…
+                      </div>
+                    )}
+                    {!historyLoading && historyItems.length === 0 && (
+                      <div className="p-4 text-sm text-muted-foreground">Nenhuma conversa anterior.</div>
+                    )}
+                    {!historyLoading && historyItems.map((it) => (
+                      <button
+                        key={it.id}
+                        onClick={() => loadConversation(it.id)}
+                        className="w-full text-left p-3 hover:bg-accent border-b last:border-b-0 transition-colors"
+                      >
+                        <div className="text-sm font-medium truncate">{it.titulo || 'Conversa sem título'}</div>
+                        <div className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
+                          {it.tipo_documento_identificado && (
+                            <Badge variant="secondary" className="text-[10px] py-0 h-4">{formatStatus(it.tipo_documento_identificado)}</Badge>
+                          )}
+                          <span>{new Date(it.updated_at).toLocaleString()}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="gap-1"
-              onClick={startNewConversation}
-              disabled={isLoading || isGeneratingDoc}
-            >
-              <Plus className="h-4 w-4" />
-              Nova conversa
-            </Button>
+        )}
+
+        {/* Toolbar leve em gallery/briefing — só botão de histórico */}
+        {phase !== 'chat' && (
+          <div className="flex items-center justify-end gap-2 border-b pb-2">
             <Popover
               open={historyOpen}
               onOpenChange={(o) => {
@@ -800,9 +922,9 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
               }}
             >
               <PopoverTrigger asChild>
-                <Button variant="ghost" size="sm" className="gap-1" disabled={isLoading || isGeneratingDoc}>
+                <Button variant="ghost" size="sm" className="gap-1">
                   <History className="h-4 w-4" />
-                  Histórico
+                  Restaurar conversa
                 </Button>
               </PopoverTrigger>
               <PopoverContent align="end" className="w-80 p-0">
@@ -838,8 +960,32 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
               </PopoverContent>
             </Popover>
           </div>
-        </div>
+        )}
 
+        {/* Fase: Galeria de templates */}
+        {phase === 'gallery' && (
+          <div className="flex-1 min-h-0">
+            <DocGenTemplateGallery
+              onPickTemplate={handlePickTemplate}
+              onStartBlank={handleStartBlank}
+            />
+          </div>
+        )}
+
+        {/* Fase: Briefing */}
+        {phase === 'briefing' && briefingValue && (
+          <div className="flex-1 min-h-0">
+            <DocGenBriefing
+              initialValue={briefingValue}
+              templateLabel={selectedTemplate?.label}
+              onBack={() => setPhase('gallery')}
+              onConfirm={(brief) => enterChatPhase(brief, selectedTemplate?.seedPromptHint)}
+            />
+          </div>
+        )}
+
+        {/* Fase: Chat + Preview (mantém comportamento existente) */}
+        {phase === 'chat' && (
         <div className="flex-1 flex flex-col lg:flex-row gap-4 min-h-0">
           {/* Chat Area */}
           <div className="flex-1 flex flex-col min-h-0 min-w-0">
@@ -1045,6 +1191,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
             </div>
           )}
         </div>
+        )}
 
         {/* Dialogo de criação com dados do DocGen */}
         <DocumentoDialog
