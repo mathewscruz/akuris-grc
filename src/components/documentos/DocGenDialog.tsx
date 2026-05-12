@@ -788,6 +788,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
         timestamp: new Date(),
       }]);
       setConversationId(data.id);
+      setPhase('chat');
       setCurrentDocType(data.tipo_documento_identificado || null);
       setCurrentDocName((data.contexto as any)?.documento_nome_identificado || null);
       setGeneratedDocument(null);
