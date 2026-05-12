@@ -39,13 +39,16 @@ interface DocumentoDialogProps {
     nome: string; descricao: string; tipo: string; classificacao: string;
     tags: string[]; status: string; data_vencimento?: Date | undefined;
   }>;
+  /** Origem do dialog — quando "docgen", reformula textos para o fluxo de incorporação. */
+  originSource?: 'docgen';
 }
 
 const CLASSIF_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
   publica: 'outline', interna: 'secondary', restrita: 'default', confidencial: 'destructive',
 };
 
-export function DocumentoDialog({ open, onOpenChange, documento, onSuccess, initialFile, initialData }: DocumentoDialogProps) {
+export function DocumentoDialog({ open, onOpenChange, documento, onSuccess, initialFile, initialData, originSource }: DocumentoDialogProps) {
+  const isDocGenFlow = originSource === 'docgen';
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -178,7 +181,9 @@ export function DocumentoDialog({ open, onOpenChange, documento, onSuccess, init
         : await supabase.from('documentos').insert([documentoData]);
       if (error) throw error;
 
-      toast({ title: documento ? "Documento atualizado" : "Documento criado" });
+      if (!isDocGenFlow) {
+        toast({ title: documento ? "Documento atualizado" : "Documento criado" });
+      }
       onSuccess();
       onOpenChange(false);
     } catch (error) {
@@ -401,18 +406,30 @@ export function DocumentoDialog({ open, onOpenChange, documento, onSuccess, init
     <WizardDialog
       open={open}
       onOpenChange={onOpenChange}
-      title={documento ? 'Editar Documento' : 'Novo Documento'}
-      description={documento ? 'Atualize informações e anexo do documento.' : 'Adicione um novo documento ao sistema.'}
+      title={
+        isDocGenFlow
+          ? 'Confirmar dados antes de incorporar'
+          : documento ? 'Editar Documento' : 'Novo Documento'
+      }
+      description={
+        isDocGenFlow
+          ? 'Passo 2 de 2 · O conteúdo gerado pela IA já está anexado. Revise os metadados e confirme a incorporação ao módulo Documentos.'
+          : documento ? 'Atualize informações e anexo do documento.' : 'Adicione um novo documento ao sistema.'
+      }
       icon={FileText}
       tabs={tabs}
       summary={summary}
       activeTab={activeTab}
       onActiveTabChange={setActiveTab}
       onSubmit={handleSubmit}
-      submitLabel={documento ? 'Atualizar' : 'Criar'}
+      submitLabel={
+        isDocGenFlow
+          ? 'Incorporar documento'
+          : documento ? 'Atualizar' : 'Criar'
+      }
       isSubmitting={loading || uploading}
       submitDisabled={!formData.nome.trim() || loading}
-      isDirty={isDirty}
+      isDirty={isDocGenFlow ? true : isDirty}
       size="xl"
     />
   );
