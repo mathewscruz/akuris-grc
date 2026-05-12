@@ -937,7 +937,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
           {/* Document Preview / Skeleton durante geração */}
           {(generatedDocument || isGeneratingDoc) && (
             <div className="w-full lg:w-1/2 lg:border-l lg:pl-4 border-t pt-4 lg:border-t-0 lg:pt-0 flex flex-col min-h-0 overflow-hidden">
-              <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                 <h3 className="font-semibold">
                   {!generatedDocument && isGeneratingDoc
                     ? 'Gerando documento…'
@@ -945,28 +945,50 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                 </h3>
                 {generatedDocument && (
                   <div className="flex flex-wrap gap-2">
-                    <Button onClick={() => setIsEditingLayout(!isEditingLayout)} size="sm" variant="outline" className="gap-1">
-                      {isEditingLayout ? 'Concluir Layout' : 'Editar Layout'}
-                    </Button>
-                    <Button onClick={handleOpenCreateDialog} size="sm" className="gap-1">
-                      <Save className="h-3 w-3" />
-                      Salvar no Sistema
-                    </Button>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button size="sm" variant="outline" className="gap-1">
-                          <Download className="h-3 w-3" />
-                          Exportar
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleExport('pdf')}>Exportar como PDF</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleExport('docx')}>Exportar como DOCX</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button onClick={() => setIsEditingLayout(!isEditingLayout)} size="sm" variant="outline" className="gap-1">
+                            {isEditingLayout ? 'Concluir Layout' : 'Editar Layout'}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Reorganizar seções, capa e formatação do documento</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button onClick={handleOpenCreateDialog} size="sm" className="gap-1">
+                            <Save className="h-3 w-3" strokeWidth={1.5} />
+                            Incorporar ao módulo Documentos
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Salva como rascunho versionado no módulo Documentos (passo 2 confirma os metadados)</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button size="sm" variant="outline" className="gap-1">
+                                <Download className="h-3 w-3" strokeWidth={1.5} />
+                                Exportar
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleExport('pdf')}>Exportar como PDF</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleExport('docx')}>Exportar como DOCX</DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TooltipTrigger>
+                        <TooltipContent>Baixa um arquivo PDF ou DOCX (não salva no sistema)</TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
                 )}
               </div>
+              {generatedDocument && !isEditingLayout && (
+                <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
+                  Revise o conteúdo abaixo. Ao <strong className="text-foreground font-semibold">incorporar</strong>, o documento será criado em <strong className="text-foreground font-semibold">Documentos</strong> como rascunho e poderá passar por aprovação.
+                </p>
+              )}
 
               {!generatedDocument && isGeneratingDoc ? (
                 <div className="flex-1 min-h-0 overflow-y-auto pr-2">
