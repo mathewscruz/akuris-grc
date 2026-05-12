@@ -1191,6 +1191,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
             </div>
           )}
         </div>
+        )}
 
         {/* Dialogo de criação com dados do DocGen */}
         <DocumentoDialog
