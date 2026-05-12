@@ -434,7 +434,8 @@ IMPORTANTE: Sempre responda em português brasileiro. Responda SOMENTE com uma m
         informacoes_coletadas: {
           ...context.informacoes_coletadas,
           ...(parsedResponse.informacoes_coletadas || {})
-        }
+        },
+        company_context: cc || (context as any).company_context || null,
       };
 
       try {
