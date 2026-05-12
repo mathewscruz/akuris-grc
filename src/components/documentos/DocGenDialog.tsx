@@ -829,23 +829,91 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
       className="h-[100dvh] sm:h-[92vh]"
     >
       <div className="flex flex-col h-full p-4 sm:p-6 gap-4 min-h-0 overflow-hidden">
-        {/* Toolbar de ações da conversa */}
-        <div className="flex items-center justify-between gap-2 border-b pb-2">
-          <div className="text-xs text-muted-foreground">
-            {currentDocName ? <span><strong className="text-foreground">{currentDocName}</strong> · </span> : null}
-            {messages.length} mensagem{messages.length === 1 ? '' : 's'} nesta conversa
+        {/* Toolbar de ações da conversa (só aparece no chat) */}
+        {phase === 'chat' && (
+          <div className="flex items-center justify-between gap-2 border-b pb-2">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground min-w-0">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-1 -ml-2 h-7"
+                onClick={() => setPhase('briefing')}
+                disabled={isLoading || isGeneratingDoc}
+                title="Voltar para o briefing"
+              >
+                <ArrowLeft className="h-3.5 w-3.5" strokeWidth={1.5} />
+                Briefing
+              </Button>
+              <span className="hidden sm:inline">·</span>
+              <span className="truncate">
+                {currentDocName ? <strong className="text-foreground">{currentDocName}</strong> : 'Conversa em andamento'}
+                {' · '}
+                {messages.length} mensagem{messages.length === 1 ? '' : 's'}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-1"
+                onClick={startNewConversation}
+                disabled={isLoading || isGeneratingDoc}
+              >
+                <Plus className="h-4 w-4" />
+                Nova conversa
+              </Button>
+              <Popover
+                open={historyOpen}
+                onOpenChange={(o) => {
+                  setHistoryOpen(o);
+                  if (o) loadHistory();
+                }}
+              >
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="sm" className="gap-1" disabled={isLoading || isGeneratingDoc}>
+                    <History className="h-4 w-4" />
+                    Histórico
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-80 p-0">
+                  <div className="p-3 border-b">
+                    <h4 className="text-sm font-semibold">Conversas anteriores</h4>
+                    <p className="text-xs text-muted-foreground">Suas últimas 20 conversas no DocGen.</p>
+                  </div>
+                  <div className="max-h-72 overflow-y-auto">
+                    {historyLoading && (
+                      <div className="p-4 text-sm text-muted-foreground flex items-center gap-2">
+                        <AkurisPulse size={16} /> Carregando…
+                      </div>
+                    )}
+                    {!historyLoading && historyItems.length === 0 && (
+                      <div className="p-4 text-sm text-muted-foreground">Nenhuma conversa anterior.</div>
+                    )}
+                    {!historyLoading && historyItems.map((it) => (
+                      <button
+                        key={it.id}
+                        onClick={() => loadConversation(it.id)}
+                        className="w-full text-left p-3 hover:bg-accent border-b last:border-b-0 transition-colors"
+                      >
+                        <div className="text-sm font-medium truncate">{it.titulo || 'Conversa sem título'}</div>
+                        <div className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
+                          {it.tipo_documento_identificado && (
+                            <Badge variant="secondary" className="text-[10px] py-0 h-4">{formatStatus(it.tipo_documento_identificado)}</Badge>
+                          )}
+                          <span>{new Date(it.updated_at).toLocaleString()}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="gap-1"
-              onClick={startNewConversation}
-              disabled={isLoading || isGeneratingDoc}
-            >
-              <Plus className="h-4 w-4" />
-              Nova conversa
-            </Button>
+        )}
+
+        {/* Toolbar leve em gallery/briefing — só botão de histórico */}
+        {phase !== 'chat' && (
+          <div className="flex items-center justify-end gap-2 border-b pb-2">
             <Popover
               open={historyOpen}
               onOpenChange={(o) => {
@@ -854,9 +922,9 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
               }}
             >
               <PopoverTrigger asChild>
-                <Button variant="ghost" size="sm" className="gap-1" disabled={isLoading || isGeneratingDoc}>
+                <Button variant="ghost" size="sm" className="gap-1">
                   <History className="h-4 w-4" />
-                  Histórico
+                  Restaurar conversa
                 </Button>
               </PopoverTrigger>
               <PopoverContent align="end" className="w-80 p-0">
@@ -892,8 +960,32 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
               </PopoverContent>
             </Popover>
           </div>
-        </div>
+        )}
 
+        {/* Fase: Galeria de templates */}
+        {phase === 'gallery' && (
+          <div className="flex-1 min-h-0">
+            <DocGenTemplateGallery
+              onPickTemplate={handlePickTemplate}
+              onStartBlank={handleStartBlank}
+            />
+          </div>
+        )}
+
+        {/* Fase: Briefing */}
+        {phase === 'briefing' && briefingValue && (
+          <div className="flex-1 min-h-0">
+            <DocGenBriefing
+              initialValue={briefingValue}
+              templateLabel={selectedTemplate?.label}
+              onBack={() => setPhase('gallery')}
+              onConfirm={(brief) => enterChatPhase(brief, selectedTemplate?.seedPromptHint)}
+            />
+          </div>
+        )}
+
+        {/* Fase: Chat + Preview (mantém comportamento existente) */}
+        {phase === 'chat' && (
         <div className="flex-1 flex flex-col lg:flex-row gap-4 min-h-0">
           {/* Chat Area */}
           <div className="flex-1 flex flex-col min-h-0 min-w-0">
