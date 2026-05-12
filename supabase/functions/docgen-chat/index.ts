@@ -743,6 +743,7 @@ Avalie e responda EXATAMENTE neste JSON:
       });
     }
 
+    return new Response(JSON.stringify({ error: 'Action not supported' }), {
       status: 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
