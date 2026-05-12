@@ -350,7 +350,65 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     setPhase('briefing');
   };
 
-  const generateDocument = async () => {
+  // ===== Onda 3: refinar seção =====
+  const handleRefineSection = async (instruction: string) => {
+    if (refiningSectionIndex === null || !generatedDocument || !userInfo) return;
+    setSectionRefineLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('docgen-chat', {
+        body: {
+          action: 'refine_section',
+          user_id: userInfo.user_id,
+          empresa_id: userInfo.empresa_id,
+          conversation_id: conversationId,
+          document: generatedDocument,
+          section_index: refiningSectionIndex,
+          instruction,
+          ...(frameworkName && { framework_context: { framework_name: frameworkName, framework_id: frameworkId } }),
+        },
+      });
+      if (error) throw error;
+      if (data?.error === 'CREDITS_EXHAUSTED') { setShowCreditsDialog(true); return; }
+      if (data?.document) {
+        setGeneratedDocument(data.document);
+        setAdherenceResult(null); // invalida análise prévia
+        akurisToast({ module: 'documentos', tone: 'success', title: 'Seção refinada', description: 'O conteúdo foi atualizado.' });
+        setRefiningSectionIndex(null);
+      }
+    } catch (e) {
+      console.error('Erro ao refinar seção:', e);
+      toast({ title: 'Erro', description: 'Não foi possível refinar a seção.', variant: 'destructive' });
+    } finally {
+      setSectionRefineLoading(false);
+    }
+  };
+
+  // ===== Onda 3: aderência inline =====
+  const handleRunAdherence = async () => {
+    if (!generatedDocument || !userInfo || !frameworkId) return;
+    setAdherenceLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('docgen-chat', {
+        body: {
+          action: 'quick_adherence',
+          user_id: userInfo.user_id,
+          empresa_id: userInfo.empresa_id,
+          conversation_id: conversationId,
+          document: generatedDocument,
+          framework_context: { framework_name: frameworkName, framework_id: frameworkId },
+        },
+      });
+      if (error) throw error;
+      if (data?.error === 'CREDITS_EXHAUSTED') { setShowCreditsDialog(true); return; }
+      if (data?.adherence) setAdherenceResult(data.adherence);
+    } catch (e) {
+      console.error('Erro na aderência:', e);
+      toast({ title: 'Erro', description: 'Não foi possível avaliar a aderência.', variant: 'destructive' });
+    } finally {
+      setAdherenceLoading(false);
+    }
+  };
+
     if (!userInfo || !conversationId || isGeneratingDoc) return;
 
     setIsGeneratingDoc(true);
