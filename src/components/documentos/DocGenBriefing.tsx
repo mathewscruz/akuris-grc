@@ -76,7 +76,7 @@ export const DocGenBriefing: React.FC<DocGenBriefingProps> = ({
   const [briefing, setBriefing] = useState<BriefingDefaults>(initialValue);
   const [frameworkInput, setFrameworkInput] = useState('');
 
-  const update = <K extends keyof BriefingDefaults>(
+  const update = <K extends keyof BriefingDefaults,>(
     key: K,
     value: BriefingDefaults[K],
   ) => setBriefing((prev) => ({ ...prev, [key]: value }));
