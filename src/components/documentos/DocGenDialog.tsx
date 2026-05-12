@@ -1336,6 +1336,18 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
         </div>
         )}
 
+        {/* Onda 3: refinador de seção */}
+        {generatedDocument && refiningSectionIndex !== null && (
+          <DocGenSectionRefiner
+            open={refiningSectionIndex !== null}
+            onOpenChange={(o) => { if (!o) setRefiningSectionIndex(null); }}
+            sectionName={generatedDocument.secoes?.[refiningSectionIndex]?.nome || ''}
+            currentContent={generatedDocument.secoes?.[refiningSectionIndex]?.conteudo || ''}
+            loading={sectionRefineLoading}
+            onSubmit={handleRefineSection}
+          />
+        )}
+
         {/* Dialogo de criação com dados do DocGen */}
         <DocumentoDialog
           open={showCreateDialog}
