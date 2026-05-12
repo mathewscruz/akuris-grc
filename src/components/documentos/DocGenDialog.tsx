@@ -1275,6 +1275,15 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                 </div>
               ) : (
                 <div className="flex-1 min-h-0 overflow-y-auto pr-2">
+                  {/* Onda 3: aderência inline ao framework */}
+                  {frameworkId && (
+                    <DocGenAdherencePanel
+                      result={adherenceResult}
+                      loading={adherenceLoading}
+                      frameworkName={frameworkName}
+                      onRun={handleRunAdherence}
+                    />
+                  )}
                   <div className="space-y-5 text-sm leading-relaxed">
                     <div>
                       <img
@@ -1288,14 +1297,36 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                         Versão: {generatedDocument.versao} | {generatedDocument.data_criacao}
                       </p>
                     </div>
-                    {generatedDocument.secoes?.map((secao: any, index: number) => (
-                      <div key={index} className="space-y-2">
-                        <h5 className="font-semibold">{secao.nome}</h5>
-                        <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                          {secao.conteudo}
-                        </p>
-                      </div>
-                    ))}
+                    {generatedDocument.secoes?.map((secao: any, index: number) => {
+                      const sectionAdherence = adherenceResult?.secoes?.find((s: any) => s.section_index === index);
+                      return (
+                        <div key={index} className="space-y-2 group">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <h5 className="font-semibold truncate">{secao.nome}</h5>
+                              {sectionAdherence && (
+                                <Badge variant="outline" className="text-[10px] capitalize shrink-0">
+                                  {sectionAdherence.status}
+                                </Badge>
+                              )}
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="opacity-60 hover:opacity-100 gap-1 h-7 px-2 text-xs shrink-0"
+                              onClick={() => setRefiningSectionIndex(index)}
+                              title="Refinar esta seção com IA (1 crédito)"
+                            >
+                              <AkurisAIIcon className="h-3.5 w-3.5" />
+                              Refinar
+                            </Button>
+                          </div>
+                          <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                            {secao.conteudo}
+                          </p>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
