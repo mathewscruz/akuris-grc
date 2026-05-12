@@ -307,6 +307,26 @@ serve(async (req) => {
         ? `\nCONTEXTO DO FRAMEWORK: O usuário está trabalhando com o framework "${framework_context.framework_name}". O documento gerado deve estar alinhado a este framework e endereçar os gaps identificados.${frameworkGapsText}`
         : '';
 
+      // ========== Contexto automático da empresa (Onda 2) ==========
+      const cc: any = company_context_input || (context as any).company_context || null;
+      let companyContextSection = '';
+      if (cc) {
+        const emp = cc.empresa || {};
+        const fmt = (arr: any[], render: (x: any) => string, max = 5) =>
+          (arr || []).slice(0, max).map(render).join('\n');
+        companyContextSection = `
+
+CONTEXTO REAL DA EMPRESA (use estes dados para personalizar o documento — NÃO peça ao usuário informações já presentes aqui):
+- Razão social: ${emp.nome || 'N/A'}
+- CNPJ: ${emp.cnpj || 'N/A'}
+- Setor: ${emp.setor_atuacao || 'N/A'}
+- Porte: ${emp.porte_empresa || 'N/A'}
+- Objetivo de compliance: ${emp.objetivo_compliance || 'N/A'}
+${cc.frameworks?.length ? `\nFrameworks ativos da empresa:\n${fmt(cc.frameworks, (f: any) => `- ${f.nome}${f.versao ? ' ' + f.versao : ''} (score ${Number(f.score || 0)}%, ${f.status || 'em andamento'})`)}` : ''}
+${cc.ativos_criticos?.length ? `\nAtivos críticos (top ${Math.min(cc.ativos_criticos.length, 5)}):\n${fmt(cc.ativos_criticos, (a: any) => `- ${a.nome} (${a.tipo || 'ativo'}, criticidade ${a.criticidade})`)}` : ''}
+${cc.riscos_altos?.length ? `\nRiscos altos/críticos (top ${Math.min(cc.riscos_altos.length, 5)}):\n${fmt(cc.riscos_altos, (r: any) => `- ${r.nome} (nível ${r.nivel}, ${r.status || ''})`)}` : ''}`;
+      }
+
       const systemPrompt = `Você é DocGen, um especialista em documentação corporativa altamente qualificado, com amplo conhecimento em frameworks de compliance, regulamentações e melhores práticas empresariais.
 
 CONTEXTO DA CONVERSA:
