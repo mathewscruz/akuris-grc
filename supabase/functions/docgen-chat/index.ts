@@ -629,7 +629,120 @@ Responda APENAS com um JSON na seguinte estrutura:
       });
     }
 
-    return new Response(JSON.stringify({ error: 'Action not supported' }), {
+    // ============ ACTION: refine_section (Onda 3 - 1 crédito já consumido acima) ============
+    if (action === 'refine_section') {
+      if (!document || typeof section_index !== 'number' || !instruction) {
+        return new Response(JSON.stringify({ error: 'document, section_index e instruction são obrigatórios' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      const secoes = document.secoes || [];
+      const target = secoes[section_index];
+      if (!target) {
+        return new Response(JSON.stringify({ error: 'Seção não encontrada' }), {
+          status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const sysPrompt = `Você é um editor sênior de documentos corporativos. Refine APENAS a seção indicada, mantendo o tom, a estrutura geral do documento e a coerência com as demais seções. Responda SOMENTE com o novo conteúdo da seção em texto corrido, sem títulos, sem markdown de cabeçalho, sem JSON.`;
+      const userPrompt = `DOCUMENTO: ${document.titulo}
+EMPRESA: ${context.empresa_nome}
+${framework_context?.framework_name ? `FRAMEWORK: ${framework_context.framework_name}\n` : ''}
+SEÇÃO ATUAL ("${target.nome}"):
+${target.conteudo}
+
+OUTRAS SEÇÕES (apenas títulos para contexto):
+${secoes.map((s: any, i: number) => `${i + 1}. ${s.nome}`).join('\n')}
+
+INSTRUÇÃO DO USUÁRIO:
+${instruction}
+
+Reescreva o conteúdo da seção atendendo à instrução.`;
+
+      const newContent = await callClaude(
+        [{ role: 'user', content: userPrompt }],
+        sysPrompt,
+        ANTHROPIC_API_KEY,
+        2500,
+        0.5
+      );
+
+      const updatedSecoes = secoes.map((s: any, i: number) =>
+        i === section_index ? { ...s, conteudo: newContent.trim() } : s
+      );
+
+      return new Response(JSON.stringify({
+        section_index,
+        new_content: newContent.trim(),
+        document: { ...document, secoes: updatedSecoes },
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    // ============ ACTION: quick_adherence (Onda 3) ============
+    if (action === 'quick_adherence') {
+      if (!document || !framework_context?.framework_id) {
+        return new Response(JSON.stringify({ error: 'document e framework_context.framework_id são obrigatórios' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const { data: reqs } = await supabase
+        .from('gap_analysis_requirements')
+        .select('codigo, titulo, categoria')
+        .eq('framework_id', framework_context.framework_id)
+        .limit(80);
+
+      if (!reqs || reqs.length === 0) {
+        return new Response(JSON.stringify({ error: 'Framework sem requisitos cadastrados' }), {
+          status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const secoes = document.secoes || [];
+      const docDigest = secoes.map((s: any, i: number) =>
+        `### Seção ${i + 1}: ${s.nome}\n${(s.conteudo || '').slice(0, 1500)}`
+      ).join('\n\n');
+
+      const reqList = reqs.map((r: any) => `- [${r.codigo || 'S/C'}] ${r.titulo}`).join('\n');
+
+      const sysPrompt = `Você é um auditor de compliance. Avalie a aderência de um documento corporativo aos requisitos de um framework. Seja rigoroso e factual. Responda APENAS com JSON válido, sem markdown.`;
+      const userPrompt = `FRAMEWORK: ${framework_context.framework_name}
+REQUISITOS (${reqs.length}):
+${reqList}
+
+DOCUMENTO "${document.titulo}":
+${docDigest}
+
+Avalie e responda EXATAMENTE neste JSON:
+{
+  "score": 0-100,
+  "resumo": "1-2 frases sobre aderência geral",
+  "secoes": [
+    { "section_index": 0, "section_name": "...", "status": "forte|parcial|fraco|ausente", "requisitos_cobertos": ["código", ...], "gaps": ["o que está faltando"] }
+  ],
+  "requisitos_nao_cobertos": ["códigos dos requisitos não endereçados em nenhuma seção"]
+}`;
+
+      const raw = await callClaude(
+        [{ role: 'user', content: userPrompt }],
+        sysPrompt,
+        ANTHROPIC_API_KEY,
+        3500,
+        0.3
+      );
+
+      let parsed: any;
+      try {
+        parsed = JSON.parse(raw.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim());
+      } catch {
+        parsed = { score: 0, resumo: 'Não foi possível avaliar.', secoes: [], requisitos_nao_cobertos: [] };
+      }
+
+      return new Response(JSON.stringify({ adherence: parsed }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
       status: 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
