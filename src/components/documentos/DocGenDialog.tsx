@@ -28,6 +28,8 @@ import DocLayoutBuilder from './DocLayoutBuilder';
 import { DocGenTemplateGallery } from './DocGenTemplateGallery';
 import { DocGenBriefing } from './DocGenBriefing';
 import { DocGenContextPanel } from './DocGenContextPanel';
+import { DocGenSectionRefiner } from './DocGenSectionRefiner';
+import { DocGenAdherencePanel, type AdherenceResult } from './DocGenAdherencePanel';
 import {
   buildSeedPrompt,
   type BriefingDefaults,
@@ -130,6 +132,12 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
   // Onda 2: contexto da empresa carregado via edge function
   const [companyContext, setCompanyContext] = useState<import('./DocGenContextPanel').CompanyContext | null>(null);
   const [companyContextLoading, setCompanyContextLoading] = useState(false);
+
+  // Onda 3: refino por seção + aderência inline
+  const [refiningSectionIndex, setRefiningSectionIndex] = useState<number | null>(null);
+  const [sectionRefineLoading, setSectionRefineLoading] = useState(false);
+  const [adherenceResult, setAdherenceResult] = useState<AdherenceResult | null>(null);
+  const [adherenceLoading, setAdherenceLoading] = useState(false);
 
   const buildDefaultBriefing = (): BriefingDefaults => ({
     docType: 'politica',
@@ -340,6 +348,65 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     setSelectedTemplate(null);
     setBriefingValue(buildDefaultBriefing());
     setPhase('briefing');
+  };
+
+  // ===== Onda 3: refinar seção =====
+  const handleRefineSection = async (instruction: string) => {
+    if (refiningSectionIndex === null || !generatedDocument || !userInfo) return;
+    setSectionRefineLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('docgen-chat', {
+        body: {
+          action: 'refine_section',
+          user_id: userInfo.user_id,
+          empresa_id: userInfo.empresa_id,
+          conversation_id: conversationId,
+          document: generatedDocument,
+          section_index: refiningSectionIndex,
+          instruction,
+          ...(frameworkName && { framework_context: { framework_name: frameworkName, framework_id: frameworkId } }),
+        },
+      });
+      if (error) throw error;
+      if (data?.error === 'CREDITS_EXHAUSTED') { setShowCreditsDialog(true); return; }
+      if (data?.document) {
+        setGeneratedDocument(data.document);
+        setAdherenceResult(null); // invalida análise prévia
+        akurisToast({ module: 'documentos', tone: 'success', title: 'Seção refinada', description: 'O conteúdo foi atualizado.' });
+        setRefiningSectionIndex(null);
+      }
+    } catch (e) {
+      console.error('Erro ao refinar seção:', e);
+      toast({ title: 'Erro', description: 'Não foi possível refinar a seção.', variant: 'destructive' });
+    } finally {
+      setSectionRefineLoading(false);
+    }
+  };
+
+  // ===== Onda 3: aderência inline =====
+  const handleRunAdherence = async () => {
+    if (!generatedDocument || !userInfo || !frameworkId) return;
+    setAdherenceLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('docgen-chat', {
+        body: {
+          action: 'quick_adherence',
+          user_id: userInfo.user_id,
+          empresa_id: userInfo.empresa_id,
+          conversation_id: conversationId,
+          document: generatedDocument,
+          framework_context: { framework_name: frameworkName, framework_id: frameworkId },
+        },
+      });
+      if (error) throw error;
+      if (data?.error === 'CREDITS_EXHAUSTED') { setShowCreditsDialog(true); return; }
+      if (data?.adherence) setAdherenceResult(data.adherence);
+    } catch (e) {
+      console.error('Erro na aderência:', e);
+      toast({ title: 'Erro', description: 'Não foi possível avaliar a aderência.', variant: 'destructive' });
+    } finally {
+      setAdherenceLoading(false);
+    }
   };
 
   const generateDocument = async () => {
@@ -1208,6 +1275,15 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                 </div>
               ) : (
                 <div className="flex-1 min-h-0 overflow-y-auto pr-2">
+                  {/* Onda 3: aderência inline ao framework */}
+                  {frameworkId && (
+                    <DocGenAdherencePanel
+                      result={adherenceResult}
+                      loading={adherenceLoading}
+                      frameworkName={frameworkName}
+                      onRun={handleRunAdherence}
+                    />
+                  )}
                   <div className="space-y-5 text-sm leading-relaxed">
                     <div>
                       <img
@@ -1221,14 +1297,36 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                         Versão: {generatedDocument.versao} | {generatedDocument.data_criacao}
                       </p>
                     </div>
-                    {generatedDocument.secoes?.map((secao: any, index: number) => (
-                      <div key={index} className="space-y-2">
-                        <h5 className="font-semibold">{secao.nome}</h5>
-                        <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                          {secao.conteudo}
-                        </p>
-                      </div>
-                    ))}
+                    {generatedDocument.secoes?.map((secao: any, index: number) => {
+                      const sectionAdherence = adherenceResult?.secoes?.find((s: any) => s.section_index === index);
+                      return (
+                        <div key={index} className="space-y-2 group">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <h5 className="font-semibold truncate">{secao.nome}</h5>
+                              {sectionAdherence && (
+                                <Badge variant="outline" className="text-[10px] capitalize shrink-0">
+                                  {sectionAdherence.status}
+                                </Badge>
+                              )}
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="opacity-60 hover:opacity-100 gap-1 h-7 px-2 text-xs shrink-0"
+                              onClick={() => setRefiningSectionIndex(index)}
+                              title="Refinar esta seção com IA (1 crédito)"
+                            >
+                              <AkurisAIIcon className="h-3.5 w-3.5" />
+                              Refinar
+                            </Button>
+                          </div>
+                          <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                            {secao.conteudo}
+                          </p>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -1236,6 +1334,18 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
             </div>
           )}
         </div>
+        )}
+
+        {/* Onda 3: refinador de seção */}
+        {generatedDocument && refiningSectionIndex !== null && (
+          <DocGenSectionRefiner
+            open={refiningSectionIndex !== null}
+            onOpenChange={(o) => { if (!o) setRefiningSectionIndex(null); }}
+            sectionName={generatedDocument.secoes?.[refiningSectionIndex]?.nome || ''}
+            currentContent={generatedDocument.secoes?.[refiningSectionIndex]?.conteudo || ''}
+            loading={sectionRefineLoading}
+            onSubmit={handleRefineSection}
+          />
         )}
 
         {/* Dialogo de criação com dados do DocGen */}
