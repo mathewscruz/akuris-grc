@@ -7,10 +7,6 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, ArrowRight, Sparkles, X } from 'lucide-react';
 import {
   type BriefingDefaults,
-  type DocType,
-  type DocTone,
-  type DocLength,
-  type DocLanguage,
   DOC_TYPE_OPTIONS,
   DOC_TONE_OPTIONS,
   DOC_LENGTH_OPTIONS,
@@ -153,7 +149,7 @@ export const DocGenBriefing: React.FC<DocGenBriefingProps> = ({
           <div className="space-y-4">
             <div>
               <Label className="text-sm font-medium mb-2 block">Tipo de documento</Label>
-              <PillGroup<DocType>
+              <PillGroup
                 options={DOC_TYPE_OPTIONS}
                 value={briefing.docType}
                 onChange={(v) => update('docType', v)}
@@ -260,7 +256,7 @@ export const DocGenBriefing: React.FC<DocGenBriefingProps> = ({
           <div className="space-y-5">
             <div>
               <Label className="text-sm font-medium mb-2 block">Tom de voz</Label>
-              <PillGroup<DocTone>
+              <PillGroup
                 options={DOC_TONE_OPTIONS}
                 value={briefing.tone}
                 onChange={(v) => update('tone', v)}
@@ -268,7 +264,7 @@ export const DocGenBriefing: React.FC<DocGenBriefingProps> = ({
             </div>
             <div>
               <Label className="text-sm font-medium mb-2 block">Idioma</Label>
-              <PillGroup<DocLanguage>
+              <PillGroup
                 options={DOC_LANGUAGE_OPTIONS}
                 value={briefing.language}
                 onChange={(v) => update('language', v)}
@@ -276,7 +272,7 @@ export const DocGenBriefing: React.FC<DocGenBriefingProps> = ({
             </div>
             <div>
               <Label className="text-sm font-medium mb-2 block">Extensão alvo</Label>
-              <PillGroup<DocLength>
+              <PillGroup
                 options={DOC_LENGTH_OPTIONS}
                 value={briefing.length}
                 onChange={(v) => update('length', v)}
