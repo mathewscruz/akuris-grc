@@ -126,6 +126,10 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
   const [selectedTemplate, setSelectedTemplate] = useState<DocGenTemplate | null>(null);
   const [briefingValue, setBriefingValue] = useState<BriefingDefaults | null>(null);
 
+  // Onda 2: contexto da empresa carregado via edge function
+  const [companyContext, setCompanyContext] = useState<import('./DocGenContextPanel').CompanyContext | null>(null);
+  const [companyContextLoading, setCompanyContextLoading] = useState(false);
+
   const buildDefaultBriefing = (): BriefingDefaults => ({
     docType: 'politica',
     frameworks: frameworkName ? [frameworkName] : [],
