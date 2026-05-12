@@ -404,18 +404,30 @@ export function DocumentoDialog({ open, onOpenChange, documento, onSuccess, init
     <WizardDialog
       open={open}
       onOpenChange={onOpenChange}
-      title={documento ? 'Editar Documento' : 'Novo Documento'}
-      description={documento ? 'Atualize informações e anexo do documento.' : 'Adicione um novo documento ao sistema.'}
+      title={
+        isDocGenFlow
+          ? 'Confirmar dados antes de incorporar'
+          : documento ? 'Editar Documento' : 'Novo Documento'
+      }
+      description={
+        isDocGenFlow
+          ? 'Passo 2 de 2 · O conteúdo gerado pela IA já está anexado. Revise os metadados e confirme a incorporação ao módulo Documentos.'
+          : documento ? 'Atualize informações e anexo do documento.' : 'Adicione um novo documento ao sistema.'
+      }
       icon={FileText}
       tabs={tabs}
       summary={summary}
       activeTab={activeTab}
       onActiveTabChange={setActiveTab}
       onSubmit={handleSubmit}
-      submitLabel={documento ? 'Atualizar' : 'Criar'}
+      submitLabel={
+        isDocGenFlow
+          ? 'Incorporar documento'
+          : documento ? 'Atualizar' : 'Criar'
+      }
       isSubmitting={loading || uploading}
       submitDisabled={!formData.nome.trim() || loading}
-      isDirty={isDirty}
+      isDirty={isDocGenFlow ? true : isDirty}
       size="xl"
     />
   );
