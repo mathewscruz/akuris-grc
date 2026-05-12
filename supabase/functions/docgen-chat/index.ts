@@ -333,7 +333,7 @@ CONTEXTO DA CONVERSA:
 - Empresa: ${context.empresa_nome}
 - Usuário: ${context.user_name}
 - Documento solicitado: ${doc_type_hint || 'documento corporativo'}
-${frameworkSection}
+${frameworkSection}${companyContextSection}
 
 SEU OBJETIVO:
 Ajudar o usuário a criar documentos corporativos de alta qualidade, fazendo perguntas inteligentes e específicas para coletar informações precisas.${framework_context?.framework_name ? ` O documento deve endereçar os gaps de conformidade do framework ${framework_context.framework_name}.` : ''}
