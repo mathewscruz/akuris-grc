@@ -173,20 +173,9 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
         }
       };
       fetchCategorias();
-      // Iniciar conversa com saudação contextualizada (apenas se chat estiver vazio — preserva conversa em andamento)
-      setMessages(prev => {
-        if (prev.length > 0) return prev;
-        let greeting: string;
-        if (requirementContext) {
-          greeting = `Olá! Sou o DocGen, o Gerador de Documentos com IA da Akuris.\n\nVamos trabalhar o requisito **${requirementContext.requirementCode} — ${requirementContext.requirementTitle}**${frameworkName ? ` do framework **${frameworkName}**` : ''}.\n\nPosso gerar uma política, procedimento ou norma sob medida para atender este requisito. Que tipo de documento você quer criar?`;
-        } else if (frameworkName) {
-          greeting = `Olá! Sou o DocGen, o Gerador de Documentos com IA da Akuris.\n\nVejo que você está trabalhando com o framework **${frameworkName}**. Posso ajudá-lo a gerar políticas, procedimentos ou normas alinhados a esse framework, usando os gaps identificados na sua avaliação para garantir que o documento cubra os pontos necessários.\n\nQue tipo de documento você gostaria de criar?`;
-        } else {
-          greeting = 'Olá! Sou o DocGen, o Gerador de Documentos com IA da Akuris. Estou aqui para ajudá-lo a criar qualquer tipo de documento que você precisa.\n\nPode me contar que tipo de documento você gostaria de criar?';
-        }
-        return [{ role: 'assistant', content: greeting, timestamp: new Date() }];
-      });
-      // Foco no input ao abrir
+      // Reset para a galeria ao abrir, exceto se já há conversa em andamento (preserva estado).
+      setPhase(prev => (messages.length > 0 ? 'chat' : 'gallery'));
+      // Foco no input ao abrir (caso já estejamos no chat)
       setTimeout(() => inputRef.current?.focus(), 200);
     }
   }, [open, frameworkName, requirementContext]);
