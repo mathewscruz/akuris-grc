@@ -47,7 +47,8 @@ const CLASSIF_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | 
   publica: 'outline', interna: 'secondary', restrita: 'default', confidencial: 'destructive',
 };
 
-export function DocumentoDialog({ open, onOpenChange, documento, onSuccess, initialFile, initialData }: DocumentoDialogProps) {
+export function DocumentoDialog({ open, onOpenChange, documento, onSuccess, initialFile, initialData, originSource }: DocumentoDialogProps) {
+  const isDocGenFlow = originSource === 'docgen';
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
