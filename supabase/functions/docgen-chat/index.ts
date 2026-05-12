@@ -146,10 +146,68 @@ serve(async (req) => {
       empresa_id,
       action = 'chat',
       doc_type_hint,
-      framework_context
+      framework_context,
+      company_context: company_context_input,
     } = await req.json();
 
     console.log('DocGen Chat request:', { message, conversation_id, action, user_id, empresa_id, framework_context });
+
+    // ============ ACTION: load_company_context (sem custo de IA) ============
+    if (action === 'load_company_context') {
+      if (!empresa_id) {
+        return new Response(JSON.stringify({ error: 'empresa_id required' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const [empresaRes, ativosRes, riscosRes, frameworksRes] = await Promise.all([
+        supabase
+          .from('empresas')
+          .select('nome, cnpj, setor_atuacao, porte_empresa, objetivo_compliance, data_alvo_certificacao')
+          .eq('id', empresa_id)
+          .maybeSingle(),
+        supabase
+          .from('ativos')
+          .select('nome, tipo, criticidade, proprietario')
+          .eq('empresa_id', empresa_id)
+          .in('criticidade', ['critica', 'alta', 'crítica'])
+          .limit(8),
+        supabase
+          .from('riscos')
+          .select('nome, nivel_risco_residual, status, categoria_id')
+          .eq('empresa_id', empresa_id)
+          .in('nivel_risco_residual', ['critico', 'alto', 'crítico'])
+          .limit(8),
+        supabase
+          .from('gap_analysis_assessments')
+          .select('framework_id, percentual_conclusao, status, gap_analysis_frameworks(nome, versao)')
+          .eq('empresa_id', empresa_id)
+          .order('updated_at', { ascending: false })
+          .limit(10),
+      ]);
+
+      const company_context = {
+        empresa: empresaRes.data || null,
+        ativos_criticos: (ativosRes.data || []).map((a: any) => ({
+          nome: a.nome, tipo: a.tipo, criticidade: a.criticidade, proprietario: a.proprietario,
+        })),
+        riscos_altos: (riscosRes.data || []).map((r: any) => ({
+          nome: r.nome, nivel: r.nivel_risco_residual, status: r.status,
+        })),
+        frameworks: (frameworksRes.data || []).map((f: any) => ({
+          framework_id: f.framework_id,
+          nome: f.gap_analysis_frameworks?.nome,
+          versao: f.gap_analysis_frameworks?.versao,
+          score: f.percentual_conclusao,
+          status: f.status,
+        })).filter((f: any) => f.nome),
+      };
+
+      return new Response(JSON.stringify({ company_context }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     // Consume AI credit before processing
     if (user_id && empresa_id) {
