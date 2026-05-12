@@ -27,7 +27,7 @@ export const DocGenContextPanel: React.FC<Props> = ({ context, loading, defaultO
   if (loading) {
     return (
       <div className="rounded-lg border border-border bg-card/50 p-4 flex items-center gap-3">
-        <AkurisPulse size="sm" />
+        <AkurisPulse size={24} />
         <span className="text-sm text-muted-foreground">Carregando contexto da empresa…</span>
       </div>
     );
