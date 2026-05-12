@@ -181,7 +181,9 @@ export function DocumentoDialog({ open, onOpenChange, documento, onSuccess, init
         : await supabase.from('documentos').insert([documentoData]);
       if (error) throw error;
 
-      toast({ title: documento ? "Documento atualizado" : "Documento criado" });
+      if (!isDocGenFlow) {
+        toast({ title: documento ? "Documento atualizado" : "Documento criado" });
+      }
       onSuccess();
       onOpenChange(false);
     } catch (error) {
