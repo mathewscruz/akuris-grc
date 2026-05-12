@@ -27,6 +27,7 @@ import { AkurisAIIcon } from '@/components/icons';
 import DocLayoutBuilder from './DocLayoutBuilder';
 import { DocGenTemplateGallery } from './DocGenTemplateGallery';
 import { DocGenBriefing } from './DocGenBriefing';
+import { DocGenContextPanel } from './DocGenContextPanel';
 import {
   buildSeedPrompt,
   type BriefingDefaults,
@@ -126,6 +127,10 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
   const [selectedTemplate, setSelectedTemplate] = useState<DocGenTemplate | null>(null);
   const [briefingValue, setBriefingValue] = useState<BriefingDefaults | null>(null);
 
+  // Onda 2: contexto da empresa carregado via edge function
+  const [companyContext, setCompanyContext] = useState<import('./DocGenContextPanel').CompanyContext | null>(null);
+  const [companyContextLoading, setCompanyContextLoading] = useState(false);
+
   const buildDefaultBriefing = (): BriefingDefaults => ({
     docType: 'politica',
     frameworks: frameworkName ? [frameworkName] : [],
@@ -180,6 +185,33 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     }
   }, [open, frameworkName, requirementContext]);
 
+  // Onda 2: carrega contexto da empresa via edge function quando o dialog abre e userInfo está pronto
+  useEffect(() => {
+    if (!open || !userInfo?.empresa_id) return;
+    if (companyContext || companyContextLoading) return;
+    let cancelled = false;
+    (async () => {
+      setCompanyContextLoading(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('docgen-chat', {
+          body: {
+            action: 'load_company_context',
+            user_id: userInfo.user_id,
+            empresa_id: userInfo.empresa_id,
+          },
+        });
+        if (!cancelled && !error && data?.company_context) {
+          setCompanyContext(data.company_context);
+        }
+      } catch (e) {
+        console.error('Erro ao carregar contexto da empresa:', e);
+      } finally {
+        if (!cancelled) setCompanyContextLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [open, userInfo?.empresa_id]);
+
   // Auto scroll para última mensagem (rola só o container do chat).
   // Só rola automaticamente se o usuário já estava perto do fim — assim
   // não interrompe a leitura de mensagens antigas.
@@ -224,6 +256,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
           action: 'chat',
           ...(frameworkName && { framework_context: { framework_name: frameworkName, framework_id: frameworkId } }),
           ...(requirementContext && { requirement_context: requirementContext }),
+          ...(companyContext && { company_context: companyContext }),
         }
       });
 
@@ -270,15 +303,23 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     setBriefingValue(briefing);
     setPhase('chat');
     // Saudação curta + contexto do briefing
-    const greeting =
-      `Briefing recebido. Vou propor a estrutura inicial e podemos refinar antes de gerar o documento completo.`;
+    const empNome = companyContext?.empresa?.nome;
+    const greeting = empNome
+      ? `Contexto de **${empNome}** carregado. Vou propor a estrutura inicial alinhada à empresa e ao briefing — depois refinamos juntos.`
+      : `Briefing recebido. Vou propor a estrutura inicial e podemos refinar antes de gerar o documento completo.`;
     setMessages([{ role: 'assistant', content: greeting, timestamp: new Date() }]);
     // Aguardar render para focar input
     setTimeout(() => inputRef.current?.focus(), 100);
-    // Enviar seed prompt automaticamente
+    // Aguardar contexto da empresa carregar (até ~3s) antes de enviar seed
     const seed = buildSeedPrompt(briefing, templateHint);
-    // pequeno atraso para garantir que userInfo esteja carregado se ainda assíncrono
-    setTimeout(() => { sendMessageInternal(seed); }, 50);
+    const waitForContext = async () => {
+      const deadline = Date.now() + 3000;
+      while (companyContextLoading && Date.now() < deadline) {
+        await new Promise(r => setTimeout(r, 100));
+      }
+      sendMessageInternal(seed);
+    };
+    setTimeout(waitForContext, 50);
   };
 
   const handlePickTemplate = (tpl: DocGenTemplate) => {
@@ -989,6 +1030,10 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
         <div className="flex-1 flex flex-col lg:flex-row gap-4 min-h-0">
           {/* Chat Area */}
           <div className="flex-1 flex flex-col min-h-0 min-w-0">
+            {/* Onda 2: contexto da empresa */}
+            <div className="mb-3">
+              <DocGenContextPanel context={companyContext} loading={companyContextLoading} defaultOpen={false} />
+            </div>
             <div
               ref={messagesScrollRef}
               className="flex-1 min-h-0 overflow-y-auto overscroll-contain pr-3 -mr-2"

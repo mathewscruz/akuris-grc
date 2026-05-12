@@ -146,10 +146,68 @@ serve(async (req) => {
       empresa_id,
       action = 'chat',
       doc_type_hint,
-      framework_context
+      framework_context,
+      company_context: company_context_input,
     } = await req.json();
 
     console.log('DocGen Chat request:', { message, conversation_id, action, user_id, empresa_id, framework_context });
+
+    // ============ ACTION: load_company_context (sem custo de IA) ============
+    if (action === 'load_company_context') {
+      if (!empresa_id) {
+        return new Response(JSON.stringify({ error: 'empresa_id required' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const [empresaRes, ativosRes, riscosRes, frameworksRes] = await Promise.all([
+        supabase
+          .from('empresas')
+          .select('nome, cnpj, setor_atuacao, porte_empresa, objetivo_compliance, data_alvo_certificacao')
+          .eq('id', empresa_id)
+          .maybeSingle(),
+        supabase
+          .from('ativos')
+          .select('nome, tipo, criticidade, proprietario')
+          .eq('empresa_id', empresa_id)
+          .in('criticidade', ['critica', 'alta', 'crítica'])
+          .limit(8),
+        supabase
+          .from('riscos')
+          .select('nome, nivel_risco_residual, status, categoria_id')
+          .eq('empresa_id', empresa_id)
+          .in('nivel_risco_residual', ['critico', 'alto', 'crítico'])
+          .limit(8),
+        supabase
+          .from('gap_analysis_assessments')
+          .select('framework_id, percentual_conclusao, status, gap_analysis_frameworks(nome, versao)')
+          .eq('empresa_id', empresa_id)
+          .order('updated_at', { ascending: false })
+          .limit(10),
+      ]);
+
+      const company_context = {
+        empresa: empresaRes.data || null,
+        ativos_criticos: (ativosRes.data || []).map((a: any) => ({
+          nome: a.nome, tipo: a.tipo, criticidade: a.criticidade, proprietario: a.proprietario,
+        })),
+        riscos_altos: (riscosRes.data || []).map((r: any) => ({
+          nome: r.nome, nivel: r.nivel_risco_residual, status: r.status,
+        })),
+        frameworks: (frameworksRes.data || []).map((f: any) => ({
+          framework_id: f.framework_id,
+          nome: f.gap_analysis_frameworks?.nome,
+          versao: f.gap_analysis_frameworks?.versao,
+          score: f.percentual_conclusao,
+          status: f.status,
+        })).filter((f: any) => f.nome),
+      };
+
+      return new Response(JSON.stringify({ company_context }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     // Consume AI credit before processing
     if (user_id && empresa_id) {
@@ -249,13 +307,33 @@ serve(async (req) => {
         ? `\nCONTEXTO DO FRAMEWORK: O usuário está trabalhando com o framework "${framework_context.framework_name}". O documento gerado deve estar alinhado a este framework e endereçar os gaps identificados.${frameworkGapsText}`
         : '';
 
+      // ========== Contexto automático da empresa (Onda 2) ==========
+      const cc: any = company_context_input || (context as any).company_context || null;
+      let companyContextSection = '';
+      if (cc) {
+        const emp = cc.empresa || {};
+        const fmt = (arr: any[], render: (x: any) => string, max = 5) =>
+          (arr || []).slice(0, max).map(render).join('\n');
+        companyContextSection = `
+
+CONTEXTO REAL DA EMPRESA (use estes dados para personalizar o documento — NÃO peça ao usuário informações já presentes aqui):
+- Razão social: ${emp.nome || 'N/A'}
+- CNPJ: ${emp.cnpj || 'N/A'}
+- Setor: ${emp.setor_atuacao || 'N/A'}
+- Porte: ${emp.porte_empresa || 'N/A'}
+- Objetivo de compliance: ${emp.objetivo_compliance || 'N/A'}
+${cc.frameworks?.length ? `\nFrameworks ativos da empresa:\n${fmt(cc.frameworks, (f: any) => `- ${f.nome}${f.versao ? ' ' + f.versao : ''} (score ${Number(f.score || 0)}%, ${f.status || 'em andamento'})`)}` : ''}
+${cc.ativos_criticos?.length ? `\nAtivos críticos (top ${Math.min(cc.ativos_criticos.length, 5)}):\n${fmt(cc.ativos_criticos, (a: any) => `- ${a.nome} (${a.tipo || 'ativo'}, criticidade ${a.criticidade})`)}` : ''}
+${cc.riscos_altos?.length ? `\nRiscos altos/críticos (top ${Math.min(cc.riscos_altos.length, 5)}):\n${fmt(cc.riscos_altos, (r: any) => `- ${r.nome} (nível ${r.nivel}, ${r.status || ''})`)}` : ''}`;
+      }
+
       const systemPrompt = `Você é DocGen, um especialista em documentação corporativa altamente qualificado, com amplo conhecimento em frameworks de compliance, regulamentações e melhores práticas empresariais.
 
 CONTEXTO DA CONVERSA:
 - Empresa: ${context.empresa_nome}
 - Usuário: ${context.user_name}
 - Documento solicitado: ${doc_type_hint || 'documento corporativo'}
-${frameworkSection}
+${frameworkSection}${companyContextSection}
 
 SEU OBJETIVO:
 Ajudar o usuário a criar documentos corporativos de alta qualidade, fazendo perguntas inteligentes e específicas para coletar informações precisas.${framework_context?.framework_name ? ` O documento deve endereçar os gaps de conformidade do framework ${framework_context.framework_name}.` : ''}
@@ -356,7 +434,8 @@ IMPORTANTE: Sempre responda em português brasileiro. Responda SOMENTE com uma m
         informacoes_coletadas: {
           ...context.informacoes_coletadas,
           ...(parsedResponse.informacoes_coletadas || {})
-        }
+        },
+        company_context: cc || (context as any).company_context || null,
       };
 
       try {
