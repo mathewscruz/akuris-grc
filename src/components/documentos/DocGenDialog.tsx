@@ -738,11 +738,9 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     setIsDocumentSaved(false);
     setIsDocumentExported(false);
     setIsEditingLayout(false);
-    const greeting = frameworkName
-      ? `Olá! Sou o DocGen, seu assistente inteligente para criação de documentos.\n\nVejo que você está trabalhando com o framework **${frameworkName}**. Posso ajudá-lo a gerar políticas, procedimentos ou normas alinhados a esse framework.\n\nQue tipo de documento você gostaria de criar?`
-      : 'Olá! Sou o DocGen, seu assistente inteligente para criação de documentos. Pode me contar que tipo de documento você gostaria de criar?';
-    setMessages([{ role: 'assistant', content: greeting, timestamp: new Date() }]);
-    setTimeout(() => inputRef.current?.focus(), 100);
+    setSelectedTemplate(null);
+    setBriefingValue(null);
+    setPhase('gallery');
   };
 
   const loadHistory = async () => {
