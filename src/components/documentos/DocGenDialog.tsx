@@ -19,8 +19,10 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { akurisToast } from '@/lib/akuris-toast';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Send, FileText, Download, Save, Plus, History } from 'lucide-react';
+import { Send, FileText, Download, Save, Plus, History, CheckCircle2 } from 'lucide-react';
 import { AkurisAIIcon } from '@/components/icons';
 import DocLayoutBuilder from './DocLayoutBuilder';
 import { formatStatus } from '@/lib/text-utils';
