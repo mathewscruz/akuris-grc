@@ -28,6 +28,8 @@ import DocLayoutBuilder from './DocLayoutBuilder';
 import { DocGenTemplateGallery } from './DocGenTemplateGallery';
 import { DocGenBriefing } from './DocGenBriefing';
 import { DocGenContextPanel } from './DocGenContextPanel';
+import { DocGenSectionRefiner } from './DocGenSectionRefiner';
+import { DocGenAdherencePanel, type AdherenceResult } from './DocGenAdherencePanel';
 import {
   buildSeedPrompt,
   type BriefingDefaults,
