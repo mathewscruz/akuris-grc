@@ -133,6 +133,12 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
   const [companyContext, setCompanyContext] = useState<import('./DocGenContextPanel').CompanyContext | null>(null);
   const [companyContextLoading, setCompanyContextLoading] = useState(false);
 
+  // Onda 3: refino por seção + aderência inline
+  const [refiningSectionIndex, setRefiningSectionIndex] = useState<number | null>(null);
+  const [sectionRefineLoading, setSectionRefineLoading] = useState(false);
+  const [adherenceResult, setAdherenceResult] = useState<AdherenceResult | null>(null);
+  const [adherenceLoading, setAdherenceLoading] = useState(false);
+
   const buildDefaultBriefing = (): BriefingDefaults => ({
     docType: 'politica',
     frameworks: frameworkName ? [frameworkName] : [],
