@@ -202,23 +202,22 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     }
   }, [isLoading, open]);
 
-  const sendMessage = async () => {
-    if (!inputMessage.trim() || !userInfo || isLoading) return;
+  const sendMessageInternal = async (text: string) => {
+    if (!text.trim() || !userInfo || isLoading) return;
 
     const userMessage: ChatMessage = {
       role: 'user',
-      content: inputMessage,
+      content: text,
       timestamp: new Date()
     };
 
     setMessages(prev => [...prev, userMessage]);
-    setInputMessage('');
     setIsLoading(true);
 
     try {
       const { data, error } = await supabase.functions.invoke('docgen-chat', {
         body: {
-          message: inputMessage,
+          message: text,
           conversation_id: conversationId,
           user_id: userInfo.user_id,
           empresa_id: userInfo.empresa_id,
@@ -230,7 +229,6 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
 
       if (error) throw error;
 
-      // Verificar se créditos foram esgotados
       if (data?.error === 'CREDITS_EXHAUSTED') {
         setShowCreditsDialog(true);
         return;
@@ -258,6 +256,49 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const sendMessage = async () => {
+    if (!inputMessage.trim()) return;
+    const text = inputMessage;
+    setInputMessage('');
+    await sendMessageInternal(text);
+  };
+
+  /** Compor saudação inicial e disparar prompt-semente automaticamente. */
+  const enterChatPhase = async (briefing: BriefingDefaults, templateHint?: string) => {
+    setBriefingValue(briefing);
+    setPhase('chat');
+    // Saudação curta + contexto do briefing
+    const greeting =
+      `Briefing recebido. Vou propor a estrutura inicial e podemos refinar antes de gerar o documento completo.`;
+    setMessages([{ role: 'assistant', content: greeting, timestamp: new Date() }]);
+    // Aguardar render para focar input
+    setTimeout(() => inputRef.current?.focus(), 100);
+    // Enviar seed prompt automaticamente
+    const seed = buildSeedPrompt(briefing, templateHint);
+    // pequeno atraso para garantir que userInfo esteja carregado se ainda assíncrono
+    setTimeout(() => { sendMessageInternal(seed); }, 50);
+  };
+
+  const handlePickTemplate = (tpl: DocGenTemplate) => {
+    setSelectedTemplate(tpl);
+    // Mescla defaults do template com framework do contexto, se houver
+    const merged: BriefingDefaults = {
+      ...tpl.briefingDefaults,
+      frameworks: Array.from(new Set([
+        ...tpl.briefingDefaults.frameworks,
+        ...(frameworkName ? [frameworkName] : []),
+      ])),
+    };
+    setBriefingValue(merged);
+    setPhase('briefing');
+  };
+
+  const handleStartBlank = () => {
+    setSelectedTemplate(null);
+    setBriefingValue(buildDefaultBriefing());
+    setPhase('briefing');
   };
 
   const generateDocument = async () => {
