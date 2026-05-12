@@ -409,6 +409,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     }
   };
 
+  const generateDocument = async () => {
     if (!userInfo || !conversationId || isGeneratingDoc) return;
 
     setIsGeneratingDoc(true);
