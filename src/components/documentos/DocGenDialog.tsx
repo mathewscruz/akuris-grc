@@ -81,6 +81,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
   requirementContext,
 }) => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const { company } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputMessage, setInputMessage] = useState('');
