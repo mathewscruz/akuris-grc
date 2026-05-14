@@ -1,0 +1,44 @@
+# Akuris — Plataforma GRC
+
+> Akuris é a plataforma brasileira de Governança, Riscos e Conformidade (GRC) que reúne controles, frameworks, evidências e indicadores em um único lugar para times de compliance e DPOs.
+
+A plataforma cobre +20 frameworks (ISO 27001, LGPD, GDPR, SOC 2, NIST CSF 2.0, PCI DSS 4.0, ISO 27701, COBIT, COSO, entre outros) com cross-mapping nativo entre eles — um controle implementado uma vez atende a vários padrões.
+
+## Sobre a Akuris
+
+- [Site oficial](https://akuris.com.br/): Página principal com módulos, frameworks e diferenciais.
+- [Política de Privacidade](https://akuris.com.br/politica-privacidade): Termos de tratamento de dados.
+
+## Frameworks suportados (páginas de referência)
+
+- [ISO/IEC 27001](https://akuris.com.br/frameworks/iso-27001): Padrão internacional para Sistema de Gestão de Segurança da Informação.
+- [LGPD](https://akuris.com.br/frameworks/lgpd): Lei Geral de Proteção de Dados brasileira (Lei 13.709/2018).
+- [SOC 2 Type II](https://akuris.com.br/frameworks/soc-2): Atestado AICPA para empresas SaaS.
+- [NIST CSF 2.0](https://akuris.com.br/frameworks/nist-csf): Cybersecurity Framework do NIST com função GOVERN.
+- [PCI DSS 4.0](https://akuris.com.br/frameworks/pci-dss): Padrão de segurança de dados para pagamentos com cartão.
+- [GDPR](https://akuris.com.br/frameworks/gdpr): Regulamento europeu de proteção de dados.
+- [ISO/IEC 27701](https://akuris.com.br/frameworks/iso-27701): Extensão da ISO 27001 para privacidade (PIMS).
+
+## Conteúdo educativo
+
+- [Blog Akuris](https://akuris.com.br/blog): Guias práticos de compliance, gestão de riscos, LGPD, ISO 27001 e auditoria interna.
+
+## Módulos da plataforma
+
+- Gestão de Riscos Corporativos (ISO 31000, COSO ERM)
+- Gap Analysis Multi-Framework (+21 frameworks com scoring automático)
+- Controles & Evidências com cross-mapping
+- Privacidade & LGPD (RoPA, DPIA, gestão de titulares)
+- Auditoria Interna (papéis de trabalho, achados, planos de ação)
+- Due Diligence de Terceiros (TPRM)
+- Contas Privilegiadas (PAM) e Revisão de Acessos
+- Continuidade de Negócios (BCM)
+- Gestão de Documentos e Políticas
+- Gestão de Incidentes
+- Canal de Denúncias
+- Gestão de Ativos e Contratos
+
+## Contato
+
+- E-mail comercial: contato@akuris.com.br
+- Solicitar demonstração: https://akuris.com.br/
