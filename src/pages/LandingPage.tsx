@@ -507,6 +507,7 @@ const LandingPage = () => {
           </div>
         </div>
       </section>
+      </main>
 
       <DemoRequestDialog open={demoOpen} onOpenChange={setDemoOpen} />
 
