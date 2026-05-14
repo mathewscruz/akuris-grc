@@ -2,7 +2,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PageHeader } from '@/components/ui/page-header';
-import { Users, Building2, Plug, MessageSquare, CreditCard, Landmark, DollarSign, Package, Newspaper } from 'lucide-react';
+import { Users, Building2, Plug, MessageSquare, CreditCard, Landmark, DollarSign, Package, Newspaper, BookOpen } from 'lucide-react';
 import { AkurisAIIcon } from '@/components/icons';
 import { useSearchParams } from 'react-router-dom';
 import GerenciamentoEmpresas from '@/components/configuracoes/GerenciamentoEmpresas';
