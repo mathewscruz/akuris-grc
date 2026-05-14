@@ -21,6 +21,26 @@ serve(async (req) => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // === AUTH: validate JWT ===
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    const verifier = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY') || supabaseKey);
+    const { data: userData, error: userErr } = await verifier.auth.getUser(authHeader.replace('Bearer ', ''));
+    if (userErr || !userData?.user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    const userId = userData.user.id;
+    const { data: callerProfile } = await supabase
+      .from('profiles').select('empresa_id, role').eq('user_id', userId).maybeSingle();
+    const callerEmpresaId = callerProfile?.empresa_id;
+
     const { assessment_id } = await req.json();
 
     console.log('Calculating score for assessment:', assessment_id);
@@ -35,27 +55,11 @@ serve(async (req) => {
 
     const empresaId = assessmentInfo?.empresa_id;
 
-    let userId: string | null = null;
-    const authHeader = req.headers.get('Authorization');
-    if (authHeader?.startsWith('Bearer ')) {
-      const supabaseAnon = Deno.env.get('SUPABASE_ANON_KEY') || supabaseKey;
-      const userClient = createClient(supabaseUrl, supabaseAnon, {
-        global: { headers: { Authorization: authHeader } }
+    // Authorization: caller must belong to the assessment's empresa (or be super_admin)
+    if (callerProfile?.role !== 'super_admin' && callerEmpresaId !== empresaId) {
+      return new Response(JSON.stringify({ error: 'Forbidden: assessment does not belong to your empresa' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
-      const { data: userData } = await userClient.auth.getUser(authHeader.replace('Bearer ', ''));
-      if (userData?.user?.id) {
-        userId = userData.user.id;
-      }
-    }
-
-    if (!userId && empresaId) {
-      const { data: adminProfile } = await supabase
-        .from('profiles')
-        .select('user_id')
-        .eq('empresa_id', empresaId)
-        .limit(1)
-        .single();
-      userId = adminProfile?.user_id || null;
     }
 
     if (empresaId && userId) {
