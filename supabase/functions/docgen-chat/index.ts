@@ -192,24 +192,24 @@ serve(async (req) => {
         supabase
           .from('empresas')
           .select('nome, cnpj, setor_atuacao, porte_empresa, objetivo_compliance, data_alvo_certificacao')
-          .eq('id', empresa_id)
+          .eq('id', empresa_id_resolved)
           .maybeSingle(),
         supabase
           .from('ativos')
           .select('nome, tipo, criticidade, proprietario')
-          .eq('empresa_id', empresa_id)
+          .eq('empresa_id', empresa_id_resolved)
           .in('criticidade', ['critica', 'alta', 'crítica'])
           .limit(8),
         supabase
           .from('riscos')
           .select('nome, nivel_risco_residual, status, categoria_id')
-          .eq('empresa_id', empresa_id)
+          .eq('empresa_id', empresa_id_resolved)
           .in('nivel_risco_residual', ['critico', 'alto', 'crítico'])
           .limit(8),
         supabase
           .from('gap_analysis_assessments')
           .select('framework_id, percentual_conclusao, status, gap_analysis_frameworks(nome, versao)')
-          .eq('empresa_id', empresa_id)
+          .eq('empresa_id', empresa_id_resolved)
           .order('updated_at', { ascending: false })
           .limit(10),
       ]);
