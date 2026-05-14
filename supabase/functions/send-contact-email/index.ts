@@ -76,15 +76,15 @@ const handler = async (req: Request): Promise<Response> => {
             
             <div style="padding: 32px;">
               <div style="background-color: #f0eeff; padding: 20px; border-radius: 8px; border-left: 4px solid #7552ff; margin-bottom: 24px;">
-                <p style="margin: 0 0 8px;"><strong>Nome:</strong> ${contactData.name}</p>
-                <p style="margin: 0 0 8px;"><strong>E-mail:</strong> ${contactData.email}</p>
-                ${contactData.company ? `<p style="margin: 0 0 8px;"><strong>Empresa:</strong> ${contactData.company}</p>` : ''}
-                ${contactData.phone ? `<p style="margin: 0;"><strong>Telefone:</strong> ${contactData.phone}</p>` : ''}
+                <p style="margin: 0 0 8px;"><strong>Nome:</strong> ${escapeHtml(contactData.name)}</p>
+                <p style="margin: 0 0 8px;"><strong>E-mail:</strong> ${escapeHtml(contactData.email)}</p>
+                ${contactData.company ? `<p style="margin: 0 0 8px;"><strong>Empresa:</strong> ${escapeHtml(contactData.company)}</p>` : ''}
+                ${contactData.phone ? `<p style="margin: 0;"><strong>Telefone:</strong> ${escapeHtml(contactData.phone)}</p>` : ''}
               </div>
               
               <h3 style="color: #0a1628; margin: 0 0 12px;">Mensagem:</h3>
               <div style="background-color: #ffffff; border-left: 4px solid #7552ff; padding: 15px; margin: 0 0 24px; border-radius: 4px; background-color: #f8fafc;">
-                ${contactData.message.replace(/\n/g, '<br>')}
+                ${escapeHtml(contactData.message).replace(/\n/g, '<br>')}
               </div>
             </div>
             
