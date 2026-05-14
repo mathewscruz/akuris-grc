@@ -46,7 +46,9 @@ const LandingPage = React.lazy(() => import('@/pages/LandingPage'));
 const PoliticaPrivacidade = React.lazy(() => import('@/pages/PoliticaPrivacidade'));
 const PlanosAcao = React.lazy(() => import('@/pages/PlanosAcao'));
 const Relatorios = React.lazy(() => import('@/pages/Relatorios'));
-
+const FrameworkSEO = React.lazy(() => import('@/pages/FrameworkSEO'));
+const Blog = React.lazy(() => import('@/pages/Blog'));
+const BlogPost = React.lazy(() => import('@/pages/BlogPost'));
 
 const Planos = React.lazy(() => import('@/pages/Planos'));
 const DefinirSenha = React.lazy(() => import('@/pages/DefinirSenha'));
@@ -93,6 +95,9 @@ function App() {
             <Route path="/404" element={<Suspense fallback={<RouteFallback />}><NotFound /></Suspense>} />
             <Route path="/" element={<Suspense fallback={<RouteFallback />}><LandingPage /></Suspense>} />
             <Route path="/politica-privacidade" element={<Suspense fallback={<RouteFallback />}><PoliticaPrivacidade /></Suspense>} />
+            <Route path="/blog" element={<Suspense fallback={<RouteFallback />}><Blog /></Suspense>} />
+            <Route path="/blog/:slug" element={<Suspense fallback={<RouteFallback />}><BlogPost /></Suspense>} />
+            <Route path="/frameworks/:slug" element={<Suspense fallback={<RouteFallback />}><FrameworkSEO /></Suspense>} />
             <Route path="/registro" element={<Navigate to="/auth" replace />} />
             <Route path="/planos" element={<Suspense fallback={<RouteFallback />}><Planos /></Suspense>} />
             <Route path="/checkout-success" element={<Navigate to="/dashboard" replace />} />
