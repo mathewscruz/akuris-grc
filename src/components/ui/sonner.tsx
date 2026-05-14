@@ -42,25 +42,21 @@ const Toaster = ({ ...props }: ToasterProps) => {
             "text-foreground",
             "border border-border/50 rounded-2xl",
             "shadow-[0_10px_28px_-12px_hsl(var(--foreground)/0.18)]",
-            "!p-0 overflow-hidden",
+            "!p-3.5 !pl-4 !pr-3 overflow-hidden",
             "animate-toast-slide-in",
-            // Layout interno
-            "!items-center !gap-0 min-h-[64px]",
-            // Padding via wrapper interno
-            "[&>*]:py-4",
+            "!items-center !gap-3",
           ].join(" "),
           // Chip sólido 24px circular — cor sobrescrita por tom abaixo
           icon: [
-            "!m-0 !mr-0 shrink-0",
+            "!m-0 shrink-0",
             "flex h-6 w-6 items-center justify-center rounded-full",
-            "ml-4",
             "bg-muted text-white",
           ].join(" "),
-          content: "min-w-0 flex-1 px-3 pr-3",
+          content: "min-w-0 flex-1",
           title: "text-[13px] font-semibold leading-tight tracking-tight text-foreground",
           description: "text-xs text-muted-foreground leading-relaxed mt-0.5 break-words",
           actionButton:
-            "!bg-background !text-foreground hover:!bg-muted/50 !border !border-border/60 !text-xs !font-semibold !px-3 !py-1.5 !rounded-lg !shadow-sm !mr-3",
+            "!bg-background !text-foreground hover:!bg-muted/50 !border !border-border/60 !text-xs !font-semibold !px-3 !py-1.5 !rounded-lg !shadow-sm !ml-2 !mr-0",
           cancelButton:
             "!bg-transparent !text-muted-foreground hover:!text-foreground !text-xs !px-2 !py-1.5 !rounded-lg",
           closeButton: [
