@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import akurisLogo from "@/assets/akuris-logo.png";
 import { useLandingReveal, useCountUp, useScrolled } from "@/hooks/useLandingAnimations";
 import { DemoRequestDialog } from "@/components/landing/DemoRequestDialog";
+import { SEO } from "@/components/SEO";
 
 const modules = [
   {
@@ -101,6 +102,11 @@ const LandingPage = () => {
 
   return (
     <div className="lp-root">
+      <SEO
+        title="Akuris — Plataforma GRC para Governança, Riscos e Conformidade"
+        description="Akuris reúne controles, frameworks, evidências e indicadores em um só lugar. Suporte a +20 frameworks: ISO 27001, LGPD, GDPR, NIST, SOC 2, PCI DSS."
+        canonical="/"
+      />
       {/* NAV */}
       <header className={`lp-nav ${scrolled ? "scrolled" : ""}`}>
         <div className="lp-container lp-nav-inner">
