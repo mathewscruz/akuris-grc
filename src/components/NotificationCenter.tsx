@@ -492,6 +492,7 @@ const NotificationCenter: React.FC = () => {
           'group relative w-full text-left rounded-2xl border border-border/50 overflow-hidden',
           'transition-all hover:shadow-[0_8px_22px_-12px_hsl(var(--foreground)/0.18)]',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
+          'animate-notification-enter',
           toneCls.stripes,
           notification.read && 'opacity-70'
         )}

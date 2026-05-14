@@ -68,7 +68,7 @@ export function akurisToast({
       <div
         role="status"
         aria-live="polite"
-        className={`relative w-[380px] max-w-[92vw] overflow-hidden rounded-2xl border border-border/50 shadow-[0_10px_28px_-12px_hsl(var(--foreground)/0.18)] animate-toast-slide-in ${toneCls.stripes}`}
+        className={`relative w-[380px] max-w-[92vw] overflow-hidden rounded-2xl border border-border/50 shadow-[0_10px_28px_-12px_hsl(var(--foreground)/0.18)] ${toneCls.stripes}`}
       >
         <div className="flex items-center gap-3 p-3.5 pl-4">
           {/* Chip ícone sólido 24px */}
