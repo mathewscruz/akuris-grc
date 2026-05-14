@@ -1,38 +1,49 @@
+## Objetivo
+
+Adicionar animações suaves de **entrada** e **saída** em todos os toasts (Sonner padrão + `akurisToast`) e animação de **entrada** nos pills do NotificationCenter.
+
 ## Diagnóstico
 
-Dois problemas no pill atual:
+- **Toasts**: existe apenas `@keyframes toast-slide-in` em `index.css` (entrada). Não há animação de saída. O Sonner possui atributos `data-[state=open]` e `data-[state=closed]` que podemos usar para ligar/desligar animações, mas o `classNames` atual sobrescreveu esse controle.
+- **NotificationCenter**: os pills aparecem sem nenhuma animação — inseridos de forma abrupta no DOM.
+- **Framer Motion**: não está instalado — solução será puramente CSS via Tailwind keyframes.
 
-1. **"Esticado"**: o `min-h-[64px]` força altura grande mesmo em toast de 1 linha (como "Login realizado com sucesso!"). O respiro deve vir só do padding, não de altura mínima.
-2. **Chip colado à esquerda**: o `ml-4` (16px) é aplicado pela classe `icon` do Sonner, mas o slot do Sonner já tem `margin: 0` injetado via CSS interno e o `[data-icon]` recebe estilos próprios — o `!m-0 !mr-0` antes do `ml-4` cria conflito de especificidade. Resultado: o chip encosta na borda esquerda.
+## Implementação
 
-A causa raiz é a estratégia de "padding por filho" (`[&>*]:py-4`). Ela não controla bem o padding lateral porque o Sonner não envolve cada filho em wrapper consistente.
+### 1. `tailwind.config.ts`
+Adicionar 3 novos keyframes + mapeamentos em `animation`:
 
-## Correção
+```
+toast-enter:    translateX(40px) scale(0.95) opacity 0 → translateX(0) scale(1) opacity 1
+                duração 0.35s, easing cubic-bezier(0.16, 1, 0.3, 1), overshoot em 60%
+toast-exit:     translateX(0) scale(1) opacity 1 → translateX(40px) scale(0.95) opacity 0
+                duração 0.25s, easing ease-intnotification-enter: translateX(16px) opacity 0 → translateX(0) opacity 1
+                duração 0.3s, easing cubic-bezier(0.16, 1, 0.3, 1)
+```
 
-Trocar a estratégia para **padding no container do toast** + usar `pl-4` no slot do icon e `pr-3` no content/action — explícito e previsível.
+### 2. `src/components/ui/sonner.tsx`
+- `toast` classNames: remover `animate-toast-slide-in` manual.
+- Adicionar `data-[state=open]:animate-toast-enter data-[state=closed]:animate-toast-exit`.
+- Sonner aplica `data-[state]` no wrapper de **todos** os toasts (padrão e custom), então a animação cobre ambos automaticamente.
 
-### `src/components/ui/sonner.tsx`
-- Remover `min-h-[64px]` e `[&>*]:py-4`.
-- Trocar `!p-0` por `!p-3.5 !pl-4 !pr-3` no `toast` (padding fixo no container).
-- Limpar a classe `icon`: manter só `!m-0 shrink-0 flex h-6 w-6 items-center justify-center rounded-full bg-muted text-white` (sem `ml-4`).
-- Ajustar `content` para `min-w-0 flex-1 pl-3 pr-2`.
-- Ajustar `actionButton` para `!ml-2 !mr-0` (sem `mr-3` que já está coberto pelo container).
+### 3. `src/lib/akuris-toast.tsx`
+- Remover `animate-toast-slide-in` do container custom — o wrapper do Sonner já cuida da animação via `data-[state]`.
+- O conteúdo visual interno (chip, listras, botão) permanece idêntico.
 
-### `src/lib/akuris-toast.tsx`
-- Remover `min-h-[64px]`.
-- Trocar `pl-4 pr-3 py-4` por `p-3.5 pl-4` (padding lateral consistente, vertical reduzido).
+### 4. `src/components/NotificationCenter.tsx`
+- `renderItem`: adicionar `animate-notification-enter` à classe do botão-pill.
+- Garantir que cada novo item notificado deslize suavemente da direita ao aparecer na lista.
 
-### `src/components/NotificationCenter.tsx`
-- Remover `min-h-[64px]` no wrapper do `renderItem`.
-- Trocar `pl-3 pr-3 py-4` por `p-3.5 pl-4`.
+### 5. Sem alterações
+- `src/index.css`: o keyframe `@keyframes toast-slide-in` legado continua existindo para não quebrar código antigo, mas deixa de ser usado pelos 3 renderizadores principais.
+- Não toca em regra de negócio, RLS, edge functions ou lógica de notificação.
 
-## Resultado
+## QA
 
-- Pill com altura natural (~56px em 1 linha, expande conforme conteúdo).
-- Chip com 16px de respiro à esquerda em todos os tons/superfícies.
-- Padding interno uniforme de 14px vertical e 16px à esquerda.
+- Disparar `toast.success("Teste")` → conferir entrada suave da direita e saída suave ao clicar no X ou esperar o timeout.
+- Disparar `akurisToast({title:"Teste",tone:"info"})` → mesmo comportamento.
+- Abrir o sino com novas notificações → conferir slide-in suave dos pills.
 
-## Fora do escopo
+## Nota sobre saída do NotificationCenter
 
-- Não muda tamanho do chip, listras ou tons.
-- Não toca em lógica de notificação.
+A saída (quando o usuário marca como lida e o item some) exige controle de estado para atrasar a remoção do DOM durante a animação. Isso pode ser feito em passo futuro se necessário; neste ciclo priorizamos entrada + saída de toasts e entrada de notificações.
