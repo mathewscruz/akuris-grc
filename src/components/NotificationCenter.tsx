@@ -634,13 +634,13 @@ const NotificationCenter: React.FC = () => {
                 </p>
               </div>
             ) : (
-              <div className="divide-y divide-border/40">
+              <div className="px-3 py-3 space-y-4">
                 {groupMeta.map(({ key, label, tone }) => {
                   const items = groups[key];
                   if (items.length === 0) return null;
                   return (
-                    <section key={key} aria-label={label}>
-                      <header className="flex items-center justify-between px-4 pt-3 pb-1.5">
+                    <section key={key} aria-label={label} className="space-y-2">
+                      <header className="flex items-center justify-between px-1">
                         <div className="flex items-center gap-2">
                           <span aria-hidden className={cn('h-1.5 w-1.5 rounded-full', TONE_CLS[tone].accent)} />
                           <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/80">
@@ -651,7 +651,7 @@ const NotificationCenter: React.FC = () => {
                           {items.length}
                         </span>
                       </header>
-                      <div>{items.map(renderItem)}</div>
+                      <div className="space-y-2">{items.map(renderItem)}</div>
                     </section>
                   );
                 })}
