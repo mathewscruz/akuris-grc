@@ -107,6 +107,12 @@ const Configuracoes = () => {
               <span className="hidden min-[1800px]:inline">Notícias</span>
             </TabsTrigger>
           )}
+          {isSuperAdmin && (
+            <TabsTrigger value="blog" className="flex items-center gap-2">
+              <BookOpen className="h-4 w-4" />
+              <span className="hidden min-[1800px]:inline">Blog</span>
+            </TabsTrigger>
+          )}
         </TabsList>
 
         {isSuperAdmin && (
