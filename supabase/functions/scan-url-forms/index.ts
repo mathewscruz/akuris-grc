@@ -364,12 +364,51 @@ async function mapDomain(url: string, apiKey: string, limit: number, includeSubd
   }
 }
 
+function isPrivateOrLocalHost(hostname: string): boolean {
+  const h = hostname.toLowerCase();
+  if (h === 'localhost' || h === '0.0.0.0' || h === '::1' || h.endsWith('.localhost') || h.endsWith('.internal') || h.endsWith('.local')) return true;
+  // IPv4 private/reserved ranges
+  const m = h.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (m) {
+    const [a, b] = [parseInt(m[1]), parseInt(m[2])];
+    if (a === 10) return true;
+    if (a === 127) return true;
+    if (a === 169 && b === 254) return true; // AWS metadata, link-local
+    if (a === 172 && b >= 16 && b <= 31) return true;
+    if (a === 192 && b === 168) return true;
+    if (a === 0) return true;
+    if (a >= 224) return true; // multicast/reserved
+  }
+  return false;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // === AUTH: require valid Supabase JWT ===
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2.45.0");
+    const verifier = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+    const { data: userData, error: userErr } = await verifier.auth.getUser(authHeader.replace('Bearer ', ''));
+    if (userErr || !userData?.user) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Unauthorized: invalid token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const { url, mode = 'single', limit = 50, includeSubdomains = false } = await req.json();
 
     if (!url) {
@@ -391,6 +430,29 @@ serve(async (req) => {
     let formattedUrl = url.trim();
     if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
       formattedUrl = `https://${formattedUrl}`;
+    }
+
+    // === SSRF: reject private/loopback/metadata addresses ===
+    let parsed: URL;
+    try {
+      parsed = new URL(formattedUrl);
+    } catch {
+      return new Response(
+        JSON.stringify({ success: false, error: 'URL inválida' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    if (!['http:', 'https:'].includes(parsed.protocol)) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Apenas URLs HTTP/HTTPS são permitidas' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    if (isPrivateOrLocalHost(parsed.hostname)) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'URLs internas/privadas não são permitidas' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     console.log(`Scanning URL: ${formattedUrl}, mode: ${mode}`);
