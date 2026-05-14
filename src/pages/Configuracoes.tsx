@@ -260,5 +260,3 @@ const Configuracoes = () => {
 };
 
 export default Configuracoes;
-
-export default Configuracoes;
