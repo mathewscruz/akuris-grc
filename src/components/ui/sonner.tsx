@@ -4,20 +4,18 @@ import { CheckCircle2, XCircle, AlertTriangle, Info } from "lucide-react"
 type ToasterProps = React.ComponentProps<typeof Sonner>
 
 /**
- * Toaster Akuris — identidade editorial centralizada.
+ * Toaster Akuris — pill horizontal com listras diagonais + chip sólido.
  *
  * Anatomia (alinhada com a estrutura interna do Sonner):
- *   ┌─┬──────────────────────────────────┬──┐
- *   │ │ [chip] Title                     │X │
- *   │a│        Description (line-clamp)  │  │
- *   └─┴──────────────────────────────────┴──┘
- *     ↑ acento vertical 2px na cor do tom
+ *   ┌──────────────────────────────────────────────┐
+ *   │ ●  Title                          [ Action ] │
+ *   │    Description (line-clamp)                  │
+ *   └──────────────────────────────────────────────┘
+ *     ↑ chip 24px sólido (cor do tom, glyph branco)
+ *     ↑ fundo: listras diagonais tingidas pelo tom (akuris-stripes-*)
  *
- * Nota técnica:
- * - Sonner expõe slots `icon`, `content`, `title`, `description` via classNames.
- *   Personalizamos esses slots para garantir alinhamento (sem o ícone
- *   "sobresair" sobre o texto) e largura consistente (360px).
- * - Toda estilização vive aqui — proibido recriar regras globais em CSS.
+ * Toda estilização vive aqui — proibido recriar regras globais em CSS
+ * (exceto utilitários de listra em src/index.css).
  */
 const Toaster = ({ ...props }: ToasterProps) => {
   return (
@@ -31,55 +29,50 @@ const Toaster = ({ ...props }: ToasterProps) => {
       gap={12}
       offset={16}
       icons={{
-        success: <CheckCircle2 className="h-[18px] w-[18px] text-success" strokeWidth={1.5} />,
-        error: <XCircle className="h-[18px] w-[18px] text-destructive" strokeWidth={1.5} />,
-        warning: <AlertTriangle className="h-[18px] w-[18px] text-warning" strokeWidth={1.5} />,
-        info: <Info className="h-[18px] w-[18px] text-info" strokeWidth={1.5} />,
+        success: <CheckCircle2 className="h-3.5 w-3.5 text-white" strokeWidth={2.25} />,
+        error: <XCircle className="h-3.5 w-3.5 text-white" strokeWidth={2.25} />,
+        warning: <AlertTriangle className="h-3.5 w-3.5 text-white" strokeWidth={2.25} />,
+        info: <Info className="h-3.5 w-3.5 text-white" strokeWidth={2.25} />,
       }}
       toastOptions={{
         classNames: {
-          // Container do toast: largura fixa, glass, acento 2px
+          // Container do pill: largura 380px, listras aplicadas por tom abaixo
           toast: [
-            "group toast relative w-[360px] max-w-[92vw]",
-            "bg-background/95 backdrop-blur-2xl",
+            "group toast relative w-[380px] max-w-[92vw]",
             "text-foreground",
-            "border border-border/60 rounded-xl",
-            "shadow-[0_12px_32px_-8px_hsl(var(--primary)/0.18)]",
+            "border border-border/50 rounded-2xl",
+            "shadow-[0_10px_28px_-12px_hsl(var(--foreground)/0.18)]",
             "!p-0 overflow-hidden",
             "animate-toast-slide-in",
-            // Layout interno: alinhamento topo
-            "!items-start !gap-0",
-            // Acento vertical 2px (cor sobrescrita por success/error/warning/info abaixo)
-            "before:content-[''] before:absolute before:left-0 before:top-3 before:bottom-3",
-            "before:w-[2px] before:rounded-full before:bg-border",
-            // Padding "real" via wrapper interno
+            // Layout interno
+            "!items-center !gap-0",
+            // Padding via wrapper interno
             "[&>*]:pt-3 [&>*]:pb-3",
           ].join(" "),
-          // Chip do ícone (32x32) — substitui o slot padrão do Sonner
+          // Chip sólido 24px circular — cor sobrescrita por tom abaixo
           icon: [
             "!m-0 !mr-0 shrink-0",
-            "flex h-8 w-8 items-center justify-center rounded-lg",
-            "bg-muted/40 ring-1 ring-border/50",
-            "ml-4 mt-0",
+            "flex h-6 w-6 items-center justify-center rounded-full",
+            "ml-4",
+            "bg-muted text-white",
           ].join(" "),
-          // Bloco de texto — largura controlada para nunca colidir com o ícone/close
-          content: "min-w-0 flex-1 px-3 pr-8",
+          content: "min-w-0 flex-1 px-3 pr-3",
           title: "text-[13px] font-semibold leading-tight tracking-tight text-foreground",
-          description: "text-xs text-muted-foreground leading-relaxed mt-1 break-words",
+          description: "text-xs text-muted-foreground leading-relaxed mt-0.5 break-words",
           actionButton:
-            "!bg-primary !text-primary-foreground hover:!bg-primary/90 !text-xs !font-semibold !px-3 !py-1.5 !rounded-md",
+            "!bg-background !text-foreground hover:!bg-muted/50 !border !border-border/60 !text-xs !font-semibold !px-3 !py-1.5 !rounded-lg !shadow-sm !mr-3",
           cancelButton:
-            "!bg-muted !text-muted-foreground hover:!bg-muted/80 !text-xs !px-3 !py-1.5 !rounded-md",
+            "!bg-transparent !text-muted-foreground hover:!text-foreground !text-xs !px-2 !py-1.5 !rounded-lg",
           closeButton: [
             "!bg-transparent !border-0 !text-muted-foreground/60 hover:!text-foreground",
             "!top-2 !right-2 !left-auto !translate-x-0 !translate-y-0",
             "!h-6 !w-6",
           ].join(" "),
-          // Cores do acento por tom
-          success: "before:!bg-success [&_[data-icon]]:!bg-success/10 [&_[data-icon]]:!ring-success/25",
-          error: "before:!bg-destructive [&_[data-icon]]:!bg-destructive/10 [&_[data-icon]]:!ring-destructive/25",
-          warning: "before:!bg-warning [&_[data-icon]]:!bg-warning/10 [&_[data-icon]]:!ring-warning/25",
-          info: "before:!bg-info [&_[data-icon]]:!bg-info/10 [&_[data-icon]]:!ring-info/25",
+          // Listras + chip sólido por tom
+          success: "akuris-stripes-success [&_[data-icon]]:!bg-success",
+          error: "akuris-stripes-destructive [&_[data-icon]]:!bg-destructive",
+          warning: "akuris-stripes-warning [&_[data-icon]]:!bg-warning",
+          info: "akuris-stripes-info [&_[data-icon]]:!bg-info",
         },
       }}
       {...props}

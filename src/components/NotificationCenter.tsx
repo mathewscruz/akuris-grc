@@ -447,11 +447,11 @@ const NotificationCenter: React.FC = () => {
     }
   };
 
-  const TONE_CLS: Record<Tone, { accent: string; chipBg: string; chipRing: string; iconText: string }> = {
-    success:     { accent: 'bg-success',     chipBg: 'bg-success/10',     chipRing: 'ring-success/25',     iconText: 'text-success' },
-    warning:     { accent: 'bg-warning',     chipBg: 'bg-warning/10',     chipRing: 'ring-warning/25',     iconText: 'text-warning' },
-    destructive: { accent: 'bg-destructive', chipBg: 'bg-destructive/10', chipRing: 'ring-destructive/25', iconText: 'text-destructive' },
-    info:        { accent: 'bg-info',        chipBg: 'bg-info/10',        chipRing: 'ring-info/25',        iconText: 'text-info' },
+  const TONE_CLS: Record<Tone, { accent: string; chipBg: string; chipRing: string; iconText: string; chipSolid: string; stripes: string }> = {
+    success:     { accent: 'bg-success',     chipBg: 'bg-success/10',     chipRing: 'ring-success/25',     iconText: 'text-success',     chipSolid: 'bg-success',     stripes: 'akuris-stripes-success' },
+    warning:     { accent: 'bg-warning',     chipBg: 'bg-warning/10',     chipRing: 'ring-warning/25',     iconText: 'text-warning',     chipSolid: 'bg-warning',     stripes: 'akuris-stripes-warning' },
+    destructive: { accent: 'bg-destructive', chipBg: 'bg-destructive/10', chipRing: 'ring-destructive/25', iconText: 'text-destructive', chipSolid: 'bg-destructive', stripes: 'akuris-stripes-destructive' },
+    info:        { accent: 'bg-info',        chipBg: 'bg-info/10',        chipRing: 'ring-info/25',        iconText: 'text-info',        chipSolid: 'bg-info',        stripes: 'akuris-stripes-info' },
   };
 
   const dateFnsLocale = locale === 'pt' ? ptBR : enUS;
@@ -489,77 +489,52 @@ const NotificationCenter: React.FC = () => {
         key={notification.id}
         onClick={() => handleNotificationClick(notification)}
         className={cn(
-          'group relative w-full text-left px-4 py-3 transition-colors',
-          'hover:bg-muted/50 focus-visible:bg-muted/60 focus-visible:outline-none',
-          !notification.read && 'bg-primary/[0.04]'
+          'group relative w-full text-left rounded-2xl border border-border/50 overflow-hidden',
+          'transition-all hover:shadow-[0_8px_22px_-12px_hsl(var(--foreground)/0.18)]',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
+          toneCls.stripes,
+          notification.read && 'opacity-70'
         )}
       >
-        {/* Acento vertical 2px na cor do tom */}
-        <span
-          aria-hidden
-          className={cn('absolute left-0 top-3 bottom-3 w-[2px] rounded-full', toneCls.accent)}
-        />
-        <div className="flex items-start gap-3 pl-2">
-          {/* Chip ícone proprietário */}
+        <div className="flex items-center gap-3 pl-3 pr-3 py-3">
+          {/* Chip sólido 24px */}
           <span
             aria-hidden
             className={cn(
-              'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ring-1',
-              toneCls.chipBg,
-              toneCls.chipRing,
-              toneCls.iconText
+              'flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-white',
+              toneCls.chipSolid
             )}
           >
-            <ModuleIcon className="h-4 w-4" strokeWidth={1.5} />
+            <ModuleIcon className="h-3.5 w-3.5" strokeWidth={2.25} />
           </span>
 
           <div className="min-w-0 flex-1">
-            {/* Eyebrow: módulo */}
-            <div className="flex items-center justify-between gap-2 mb-1">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/80 leading-none truncate">
-                {moduleLabel}
-              </p>
-              {!notification.read && (
-                <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
-              )}
-            </div>
-
-            {/* Título */}
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/80 leading-none mb-1 truncate">
+              {moduleLabel}
+            </p>
             <p className={cn(
-              'text-[13px] font-semibold leading-tight tracking-tight',
+              'text-[13px] font-semibold leading-tight tracking-tight truncate',
               !notification.read ? 'text-foreground' : 'text-muted-foreground'
             )}>
               {notification.title}
             </p>
-
-            {/* Mensagem */}
             {notification.message && (
-              <p className="text-xs text-muted-foreground leading-relaxed mt-1 line-clamp-2">
+              <p className="text-xs text-muted-foreground leading-relaxed mt-0.5 line-clamp-2">
                 {notification.message}
               </p>
             )}
-
-            {/* Footer: tempo relativo + ação inline */}
-            <div className="flex items-center justify-between gap-2 mt-2">
-              <span className="text-[11px] text-muted-foreground/70 tabular-nums">
-                {formatRelative(notification.created_at)}
-              </span>
-              {!notification.read && !notification.isAutomatic && (
-                <span
-                  role="button"
-                  tabIndex={0}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    markAsReadMutation.mutate(notification.id);
-                  }}
-                  className="text-[11px] font-medium text-primary/80 hover:text-primary transition-colors inline-flex items-center gap-1"
-                >
-                  <Check className="h-3 w-3" strokeWidth={1.5} />
-                  {t('notifications.markAllRead').toLowerCase()}
-                </span>
-              )}
-            </div>
+            <span className="text-[11px] text-muted-foreground/70 tabular-nums mt-1.5 block">
+              {formatRelative(notification.created_at)}
+            </span>
           </div>
+
+          {/* Botão "Action" branco — abre o detalhe / link */}
+          <span
+            className="akuris-pill-action shrink-0"
+            aria-hidden
+          >
+            {notification.link_to ? (t('common.open') !== 'common.open' ? t('common.open') : 'Abrir') : t('notifications.viewDetails') !== 'notifications.viewDetails' ? t('notifications.viewDetails') : 'Ver'}
+          </span>
         </div>
       </button>
     );
@@ -659,13 +634,13 @@ const NotificationCenter: React.FC = () => {
                 </p>
               </div>
             ) : (
-              <div className="divide-y divide-border/40">
+              <div className="px-3 py-3 space-y-4">
                 {groupMeta.map(({ key, label, tone }) => {
                   const items = groups[key];
                   if (items.length === 0) return null;
                   return (
-                    <section key={key} aria-label={label}>
-                      <header className="flex items-center justify-between px-4 pt-3 pb-1.5">
+                    <section key={key} aria-label={label} className="space-y-2">
+                      <header className="flex items-center justify-between px-1">
                         <div className="flex items-center gap-2">
                           <span aria-hidden className={cn('h-1.5 w-1.5 rounded-full', TONE_CLS[tone].accent)} />
                           <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/80">
@@ -676,7 +651,7 @@ const NotificationCenter: React.FC = () => {
                           {items.length}
                         </span>
                       </header>
-                      <div>{items.map(renderItem)}</div>
+                      <div className="space-y-2">{items.map(renderItem)}</div>
                     </section>
                   );
                 })}
