@@ -239,9 +239,26 @@ const Configuracoes = () => {
             </Card>
           </TabsContent>
         )}
+        {isSuperAdmin && (
+          <TabsContent value="blog">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BookOpen className="h-5 w-5" />
+                  Blog (SEO)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <BlogManager />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );
 };
+
+export default Configuracoes;
 
 export default Configuracoes;
