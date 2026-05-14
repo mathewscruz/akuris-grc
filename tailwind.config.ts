@@ -182,6 +182,19 @@ export default {
 				'page-enter': {
 					'0%': { opacity: '0.4', transform: 'translateY(4px)' },
 					'100%': { opacity: '1', transform: 'translateY(0)' }
+				},
+				'toast-enter': {
+					'0%':   { opacity: '0', transform: 'translateX(40px) scale(0.96)' },
+					'60%':  { opacity: '1', transform: 'translateX(-4px) scale(1)' },
+					'100%': { opacity: '1', transform: 'translateX(0) scale(1)' }
+				},
+				'toast-exit': {
+					'0%':   { opacity: '1', transform: 'translateX(0) scale(1)' },
+					'100%': { opacity: '0', transform: 'translateX(40px) scale(0.96)' }
+				},
+				'notification-enter': {
+					'0%':   { opacity: '0', transform: 'translateX(16px)' },
+					'100%': { opacity: '1', transform: 'translateX(0)' }
 				}
 			},
 			animation: {
@@ -194,7 +207,10 @@ export default {
 				'shimmer': 'shimmer 2s infinite linear',
 				'pulse-subtle': 'pulse-subtle 3s infinite ease-in-out',
 				'spin-burst': 'spin-burst 5s ease-in-out infinite',
-				'page-enter': 'page-enter 0.22s cubic-bezier(0.22, 1, 0.36, 1) both'
+				'page-enter': 'page-enter 0.22s cubic-bezier(0.22, 1, 0.36, 1) both',
+				'toast-enter': 'toast-enter 0.35s cubic-bezier(0.16, 1, 0.3, 1) both',
+				'toast-exit': 'toast-exit 0.22s cubic-bezier(0.4, 0, 1, 1) both',
+				'notification-enter': 'notification-enter 0.3s cubic-bezier(0.16, 1, 0.3, 1) both'
 			},
 			spacing: {
 				'xs': 'var(--spacing-xs)',
