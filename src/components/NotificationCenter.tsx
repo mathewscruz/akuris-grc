@@ -447,11 +447,11 @@ const NotificationCenter: React.FC = () => {
     }
   };
 
-  const TONE_CLS: Record<Tone, { accent: string; chipBg: string; chipRing: string; iconText: string }> = {
-    success:     { accent: 'bg-success',     chipBg: 'bg-success/10',     chipRing: 'ring-success/25',     iconText: 'text-success' },
-    warning:     { accent: 'bg-warning',     chipBg: 'bg-warning/10',     chipRing: 'ring-warning/25',     iconText: 'text-warning' },
-    destructive: { accent: 'bg-destructive', chipBg: 'bg-destructive/10', chipRing: 'ring-destructive/25', iconText: 'text-destructive' },
-    info:        { accent: 'bg-info',        chipBg: 'bg-info/10',        chipRing: 'ring-info/25',        iconText: 'text-info' },
+  const TONE_CLS: Record<Tone, { accent: string; chipBg: string; chipRing: string; iconText: string; chipSolid: string; stripes: string }> = {
+    success:     { accent: 'bg-success',     chipBg: 'bg-success/10',     chipRing: 'ring-success/25',     iconText: 'text-success',     chipSolid: 'bg-success',     stripes: 'akuris-stripes-success' },
+    warning:     { accent: 'bg-warning',     chipBg: 'bg-warning/10',     chipRing: 'ring-warning/25',     iconText: 'text-warning',     chipSolid: 'bg-warning',     stripes: 'akuris-stripes-warning' },
+    destructive: { accent: 'bg-destructive', chipBg: 'bg-destructive/10', chipRing: 'ring-destructive/25', iconText: 'text-destructive', chipSolid: 'bg-destructive', stripes: 'akuris-stripes-destructive' },
+    info:        { accent: 'bg-info',        chipBg: 'bg-info/10',        chipRing: 'ring-info/25',        iconText: 'text-info',        chipSolid: 'bg-info',        stripes: 'akuris-stripes-info' },
   };
 
   const dateFnsLocale = locale === 'pt' ? ptBR : enUS;
