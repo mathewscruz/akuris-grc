@@ -17,6 +17,7 @@ import { FinanceiroIATab } from '@/components/configuracoes/FinanceiroIATab';
 import { GerenciamentoPlanos } from '@/components/configuracoes/GerenciamentoPlanos';
 import GerenciamentoChangelog from '@/components/configuracoes/GerenciamentoChangelog';
 import NoticiasTab from '@/components/configuracoes/NoticiasTab';
+import BlogManager from '@/components/configuracoes/BlogManager';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 const Configuracoes = () => {
