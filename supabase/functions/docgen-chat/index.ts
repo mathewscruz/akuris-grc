@@ -158,12 +158,35 @@ serve(async (req) => {
 
     // ============ ACTION: load_company_context (sem custo de IA) ============
     if (action === 'load_company_context') {
-      if (!empresa_id) {
+      // === AUTH: validate JWT and derive empresa_id from caller's profile ===
+      const authHeader = req.headers.get('Authorization');
+      if (!authHeader?.startsWith('Bearer ')) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      const verifier = createClient(SUPABASE_URL, Deno.env.get('SUPABASE_ANON_KEY') || SUPABASE_SERVICE_ROLE_KEY);
+      const { data: userData, error: userErr } = await verifier.auth.getUser(authHeader.replace('Bearer ', ''));
+      if (userErr || !userData?.user) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      const { data: callerProfile } = await supabase
+        .from('profiles').select('empresa_id, role').eq('user_id', userData.user.id).maybeSingle();
+      // Override body empresa_id with the authenticated user's empresa (super_admin can pass any).
+      const effectiveEmpresaId = callerProfile?.role === 'super_admin'
+        ? (empresa_id ?? callerProfile?.empresa_id)
+        : callerProfile?.empresa_id;
+      if (!effectiveEmpresaId) {
         return new Response(JSON.stringify({ error: 'empresa_id required' }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
+      // Reassign for downstream queries below
+      // eslint-disable-next-line no-var
+      var empresa_id_resolved = effectiveEmpresaId;
 
       const [empresaRes, ativosRes, riscosRes, frameworksRes] = await Promise.all([
         supabase
