@@ -496,7 +496,7 @@ const NotificationCenter: React.FC = () => {
           notification.read && 'opacity-70'
         )}
       >
-        <div className="flex items-center gap-3 pl-3 pr-3 py-4 min-h-[64px]">
+        <div className="flex items-center gap-3 p-3.5 pl-4">
           {/* Chip sólido 24px */}
           <span
             aria-hidden
