@@ -45,9 +45,9 @@ const Toaster = ({ ...props }: ToasterProps) => {
             "!p-0 overflow-hidden",
             "animate-toast-slide-in",
             // Layout interno
-            "!items-center !gap-0",
+            "!items-center !gap-0 min-h-[64px]",
             // Padding via wrapper interno
-            "[&>*]:pt-3 [&>*]:pb-3",
+            "[&>*]:py-4",
           ].join(" "),
           // Chip sólido 24px circular — cor sobrescrita por tom abaixo
           icon: [
