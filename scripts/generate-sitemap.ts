@@ -19,6 +19,7 @@ const today = new Date().toISOString().split('T')[0];
 
 const staticEntries: SitemapEntry[] = [
   { path: '/', changefreq: 'weekly', priority: '1.0', lastmod: today },
+  { path: '/auth', changefreq: 'monthly', priority: '0.5', lastmod: today },
   { path: '/politica-privacidade', changefreq: 'monthly', priority: '0.4', lastmod: today },
   { path: '/blog', changefreq: 'weekly', priority: '0.8', lastmod: today },
 ];
