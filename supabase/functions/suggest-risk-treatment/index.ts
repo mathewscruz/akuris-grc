@@ -17,13 +17,32 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
-    const { nome, descricao, categoria, nivel_risco, empresa_id, user_id } = await req.json();
+    // === AUTH: validate JWT and derive empresa_id from caller's profile ===
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    const verifier = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY') || supabaseKey);
+    const { data: userData, error: userErr } = await verifier.auth.getUser(authHeader.replace('Bearer ', ''));
+    if (userErr || !userData?.user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    const user_id = userData.user.id;
+    const { data: profile } = await supabase
+      .from('profiles').select('empresa_id').eq('user_id', user_id).maybeSingle();
+    const empresa_id = profile?.empresa_id;
+
+    const { nome, descricao, categoria, nivel_risco } = await req.json();
 
     // Consumir crédito de IA
     if (empresa_id && user_id) {
-      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-      const supabase = createClient(supabaseUrl, supabaseKey);
 
       const { data: creditResult, error: creditError } = await supabase
         .rpc('consume_ai_credit', {
