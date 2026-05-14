@@ -43,7 +43,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
             "border border-border/50 rounded-2xl",
             "shadow-[0_10px_28px_-12px_hsl(var(--foreground)/0.18)]",
             "!p-3.5 !pl-4 !pr-3 overflow-hidden",
-            "animate-toast-slide-in",
+            "data-[state=open]:animate-toast-enter data-[state=closed]:animate-toast-exit",
             "!items-center !gap-3",
           ].join(" "),
           // Chip sólido 24px circular — cor sobrescrita por tom abaixo
