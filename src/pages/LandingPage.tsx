@@ -131,6 +131,7 @@ const LandingPage = () => {
         </div>
       </header>
 
+      <main>
       {/* HERO */}
       <section className="lp-hero" id="produto">
         <div className="lp-container lp-hero-grid">
