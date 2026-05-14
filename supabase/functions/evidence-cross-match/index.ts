@@ -34,11 +34,11 @@ serve(async (req) => {
 
   try {
     const body = (await req.json()) as RequestBody;
-    const { evidence_id, empresa_id, framework_ids, max_candidates = 30 } = body || ({} as RequestBody);
+    const { evidence_id, framework_ids, max_candidates = 30 } = body || ({} as RequestBody);
 
-    if (!evidence_id || !empresa_id) {
+    if (!evidence_id) {
       return new Response(
-        JSON.stringify({ error: 'Parâmetros obrigatórios: evidence_id, empresa_id' }),
+        JSON.stringify({ error: 'Parâmetro obrigatório: evidence_id' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
@@ -54,13 +54,28 @@ serve(async (req) => {
     }
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    // Identifica usuário pelo JWT
+    // === AUTH: validate JWT and derive empresa_id from caller's profile ===
     const authHeader = req.headers.get('Authorization');
-    let userId: string | null = null;
-    if (authHeader) {
-      const token = authHeader.replace('Bearer ', '');
-      const { data: { user } } = await supabase.auth.getUser(token);
-      userId = user?.id || null;
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const verifier = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY') || serviceKey);
+    const { data: userData, error: userErr } = await verifier.auth.getUser(authHeader.replace('Bearer ', ''));
+    if (userErr || !userData?.user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const userId = userData.user.id;
+    const { data: profile } = await supabase
+      .from('profiles').select('empresa_id').eq('user_id', userId).maybeSingle();
+    const empresa_id = profile?.empresa_id;
+    if (!empresa_id) {
+      return new Response(JSON.stringify({ error: 'User profile missing empresa_id' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     // 1) Carrega a evidência

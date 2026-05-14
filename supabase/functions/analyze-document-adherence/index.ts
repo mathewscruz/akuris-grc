@@ -15,7 +15,7 @@ serve(async (req) => {
   
   try {
     requestBody = await req.json();
-    const { assessmentId, frameworkId, storageFileName, empresaId } = requestBody;
+    const { assessmentId, frameworkId, storageFileName } = requestBody;
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -27,16 +27,32 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Consumir crédito de IA
-    if (empresaId) {
-      const authHeader = req.headers.get('Authorization');
-      let userId: string | null = null;
-      if (authHeader) {
-        const token = authHeader.replace('Bearer ', '');
-        const { data: { user } } = await supabase.auth.getUser(token);
-        userId = user?.id || null;
-      }
+    // === AUTH: validate JWT and derive empresa_id from caller's profile ===
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    const verifier = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY') || supabaseKey);
+    const { data: userData, error: userErr } = await verifier.auth.getUser(authHeader.replace('Bearer ', ''));
+    if (userErr || !userData?.user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    const userId = userData.user.id;
+    const { data: profile } = await supabase
+      .from('profiles').select('empresa_id').eq('user_id', userId).maybeSingle();
+    const empresaId = profile?.empresa_id;
+    if (!empresaId) {
+      return new Response(JSON.stringify({ error: 'User profile missing empresa_id' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
 
+    // Consumir crédito de IA (empresa derivada do JWT, não do body)
+    {
       const { data: creditResult, error: creditError } = await supabase
         .rpc('consume_ai_credit', {
           p_empresa_id: empresaId,

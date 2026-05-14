@@ -158,35 +158,58 @@ serve(async (req) => {
 
     // ============ ACTION: load_company_context (sem custo de IA) ============
     if (action === 'load_company_context') {
-      if (!empresa_id) {
+      // === AUTH: validate JWT and derive empresa_id from caller's profile ===
+      const authHeader = req.headers.get('Authorization');
+      if (!authHeader?.startsWith('Bearer ')) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      const verifier = createClient(SUPABASE_URL, Deno.env.get('SUPABASE_ANON_KEY') || SUPABASE_SERVICE_ROLE_KEY);
+      const { data: userData, error: userErr } = await verifier.auth.getUser(authHeader.replace('Bearer ', ''));
+      if (userErr || !userData?.user) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      const { data: callerProfile } = await supabase
+        .from('profiles').select('empresa_id, role').eq('user_id', userData.user.id).maybeSingle();
+      // Override body empresa_id with the authenticated user's empresa (super_admin can pass any).
+      const effectiveEmpresaId = callerProfile?.role === 'super_admin'
+        ? (empresa_id ?? callerProfile?.empresa_id)
+        : callerProfile?.empresa_id;
+      if (!effectiveEmpresaId) {
         return new Response(JSON.stringify({ error: 'empresa_id required' }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
+      // Reassign for downstream queries below
+      // eslint-disable-next-line no-var
+      var empresa_id_resolved = effectiveEmpresaId;
 
       const [empresaRes, ativosRes, riscosRes, frameworksRes] = await Promise.all([
         supabase
           .from('empresas')
           .select('nome, cnpj, setor_atuacao, porte_empresa, objetivo_compliance, data_alvo_certificacao')
-          .eq('id', empresa_id)
+          .eq('id', empresa_id_resolved)
           .maybeSingle(),
         supabase
           .from('ativos')
           .select('nome, tipo, criticidade, proprietario')
-          .eq('empresa_id', empresa_id)
+          .eq('empresa_id', empresa_id_resolved)
           .in('criticidade', ['critica', 'alta', 'crítica'])
           .limit(8),
         supabase
           .from('riscos')
           .select('nome, nivel_risco_residual, status, categoria_id')
-          .eq('empresa_id', empresa_id)
+          .eq('empresa_id', empresa_id_resolved)
           .in('nivel_risco_residual', ['critico', 'alto', 'crítico'])
           .limit(8),
         supabase
           .from('gap_analysis_assessments')
           .select('framework_id, percentual_conclusao, status, gap_analysis_frameworks(nome, versao)')
-          .eq('empresa_id', empresa_id)
+          .eq('empresa_id', empresa_id_resolved)
           .order('updated_at', { ascending: false })
           .limit(10),
       ]);

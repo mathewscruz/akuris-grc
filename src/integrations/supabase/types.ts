@@ -7238,6 +7238,15 @@ export type Database = {
           empresa_nome: string
         }[]
       }
+      get_denuncia_config_publica: {
+        Args: { p_empresa_id: string }
+        Returns: {
+          empresa_id: string
+          permitir_anonimas: boolean
+          politica_privacidade: string
+          texto_apresentacao: string
+        }[]
+      }
       get_empresa_by_slug: { Args: { empresa_slug: string }; Returns: string }
       get_profiles_by_text_ids: {
         Args: { text_ids: string[] }
