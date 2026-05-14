@@ -1441,6 +1441,60 @@ export type Database = {
         }
         Relationships: []
       }
+      blog_posts: {
+        Row: {
+          autor: string
+          capa_url: string | null
+          conteudo_md: string
+          created_at: string
+          framework_slug: string | null
+          id: string
+          published: boolean
+          published_at: string | null
+          resumo: string
+          seo_description: string | null
+          seo_title: string | null
+          slug: string
+          tags: string[]
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          autor?: string
+          capa_url?: string | null
+          conteudo_md: string
+          created_at?: string
+          framework_slug?: string | null
+          id?: string
+          published?: boolean
+          published_at?: string | null
+          resumo: string
+          seo_description?: string | null
+          seo_title?: string | null
+          slug: string
+          tags?: string[]
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          autor?: string
+          capa_url?: string | null
+          conteudo_md?: string
+          created_at?: string
+          framework_slug?: string | null
+          id?: string
+          published?: boolean
+          published_at?: string | null
+          resumo?: string
+          seo_description?: string | null
+          seo_title?: string | null
+          slug?: string
+          tags?: string[]
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       changelog_entries: {
         Row: {
           created_at: string | null

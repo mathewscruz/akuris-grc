@@ -1,5 +1,8 @@
+# Bots de busca tradicionais — liberados para conteúdo público
 User-agent: Googlebot
 Allow: /
+Allow: /frameworks/
+Allow: /blog/
 Disallow: /dashboard
 Disallow: /configuracoes
 Disallow: /riscos
@@ -31,30 +34,12 @@ Disallow: /denuncia-menu
 
 User-agent: Bingbot
 Allow: /
+Allow: /frameworks/
+Allow: /blog/
 Disallow: /dashboard
 Disallow: /configuracoes
-Disallow: /riscos
-Disallow: /controles
-Disallow: /auditorias
-Disallow: /documentos
-Disallow: /incidentes
-Disallow: /ativos
-Disallow: /contratos
-Disallow: /continuidade
-Disallow: /governanca
-Disallow: /privacidade
-Disallow: /planos-acao
-Disallow: /relatorios
-Disallow: /sistemas
-Disallow: /contas-privilegiadas
-Disallow: /due-diligence
-Disallow: /gap-analysis
-Disallow: /revisao-acessos
-Disallow: /politicas
-Disallow: /denuncia
 Disallow: /auth
 Disallow: /registro
-Disallow: /denuncia-menu
 
 User-agent: Twitterbot
 Allow: /
@@ -62,10 +47,14 @@ Allow: /
 User-agent: facebookexternalhit
 Allow: /
 
+# Bots de IA generativa — liberados para indexação e citação
 User-agent: GPTBot
 Allow: /
 
 User-agent: ChatGPT-User
+Allow: /
+
+User-agent: OAI-SearchBot
 Allow: /
 
 User-agent: Google-Extended
@@ -77,6 +66,31 @@ Allow: /
 User-agent: Claude-Web
 Allow: /
 
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: cohere-ai
+Allow: /
+
+User-agent: Meta-ExternalAgent
+Allow: /
+
+User-agent: Bytespider
+Allow: /
+
+# Demais bots — comportamento padrão
 User-agent: *
 Allow: /
 Disallow: /dashboard
