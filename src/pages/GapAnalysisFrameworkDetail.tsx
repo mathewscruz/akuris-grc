@@ -21,6 +21,9 @@ import {
   AssessmentInsightsStrip,
   SectionHeatmap,
   PriorityQueueCard,
+  RequirementDrawerProvider,
+  useRequirementDrawer,
+  CommandPalette,
   type AssessmentInsight,
   type HeatCell,
 } from '@/components/gap-analysis/v2';
@@ -46,11 +49,20 @@ interface Framework {
 }
 
 export default function GapAnalysisFrameworkDetail() {
+  return (
+    <RequirementDrawerProvider>
+      <GapAnalysisFrameworkDetailInner />
+    </RequirementDrawerProvider>
+  );
+}
+
+function GapAnalysisFrameworkDetailInner() {
   const { frameworkId } = useParams<{ frameworkId: string }>();
   const navigate = useNavigate();
   const [, setSearchParams] = useSearchParams();
   const { profile } = useAuth();
   const empresaId = profile?.empresa_id;
+  const { openRequirement } = useRequirementDrawer();
   const [framework, setFramework] = useState<Framework | null>(null);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
@@ -392,18 +404,11 @@ export default function GapAnalysisFrameworkDetail() {
                     empresaId={empresaId}
                     limit={5}
                     onRequirementClick={(req) => {
-                      setSearchParams(prev => {
-                        const next = new URLSearchParams(prev);
-                        if (req.codigo) next.set('q', req.codigo);
-                        else next.set('q', req.titulo.slice(0, 30));
-                        next.set('status', 'all');
-                        return next;
-                      }, { replace: false });
-                      setTimeout(() => {
-                        document.getElementById('reqs-table')?.scrollIntoView({
-                          behavior: 'smooth', block: 'start',
-                        });
-                      }, 50);
+                      openRequirement({
+                        requirementId: req.id,
+                        empresaId,
+                        onSaved: handleScoreChange,
+                      });
                     }}
                     onSeeAll={() => {
                       document.getElementById('reqs-table')?.scrollIntoView({
@@ -490,6 +495,15 @@ export default function GapAnalysisFrameworkDetail() {
             <EvidenceLibraryHub />
           </TabsContent>
         </Tabs>
+
+        {/* Onda 4 — Command Palette (⌘K) */}
+        {empresaId && frameworkId && (
+          <CommandPalette
+            frameworkId={frameworkId}
+            empresaId={empresaId}
+            onSaved={handleScoreChange}
+          />
+        )}
       </div>
     </ErrorBoundary>
   );

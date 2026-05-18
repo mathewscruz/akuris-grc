@@ -161,3 +161,11 @@ Onda 5  [Docs · Rem · SoA] ───┘
   - `PriorityQueueCard` (top-5 requisitos ordenados por peso × penalidade de status × urgência de prazo; CTA "Triagem" filtra a tabela via `?q=`).
   - `SectionHeatmap` (grade compacta de categorias substituindo `CategoryBarChart`, clique filtra a tabela).
   - Tabela de requisitos preservada (será substituída na Onda 4 junto com o Drawer).
+
+- **Onda 4** ✅ Drawer + Command Palette + Diagnóstico IA:
+  - Edge function `gap-analysis-ai-diagnostic` (Lovable AI, consume_ai_credit, 402).
+  - `AIDiagnosticCard` (status sugerido, pontos avaliados, gaps, justificativa copy/aplicar).
+  - `RequirementDrawer` (sheet 820px com StatusSeg, diagnóstico IA sob demanda, justificativa, prazo, save direto em `gap_analysis_evaluations`).
+  - `RequirementDrawerProvider` (contexto global — qualquer ponto pode abrir o drawer).
+  - `CommandPalette` (⌘K / Ctrl+K — busca todos os requisitos do framework, status dot, abre drawer).
+  - Wiring: PriorityQueueCard agora abre o drawer; "Edição completa" no header do drawer pode delegar ao RequirementDetailDialog existente.
