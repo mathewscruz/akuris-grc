@@ -3,7 +3,7 @@
  * Score global ponderado + MaturityScale (5 níveis) + StackBar consolidado + 3 KPIs.
  * Visual Akuris (Navy/Purple/DM Sans), sem cores cruas.
  */
-import { CornerAccent } from '@/components/ui/CornerAccent';
+import { CornerAccent } from '@/components/identity/CornerAccent';
 import { MaturityScale, getMaturityLevel } from './MaturityScale';
 import { StackBar, type StackSegment } from './StackBar';
 import { SectionHead } from './SectionHead';
