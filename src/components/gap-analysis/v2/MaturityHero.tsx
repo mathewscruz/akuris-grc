@@ -11,20 +11,18 @@ import type { StackSegment } from './StackBar';
 
 interface MaturityHeroProps {
   overallScore: number;
-  segments: StackSegment[];
+  /** Mantido por compat — não usado no layout 4-col atual. */
+  segments?: StackSegment[];
   totalRequirements: number;
   totalEvaluated: number;
   criticalCount: number;
   activeFrameworksCount: number;
-  /** Pontos ganhos nos últimos 30d (placeholder se ausente). */
   delta30d?: number;
-  /** Marco próximo opcional (placeholder se ausente). */
   nextMilestone?: {
     label: string;
-    date: string; // ISO
+    date: string;
     targetScore?: number;
   };
-  /** Callback para "Ver plano sugerido" do card de IA. */
   onSeePlan?: () => void;
 }
 
