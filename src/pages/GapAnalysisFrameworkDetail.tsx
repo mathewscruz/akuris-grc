@@ -49,11 +49,20 @@ interface Framework {
 }
 
 export default function GapAnalysisFrameworkDetail() {
+  return (
+    <RequirementDrawerProvider>
+      <GapAnalysisFrameworkDetailInner />
+    </RequirementDrawerProvider>
+  );
+}
+
+function GapAnalysisFrameworkDetailInner() {
   const { frameworkId } = useParams<{ frameworkId: string }>();
   const navigate = useNavigate();
   const [, setSearchParams] = useSearchParams();
   const { profile } = useAuth();
   const empresaId = profile?.empresa_id;
+  const { openRequirement } = useRequirementDrawer();
   const [framework, setFramework] = useState<Framework | null>(null);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
