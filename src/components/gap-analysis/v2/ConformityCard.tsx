@@ -37,7 +37,8 @@ export function ConformityCard({
   targetScore = 60,
   delta30d = 0,
 }: ConformityCardProps) {
-  const maturity = getMaturityLevel(overallScore);
+  const score = Math.round(Number(overallScore) || 0);
+  const maturity = getMaturityLevel(score);
   const total = conforme + parcial + naoConforme + naoAplicavel || 1;
   const segs = [
     { kind: 'conforme', value: conforme, color: 'hsl(var(--success))' },
@@ -92,9 +93,9 @@ export function ConformityCard({
               />
             ))}
           </svg>
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-3xl font-bold tabular-nums leading-none tracking-tight text-foreground">
-              {overallScore}%
+          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+            <span className="text-2xl font-bold tabular-nums leading-none tracking-tight text-foreground">
+              {score}<span className="text-base text-muted-foreground">%</span>
             </span>
             <span className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground mt-1">
               Conformidade
@@ -120,7 +121,7 @@ export function ConformityCard({
         <Triple
           eyebrow="Meta Q1"
           value={`${targetScore}%`}
-          tone={overallScore >= targetScore ? 'success' : 'warning'}
+          tone={score >= targetScore ? 'success' : 'warning'}
         />
         <Triple
           eyebrow="Δ 30d"

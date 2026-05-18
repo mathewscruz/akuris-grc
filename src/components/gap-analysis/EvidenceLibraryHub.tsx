@@ -41,14 +41,14 @@ export function EvidenceLibraryHub() {
           akurisToast({
             module: 'gap',
             tone: 'success',
-            title: 'Sugestões geradas pela IA',
+            title: 'Cruzamentos identificados pela IA',
             description: `${result.persisted} requisito(s) podem usar esta evidência.`,
           });
         } else {
           akurisToast({
             module: 'gap',
             tone: 'info',
-            title: 'Nenhuma sugestão encontrada',
+            title: 'Nenhum cruzamento encontrado',
             description: 'A IA não identificou outros requisitos compatíveis.',
           });
         }
@@ -76,7 +76,7 @@ export function EvidenceLibraryHub() {
               <span><strong className="text-foreground">{lib.stats.total}</strong> evidências</span>
               <span><strong className="text-foreground">{lib.stats.com_links}</strong> em uso</span>
               {lib.stats.com_sugestoes > 0 && (
-                <span className="text-warning"><strong>{lib.stats.com_sugestoes}</strong> com sugestões pendentes</span>
+                <span className="text-warning"><strong>{lib.stats.com_sugestoes}</strong> com cruzamentos pendentes</span>
               )}
             </div>
           </div>
@@ -124,7 +124,7 @@ export function EvidenceLibraryHub() {
                           <Badge variant="secondary" className="text-[10px]">{ev.total_links} usos</Badge>
                         )}
                         {(ev.total_sugestoes || 0) > 0 && (
-                          <StatusBadge tone="warning" size="sm">{ev.total_sugestoes} sugestões pendentes</StatusBadge>
+                          <StatusBadge tone="warning" size="sm">{ev.total_sugestoes} cruzamentos pendentes</StatusBadge>
                         )}
                         {(ev.tags || []).slice(0, 3).map((t) => (
                           <Badge key={t} variant="outline" className="text-[10px]">{t}</Badge>
@@ -145,7 +145,7 @@ export function EvidenceLibraryHub() {
                         <AkurisPulse size={16} />
                       ) : (
                         <>
-                          <Sparkles className="h-3.5 w-3.5" strokeWidth={1.5} /> Sugerir reaproveitamento
+                          <Sparkles className="h-3.5 w-3.5" strokeWidth={1.5} /> Cruzar com IA
                         </>
                       )}
                     </Button>
@@ -162,7 +162,7 @@ export function EvidenceLibraryHub() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-primary" strokeWidth={1.5} />
-              Sugestões para "{openItem?.nome}"
+              Cruzamentos para "{openItem?.nome}"
             </DialogTitle>
           </DialogHeader>
 
@@ -175,7 +175,7 @@ export function EvidenceLibraryHub() {
             <p className="text-sm text-muted-foreground py-6 text-center">Aguardando análise.</p>
           ) : matchResult.suggestions.length === 0 ? (
             <EmptyState
-              title="Nenhuma sugestão"
+              title="Nenhum cruzamento"
               description="A IA não identificou outros requisitos onde esta evidência se aplique de forma clara."
             />
           ) : (
@@ -207,7 +207,7 @@ export function EvidenceLibraryHub() {
                 ))}
                 <p className="text-[11px] text-muted-foreground pt-2 px-1 flex items-center gap-1">
                   <CheckCircle2 className="h-3 w-3" strokeWidth={1.5} />
-                  Sugestões salvas como pendentes em cada requisito. Acesse o requisito para aceitar e marcar como Conforme.
+                  Cruzamentos salvos como pendentes em cada requisito. Acesse o requisito para aceitar e marcar como Conforme.
                 </p>
               </div>
             </ScrollArea>

@@ -55,7 +55,7 @@ export function KpiTiny({
         {eyebrow}
       </div>
       <div className={cn('mt-1 flex items-baseline gap-1', VALUE_COLOR[tone])}>
-        <span className="text-2xl font-semibold tabular-nums leading-none tracking-tight">{value}</span>
+        <span className="text-2xl font-bold tabular-nums leading-none tracking-tight font-sans">{value}</span>
         {unit && <span className="text-sm text-muted-foreground">{unit}</span>}
       </div>
       {foot && (

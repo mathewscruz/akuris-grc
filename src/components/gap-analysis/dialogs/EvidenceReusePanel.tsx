@@ -61,7 +61,7 @@ export function EvidenceReusePanel({ requirementId, frameworkId, evaluationId, o
   const handleAcceptSuggestion = async (linkId: string) => {
     const ok = await lib.acceptSuggestion(linkId);
     if (ok) {
-      akurisToast({ module: 'gap', tone: 'success', title: 'Evidência vinculada', description: 'Sugestão da IA aceita.' });
+      akurisToast({ module: 'gap', tone: 'success', title: 'Evidência vinculada', description: 'Recomendação aplicada.' });
       await reload();
       onLinked?.();
     }
@@ -113,7 +113,7 @@ export function EvidenceReusePanel({ requirementId, frameworkId, evaluationId, o
         <Tabs defaultValue="sugestoes">
           <TabsList className="grid grid-cols-2 w-full">
             <TabsTrigger value="sugestoes">
-              Sugestões da IA{suggestions.length > 0 ? ` · ${suggestions.length}` : ''}
+              Recomendado pela IA{suggestions.length > 0 ? ` · ${suggestions.length}` : ''}
             </TabsTrigger>
             <TabsTrigger value="biblioteca">
               Biblioteca · {lib.items.length}
@@ -125,7 +125,7 @@ export function EvidenceReusePanel({ requirementId, frameworkId, evaluationId, o
               <div className="py-6 flex justify-center"><AkurisPulse size={32} /></div>
             ) : suggestions.length === 0 ? (
               <div className="rounded-md border border-dashed border-border/60 bg-background/40 px-4 py-6 text-center text-xs text-muted-foreground">
-                Nenhuma sugestão da IA para este requisito ainda. Faça upload de uma evidência ou rode "Sugerir reaproveitamento" na Biblioteca.
+                Nenhuma recomendação da IA para este requisito ainda. Faça upload de uma evidência ou rode "Cruzar com IA" na Biblioteca.
               </div>
             ) : (
               <ScrollArea className="max-h-64">

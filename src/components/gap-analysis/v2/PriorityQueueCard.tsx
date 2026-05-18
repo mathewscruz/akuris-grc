@@ -98,10 +98,11 @@ export function PriorityQueueCard({
           const sPen = statusPenalty(ev?.conformity_status);
           const dl = deadlineUrgency(ev?.prazo_implementacao || null);
           const priority = peso * sPen * (0.4 + dl.factor * 0.6);
+          // Não duplicamos o status no texto — o chip já o mostra ao lado.
           const reasonParts: string[] = [];
-          if (ev?.conformity_status === 'nao_conforme') reasonParts.push('não conforme');
-          else if (ev?.conformity_status === 'parcial') reasonParts.push('parcial');
-          else reasonParts.push('não avaliado');
+          if (!ev?.conformity_status || ev.conformity_status === 'nao_avaliado') {
+            reasonParts.push('não avaliado');
+          }
           if (peso >= 4) reasonParts.push('peso alto');
           if (dl.factor >= 0.85) reasonParts.push(dl.reason);
           return {

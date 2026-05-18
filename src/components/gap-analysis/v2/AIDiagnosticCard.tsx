@@ -83,7 +83,7 @@ export function AIDiagnosticCard({
             </span>
           </div>
           <h4 className="mt-1 text-sm font-semibold text-foreground">
-            Sugestão: {statusLabel}
+            Status recomendado: {statusLabel}
           </h4>
           <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{result.summary}</p>
         </div>
