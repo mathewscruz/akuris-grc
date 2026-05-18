@@ -495,6 +495,15 @@ function GapAnalysisFrameworkDetailInner() {
             <EvidenceLibraryHub />
           </TabsContent>
         </Tabs>
+
+        {/* Onda 4 — Command Palette (⌘K) */}
+        {empresaId && frameworkId && (
+          <CommandPalette
+            frameworkId={frameworkId}
+            empresaId={empresaId}
+            onSaved={handleScoreChange}
+          />
+        )}
       </div>
     </ErrorBoundary>
   );
