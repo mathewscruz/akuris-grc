@@ -491,7 +491,7 @@ function GapAnalysisFrameworkDetailInner() {
             />
           </TabsContent>
           <TabsContent value="soa">
-            <SoATab
+            <SoATabV2
               frameworkId={frameworkId!}
               frameworkName={framework.nome}
               frameworkVersion={framework.versao}
