@@ -404,18 +404,11 @@ function GapAnalysisFrameworkDetailInner() {
                     empresaId={empresaId}
                     limit={5}
                     onRequirementClick={(req) => {
-                      setSearchParams(prev => {
-                        const next = new URLSearchParams(prev);
-                        if (req.codigo) next.set('q', req.codigo);
-                        else next.set('q', req.titulo.slice(0, 30));
-                        next.set('status', 'all');
-                        return next;
-                      }, { replace: false });
-                      setTimeout(() => {
-                        document.getElementById('reqs-table')?.scrollIntoView({
-                          behavior: 'smooth', block: 'start',
-                        });
-                      }, 50);
+                      openRequirement({
+                        requirementId: req.id,
+                        empresaId,
+                        onSaved: handleScoreChange,
+                      });
                     }}
                     onSeeAll={() => {
                       document.getElementById('reqs-table')?.scrollIntoView({
