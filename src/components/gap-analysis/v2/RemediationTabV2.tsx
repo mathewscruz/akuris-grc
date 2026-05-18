@@ -232,7 +232,7 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
           <SectionHead
             title="Sugestões IA por causa-raiz"
             count={aiClusters.length}
-            rightSlot={<AIBadge />}
+            right={<AIBadge />}
           />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {aiClusters.map(c => (
@@ -313,7 +313,7 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
                           <span className="font-mono text-[10px] text-muted-foreground">
                             {p.requirement_codigo}
                           </span>
-                          <StatusBadge size="sm" {...resolvePriorityTone(p.prioridade)}>
+                          <StatusBadge size="sm" {...resolvePrioridadeTone(p.prioridade)}>
                             {p.prioridade}
                           </StatusBadge>
                         </div>
