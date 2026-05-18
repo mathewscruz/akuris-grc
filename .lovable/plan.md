@@ -142,3 +142,16 @@ Onda 3  [Avaliação grande] ───┤
 Onda 4  [Drawer + ⌘K]      ───┤  validar
 Onda 5  [Docs · Rem · SoA] ───┘
 ```
+
+---
+
+## Status
+
+- **Onda 1** ✅ primitivos criados em `src/components/gap-analysis/v2/`.
+- **Onda 2** ✅ página Frameworks reformulada:
+  - `MaturityHero` (score grande, MaturityScale CMMI, StackBar global, 3 KPIs).
+  - `AIRecommendedTile` (selo FwMono, badge IA, overlap %, CTA).
+  - `ActiveFrameworkRow` (full-width: selo + score 50px + StackBar + chips + CTA).
+  - `fw-utils.ts` (deriveFwMono, getFwCategory).
+  - Loader trocado por `AkurisPulse`.
+  - `WelcomeHero` e `FrameworkCatalog` mantidos (zero-state e catálogo agrupado).
