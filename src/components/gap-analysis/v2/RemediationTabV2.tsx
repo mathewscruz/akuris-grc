@@ -267,7 +267,7 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
               count={aiClusters.length}
               right={<AIBadge />}
             />
-            <SegmentToggle
+            <SegmentToggle<'causa' | 'secao' | 'esforco'>
               value={grouping}
               onChange={setGrouping}
               options={[
