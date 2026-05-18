@@ -52,7 +52,7 @@ export function AssessmentInsightsStrip({ insights }: AssessmentInsightsStripPro
               {ins.eyebrow}
             </div>
             <div className="mt-1 flex items-baseline gap-2">
-              <span className={`font-mono text-3xl font-semibold tabular-nums leading-none ${VALUE_TONE[tone]}`}>
+              <span className={`text-3xl font-semibold tabular-nums leading-none tracking-tight ${VALUE_TONE[tone]}`}>
                 {ins.value}
               </span>
               <span className="text-sm font-medium text-foreground">{ins.title}</span>

@@ -30,5 +30,8 @@ export { DocumentsHero } from './DocumentsHero';
 export { RemediationTabV2 } from './RemediationTabV2';
 export { SoATabV2 } from './SoATabV2';
 export { BulkActionBar } from './BulkActionBar';
+export { ConformityCard } from './ConformityCard';
+export { RequirementsTableToolbar } from './RequirementsTableToolbar';
+export type { RequirementsToolbarCounts } from './RequirementsTableToolbar';
 export { deriveFwMono, getFwCategory, FW_CATEGORY_LABEL } from './fw-utils';
 export type { FwCategory } from './fw-utils';

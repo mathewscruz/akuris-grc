@@ -45,8 +45,8 @@ export function KpiTiny({
   return (
     <div
       className={cn(
-        'relative overflow-hidden rounded-lg border border-border bg-card px-3.5 py-3',
-        'before:absolute before:left-0 before:top-0 before:h-0.5 before:w-full',
+        'relative overflow-hidden rounded-lg border border-border bg-card pl-4 pr-3.5 py-3',
+        'before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[3px]',
         ACCENT[tone],
         className
       )}
