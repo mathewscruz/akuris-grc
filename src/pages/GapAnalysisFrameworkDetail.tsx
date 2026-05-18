@@ -8,7 +8,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { GenericRequirementsTable } from '@/components/gap-analysis/GenericRequirementsTable';
-import { CategoryBarChart } from '@/components/gap-analysis/CategoryBarChart';
 import { FrameworkHeroSummary } from '@/components/gap-analysis/FrameworkHeroSummary';
 import { FrameworkHistoryTab } from '@/components/gap-analysis/FrameworkHistoryTab';
 import { AdherenceAssessmentView } from '@/components/gap-analysis/adherence/AdherenceAssessmentView';
@@ -18,6 +17,13 @@ import { RemediationTab } from '@/components/gap-analysis/RemediationTab';
 import { FrameworkOnboarding } from '@/components/gap-analysis/FrameworkOnboarding';
 import { SoATab } from '@/components/gap-analysis/SoATab';
 import { EvidenceLibraryHub } from '@/components/gap-analysis/EvidenceLibraryHub';
+import {
+  AssessmentInsightsStrip,
+  SectionHeatmap,
+  PriorityQueueCard,
+  type AssessmentInsight,
+  type HeatCell,
+} from '@/components/gap-analysis/v2';
 import { useDocGen } from '@/contexts/DocGenContext';
 
 import { exportFrameworkPDF } from '@/components/gap-analysis/ExportFrameworkPDF';
