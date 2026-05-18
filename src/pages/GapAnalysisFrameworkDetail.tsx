@@ -452,7 +452,7 @@ function GapAnalysisFrameworkDetailInner() {
             )}
           </TabsContent>
 
-          <TabsContent value="documentos">
+          <TabsContent value="documentos" className="space-y-5">
             {adherenceView === 'result' && selectedAdherenceAssessment ? (
               <AdherenceResultView
                 assessment={selectedAdherenceAssessment}
@@ -461,11 +461,16 @@ function GapAnalysisFrameworkDetailInner() {
                 onApplied={handleScoreChange}
               />
             ) : (
-              <AdherenceAssessmentView
-                onViewResult={(assessment) => { setSelectedAdherenceAssessment(assessment); setAdherenceView('result'); }}
-                frameworkId={frameworkId}
-                frameworkNome={framework.nome}
-              />
+              <>
+                {empresaId && (
+                  <DocumentsHero frameworkId={frameworkId!} empresaId={empresaId} />
+                )}
+                <AdherenceAssessmentView
+                  onViewResult={(assessment) => { setSelectedAdherenceAssessment(assessment); setAdherenceView('result'); }}
+                  frameworkId={frameworkId}
+                  frameworkNome={framework.nome}
+                />
+              </>
             )}
           </TabsContent>
 
