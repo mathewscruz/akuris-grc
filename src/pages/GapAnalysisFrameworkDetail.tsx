@@ -8,7 +8,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { GenericRequirementsTable } from '@/components/gap-analysis/GenericRequirementsTable';
-import { FrameworkHeroSummary } from '@/components/gap-analysis/FrameworkHeroSummary';
 import { FrameworkHistoryTab } from '@/components/gap-analysis/FrameworkHistoryTab';
 import { AdherenceAssessmentView } from '@/components/gap-analysis/adherence/AdherenceAssessmentView';
 import { AdherenceResultView } from '@/components/gap-analysis/adherence/AdherenceResultView';
@@ -19,6 +18,8 @@ import {
   AssessmentInsightsStrip,
   SectionHeatmap,
   PriorityQueueCard,
+  ConformityCard,
+  RequirementsTableToolbar,
   RequirementDrawerProvider,
   useRequirementDrawer,
   CommandPalette,
