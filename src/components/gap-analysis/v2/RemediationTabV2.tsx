@@ -1,18 +1,20 @@
 /**
- * RemediationTabV2 — Onda 5 Akuris.
- * 4 KPIs editoriais + Sugestões IA (causa-raiz, client-side por categoria)
- * + Kanban de 4 colunas (A iniciar / Em andamento / Em revisão / Concluído).
+ * RemediationTabV2 — Onda 5+ Akuris (equalizada ao mockup img 255).
+ * 4 KPIs editoriais + Sugestões IA com segment (causa-raiz/seção/esforço) +
+ * cards de cluster com chips de códigos + Kanban com toggle Quadro/Lista/Timeline.
  * Mantém identidade Navy/Purple, tokens semânticos, AkurisPulse.
  */
 import { useEffect, useMemo, useState } from 'react';
-import { ExternalLink, ArrowRight, ClipboardList, Sparkles } from 'lucide-react';
+import { ExternalLink, ArrowRight, ClipboardList, Sparkles, LayoutGrid, List, GitBranch } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { logger } from '@/lib/logger';
+import { cn } from '@/lib/utils';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolvePrioridadeTone } from '@/lib/status-tone';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { KpiTiny } from './KpiTiny';
 import { AIBadge } from './AIBadge';
 import { SectionHead } from './SectionHead';
