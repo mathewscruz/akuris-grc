@@ -68,11 +68,11 @@ export function ActiveFrameworkRow({
 
         {/* Score + maturidade */}
         <div className="flex items-baseline gap-3">
-          <span className={`font-mono text-5xl font-semibold tabular-nums ${scoreTone} leading-none`}>
+          <span className={`text-5xl font-semibold tabular-nums tracking-tight ${scoreTone} leading-none`}>
             {averageScore}
           </span>
           <div className="flex flex-col">
-            <span className="font-mono text-xs text-muted-foreground">/ 100</span>
+            <span className="text-xs text-muted-foreground tabular-nums">/ 100</span>
             <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mt-1">
               Nível {maturity.id} · {maturity.label}
             </span>
