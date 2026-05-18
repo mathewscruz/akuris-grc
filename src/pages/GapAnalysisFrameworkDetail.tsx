@@ -470,7 +470,7 @@ function GapAnalysisFrameworkDetailInner() {
           </TabsContent>
 
           <TabsContent value="remediacao">
-            <RemediationTab frameworkId={frameworkId!} frameworkName={framework.nome} />
+            <RemediationTabV2 frameworkId={frameworkId!} frameworkName={framework.nome} />
           </TabsContent>
 
           <TabsContent value="historico">
