@@ -326,37 +326,7 @@ function GapAnalysisFrameworkDetailInner() {
               />
             ) : (
               <>
-                {/* Hero consolidado: donut + sparkline + delta + chips de domínio/seção */}
-                <FrameworkHeroSummary
-                  overallScore={overallScore}
-                  totalRequirements={totalRequirements}
-                  evaluatedRequirements={evaluatedRequirements}
-                  domainScores={domainScores}
-                  sectionScores={sectionScores}
-                  config={config}
-                  frameworkId={frameworkId!}
-                  loading={scoreLoading}
-                  contextMessage={(() => {
-                    if (totalRequirements === 0) return undefined;
-                    if (evaluatedRequirements === 0)
-                      return 'Comece avaliando os requisitos — clique em qualquer linha da tabela ou use a Análise de Documentos.';
-                    const naoConforme = categoryData.reduce((s, c) => s + c.nao_conforme, 0);
-                    if (naoConforme > 0)
-                      return `${naoConforme} requisito(s) não conforme(s) identificado(s). Crie planos de ação para tratar os gaps.`;
-                    if (evaluatedRequirements < totalRequirements)
-                      return `Continue avaliando — ${evaluatedRequirements} de ${totalRequirements} concluídos.`;
-                    return `Todos os ${totalRequirements} requisitos foram avaliados.`;
-                  })()}
-                  contextAction={
-                    evaluatedRequirements > 0 && categoryData.reduce((s, c) => s + c.nao_conforme, 0) > 0
-                      ? { label: 'Ver remediação', onClick: () => setActiveTab('remediacao') }
-                      : evaluatedRequirements === 0 && totalRequirements > 0
-                      ? { label: 'Analisar documentos', onClick: () => setActiveTab('documentos') }
-                      : undefined
-                  }
-                />
-
-                {/* Onda 3 — Strip de insights da avaliação */}
+                {/* Onda 3+ — Strip de insights da avaliação */}
                 {(() => {
                   const naoConformeCount = categoryData.reduce((s, c) => s + c.nao_conforme, 0);
                   const parcialCount = categoryData.reduce((s, c) => s + c.parcial, 0);
@@ -399,28 +369,43 @@ function GapAnalysisFrameworkDetailInner() {
                   return <AssessmentInsightsStrip insights={insights} />;
                 })()}
 
-                {/* Onda 3 — Fila de Prioridade (top-N requisitos pela IA) */}
-                {empresaId && evaluatedRequirements > 0 && (
-                  <PriorityQueueCard
-                    frameworkId={frameworkId!}
-                    empresaId={empresaId}
-                    limit={5}
-                    onRequirementClick={(req) => {
-                      openRequirement({
-                        requirementId: req.id,
-                        empresaId,
-                        onSaved: handleScoreChange,
-                      });
-                    }}
-                    onSeeAll={() => {
-                      document.getElementById('reqs-table')?.scrollIntoView({
-                        behavior: 'smooth', block: 'start',
-                      });
-                    }}
+                {/* Onda 5+ — Conformidade + Fila de Prioridade lado a lado */}
+                <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.6fr] gap-4">
+                  <ConformityCard
+                    overallScore={overallScore}
+                    totalRequirements={totalRequirements}
+                    evaluatedRequirements={evaluatedRequirements}
+                    conforme={categoryData.reduce((s, c) => s + c.conforme, 0)}
+                    parcial={categoryData.reduce((s, c) => s + c.parcial, 0)}
+                    naoConforme={categoryData.reduce((s, c) => s + c.nao_conforme, 0)}
+                    naoAplicavel={categoryData.reduce((s, c) => s + c.nao_aplicavel, 0)}
                   />
-                )}
+                  {empresaId && evaluatedRequirements > 0 ? (
+                    <PriorityQueueCard
+                      frameworkId={frameworkId!}
+                      empresaId={empresaId}
+                      limit={5}
+                      onRequirementClick={(req) => {
+                        openRequirement({
+                          requirementId: req.id,
+                          empresaId,
+                          onSaved: handleScoreChange,
+                        });
+                      }}
+                      onSeeAll={() => {
+                        document.getElementById('reqs-table')?.scrollIntoView({
+                          behavior: 'smooth', block: 'start',
+                        });
+                      }}
+                    />
+                  ) : (
+                    <div className="rounded-2xl border border-dashed border-border bg-card p-6 flex items-center justify-center text-sm text-muted-foreground">
+                      A fila de prioridade aparece após as primeiras avaliações.
+                    </div>
+                  )}
+                </div>
 
-                {/* Onda 3 — Heatmap de aderência por categoria (substitui CategoryBarChart) */}
+                {/* Heatmap de aderência por categoria */}
                 {categoryData.length > 0 && (
                   <SectionHeatmap
                     cells={categoryData.map<HeatCell>(c => ({
@@ -441,6 +426,15 @@ function GapAnalysisFrameworkDetailInner() {
                 )}
 
                 <div id="reqs-table">
+                  <RequirementsTableToolbar
+                    counts={{
+                      total: totalRequirements,
+                      semEvidencia: Math.max(0, totalRequirements - evaluatedRequirements),
+                      criticos: categoryData.reduce((s, c) => s + c.nao_conforme, 0),
+                      prazoVencido: 0,
+                      sugeridosIA: categoryData.reduce((s, c) => s + c.parcial, 0),
+                    }}
+                  />
                   <GenericRequirementsTable
                     frameworkId={frameworkId!}
                     frameworkName={framework.nome}
