@@ -1,178 +1,107 @@
+## Diagnóstico — o que diverge dos mockups
 
-# Reforma Gap Analysis — Estrutura Claude, Identidade Akuris
+Comparei tela a tela com as 9 imagens enviadas. Identifiquei **3 grupos**:
 
-Reorganizar o módulo Gap Analysis em **5 telas + 4 overlays** conforme o design enviado, mantendo Navy/Purple/DM Sans, tokens semânticos atuais (`success/warning/destructive/info/primary`), `StatusBadge`, `AkurisPulse`, ícones proprietários e regras de segurança/empresa_id.
+### A. Equalização tipográfica e cromática (atravessa todas as telas)
+Os números grandes do mockup ("47%", "46", "117/121", "+33pts") usam **DM Sans bold**, não monospace. Hoje os componentes V2 (`MaturityHero`, `KpiTiny`, `AssessmentInsightsStrip`, `ActiveFrameworkRow`, `PriorityQueueCard`, `RemediationTabV2`) renderizam esses numerais com `font-mono`, o que produz aspecto técnico ≠ identidade Akuris. **Eyebrows** uppercase (`ÍNDICE DE MATURIDADE`, `PRÓXIMO MARCO`, etc.) ficam em mono — bate com mockup.
 
-A reforma é grande e será entregue em **5 ondas independentes**, cada uma testável isoladamente. Implementadas em sequência, mas você pode pausar entre ondas.
+O `KpiTiny` tem hoje uma listra colorida no **topo**; mockups das telas Documentos, Remediação e SoA mostram **listra na esquerda** dos cards de KPI.
 
----
+### B. Telas que precisam de reestruturação visual
+1. **Frameworks · Hero (img 252)** — hoje é 2 colunas (score+escala | distribuição+KPIs). Mockup é dashboard de **4 colunas**: `Índice de Maturidade` | `Próximo Marco` | `Gaps a Tratar` | `Insight da IA`. A `MaturityScale` fica embaixo da coluna 1, não em destaque.
+2. **Avaliação (img 253)** — hoje renderiza o `FrameworkHeroSummary` (donut grande full-width) + Insights + Priority Queue empilhados. Mockup mostra **Conformidade card (donut compacto) + PriorityQueueCard lado a lado em 2 colunas**, sem o `FrameworkHeroSummary` legado.
+3. **Avaliação · Tabela** — falta a faixa de **chips contextuais** (Todos · 121 / Sem evidência · 46 / Críticos · 18 / Prazo vencido · 3 / Sugeridos pela IA · 12) + toggle `Densidade conforto|Compacta` e `Tabela|Quadro` acima do `GenericRequirementsTable`.
+4. **Documentos (img 254)** — `DocumentsHero` hoje é uma faixa horizontal só com convite. Mockup tem **2 colunas**: convite à esquerda + painel "Tipos sugeridos para esta avaliação" (com chip "FALTA") à direita.
+5. **Remediação (img 255)** — falta o **segmento `Por causa-raiz | Por seção | Por esforço`** acima das sugestões, o **toggle `Quadro | Lista | Timeline`** do board, e os **chips de códigos** dentro dos cards de sugestão IA (4.1 4.2 4.3 ...).
 
-## Inventário de mudanças (resumo do que existe vs. o que vem)
-
-| Tela | Hoje | Novo |
-|---|---|---|
-| Frameworks (lista) | `WelcomeHero` + `FrameworkCard` grid + `FrameworkCatalog` | Hero de Maturidade (escala 5 níveis + próximo marco + gaps + insight IA) + framework ativo full-width com `StackBar` + "Recomendados pela IA" com % de sobreposição + "Outros disponíveis" |
-| Avaliação | `FrameworkHeroSummary` (donut) + `CategoryBarChart` + `GenericRequirementsTable` | 3 cards **Insight strips** (Onde focar / Padrão detectado / Ganho rápido) + Donut compacto + **Fila de prioridade IA (top-5)** + **Heatmap por seção** + tabela com coluna **"IA sugere"**, density toggle, chips de filtro contextuais |
-| Documentos | parte do `EvidenceLibraryHub` | **Hero dropzone roxo** ("Suba o documento, a IA mapeia"), tipos sugeridos faltantes, 4 KPIs, cards de análises recentes com chips de cláusulas cobertas/gaps + badge de confiança IA |
-| Remediação | `RemediationTab` (StatCards + lista simples) | 4 KPIs + **Sugestões IA por causa-raiz** (agrupa N requisitos em 1 plano consolidado, com esforço/dias/impacto) + **Kanban** (A iniciar / Em andamento / Em revisão / Concluído) |
-| SoA | `SoATab` | 7 KPIs compactos + filtros segmentados + **Bulk action bar** dark sticky (alterar status / atribuir / definir prazo / criar plano em lote / gerar justificativa IA) + inline observações |
-| **Modal requisito** | `RequirementDetailDialog` (modal central, 1300 linhas) | **Drawer lateral 820px** com tabs (Avaliação/Evidências/Plano/Histórico/Discussão), `StatusSeg` C-P-N-A com atalhos teclado, **AI Diagnostic Card** com confiança/fontes/ações, blocos Texto Oficial + Pontos Avaliados (checklist) + Justificativa, navegação ↑↓ requisitos, footer com autosave + "Salvar e próximo" |
-| **Command Palette ⌘K** | inexistente | Overlay global de busca semântica (requisitos, ações rápidas, frameworks) com atalhos |
-| **AI Diagnostic Popup** | parte do dialog | Modal compacto inline na tabela (status sugerido, confiança, pontos atendidos, justificativa gerada, Aplicar/Regenerar/Descartar) |
-| **Evidence Picker** | `EvidenceReusePanel` | Modal redesenhado: tabela com seleção, "também cobre N cláusulas", aderência por % (verde/amarelo), CTA "Vincular ao requisito X" |
-
----
-
-## ONDA 1 — Tokens e primitivos compartilhados (base de tudo)
-
-Sem alterações visuais ainda, só plataforma para as ondas seguintes.
-
-**Novos componentes em `src/components/gap-analysis/v2/`:**
-- `MaturityScale.tsx` — barra horizontal 5-níveis (Inicial→Otimizado) com tokens `destructive/warning/primary/success`.
-- `StackBar.tsx` — barra empilhada (conforme/parcial/não-conforme/N-A) reutilizável.
-- `StatusSeg.tsx` — segmented control C / P / N / A com atalhos teclado + indicador de sugestão IA.
-- `InsightStrip.tsx` — card de insight com ribbon lateral colorida + label IA + body + CTA.
-- `KpiTiny.tsx` — KPI compacto (eyebrow + value tnum + foot) para rows de 4/7 colunas.
-- `AIBadge.tsx` — chip "IA" reutilizando token `primary`.
-- `FwMono.tsx` — selo monocromático do framework (l1/l2).
-- `SectionHead.tsx` — header de seção com title + count + rule + slot direita.
-
-**Tokens novos em `index.css`** (sob `:root` e `.dark`):
-- `--gap-rule`, `--gap-surface-2`, `--gap-surface-3` (alias dos atuais para coesão com o design).
-
-**Arquivo**: `src/styles/gap-analysis-tokens.css` (importado uma vez no `index.css`).
-
-**Sem migração de banco.**
+### C. Higiene e remoção de redundância
+- `RemediationTab.tsx` (legacy) — substituído por `RemediationTabV2`, nada mais importa: **deletar**.
+- `SoATab.tsx` (legacy) — substituído por `SoATabV2`, nada mais importa: **deletar**.
+- `FrameworkHeroSummary.tsx` — só é usado em `GapAnalysisFrameworkDetail` (lugar que vamos refatorar). Após o C2 fica órfão: **deletar**.
+- `CategoryBarChart.tsx` — não é usado em lugar nenhum desde a Onda 3: **deletar**.
+- `dialogs/EvidenceReusePanel.tsx` permanece (usado pelo `RequirementDetailDialog` ainda em uso para "Edição completa" do drawer) — **manter**.
 
 ---
 
-## ONDA 2 — Página Frameworks (lista)
+## Plano de execução
 
-Reescrever `GapAnalysisFrameworks.tsx` com:
-- **Hero de Maturidade**: score grande + nível + delta 30d + `MaturityScale` + sub-cards (Próximo marco com barra de meta, Gaps a tratar com críticos/vencidos, Insight IA usando `useFrameworksOverview`/score histórico já existente).
-- **Filtros** mantidos (Search + chips de categoria).
-- **Frameworks ativos**: card full-width com `FwMono` + título + `StackBar` + score lateral + CTA "Continuar avaliação".
-- **Recomendados pela IA**: 4 tiles com barra de sobreposição (% calculado por overlap de categorias entre frameworks ativos e disponíveis — heurística simples no client; AI scoring real fica para onda futura).
-- **Outros disponíveis**: grid compacto restante.
+### Etapa 1 — Padronização tipográfica V2
+Substituir `font-mono` por DM Sans nos **números heróicos** dos componentes abaixo, mantendo `tabular-nums` para alinhamento e mantendo `font-mono` nos *eyebrows* (caixa alta + tracking) e em códigos técnicos (`4.1.2`, `A.5.4`):
 
-Mantém: `WelcomeHero` para estado vazio inicial, `FrameworkCatalog` lazy-loaded para "Adicionar framework".
+- `MaturityHero.tsx` — score `47` e KpiCells
+- `KpiTiny.tsx` — valor herói + listra de acento muda de `top` para **`left` (2px)**
+- `AssessmentInsightsStrip.tsx` — valor herói
+- `ActiveFrameworkRow.tsx` — score lateral 47%
+- `PriorityQueueCard.tsx` — códigos permanecem em mono; ajustes mínimos
+- `RemediationTabV2.tsx` — números dos cards de cluster
 
----
-
-## ONDA 3 — Página Avaliação (a maior)
-
-Reorganizar `GapAnalysisFrameworkDetail.tsx` + criar componentes:
-- **`AssessmentInsightsStrip.tsx`** — 3 insights derivados de `gap_analysis_evaluations` (causa-raiz, gaps por seção, evidências reaproveitáveis).
-- **`PriorityQueueCard.tsx`** — top-5 requisitos a triar, ordenados por: crítico > prazo > peso. Coluna direita do hero. Cada item: rank, código, título, motivo IA, status, responsável avatar, botão "Triagem →" abre Drawer.
-- **`SectionHeatmap.tsx`** — para cada seção, células coloridas (1 por requisito) com legenda + % e contagem.
-- **`v2/RequirementsTableV2.tsx`** — refatorar `GenericRequirementsTable`:
-  - Colunas: ☐ / Código (com ⚠ se prioritário) / Requisito / Prazo / Responsável / Status / **IA sugere** / Evid. / Avaliação (select inline).
-  - Tools row: chips contextuais (Sem evidência · Críticos · Prazo vencido · Sugeridos IA) + density toggle (usa `useTableDensity` existente) + view toggle (tabela/quadro).
-- Mantém `useFrameworkScore`, `loadCategoryData`, etc.
-
----
-
-## ONDA 4 — Drawer + Overlays (substitui modal atual)
-
-- **`RequirementDrawer.tsx`** — substitui `RequirementDetailDialog`. Sheet lateral 820px (usa shadcn `Sheet`).
-  - Header fixo: code badge + Crítico pill + título + close + `StatusSeg` + AI Badge + nav ↑↓ requisitos + meta (framework/seção/responsável/prazo/atualizado).
-  - Tabs: Avaliação / Evidências (count) / Plano de Ação (count) / Histórico (count) / Discussão (count).
-  - Body: `AIDiagnosticCard` + `OfficialTextBlock` + `EvaluatedPointsChecklist` (4 critérios marcados auto pela IA) + `JustificationTextarea` com botão "Gerar com IA" + autosave.
-  - Footer fixo: kbd hints (C/P/N/A status, E evidência, ⌘↵ salvar) + autosave dot + "Próximo requisito" + "Salvar e fechar".
-  - Atalhos teclado via novo hook `useDrawerShortcuts`.
-
-- **`CommandPalette.tsx`** — global, ⌘K abre. Busca em `gap_analysis_requirements` (full-text) + ações rápidas + frameworks. Registrado em `App.tsx` ou no layout do módulo.
-
-- **`AIDiagnosticPopup.tsx`** — modal centralizado pequeno, alternativa ao Drawer para triagem rápida na tabela (botão "diagnóstico inline" em cada linha).
-
-- **`EvidencePickerDialog.tsx`** — refatorar `EvidenceReusePanel` para o layout do design (tabela com aderência, "também cobre N cláusulas", CTA específico).
-
-- Edge function nova: `gap-analysis-ai-diagnostic/index.ts` — recebe `requirement_id` + lista de evidências, retorna `{ status_sugerido, confianca, pontos_atendidos, justificativa, fontes[] }` usando Lovable AI. Respeita `consume_ai_credit` + 402. (Reusa pattern de `analyze-evidence-against-requirement` existente.)
-
----
-
-## ONDA 5 — Documentos · Remediação · SoA
-
-- **`DocumentosTab.tsx`** (nova aba no detail ou rota dedicada):
-  - Hero roxo dropzone + tipos sugeridos faltantes (derivados de cláusulas sem evidência).
-  - 4 KPIs (analisados, conformidade média, cláusulas cobertas, sem cobertura).
-  - Cards de análises recentes com chips cobre/gaps + confiança IA. Reusa storage atual.
-
-- **`RemediationTabV2.tsx`** — substitui `RemediationTab`:
-  - 4 KPIs (gaps abertos, sugeridos IA, em execução, impacto potencial).
-  - **`AISuggestedPlanCards.tsx`** — agrupa requisitos não-conformes por `categoria`/causa-raiz e gera 1-3 cards "plano consolidado" com esforço/dias/impacto. Botão "Criar plano →" chama `planos_acao` insert vinculando todos os requirements.
-  - Kanban 4 colunas (A iniciar / Em andamento / Em revisão / Concluído) com drag opcional (sem na v1, só botões mover).
-  - Edge function `gap-analysis-cluster-plans/index.ts` — agrupa por causa-raiz com IA.
-
-- **`SoATabV2.tsx`** — substitui `SoATab`:
-  - 7 KPIs (Total, Aplicáveis, N/A, Conformes, Parciais, Não conformes, Não avaliados).
-  - Filtros segmentados (Cláusulas / Anexo A / Todos).
-  - Tabela com checkbox por linha + observações inline.
-  - **`BulkActionBar.tsx`** — barra dark sticky aparece quando 1+ selecionados: Alterar status / Atribuir / Definir prazo / Criar plano em lote / Gerar justificativa IA / Limpar.
-
----
-
-## Detalhes técnicos
-
-- **Identidade preservada**: nada de `oklch()` cru, Hanken Grotesk, off-white #f0eee9. Tudo via `hsl(var(--*))`, DM Sans, `bg-background`. Roxo Akuris (`--primary`) ocupa o papel do "roxo atenuado" do design.
-- **Status colors**: continua `success/warning/destructive/info/muted-foreground` via `STATUS_BG_CLASS`/`STATUS_TEXT_CLASS` de `gap-analysis-tokens.ts`.
-- **Loading**: `AkurisPulse` em todos os pontos, nada de `animate-spin`/skeleton visível.
-- **Badges**: `StatusBadge` + `status-tone.tsx`, sem cores Tailwind cruas.
-- **Tabelas**: respeitam `useTableDensity`.
-- **Segurança**: toda query mantém `.eq('empresa_id', empresaId)`.
-- **AI Credits**: novas edge functions chamam `consume_ai_credit` RPC, retornam 402.
-- **Logs**: `logger.ts`, `invokeEdgeFunction` wrapper.
-- **Sem mudança de schema** na v1 (todas as features novas operam sobre tabelas existentes: `gap_analysis_frameworks`, `_requirements`, `_evaluations`, `planos_acao`).
-
-## Arquivos que serão removidos/depreciados ao final
-
-- `RequirementDetailDialog.tsx` (1300 linhas) → substituído por `RequirementDrawer.tsx`.
-- `EvidenceReusePanel.tsx` → substituído por `EvidencePickerDialog.tsx`.
-- `RemediationTab.tsx`, `SoATab.tsx` → V2.
-- `FrameworkHeroSummary.tsx` é mantido (usado em outros pontos), mas o detail page passa a usar componentes novos.
-
-## Quanto demora
-
-Cada onda = 1 a 2 conversas. Recomendo aprovar o plano e fazermos **Onda 1 + 2** primeiro (base + Frameworks), validamos visualmente, e seguimos.
+### Etapa 2 — Frameworks Hero em 4 colunas (img 252)
+Reescrever `MaturityHero.tsx` como `grid grid-cols-1 lg:grid-cols-[1.4fr_1fr_0.8fr_1.2fr]` com separadores verticais sutis (`border-l border-border/40`):
 
 ```text
-Onda 1  [primitivos]       ───┐
-Onda 2  [Frameworks list]  ───┤  validar
-Onda 3  [Avaliação grande] ───┤
-Onda 4  [Drawer + ⌘K]      ───┤  validar
-Onda 5  [Docs · Rem · SoA] ───┘
+┌──────────────────────┬──────────────┬─────────────┬────────────────┐
+│ ÍNDICE DE MATURIDADE │ PRÓXIMO MARCO│ GAPS A TRATAR│ ✦ INSIGHT DA IA│
+│ 47%  [Nível 3]       │ Auditoria … │ 46 (destr.) │ Mantendo o     │
+│ ▲ +22.4 pts · 30d    │ 26 abr 2026 │ Req. não    │ ritmo…         │
+│ [MaturityScale 5lvl] │ progress    │ conformes   │ Ver plano →    │
+│                      │ 47%→meta60% │ 18 críticos │                │
+│                      │             │ 3 vencidos  │                │
+└──────────────────────┴──────────────┴─────────────┴────────────────┘
 ```
+
+Dados:
+- **Próximo Marco** — placeholder estático na primeira passada (o módulo não tem ainda tabela de marcos do framework). Texto "Defina um marco" + CTA se ausente.
+- **Gaps a Tratar** — derivar `naoConformeCount` (já calculado) + `criticosCount` (peso alto) + `vencidosCount` (evaluations com `prazo < now`).
+- **Insight IA** — texto contextual gerado client-side (mesmo padrão do `contextMessage` atual) com link "Ver plano sugerido →" que troca tab para `remediacao`.
+
+### Etapa 3 — Avaliação · 2 colunas Conformidade + Fila (img 253)
+Em `GapAnalysisFrameworkDetail.tsx`:
+1. **Remover** o `<FrameworkHeroSummary …>` da aba `avaliacao`.
+2. Criar `src/components/gap-analysis/v2/ConformityCard.tsx` — card editorial com:
+   - Donut 110px (success/warning/destructive/info), score central
+   - Pill "Nível X — Definido" no topo
+   - Legenda compacta (Conforme 43 · Parcial 25 · Não conf. 46 · N/A 3)
+   - Tríade rodapé: `PROGRESSO 117/121` | `META Q1 60%` | `Δ 30d +22,4`
+3. Renderizar `ConformityCard` + `PriorityQueueCard` em `grid lg:grid-cols-[1fr_1.6fr]`.
+4. `AssessmentInsightsStrip` continua acima (3 cards).
+
+### Etapa 4 — Avaliação · faixa de chips + toggles acima da tabela (img 253)
+Criar `src/components/gap-analysis/v2/RequirementsTableToolbar.tsx`:
+- **Chips contextuais** com contagens reais (Todos / Sem evidência / Críticos / Prazo vencido / Sugeridos IA) — cada chip aplica filtro via `searchParams`.
+- Toggle `Tabela | Quadro` (Quadro inicialmente desabilitado com tooltip "em breve" — mantém escopo).
+- Reaproveitar `DensityToggle` já existente para `Conforto | Compacta`.
+- Encaixa **acima** do `<GenericRequirementsTable>` no `<div id="reqs-table">`.
+
+### Etapa 5 — Documentos · hero 2 colunas + tipos sugeridos (img 254)
+Refatorar `DocumentsHero.tsx`:
+- Grid `lg:grid-cols-[1.6fr_1fr]`.
+- Esquerda: convite + 3 botões (Anexar arquivos roxo, Adicionar link, Gerar com IA).
+- Direita: painel "TIPOS SUGERIDOS PARA ESTA AVALIAÇÃO" listando 4 tipos derivados dos requisitos sem evidência (`Política de Segurança` cobre A.5.1 etc.) com chip `FALTA`.
+- Manter os 4 KpiTiny já existentes — mas agora com listra **esquerda** vinda da Etapa 1.
+
+### Etapa 6 — Remediação · segmentos + Kanban com toggle (img 255)
+Em `RemediationTabV2.tsx`:
+- Adicionar segmento `Por causa-raiz | Por seção | Por esforço` no header de `Sugestões da IA` (segment controla agrupamento; "Por seção" e "Por esforço" reagrupam o array já carregado).
+- Cards de cluster: trocar paragrafo "Tratar N gaps em X" pelo formato do mockup (chips dos códigos: `4.1 4.2 4.3 +5`) e meta `M esforço · 12d estimado · +18 pts impacto`.
+- Header do Kanban: toggle `Quadro | Lista | Timeline` (apenas Quadro funcional, demais como "em breve" com tooltip).
+- Empty-state do Kanban: 2-col text "Adote uma sugestão acima · ou crie um plano avulso." quando vazio.
+
+### Etapa 7 — Limpeza
+Remover arquivos órfãos:
+```text
+src/components/gap-analysis/RemediationTab.tsx
+src/components/gap-analysis/SoATab.tsx
+src/components/gap-analysis/FrameworkHeroSummary.tsx
+src/components/gap-analysis/CategoryBarChart.tsx
+```
+E remover imports/usages eventualmente apontando para esses caminhos (já confirmei que após a Etapa 3, ninguém os importa).
 
 ---
 
-## Status
+## Fora deste plano (decisões explícitas)
 
-- **Onda 1** ✅ primitivos criados em `src/components/gap-analysis/v2/`.
-- **Onda 2** ✅ página Frameworks reformulada:
-  - `MaturityHero` (score grande, MaturityScale CMMI, StackBar global, 3 KPIs).
-  - `AIRecommendedTile` (selo FwMono, badge IA, overlap %, CTA).
-  - `ActiveFrameworkRow` (full-width: selo + score 50px + StackBar + chips + CTA).
-  - `fw-utils.ts` (deriveFwMono, getFwCategory).
-  - Loader trocado por `AkurisPulse`.
-  - `WelcomeHero` e `FrameworkCatalog` mantidos (zero-state e catálogo agrupado).
+- **Drawer (img 257), Command Palette (img 258), AI Diagnostic Popup (img 259), Evidence Picker (img 260)** — já implementados nas Ondas 4–5. Nas screenshots tirei o mesmo layout/estrutura; manter como está, sem reabrir.
+- **Marcos do framework** — o mockup mostra "Auditoria externa ISO/IEC 27001 · 26 abr 2026". O sistema ainda não tem tabela de marcos por framework. Renderizo como placeholder ("Defina um marco · CTA") nesta passada e crio o banco depois, se você confirmar.
+- **Schema** — sem mudanças no banco.
 
-- **Onda 3** ✅ página de Avaliação reformulada:
-  - `AssessmentInsightsStrip` (3 cartões editoriais: Cobertura · Criticidade · Parciais com CTAs).
-  - `PriorityQueueCard` (top-5 requisitos ordenados por peso × penalidade de status × urgência de prazo; CTA "Triagem" filtra a tabela via `?q=`).
-  - `SectionHeatmap` (grade compacta de categorias substituindo `CategoryBarChart`, clique filtra a tabela).
-  - Tabela de requisitos preservada (será substituída na Onda 4 junto com o Drawer).
-
-- **Onda 4** ✅ Drawer + Command Palette + Diagnóstico IA:
-  - Edge function `gap-analysis-ai-diagnostic` (Lovable AI, consume_ai_credit, 402).
-  - `AIDiagnosticCard` (status sugerido, pontos avaliados, gaps, justificativa copy/aplicar).
-  - `RequirementDrawer` (sheet 820px com StatusSeg, diagnóstico IA sob demanda, justificativa, prazo, save direto em `gap_analysis_evaluations`).
-  - `RequirementDrawerProvider` (contexto global — qualquer ponto pode abrir o drawer).
-  - `CommandPalette` (⌘K / Ctrl+K — busca todos os requisitos do framework, status dot, abre drawer).
-  - Wiring: PriorityQueueCard agora abre o drawer; "Edição completa" no header do drawer pode delegar ao RequirementDetailDialog existente.
-
-- **Onda 5** ✅ Documentos · Remediação · SoA editoriais:
-  - `DocumentsHero` (hero roxo "Suba o documento, a IA mapeia" + 4 KPIs derivados de `gap_analysis_adherence_assessments` e cobertura real) acima do `AdherenceAssessmentView`.
-  - `RemediationTabV2` substitui `RemediationTab` — 4 KPIs editoriais (gaps abertos / sugeridos IA / em execução / impacto potencial), **Sugestões IA por causa-raiz** (agrupamento client-side por categoria, ≥2 requisitos = 1 plano consolidado com esforço/dias/impacto) e Kanban 4 colunas (A iniciar · Em andamento · Em revisão · Concluído) com cards por requisito.
-  - `SoATabV2` substitui `SoATab` — 7 KPIs editoriais, filtros segmentados (Todos · Cláusulas · Anexo A), seleção em lote por linha e `BulkActionBar` dark sticky com Alterar status (upsert em lote em `gap_analysis_evaluations`), Atribuir, Prazo, Plano em lote e **Gerar justificativa IA**.
-  - `BulkActionBar` reaproveitável fora do SoA quando necessário.
-  - Identidade Akuris preservada: tokens semânticos, AkurisPulse, StatusBadge, sem cores Tailwind cruas.
+Quando aprovar, executo as 7 etapas sequencialmente em uma única passada (consigo concluir Etapas 1+3+4+5+6+7 no mesmo turno; Etapa 2 é a única que envolve repensar visual de fato).
