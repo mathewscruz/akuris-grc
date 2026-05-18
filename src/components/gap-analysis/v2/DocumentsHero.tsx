@@ -126,7 +126,7 @@ export function DocumentsHero({ frameworkId, empresaId, onUploadClick }: Props) 
           foot="média das análises"
           tone={
             stats.avgConformity >= 70
-              ? 'positive'
+              ? 'success'
               : stats.avgConformity >= 40
               ? 'warning'
               : 'neutral'
@@ -136,7 +136,7 @@ export function DocumentsHero({ frameworkId, empresaId, onUploadClick }: Props) 
           eyebrow="COBERTAS"
           value={stats.coveredClauses}
           foot="cláusulas atendidas"
-          tone="positive"
+          tone="success"
         />
         <KpiTiny
           eyebrow="SEM COBERTURA"
