@@ -60,7 +60,7 @@ export function MaturityHero({
   const insightCopy = (() => {
     if (totalEvaluated === 0) {
       return {
-        body: <>Comece avaliando os requisitos do seu primeiro framework — a IA cruza evidências automaticamente.</>,
+        body: <>Comece avaliando os requisitos do seu primeiro framework — as evidências são cruzadas automaticamente.</>,
         cta: 'Como começar',
       };
     }
@@ -194,11 +194,11 @@ export function MaturityHero({
           )}
         </div>
 
-        {/* Coluna 4 — Insight IA */}
+        {/* Coluna 4 — Insight contextual */}
         <div className="p-6 border-t lg:border-t-0 lg:border-l border-border/60 bg-primary/[0.02]">
           <div className="inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-primary">
             <Sparkles className="h-3 w-3" strokeWidth={1.5} />
-            Insight da IA
+            Insight
           </div>
           <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
             {insightCopy.body}

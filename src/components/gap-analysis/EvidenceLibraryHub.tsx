@@ -41,7 +41,7 @@ export function EvidenceLibraryHub() {
           akurisToast({
             module: 'gap',
             tone: 'success',
-            title: 'Cruzamentos identificados pela IA',
+            title: 'Cruzamentos identificados',
             description: `${result.persisted} requisito(s) podem usar esta evidência.`,
           });
         } else {
@@ -49,7 +49,7 @@ export function EvidenceLibraryHub() {
             module: 'gap',
             tone: 'info',
             title: 'Nenhum cruzamento encontrado',
-            description: 'A IA não identificou outros requisitos compatíveis.',
+            description: 'Nenhum outro requisito compatível foi identificado.',
           });
         }
       }

@@ -379,11 +379,11 @@ export default function GapAnalysisFrameworks() {
               />
             )}
 
-            {/* Recomendados pela IA */}
+            {/* Recomendados para sua empresa */}
             {aiRecommended.length > 0 && (
               <section>
                 <SectionHead
-                  title="RECOMENDADOS PELA IA"
+                  title="RECOMENDADOS PARA SUA EMPRESA"
                   count={aiRecommended.length}
                   right={
                     <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">

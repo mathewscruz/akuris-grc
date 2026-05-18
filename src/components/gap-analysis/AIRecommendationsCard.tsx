@@ -118,8 +118,8 @@ export function AIRecommendationsButton(props: AIRecommendationsDialogProps) {
   };
 
   const tooltipText = canAnalyze
-    ? 'Consultor IA de Conformidade — análise priorizada e quick wins'
-    : `Avalie pelo menos ${minEvaluated} requisito${minEvaluated > 1 ? 's' : ''} (${props.evaluatedRequirements}/${minEvaluated}) para liberar o Consultor IA`;
+    ? 'Consultor de Conformidade — análise priorizada e quick wins'
+    : `Avalie pelo menos ${minEvaluated} requisito${minEvaluated > 1 ? 's' : ''} (${props.evaluatedRequirements}/${minEvaluated}) para liberar o Consultor`;
 
   return (
     <>
@@ -150,7 +150,7 @@ export function AIRecommendationsButton(props: AIRecommendationsDialogProps) {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AkurisAIIcon className="h-5 w-5 text-primary"/>
-              Consultor IA de Conformidade
+              Consultor de Conformidade
               <AiCostHint className="ml-2" action="cada análise" />
             </DialogTitle>
           </DialogHeader>

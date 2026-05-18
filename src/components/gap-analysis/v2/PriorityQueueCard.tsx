@@ -146,7 +146,6 @@ export function PriorityQueueCard({
           count={items.length}
           right={
             <div className="flex items-center gap-2">
-              <AIBadge>Ordenado pela IA</AIBadge>
               {onSeeAll && (
                 <button
                   type="button"

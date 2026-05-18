@@ -258,14 +258,13 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
         />
       </div>
 
-      {/* Planos consolidados pela IA */}
+      {/* Planos consolidados */}
       {aiClusters.length > 0 && (
         <section className="space-y-3">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <SectionHead
-              title="Planos consolidados pela IA"
+              title="Planos consolidados"
               count={aiClusters.length}
-              right={<AIBadge />}
             />
             <SegmentToggle
               value={grouping}
@@ -280,7 +279,7 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
 
           <p className="text-xs text-muted-foreground">
             <Sparkles className="inline h-3 w-3 mr-1 text-primary" strokeWidth={1.5} />
-            A IA agrupou seus <strong className="text-foreground">{naoConformes.length} gaps</strong> em{' '}
+            Seus <strong className="text-foreground">{naoConformes.length} gaps</strong> foram agrupados em{' '}
             <strong className="text-foreground">{aiClusters.length} planos consolidados</strong>{' '}
             que cobrem <strong className="text-foreground">{aiClusters.reduce((s, c) => s + c.items.length, 0)} requisitos</strong>.
           </p>
@@ -294,7 +293,6 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
                 <CornerAccent position="top-right" size={10} />
                 <span className="absolute left-0 top-3 bottom-3 w-[2px] rounded-r bg-primary" />
                 <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-primary">
-                  <AIBadge />
                   Cobre {c.items.length} requisitos
                 </div>
                 <h4 className="mt-1 text-sm font-semibold leading-snug">
