@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { ChevronLeft, Download, FileBarChart, FileDown, HelpCircle, MoreHorizontal, FileText } from 'lucide-react';
 import { AkurisAIIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { GenericRequirementsTable } from '@/components/gap-analysis/GenericRequirementsTable';
-import { CategoryBarChart } from '@/components/gap-analysis/CategoryBarChart';
 import { FrameworkHeroSummary } from '@/components/gap-analysis/FrameworkHeroSummary';
 import { FrameworkHistoryTab } from '@/components/gap-analysis/FrameworkHistoryTab';
 import { AdherenceAssessmentView } from '@/components/gap-analysis/adherence/AdherenceAssessmentView';
@@ -18,6 +17,13 @@ import { RemediationTab } from '@/components/gap-analysis/RemediationTab';
 import { FrameworkOnboarding } from '@/components/gap-analysis/FrameworkOnboarding';
 import { SoATab } from '@/components/gap-analysis/SoATab';
 import { EvidenceLibraryHub } from '@/components/gap-analysis/EvidenceLibraryHub';
+import {
+  AssessmentInsightsStrip,
+  SectionHeatmap,
+  PriorityQueueCard,
+  type AssessmentInsight,
+  type HeatCell,
+} from '@/components/gap-analysis/v2';
 import { useDocGen } from '@/contexts/DocGenContext';
 
 import { exportFrameworkPDF } from '@/components/gap-analysis/ExportFrameworkPDF';
@@ -42,6 +48,7 @@ interface Framework {
 export default function GapAnalysisFrameworkDetail() {
   const { frameworkId } = useParams<{ frameworkId: string }>();
   const navigate = useNavigate();
+  const [, setSearchParams] = useSearchParams();
   const { profile } = useAuth();
   const empresaId = profile?.empresa_id;
   const [framework, setFramework] = useState<Framework | null>(null);
@@ -335,25 +342,106 @@ export default function GapAnalysisFrameworkDetail() {
                   }
                 />
 
-                {/* Aderência por categoria — agora clicável (filtra a tabela abaixo) */}
-                {categoryScores.length > 0 && (
-                  <CategoryBarChart
-                    categoryScores={categoryScores}
-                    config={config}
-                    activeCategory={activeCategoryFilter}
-                    onCategoryClick={(cat) =>
-                      setActiveCategoryFilter(prev => prev === cat ? undefined : cat)
+                {/* Onda 3 — Strip de insights da avaliação */}
+                {(() => {
+                  const naoConformeCount = categoryData.reduce((s, c) => s + c.nao_conforme, 0);
+                  const parcialCount = categoryData.reduce((s, c) => s + c.parcial, 0);
+                  const coverage = totalRequirements > 0
+                    ? Math.round((evaluatedRequirements / totalRequirements) * 100)
+                    : 0;
+                  const insights: AssessmentInsight[] = [
+                    {
+                      eyebrow: 'COBERTURA',
+                      title: 'avaliados',
+                      value: `${coverage}%`,
+                      hint: `${evaluatedRequirements} de ${totalRequirements} requisitos passaram pela triagem.`,
+                      tone: coverage >= 70 ? 'positive' : coverage >= 40 ? 'warning' : 'neutral',
+                      ctaLabel: coverage < 100 && totalRequirements > 0 ? 'Continuar avaliação' : undefined,
+                      onCta: coverage < 100 ? () => {
+                        document.getElementById('reqs-table')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      } : undefined,
+                    },
+                    {
+                      eyebrow: 'CRITICIDADE',
+                      title: 'não conformes',
+                      value: naoConformeCount,
+                      hint: naoConformeCount > 0
+                        ? `Crie planos de ação para fechar os gaps identificados.`
+                        : `Nenhum gap crítico no momento — mantenha a vigilância.`,
+                      tone: naoConformeCount > 0 ? 'critical' : 'positive',
+                      ctaLabel: naoConformeCount > 0 ? 'Ver remediação' : undefined,
+                      onCta: naoConformeCount > 0 ? () => setActiveTab('remediacao') : undefined,
+                    },
+                    {
+                      eyebrow: 'PARCIAIS',
+                      title: 'em evolução',
+                      value: parcialCount,
+                      hint: parcialCount > 0
+                        ? `Requisitos parcialmente atendidos — próximos a fechar.`
+                        : `Sem itens parciais. Avaliações são binárias por enquanto.`,
+                      tone: parcialCount > 0 ? 'warning' : 'neutral',
+                    },
+                  ];
+                  return <AssessmentInsightsStrip insights={insights} />;
+                })()}
+
+                {/* Onda 3 — Fila de Prioridade (top-N requisitos pela IA) */}
+                {empresaId && evaluatedRequirements > 0 && (
+                  <PriorityQueueCard
+                    frameworkId={frameworkId!}
+                    empresaId={empresaId}
+                    limit={5}
+                    onRequirementClick={(req) => {
+                      setSearchParams(prev => {
+                        const next = new URLSearchParams(prev);
+                        if (req.codigo) next.set('q', req.codigo);
+                        else next.set('q', req.titulo.slice(0, 30));
+                        next.set('status', 'all');
+                        return next;
+                      }, { replace: false });
+                      setTimeout(() => {
+                        document.getElementById('reqs-table')?.scrollIntoView({
+                          behavior: 'smooth', block: 'start',
+                        });
+                      }, 50);
+                    }}
+                    onSeeAll={() => {
+                      document.getElementById('reqs-table')?.scrollIntoView({
+                        behavior: 'smooth', block: 'start',
+                      });
+                    }}
+                  />
+                )}
+
+                {/* Onda 3 — Heatmap de aderência por categoria (substitui CategoryBarChart) */}
+                {categoryData.length > 0 && (
+                  <SectionHeatmap
+                    cells={categoryData.map<HeatCell>(c => ({
+                      id: c.categoria,
+                      label: c.categoria,
+                      total: c.total,
+                      conforme: c.conforme,
+                      parcial: c.parcial,
+                      nao_conforme: c.nao_conforme,
+                      nao_aplicavel: c.nao_aplicavel,
+                      nao_avaliado: c.nao_avaliado,
+                    }))}
+                    activeId={activeCategoryFilter}
+                    onCellClick={(id) =>
+                      setActiveCategoryFilter(prev => prev === id ? undefined : id)
                     }
                   />
                 )}
 
-                <GenericRequirementsTable
-                  frameworkId={frameworkId!}
-                  frameworkName={framework.nome}
-                  config={config}
-                  onStatusChange={handleScoreChange}
-                  initialCategoryFilter={activeCategoryFilter}
-                />
+                <div id="reqs-table">
+                  <GenericRequirementsTable
+                    frameworkId={frameworkId!}
+                    frameworkName={framework.nome}
+                    config={config}
+                    onStatusChange={handleScoreChange}
+                    initialCategoryFilter={activeCategoryFilter}
+                  />
+                </div>
               </>
             )}
           </TabsContent>

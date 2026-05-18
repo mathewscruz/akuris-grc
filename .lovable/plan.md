@@ -155,3 +155,9 @@ Onda 5  [Docs · Rem · SoA] ───┘
   - `fw-utils.ts` (deriveFwMono, getFwCategory).
   - Loader trocado por `AkurisPulse`.
   - `WelcomeHero` e `FrameworkCatalog` mantidos (zero-state e catálogo agrupado).
+
+- **Onda 3** ✅ página de Avaliação reformulada:
+  - `AssessmentInsightsStrip` (3 cartões editoriais: Cobertura · Criticidade · Parciais com CTAs).
+  - `PriorityQueueCard` (top-5 requisitos ordenados por peso × penalidade de status × urgência de prazo; CTA "Triagem" filtra a tabela via `?q=`).
+  - `SectionHeatmap` (grade compacta de categorias substituindo `CategoryBarChart`, clique filtra a tabela).
+  - Tabela de requisitos preservada (será substituída na Onda 4 junto com o Drawer).
