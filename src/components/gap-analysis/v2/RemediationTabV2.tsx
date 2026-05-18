@@ -12,7 +12,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { logger } from '@/lib/logger';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { resolvePriorityTone, resolvePlanStatusTone } from '@/lib/status-tone';
+import { resolvePrioridadeTone } from '@/lib/status-tone';
 import { KpiTiny } from './KpiTiny';
 import { AIBadge } from './AIBadge';
 import { SectionHead } from './SectionHead';
