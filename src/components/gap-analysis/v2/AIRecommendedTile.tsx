@@ -1,10 +1,9 @@
 /**
- * AIRecommendedTile — tile editorial de framework recomendado pela IA.
+ * AIRecommendedTile — tile editorial de framework recomendado.
  * Mostra selo FwMono, nome, overlap % (reuso com base atual) e CTA.
  */
 import { ArrowRight } from 'lucide-react';
 import { FwMono } from './FwMono';
-import { AIBadge } from './AIBadge';
 import { deriveFwMono, getFwCategory, FW_CATEGORY_LABEL } from './fw-utils';
 
 interface AIRecommendedTileProps {
@@ -40,9 +39,6 @@ export function AIRecommendedTile({
       <div className="flex items-start gap-3">
         <FwMono l1={mono.l1} l2={mono.l2} size="md" />
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 mb-1">
-            <AIBadge>Recomendado</AIBadge>
-          </div>
           <h3 className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors truncate">
             {nome} <span className="text-xs font-normal text-muted-foreground">{versao}</span>
           </h3>

@@ -33,7 +33,7 @@ const CHIPS: Array<{
   { key: 'sem_evidencia', label: 'Sem evidência', field: 'semEvidencia', apply: (sp) => { sp.set('status', 'nao_avaliado'); sp.delete('prio'); } },
   { key: 'criticos', label: 'Críticos', field: 'criticos', apply: (sp) => { sp.set('status', 'nao_conforme'); sp.set('prio', '1'); } },
   { key: 'vencidos', label: 'Prazo vencido', field: 'prazoVencido', apply: (sp) => { sp.set('status', 'nao_conforme'); sp.delete('prio'); } },
-  { key: 'ia', label: 'Sugeridos pela IA', field: 'sugeridosIA', apply: (sp) => { sp.set('status', 'parcial'); sp.delete('prio'); } },
+  { key: 'ia', label: 'Parciais', field: 'sugeridosIA', apply: (sp) => { sp.set('status', 'parcial'); sp.delete('prio'); } },
 ];
 
 function detectActive(sp: URLSearchParams): ChipKey {

@@ -77,7 +77,9 @@ export function AIDiagnosticCard({
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <AIBadge>Diagnóstico IA</AIBadge>
+            <span className="text-[10px] font-mono uppercase tracking-wider text-primary">
+              Diagnóstico
+            </span>
             <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
               Confiança {result.confidence}%
             </span>

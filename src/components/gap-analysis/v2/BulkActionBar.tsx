@@ -93,7 +93,6 @@ export function BulkActionBar({
             className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-md bg-primary/20 hover:bg-primary/30 text-primary transition-colors"
           >
             <Sparkles className="h-3.5 w-3.5" strokeWidth={1.5} />
-            <AIBadge />
             Justificativa
           </button>
         )}

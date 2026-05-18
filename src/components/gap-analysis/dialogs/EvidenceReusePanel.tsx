@@ -107,13 +107,13 @@ export function EvidenceReusePanel({ requirementId, frameworkId, evaluationId, o
           <h4 className="text-sm font-semibold">Reaproveitar evidência existente</h4>
         </div>
         <p className="text-xs text-muted-foreground">
-          Use uma evidência da biblioteca da empresa em vez de fazer um novo upload. A IA também sugere automaticamente onde uma evidência já existente pode atender este requisito.
+          Use uma evidência da biblioteca da empresa em vez de fazer um novo upload. Recomendações automáticas indicam onde uma evidência já existente pode atender este requisito.
         </p>
 
         <Tabs defaultValue="sugestoes">
           <TabsList className="grid grid-cols-2 w-full">
             <TabsTrigger value="sugestoes">
-              Recomendado pela IA{suggestions.length > 0 ? ` · ${suggestions.length}` : ''}
+              Recomendados{suggestions.length > 0 ? ` · ${suggestions.length}` : ''}
             </TabsTrigger>
             <TabsTrigger value="biblioteca">
               Biblioteca · {lib.items.length}

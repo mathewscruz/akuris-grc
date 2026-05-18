@@ -1,77 +1,56 @@
 ## Objetivo
 
-Corrigir inconsistências visuais nas abas do módulo Gap Analysis, remover rótulos "Sugestão" / "Sugestão da IA" e padronizar fonte (DM Sans) e cores (tokens semânticos).
+Remover da UI do módulo Gap Analysis os rótulos que expõem ao usuário que a ordenação/recomendação/sugestão é feita pela IA ("Ordenado pela IA", "Recomendado pela IA", "Sugeridos pela IA", "Planos consolidados pela IA", "RECOMENDADOS PELA IA", "Cruzamentos identificados pela IA", AIBadges visíveis etc.). A funcionalidade permanece — só removemos a menção visual à IA.
 
-## Diagnóstico
+## Alterações por arquivo (apenas texto/UI)
 
-Pelos prints anexos identifiquei 4 problemas reais:
+1. `src/components/gap-analysis/v2/PriorityQueueCard.tsx`
+   - Remover `<AIBadge>Ordenado pela IA</AIBadge>` do header (linha ~149). Manter o título "Fila prioritária".
 
-1. **Donut de Conformidade com número quebrado** (img-261): o `overallScore` vem do hook como float (ex.: `58.0645161290323`) e o `ConformityCard` renderiza `{overallScore}%` sem `Math.round`. O texto transborda do donut e sobrepõe a legenda. Mesmo problema potencial no `MaturityHero` (col. 1) e em `KpiTiny` de `DocumentsHero`/`RemediationTabV2`.
+2. `src/components/gap-analysis/v2/RemediationTabV2.tsx`
+   - Trocar título "Planos consolidados pela IA" → "Planos consolidados" (linha ~266).
+   - Atualizar comentário do bloco para "Planos consolidados".
+   - Remover AIBadge associado ao chip "Cobre N requisitos" se presente.
 
-2. **Status duplicado** (img-262): em algum render de requisito aparece `⚠ NÃO CONFORME  não conforme` — o `StatusBadge` já mostra o label canônico e, ao lado, alguém imprime o `conformity_status` cru. Vou auditar `GenericRequirementsTable`, `RequirementDrawer`, `RequirementDetailDialog` e `PriorityQueueCard` e remover a impressão duplicada.
+3. `src/pages/GapAnalysisFrameworks.tsx`
+   - Trocar seção "RECOMENDADOS PELA IA" → "RECOMENDADOS PARA SUA EMPRESA" (linha ~386) e ajustar comentário acima.
 
-3. **Rótulos "Sugestão" / "Sugestão da IA"** espalhados:
-   - `RemediationTabV2.tsx` — título "Sugestões da IA", chip "Sugestão · cobre X requisitos", empty state "Adote uma sugestão acima".
-   - `DocumentsHero.tsx` — "Nenhuma sugestão — todos os requisitos…".
-   - `RequirementDrawer.tsx` — "Clique em Gerar diagnóstico para receber a sugestão da IA".
-   - `AIDiagnosticCard.tsx` — "Sugestão: {statusLabel}".
-   - `EvidenceLibraryHub.tsx` — "Sugestões geradas pela IA", "X sugestões pendentes", "Sugestões para …".
-   - `EvidenceReusePanel.tsx` (dialog) — aba "Sugestões da IA · N".
-   - `StatusSeg.tsx` — `aria-label="Sugestão da IA"` (apenas a11y, mantém).
-   
-   Substituição padrão: o módulo já tem o `<AIBadge>IA</AIBadge>`. Vou trocar por rótulos editoriais consistentes (ex.: "Recomendado pela IA" no chip + AIBadge no canto, "Planos consolidados", "Diagnóstico IA", "Itens propostos pela IA"), mantendo apenas o badge **IA** como marcador.
+4. `src/components/gap-analysis/v2/AIRecommendedTile.tsx`
+   - Remover `<AIBadge>Recomendado</AIBadge>` do tile (linha ~44); manter apenas o título do framework e o motivo da recomendação.
+   - Atualizar comentário do header do arquivo.
 
-4. **Tipografia não padronizada nos KPIs** (img-263): os números grandes (`0`, `67%`, `68/121`, `53`) parecem renderizar com fallback do sistema porque o `KpiTiny` usa `text-2xl font-semibold` mas o `font-bold tabular-nums` do donut/Hero usa DM Sans. Vou padronizar:
-   - números herói → `font-bold tabular-nums tracking-tight` (já é DM Sans via body).
-   - KPIs → `font-semibold tabular-nums`, mesmo tamanho/peso em todos os 4 KPI cards visíveis na tela.
-   - garantir `Math.round` em todos os valores percentuais antes de renderizar.
+5. `src/components/gap-analysis/v2/RequirementsTableToolbar.tsx`
+   - Renomear chip de filtro `'Sugeridos pela IA'` → `'Parciais'` (linha ~36). Manter `key: 'ia'` (interno) para não quebrar URLs.
 
-## Mudanças propostas (apenas UI/apresentação)
+6. `src/components/gap-analysis/dialogs/EvidenceReusePanel.tsx`
+   - Renomear aba `Recomendado pela IA` → `Recomendados` (linha ~116).
 
-### Aba Avaliação
-- `v2/ConformityCard.tsx`: `Math.round(overallScore)` no centro do donut; reduzir `text-3xl` para evitar overflow quando score = 100%; mover legenda para abaixo do donut em viewport apertado.
-- Auditar `GenericRequirementsTable.tsx` e remover qualquer span de `conformity_status` cru ao lado do `getStatusBadge`.
-- `v2/PriorityQueueCard.tsx` e `v2/RequirementDrawer.tsx`: idem.
+7. `src/components/gap-analysis/EvidenceLibraryHub.tsx`
+   - "Cruzamentos identificados pela IA" → "Cruzamentos identificados" (linha ~44).
 
-### Aba Análise de Documentos
-- `v2/DocumentsHero.tsx`: trocar "Nenhuma sugestão — …" por "Sem lacunas documentais — todos os requisitos têm cobertura inicial." Renomear bloco "Tipos sugeridos para esta avaliação" → "Lacunas documentais detectadas". Padronizar `KpiTiny` numéricos.
+8. `src/components/gap-analysis/v2/AIDiagnosticCard.tsx`
+   - "Status recomendado: …" → "Status sugerido: …"? Não — o pedido é remover menção a IA, então manter "Status recomendado" (já não cita IA). Sem alteração.
 
-### Aba Remediação
-- `v2/RemediationTabV2.tsx`:
-  - KPI eyebrow `SUGERIDOS PELA IA` → `PLANOS CONSOLIDADOS` (mantém AIBadge no card).
-  - `SectionHead title="Sugestões da IA"` → `Planos consolidados pela IA`.
-  - Chip do cluster `Sugestão · cobre N requisitos` → `Cobre N requisitos` (com `<AIBadge/>` antes).
-  - Empty state `Adote uma sugestão acima · ou crie um plano avulso` → `Crie um plano de ação a partir de um requisito não conforme.`
-  - Tooltip do KPI "se aplicar todas as sugestões" → "se aplicar todos os planos consolidados".
+9. `src/components/gap-analysis/v2/MaturityHero.tsx`
+   - Trocar copy "a IA cruza evidências automaticamente" → "as evidências são cruzadas automaticamente" (linha ~63).
+   - Renomear comentário "Insight IA" → "Insight contextual" (linha ~197).
 
-### Aba Biblioteca de Evidências
-- `EvidenceLibraryHub.tsx`: "Sugestões geradas pela IA" → "Cruzamentos identificados pela IA"; "X sugestões pendentes" → "X cruzamentos pendentes"; título do dialog "Sugestões para …" → "Cruzamentos para …".
-- `dialogs/EvidenceReusePanel.tsx`: aba `Sugestões da IA` → `Recomendado pela IA` (com `<AIBadge/>`). Toast "Sugestão da IA aceita" → "Recomendação aplicada".
-- `dialogs/RequirementDetailDialog.tsx`: "Sugestão da IA:" → "Recomendação IA:" (com badge); "receber uma sugestão de status" → "receber a recomendação de status".
-- `v2/AIDiagnosticCard.tsx`: "Sugestão: X" → "Status recomendado: X".
-- `v2/RequirementDrawer.tsx`: "receber a sugestão da IA com" → "receber a análise da IA com".
+10. `src/components/gap-analysis/v2/InsightStrip.tsx`
+    - Atualizar comentário do header para remover menção a IA (sem efeito visual, só limpeza).
 
-### Padronização tipográfica global do módulo
-- Todos os números herói usam classes consistentes: `font-bold tabular-nums tracking-tight` para 4xl+ e `font-semibold tabular-nums` para os KPIs.
-- Todos os percentuais derivados de cálculo passam por `Math.round` antes do render.
-- Nenhuma cor crua Tailwind — manter apenas tokens semânticos.
+11. `src/components/gap-analysis/v2/StatusSeg.tsx`
+    - `aria-label="Sugestão da IA"` → `aria-label="Sugestão"` (linha ~99). Manter o pulse-dot.
 
-## Detalhes técnicos
+12. `src/components/gap-analysis/AIRecommendationsCard.tsx`
+    - Título visível "Consultor IA de Conformidade" → "Consultor de Conformidade" (linhas ~121 e ~153). Mensagens de erro de créditos permanecem (são técnicas).
 
-- Sem alteração de schema, RLS, edge functions ou regra de negócio. Apenas componentes de apresentação.
-- Manter `aria-label="Sugestão da IA"` em `StatusSeg.tsx` (acessibilidade descreve a função do botão; não é label visível).
-- Preservar o componente `AIBadge` como o único marcador visual de origem IA.
+## Não alterar
+
+- Lógica de chamada de IA, RPC `consume_ai_credit`, mensagens de erro `Créditos de IA esgotados` (técnicas/administrativas).
+- Componente `AIBadge` em si — apenas paramos de usá-lo nos pontos acima. Pode permanecer no codebase para uso futuro.
+- Tooltips/toasts que não expõem palavra "IA" ao usuário final.
 
 ## Validação
 
-1. Abrir `/gap-analysis/framework/:id` → conferir donut sem overflow em score 0%, 58%, 100%.
-2. Tabela de requisitos → conferir que cada linha mostra **apenas** o `StatusBadge`, sem texto cru ao lado.
-3. Aba Remediação → conferir que nenhum texto contém "Sugestão" / "Sugestões da IA".
-4. Aba Documentos → conferir que os 4 KPIs e a tríade têm fonte e peso idênticos.
-5. Biblioteca de Evidências e drawer/diálogo de requisito → confirmar substituições.
-
-## O que NÃO faz parte
-
-- Não toca em backend, RLS, edge functions, schema.
-- Não muda lógica de score, prioridade, cálculo de aderência.
-- Não adiciona novas features — somente equalização visual e textual.
+- Após edição, `rg -n "pela IA|pelo IA|Ordenado pela IA|Recomendado pela IA|Sugeridos pela IA|RECOMENDADOS PELA IA" src/components/gap-analysis src/pages/GapAnalysis*` deve retornar vazio.
+- Conferir as 4 abas (Visão geral, Requisitos, Documentos, Remediação) e a lista de frameworks no preview.
