@@ -237,7 +237,7 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
           tone={kpis.gapsAbertos > 0 ? 'destructive' : 'success'}
         />
         <KpiTiny
-          eyebrow="SUGERIDOS PELA IA"
+          eyebrow="PLANOS CONSOLIDADOS"
           value={aiClusters.length}
           foot={aiClusters.length > 0
             ? `cobre ${aiClusters.reduce((s, c) => s + c.items.length, 0)} gaps`
@@ -253,17 +253,17 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
         <KpiTiny
           eyebrow="IMPACTO POTENCIAL"
           value={`+${kpis.impactoPotencial}pts`}
-          foot="se aplicar todas as sugestões"
+          foot="se aplicar todos os planos"
           tone={kpis.impactoPotencial > 0 ? 'success' : 'neutral'}
         />
       </div>
 
-      {/* Sugestões IA */}
+      {/* Planos consolidados pela IA */}
       {aiClusters.length > 0 && (
         <section className="space-y-3">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <SectionHead
-              title="Sugestões da IA"
+              title="Planos consolidados pela IA"
               count={aiClusters.length}
               right={<AIBadge />}
             />
@@ -294,8 +294,8 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
                 <CornerAccent position="top-right" size={10} />
                 <span className="absolute left-0 top-3 bottom-3 w-[2px] rounded-r bg-primary" />
                 <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-primary">
-                  <Sparkles className="h-3 w-3" strokeWidth={1.5} />
-                  Sugestão · cobre {c.items.length} requisitos
+                  <AIBadge />
+                  Cobre {c.items.length} requisitos
                 </div>
                 <h4 className="mt-1 text-sm font-semibold leading-snug">
                   {grouping === 'esforco' ? `Plano consolidado · ${c.categoria}` : `Tratar ${c.categoria}`}
@@ -368,7 +368,7 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
         {planos.length === 0 ? (
           <div className="rounded-xl border border-dashed border-border bg-card py-12 text-center">
             <ClipboardList className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" strokeWidth={1.5} />
-            <p className="text-sm font-medium">Adote uma sugestão acima · ou crie um plano avulso.</p>
+            <p className="text-sm font-medium">Crie um plano de ação a partir de um requisito não conforme.</p>
             <p className="text-xs text-muted-foreground mt-1 max-w-md mx-auto">
               Marque requisitos como "Não Conforme" e crie planos de ação a partir do drawer do requisito.
             </p>

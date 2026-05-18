@@ -837,7 +837,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                           <p className="text-xs font-medium text-foreground">Diagnóstico Rápido</p>
                         </div>
                         <p className="text-[11px] text-muted-foreground">
-                          Responda às perguntas para receber uma sugestão de status.
+                          Responda às perguntas para receber a recomendação de status.
                         </p>
                         <div className="space-y-2.5">
                           {diagnosticQuestions.map((q, idx) => {
@@ -874,7 +874,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                         {diagnosticSuggestion && (
                           <div className="flex items-center justify-between gap-3 p-3 rounded-md bg-primary/5 border border-primary/20">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-[11px] text-muted-foreground">Sugestão da IA:</span>
+                              <span className="text-[11px] text-muted-foreground">Recomendação IA:</span>
                               <Badge variant="outline" className={cn('font-semibold', diagnosticSuggestion.color)}>
                                 {diagnosticSuggestion.label}
                               </Badge>

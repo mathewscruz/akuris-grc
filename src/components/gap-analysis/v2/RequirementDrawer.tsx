@@ -270,7 +270,7 @@ export function RequirementDrawer({
                 )}
                 {!diagnosing && !diagnostic && (
                   <p className="text-xs text-muted-foreground italic px-1">
-                    Clique em "Gerar diagnóstico" para receber a sugestão da IA com
+                    Clique em "Gerar diagnóstico" para receber a análise da IA com
                     pontos avaliados, gaps e justificativa pronta.
                   </p>
                 )}

@@ -160,15 +160,15 @@ export function DocumentsHero({ frameworkId, empresaId, onUploadClick, onLinkCli
             </div>
           </div>
 
-          {/* Tipos sugeridos */}
+          {/* Lacunas documentais detectadas */}
           <aside className="p-6 border-t lg:border-t-0 lg:border-l border-border/60 bg-muted/20">
             <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
-              Tipos sugeridos para esta avaliação
+              Lacunas documentais detectadas
             </div>
             <ul className="mt-3 space-y-2.5">
               {suggested.length === 0 ? (
                 <li className="text-xs text-muted-foreground italic">
-                  Nenhuma sugestão — todos os requisitos têm cobertura inicial.
+                  Sem lacunas documentais — todos os requisitos têm cobertura inicial.
                 </li>
               ) : (
                 suggested.map((s, i) => (

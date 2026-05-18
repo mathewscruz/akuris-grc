@@ -49,7 +49,8 @@ export function MaturityHero({
   nextMilestone,
   onSeePlan,
 }: MaturityHeroProps) {
-  const maturity = getMaturityLevel(overallScore);
+  const score = Math.round(Number(overallScore) || 0);
+  const maturity = getMaturityLevel(score);
   const coverage = totalRequirements > 0
     ? Math.round((totalEvaluated / totalRequirements) * 100)
     : 0;
@@ -64,16 +65,16 @@ export function MaturityHero({
       };
     }
     if (delta30d > 0 && nextMilestone?.targetScore) {
-      const projected = Math.min(100, overallScore + delta30d);
+      const projected = Math.min(100, Math.round(score + delta30d));
       return {
         body: <>Mantendo o ritmo atual, você chega a <strong className="text-foreground">{projected}%</strong> até {formatDateBR(nextMilestone.date)}, {projected >= nextMilestone.targetScore ? <>batendo a meta</> : <>abaixo da meta de {nextMilestone.targetScore}%</>}.</>,
-        cta: 'Ver plano sugerido',
+        cta: 'Ver plano recomendado',
       };
     }
     if (criticalCount > 0) {
       return {
         body: <>Há <strong className="text-foreground">{criticalCount}</strong> não conformes ativos. Priorizar remediação eleva a maturidade em ~{Math.min(15, criticalCount)}pts.</>,
-        cta: 'Ver plano sugerido',
+        cta: 'Ver plano recomendado',
       };
     }
     return {
@@ -96,7 +97,7 @@ export function MaturityHero({
           <div className="mt-2 flex items-end gap-3 flex-wrap">
             <div className="flex items-baseline">
               <span className="text-6xl font-bold tabular-nums leading-none tracking-tight text-foreground">
-                {overallScore}
+                {score}
               </span>
               <span className="text-2xl text-muted-foreground ml-0.5">%</span>
             </div>
@@ -112,7 +113,7 @@ export function MaturityHero({
             <span className="text-muted-foreground">· 30d</span>
           </div>
           <div className="mt-4">
-            <MaturityScale score={overallScore} />
+            <MaturityScale score={score} />
           </div>
         </div>
 
@@ -134,7 +135,7 @@ export function MaturityHero({
                   <div className="relative h-1.5 rounded-full bg-muted overflow-hidden">
                     <div
                       className="absolute inset-y-0 left-0 bg-primary"
-                      style={{ width: `${overallScore}%` }}
+                      style={{ width: `${score}%` }}
                     />
                     <div
                       className="absolute inset-y-0 w-0.5 bg-foreground/40"
@@ -142,7 +143,7 @@ export function MaturityHero({
                     />
                   </div>
                   <div className="mt-1.5 flex items-center justify-between text-[10px] font-mono uppercase tracking-wider text-muted-foreground tabular-nums">
-                    <span>{overallScore}%</span>
+                    <span>{score}%</span>
                     <span>meta {nextMilestone.targetScore}%</span>
                     <span>100%</span>
                   </div>
