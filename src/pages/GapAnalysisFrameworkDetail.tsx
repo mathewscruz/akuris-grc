@@ -13,9 +13,7 @@ import { FrameworkHistoryTab } from '@/components/gap-analysis/FrameworkHistoryT
 import { AdherenceAssessmentView } from '@/components/gap-analysis/adherence/AdherenceAssessmentView';
 import { AdherenceResultView } from '@/components/gap-analysis/adherence/AdherenceResultView';
 import { AIRecommendationsButton } from '@/components/gap-analysis/AIRecommendationsCard';
-import { RemediationTab } from '@/components/gap-analysis/RemediationTab';
 import { FrameworkOnboarding } from '@/components/gap-analysis/FrameworkOnboarding';
-import { SoATab } from '@/components/gap-analysis/SoATab';
 import { EvidenceLibraryHub } from '@/components/gap-analysis/EvidenceLibraryHub';
 import {
   AssessmentInsightsStrip,
@@ -24,6 +22,9 @@ import {
   RequirementDrawerProvider,
   useRequirementDrawer,
   CommandPalette,
+  DocumentsHero,
+  RemediationTabV2,
+  SoATabV2,
   type AssessmentInsight,
   type HeatCell,
 } from '@/components/gap-analysis/v2';
@@ -451,7 +452,7 @@ function GapAnalysisFrameworkDetailInner() {
             )}
           </TabsContent>
 
-          <TabsContent value="documentos">
+          <TabsContent value="documentos" className="space-y-5">
             {adherenceView === 'result' && selectedAdherenceAssessment ? (
               <AdherenceResultView
                 assessment={selectedAdherenceAssessment}
@@ -460,16 +461,21 @@ function GapAnalysisFrameworkDetailInner() {
                 onApplied={handleScoreChange}
               />
             ) : (
-              <AdherenceAssessmentView
-                onViewResult={(assessment) => { setSelectedAdherenceAssessment(assessment); setAdherenceView('result'); }}
-                frameworkId={frameworkId}
-                frameworkNome={framework.nome}
-              />
+              <>
+                {empresaId && (
+                  <DocumentsHero frameworkId={frameworkId!} empresaId={empresaId} />
+                )}
+                <AdherenceAssessmentView
+                  onViewResult={(assessment) => { setSelectedAdherenceAssessment(assessment); setAdherenceView('result'); }}
+                  frameworkId={frameworkId}
+                  frameworkNome={framework.nome}
+                />
+              </>
             )}
           </TabsContent>
 
           <TabsContent value="remediacao">
-            <RemediationTab frameworkId={frameworkId!} frameworkName={framework.nome} />
+            <RemediationTabV2 frameworkId={frameworkId!} frameworkName={framework.nome} />
           </TabsContent>
 
           <TabsContent value="historico">
@@ -485,7 +491,7 @@ function GapAnalysisFrameworkDetailInner() {
             />
           </TabsContent>
           <TabsContent value="soa">
-            <SoATab
+            <SoATabV2
               frameworkId={frameworkId!}
               frameworkName={framework.nome}
               frameworkVersion={framework.versao}
