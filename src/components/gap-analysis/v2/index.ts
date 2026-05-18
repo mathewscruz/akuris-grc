@@ -13,3 +13,8 @@ export type { KpiTone } from './KpiTiny';
 export { AIBadge } from './AIBadge';
 export { FwMono } from './FwMono';
 export { SectionHead } from './SectionHead';
+export { MaturityHero } from './MaturityHero';
+export { AIRecommendedTile } from './AIRecommendedTile';
+export { ActiveFrameworkRow } from './ActiveFrameworkRow';
+export { deriveFwMono, getFwCategory, FW_CATEGORY_LABEL } from './fw-utils';
+export type { FwCategory } from './fw-utils';

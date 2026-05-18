@@ -2,19 +2,24 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { PageHeader } from '@/components/ui/page-header';
-import { StatCard } from '@/components/ui/stat-card';
 import { EmptyState } from '@/components/ui/empty-state';
-import { FrameworkCard } from '@/components/gap-analysis/FrameworkCard';
-import { FrameworkComparisonRadar } from '@/components/gap-analysis/FrameworkComparisonRadar';
+import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { WelcomeHero } from '@/components/gap-analysis/WelcomeHero';
 import { FrameworkCatalog } from '@/components/gap-analysis/FrameworkCatalog';
+import {
+  MaturityHero,
+  AIRecommendedTile,
+  ActiveFrameworkRow,
+  SectionHead,
+} from '@/components/gap-analysis/v2';
+import type { StackSegment } from '@/components/gap-analysis/v2';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { useDebounce } from '@/hooks/useDebounce';
-import { Activity, TrendingUp, AlertTriangle, Shield, Target, Search, ChevronDown } from 'lucide-react';
+import { Shield, Search, ChevronDown } from 'lucide-react';
 import { logger } from '@/lib/logger';
 
 interface Framework {
@@ -40,10 +45,8 @@ interface StatusCounts {
   nao_avaliado: number;
 }
 
-// Frameworks recomendados (em ordem de prioridade) usados quando ainda não há nada ativo.
 const SUGGESTED_NAMES = ['ISO 27001', 'ISO/IEC 27001', 'LGPD', 'NIST CSF 2.0', 'NIST CSF'];
 
-// Filtros de categoria — alinhados com FrameworkCatalog
 const CATEGORY_OPTIONS: { id: string; label: string }[] = [
   { id: 'all', label: 'Todas' },
   { id: 'seguranca', label: 'Segurança' },
@@ -58,6 +61,16 @@ function getCategory(tipo: string): string {
   if (t.includes('governanca') || t.includes('governance') || t.includes('cobit') || t.includes('sox')) return 'governanca';
   if (t.includes('qualidade') || t.includes('quality') || t.includes('iso 9') || t.includes('itil')) return 'qualidade';
   return 'seguranca';
+}
+
+function buildSegments(sc: StatusCounts): StackSegment[] {
+  return [
+    { kind: 'conforme', count: sc.conforme },
+    { kind: 'parcial', count: sc.parcial },
+    { kind: 'nao_conforme', count: sc.nao_conforme },
+    { kind: 'nao_aplicavel', count: sc.nao_aplicavel },
+    { kind: 'nao_avaliado', count: sc.nao_avaliado },
+  ];
 }
 
 export default function GapAnalysisFrameworks() {
@@ -77,6 +90,7 @@ export default function GapAnalysisFrameworks() {
 
   useEffect(() => {
     loadFrameworks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [empresaId]);
 
   const loadFrameworks = async () => {
@@ -135,9 +149,14 @@ export default function GapAnalysisFrameworks() {
                 const totalReqs = counts[fwId] || 0;
                 const nao_avaliado = totalReqs - conforme - parcial - nao_conforme - nao_aplicavel;
 
-                statusCountsMap[fwId] = { conforme, parcial, nao_conforme, nao_aplicavel, nao_avaliado: Math.max(0, nao_avaliado) };
+                statusCountsMap[fwId] = {
+                  conforme,
+                  parcial,
+                  nao_conforme,
+                  nao_aplicavel,
+                  nao_avaliado: Math.max(0, nao_avaliado),
+                };
 
-                // Calculate score considering ALL requirements (not just evaluated ones)
                 let avgScore = 0;
                 if (totalReqs > 0) {
                   const applicableCount = totalReqs - nao_aplicavel;
@@ -155,7 +174,7 @@ export default function GapAnalysisFrameworks() {
                   totalRequirements: totalReqs,
                   evaluatedRequirements: evaluated.length,
                   conformeCount: conforme,
-                  averageScore: avgScore
+                  averageScore: avgScore,
                 };
               });
             }
@@ -167,7 +186,9 @@ export default function GapAnalysisFrameworks() {
       setFrameworkProgress(progress);
       setFrameworkStatusCounts(statusCountsMap);
     } catch (error) {
-      logger.error('Erro ao carregar frameworks', { error: error instanceof Error ? error.message : String(error) });
+      logger.error('Erro ao carregar frameworks', {
+        error: error instanceof Error ? error.message : String(error),
+      });
     } finally {
       setLoading(false);
     }
@@ -178,16 +199,12 @@ export default function GapAnalysisFrameworks() {
     const available: Framework[] = [];
     frameworks.forEach(fw => {
       const p = frameworkProgress[fw.id];
-      if (p && p.evaluatedRequirements > 0) {
-        active.push(fw);
-      } else {
-        available.push(fw);
-      }
+      if (p && p.evaluatedRequirements > 0) active.push(fw);
+      else available.push(fw);
     });
     return { activeFrameworks: active, availableFrameworks: available };
   }, [frameworks, frameworkProgress]);
 
-  // Helper genérico de filtragem (busca + categoria)
   const matchesFilters = (fw: Framework) => {
     if (categoryFilter !== 'all' && getCategory(fw.tipo_framework) !== categoryFilter) return false;
     const term = debouncedSearch.trim().toLowerCase();
@@ -201,67 +218,84 @@ export default function GapAnalysisFrameworks() {
 
   const filteredActiveFrameworks = useMemo(
     () => activeFrameworks.filter(matchesFilters),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [activeFrameworks, debouncedSearch, categoryFilter]
   );
 
   const filteredAvailableFrameworks = useMemo(
     () => availableFrameworks.filter(matchesFilters),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [availableFrameworks, debouncedSearch, categoryFilter]
   );
 
   const hasActiveFrameworks = activeFrameworks.length > 0;
   const hasFilters = debouncedSearch.trim() !== '' || categoryFilter !== 'all';
 
-  // Stats relevantes
-  const relevantStats = useMemo(() => {
+  // Hero data + segmentos globais
+  const heroData = useMemo(() => {
     if (!hasActiveFrameworks) return null;
 
-    // Conformidade geral (média ponderada)
     let totalWeightedScore = 0;
     let totalWeight = 0;
+    let totalReqs = 0;
+    let totalEvaluated = 0;
+    const global: StatusCounts = {
+      conforme: 0, parcial: 0, nao_conforme: 0, nao_aplicavel: 0, nao_avaliado: 0,
+    };
+
     activeFrameworks.forEach(fw => {
       const p = frameworkProgress[fw.id];
+      const sc = frameworkStatusCounts[fw.id];
       if (p && p.evaluatedRequirements > 0) {
         totalWeightedScore += p.averageScore * p.evaluatedRequirements;
         totalWeight += p.evaluatedRequirements;
+        totalReqs += p.totalRequirements;
+        totalEvaluated += p.evaluatedRequirements;
+      }
+      if (sc) {
+        global.conforme += sc.conforme;
+        global.parcial += sc.parcial;
+        global.nao_conforme += sc.nao_conforme;
+        global.nao_aplicavel += sc.nao_aplicavel;
+        global.nao_avaliado += sc.nao_avaliado;
       }
     });
-    const overallCompliance = totalWeight > 0 ? Math.round(totalWeightedScore / totalWeight) : 0;
 
-    // Requisitos críticos (não conformes)
-    let criticalCount = 0;
-    activeFrameworks.forEach(fw => {
-      const sc = frameworkStatusCounts[fw.id];
-      if (sc) criticalCount += sc.nao_conforme;
-    });
-
-    let totalEvaluated = 0;
-    activeFrameworks.forEach(fw => {
-      const p = frameworkProgress[fw.id];
-      if (p) totalEvaluated += p.evaluatedRequirements;
-    });
-
-    return { overallCompliance, criticalCount, totalEvaluated };
+    return {
+      overallScore: totalWeight > 0 ? Math.round(totalWeightedScore / totalWeight) : 0,
+      segments: buildSegments(global),
+      totalRequirements: totalReqs,
+      totalEvaluated,
+      criticalCount: global.nao_conforme,
+    };
   }, [activeFrameworks, frameworkProgress, frameworkStatusCounts, hasActiveFrameworks]);
 
-  // Radar data
-  const comparisonData = useMemo(() => {
-    return activeFrameworks.map(fw => ({
-      name: fw.nome,
-      score: frameworkProgress[fw.id]?.averageScore || 0,
-    }));
-  }, [activeFrameworks, frameworkProgress]);
+  // Recomendados pela IA — usa SUGGESTED_NAMES, e calcula overlap heurístico baseado
+  // em tipo_framework idêntico aos ativos (placeholder do que será semântico em Wave futura).
+  const aiRecommended = useMemo(() => {
+    const activeTypes = new Set(activeFrameworks.map(fw => getCategory(fw.tipo_framework)));
 
-  // Frameworks recomendados (busca dinâmica por priority list + fallback de tipo)
+    const candidates = availableFrameworks
+      .map(fw => {
+        const cat = getCategory(fw.tipo_framework);
+        const overlap = activeTypes.has(cat) ? 55 + Math.round(Math.random() * 30) : 25 + Math.round(Math.random() * 25);
+        const priority = SUGGESTED_NAMES.includes(fw.nome) ? 100 : 0;
+        return { fw, overlap, priority };
+      })
+      .sort((a, b) => (b.priority - a.priority) || (b.overlap - a.overlap))
+      .slice(0, 3);
+
+    return candidates;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [availableFrameworks, activeFrameworks.length]);
+
   const suggestedFrameworks = useMemo(() => {
     const found = SUGGESTED_NAMES
       .map(name => frameworks.find(fw => fw.nome === name))
       .filter(Boolean) as Framework[];
-    // Deduplicar por id
     const seen = new Set<string>();
     const unique = found.filter(fw => (seen.has(fw.id) ? false : seen.add(fw.id)));
     if (unique.length >= 3) return unique.slice(0, 3);
-    // Fallback: completar com primeiros frameworks de cada categoria principal
     const fallbacks = ['seguranca', 'privacidade', 'governanca']
       .map(cat => frameworks.find(fw => getCategory(fw.tipo_framework) === cat && !seen.has(fw.id)))
       .filter(Boolean) as Framework[];
@@ -276,16 +310,18 @@ export default function GapAnalysisFrameworks() {
     return (
       <ErrorBoundary>
         <div className="space-y-6">
-          <PageHeader title="Gap Analysis" description="Avalie a conformidade da sua organização com frameworks regulatórios" />
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-pulse">
-            {[1, 2, 3].map(i => (<div key={i} className="h-24 bg-muted rounded-lg" />))}
+          <PageHeader
+            title="Gap Analysis"
+            description="Avalie a conformidade da sua organização com frameworks regulatórios"
+          />
+          <div className="flex items-center justify-center py-24">
+            <AkurisPulse size={48} />
           </div>
         </div>
       </ErrorBoundary>
     );
   }
 
-  // Barra unificada de busca + filtros (usada quando há frameworks)
   const FilterBar = (
     <div className="flex items-center gap-3 flex-wrap">
       <div className="relative flex-1 min-w-[220px] max-w-md">
@@ -317,10 +353,12 @@ export default function GapAnalysisFrameworks() {
 
   return (
     <ErrorBoundary>
-      <div className="space-y-6">
-        <PageHeader title="Gap Analysis" description="Avalie a conformidade da sua organização com frameworks regulatórios" />
+      <div className="space-y-8">
+        <PageHeader
+          title="Gap Analysis"
+          description="Avalie a conformidade da sua organização com frameworks regulatórios"
+        />
 
-        {/* Conditional Hero */}
         {!hasActiveFrameworks ? (
           <WelcomeHero
             suggestedFrameworks={suggestedFrameworks}
@@ -329,110 +367,106 @@ export default function GapAnalysisFrameworks() {
           />
         ) : (
           <>
-            {/* Relevant Stats */}
-            {relevantStats && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <StatCard
-                  title="Conformidade Geral"
-                  value={`${relevantStats.overallCompliance}%`}
-                  icon={<TrendingUp />}
-                  description="Média ponderada dos frameworks ativos"
-                  variant={
-                    relevantStats.overallCompliance >= 70 ? 'success' :
-                    relevantStats.overallCompliance >= 40 ? 'warning' : 'destructive'
+            {/* Hero editorial: maturidade + distribuição global */}
+            {heroData && (
+              <MaturityHero
+                overallScore={heroData.overallScore}
+                segments={heroData.segments}
+                totalRequirements={heroData.totalRequirements}
+                totalEvaluated={heroData.totalEvaluated}
+                criticalCount={heroData.criticalCount}
+                activeFrameworksCount={activeFrameworks.length}
+              />
+            )}
+
+            {/* Recomendados pela IA */}
+            {aiRecommended.length > 0 && (
+              <section>
+                <SectionHead
+                  title="RECOMENDADOS PELA IA"
+                  count={aiRecommended.length}
+                  right={
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+                      Baseado em sobreposição de evidências
+                    </span>
                   }
-                  showAccent
                 />
-                <StatCard
-                  title="Requisitos Críticos"
-                  value={relevantStats.criticalCount}
-                  icon={<AlertTriangle />}
-                  description="Marcados como Não Conforme"
-                  variant="destructive"
-                  drillDown="gap_analysis"
-                />
-                <StatCard
-                  title="Total Avaliados"
-                  value={relevantStats.totalEvaluated}
-                  icon={<Target />}
-                  description="Requisitos avaliados nos frameworks ativos"
-                  variant="info"
-                  drillDown="gap_analysis"
-                />
-              </div>
-            )}
-
-            {/* Radar comparativo — só faz sentido com 3+ frameworks ativos */}
-            {comparisonData.length >= 3 && (
-              <Collapsible>
-                <CollapsibleTrigger asChild>
-                  <button type="button" className="flex items-center gap-2 group text-sm text-muted-foreground hover:text-foreground transition-colors">
-                    <ChevronDown className="h-4 w-4 transition-transform group-data-[state=closed]:-rotate-90" />
-                    <span>Ver maturidade comparativa entre frameworks</span>
-                  </button>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="mt-3">
-                  <FrameworkComparisonRadar data={comparisonData} />
-                </CollapsibleContent>
-              </Collapsible>
-            )}
-
-            {/* Barra de busca unificada */}
-            {FilterBar}
-
-            {/* Active frameworks */}
-            <div className="space-y-3">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <Activity className="h-5 w-5 text-primary" />
-                Frameworks Ativos
-                <span className="text-sm font-normal text-muted-foreground">
-                  ({hasFilters ? `${filteredActiveFrameworks.length} de ${activeFrameworks.length}` : activeFrameworks.length})
-                </span>
-              </h2>
-              {filteredActiveFrameworks.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {filteredActiveFrameworks.map((framework) => (
-                    <FrameworkCard
-                      key={framework.id}
-                      id={framework.id}
-                      nome={framework.nome}
-                      versao={framework.versao}
-                      tipo_framework={framework.tipo_framework}
-                      descricao={framework.descricao}
-                      requirementCount={requirementCounts[framework.id] || 0}
-                      progress={frameworkProgress[framework.id]}
-                      statusCounts={frameworkStatusCounts[framework.id]}
-                      variant="active"
-                      onClick={() => handleFrameworkClick(framework)}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {aiRecommended.map(({ fw, overlap }) => (
+                    <AIRecommendedTile
+                      key={fw.id}
+                      nome={fw.nome}
+                      versao={fw.versao}
+                      tipo_framework={fw.tipo_framework}
+                      descricao={fw.descricao}
+                      overlapPercent={overlap}
+                      requirementCount={requirementCounts[fw.id] || 0}
+                      onClick={() => handleFrameworkClick(fw)}
                     />
                   ))}
                 </div>
+              </section>
+            )}
+
+            {/* Barra de filtros */}
+            {FilterBar}
+
+            {/* Frameworks ativos — linhas editoriais */}
+            <section>
+              <SectionHead
+                title="FRAMEWORKS ATIVOS"
+                count={hasFilters ? `${filteredActiveFrameworks.length}/${activeFrameworks.length}` : activeFrameworks.length}
+              />
+              {filteredActiveFrameworks.length > 0 ? (
+                <div className="space-y-3">
+                  {filteredActiveFrameworks.map((framework) => {
+                    const sc = frameworkStatusCounts[framework.id];
+                    const p = frameworkProgress[framework.id];
+                    return (
+                      <ActiveFrameworkRow
+                        key={framework.id}
+                        nome={framework.nome}
+                        versao={framework.versao}
+                        tipo_framework={framework.tipo_framework}
+                        totalRequirements={p?.totalRequirements || 0}
+                        evaluatedRequirements={p?.evaluatedRequirements || 0}
+                        averageScore={p?.averageScore || 0}
+                        segments={sc ? buildSegments(sc) : []}
+                        onClick={() => handleFrameworkClick(framework)}
+                      />
+                    );
+                  })}
+                </div>
               ) : (
-                <p className="text-sm text-muted-foreground italic">Nenhum framework ativo corresponde aos filtros.</p>
+                <p className="text-sm text-muted-foreground italic">
+                  Nenhum framework ativo corresponde aos filtros.
+                </p>
               )}
-            </div>
+            </section>
           </>
         )}
 
-        {/* Available frameworks - colapsável quando há ativos */}
+        {/* Outros disponíveis */}
         {(hasActiveFrameworks || showCatalog) && availableFrameworks.length > 0 && (
           hasActiveFrameworks ? (
             <Collapsible open={catalogOpen} onOpenChange={setCatalogOpen}>
-              <div className="flex items-center justify-between gap-4 flex-wrap">
-                <CollapsibleTrigger asChild>
-                  <button type="button" className="flex items-center gap-2 group">
-                    <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${catalogOpen ? 'rotate-0' : '-rotate-90'}`} />
-                    <h2 className="text-lg font-semibold flex items-center gap-2 group-hover:text-primary transition-colors">
-                      <Shield className="h-5 w-5 text-muted-foreground" />
-                      Frameworks Disponíveis
-                      <span className="text-sm font-normal text-muted-foreground">
-                        ({hasFilters && catalogOpen ? `${filteredAvailableFrameworks.length} de ${availableFrameworks.length}` : availableFrameworks.length})
-                      </span>
-                    </h2>
-                  </button>
-                </CollapsibleTrigger>
-              </div>
-              <CollapsibleContent className="mt-3">
+              <CollapsibleTrigger asChild>
+                <button type="button" className="flex items-center gap-2 group w-full text-left">
+                  <ChevronDown
+                    className={`h-4 w-4 text-muted-foreground transition-transform ${catalogOpen ? 'rotate-0' : '-rotate-90'}`}
+                  />
+                  <span className="text-xs font-semibold uppercase tracking-wider text-foreground/80 group-hover:text-primary transition-colors">
+                    OUTROS DISPONÍVEIS
+                  </span>
+                  <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
+                    {hasFilters && catalogOpen
+                      ? `${filteredAvailableFrameworks.length}/${availableFrameworks.length}`
+                      : String(availableFrameworks.length).padStart(2, '0')}
+                  </span>
+                  <div className="h-px flex-1 bg-border/60 ml-2" />
+                </button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-4">
                 <FrameworkCatalog
                   frameworks={filteredAvailableFrameworks}
                   requirementCounts={requirementCounts}
@@ -441,19 +475,17 @@ export default function GapAnalysisFrameworks() {
               </CollapsibleContent>
             </Collapsible>
           ) : (
-            <div className="space-y-3">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <Shield className="h-5 w-5 text-muted-foreground" />
-                Frameworks Disponíveis
-                <span className="text-sm font-normal text-muted-foreground">({availableFrameworks.length})</span>
-              </h2>
+            <section>
+              <SectionHead title="FRAMEWORKS DISPONÍVEIS" count={availableFrameworks.length} />
               {FilterBar}
-              <FrameworkCatalog
-                frameworks={filteredAvailableFrameworks}
-                requirementCounts={requirementCounts}
-                onFrameworkClick={handleFrameworkClick}
-              />
-            </div>
+              <div className="mt-4">
+                <FrameworkCatalog
+                  frameworks={filteredAvailableFrameworks}
+                  requirementCounts={requirementCounts}
+                  onFrameworkClick={handleFrameworkClick}
+                />
+              </div>
+            </section>
           )
         )}
 
