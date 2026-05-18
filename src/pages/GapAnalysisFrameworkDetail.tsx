@@ -21,6 +21,9 @@ import {
   AssessmentInsightsStrip,
   SectionHeatmap,
   PriorityQueueCard,
+  RequirementDrawerProvider,
+  useRequirementDrawer,
+  CommandPalette,
   type AssessmentInsight,
   type HeatCell,
 } from '@/components/gap-analysis/v2';
