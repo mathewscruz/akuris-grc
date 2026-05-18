@@ -169,3 +169,10 @@ Onda 5  [Docs · Rem · SoA] ───┘
   - `RequirementDrawerProvider` (contexto global — qualquer ponto pode abrir o drawer).
   - `CommandPalette` (⌘K / Ctrl+K — busca todos os requisitos do framework, status dot, abre drawer).
   - Wiring: PriorityQueueCard agora abre o drawer; "Edição completa" no header do drawer pode delegar ao RequirementDetailDialog existente.
+
+- **Onda 5** ✅ Documentos · Remediação · SoA editoriais:
+  - `DocumentsHero` (hero roxo "Suba o documento, a IA mapeia" + 4 KPIs derivados de `gap_analysis_adherence_assessments` e cobertura real) acima do `AdherenceAssessmentView`.
+  - `RemediationTabV2` substitui `RemediationTab` — 4 KPIs editoriais (gaps abertos / sugeridos IA / em execução / impacto potencial), **Sugestões IA por causa-raiz** (agrupamento client-side por categoria, ≥2 requisitos = 1 plano consolidado com esforço/dias/impacto) e Kanban 4 colunas (A iniciar · Em andamento · Em revisão · Concluído) com cards por requisito.
+  - `SoATabV2` substitui `SoATab` — 7 KPIs editoriais, filtros segmentados (Todos · Cláusulas · Anexo A), seleção em lote por linha e `BulkActionBar` dark sticky com Alterar status (upsert em lote em `gap_analysis_evaluations`), Atribuir, Prazo, Plano em lote e **Gerar justificativa IA**.
+  - `BulkActionBar` reaproveitável fora do SoA quando necessário.
+  - Identidade Akuris preservada: tokens semânticos, AkurisPulse, StatusBadge, sem cores Tailwind cruas.
