@@ -243,6 +243,22 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     }
   }, [isLoading, open]);
 
+  // Auto-gerar documento quando o briefing pediu "Gerar direto" e a IA já respondeu o seed.
+  useEffect(() => {
+    if (!pendingAutoGenerateRef.current) return;
+    if (isLoading || isGeneratingDoc) return;
+    if (!conversationId || !userInfo) return;
+    if (generatedDocument) {
+      pendingAutoGenerateRef.current = false;
+      return;
+    }
+    // Precisa de pelo menos a resposta do seed (assistant + user + assistant).
+    if (messages.length < 2) return;
+    pendingAutoGenerateRef.current = false;
+    generateDocument();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, isGeneratingDoc, conversationId, messages.length, generatedDocument, userInfo]);
+
   const sendMessageInternal = async (text: string) => {
     if (!text.trim() || !userInfo || isLoading) return;
 
