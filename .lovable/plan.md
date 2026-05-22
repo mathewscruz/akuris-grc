@@ -1,56 +1,51 @@
-## Objetivo
+## Problemas identificados
 
-Remover da UI do módulo Gap Analysis os rótulos que expõem ao usuário que a ordenação/recomendação/sugestão é feita pela IA ("Ordenado pela IA", "Recomendado pela IA", "Sugeridos pela IA", "Planos consolidados pela IA", "RECOMENDADOS PELA IA", "Cruzamentos identificados pela IA", AIBadges visíveis etc.). A funcionalidade permanece — só removemos a menção visual à IA.
+1. **Tela "vazia" no passo 1**: o `DocGenBriefing` só mostra os pills de tipo de documento — todo o resto do popup fica em branco. Como o template já vem com tipo pré-selecionado (ex.: PSI → "Política"), o passo 1 é redundante.
+2. **Contador errado no header**: `Passo {step + 1} de 3` → mostra "Passo 2 de 3" estando no step 1 (`DocGenBriefing.tsx` linha ~123).
+3. **Fluxo lento até gerar**: após o briefing o usuário cai no chat e precisa conversar para só depois disparar `generate_document`. Para templates pré-configurados isso é fricção desnecessária.
+4. **Conformidade com framework não é visível no briefing**: o usuário não vê quais requisitos serão cobertos antes de gerar.
 
-## Alterações por arquivo (apenas texto/UI)
+## Plano de correção
 
-1. `src/components/gap-analysis/v2/PriorityQueueCard.tsx`
-   - Remover `<AIBadge>Ordenado pela IA</AIBadge>` do header (linha ~149). Manter o título "Fila prioritária".
+### 1. Reestruturar `DocGenBriefing` em 2 passos densos (em vez de 3 quase vazios)
 
-2. `src/components/gap-analysis/v2/RemediationTabV2.tsx`
-   - Trocar título "Planos consolidados pela IA" → "Planos consolidados" (linha ~266).
-   - Atualizar comentário do bloco para "Planos consolidados".
-   - Remover AIBadge associado ao chip "Cobre N requisitos" se presente.
+**Passo 1 — "Sobre o documento"** (combina tipo + frameworks + escopo + público):
+- Pills de tipo (esconder se já vier de template — mostrar como chip readonly com link "Trocar tipo")
+- Frameworks aplicáveis (com sugestões puxadas do `companyContext.frameworks` da empresa, não só a lista hardcoded)
+- Escopo (textarea) com placeholder dinâmico baseado no template
+- Público-alvo
+- **Card lateral** mostrando "X requisitos do(s) framework(s) selecionado(s) serão considerados pela IA" (contagem real consultando `framework_requisitos` por nome)
 
-3. `src/pages/GapAnalysisFrameworks.tsx`
-   - Trocar seção "RECOMENDADOS PELA IA" → "RECOMENDADOS PARA SUA EMPRESA" (linha ~386) e ajustar comentário acima.
+**Passo 2 — "Estilo e geração"**:
+- Tom, idioma, extensão (pills atuais)
+- **Toggle "Gerar direto"** (default ON quando vier de template): pula a etapa de chat conversacional e chama `generate_document` imediatamente após o seed prompt.
+- Resumo final do briefing antes do botão "Gerar".
 
-4. `src/components/gap-analysis/v2/AIRecommendedTile.tsx`
-   - Remover `<AIBadge>Recomendado</AIBadge>` do tile (linha ~44); manter apenas o título do framework e o motivo da recomendação.
-   - Atualizar comentário do header do arquivo.
+### 2. Corrigir contador
+`Passo {step + 1} de 3` → `Passo {step} de 2` (com novo total).
 
-5. `src/components/gap-analysis/v2/RequirementsTableToolbar.tsx`
-   - Renomear chip de filtro `'Sugeridos pela IA'` → `'Parciais'` (linha ~36). Manter `key: 'ia'` (interno) para não quebrar URLs.
+### 3. Fluxo "Gerar direto" no `DocGenDialog`
+- Em `enterChatPhase`, se `briefing.directGenerate === true`:
+  - Inserir mensagem de saudação curta
+  - Disparar seed prompt
+  - **Encadear** chamada a `generate_document` assim que a IA responder a estrutura inicial (sem esperar input do usuário)
+  - Usuário cai direto na tela de documento gerado, com opções de refinar seção por seção (já existe via `DocGenSectionRefiner`)
+- Se `directGenerate === false`: comportamento atual (chat conversacional).
 
-6. `src/components/gap-analysis/dialogs/EvidenceReusePanel.tsx`
-   - Renomear aba `Recomendado pela IA` → `Recomendados` (linha ~116).
+### 4. Pré-popular escopo do template + empresa
+Quando `companyContext` estiver carregado e `briefing.scope` for o default do template, enriquecer com `setor_atuacao` e `porte_empresa` da empresa para a IA já produzir conteúdo aderente.
 
-7. `src/components/gap-analysis/EvidenceLibraryHub.tsx`
-   - "Cruzamentos identificados pela IA" → "Cruzamentos identificados" (linha ~44).
+### 5. Mostrar contagem de requisitos cobertos
+- Hook leve `useFrameworkRequirementCount(frameworkNames)` que faz `select count` em `framework_requisitos` por nome.
+- Exibir no card lateral do passo 1.
 
-8. `src/components/gap-analysis/v2/AIDiagnosticCard.tsx`
-   - "Status recomendado: …" → "Status sugerido: …"? Não — o pedido é remover menção a IA, então manter "Status recomendado" (já não cita IA). Sem alteração.
+## Arquivos afetados
 
-9. `src/components/gap-analysis/v2/MaturityHero.tsx`
-   - Trocar copy "a IA cruza evidências automaticamente" → "as evidências são cruzadas automaticamente" (linha ~63).
-   - Renomear comentário "Insight IA" → "Insight contextual" (linha ~197).
+- `src/components/documentos/DocGenBriefing.tsx` — reestruturar para 2 passos, corrigir contador, adicionar toggle "Gerar direto", card de requisitos
+- `src/components/documentos/DocGenDialog.tsx` — suportar `directGenerate` no fluxo `enterChatPhase`, encadear `generate_document`
+- `src/lib/docgen-templates.ts` — adicionar campo `directGenerate?: boolean` em `BriefingDefaults` (default true para templates, false para "em branco")
+- `src/hooks/useFrameworkRequirementCount.ts` *(novo)* — count de requisitos por nome de framework
 
-10. `src/components/gap-analysis/v2/InsightStrip.tsx`
-    - Atualizar comentário do header para remover menção a IA (sem efeito visual, só limpeza).
-
-11. `src/components/gap-analysis/v2/StatusSeg.tsx`
-    - `aria-label="Sugestão da IA"` → `aria-label="Sugestão"` (linha ~99). Manter o pulse-dot.
-
-12. `src/components/gap-analysis/AIRecommendationsCard.tsx`
-    - Título visível "Consultor IA de Conformidade" → "Consultor de Conformidade" (linhas ~121 e ~153). Mensagens de erro de créditos permanecem (são técnicas).
-
-## Não alterar
-
-- Lógica de chamada de IA, RPC `consume_ai_credit`, mensagens de erro `Créditos de IA esgotados` (técnicas/administrativas).
-- Componente `AIBadge` em si — apenas paramos de usá-lo nos pontos acima. Pode permanecer no codebase para uso futuro.
-- Tooltips/toasts que não expõem palavra "IA" ao usuário final.
-
-## Validação
-
-- Após edição, `rg -n "pela IA|pelo IA|Ordenado pela IA|Recomendado pela IA|Sugeridos pela IA|RECOMENDADOS PELA IA" src/components/gap-analysis src/pages/GapAnalysis*` deve retornar vazio.
-- Conferir as 4 abas (Visão geral, Requisitos, Documentos, Remediação) e a lista de frameworks no preview.
+## Fora de escopo
+- Edge function `docgen-chat` não muda (já aceita `generate_document` independentemente)
+- Não mexe em UI do chat nem do documento gerado além do encadeamento automático

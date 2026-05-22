@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, ArrowRight, Sparkles, X } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { ArrowLeft, ArrowRight, Sparkles, X, ShieldCheck, Layers } from 'lucide-react';
 import {
   type BriefingDefaults,
   DOC_TYPE_OPTIONS,
@@ -12,16 +13,20 @@ import {
   DOC_LENGTH_OPTIONS,
   DOC_LANGUAGE_OPTIONS,
 } from '@/lib/docgen-templates';
+import { useFrameworkRequirementCount } from '@/hooks/useFrameworkRequirementCount';
+import type { CompanyContext } from './DocGenContextPanel';
 import { cn } from '@/lib/utils';
 
 interface DocGenBriefingProps {
   initialValue: BriefingDefaults;
   templateLabel?: string;
+  companyContext?: CompanyContext | null;
   onBack: () => void;
   onConfirm: (briefing: BriefingDefaults) => void;
 }
 
-type Step = 1 | 2 | 3;
+type Step = 1 | 2;
+const TOTAL_STEPS = 2;
 
 const DEFAULT_FRAMEWORK_SUGGESTIONS = [
   'ISO 27001',
@@ -65,16 +70,20 @@ function PillGroup<T extends string>({ options, value, onChange }: PillGroupProp
 export const DocGenBriefing: React.FC<DocGenBriefingProps> = ({
   initialValue,
   templateLabel,
+  companyContext,
   onBack,
   onConfirm,
 }) => {
   const [step, setStep] = useState<Step>(1);
-  const [briefing, setBriefing] = useState<BriefingDefaults>(initialValue);
+  const [briefing, setBriefing] = useState<BriefingDefaults>({
+    directGenerate: true,
+    ...initialValue,
+  });
   const [frameworkInput, setFrameworkInput] = useState('');
 
-  const update = (
-    key: keyof BriefingDefaults,
-    value: BriefingDefaults[keyof BriefingDefaults],
+  const update = <K extends keyof BriefingDefaults>(
+    key: K,
+    value: BriefingDefaults[K],
   ) => setBriefing((prev) => ({ ...prev, [key]: value }));
 
   const addFramework = (fw: string) => {
@@ -92,15 +101,29 @@ export const DocGenBriefing: React.FC<DocGenBriefingProps> = ({
     );
   };
 
-  const canAdvance =
-    step === 1
-      ? !!briefing.docType
-      : step === 2
-        ? true // escopo é opcional, mas recomendado
-        : true;
+  // Sugestões enriquecidas: frameworks da empresa primeiro, depois defaults.
+  const enrichedSuggestions = useMemo(() => {
+    const fromCompany = (companyContext?.frameworks || [])
+      .map((f) => f.nome)
+      .filter((n): n is string => !!n);
+    const seen = new Set<string>();
+    const ordered: string[] = [];
+    [...fromCompany, ...DEFAULT_FRAMEWORK_SUGGESTIONS].forEach((n) => {
+      const key = n.toLowerCase();
+      if (!seen.has(key) && !briefing.frameworks.includes(n)) {
+        seen.add(key);
+        ordered.push(n);
+      }
+    });
+    return ordered.slice(0, 10);
+  }, [companyContext, briefing.frameworks]);
+
+  const reqCountQuery = useFrameworkRequirementCount(briefing.frameworks);
+
+  const canAdvance = step === 1 ? !!briefing.docType : true;
 
   const handleNext = () => {
-    if (step < 3) {
+    if (step < TOTAL_STEPS) {
       setStep((s) => (s + 1) as Step);
     } else {
       onConfirm(briefing);
@@ -112,31 +135,34 @@ export const DocGenBriefing: React.FC<DocGenBriefingProps> = ({
     else onBack();
   };
 
+  const currentDocTypeLabel = DOC_TYPE_OPTIONS.find((o) => o.value === briefing.docType)?.label;
+
   return (
     <div className="flex flex-col h-full min-h-0 gap-4">
       {/* Header */}
       <div>
         <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">
-          Passo {step + 1} de 3 · Briefing
+          Passo {step} de {TOTAL_STEPS} · Briefing
           {templateLabel ? ` · ${templateLabel}` : ''}
         </p>
-        <h3 className="text-lg font-semibold mt-1">
-          {step === 1 && 'Que tipo de documento é?'}
-          {step === 2 && 'Qual o escopo e o público?'}
-          {step === 3 && 'Tom, idioma e extensão'}
+        <h3 className="text-lg font-semibold mt-1 font-sans">
+          {step === 1 && 'Sobre o documento'}
+          {step === 2 && 'Estilo e geração'}
         </h3>
         <p className="text-sm text-muted-foreground mt-0.5">
-          Quanto mais preciso o briefing, mais alinhado o documento gerado.
+          {step === 1
+            ? 'Tipo, frameworks aplicáveis, escopo e público. A IA usará isso para alinhar o conteúdo.'
+            : 'Defina tom, idioma e extensão. Você pode gerar direto ou revisar a estrutura em conversa.'}
         </p>
 
         {/* Progress */}
         <div className="flex gap-1.5 mt-3">
-          {[1, 2, 3].map((n) => (
+          {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
             <div
-              key={n}
+              key={i}
               className={cn(
                 'h-1 flex-1 rounded-full transition-colors',
-                n <= step ? 'bg-primary' : 'bg-muted',
+                i + 1 <= step ? 'bg-primary' : 'bg-muted',
               )}
             />
           ))}
@@ -146,7 +172,8 @@ export const DocGenBriefing: React.FC<DocGenBriefingProps> = ({
       {/* Body */}
       <div className="flex-1 min-h-0 overflow-y-auto pr-1 -mr-1 space-y-6">
         {step === 1 && (
-          <div className="space-y-4">
+          <div className="space-y-6">
+            {/* Tipo */}
             <div>
               <Label className="text-sm font-medium mb-2 block">Tipo de documento</Label>
               <PillGroup
@@ -155,25 +182,23 @@ export const DocGenBriefing: React.FC<DocGenBriefingProps> = ({
                 onChange={(v) => update('docType', v)}
               />
             </div>
-          </div>
-        )}
 
-        {step === 2 && (
-          <div className="space-y-5">
+            {/* Frameworks */}
             <div>
-              <Label className="text-sm font-medium mb-2 block">
-                Frameworks aplicáveis (opcional)
+              <Label className="text-sm font-medium mb-1 block">
+                Frameworks aplicáveis
               </Label>
               <p className="text-xs text-muted-foreground mb-2">
-                A IA vai alinhar o conteúdo aos requisitos destes frameworks.
+                A IA alinhará o conteúdo aos requisitos destes frameworks.
               </p>
-              <div className="flex flex-wrap gap-1.5 mb-2">
+              <div className="flex flex-wrap gap-1.5 mb-2 min-h-[26px]">
+                {briefing.frameworks.length === 0 && (
+                  <span className="text-xs text-muted-foreground italic">
+                    Nenhum framework selecionado.
+                  </span>
+                )}
                 {briefing.frameworks.map((fw) => (
-                  <Badge
-                    key={fw}
-                    variant="secondary"
-                    className="gap-1 pr-1 text-xs"
-                  >
+                  <Badge key={fw} variant="secondary" className="gap-1 pr-1 text-xs">
                     {fw}
                     <button
                       type="button"
@@ -209,22 +234,44 @@ export const DocGenBriefing: React.FC<DocGenBriefingProps> = ({
                   Adicionar
                 </Button>
               </div>
-              <div className="flex flex-wrap gap-1 mt-2">
-                {DEFAULT_FRAMEWORK_SUGGESTIONS.filter(
-                  (s) => !briefing.frameworks.includes(s),
-                ).map((s) => (
-                  <button
-                    type="button"
-                    key={s}
-                    onClick={() => addFramework(s)}
-                    className="px-2 py-0.5 rounded-full text-[11px] text-muted-foreground border border-dashed border-border hover:text-foreground hover:border-primary/40 transition-colors"
-                  >
-                    + {s}
-                  </button>
-                ))}
-              </div>
+              {enrichedSuggestions.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {enrichedSuggestions.map((s) => (
+                    <button
+                      type="button"
+                      key={s}
+                      onClick={() => addFramework(s)}
+                      className="px-2 py-0.5 rounded-full text-[11px] text-muted-foreground border border-dashed border-border hover:text-foreground hover:border-primary/40 transition-colors"
+                    >
+                      + {s}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Card de cobertura */}
+              {briefing.frameworks.length > 0 && (
+                <div className="mt-3 rounded-lg border border-border bg-card/50 p-3 flex items-start gap-3">
+                  <ShieldCheck className="h-4 w-4 text-primary mt-0.5" strokeWidth={1.5} />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium">
+                      {reqCountQuery.isLoading
+                        ? 'Calculando cobertura…'
+                        : reqCountQuery.data?.count
+                        ? `${reqCountQuery.data.count} requisitos serão considerados pela IA`
+                        : 'Nenhum requisito catalogado para esses frameworks'}
+                    </div>
+                    {reqCountQuery.data?.matched && reqCountQuery.data.matched.length > 0 && (
+                      <div className="text-xs text-muted-foreground mt-0.5 truncate">
+                        Casados: {reqCountQuery.data.matched.join(' · ')}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
+            {/* Escopo */}
             <div>
               <Label htmlFor="scope" className="text-sm font-medium mb-2 block">
                 Escopo do documento
@@ -234,10 +281,11 @@ export const DocGenBriefing: React.FC<DocGenBriefingProps> = ({
                 value={briefing.scope}
                 onChange={(e) => update('scope', e.target.value)}
                 placeholder="Ex.: regras para criação, complexidade e troca de senhas em todos os sistemas corporativos"
-                className="min-h-[80px] resize-none"
+                className="min-h-[72px] resize-none"
               />
             </div>
 
+            {/* Público */}
             <div>
               <Label htmlFor="audience" className="text-sm font-medium mb-2 block">
                 Público-alvo
@@ -252,8 +300,8 @@ export const DocGenBriefing: React.FC<DocGenBriefingProps> = ({
           </div>
         )}
 
-        {step === 3 && (
-          <div className="space-y-5">
+        {step === 2 && (
+          <div className="space-y-6">
             <div>
               <Label className="text-sm font-medium mb-2 block">Tom de voz</Label>
               <PillGroup
@@ -278,6 +326,45 @@ export const DocGenBriefing: React.FC<DocGenBriefingProps> = ({
                 onChange={(v) => update('length', v)}
               />
             </div>
+
+            {/* Toggle gerar direto */}
+            <div className="rounded-lg border border-border bg-card/50 p-3 flex items-start gap-3">
+              <Sparkles className="h-4 w-4 text-primary mt-0.5" strokeWidth={1.5} />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between gap-3">
+                  <Label htmlFor="direct-gen" className="text-sm font-medium cursor-pointer">
+                    Gerar documento direto
+                  </Label>
+                  <Switch
+                    id="direct-gen"
+                    checked={briefing.directGenerate !== false}
+                    onCheckedChange={(v) => update('directGenerate', v)}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Pula a conversa inicial e produz o documento completo já no primeiro passo.
+                  Desligue se preferir revisar a estrutura proposta antes.
+                </p>
+              </div>
+            </div>
+
+            {/* Resumo */}
+            <div className="rounded-lg border border-dashed border-border p-3 space-y-1 text-xs">
+              <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mb-1">
+                Resumo
+              </div>
+              <div><span className="text-muted-foreground">Tipo:</span> {currentDocTypeLabel}</div>
+              <div>
+                <span className="text-muted-foreground">Frameworks:</span>{' '}
+                {briefing.frameworks.length ? briefing.frameworks.join(', ') : '—'}
+              </div>
+              {briefing.scope && (
+                <div className="line-clamp-2">
+                  <span className="text-muted-foreground">Escopo:</span> {briefing.scope}
+                </div>
+              )}
+              <div><span className="text-muted-foreground">Público:</span> {briefing.audience || '—'}</div>
+            </div>
           </div>
         )}
       </div>
@@ -289,10 +376,10 @@ export const DocGenBriefing: React.FC<DocGenBriefingProps> = ({
           {step === 1 ? 'Trocar modelo' : 'Voltar'}
         </Button>
         <Button onClick={handleNext} disabled={!canAdvance} className="gap-1">
-          {step === 3 ? (
+          {step === TOTAL_STEPS ? (
             <>
               <Sparkles className="h-4 w-4" strokeWidth={1.5} />
-              Iniciar geração
+              {briefing.directGenerate !== false ? 'Gerar documento' : 'Iniciar conversa'}
             </>
           ) : (
             <>
