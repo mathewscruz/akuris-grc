@@ -42,7 +42,7 @@ export function AIRecommendedTile({
           <h3 className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors truncate">
             {nome} <span className="text-xs font-normal text-muted-foreground">{versao}</span>
           </h3>
-          <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mt-0.5">
+          <div className="text-[10px] font-sans uppercase tracking-wider text-muted-foreground mt-0.5">
             {FW_CATEGORY_LABEL[cat]}
           </div>
         </div>
@@ -54,7 +54,7 @@ export function AIRecommendedTile({
 
       {/* Overlap row */}
       <div className="space-y-1.5 pt-2 border-t border-border/60">
-        <div className="flex items-center justify-between text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+        <div className="flex items-center justify-between text-[10px] font-sans uppercase tracking-wider text-muted-foreground">
           <span>Reuso estimado</span>
           <span className="tabular-nums text-foreground font-semibold">{overlapPercent}%</span>
         </div>

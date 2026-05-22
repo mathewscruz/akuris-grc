@@ -77,10 +77,10 @@ export function AIDiagnosticCard({
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[10px] font-mono uppercase tracking-wider text-primary">
+            <span className="text-[10px] font-sans uppercase tracking-wider text-primary">
               Diagnóstico
             </span>
-            <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+            <span className="text-[10px] font-sans uppercase tracking-wider text-muted-foreground">
               Confiança {result.confidence}%
             </span>
           </div>
@@ -104,7 +104,7 @@ export function AIDiagnosticCard({
       {/* Pontos avaliados */}
       {result.evaluated_points.length > 0 && (
         <div className="mb-4">
-          <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mb-2">
+          <div className="text-[10px] font-sans uppercase tracking-wider text-muted-foreground mb-2">
             Pontos avaliados
           </div>
           <ul className="space-y-1.5">
@@ -125,7 +125,7 @@ export function AIDiagnosticCard({
       {/* Gaps */}
       {result.gaps.length > 0 && (
         <div className="mb-4">
-          <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mb-2">
+          <div className="text-[10px] font-sans uppercase tracking-wider text-muted-foreground mb-2">
             Gaps identificados
           </div>
           <ul className="space-y-1 list-disc list-inside text-xs text-foreground/80">
@@ -138,7 +138,7 @@ export function AIDiagnosticCard({
       {result.justification && (
         <div className="border-t border-primary/20 pt-3 mt-3">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+            <span className="text-[10px] font-sans uppercase tracking-wider text-muted-foreground">
               Justificativa sugerida
             </span>
             <div className="flex items-center gap-1">

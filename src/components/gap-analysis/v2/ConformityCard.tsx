@@ -97,7 +97,7 @@ export function ConformityCard({
             <span className="text-2xl font-bold tabular-nums leading-none tracking-tight text-foreground">
               {score}<span className="text-base text-muted-foreground">%</span>
             </span>
-            <span className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground mt-1">
+            <span className="text-[9px] font-sans uppercase tracking-wider text-muted-foreground mt-1">
               Conformidade
             </span>
           </div>
@@ -159,7 +159,7 @@ function Triple({
   const tc = tone === 'success' ? 'text-success' : tone === 'warning' ? 'text-warning' : 'text-foreground';
   return (
     <div>
-      <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+      <div className="text-[10px] font-sans uppercase tracking-wider text-muted-foreground">
         {eyebrow}
       </div>
       <div className={`mt-1 text-base font-semibold tabular-nums ${tc}`}>

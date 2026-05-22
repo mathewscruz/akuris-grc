@@ -386,7 +386,7 @@ export default function GapAnalysisFrameworks() {
                   title="RECOMENDADOS PARA SUA EMPRESA"
                   count={aiRecommended.length}
                   right={
-                    <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+                    <span className="text-[10px] font-sans uppercase tracking-wider text-muted-foreground">
                       Baseado em sobreposição de evidências
                     </span>
                   }

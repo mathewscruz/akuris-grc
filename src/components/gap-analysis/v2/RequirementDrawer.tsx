@@ -185,7 +185,7 @@ export function RequirementDrawer({
               <div className="flex items-start gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+                    <span className="text-[10px] font-sans uppercase tracking-wider text-muted-foreground">
                       Triagem rápida
                     </span>
                     {requirement.codigo && (
@@ -199,7 +199,7 @@ export function RequirementDrawer({
                     {requirement.categoria && (
                       <>
                         <span className="text-muted-foreground/60">·</span>
-                        <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground truncate">
+                        <span className="text-[10px] font-sans uppercase tracking-wider text-muted-foreground truncate">
                           {requirement.categoria}
                         </span>
                       </>
@@ -297,7 +297,7 @@ export function RequirementDrawer({
 
               {/* Prazo */}
               <section>
-                <Label htmlFor="prazo-drawer" className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+                <Label htmlFor="prazo-drawer" className="text-[10px] font-sans uppercase tracking-wider text-muted-foreground">
                   PRAZO DE IMPLEMENTAÇÃO
                 </Label>
                 <Input

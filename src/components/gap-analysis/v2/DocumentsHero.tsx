@@ -120,7 +120,7 @@ export function DocumentsHero({ frameworkId, empresaId, onUploadClick, onLinkCli
         <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr]">
           {/* Convite */}
           <div className="p-6">
-            <div className="inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-primary">
+            <div className="inline-flex items-center gap-1.5 text-[10px] font-sans uppercase tracking-wider text-primary">
               <Sparkles className="h-3 w-3" strokeWidth={1.5} />
               Análise automatizada
             </div>
@@ -162,7 +162,7 @@ export function DocumentsHero({ frameworkId, empresaId, onUploadClick, onLinkCli
 
           {/* Lacunas documentais detectadas */}
           <aside className="p-6 border-t lg:border-t-0 lg:border-l border-border/60 bg-muted/20">
-            <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+            <div className="text-[10px] font-sans uppercase tracking-wider text-muted-foreground">
               Lacunas documentais detectadas
             </div>
             <ul className="mt-3 space-y-2.5">
@@ -179,7 +179,7 @@ export function DocumentsHero({ frameworkId, empresaId, onUploadClick, onLinkCli
                         <span className="text-sm font-medium text-foreground truncate">
                           {s.label}
                         </span>
-                        <span className="text-[10px] font-mono uppercase tracking-wider text-destructive shrink-0">
+                        <span className="text-[10px] font-sans uppercase tracking-wider text-destructive shrink-0">
                           {s.status}
                         </span>
                       </div>
