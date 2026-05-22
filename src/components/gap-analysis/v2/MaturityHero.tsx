@@ -91,7 +91,7 @@ export function MaturityHero({
       <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr_0.9fr_1.2fr]">
         {/* Coluna 1 — Maturidade */}
         <div className="p-6 lg:pr-7">
-          <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+          <div className="text-[10px] font-sans uppercase tracking-wider text-muted-foreground">
             Índice de maturidade · {activeFrameworksCount} {activeFrameworksCount === 1 ? 'framework ativo' : 'frameworks ativos'}
           </div>
           <div className="mt-2 flex items-end gap-3 flex-wrap">
@@ -119,7 +119,7 @@ export function MaturityHero({
 
         {/* Coluna 2 — Próximo Marco */}
         <div className="p-6 border-t lg:border-t-0 lg:border-l border-border/60">
-          <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+          <div className="text-[10px] font-sans uppercase tracking-wider text-muted-foreground">
             Próximo marco
           </div>
           {nextMilestone ? (
@@ -142,7 +142,7 @@ export function MaturityHero({
                       style={{ left: `${nextMilestone.targetScore}%` }}
                     />
                   </div>
-                  <div className="mt-1.5 flex items-center justify-between text-[10px] font-mono uppercase tracking-wider text-muted-foreground tabular-nums">
+                  <div className="mt-1.5 flex items-center justify-between text-[10px] font-sans uppercase tracking-wider text-muted-foreground tabular-nums">
                     <span>{score}%</span>
                     <span>meta {nextMilestone.targetScore}%</span>
                     <span>100%</span>
@@ -168,7 +168,7 @@ export function MaturityHero({
 
         {/* Coluna 3 — Gaps a Tratar */}
         <div className="p-6 border-t lg:border-t-0 lg:border-l border-border/60">
-          <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+          <div className="text-[10px] font-sans uppercase tracking-wider text-muted-foreground">
             Gaps a tratar
           </div>
           <div className={`mt-2 text-5xl font-bold tabular-nums leading-none tracking-tight ${gapTone}`}>
@@ -196,7 +196,7 @@ export function MaturityHero({
 
         {/* Coluna 4 — Insight contextual */}
         <div className="p-6 border-t lg:border-t-0 lg:border-l border-border/60 bg-primary/[0.02]">
-          <div className="inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-primary">
+          <div className="inline-flex items-center gap-1.5 text-[10px] font-sans uppercase tracking-wider text-primary">
             <Sparkles className="h-3 w-3" strokeWidth={1.5} />
             Insight
           </div>

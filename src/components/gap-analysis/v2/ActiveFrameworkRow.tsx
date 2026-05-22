@@ -54,7 +54,7 @@ export function ActiveFrameworkRow({
         <div className="flex items-center gap-3 min-w-0">
           <FwMono l1={mono.l1} l2={mono.l2} size="lg" />
           <div className="min-w-0">
-            <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+            <div className="text-[10px] font-sans uppercase tracking-wider text-muted-foreground">
               {FW_CATEGORY_LABEL[cat]}
             </div>
             <div className="font-semibold text-base text-foreground group-hover:text-primary transition-colors truncate">
@@ -73,7 +73,7 @@ export function ActiveFrameworkRow({
           </span>
           <div className="flex flex-col">
             <span className="text-xs text-muted-foreground tabular-nums">/ 100</span>
-            <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mt-1">
+            <span className="text-[10px] font-sans uppercase tracking-wider text-muted-foreground mt-1">
               Nível {maturity.id} · {maturity.label}
             </span>
           </div>
@@ -81,7 +81,7 @@ export function ActiveFrameworkRow({
 
         {/* Distribuição */}
         <div className="space-y-2 min-w-0">
-          <div className="flex items-center justify-between text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
+          <div className="flex items-center justify-between text-[11px] font-sans uppercase tracking-wider text-muted-foreground">
             <span>Distribuição</span>
             <span className="tabular-nums">
               {evaluatedRequirements}/{totalRequirements} · {coverage}%

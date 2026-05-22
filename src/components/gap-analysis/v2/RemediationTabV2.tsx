@@ -292,7 +292,7 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
               >
                 <CornerAccent position="top-right" size={10} />
                 <span className="absolute left-0 top-3 bottom-3 w-[2px] rounded-r bg-primary" />
-                <div className="flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-primary">
+                <div className="flex items-center gap-1.5 text-[10px] font-sans uppercase tracking-wider text-primary">
                   Cobre {c.items.length} requisitos
                 </div>
                 <h4 className="mt-1 text-sm font-semibold leading-snug">
@@ -378,7 +378,7 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
               return (
                 <div key={col.key} className="rounded-xl border border-border bg-muted/20 p-3 flex flex-col">
                   <div className="flex items-center justify-between mb-3 px-1">
-                    <span className="inline-flex items-center gap-2 text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
+                    <span className="inline-flex items-center gap-2 text-[11px] font-sans uppercase tracking-wider text-muted-foreground">
                       <span className={cn('h-1.5 w-1.5 rounded-full', COL_DOT[col.key])} />
                       {col.label}
                     </span>

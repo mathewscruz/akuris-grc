@@ -15,7 +15,7 @@ export function AIBadge({ children = 'IA', className }: AIBadgeProps) {
     <span
       className={cn(
         'inline-flex items-center gap-1 rounded border border-primary/25 bg-primary/10',
-        'px-1.5 py-[1px] font-mono text-[10px] uppercase tracking-wider text-primary',
+        'px-1.5 py-[1px] font-sans text-[10px] uppercase tracking-wider text-primary',
         className
       )}
     >

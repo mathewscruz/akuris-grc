@@ -63,7 +63,7 @@ export function SectionHeatmap({
         title={title}
         count={cells.length}
         right={
-          <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+          <span className="text-[10px] font-sans uppercase tracking-wider text-muted-foreground">
             Clique para filtrar
           </span>
         }

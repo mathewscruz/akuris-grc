@@ -48,7 +48,7 @@ export function AssessmentInsightsStrip({ insights }: AssessmentInsightsStripPro
             <span className={`absolute left-0 top-3 bottom-3 w-[2px] rounded-r ${RIBBON[tone]}`} />
             {i === 0 && <CornerAccent position="top-right" size={10} />}
 
-            <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+            <div className="text-[10px] font-sans uppercase tracking-wider text-muted-foreground">
               {ins.eyebrow}
             </div>
             <div className="mt-1 flex items-baseline gap-2">

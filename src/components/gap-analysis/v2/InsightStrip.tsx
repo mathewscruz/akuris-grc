@@ -43,7 +43,7 @@ export function InsightStrip({
       )}
     >
       <span className={cn('absolute left-0 top-3 bottom-3 w-1 rounded-r', RIBBON[tone])} aria-hidden />
-      <div className="inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+      <div className="inline-flex items-center gap-1.5 text-[10px] font-sans uppercase tracking-wider text-muted-foreground">
         <Sparkles className="h-3 w-3 text-primary" strokeWidth={1.5} />
         {eyebrow}
       </div>

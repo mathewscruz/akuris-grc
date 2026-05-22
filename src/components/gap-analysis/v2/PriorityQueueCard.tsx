@@ -196,7 +196,7 @@ export function PriorityQueueCard({
                           </span>
                         )}
                         {item.categoria && (
-                          <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground truncate">
+                          <span className="text-[10px] font-sans uppercase tracking-wider text-muted-foreground truncate">
                             · {item.categoria}
                           </span>
                         )}
@@ -206,13 +206,13 @@ export function PriorityQueueCard({
                       </div>
                       <div className="flex items-center gap-2 mt-1 flex-wrap">
                         {isCritical && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-wider text-destructive">
+                          <span className="inline-flex items-center gap-1 text-[10px] font-sans uppercase tracking-wider text-destructive">
                             <AlertTriangle className="h-3 w-3" strokeWidth={1.5} />
                             Não conforme
                           </span>
                         )}
                         {isOverdue && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-wider text-destructive">
+                          <span className="inline-flex items-center gap-1 text-[10px] font-sans uppercase tracking-wider text-destructive">
                             <CalendarClock className="h-3 w-3" strokeWidth={1.5} />
                             Vencido
                           </span>
