@@ -1086,6 +1086,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
             <DocGenBriefing
               initialValue={briefingValue}
               templateLabel={selectedTemplate?.label}
+              companyContext={companyContext}
               onBack={() => setPhase('gallery')}
               onConfirm={(brief) => enterChatPhase(brief, selectedTemplate?.seedPromptHint)}
             />
