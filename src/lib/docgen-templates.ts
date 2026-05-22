@@ -45,6 +45,8 @@ export interface BriefingDefaults {
   tone: DocTone;
   language: DocLanguage;
   length: DocLength;
+  /** Quando true, pula o chat conversacional e gera o documento direto após o seed. */
+  directGenerate?: boolean;
 }
 
 export interface DocGenTemplate {
