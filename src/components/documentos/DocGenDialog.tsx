@@ -311,15 +311,19 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
   const enterChatPhase = async (briefing: BriefingDefaults, templateHint?: string) => {
     setBriefingValue(briefing);
     setPhase('chat');
+    const autoGen = briefing.directGenerate !== false;
+    pendingAutoGenerateRef.current = autoGen;
     // Saudação curta + contexto do briefing
     const empNome = companyContext?.empresa?.nome;
-    const greeting = empNome
-      ? `Contexto de **${empNome}** carregado. Vou propor a estrutura inicial alinhada à empresa e ao briefing — depois refinamos juntos.`
-      : `Briefing recebido. Vou propor a estrutura inicial e podemos refinar antes de gerar o documento completo.`;
+    const greeting = autoGen
+      ? (empNome
+          ? `Contexto de **${empNome}** carregado. Vou montar o documento completo já alinhado ao briefing — você poderá refinar seção por seção depois.`
+          : `Briefing recebido. Vou montar o documento completo — você poderá refinar seção por seção depois.`)
+      : (empNome
+          ? `Contexto de **${empNome}** carregado. Vou propor a estrutura inicial alinhada à empresa e ao briefing — depois refinamos juntos.`
+          : `Briefing recebido. Vou propor a estrutura inicial e podemos refinar antes de gerar o documento completo.`);
     setMessages([{ role: 'assistant', content: greeting, timestamp: new Date() }]);
-    // Aguardar render para focar input
     setTimeout(() => inputRef.current?.focus(), 100);
-    // Aguardar contexto da empresa carregar (até ~3s) antes de enviar seed
     const seed = buildSeedPrompt(briefing, templateHint);
     const waitForContext = async () => {
       const deadline = Date.now() + 3000;
