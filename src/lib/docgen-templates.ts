@@ -74,6 +74,7 @@ const baseDefaults = {
   tone: 'formal' as DocTone,
   language: 'pt-BR' as DocLanguage,
   length: 'padrao' as DocLength,
+  directGenerate: true,
 };
 
 export const DOCGEN_TEMPLATES: DocGenTemplate[] = [
