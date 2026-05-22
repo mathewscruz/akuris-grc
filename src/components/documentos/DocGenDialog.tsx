@@ -106,6 +106,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
   const [showCreditsDialog, setShowCreditsDialog] = useState(false);
   const messagesScrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const pendingAutoGenerateRef = useRef(false);
 
   // Dialog de criação via DocGen
   const [showCreateDialog, setShowCreateDialog] = useState(false);
