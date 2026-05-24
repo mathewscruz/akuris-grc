@@ -12,7 +12,7 @@ export type AkurisToastTone = 'success' | 'warning' | 'destructive' | 'info' | '
 export interface AkurisToastOptions {
   /** Módulo de origem — define o ícone proprietário no chip. */
   module?: NotificationModuleKey;
-  /** Tom semântico — define cor do chip e da listra. Default: 'info'. */
+  /** Tom semântico — define cor do acento vertical e do chip. Default: 'info'. */
   tone?: AkurisToastTone;
   /** Eyebrow opcional acima do título (uppercase, tracking-[0.18em]). */
   eyebrow?: string;
@@ -26,12 +26,12 @@ export interface AkurisToastOptions {
   duration?: number;
 }
 
-const TONE_CLASSES: Record<AkurisToastTone, { chipBg: string; stripes: string }> = {
-  success:     { chipBg: 'bg-success',     stripes: 'akuris-stripes-success' },
-  warning:     { chipBg: 'bg-warning',     stripes: 'akuris-stripes-warning' },
-  destructive: { chipBg: 'bg-destructive', stripes: 'akuris-stripes-destructive' },
-  info:        { chipBg: 'bg-info',        stripes: 'akuris-stripes-info' },
-  reminder:    { chipBg: 'bg-primary',     stripes: 'akuris-stripes-reminder' },
+const TONE_CLASSES: Record<AkurisToastTone, { chipBg: string; accent: string }> = {
+  success:     { chipBg: 'bg-success',     accent: 'bg-success' },
+  warning:     { chipBg: 'bg-warning',     accent: 'bg-warning' },
+  destructive: { chipBg: 'bg-destructive', accent: 'bg-destructive' },
+  info:        { chipBg: 'bg-info',        accent: 'bg-info' },
+  reminder:    { chipBg: 'bg-primary',     accent: 'bg-primary' },
 };
 
 const FALLBACK_TONE_ICON: Record<AkurisToastTone, React.ComponentType<any>> = {
@@ -43,12 +43,11 @@ const FALLBACK_TONE_ICON: Record<AkurisToastTone, React.ComponentType<any>> = {
 };
 
 /**
- * akurisToast — Toast com identidade Akuris no estilo "pill listrado":
- * - Chip 24px circular sólido com glyph branco (ícone proprietário do módulo)
- * - Fundo com listras diagonais tingidas pelo tom (akuris-stripes-*)
- * - Botão "Action" branco à direita (opcional)
- *
- * Compatível com Sonner. Para toasts simples, continue usando `toast.success(...)` etc.
+ * akurisToast — Toast Editorial Precision:
+ * - Surface bg-card sólida, borda fina, sombra profunda
+ * - Acento vertical 3px à esquerda na cor do tom
+ * - Chip 32px circular sólido com glyph branco (ícone proprietário do módulo)
+ * - Action como link inline em text-primary
  */
 export function akurisToast({
   module,
@@ -68,56 +67,57 @@ export function akurisToast({
       <div
         role="status"
         aria-live="polite"
-        className={`relative w-[380px] max-w-[92vw] overflow-hidden rounded-2xl border border-border/50 shadow-[0_10px_28px_-12px_hsl(var(--foreground)/0.18)] ${toneCls.stripes}`}
+        className="relative w-[380px] max-w-[92vw] overflow-hidden rounded-lg border border-border bg-card pl-5 p-4 shadow-[0_18px_40px_-16px_hsl(0_0%_0%/0.55),0_2px_6px_-2px_hsl(0_0%_0%/0.25)]"
       >
-        <div className="flex items-center gap-3 p-3.5 pl-4">
-          {/* Chip ícone sólido 24px */}
+        {/* Acento vertical 3px */}
+        <span aria-hidden className={`absolute left-0 top-0 bottom-0 w-[3px] ${toneCls.accent}`} />
+
+        <div className="flex items-start gap-3">
+          {/* Chip 32px sólido */}
           <span
             aria-hidden
-            className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-white ${toneCls.chipBg}`}
+            className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white ${toneCls.chipBg}`}
           >
-            <IconComp className="h-3.5 w-3.5" strokeWidth={2.25} />
+            <IconComp className="h-4 w-4" strokeWidth={2.25} />
           </span>
 
           {/* Conteúdo */}
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 pt-0.5">
             {eyebrow && (
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary/70 leading-none mb-1">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground leading-none mb-1.5">
                 {eyebrow}
               </p>
             )}
-            <p className="text-[13px] font-semibold text-foreground leading-tight">
+            <p className="text-[14px] font-semibold text-foreground leading-tight">
               {title}
             </p>
             {description && (
-              <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">
+              <p className="text-[13px] text-muted-foreground leading-relaxed mt-1 break-words">
                 {description}
               </p>
             )}
+            {action && (
+              <button
+                type="button"
+                onClick={() => {
+                  action.onClick();
+                  sonnerToast.dismiss(id);
+                }}
+                className="mt-3 text-[12px] font-medium text-primary hover:text-primary/80 transition-colors"
+              >
+                {action.label}
+              </button>
+            )}
           </div>
-
-          {/* Ação (pill branco) */}
-          {action && (
-            <button
-              type="button"
-              onClick={() => {
-                action.onClick();
-                sonnerToast.dismiss(id);
-              }}
-              className="akuris-pill-action shrink-0"
-            >
-              {action.label}
-            </button>
-          )}
 
           {/* Fechar */}
           <button
             type="button"
             aria-label="Fechar"
             onClick={() => sonnerToast.dismiss(id)}
-            className="shrink-0 p-1 rounded-md text-muted-foreground/60 hover:text-foreground hover:bg-muted/50 transition-colors"
+            className="shrink-0 -mt-1 -mr-1 p-1 rounded-md text-muted-foreground/70 hover:text-foreground hover:bg-muted/40 transition-colors"
           >
-            <X className="h-3.5 w-3.5" strokeWidth={1.5} />
+            <X className="h-4 w-4" strokeWidth={1.5} />
           </button>
         </div>
       </div>
