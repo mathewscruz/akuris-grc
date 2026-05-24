@@ -23,7 +23,8 @@ const Toaster = ({ ...props }: ToasterProps) => {
       theme="system"
       className="toaster group"
       position="top-right"
-      expand={false}
+      expand={true}
+      visibleToasts={4}
       richColors={false}
       duration={4500}
       gap={12}
