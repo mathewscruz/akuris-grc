@@ -1,23 +1,32 @@
-# Toasts vazios ao empilhar — correção
+# Toast Akuris — redesign "Editorial precision"
 
-## Diagnóstico
+## Direção escolhida
+- Surface sólida `bg-card` com borda fina `border-border`, raio `rounded-lg`, sombra profunda.
+- Acento vertical de 3px à esquerda na cor semântica do tom (success / warning / destructive / info / primary).
+- Chip circular 32px **sólido** na cor semântica com glyph branco (no warning/success o glyph fica em navy para contraste).
+- Conteúdo: título 14px semibold, descrição 13px `text-muted-foreground` leading-relaxed.
+- Botão Action como link inline em `text-primary` (sem pill branco).
+- Close 16px no canto superior direito.
+- **Sem listras diagonais.**
 
-No screenshot, o toast da frente ("Status atualizado para Parcial") aparece normal, mas os 2 toasts atrás dele aparecem como faixas vazias (só fundo listrado, sem título/descrição/chip).
+## Mudanças
 
-Causa: em `src/components/ui/sonner.tsx` o Toaster está configurado com `expand={false}`. Esse é o modo "stack" do Sonner — ele só renderiza o toast da frente completo e usa os de trás como "cards fantasmas" colapsados. Como nosso pill tem `overflow-hidden`, fundo listrado próprio e padding generoso, os cards de trás ficam visíveis mas sem conteúdo legível — exatamente o efeito da print.
+1. **`src/components/ui/sonner.tsx`** — reescrever classNames:
+   - Remover todas as `akuris-stripes-*` e o override `[&_[data-icon]]:!bg-…` que pintava só o chip.
+   - Toast: `bg-card border border-border rounded-lg shadow-[…] pl-4 p-4 gap-3 items-start`, com pseudo `before:` de 3px à esquerda colorido pelo tom via classes `data-[type=success]:before:bg-success` etc.
+   - Icon chip: 32px circular sólido (`bg-success`/`bg-warning`/`bg-destructive`/`bg-info`/`bg-primary`) com glyph branco.
+   - Title `text-[14px] font-semibold`, description `text-[13px] text-muted-foreground leading-relaxed mt-1`.
+   - ActionButton: link inline `bg-transparent text-primary hover:text-primary/80 font-medium text-[12px] px-0 py-0 border-0 shadow-none mt-3`.
+   - Manter `expand={true}` e `visibleToasts={4}` da correção anterior.
 
-## Correção
+2. **`src/lib/akuris-toast.tsx`** — atualizar o custom toast para o mesmo padrão (acento vertical 3px + chip 32px sólido + sem listras), preservando o slot de ícone proprietário do módulo. Remover dependência de `akuris-stripes-*` e do `akuris-pill-action`; trocar action pelo mesmo link inline `text-primary`.
 
-Editar **apenas** `src/components/ui/sonner.tsx`:
+3. **`src/index.css`** — manter as classes `akuris-stripes-*` por compatibilidade (outros componentes podem usar), apenas não usadas pelo toast. Sem remoção destrutiva.
 
-1. Trocar `expand={false}` por `expand={true}` para que toasts empilhados sejam renderizados lado a lado verticalmente, cada um com título, descrição, chip e ação completos.
-2. Adicionar `visibleToasts={4}` (hoje fica no default 3) para acomodar rajadas curtas sem cortar.
-3. Manter `gap={12}` (já existe) — com expand ativo o gap passa a valer entre cards expandidos, mantendo respiro entre eles.
-
-Nenhuma outra mudança: tipografia, listras por tom, chip 24px, botões de ação e animações `animate-toast-enter/exit` continuam iguais. `akurisToast` (custom) já é independente e não é afetado.
+4. **Memória** — atualizar `mem://design/foundations/notifications-pill-redesign` para refletir o novo padrão "Editorial precision" (acento vertical + chip sólido, sem listras).
 
 ## Validação
-
-- Disparar 3+ toasts em sequência (ex.: alterar status de vários requisitos) e confirmar que todos mostram texto, chip e botão de ação.
-- Verificar que um toast solitário continua com o mesmo visual atual (pill listrado, chip colorido).
-- Conferir no modo claro e escuro.
+- Disparar success/warning/error/info isolados e empilhados (3+).
+- Conferir em dark e light theme.
+- Confirmar ação inline (ex.: toast com botão "Ver detalhes") e descrição com `<span>` em destaque.
+- Confirmar que `akurisToast({module, tone})` continua renderizando ícone do módulo.
