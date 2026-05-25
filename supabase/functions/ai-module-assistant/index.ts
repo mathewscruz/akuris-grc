@@ -21,41 +21,48 @@ serve(async (req) => {
     const supabaseAnon = Deno.env.get('SUPABASE_ANON_KEY') || supabaseServiceKey;
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Authenticate user
+    // Authenticate user (mandatory)
     const authHeader = req.headers.get('Authorization');
-    let userId: string | null = null;
-    let empresaId: string | null = null;
-
-    if (authHeader?.startsWith('Bearer ')) {
-      const userClient = createClient(supabaseUrl, supabaseAnon, {
-        global: { headers: { Authorization: authHeader } }
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
-      const { data: userData, error: userError } = await userClient.auth.getUser(authHeader.replace('Bearer ', ''));
-      if (!userError && userData?.user?.id) {
-        userId = userData.user.id;
-        const { data: profile } = await supabaseAdmin
-          .from('profiles')
-          .select('empresa_id')
-          .eq('user_id', userId)
-          .single();
-        empresaId = profile?.empresa_id || null;
-      }
     }
 
-    // Consume AI credit if we have user context
-    if (userId && empresaId) {
-      const { data: creditResult } = await supabaseAdmin.rpc('consume_ai_credit', {
-        p_empresa_id: empresaId,
-        p_user_id: userId,
-        p_funcionalidade: `ai-assistant:${action}`,
-        p_descricao: `Assistente IA - ${action}`
+    const userClient = createClient(supabaseUrl, supabaseAnon, {
+      global: { headers: { Authorization: authHeader } }
+    });
+    const { data: userData, error: userError } = await userClient.auth.getUser(authHeader.replace('Bearer ', ''));
+    if (userError || !userData?.user?.id) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    }
+    const userId: string = userData.user.id;
+    const { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('empresa_id')
+      .eq('user_id', userId)
+      .single();
+    const empresaId: string | null = profile?.empresa_id || null;
+    if (!empresaId) {
+      return new Response(JSON.stringify({ error: 'Forbidden: empresa not found' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
-      if (creditResult === false) {
-        return new Response(JSON.stringify({ error: "Créditos de IA esgotados." }), {
-          status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
+    // Consume AI credit
+    const { data: creditResult } = await supabaseAdmin.rpc('consume_ai_credit', {
+      p_empresa_id: empresaId,
+      p_user_id: userId,
+      p_funcionalidade: `ai-assistant:${action}`,
+      p_descricao: `Assistente IA - ${action}`
+    });
+
+    if (creditResult === false) {
+      return new Response(JSON.stringify({ error: "Créditos de IA esgotados." }), {
+        status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     let systemPrompt = "";
