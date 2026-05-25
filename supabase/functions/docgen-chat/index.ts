@@ -139,7 +139,7 @@ serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    const { 
+    let { 
       message, 
       conversation_id, 
       user_id, 
