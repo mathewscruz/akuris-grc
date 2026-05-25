@@ -236,11 +236,42 @@ serve(async (req) => {
       });
     }
 
+    // ============ AUTH guard for all other actions ============
+    // Trust only the JWT — never the empresa_id/user_id from the request body.
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const verifier = createClient(SUPABASE_URL, Deno.env.get('SUPABASE_ANON_KEY') || SUPABASE_SERVICE_ROLE_KEY);
+    const { data: authUserData, error: authUserErr } = await verifier.auth.getUser(authHeader.replace('Bearer ', ''));
+    if (authUserErr || !authUserData?.user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const authedUserId = authUserData.user.id;
+    const { data: callerProfile } = await supabase
+      .from('profiles').select('empresa_id, role').eq('user_id', authedUserId).maybeSingle();
+    const authedEmpresaId = callerProfile?.role === 'super_admin'
+      ? (empresa_id ?? callerProfile?.empresa_id)
+      : callerProfile?.empresa_id;
+    if (!authedEmpresaId) {
+      return new Response(JSON.stringify({ error: 'Forbidden: empresa not found' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    // Override body-supplied values for the remainder of the handler
+    // (variables declared via `let`-style reassign through new locals)
+    const user_id_eff = authedUserId;
+    const empresa_id_eff = authedEmpresaId;
+
     // Consume AI credit before processing
-    if (user_id && empresa_id) {
+    {
       const { data: creditResult } = await supabase.rpc('consume_ai_credit', {
-        p_empresa_id: empresa_id,
-        p_user_id: user_id,
+        p_empresa_id: empresa_id_eff,
+        p_user_id: user_id_eff,
         p_funcionalidade: `docgen-chat:${action}`,
         p_descricao: `DocGen - ${action === 'generate_document' ? 'Geração de documento' : 'Chat conversacional'}`
       });
