@@ -262,8 +262,6 @@ serve(async (req) => {
         status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    // Override body-supplied values for the remainder of the handler
-    // (variables declared via `let`-style reassign through new locals)
     // Override body-supplied values with authenticated values
     user_id = user_id_eff;
     empresa_id = empresa_id_eff;
@@ -272,18 +270,6 @@ serve(async (req) => {
     {
       const { data: creditResult } = await supabase.rpc('consume_ai_credit', {
         p_empresa_id: empresa_id_eff,
-        p_user_id: user_id_eff,
-        p_funcionalidade: `docgen-chat:${action}`,
-        p_descricao: `DocGen - ${action === 'generate_document' ? 'Geração de documento' : 'Chat conversacional'}`
-      });
-
-      if (creditResult === false) {
-        return new Response(JSON.stringify({ error: 'CREDITS_EXHAUSTED' }), {
-          status: 402,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-    }
         p_user_id: user_id_eff,
         p_funcionalidade: `docgen-chat:${action}`,
         p_descricao: `DocGen - ${action === 'generate_document' ? 'Geração de documento' : 'Chat conversacional'}`
