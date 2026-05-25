@@ -24,29 +24,38 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Authenticate user and consume credit
+    // Authenticate user (mandatory)
     const authHeader = req.headers.get('Authorization');
-    let userId: string | null = null;
-    let empresaId: string | null = null;
-
-    if (authHeader?.startsWith('Bearer ')) {
-      const userClient = createClient(supabaseUrl, supabaseAnon, {
-        global: { headers: { Authorization: authHeader } }
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
-      const { data: userData, error: claimsError } = await userClient.auth.getUser(authHeader.replace('Bearer ', ''));
-      if (!claimsError && userData?.user?.id) {
-        userId = userData.user.id as string;
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('empresa_id')
-          .eq('user_id', userId)
-          .single();
-        empresaId = profile?.empresa_id || null;
-      }
+    }
+
+    const userClient = createClient(supabaseUrl, supabaseAnon, {
+      global: { headers: { Authorization: authHeader } }
+    });
+    const { data: userData, error: claimsError } = await userClient.auth.getUser(authHeader.replace('Bearer ', ''));
+    if (claimsError || !userData?.user?.id) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const userId: string = userData.user.id;
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('empresa_id')
+      .eq('user_id', userId)
+      .single();
+    const empresaId: string | null = profile?.empresa_id || null;
+    if (!empresaId) {
+      return new Response(JSON.stringify({ error: 'Forbidden: empresa not found' }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Consume credit before AI call
-    if (userId && empresaId) {
+    {
       const { data: creditResult } = await supabase.rpc('consume_ai_credit', {
         p_empresa_id: empresaId,
         p_user_id: userId,
