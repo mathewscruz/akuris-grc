@@ -5,12 +5,15 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { ArrowLeft, Plus, Settings } from 'lucide-react';
+import { ArrowLeft, Plus, Settings, Sparkles, FileText } from 'lucide-react';
 import { useProjeto, useUpsertProjeto } from '@/hooks/useProjetos';
 import { useProjetoColunas, useProjetoTarefas } from '@/hooks/useProjetoTarefas';
 import { KanbanBoard } from '@/components/projetos/KanbanBoard';
 import { TarefaDialog } from '@/components/projetos/TarefaDialog';
 import { ProjetoDialog } from '@/components/projetos/ProjetoDialog';
+import { GanttChart } from '@/components/projetos/GanttChart';
+import { SuggestTasksDialog } from '@/components/projetos/SuggestTasksDialog';
+import { StatusReportDialog } from '@/components/projetos/StatusReportDialog';
 import type { ProjetoTarefa, ProjetoTarefaPrioridade } from '@/types/projetos';
 import { STATUS_LABEL, PRIORIDADE_LABEL } from '@/types/projetos';
 
