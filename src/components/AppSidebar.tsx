@@ -68,6 +68,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { prefetchRoute } from '@/lib/route-prefetch';
+import { useSidebarFit } from '@/hooks/useSidebarFit';
 
 type MenuItem = {
   title: string;
