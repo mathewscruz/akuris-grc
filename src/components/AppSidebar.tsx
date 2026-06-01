@@ -386,7 +386,7 @@ export function AppSidebar() {
                             <div className="flex items-center min-w-0">
                               <span className="relative flex-shrink-0 mr-3">
                                 <item.icon
-                                  className={`h-4 w-4 transition-colors duration-200 ${
+                                  className={`${iconSize} transition-colors duration-200 ${
                                     hasActiveSubItem(item.subItems) || openGroups.includes(item.title)
                                       ? 'text-primary'
                                       : ''
