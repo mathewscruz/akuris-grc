@@ -195,7 +195,8 @@ export function AppSidebar() {
   const [showLogoutOverlay, setShowLogoutOverlay] = useState(false);
 
   const isCollapsed = state === 'collapsed';
-  const fit = useSidebarFit();
+  const contentRef = useRef<HTMLDivElement>(null);
+  const fit = useAutoFit(contentRef);
   const isCompact = fit !== 'comfortable';
   const isDense = fit === 'dense';
   const itemH = isDense ? 'h-7' : isCompact ? 'h-8' : 'h-9';
