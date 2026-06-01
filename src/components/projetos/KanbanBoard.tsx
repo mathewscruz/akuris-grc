@@ -6,8 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Plus, Calendar, User as UserIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import type { ProjetoColuna, ProjetoTarefa, ProjetoTarefaPrioridade } from '@/types/projetos';
-import { useMoveTarefa } from '@/hooks/useProjetoTarefas';
+import { useMoveTarefa, useUpsertTarefa } from '@/hooks/useProjetoTarefas';
 
 const prioridadeTone: Record<ProjetoTarefaPrioridade, 'destructive' | 'warning' | 'info' | 'neutral'> = {
   critica: 'destructive',
@@ -59,6 +60,7 @@ export function KanbanBoard({ projetoId, colunas, tarefas, onAddTarefa, onEditTa
         {colunas.map((col) => (
           <ColumnDroppable
             key={col.id}
+            projetoId={projetoId}
             coluna={col}
             tarefas={tarefasPorColuna[col.id] ?? []}
             onAdd={() => onAddTarefa(col.id)}
@@ -71,8 +73,24 @@ export function KanbanBoard({ projetoId, colunas, tarefas, onAddTarefa, onEditTa
   );
 }
 
-function ColumnDroppable({ coluna, tarefas, onAdd, onEdit }: { coluna: ProjetoColuna; tarefas: ProjetoTarefa[]; onAdd: () => void; onEdit: (t: ProjetoTarefa) => void; }) {
+function ColumnDroppable({ projetoId, coluna, tarefas, onAdd, onEdit }: { projetoId: string; coluna: ProjetoColuna; tarefas: ProjetoTarefa[]; onAdd: () => void; onEdit: (t: ProjetoTarefa) => void; }) {
   const { setNodeRef, isOver } = useDroppable({ id: coluna.id });
+  const [quickValue, setQuickValue] = React.useState('');
+  const [quickOpen, setQuickOpen] = React.useState(false);
+  const upsert = useUpsertTarefa();
+
+  const submitQuick = async () => {
+    const titulo = quickValue.trim();
+    if (titulo.length < 2) return;
+    await upsert.mutateAsync({
+      projeto_id: projetoId,
+      coluna_id: coluna.id,
+      titulo,
+      prioridade: 'media',
+    });
+    setQuickValue('');
+  };
+
   return (
     <div ref={setNodeRef} className={`flex-shrink-0 w-72 rounded-lg border border-border bg-muted/30 p-3 transition-colors ${isOver ? 'border-primary bg-primary/5' : ''}`}>
       <div className="flex items-center justify-between mb-3">
@@ -81,7 +99,7 @@ function ColumnDroppable({ coluna, tarefas, onAdd, onEdit }: { coluna: ProjetoCo
           <h3 className="text-sm font-semibold">{coluna.nome}</h3>
           <span className="text-xs text-muted-foreground tabular-nums">({tarefas.length})</span>
         </div>
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onAdd}>
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onAdd} title="Tarefa detalhada">
           <Plus className="h-4 w-4" />
         </Button>
       </div>
@@ -90,6 +108,35 @@ function ColumnDroppable({ coluna, tarefas, onAdd, onEdit }: { coluna: ProjetoCo
           <DraggableTask key={t.id} tarefa={t} onClick={() => onEdit(t)} />
         ))}
       </div>
+
+      {quickOpen ? (
+        <div className="mt-2 space-y-2">
+          <Input
+            autoFocus
+            value={quickValue}
+            onChange={(e) => setQuickValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') { e.preventDefault(); submitQuick(); }
+              if (e.key === 'Escape') { setQuickOpen(false); setQuickValue(''); }
+            }}
+            placeholder="Título da tarefa…"
+            className="h-8 text-sm"
+          />
+          <div className="flex gap-1">
+            <Button size="sm" className="flex-1 h-7" onClick={submitQuick} disabled={upsert.isPending}>Adicionar</Button>
+            <Button size="sm" variant="ghost" className="h-7" onClick={() => { setQuickOpen(false); setQuickValue(''); }}>Cancelar</Button>
+          </div>
+        </div>
+      ) : (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="mt-2 w-full h-7 justify-start text-xs text-muted-foreground hover:text-foreground"
+          onClick={() => setQuickOpen(true)}
+        >
+          <Plus className="h-3 w-3" /> Adicionar tarefa
+        </Button>
+      )}
     </div>
   );
 }
