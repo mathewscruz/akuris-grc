@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { StatCard } from '@/components/ui/stat-card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
-import { Plus, Kanban, ListTodo, CheckCircle2, AlertTriangle, Inbox } from 'lucide-react';
+import { Plus, Kanban, ListTodo, CheckCircle2, AlertTriangle, Inbox, LayoutTemplate } from 'lucide-react';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { useProjetos } from '@/hooks/useProjetos';
 import { useProjetoStats } from '@/hooks/useProjetoStats';
