@@ -506,19 +506,19 @@ export function AppSidebar() {
           </SidebarGroup>
         ))}
 
-        <SidebarGroup className="mt-auto">
+        <SidebarGroup className={`mt-auto ${isDense ? 'border-t border-sidebar-border/30 pt-1' : ''}`}>
           <SidebarGroupContent>
-            <SidebarMenu className="space-y-1">
+            <SidebarMenu className={itemSpace}>
               {canAccess('configuracoes') && (
                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild className="transition-colors duration-200 h-9">
+                  <SidebarMenuButton asChild className={`transition-colors duration-200 ${itemH}`}>
                     <NavLink
                       to="/configuracoes"
                       onClick={handleNavClick}
                       className={({ isActive }) => `flex items-center w-full px-3 ${getNavCls({ isActive })}`}
                     >
                       <Settings
-                        className={`h-4 w-4 mr-3 flex-shrink-0 transition-colors duration-200 ${
+                        className={`${iconSize} mr-3 flex-shrink-0 transition-colors duration-200 ${
                           isActive('/configuracoes') ? 'text-primary-foreground' : ''
                         }`}
                       />
