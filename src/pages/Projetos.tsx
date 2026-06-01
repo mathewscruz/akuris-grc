@@ -5,11 +5,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { StatCard } from '@/components/ui/stat-card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
-import { Plus, Kanban, ListTodo, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Plus, Kanban, ListTodo, CheckCircle2, AlertTriangle, Inbox } from 'lucide-react';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { useProjetos } from '@/hooks/useProjetos';
 import { useProjetoStats } from '@/hooks/useProjetoStats';
 import { ProjetoDialog } from '@/components/projetos/ProjetoDialog';
+import { ProjetoActionsMenu } from '@/components/projetos/ProjetoActionsMenu';
 import type { Projeto } from '@/types/projetos';
 import { STATUS_LABEL } from '@/types/projetos';
 
@@ -26,8 +27,13 @@ export default function Projetos() {
   const { data: stats } = useProjetoStats();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editando, setEditando] = useState<Projeto | null>(null);
+  const [mostrarArquivados, setMostrarArquivados] = useState(false);
 
   const openNovo = () => { setEditando(null); setDialogOpen(true); };
+  const openEditar = (p: Projeto) => { setEditando(p); setDialogOpen(true); };
+
+  const visiveis = projetos.filter((p) => mostrarArquivados ? p.status === 'arquivado' : p.status !== 'arquivado');
+  const totalArquivados = projetos.filter((p) => p.status === 'arquivado').length;
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -36,7 +42,12 @@ export default function Projetos() {
           <h1 className="text-3xl font-semibold tracking-tight">Projetos</h1>
           <p className="text-sm text-muted-foreground mt-1">Gestão de atividades, Kanban e entregas integrada ao GRC.</p>
         </div>
-        <Button onClick={openNovo}><Plus className="h-4 w-4" /> Novo projeto</Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => navigate('/projetos/minhas-tarefas')}>
+            <Inbox className="h-4 w-4" /> Minhas tarefas
+          </Button>
+          <Button onClick={openNovo}><Plus className="h-4 w-4" /> Novo projeto</Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -46,19 +57,29 @@ export default function Projetos() {
         <StatCard title="Tarefas atrasadas" value={stats?.tarefasAtrasadas ?? 0} icon={<AlertTriangle />} variant="destructive" />
       </div>
 
+      {totalArquivados > 0 && (
+        <div className="flex justify-end">
+          <Button variant="ghost" size="sm" onClick={() => setMostrarArquivados((v) => !v)}>
+            {mostrarArquivados ? `Voltar aos ativos` : `Ver arquivados (${totalArquivados})`}
+          </Button>
+        </div>
+      )}
+
       {isLoading ? (
         <div className="flex justify-center py-16"><AkurisPulse size={56} /></div>
-      ) : projetos.length === 0 ? (
+      ) : visiveis.length === 0 ? (
         <EmptyState
           variant="illustrated"
           icon={<Kanban className="h-8 w-8" />}
-          title="Nenhum projeto ainda"
-          description="Crie seu primeiro projeto para organizar atividades em Kanban e vincular cards aos seus riscos, controles, auditorias e incidentes."
-          action={{ label: 'Criar projeto', onClick: openNovo }}
+          title={mostrarArquivados ? 'Nenhum projeto arquivado' : 'Nenhum projeto ainda'}
+          description={mostrarArquivados
+            ? 'Projetos arquivados aparecerão aqui.'
+            : 'Crie seu primeiro projeto para organizar atividades em Kanban e vincular cards aos seus riscos, controles, auditorias e incidentes.'}
+          action={!mostrarArquivados ? { label: 'Criar projeto', onClick: openNovo } : undefined}
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {projetos.map((p) => (
+          {visiveis.map((p) => (
             <Card
               key={p.id}
               variant="elevated"
@@ -69,8 +90,11 @@ export default function Projetos() {
               <div className="h-1.5" style={{ backgroundColor: p.cor ?? '#7552FF' }} />
               <CardContent className="p-5 space-y-3">
                 <div className="flex items-start justify-between gap-2">
-                  <h3 className="font-semibold leading-tight">{p.nome}</h3>
-                  <StatusBadge tone={statusTone[p.status] ?? 'neutral'} size="sm">{STATUS_LABEL[p.status]}</StatusBadge>
+                  <h3 className="font-semibold leading-tight flex-1 min-w-0">{p.nome}</h3>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <StatusBadge tone={statusTone[p.status] ?? 'neutral'} size="sm">{STATUS_LABEL[p.status]}</StatusBadge>
+                    <ProjetoActionsMenu projeto={p} onEdit={() => openEditar(p)} />
+                  </div>
                 </div>
                 {p.descricao && <p className="text-sm text-muted-foreground line-clamp-2">{p.descricao}</p>}
                 <div className="flex items-center justify-between text-xs text-muted-foreground pt-1">
