@@ -69,10 +69,10 @@ export const StatusReportDialog: React.FC<StatusReportDialogProps> = ({ open, on
         {report && metrics && (
           <div className="space-y-5">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <StatCard label="Tarefas" value={metrics.total} />
-              <StatCard label="Concluídas" value={metrics.concluidas} />
-              <StatCard label="Atrasadas" value={metrics.atrasadas} />
-              <StatCard label="Progresso" value={`${metrics.progressoMedio}%`} />
+              <StatCard title="Tarefas" value={metrics.total} />
+              <StatCard title="Concluídas" value={metrics.concluidas} />
+              <StatCard title="Atrasadas" value={metrics.atrasadas} />
+              <StatCard title="Progresso" value={`${metrics.progressoMedio}%`} />
             </div>
 
             <div className="rounded-lg border border-border bg-card p-5 space-y-3">
