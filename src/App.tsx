@@ -45,6 +45,8 @@ const NotFound = React.lazy(() => import('@/pages/NotFound'));
 const LandingPage = React.lazy(() => import('@/pages/LandingPage'));
 const PoliticaPrivacidade = React.lazy(() => import('@/pages/PoliticaPrivacidade'));
 const PlanosAcao = React.lazy(() => import('@/pages/PlanosAcao'));
+const Projetos = React.lazy(() => import('@/pages/Projetos'));
+const ProjetoDetalhe = React.lazy(() => import('@/pages/ProjetoDetalhe'));
 const Relatorios = React.lazy(() => import('@/pages/Relatorios'));
 const FrameworkSEO = React.lazy(() => import('@/pages/FrameworkSEO'));
 const Blog = React.lazy(() => import('@/pages/Blog'));
