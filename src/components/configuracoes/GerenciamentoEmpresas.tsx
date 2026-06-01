@@ -13,7 +13,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Plus, Edit, Trash2, Building2, Upload, MoreHorizontal } from 'lucide-react';
+import { Plus, Edit, Trash2, Building2, Upload, MoreHorizontal, RefreshCw, Power, PowerOff } from 'lucide-react';
 import { differenceInDays } from 'date-fns';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { PlanBadge } from '@/components/PlanBadge';
@@ -283,6 +283,44 @@ const GerenciamentoEmpresasInner = () => {
     }
   };
 
+  const handleRenovarTrial = async (empresa: Empresa) => {
+    if (!window.confirm(`Renovar o trial de "${empresa.nome}" por mais 14 dias?`)) return;
+    try {
+      const { error } = await supabase
+        .from('empresas')
+        .update({
+          status_licenca: 'trial',
+          data_inicio_trial: new Date().toISOString(),
+          ativo: true,
+        })
+        .eq('id', empresa.id);
+      if (error) throw error;
+      toast.success('Trial renovado por 14 dias');
+      fetchEmpresas();
+    } catch (error: any) {
+      console.error('Erro ao renovar trial:', error);
+      toast.error(error?.message || 'Erro ao renovar trial');
+    }
+  };
+
+  const handleToggleAtivo = async (empresa: Empresa) => {
+    const novoStatus = !empresa.ativo;
+    const acao = novoStatus ? 'ativar' : 'inativar';
+    if (!window.confirm(`Deseja ${acao} a empresa "${empresa.nome}"?`)) return;
+    try {
+      const { error } = await supabase
+        .from('empresas')
+        .update({ ativo: novoStatus })
+        .eq('id', empresa.id);
+      if (error) throw error;
+      toast.success(`Empresa ${novoStatus ? 'ativada' : 'inativada'} com sucesso`);
+      fetchEmpresas();
+    } catch (error: any) {
+      console.error('Erro ao alterar status:', error);
+      toast.error(error?.message || 'Erro ao alterar status');
+    }
+  };
+
   const openCreateDialog = () => {
     setEditingEmpresa(null);
     setSelectedPlanoId('');
@@ -420,6 +458,23 @@ const GerenciamentoEmpresasInner = () => {
                   disabled={uploading}
                 />
               </label>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleToggleAtivo(empresa)}>
+              {empresa.ativo ? (
+                <>
+                  <PowerOff className="h-4 w-4 mr-2" />
+                  Inativar empresa
+                </>
+              ) : (
+                <>
+                  <Power className="h-4 w-4 mr-2" />
+                  Ativar empresa
+                </>
+              )}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleRenovarTrial(empresa)}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Renovar trial (14d)
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => openDeleteDialog(empresa)}
