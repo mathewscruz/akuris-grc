@@ -17,6 +17,9 @@ import {
   useChecklistMutations,
 } from '@/hooks/useProjetoTarefas';
 import { VinculosGRCPanel } from './VinculosGRCPanel';
+import { TempoPanel } from './TempoPanel';
+import { ReacoesPorComentario } from './ReacoesBar';
+import { useReacoes, useSprints } from '@/hooks/useProjetoExtras';
 import type { ProjetoTarefa, ProjetoTarefaPrioridade, ProjetoColuna } from '@/types/projetos';
 import { Trash2, Plus, Send } from 'lucide-react';
 
