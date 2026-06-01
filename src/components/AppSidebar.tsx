@@ -540,17 +540,17 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border p-3">
+      <SidebarFooter className={`border-t border-sidebar-border ${isDense ? 'p-2' : 'p-3'}`}>
         <div>
           <Button 
             variant="ghost" 
             size="sm" 
             onClick={handleSignOut}
-            className={`w-full text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors duration-200 h-9 px-3 ${
+            className={`w-full text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors duration-200 ${itemH} px-3 ${
               isCollapsed ? 'justify-center' : 'justify-start'
             }`}
           >
-            <LogOut className={`h-4 w-4 flex-shrink-0 ${!isCollapsed ? 'mr-3' : ''}`} />
+            <LogOut className={`${iconSize} flex-shrink-0 ${!isCollapsed ? 'mr-3' : ''}`} />
             {!isCollapsed && (
               <span className="text-sm font-medium truncate">
                 {t('sidebar.logout')}
