@@ -430,7 +430,7 @@ export function AppSidebar() {
                                     key={subItem.title}
                                     asChild
                                     isActive={active}
-                                    className="transition-colors duration-200 h-9 animate-fade-in opacity-0 [animation-fill-mode:forwards] data-[active=true]:bg-transparent"
+                                    className={`transition-colors duration-200 ${itemH} animate-fade-in opacity-0 [animation-fill-mode:forwards] data-[active=true]:bg-transparent`}
                                     style={{ animationDelay: `${idx * 30}ms`, animationDuration: '220ms' }}
                                   >
                                     <NavLink
