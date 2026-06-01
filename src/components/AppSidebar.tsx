@@ -341,7 +341,7 @@ export function AppSidebar() {
       className="transition-all duration-300 ease-out sidebar-gradient"
       collapsible="icon"
     >
-      <SidebarHeader className="border-b border-sidebar-border h-14 overflow-hidden">
+      <SidebarHeader className={`border-b border-sidebar-border ${isDense ? 'h-12' : 'h-14'} overflow-hidden`}>
         <div className="flex items-center justify-center px-1 py-2 h-full">
           <img 
             key={`sidebar-logo-${logoUpdateKey}-${Date.now()}`}
