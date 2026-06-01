@@ -157,6 +157,7 @@ export const en = {
   sidebar: {
     dashboard: 'Dashboard',
     actionPlans: 'Action Plans',
+    projects: 'Projects',
     assetManagement: 'Asset Management',
     assets: 'Assets',
     licenses: 'Licenses',
