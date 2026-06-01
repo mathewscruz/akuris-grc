@@ -459,6 +459,23 @@ const GerenciamentoEmpresasInner = () => {
                 />
               </label>
             </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleToggleAtivo(empresa)}>
+              {empresa.ativo ? (
+                <>
+                  <PowerOff className="h-4 w-4 mr-2" />
+                  Inativar empresa
+                </>
+              ) : (
+                <>
+                  <Power className="h-4 w-4 mr-2" />
+                  Ativar empresa
+                </>
+              )}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleRenovarTrial(empresa)}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Renovar trial (14d)
+            </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => openDeleteDialog(empresa)}
               className="text-destructive focus:text-destructive"
