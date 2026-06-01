@@ -283,6 +283,44 @@ const GerenciamentoEmpresasInner = () => {
     }
   };
 
+  const handleRenovarTrial = async (empresa: Empresa) => {
+    if (!window.confirm(`Renovar o trial de "${empresa.nome}" por mais 14 dias?`)) return;
+    try {
+      const { error } = await supabase
+        .from('empresas')
+        .update({
+          status_licenca: 'trial',
+          data_inicio_trial: new Date().toISOString(),
+          ativo: true,
+        })
+        .eq('id', empresa.id);
+      if (error) throw error;
+      toast.success('Trial renovado por 14 dias');
+      fetchEmpresas();
+    } catch (error: any) {
+      console.error('Erro ao renovar trial:', error);
+      toast.error(error?.message || 'Erro ao renovar trial');
+    }
+  };
+
+  const handleToggleAtivo = async (empresa: Empresa) => {
+    const novoStatus = !empresa.ativo;
+    const acao = novoStatus ? 'ativar' : 'inativar';
+    if (!window.confirm(`Deseja ${acao} a empresa "${empresa.nome}"?`)) return;
+    try {
+      const { error } = await supabase
+        .from('empresas')
+        .update({ ativo: novoStatus })
+        .eq('id', empresa.id);
+      if (error) throw error;
+      toast.success(`Empresa ${novoStatus ? 'ativada' : 'inativada'} com sucesso`);
+      fetchEmpresas();
+    } catch (error: any) {
+      console.error('Erro ao alterar status:', error);
+      toast.error(error?.message || 'Erro ao alterar status');
+    }
+  };
+
   const openCreateDialog = () => {
     setEditingEmpresa(null);
     setSelectedPlanoId('');
