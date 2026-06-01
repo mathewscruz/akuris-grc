@@ -78,6 +78,9 @@ const GerenciamentoEmpresasInner = () => {
   const [selectedPlanoId, setSelectedPlanoId] = useState<string>('');
   const [sortField, setSortField] = useState<string>('nome');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [renewTrialEmpresa, setRenewTrialEmpresa] = useState<Empresa | null>(null);
+  const [toggleAtivoEmpresa, setToggleAtivoEmpresa] = useState<Empresa | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
 
   const form = useForm<EmpresaForm>({
     resolver: zodResolver(empresaSchema),
@@ -283,9 +286,10 @@ const GerenciamentoEmpresasInner = () => {
     }
   };
 
-  const handleRenovarTrial = async (empresa: Empresa) => {
-    if (!window.confirm(`Renovar o trial de "${empresa.nome}" por mais 14 dias?`)) return;
+  const confirmRenovarTrial = async () => {
+    if (!renewTrialEmpresa) return;
     try {
+      setActionLoading(true);
       const { error } = await supabase
         .from('empresas')
         .update({
@@ -293,31 +297,37 @@ const GerenciamentoEmpresasInner = () => {
           data_inicio_trial: new Date().toISOString(),
           ativo: true,
         })
-        .eq('id', empresa.id);
+        .eq('id', renewTrialEmpresa.id);
       if (error) throw error;
-      toast.success('Trial renovado por 14 dias');
+      toast.success(`Trial de "${renewTrialEmpresa.nome}" renovado por 14 dias`);
+      setRenewTrialEmpresa(null);
       fetchEmpresas();
     } catch (error: any) {
       console.error('Erro ao renovar trial:', error);
       toast.error(error?.message || 'Erro ao renovar trial');
+    } finally {
+      setActionLoading(false);
     }
   };
 
-  const handleToggleAtivo = async (empresa: Empresa) => {
-    const novoStatus = !empresa.ativo;
-    const acao = novoStatus ? 'ativar' : 'inativar';
-    if (!window.confirm(`Deseja ${acao} a empresa "${empresa.nome}"?`)) return;
+  const confirmToggleAtivo = async () => {
+    if (!toggleAtivoEmpresa) return;
+    const novoStatus = !toggleAtivoEmpresa.ativo;
     try {
+      setActionLoading(true);
       const { error } = await supabase
         .from('empresas')
         .update({ ativo: novoStatus })
-        .eq('id', empresa.id);
+        .eq('id', toggleAtivoEmpresa.id);
       if (error) throw error;
-      toast.success(`Empresa ${novoStatus ? 'ativada' : 'inativada'} com sucesso`);
+      toast.success(`Empresa "${toggleAtivoEmpresa.nome}" ${novoStatus ? 'ativada' : 'inativada'} com sucesso`);
+      setToggleAtivoEmpresa(null);
       fetchEmpresas();
     } catch (error: any) {
       console.error('Erro ao alterar status:', error);
       toast.error(error?.message || 'Erro ao alterar status');
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -459,7 +469,7 @@ const GerenciamentoEmpresasInner = () => {
                 />
               </label>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleToggleAtivo(empresa)}>
+            <DropdownMenuItem onClick={() => setToggleAtivoEmpresa(empresa)}>
               {empresa.ativo ? (
                 <>
                   <PowerOff className="h-4 w-4 mr-2" />
@@ -472,7 +482,7 @@ const GerenciamentoEmpresasInner = () => {
                 </>
               )}
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleRenovarTrial(empresa)}>
+            <DropdownMenuItem onClick={() => setRenewTrialEmpresa(empresa)}>
               <RefreshCw className="h-4 w-4 mr-2" />
               Renovar trial (14d)
             </DropdownMenuItem>
@@ -706,6 +716,31 @@ const GerenciamentoEmpresasInner = () => {
         onConfirm={handleDelete}
         variant="destructive"
         confirmText="Excluir"
+      />
+
+      <ConfirmDialog
+        open={!!renewTrialEmpresa}
+        onOpenChange={(open) => !open && setRenewTrialEmpresa(null)}
+        title="Renovar Trial"
+        description={`Deseja renovar o trial de "${renewTrialEmpresa?.nome}" por mais 14 dias? A empresa será reativada caso esteja inativa.`}
+        onConfirm={confirmRenovarTrial}
+        confirmText="Renovar"
+        loading={actionLoading}
+      />
+
+      <ConfirmDialog
+        open={!!toggleAtivoEmpresa}
+        onOpenChange={(open) => !open && setToggleAtivoEmpresa(null)}
+        title={toggleAtivoEmpresa?.ativo ? 'Inativar Empresa' : 'Ativar Empresa'}
+        description={
+          toggleAtivoEmpresa?.ativo
+            ? `Deseja inativar a empresa "${toggleAtivoEmpresa?.nome}"? Os usuários perderão acesso até que seja reativada.`
+            : `Deseja reativar a empresa "${toggleAtivoEmpresa?.nome}"?`
+        }
+        onConfirm={confirmToggleAtivo}
+        variant={toggleAtivoEmpresa?.ativo ? 'destructive' : 'default'}
+        confirmText={toggleAtivoEmpresa?.ativo ? 'Inativar' : 'Ativar'}
+        loading={actionLoading}
       />
     </div>
   );
