@@ -35,6 +35,7 @@ interface Props {
 export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, defaultColunaId }: Props) {
   const upsert = useUpsertTarefa();
   const remove = useDeleteTarefa(projetoId);
+  const { data: sprints = [] } = useSprints(projetoId);
   const [form, setForm] = useState({
     titulo: '',
     descricao: '',
@@ -43,6 +44,7 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
     responsavel_id: '',
     prazo: '',
     estimativa_horas: '',
+    sprint_id: '',
   });
 
   useEffect(() => {
@@ -55,6 +57,7 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
         responsavel_id: tarefa?.responsavel_id ?? '',
         prazo: tarefa?.prazo ? tarefa.prazo.slice(0, 10) : '',
         estimativa_horas: tarefa?.estimativa_horas ? String(tarefa.estimativa_horas) : '',
+        sprint_id: (tarefa as any)?.sprint_id ?? '',
       });
     }
   }, [open, tarefa, defaultColunaId, colunas]);
@@ -72,7 +75,8 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
       responsavel_id: form.responsavel_id || null,
       prazo: form.prazo || null,
       estimativa_horas: form.estimativa_horas ? Number(form.estimativa_horas) : null,
-    });
+      sprint_id: form.sprint_id || null,
+    } as any);
     onOpenChange(false);
   };
 
