@@ -480,7 +480,7 @@ export function AppSidebar() {
                             >
                               <div className="flex items-center min-w-0">
                                 <item.icon
-                                  className={`h-4 w-4 mr-3 flex-shrink-0 transition-colors duration-200 ${
+                                  className={`${iconSize} mr-3 flex-shrink-0 transition-colors duration-200 ${
                                     active ? '!text-primary-foreground' : ''
                                   }`}
                                 />
