@@ -377,7 +377,7 @@ export function AppSidebar() {
                       >
                         <CollapsibleTrigger asChild>
                           <SidebarMenuButton
-                            className={`w-full justify-between transition-colors duration-200 h-9 px-3 rounded-md group ${
+                            className={`w-full justify-between transition-colors duration-200 ${itemH} px-2.5 rounded-md group ${
                               hasActiveSubItem(item.subItems)
                                 ? 'bg-primary/10 text-primary'
                                 : 'hover:bg-sidebar-accent/60'
