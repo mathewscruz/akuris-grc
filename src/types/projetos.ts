@@ -81,6 +81,12 @@ export interface ProjetoTarefa {
   concluida_em: string | null;
   created_at: string;
   updated_at: string;
+  sprint_id?: string | null;
+  sla_horas?: number | null;
+  sla_status?: 'no_prazo' | 'em_risco' | 'violado' | 'sem_sla';
+  sla_violado_em?: string | null;
+  origem_tipo?: string | null;
+  origem_id?: string | null;
 }
 
 export interface ProjetoTarefaChecklist {

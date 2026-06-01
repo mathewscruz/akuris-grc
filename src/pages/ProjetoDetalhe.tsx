@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { ArrowLeft, Plus, Settings, Sparkles, FileText } from 'lucide-react';
+import { ArrowLeft, Plus, Settings, Sparkles, FileText, Download } from 'lucide-react';
 import { useProjeto } from '@/hooks/useProjetos';
 import { useProjetoColunas, useProjetoTarefas } from '@/hooks/useProjetoTarefas';
 import { KanbanBoard } from '@/components/projetos/KanbanBoard';
@@ -16,6 +16,10 @@ import { StatusReportDialog } from '@/components/projetos/StatusReportDialog';
 import { CalendarView } from '@/components/projetos/CalendarView';
 import { ListaTarefas } from '@/components/projetos/ListaTarefas';
 import { ProjetoActionsMenu } from '@/components/projetos/ProjetoActionsMenu';
+import { SprintsPanel } from '@/components/projetos/SprintsPanel';
+import { MetricasPanel } from '@/components/projetos/MetricasPanel';
+import { AutomacoesPanel } from '@/components/projetos/AutomacoesPanel';
+import { exportTarefasCSV } from '@/components/projetos/exportProjeto';
 import type { ProjetoTarefa } from '@/types/projetos';
 import { STATUS_LABEL } from '@/types/projetos';
 
@@ -66,6 +70,9 @@ export default function ProjetoDetalhe() {
         <Button variant="outline" size="sm" onClick={() => setSuggestDialog(true)}>
           <Sparkles className="h-4 w-4" /> Quebrar com IA
         </Button>
+        <Button variant="outline" size="sm" onClick={() => exportTarefasCSV(projeto.nome, tarefas, colunas)}>
+          <Download className="h-4 w-4" /> Exportar CSV
+        </Button>
         <Button variant="outline" size="sm" onClick={() => setProjetoDialog(true)}>
           <Settings className="h-4 w-4" /> Editar
         </Button>
@@ -81,28 +88,31 @@ export default function ProjetoDetalhe() {
           <TabsTrigger value="lista">Lista</TabsTrigger>
           <TabsTrigger value="calendario">Calendário</TabsTrigger>
           <TabsTrigger value="gantt">Gantt</TabsTrigger>
+          <TabsTrigger value="sprints">Sprints</TabsTrigger>
+          <TabsTrigger value="metricas">Métricas</TabsTrigger>
+          <TabsTrigger value="automacoes">Automações</TabsTrigger>
         </TabsList>
 
         <TabsContent value="kanban" className="mt-4">
-          <KanbanBoard
-            projetoId={projeto.id}
-            colunas={colunas}
-            tarefas={tarefas}
-            onAddTarefa={(cid) => openNovaTarefa(cid)}
-            onEditTarefa={openEditarTarefa}
-          />
+          <KanbanBoard projetoId={projeto.id} colunas={colunas} tarefas={tarefas} onAddTarefa={(cid) => openNovaTarefa(cid)} onEditTarefa={openEditarTarefa} />
         </TabsContent>
-
         <TabsContent value="lista" className="mt-4">
           <ListaTarefas tarefas={tarefas} colunas={colunas} onSelect={openEditarTarefa} />
         </TabsContent>
-
         <TabsContent value="calendario" className="mt-4">
           <CalendarView tarefas={tarefas} onSelectTarefa={openEditarTarefa} />
         </TabsContent>
-
         <TabsContent value="gantt" className="mt-4">
           <GanttChart tarefas={tarefas} onSelectTarefa={openEditarTarefa} />
+        </TabsContent>
+        <TabsContent value="sprints" className="mt-4">
+          <SprintsPanel projetoId={projeto.id} tarefas={tarefas} onSelectTarefa={openEditarTarefa} />
+        </TabsContent>
+        <TabsContent value="metricas" className="mt-4">
+          <MetricasPanel tarefas={tarefas} colunas={colunas} />
+        </TabsContent>
+        <TabsContent value="automacoes" className="mt-4">
+          <AutomacoesPanel projetoId={projeto.id} colunas={colunas} />
         </TabsContent>
       </Tabs>
 
