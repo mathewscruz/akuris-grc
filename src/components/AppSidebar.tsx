@@ -445,7 +445,7 @@ export function AppSidebar() {
                                     >
                                       <subItem.icon
                                         strokeWidth={1.5}
-                                        className={`h-4 w-4 mr-3 flex-shrink-0 transition-colors duration-200 ${
+                                        className={`${iconSize} mr-3 flex-shrink-0 transition-colors duration-200 ${
                                           active ? '!text-primary-foreground' : ''
                                         }`}
                                       />
