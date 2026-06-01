@@ -243,15 +243,18 @@ function ChecklistPanel({ tarefaId }: { tarefaId: string }) {
 function ComentariosPanel({ tarefaId }: { tarefaId: string }) {
   const { data: coms = [] } = useTarefaComentarios(tarefaId);
   const add = useAddComentario(tarefaId);
+  const ids = coms.map((c) => c.id);
+  const { data: reacoes } = useReacoes(ids);
   const [novo, setNovo] = useState('');
   return (
     <div className="space-y-3">
       <div className="space-y-2 max-h-72 overflow-y-auto">
         {coms.length === 0 && <p className="text-sm text-muted-foreground">Sem comentários ainda.</p>}
         {coms.map((c) => (
-          <div key={c.id} className="rounded-md border border-border bg-card p-3 text-sm">
-            <p className="text-xs text-muted-foreground mb-1">{new Date(c.created_at).toLocaleString('pt-BR')}</p>
+          <div key={c.id} className="rounded-md border border-border bg-card p-3 text-sm space-y-2">
+            <p className="text-xs text-muted-foreground">{new Date(c.created_at).toLocaleString('pt-BR')}</p>
             <p className="whitespace-pre-wrap">{c.conteudo}</p>
+            <ReacoesPorComentario comentarioId={c.id} reacoes={reacoes} />
           </div>
         ))}
       </div>
