@@ -80,6 +80,7 @@ export default function ProjetoDetalhe() {
         <TabsList>
           <TabsTrigger value="kanban">Kanban</TabsTrigger>
           <TabsTrigger value="lista">Lista</TabsTrigger>
+          <TabsTrigger value="gantt">Gantt</TabsTrigger>
         </TabsList>
 
         <TabsContent value="kanban" className="mt-4">
