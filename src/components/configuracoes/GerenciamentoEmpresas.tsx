@@ -717,6 +717,31 @@ const GerenciamentoEmpresasInner = () => {
         variant="destructive"
         confirmText="Excluir"
       />
+
+      <ConfirmDialog
+        open={!!renewTrialEmpresa}
+        onOpenChange={(open) => !open && setRenewTrialEmpresa(null)}
+        title="Renovar Trial"
+        description={`Deseja renovar o trial de "${renewTrialEmpresa?.nome}" por mais 14 dias? A empresa será reativada caso esteja inativa.`}
+        onConfirm={confirmRenovarTrial}
+        confirmText="Renovar"
+        loading={actionLoading}
+      />
+
+      <ConfirmDialog
+        open={!!toggleAtivoEmpresa}
+        onOpenChange={(open) => !open && setToggleAtivoEmpresa(null)}
+        title={toggleAtivoEmpresa?.ativo ? 'Inativar Empresa' : 'Ativar Empresa'}
+        description={
+          toggleAtivoEmpresa?.ativo
+            ? `Deseja inativar a empresa "${toggleAtivoEmpresa?.nome}"? Os usuários perderão acesso até que seja reativada.`
+            : `Deseja reativar a empresa "${toggleAtivoEmpresa?.nome}"?`
+        }
+        onConfirm={confirmToggleAtivo}
+        variant={toggleAtivoEmpresa?.ativo ? 'destructive' : 'default'}
+        confirmText={toggleAtivoEmpresa?.ativo ? 'Inativar' : 'Ativar'}
+        loading={actionLoading}
+      />
     </div>
   );
 };
