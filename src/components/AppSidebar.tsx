@@ -422,7 +422,7 @@ export function AppSidebar() {
                         </CollapsibleTrigger>
                         {!isCollapsed && (
                           <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
-                            <div className="space-y-1 mt-1 ml-6 pl-2 border-l-2 border-sidebar-border/30">
+                            <div className={`${subWrapperCls} border-l-2 border-sidebar-border/30`}>
                               {item.subItems.map((subItem, idx) => {
                                 const active = isActive(subItem.url);
                                 return (
