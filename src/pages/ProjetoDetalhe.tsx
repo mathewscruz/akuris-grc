@@ -62,6 +62,12 @@ export default function ProjetoDetalhe() {
           {projeto.descricao && <p className="text-sm text-muted-foreground line-clamp-1">{projeto.descricao}</p>}
         </div>
         <StatusBadge tone="primary" size="md">{STATUS_LABEL[projeto.status]}</StatusBadge>
+        <Button variant="outline" size="sm" onClick={() => setReportDialog(true)}>
+          <FileText className="h-4 w-4" /> Status report IA
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => setSuggestDialog(true)}>
+          <Sparkles className="h-4 w-4" /> Quebrar com IA
+        </Button>
         <Button variant="outline" size="sm" onClick={() => setProjetoDialog(true)}>
           <Settings className="h-4 w-4" /> Editar
         </Button>
