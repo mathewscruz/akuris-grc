@@ -358,16 +358,16 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="py-2 transition-all duration-300 ease-out">
+      <SidebarContent className={`${contentPad} ${isDense ? 'overflow-hidden' : ''} transition-all duration-300 ease-out`}>
         {getVisibleSections().map((section) => (
           <SidebarGroup key={section.id}>
             {!isCollapsed && (
-              <SidebarGroupLabel className="text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/40 px-3 mb-1">
+              <SidebarGroupLabel className={groupLabelCls}>
                 {section.label}
               </SidebarGroupLabel>
             )}
             <SidebarGroupContent>
-              <SidebarMenu className="space-y-1">
+              <SidebarMenu className={itemSpace}>
                 {section.items.map((item) => (
                   <SidebarMenuItem key={item.title}>
                     {item.subItems ? (
