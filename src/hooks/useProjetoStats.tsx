@@ -19,18 +19,24 @@ export function useProjetoStats() {
     queryKey: ['projeto-stats', empresaId],
     enabled: !!empresaId,
     queryFn: async (): Promise<ProjetoStats> => {
-      const [{ data: projetos }, { data: tarefas }] = await Promise.all([
-        supabase.from('projetos' as any).select('id, status').eq('empresa_id', empresaId!),
-        supabase
+      const { data: projetos } = await supabase
+        .from('projetos' as any)
+        .select('id, status')
+        .eq('empresa_id', empresaId!);
+
+      const projetosArr = ((projetos ?? []) as any[]).map((p) => p as { id: string; status: string });
+      const projetoIds = projetosArr.map((p) => p.id);
+
+      let tar: { id: string; prazo: string | null; concluida_em: string | null }[] = [];
+      if (projetoIds.length) {
+        const { data } = await supabase
           .from('projeto_tarefas' as any)
-          .select('id, prazo, concluida_em, projeto_id, projetos:projeto_id!inner(empresa_id)')
-          .eq('projetos.empresa_id' as any, empresaId!),
-      ]);
+          .select('id, prazo, concluida_em')
+          .in('projeto_id', projetoIds);
+        tar = ((data ?? []) as any[]) as typeof tar;
+      }
 
-      const proj = (projetos ?? []) as any[];
-      const tar = (tarefas ?? []) as any[];
       const now = new Date();
-
       const tarefasAtrasadas = tar.filter(
         (t) => t.prazo && !t.concluida_em && new Date(t.prazo) < now
       ).length;
@@ -38,8 +44,8 @@ export function useProjetoStats() {
       const tarefasAbertas = tar.length - tarefasConcluidas;
 
       return {
-        totalProjetos: proj.length,
-        projetosAtivos: proj.filter((p) => p.status === 'ativo').length,
+        totalProjetos: projetosArr.length,
+        projetosAtivos: projetosArr.filter((p) => p.status === 'ativo').length,
         totalTarefas: tar.length,
         tarefasAbertas,
         tarefasConcluidas,
