@@ -6075,6 +6075,41 @@ export type Database = {
           },
         ]
       }
+      projeto_comentario_reacoes: {
+        Row: {
+          comentario_id: string
+          created_at: string
+          emoji: string
+          empresa_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          comentario_id: string
+          created_at?: string
+          emoji: string
+          empresa_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          comentario_id?: string
+          created_at?: string
+          emoji?: string
+          empresa_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projeto_comentario_reacoes_comentario_id_fkey"
+            columns: ["comentario_id"]
+            isOneToOne: false
+            referencedRelation: "projeto_tarefa_comentarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projeto_membros: {
         Row: {
           added_by: string | null
@@ -6103,6 +6138,56 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "projeto_membros_projeto_id_fkey"
+            columns: ["projeto_id"]
+            isOneToOne: false
+            referencedRelation: "projetos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projeto_sprints: {
+        Row: {
+          ativa: boolean
+          concluida: boolean
+          created_at: string
+          data_fim: string
+          data_inicio: string
+          empresa_id: string
+          id: string
+          nome: string
+          objetivo: string | null
+          projeto_id: string
+          updated_at: string
+        }
+        Insert: {
+          ativa?: boolean
+          concluida?: boolean
+          created_at?: string
+          data_fim: string
+          data_inicio: string
+          empresa_id: string
+          id?: string
+          nome: string
+          objetivo?: string | null
+          projeto_id: string
+          updated_at?: string
+        }
+        Update: {
+          ativa?: boolean
+          concluida?: boolean
+          created_at?: string
+          data_fim?: string
+          data_inicio?: string
+          empresa_id?: string
+          id?: string
+          nome?: string
+          objetivo?: string | null
+          projeto_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projeto_sprints_projeto_id_fkey"
             columns: ["projeto_id"]
             isOneToOne: false
             referencedRelation: "projetos"
@@ -6389,6 +6474,7 @@ export type Database = {
           sla_horas: number | null
           sla_status: string
           sla_violado_em: string | null
+          sprint_id: string | null
           tags: string[] | null
           tempo_gasto_horas: number | null
           titulo: string
@@ -6417,6 +6503,7 @@ export type Database = {
           sla_horas?: number | null
           sla_status?: string
           sla_violado_em?: string | null
+          sprint_id?: string | null
           tags?: string[] | null
           tempo_gasto_horas?: number | null
           titulo: string
@@ -6445,6 +6532,7 @@ export type Database = {
           sla_horas?: number | null
           sla_status?: string
           sla_violado_em?: string | null
+          sprint_id?: string | null
           tags?: string[] | null
           tempo_gasto_horas?: number | null
           titulo?: string
@@ -6470,6 +6558,13 @@ export type Database = {
             columns: ["projeto_id"]
             isOneToOne: false
             referencedRelation: "projetos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projeto_tarefas_sprint_id_fkey"
+            columns: ["sprint_id"]
+            isOneToOne: false
+            referencedRelation: "projeto_sprints"
             referencedColumns: ["id"]
           },
         ]
@@ -6517,6 +6612,47 @@ export type Database = {
             columns: ["empresa_id"]
             isOneToOne: false
             referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projeto_tempo_entradas: {
+        Row: {
+          created_at: string
+          data: string
+          descricao: string | null
+          empresa_id: string
+          horas: number
+          id: string
+          tarefa_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data?: string
+          descricao?: string | null
+          empresa_id: string
+          horas: number
+          id?: string
+          tarefa_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data?: string
+          descricao?: string | null
+          empresa_id?: string
+          horas?: number
+          id?: string
+          tarefa_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projeto_tempo_entradas_tarefa_id_fkey"
+            columns: ["tarefa_id"]
+            isOneToOne: false
+            referencedRelation: "projeto_tarefas"
             referencedColumns: ["id"]
           },
         ]
