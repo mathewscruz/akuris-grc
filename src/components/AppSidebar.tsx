@@ -68,6 +68,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { prefetchRoute } from '@/lib/route-prefetch';
+import { useSidebarFit } from '@/hooks/useSidebarFit';
 
 type MenuItem = {
   title: string;
@@ -194,6 +195,19 @@ export function AppSidebar() {
   const [showLogoutOverlay, setShowLogoutOverlay] = useState(false);
 
   const isCollapsed = state === 'collapsed';
+  const fit = useSidebarFit();
+  const isCompact = fit !== 'comfortable';
+  const isDense = fit === 'dense';
+  const itemH = isDense ? 'h-7' : isCompact ? 'h-8' : 'h-9';
+  const iconSize = isDense ? 'h-3.5 w-3.5' : 'h-4 w-4';
+  const itemSpace = isDense ? 'space-y-0' : isCompact ? 'space-y-0.5' : 'space-y-1';
+  const groupLabelCls = isDense
+    ? 'text-[9px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/40 px-3 mb-0'
+    : isCompact
+    ? 'text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/40 px-3 mb-0.5'
+    : 'text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/40 px-3 mb-1';
+  const contentPad = isCompact ? 'py-1' : 'py-2';
+  const subWrapperCls = isDense ? 'space-y-0 mt-0.5 ml-4 pl-1.5' : 'space-y-1 mt-1 ml-6 pl-2';
 
   // Open group automatically when it contains the active route
   useEffect(() => {
@@ -327,7 +341,7 @@ export function AppSidebar() {
       className="transition-all duration-300 ease-out sidebar-gradient"
       collapsible="icon"
     >
-      <SidebarHeader className="border-b border-sidebar-border h-14 overflow-hidden">
+      <SidebarHeader className={`border-b border-sidebar-border ${isDense ? 'h-12' : 'h-14'} overflow-hidden`}>
         <div className="flex items-center justify-center px-1 py-2 h-full">
           <img 
             key={`sidebar-logo-${logoUpdateKey}-${Date.now()}`}
@@ -344,16 +358,16 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="py-2 transition-all duration-300 ease-out">
+      <SidebarContent className={`${contentPad} ${isDense ? 'overflow-hidden' : ''} transition-all duration-300 ease-out`}>
         {getVisibleSections().map((section) => (
           <SidebarGroup key={section.id}>
             {!isCollapsed && (
-              <SidebarGroupLabel className="text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/40 px-3 mb-1">
+              <SidebarGroupLabel className={groupLabelCls}>
                 {section.label}
               </SidebarGroupLabel>
             )}
             <SidebarGroupContent>
-              <SidebarMenu className="space-y-1">
+              <SidebarMenu className={itemSpace}>
                 {section.items.map((item) => (
                   <SidebarMenuItem key={item.title}>
                     {item.subItems ? (
@@ -363,7 +377,7 @@ export function AppSidebar() {
                       >
                         <CollapsibleTrigger asChild>
                           <SidebarMenuButton
-                            className={`w-full justify-between transition-colors duration-200 h-9 px-3 rounded-md group ${
+                            className={`w-full justify-between transition-colors duration-200 ${itemH} px-2.5 rounded-md group ${
                               hasActiveSubItem(item.subItems)
                                 ? 'bg-primary/10 text-primary'
                                 : 'hover:bg-sidebar-accent/60'
@@ -372,7 +386,7 @@ export function AppSidebar() {
                             <div className="flex items-center min-w-0">
                               <span className="relative flex-shrink-0 mr-3">
                                 <item.icon
-                                  className={`h-4 w-4 transition-colors duration-200 ${
+                                  className={`${iconSize} transition-colors duration-200 ${
                                     hasActiveSubItem(item.subItems) || openGroups.includes(item.title)
                                       ? 'text-primary'
                                       : ''
@@ -399,7 +413,7 @@ export function AppSidebar() {
                             </div>
                             {!isCollapsed && (
                               <ChevronDown
-                                className={`h-4 w-4 transition-transform duration-200 flex-shrink-0 ${
+                                className={`${iconSize} transition-transform duration-200 flex-shrink-0 ${
                                   openGroups.includes(item.title) ? 'rotate-180 text-primary' : ''
                                 }`}
                               />
@@ -408,7 +422,7 @@ export function AppSidebar() {
                         </CollapsibleTrigger>
                         {!isCollapsed && (
                           <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down">
-                            <div className="space-y-1 mt-1 ml-6 pl-2 border-l-2 border-sidebar-border/30">
+                            <div className={`${subWrapperCls} border-l-2 border-sidebar-border/30`}>
                               {item.subItems.map((subItem, idx) => {
                                 const active = isActive(subItem.url);
                                 return (
@@ -416,7 +430,7 @@ export function AppSidebar() {
                                     key={subItem.title}
                                     asChild
                                     isActive={active}
-                                    className="transition-colors duration-200 h-9 animate-fade-in opacity-0 [animation-fill-mode:forwards] data-[active=true]:bg-transparent"
+                                    className={`transition-colors duration-200 ${itemH} animate-fade-in opacity-0 [animation-fill-mode:forwards] data-[active=true]:bg-transparent`}
                                     style={{ animationDelay: `${idx * 30}ms`, animationDuration: '220ms' }}
                                   >
                                     <NavLink
@@ -431,7 +445,7 @@ export function AppSidebar() {
                                     >
                                       <subItem.icon
                                         strokeWidth={1.5}
-                                        className={`h-4 w-4 mr-3 flex-shrink-0 transition-colors duration-200 ${
+                                        className={`${iconSize} mr-3 flex-shrink-0 transition-colors duration-200 ${
                                           active ? '!text-primary-foreground' : ''
                                         }`}
                                       />
@@ -451,7 +465,7 @@ export function AppSidebar() {
                           <SidebarMenuButton
                             asChild
                             isActive={active}
-                            className="transition-colors duration-200 h-9 min-w-0 px-3 data-[active=true]:bg-transparent"
+                            className={`transition-colors duration-200 ${itemH} min-w-0 px-2.5 data-[active=true]:bg-transparent`}
                           >
                             <NavLink
                               to={item.url!}
@@ -466,7 +480,7 @@ export function AppSidebar() {
                             >
                               <div className="flex items-center min-w-0">
                                 <item.icon
-                                  className={`h-4 w-4 mr-3 flex-shrink-0 transition-colors duration-200 ${
+                                  className={`${iconSize} mr-3 flex-shrink-0 transition-colors duration-200 ${
                                     active ? '!text-primary-foreground' : ''
                                   }`}
                                 />
@@ -492,19 +506,19 @@ export function AppSidebar() {
           </SidebarGroup>
         ))}
 
-        <SidebarGroup className="mt-auto">
+        <SidebarGroup className={`mt-auto ${isDense ? 'border-t border-sidebar-border/30 pt-1' : ''}`}>
           <SidebarGroupContent>
-            <SidebarMenu className="space-y-1">
+            <SidebarMenu className={itemSpace}>
               {canAccess('configuracoes') && (
                 <SidebarMenuItem>
-                  <SidebarMenuButton asChild className="transition-colors duration-200 h-9">
+                  <SidebarMenuButton asChild className={`transition-colors duration-200 ${itemH}`}>
                     <NavLink
                       to="/configuracoes"
                       onClick={handleNavClick}
                       className={({ isActive }) => `flex items-center w-full px-3 ${getNavCls({ isActive })}`}
                     >
                       <Settings
-                        className={`h-4 w-4 mr-3 flex-shrink-0 transition-colors duration-200 ${
+                        className={`${iconSize} mr-3 flex-shrink-0 transition-colors duration-200 ${
                           isActive('/configuracoes') ? 'text-primary-foreground' : ''
                         }`}
                       />
@@ -526,17 +540,17 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border p-3">
+      <SidebarFooter className={`border-t border-sidebar-border ${isDense ? 'p-2' : 'p-3'}`}>
         <div>
           <Button 
             variant="ghost" 
             size="sm" 
             onClick={handleSignOut}
-            className={`w-full text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors duration-200 h-9 px-3 ${
+            className={`w-full text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors duration-200 ${itemH} px-3 ${
               isCollapsed ? 'justify-center' : 'justify-start'
             }`}
           >
-            <LogOut className={`h-4 w-4 flex-shrink-0 ${!isCollapsed ? 'mr-3' : ''}`} />
+            <LogOut className={`${iconSize} flex-shrink-0 ${!isCollapsed ? 'mr-3' : ''}`} />
             {!isCollapsed && (
               <span className="text-sm font-medium truncate">
                 {t('sidebar.logout')}
