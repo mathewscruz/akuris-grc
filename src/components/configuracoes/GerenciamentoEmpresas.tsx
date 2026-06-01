@@ -469,7 +469,7 @@ const GerenciamentoEmpresasInner = () => {
                 />
               </label>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleToggleAtivo(empresa)}>
+            <DropdownMenuItem onClick={() => setToggleAtivoEmpresa(empresa)}>
               {empresa.ativo ? (
                 <>
                   <PowerOff className="h-4 w-4 mr-2" />
