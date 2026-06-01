@@ -32,6 +32,8 @@ export default function ProjetoDetalhe() {
   const [tarefaAtual, setTarefaAtual] = useState<ProjetoTarefa | null>(null);
   const [defaultColuna, setDefaultColuna] = useState<string | null>(null);
   const [projetoDialog, setProjetoDialog] = useState(false);
+  const [suggestDialog, setSuggestDialog] = useState(false);
+  const [reportDialog, setReportDialog] = useState(false);
 
   if (isLoading) return <div className="flex justify-center py-16"><AkurisPulse size={56} /></div>;
   if (!projeto) return <div className="p-6">Projeto não encontrado.</div>;
