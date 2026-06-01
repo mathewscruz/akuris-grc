@@ -13,7 +13,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Plus, Edit, Trash2, Building2, Upload, MoreHorizontal } from 'lucide-react';
+import { Plus, Edit, Trash2, Building2, Upload, MoreHorizontal, RefreshCw, Power, PowerOff } from 'lucide-react';
 import { differenceInDays } from 'date-fns';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { PlanBadge } from '@/components/PlanBadge';
