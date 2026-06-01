@@ -1,61 +1,87 @@
-# Popular conta de demonstração — Nexure
+# Módulo Projetos — Gestão de Atividades (Jira/ClickUp-like)
 
-Conta identificada: `henrique.mathews@gmail.com` · empresa **Nexure** (`34b992d1-47bc-4bc1-bf39-df83d20e60fe`) · user `665e71d9-…`.
+Novo módulo "Projetos" no Akuris para gerenciar atividades em cards, com 3 visões (Kanban, Lista, Gantt), comentários/anexos/checklist, automações, SLA, vínculo polimórfico com qualquer entidade GRC, criação automática a partir de gaps/achados e IA (quebra de tarefas + status report).
 
-Hoje a conta tem apenas 1 risco, 1 documento e 1 ativo. Vou popular todos os módulos GRC com dados realistas e interligados, para que cada tela demo conte uma história coerente (riscos → controles → planos de ação → auditorias → incidentes → continuidade etc.).
+## Experiência do usuário
 
-## O que será criado (via INSERT, isolado por `empresa_id`)
+**Navegação** — Nova entrada na sidebar "Projetos" (seção Operação), com ícone proprietário Akuris (stroke 1.5).
 
-**Fundamentos**
-- Categorias de Riscos, Controles, Documentos, Denúncias (4–6 cada)
-- 1 Matriz de Riscos 5×5 "Corporativa 2026"
-- Localizações de Ativos (Datacenter, Sede, Filial, Home Office)
+**Páginas:**
+1. `/projetos` — Hub com cards de projetos da empresa (KPIs: tarefas abertas, atrasadas, % conclusão, próximos vencimentos). StatCards editoriais + filtros por status/owner.
+2. `/projetos/:id` — Workspace do projeto com abas:
+   - **Kanban** — colunas customizáveis (status), drag-drop, WIP limit opcional, swimlanes por responsável/prioridade
+   - **Lista** — tabela densa com filtros, ordenação, edição inline e bulk actions
+   - **Gantt** — timeline com dependências (FS/SS/FF/SF), marcos, caminho crítico visual, zoom dia/semana/mês
+   - **Visão Geral** — resumo, burndown, riscos, status report IA
+   - **Automações** — regras "quando X então Y"
+   - **Configurações** — membros, colunas, SLA, templates
 
-**Riscos (10)** — Vazamento LGPD, Ransomware, Fraude financeira, Indisponibilidade SaaS, Insider threat, Falha backup, Phishing, Não conformidade ISO, Perda de fornecedor crítico, Shadow IT. Com prob×impacto inicial e residual, responsável, próxima revisão, tratamento (mitigar/aceitar/transferir) e 2 aceites formais.
+**Card de tarefa (dialog full-screen no mobile)** — título, descrição (rich text), status, prioridade, responsável (UserSelect), seguidores, datas (início/fim/prazo), estimativa/tempo gasto, tags, checklist, dependências, anexos, comentários com @menção, e **bloco "Vínculos GRC"** mostrando entidades ligadas (risco, controle, incidente, auditoria, gap, contrato, due diligence, política, ativo).
 
-**Controles (12)** — MFA, Backup 3-2-1, SIEM, DLP, Patch management, Revisão de acessos trimestral, Treinamento phishing, Segregação de funções, Criptografia em repouso, Gestão de chaves, Plano de resposta a incidentes, Auditoria de logs. Vinculados aos riscos, com testes/eficácia.
+**Criação automática** — Em Gap Analysis, Auditorias e Incidentes, botão "Criar tarefa em projeto" que abre seletor de projeto + pré-preenche título/descrição/vínculo. Item de auditoria reprovado pode disparar tarefa automaticamente via toggle.
 
-**Planos de Ação (8)** — Mistura aberto / em andamento / concluído / atrasado, vinculados a riscos, controles e auditorias, com responsáveis e prazos.
+**Notificações** — Tudo centralizado no sino do header (atribuição, comentário com @, vencimento próximo, SLA estourado, mudança de status).
 
-**Documentos (10)** — Política SI, Política LGPD, PCN, PRD, Procedimento Backup, Norma Acesso, Termo Confidencialidade, Manual Resposta a Incidentes, Política BYOD, Código de Conduta. Com versão, vigência, classificação e aprovações.
+**IA (consome créditos)** — Botão "Sugerir quebra" no projeto vazio gera lista de tarefas a partir do objetivo. Botão "Status Report" gera relatório executivo (progresso, bloqueios, riscos, próximos passos) exportável em PDF.
 
-**Ativos (15)** — Servidores, banco PostgreSQL, firewall, switches, storage, 6 laptops executivos, impressora, nobreak, AC precision; com fornecedor, valor, criticidade, localização e data de aquisição.
-- **Licenças (5)**: Microsoft 365, Adobe, Antivírus, Fortinet, GitHub Enterprise.
-- **Chaves (4)**: chaves de cofre/áreas restritas com responsáveis.
+## Modelo de dados (Supabase)
 
-**Contas Privilegiadas (6)** + Sistemas Privilegiados (4): AD, AWS, GitHub, ERP — com rotação e justificativa.
+Todas as tabelas com `empresa_id uuid not null`, RLS por empresa + membership, GRANT explícito, índices em FKs.
 
-**Revisão de Acessos (2)** — uma concluída, uma em andamento com itens pendentes.
+- `projetos` — nome, descrição, status (ativo/pausado/concluído/arquivado), owner_id, data_inicio, data_fim_prevista, cor, icone, configuracoes (jsonb: WIP limits, colunas customizadas, SLA por prioridade)
+- `projeto_membros` — projeto_id, user_id, papel (owner/admin/membro/viewer)
+- `projeto_colunas` — projeto_id, nome, ordem, cor, wip_limit, is_concluido
+- `projeto_tarefas` — projeto_id, coluna_id, titulo, descricao, prioridade (baixa/media/alta/critica), responsavel_id, criador_id, data_inicio, data_fim, prazo, estimativa_horas, tempo_gasto_horas, progresso_pct, tags (text[]), ordem (para drag-drop), parent_task_id (subtarefas), bloqueada (bool)
+- `projeto_tarefa_seguidores` — tarefa_id, user_id
+- `projeto_tarefa_dependencias` — tarefa_id, depende_de_tarefa_id, tipo (FS/SS/FF/SF)
+- `projeto_tarefa_checklist` — tarefa_id, texto, concluido, ordem
+- `projeto_tarefa_comentarios` — tarefa_id, user_id, conteudo (rich), mencionados (uuid[])
+- `projeto_tarefa_anexos` — tarefa_id, nome, url (Supabase Storage bucket `projeto-anexos`), tipo, tamanho
+- `projeto_tarefa_vinculos` — tarefa_id, entidade_tipo (risco/controle/incidente/auditoria/gap/contrato/due_diligence/politica/ativo/denuncia/plano_acao), entidade_id, criado_por *(polimórfico — UNIQUE(tarefa_id, entidade_tipo, entidade_id))*
+- `projeto_tarefa_atividade` — log timeline (campo, valor_antigo, valor_novo, user_id) para auditoria
+- `projeto_automacoes` — projeto_id, nome, gatilho (jsonb), acoes (jsonb), ativa
+- `projeto_templates` — empresa_id, nome, estrutura (jsonb: colunas + tarefas modelo)
+- Bucket Storage: `projeto-anexos` (privado, RLS por empresa)
 
-**Auditorias (3)** — Interna ISO 27001 (concluída), Externa LGPD (em andamento), SOC 2 (planejada) — com 6–10 itens cada (conformes / não-conformes / parciais) e achados gerando planos de ação.
+**RLS** (híbrido conforme escolha):
+- Admins/super-admin da empresa: acesso total
+- Demais: só veem projetos onde são membros (via `projeto_membros`)
+- Função SECURITY DEFINER `is_projeto_member(projeto_id, user_id)` para evitar recursão
 
-**Incidentes (6)** — Phishing detectado, Acesso indevido, Notebook perdido (LGPD), Ransomware contido em sandbox, Indisponibilidade SSO, Malware estação. Com tratamento, evidências e comunicação ANPD quando aplicável.
+## Edge Functions
 
-**Fornecedores (6) + Contratos (5)** — Microsoft, AWS, consultoria SI, limpeza, ISP, escritório jurídico. Contratos com vigência, valor mensal/total, marcos e SLA.
+- `projeto-suggest-tasks` — recebe objetivo, devolve tarefas sugeridas via Lovable AI Gateway (`google/gemini-3-flash-preview`), consome crédito via `consume_ai_credit`, retorna 402 se exausto
+- `projeto-status-report` — gera relatório executivo do projeto (mesmo padrão)
+- `projeto-automacao-executor` — disparado por triggers no banco quando tarefa muda; executa ações (notificar, mover, criar subtarefa)
+- `projeto-sla-checker` — cron diário verifica SLA estourado e dispara notificação
 
-**Due Diligence (3)** — 1 assessment concluído (score alto), 1 em andamento, 1 enviado aguardando resposta — sobre fornecedores acima.
+Tudo com `verify_jwt=true`, validação Zod, wrapper `invokeEdgeFunction`, logger central.
 
-**Gap Analysis (2 frameworks)** — ISO 27001 e LGPD com assessment em andamento (~60% de conformidade) usando frameworks globais já existentes (sem duplicar templates).
+## Integrações com módulos existentes
 
-**LGPD / Privacidade**
-- **Dados Pessoais (8)**: nome, e-mail, CPF, endereço, dados de saúde, geolocalização, dados de menores, biometria — com base legal e finalidade.
-- **Fluxos de Dados (4)**: RH, Marketing, Atendimento, Folha.
+- **Planos de Ação**: cada tarefa de projeto pode opcionalmente "virar" plano de ação (toggle no card) — sincronização bidirecional via trigger
+- **Gap Analysis / Auditorias / Incidentes / Riscos**: botão "Criar tarefa" + listagem de tarefas vinculadas na tela da entidade (componente `<TarefasVinculadasPanel entidadeTipo entidadeId />`)
+- **Dashboard**: novo card "Projetos ativos" com KPIs agregados
+- **Notificações**: usa o sino existente + tabela `notifications`
 
-**Denúncias (5)** — Categorias + 5 denúncias variando entre assédio, fraude, conflito de interesses; status mistos, com protocolo público.
+## Frontend
 
-**Continuidade (PCN)**
-- 3 Planos (Datacenter, Sistemas Críticos, Recursos Humanos), 2 testes realizados, 5 tarefas (pendentes/concluídas).
+- Pasta `src/components/projetos/` com `KanbanBoard.tsx`, `GanttChart.tsx`, `TarefaDialog.tsx`, `TarefaCard.tsx`, `ProjetoDialog.tsx`, `AutomacaoDialog.tsx`, `VinculosGRCPanel.tsx`, `StatusReportDialog.tsx`
+- Hooks: `useProjetos`, `useProjetoTarefas`, `useProjetoStats`
+- Páginas: `src/pages/Projetos.tsx`, `src/pages/ProjetoDetalhe.tsx`
+- Drag-drop: `@dnd-kit/core` (já leve, compatível com a stack)
+- Gantt: implementação custom em SVG (sem libs pesadas) baseada nas tarefas + dependências, para manter identidade visual
+- Rich text: Tiptap (mesmo padrão de outros módulos se houver, senão textarea + markdown)
+- Identidade: DM Sans, Navy/Purple, StatusBadge, AkurisPulse para loading, StatCard editorial, CornerAccent nos headers, AkurisMarkPattern em empty states
 
-## Como vou executar
+## Permissões (RBAC)
 
-Tudo via a ferramenta de **insert** do Supabase, em um único batch transacional onde possível, sempre filtrando por `empresa_id = 34b992d1-…` e `created_by = 665e71d9-…`. Nada toca outras empresas.
+Novo módulo `projetos` adicionado em `planos-utils` e nos perfis de permissão modular. Ações: `view`, `create`, `edit`, `delete`, `manage_automations`.
 
-Vou primeiro inspecionar as colunas obrigatórias de cada tabela (algumas têm enums específicos) e então executar os INSERTs de forma idempotente (verificando se já existe registro com nome conhecido antes de inserir, para você poder rodar de novo sem duplicar).
+## Entrega faseada
 
-## Fora do escopo
+**Fase 1 (esta entrega)** — CRUD de projetos/tarefas, Kanban com drag-drop, Lista, comentários, anexos, checklist, vínculos GRC, notificações no sino, criação a partir de gaps/auditorias/incidentes, RLS, RBAC.
 
-- Não criar usuários adicionais (só o seu já existente é referenciado).
-- Não enviar e-mails reais de notificação (triggers que disparam edge functions de e-mail não rodam por INSERT direto na maioria dos casos — confirmo antes de executar se algum trigger crítico precisa ser desativado temporariamente).
-- Não mexer em frameworks globais de Gap Analysis (apenas criar o assessment da Nexure sobre os frameworks já existentes).
+**Fase 2 (próxima)** — Gantt com dependências, automações, SLA checker, templates de projeto, IA (suggest-tasks + status-report), dashboard agregado.
 
-Posso prosseguir com esse seed completo?
+Divido em duas fases para garantir qualidade — confirme se prefere assim ou se quer tudo numa entrega só (será maior e mais lenta de validar).
