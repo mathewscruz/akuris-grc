@@ -413,7 +413,7 @@ export function AppSidebar() {
                             </div>
                             {!isCollapsed && (
                               <ChevronDown
-                                className={`h-4 w-4 transition-transform duration-200 flex-shrink-0 ${
+                                className={`${iconSize} transition-transform duration-200 flex-shrink-0 ${
                                   openGroups.includes(item.title) ? 'rotate-180 text-primary' : ''
                                 }`}
                               />
