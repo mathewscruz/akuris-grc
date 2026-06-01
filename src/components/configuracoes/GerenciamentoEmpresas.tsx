@@ -78,6 +78,9 @@ const GerenciamentoEmpresasInner = () => {
   const [selectedPlanoId, setSelectedPlanoId] = useState<string>('');
   const [sortField, setSortField] = useState<string>('nome');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [renewTrialEmpresa, setRenewTrialEmpresa] = useState<Empresa | null>(null);
+  const [toggleAtivoEmpresa, setToggleAtivoEmpresa] = useState<Empresa | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
 
   const form = useForm<EmpresaForm>({
     resolver: zodResolver(empresaSchema),
