@@ -295,6 +295,13 @@ function GapAnalysisFrameworkDetailInner() {
                     Gerador de Documentos
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
+                  <CriarTarefaMenuItem
+                    entidadeTipo="gap_assessment"
+                    entidadeId={frameworkId}
+                    tituloSugerido={`Remediação · ${framework.nome}`}
+                    descricaoSugerida={`Plano de remediação para o framework ${framework.nome}.`}
+                  />
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => { setActiveTab('avaliacao'); setShowOnboarding(true); }}>
                     <HelpCircle className="h-4 w-4 mr-2" strokeWidth={1.5} />
                     Revisitar tour
