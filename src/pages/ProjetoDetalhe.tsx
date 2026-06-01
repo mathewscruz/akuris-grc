@@ -131,6 +131,10 @@ export default function ProjetoDetalhe() {
             </Table>
           </div>
         </TabsContent>
+
+        <TabsContent value="gantt" className="mt-4">
+          <GanttChart tarefas={tarefas} onSelectTarefa={openEditarTarefa} />
+        </TabsContent>
       </Tabs>
 
       <TarefaDialog
@@ -142,6 +146,8 @@ export default function ProjetoDetalhe() {
         defaultColunaId={defaultColuna}
       />
       <ProjetoDialog open={projetoDialog} onOpenChange={setProjetoDialog} projeto={projeto} />
+      <SuggestTasksDialog open={suggestDialog} onOpenChange={setSuggestDialog} projetoId={projeto.id} colunas={colunas} />
+      <StatusReportDialog open={reportDialog} onOpenChange={setReportDialog} projetoId={projeto.id} projetoNome={projeto.nome} />
     </div>
   );
 }
