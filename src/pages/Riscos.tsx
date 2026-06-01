@@ -548,6 +548,11 @@ export function Riscos() {
             <DropdownMenuItem onClick={() => setAuditRisco(risco)}>
               <History className="mr-2 h-4 w-4" strokeWidth={1.5} /> Trilha de Auditoria
             </DropdownMenuItem>
+            <CriarTarefaMenuItem
+              entidadeTipo="risco"
+              entidadeId={risco.id}
+              tituloSugerido={`Tratar risco: ${risco.titulo ?? risco.nome ?? ''}`}
+            />
             <DropdownMenuItem onClick={() => openDeleteDialog(risco)} className="text-destructive focus:text-destructive">
               <Trash2 className="mr-2 h-4 w-4" strokeWidth={1.5} /> Excluir
             </DropdownMenuItem>

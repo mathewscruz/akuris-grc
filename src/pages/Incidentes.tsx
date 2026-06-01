@@ -296,6 +296,11 @@ export default function Incidentes() {
                 <Shield className="mr-2 h-4 w-4" />
                 Tratamentos
               </DropdownMenuItem>
+              <CriarTarefaMenuItem
+                entidadeTipo="incidente"
+                entidadeId={item.id}
+                tituloSugerido={`Responder incidente: ${item.titulo ?? ''}`}
+              />
               <DropdownMenuItem onClick={() => handleDelete(item.id)} className="text-destructive">
                 <Trash2 className="mr-2 h-4 w-4" />
                 Excluir
