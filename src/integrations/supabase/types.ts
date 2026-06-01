@@ -5968,6 +5968,482 @@ export type Database = {
           },
         ]
       }
+      projeto_colunas: {
+        Row: {
+          cor: string | null
+          created_at: string
+          id: string
+          is_concluido: boolean
+          nome: string
+          ordem: number
+          projeto_id: string
+          wip_limit: number | null
+        }
+        Insert: {
+          cor?: string | null
+          created_at?: string
+          id?: string
+          is_concluido?: boolean
+          nome: string
+          ordem?: number
+          projeto_id: string
+          wip_limit?: number | null
+        }
+        Update: {
+          cor?: string | null
+          created_at?: string
+          id?: string
+          is_concluido?: boolean
+          nome?: string
+          ordem?: number
+          projeto_id?: string
+          wip_limit?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projeto_colunas_projeto_id_fkey"
+            columns: ["projeto_id"]
+            isOneToOne: false
+            referencedRelation: "projetos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projeto_membros: {
+        Row: {
+          added_by: string | null
+          created_at: string
+          id: string
+          papel: Database["public"]["Enums"]["projeto_membro_papel"]
+          projeto_id: string
+          user_id: string
+        }
+        Insert: {
+          added_by?: string | null
+          created_at?: string
+          id?: string
+          papel?: Database["public"]["Enums"]["projeto_membro_papel"]
+          projeto_id: string
+          user_id: string
+        }
+        Update: {
+          added_by?: string | null
+          created_at?: string
+          id?: string
+          papel?: Database["public"]["Enums"]["projeto_membro_papel"]
+          projeto_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projeto_membros_projeto_id_fkey"
+            columns: ["projeto_id"]
+            isOneToOne: false
+            referencedRelation: "projetos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projeto_tarefa_anexos: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string
+          storage_path: string
+          tamanho_bytes: number | null
+          tarefa_id: string
+          tipo: string | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome: string
+          storage_path: string
+          tamanho_bytes?: number | null
+          tarefa_id: string
+          tipo?: string | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string
+          storage_path?: string
+          tamanho_bytes?: number | null
+          tarefa_id?: string
+          tipo?: string | null
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projeto_tarefa_anexos_tarefa_id_fkey"
+            columns: ["tarefa_id"]
+            isOneToOne: false
+            referencedRelation: "projeto_tarefas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projeto_tarefa_atividade: {
+        Row: {
+          campo: string
+          created_at: string
+          id: string
+          tarefa_id: string
+          user_id: string | null
+          valor_antigo: string | null
+          valor_novo: string | null
+        }
+        Insert: {
+          campo: string
+          created_at?: string
+          id?: string
+          tarefa_id: string
+          user_id?: string | null
+          valor_antigo?: string | null
+          valor_novo?: string | null
+        }
+        Update: {
+          campo?: string
+          created_at?: string
+          id?: string
+          tarefa_id?: string
+          user_id?: string | null
+          valor_antigo?: string | null
+          valor_novo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projeto_tarefa_atividade_tarefa_id_fkey"
+            columns: ["tarefa_id"]
+            isOneToOne: false
+            referencedRelation: "projeto_tarefas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projeto_tarefa_checklist: {
+        Row: {
+          concluido: boolean
+          created_at: string
+          id: string
+          ordem: number
+          tarefa_id: string
+          texto: string
+        }
+        Insert: {
+          concluido?: boolean
+          created_at?: string
+          id?: string
+          ordem?: number
+          tarefa_id: string
+          texto: string
+        }
+        Update: {
+          concluido?: boolean
+          created_at?: string
+          id?: string
+          ordem?: number
+          tarefa_id?: string
+          texto?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projeto_tarefa_checklist_tarefa_id_fkey"
+            columns: ["tarefa_id"]
+            isOneToOne: false
+            referencedRelation: "projeto_tarefas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projeto_tarefa_comentarios: {
+        Row: {
+          conteudo: string
+          created_at: string
+          id: string
+          mencionados: string[] | null
+          tarefa_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          conteudo: string
+          created_at?: string
+          id?: string
+          mencionados?: string[] | null
+          tarefa_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          conteudo?: string
+          created_at?: string
+          id?: string
+          mencionados?: string[] | null
+          tarefa_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projeto_tarefa_comentarios_tarefa_id_fkey"
+            columns: ["tarefa_id"]
+            isOneToOne: false
+            referencedRelation: "projeto_tarefas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projeto_tarefa_dependencias: {
+        Row: {
+          created_at: string
+          depende_de_tarefa_id: string
+          id: string
+          tarefa_id: string
+          tipo: Database["public"]["Enums"]["projeto_dependencia_tipo"]
+        }
+        Insert: {
+          created_at?: string
+          depende_de_tarefa_id: string
+          id?: string
+          tarefa_id: string
+          tipo?: Database["public"]["Enums"]["projeto_dependencia_tipo"]
+        }
+        Update: {
+          created_at?: string
+          depende_de_tarefa_id?: string
+          id?: string
+          tarefa_id?: string
+          tipo?: Database["public"]["Enums"]["projeto_dependencia_tipo"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projeto_tarefa_dependencias_depende_de_tarefa_id_fkey"
+            columns: ["depende_de_tarefa_id"]
+            isOneToOne: false
+            referencedRelation: "projeto_tarefas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projeto_tarefa_dependencias_tarefa_id_fkey"
+            columns: ["tarefa_id"]
+            isOneToOne: false
+            referencedRelation: "projeto_tarefas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projeto_tarefa_seguidores: {
+        Row: {
+          created_at: string
+          id: string
+          tarefa_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          tarefa_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          tarefa_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projeto_tarefa_seguidores_tarefa_id_fkey"
+            columns: ["tarefa_id"]
+            isOneToOne: false
+            referencedRelation: "projeto_tarefas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projeto_tarefa_vinculos: {
+        Row: {
+          created_at: string
+          criado_por: string | null
+          entidade_id: string
+          entidade_tipo: Database["public"]["Enums"]["projeto_vinculo_entidade"]
+          id: string
+          tarefa_id: string
+        }
+        Insert: {
+          created_at?: string
+          criado_por?: string | null
+          entidade_id: string
+          entidade_tipo: Database["public"]["Enums"]["projeto_vinculo_entidade"]
+          id?: string
+          tarefa_id: string
+        }
+        Update: {
+          created_at?: string
+          criado_por?: string | null
+          entidade_id?: string
+          entidade_tipo?: Database["public"]["Enums"]["projeto_vinculo_entidade"]
+          id?: string
+          tarefa_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projeto_tarefa_vinculos_tarefa_id_fkey"
+            columns: ["tarefa_id"]
+            isOneToOne: false
+            referencedRelation: "projeto_tarefas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projeto_tarefas: {
+        Row: {
+          bloqueada: boolean
+          coluna_id: string | null
+          concluida_em: string | null
+          created_at: string
+          criador_id: string | null
+          data_fim: string | null
+          data_inicio: string | null
+          descricao: string | null
+          estimativa_horas: number | null
+          id: string
+          ordem: number
+          parent_task_id: string | null
+          prazo: string | null
+          prioridade: Database["public"]["Enums"]["projeto_tarefa_prioridade"]
+          progresso_pct: number
+          projeto_id: string
+          responsavel_id: string | null
+          tags: string[] | null
+          tempo_gasto_horas: number | null
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          bloqueada?: boolean
+          coluna_id?: string | null
+          concluida_em?: string | null
+          created_at?: string
+          criador_id?: string | null
+          data_fim?: string | null
+          data_inicio?: string | null
+          descricao?: string | null
+          estimativa_horas?: number | null
+          id?: string
+          ordem?: number
+          parent_task_id?: string | null
+          prazo?: string | null
+          prioridade?: Database["public"]["Enums"]["projeto_tarefa_prioridade"]
+          progresso_pct?: number
+          projeto_id: string
+          responsavel_id?: string | null
+          tags?: string[] | null
+          tempo_gasto_horas?: number | null
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          bloqueada?: boolean
+          coluna_id?: string | null
+          concluida_em?: string | null
+          created_at?: string
+          criador_id?: string | null
+          data_fim?: string | null
+          data_inicio?: string | null
+          descricao?: string | null
+          estimativa_horas?: number | null
+          id?: string
+          ordem?: number
+          parent_task_id?: string | null
+          prazo?: string | null
+          prioridade?: Database["public"]["Enums"]["projeto_tarefa_prioridade"]
+          progresso_pct?: number
+          projeto_id?: string
+          responsavel_id?: string | null
+          tags?: string[] | null
+          tempo_gasto_horas?: number | null
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projeto_tarefas_coluna_id_fkey"
+            columns: ["coluna_id"]
+            isOneToOne: false
+            referencedRelation: "projeto_colunas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projeto_tarefas_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "projeto_tarefas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projeto_tarefas_projeto_id_fkey"
+            columns: ["projeto_id"]
+            isOneToOne: false
+            referencedRelation: "projetos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projetos: {
+        Row: {
+          configuracoes: Json | null
+          cor: string | null
+          created_at: string
+          created_by: string | null
+          data_fim_prevista: string | null
+          data_inicio: string | null
+          descricao: string | null
+          empresa_id: string
+          icone: string | null
+          id: string
+          nome: string
+          owner_id: string
+          status: Database["public"]["Enums"]["projeto_status"]
+          updated_at: string
+        }
+        Insert: {
+          configuracoes?: Json | null
+          cor?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_fim_prevista?: string | null
+          data_inicio?: string | null
+          descricao?: string | null
+          empresa_id: string
+          icone?: string | null
+          id?: string
+          nome: string
+          owner_id: string
+          status?: Database["public"]["Enums"]["projeto_status"]
+          updated_at?: string
+        }
+        Update: {
+          configuracoes?: Json | null
+          cor?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_fim_prevista?: string | null
+          data_inicio?: string | null
+          descricao?: string | null
+          empresa_id?: string
+          icone?: string | null
+          id?: string
+          nome?: string
+          owner_id?: string
+          status?: Database["public"]["Enums"]["projeto_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       relatorio_agendamentos: {
         Row: {
           ativo: boolean
@@ -7166,6 +7642,8 @@ export type Database = {
         Args: { assessment_id_param: string }
         Returns: undefined
       }
+      can_access_projeto: { Args: { _projeto_id: string }; Returns: boolean }
+      can_access_tarefa: { Args: { _tarefa_id: string }; Returns: boolean }
       can_update_assessment_via_token: {
         Args: { assessment_link_token: string }
         Returns: boolean
@@ -7275,6 +7753,10 @@ export type Database = {
       }
       is_admin: { Args: never; Returns: boolean }
       is_admin_or_super_admin: { Args: never; Returns: boolean }
+      is_projeto_member: {
+        Args: { _projeto_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_super_admin: { Args: never; Returns: boolean }
       matriz_pertence_empresa: { Args: { matriz_id: string }; Returns: boolean }
       popular_ativos_demo: {
@@ -7306,6 +7788,10 @@ export type Database = {
         Args: { p_empresa_id: string; p_user_id: string }
         Returns: number
       }
+      projeto_pertence_empresa: {
+        Args: { _projeto_id: string }
+        Returns: boolean
+      }
       requirement_pertence_empresa: {
         Args: { requirement_id: string }
         Returns: boolean
@@ -7320,6 +7806,28 @@ export type Database = {
     }
     Enums: {
       app_role: "user" | "admin" | "super_admin"
+      projeto_dependencia_tipo: "FS" | "SS" | "FF" | "SF"
+      projeto_membro_papel: "owner" | "admin" | "membro" | "viewer"
+      projeto_status: "ativo" | "pausado" | "concluido" | "arquivado"
+      projeto_tarefa_prioridade: "baixa" | "media" | "alta" | "critica"
+      projeto_vinculo_entidade:
+        | "risco"
+        | "controle"
+        | "incidente"
+        | "auditoria"
+        | "auditoria_item"
+        | "gap_requirement"
+        | "gap_assessment"
+        | "contrato"
+        | "fornecedor"
+        | "due_diligence"
+        | "documento"
+        | "ativo"
+        | "denuncia"
+        | "plano_acao"
+        | "dados_pessoais"
+        | "conta_privilegiada"
+        | "continuidade"
       user_role: "super_admin" | "admin" | "user" | "readonly"
     }
     CompositeTypes: {
@@ -7449,6 +7957,29 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["user", "admin", "super_admin"],
+      projeto_dependencia_tipo: ["FS", "SS", "FF", "SF"],
+      projeto_membro_papel: ["owner", "admin", "membro", "viewer"],
+      projeto_status: ["ativo", "pausado", "concluido", "arquivado"],
+      projeto_tarefa_prioridade: ["baixa", "media", "alta", "critica"],
+      projeto_vinculo_entidade: [
+        "risco",
+        "controle",
+        "incidente",
+        "auditoria",
+        "auditoria_item",
+        "gap_requirement",
+        "gap_assessment",
+        "contrato",
+        "fornecedor",
+        "due_diligence",
+        "documento",
+        "ativo",
+        "denuncia",
+        "plano_acao",
+        "dados_pessoais",
+        "conta_privilegiada",
+        "continuidade",
+      ],
       user_role: ["super_admin", "admin", "user", "readonly"],
     },
   },
