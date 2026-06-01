@@ -143,8 +143,28 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
                   <Input type="number" step="0.5" value={form.estimativa_horas} onChange={(e) => setForm({ ...form, estimativa_horas: e.target.value })} />
                 </div>
               </div>
+              <div>
+                <Label>Sprint</Label>
+                <Select value={form.sprint_id || 'none'} onValueChange={(v) => setForm({ ...form, sprint_id: v === 'none' ? '' : v })}>
+                  <SelectTrigger><SelectValue placeholder="Sem sprint" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sem sprint</SelectItem>
+                    {sprints.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.nome} {s.ativa ? '· ativa' : s.concluida ? '· concluída' : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </form>
           </TabsContent>
+
+          {tarefa && (
+            <TabsContent value="tempo" className="pt-3">
+              <TempoPanel tarefaId={tarefa.id} estimativa={tarefa.estimativa_horas} gasto={tarefa.tempo_gasto_horas} />
+            </TabsContent>
+          )}
 
           {tarefa && (
             <TabsContent value="checklist" className="pt-3">
