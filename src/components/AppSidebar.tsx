@@ -359,9 +359,12 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
 
-      <SidebarContent className={`${contentPad} ${isDense ? 'overflow-hidden' : ''} transition-all duration-300 ease-out`}>
+      <SidebarContent
+        ref={contentRef as any}
+        className={`${contentPad} ${isCompact ? 'overflow-hidden gap-0' : ''} transition-all duration-300 ease-out`}
+      >
         {getVisibleSections().map((section) => (
-          <SidebarGroup key={section.id}>
+          <SidebarGroup key={section.id} className={isDense ? 'py-0' : isCompact ? 'py-1' : ''}>
             {!isCollapsed && (
               <SidebarGroupLabel className={groupLabelCls}>
                 {section.label}
