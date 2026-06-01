@@ -1,87 +1,132 @@
-# Módulo Projetos — Gestão de Atividades (Jira/ClickUp-like)
+# Projetos — Fase 3 (Paridade com Jira/ClickUp + Itens pendentes)
 
-Novo módulo "Projetos" no Akuris para gerenciar atividades em cards, com 3 visões (Kanban, Lista, Gantt), comentários/anexos/checklist, automações, SLA, vínculo polimórfico com qualquer entidade GRC, criação automática a partir de gaps/achados e IA (quebra de tarefas + status report).
+## Passos manuais que vou executar
 
-## Experiência do usuário
+1. **Habilitar `pg_cron` e `pg_net`** via migration.
+2. **Agendar o `projeto-sla-checker`** para rodar a cada hora (via insert SQL com URL + anon key reais).
+3. **Embutir `<CriarTarefaFromGRC>`** nas telas de **Gap Analysis (requisito)**, **Incidentes**, **Riscos** e **Auditorias** (1 botão padrão "Criar tarefa de projeto" em cada detalhe/linha).
 
-**Navegação** — Nova entrada na sidebar "Projetos" (seção Operação), com ícone proprietário Akuris (stroke 1.5).
+## Exclusão de projetos
 
-**Páginas:**
-1. `/projetos` — Hub com cards de projetos da empresa (KPIs: tarefas abertas, atrasadas, % conclusão, próximos vencimentos). StatCards editoriais + filtros por status/owner.
-2. `/projetos/:id` — Workspace do projeto com abas:
-   - **Kanban** — colunas customizáveis (status), drag-drop, WIP limit opcional, swimlanes por responsável/prioridade
-   - **Lista** — tabela densa com filtros, ordenação, edição inline e bulk actions
-   - **Gantt** — timeline com dependências (FS/SS/FF/SF), marcos, caminho crítico visual, zoom dia/semana/mês
-   - **Visão Geral** — resumo, burndown, riscos, status report IA
-   - **Automações** — regras "quando X então Y"
-   - **Configurações** — membros, colunas, SLA, templates
+- Botão **"Excluir projeto"** no header de `ProjetoDetalhe` (variante destrutiva, atrás de `ConfirmDialog` com digitar o nome para confirmar — padrão Jira).
+- Menu de contexto **"Arquivar / Excluir"** no card de projeto em `Projetos.tsx` (3 pontos).
+- Bloqueia exclusão se houver tarefas ativas — oferece "Arquivar" como alternativa segura (muda `status` para `arquivado`).
+- Hook `useDeleteProjeto` já existe — só falta o gatilho na UI.
 
-**Card de tarefa (dialog full-screen no mobile)** — título, descrição (rich text), status, prioridade, responsável (UserSelect), seguidores, datas (início/fim/prazo), estimativa/tempo gasto, tags, checklist, dependências, anexos, comentários com @menção, e **bloco "Vínculos GRC"** mostrando entidades ligadas (risco, controle, incidente, auditoria, gap, contrato, due diligence, política, ativo).
+## Lacunas identificadas vs Jira/ClickUp e o que entra nesta fase
 
-**Criação automática** — Em Gap Analysis, Auditorias e Incidentes, botão "Criar tarefa em projeto" que abre seletor de projeto + pré-preenche título/descrição/vínculo. Item de auditoria reprovado pode disparar tarefa automaticamente via toggle.
+### Gestão de trabalho (essencial faltando)
+- **Filtros e busca avançada** na Lista: por responsável, prioridade, status, tags, prazo, SLA, origem GRC.
+- **Agrupamento** na visão Lista: por coluna, prioridade ou responsável (estilo ClickUp "Group by").
+- **Subtarefas** com indentação visual e progresso herdado (campo `parent_task_id` já existe — só falta UI).
+- **Bulk actions**: seleção múltipla na Lista para mover de coluna, mudar prioridade, atribuir responsável, excluir.
+- **Quick add** inline no Kanban (linha "+ Adicionar tarefa" no rodapé de cada coluna sem abrir dialog).
 
-**Notificações** — Tudo centralizado no sino do header (atribuição, comentário com @, vencimento próximo, SLA estourado, mudança de status).
+### Visões adicionais
+- **Visão Calendário** mensal mostrando tarefas pelo `prazo` (drag para alterar prazo).
+- **Minha caixa** ("My Work" do ClickUp): rota `/projetos/minhas-tarefas` listando tudo onde o usuário é responsável, agrupado por urgência.
 
-**IA (consome créditos)** — Botão "Sugerir quebra" no projeto vazio gera lista de tarefas a partir do objetivo. Botão "Status Report" gera relatório executivo (progresso, bloqueios, riscos, próximos passos) exportável em PDF.
+### Sprints / Iterações (modo ágil leve)
+- Tabela `projeto_sprints` (nome, data_inicio, data_fim, projeto_id, ativa, objetivo).
+- Coluna `sprint_id` em `projeto_tarefas`.
+- Seletor de sprint no header + "Sprint atual" como filtro padrão.
+- Burndown simples (SVG) na aba Sprint.
 
-## Modelo de dados (Supabase)
+### Time tracking
+- Tabela `projeto_tempo_entradas` (tarefa_id, user_id, horas, descricao, data).
+- Botão **Play/Pause** na TarefaDialog que registra tempo.
+- Soma do `tempo_gasto_horas` atualizada por trigger.
 
-Todas as tabelas com `empresa_id uuid not null`, RLS por empresa + membership, GRANT explícito, índices em FKs.
+### Automações (UI)
+- Tela **`/projetos/:id/automacoes`** com builder visual:
+  - **Quando**: tarefa criada / movida para coluna X / prazo vencido / SLA em risco.
+  - **Então**: atribuir a Y / mover para coluna Z / mudar prioridade / notificar usuário / criar tarefa filha.
+- Edge function **`projeto-automacao-executor`** chamada por trigger pg quando tarefas mudam de coluna.
 
-- `projetos` — nome, descrição, status (ativo/pausado/concluído/arquivado), owner_id, data_inicio, data_fim_prevista, cor, icone, configuracoes (jsonb: WIP limits, colunas customizadas, SLA por prioridade)
-- `projeto_membros` — projeto_id, user_id, papel (owner/admin/membro/viewer)
-- `projeto_colunas` — projeto_id, nome, ordem, cor, wip_limit, is_concluido
-- `projeto_tarefas` — projeto_id, coluna_id, titulo, descricao, prioridade (baixa/media/alta/critica), responsavel_id, criador_id, data_inicio, data_fim, prazo, estimativa_horas, tempo_gasto_horas, progresso_pct, tags (text[]), ordem (para drag-drop), parent_task_id (subtarefas), bloqueada (bool)
-- `projeto_tarefa_seguidores` — tarefa_id, user_id
-- `projeto_tarefa_dependencias` — tarefa_id, depende_de_tarefa_id, tipo (FS/SS/FF/SF)
-- `projeto_tarefa_checklist` — tarefa_id, texto, concluido, ordem
-- `projeto_tarefa_comentarios` — tarefa_id, user_id, conteudo (rich), mencionados (uuid[])
-- `projeto_tarefa_anexos` — tarefa_id, nome, url (Supabase Storage bucket `projeto-anexos`), tipo, tamanho
-- `projeto_tarefa_vinculos` — tarefa_id, entidade_tipo (risco/controle/incidente/auditoria/gap/contrato/due_diligence/politica/ativo/denuncia/plano_acao), entidade_id, criado_por *(polimórfico — UNIQUE(tarefa_id, entidade_tipo, entidade_id))*
-- `projeto_tarefa_atividade` — log timeline (campo, valor_antigo, valor_novo, user_id) para auditoria
-- `projeto_automacoes` — projeto_id, nome, gatilho (jsonb), acoes (jsonb), ativa
-- `projeto_templates` — empresa_id, nome, estrutura (jsonb: colunas + tarefas modelo)
-- Bucket Storage: `projeto-anexos` (privado, RLS por empresa)
+### Templates (UI)
+- Tela **`/configuracoes/projeto-templates`** (super-admin gerencia globais; admin gerencia da empresa).
+- Botão **"Criar a partir de template"** no `Projetos.tsx` (mostra templates globais + empresa).
+- Aplicar template clona colunas + tarefas iniciais.
 
-**RLS** (híbrido conforme escolha):
-- Admins/super-admin da empresa: acesso total
-- Demais: só veem projetos onde são membros (via `projeto_membros`)
-- Função SECURITY DEFINER `is_projeto_member(projeto_id, user_id)` para evitar recursão
+### Notificações centralizadas
+- Trigger pg que insere em `notifications` quando: tarefa atribuída, comentário com menção, prazo vence em 24h, SLA violado.
+- Aparecem no sino do header (padrão já existente).
 
-## Edge Functions
+### Colaboração refinada
+- **@menções** no campo de comentário (autocomplete de usuários da empresa).
+- **Reações** nos comentários (👍 ✅ ❓) — tabela `projeto_comentario_reacoes`.
+- **Edição/exclusão** do próprio comentário (timestamp `updated_at`).
+- **Watchers**: `projeto_tarefa_seguidores` já existe — botão "Seguir" no TarefaDialog.
 
-- `projeto-suggest-tasks` — recebe objetivo, devolve tarefas sugeridas via Lovable AI Gateway (`google/gemini-3-flash-preview`), consome crédito via `consume_ai_credit`, retorna 402 se exausto
-- `projeto-status-report` — gera relatório executivo do projeto (mesmo padrão)
-- `projeto-automacao-executor` — disparado por triggers no banco quando tarefa muda; executa ações (notificar, mover, criar subtarefa)
-- `projeto-sla-checker` — cron diário verifica SLA estourado e dispara notificação
+### Métricas e relatórios
+- Dashboard do projeto com: velocidade (tarefas/semana), cycle time médio, distribuição por prioridade, taxa de SLA.
+- Exportar tarefas em CSV (usando `csv-utils.ts`).
+- Exportar status report em PDF (usando `pdf-utils.ts`).
 
-Tudo com `verify_jwt=true`, validação Zod, wrapper `invokeEdgeFunction`, logger central.
+### Tarefas recorrentes
+- Campo `recorrencia` (cron-like simples: diária, semanal, mensal) — trigger gera a próxima ao concluir.
 
-## Integrações com módulos existentes
+## Faseamento (uma entrega)
 
-- **Planos de Ação**: cada tarefa de projeto pode opcionalmente "virar" plano de ação (toggle no card) — sincronização bidirecional via trigger
-- **Gap Analysis / Auditorias / Incidentes / Riscos**: botão "Criar tarefa" + listagem de tarefas vinculadas na tela da entidade (componente `<TarefasVinculadasPanel entidadeTipo entidadeId />`)
-- **Dashboard**: novo card "Projetos ativos" com KPIs agregados
-- **Notificações**: usa o sino existente + tabela `notifications`
+**Pacote A — fundamentos faltando (alta prioridade):**
+1. Migration: `projeto_sprints`, `projeto_tempo_entradas`, `projeto_comentario_reacoes`, coluna `sprint_id` em `projeto_tarefas`, trigger de notificações.
+2. Habilita `pg_cron`/`pg_net` + agenda `projeto-sla-checker` (hourly).
+3. Exclusão/arquivamento de projeto (UI).
+4. Filtros + busca + agrupamento na Lista; bulk actions; quick-add no Kanban.
+5. Subtarefas (UI hierárquica).
+6. Visão Calendário + rota "Minhas tarefas".
+7. `<CriarTarefaFromGRC>` embutido em Gap Analysis, Incidentes, Riscos e Auditorias.
 
-## Frontend
+**Pacote B — produtividade (incluso):**
+8. Time tracking (Play/Pause + somatório).
+9. UI de Automações (builder + executor edge function).
+10. UI de Templates (lista, criar, aplicar).
+11. Watchers (seguir/parar de seguir).
+12. @menções + reações em comentários.
 
-- Pasta `src/components/projetos/` com `KanbanBoard.tsx`, `GanttChart.tsx`, `TarefaDialog.tsx`, `TarefaCard.tsx`, `ProjetoDialog.tsx`, `AutomacaoDialog.tsx`, `VinculosGRCPanel.tsx`, `StatusReportDialog.tsx`
-- Hooks: `useProjetos`, `useProjetoTarefas`, `useProjetoStats`
-- Páginas: `src/pages/Projetos.tsx`, `src/pages/ProjetoDetalhe.tsx`
-- Drag-drop: `@dnd-kit/core` (já leve, compatível com a stack)
-- Gantt: implementação custom em SVG (sem libs pesadas) baseada nas tarefas + dependências, para manter identidade visual
-- Rich text: Tiptap (mesmo padrão de outros módulos se houver, senão textarea + markdown)
-- Identidade: DM Sans, Navy/Purple, StatusBadge, AkurisPulse para loading, StatCard editorial, CornerAccent nos headers, AkurisMarkPattern em empty states
+**Pacote C — métricas (incluso):**
+13. Sprint board + burndown SVG.
+14. Mini-dashboard de métricas no projeto.
+15. Exportar CSV/PDF.
 
-## Permissões (RBAC)
+Tarefas recorrentes ficam fora deste plano (item de baixa prioridade — pode entrar em fase futura se você quiser).
 
-Novo módulo `projetos` adicionado em `planos-utils` e nos perfis de permissão modular. Ações: `view`, `create`, `edit`, `delete`, `manage_automations`.
+## Detalhes técnicos
 
-## Entrega faseada
+```text
+projeto_sprints              (id, empresa_id, projeto_id, nome, objetivo, data_inicio, data_fim, ativa, created_at)
+projeto_tempo_entradas       (id, empresa_id, tarefa_id, user_id, horas, descricao, data, created_at)
+projeto_comentario_reacoes   (id, comentario_id, user_id, emoji, created_at)
+projeto_tarefas.sprint_id    (uuid, fk → projeto_sprints.id, nullable)
 
-**Fase 1 (esta entrega)** — CRUD de projetos/tarefas, Kanban com drag-drop, Lista, comentários, anexos, checklist, vínculos GRC, notificações no sino, criação a partir de gaps/auditorias/incidentes, RLS, RBAC.
+Triggers:
+  trg_notifica_tarefa_atribuida   → notifications quando responsavel_id muda
+  trg_notifica_comentario_mencao  → notifications quando mencionados[] não vazio
+  trg_executa_automacoes          → invoca projeto-automacao-executor via pg_net quando coluna_id muda
 
-**Fase 2 (próxima)** — Gantt com dependências, automações, SLA checker, templates de projeto, IA (suggest-tasks + status-report), dashboard agregado.
+Edge functions:
+  projeto-automacao-executor      → recebe tarefa+gatilho, lê regras ativas, executa ações
+  projeto-recorrente-generator    → (não nesta fase)
 
-Divido em duas fases para garantir qualidade — confirme se prefere assim ou se quer tudo numa entrega só (será maior e mais lenta de validar).
+UI:
+  src/pages/MinhasTarefas.tsx
+  src/pages/ProjetoAutomacoes.tsx
+  src/pages/ProjetoTemplates.tsx
+  src/components/projetos/CalendarView.tsx
+  src/components/projetos/SprintBoard.tsx
+  src/components/projetos/BurndownChart.tsx
+  src/components/projetos/ListaTarefasAdvanced.tsx (filtros, bulk, agrupar, subtarefas)
+  src/components/projetos/TimeTracker.tsx
+  src/components/projetos/AutomacaoBuilder.tsx
+  src/components/projetos/MetricasDashboard.tsx
+
+Multi-tenant: toda query inclui .eq('empresa_id', empresaId). RLS espelhando o padrão da Fase 1/2.
+Identidade visual: DM Sans, StatCards, StatusBadges (status-tone), AkurisPulse, EmptyState, CornerAccent.
+Loaders: somente AkurisPulse — sem Loader2/Skeleton visíveis.
+Toasts: Sonner via akurisToast quando aplicável.
+```
+
+## Fora de escopo (deixar para depois)
+- Integração com Git/PRs, dependências cross-projeto, formulários customizados, dashboards multi-projeto agregados, importação de Jira/CSV, API pública de projetos. Posso atacar em uma Fase 4 dedicada se você quiser.
+
+Pode aprovar que eu sigo direto na implementação desses três pacotes (A+B+C) em uma mensagem só.
