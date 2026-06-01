@@ -47,6 +47,7 @@ const PoliticaPrivacidade = React.lazy(() => import('@/pages/PoliticaPrivacidade
 const PlanosAcao = React.lazy(() => import('@/pages/PlanosAcao'));
 const Projetos = React.lazy(() => import('@/pages/Projetos'));
 const ProjetoDetalhe = React.lazy(() => import('@/pages/ProjetoDetalhe'));
+const MinhasTarefas = React.lazy(() => import('@/pages/MinhasTarefas'));
 const Relatorios = React.lazy(() => import('@/pages/Relatorios'));
 const FrameworkSEO = React.lazy(() => import('@/pages/FrameworkSEO'));
 const Blog = React.lazy(() => import('@/pages/Blog'));
@@ -124,6 +125,13 @@ function App() {
               <Layout>
                 <ProtectedRoute moduleName="projetos">
                   <Projetos />
+                </ProtectedRoute>
+              </Layout>
+            } />
+            <Route path="/projetos/minhas-tarefas" element={
+              <Layout>
+                <ProtectedRoute moduleName="projetos">
+                  <MinhasTarefas />
                 </ProtectedRoute>
               </Layout>
             } />

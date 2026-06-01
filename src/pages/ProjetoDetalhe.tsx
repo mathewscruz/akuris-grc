@@ -2,11 +2,10 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { ArrowLeft, Plus, Settings, Sparkles, FileText } from 'lucide-react';
-import { useProjeto, useUpsertProjeto } from '@/hooks/useProjetos';
+import { useProjeto } from '@/hooks/useProjetos';
 import { useProjetoColunas, useProjetoTarefas } from '@/hooks/useProjetoTarefas';
 import { KanbanBoard } from '@/components/projetos/KanbanBoard';
 import { TarefaDialog } from '@/components/projetos/TarefaDialog';
@@ -14,12 +13,11 @@ import { ProjetoDialog } from '@/components/projetos/ProjetoDialog';
 import { GanttChart } from '@/components/projetos/GanttChart';
 import { SuggestTasksDialog } from '@/components/projetos/SuggestTasksDialog';
 import { StatusReportDialog } from '@/components/projetos/StatusReportDialog';
-import type { ProjetoTarefa, ProjetoTarefaPrioridade } from '@/types/projetos';
-import { STATUS_LABEL, PRIORIDADE_LABEL } from '@/types/projetos';
-
-const prioridadeTone: Record<ProjetoTarefaPrioridade, 'destructive' | 'warning' | 'info' | 'neutral'> = {
-  critica: 'destructive', alta: 'warning', media: 'info', baixa: 'neutral',
-};
+import { CalendarView } from '@/components/projetos/CalendarView';
+import { ListaTarefas } from '@/components/projetos/ListaTarefas';
+import { ProjetoActionsMenu } from '@/components/projetos/ProjetoActionsMenu';
+import type { ProjetoTarefa } from '@/types/projetos';
+import { STATUS_LABEL } from '@/types/projetos';
 
 export default function ProjetoDetalhe() {
   const { id } = useParams<{ id: string }>();
@@ -71,6 +69,7 @@ export default function ProjetoDetalhe() {
         <Button variant="outline" size="sm" onClick={() => setProjetoDialog(true)}>
           <Settings className="h-4 w-4" /> Editar
         </Button>
+        <ProjetoActionsMenu projeto={projeto} onEdit={() => setProjetoDialog(true)} variant="button" />
         <Button size="sm" onClick={() => openNovaTarefa()}>
           <Plus className="h-4 w-4" /> Nova tarefa
         </Button>
@@ -80,6 +79,7 @@ export default function ProjetoDetalhe() {
         <TabsList>
           <TabsTrigger value="kanban">Kanban</TabsTrigger>
           <TabsTrigger value="lista">Lista</TabsTrigger>
+          <TabsTrigger value="calendario">Calendário</TabsTrigger>
           <TabsTrigger value="gantt">Gantt</TabsTrigger>
         </TabsList>
 
@@ -94,42 +94,11 @@ export default function ProjetoDetalhe() {
         </TabsContent>
 
         <TabsContent value="lista" className="mt-4">
-          <div className="rounded-lg border border-border bg-card">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Tarefa</TableHead>
-                  <TableHead>Coluna</TableHead>
-                  <TableHead>Prioridade</TableHead>
-                  <TableHead>Prazo</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {tarefas.length === 0 ? (
-                  <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">Nenhuma tarefa.</TableCell></TableRow>
-                ) : tarefas.map((t) => {
-                  const col = colunas.find((c) => c.id === t.coluna_id);
-                  const atrasada = t.prazo && !t.concluida_em && new Date(t.prazo) < new Date();
-                  return (
-                    <TableRow key={t.id} className="cursor-pointer" onClick={() => openEditarTarefa(t)}>
-                      <TableCell className="font-medium">{t.titulo}</TableCell>
-                      <TableCell>{col?.nome ?? '—'}</TableCell>
-                      <TableCell>
-                        <StatusBadge tone={prioridadeTone[t.prioridade]} size="sm">{PRIORIDADE_LABEL[t.prioridade]}</StatusBadge>
-                      </TableCell>
-                      <TableCell className={atrasada ? 'text-destructive font-medium' : ''}>
-                        {t.prazo ? new Date(t.prazo).toLocaleDateString('pt-BR') : '—'}
-                      </TableCell>
-                      <TableCell>
-                        {t.concluida_em ? <StatusBadge tone="success" size="sm">Concluída</StatusBadge> : <StatusBadge tone="info" size="sm">Em aberto</StatusBadge>}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
+          <ListaTarefas tarefas={tarefas} colunas={colunas} onSelect={openEditarTarefa} />
+        </TabsContent>
+
+        <TabsContent value="calendario" className="mt-4">
+          <CalendarView tarefas={tarefas} onSelectTarefa={openEditarTarefa} />
         </TabsContent>
 
         <TabsContent value="gantt" className="mt-4">

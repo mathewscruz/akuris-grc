@@ -51,6 +51,7 @@ import { ComunicacaoDialog } from '@/components/incidentes/ComunicacaoDialog';
 import { EvidenciaDialog } from '@/components/incidentes/EvidenciaDialog';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/components/AuthProvider';
+import { CriarTarefaMenuItem } from '@/components/projetos/CriarTarefaMenuItem';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Incidente {
@@ -296,6 +297,11 @@ export default function Incidentes() {
                 <Shield className="mr-2 h-4 w-4" />
                 Tratamentos
               </DropdownMenuItem>
+              <CriarTarefaMenuItem
+                entidadeTipo="incidente"
+                entidadeId={item.id}
+                tituloSugerido={`Responder incidente: ${item.titulo ?? ''}`}
+              />
               <DropdownMenuItem onClick={() => handleDelete(item.id)} className="text-destructive">
                 <Trash2 className="mr-2 h-4 w-4" />
                 Excluir
