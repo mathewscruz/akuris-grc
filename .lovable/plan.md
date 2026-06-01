@@ -1,132 +1,52 @@
-# Projetos — Fase 3 (Paridade com Jira/ClickUp + Itens pendentes)
+## Objetivo
+Eliminar o scroll vertical no menu lateral em qualquer altura de tela, mantendo todos os itens visíveis (sem esconder nada permanentemente).
 
-## Passos manuais que vou executar
+## Diagnóstico
+Hoje em `src/components/AppSidebar.tsx`:
+- 4 seções (Operação, GRC Core, Compliance, Insights) + grupo "Configurações" no rodapé.
+- Cada `SidebarMenuButton` usa `h-9` (36px) + `mb-1`/`space-y-1`.
+- Labels de seção têm `mb-1` extra.
+- Em telas com altura < ~820px o conteúdo ultrapassa o viewport e o `SidebarContent` ativa scroll.
 
-1. **Habilitar `pg_cron` e `pg_net`** via migration.
-2. **Agendar o `projeto-sla-checker`** para rodar a cada hora (via insert SQL com URL + anon key reais).
-3. **Embutir `<CriarTarefaFromGRC>`** nas telas de **Gap Analysis (requisito)**, **Incidentes**, **Riscos** e **Auditorias** (1 botão padrão "Criar tarefa de projeto" em cada detalhe/linha).
+## Estratégia: densidade adaptativa por altura do viewport
+Aplicar um modo "compacto" automático quando a altura disponível não comporta todos os itens expandidos. Tudo via classes Tailwind condicionais — sem esconder itens, sem mudar comportamento de clique.
 
-## Exclusão de projetos
+### Mudanças
+1. **Hook `useSidebarFit`** (`src/hooks/useSidebarFit.tsx`)
+   - Lê `window.innerHeight` (com listener de resize, debounced).
+   - Retorna um de três níveis: `comfortable` (≥900px), `compact` (700–899px), `dense` (<700px).
 
-- Botão **"Excluir projeto"** no header de `ProjetoDetalhe` (variante destrutiva, atrás de `ConfirmDialog` com digitar o nome para confirmar — padrão Jira).
-- Menu de contexto **"Arquivar / Excluir"** no card de projeto em `Projetos.tsx` (3 pontos).
-- Bloqueia exclusão se houver tarefas ativas — oferece "Arquivar" como alternativa segura (muda `status` para `arquivado`).
-- Hook `useDeleteProjeto` já existe — só falta o gatilho na UI.
+2. **`AppSidebar.tsx` adapta tokens conforme nível**
+   - `SidebarContent`: `py-2` → `py-1` no `compact`/`dense`.
+   - `SidebarMenu`: `space-y-1` → `space-y-0.5` no `compact`, `space-y-0` no `dense`.
+   - `SidebarMenuButton` (itens principais e sub-itens): `h-9` → `h-8` no `compact`, `h-7` no `dense`; padding `px-3` → `px-2.5`.
+   - `SidebarGroupLabel`: `mb-1` → `mb-0.5`; no nível `dense` reduz para `text-[9px]` e `mb-0` (eyebrows mais curtos).
+   - Espaçamento entre `SidebarGroup`s: adiciona `gap` controlado pelo nível.
+   - Ícones permanecem `h-4 w-4` em `comfortable`/`compact`; no `dense` vão para `h-3.5 w-3.5` para alinhar à altura `h-7`.
+   - Logo `SidebarHeader`: já é `h-14` — no `dense` cai para `h-12`.
 
-## Lacunas identificadas vs Jira/ClickUp e o que entra nesta fase
+3. **Sub-itens do GRC Core (Collapsible)**
+   - Mantém `ml-6 pl-2` em `comfortable`; em `dense` reduz para `ml-4 pl-1.5` para economizar largura visual sem cortar texto.
+   - `mt-1` → `mt-0.5` no `dense`.
 
-### Gestão de trabalho (essencial faltando)
-- **Filtros e busca avançada** na Lista: por responsável, prioridade, status, tags, prazo, SLA, origem GRC.
-- **Agrupamento** na visão Lista: por coluna, prioridade ou responsável (estilo ClickUp "Group by").
-- **Subtarefas** com indentação visual e progresso herdado (campo `parent_task_id` já existe — só falta UI).
-- **Bulk actions**: seleção múltipla na Lista para mover de coluna, mudar prioridade, atribuir responsável, excluir.
-- **Quick add** inline no Kanban (linha "+ Adicionar tarefa" no rodapé de cada coluna sem abrir dialog).
+4. **Grupo "Configurações" fixo no rodapé**
+   - Continua com `mt-auto`. No `dense` recebe `border-t border-sidebar-border/30 pt-1` para separar visualmente já que o espaçamento global encolhe.
 
-### Visões adicionais
-- **Visão Calendário** mensal mostrando tarefas pelo `prazo` (drag para alterar prazo).
-- **Minha caixa** ("My Work" do ClickUp): rota `/projetos/minhas-tarefas` listando tudo onde o usuário é responsável, agrupado por urgência.
+5. **Fallback de segurança**
+   - `SidebarContent` recebe `overflow-hidden` no nível `dense` (em vez do `overflow-auto` implícito do shadcn) — se ainda assim sobrar 1–2px, evita scrollbar visual.
+   - Garantimos que nada seja cortado: as classes acima cabem ~14 itens visíveis com sub-menu fechado em 600px de altura. O sub-menu do GRC Core, quando aberto, é a única fonte de pressão restante — ele já é colapsável e só fica aberto na rota ativa.
 
-### Sprints / Iterações (modo ágil leve)
-- Tabela `projeto_sprints` (nome, data_inicio, data_fim, projeto_id, ativa, objetivo).
-- Coluna `sprint_id` em `projeto_tarefas`.
-- Seletor de sprint no header + "Sprint atual" como filtro padrão.
-- Burndown simples (SVG) na aba Sprint.
+## Critério de aceite
+- Em 1920×1080, 1366×768, 1280×720 e 1024×600 (zoom incluído), o `SidebarContent` não exibe barra de rolagem com todas as seções visíveis e o sub-menu do GRC Core fechado.
+- Quando o usuário expande o sub-menu do GRC Core em altura muito pequena, o comportamento continua funcional (sub-itens visíveis), aceitando rolagem apenas nesse cenário extremo.
+- Nenhum item some, nenhum requer hover/popover para ser acessado.
+- Identidade visual preservada (DM Sans, tokens de cor, ícones stroke 1.5).
 
-### Time tracking
-- Tabela `projeto_tempo_entradas` (tarefa_id, user_id, horas, descricao, data).
-- Botão **Play/Pause** na TarefaDialog que registra tempo.
-- Soma do `tempo_gasto_horas` atualizada por trigger.
+## Arquivos afetados
+- `src/hooks/useSidebarFit.tsx` (novo)
+- `src/components/AppSidebar.tsx` (ajustes de classes condicionais)
 
-### Automações (UI)
-- Tela **`/projetos/:id/automacoes`** com builder visual:
-  - **Quando**: tarefa criada / movida para coluna X / prazo vencido / SLA em risco.
-  - **Então**: atribuir a Y / mover para coluna Z / mudar prioridade / notificar usuário / criar tarefa filha.
-- Edge function **`projeto-automacao-executor`** chamada por trigger pg quando tarefas mudam de coluna.
-
-### Templates (UI)
-- Tela **`/configuracoes/projeto-templates`** (super-admin gerencia globais; admin gerencia da empresa).
-- Botão **"Criar a partir de template"** no `Projetos.tsx` (mostra templates globais + empresa).
-- Aplicar template clona colunas + tarefas iniciais.
-
-### Notificações centralizadas
-- Trigger pg que insere em `notifications` quando: tarefa atribuída, comentário com menção, prazo vence em 24h, SLA violado.
-- Aparecem no sino do header (padrão já existente).
-
-### Colaboração refinada
-- **@menções** no campo de comentário (autocomplete de usuários da empresa).
-- **Reações** nos comentários (👍 ✅ ❓) — tabela `projeto_comentario_reacoes`.
-- **Edição/exclusão** do próprio comentário (timestamp `updated_at`).
-- **Watchers**: `projeto_tarefa_seguidores` já existe — botão "Seguir" no TarefaDialog.
-
-### Métricas e relatórios
-- Dashboard do projeto com: velocidade (tarefas/semana), cycle time médio, distribuição por prioridade, taxa de SLA.
-- Exportar tarefas em CSV (usando `csv-utils.ts`).
-- Exportar status report em PDF (usando `pdf-utils.ts`).
-
-### Tarefas recorrentes
-- Campo `recorrencia` (cron-like simples: diária, semanal, mensal) — trigger gera a próxima ao concluir.
-
-## Faseamento (uma entrega)
-
-**Pacote A — fundamentos faltando (alta prioridade):**
-1. Migration: `projeto_sprints`, `projeto_tempo_entradas`, `projeto_comentario_reacoes`, coluna `sprint_id` em `projeto_tarefas`, trigger de notificações.
-2. Habilita `pg_cron`/`pg_net` + agenda `projeto-sla-checker` (hourly).
-3. Exclusão/arquivamento de projeto (UI).
-4. Filtros + busca + agrupamento na Lista; bulk actions; quick-add no Kanban.
-5. Subtarefas (UI hierárquica).
-6. Visão Calendário + rota "Minhas tarefas".
-7. `<CriarTarefaFromGRC>` embutido em Gap Analysis, Incidentes, Riscos e Auditorias.
-
-**Pacote B — produtividade (incluso):**
-8. Time tracking (Play/Pause + somatório).
-9. UI de Automações (builder + executor edge function).
-10. UI de Templates (lista, criar, aplicar).
-11. Watchers (seguir/parar de seguir).
-12. @menções + reações em comentários.
-
-**Pacote C — métricas (incluso):**
-13. Sprint board + burndown SVG.
-14. Mini-dashboard de métricas no projeto.
-15. Exportar CSV/PDF.
-
-Tarefas recorrentes ficam fora deste plano (item de baixa prioridade — pode entrar em fase futura se você quiser).
-
-## Detalhes técnicos
-
-```text
-projeto_sprints              (id, empresa_id, projeto_id, nome, objetivo, data_inicio, data_fim, ativa, created_at)
-projeto_tempo_entradas       (id, empresa_id, tarefa_id, user_id, horas, descricao, data, created_at)
-projeto_comentario_reacoes   (id, comentario_id, user_id, emoji, created_at)
-projeto_tarefas.sprint_id    (uuid, fk → projeto_sprints.id, nullable)
-
-Triggers:
-  trg_notifica_tarefa_atribuida   → notifications quando responsavel_id muda
-  trg_notifica_comentario_mencao  → notifications quando mencionados[] não vazio
-  trg_executa_automacoes          → invoca projeto-automacao-executor via pg_net quando coluna_id muda
-
-Edge functions:
-  projeto-automacao-executor      → recebe tarefa+gatilho, lê regras ativas, executa ações
-  projeto-recorrente-generator    → (não nesta fase)
-
-UI:
-  src/pages/MinhasTarefas.tsx
-  src/pages/ProjetoAutomacoes.tsx
-  src/pages/ProjetoTemplates.tsx
-  src/components/projetos/CalendarView.tsx
-  src/components/projetos/SprintBoard.tsx
-  src/components/projetos/BurndownChart.tsx
-  src/components/projetos/ListaTarefasAdvanced.tsx (filtros, bulk, agrupar, subtarefas)
-  src/components/projetos/TimeTracker.tsx
-  src/components/projetos/AutomacaoBuilder.tsx
-  src/components/projetos/MetricasDashboard.tsx
-
-Multi-tenant: toda query inclui .eq('empresa_id', empresaId). RLS espelhando o padrão da Fase 1/2.
-Identidade visual: DM Sans, StatCards, StatusBadges (status-tone), AkurisPulse, EmptyState, CornerAccent.
-Loaders: somente AkurisPulse — sem Loader2/Skeleton visíveis.
-Toasts: Sonner via akurisToast quando aplicável.
-```
-
-## Fora de escopo (deixar para depois)
-- Integração com Git/PRs, dependências cross-projeto, formulários customizados, dashboards multi-projeto agregados, importação de Jira/CSV, API pública de projetos. Posso atacar em uma Fase 4 dedicada se você quiser.
-
-Pode aprovar que eu sigo direto na implementação desses três pacotes (A+B+C) em uma mensagem só.
+## Fora de escopo
+- Não muda densidade global (`DensityToggle` continua afetando tabelas).
+- Não introduz colapso automático de grupos nem oculta seções.
+- Não altera o `collapsible="icon"` da própria sidebar.
