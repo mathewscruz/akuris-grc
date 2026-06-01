@@ -482,7 +482,7 @@ const GerenciamentoEmpresasInner = () => {
                 </>
               )}
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleRenovarTrial(empresa)}>
+            <DropdownMenuItem onClick={() => setRenewTrialEmpresa(empresa)}>
               <RefreshCw className="h-4 w-4 mr-2" />
               Renovar trial (14d)
             </DropdownMenuItem>
