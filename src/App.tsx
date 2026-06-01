@@ -136,6 +136,13 @@ function App() {
                 </ProtectedRoute>
               </Layout>
             } />
+            <Route path="/projetos/templates" element={
+              <Layout>
+                <ProtectedRoute moduleName="projetos">
+                  <ProjetoTemplates />
+                </ProtectedRoute>
+              </Layout>
+            } />
             <Route path="/projetos/:id" element={
               <Layout>
                 <ProtectedRoute moduleName="projetos">
