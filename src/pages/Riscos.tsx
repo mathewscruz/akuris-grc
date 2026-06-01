@@ -58,6 +58,7 @@ import { TrilhaAuditoriaRiscos } from '@/components/riscos/TrilhaAuditoriaRiscos
 import { HistoricoAvaliacoesDialog } from '@/components/riscos/HistoricoAvaliacoesDialog';
 import { AprovacaoRiscoDialog } from '@/components/riscos/AprovacaoRiscoDialog';
 import { exportRiscosPDF, exportRiscosCSV } from '@/components/riscos/ExportRiscosPDF';
+import { CriarTarefaMenuItem } from '@/components/projetos/CriarTarefaMenuItem';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Risco {
@@ -551,7 +552,7 @@ export function Riscos() {
             <CriarTarefaMenuItem
               entidadeTipo="risco"
               entidadeId={risco.id}
-              tituloSugerido={`Tratar risco: ${risco.titulo ?? risco.nome ?? ''}`}
+              tituloSugerido={`Tratar risco: ${risco.nome ?? ''}`}
             />
             <DropdownMenuItem onClick={() => openDeleteDialog(risco)} className="text-destructive focus:text-destructive">
               <Trash2 className="mr-2 h-4 w-4" strokeWidth={1.5} /> Excluir

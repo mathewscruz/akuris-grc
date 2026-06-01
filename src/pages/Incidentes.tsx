@@ -51,6 +51,7 @@ import { ComunicacaoDialog } from '@/components/incidentes/ComunicacaoDialog';
 import { EvidenciaDialog } from '@/components/incidentes/EvidenciaDialog';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/components/AuthProvider';
+import { CriarTarefaMenuItem } from '@/components/projetos/CriarTarefaMenuItem';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Incidente {
