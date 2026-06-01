@@ -60,6 +60,9 @@ export interface TarefaInput {
   estimativa_horas?: number | null;
   tags?: string[];
   ordem?: number;
+  sla_horas?: number | null;
+  origem_tipo?: string | null;
+  origem_id?: string | null;
 }
 
 export function useUpsertTarefa() {

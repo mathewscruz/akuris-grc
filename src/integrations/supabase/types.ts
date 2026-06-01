@@ -5968,6 +5968,72 @@ export type Database = {
           },
         ]
       }
+      projeto_automacoes: {
+        Row: {
+          acoes: Json
+          ativa: boolean
+          condicoes: Json
+          created_at: string
+          criado_por: string | null
+          descricao: string | null
+          empresa_id: string
+          execucoes_count: number
+          gatilho: string
+          id: string
+          nome: string
+          projeto_id: string
+          ultima_execucao_em: string | null
+          updated_at: string
+        }
+        Insert: {
+          acoes?: Json
+          ativa?: boolean
+          condicoes?: Json
+          created_at?: string
+          criado_por?: string | null
+          descricao?: string | null
+          empresa_id: string
+          execucoes_count?: number
+          gatilho: string
+          id?: string
+          nome: string
+          projeto_id: string
+          ultima_execucao_em?: string | null
+          updated_at?: string
+        }
+        Update: {
+          acoes?: Json
+          ativa?: boolean
+          condicoes?: Json
+          created_at?: string
+          criado_por?: string | null
+          descricao?: string | null
+          empresa_id?: string
+          execucoes_count?: number
+          gatilho?: string
+          id?: string
+          nome?: string
+          projeto_id?: string
+          ultima_execucao_em?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projeto_automacoes_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projeto_automacoes_projeto_id_fkey"
+            columns: ["projeto_id"]
+            isOneToOne: false
+            referencedRelation: "projetos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projeto_colunas: {
         Row: {
           cor: string | null
@@ -6312,12 +6378,17 @@ export type Database = {
           estimativa_horas: number | null
           id: string
           ordem: number
+          origem_id: string | null
+          origem_tipo: string | null
           parent_task_id: string | null
           prazo: string | null
           prioridade: Database["public"]["Enums"]["projeto_tarefa_prioridade"]
           progresso_pct: number
           projeto_id: string
           responsavel_id: string | null
+          sla_horas: number | null
+          sla_status: string
+          sla_violado_em: string | null
           tags: string[] | null
           tempo_gasto_horas: number | null
           titulo: string
@@ -6335,12 +6406,17 @@ export type Database = {
           estimativa_horas?: number | null
           id?: string
           ordem?: number
+          origem_id?: string | null
+          origem_tipo?: string | null
           parent_task_id?: string | null
           prazo?: string | null
           prioridade?: Database["public"]["Enums"]["projeto_tarefa_prioridade"]
           progresso_pct?: number
           projeto_id: string
           responsavel_id?: string | null
+          sla_horas?: number | null
+          sla_status?: string
+          sla_violado_em?: string | null
           tags?: string[] | null
           tempo_gasto_horas?: number | null
           titulo: string
@@ -6358,12 +6434,17 @@ export type Database = {
           estimativa_horas?: number | null
           id?: string
           ordem?: number
+          origem_id?: string | null
+          origem_tipo?: string | null
           parent_task_id?: string | null
           prazo?: string | null
           prioridade?: Database["public"]["Enums"]["projeto_tarefa_prioridade"]
           progresso_pct?: number
           projeto_id?: string
           responsavel_id?: string | null
+          sla_horas?: number | null
+          sla_status?: string
+          sla_violado_em?: string | null
           tags?: string[] | null
           tempo_gasto_horas?: number | null
           titulo?: string
@@ -6389,6 +6470,53 @@ export type Database = {
             columns: ["projeto_id"]
             isOneToOne: false
             referencedRelation: "projetos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projeto_templates: {
+        Row: {
+          categoria: string | null
+          created_at: string
+          criado_por: string | null
+          dados: Json
+          descricao: string | null
+          empresa_id: string | null
+          id: string
+          is_global: boolean
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          categoria?: string | null
+          created_at?: string
+          criado_por?: string | null
+          dados?: Json
+          descricao?: string | null
+          empresa_id?: string | null
+          id?: string
+          is_global?: boolean
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          categoria?: string | null
+          created_at?: string
+          criado_por?: string | null
+          dados?: Json
+          descricao?: string | null
+          empresa_id?: string | null
+          id?: string
+          is_global?: boolean
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "projeto_templates_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
             referencedColumns: ["id"]
           },
         ]

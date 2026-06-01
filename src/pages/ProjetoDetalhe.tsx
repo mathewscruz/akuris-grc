@@ -5,12 +5,15 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { ArrowLeft, Plus, Settings } from 'lucide-react';
+import { ArrowLeft, Plus, Settings, Sparkles, FileText } from 'lucide-react';
 import { useProjeto, useUpsertProjeto } from '@/hooks/useProjetos';
 import { useProjetoColunas, useProjetoTarefas } from '@/hooks/useProjetoTarefas';
 import { KanbanBoard } from '@/components/projetos/KanbanBoard';
 import { TarefaDialog } from '@/components/projetos/TarefaDialog';
 import { ProjetoDialog } from '@/components/projetos/ProjetoDialog';
+import { GanttChart } from '@/components/projetos/GanttChart';
+import { SuggestTasksDialog } from '@/components/projetos/SuggestTasksDialog';
+import { StatusReportDialog } from '@/components/projetos/StatusReportDialog';
 import type { ProjetoTarefa, ProjetoTarefaPrioridade } from '@/types/projetos';
 import { STATUS_LABEL, PRIORIDADE_LABEL } from '@/types/projetos';
 
@@ -29,6 +32,8 @@ export default function ProjetoDetalhe() {
   const [tarefaAtual, setTarefaAtual] = useState<ProjetoTarefa | null>(null);
   const [defaultColuna, setDefaultColuna] = useState<string | null>(null);
   const [projetoDialog, setProjetoDialog] = useState(false);
+  const [suggestDialog, setSuggestDialog] = useState(false);
+  const [reportDialog, setReportDialog] = useState(false);
 
   if (isLoading) return <div className="flex justify-center py-16"><AkurisPulse size={56} /></div>;
   if (!projeto) return <div className="p-6">Projeto não encontrado.</div>;
@@ -57,6 +62,12 @@ export default function ProjetoDetalhe() {
           {projeto.descricao && <p className="text-sm text-muted-foreground line-clamp-1">{projeto.descricao}</p>}
         </div>
         <StatusBadge tone="primary" size="md">{STATUS_LABEL[projeto.status]}</StatusBadge>
+        <Button variant="outline" size="sm" onClick={() => setReportDialog(true)}>
+          <FileText className="h-4 w-4" /> Status report IA
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => setSuggestDialog(true)}>
+          <Sparkles className="h-4 w-4" /> Quebrar com IA
+        </Button>
         <Button variant="outline" size="sm" onClick={() => setProjetoDialog(true)}>
           <Settings className="h-4 w-4" /> Editar
         </Button>
@@ -69,6 +80,7 @@ export default function ProjetoDetalhe() {
         <TabsList>
           <TabsTrigger value="kanban">Kanban</TabsTrigger>
           <TabsTrigger value="lista">Lista</TabsTrigger>
+          <TabsTrigger value="gantt">Gantt</TabsTrigger>
         </TabsList>
 
         <TabsContent value="kanban" className="mt-4">
@@ -119,6 +131,10 @@ export default function ProjetoDetalhe() {
             </Table>
           </div>
         </TabsContent>
+
+        <TabsContent value="gantt" className="mt-4">
+          <GanttChart tarefas={tarefas} onSelectTarefa={openEditarTarefa} />
+        </TabsContent>
       </Tabs>
 
       <TarefaDialog
@@ -130,6 +146,8 @@ export default function ProjetoDetalhe() {
         defaultColunaId={defaultColuna}
       />
       <ProjetoDialog open={projetoDialog} onOpenChange={setProjetoDialog} projeto={projeto} />
+      <SuggestTasksDialog open={suggestDialog} onOpenChange={setSuggestDialog} projetoId={projeto.id} colunas={colunas} />
+      <StatusReportDialog open={reportDialog} onOpenChange={setReportDialog} projetoId={projeto.id} projetoNome={projeto.nome} />
     </div>
   );
 }
