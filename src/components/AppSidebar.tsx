@@ -195,6 +195,19 @@ export function AppSidebar() {
   const [showLogoutOverlay, setShowLogoutOverlay] = useState(false);
 
   const isCollapsed = state === 'collapsed';
+  const fit = useSidebarFit();
+  const isCompact = fit !== 'comfortable';
+  const isDense = fit === 'dense';
+  const itemH = isDense ? 'h-7' : isCompact ? 'h-8' : 'h-9';
+  const iconSize = isDense ? 'h-3.5 w-3.5' : 'h-4 w-4';
+  const itemSpace = isDense ? 'space-y-0' : isCompact ? 'space-y-0.5' : 'space-y-1';
+  const groupLabelCls = isDense
+    ? 'text-[9px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/40 px-3 mb-0'
+    : isCompact
+    ? 'text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/40 px-3 mb-0.5'
+    : 'text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/40 px-3 mb-1';
+  const contentPad = isCompact ? 'py-1' : 'py-2';
+  const subWrapperCls = isDense ? 'space-y-0 mt-0.5 ml-4 pl-1.5' : 'space-y-1 mt-1 ml-6 pl-2';
 
   // Open group automatically when it contains the active route
   useEffect(() => {
