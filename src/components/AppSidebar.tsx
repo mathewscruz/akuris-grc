@@ -465,7 +465,7 @@ export function AppSidebar() {
                           <SidebarMenuButton
                             asChild
                             isActive={active}
-                            className="transition-colors duration-200 h-9 min-w-0 px-3 data-[active=true]:bg-transparent"
+                            className={`transition-colors duration-200 ${itemH} min-w-0 px-2.5 data-[active=true]:bg-transparent`}
                           >
                             <NavLink
                               to={item.url!}
