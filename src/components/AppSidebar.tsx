@@ -510,7 +510,7 @@ export function AppSidebar() {
           </SidebarGroup>
         ))}
 
-        <SidebarGroup className={`mt-auto ${isDense ? 'border-t border-sidebar-border/30 pt-1' : ''}`}>
+        <SidebarGroup className={`mt-auto ${isDense ? 'py-0 border-t border-sidebar-border/30 pt-1' : isCompact ? 'py-1' : ''}`}>
           <SidebarGroupContent>
             <SidebarMenu className={itemSpace}>
               {canAccess('configuracoes') && (
