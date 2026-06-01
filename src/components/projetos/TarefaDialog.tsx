@@ -91,6 +91,7 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
           <TabsList>
             <TabsTrigger value="detalhes">Detalhes</TabsTrigger>
             {tarefa && <TabsTrigger value="checklist">Checklist</TabsTrigger>}
+            {tarefa && <TabsTrigger value="tempo">Tempo</TabsTrigger>}
             {tarefa && <TabsTrigger value="comentarios">Comentários</TabsTrigger>}
             {tarefa && <TabsTrigger value="vinculos">Vínculos GRC</TabsTrigger>}
           </TabsList>
