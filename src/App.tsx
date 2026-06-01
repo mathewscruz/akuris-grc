@@ -120,6 +120,20 @@ function App() {
                 </ProtectedRoute>
               </Layout>
             } />
+            <Route path="/projetos" element={
+              <Layout>
+                <ProtectedRoute moduleName="projetos">
+                  <Projetos />
+                </ProtectedRoute>
+              </Layout>
+            } />
+            <Route path="/projetos/:id" element={
+              <Layout>
+                <ProtectedRoute moduleName="projetos">
+                  <ProjetoDetalhe />
+                </ProtectedRoute>
+              </Layout>
+            } />
             <Route path="/relatorios" element={
               <Layout>
                 <ProtectedRoute moduleName="relatorios" fallbackToRoleCheck={false}>
