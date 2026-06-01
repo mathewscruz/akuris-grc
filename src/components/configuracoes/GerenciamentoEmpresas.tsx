@@ -286,9 +286,10 @@ const GerenciamentoEmpresasInner = () => {
     }
   };
 
-  const handleRenovarTrial = async (empresa: Empresa) => {
-    if (!window.confirm(`Renovar o trial de "${empresa.nome}" por mais 14 dias?`)) return;
+  const confirmRenovarTrial = async () => {
+    if (!renewTrialEmpresa) return;
     try {
+      setActionLoading(true);
       const { error } = await supabase
         .from('empresas')
         .update({
@@ -296,31 +297,37 @@ const GerenciamentoEmpresasInner = () => {
           data_inicio_trial: new Date().toISOString(),
           ativo: true,
         })
-        .eq('id', empresa.id);
+        .eq('id', renewTrialEmpresa.id);
       if (error) throw error;
-      toast.success('Trial renovado por 14 dias');
+      toast.success(`Trial de "${renewTrialEmpresa.nome}" renovado por 14 dias`);
+      setRenewTrialEmpresa(null);
       fetchEmpresas();
     } catch (error: any) {
       console.error('Erro ao renovar trial:', error);
       toast.error(error?.message || 'Erro ao renovar trial');
+    } finally {
+      setActionLoading(false);
     }
   };
 
-  const handleToggleAtivo = async (empresa: Empresa) => {
-    const novoStatus = !empresa.ativo;
-    const acao = novoStatus ? 'ativar' : 'inativar';
-    if (!window.confirm(`Deseja ${acao} a empresa "${empresa.nome}"?`)) return;
+  const confirmToggleAtivo = async () => {
+    if (!toggleAtivoEmpresa) return;
+    const novoStatus = !toggleAtivoEmpresa.ativo;
     try {
+      setActionLoading(true);
       const { error } = await supabase
         .from('empresas')
         .update({ ativo: novoStatus })
-        .eq('id', empresa.id);
+        .eq('id', toggleAtivoEmpresa.id);
       if (error) throw error;
-      toast.success(`Empresa ${novoStatus ? 'ativada' : 'inativada'} com sucesso`);
+      toast.success(`Empresa "${toggleAtivoEmpresa.nome}" ${novoStatus ? 'ativada' : 'inativada'} com sucesso`);
+      setToggleAtivoEmpresa(null);
       fetchEmpresas();
     } catch (error: any) {
       console.error('Erro ao alterar status:', error);
       toast.error(error?.message || 'Erro ao alterar status');
+    } finally {
+      setActionLoading(false);
     }
   };
 
