@@ -24,6 +24,7 @@ import {
   KeyRound,
   Key,
   ListTodo,
+  KanbanSquare,
   FileBarChart,
   GraduationCap,
   ShieldCheck,
