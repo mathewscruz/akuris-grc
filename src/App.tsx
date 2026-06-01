@@ -48,6 +48,7 @@ const PlanosAcao = React.lazy(() => import('@/pages/PlanosAcao'));
 const Projetos = React.lazy(() => import('@/pages/Projetos'));
 const ProjetoDetalhe = React.lazy(() => import('@/pages/ProjetoDetalhe'));
 const MinhasTarefas = React.lazy(() => import('@/pages/MinhasTarefas'));
+const ProjetoTemplates = React.lazy(() => import('@/pages/ProjetoTemplates'));
 const Relatorios = React.lazy(() => import('@/pages/Relatorios'));
 const FrameworkSEO = React.lazy(() => import('@/pages/FrameworkSEO'));
 const Blog = React.lazy(() => import('@/pages/Blog'));
