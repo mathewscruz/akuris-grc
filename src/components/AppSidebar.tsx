@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { 
@@ -68,7 +68,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { prefetchRoute } from '@/lib/route-prefetch';
-import { useSidebarFit } from '@/hooks/useSidebarFit';
+import { useAutoFit } from '@/hooks/useSidebarFit';
 
 type MenuItem = {
   title: string;
@@ -195,7 +195,8 @@ export function AppSidebar() {
   const [showLogoutOverlay, setShowLogoutOverlay] = useState(false);
 
   const isCollapsed = state === 'collapsed';
-  const fit = useSidebarFit();
+  const contentRef = useRef<HTMLDivElement>(null);
+  const fit = useAutoFit(contentRef);
   const isCompact = fit !== 'comfortable';
   const isDense = fit === 'dense';
   const itemH = isDense ? 'h-7' : isCompact ? 'h-8' : 'h-9';
@@ -358,9 +359,12 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
 
-      <SidebarContent className={`${contentPad} ${isDense ? 'overflow-hidden' : ''} transition-all duration-300 ease-out`}>
+      <SidebarContent
+        ref={contentRef as any}
+        className={`${contentPad} ${isCompact ? 'overflow-hidden gap-0' : ''} transition-all duration-300 ease-out`}
+      >
         {getVisibleSections().map((section) => (
-          <SidebarGroup key={section.id}>
+          <SidebarGroup key={section.id} className={isDense ? 'py-0' : isCompact ? 'py-1' : ''}>
             {!isCollapsed && (
               <SidebarGroupLabel className={groupLabelCls}>
                 {section.label}
@@ -506,7 +510,7 @@ export function AppSidebar() {
           </SidebarGroup>
         ))}
 
-        <SidebarGroup className={`mt-auto ${isDense ? 'border-t border-sidebar-border/30 pt-1' : ''}`}>
+        <SidebarGroup className={`mt-auto ${isDense ? 'py-0 border-t border-sidebar-border/30 pt-1' : isCompact ? 'py-1' : ''}`}>
           <SidebarGroupContent>
             <SidebarMenu className={itemSpace}>
               {canAccess('configuracoes') && (
