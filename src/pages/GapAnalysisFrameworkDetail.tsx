@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/ui/page-header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { CriarTarefaMenuItem } from '@/components/projetos/CriarTarefaMenuItem';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { GenericRequirementsTable } from '@/components/gap-analysis/GenericRequirementsTable';
 import { FrameworkHistoryTab } from '@/components/gap-analysis/FrameworkHistoryTab';
@@ -294,6 +295,13 @@ function GapAnalysisFrameworkDetailInner() {
                     <AkurisAIIcon className="h-4 w-4 mr-2" />
                     Gerador de Documentos
                   </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <CriarTarefaMenuItem
+                    entidadeTipo="gap_assessment"
+                    entidadeId={frameworkId}
+                    tituloSugerido={`Remediação · ${framework.nome}`}
+                    descricaoSugerida={`Plano de remediação para o framework ${framework.nome}.`}
+                  />
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => { setActiveTab('avaliacao'); setShowOnboarding(true); }}>
                     <HelpCircle className="h-4 w-4 mr-2" strokeWidth={1.5} />

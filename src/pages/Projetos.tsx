@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { StatCard } from '@/components/ui/stat-card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
-import { Plus, Kanban, ListTodo, CheckCircle2, AlertTriangle, Inbox } from 'lucide-react';
+import { Plus, Kanban, ListTodo, CheckCircle2, AlertTriangle, Inbox, LayoutTemplate } from 'lucide-react';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { useProjetos } from '@/hooks/useProjetos';
 import { useProjetoStats } from '@/hooks/useProjetoStats';
@@ -43,6 +43,9 @@ export default function Projetos() {
           <p className="text-sm text-muted-foreground mt-1">Gestão de atividades, Kanban e entregas integrada ao GRC.</p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={() => navigate('/projetos/templates')}>
+            <LayoutTemplate className="h-4 w-4" /> Templates
+          </Button>
           <Button variant="outline" onClick={() => navigate('/projetos/minhas-tarefas')}>
             <Inbox className="h-4 w-4" /> Minhas tarefas
           </Button>
