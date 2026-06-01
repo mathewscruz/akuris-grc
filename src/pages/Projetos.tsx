@@ -43,6 +43,9 @@ export default function Projetos() {
           <p className="text-sm text-muted-foreground mt-1">Gestão de atividades, Kanban e entregas integrada ao GRC.</p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={() => navigate('/projetos/templates')}>
+            <LayoutTemplate className="h-4 w-4" /> Templates
+          </Button>
           <Button variant="outline" onClick={() => navigate('/projetos/minhas-tarefas')}>
             <Inbox className="h-4 w-4" /> Minhas tarefas
           </Button>
