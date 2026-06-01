@@ -157,6 +157,7 @@ export const pt = {
   sidebar: {
     dashboard: 'Dashboard',
     actionPlans: 'Planos de Ação',
+    projects: 'Projetos',
     assetManagement: 'Gestão de Ativos',
     assets: 'Ativos',
     licenses: 'Licenças',

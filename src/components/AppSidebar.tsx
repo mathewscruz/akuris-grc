@@ -24,6 +24,7 @@ import {
   KeyRound,
   Key,
   ListTodo,
+  KanbanSquare,
   FileBarChart,
   GraduationCap,
   ShieldCheck,
@@ -89,6 +90,7 @@ const getMenuSections = (t: (key: string) => string): MenuSection[] => [
     items: [
       { title: t('sidebar.dashboard'), url: '/dashboard', icon: LayoutDashboard, moduleName: 'dashboard' },
       { title: t('sidebar.actionPlans'), url: '/planos-acao', icon: ListTodo, moduleName: 'planos-acao' },
+      { title: t('sidebar.projects'), url: '/projetos', icon: KanbanSquare, moduleName: 'projetos' },
     ],
   },
   {
