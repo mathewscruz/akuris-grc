@@ -52,13 +52,24 @@ function ActionButton({ action, onAfter }: { action: AkurIAAction; onAfter: () =
   );
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 function MessageInner({ role, content, timestamp, isStreaming, userInitials }: Props) {
   const [copied, setCopied] = useState(false);
 
   const isUser = role === "user";
-  const { cleanContent, actions } = isUser
+  const parsed = isUser
     ? { cleanContent: content, actions: [] as AkurIAAction[] }
     : parseAkurIAActions(content);
+  const cleanContent = parsed.cleanContent;
+  // Filtra ações inválidas: 'open' sem UUID válido gera 404 na navegação.
+  const validActions = parsed.actions.filter((a) => {
+    if (a.type === "open") return a.payload && UUID_RE.test(a.payload);
+    return true;
+  });
+  // Só renderiza botões após o stream terminar — evita flicker de botões
+  // aparecendo/sumindo enquanto os tokens da tag chegam parcialmente.
+  const actions = isStreaming ? [] : validActions;
 
   const copy = () => {
     navigator.clipboard.writeText(cleanContent);
