@@ -40,7 +40,7 @@ export function AkurIAChatbot() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const session_ = useAkurIASession(user?.id || null);
-  const { active, conversations, activeId, newConversation, selectConversation, deleteConversation, appendMessage, updateLastAssistant } = session_;
+  const { active, conversations, activeId, newConversation, selectConversation, deleteConversation, appendMessage, updateAssistantIn } = session_;
 
   const messages = active?.messages || [];
 
@@ -84,7 +84,9 @@ export function AkurIAChatbot() {
       if (!text || isLoading) return;
 
       const userMsg: AkurIAMsg = { role: "user", content: text, timestamp: Date.now() };
-      appendMessage(userMsg);
+      // Captura convId SÍNCRONO — evita closure stale de activeId quando a
+      // 1ª mensagem cria conversa nova durante o streaming.
+      const targetConvId = appendMessage(userMsg);
       setInput("");
       setIsLoading(true);
 
@@ -134,7 +136,7 @@ export function AkurIAChatbot() {
 
         const upsert = (chunk: string) => {
           assistantSoFar += chunk;
-          updateLastAssistant(assistantSoFar);
+          updateAssistantIn(targetConvId, assistantSoFar);
         };
 
         while (true) {
@@ -190,7 +192,7 @@ export function AkurIAChatbot() {
         setIsLoading(false);
       }
     },
-    [input, isLoading, messages, session, location.pathname, locale, appendMessage, updateLastAssistant]
+    [input, isLoading, messages, session, location.pathname, locale, appendMessage, updateAssistantIn]
   );
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
