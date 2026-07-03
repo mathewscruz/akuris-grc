@@ -68,19 +68,8 @@ serve(async (req) => {
       });
     }
 
-    // Consome crédito
-    const { data: creditOk, error: creditErr } = await supabase.rpc('consume_ai_credit', {
-      p_empresa_id: empresaId,
-      p_user_id: userId,
-      p_funcionalidade: 'gap_analysis_ai_diagnostic',
-      p_descricao: `Diagnóstico IA do requisito ${requirementId}`,
-    });
-    if (creditErr || creditOk === false) {
-      return new Response(
-        JSON.stringify({ error: 'Créditos de IA esgotados.', creditsExhausted: true }),
-        { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      );
-    }
+    // Consumo de crédito é feito APÓS o gateway aceitar (mais abaixo).
+
 
     // Busca o requisito
     const { data: req_, error: reqErr } = await supabase

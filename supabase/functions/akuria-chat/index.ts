@@ -375,6 +375,18 @@ ${specificDetails}`;
       throw new Error("AI gateway error");
     }
 
+    // Só debita crédito quando o gateway aceitou a requisição.
+    // Se o consumo falhar aqui, apenas logamos — a resposta já está a caminho
+    // e não faz sentido descartá-la.
+    supabase.rpc('consume_ai_credit', {
+      p_empresa_id: empresaId,
+      p_user_id: user.id,
+      p_funcionalidade: 'akuria_chat',
+      p_descricao: 'Conversa com AkurIA chatbot',
+    }).then(({ error: cerr }: any) => {
+      if (cerr) console.error('consume_ai_credit (akuria_chat) failed:', cerr);
+    });
+
     return new Response(aiResponse.body, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
