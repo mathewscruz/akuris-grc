@@ -172,6 +172,14 @@ Sem saudações ou introduções. Retorne APENAS JSON válido (sem markdown), ne
       );
     }
 
+    // Debita crédito só após o gateway ter aceitado.
+    await supabase.rpc('consume_ai_credit', {
+      p_empresa_id: empresaId,
+      p_user_id: userId,
+      p_funcionalidade: 'gap_analysis_ai_diagnostic',
+      p_descricao: `Diagnóstico IA do requisito ${requirementId}`,
+    });
+
     const aiData = await aiResp.json();
     const raw: string = aiData?.choices?.[0]?.message?.content ?? '';
     const cleaned = raw.replace(/```json\s*|\s*```/g, '').trim();
