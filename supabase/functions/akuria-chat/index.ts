@@ -14,24 +14,46 @@ const listItems = (items: any[], field: string, max = 15): string => {
   return names.join(', ') + suffix;
 };
 
-// =============== Cache em memória de contexto por empresa (TTL 5min) ===============
+// =============== Cache DUPLO: DB (persistente 10min) + memória (60s) ==============
+// Antes só havia cache em memória, que se perdia a cada cold start da edge
+// function → recomputava 14 queries em toda mensagem no primeiro hit.
 type CacheEntry = { summary: string; expiresAt: number };
-const contextCache = new Map<string, CacheEntry>();
-const CACHE_TTL_MS = 5 * 60 * 1000;
+const memCache = new Map<string, CacheEntry>();
+const MEM_TTL_MS = 60 * 1000; // 1 min — protege bursts na mesma instância
+const DB_TTL_MIN = 10; // 10 min — janela padrão
 
-const getCachedContext = (empresaId: string): string | null => {
-  const entry = contextCache.get(empresaId);
-  if (!entry) return null;
-  if (Date.now() > entry.expiresAt) {
-    contextCache.delete(empresaId);
-    return null;
+async function getCachedContext(supabase: any, empresaId: string): Promise<string | null> {
+  const mem = memCache.get(empresaId);
+  if (mem && Date.now() < mem.expiresAt) return mem.summary;
+  try {
+    const { data } = await supabase
+      .from('empresa_ai_context_cache')
+      .select('summary, expires_at')
+      .eq('empresa_id', empresaId)
+      .maybeSingle();
+    if (data?.summary && data.expires_at && new Date(data.expires_at).getTime() > Date.now()) {
+      memCache.set(empresaId, { summary: data.summary, expiresAt: Date.now() + MEM_TTL_MS });
+      return data.summary;
+    }
+  } catch (e) {
+    console.error('context cache read error', e);
   }
-  return entry.summary;
-};
+  return null;
+}
 
-const setCachedContext = (empresaId: string, summary: string) => {
-  contextCache.set(empresaId, { summary, expiresAt: Date.now() + CACHE_TTL_MS });
-};
+async function setCachedContext(supabase: any, empresaId: string, summary: string) {
+  memCache.set(empresaId, { summary, expiresAt: Date.now() + MEM_TTL_MS });
+  try {
+    await supabase.from('empresa_ai_context_cache').upsert({
+      empresa_id: empresaId,
+      summary,
+      updated_at: new Date().toISOString(),
+      expires_at: new Date(Date.now() + DB_TTL_MIN * 60 * 1000).toISOString(),
+    });
+  } catch (e) {
+    console.error('context cache write error', e);
+  }
+}
 
 // =============== Detecta menções a entidades específicas e busca detalhes ===============
 async function fetchSpecificMentions(
