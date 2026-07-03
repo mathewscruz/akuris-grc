@@ -95,7 +95,7 @@ async function fetchSpecificMentions(
 }
 
 async function buildContextSummary(supabase: any, empresaId: string): Promise<string> {
-  const cached = getCachedContext(empresaId);
+  const cached = await getCachedContext(supabase, empresaId);
   if (cached) return cached;
 
   const [
