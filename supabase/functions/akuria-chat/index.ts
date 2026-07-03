@@ -282,21 +282,11 @@ serve(async (req) => {
     const isSuperAdmin = roles.includes('super_admin');
     const isAdmin = roles.includes('admin') || isSuperAdmin;
 
-    // Consume AI credit
-    const { data: creditResult, error: creditError } = await supabase
-      .rpc('consume_ai_credit', {
-        p_empresa_id: empresaId,
-        p_user_id: user.id,
-        p_funcionalidade: 'akuria_chat',
-        p_descricao: 'Conversa com AkurIA chatbot'
-      });
+    // OBS.: consume_ai_credit é chamado APÓS o gateway aceitar a requisição
+    // (após aiResponse.ok abaixo). Antes o crédito era debitado mesmo quando
+    // o gateway falhava (500) ou o usuário cancelava — pagando por resposta
+    // que nunca chegou.
 
-    if (creditError || creditResult === false) {
-      return new Response(JSON.stringify({ error: 'Créditos de IA esgotados.' }), {
-        status: 402,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
-      });
-    }
 
     const contextSummary = await buildContextSummary(supabase, empresaId);
 
