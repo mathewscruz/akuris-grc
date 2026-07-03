@@ -234,6 +234,14 @@ Retorne JSON: {
       throw new Error("Erro no gateway de IA");
     }
 
+    // Debita crédito apenas após gateway ter aceitado.
+    await supabaseAdmin.rpc('consume_ai_credit', {
+      p_empresa_id: empresaId,
+      p_user_id: userId,
+      p_funcionalidade: `ai-assistant:${action}`,
+      p_descricao: `Assistente IA - ${action}`,
+    });
+
     const aiData = await response.json();
     const content = aiData.choices?.[0]?.message?.content || "";
     
