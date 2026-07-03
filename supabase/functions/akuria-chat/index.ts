@@ -236,7 +236,7 @@ FRAMEWORKS DE COMPLIANCE (${frameworks.length}):
 ${frameworkScores.length > 0 ? frameworkScores.join(' | ') : 'Nenhum framework com avaliações'}
   `.trim();
 
-  setCachedContext(empresaId, summary);
+  await setCachedContext(supabase, empresaId, summary);
   return summary;
 }
 
