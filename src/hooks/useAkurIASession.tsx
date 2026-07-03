@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export type AkurIAMsg = {
   role: "user" | "assistant";
@@ -50,15 +50,34 @@ export function useAkurIASession(userId: string | null) {
   const [conversations, setConversations] = useState<AkurIAConversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
 
+  // Refs sempre com a última versão — evita closures obsoletos durante
+  // streaming assíncrono. Bug corrigido: a 1ª mensagem não recebia resposta
+  // porque activeId ainda era null quando os chunks chegavam ao
+  // updateLastAssistant, que descartava tudo silenciosamente.
+  const conversationsRef = useRef<AkurIAConversation[]>([]);
+  const activeIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    conversationsRef.current = conversations;
+  }, [conversations]);
+  useEffect(() => {
+    activeIdRef.current = activeId;
+  }, [activeId]);
+
   // Carrega na inicialização
   useEffect(() => {
     const loaded = loadAll(userId);
     setConversations(loaded);
-    if (loaded.length > 0) setActiveId(loaded[0].id);
+    conversationsRef.current = loaded;
+    if (loaded.length > 0) {
+      setActiveId(loaded[0].id);
+      activeIdRef.current = loaded[0].id;
+    }
   }, [userId]);
 
   const persist = useCallback(
     (next: AkurIAConversation[]) => {
+      conversationsRef.current = next;
       setConversations(next);
       saveAll(userId, next);
     },
@@ -76,33 +95,39 @@ export function useAkurIASession(userId: string | null) {
       updatedAt: Date.now(),
       messages: [],
     };
-    const next = [conv, ...conversations];
+    const next = [conv, ...conversationsRef.current];
     persist(next);
+    activeIdRef.current = id;
     setActiveId(id);
     return conv;
-  }, [conversations, persist]);
+  }, [persist]);
 
   const selectConversation = useCallback((id: string) => {
+    activeIdRef.current = id;
     setActiveId(id);
   }, []);
 
   const deleteConversation = useCallback(
     (id: string) => {
-      const next = conversations.filter((c) => c.id !== id);
+      const next = conversationsRef.current.filter((c) => c.id !== id);
       persist(next);
-      if (activeId === id) {
-        setActiveId(next[0]?.id || null);
+      if (activeIdRef.current === id) {
+        const newActive = next[0]?.id || null;
+        activeIdRef.current = newActive;
+        setActiveId(newActive);
       }
     },
-    [conversations, activeId, persist]
+    [persist]
   );
 
+  // Retorna o id da conversa afetada de forma SÍNCRONA — permite ao caller
+  // referenciar a conversa sem depender do state React (que ainda não foi
+  // aplicado durante o streaming da primeira mensagem).
   const appendMessage = useCallback(
-    (msg: AkurIAMsg) => {
-      let convId = activeId;
-      let list = conversations;
+    (msg: AkurIAMsg): string => {
+      let convId = activeIdRef.current;
+      let list = conversationsRef.current;
 
-      // Cria conversa lazy se não houver ativa
       if (!convId) {
         const id = `conv_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
         const conv: AkurIAConversation = {
@@ -114,9 +139,10 @@ export function useAkurIASession(userId: string | null) {
         };
         list = [conv, ...list];
         convId = id;
+        activeIdRef.current = id;
         setActiveId(id);
         persist(list);
-        return;
+        return convId;
       }
 
       const next = list.map((c) => {
@@ -130,15 +156,19 @@ export function useAkurIASession(userId: string | null) {
         };
       });
       persist(next);
+      return convId;
     },
-    [activeId, conversations, persist]
+    [persist]
   );
 
-  const updateLastAssistant = useCallback(
-    (content: string) => {
-      if (!activeId) return;
-      const next = conversations.map((c) => {
-        if (c.id !== activeId) return c;
+  // Atualiza a última mensagem de assistente de UMA conversa específica.
+  // Se convId não for informado, cai no activeIdRef atual.
+  const updateAssistantIn = useCallback(
+    (convId: string | null, content: string) => {
+      const targetId = convId ?? activeIdRef.current;
+      if (!targetId) return;
+      const next = conversationsRef.current.map((c) => {
+        if (c.id !== targetId) return c;
         const msgs = [...c.messages];
         const last = msgs[msgs.length - 1];
         if (last?.role === "assistant") {
@@ -150,11 +180,18 @@ export function useAkurIASession(userId: string | null) {
       });
       persist(next);
     },
-    [activeId, conversations, persist]
+    [persist]
+  );
+
+  // Wrapper legado (usa a conversa ativa via ref).
+  const updateLastAssistant = useCallback(
+    (content: string) => updateAssistantIn(null, content),
+    [updateAssistantIn]
   );
 
   const clearAll = useCallback(() => {
     persist([]);
+    activeIdRef.current = null;
     setActiveId(null);
   }, [persist]);
 
@@ -167,6 +204,7 @@ export function useAkurIASession(userId: string | null) {
     deleteConversation,
     appendMessage,
     updateLastAssistant,
+    updateAssistantIn,
     clearAll,
   };
 }

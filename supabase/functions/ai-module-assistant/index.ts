@@ -51,19 +51,8 @@ serve(async (req) => {
       });
     }
 
-    // Consume AI credit
-    const { data: creditResult } = await supabaseAdmin.rpc('consume_ai_credit', {
-      p_empresa_id: empresaId,
-      p_user_id: userId,
-      p_funcionalidade: `ai-assistant:${action}`,
-      p_descricao: `Assistente IA - ${action}`
-    });
+    // Consumo de crédito ocorre APÓS o gateway aceitar a requisição (abaixo).
 
-    if (creditResult === false) {
-      return new Response(JSON.stringify({ error: "Créditos de IA esgotados." }), {
-        status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
 
     let systemPrompt = "";
     let userPrompt = "";
@@ -244,6 +233,14 @@ Retorne JSON: {
       console.error("AI gateway error:", response.status, t);
       throw new Error("Erro no gateway de IA");
     }
+
+    // Debita crédito apenas após gateway ter aceitado.
+    await supabaseAdmin.rpc('consume_ai_credit', {
+      p_empresa_id: empresaId,
+      p_user_id: userId,
+      p_funcionalidade: `ai-assistant:${action}`,
+      p_descricao: `Assistente IA - ${action}`,
+    });
 
     const aiData = await response.json();
     const content = aiData.choices?.[0]?.message?.content || "";

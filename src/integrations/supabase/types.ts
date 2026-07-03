@@ -4161,6 +4161,35 @@ export type Database = {
         }
         Relationships: []
       }
+      empresa_ai_context_cache: {
+        Row: {
+          empresa_id: string
+          expires_at: string
+          summary: string
+          updated_at: string
+        }
+        Insert: {
+          empresa_id: string
+          expires_at?: string
+          summary: string
+          updated_at?: string
+        }
+        Update: {
+          empresa_id?: string
+          expires_at?: string
+          summary?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "empresa_ai_context_cache_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: true
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       empresa_reminder_settings: {
         Row: {
           created_at: string
