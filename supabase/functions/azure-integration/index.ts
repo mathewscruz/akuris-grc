@@ -107,13 +107,50 @@ serve(async (req) => {
   }
 
   try {
-    const { action, tenant_id, client_id, client_secret, empresa_id } = await req.json();
-
-    console.log(`Azure integration action: ${action}`);
+    // === AUTH: require valid Supabase JWT ===
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') || supabaseServiceKey;
+    const verifier = createClient(supabaseUrl, supabaseAnonKey);
+    const { data: userData, error: userErr } = await verifier.auth.getUser(authHeader.replace('Bearer ', ''));
+    if (userErr || !userData?.user) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Resolve caller's empresa/role to enforce tenant boundary.
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('empresa_id, role')
+      .eq('user_id', userData.user.id)
+      .maybeSingle();
+
+    if (!profile?.empresa_id) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Forbidden' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { action, tenant_id, client_id, client_secret, empresa_id: bodyEmpresaId } = await req.json();
+    const isSuperAdmin = profile.role === 'super_admin';
+    // Ignore any empresa_id sent from the client for non-super-admins.
+    const empresa_id = isSuperAdmin && bodyEmpresaId ? bodyEmpresaId : profile.empresa_id;
+
+    console.log(`Azure integration action: ${action}`);
+
 
     switch (action) {
       case 'test': {
