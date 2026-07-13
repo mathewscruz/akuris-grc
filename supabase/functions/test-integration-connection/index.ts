@@ -171,8 +171,9 @@ serve(async (req) => {
 
         const webhookHeaders: Record<string, string> = {
           'Content-Type': 'application/json',
-          ...(headers || {})
+          ...safeHeaders,
         };
+
 
         const webhookResponse = await fetch(webhook_url, {
           method: 'POST',
