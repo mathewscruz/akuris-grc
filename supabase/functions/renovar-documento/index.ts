@@ -55,7 +55,23 @@ serve(async (req) => {
       throw new Error('Documento não encontrado');
     }
 
+    // Tenant boundary: caller must belong to the document's empresa
+    const { data: callerProfile } = await supabase
+      .from('profiles')
+      .select('empresa_id, role')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    const isSuperAdmin = callerProfile?.role === 'super_admin';
+    if (!isSuperAdmin && callerProfile?.empresa_id !== documentoAtual.empresa_id) {
+      return new Response(
+        JSON.stringify({ error: 'Forbidden: documento de outra empresa' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     console.log('Documento atual encontrado - Versão:', documentoAtual.versao);
+
 
     // 2. Arquivar versão atual no histórico
     const { error: historicoError } = await supabase
