@@ -250,20 +250,56 @@ serve(async (req) => {
   }
 
   try {
-    const { empresa_id, evento, titulo, descricao, link, dados, gravidade, triggered_by, timestamp } = await req.json();
-
-    if (!empresa_id || !evento) {
+    // === AUTH: require valid Supabase JWT ===
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
       return new Response(
-        JSON.stringify({ error: 'empresa_id e evento são obrigatórios' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log(`Dispatching event: ${evento} for empresa: ${empresa_id}`);
-
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const verifier = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY') || supabaseServiceKey);
+    const { data: userData, error: userErr } = await verifier.auth.getUser(authHeader.replace('Bearer ', ''));
+    if (userErr || !userData?.user) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const { data: callerProfile } = await supabase
+      .from('profiles')
+      .select('empresa_id, role')
+      .eq('user_id', userData.user.id)
+      .maybeSingle();
+
+    if (!callerProfile?.empresa_id) {
+      return new Response(
+        JSON.stringify({ error: 'Forbidden' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { empresa_id: bodyEmpresaId, evento, titulo, descricao, link, dados, gravidade, triggered_by, timestamp } = await req.json();
+
+    if (!evento) {
+      return new Response(
+        JSON.stringify({ error: 'evento é obrigatório' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Force empresa_id to caller's own empresa (super_admin may target any tenant).
+    const isSuperAdmin = callerProfile.role === 'super_admin';
+    const empresa_id = isSuperAdmin && bodyEmpresaId ? bodyEmpresaId : callerProfile.empresa_id;
+
+    console.log(`Dispatching event: ${evento} for empresa: ${empresa_id}`);
+
 
     const { data: integrations, error: fetchError } = await supabase
       .from('integracoes_config')
