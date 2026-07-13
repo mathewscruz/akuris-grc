@@ -112,10 +112,35 @@ export default function GapAnalysisFrameworks() {
       const statusCountsMap: Record<string, StatusCounts> = {};
 
       if (frameworkIds.length > 0) {
-        const { data: allRequirements, error: reqError } = await supabase
-          .from('gap_analysis_requirements')
-          .select('id, framework_id')
-          .in('framework_id', frameworkIds);
+        // PostgREST caps queries at 1000 rows by default. Frameworks globais somam >1000 requisitos,
+        // então paginamos em lotes para não truncar as contagens.
+        const PAGE_SIZE = 1000;
+        const fetchAllPaginated = async <T,>(
+          builder: () => ReturnType<typeof supabase.from> extends infer _R
+            ? ReturnType<ReturnType<typeof supabase.from>['select']>
+            : never,
+        ): Promise<{ data: T[]; error: unknown }> => {
+          const acc: T[] = [];
+          let from = 0;
+          // eslint-disable-next-line no-constant-condition
+          while (true) {
+            const { data, error } = await (builder() as any).range(from, from + PAGE_SIZE - 1);
+            if (error) return { data: acc, error };
+            const batch = (data as T[]) || [];
+            acc.push(...batch);
+            if (batch.length < PAGE_SIZE) break;
+            from += PAGE_SIZE;
+          }
+          return { data: acc, error: null };
+        };
+
+        const { data: allRequirements, error: reqError } = await fetchAllPaginated<{ id: string; framework_id: string }>(
+          () =>
+            supabase
+              .from('gap_analysis_requirements')
+              .select('id, framework_id')
+              .in('framework_id', frameworkIds) as any,
+        );
 
         if (!reqError && allRequirements) {
           allRequirements.forEach(req => {
@@ -123,11 +148,16 @@ export default function GapAnalysisFrameworks() {
           });
 
           if (empresaId) {
-            const { data: allEvaluations, error: evalError } = await supabase
-              .from('gap_analysis_evaluations')
-              .select('conformity_status, framework_id')
-              .in('framework_id', frameworkIds)
-              .eq('empresa_id', empresaId);
+            const { data: allEvaluations, error: evalError } = await fetchAllPaginated<{
+              conformity_status: string;
+              framework_id: string;
+            }>(() =>
+              supabase
+                .from('gap_analysis_evaluations')
+                .select('conformity_status, framework_id')
+                .in('framework_id', frameworkIds)
+                .eq('empresa_id', empresaId) as any,
+            );
 
             if (!evalError && allEvaluations) {
               const evalsByFramework = new Map<string, typeof allEvaluations>();
