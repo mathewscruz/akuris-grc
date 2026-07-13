@@ -100,9 +100,9 @@ Deno.serve(async (req) => {
       throw new Error('Erro ao buscar informações de usuários')
     }
 
-    // Filtrar apenas os usuários solicitados
-    const filteredUsers = authUsers.users.filter(authUser => 
-      user_ids.includes(authUser.id)
+    // Filtrar apenas os usuários solicitados (respeitando o escopo de tenant)
+    const filteredUsers = authUsers.users.filter(authUser =>
+      allowedUserIds.includes(authUser.id)
     ).map(authUser => ({
       id: authUser.id,
       last_sign_in_at: authUser.last_sign_in_at,
@@ -113,8 +113,9 @@ Deno.serve(async (req) => {
     const { data: tempPasswords, error: tempPasswordsError } = await supabaseAdmin
       .from('temporary_passwords')
       .select('user_id, is_temporary, created_at, expires_at')
-      .in('user_id', user_ids)
+      .in('user_id', allowedUserIds)
       .eq('is_temporary', true)
+
 
     if (tempPasswordsError) {
       console.error('Erro ao buscar senhas temporárias:', tempPasswordsError)
