@@ -1,82 +1,67 @@
-## Contexto
+## Resumo da validação
 
-Auditoria completa dos 24 frameworks globais do módulo Gap Analysis (`empresa_id = NULL`). Nenhum está vazio, mas encontrei **dois problemas**:
+Os 24 frameworks globais (`empresa_id IS NULL`, `is_template = true`) estão presentes e populados. Comparando com os padrões oficiais, todos estão em faixa aceitável (últimos ajustes fizeram PCI DSS/CIS/DORA/CCPA baterem números oficiais). O que **precisa correção** é o idioma: parte relevante dos requisitos ainda está em **inglês**, em desacordo com a identidade do sistema (PT-BR nativo).
 
-### 1. Duplicatas de `codigo` dentro do mesmo framework (achado colateral)
+### Requisitos em inglês encontrados
 
-Ao validar contagens descobri que 9 frameworks têm o mesmo `codigo` repetido em várias linhas — inflando artificialmente o total de requisitos:
+| Framework | Títulos EN | Descrições EN |
+|---|---:|---:|
+| GDPR | 59 | 97 (quase todos os 97 registros) |
+| CIS Controls v8 | 25 | 53 |
+| PCI DSS 4.0 | 29 | 58 |
+| DORA | 0 | 1 |
+| ISO/IEC 27701 | 0 | 1 |
+| NIST SP 800-82 | 1 | 0 |
 
-| Framework | Linhas | Códigos únicos | Duplicatas |
-|---|---|---|---|
-| HIPAA | 100 | 54 | 46 |
-| PCI DSS | 100 | 64 | 36 |
-| CIS Controls | 100 | 75 | 25 |
-| SOC 2 Type II | 74 | 63 | 11 |
-| ISO 14001 | 45 | 35 | 10 |
-| LGPD | 65 | 56 | 9 |
-| GDPR | 99 | 97 | 2 |
-| ISO 31000 | 22 | 21 | 1 |
-| CCPA | 20 | 19 | 1 |
+Total: ~150 títulos e ~210 descrições a traduzir.
 
-Total: **141 linhas duplicadas** que corrompem contagem e podem duplicar avaliações no gap analysis.
+### Tela `Gap Analysis › Frameworks` (`src/pages/GapAnalysisFrameworks.tsx`)
 
-### 2. Cobertura abaixo do padrão oficial (o que o usuário aprovou completar)
+A tela carrega corretamente:
+- Filtra `empresa_id IS NULL` + `is_template = true` (bate com os 24 globais).
+- Conta requisitos por framework via `gap_analysis_requirements`.
+- Agrega avaliações por `empresa_id` (isolamento multi-tenant ok).
+- Segmentos e score médio usam a mesma escala do resto do sistema (100/50/0, exclui N/A).
 
-Descontadas as duplicatas, os 4 frameworks aprovados ficam:
+**Um ponto de atenção lógico** (não pedido, mas relevante): em `frameworkProgress`, `evaluatedRequirements` inclui `nao_aplicavel`, enquanto o denominador do `averageScore` é `totalReqs - nao_aplicavel`. Isso é consistente com a política do sistema (N/A conta como avaliado, mas fora do denominador de score). Nenhuma correção proposta aqui — apenas confirmação de que está correto.
 
-| Framework | Únicos hoje | Esperado (oficial) | A adicionar |
-|---|---|---|---|
-| PCI DSS 4.0 | 64 | ~277 sub-requisitos (12 macro) | ~213 |
-| CIS Controls v8 | 75 | 18 controles + 153 safeguards = 171 | ~96 |
-| DORA (Reg. 2022/2554) | 42 | 64 artigos + RTS chave | ~25 |
-| CCPA/CPRA | 19 | ~40 (com update CPRA 2023) | ~21 |
+Conclusão da tela: **exibindo dados corretamente**.
 
-## Plano de execução
+## Plano de ação
 
-### Etapa 1 — Migração de deduplicação (defensiva, aplica a TODOS os frameworks globais)
+### 1. Migration única de tradução PT-BR
 
-Uma migração idempotente que:
+Uma migration idempotente (`UPDATE ... WHERE`) traduzindo os campos `titulo`, `descricao` (e `orientacao_implementacao`/`exemplos_evidencias` quando também estiverem em EN) apenas nos requisitos globais dos 5 frameworks afetados:
 
-- Para cada `(framework_id, codigo)` com duplicatas, mantém apenas a linha **mais completa** (maior tamanho de `descricao` + `orientacao_implementacao`), depois a mais recente como desempate.
-- Antes de deletar, migra qualquer `gap_analysis_evaluations` que referencie IDs a serem removidos para o `requirement_id` sobrevivente (evita perder avaliações).
-- Idem para `gap_analysis_adherence_details` (usa `requirement_id`).
-- Só afeta frameworks globais (`empresa_id IS NULL`), sem risco de tocar dados de empresa.
+- **GDPR (2018)** — traduzir os 97 artigos: títulos, descrições e (quando aplicável) orientação/evidências. Manter o `codigo` (`Art. 1`, `Art. 2`, ...). Ex.: `Right of Access` → `Direito de Acesso`; `Records of Processing Activities` → `Registros das Atividades de Tratamento`.
+- **CIS Controls v8** — traduzir os 25 títulos e 53 descrições ainda em inglês (Controls 3–18 e Safeguards correspondentes). Ex.: `Securely Dispose of Data` → `Descartar Dados de Forma Segura`; `Require MFA for Remote Access` → `Exigir MFA para Acesso Remoto`.
+- **PCI DSS 4.0** — traduzir 29 títulos e 58 descrições dos sub-requisitos (principalmente Requirements 11 e 12 recém-adicionados). Manter numeração oficial `1.1.1`, `11.4.2`, etc.
+- **DORA** — traduzir 1 descrição remanescente.
+- **ISO/IEC 27701** — traduzir 1 descrição remanescente.
+- **NIST SP 800-82 Rev. 3** — traduzir 1 título remanescente.
 
-### Etapa 2 — Enriquecimento dos 4 frameworks aprovados
+Regras da migration:
+- Escopo: `WHERE framework_id IN (...) AND empresa_id IS NULL` (via join com `gap_analysis_frameworks`).
+- Idempotência: cada `UPDATE` casa por `(framework_id, codigo)`, então re-executar não gera efeito colateral.
+- Preservar `peso`, `categoria`, `ordem`, `nivel_criticidade`, `is_template`.
+- Nenhuma alteração de schema; nenhum requisito criado/removido.
 
-Uma segunda migração (ou seed via `INSERT`) que adiciona os requisitos faltantes, **com o mesmo padrão dos existentes**: `codigo`, `titulo`, `descricao`, `categoria`, `orientacao_implementacao`, `exemplos_evidencias`, `ordem`, `peso` default 1.
+### 2. Validação pós-migration
 
-Detalhamento por framework:
+Rodar novamente a heurística de detecção de inglês nos 24 frameworks e confirmar que os 5 frameworks acima ficam com `possibly_english = 0` (títulos e descrições).
 
-**PCI DSS 4.0** (target 277)
-- Completa os 12 grupos macro com todos os sub-requisitos oficiais publicados pelo PCI SSC (ex.: 1.1.1 → 1.5.1, 2.1.1 → 2.3.2, etc.), incluindo os controles introduzidos na v4.0 (customized approach, phishing 5.4.1, autenticação 8.3.6-8.3.11).
-- Categorias reaproveitam as já existentes (`Network Security`, `Access Control`, etc.).
+### 3. Sem alterações na UI
 
-**CIS Controls v8** (target 171)
-- Adiciona as 153 safeguards nível 1/2/3 sob os 18 controles atuais (ex.: 1.1 → 1.5, 2.1 → 2.7, 3.1 → 3.14, ... 18.1 → 18.5).
-- Categoria = "IG1", "IG2", "IG3" (Implementation Groups) no campo `area_responsavel`; `categoria` mantém o grupo funcional do controle pai.
+`GapAnalysisFrameworks.tsx`, `useFrameworksOverview.ts` e demais componentes de Gap Analysis já leem os campos corretos — não é necessário alterar nada no frontend. A tela refletirá automaticamente os textos traduzidos.
 
-**DORA — Regulamento UE 2022/2554** (target ~64)
-- Adiciona artigos faltantes por capítulo: governança (Art. 5-6), gestão de risco TIC (Art. 6-16 completos), gestão de incidentes (Art. 17-23), teste de resiliência (Art. 24-27), gestão de terceiros (Art. 28-44), compartilhamento de informação (Art. 45), supervisão (Art. 46-56).
+## Fora de escopo
 
-**CCPA/CPRA** (target ~40)
-- Atualiza para incluir emendas do CPRA (Cal. Civ. Code §§1798.100–1798.199.100): novos direitos (correction, limit use of SPI), obrigações de service providers/contractors/third parties, requisitos CPPA, avaliações de risco e ciber-auditoria.
-- Renomeia versão de `2018` para `2018/CPRA 2023`.
+- Não modificar frameworks de outras empresas (`empresa_id IS NOT NULL`).
+- Não alterar cálculos, RLS ou schema.
+- Não “retraduzir” requisitos já em PT-BR — o `UPDATE` toca apenas linhas em inglês.
 
-### Etapa 3 — Validação
+## Detalhes técnicos
 
-Após aplicar:
-- `SELECT nome, COUNT(*) total, COUNT(DISTINCT codigo) uniq FROM ... GROUP BY nome;`
-- Confirmar 0 duplicatas e as novas contagens.
-- Verificar que `gap_analysis_evaluations` e `gap_analysis_adherence_details` continuam consistentes (mesma linha por avaliação).
-
-## Fora do escopo (informativo)
-
-Detectei também gaps menores em LGPD (faltam ~9 artigos), GDPR (2 artigos) e HIPAA (implementation specs opcionais). Não farei nada agora — se quiser, sinaliza depois e completo em uma migração adicional.
-
-## Notas técnicas
-
-- Sem mudanças em código frontend/backend — só dados.
-- Todas as inserções usam `empresa_id = NULL` (frameworks globais) e respeitam o padrão de `mem://architecture/gap-analysis-templates-globais-isolamento`.
-- Duas migrações separadas para revisão isolada; a de deduplicação pode ser aprovada mesmo se o usuário quiser adiar o enriquecimento.
-- Nenhuma edição em `types.ts`.
+- Toda a operação é uma migration SQL (uma chamada de `migration`) com blocos `UPDATE public.gap_analysis_requirements SET titulo = ..., descricao = ... WHERE framework_id = (SELECT id FROM gap_analysis_frameworks WHERE nome = 'X' AND empresa_id IS NULL) AND codigo = 'Y';`.
+- Sem impacto em `gap_analysis_evaluations`, `gap_analysis_adherence_details` etc. — o `id` dos requisitos permanece.
+- Estimativa: ~370 linhas de UPDATE (uma por registro afetado).
