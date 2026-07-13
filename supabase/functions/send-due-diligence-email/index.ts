@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "npm:resend@2.0.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -11,11 +12,7 @@ const corsHeaders = {
 interface EmailRequest {
   type: 'send' | 'reminder' | 'completion' | 'invitation';
   assessment_id: string;
-  fornecedor_nome: string;
-  fornecedor_email: string;
-  template_nome: string;
-  assessment_link?: string;
-  data_expiracao?: string;
+  template_nome?: string;
   empresa_nome?: string;
   empresa_logo_url?: string;
 }
@@ -24,10 +21,84 @@ const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { type, assessment_id, fornecedor_nome, fornecedor_email, template_nome, assessment_link, data_expiracao, empresa_nome, empresa_logo_url }: EmailRequest = await req.json();
+    // === AUTH: require valid Supabase JWT ===
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const verifier = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY') || supabaseServiceKey);
+    const { data: userData, error: userErr } = await verifier.auth.getUser(authHeader.replace('Bearer ', ''));
+    if (userErr || !userData?.user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const { data: profile } = await supabase
+      .from('profiles').select('empresa_id, role').eq('user_id', userData.user.id).maybeSingle();
+    if (!profile?.empresa_id) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    const body: EmailRequest = await req.json();
+    const { type, assessment_id, template_nome: bodyTemplateNome } = body;
+
+    if (!assessment_id) {
+      return new Response(JSON.stringify({ error: 'assessment_id obrigatório' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Load trusted assessment data server-side
+    const { data: assessment, error: aerr } = await supabase
+      .from('due_diligence_assessments')
+      .select('id, empresa_id, fornecedor_nome, fornecedor_email, link_token, data_expiracao, template_id')
+      .eq('id', assessment_id)
+      .maybeSingle();
+
+    if (aerr || !assessment) {
+      return new Response(JSON.stringify({ error: 'Assessment não encontrado' }), {
+        status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    const isSuperAdmin = profile.role === 'super_admin';
+    if (!isSuperAdmin && assessment.empresa_id !== profile.empresa_id) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    if (!assessment.fornecedor_email) {
+      return new Response(JSON.stringify({ error: 'Fornecedor sem e-mail' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    let template_nome = bodyTemplateNome || 'Due Diligence';
+    if (assessment.template_id) {
+      const { data: tpl } = await supabase
+        .from('due_diligence_templates').select('nome').eq('id', assessment.template_id).maybeSingle();
+      if (tpl?.nome) template_nome = tpl.nome;
+    }
+
+    const fornecedor_nome = assessment.fornecedor_nome || 'Fornecedor';
+    const fornecedor_email = assessment.fornecedor_email;
+    const data_expiracao = assessment.data_expiracao;
+    const assessment_link = assessment.link_token
+      ? `https://akuris.com.br/due-diligence/responder/${assessment.link_token}`
+      : undefined;
 
     const sysName = 'Akuris';
     let emailContent: { subject: string; html: string };
+
 
     const headerHtml = `<div style="text-align: center; margin-bottom: 30px;"><img src="https://akuris-grc.lovable.app/akuris-logo-email.png" alt="Akuris" width="200" height="60" style="display: block; margin: 0 auto;" /></div>`;
     const footerHtml = `<hr style="border: none; border-top: 1px solid #e2e8f0; margin: 30px 0;"><p style="color: #64748b; font-size: 14px;">Este é um e-mail automático da <strong>Akuris</strong>. Em caso de dúvidas, entre em contato conosco.</p><p style="color: #8898aa; font-size: 12px;">© ${new Date().getFullYear()} Akuris. Todos os direitos reservados.</p>`;
