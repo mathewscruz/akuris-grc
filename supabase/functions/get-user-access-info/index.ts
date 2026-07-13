@@ -73,6 +73,25 @@ Deno.serve(async (req) => {
       throw new Error('Lista de IDs de usuários inválida')
     }
 
+    // Tenant boundary: non-super_admins can only look up users in their own empresa
+    let allowedUserIds: string[] = user_ids
+    if (!isSuperAdmin) {
+      const { data: sameTenantProfiles } = await supabaseAdmin
+        .from('profiles')
+        .select('user_id')
+        .eq('empresa_id', currentUserProfile.empresa_id)
+        .in('user_id', user_ids)
+      allowedUserIds = (sameTenantProfiles || []).map((p: any) => p.user_id)
+    }
+
+    if (allowedUserIds.length === 0) {
+      return new Response(JSON.stringify({ success: true, users: [] }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      })
+    }
+
+
     // Buscar informações de acesso dos usuários
     const { data: authUsers, error: usersError } = await supabaseAdmin.auth.admin
       .listUsers()
