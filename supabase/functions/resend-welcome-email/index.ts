@@ -1,11 +1,4 @@
-
-import React from 'npm:react@18.3.1'
-import { Resend } from 'npm:resend@4.0.0'
-import { renderAsync } from 'npm:@react-email/components@0.0.22'
-import { WelcomeEmail } from './_templates/welcome-email.tsx'
 import { createClient } from 'npm:@supabase/supabase-js@2'
-
-const resend = new Resend(Deno.env.get('RESEND_API_KEY') as string)
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -22,18 +15,19 @@ Deno.serve(async (req) => {
   }
 
   if (req.method !== 'POST') {
-    return new Response('Method not allowed', { 
-      status: 405, 
-      headers: corsHeaders 
+    return new Response('Method not allowed', {
+      status: 405,
+      headers: corsHeaders,
     })
   }
 
   try {
     console.log('Recebendo requisição para reenviar e-mail de boas-vindas')
-    
+
+    const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      SERVICE_ROLE
     )
 
     const supabase = createClient(
@@ -65,20 +59,20 @@ Deno.serve(async (req) => {
 
     const isSuperAdmin = currentUserProfile.role === 'super_admin'
     const isAdmin = currentUserProfile.role === 'admin' || isSuperAdmin
-    
+
     if (!isAdmin) {
       throw new Error('Usuário não tem permissão para reenviar e-mails de boas-vindas')
     }
-    
+
     const { userId }: ResendWelcomeEmailRequest = await req.json()
-    
+
     if (!userId) {
       throw new Error('ID do usuário não fornecido')
     }
 
     const { data: userProfile, error: userProfileError } = await supabaseAdmin
       .from('profiles')
-      .select('nome, email, empresa_id, empresa:empresas(nome, logo_url)')
+      .select('nome, email, user_id, empresa_id, empresa:empresas(nome, logo_url)')
       .eq('user_id', userId)
       .single()
 
@@ -90,10 +84,10 @@ Deno.serve(async (req) => {
       throw new Error('Você não tem permissão para gerenciar este usuário')
     }
 
-    // Gerar novo link de convite (não mais senha temporária)
+    // Gerar novo link de recovery
     const siteUrl = 'https://akuris.com.br'
     let setupPasswordUrl = `${siteUrl}/auth`
-    
+
     try {
       const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
         type: 'recovery',
@@ -110,31 +104,27 @@ Deno.serve(async (req) => {
       console.error('Erro ao gerar link:', linkGenError)
     }
 
-    console.log(`Enviando e-mail de boas-vindas para: ${userProfile.email}`)
-    
-    const html = await renderAsync(
-      React.createElement(WelcomeEmail, {
+    console.log(`Reenviando e-mail via send-welcome-email para: ${userProfile.email}`)
+
+    const { error: emailError } = await supabaseAdmin.functions.invoke('send-welcome-email', {
+      headers: {
+        Authorization: `Bearer ${SERVICE_ROLE}`,
+      },
+      body: {
         userName: userProfile.nome,
         userEmail: userProfile.email,
         setupPasswordUrl,
         companyName: (userProfile.empresa as any)?.nome,
-        companyLogoUrl: (userProfile.empresa as any)?.logo_url
-      })
-    )
-
-    const { data, error } = await resend.emails.send({
-      from: 'Akuris <noreply@akuris.com.br>',
-      to: [userProfile.email],
-      subject: 'Akuris - Defina sua senha de acesso',
-      html,
+        companyLogoUrl: (userProfile.empresa as any)?.logo_url,
+      },
     })
 
-    if (error) {
-      console.error('Erro ao enviar e-mail:', error)
-      throw error
+    if (emailError) {
+      console.error('Erro ao invocar send-welcome-email:', emailError)
+      throw emailError
     }
 
-    console.log('E-mail enviado com sucesso:', data)
+    console.log('E-mail reenviado com sucesso')
 
     // Atualiza metadata do convite
     try {
@@ -142,28 +132,24 @@ Deno.serve(async (req) => {
         .from('profiles')
         .update({ invitation_sent_at: new Date().toISOString(), invitation_link: setupPasswordUrl })
         .eq('user_id', userProfile.user_id)
-    } catch (e) { console.error('Falha ao atualizar invitation metadata:', e) }
+    } catch (e) {
+      console.error('Falha ao atualizar invitation metadata:', e)
+    }
 
-    return new Response(JSON.stringify({ success: true, data, setupPasswordUrl }), {
+    return new Response(JSON.stringify({ success: true, setupPasswordUrl }), {
       status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        ...corsHeaders,
-      },
+      headers: { 'Content-Type': 'application/json', ...corsHeaders },
     })
   } catch (error: any) {
     console.error('Erro na função resend-welcome-email:', error)
     return new Response(
       JSON.stringify({
         error: (error instanceof Error ? error.message : String(error)),
-        details: 'Falha ao reenviar e-mail de boas-vindas'
+        details: 'Falha ao reenviar e-mail de boas-vindas',
       }),
       {
         status: 500,
-        headers: { 
-          'Content-Type': 'application/json', 
-          ...corsHeaders 
-        },
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
       }
     )
   }
