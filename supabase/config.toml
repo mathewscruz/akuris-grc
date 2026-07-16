@@ -198,7 +198,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.send-risco-aceite-notification]
-verify_jwt = false
+verify_jwt = true
 
 [functions.api-public]
 verify_jwt = false
