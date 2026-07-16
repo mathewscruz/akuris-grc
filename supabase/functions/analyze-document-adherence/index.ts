@@ -109,13 +109,13 @@ serve(async (req) => {
       }
     }
 
-    console.log('Starting adherence analysis:', { assessmentId, frameworkId, storageFileName });
+    console.log('Starting adherence analysis:', { assessmentId, frameworkId: safeFrameworkId, storageFileName: safeStorageFileName });
 
-    // 1. Buscar framework e requisitos
+    // 1. Buscar framework e requisitos (framework é template global, não tem empresa_id)
     const { data: framework, error: frameworkError } = await supabase
       .from('gap_analysis_frameworks')
       .select('*')
-      .eq('id', frameworkId)
+      .eq('id', safeFrameworkId)
       .single();
 
     if (frameworkError || !framework) {
@@ -125,7 +125,7 @@ serve(async (req) => {
     const { data: requirements, error: reqError } = await supabase
       .from('gap_analysis_requirements')
       .select('*')
-      .eq('framework_id', frameworkId)
+      .eq('framework_id', safeFrameworkId)
       .order('ordem');
 
     if (reqError) throw new Error(`Erro ao buscar requisitos: ${reqError.message}`);
@@ -133,10 +133,10 @@ serve(async (req) => {
 
     console.log(`Framework: ${framework.nome}, Requirements: ${requirements.length}`);
 
-    // 2. Baixar arquivo do storage
+    // 2. Baixar arquivo do storage (path derivado do assessment persistido, não do client)
     const { data: fileData, error: downloadError } = await supabase.storage
       .from('adherence-documents')
-      .download(storageFileName);
+      .download(safeStorageFileName);
 
     if (downloadError || !fileData) {
       throw new Error(`Erro ao baixar documento: ${downloadError?.message}`);
@@ -146,7 +146,7 @@ serve(async (req) => {
 
     // 3. Extrair texto
     let documentText = '';
-    const fileExtension = storageFileName.toLowerCase().split('.').pop();
+    const fileExtension = safeStorageFileName.toLowerCase().split('.').pop();
 
     if (fileExtension === 'txt') {
       documentText = await fileData.text();
