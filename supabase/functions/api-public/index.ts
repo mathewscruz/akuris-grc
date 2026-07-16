@@ -57,7 +57,7 @@ serve(async (req) => {
     // Validar API Key
     const { data: keyData, error: keyError } = await supabase
       .from('api_keys')
-      .select('id, empresa_id, permissoes, rate_limit_por_minuto, ativo, total_requisicoes, ip_whitelist')
+      .select('id, empresa_id, permissoes, rate_limit_por_minuto, ativo, total_requisicoes, ip_whitelist, expires_at')
       .eq('api_key', apiKey)
       .single();
 
@@ -73,6 +73,33 @@ serve(async (req) => {
         JSON.stringify({ error: 'API Key desativada' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    // Verificar expiração
+    if (keyData.expires_at && new Date(keyData.expires_at).getTime() < Date.now()) {
+      return new Response(
+        JSON.stringify({ error: 'API Key expirada' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Verificar IP whitelist (se configurada)
+    const ipWhitelist = Array.isArray(keyData.ip_whitelist) ? keyData.ip_whitelist : [];
+    if (ipWhitelist.length > 0) {
+      const forwarded = req.headers.get('x-forwarded-for') || '';
+      const callerIp = (forwarded.split(',')[0] || '').trim() ||
+        req.headers.get('cf-connecting-ip') ||
+        req.headers.get('x-real-ip') || '';
+      const allowed = ipWhitelist.some((entry: string) => {
+        const e = String(entry || '').trim();
+        return e && (e === callerIp || (e.endsWith('*') && callerIp.startsWith(e.slice(0, -1))));
+      });
+      if (!allowed) {
+        return new Response(
+          JSON.stringify({ error: 'IP não autorizado para esta API Key' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
     }
 
     // Rate limiting simples (baseado em janela de 1 minuto)
