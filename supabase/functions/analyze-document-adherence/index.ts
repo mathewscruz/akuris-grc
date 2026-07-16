@@ -51,6 +51,35 @@ serve(async (req) => {
       });
     }
 
+    // === TENANT GUARD: assessment precisa pertencer à empresa do JWT ===
+    if (!assessmentId) {
+      return new Response(JSON.stringify({ error: 'assessmentId obrigatório' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    const { data: assessmentRow, error: assessmentErr } = await supabase
+      .from('gap_analysis_adherence_assessments')
+      .select('id, empresa_id, framework_id, arquivo_storage_path, arquivo_nome')
+      .eq('id', assessmentId)
+      .maybeSingle();
+    if (assessmentErr || !assessmentRow) {
+      return new Response(JSON.stringify({ error: 'Assessment não encontrado' }), {
+        status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    if (assessmentRow.empresa_id !== empresaId) {
+      console.warn('Cross-tenant attempt on analyze-document-adherence', { userId, empresaId, targetEmpresa: assessmentRow.empresa_id, assessmentId });
+      return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    // Coerce framework/path para os valores persistidos no assessment (nunca confiar no body)
+    const safeFrameworkId = assessmentRow.framework_id;
+    const safeStorageFileName = assessmentRow.arquivo_storage_path || storageFileName;
+    if (safeFrameworkId !== frameworkId || safeStorageFileName !== storageFileName) {
+      console.warn('Body IDs did not match assessment row — using stored values', { assessmentId });
+    }
+
     // Consumir crédito de IA (empresa derivada do JWT, não do body)
     {
       const { data: creditResult, error: creditError } = await supabase
