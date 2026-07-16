@@ -97,19 +97,41 @@ serve(async (req) => {
       );
     }
 
-    // Tenta baixar o arquivo (txt) — se não conseguir extrair texto, devolve veredito incerto
+    // === SSRF guard: só aceita URLs do próprio Supabase Storage do projeto ===
+    // Rejeita fileUrl arbitrária (loopback, metadata IMDS, hosts externos, etc.).
     let documentText = '';
+    let allowedFetch = false;
     try {
-      const fileResp = await fetch(fileUrl);
-      const ct = fileResp.headers.get('content-type') || '';
-      if (ct.includes('text/') || (fileName || '').toLowerCase().endsWith('.txt')) {
-        documentText = (await fileResp.text()).slice(0, 20000);
+      const target = new URL(fileUrl);
+      const allowedHost = new URL(supabaseUrl).host;
+      // Aceita apenas o host do projeto Supabase, HTTPS, e caminho de Storage.
+      if (
+        target.protocol === 'https:' &&
+        target.host === allowedHost &&
+        target.pathname.startsWith('/storage/v1/')
+      ) {
+        allowedFetch = true;
       } else {
-        // Para PDFs/Docx não temos parser inline aqui — informamos a IA do limite
-        documentText = `[CONTEÚDO BINÁRIO - tipo ${ct || 'desconhecido'} - apenas metadados disponíveis: nome=${fileName || 'arquivo'}]`;
+        console.warn('SSRF guard: fileUrl rejeitada', { host: target.host, path: target.pathname });
       }
-    } catch (e) {
-      documentText = '[Não foi possível baixar o arquivo para análise textual.]';
+    } catch (_) {
+      // URL inválida — mantém allowedFetch=false
+    }
+
+    if (allowedFetch) {
+      try {
+        const fileResp = await fetch(fileUrl);
+        const ct = fileResp.headers.get('content-type') || '';
+        if (ct.includes('text/') || (fileName || '').toLowerCase().endsWith('.txt')) {
+          documentText = (await fileResp.text()).slice(0, 20000);
+        } else {
+          documentText = `[CONTEÚDO BINÁRIO - tipo ${ct || 'desconhecido'} - apenas metadados disponíveis: nome=${fileName || 'arquivo'}]`;
+        }
+      } catch (e) {
+        documentText = '[Não foi possível baixar o arquivo para análise textual.]';
+      }
+    } else {
+      documentText = `[URL de evidência recusada por política de segurança - apenas Storage do projeto é permitido. Nome=${fileName || 'arquivo'}]`;
     }
 
     const prompt = `Você é um auditor sênior de conformidade. Analise se a evidência fornecida atende ao requisito abaixo.
