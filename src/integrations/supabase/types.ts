@@ -5511,8 +5511,9 @@ export type Database = {
       mfa_codes: {
         Row: {
           attempts: number
-          code: string
+          code_hash: string
           created_at: string
+          delivered_at: string | null
           empresa_id: string
           expires_at: string
           id: string
@@ -5521,8 +5522,9 @@ export type Database = {
         }
         Insert: {
           attempts?: number
-          code: string
+          code_hash: string
           created_at?: string
+          delivered_at?: string | null
           empresa_id: string
           expires_at?: string
           id?: string
@@ -5531,8 +5533,9 @@ export type Database = {
         }
         Update: {
           attempts?: number
-          code?: string
+          code_hash?: string
           created_at?: string
+          delivered_at?: string | null
           empresa_id?: string
           expires_at?: string
           id?: string
@@ -7911,6 +7914,10 @@ export type Database = {
       }
     }
     Functions: {
+      activate_mfa_code_issue: {
+        Args: { p_code_id: string; p_user_id: string }
+        Returns: boolean
+      }
       apply_default_permissions_for_user: {
         Args: { user_id_param: string }
         Returns: undefined
@@ -8040,6 +8047,7 @@ export type Database = {
         Returns: boolean
       }
       has_super_admin_role: { Args: never; Returns: boolean }
+      has_valid_mfa_session: { Args: never; Returns: boolean }
       incidente_pertence_empresa: {
         Args: { incidente_id: string }
         Returns: boolean
@@ -8051,6 +8059,14 @@ export type Database = {
         Returns: boolean
       }
       is_super_admin: { Args: never; Returns: boolean }
+      issue_mfa_code: {
+        Args: { p_code_hash: string; p_user_id: string }
+        Returns: {
+          code_id: string
+          expires_at: string
+          status: string
+        }[]
+      }
       matriz_pertence_empresa: { Args: { matriz_id: string }; Returns: boolean }
       popular_ativos_demo: {
         Args: { p_empresa_id: string; p_user_id: string }
@@ -8096,6 +8112,14 @@ export type Database = {
       risco_pertence_empresa: { Args: { risco_id: string }; Returns: boolean }
       ropa_pertence_empresa: { Args: { ropa_id: string }; Returns: boolean }
       validate_denuncia_token: { Args: { p_token: string }; Returns: string }
+      verify_mfa_code_attempt: {
+        Args: { p_code_hash: string; p_user_id: string }
+        Returns: {
+          remaining_attempts: number
+          session_expires_at: string
+          status: string
+        }[]
+      }
     }
     Enums: {
       app_role: "user" | "admin" | "super_admin"
