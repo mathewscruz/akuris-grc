@@ -22,57 +22,56 @@ const memCache = new Map<string, CacheEntry>();
 const MEM_TTL_MS = 60 * 1000; // 1 min — protege bursts na mesma instância
 const DB_TTL_MIN = 10; // 10 min — janela padrão
 
-async function getCachedContext(supabase: any, empresaId: string): Promise<string | null> {
-  const mem = memCache.get(empresaId);
+async function getCachedContext(supabase: any, cacheKey: string): Promise<string | null> {
+  const mem = memCache.get(cacheKey);
   if (mem && Date.now() < mem.expiresAt) return mem.summary;
-  try {
-    const { data } = await supabase
-      .from('empresa_ai_context_cache')
-      .select('summary, expires_at')
-      .eq('empresa_id', empresaId)
-      .maybeSingle();
-    if (data?.summary && data.expires_at && new Date(data.expires_at).getTime() > Date.now()) {
-      memCache.set(empresaId, { summary: data.summary, expiresAt: Date.now() + MEM_TTL_MS });
-      return data.summary;
-    }
-  } catch (e) {
-    console.error('context cache read error', e);
-  }
   return null;
 }
 
-async function setCachedContext(supabase: any, empresaId: string, summary: string) {
-  memCache.set(empresaId, { summary, expiresAt: Date.now() + MEM_TTL_MS });
-  try {
-    await supabase.from('empresa_ai_context_cache').upsert({
-      empresa_id: empresaId,
-      summary,
-      updated_at: new Date().toISOString(),
-      expires_at: new Date(Date.now() + DB_TTL_MIN * 60 * 1000).toISOString(),
-    });
-  } catch (e) {
-    console.error('context cache write error', e);
+async function setCachedContext(_supabase: any, cacheKey: string, summary: string) {
+  memCache.set(cacheKey, { summary, expiresAt: Date.now() + MEM_TTL_MS });
+}
+
+// Retorna o conjunto de módulos que o usuário pode LER. Super-admins veem tudo.
+async function getAllowedModules(supabase: any, userId: string, isSuperAdmin: boolean): Promise<Set<string>> {
+  if (isSuperAdmin) {
+    const { data } = await supabase.from('system_modules').select('name').eq('is_active', true);
+    return new Set((data || []).map((m: any) => m.name));
   }
+  const { data } = await supabase
+    .from('user_module_permissions')
+    .select('can_read, can_access, system_modules!inner(name, is_active)')
+    .eq('user_id', userId)
+    .eq('system_modules.is_active', true);
+  const allowed = new Set<string>();
+  for (const row of (data || [])) {
+    if ((row.can_read || row.can_access) && row.system_modules?.name) {
+      allowed.add(row.system_modules.name);
+    }
+  }
+  return allowed;
 }
 
 // =============== Detecta menções a entidades específicas e busca detalhes ===============
+// Cada padrão mapeia para o módulo GRC correspondente para aplicar RBAC.
 async function fetchSpecificMentions(
   supabase: any,
   empresaId: string,
-  userMessage: string
+  userMessage: string,
+  allowedModules: Set<string>
 ): Promise<string> {
   const text = userMessage.toLowerCase();
-  // Padrões: "fale do risco X", "detalhes do controle Y", "incidente Z", etc.
   const patterns = [
-    { regex: /(?:risco|riscos)\s+(?:chamad[oa]\s+|de\s+nome\s+|sobre\s+)?["“']?([a-zA-Z0-9 áéíóúâêôãõçàÁÉÍÓÚÂÊÔÃÕÇÀ.\-_]{3,60})/i, table: 'riscos', label: 'RISCO', fields: 'nome, descricao, nivel_risco_inicial, nivel_risco_residual, status, responsavel, aceito', searchField: 'nome' },
-    { regex: /(?:controle|controles)\s+(?:chamad[oa]\s+|de\s+nome\s+|sobre\s+)?["“']?([a-zA-Z0-9 áéíóúâêôãõçàÁÉÍÓÚÂÊÔÃÕÇÀ.\-_]{3,60})/i, table: 'controles', label: 'CONTROLE', fields: 'nome, descricao, status, criticidade, frequencia, proxima_avaliacao', searchField: 'nome' },
-    { regex: /(?:incidente|incidentes)\s+(?:chamad[oa]\s+|de\s+nome\s+|sobre\s+)?["“']?([a-zA-Z0-9 áéíóúâêôãõçàÁÉÍÓÚÂÊÔÃÕÇÀ.\-_]{3,60})/i, table: 'incidentes', label: 'INCIDENTE', fields: 'titulo, descricao, criticidade, status, tipo, data_ocorrencia', searchField: 'titulo' },
-    { regex: /(?:contrato|contratos)\s+(?:chamad[oa]\s+|de\s+nome\s+|sobre\s+)?["“']?([a-zA-Z0-9 áéíóúâêôãõçàÁÉÍÓÚÂÊÔÃÕÇÀ.\-_]{3,60})/i, table: 'contratos', label: 'CONTRATO', fields: 'nome, descricao, status, valor, data_inicio, data_fim', searchField: 'nome' },
-    { regex: /(?:documento|documentos)\s+(?:chamad[oa]\s+|de\s+nome\s+|sobre\s+)?["“']?([a-zA-Z0-9 áéíóúâêôãõçàÁÉÍÓÚÂÊÔÃÕÇÀ.\-_]{3,60})/i, table: 'documentos', label: 'DOCUMENTO', fields: 'nome, descricao, status, tipo, data_vencimento', searchField: 'nome' },
+    { module: 'riscos',      regex: /(?:risco|riscos)\s+(?:chamad[oa]\s+|de\s+nome\s+|sobre\s+)?["“']?([a-zA-Z0-9 áéíóúâêôãõçàÁÉÍÓÚÂÊÔÃÕÇÀ.\-_]{3,60})/i, table: 'riscos', label: 'RISCO', fields: 'nome, descricao, nivel_risco_inicial, nivel_risco_residual, status, responsavel, aceito', searchField: 'nome' },
+    { module: 'controles',   regex: /(?:controle|controles)\s+(?:chamad[oa]\s+|de\s+nome\s+|sobre\s+)?["“']?([a-zA-Z0-9 áéíóúâêôãõçàÁÉÍÓÚÂÊÔÃÕÇÀ.\-_]{3,60})/i, table: 'controles', label: 'CONTROLE', fields: 'nome, descricao, status, criticidade, frequencia, proxima_avaliacao', searchField: 'nome' },
+    { module: 'incidentes',  regex: /(?:incidente|incidentes)\s+(?:chamad[oa]\s+|de\s+nome\s+|sobre\s+)?["“']?([a-zA-Z0-9 áéíóúâêôãõçàÁÉÍÓÚÂÊÔÃÕÇÀ.\-_]{3,60})/i, table: 'incidentes', label: 'INCIDENTE', fields: 'titulo, descricao, criticidade, status, tipo, data_ocorrencia', searchField: 'titulo' },
+    { module: 'contratos',   regex: /(?:contrato|contratos)\s+(?:chamad[oa]\s+|de\s+nome\s+|sobre\s+)?["“']?([a-zA-Z0-9 áéíóúâêôãõçàÁÉÍÓÚÂÊÔÃÕÇÀ.\-_]{3,60})/i, table: 'contratos', label: 'CONTRATO', fields: 'nome, descricao, status, valor, data_inicio, data_fim', searchField: 'nome' },
+    { module: 'documentos',  regex: /(?:documento|documentos)\s+(?:chamad[oa]\s+|de\s+nome\s+|sobre\s+)?["“']?([a-zA-Z0-9 áéíóúâêôãõçàÁÉÍÓÚÂÊÔÃÕÇÀ.\-_]{3,60})/i, table: 'documentos', label: 'DOCUMENTO', fields: 'nome, descricao, status, tipo, data_vencimento', searchField: 'nome' },
   ];
 
   const sections: string[] = [];
   for (const p of patterns) {
+    if (!allowedModules.has(p.module)) continue;
     const m = text.match(p.regex);
     if (!m) continue;
     const term = m[1].trim().replace(/["“'.]+$/, '');
@@ -94,9 +93,19 @@ async function fetchSpecificMentions(
   return sections.join('\n');
 }
 
-async function buildContextSummary(supabase: any, empresaId: string): Promise<string> {
-  const cached = await getCachedContext(supabase, empresaId);
+async function buildContextSummary(
+  supabase: any,
+  empresaId: string,
+  allowedModules: Set<string>
+): Promise<string> {
+  // Cache por (empresa, conjunto de módulos permitidos) — perfis diferentes veem contextos diferentes
+  const modKey = Array.from(allowedModules).sort().join(',');
+  const cacheKey = `${empresaId}:${modKey}`;
+  const cached = await getCachedContext(supabase, cacheKey);
   if (cached) return cached;
+
+  const can = (m: string) => allowedModules.has(m);
+  const empty = () => ({ data: [] });
 
   const [
     riscosRes, controlesRes, incidentesRes, denunciasRes,
@@ -104,21 +113,20 @@ async function buildContextSummary(supabase: any, empresaId: string): Promise<st
     ativosRes, contasRes, dadosRes,
     planosRes, fornecedoresRes
   ] = await Promise.all([
-    supabase.from('riscos').select('id, nome, nivel_risco_inicial, nivel_risco_residual, status, aceito, status_aprovacao, responsavel').eq('empresa_id', empresaId),
-    supabase.from('controles').select('id, nome, status, proxima_avaliacao, criticidade, frequencia').eq('empresa_id', empresaId),
-    supabase.from('incidentes').select('id, titulo, criticidade, status, tipo').eq('empresa_id', empresaId),
-    supabase.from('denuncias').select('id, titulo, status, gravidade, anonima').eq('empresa_id', empresaId),
-    supabase.from('auditorias').select('id, nome, status, prioridade, tipo').eq('empresa_id', empresaId),
-    supabase.from('documentos').select('id, nome, status, data_vencimento, tipo, arquivo_url, arquivo_url_externa').eq('empresa_id', empresaId),
-    supabase.from('gap_analysis_frameworks').select('id, nome, versao, tipo_framework'),
-    supabase.from('gap_analysis_evaluations').select('id, framework_id, conformity_status').eq('empresa_id', empresaId),
-    supabase.from('contratos').select('id, nome, numero_contrato, status, data_fim, valor').eq('empresa_id', empresaId),
-    supabase.from('ativos').select('id, nome, tipo, criticidade, status').eq('empresa_id', empresaId),
-    supabase.from('contas_privilegiadas').select('id, usuario_beneficiario, tipo_acesso, nivel_privilegio, status, data_expiracao').eq('empresa_id', empresaId),
-    supabase.from('dados_pessoais').select('id, nome, categoria_dados, sensibilidade, base_legal').eq('empresa_id', empresaId),
-    
-    supabase.from('planos_acao').select('id, titulo, status, prioridade, prazo').eq('empresa_id', empresaId),
-    supabase.from('fornecedores').select('id, nome, status, categoria').eq('empresa_id', empresaId),
+    can('riscos')              ? supabase.from('riscos').select('id, nome, nivel_risco_inicial, nivel_risco_residual, status, aceito, status_aprovacao, responsavel').eq('empresa_id', empresaId) : empty(),
+    can('controles')           ? supabase.from('controles').select('id, nome, status, proxima_avaliacao, criticidade, frequencia').eq('empresa_id', empresaId) : empty(),
+    can('incidentes')          ? supabase.from('incidentes').select('id, titulo, criticidade, status, tipo').eq('empresa_id', empresaId) : empty(),
+    can('denuncia')            ? supabase.from('denuncias').select('id, titulo, status, gravidade, anonima').eq('empresa_id', empresaId) : empty(),
+    can('auditorias')          ? supabase.from('auditorias').select('id, nome, status, prioridade, tipo').eq('empresa_id', empresaId) : empty(),
+    can('documentos')          ? supabase.from('documentos').select('id, nome, status, data_vencimento, tipo, arquivo_url, arquivo_url_externa').eq('empresa_id', empresaId) : empty(),
+    can('gap-analysis')        ? supabase.from('gap_analysis_frameworks').select('id, nome, versao, tipo_framework') : empty(),
+    can('gap-analysis')        ? supabase.from('gap_analysis_evaluations').select('id, framework_id, conformity_status').eq('empresa_id', empresaId) : empty(),
+    can('contratos')           ? supabase.from('contratos').select('id, nome, numero_contrato, status, data_fim, valor').eq('empresa_id', empresaId) : empty(),
+    can('ativos')              ? supabase.from('ativos').select('id, nome, tipo, criticidade, status').eq('empresa_id', empresaId) : empty(),
+    can('contas-privilegiadas')? supabase.from('contas_privilegiadas').select('id, usuario_beneficiario, tipo_acesso, nivel_privilegio, status, data_expiracao').eq('empresa_id', empresaId) : empty(),
+    can('dados')               ? supabase.from('dados_pessoais').select('id, nome, categoria_dados, sensibilidade, base_legal').eq('empresa_id', empresaId) : empty(),
+    can('planos-acao')         ? supabase.from('planos_acao').select('id, titulo, status, prioridade, prazo').eq('empresa_id', empresaId) : empty(),
+    can('contratos')           ? supabase.from('fornecedores').select('id, nome, status, categoria').eq('empresa_id', empresaId) : empty(),
   ]);
 
   const riscos: any[] = riscosRes.data || [];
@@ -133,14 +141,13 @@ async function buildContextSummary(supabase: any, empresaId: string): Promise<st
   const ativos: any[] = ativosRes.data || [];
   const contas: any[] = contasRes.data || [];
   const dados: any[] = dadosRes.data || [];
-  
   const planos: any[] = planosRes.data || [];
   const fornecedores: any[] = fornecedoresRes.data || [];
 
   const [planosBCPRes, tarefasBCPRes, testesBCPRes] = await Promise.all([
-    supabase.from('continuidade_planos').select('id, nome, tipo, status, rto_horas, rpo_horas, proxima_revisao').eq('empresa_id', empresaId),
-    supabase.from('continuidade_tarefas').select('id, status').eq('empresa_id', empresaId),
-    supabase.from('continuidade_testes').select('id, resultado, data_teste').eq('empresa_id', empresaId),
+    can('continuidade') ? supabase.from('continuidade_planos').select('id, nome, tipo, status, rto_horas, rpo_horas, proxima_revisao').eq('empresa_id', empresaId) : empty(),
+    can('continuidade') ? supabase.from('continuidade_tarefas').select('id, status').eq('empresa_id', empresaId) : empty(),
+    can('continuidade') ? supabase.from('continuidade_testes').select('id, resultado, data_teste').eq('empresa_id', empresaId) : empty(),
   ]);
   const planosBCP: any[] = planosBCPRes.data || [];
   const tarefasBCP: any[] = tarefasBCPRes.data || [];
@@ -157,65 +164,65 @@ async function buildContextSummary(supabase: any, empresaId: string): Promise<st
     return `${f.nome}: ${score}% (${conformes}/${evs.length} conformes)`;
   });
 
-  const summary = `
-DADOS DA EMPRESA (use APENAS estes dados, NUNCA invente):
+  const blocks: string[] = ['DADOS DA EMPRESA (use APENAS estes dados, NUNCA invente):'];
 
-RISCOS (${riscos.length} total):
+  if (can('riscos')) blocks.push(`\nRISCOS (${riscos.length} total):
 - ${riscos.filter(r => ['critico', 'muito_alto', 'alto', 'Crítico', 'Muito Alto', 'Alto'].includes(r.nivel_risco_inicial || '')).length} altos/críticos
 - ${riscos.filter(r => r.aceito === true).length} aceitos formalmente
 - ${riscos.filter(r => !r.status || r.status === 'identificado').length} identificados (sem tratamento)
 - ${riscos.filter(r => r.status === 'em_tratamento' || r.status === 'tratado').length} em tratamento ou tratados
-- Itens: ${listItems(riscos, 'nome')}
+- Itens: ${listItems(riscos, 'nome')}`);
 
-CONTROLES (${controles.length} total):
+  if (can('controles')) blocks.push(`\nCONTROLES (${controles.length} total):
 - ${controles.filter(c => c.status === 'ativo').length} ativos
 - ${controles.filter(c => c.criticidade === 'critico').length} críticos
 - ${controles.filter(c => c.proxima_avaliacao && new Date(c.proxima_avaliacao) <= thirtyDays && new Date(c.proxima_avaliacao) >= now).length} com avaliação vencendo em 30 dias
-- Itens: ${listItems(controles, 'nome')}
+- Itens: ${listItems(controles, 'nome')}`);
 
-INCIDENTES (${incidentes.length} total):
+  if (can('incidentes')) blocks.push(`\nINCIDENTES (${incidentes.length} total):
 - ${incidentes.filter(i => ['aberto', 'investigacao', 'em_investigacao', 'em_andamento'].includes(i.status || '')).length} abertos/em andamento
 - ${incidentes.filter(i => i.criticidade === 'critica').length} críticos
 - ${incidentes.filter(i => i.status === 'resolvido').length} resolvidos
-- Itens: ${listItems(incidentes, 'titulo')}
+- Itens: ${listItems(incidentes, 'titulo')}`);
 
-DENÚNCIAS (${denuncias.length} total):
+  if (can('denuncia')) blocks.push(`\nDENÚNCIAS (${denuncias.length} total):
 - ${denuncias.filter(d => ['nova', 'em_investigacao', 'em_analise'].includes(d.status || '')).length} pendentes
 - ${denuncias.filter(d => d.gravidade === 'alta' || d.gravidade === 'critica').length} graves
 - ${denuncias.filter(d => d.anonima === true).length} anônimas
-- Itens: ${listItems(denuncias, 'titulo')}
+- Itens: ${listItems(denuncias, 'titulo')}`);
 
-AUDITORIAS (${auditorias.length} total):
+  if (can('auditorias')) blocks.push(`\nAUDITORIAS (${auditorias.length} total):
 - ${auditorias.filter(a => a.status === 'em_andamento').length} em andamento
 - ${auditorias.filter(a => a.status === 'concluida').length} concluídas
-- Itens: ${listItems(auditorias, 'nome')}
+- Itens: ${listItems(auditorias, 'nome')}`);
 
-DOCUMENTOS (${documentos.length} total):
+  if (can('documentos')) blocks.push(`\nDOCUMENTOS (${documentos.length} total):
 - ${documentos.filter(d => d.data_vencimento && new Date(d.data_vencimento) < now).length} vencidos
 - ${documentos.filter(d => d.data_vencimento && new Date(d.data_vencimento) <= thirtyDays && new Date(d.data_vencimento) >= now).length} vencendo em 30 dias
 - ${documentos.filter(d => d.arquivo_url || d.arquivo_url_externa).length} com arquivo/URL anexado
-- Itens: ${listItems(documentos, 'nome')}
+- Itens: ${listItems(documentos, 'nome')}`);
 
-ATIVOS (${ativos.length} total):
+  if (can('ativos')) blocks.push(`\nATIVOS (${ativos.length} total):
 - ${ativos.filter(a => a.criticidade === 'critico').length} críticos
 - ${ativos.filter(a => a.status === 'ativo').length} ativos
-- Itens: ${listItems(ativos, 'nome')}
+- Itens: ${listItems(ativos, 'nome')}`);
 
-CONTAS PRIVILEGIADAS (${contas.length} total):
+  if (can('contas-privilegiadas')) blocks.push(`\nCONTAS PRIVILEGIADAS (${contas.length} total):
 - ${contas.filter(c => c.status === 'ativo' || c.status === 'ativa').length} ativas
 - ${contas.filter(c => c.data_expiracao && new Date(c.data_expiracao) <= thirtyDays && new Date(c.data_expiracao) >= now).length} expirando em 30 dias
-- Itens: ${contas.slice(0, 15).map((c: any) => `${c.usuario_beneficiario} (${c.tipo_acesso})`).join(', ') || 'Nenhuma'}
+- Itens: ${contas.slice(0, 15).map((c: any) => `${c.usuario_beneficiario} (${c.tipo_acesso})`).join(', ') || 'Nenhuma'}`);
 
-DADOS PESSOAIS - LGPD (${dados.length} total):
+  if (can('dados')) blocks.push(`\nDADOS PESSOAIS - LGPD (${dados.length} total):
 - ${dados.filter(d => d.sensibilidade === 'critico' || d.sensibilidade === 'sensivel').length} sensíveis/críticos
-- Itens: ${listItems(dados, 'nome')}
-PLANOS DE AÇÃO (${planos.length} total):
+- Itens: ${listItems(dados, 'nome')}`);
+
+  if (can('planos-acao')) blocks.push(`\nPLANOS DE AÇÃO (${planos.length} total):
 - ${planos.filter(p => ['em_andamento', 'aberto', 'pendente'].includes(p.status || '')).length} em andamento/abertos
 - ${planos.filter(p => p.status === 'concluido').length} concluídos
 - ${planos.filter(p => p.prazo && new Date(p.prazo) < now && p.status !== 'concluido').length} atrasados
-- Itens: ${listItems(planos, 'titulo')}
+- Itens: ${listItems(planos, 'titulo')}`);
 
-FORNECEDORES (${fornecedores.length} total):
+  if (can('contratos')) blocks.push(`\nFORNECEDORES (${fornecedores.length} total):
 - ${fornecedores.filter(f => f.status === 'ativo').length} ativos
 - Itens: ${listItems(fornecedores, 'nome')}
 
@@ -223,20 +230,26 @@ CONTRATOS (${contratos.length} total):
 - ${contratos.filter(c => c.status === 'ativo').length} ativos
 - ${contratos.filter(c => c.data_fim && new Date(c.data_fim) <= thirtyDays && new Date(c.data_fim) >= now).length} vencendo em 30 dias
 - Valor total contratado: R$ ${contratos.reduce((s: number, c: any) => s + (Number(c.valor) || 0), 0).toLocaleString('pt-BR')}
-- Itens: ${listItems(contratos, 'nome')}
+- Itens: ${listItems(contratos, 'nome')}`);
 
-CONTINUIDADE DE NEGÓCIOS - BCP/DRP (${planosBCP.length} planos):
+  if (can('continuidade')) blocks.push(`\nCONTINUIDADE DE NEGÓCIOS - BCP/DRP (${planosBCP.length} planos):
 - ${planosBCP.filter(p => p.status === 'ativo').length} planos ativos
 - ${planosBCP.filter(p => p.status === 'em_revisao').length} em revisão
 - ${tarefasBCP.filter(t => t.status === 'pendente').length} tarefas pendentes
 - ${testesBCP.length} testes registrados (${testesBCP.filter(t => t.resultado === 'aprovado').length} aprovados)
-- Itens: ${listItems(planosBCP, 'nome')}
+- Itens: ${listItems(planosBCP, 'nome')}`);
 
-FRAMEWORKS DE COMPLIANCE (${frameworks.length}):
-${frameworkScores.length > 0 ? frameworkScores.join(' | ') : 'Nenhum framework com avaliações'}
-  `.trim();
+  if (can('gap-analysis')) blocks.push(`\nFRAMEWORKS DE COMPLIANCE (${frameworks.length}):
+${frameworkScores.length > 0 ? frameworkScores.join(' | ') : 'Nenhum framework com avaliações'}`);
 
-  await setCachedContext(supabase, empresaId, summary);
+  const denied = ['riscos','controles','incidentes','denuncia','auditorias','documentos','ativos','contas-privilegiadas','dados','planos-acao','contratos','continuidade','gap-analysis']
+    .filter(m => !can(m));
+  if (denied.length > 0) {
+    blocks.push(`\nMÓDULOS SEM PERMISSÃO (o usuário NÃO tem acesso a estes dados — NÃO responda sobre eles, oriente a solicitar acesso ao administrador): ${denied.join(', ')}`);
+  }
+
+  const summary = blocks.join('\n').trim();
+  await setCachedContext(supabase, cacheKey, summary);
   return summary;
 }
 
@@ -310,13 +323,16 @@ serve(async (req) => {
     // que nunca chegou.
 
 
-    const contextSummary = await buildContextSummary(supabase, empresaId);
+    // RBAC: descobrir módulos que o usuário pode ler; AkurIA só devolve dados desses módulos
+    const allowedModules = await getAllowedModules(supabase, user.id, isSuperAdmin);
 
-    // Busca específica baseada na última msg do usuário
+    const contextSummary = await buildContextSummary(supabase, empresaId, allowedModules);
+
+    // Busca específica baseada na última msg do usuário (também respeita RBAC)
     const lastUserMsg = [...(messages || [])].reverse().find((m: any) => m.role === 'user');
     let specificDetails = '';
     if (lastUserMsg?.content) {
-      specificDetails = await fetchSpecificMentions(supabase, empresaId, lastUserMsg.content);
+      specificDetails = await fetchSpecificMentions(supabase, empresaId, lastUserMsg.content, allowedModules);
     }
 
     const isEN = locale === 'en';

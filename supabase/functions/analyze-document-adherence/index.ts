@@ -51,6 +51,39 @@ serve(async (req) => {
       });
     }
 
+    // === TENANT GUARD: assessment precisa pertencer à empresa do JWT ===
+    if (!assessmentId) {
+      return new Response(JSON.stringify({ error: 'assessmentId obrigatório' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    const { data: assessmentRow, error: assessmentErr } = await supabase
+      .from('gap_analysis_adherence_assessments')
+      .select('id, empresa_id, framework_id')
+      .eq('id', assessmentId)
+      .maybeSingle();
+    if (assessmentErr || !assessmentRow) {
+      return new Response(JSON.stringify({ error: 'Assessment não encontrado' }), {
+        status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    if (assessmentRow.empresa_id !== empresaId) {
+      console.warn('Cross-tenant attempt on analyze-document-adherence', { userId, empresaId, targetEmpresa: assessmentRow.empresa_id, assessmentId });
+      return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+    // Framework é o persistido no assessment (não confiar no body)
+    const safeFrameworkId = assessmentRow.framework_id;
+    // O path do storage precisa estar dentro da pasta da empresa (convenção do bucket)
+    const safeStorageFileName = String(storageFileName || '');
+    if (!safeStorageFileName.startsWith(`${empresaId}/`)) {
+      console.warn('Storage path outside empresa folder', { userId, empresaId, safeStorageFileName });
+      return new Response(JSON.stringify({ error: 'Arquivo inválido para esta empresa' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     // Consumir crédito de IA (empresa derivada do JWT, não do body)
     {
       const { data: creditResult, error: creditError } = await supabase
@@ -80,13 +113,13 @@ serve(async (req) => {
       }
     }
 
-    console.log('Starting adherence analysis:', { assessmentId, frameworkId, storageFileName });
+    console.log('Starting adherence analysis:', { assessmentId, frameworkId: safeFrameworkId, storageFileName: safeStorageFileName });
 
-    // 1. Buscar framework e requisitos
+    // 1. Buscar framework e requisitos (framework é template global, não tem empresa_id)
     const { data: framework, error: frameworkError } = await supabase
       .from('gap_analysis_frameworks')
       .select('*')
-      .eq('id', frameworkId)
+      .eq('id', safeFrameworkId)
       .single();
 
     if (frameworkError || !framework) {
@@ -96,7 +129,7 @@ serve(async (req) => {
     const { data: requirements, error: reqError } = await supabase
       .from('gap_analysis_requirements')
       .select('*')
-      .eq('framework_id', frameworkId)
+      .eq('framework_id', safeFrameworkId)
       .order('ordem');
 
     if (reqError) throw new Error(`Erro ao buscar requisitos: ${reqError.message}`);
@@ -104,10 +137,10 @@ serve(async (req) => {
 
     console.log(`Framework: ${framework.nome}, Requirements: ${requirements.length}`);
 
-    // 2. Baixar arquivo do storage
+    // 2. Baixar arquivo do storage (path derivado do assessment persistido, não do client)
     const { data: fileData, error: downloadError } = await supabase.storage
       .from('adherence-documents')
-      .download(storageFileName);
+      .download(safeStorageFileName);
 
     if (downloadError || !fileData) {
       throw new Error(`Erro ao baixar documento: ${downloadError?.message}`);
@@ -117,7 +150,7 @@ serve(async (req) => {
 
     // 3. Extrair texto
     let documentText = '';
-    const fileExtension = storageFileName.toLowerCase().split('.').pop();
+    const fileExtension = safeStorageFileName.toLowerCase().split('.').pop();
 
     if (fileExtension === 'txt') {
       documentText = await fileData.text();

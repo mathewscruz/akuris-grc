@@ -8047,7 +8047,9 @@ export type Database = {
         Returns: boolean
       }
       has_super_admin_role: { Args: never; Returns: boolean }
-      has_valid_mfa_session: { Args: never; Returns: boolean }
+      has_valid_mfa_session:
+        | { Args: never; Returns: boolean }
+        | { Args: { _user_id: string }; Returns: boolean }
       incidente_pertence_empresa: {
         Args: { incidente_id: string }
         Returns: boolean
