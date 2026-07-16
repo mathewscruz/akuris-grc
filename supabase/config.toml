@@ -153,10 +153,10 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.send-approval-notification]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-auditoria-item-notification]
-verify_jwt = false
+verify_jwt = true
 
 [functions.process-invitation-reminders]
 verify_jwt = false
