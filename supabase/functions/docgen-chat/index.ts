@@ -302,14 +302,21 @@ serve(async (req) => {
       frameworkGapsText = await fetchFrameworkGaps(supabase, framework_context.framework_id, empresa_id);
     }
 
-    // Buscar ou criar conversa
+    // Buscar ou criar conversa — SEMPRE filtrar por empresa_id + user_id (cross-tenant guard)
     let conversation;
     if (conversation_id) {
       const { data } = await supabase
         .from('docgen_conversations')
         .select('*')
         .eq('id', conversation_id)
-        .single();
+        .eq('empresa_id', authedEmpresaId)
+        .eq('user_id', authedUserId)
+        .maybeSingle();
+      if (!data) {
+        return new Response(JSON.stringify({ error: 'Conversation not found' }), {
+          status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
       conversation = data;
     }
 
