@@ -114,7 +114,7 @@ verify_jwt = false
 verify_jwt = true
 
 [functions.send-review-notification]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-controle-notification]
 verify_jwt = true
