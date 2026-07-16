@@ -18,11 +18,32 @@ Deno.serve(async (req) => {
     const resend = new Resend(resendApiKey);
     const supabaseClient = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
 
+    // === AUTH: exige JWT válido ===
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+    }
+    const { data: userData, error: userErr } = await supabaseClient.auth.getUser(authHeader.replace('Bearer ', ''));
+    if (userErr || !userData?.user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+    }
+    const { data: callerProfile } = await supabaseClient
+      .from('profiles').select('empresa_id').eq('user_id', userData.user.id).maybeSingle();
+    const callerEmpresaId = callerProfile?.empresa_id;
+    if (!callerEmpresaId) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+    }
+
     const { reviewId }: SendNotificationRequest = await req.json();
 
     const { data: review, error: reviewError } = await supabaseClient.from('access_reviews').select(`*, sistema:sistemas_privilegiados(nome_sistema), responsavel:profiles!access_reviews_responsavel_revisao_fkey(nome, email, empresa_id)`).eq('id', reviewId).single();
     if (reviewError) throw reviewError;
     if (!review.responsavel?.email) return new Response(JSON.stringify({ error: 'Responsável não possui e-mail cadastrado' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+
+    // Isolamento por tenant: caller e responsável devem estar na mesma empresa
+    if (review.responsavel.empresa_id !== callerEmpresaId) {
+      return new Response(JSON.stringify({ error: 'Forbidden: revisão de outro tenant' }), { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+    }
 
     let companyName = 'Akuris';
     if (review.responsavel.empresa_id) {

@@ -29,11 +29,51 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // === AUTH: exige JWT válido de usuário autenticado do próprio tenant ===
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const token = authHeader.replace('Bearer ', '');
+    const { data: userData, error: userErr } = await supabase.auth.getUser(token);
+    if (userErr || !userData?.user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const callerId = userData.user.id;
+    const { data: callerProfile } = await supabase
+      .from('profiles').select('empresa_id').eq('user_id', callerId).maybeSingle();
+    const callerEmpresaId = callerProfile?.empresa_id;
+    if (!callerEmpresaId) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const { item_id, auditoria_id, responsavel_id, item_codigo, item_titulo, auditoria_nome, prazo }: NotificationRequest = await req.json();
+
+    // Valida que a auditoria pertence à empresa do chamador (impede envio cross-tenant)
+    const { data: auditoria } = await supabase
+      .from('auditorias').select('empresa_id').eq('id', auditoria_id).maybeSingle();
+    if (!auditoria || auditoria.empresa_id !== callerEmpresaId) {
+      return new Response(JSON.stringify({ error: 'Forbidden: auditoria não pertence à sua empresa' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     const { data: responsavel, error: responsavelError } = await supabase
       .from("profiles").select("nome, email, empresa_id").eq("user_id", responsavel_id).single();
     if (responsavelError || !responsavel) throw new Error("Responsável não encontrado");
+
+    // Responsável precisa estar na mesma empresa
+    if (responsavel.empresa_id !== callerEmpresaId) {
+      return new Response(JSON.stringify({ error: 'Forbidden: responsável não pertence à sua empresa' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     const { data: empresa } = await supabase
       .from("empresas").select("nome, logo_url").eq("id", responsavel.empresa_id).single();

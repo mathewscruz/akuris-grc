@@ -114,7 +114,7 @@ verify_jwt = false
 verify_jwt = true
 
 [functions.send-review-notification]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-controle-notification]
 verify_jwt = true
@@ -129,7 +129,7 @@ verify_jwt = false
 verify_jwt = true
 
 [functions.send-incidente-notification]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-contrato-vencimento-notification]
 verify_jwt = false
@@ -153,10 +153,10 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.send-approval-notification]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-auditoria-item-notification]
-verify_jwt = false
+verify_jwt = true
 
 [functions.process-invitation-reminders]
 verify_jwt = false
@@ -198,7 +198,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.send-risco-aceite-notification]
-verify_jwt = false
+verify_jwt = true
 
 [functions.api-public]
 verify_jwt = false
