@@ -39,8 +39,67 @@ serve(async (req) => {
       });
     }
 
-    const body = await req.json();
-    console.log(`Inbound webhook received: ${webhook.nome} (${webhook.tipo_evento}) for module ${webhook.modulo_destino}`);
+    // Ler body como texto para validação de assinatura antes de parsear JSON
+    const rawBody = await req.text();
+
+    // Validação HMAC-SHA256 (opcional — só exige se signing_secret estiver configurado)
+    if (webhook.signing_secret) {
+      const sigHeader =
+        req.headers.get('x-webhook-signature') ||
+        req.headers.get('x-hub-signature-256') || '';
+      const provided = sigHeader.replace(/^sha256=/i, '').trim().toLowerCase();
+
+      if (!provided) {
+        return new Response(JSON.stringify({ error: 'Assinatura HMAC ausente (header X-Webhook-Signature)' }), {
+          status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      try {
+        const enc = new TextEncoder();
+        const key = await crypto.subtle.importKey(
+          'raw',
+          enc.encode(webhook.signing_secret),
+          { name: 'HMAC', hash: 'SHA-256' },
+          false,
+          ['sign']
+        );
+        const sigBuf = await crypto.subtle.sign('HMAC', key, enc.encode(rawBody));
+        const expected = Array.from(new Uint8Array(sigBuf))
+          .map(b => b.toString(16).padStart(2, '0'))
+          .join('');
+
+        // Comparação em tempo constante
+        if (expected.length !== provided.length) {
+          return new Response(JSON.stringify({ error: 'Assinatura inválida' }), {
+            status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+        let diff = 0;
+        for (let i = 0; i < expected.length; i++) {
+          diff |= expected.charCodeAt(i) ^ provided.charCodeAt(i);
+        }
+        if (diff !== 0) {
+          return new Response(JSON.stringify({ error: 'Assinatura inválida' }), {
+            status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          });
+        }
+      } catch (sigErr) {
+        console.error('HMAC verification failed:', sigErr);
+        return new Response(JSON.stringify({ error: 'Falha ao validar assinatura' }), {
+          status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+    }
+
+    let body: any;
+    try {
+      body = JSON.parse(rawBody);
+    } catch {
+      return new Response(JSON.stringify({ error: 'Body JSON inválido' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
 
     // Route to appropriate module
     let insertError = null;
