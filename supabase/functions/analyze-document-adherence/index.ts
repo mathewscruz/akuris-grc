@@ -59,7 +59,7 @@ serve(async (req) => {
     }
     const { data: assessmentRow, error: assessmentErr } = await supabase
       .from('gap_analysis_adherence_assessments')
-      .select('id, empresa_id, framework_id, arquivo_storage_path, arquivo_nome')
+      .select('id, empresa_id, framework_id')
       .eq('id', assessmentId)
       .maybeSingle();
     if (assessmentErr || !assessmentRow) {
@@ -73,11 +73,15 @@ serve(async (req) => {
         status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
-    // Coerce framework/path para os valores persistidos no assessment (nunca confiar no body)
+    // Framework é o persistido no assessment (não confiar no body)
     const safeFrameworkId = assessmentRow.framework_id;
-    const safeStorageFileName = assessmentRow.arquivo_storage_path || storageFileName;
-    if (safeFrameworkId !== frameworkId || safeStorageFileName !== storageFileName) {
-      console.warn('Body IDs did not match assessment row — using stored values', { assessmentId });
+    // O path do storage precisa estar dentro da pasta da empresa (convenção do bucket)
+    const safeStorageFileName = String(storageFileName || '');
+    if (!safeStorageFileName.startsWith(`${empresaId}/`)) {
+      console.warn('Storage path outside empresa folder', { userId, empresaId, safeStorageFileName });
+      return new Response(JSON.stringify({ error: 'Arquivo inválido para esta empresa' }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
     // Consumir crédito de IA (empresa derivada do JWT, não do body)
