@@ -53,23 +53,25 @@ async function getAllowedModules(supabase: any, userId: string, isSuperAdmin: bo
 }
 
 // =============== Detecta menções a entidades específicas e busca detalhes ===============
+// Cada padrão mapeia para o módulo GRC correspondente para aplicar RBAC.
 async function fetchSpecificMentions(
   supabase: any,
   empresaId: string,
-  userMessage: string
+  userMessage: string,
+  allowedModules: Set<string>
 ): Promise<string> {
   const text = userMessage.toLowerCase();
-  // Padrões: "fale do risco X", "detalhes do controle Y", "incidente Z", etc.
   const patterns = [
-    { regex: /(?:risco|riscos)\s+(?:chamad[oa]\s+|de\s+nome\s+|sobre\s+)?["“']?([a-zA-Z0-9 áéíóúâêôãõçàÁÉÍÓÚÂÊÔÃÕÇÀ.\-_]{3,60})/i, table: 'riscos', label: 'RISCO', fields: 'nome, descricao, nivel_risco_inicial, nivel_risco_residual, status, responsavel, aceito', searchField: 'nome' },
-    { regex: /(?:controle|controles)\s+(?:chamad[oa]\s+|de\s+nome\s+|sobre\s+)?["“']?([a-zA-Z0-9 áéíóúâêôãõçàÁÉÍÓÚÂÊÔÃÕÇÀ.\-_]{3,60})/i, table: 'controles', label: 'CONTROLE', fields: 'nome, descricao, status, criticidade, frequencia, proxima_avaliacao', searchField: 'nome' },
-    { regex: /(?:incidente|incidentes)\s+(?:chamad[oa]\s+|de\s+nome\s+|sobre\s+)?["“']?([a-zA-Z0-9 áéíóúâêôãõçàÁÉÍÓÚÂÊÔÃÕÇÀ.\-_]{3,60})/i, table: 'incidentes', label: 'INCIDENTE', fields: 'titulo, descricao, criticidade, status, tipo, data_ocorrencia', searchField: 'titulo' },
-    { regex: /(?:contrato|contratos)\s+(?:chamad[oa]\s+|de\s+nome\s+|sobre\s+)?["“']?([a-zA-Z0-9 áéíóúâêôãõçàÁÉÍÓÚÂÊÔÃÕÇÀ.\-_]{3,60})/i, table: 'contratos', label: 'CONTRATO', fields: 'nome, descricao, status, valor, data_inicio, data_fim', searchField: 'nome' },
-    { regex: /(?:documento|documentos)\s+(?:chamad[oa]\s+|de\s+nome\s+|sobre\s+)?["“']?([a-zA-Z0-9 áéíóúâêôãõçàÁÉÍÓÚÂÊÔÃÕÇÀ.\-_]{3,60})/i, table: 'documentos', label: 'DOCUMENTO', fields: 'nome, descricao, status, tipo, data_vencimento', searchField: 'nome' },
+    { module: 'riscos',      regex: /(?:risco|riscos)\s+(?:chamad[oa]\s+|de\s+nome\s+|sobre\s+)?["“']?([a-zA-Z0-9 áéíóúâêôãõçàÁÉÍÓÚÂÊÔÃÕÇÀ.\-_]{3,60})/i, table: 'riscos', label: 'RISCO', fields: 'nome, descricao, nivel_risco_inicial, nivel_risco_residual, status, responsavel, aceito', searchField: 'nome' },
+    { module: 'controles',   regex: /(?:controle|controles)\s+(?:chamad[oa]\s+|de\s+nome\s+|sobre\s+)?["“']?([a-zA-Z0-9 áéíóúâêôãõçàÁÉÍÓÚÂÊÔÃÕÇÀ.\-_]{3,60})/i, table: 'controles', label: 'CONTROLE', fields: 'nome, descricao, status, criticidade, frequencia, proxima_avaliacao', searchField: 'nome' },
+    { module: 'incidentes',  regex: /(?:incidente|incidentes)\s+(?:chamad[oa]\s+|de\s+nome\s+|sobre\s+)?["“']?([a-zA-Z0-9 áéíóúâêôãõçàÁÉÍÓÚÂÊÔÃÕÇÀ.\-_]{3,60})/i, table: 'incidentes', label: 'INCIDENTE', fields: 'titulo, descricao, criticidade, status, tipo, data_ocorrencia', searchField: 'titulo' },
+    { module: 'contratos',   regex: /(?:contrato|contratos)\s+(?:chamad[oa]\s+|de\s+nome\s+|sobre\s+)?["“']?([a-zA-Z0-9 áéíóúâêôãõçàÁÉÍÓÚÂÊÔÃÕÇÀ.\-_]{3,60})/i, table: 'contratos', label: 'CONTRATO', fields: 'nome, descricao, status, valor, data_inicio, data_fim', searchField: 'nome' },
+    { module: 'documentos',  regex: /(?:documento|documentos)\s+(?:chamad[oa]\s+|de\s+nome\s+|sobre\s+)?["“']?([a-zA-Z0-9 áéíóúâêôãõçàÁÉÍÓÚÂÊÔÃÕÇÀ.\-_]{3,60})/i, table: 'documentos', label: 'DOCUMENTO', fields: 'nome, descricao, status, tipo, data_vencimento', searchField: 'nome' },
   ];
 
   const sections: string[] = [];
   for (const p of patterns) {
+    if (!allowedModules.has(p.module)) continue;
     const m = text.match(p.regex);
     if (!m) continue;
     const term = m[1].trim().replace(/["“'.]+$/, '');
