@@ -17,6 +17,14 @@ function generateOTP(): string {
   return Array.from(arr).map((n) => n % 10).join('')
 }
 
+async function hashOTP(code: string, userId: string): Promise<string> {
+  const enc = new TextEncoder()
+  const buf = await crypto.subtle.digest('SHA-256', enc.encode(`${userId}:${code}`))
+  return Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
