@@ -323,13 +323,16 @@ serve(async (req) => {
     // que nunca chegou.
 
 
-    const contextSummary = await buildContextSummary(supabase, empresaId);
+    // RBAC: descobrir módulos que o usuário pode ler; AkurIA só devolve dados desses módulos
+    const allowedModules = await getAllowedModules(supabase, user.id, isSuperAdmin);
 
-    // Busca específica baseada na última msg do usuário
+    const contextSummary = await buildContextSummary(supabase, empresaId, allowedModules);
+
+    // Busca específica baseada na última msg do usuário (também respeita RBAC)
     const lastUserMsg = [...(messages || [])].reverse().find((m: any) => m.role === 'user');
     let specificDetails = '';
     if (lastUserMsg?.content) {
-      specificDetails = await fetchSpecificMentions(supabase, empresaId, lastUserMsg.content);
+      specificDetails = await fetchSpecificMentions(supabase, empresaId, lastUserMsg.content, allowedModules);
     }
 
     const isEN = locale === 'en';
