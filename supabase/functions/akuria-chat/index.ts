@@ -22,37 +22,34 @@ const memCache = new Map<string, CacheEntry>();
 const MEM_TTL_MS = 60 * 1000; // 1 min — protege bursts na mesma instância
 const DB_TTL_MIN = 10; // 10 min — janela padrão
 
-async function getCachedContext(supabase: any, empresaId: string): Promise<string | null> {
-  const mem = memCache.get(empresaId);
+async function getCachedContext(supabase: any, cacheKey: string): Promise<string | null> {
+  const mem = memCache.get(cacheKey);
   if (mem && Date.now() < mem.expiresAt) return mem.summary;
-  try {
-    const { data } = await supabase
-      .from('empresa_ai_context_cache')
-      .select('summary, expires_at')
-      .eq('empresa_id', empresaId)
-      .maybeSingle();
-    if (data?.summary && data.expires_at && new Date(data.expires_at).getTime() > Date.now()) {
-      memCache.set(empresaId, { summary: data.summary, expiresAt: Date.now() + MEM_TTL_MS });
-      return data.summary;
-    }
-  } catch (e) {
-    console.error('context cache read error', e);
-  }
   return null;
 }
 
-async function setCachedContext(supabase: any, empresaId: string, summary: string) {
-  memCache.set(empresaId, { summary, expiresAt: Date.now() + MEM_TTL_MS });
-  try {
-    await supabase.from('empresa_ai_context_cache').upsert({
-      empresa_id: empresaId,
-      summary,
-      updated_at: new Date().toISOString(),
-      expires_at: new Date(Date.now() + DB_TTL_MIN * 60 * 1000).toISOString(),
-    });
-  } catch (e) {
-    console.error('context cache write error', e);
+async function setCachedContext(_supabase: any, cacheKey: string, summary: string) {
+  memCache.set(cacheKey, { summary, expiresAt: Date.now() + MEM_TTL_MS });
+}
+
+// Retorna o conjunto de módulos que o usuário pode LER. Super-admins veem tudo.
+async function getAllowedModules(supabase: any, userId: string, isSuperAdmin: boolean): Promise<Set<string>> {
+  if (isSuperAdmin) {
+    const { data } = await supabase.from('system_modules').select('name').eq('is_active', true);
+    return new Set((data || []).map((m: any) => m.name));
   }
+  const { data } = await supabase
+    .from('user_module_permissions')
+    .select('can_read, can_access, system_modules!inner(name, is_active)')
+    .eq('user_id', userId)
+    .eq('system_modules.is_active', true);
+  const allowed = new Set<string>();
+  for (const row of (data || [])) {
+    if ((row.can_read || row.can_access) && row.system_modules?.name) {
+      allowed.add(row.system_modules.name);
+    }
+  }
+  return allowed;
 }
 
 // =============== Detecta menções a entidades específicas e busca detalhes ===============
