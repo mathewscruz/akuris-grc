@@ -1,46 +1,50 @@
-## Problema
+## Validação do fluxo de senha e primeiro acesso
 
-Nos logs de `create-user`:
-```
-Erro ao enviar e-mail: FunctionsHttpError ... status: 401 ... url: .../send-welcome-email
-```
+Percorri as peças: `create-user` → `send-welcome-email` → e-mail com link → `/definir-senha` → `updateUser({password})`, além de `resend-welcome-email`, `send-password-reset` e `ForgotPasswordDialog`.
 
-A função `send-welcome-email` valida o chamador comparando `Authorization: Bearer <token>` contra `SUPABASE_SERVICE_ROLE_KEY`. Quando `create-user` chama:
+### Estado geral
 
-```ts
-await supabaseAdmin.functions.invoke('send-welcome-email', { body: {...} })
-```
+O fluxo está **funcional** após a correção do 401 (Authorization service_role) aplicada na última rodada. Estrutura correta:
 
-o cliente supabase-js dentro do runtime Deno **não injeta** automaticamente a chave do `createClient` no header `Authorization` de chamadas function-to-function. Resultado: o token recebido não bate com `SERVICE_ROLE` → 401 → e-mail nunca é enviado.
+- `create-user` gera senha aleatória interna, cria auth user com `email_confirm=true`, gera **invite link** (fallback recovery), envia via `send-welcome-email`.
+- E-mail leva a `https://akuris.com.br/definir-senha?token_hash=...&type=invite|recovery`.
+- `/definir-senha` é rota pública em `App.tsx`. `DefinirSenha.tsx` verifica token via `verifyOtp`, aplica `updateUser({password})`, faz `signOut` e redireciona para `/auth`.
+- Validação de senha (zod: 8+, maiúscula, minúscula, número) igual client-side e visual de requisitos.
 
-O mesmo padrão ocorre em qualquer outro ponto que faça `supabaseAdmin.functions.invoke('send-welcome-email', ...)`.
+### Correções recomendadas (não-bloqueantes)
 
-## Correção
+**1. Rate limiting em `send-password-reset`**
+Hoje qualquer IP pode disparar reset repetido (função retorna 200 silencioso, mas gera link + e-mail real). Adicionar mesmo padrão de `provision-new-account` (mapa em memória: N reqs por IP por janela).
 
-Passar o header `Authorization` explicitamente nas invocações internas.
+**2. Mensagens de erro em `DefinirSenha.handleSubmit`**
+`toast.error(error.message)` propaga texto cru do Supabase. Trocar por mensagem genérica traduzida (`t('defineSenhaPage.error')`) e logar `error.message` via `logger.error`.
 
-**1. `supabase/functions/create-user/index.ts`** — na chamada de `send-welcome-email`:
-```ts
-await supabaseAdmin.functions.invoke('send-welcome-email', {
-  headers: {
-    Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
-  },
-  body: { userName: nome, userEmail: email, setupPasswordUrl, companyName, companyLogoUrl },
-})
-```
+**3. Dead code de `temporary_passwords` em `DefinirSenha`**
+O fluxo atual (invite link) não popula `temporary_passwords`. O `update` na linha 123-126 sempre falha silenciosamente. Remover.
 
-**2. `supabase/functions/resend-welcome-email/index.ts`** — hoje a função monta e envia via Resend diretamente (não invoca `send-welcome-email`), então não precisa de mudança. Verificar mesmo assim se não há outro caller interno; se houver, aplicar o mesmo padrão.
+**4. Consistência de `resend-welcome-email`**
+Hoje ele monta HTML e envia via Resend direto — duplica lógica do `send-welcome-email`. Refatorar para invocar `send-welcome-email` passando `Authorization: Bearer <service_role>` (mesmo padrão que aplicamos em `create-user`). Reduz superfície de manutenção e mantém validação de allowlist de URL centralizada.
 
-**3. Buscar em toda `supabase/functions/` por `functions.invoke('send-welcome-email'` e aplicar o header nos que faltarem** (ex.: `check-trial-expiration`, `process-invitation-reminders` se aplicável).
+**5. Fallback quando `generateLink(invite)` retorna erro `email_exists`**
+Já existe fallback para `recovery` em `create-user`. Confirmar que o UX comunica bem: quando um usuário órfão é recriado, o e-mail hoje é enviado com `type=recovery` mas o template diz "Bem-vindo, sua conta foi criada". Ajustar copy do template para ser neutro ("Defina sua senha para acessar o Akuris"), ou selecionar variante do template conforme o tipo.
 
-## Verificação
+### O que **não** vou mexer (está correto)
 
-1. Redeploy de `create-user`.
-2. Criar um usuário novo pela UI.
-3. Conferir logs: `create-user` deve logar "E-mail de boas-vindas enviado com sucesso" e `send-welcome-email` deve retornar 200.
-4. Confirmar recebimento na caixa do destinatário.
+- `verify_jwt = false` em `send-welcome-email`, `send-password-reset`, `resend-welcome-email`: gate é in-code (service_role interno ou admin autenticado). Correto.
+- Allowlist de hosts em `send-welcome-email.isSafeSetupUrl`: correto.
+- Rota `/definir-senha` pública, sem `ProtectedRoute`: correto.
+- `verifyOtp({type})` para invite/recovery + `updateUser({password})`: fluxo padrão Supabase, correto.
+- `signOut` + redirect após definir senha: correto.
+- Validação zod local: OK.
 
-## Escopo fora
+### Escopo
 
-- Não alterar `verify_jwt` no `config.toml` (já está `false` para `send-welcome-email`, o gate é in-code).
-- Não mexer no fluxo de geração de link/OTP.
+Aplicar itens 1–5 acima. Sem migrations. Sem mudanças em RLS ou tipos.
+
+### Verificação
+
+1. Criar usuário novo via UI → conferir log "E-mail de boas-vindas enviado com sucesso" e recebimento.
+2. Clicar no link do e-mail → tela `/definir-senha` valida token e permite definir senha.
+3. Enviar senha → `updateUser` → `signOut` → redireciona para `/auth`, login com nova senha funciona.
+4. "Esqueci senha" (ForgotPasswordDialog) → chamar 6x rapidamente do mesmo IP → 6ª deve retornar 429.
+5. "Reenviar convite" (Gerenciamento de Usuários) → e-mail chega, link `/definir-senha?type=recovery` funciona.

@@ -18,16 +18,12 @@ export const WelcomeEmail = ({
   companyLogoUrl,
 }: WelcomeEmailProps) => (
   <BaseEmailTemplate
-    previewText="Bem-vindo ao Akuris — Defina sua senha"
-    title={`Bem-vindo, ${userName}!`}
+    previewText="Akuris — Defina sua senha de acesso"
+    title={`Olá, ${userName}!`}
     companyLogoUrl={companyLogoUrl}
   >
     <Text style={emailStyles.text}>
-      Sua conta foi criada com sucesso. Estamos felizes em tê-lo(a) conosco!
-    </Text>
-
-    <Text style={emailStyles.text}>
-      Para começar, defina sua senha de acesso clicando no botão abaixo:
+      Sua conta no Akuris está pronta. Para acessar a plataforma, defina sua senha clicando no botão abaixo:
     </Text>
 
     <Section style={emailStyles.infoBox}>
@@ -43,11 +39,11 @@ export const WelcomeEmail = ({
     </Section>
 
     <Text style={emailStyles.textSmall}>
-      ⏳ Este link expira em <strong>24 horas</strong>. Caso expire, peça ao administrador para reenviar o convite.
+      ⏳ Este link expira em <strong>24 horas</strong>. Se expirar, peça ao administrador para reenviar o convite.
     </Text>
 
     <Text style={emailStyles.textSmall}>
-      Se você não solicitou este cadastro, por favor desconsidere este e-mail.
+      Se você não reconhece este e-mail, por favor desconsidere.
     </Text>
   </BaseEmailTemplate>
 );
