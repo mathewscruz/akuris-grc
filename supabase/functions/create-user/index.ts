@@ -307,6 +307,9 @@ Deno.serve(async (req) => {
     try {
       console.log('Enviando e-mail de boas-vindas com link para definir senha...')
       const { error: emailError } = await supabaseAdmin.functions.invoke('send-welcome-email', {
+        headers: {
+          Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+        },
         body: {
           userName: nome,
           userEmail: email,

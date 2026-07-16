@@ -64,6 +64,9 @@ Deno.serve(async (req) => {
 
       try {
         await supabaseAdmin.functions.invoke('send-welcome-email', {
+          headers: {
+            Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+          },
           body: {
             userName: r.nome,
             userEmail: r.email,
