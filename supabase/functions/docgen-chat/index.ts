@@ -262,15 +262,15 @@ serve(async (req) => {
         status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    // Override body-supplied values with authenticated values
-    user_id = user_id_eff;
-    empresa_id = empresa_id_eff;
+    // Override body-supplied values with authenticated values (nunca confiar no body)
+    user_id = authedUserId;
+    empresa_id = authedEmpresaId;
 
     // Consume AI credit before processing
     {
       const { data: creditResult } = await supabase.rpc('consume_ai_credit', {
-        p_empresa_id: empresa_id_eff,
-        p_user_id: user_id_eff,
+        p_empresa_id: authedEmpresaId,
+        p_user_id: authedUserId,
         p_funcionalidade: `docgen-chat:${action}`,
         p_descricao: `DocGen - ${action === 'generate_document' ? 'Geração de documento' : 'Chat conversacional'}`
       });
