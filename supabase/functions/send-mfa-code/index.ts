@@ -145,36 +145,24 @@ Deno.serve(async (req) => {
       })
     }
 
-    // Reusa código ativo se existir; caso contrário, gera novo
-    const { data: activeCode } = await supabaseAdmin
+    // Sempre gera um novo código — o valor em texto puro nunca é persistido.
+    // (Se um código anterior estava ativo, será invalidado pelo trigger
+    //  invalidate_previous_mfa_codes ao inserirmos o novo.)
+    const code = generateOTP()
+    const codeHash = await hashOTP(code, userId)
+
+    const { error: insertError } = await supabaseAdmin
       .from('mfa_codes')
-      .select('id, code, expires_at')
-      .eq('user_id', userId)
-      .eq('used', false)
-      .gt('expires_at', new Date().toISOString())
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
+      .insert({
+        user_id: userId,
+        empresa_id: profile.empresa_id,
+        code_hash: codeHash,
+        expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+      })
 
-    let code: string
-    if (activeCode && !force) {
-      code = activeCode.code
-      console.log('Reusando código MFA ativo para userId:', userId)
-    } else {
-      code = generateOTP()
-      const { error: insertError } = await supabaseAdmin
-        .from('mfa_codes')
-        .insert({
-          user_id: userId,
-          empresa_id: profile.empresa_id,
-          code,
-          expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
-        })
-
-      if (insertError) {
-        console.error('Erro ao inserir código MFA:', insertError)
-        throw new Error('Erro ao gerar código de verificação')
-      }
+    if (insertError) {
+      console.error('Erro ao inserir código MFA:', insertError)
+      throw new Error('Erro ao gerar código de verificação')
     }
 
     const html = await renderAsync(
