@@ -129,7 +129,7 @@ verify_jwt = false
 verify_jwt = true
 
 [functions.send-incidente-notification]
-verify_jwt = false
+verify_jwt = true
 
 [functions.send-contrato-vencimento-notification]
 verify_jwt = false
