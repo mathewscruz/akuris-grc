@@ -294,6 +294,7 @@ export type Database = {
           mapeamento_campos: Json | null
           modulo_destino: string
           nome: string
+          signing_secret: string | null
           tipo_evento: string
           total_recebidos: number | null
           ultimo_recebimento: string | null
@@ -310,6 +311,7 @@ export type Database = {
           mapeamento_campos?: Json | null
           modulo_destino: string
           nome: string
+          signing_secret?: string | null
           tipo_evento: string
           total_recebidos?: number | null
           ultimo_recebimento?: string | null
@@ -326,6 +328,7 @@ export type Database = {
           mapeamento_campos?: Json | null
           modulo_destino?: string
           nome?: string
+          signing_secret?: string | null
           tipo_evento?: string
           total_recebidos?: number | null
           ultimo_recebimento?: string | null
