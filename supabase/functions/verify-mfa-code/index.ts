@@ -119,8 +119,9 @@ Deno.serve(async (req) => {
       .update({ attempts: mfaCode.attempts + 1 })
       .eq('id', mfaCode.id)
 
-    // Verificar código
-    if (mfaCode.code !== code.trim()) {
+    // Verificar código: compara hash do valor recebido com o hash persistido
+    const providedHash = await hashOTP(code.trim(), userId)
+    if (!mfaCode.code_hash || !safeEqual(mfaCode.code_hash, providedHash)) {
       const remaining = 4 - mfaCode.attempts
       return new Response(JSON.stringify({ 
         success: false, 
