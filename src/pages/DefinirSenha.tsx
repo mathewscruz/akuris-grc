@@ -117,15 +117,6 @@ const DefinirSenha = () => {
 
       if (error) throw error;
 
-      // Limpar flag de senha temporária se existir
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase
-          .from('temporary_passwords')
-          .update({ is_temporary: false, updated_at: new Date().toISOString() })
-          .eq('user_id', user.id);
-      }
-
       setSuccess(true);
       toast.success(t('defineSenhaPage.success'));
 
@@ -133,7 +124,8 @@ const DefinirSenha = () => {
       await supabase.auth.signOut();
       setTimeout(() => navigate('/auth'), 2000);
     } catch (error: any) {
-      toast.error(error.message || t('passwordChange.error'));
+      logger.error('Erro ao definir senha', { error: error?.message, module: 'auth' });
+      toast.error(t('defineSenhaPage.error'));
       setIsLoading(false);
     }
   };
