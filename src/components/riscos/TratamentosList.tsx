@@ -321,6 +321,8 @@ export function TratamentosList({ riscoId, riscoNome, embedded = false, riscoDat
         onOpenChange={setDeleteDialogOpen}
         title="Excluir Tratamento"
         description="Tem certeza que deseja excluir este tratamento? Esta ação não pode ser desfeita."
+        variant="destructive"
+        confirmText="Excluir"
         onConfirm={handleDelete}
       />
     </>
