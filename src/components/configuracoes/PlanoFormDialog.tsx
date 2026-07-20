@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { DialogShell } from '@/components/ui/dialog-shell';
+import { CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -130,12 +131,16 @@ export const PlanoFormDialog: React.FC<Props> = ({ open, onOpenChange, plano, on
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle>{plano ? 'Editar plano' : 'Novo plano'}</DialogTitle>
-        </DialogHeader>
-
+    <DialogShell
+      open={open}
+      onOpenChange={onOpenChange}
+      icon={CreditCard}
+      title={plano ? 'Editar plano' : 'Novo plano'}
+      size="lg"
+      onSubmit={handleSave}
+      submitLabel="Salvar"
+      isSubmitting={saving}
+    >
         <ScrollArea className="flex-1 pr-4">
           <div className="space-y-6 py-2">
             {/* Identificação */}
@@ -277,15 +282,6 @@ export const PlanoFormDialog: React.FC<Props> = ({ open, onOpenChange, plano, on
             </div>
           </div>
         </ScrollArea>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancelar</Button>
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? <AkurisPulse size={16} className="mr-2" /> : null}
-            Salvar
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </DialogShell>
   );
 };

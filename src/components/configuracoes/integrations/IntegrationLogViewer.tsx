@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
+import { DialogShell } from '@/components/ui/dialog-shell';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -137,27 +137,24 @@ export function IntegrationLogViewer({ open, onOpenChange }: IntegrationLogViewe
   const errorCount = logs.filter(l => !l.sucesso).length;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[85vh]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Clock className="h-5 w-5" />
-            Logs de Integrações
-          </DialogTitle>
-          <DialogDescription>
-            Histórico de notificações enviadas para integrações externas
-          </DialogDescription>
-        </DialogHeader>
-
+    <DialogShell
+      open={open}
+      onOpenChange={onOpenChange}
+      icon={Clock}
+      title="Logs de Integrações"
+      description="Histórico de notificações enviadas para integrações externas"
+      size="lg"
+      hideFooter
+    >
         {/* Resumo + Filtros */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-2">
           <div className="flex items-center gap-3 text-sm">
-            <Badge variant="success">
+            <StatusBadge tone="success" size="sm">
               ✓ {successCount} sucesso
-            </Badge>
-            <Badge variant="destructive">
+            </StatusBadge>
+            <StatusBadge tone="destructive" size="sm">
               ✗ {errorCount} falha{errorCount !== 1 ? 's' : ''}
-            </Badge>
+            </StatusBadge>
           </div>
           <div className="flex items-center gap-2">
             <Filter className="h-4 w-4 text-muted-foreground" />
@@ -216,9 +213,9 @@ export function IntegrationLogViewer({ open, onOpenChange }: IntegrationLogViewe
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge variant={log.sucesso ? 'default' : 'destructive'}>
+                      <StatusBadge tone={log.sucesso ? 'success' : 'destructive'} size="sm">
                         HTTP {log.status_code || 'N/A'}
-                      </Badge>
+                      </StatusBadge>
                     </div>
                   </div>
 
@@ -238,7 +235,6 @@ export function IntegrationLogViewer({ open, onOpenChange }: IntegrationLogViewe
             </div>
           )}
         </ScrollArea>
-      </DialogContent>
-    </Dialog>
+    </DialogShell>
   );
 }
