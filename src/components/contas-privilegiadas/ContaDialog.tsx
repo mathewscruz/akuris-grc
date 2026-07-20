@@ -143,6 +143,8 @@ export default function ContaDialog({ open, onClose, conta, sistemas }: ContaDia
         icon={KeyRound}
         size="lg"
         onSubmit={form.handleSubmit(onSubmit)}
+        submitLabel={conta ? 'Atualizar' : 'Criar Conta'}
+        isDirty={form.formState.isDirty}
       >
 <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
@@ -397,14 +399,6 @@ export default function ContaDialog({ open, onClose, conta, sistemas }: ContaDia
               )}
             />
 
-            <div className="flex justify-end gap-3 pt-4 border-t border-border/50">
-              <Button type="button" variant="outline" onClick={onClose}>
-                Cancelar
-              </Button>
-              <Button type="submit">
-                {conta ? 'Atualizar' : 'Criar'} Conta
-              </Button>
-            </div>
           </form>
         </Form>
       </DialogShell>

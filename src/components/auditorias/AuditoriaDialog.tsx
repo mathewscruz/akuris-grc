@@ -171,6 +171,8 @@ const AuditoriaDialog = ({ open, onOpenChange, auditoria, onSuccess }: Auditoria
         icon={ClipboardCheck}
         size="lg"
         onSubmit={() => handleSubmit({ preventDefault: () => {} } as React.FormEvent)}
+        submitLabel={auditoria ? 'Atualizar' : 'Criar'}
+        isSubmitting={isSubmitting}
       >
 <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -346,14 +348,6 @@ const AuditoriaDialog = ({ open, onOpenChange, auditoria, onSuccess }: Auditoria
             />
           </div>
 
-          <div className="flex justify-end space-x-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Salvando...' : auditoria ? 'Atualizar' : 'Criar'}
-            </Button>
-          </div>
         </form>
       </DialogShell>
   );

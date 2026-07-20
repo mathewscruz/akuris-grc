@@ -235,6 +235,9 @@ export default function SistemaDialog({ open, onClose, sistema }: SistemaDialogP
         icon={Server}
         size="lg"
         onSubmit={form.handleSubmit(onSubmit)}
+        submitLabel={sistema ? 'Atualizar' : 'Criar Sistema'}
+        isSubmitting={uploadingImage}
+        isDirty={form.formState.isDirty}
       >
 <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
@@ -475,14 +478,6 @@ export default function SistemaDialog({ open, onClose, sistema }: SistemaDialogP
               )}
             />
 
-            <div className="flex justify-end gap-3 pt-4 border-t border-border/50">
-              <Button type="button" variant="outline" onClick={onClose}>
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={uploadingImage}>
-                {uploadingImage ? 'Enviando...' : sistema ? 'Atualizar' : 'Criar'} Sistema
-              </Button>
-            </div>
           </form>
         </Form>
       </DialogShell>

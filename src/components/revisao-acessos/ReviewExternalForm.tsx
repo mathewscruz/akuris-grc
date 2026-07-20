@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card } from "@/components/ui/card";
@@ -196,13 +196,13 @@ export function ReviewExternalForm({ review, onComplete }: ReviewExternalFormPro
                   <p className="text-sm text-muted-foreground">{currentItem.email_beneficiario}</p>
                 )}
                 <div className="flex gap-2 flex-wrap">
-                  <Badge>{formatStatus(currentItem.tipo_acesso)}</Badge>
-                  <Badge variant="outline">{formatStatus(currentItem.nivel_privilegio)}</Badge>
+                  <StatusBadge size="sm" tone="neutral">{formatStatus(currentItem.tipo_acesso)}</StatusBadge>
+                  <StatusBadge size="sm" tone="neutral" variant="outline">{formatStatus(currentItem.nivel_privilegio)}</StatusBadge>
                 </div>
               </div>
-              <Badge variant={currentItem.decisao === "pendente" ? "outline" : "secondary"}>
+              <StatusBadge size="sm" tone={currentItem.decisao === "pendente" ? "neutral" : "info"} variant={currentItem.decisao === "pendente" ? "outline" : "soft"}>
                 {formatStatus(currentItem.decisao)}
-              </Badge>
+              </StatusBadge>
             </div>
 
             <div className="grid grid-cols-2 gap-4 text-sm">

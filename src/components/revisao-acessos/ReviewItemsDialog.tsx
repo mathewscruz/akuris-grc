@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DialogShell } from "@/components/ui/dialog-shell";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge, type StatusTone } from "@/components/ui/status-badge";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useOptimizedQuery } from "@/hooks/useOptimizedQuery";
@@ -9,7 +9,7 @@ import { useReviewData } from "@/hooks/useReviewData";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateForInput } from "@/lib/date-utils";
 import { formatStatus } from "@/lib/text-utils";
-import { CheckCircle, XCircle, Edit, Download } from "lucide-react";
+import { CheckCircle, XCircle, Edit, Download, ClipboardCheck } from "lucide-react";
 import { ReviewItemDecisionDialog } from "./ReviewItemDecisionDialog";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
@@ -76,14 +76,14 @@ export function ReviewItemsDialog({ open, onClose, review, onSuccess }: ReviewIt
   };
 
   const getDecisionBadge = (decisao: string) => {
-    const variants: Record<string, { variant: "default" | "secondary" | "destructive" | "outline"; label: string }> = {
-      pendente: { variant: "outline", label: "Pendente" },
-      aprovar: { variant: "secondary", label: "Aprovado" },
-      revogar: { variant: "destructive", label: "Revogado" },
-      modificar: { variant: "default", label: "Modificado" },
+    const variants: Record<string, { tone: StatusTone; label: string }> = {
+      pendente: { tone: "neutral", label: "Pendente" },
+      aprovar: { tone: "success", label: "Aprovado" },
+      revogar: { tone: "destructive", label: "Revogado" },
+      modificar: { tone: "info", label: "Modificado" },
     };
     const config = variants[decisao] || variants.pendente;
-    return <Badge variant={config.variant}>{config.label}</Badge>;
+    return <StatusBadge size="sm" tone={config.tone}>{config.label}</StatusBadge>;
   };
 
   const filteredItems = searchTerm
@@ -99,12 +99,14 @@ export function ReviewItemsDialog({ open, onClose, review, onSuccess }: ReviewIt
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onClose}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{review?.nome_revisao} - Itens da Revisão</DialogTitle>
-          </DialogHeader>
-
+      <DialogShell
+        open={open}
+        onOpenChange={(o) => { if (!o) onClose(); }}
+        icon={ClipboardCheck}
+        title={`${review?.nome_revisao ?? ''} — Itens da Revisão`}
+        size="xl"
+        hideFooter
+      >
           <div className="space-y-4">
             <div className="flex items-center gap-4 p-4 bg-muted rounded-lg">
               <div className="flex-1">
@@ -122,13 +124,13 @@ export function ReviewItemsDialog({ open, onClose, review, onSuccess }: ReviewIt
               <div className="flex gap-2">
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground">Aprovados</p>
-                  <p className="text-lg font-semibold text-green-600">
+                  <p className="text-lg font-semibold text-success">
                     {review?.contas_aprovadas || 0}
                   </p>
                 </div>
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground">Revogados</p>
-                  <p className="text-lg font-semibold text-red-600">
+                  <p className="text-lg font-semibold text-destructive">
                     {review?.contas_revogadas || 0}
                   </p>
                 </div>
@@ -164,8 +166,8 @@ export function ReviewItemsDialog({ open, onClose, review, onSuccess }: ReviewIt
                       <h4 className="font-semibold">{item.usuario_beneficiario}</h4>
                       <p className="text-sm text-muted-foreground">{item.email_beneficiario || "-"}</p>
                       <div className="flex gap-2 mt-2">
-                        <Badge>{formatStatus(item.tipo_acesso)}</Badge>
-                        <Badge variant="outline">{formatStatus(item.nivel_privilegio)}</Badge>
+                        <StatusBadge size="sm" tone="neutral">{formatStatus(item.tipo_acesso)}</StatusBadge>
+                        <StatusBadge size="sm" tone="neutral" variant="outline">{formatStatus(item.nivel_privilegio)}</StatusBadge>
                         {getDecisionBadge(item.decisao)}
                       </div>
                       {item.data_expiracao && (
@@ -201,8 +203,7 @@ export function ReviewItemsDialog({ open, onClose, review, onSuccess }: ReviewIt
               )}
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+      </DialogShell>
 
       <ReviewItemDecisionDialog
         open={decisionDialogOpen}

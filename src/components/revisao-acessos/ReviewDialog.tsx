@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -163,6 +162,8 @@ export function ReviewDialog({ open, onClose, review, onSuccess }: ReviewDialogP
         icon={Eye}
         size="lg"
         onSubmit={form.handleSubmit(onSubmit)}
+        submitLabel={review ? "Atualizar" : "Criar Revisão"}
+        isDirty={form.formState.isDirty}
       >
 <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -313,14 +314,6 @@ export function ReviewDialog({ open, onClose, review, onSuccess }: ReviewDialogP
               )}
             />
 
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={onClose}>
-                Cancelar
-              </Button>
-              <Button type="submit">
-                {review ? "Atualizar" : "Criar Revisão"}
-              </Button>
-            </div>
           </form>
         </Form>
       </DialogShell>
