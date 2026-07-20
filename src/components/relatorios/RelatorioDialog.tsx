@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+import { DialogShell } from '@/components/ui/dialog-shell';
+import { FileBarChart } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -39,11 +39,17 @@ export function RelatorioDialog({ open, onOpenChange, onSave, relatorio, loading
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{relatorio ? 'Editar Relatório' : 'Novo Relatório'}</DialogTitle>
-        </DialogHeader>
+    <DialogShell
+      open={open}
+      onOpenChange={onOpenChange}
+      icon={FileBarChart}
+      title={relatorio ? 'Editar Relatório' : 'Novo Relatório'}
+      size="sm"
+      onSubmit={handleSave}
+      submitLabel={relatorio ? 'Salvar' : 'Criar'}
+      isSubmitting={loading}
+      submitDisabled={!nome.trim()}
+    >
         <div className="grid gap-4 py-4">
           <div className="space-y-2">
             <Label>Nome *</Label>
@@ -69,13 +75,6 @@ export function RelatorioDialog({ open, onOpenChange, onSave, relatorio, loading
             </Select>
           </div>
         </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={handleSave} disabled={!nome.trim() || loading}>
-            {loading ? 'Salvando...' : 'Criar'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </DialogShell>
   );
 }

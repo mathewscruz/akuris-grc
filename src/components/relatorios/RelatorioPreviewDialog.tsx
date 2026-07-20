@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
+import { DialogShell } from '@/components/ui/dialog-shell';
+import { FileBarChart } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { fetchTemplateData } from './generateTemplatePDF';
 
 interface RelatorioPreviewDialogProps {
@@ -29,16 +28,16 @@ export function RelatorioPreviewDialog({ open, onOpenChange, relatorio, empresaI
   }, [open, relatorio, empresaId]);
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[85vh]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-3">
-            Preview: {relatorio?.nome}
-            {relatorio?.template_base && <Badge variant="outline" className="text-xs">{relatorio.template_base}</Badge>}
-          </DialogTitle>
-        </DialogHeader>
-
-        <ScrollArea className="h-[65vh] pr-4">
+    <DialogShell
+      open={open}
+      onOpenChange={onOpenChange}
+      icon={FileBarChart}
+      title={`Preview: ${relatorio?.nome ?? ''}`}
+      description={relatorio?.template_base || undefined}
+      size="lg"
+      hideFooter
+    >
+        <div>
           {loading ? (
             <div className="flex items-center justify-center py-16">
               <AkurisPulse size={32} />
@@ -98,8 +97,7 @@ export function RelatorioPreviewDialog({ open, onOpenChange, relatorio, empresaI
               ))}
             </div>
           )}
-        </ScrollArea>
-      </DialogContent>
-    </Dialog>
+        </div>
+    </DialogShell>
   );
 }

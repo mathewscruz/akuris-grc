@@ -1,6 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { DialogShell } from "@/components/ui/dialog-shell";
 import { AlertTriangle, Shield, FileWarning, Flame, ExternalLink } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -62,15 +60,14 @@ const AlertsDetailDialog = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-warning" />
-            {t('alertsDialog.title')}
-          </DialogTitle>
-        </DialogHeader>
-
+    <DialogShell
+      open={open}
+      onOpenChange={onOpenChange}
+      icon={AlertTriangle}
+      title={t('alertsDialog.title')}
+      size="md"
+      hideFooter
+    >
         <div className="grid grid-cols-4 gap-3 mb-4">
           <div className="bg-destructive/10 rounded-lg p-3 text-center">
             <p className="text-2xl font-bold text-destructive">{riscosAltos}</p>
@@ -90,7 +87,7 @@ const AlertsDetailDialog = ({
           </div>
         </div>
 
-        <ScrollArea className="h-[400px] pr-4">
+        <div>
           <div className="space-y-4">
             {groupedAlerts.risco.length > 0 && (
               <div>
@@ -200,9 +197,8 @@ const AlertsDetailDialog = ({
               </div>
             )}
           </div>
-        </ScrollArea>
-      </DialogContent>
-    </Dialog>
+        </div>
+    </DialogShell>
   );
 };
 
