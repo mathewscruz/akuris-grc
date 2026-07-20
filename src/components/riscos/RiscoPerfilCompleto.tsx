@@ -82,7 +82,10 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="!w-[95vw] !max-w-[1120px] h-[90vh] p-0 gap-0 flex flex-col overflow-hidden [&>button.absolute]:hidden">
+      <DialogContent
+        className="!w-[95vw] !max-w-[1120px] h-[90vh] p-0 gap-0 flex flex-col overflow-hidden [&>button.absolute]:hidden"
+        style={{ background: `linear-gradient(0deg, hsl(var(${SEV_TINT[sevAtual]}) / 0.03), hsl(var(${SEV_TINT[sevAtual]}) / 0.03)), hsl(var(--background))` }}
+      >
         {/* Top bar */}
         <div className="flex items-center justify-between gap-4 px-6 py-4 border-b border-border">
           <div className="flex items-center gap-3 min-w-0">
@@ -111,14 +114,8 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
         {/* Body master-detail — esquerda grande (resumo), direita compacta (abas) */}
         <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[1fr_380px]">
           {/* Resumo (esquerda) */}
-          <aside className="relative border-b lg:border-b-0 lg:border-r border-border overflow-y-auto">
-            {/* Fundo levíssimo na cor da severidade do risco (uniforme, sem corte). */}
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-0"
-              style={{ background: `linear-gradient(180deg, hsl(var(${SEV_TINT[sevAtual]}) / 0.10), hsl(var(${SEV_TINT[sevAtual]}) / 0.03))` }}
-            />
-            <div className="relative p-6 space-y-6">
+          <aside className="border-b lg:border-b-0 lg:border-r border-border overflow-y-auto">
+            <div className="p-6 space-y-6">
             <div className="flex items-center gap-4">
               <ScoreRing score={scoreAtual} sev={sevAtual} size={84} />
               <div className="min-w-0 flex flex-col items-start gap-1.5">
