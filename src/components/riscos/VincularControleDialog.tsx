@@ -2,15 +2,15 @@
  * VincularControleDialog — vincula controles a um risco a partir do próprio risco
  * (contraparte do ControlesVinculacaoDialog, que faz o mesmo pelo lado do controle).
  * Grava em controles_riscos (controle_id, risco_id, tipo_vinculacao, eficacia_estimada).
+ *
+ * Usa o DialogShell padrão (cabeçalho + rodapé Cancel/Salvar + Ctrl+S).
  */
 import { useEffect, useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
+import { DialogShell } from '@/components/ui/dialog-shell';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
@@ -110,14 +110,11 @@ export function VincularControleDialog({ open, onOpenChange, riscoId, riscoNome,
       }
     },
     onSuccess: () => {
-      toast({ title: 'Controles vinculados', description: `Vínculos do risco atualizados.` });
+      toast({ title: 'Controles vinculados', description: 'Vínculos do risco atualizados.' });
       queryClient.invalidateQueries({ queryKey: ['risco-detail', riscoId] });
       queryClient.invalidateQueries({ queryKey: ['controles'] });
       onSuccess?.();
       onOpenChange(false);
-    },
-    onError: (e: any) => {
-      toast({ title: 'Erro', description: e.message || 'Não foi possível salvar.', variant: 'destructive' });
     },
   });
 
@@ -127,107 +124,83 @@ export function VincularControleDialog({ open, onOpenChange, riscoId, riscoNome,
   });
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[82vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-base">
-            <LinkIcon className="w-4 h-4" strokeWidth={1.5} />
-            Vincular controles ao risco
-          </DialogTitle>
-          <p className="text-sm text-muted-foreground truncate">{riscoNome}</p>
-        </DialogHeader>
+    <DialogShell
+      open={open}
+      onOpenChange={onOpenChange}
+      icon={LinkIcon}
+      title="Vincular controles ao risco"
+      description={riscoNome}
+      size="md"
+      submitLabel="Salvar vínculos"
+      isSubmitting={save.isPending}
+      onSubmit={() => save.mutate()}
+    >
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-3">
+        <ShieldCheck className="h-3.5 w-3.5" strokeWidth={1.5} />
+        {vinculos.length} {vinculos.length === 1 ? 'controle selecionado' : 'controles selecionados'}
+      </div>
 
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-            placeholder="Buscar controle por código ou nome…"
-            className="pl-9"
-          />
-        </div>
+      <div className="relative mb-3">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          value={busca}
+          onChange={(e) => setBusca(e.target.value)}
+          placeholder="Buscar controle por código ou nome…"
+          className="pl-9"
+        />
+      </div>
 
-        <div className="flex-1 overflow-y-auto -mx-1 px-1 space-y-2">
-          {filtrados.length === 0 ? (
-            <div className="py-10 text-center text-sm text-muted-foreground">
-              Nenhum controle ativo encontrado.
-            </div>
-          ) : (
-            filtrados.map((c) => {
-              const v = getVinculo(c.id);
-              return (
-                <div key={c.id} className="border border-border rounded-lg p-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <label className="flex items-start gap-3 cursor-pointer flex-1 min-w-0">
-                      <Checkbox
-                        checked={isVinculado(c.id)}
-                        onCheckedChange={(ch) => toggle(c.id, !!ch)}
-                        className="mt-0.5"
-                      />
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          {c.codigo && (
-                            <span className="font-mono text-[11px] text-muted-foreground">{c.codigo}</span>
-                          )}
-                          <span className="text-sm font-medium truncate">{c.nome}</span>
-                        </div>
-                        <div className="text-[11px] text-muted-foreground mt-0.5">{formatStatus(c.tipo)}</div>
-                      </div>
-                    </label>
-                  </div>
-
-                  {isVinculado(c.id) && (
-                    <div className="mt-3 grid grid-cols-2 gap-3 pl-7">
-                      <div>
-                        <Label className="text-[11px]">Tipo de vínculo</Label>
-                        <Select
-                          value={v?.tipo_vinculacao || 'mitiga'}
-                          onValueChange={(val) => update(c.id, 'tipo_vinculacao', val)}
-                        >
-                          <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="mitiga">Mitiga</SelectItem>
-                            <SelectItem value="previne">Previne</SelectItem>
-                            <SelectItem value="detecta">Detecta</SelectItem>
-                            <SelectItem value="corrige">Corrige</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label className="text-[11px]">Eficácia estimada</Label>
-                        <Select
-                          value={v?.eficacia_estimada || 'media'}
-                          onValueChange={(val) => update(c.id, 'eficacia_estimada', val)}
-                        >
-                          <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="alta">Alta</SelectItem>
-                            <SelectItem value="media">Média</SelectItem>
-                            <SelectItem value="baixa">Baixa</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+      <div className="space-y-2">
+        {filtrados.length === 0 ? (
+          <div className="py-10 text-center text-sm text-muted-foreground">Nenhum controle ativo encontrado.</div>
+        ) : (
+          filtrados.map((c) => {
+            const v = getVinculo(c.id);
+            return (
+              <div key={c.id} className="border border-border rounded-lg p-3">
+                <label className="flex items-start gap-3 cursor-pointer flex-1 min-w-0">
+                  <Checkbox checked={isVinculado(c.id)} onCheckedChange={(ch) => toggle(c.id, !!ch)} className="mt-0.5" />
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {c.codigo && <span className="font-mono text-[11px] text-muted-foreground">{c.codigo}</span>}
+                      <span className="text-sm font-medium truncate">{c.nome}</span>
                     </div>
-                  )}
-                </div>
-              );
-            })
-          )}
-        </div>
+                    <div className="text-[11px] text-muted-foreground mt-0.5">{formatStatus(c.tipo)}</div>
+                  </div>
+                </label>
 
-        <div className="flex items-center justify-between gap-2 pt-3 border-t border-border">
-          <span className="text-xs text-muted-foreground inline-flex items-center gap-1.5">
-            <ShieldCheck className="h-3.5 w-3.5" strokeWidth={1.5} />
-            {vinculos.length} {vinculos.length === 1 ? 'controle selecionado' : 'controles selecionados'}
-          </span>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>Cancelar</Button>
-            <Button size="sm" onClick={() => save.mutate()} disabled={save.isPending}>
-              {save.isPending ? 'Salvando…' : 'Salvar vínculos'}
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+                {isVinculado(c.id) && (
+                  <div className="mt-3 grid grid-cols-2 gap-3 pl-7">
+                    <div>
+                      <Label className="text-[11px]">Tipo de vínculo</Label>
+                      <Select value={v?.tipo_vinculacao || 'mitiga'} onValueChange={(val) => update(c.id, 'tipo_vinculacao', val)}>
+                        <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="mitiga">Mitiga</SelectItem>
+                          <SelectItem value="previne">Previne</SelectItem>
+                          <SelectItem value="detecta">Detecta</SelectItem>
+                          <SelectItem value="corrige">Corrige</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-[11px]">Eficácia estimada</Label>
+                      <Select value={v?.eficacia_estimada || 'media'} onValueChange={(val) => update(c.id, 'eficacia_estimada', val)}>
+                        <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="alta">Alta</SelectItem>
+                          <SelectItem value="media">Média</SelectItem>
+                          <SelectItem value="baixa">Baixa</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+    </DialogShell>
   );
 }

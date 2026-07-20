@@ -1,16 +1,19 @@
 /**
- * Kit de popups Akuris — padrão único para diálogos/sheets.
+ * Kit de popups Akuris — complementa o DialogShell (que já é o padrão de
+ * FORMULÁRIO centralizado, adotado em ~27 telas: header + scroll + rodapé
+ * Cancel/Save + Ctrl+S + guarda de alterações não salvas).
  *
- * Dois níveis de uso:
- *  1. FormModal — envelope pronto p/ formulários (criar/editar). Escolhe
- *     Dialog (centralizado) ou Sheet (lateral), já com cabeçalho/rodapé e
- *     fechar-ao-salvar + loading centralizados. Ideal p/ forms simples.
- *  2. Primitivos (ModalHeader/Body/Footer, FieldRow, DetailSection, SubCard)
- *     — para compor popups de DETALHE ou forms complexos (react-hook-form,
- *     abas) dentro do próprio DialogContent/SheetContent, mantendo o mesmo
- *     cabeçalho/rodapé sem remontar à mão.
+ * Este módulo NÃO reimplementa o shell de formulário. Ele fornece:
+ *  - Cascas para popups LATERAIS (Sheet) e de DETALHE, que o DialogShell não
+ *    cobre: ModalHeader (com navegação "N de M", badges, ações), ModalBody,
+ *    ModalFooter.
+ *  - Primitivos de conteúdo reutilizáveis em qualquer shell: FieldRow
+ *    (ícone+rótulo+valor), DetailSection (título+ação), SubCard (borda de acento).
  *
- * Badges de status: usar sempre <StatusBadge> (src/components/ui/status-badge).
+ * Regras:
+ *  - Formulário centralizado (criar/editar) → use DialogShell.
+ *  - Detalhe / painel lateral → use Sheet + ModalHeader/Body/Footer + primitivos.
+ *  - Badge de status → sempre <StatusBadge>.
  */
 export {
   ModalHeader,
@@ -22,4 +25,3 @@ export {
   type ModalHeaderProps,
   type RecordNav,
 } from './ModalPrimitives';
-export { FormModal, type FormModalProps } from './FormModal';
