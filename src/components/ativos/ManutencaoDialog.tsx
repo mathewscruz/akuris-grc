@@ -4,10 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
+import { StatusBadge, type StatusTone } from '@/components/ui/status-badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { DialogShell } from '@/components/ui/dialog-shell';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
@@ -255,11 +255,19 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
     });
   };
 
-  const getBadgeVariant = (type: string, value: string) => {
+  const COLOR_TO_TONE: Record<string, StatusTone> = {
+    default: 'info',
+    warning: 'warning',
+    destructive: 'destructive',
+    secondary: 'neutral',
+    success: 'success',
+  };
+
+  const getBadgeTone = (type: string, value: string): StatusTone => {
     const option = type === 'tipo' ? tiposManutencao.find(t => t.value === value) :
                   type === 'status' ? statusOptions.find(s => s.value === value) :
                   criticidades.find(c => c.value === value);
-    return option?.color || 'default';
+    return COLOR_TO_TONE[option?.color || 'default'] || 'neutral';
   };
 
   const formatCurrency = (value: number | null) => {
@@ -303,18 +311,15 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Wrench className="h-5 w-5" />
-            Manutenções - {ativoNome}
-          </DialogTitle>
-          <DialogDescription>
-            Gerencie o histórico de manutenções do ativo
-          </DialogDescription>
-        </DialogHeader>
-        
+    <DialogShell
+      open={open}
+      onOpenChange={onOpenChange}
+      icon={Wrench}
+      title={`Manutenções — ${ativoNome}`}
+      description="Gerencie o histórico de manutenções do ativo"
+      size="xl"
+      hideFooter
+    >
         <div className="space-y-6">
           {/* Resumo das Manutenções */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -367,22 +372,23 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
 
           {/* Botão Nova Manutenção */}
           <div className="flex justify-end">
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={() => {
-                  setEditingManutencao(null);
-                  resetForm();
-                }}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nova Manutenção
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>
-                    {editingManutencao ? 'Editar Manutenção' : 'Nova Manutenção'}
-                  </DialogTitle>
-                </DialogHeader>
+            <Button onClick={() => {
+              setEditingManutencao(null);
+              resetForm();
+              setIsDialogOpen(true);
+            }}>
+              <Plus className="h-4 w-4 mr-2" />
+              Nova Manutenção
+            </Button>
+            <DialogShell
+              open={isDialogOpen}
+              onOpenChange={setIsDialogOpen}
+              icon={Wrench}
+              title={editingManutencao ? 'Editar Manutenção' : 'Nova Manutenção'}
+              size="md"
+              onSubmit={() => handleSubmit(new Event('submit') as unknown as React.FormEvent)}
+              submitLabel={editingManutencao ? 'Atualizar' : 'Criar'}
+            >
                 <form onSubmit={handleSubmit} className="space-y-5">
                   <div className="grid grid-cols-2 gap-5">
                     <div className="space-y-2">
@@ -531,17 +537,8 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
                     />
                   </div>
 
-                  <div className="flex justify-end gap-3 pt-4 border-t border-border/50">
-                    <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                      Cancelar
-                    </Button>
-                    <Button type="submit">
-                      {editingManutencao ? 'Atualizar' : 'Criar'} Manutenção
-                    </Button>
-                  </div>
                 </form>
-              </DialogContent>
-            </Dialog>
+            </DialogShell>
           </div>
 
           {/* Tabela de Manutenções */}
@@ -579,22 +576,22 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
                           {formatDateOnly(manutencao.data_manutencao)}
                         </TableCell>
                         <TableCell>
-                          <Badge variant={getBadgeVariant('tipo', manutencao.tipo_manutencao) as any}>
+                          <StatusBadge size="sm" tone={getBadgeTone('tipo', manutencao.tipo_manutencao)}>
                             {tiposManutencao.find(t => t.value === manutencao.tipo_manutencao)?.label}
-                          </Badge>
+                          </StatusBadge>
                         </TableCell>
                         <TableCell className="max-w-xs truncate">
                           {manutencao.descricao}
                         </TableCell>
                         <TableCell>
-                          <Badge variant={getBadgeVariant('status', manutencao.status) as any}>
+                          <StatusBadge size="sm" tone={getBadgeTone('status', manutencao.status)}>
                             {statusOptions.find(s => s.value === manutencao.status)?.label}
-                          </Badge>
+                          </StatusBadge>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={getBadgeVariant('criticidade', manutencao.criticidade) as any}>
+                          <StatusBadge size="sm" tone={getBadgeTone('criticidade', manutencao.criticidade)}>
                             {criticidades.find(c => c.value === manutencao.criticidade)?.label}
-                          </Badge>
+                          </StatusBadge>
                         </TableCell>
                         <TableCell>{renderResponsavel(manutencao)}</TableCell>
                         <TableCell>{formatCurrency(manutencao.custo)}</TableCell>
@@ -650,9 +647,11 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
           onConfirm={confirmDelete}
           title="Excluir Manutenção"
           description="Tem certeza que deseja excluir esta manutenção? Esta ação não pode ser desfeita."
+          confirmText="Excluir"
+          cancelText="Cancelar"
+          variant="destructive"
         />
-      </DialogContent>
-    </Dialog>
+    </DialogShell>
   );
 };
 

@@ -3,7 +3,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { resolveCriticidadeTone } from '@/lib/status-tone';
 import { Box, FileText, MapPin, Settings2, Calendar as CalendarIcon } from 'lucide-react';
 import LocalizacaoSelect from '@/components/ativos/LocalizacaoSelect';
 import { UserSelect } from '@/components/riscos/UserSelect';
@@ -93,13 +94,6 @@ const statusOptions = [
 ];
 
 const valoresNegocio = ['alto', 'medio', 'baixo'];
-
-const CRITICIDADE_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-  critico: 'destructive',
-  alto: 'default',
-  medio: 'secondary',
-  baixo: 'outline',
-};
 
 const AtivoDialog: React.FC<AtivoDialogProps> = ({ open, onOpenChange, formData, setFormData, onSubmit, isEditing }) => {
   const [activeTab, setActiveTab] = useState('identificacao');
@@ -345,7 +339,7 @@ const AtivoDialog: React.FC<AtivoDialogProps> = ({ open, onOpenChange, formData,
         label="Criticidade"
         value={
           formData.criticidade
-            ? <Badge variant={CRITICIDADE_VARIANT[formData.criticidade]} className="text-[10px]">{formatStatus(formData.criticidade)}</Badge>
+            ? <StatusBadge size="sm" {...resolveCriticidadeTone(formData.criticidade)}>{formatStatus(formData.criticidade)}</StatusBadge>
             : <span className="text-muted-foreground italic">—</span>
         }
       />

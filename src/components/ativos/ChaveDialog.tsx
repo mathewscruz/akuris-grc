@@ -4,12 +4,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useEmpresaId } from "@/hooks/useEmpresaId";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { DialogShell } from "@/components/ui/dialog-shell";
+import { KeyRound } from "lucide-react";
 import {
   Form,
   FormControl,
@@ -20,7 +16,6 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -113,14 +108,16 @@ export function ChaveDialog({ open, onOpenChange, chave }: ChaveDialogProps) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            {chave ? 'Editar Chave' : 'Nova Chave Criptográfica'}
-          </DialogTitle>
-        </DialogHeader>
-
+    <DialogShell
+      open={open}
+      onOpenChange={onOpenChange}
+      icon={KeyRound}
+      title={chave ? 'Editar Chave' : 'Nova Chave Criptográfica'}
+      size="lg"
+      onSubmit={form.handleSubmit(onSubmit)}
+      isSubmitting={saveMutation.isPending}
+      isDirty={form.formState.isDirty}
+    >
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
             <div className="grid grid-cols-2 gap-5">
@@ -377,21 +374,8 @@ export function ChaveDialog({ open, onOpenChange, chave }: ChaveDialogProps) {
               />
             </div>
 
-            <div className="flex justify-end gap-3 pt-4 border-t border-border/50">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-              >
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={saveMutation.isPending}>
-                {saveMutation.isPending ? 'Salvando...' : 'Salvar'}
-              </Button>
-            </div>
           </form>
         </Form>
-      </DialogContent>
-    </Dialog>
+    </DialogShell>
   );
 }
