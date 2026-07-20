@@ -72,7 +72,6 @@ export function CertificationReadinessCard({
 }: Props) {
   const alvo = certifiable ? 'certificação' : 'conformidade';
   const aplicaveis = Math.max(0, conforme + parcial + naoConforme);
-  const readiness = aplicaveis > 0 ? Math.round((conforme / aplicaveis) * 100) : 0;
 
   // Cobertura: quanto dos aplicáveis já foi avaliado. Veredito só é confiável
   // acima de 80% de cobertura.
@@ -93,6 +92,13 @@ export function CertificationReadinessCard({
     nao_pronto: `Ainda não pronto para ${alvo}`,
     quase: `Quase pronto para ${alvo}`,
     pronto: `Pronto para a auditoria de ${alvo}`,
+  };
+
+  const verdictTag: Record<Verdict, string> = {
+    incompleto: 'Cobertura incompleta',
+    nao_pronto: 'Com bloqueadores',
+    quase: 'Quase lá',
+    pronto: 'Sem bloqueadores',
   };
 
   const detail: Record<Verdict, string> = {
@@ -122,14 +128,19 @@ export function CertificationReadinessCard({
               Prontidão para {alvo}
             </span>
             <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide', style.badge)}>
-              {readiness}% conforme
+              {verdictTag[verdict]}
             </span>
           </div>
           <h3 className="mt-1 text-base font-semibold text-foreground">{headline[verdict]}</h3>
           <p className="mt-1 text-sm text-muted-foreground leading-relaxed">{detail[verdict]}</p>
 
           {/* Contadores de bloqueadores */}
-          <div className="mt-3 flex items-center gap-4 text-xs">
+          <div className="mt-3 flex items-center gap-4 text-xs flex-wrap">
+            <span className="inline-flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-success" />
+              <span className="text-muted-foreground">Totalmente conformes</span>
+              <span className="font-semibold tabular-nums text-foreground">{conforme} de {aplicaveis}</span>
+            </span>
             <span className="inline-flex items-center gap-1.5">
               <span className="h-2 w-2 rounded-full bg-destructive" />
               <span className="text-muted-foreground">Não conformidades</span>
