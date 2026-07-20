@@ -16,8 +16,16 @@ import { formatDateOnly } from '@/lib/date-utils';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { Edit, ShieldCheck, Shield, X, ArrowRight, Wallet, Layers, Tag, User, CalendarClock, Timer, History, Eye, MessageSquare } from 'lucide-react';
 import {
-  initials, scoreFromPI, severityFromNivel, shortRiskId, slaFromRevisao, SLA_LABELS, financialExposure, formatBRL,
+  initials, scoreFromPI, severityFromNivel, shortRiskId, slaFromRevisao, SLA_LABELS, financialExposure, formatBRL, type Severity,
 } from '@/components/riscos/risk-utils';
+
+/** Variável de cor da severidade para o fundo levíssimo do painel. */
+const SEV_TINT: Record<Severity, string> = {
+  critico: '--destructive',
+  alto: '--warning',
+  medio: '--warning',
+  baixo: '--success',
+};
 import { ScoreRing, ScoreBlock, StatTile, HeaderMeta } from '@/components/riscos/RiscoVisuals';
 import { useRiscoDetail } from '@/hooks/useRiscoDetail';
 import { RiscoComentarios } from '@/components/riscos/RiscoComentarios';
@@ -104,17 +112,11 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
         <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[1fr_380px]">
           {/* Resumo (esquerda) */}
           <aside className="relative border-b lg:border-b-0 lg:border-r border-border overflow-y-auto">
-            {/* Degradê suave vermelho → amarelo → verde: faixa fina + brilho no topo
-                que se dissolve (não tinge o fundo, que segue igual ao resto). */}
+            {/* Fundo levíssimo na cor da severidade do risco (uniforme, sem corte). */}
             <div
               aria-hidden
-              className="pointer-events-none absolute inset-x-0 top-0 h-1.5"
-              style={{ background: 'linear-gradient(90deg, hsl(var(--destructive)), hsl(var(--warning)), hsl(var(--success)))' }}
-            />
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-x-0 top-0 h-36"
-              style={{ background: 'linear-gradient(160deg, hsl(var(--destructive) / 0.10), hsl(var(--warning) / 0.06) 45%, transparent 80%)' }}
+              className="pointer-events-none absolute inset-0"
+              style={{ background: `linear-gradient(180deg, hsl(var(${SEV_TINT[sevAtual]}) / 0.10), hsl(var(${SEV_TINT[sevAtual]}) / 0.03))` }}
             />
             <div className="relative p-6 space-y-6">
             <div className="flex items-center gap-4">
