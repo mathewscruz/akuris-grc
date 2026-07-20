@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DialogShell } from "@/components/ui/dialog-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Tag } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -161,12 +161,16 @@ export default function CategoriasDialog({ open, onOpenChange }: CategoriasDialo
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Gerenciar Categorias</DialogTitle>
-        </DialogHeader>
-
+    <>
+      <DialogShell
+        open={open}
+        onOpenChange={onOpenChange}
+        icon={Tag}
+        title="Gerenciar Categorias"
+        description="Crie e gerencie as categorias utilizadas para classificar os controles."
+        size="lg"
+        hideFooter
+      >
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Formulário */}
           <div>
@@ -277,18 +281,19 @@ export default function CategoriasDialog({ open, onOpenChange }: CategoriasDialo
           </div>
         </div>
 
-        <ConfirmDialog
-          open={deleteConfirm.open}
-          onOpenChange={(open) => setDeleteConfirm(prev => ({ ...prev, open }))}
-          title="Excluir Categoria"
-          description={`Tem certeza que deseja excluir "${deleteConfirm.nome}"? Esta ação não pode ser desfeita.`}
-          confirmText="Excluir"
-          cancelText="Cancelar"
-          variant="destructive"
-          onConfirm={confirmDelete}
-          loading={deleteCategoriaMutation.isPending}
-        />
-      </DialogContent>
-    </Dialog>
+      </DialogShell>
+
+      <ConfirmDialog
+        open={deleteConfirm.open}
+        onOpenChange={(open) => setDeleteConfirm(prev => ({ ...prev, open }))}
+        title="Excluir Categoria"
+        description={`Tem certeza que deseja excluir "${deleteConfirm.nome}"? Esta ação não pode ser desfeita.`}
+        confirmText="Excluir"
+        cancelText="Cancelar"
+        variant="destructive"
+        onConfirm={confirmDelete}
+        loading={deleteCategoriaMutation.isPending}
+      />
+    </>
   );
 }
