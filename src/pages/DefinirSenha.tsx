@@ -39,11 +39,15 @@ const DefinirSenha = () => {
   const [success, setSuccess] = useState(false);
   const [errors, setErrors] = useState<{ password?: string; confirmPassword?: string }>({});
 
+  // Guardamos o token e só o consumimos no submit (evita que scanners de
+  // e-mail — Outlook Safe Links, Gmail, antivírus — pré-visitem o link e
+  // invalidem o OTP antes do usuário chegar aqui).
+  const [pendingToken, setPendingToken] = useState<{ token_hash: string; type: string } | null>(null);
+  const [hasActiveSession, setHasActiveSession] = useState(false);
+
   useEffect(() => {
-    const verifyToken = async () => {
+    const checkPresence = async () => {
       try {
-        // O Supabase redireciona com um hash fragment contendo access_token
-        // ou com query params token_hash e type
         const hashParams = new URLSearchParams(window.location.hash.substring(1));
         const accessToken = hashParams.get('access_token');
         const refreshToken = hashParams.get('refresh_token');
@@ -51,35 +55,27 @@ const DefinirSenha = () => {
         const tokenHash = searchParams.get('token_hash');
 
         if (accessToken && refreshToken) {
-          // Token já processado pelo Supabase, sessão ativa
           const { error } = await supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: refreshToken,
           });
-          
           if (error) {
             logger.error('Erro ao definir sessão', { error: error.message, module: 'auth' });
             setIsTokenValid(false);
           } else {
+            setHasActiveSession(true);
             setIsTokenValid(true);
           }
         } else if (tokenHash && type) {
-          // Verificar token via OTP
-          const { error } = await supabase.auth.verifyOtp({
-            token_hash: tokenHash,
-            type: type as any,
-          });
-
-          if (error) {
-            logger.error('Erro ao verificar token', { error: error.message, module: 'auth' });
-            setIsTokenValid(false);
-          } else {
-            setIsTokenValid(true);
-          }
+          // NÃO chamamos verifyOtp aqui — apenas registramos que temos um token
+          // a consumir no submit. Isso impede que pré-visualizadores de e-mail
+          // queimem o OTP antes do usuário abrir o link de verdade.
+          setPendingToken({ token_hash: tokenHash, type });
+          setIsTokenValid(true);
         } else {
-          // Verificar se já existe sessão ativa (caso de redirect)
           const { data: { session } } = await supabase.auth.getSession();
           if (session) {
+            setHasActiveSession(true);
             setIsTokenValid(true);
           } else {
             setIsTokenValid(false);
@@ -93,7 +89,7 @@ const DefinirSenha = () => {
       }
     };
 
-    verifyToken();
+    checkPresence();
   }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -113,14 +109,28 @@ const DefinirSenha = () => {
 
     setIsLoading(true);
     try {
-      const { error } = await supabase.auth.updateUser({ password });
+      // Consumir o token só agora, imediatamente antes do updateUser.
+      if (pendingToken && !hasActiveSession) {
+        const { error: otpError } = await supabase.auth.verifyOtp({
+          token_hash: pendingToken.token_hash,
+          type: pendingToken.type as any,
+        });
+        if (otpError) {
+          logger.error('Erro ao verificar token no submit', { error: otpError.message, module: 'auth' });
+          toast.error(t('defineSenhaPage.invalidLinkDesc'));
+          setIsTokenValid(false);
+          setIsLoading(false);
+          return;
+        }
+        setHasActiveSession(true);
+      }
 
+      const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
 
       setSuccess(true);
       toast.success(t('defineSenhaPage.success'));
 
-      // Fazer signOut e redirecionar para login
       await supabase.auth.signOut();
       setTimeout(() => navigate('/auth'), 2000);
     } catch (error: any) {
