@@ -20,7 +20,7 @@ interface Props {
 
 export function RiscosViewChips({ active, onChange, items }: Props) {
   return (
-    <div className="flex items-center gap-1 border-b border-border overflow-x-auto -mb-px">
+    <div className="inline-flex max-w-full items-center gap-0.5 overflow-x-auto rounded-lg bg-muted/60 p-1">
       {items.map((v) => {
         const isActive = v.id === active;
         return (
@@ -29,17 +29,17 @@ export function RiscosViewChips({ active, onChange, items }: Props) {
             type="button"
             onClick={() => onChange(v.id)}
             className={cn(
-              'whitespace-nowrap inline-flex items-center gap-1.5 px-3 py-2 -mb-px border-b-2 text-xs transition-colors',
+              'inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-xs transition-all',
               isActive
-                ? 'border-foreground text-foreground font-semibold'
-                : 'border-transparent text-muted-foreground hover:text-foreground/85 font-medium',
+                ? 'bg-card text-foreground font-semibold shadow-sm'
+                : 'text-muted-foreground hover:text-foreground/90 font-medium',
             )}
           >
             {v.label}
             <span
               className={cn(
-                'tabular-nums text-[10.5px] px-1.5 py-0.5 rounded-full',
-                isActive ? 'bg-muted text-foreground/80' : 'text-muted-foreground/80',
+                'tabular-nums text-[10.5px] px-1.5 rounded-full',
+                isActive ? 'bg-muted text-foreground/80' : 'bg-muted/70 text-muted-foreground/80',
               )}
             >
               {v.count}
