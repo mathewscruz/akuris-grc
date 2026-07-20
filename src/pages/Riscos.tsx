@@ -27,6 +27,7 @@ import { logger } from '@/lib/logger';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { useRiscosStats } from '@/hooks/useRiscosStats';
+import { useRiskScoreTrend } from '@/hooks/useRiskScoreTrend';
 import { useToast } from '@/hooks/use-toast';
 import { formatDateOnly } from '@/lib/date-utils';
 import { differenceInDays } from 'date-fns';
@@ -105,6 +106,7 @@ export function Riscos() {
   const { toast } = useToast();
   const location = useLocation();
   const { data: stats, refetch: refetchStats } = useRiscosStats();
+  const { data: trendPoints = [] } = useRiskScoreTrend();
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   
@@ -130,6 +132,7 @@ export function Riscos() {
   // Drawer de detalhe
   const [drawerRiscoId, setDrawerRiscoId] = useState<string | null>(null);
   const [matrixCell, setMatrixCell] = useState<{ p: number; i: number } | undefined>();
+  const [matrixMode, setMatrixMode] = useState<'inerente' | 'residual'>('inerente');
 
   // Saved view chips (apenas para a aba Tabela)
   const [savedView, setSavedView] = useState<SavedView>('todos');
@@ -695,11 +698,13 @@ export function Riscos() {
             { critico: 0, alto: 0, medio: 0, baixo: 0 } as Record<'critico' | 'alto' | 'medio' | 'baixo', number>,
           );
 
-          // Risks da célula selecionada
+          // Risks da célula selecionada — respeita o modo do heatmap (inerente/residual)
           const cellRisks = matrixCell
-            ? riscos.filter(
-                (r) => toScaleNumber(r.probabilidade_inicial) === matrixCell.p && toScaleNumber(r.impacto_inicial) === matrixCell.i,
-              )
+            ? riscos.filter((r) => {
+                const p = toScaleNumber(matrixMode === 'residual' ? r.probabilidade_residual : r.probabilidade_inicial);
+                const i = toScaleNumber(matrixMode === 'residual' ? r.impacto_residual : r.impacto_inicial);
+                return p === matrixCell.p && i === matrixCell.i;
+              })
             : [];
 
           const overviewNode = (
@@ -729,7 +734,7 @@ export function Riscos() {
                 ]}
               />
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                <div className="lg:col-span-2"><RiskTrendChart riscos={riscos as any} apetite={apetiteScore} /></div>
+                <div className="lg:col-span-2"><RiskTrendChart points={trendPoints} apetite={apetiteScore} /></div>
                 <RiskCategoryBars riscos={riscos as any} />
               </div>
               <RiskWatchlist
@@ -753,6 +758,8 @@ export function Riscos() {
                     selected={matrixCell}
                     onSelectCell={(c) => setMatrixCell(c)}
                     onOpenRisk={(id) => setDrawerRiscoId(id)}
+                    mode={matrixMode}
+                    onModeChange={(m) => { setMatrixMode(m); setMatrixCell(undefined); }}
                   />
                   <AppetiteFooter apetiteScore={apetiteScore} acimaCount={acimaApetite} />
                 </div>

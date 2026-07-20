@@ -6,15 +6,19 @@
  */
 import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
-import { severityFromScore, shortRiskId, type Severity } from '@/components/riscos/risk-utils';
+import { severityFromScore, shortRiskId, toScaleNumber, type Severity } from '@/components/riscos/risk-utils';
 
 const PROB_LABELS = ['Raro', 'Improvável', 'Possível', 'Provável', 'Quase certo'];
 const IMP_LABELS = ['Insignif.', 'Menor', 'Moderado', 'Maior', 'Catastróf.'];
+
+export type HeatmapMode = 'inerente' | 'residual';
 
 interface Risco {
   id: string;
   probabilidade_inicial?: string;
   impacto_inicial?: string;
+  probabilidade_residual?: string;
+  impacto_residual?: string;
 }
 
 interface Props {
@@ -22,6 +26,9 @@ interface Props {
   selected?: { p: number; i: number };
   onSelectCell: (cell: { p: number; i: number }) => void;
   onOpenRisk: (id: string) => void;
+  /** Inerente = P×I inicial (antes dos controles); Residual = P×I residual (após tratamento). */
+  mode?: HeatmapMode;
+  onModeChange?: (mode: HeatmapMode) => void;
 }
 
 const SEV_BG: Record<Severity, string> = {
@@ -45,20 +52,32 @@ const SEV_BADGE: Record<Severity, string> = {
   baixo: 'bg-success text-success-foreground',
 };
 
-export function RiskHeatmap({ riscos, selected, onSelectCell, onOpenRisk }: Props) {
+export function RiskHeatmap({ riscos, selected, onSelectCell, onOpenRisk, mode = 'inerente', onModeChange }: Props) {
+  // Quantos riscos não têm avaliação residual (não aparecem no mapa residual).
+  const semResidual = useMemo(
+    () =>
+      mode === 'residual'
+        ? riscos.filter(
+            (r) => toScaleNumber(r.probabilidade_residual) === null || toScaleNumber(r.impacto_residual) === null,
+          ).length
+        : 0,
+    [riscos, mode],
+  );
+
   const byCell = useMemo(() => {
     const map = new Map<string, Risco[]>();
     riscos.forEach((r) => {
-      const p = Number(r.probabilidade_inicial) || 0;
-      const i = Number(r.impacto_inicial) || 0;
-      if (p < 1 || i < 1 || p > 5 || i > 5) return;
+      // Fonte única de verdade: aceita número ("1".."5") ou texto legado ("provavel").
+      const p = toScaleNumber(mode === 'residual' ? r.probabilidade_residual : r.probabilidade_inicial);
+      const i = toScaleNumber(mode === 'residual' ? r.impacto_residual : r.impacto_inicial);
+      if (p === null || i === null) return;
       const k = `${p}-${i}`;
       const arr = map.get(k) || [];
       arr.push(r);
       map.set(k, arr);
     });
     return map;
-  }, [riscos]);
+  }, [riscos, mode]);
 
   const probs = [5, 4, 3, 2, 1];
   const imps = [1, 2, 3, 4, 5];
@@ -77,17 +96,49 @@ export function RiskHeatmap({ riscos, selected, onSelectCell, onOpenRisk }: Prop
           <div className="text-[10.5px] font-semibold tracking-[1.2px] uppercase text-muted-foreground">
             Probabilidade × Impacto
           </div>
-          <div className="text-base font-semibold mt-1">Mapa de calor</div>
+          <div className="text-base font-semibold mt-1">
+            Mapa de calor
+            <span className="text-muted-foreground font-normal">
+              {' · '}
+              {mode === 'residual' ? 'risco residual (após tratamento)' : 'risco inerente (antes dos controles)'}
+            </span>
+          </div>
         </div>
-        <div className="flex flex-wrap gap-x-3.5 gap-y-1 items-center text-[11px] text-muted-foreground">
-          {legend.map((l) => (
-            <div key={l.sev} className="inline-flex items-center gap-1.5">
-              <span className={cn('h-2.5 w-2.5 rounded-sm', l.cls)} />
-              {l.label}
+        <div className="flex flex-col items-end gap-2">
+          {/* Toggle Inerente / Residual */}
+          {onModeChange && (
+            <div className="inline-flex p-0.5 bg-muted/60 rounded-md text-[11px]">
+              {(['inerente', 'residual'] as HeatmapMode[]).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => onModeChange(m)}
+                  className={cn(
+                    'px-2.5 py-1 rounded font-medium transition-colors capitalize',
+                    mode === m ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
+                  )}
+                >
+                  {m}
+                </button>
+              ))}
             </div>
-          ))}
+          )}
+          <div className="flex flex-wrap gap-x-3.5 gap-y-1 items-center text-[11px] text-muted-foreground">
+            {legend.map((l) => (
+              <div key={l.sev} className="inline-flex items-center gap-1.5">
+                <span className={cn('h-2.5 w-2.5 rounded-sm', l.cls)} />
+                {l.label}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
+
+      {mode === 'residual' && semResidual > 0 && (
+        <div className="-mt-2 mb-4 text-[11px] text-muted-foreground">
+          {semResidual} {semResidual === 1 ? 'risco sem avaliação residual' : 'riscos sem avaliação residual'} — não aparecem neste mapa.
+        </div>
+      )}
 
       <div className="overflow-x-auto">
         <div className="min-w-[560px] grid" style={{ gridTemplateColumns: 'auto 1fr', gap: 8 }}>
