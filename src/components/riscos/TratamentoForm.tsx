@@ -21,6 +21,9 @@ import { useAuth } from '@/components/AuthProvider';
 import { toast } from 'sonner';
 import { CreditsExhaustedDialog } from '@/components/CreditsExhaustedDialog';
 import { UserSelect } from './UserSelect';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ClipboardList } from 'lucide-react';
+import { severityFromNivel } from './risk-utils';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { AiCostHint } from '@/components/ui/ai-cost-hint';
@@ -65,6 +68,8 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
   const [suggestionDialogOpen, setSuggestionDialogOpen] = useState(false);
   const [iaSuggestions, setIaSuggestions] = useState<any>(null);
   const [showCreditsDialog, setShowCreditsDialog] = useState(false);
+  // Gerar plano de ação vinculado ao criar tratamento (só faz sentido em novos)
+  const [gerarPlano, setGerarPlano] = useState(true);
 
   const form = useForm<TratamentoFormData>({
     resolver: zodResolver(tratamentoSchema),
@@ -124,6 +129,33 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
 
         if (error) throw error;
         toast.success('Tratamento criado com sucesso!');
+
+        // Gera plano de ação vinculado (rastreabilidade risco → tratamento → ação)
+        if (gerarPlano && profile.empresa_id) {
+          try {
+            const sev = severityFromNivel(riscoData?.nivel_risco_inicial);
+            const prioridade = sev === 'critico' ? 'alta' : sev === 'alto' ? 'alta' : sev === 'medio' ? 'media' : 'baixa';
+            const tituloRisco = riscoData?.nome || 'Risco';
+            const { error: planoError } = await supabase.from('planos_acao').insert({
+              empresa_id: profile.empresa_id,
+              titulo: `Tratar risco: ${tituloRisco}`,
+              descricao: data.descricao,
+              modulo_origem: 'riscos',
+              registro_origem_id: riscoId,
+              registro_origem_titulo: tituloRisco,
+              responsavel_id: data.responsavel || null,
+              prazo: data.prazo ? data.prazo.toISOString() : null,
+              prioridade,
+              status: 'pendente',
+              created_by: profile.user_id,
+            });
+            if (planoError) throw planoError;
+            toast.success('Plano de ação criado e vinculado ao risco.');
+          } catch (planoErr: any) {
+            // Não bloqueia o tratamento se o plano falhar
+            toast.error('Tratamento salvo, mas houve erro ao criar o plano de ação: ' + planoErr.message);
+          }
+        }
       }
 
       onSuccess();
@@ -368,6 +400,27 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
           </SelectContent>
         </Select>
       </div>
+
+      {/* Gerar plano de ação vinculado — só ao criar um tratamento novo */}
+      {!tratamento && (
+        <label className="flex items-start gap-3 rounded-lg border border-border/60 bg-muted/20 p-4 cursor-pointer">
+          <Checkbox
+            checked={gerarPlano}
+            onCheckedChange={(c) => setGerarPlano(!!c)}
+            className="mt-0.5"
+          />
+          <div className="space-y-0.5">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <ClipboardList className="h-4 w-4 text-primary" strokeWidth={1.5} />
+              Gerar plano de ação vinculado
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Cria um item em Planos de Ação (origem: Riscos) com responsável e prazo deste
+              tratamento, para acompanhar a execução e manter a rastreabilidade risco → ação.
+            </p>
+          </div>
+        </label>
+      )}
 
       <p className="text-xs text-muted-foreground">* Campos obrigatórios</p>
 

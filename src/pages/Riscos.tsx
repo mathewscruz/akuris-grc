@@ -27,6 +27,7 @@ import { logger } from '@/lib/logger';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { useRiscosStats } from '@/hooks/useRiscosStats';
+import { useRiskScoreTrend } from '@/hooks/useRiskScoreTrend';
 import { useToast } from '@/hooks/use-toast';
 import { formatDateOnly } from '@/lib/date-utils';
 import { differenceInDays } from 'date-fns';
@@ -52,7 +53,7 @@ import { AppetiteFooter } from '@/components/riscos/matrix/AppetiteFooter';
 import { RiscosViewChips, type SavedView } from '@/components/riscos/table/RiscosViewChips';
 import { SparklineCell } from '@/components/riscos/table/SparklineCell';
 import { SlaCell } from '@/components/riscos/table/SlaCell';
-import { isAcimaApetite, severityFromNivel, slaFromRevisao, scoreFromPI, shortRiskId, relativeShort, toScaleNumber, formatScaleValue } from '@/components/riscos/risk-utils';
+import { isAcimaApetite, severityFromNivel, slaFromRevisao, scoreFromPI, shortRiskId, relativeShort, toScaleNumber, formatScaleValue, financialExposure, formatBRL } from '@/components/riscos/risk-utils';
 
 
 import { TrilhaAuditoriaRiscos } from '@/components/riscos/TrilhaAuditoriaRiscos';
@@ -70,6 +71,7 @@ interface Risco {
   categoria_id?: string;
   probabilidade_inicial?: string;
   impacto_inicial?: string;
+  impacto_financeiro?: number;
   probabilidade_residual?: string;
   impacto_residual?: string;
   nivel_risco_inicial: string;
@@ -105,6 +107,7 @@ export function Riscos() {
   const { toast } = useToast();
   const location = useLocation();
   const { data: stats, refetch: refetchStats } = useRiscosStats();
+  const { data: trendPoints = [] } = useRiskScoreTrend();
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   
@@ -130,6 +133,7 @@ export function Riscos() {
   // Drawer de detalhe
   const [drawerRiscoId, setDrawerRiscoId] = useState<string | null>(null);
   const [matrixCell, setMatrixCell] = useState<{ p: number; i: number } | undefined>();
+  const [matrixMode, setMatrixMode] = useState<'inerente' | 'residual'>('inerente');
 
   // Saved view chips (apenas para a aba Tabela)
   const [savedView, setSavedView] = useState<SavedView>('todos');
@@ -145,7 +149,7 @@ export function Riscos() {
         .from('riscos')
         .select(`
           id, nome, descricao, matriz_id, categoria_id,
-          probabilidade_inicial, impacto_inicial,
+          probabilidade_inicial, impacto_inicial, impacto_financeiro,
           probabilidade_residual, impacto_residual,
           nivel_risco_inicial, nivel_risco_residual,
           status, responsavel, controles_existentes,
@@ -365,7 +369,12 @@ export function Riscos() {
       aValue = a.categoria?.nome || '';
       bValue = b.categoria?.nome || '';
     }
-    
+
+    if (sortField === 'exposicao') {
+      aValue = financialExposure(a.impacto_financeiro, a.probabilidade_residual ?? a.probabilidade_inicial) ?? -1;
+      bValue = financialExposure(b.impacto_financeiro, b.probabilidade_residual ?? b.probabilidade_inicial) ?? -1;
+    }
+
     if (aValue === null || aValue === undefined) aValue = '';
     if (bValue === null || bValue === undefined) bValue = '';
     
@@ -469,6 +478,22 @@ export function Riscos() {
           {formatScaleValue(r.probabilidade_inicial)} × {formatScaleValue(r.impacto_inicial)}
         </span>
       ),
+    },
+    {
+      key: 'exposicao',
+      label: 'Exposição',
+      sortable: true,
+      className: 'w-[100px]',
+      render: (_v: any, r: Risco) => {
+        const exp = financialExposure(r.impacto_financeiro, r.probabilidade_residual ?? r.probabilidade_inicial);
+        return exp === null ? (
+          <span className="text-xs text-muted-foreground">—</span>
+        ) : (
+          <span className="font-mono tabular-nums text-xs font-medium text-foreground" title={formatBRL(exp)}>
+            {formatBRL(exp, true)}
+          </span>
+        );
+      },
     },
     {
       key: 'trend',
@@ -695,11 +720,13 @@ export function Riscos() {
             { critico: 0, alto: 0, medio: 0, baixo: 0 } as Record<'critico' | 'alto' | 'medio' | 'baixo', number>,
           );
 
-          // Risks da célula selecionada
+          // Risks da célula selecionada — respeita o modo do heatmap (inerente/residual)
           const cellRisks = matrixCell
-            ? riscos.filter(
-                (r) => toScaleNumber(r.probabilidade_inicial) === matrixCell.p && toScaleNumber(r.impacto_inicial) === matrixCell.i,
-              )
+            ? riscos.filter((r) => {
+                const p = toScaleNumber(matrixMode === 'residual' ? r.probabilidade_residual : r.probabilidade_inicial);
+                const i = toScaleNumber(matrixMode === 'residual' ? r.impacto_residual : r.impacto_inicial);
+                return p === matrixCell.p && i === matrixCell.i;
+              })
             : [];
 
           const overviewNode = (
@@ -729,7 +756,7 @@ export function Riscos() {
                 ]}
               />
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                <div className="lg:col-span-2"><RiskTrendChart riscos={riscos as any} apetite={apetiteScore} /></div>
+                <div className="lg:col-span-2"><RiskTrendChart points={trendPoints} apetite={apetiteScore} /></div>
                 <RiskCategoryBars riscos={riscos as any} />
               </div>
               <RiskWatchlist
@@ -753,6 +780,8 @@ export function Riscos() {
                     selected={matrixCell}
                     onSelectCell={(c) => setMatrixCell(c)}
                     onOpenRisk={(id) => setDrawerRiscoId(id)}
+                    mode={matrixMode}
+                    onModeChange={(m) => { setMatrixMode(m); setMatrixCell(undefined); }}
                   />
                   <AppetiteFooter apetiteScore={apetiteScore} acimaCount={acimaApetite} />
                 </div>

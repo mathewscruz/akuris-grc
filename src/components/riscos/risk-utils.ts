@@ -89,6 +89,43 @@ export function shortRiskId(uuid?: string | null, codigo?: string | null): strin
   return `R-${tail}`;
 }
 
+/**
+ * Fator de probabilidade (1–5 → chance aproximada) para ponderar o impacto
+ * financeiro. Exposição = impacto_financeiro × fator. Escala deliberadamente
+ * simples e monotônica (não é modelo atuarial).
+ */
+const PROB_FACTOR: Record<number, number> = { 1: 0.1, 2: 0.3, 3: 0.5, 4: 0.7, 5: 0.9 };
+
+/**
+ * Exposição financeira estimada = impacto financeiro (perda potencial) ×
+ * fator da probabilidade (residual, se houver; senão inicial). Retorna null
+ * quando não há impacto financeiro informado.
+ */
+export function financialExposure(
+  impactoFinanceiro?: number | string | null,
+  probabilidade?: string | number | null,
+): number | null {
+  const valor = typeof impactoFinanceiro === 'string' ? Number(impactoFinanceiro) : impactoFinanceiro;
+  if (valor === null || valor === undefined || !Number.isFinite(valor) || valor <= 0) return null;
+  const p = toScaleNumber(probabilidade);
+  const factor = p ? PROB_FACTOR[p] : 1;
+  return valor * factor;
+}
+
+/** Formata um valor em Reais (BRL). Abrevia milhares/milhões para caber em células. */
+export function formatBRL(value?: number | null, compact = false): string {
+  if (value === null || value === undefined || !Number.isFinite(value)) return '—';
+  if (compact) {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+      notation: 'compact',
+      maximumFractionDigits: 1,
+    }).format(value);
+  }
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(value);
+}
+
 export type SlaStatus = 'no_prazo' | 'atencao' | 'vencido' | 'sem_revisao';
 
 export function slaFromRevisao(dataProximaRevisao?: string | null): SlaStatus {

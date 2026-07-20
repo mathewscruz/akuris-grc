@@ -2,7 +2,7 @@
  * RiscoDetailDrawer — Sheet 540px (fullscreen mobile) com 4 abas: Visão · Tratamentos · Histórico · Controles.
  * Footer fixo com CTAs "Aceitar formalmente" e "Editar risco".
  */
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Sheet,
   SheetContent,
@@ -21,15 +21,18 @@ import {
 import { formatStatus } from '@/lib/text-utils';
 import { formatDateOnly } from '@/lib/date-utils';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
-import { Edit, ShieldCheck, Clock, AlertTriangle, Shield, History, Eye, X } from 'lucide-react';
+import { Edit, ShieldCheck, Clock, AlertTriangle, Shield, History, Eye, X, Plus } from 'lucide-react';
 import {
   initials,
   scoreFromPI,
   shortRiskId,
   slaFromRevisao,
   SLA_LABELS,
+  financialExposure,
+  formatBRL,
 } from '@/components/riscos/risk-utils';
 import { useRiscoDetail } from '@/hooks/useRiscoDetail';
+import { VincularControleDialog } from '@/components/riscos/VincularControleDialog';
 
 interface Risco {
   id: string;
@@ -42,6 +45,7 @@ interface Risco {
   impacto_inicial?: string;
   probabilidade_residual?: string;
   impacto_residual?: string;
+  impacto_financeiro?: number | null;
   causas?: string;
   consequencias?: string;
   controles_existentes?: string;
@@ -65,6 +69,7 @@ interface Props {
 
 export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept, onOpenTratamentos }: Props) {
   const { data: detail, isLoading } = useRiscoDetail(risco?.id ?? null);
+  const [vincularOpen, setVincularOpen] = useState(false);
 
   const inicialScore = useMemo(
     () => scoreFromPI(risco?.probabilidade_inicial, risco?.impacto_inicial),
@@ -199,6 +204,45 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
                 </div>
               </section>
 
+              {/* Exposição financeira + evolução do risco */}
+              {(() => {
+                const exp = financialExposure(
+                  risco.impacto_financeiro,
+                  risco.probabilidade_residual ?? risco.probabilidade_inicial,
+                );
+                const evo = [...(detail?.historico || [])]
+                  .reverse()
+                  .map((h) => scoreFromPI(h.probabilidade, h.impacto))
+                  .filter((s) => s > 0);
+                if (exp === null && evo.length < 2) return null;
+                return (
+                  <section className="grid grid-cols-2 gap-3">
+                    {exp !== null && (
+                      <div className="bg-card border border-border rounded-lg p-3">
+                        <SectionLabel>Exposição financeira</SectionLabel>
+                        <div className="mt-1.5 text-lg font-semibold tabular-nums" title={formatBRL(exp)}>
+                          {formatBRL(exp)}
+                        </div>
+                        <div className="text-[11px] text-muted-foreground mt-1">
+                          impacto {formatBRL(risco.impacto_financeiro ?? null, true)} × probabilidade
+                        </div>
+                      </div>
+                    )}
+                    {evo.length >= 2 && (
+                      <div className="bg-card border border-border rounded-lg p-3">
+                        <SectionLabel>Evolução do risco</SectionLabel>
+                        <div className="mt-2">
+                          <RiskSparkline scores={evo} />
+                        </div>
+                        <div className="text-[11px] text-muted-foreground mt-1">
+                          {evo.length} avaliações · score {evo[0]} → {evo[evo.length - 1]}
+                        </div>
+                      </div>
+                    )}
+                  </section>
+                );
+              })()}
+
               {(risco.causas || risco.consequencias) && (
                 <section>
                   <SectionLabel>Causas e consequências</SectionLabel>
@@ -311,10 +355,25 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
 
             {/* Controles */}
             <TabsContent value="controles" className="m-0 space-y-2 data-[state=active]:animate-fade-in">
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <span className="text-[10.5px] font-semibold tracking-[1.2px] uppercase text-muted-foreground">
+                  {detail?.controles.length || 0} vinculado{(detail?.controles.length || 0) === 1 ? '' : 's'}
+                </span>
+                <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setVincularOpen(true)}>
+                  <Plus className="h-3.5 w-3.5 mr-1" strokeWidth={1.5} />
+                  Vincular controle
+                </Button>
+              </div>
               {isLoading ? (
                 <div className="flex justify-center py-10"><AkurisPulse size={32} /></div>
               ) : detail?.controles.length === 0 ? (
-                <EmptyHint text="Nenhum controle vinculado." />
+                <div className="py-8 text-center space-y-3">
+                  <p className="text-sm text-muted-foreground">Nenhum controle vinculado.</p>
+                  <Button variant="outline" size="sm" onClick={() => setVincularOpen(true)}>
+                    <Plus className="h-3.5 w-3.5 mr-1.5" strokeWidth={1.5} />
+                    Vincular um controle
+                  </Button>
+                </div>
               ) : (
                 detail!.controles.map((c) => {
                   const pct = coberturaPct(c.eficacia_estimada);
@@ -363,8 +422,40 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
             </Button>
           </div>
         </div>
+
+        <VincularControleDialog
+          open={vincularOpen}
+          onOpenChange={setVincularOpen}
+          riscoId={risco.id}
+          riscoNome={risco.nome}
+        />
       </SheetContent>
     </Sheet>
+  );
+}
+
+/** Mini-sparkline (SVG) da evolução do score do risco ao longo das avaliações. */
+function RiskSparkline({ scores }: { scores: number[] }) {
+  const w = 120;
+  const h = 32;
+  const max = Math.max(...scores, 1);
+  const min = Math.min(...scores, 0);
+  const range = max - min || 1;
+  const step = scores.length > 1 ? w / (scores.length - 1) : w;
+  const pts = scores.map((s, i) => {
+    const x = i * step;
+    const y = h - ((s - min) / range) * (h - 4) - 2;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+  const last = scores[scores.length - 1];
+  const first = scores[0];
+  // caiu (melhorou) = verde; subiu (piorou) = vermelho; estável = neutro
+  const stroke = last < first ? 'hsl(var(--success))' : last > first ? 'hsl(var(--destructive))' : 'hsl(var(--muted-foreground))';
+  return (
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="overflow-visible">
+      <polyline points={pts.join(' ')} fill="none" stroke={stroke} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx={(scores.length - 1) * step} cy={h - ((last - min) / range) * (h - 4) - 2} r={2.5} fill={stroke} />
+    </svg>
   );
 }
 
