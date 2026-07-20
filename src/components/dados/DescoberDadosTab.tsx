@@ -2,11 +2,10 @@ import { useState, useEffect } from "react";
 import { Globe, Trash2, Eye, Plus, Search, ExternalLink, FileText, AlertTriangle, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { DataTable } from "@/components/ui/data-table";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DialogShell } from "@/components/ui/dialog-shell";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import ConfirmDialog from "@/components/ConfirmDialog";
@@ -224,7 +223,7 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
       label: 'Formulários',
       sortable: true,
       render: (value: number) => (
-        <Badge variant="outline">{value}</Badge>
+        <StatusBadge size="sm" tone="neutral" variant="outline">{value}</StatusBadge>
       )
     },
     {
@@ -232,7 +231,7 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
       label: 'Campos',
       sortable: true,
       render: (value: number) => (
-        <Badge variant="secondary">{value}</Badge>
+        <StatusBadge size="sm" tone="neutral">{value}</StatusBadge>
       )
     },
     {
@@ -387,15 +386,14 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
       />
 
       {/* Detail Dialog */}
-      <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Globe className="h-5 w-5 text-primary" />
-              Detalhes da Descoberta
-            </DialogTitle>
-          </DialogHeader>
-
+      <DialogShell
+        open={showDetailDialog}
+        onOpenChange={setShowDetailDialog}
+        icon={Globe}
+        title="Detalhes da Descoberta"
+        size="lg"
+        hideFooter
+      >
           {selectedDescoberta && (
             <div className="space-y-4">
               {/* Summary Cards */}
@@ -414,7 +412,7 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
                 <Card>
                   <CardContent className="pt-4">
                     <div className="flex items-center gap-2">
-                      <Search className="h-4 w-4 text-blue-500" />
+                      <Search className="h-4 w-4 text-info" />
                       <div>
                         <p className="text-2xl font-bold">{selectedDescoberta.total_campos}</p>
                         <p className="text-xs text-muted-foreground">Campos</p>
@@ -425,7 +423,7 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
                 <Card>
                   <CardContent className="pt-4">
                     <div className="flex items-center gap-2">
-                      <AlertTriangle className="h-4 w-4 text-amber-500" />
+                      <AlertTriangle className="h-4 w-4 text-warning" />
                       <div>
                         <p className="text-2xl font-bold">{selectedDescoberta.campos_sensiveis}</p>
                         <p className="text-xs text-muted-foreground">Sensíveis</p>
@@ -479,9 +477,9 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
                         <div className="flex items-center gap-3">
                           <FileText className="h-4 w-4" />
                           <span className="font-medium">{form.formName}</span>
-                          <Badge variant="secondary" className="text-xs">
+                          <StatusBadge size="sm" tone="neutral">
                             {form.fields.length} campos
-                          </Badge>
+                          </StatusBadge>
                         </div>
                       </AccordionTrigger>
                       <AccordionContent>
@@ -523,8 +521,7 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
               )}
             </div>
           )}
-        </DialogContent>
-      </Dialog>
+      </DialogShell>
 
       {/* Confirm Delete */}
       <ConfirmDialog

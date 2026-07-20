@@ -1,9 +1,8 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { DialogShell } from "@/components/ui/dialog-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -337,15 +336,26 @@ export const UrlScannerDialog = ({ isOpen, onClose, onImport }: UrlScannerDialog
   );
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Globe className="h-5 w-5 text-primary" />
-            Scanner de Formulários Web
-          </DialogTitle>
-        </DialogHeader>
-
+    <DialogShell
+      open={isOpen}
+      onOpenChange={handleClose}
+      icon={Globe}
+      title="Scanner de Formulários Web"
+      size="lg"
+      footer={
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" size="sm" onClick={handleClose}>
+            Fechar
+          </Button>
+          {scanResult && selectedFields.size > 0 && (
+            <Button size="sm" onClick={handleImport}>
+              <Plus className="h-4 w-4 mr-2" />
+              Importar {selectedFields.size} Campo(s) para Catálogo
+            </Button>
+          )}
+        </div>
+      }
+    >
         <div className="space-y-4">
           {/* URL Input */}
           <div className="space-y-2">
@@ -485,7 +495,7 @@ export const UrlScannerDialog = ({ isOpen, onClose, onImport }: UrlScannerDialog
                 <Card>
                   <CardContent className="pt-4">
                     <div className="flex items-center gap-2">
-                      <Search className="h-4 w-4 text-blue-500" />
+                      <Search className="h-4 w-4 text-info" />
                       <div>
                         <p className="text-2xl font-bold">{getTotalFieldsCount()}</p>
                         <p className="text-xs text-muted-foreground">Campos</p>
@@ -496,7 +506,7 @@ export const UrlScannerDialog = ({ isOpen, onClose, onImport }: UrlScannerDialog
                 <Card>
                   <CardContent className="pt-4">
                     <div className="flex items-center gap-2">
-                      <AlertTriangle className="h-4 w-4 text-amber-500" />
+                      <AlertTriangle className="h-4 w-4 text-warning" />
                       <div>
                         <p className="text-2xl font-bold">{scanResult.sensitiveFieldsCount}</p>
                         <p className="text-xs text-muted-foreground">Sensíveis</p>
@@ -570,12 +580,12 @@ export const UrlScannerDialog = ({ isOpen, onClose, onImport }: UrlScannerDialog
                             <div className="flex items-center gap-3 flex-wrap">
                               <Globe className="h-4 w-4" />
                               <span className="font-medium truncate max-w-[300px]">{page.title || page.url}</span>
-                              <Badge variant="secondary" className="text-xs">
+                              <StatusBadge size="sm" tone="neutral">
                                 {page.forms.length} form(s)
-                              </Badge>
-                              <Badge variant="outline" className="text-xs">
+                              </StatusBadge>
+                              <StatusBadge size="sm" tone="neutral" variant="outline">
                                 {page.totalFields} campos
-                              </Badge>
+                              </StatusBadge>
                             </div>
                           </AccordionTrigger>
                           <AccordionContent>
@@ -594,7 +604,7 @@ export const UrlScannerDialog = ({ isOpen, onClose, onImport }: UrlScannerDialog
                                     <FileText className="h-4 w-4" />
                                     <span className="font-medium">{form.formName}</span>
                                     {form.method && (
-                                      <Badge variant="outline" className="text-xs">{form.method}</Badge>
+                                      <StatusBadge size="sm" tone="neutral" variant="outline">{form.method}</StatusBadge>
                                     )}
                                   </div>
                                   {renderFormFields(form, formIndex, String(pageIndex))}
@@ -612,13 +622,13 @@ export const UrlScannerDialog = ({ isOpen, onClose, onImport }: UrlScannerDialog
                             <div className="flex items-center gap-3">
                               <FileText className="h-4 w-4" />
                               <span className="font-medium">{form.formName}</span>
-                              <Badge variant="secondary" className="text-xs">
+                              <StatusBadge size="sm" tone="neutral">
                                 {form.fields.length} campos
-                              </Badge>
+                              </StatusBadge>
                               {form.method && (
-                                <Badge variant="outline" className="text-xs">
+                                <StatusBadge size="sm" tone="neutral" variant="outline">
                                   {form.method}
-                                </Badge>
+                                </StatusBadge>
                               )}
                             </div>
                           </AccordionTrigger>
@@ -635,18 +645,6 @@ export const UrlScannerDialog = ({ isOpen, onClose, onImport }: UrlScannerDialog
           )}
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={handleClose}>
-            Fechar
-          </Button>
-          {scanResult && selectedFields.size > 0 && (
-            <Button onClick={handleImport}>
-              <Plus className="h-4 w-4 mr-2" />
-              Importar {selectedFields.size} Campo(s) para Catálogo
-            </Button>
-          )}
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </DialogShell>
   );
 };

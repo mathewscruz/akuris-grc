@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DialogShell } from "@/components/ui/dialog-shell";
+import { ClipboardList } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -179,12 +179,38 @@ export function RopaWizard({ isOpen, onClose, onSave, preSelectedDadoId }: RopaW
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Novo ROPA - Wizard Guiado</DialogTitle>
-        </DialogHeader>
+    <DialogShell
+      open={isOpen}
+      onOpenChange={onClose}
+      icon={ClipboardList}
+      title="Novo ROPA — Wizard Guiado"
+      size="lg"
+      footer={
+        <div className="flex justify-between w-full">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => step === 1 ? onClose() : setStep(step - 1)}
+            disabled={isLoading}
+          >
+            <ChevronLeft className="h-4 w-4 mr-1" />
+            {step === 1 ? 'Cancelar' : 'Voltar'}
+          </Button>
 
+          {step < 4 ? (
+            <Button size="sm" onClick={() => setStep(step + 1)} disabled={!canProceed()}>
+              Próximo
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          ) : (
+            <Button size="sm" onClick={handleSave} disabled={isLoading}>
+              <Check className="h-4 w-4 mr-1" />
+              {isLoading ? 'Criando...' : 'Criar ROPA'}
+            </Button>
+          )}
+        </div>
+      }
+    >
         <div className="space-y-4">
           <div className="space-y-2">
             <div className="flex justify-between text-sm text-muted-foreground mb-1">
@@ -359,7 +385,7 @@ export function RopaWizard({ isOpen, onClose, onSave, preSelectedDadoId }: RopaW
                   <div className="flex flex-wrap gap-2 mt-1">
                     {selectedDados.map(id => {
                       const dado = dadosPessoais.find(d => d.id === id);
-                      return <Badge key={id} variant="secondary">{dado?.nome}</Badge>;
+                      return <StatusBadge key={id} size="sm" tone="neutral">{dado?.nome}</StatusBadge>;
                     })}
                   </div>
                 </div>
@@ -369,7 +395,7 @@ export function RopaWizard({ isOpen, onClose, onSave, preSelectedDadoId }: RopaW
                     {selectedAtivos.length > 0 ? (
                       selectedAtivos.map(id => {
                         const ativo = ativos.find(a => a.id === id);
-                        return <Badge key={id} variant="outline">{ativo?.nome}</Badge>;
+                        return <StatusBadge key={id} size="sm" tone="neutral" variant="outline">{ativo?.nome}</StatusBadge>;
                       })
                     ) : (
                       <span className="text-sm text-muted-foreground">Nenhum ativo vinculado</span>
@@ -395,33 +421,7 @@ export function RopaWizard({ isOpen, onClose, onSave, preSelectedDadoId }: RopaW
             </div>
           )}
 
-          <div className="flex justify-between pt-4 border-t">
-            <Button
-              variant="outline"
-              onClick={() => step === 1 ? onClose() : setStep(step - 1)}
-              disabled={isLoading}
-            >
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              {step === 1 ? 'Cancelar' : 'Voltar'}
-            </Button>
-            
-            {step < 4 ? (
-              <Button
-                onClick={() => setStep(step + 1)}
-                disabled={!canProceed()}
-              >
-                Próximo
-                <ChevronRight className="h-4 w-4 ml-1" />
-              </Button>
-            ) : (
-              <Button onClick={handleSave} disabled={isLoading}>
-                <Check className="h-4 w-4 mr-1" />
-                {isLoading ? 'Criando...' : 'Criar ROPA'}
-              </Button>
-            )}
-          </div>
         </div>
-      </DialogContent>
-    </Dialog>
+    </DialogShell>
   );
 }
