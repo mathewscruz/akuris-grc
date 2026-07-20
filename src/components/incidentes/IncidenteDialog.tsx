@@ -161,6 +161,10 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
         .eq('user_id', userData.user?.id)
         .single();
 
+      if (!profile?.empresa_id) {
+        throw new Error('Não foi possível identificar a empresa do usuário. Faça login novamente.');
+      }
+
       const incidenteData = {
         titulo: data.titulo!,
         descricao: data.descricao,
@@ -176,7 +180,7 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
         sistemas_afetados: data.sistemas_afetados,
         ativos_afetados: data.ativos_afetados,
         riscos_relacionados: data.riscos_relacionados,
-        empresa_id: profile?.empresa_id!,
+        empresa_id: profile.empresa_id,
         created_by: userData.user?.id,
       };
 

@@ -96,6 +96,12 @@ const handler = async (req: Request): Promise<Response> => {
       ctaText = "Ver Risco";
     }
 
+    if (!destinatario?.email) {
+      return new Response(JSON.stringify({ error: "Destinatário não encontrado" }), {
+        status: 400, headers: { "Content-Type": "application/json", ...corsHeaders }
+      });
+    }
+
     const htmlContent = `
 <!DOCTYPE html>
 <html>
@@ -128,7 +134,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     await resend.emails.send({
       from: "Akuris <noreply@akuris.com.br>",
-      to: [destinatario?.email!],
+      to: [destinatario.email],
       subject,
       html: htmlContent,
     });
