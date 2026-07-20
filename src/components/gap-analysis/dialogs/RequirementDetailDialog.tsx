@@ -506,7 +506,6 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
             empresa_id: empresaId,
             conformity_status: newStatus,
             evidence_status: 'pendente',
-            status: 'em_andamento',
           })
           .select()
           .single();
@@ -622,8 +621,9 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
           prazo_implementacao: formData.prazo_implementacao ? parseDateForDB(formData.prazo_implementacao) : null,
           evidence_files: formData.evidence_files, plano_acao_id: formData.plano_acao_id || null,
           diagnostic_answers: Object.keys(diagnosticAnswers).length > 0 ? diagnosticAnswers : null,
-          conformity_status: currentStatus || 'pendente',
-          evidence_status: 'pendente', status: 'em_andamento'
+          conformity_status: currentStatus || 'nao_avaliado',
+          evidence_status: 'pendente'
+
         }).select().single();
         if (error) throw error;
         evaluationId = newEval.id;
