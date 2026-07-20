@@ -152,10 +152,10 @@ export function IntegrationLogViewer({ open, onOpenChange }: IntegrationLogViewe
         {/* Resumo + Filtros */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-2">
           <div className="flex items-center gap-3 text-sm">
-            <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-200">
+            <Badge variant="success">
               ✓ {successCount} sucesso
             </Badge>
-            <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-200">
+            <Badge variant="destructive">
               ✗ {errorCount} falha{errorCount !== 1 ? 's' : ''}
             </Badge>
           </div>

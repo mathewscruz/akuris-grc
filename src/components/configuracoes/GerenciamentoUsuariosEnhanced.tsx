@@ -594,7 +594,7 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
         
         if (accessInfo?.first_access_pending) {
           return (
-            <Badge variant="outline" className="text-amber-600 whitespace-nowrap">
+            <Badge variant="warning" className="whitespace-nowrap">
               <Clock className="h-3 w-3 mr-1" />
               Primeiro acesso pendente
             </Badge>

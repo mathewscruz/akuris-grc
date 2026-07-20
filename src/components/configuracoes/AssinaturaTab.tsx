@@ -166,7 +166,7 @@ export function AssinaturaTab() {
                 )}
               </div>
             </div>
-            <Badge variant="outline" className={info.status_licenca === 'trial' ? 'border-amber-500 text-amber-600' : 'border-primary text-primary'}>
+            <Badge variant={info.status_licenca === 'trial' ? 'warning' : 'soft'}>
               {info.status_licenca === 'trial' ? 'Em teste' : 'Em operação'}
             </Badge>
           </div>

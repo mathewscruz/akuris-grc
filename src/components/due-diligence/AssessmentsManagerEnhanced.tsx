@@ -646,7 +646,7 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
                           </Badge>
                         )}
                         {isExpiringSoon(assessment.data_expiracao) && assessment.status !== 'concluido' && !isExpired(assessment.data_expiracao) && (
-                          <Badge variant="outline" className="border-amber-500 text-amber-600">
+                          <Badge variant="warning">
                             <Clock className="h-3 w-3 mr-1" />
                             Vence em {getDaysUntilExpiration(assessment.data_expiracao)}d
                           </Badge>

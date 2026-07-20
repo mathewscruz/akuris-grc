@@ -320,7 +320,7 @@ export function ConfiguracoesDenuncia() {
                 {formData.ativo ? "Ativo" : "Inativo"}
               </Badge>
               {empresaSlug ? (
-                <Badge variant="outline" className="text-green-600">
+                <Badge variant="success">
                   URLs Amigáveis
                 </Badge>
               ) : (
