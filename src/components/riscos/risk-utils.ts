@@ -25,10 +25,51 @@ export function severityFromNivel(raw?: string | null): Severity {
   return 'baixo';
 }
 
-/** Score derivado de prob × imp (strings "1"-"5"). */
+/**
+ * Mapa de valores textuais legados de probabilidade/impacto → escala canônica 1–5.
+ * Riscos antigos gravaram texto ("provavel", "catastrofico"); os novos gravam
+ * número ("1".."5"). Este mapa permite normalizar ambos para a mesma escala.
+ */
+const SCALE_MAP: Record<string, number> = {
+  // Probabilidade
+  raro: 1,
+  improvavel: 2,
+  possivel: 3,
+  provavel: 4,
+  quase_certo: 5,
+  muito_provavel: 5,
+  // Impacto
+  insignificante: 1,
+  menor: 2,
+  moderado: 3,
+  maior: 4,
+  catastrofico: 5,
+};
+
+/**
+ * Normaliza um valor de probabilidade/impacto para a escala canônica 1–5.
+ * Aceita número ("1".."5") ou texto legado ("provavel", "catastrofico").
+ * Retorna null quando não há valor reconhecível. Fonte única de verdade para
+ * toda conversão prob/impacto → número (matriz, sparkline, score, exibição).
+ */
+export function toScaleNumber(value?: string | number | null): number | null {
+  if (value === null || value === undefined || value === '') return null;
+  const n = Number(value);
+  if (Number.isFinite(n) && n >= 1 && n <= 5) return Math.round(n);
+  const key = norm(value as string).replace(/\s+/g, '_');
+  return SCALE_MAP[key] ?? null;
+}
+
+/** Exibição "P × I" normalizada: sempre número (ou "—"), nunca texto legado. */
+export function formatScaleValue(value?: string | number | null): string {
+  const n = toScaleNumber(value);
+  return n === null ? '—' : n.toString();
+}
+
+/** Score derivado de prob × imp. Aceita número ("1"-"5") ou texto legado. */
 export function scoreFromPI(prob?: string | number | null, imp?: string | number | null): number {
-  const p = Number(prob) || 0;
-  const i = Number(imp) || 0;
+  const p = toScaleNumber(prob) ?? 0;
+  const i = toScaleNumber(imp) ?? 0;
   return p * i;
 }
 

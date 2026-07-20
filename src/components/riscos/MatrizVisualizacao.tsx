@@ -7,6 +7,7 @@ import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Grid3X3 } from 'lucide-react';
+import { toScaleNumber } from '@/components/riscos/risk-utils';
 
 interface Matriz {
   id: string;
@@ -90,8 +91,8 @@ export function MatrizVisualizacao({ onNavigate, onConfigure }: Props) {
 
   const getRiscosPorCelula = (probabilidade: number, impacto: number) => {
     return riscos.filter(risco => {
-      const probRisco = parseInt(risco.probabilidade_inicial);
-      const impactoRisco = parseInt(risco.impacto_inicial);
+      const probRisco = toScaleNumber(risco.probabilidade_inicial);
+      const impactoRisco = toScaleNumber(risco.impacto_inicial);
       return probRisco === probabilidade && impactoRisco === impacto;
     });
   };

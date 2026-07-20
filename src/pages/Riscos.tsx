@@ -51,7 +51,7 @@ import { AppetiteFooter } from '@/components/riscos/matrix/AppetiteFooter';
 import { RiscosViewChips, type SavedView } from '@/components/riscos/table/RiscosViewChips';
 import { SparklineCell } from '@/components/riscos/table/SparklineCell';
 import { SlaCell } from '@/components/riscos/table/SlaCell';
-import { isAcimaApetite, severityFromNivel, slaFromRevisao, scoreFromPI, shortRiskId, relativeShort } from '@/components/riscos/risk-utils';
+import { isAcimaApetite, severityFromNivel, slaFromRevisao, scoreFromPI, shortRiskId, relativeShort, toScaleNumber, formatScaleValue } from '@/components/riscos/risk-utils';
 
 
 import { TrilhaAuditoriaRiscos } from '@/components/riscos/TrilhaAuditoriaRiscos';
@@ -465,7 +465,7 @@ export function Riscos() {
       className: 'w-[70px]',
       render: (_v: any, r: Risco) => (
         <span className="font-mono tabular-nums text-xs text-muted-foreground">
-          {r.probabilidade_inicial || '—'} × {r.impacto_inicial || '—'}
+          {formatScaleValue(r.probabilidade_inicial)} × {formatScaleValue(r.impacto_inicial)}
         </span>
       ),
     },
@@ -669,7 +669,9 @@ export function Riscos() {
         {(() => {
           // Derivações compartilhadas para Visão geral e Matriz
           const acimaApetite = riscos.filter(isAcimaApetite).length;
-          const semResponsavel = riscos.filter((r) => !r.responsavel || !String(r.responsavel).trim()).length;
+          // Alinhado à coluna Resp. da tabela: conta riscos sem nome de responsável
+          // resolvido (um ID que não resolve para um perfil também aparece como "—").
+          const semResponsavel = riscos.filter((r) => !r.responsavel_nome).length;
           const revisaoVencida = riscos.filter((r) => slaFromRevisao(r.data_proxima_revisao) === 'vencido').length;
           const emTratamento = riscos.filter((r) => r.status === 'em_tratamento').length;
 
@@ -695,7 +697,7 @@ export function Riscos() {
           // Risks da célula selecionada
           const cellRisks = matrixCell
             ? riscos.filter(
-                (r) => Number(r.probabilidade_inicial) === matrixCell.p && Number(r.impacto_inicial) === matrixCell.i,
+                (r) => toScaleNumber(r.probabilidade_inicial) === matrixCell.p && toScaleNumber(r.impacto_inicial) === matrixCell.i,
               )
             : [];
 
@@ -769,7 +771,7 @@ export function Riscos() {
           const viewFilters: Record<SavedView, (r: Risco) => boolean> = {
             todos: () => true,
             acima_apetite: (r) => isAcimaApetite(r),
-            sem_responsavel: (r) => !r.responsavel || !String(r.responsavel).trim(),
+            sem_responsavel: (r) => !r.responsavel_nome,
             revisao_vencida: (r) => slaFromRevisao(r.data_proxima_revisao) === 'vencido',
             meus_riscos: (r) => !!meId && r.responsavel === meId,
           };
