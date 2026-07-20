@@ -2,7 +2,7 @@
  * RiscoDetailDrawer — Sheet 540px (fullscreen mobile) com 4 abas: Visão · Tratamentos · Histórico · Controles.
  * Footer fixo com CTAs "Aceitar formalmente" e "Editar risco".
  */
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Sheet,
   SheetContent,
@@ -21,7 +21,7 @@ import {
 import { formatStatus } from '@/lib/text-utils';
 import { formatDateOnly } from '@/lib/date-utils';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
-import { Edit, ShieldCheck, Clock, AlertTriangle, Shield, History, Eye, X } from 'lucide-react';
+import { Edit, ShieldCheck, Clock, AlertTriangle, Shield, History, Eye, X, Plus } from 'lucide-react';
 import {
   initials,
   scoreFromPI,
@@ -30,6 +30,7 @@ import {
   SLA_LABELS,
 } from '@/components/riscos/risk-utils';
 import { useRiscoDetail } from '@/hooks/useRiscoDetail';
+import { VincularControleDialog } from '@/components/riscos/VincularControleDialog';
 
 interface Risco {
   id: string;
@@ -65,6 +66,7 @@ interface Props {
 
 export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept, onOpenTratamentos }: Props) {
   const { data: detail, isLoading } = useRiscoDetail(risco?.id ?? null);
+  const [vincularOpen, setVincularOpen] = useState(false);
 
   const inicialScore = useMemo(
     () => scoreFromPI(risco?.probabilidade_inicial, risco?.impacto_inicial),
@@ -311,10 +313,25 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
 
             {/* Controles */}
             <TabsContent value="controles" className="m-0 space-y-2 data-[state=active]:animate-fade-in">
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <span className="text-[10.5px] font-semibold tracking-[1.2px] uppercase text-muted-foreground">
+                  {detail?.controles.length || 0} vinculado{(detail?.controles.length || 0) === 1 ? '' : 's'}
+                </span>
+                <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setVincularOpen(true)}>
+                  <Plus className="h-3.5 w-3.5 mr-1" strokeWidth={1.5} />
+                  Vincular controle
+                </Button>
+              </div>
               {isLoading ? (
                 <div className="flex justify-center py-10"><AkurisPulse size={32} /></div>
               ) : detail?.controles.length === 0 ? (
-                <EmptyHint text="Nenhum controle vinculado." />
+                <div className="py-8 text-center space-y-3">
+                  <p className="text-sm text-muted-foreground">Nenhum controle vinculado.</p>
+                  <Button variant="outline" size="sm" onClick={() => setVincularOpen(true)}>
+                    <Plus className="h-3.5 w-3.5 mr-1.5" strokeWidth={1.5} />
+                    Vincular um controle
+                  </Button>
+                </div>
               ) : (
                 detail!.controles.map((c) => {
                   const pct = coberturaPct(c.eficacia_estimada);
@@ -363,6 +380,13 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
             </Button>
           </div>
         </div>
+
+        <VincularControleDialog
+          open={vincularOpen}
+          onOpenChange={setVincularOpen}
+          riscoId={risco.id}
+          riscoNome={risco.nome}
+        />
       </SheetContent>
     </Sheet>
   );
