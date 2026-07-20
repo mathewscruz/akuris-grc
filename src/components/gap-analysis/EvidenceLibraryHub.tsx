@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DialogShell } from '@/components/ui/dialog-shell';
+import { Sparkles as SparklesIcon } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -121,13 +121,13 @@ export function EvidenceLibraryHub() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-sm font-medium truncate">{ev.nome}</span>
                         {(ev.total_links || 0) > 0 && (
-                          <Badge variant="secondary" className="text-[10px]">{ev.total_links} usos</Badge>
+                          <StatusBadge tone="neutral" size="sm">{ev.total_links} usos</StatusBadge>
                         )}
                         {(ev.total_sugestoes || 0) > 0 && (
                           <StatusBadge tone="warning" size="sm">{ev.total_sugestoes} cruzamentos pendentes</StatusBadge>
                         )}
                         {(ev.tags || []).slice(0, 3).map((t) => (
-                          <Badge key={t} variant="outline" className="text-[10px]">{t}</Badge>
+                          <StatusBadge key={t} tone="neutral" variant="outline" size="sm">{t}</StatusBadge>
                         ))}
                       </div>
                       {ev.descricao && (
@@ -157,15 +157,14 @@ export function EvidenceLibraryHub() {
         </CardContent>
       </Card>
 
-      <Dialog open={!!openItem} onOpenChange={(o) => { if (!o) { setOpenItem(null); setMatchResult(null); } }}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-primary" strokeWidth={1.5} />
-              Cruzamentos para "{openItem?.nome}"
-            </DialogTitle>
-          </DialogHeader>
-
+      <DialogShell
+        open={!!openItem}
+        onOpenChange={(o) => { if (!o) { setOpenItem(null); setMatchResult(null); } }}
+        icon={SparklesIcon}
+        title={`Cruzamentos para "${openItem?.nome ?? ''}"`}
+        size="md"
+        hideFooter
+      >
           {running === openItem?.id ? (
             <div className="py-10 flex flex-col items-center gap-3">
               <AkurisPulse />
@@ -187,7 +186,7 @@ export function EvidenceLibraryHub() {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           {s.framework_nome && (
-                            <Badge variant="outline" className="text-[10px]">{s.framework_nome}</Badge>
+                            <StatusBadge tone="neutral" variant="outline" size="sm">{s.framework_nome}</StatusBadge>
                           )}
                           {s.codigo && <span className="text-xs font-mono text-muted-foreground">{s.codigo}</span>}
                         </div>
@@ -212,8 +211,7 @@ export function EvidenceLibraryHub() {
               </div>
             </ScrollArea>
           )}
-        </DialogContent>
-      </Dialog>
+      </DialogShell>
     </div>
   );
 }

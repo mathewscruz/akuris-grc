@@ -14,7 +14,6 @@ import { useEmpresaId } from "@/hooks/useEmpresaId";
 import { Upload, X, FileText, Calendar, Lightbulb, ClipboardList, CheckCircle2, ExternalLink, AlertTriangle, ChevronDown, History, BookOpen, RefreshCw, HelpCircle, Building2, Settings, FileCheck, CheckSquare, Shield, Target, Check, type LucideIcon } from 'lucide-react';
 import { AkurisAIIcon } from "@/components/icons";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { formatDateForInput, parseDateForDB } from "@/lib/date-utils";
 import { formatStatus } from "@/lib/text-utils";
@@ -1238,14 +1237,37 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
         }}
       />
 
-      <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <ExternalLink className="h-4 w-4 text-primary" strokeWidth={1.5} />
-              Adicionar link como evidência
-            </DialogTitle>
-          </DialogHeader>
+      <DialogShell
+        open={linkDialogOpen}
+        onOpenChange={setLinkDialogOpen}
+        icon={ExternalLink}
+        title="Adicionar link como evidência"
+        size="sm"
+        footer={
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setLinkDialogOpen(false)}>Cancelar</Button>
+            <Button
+              size="sm"
+              onClick={() => {
+                const url = linkUrl.trim();
+                if (!url) { toast.error('Informe a URL'); return; }
+                let safeName = linkName.trim();
+                if (!safeName) {
+                  try { safeName = new URL(url).hostname; } catch { safeName = url; }
+                }
+                setFormData(prev => ({
+                  ...prev,
+                  evidence_files: [...prev.evidence_files, { type: 'link', name: safeName, url }],
+                }));
+                setLinkDialogOpen(false);
+                toast.success('Link adicionado como evidência');
+              }}
+            >
+              Adicionar
+            </Button>
+          </div>
+        }
+      >
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
               <Label htmlFor="link-url" className="text-xs">URL <span className="text-destructive">*</span></Label>
@@ -1269,29 +1291,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
               <p className="text-[11px] text-muted-foreground">Se vazio, usaremos o domínio da URL.</p>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setLinkDialogOpen(false)}>Cancelar</Button>
-            <Button
-              onClick={() => {
-                const url = linkUrl.trim();
-                if (!url) { toast.error('Informe a URL'); return; }
-                let safeName = linkName.trim();
-                if (!safeName) {
-                  try { safeName = new URL(url).hostname; } catch { safeName = url; }
-                }
-                setFormData(prev => ({
-                  ...prev,
-                  evidence_files: [...prev.evidence_files, { type: 'link', name: safeName, url }],
-                }));
-                setLinkDialogOpen(false);
-                toast.success('Link adicionado como evidência');
-              }}
-            >
-              Adicionar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      </DialogShell>
     </>
   );
 };

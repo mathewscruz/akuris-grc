@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { DialogShell } from '@/components/ui/dialog-shell';
 import { Target, Zap, TrendingUp, ArrowRight } from 'lucide-react';
 import { AkurisAIIcon } from '@/components/icons';
 import { supabase } from '@/integrations/supabase/client';
@@ -110,9 +110,9 @@ export function AIRecommendationsButton(props: AIRecommendationsDialogProps) {
 
   const getEffortBadge = (esforco: string) => {
     switch (esforco) {
-      case 'baixo': return <Badge variant="secondary" className="text-xs">Baixo esforço</Badge>;
-      case 'medio': return <Badge variant="outline" className="text-xs">Médio esforço</Badge>;
-      case 'alto': return <Badge variant="destructive" className="text-xs">Alto esforço</Badge>;
+      case 'baixo': return <StatusBadge size="sm" tone="success">Baixo esforço</StatusBadge>;
+      case 'medio': return <StatusBadge size="sm" tone="warning">Médio esforço</StatusBadge>;
+      case 'alto': return <StatusBadge size="sm" tone="destructive">Alto esforço</StatusBadge>;
       default: return null;
     }
   };
@@ -145,16 +145,15 @@ export function AIRecommendationsButton(props: AIRecommendationsDialogProps) {
         </Tooltip>
       </TooltipProvider>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="w-[95vw] max-w-3xl lg:max-w-4xl max-h-[88vh] overflow-y-auto p-5 sm:p-6">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <AkurisAIIcon className="h-5 w-5 text-primary"/>
-              Consultor de Conformidade
-              <AiCostHint className="ml-2" action="cada análise" />
-            </DialogTitle>
-          </DialogHeader>
-
+      <DialogShell
+        open={open}
+        onOpenChange={setOpen}
+        icon={AkurisAIIcon as any}
+        title="Consultor de Conformidade"
+        size="lg"
+        hideFooter
+      >
+          <div className="flex justify-end mb-2"><AiCostHint action="cada análise" /></div>
           {loading && !recommendations ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
               <AkurisPulse size={32} className="text-primary" />
@@ -246,8 +245,7 @@ export function AIRecommendationsButton(props: AIRecommendationsDialogProps) {
               </Button>
             </div>
           )}
-        </DialogContent>
-      </Dialog>
+      </DialogShell>
     </>
   );
 }

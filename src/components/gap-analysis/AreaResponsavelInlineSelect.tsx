@@ -4,13 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { DialogShell } from "@/components/ui/dialog-shell";
 import { useAuth } from "@/components/AuthProvider";
 import { toast } from "sonner";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -147,21 +141,23 @@ export const AreaResponsavelInlineSelect: React.FC<AreaResponsavelInlineSelectPr
         </SelectContent>
       </Select>
 
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogTrigger asChild>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="h-8 w-8 p-0 shrink-0"
-          >
-            <Plus className="h-3 w-3" strokeWidth={1.5}/>
-          </Button>
-        </DialogTrigger>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Adicionar Nova Área</DialogTitle>
-          </DialogHeader>
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        className="h-8 w-8 p-0 shrink-0"
+        onClick={() => setIsDialogOpen(true)}
+      >
+        <Plus className="h-3 w-3" strokeWidth={1.5}/>
+      </Button>
+      <DialogShell
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        icon={Plus}
+        title="Adicionar Nova Área"
+        size="sm"
+        hideFooter
+      >
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="newArea">Nome da Área</Label>
@@ -179,8 +175,7 @@ export const AreaResponsavelInlineSelect: React.FC<AreaResponsavelInlineSelectPr
               </div>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+      </DialogShell>
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { DialogShell } from '@/components/ui/dialog-shell';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
-import { FileText, Shield, Upload, X } from 'lucide-react';
+import { FileText, Shield, Upload, X, FileSearch } from 'lucide-react';
 import { useOptimizedQuery } from '@/hooks/useOptimizedQuery';
 import * as pdfjsLib from 'pdfjs-dist';
 import mammoth from 'mammoth';
@@ -408,29 +408,27 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
   };
 
   return (
-    <Dialog open={open} onOpenChange={(newOpen) => {
-      // Prevenir fechamento durante análise
-      if (analysisState.isAnalyzing && !analysisState.isError) {
-        toast({
-          title: "Análise em andamento",
-          description: "Aguarde a conclusão da análise. O processo continuará mesmo se você fechar o dialog.",
-        });
-        return;
-      }
-      onOpenChange(newOpen);
-    }}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>
-            {analysisState.isAnalyzing ? 'Analisando Documento' : 'Nova Avaliação de Aderência'}
-          </DialogTitle>
-          <DialogDescription>
-            {analysisState.isAnalyzing 
-              ? 'Aguarde enquanto processamos a análise de aderência'
-              : 'Compare um documento interno com os requisitos de um framework regulatório usando IA'}
-          </DialogDescription>
-        </DialogHeader>
-
+    <DialogShell
+      open={open}
+      onOpenChange={(newOpen) => {
+        // Prevenir fechamento durante análise
+        if (analysisState.isAnalyzing && !analysisState.isError) {
+          toast({
+            title: "Análise em andamento",
+            description: "Aguarde a conclusão da análise. O processo continuará mesmo se você fechar o dialog.",
+          });
+          return;
+        }
+        onOpenChange(newOpen);
+      }}
+      icon={FileSearch}
+      title={analysisState.isAnalyzing ? 'Analisando Documento' : 'Nova Avaliação de Aderência'}
+      description={analysisState.isAnalyzing
+        ? 'Aguarde enquanto processamos a análise de aderência'
+        : 'Compare um documento interno com os requisitos de um framework regulatório usando IA'}
+      size="md"
+      hideFooter
+    >
         {/* Mostrar progresso ou formulário */}
         {analysisState.isAnalyzing || analysisState.progress > 0 ? (
           <div className="min-h-[400px]">
@@ -574,7 +572,6 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
             </div>
           </form>
         )}
-      </DialogContent>
-    </Dialog>
+    </DialogShell>
   );
 }
