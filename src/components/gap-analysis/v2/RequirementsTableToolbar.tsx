@@ -12,15 +12,14 @@ export interface RequirementsToolbarCounts {
   total: number;
   semEvidencia: number;
   criticos: number;
-  prazoVencido: number;
-  sugeridosIA: number;
+  parciais: number;
 }
 
 interface Props {
   counts: RequirementsToolbarCounts;
 }
 
-type ChipKey = 'all' | 'sem_evidencia' | 'criticos' | 'vencidos' | 'ia';
+type ChipKey = 'all' | 'sem_evidencia' | 'criticos' | 'parciais';
 
 const CHIPS: Array<{
   key: ChipKey;
@@ -32,8 +31,7 @@ const CHIPS: Array<{
   { key: 'all', label: 'Todos', field: 'total', apply: (sp) => { sp.delete('status'); sp.delete('prio'); } },
   { key: 'sem_evidencia', label: 'Sem evidência', field: 'semEvidencia', apply: (sp) => { sp.set('status', 'nao_avaliado'); sp.delete('prio'); } },
   { key: 'criticos', label: 'Críticos', field: 'criticos', apply: (sp) => { sp.set('status', 'nao_conforme'); sp.set('prio', '1'); } },
-  { key: 'vencidos', label: 'Prazo vencido', field: 'prazoVencido', apply: (sp) => { sp.set('status', 'nao_conforme'); sp.delete('prio'); } },
-  { key: 'ia', label: 'Parciais', field: 'sugeridosIA', apply: (sp) => { sp.set('status', 'parcial'); sp.delete('prio'); } },
+  { key: 'parciais', label: 'Parciais', field: 'parciais', apply: (sp) => { sp.set('status', 'parcial'); sp.delete('prio'); } },
 ];
 
 function detectActive(sp: URLSearchParams): ChipKey {
@@ -41,8 +39,7 @@ function detectActive(sp: URLSearchParams): ChipKey {
   const prio = sp.get('prio');
   if (status === 'nao_conforme' && prio === '1') return 'criticos';
   if (status === 'nao_avaliado') return 'sem_evidencia';
-  if (status === 'parcial') return 'ia';
-  if (status === 'nao_conforme') return 'vencidos';
+  if (status === 'parcial') return 'parciais';
   return 'all';
 }
 

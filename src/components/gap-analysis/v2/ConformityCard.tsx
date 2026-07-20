@@ -3,8 +3,9 @@
  * Substitui o FrameworkHeroSummary na aba Avaliação, pareado lado a lado
  * com PriorityQueueCard. Identidade Akuris (DM Sans, tokens semânticos).
  */
-import { ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight, ArrowRight } from 'lucide-react';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { Button } from '@/components/ui/button';
 import { getMaturityLevel } from './MaturityScale';
 
 interface ConformityCardProps {
@@ -19,6 +20,10 @@ interface ConformityCardProps {
   targetScore?: number;
   /** Pontos ganhos nos últimos 30d. */
   delta30d?: number;
+  /** Ação "continuar avaliação" — só renderiza quando fornecida. */
+  onContinue?: () => void;
+  /** Ação "ver remediação" — só renderiza quando fornecida. */
+  onGoToRemediation?: () => void;
 }
 
 const DONUT_SIZE = 132;
@@ -36,6 +41,8 @@ export function ConformityCard({
   naoAplicavel,
   targetScore = 60,
   delta30d = 0,
+  onContinue,
+  onGoToRemediation,
 }: ConformityCardProps) {
   const score = Math.round(Number(overallScore) || 0);
   const maturity = getMaturityLevel(score);
@@ -59,7 +66,7 @@ export function ConformityCard({
   return (
     <article className="relative overflow-hidden rounded-2xl border border-border bg-card p-5">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-foreground">Conformidade</h3>
+        <h3 className="text-sm font-semibold text-foreground">Score de aderência</h3>
         <StatusBadge tone="info" size="sm">
           Nível {maturity.id} — {maturity.label}
         </StatusBadge>
@@ -98,7 +105,7 @@ export function ConformityCard({
               {score}<span className="text-base text-muted-foreground">%</span>
             </span>
             <span className="text-[9px] font-sans uppercase tracking-wider text-muted-foreground mt-1">
-              Conformidade
+              Aderência
             </span>
           </div>
         </div>
@@ -133,6 +140,24 @@ export function ConformityCard({
           }
         />
       </div>
+
+      {/* Ações contextuais (migradas da antiga faixa de insights) */}
+      {(onContinue || onGoToRemediation) && (
+        <div className="mt-4 pt-3 border-t border-border/60 flex flex-wrap gap-2">
+          {onContinue && (
+            <Button variant="outline" size="sm" onClick={onContinue} className="gap-1.5">
+              Continuar avaliação
+              <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.5} />
+            </Button>
+          )}
+          {onGoToRemediation && (
+            <Button variant="ghost" size="sm" onClick={onGoToRemediation} className="gap-1.5">
+              Ver remediação
+              <ArrowUpRight className="h-3.5 w-3.5" strokeWidth={1.5} />
+            </Button>
+          )}
+        </div>
+      )}
     </article>
   );
 }

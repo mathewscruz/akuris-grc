@@ -353,6 +353,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
   const [evidenciasText, setEvidenciasText] = useState<string | null>(null);
   const [generatingGuidance, setGeneratingGuidance] = useState(false);
   const [diagnosticQuestions, setDiagnosticQuestions] = useState<Array<{pergunta: string; peso: number}>>([]);
+  const [guidanceOpen, setGuidanceOpen] = useState(true);
   const [diagnosticAnswers, setDiagnosticAnswers] = useState<Record<number, 'sim' | 'parcial' | 'nao' | null>>({});
   const { openDocGen } = useDocGen();
   const [validatingUrl, setValidatingUrl] = useState<string | null>(null);
@@ -730,21 +731,8 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
         className="h-[100dvh] sm:h-[92vh]"
       >
         <div className="flex flex-col h-full min-h-0 overflow-hidden">
-          {/* ====================================================== */}
-          {/* STATUS BAR — sempre visível, primeira ação do usuário  */}
-          {/* ====================================================== */}
-          <div className="px-6 py-3 border-b bg-muted/20">
-            <div className="flex items-center gap-3 flex-wrap">
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</span>
-              <StatusSegmentedControl
-                value={currentStatus}
-                onChange={handleStatusChange}
-                disabled={savingStatus || loading}
-              />
-              {savingStatus && <AkurisPulse size={14} className="text-muted-foreground" />}
-            </div>
-          </div>
-
+          {/* Status agora vive dentro do Step 1 "Avaliar Conformidade" (painel
+              direito), evitando duplicar a ação em dois lugares. */}
           {loading ? (
             <div className="flex items-center justify-center py-16">
               <AkurisPulse size={32} className="text-primary" />
@@ -757,10 +745,16 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
               <div className="h-full md:w-[42%] border-r bg-muted/20 flex-1 md:flex-none min-h-0 overflow-y-auto">
                 <div className="p-5 space-y-4">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setGuidanceOpen(o => !o)}
+                      className="flex items-center gap-1.5 hover:opacity-80 transition-opacity"
+                      aria-expanded={guidanceOpen}
+                    >
                       <BookOpen className="h-4 w-4 text-primary" strokeWidth={1.5} />
                       <h4 className="text-sm font-semibold text-foreground">Orientação do Requisito</h4>
-                    </div>
+                      <ChevronDown className={cn('h-3.5 w-3.5 text-muted-foreground transition-transform', guidanceOpen ? '' : '-rotate-90')} strokeWidth={1.5} />
+                    </button>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -773,7 +767,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                     </Button>
                   </div>
 
-                  {generatingGuidance && !guidanceText ? (
+                  {guidanceOpen && (generatingGuidance && !guidanceText ? (
                     <GuidanceSkeleton />
                   ) : guidanceText ? (
                     <>
@@ -808,7 +802,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                         </p>
                       </div>
                     </div>
-                  )}
+                  ))}
                 </div>
               </div>
 
@@ -822,7 +816,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                   <JourneyStep
                     number={1}
                     title="Avaliar Conformidade"
-                    description="Defina o status acima ou use o diagnóstico rápido"
+                    description="Defina o status e, se disponível, use o diagnóstico guiado"
                     state={isStatusDefined ? 'complete' : 'active'}
                     badge={
                       isStatusDefined
@@ -830,14 +824,23 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                         : <Badge variant="outline" className="text-[10px]">Pendente</Badge>
                     }
                   >
-                    {diagnosticQuestions.length > 0 ? (
-                      <div className="space-y-3">
+                    <div className="space-y-3">
+                      {/* Status vive aqui agora (antes duplicado numa barra no topo) */}
+                      <StatusSegmentedControl
+                        value={currentStatus}
+                        onChange={handleStatusChange}
+                        disabled={savingStatus || loading}
+                      />
+                      {savingStatus && <AkurisPulse size={14} className="text-muted-foreground" />}
+
+                      {diagnosticQuestions.length > 0 && (
+                        <div className="space-y-3 pt-3 border-t border-border/50">
                         <div className="flex items-center gap-1.5">
                           <HelpCircle className="h-3.5 w-3.5 text-primary" strokeWidth={1.5} />
-                          <p className="text-xs font-medium text-foreground">Diagnóstico Rápido</p>
+                          <p className="text-xs font-medium text-foreground">Diagnóstico Guiado</p>
                         </div>
                         <p className="text-[11px] text-muted-foreground">
-                          Responda às perguntas para receber a recomendação de status.
+                          Responda às perguntas para receber uma recomendação de status.
                         </p>
                         <div className="space-y-2.5">
                           {diagnosticQuestions.map((q, idx) => {
@@ -874,7 +877,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                         {diagnosticSuggestion && (
                           <div className="flex items-center justify-between gap-3 p-3 rounded-md bg-primary/5 border border-primary/20">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-[11px] text-muted-foreground">Recomendação IA:</span>
+                              <span className="text-[11px] text-muted-foreground">Recomendação:</span>
                               <Badge variant="outline" className={cn('font-semibold', diagnosticSuggestion.color)}>
                                 {diagnosticSuggestion.label}
                               </Badge>
@@ -892,15 +895,9 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                             </Button>
                           </div>
                         )}
-                      </div>
-                    ) : (
-                      <div className="flex items-start gap-2 p-3 rounded-md bg-muted/30 border border-dashed">
-                        <Lightbulb className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" strokeWidth={1.5} />
-                        <p className="text-[11px] text-muted-foreground">
-                          Use os botões de status no topo do diálogo para definir a conformidade deste requisito.
-                        </p>
-                      </div>
-                    )}
+                        </div>
+                      )}
+                    </div>
                   </JourneyStep>
 
                   {/* ===== STEP 2: Evidências ===== */}

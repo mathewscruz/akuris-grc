@@ -13,7 +13,9 @@ import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeSanitize from 'rehype-sanitize';
 import { ExternalLink } from 'lucide-react';
 import { AkurisAIIcon } from '@/components/icons';
 import { supabase } from '@/integrations/supabase/client';
@@ -42,6 +44,7 @@ interface RequirementCore {
   descricao: string | null;
   categoria: string | null;
   orientacao_implementacao: string | null;
+  exemplos_evidencias: string | null;
   framework_id: string;
 }
 
@@ -51,6 +54,10 @@ interface EvaluationCore {
   observacoes: string | null;
   prazo_implementacao: string | null;
 }
+
+/** Estilo de prosa para conteúdo em Markdown (orientação da norma, evidências). */
+const PROSE_CLASS =
+  'prose prose-sm dark:prose-invert max-w-none prose-headings:font-semibold prose-headings:text-foreground prose-headings:text-sm prose-headings:mt-3 prose-headings:mb-1.5 prose-p:my-1.5 prose-ul:my-1.5 prose-ol:my-1.5 prose-li:my-0.5 prose-strong:text-foreground';
 
 export function RequirementDrawer({
   open,
@@ -79,7 +86,7 @@ export function RequirementDrawer({
         const [reqRes, evalRes] = await Promise.all([
           supabase
             .from('gap_analysis_requirements')
-            .select('id, codigo, titulo, descricao, categoria, orientacao_implementacao, framework_id')
+            .select('id, codigo, titulo, descricao, categoria, orientacao_implementacao, exemplos_evidencias, framework_id')
             .eq('id', requirementId)
             .maybeSingle(),
           supabase
@@ -225,12 +232,26 @@ export function RequirementDrawer({
 
             {/* Body */}
             <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
-              {/* Texto oficial / orientação */}
+              {/* Texto oficial / orientação (renderizado como Markdown) */}
               {(requirement.descricao || requirement.orientacao_implementacao) && (
                 <section>
                   <SectionHead title="O QUE A NORMA EXIGE" />
-                  <div className="rounded-lg border border-border bg-muted/30 p-4 text-sm text-foreground/85 leading-relaxed whitespace-pre-wrap">
-                    {requirement.orientacao_implementacao || requirement.descricao}
+                  <div className={`rounded-lg border border-border bg-muted/30 p-4 text-sm text-foreground/85 leading-relaxed ${PROSE_CLASS}`}>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSanitize]}>
+                      {requirement.orientacao_implementacao || requirement.descricao || ''}
+                    </ReactMarkdown>
+                  </div>
+                </section>
+              )}
+
+              {/* Evidências esperadas — orienta o usuário sobre que prova buscar/anexar */}
+              {requirement.exemplos_evidencias && (
+                <section>
+                  <SectionHead title="EVIDÊNCIAS ESPERADAS" />
+                  <div className={`rounded-lg border border-border bg-muted/30 p-4 text-sm text-foreground/85 leading-relaxed ${PROSE_CLASS}`}>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSanitize]}>
+                      {requirement.exemplos_evidencias}
+                    </ReactMarkdown>
                   </div>
                 </section>
               )}
@@ -295,19 +316,19 @@ export function RequirementDrawer({
                 />
               </section>
 
-              {/* Prazo */}
-              <section>
-                <Label htmlFor="prazo-drawer" className="text-[10px] font-sans uppercase tracking-wider text-muted-foreground">
-                  PRAZO DE IMPLEMENTAÇÃO
-                </Label>
-                <Input
-                  id="prazo-drawer"
-                  type="date"
-                  value={evaluation.prazo_implementacao || ''}
-                  onChange={(e) => setEvaluation(prev => ({ ...prev, prazo_implementacao: e.target.value || null }))}
-                  className="mt-1.5 max-w-[200px]"
-                />
-              </section>
+              {/* Prazo — só aparece para o que precisa ser implementado */}
+              {(evaluation.conformity_status === 'nao_conforme' || evaluation.conformity_status === 'parcial') && (
+                <section>
+                  <SectionHead title="PRAZO DE IMPLEMENTAÇÃO" />
+                  <Input
+                    id="prazo-drawer"
+                    type="date"
+                    value={evaluation.prazo_implementacao || ''}
+                    onChange={(e) => setEvaluation(prev => ({ ...prev, prazo_implementacao: e.target.value || null }))}
+                    className="mt-1.5 max-w-[200px]"
+                  />
+                </section>
+              )}
             </div>
 
             {/* Footer */}

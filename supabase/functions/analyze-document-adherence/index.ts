@@ -163,8 +163,15 @@ serve(async (req) => {
     }
 
     // 4. Montar prompt
+    // Sonnet 5 comporta um contexto grande; 150 requisitos cobrem os frameworks
+    // usuais (ISO 27001 tem ~121). Frameworks muito grandes (ex.: PCI DSS ~288)
+    // ainda pedem processamento em lotes — melhoria futura.
+    const MAX_REQS_POR_ANALISE = 150;
     const docTextForAnalysis = documentText.substring(0, 30000);
-    const reqsForAnalysis = requirements.slice(0, 60);
+    const reqsForAnalysis = requirements.slice(0, MAX_REQS_POR_ANALISE);
+    if (requirements.length > MAX_REQS_POR_ANALISE) {
+      console.warn(`Framework com ${requirements.length} requisitos excede o limite de ${MAX_REQS_POR_ANALISE} por análise; ${requirements.length - MAX_REQS_POR_ANALISE} não foram analisados nesta rodada.`);
+    }
 
     const reqsText = reqsForAnalysis.map((r: any, i: number) => {
       let entry = `${i+1}. ID:${r.id} | ${r.codigo || 'N/A'}: ${r.titulo}`;
@@ -234,8 +241,8 @@ FORMATO JSON OBRIGATÓRIO (retorne APENAS JSON válido, sem markdown):
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 16000,
+        model: 'claude-sonnet-5',
+        max_tokens: 32000,
         system: 'Você é um auditor sênior de conformidade regulatória. Analise documentos com rigor e precisão. Retorne APENAS JSON válido seguindo exatamente o schema fornecido. Seja específico nas evidências e gaps.',
         messages: [
           { role: 'user', content: prompt }
