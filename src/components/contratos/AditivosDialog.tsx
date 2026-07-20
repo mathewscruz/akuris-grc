@@ -5,7 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Badge } from '@/components/ui/badge';
+import { StatusBadge, type StatusTone } from '@/components/ui/status-badge';
+import { DialogShell } from '@/components/ui/dialog-shell';
 import { CalendarIcon, Edit, Trash2, FileText, CheckCircle, Clock, XCircle, FileEdit, ArrowRight } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -76,11 +77,11 @@ interface AditivosDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const STATUS_INFO: Record<string, { label: string; icon: typeof FileText; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
-  rascunho: { label: 'Rascunho', icon: FileText, variant: 'secondary' },
-  aprovacao: { label: 'Em Aprovação', icon: Clock, variant: 'default' },
-  ativo: { label: 'Ativo', icon: CheckCircle, variant: 'default' },
-  rejeitado: { label: 'Rejeitado', icon: XCircle, variant: 'destructive' },
+const STATUS_INFO: Record<string, { label: string; icon: typeof FileText; tone: StatusTone }> = {
+  rascunho: { label: 'Rascunho', icon: FileText, tone: 'neutral' },
+  aprovacao: { label: 'Em Aprovação', icon: Clock, tone: 'info' },
+  ativo: { label: 'Ativo', icon: CheckCircle, tone: 'success' },
+  rejeitado: { label: 'Rejeitado', icon: XCircle, tone: 'destructive' },
 };
 
 const formatCurrency = (value: number | null) => {
@@ -256,9 +257,9 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
           label: `Aditivo ${a.numero_aditivo}`,
           description: `${formatStatus(a.tipo)} · ${formatDate(a.data_assinatura)}`,
           badge: (
-            <Badge variant={info.variant} className="text-[10px] px-1.5 py-0 h-5">
+            <StatusBadge tone={info.tone} size="sm">
               {info.label}
-            </Badge>
+            </StatusBadge>
           ),
           icon: info.icon,
           raw: a,
@@ -282,10 +283,9 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
             <h2 className="text-xl font-semibold tracking-tight">Aditivo {a.numero_aditivo}</h2>
             <p className="text-sm text-muted-foreground">{formatStatus(a.tipo)}</p>
           </div>
-          <Badge variant={info.variant} className="gap-1">
-            <StatusIcon className="h-3 w-3" />
+          <StatusBadge tone={info.tone} icon={<StatusIcon className="h-3 w-3" />}>
             {info.label}
-          </Badge>
+          </StatusBadge>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -400,13 +400,18 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
       />
 
       {/* Sub-dialog para criar/editar aditivo */}
-      <Dialog open={formOpen} onOpenChange={setFormOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editingAditivo ? 'Editar Aditivo' : 'Novo Aditivo'}</DialogTitle>
-            <DialogDescription>Preencha as informações do aditivo contratual</DialogDescription>
-          </DialogHeader>
-
+      <DialogShell
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        icon={FileEdit}
+        title={editingAditivo ? 'Editar Aditivo' : 'Novo Aditivo'}
+        description="Preencha as informações do aditivo contratual"
+        size="lg"
+        onSubmit={form.handleSubmit(onSubmit)}
+        submitLabel={editingAditivo ? 'Atualizar' : 'Criar'}
+        isSubmitting={loading}
+        isDirty={form.formState.isDirty}
+      >
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
               <FormField
@@ -585,25 +590,9 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
                 )}
               />
 
-              <DialogFooter className="md:col-span-2 pt-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setFormOpen(false);
-                    setEditingAditivo(null);
-                  }}
-                >
-                  Cancelar
-                </Button>
-                <Button type="submit" disabled={loading}>
-                  {loading ? 'Salvando...' : editingAditivo ? 'Atualizar' : 'Criar'} Aditivo
-                </Button>
-              </DialogFooter>
             </form>
           </Form>
-        </DialogContent>
-      </Dialog>
+      </DialogShell>
 
       <ConfirmDialog
         open={deleteConfirmOpen}

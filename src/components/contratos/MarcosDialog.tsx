@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DialogShell } from '@/components/ui/dialog-shell';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,7 +11,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveMarcoStatusTone, resolveMarcoTipoTone } from '@/lib/status-tone';
 import { formatStatus } from '@/lib/text-utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Calendar, DollarSign, User, AlertCircle } from 'lucide-react';
+import { Plus, Calendar, CalendarClock, DollarSign, User, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
@@ -48,6 +49,7 @@ export function MarcosDialog({ contrato, open, onOpenChange }: MarcosDialogProps
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingMarco, setEditingMarco] = useState<Marco | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: string; nome?: string }>({ open: false, id: '' });
   const [formData, setFormData] = useState({
     nome: '',
     tipo: 'vencimento',
@@ -193,12 +195,12 @@ export function MarcosDialog({ contrato, open, onOpenChange }: MarcosDialogProps
     setShowForm(true);
   };
 
-  const handleDelete = async (marcoId: string) => {
+  const handleDelete = async () => {
     try {
       const { error } = await supabase
         .from('contrato_marcos')
         .delete()
-        .eq('id', marcoId);
+        .eq('id', deleteConfirm.id);
 
       if (error) throw error;
 
@@ -215,6 +217,8 @@ export function MarcosDialog({ contrato, open, onOpenChange }: MarcosDialogProps
         description: "Erro ao excluir marco",
         variant: "destructive",
       });
+    } finally {
+      setDeleteConfirm({ open: false, id: '' });
     }
   };
 
@@ -245,20 +249,19 @@ export function MarcosDialog({ contrato, open, onOpenChange }: MarcosDialogProps
   if (!contrato) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            Marcos - {contrato.nome}
-          </DialogTitle>
-        </DialogHeader>
-
+    <>
+    <DialogShell
+      open={open}
+      onOpenChange={onOpenChange}
+      icon={CalendarClock}
+      title={`Marcos — ${contrato.nome}`}
+      description={`Gerencie marcos importantes e datas do contrato ${contrato.numero_contrato}`}
+      size="lg"
+      hideFooter
+    >
         <div className="space-y-4">
           {!showForm && (
-            <div className="flex justify-between items-center">
-              <p className="text-sm text-muted-foreground">
-                Gerencie marcos importantes e datas do contrato
-              </p>
+            <div className="flex justify-end items-center">
               <Button onClick={() => setShowForm(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 Novo Marco
@@ -416,14 +419,14 @@ export function MarcosDialog({ contrato, open, onOpenChange }: MarcosDialogProps
 
           <div className="space-y-4">
             {marcos.map((marco) => (
-              <Card key={marco.id} className={`hover:shadow-md transition-shadow ${isOverdue(marco.data_prevista, marco.status) ? 'border-red-200' : ''}`}>
+              <Card key={marco.id} className={`hover:shadow-md transition-shadow ${isOverdue(marco.data_prevista, marco.status) ? 'border-destructive/30' : ''}`}>
                 <CardContent className="pt-6">
                   <div className="flex justify-between items-start mb-4">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <h3 className="font-semibold">{marco.nome}</h3>
                         {isOverdue(marco.data_prevista, marco.status) && (
-                          <AlertCircle className="h-4 w-4 text-red-500" />
+                          <AlertCircle className="h-4 w-4 text-destructive" />
                         )}
                       </div>
                       <p className="text-sm text-muted-foreground">{marco.descricao}</p>
@@ -445,7 +448,7 @@ export function MarcosDialog({ contrato, open, onOpenChange }: MarcosDialogProps
 
                     {marco.data_realizada && (
                       <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-green-600" />
+                        <Calendar className="h-4 w-4 text-success" />
                         <div>
                           <span className="font-medium">Data Realizada:</span>
                           <p>{format(new Date(marco.data_realizada), 'dd/MM/yyyy', { locale: ptBR })}</p>
@@ -484,7 +487,7 @@ export function MarcosDialog({ contrato, open, onOpenChange }: MarcosDialogProps
                     <Button variant="outline" size="sm" onClick={() => handleEdit(marco)}>
                       Editar
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleDelete(marco.id)}>
+                    <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => setDeleteConfirm({ open: true, id: marco.id, nome: marco.nome })}>
                       Excluir
                     </Button>
                   </div>
@@ -502,7 +505,18 @@ export function MarcosDialog({ contrato, open, onOpenChange }: MarcosDialogProps
             </Card>
           )}
         </div>
-      </DialogContent>
-    </Dialog>
+    </DialogShell>
+
+    <ConfirmDialog
+      open={deleteConfirm.open}
+      onOpenChange={(open) => setDeleteConfirm(prev => ({ ...prev, open }))}
+      title="Excluir Marco"
+      description={`Tem certeza que deseja excluir o marco "${deleteConfirm.nome}"? Esta ação não pode ser desfeita.`}
+      confirmText="Excluir"
+      cancelText="Cancelar"
+      variant="destructive"
+      onConfirm={handleDelete}
+    />
+    </>
   );
 }

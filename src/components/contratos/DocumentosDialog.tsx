@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DialogShell } from '@/components/ui/dialog-shell';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
+import { StatusBadge, type StatusTone } from '@/components/ui/status-badge';
+import { FolderOpen } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, FileText, Upload, Download, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -237,16 +238,16 @@ export function DocumentosDialog({ contrato, open, onOpenChange }: DocumentosDia
   };
 
   const getTipoBadge = (tipo: string) => {
-    const tipoMap = {
-      contrato_principal: { color: 'bg-blue-500', label: 'Contrato Principal' },
-      aditivo: { color: 'bg-purple-500', label: 'Aditivo' },
-      anexo: { color: 'bg-green-500', label: 'Anexo' },
-      proposta: { color: 'bg-orange-500', label: 'Proposta' },
-      outros: { color: 'bg-gray-500', label: 'Outros' }
+    const tipoMap: Record<string, { tone: StatusTone; label: string }> = {
+      contrato_principal: { tone: 'info', label: 'Contrato Principal' },
+      aditivo: { tone: 'primary', label: 'Aditivo' },
+      anexo: { tone: 'success', label: 'Anexo' },
+      proposta: { tone: 'warning', label: 'Proposta' },
+      outros: { tone: 'neutral', label: 'Outros' }
     };
-    
-    const tipoInfo = tipoMap[tipo as keyof typeof tipoMap] || { color: 'bg-gray-500', label: tipo };
-    return <Badge className={`${tipoInfo.color} text-white`}>{tipoInfo.label}</Badge>;
+
+    const tipoInfo = tipoMap[tipo] || { tone: 'neutral' as StatusTone, label: tipo };
+    return <StatusBadge size="sm" tone={tipoInfo.tone}>{tipoInfo.label}</StatusBadge>;
   };
 
   const formatFileSize = (bytes: number) => {
@@ -261,20 +262,18 @@ export function DocumentosDialog({ contrato, open, onOpenChange }: DocumentosDia
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              Documentos - {contrato.nome}
-            </DialogTitle>
-          </DialogHeader>
-
+      <DialogShell
+        open={open}
+        onOpenChange={onOpenChange}
+        icon={FolderOpen}
+        title={`Documentos — ${contrato.nome}`}
+        description={`Gerencie documentos relacionados ao contrato ${contrato.numero_contrato}`}
+        size="lg"
+        hideFooter
+      >
           <div className="space-y-4">
             {!showForm && (
-              <div className="flex justify-between items-center">
-                <p className="text-sm text-muted-foreground">
-                  Gerencie documentos relacionados ao contrato
-                </p>
+              <div className="flex justify-end items-center">
                 <Button onClick={() => setShowForm(true)}>
                   <Plus className="h-4 w-4 mr-2" />
                   Novo Documento
@@ -366,7 +365,7 @@ export function DocumentosDialog({ contrato, open, onOpenChange }: DocumentosDia
                           <FileText className="h-5 w-5 text-muted-foreground" />
                           <h3 className="font-semibold">{documento.nome}</h3>
                           {documento.is_current_version && (
-                            <Badge variant="outline">Versão Atual</Badge>
+                            <StatusBadge size="sm" tone="success" variant="outline">Versão Atual</StatusBadge>
                           )}
                         </div>
                         <p className="text-sm text-muted-foreground">{documento.descricao}</p>
@@ -423,8 +422,7 @@ export function DocumentosDialog({ contrato, open, onOpenChange }: DocumentosDia
               </Card>
             )}
           </div>
-        </DialogContent>
-      </Dialog>
+      </DialogShell>
 
       <ConfirmDialog
         open={deleteConfirm.open}

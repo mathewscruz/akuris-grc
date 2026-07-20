@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+import { DialogShell } from '@/components/ui/dialog-shell';
+import { Building2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -160,14 +160,16 @@ export function FornecedorDialog({ fornecedor, open, onOpenChange, onSuccess }: 
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            {fornecedor ? 'Editar Fornecedor' : 'Novo Fornecedor'}
-          </DialogTitle>
-        </DialogHeader>
-
+    <DialogShell
+      open={open}
+      onOpenChange={onOpenChange}
+      icon={Building2}
+      title={fornecedor ? 'Editar Fornecedor' : 'Novo Fornecedor'}
+      size="md"
+      onSubmit={() => handleSubmit(new Event('submit') as unknown as React.FormEvent)}
+      submitLabel={fornecedor ? 'Atualizar' : 'Cadastrar'}
+      isSubmitting={loading}
+    >
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2 md:col-span-2">
@@ -314,16 +316,7 @@ export function FornecedorDialog({ fornecedor, open, onOpenChange, onSuccess }: 
             </div>
           </div>
 
-          <div className="flex justify-end space-x-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Salvando...' : (fornecedor ? 'Atualizar' : 'Cadastrar')}
-            </Button>
-          </div>
         </form>
-      </DialogContent>
-    </Dialog>
+    </DialogShell>
   );
 }

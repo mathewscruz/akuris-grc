@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { DialogShell } from '@/components/ui/dialog-shell';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { resolveContratoStatusTone } from '@/lib/status-tone';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
@@ -610,16 +611,16 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Tipo:</span>
-                    <Badge variant="outline">{formatStatus(formData.tipo)}</Badge>
+                    <StatusBadge tone="neutral" variant="outline" size="sm">{formatStatus(formData.tipo)}</StatusBadge>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Status:</span>
-                    <Badge variant="secondary">{formatStatus(formData.status)}</Badge>
+                    <StatusBadge size="sm" {...resolveContratoStatusTone(formData.status)}>{formatStatus(formData.status)}</StatusBadge>
                   </div>
                   {formData.confidencial && (
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Confidencial:</span>
-                      <Badge variant="destructive">Sim</Badge>
+                      <StatusBadge tone="destructive" size="sm">Sim</StatusBadge>
                     </div>
                   )}
                 </div>
@@ -689,21 +690,50 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col p-0">
-        <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4">
-          <DialogTitle>
-            {contrato ? 'Editar Contrato' : 'Novo Contrato'}
-          </DialogTitle>
-          <DialogDescription>
-            {contrato 
-              ? 'Atualize as informações do contrato conforme necessário.' 
-              : 'Preencha os campos para cadastrar um novo contrato.'}
-          </DialogDescription>
-        </DialogHeader>
+    <DialogShell
+      open={open}
+      onOpenChange={onOpenChange}
+      icon={FileText}
+      title={contrato ? 'Editar Contrato' : 'Novo Contrato'}
+      description={contrato
+        ? 'Atualize as informações do contrato conforme necessário.'
+        : 'Preencha os campos para cadastrar um novo contrato.'}
+      size="lg"
+      noScroll
+      footer={
+        <div className="flex justify-between w-full">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handlePrevious}
+            disabled={currentStep === 1}
+          >
+            <ChevronLeft className="h-4 w-4 mr-2" />
+            Anterior
+          </Button>
 
+          <div className="flex gap-2">
+            <Button type="button" variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
+              Cancelar
+            </Button>
+            {currentStep < STEPS.length ? (
+              <Button type="button" size="sm" onClick={handleNext}>
+                Próximo
+                <ChevronRight className="h-4 w-4 ml-2" />
+              </Button>
+            ) : (
+              <Button type="button" size="sm" onClick={handleSubmit} disabled={loading}>
+                {loading ? 'Salvando...' : (contrato ? 'Atualizar' : 'Criar Contrato')}
+              </Button>
+            )}
+          </div>
+        </div>
+      }
+    >
+      <div className="h-full flex flex-col min-h-0">
         {/* Step Indicator */}
-        <div className="px-6 pb-4">
+        <div className="px-6 pt-6 pb-4 flex-shrink-0">
           <div className="flex items-center justify-between">
             {STEPS.map((step, index) => {
               const StepIcon = step.icon;
@@ -766,41 +796,7 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
           </div>
           {renderStepContent()}
         </div>
-
-        {/* Footer */}
-        <div className="flex-shrink-0 px-6 py-4 border-t bg-muted/30 flex justify-between">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handlePrevious}
-            disabled={currentStep === 1}
-          >
-            <ChevronLeft className="h-4 w-4 mr-2" />
-            Anterior
-          </Button>
-
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => onOpenChange(false)}
-            >
-              Cancelar
-            </Button>
-            
-            {currentStep < STEPS.length ? (
-              <Button type="button" onClick={handleNext}>
-                Próximo
-                <ChevronRight className="h-4 w-4 ml-2" />
-              </Button>
-            ) : (
-              <Button type="button" onClick={handleSubmit} disabled={loading}>
-                {loading ? 'Salvando...' : (contrato ? 'Atualizar' : 'Criar Contrato')}
-              </Button>
-            )}
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </DialogShell>
   );
 }
