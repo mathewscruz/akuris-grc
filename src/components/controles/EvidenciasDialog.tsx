@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DialogShell } from "@/components/ui/dialog-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -181,15 +181,15 @@ export function EvidenciasDialog({ open, onOpenChange, controleId, controleNome 
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FileUp className="h-5 w-5" />
-            Gestão de Evidências - {controleNome}
-          </DialogTitle>
-        </DialogHeader>
-
+    <DialogShell
+      open={open}
+      onOpenChange={onOpenChange}
+      icon={FileUp}
+      title="Gestão de Evidências"
+      description={controleNome}
+      size="lg"
+      hideFooter
+    >
         <Tabs defaultValue="evidencias">
           <TabsList>
             <TabsTrigger value="evidencias">Evidências</TabsTrigger>
@@ -315,7 +315,6 @@ export function EvidenciasDialog({ open, onOpenChange, controleId, controleNome 
             </div>
           </TabsContent>
         </Tabs>
-      </DialogContent>
-    </Dialog>
+    </DialogShell>
   );
 }

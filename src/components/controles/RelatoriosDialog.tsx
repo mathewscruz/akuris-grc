@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DialogShell } from "@/components/ui/dialog-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -186,15 +186,14 @@ export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) 
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5" />
-            Relatórios e Análises
-          </DialogTitle>
-        </DialogHeader>
-
+    <DialogShell
+      open={open}
+      onOpenChange={onOpenChange}
+      icon={BarChart3}
+      title="Relatórios e Análises"
+      size="lg"
+      hideFooter
+    >
         <Tabs value={tipoRelatorio} onValueChange={setTipoRelatorio}>
           <TabsList>
             <TabsTrigger value="eficacia">Eficácia</TabsTrigger>
@@ -403,7 +402,6 @@ export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) 
             </Card>
           </TabsContent>
         </Tabs>
-      </DialogContent>
-    </Dialog>
+    </DialogShell>
   );
 }

@@ -1,4 +1,5 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DialogShell } from "@/components/ui/dialog-shell";
+import { FlaskConical } from "lucide-react";
 import TestesList from "./TestesList";
 
 interface TestesDialogProps {
@@ -8,27 +9,25 @@ interface TestesDialogProps {
   controleNome?: string;
 }
 
-export default function TestesDialog({ 
-  open, 
-  onOpenChange, 
-  controleId, 
-  controleNome 
+export default function TestesDialog({
+  open,
+  onOpenChange,
+  controleId,
+  controleNome,
 }: TestesDialogProps) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            Testes do Controle: {controleNome}
-          </DialogTitle>
-        </DialogHeader>
-        {controleId && controleNome && (
-          <TestesList 
-            controleId={controleId} 
-            controleNome={controleNome} 
-          />
-        )}
-      </DialogContent>
-    </Dialog>
+    <DialogShell
+      open={open}
+      onOpenChange={onOpenChange}
+      icon={FlaskConical}
+      title="Testes do Controle"
+      description={controleNome}
+      size="lg"
+      hideFooter
+    >
+      {controleId && controleNome && (
+        <TestesList controleId={controleId} controleNome={controleNome} />
+      )}
+    </DialogShell>
   );
 }
