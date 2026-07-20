@@ -19,6 +19,7 @@ import {
   SectionHeatmap,
   PriorityQueueCard,
   ConformityCard,
+  CertificationReadinessCard,
   RequirementsTableToolbar,
   RequirementDrawerProvider,
   useRequirementDrawer,
@@ -332,6 +333,25 @@ function GapAnalysisFrameworkDetailInner() {
               />
             ) : (
               <>
+                {/* Manchete do módulo: "estou pronto para certificar?" */}
+                <CertificationReadinessCard
+                  certifiable={supportsSoA}
+                  total={totalRequirements}
+                  conforme={categoryData.reduce((s, c) => s + c.conforme, 0)}
+                  parcial={categoryData.reduce((s, c) => s + c.parcial, 0)}
+                  naoConforme={categoryData.reduce((s, c) => s + c.nao_conforme, 0)}
+                  naoAplicavel={categoryData.reduce((s, c) => s + c.nao_aplicavel, 0)}
+                  naoAvaliado={categoryData.reduce((s, c) => s + c.nao_avaliado, 0)}
+                  onViewBlockers={() => {
+                    const sp = new URLSearchParams(window.location.search);
+                    sp.set('status', 'nao_conforme');
+                    sp.set('prio', '1');
+                    setSearchParams(sp, { replace: true });
+                    document.getElementById('reqs-table')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }}
+                  onGoToRemediation={() => setActiveTab('remediacao')}
+                />
+
                 {/* Conformidade + Fila de Prioridade lado a lado.
                     A antiga faixa de 3 tiles foi removida — os mesmos números
                     (cobertura, não-conformes, parciais) já vivem no ConformityCard,

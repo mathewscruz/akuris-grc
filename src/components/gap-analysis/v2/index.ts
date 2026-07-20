@@ -16,6 +16,7 @@ export { SectionHead } from './SectionHead';
 export { MaturityHero } from './MaturityHero';
 export { AIRecommendedTile } from './AIRecommendedTile';
 export { ActiveFrameworkRow } from './ActiveFrameworkRow';
+export { CertificationReadinessCard } from './CertificationReadinessCard';
 export { SectionHeatmap } from './SectionHeatmap';
 export type { HeatCell } from './SectionHeatmap';
 export { PriorityQueueCard } from './PriorityQueueCard';
