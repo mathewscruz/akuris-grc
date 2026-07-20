@@ -128,8 +128,30 @@ export function relativeShort(iso?: string | null): string {
   return `há ${Math.floor(days / 365)}a`;
 }
 
-/** Risco "acima do apetite" = score (residual ou inicial) ≥ 10 (alto/crítico). */
-export function isAcimaApetite(r: { nivel_risco_residual?: string | null; nivel_risco_inicial?: string | null }): boolean {
+/**
+ * Risco "acima do apetite". Quando um limite de apetite (score máximo aceitável)
+ * é informado, compara o score numérico do risco (residual||inicial) a ele.
+ * Sem apetite configurado (ou risco sem P×I), cai no fallback por severidade
+ * (alto/crítico), preservando o comportamento anterior.
+ */
+export function isAcimaApetite(
+  r: {
+    nivel_risco_residual?: string | null;
+    nivel_risco_inicial?: string | null;
+    probabilidade_residual?: string | number | null;
+    impacto_residual?: string | number | null;
+    probabilidade_inicial?: string | number | null;
+    impacto_inicial?: string | number | null;
+  },
+  apetiteScore?: number | null,
+): boolean {
+  if (apetiteScore != null) {
+    const score = scoreFromPI(
+      r.probabilidade_residual ?? r.probabilidade_inicial,
+      r.impacto_residual ?? r.impacto_inicial,
+    );
+    if (score > 0) return score > apetiteScore;
+  }
   const sev = severityFromNivel(r.nivel_risco_residual || r.nivel_risco_inicial);
   return sev === 'critico' || sev === 'alto';
 }

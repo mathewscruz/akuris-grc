@@ -96,7 +96,7 @@ interface Risco {
 
 
 interface MatrizConfig {
-  niveis_risco: Array<{ min: number; max: number; nivel: string; cor?: string }>;
+  niveis_risco: Array<{ min: number; max: number; nivel: string; cor?: string; apetite?: boolean }>;
 }
 
 export function Riscos() {
@@ -669,21 +669,21 @@ export function Riscos() {
 
         {(() => {
           // Derivações compartilhadas para Visão geral e Matriz
-          const acimaApetite = riscos.filter(isAcimaApetite).length;
+          // Apetite score = max do nível marcado como limite de apetite na config da
+          // matriz (fallback: nível "médio", para matrizes sem a marcação).
+          const apetiteScore: number | null = (() => {
+            const niveis = matrizConfig?.niveis_risco;
+            if (!niveis) return null;
+            const norm = (s?: string) => s?.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+            const lvl = niveis.find((n) => n.apetite) || niveis.find((n) => norm(n.nivel) === 'medio');
+            return lvl ? lvl.max : null;
+          })();
+          const acimaApetite = riscos.filter((r) => isAcimaApetite(r, apetiteScore)).length;
           // Alinhado à coluna Resp. da tabela: conta riscos sem nome de responsável
           // resolvido (um ID que não resolve para um perfil também aparece como "—").
           const semResponsavel = riscos.filter((r) => !r.responsavel_nome).length;
           const revisaoVencida = riscos.filter((r) => slaFromRevisao(r.data_proxima_revisao) === 'vencido').length;
           const emTratamento = riscos.filter((r) => r.status === 'em_tratamento').length;
-
-          // Apetite score derivado da matriz (limite superior do nível "médio")
-          let apetiteScore: number | null = null;
-          if (matrizConfig?.niveis_risco) {
-            const medio = matrizConfig.niveis_risco.find(
-              (n) => n.nivel?.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim() === 'medio',
-            );
-            if (medio) apetiteScore = medio.max;
-          }
 
           // Counts por severidade (residual||inicial)
           const sevCounts = riscos.reduce(
@@ -771,7 +771,7 @@ export function Riscos() {
           const meId = profile?.user_id;
           const viewFilters: Record<SavedView, (r: Risco) => boolean> = {
             todos: () => true,
-            acima_apetite: (r) => isAcimaApetite(r),
+            acima_apetite: (r) => isAcimaApetite(r, apetiteScore),
             sem_responsavel: (r) => !r.responsavel_nome,
             revisao_vencida: (r) => slaFromRevisao(r.data_proxima_revisao) === 'vencido',
             meus_riscos: (r) => !!meId && r.responsavel === meId,

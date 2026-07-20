@@ -82,6 +82,8 @@ interface NivelRisco {
   max: number;
   nivel: string;
   cor: string;
+  /** Marca o nível como limite de apetite: riscos acima do seu `max` ficam "acima do apetite". */
+  apetite?: boolean;
 }
 
 interface Matriz {
@@ -140,7 +142,7 @@ export function MatrizForm({ onSuccess }: Props) {
 
   const [niveisRisco, setNiveisRisco] = useState<NivelRisco[]>([
     { min: 1, max: 4, nivel: 'Baixo', cor: '#22c55e' },
-    { min: 5, max: 9, nivel: 'Médio', cor: '#eab308' },
+    { min: 5, max: 9, nivel: 'Médio', cor: '#eab308', apetite: true },
     { min: 10, max: 16, nivel: 'Alto', cor: '#f97316' },
     { min: 17, max: 25, nivel: 'Crítico', cor: '#dc2626' }
   ]);
@@ -794,6 +796,40 @@ export function MatrizForm({ onSuccess }: Props) {
                     <Plus className="h-4 w-4" strokeWidth={1.5} />
                     Adicionar nível de risco
                   </Button>
+                </div>
+
+                {/* Limite de apetite de risco — configurável (antes era fixo em "Médio") */}
+                <div className="mt-4 pt-4 border-t border-border/40">
+                  <span className="text-sm font-medium text-foreground">Limite de apetite de risco</span>
+                  <p className="text-xs text-muted-foreground mt-0.5 mb-2">
+                    Riscos com score acima do nível escolhido são considerados <strong>acima do apetite</strong> e
+                    exigem tratamento ou aceite formal. Define a linha de apetite no gráfico e o filtro "Acima do apetite".
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {(() => {
+                      // Nível efetivo destacado: o marcado, ou "médio" como fallback
+                      // (mesma regra da derivação em Riscos.tsx) para matrizes sem marcação.
+                      const algumMarcado = niveisRisco.some((n) => n.apetite);
+                      const norm = (s?: string) => s?.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+                      return [...niveisRisco].sort((a, b) => a.min - b.min).map((nivel) => {
+                      const realIndex = niveisRisco.indexOf(nivel);
+                      const efetivo = nivel.apetite || (!algumMarcado && norm(nivel.nivel) === 'medio');
+                      return (
+                        <Button
+                          key={realIndex}
+                          type="button"
+                          size="sm"
+                          variant={efetivo ? 'default' : 'outline'}
+                          onClick={() => setNiveisRisco((prev) => prev.map((n, j) => ({ ...n, apetite: j === realIndex })))}
+                          className="gap-1.5"
+                        >
+                          Até {nivel.nivel || `Nível ${realIndex + 1}`}
+                          <span className="text-[10px] opacity-70 tabular-nums">(≤{nivel.max})</span>
+                        </Button>
+                      );
+                      });
+                    })()}
+                  </div>
                 </div>
               </div>
             </form>
