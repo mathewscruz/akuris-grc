@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DialogShell } from '@/components/ui/dialog-shell';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { StatusBadge, type StatusTone } from '@/components/ui/status-badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Edit, Trash2, ClipboardList, TestTube, Clock, Target } from 'lucide-react';
+import { Plus, Edit, Trash2, ClipboardList, TestTube, Clock, Target, ShieldCheck } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -19,18 +19,18 @@ interface PlanoDetalheDialogProps {
   plano: any;
 }
 
-const statusMap: Record<string, { label: string; variant: any }> = {
-  rascunho: { label: 'Rascunho', variant: 'secondary' },
-  ativo: { label: 'Ativo', variant: 'success' },
-  em_revisao: { label: 'Em Revisão', variant: 'warning' },
-  desativado: { label: 'Desativado', variant: 'destructive' },
+const statusMap: Record<string, { label: string; tone: StatusTone }> = {
+  rascunho: { label: 'Rascunho', tone: 'neutral' },
+  ativo: { label: 'Ativo', tone: 'success' },
+  em_revisao: { label: 'Em Revisão', tone: 'warning' },
+  desativado: { label: 'Desativado', tone: 'destructive' },
 };
 
-const prioridadeMap: Record<string, { label: string; variant: any }> = {
-  baixa: { label: 'Baixa', variant: 'secondary' },
-  media: { label: 'Média', variant: 'info' },
-  alta: { label: 'Alta', variant: 'warning' },
-  critica: { label: 'Crítica', variant: 'destructive' },
+const prioridadeMap: Record<string, { label: string; tone: StatusTone }> = {
+  baixa: { label: 'Baixa', tone: 'neutral' },
+  media: { label: 'Média', tone: 'info' },
+  alta: { label: 'Alta', tone: 'warning' },
+  critica: { label: 'Crítica', tone: 'destructive' },
 };
 
 const tipoTesteMap: Record<string, string> = {
@@ -39,10 +39,10 @@ const tipoTesteMap: Record<string, string> = {
   real: 'Teste Real',
 };
 
-const resultadoMap: Record<string, { label: string; variant: any }> = {
-  aprovado: { label: 'Aprovado', variant: 'success' },
-  reprovado: { label: 'Reprovado', variant: 'destructive' },
-  parcial: { label: 'Parcial', variant: 'warning' },
+const resultadoMap: Record<string, { label: string; tone: StatusTone }> = {
+  aprovado: { label: 'Aprovado', tone: 'success' },
+  reprovado: { label: 'Reprovado', tone: 'destructive' },
+  parcial: { label: 'Parcial', tone: 'warning' },
 };
 
 export function PlanoDetalheDialog({ open, onOpenChange, plano }: PlanoDetalheDialogProps) {
@@ -95,15 +95,18 @@ export function PlanoDetalheDialog({ open, onOpenChange, plano }: PlanoDetalheDi
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <div className="flex items-center gap-3">
-              <DialogTitle className="text-xl">{plano.nome}</DialogTitle>
-              <Badge variant={st.variant}>{st.label}</Badge>
-              <Badge variant="outline">{plano.tipo === 'bcp' ? 'BCP' : plano.tipo === 'drp' ? 'DRP' : 'BCP + DRP'}</Badge>
-            </div>
-          </DialogHeader>
+      <DialogShell
+        open={open}
+        onOpenChange={onOpenChange}
+        icon={ShieldCheck}
+        title={plano.nome}
+        size="lg"
+        hideFooter
+      >
+          <div className="flex items-center gap-2 mb-4">
+            <StatusBadge tone={st.tone}>{st.label}</StatusBadge>
+            <StatusBadge tone="neutral" variant="outline">{plano.tipo === 'bcp' ? 'BCP' : plano.tipo === 'drp' ? 'DRP' : 'BCP + DRP'}</StatusBadge>
+          </div>
 
           {/* Resumo */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 my-4">
@@ -154,10 +157,10 @@ export function PlanoDetalheDialog({ open, onOpenChange, plano }: PlanoDetalheDi
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-medium text-sm">{t.titulo}</span>
-                            <Badge variant={pri.variant} size="sm">{pri.label}</Badge>
-                            <Badge variant={t.status === 'concluida' ? 'success' : t.status === 'em_andamento' ? 'info' : 'secondary'} size="sm">
+                            <StatusBadge tone={pri.tone} size="sm">{pri.label}</StatusBadge>
+                            <StatusBadge tone={t.status === 'concluida' ? 'success' : t.status === 'em_andamento' ? 'info' : 'neutral'} size="sm">
                               {t.status === 'pendente' ? 'Pendente' : t.status === 'em_andamento' ? 'Em Andamento' : 'Concluída'}
-                            </Badge>
+                            </StatusBadge>
                           </div>
                           {t.descricao && <p className="text-xs text-muted-foreground mt-1">{t.descricao}</p>}
                           {t.prazo && <p className="text-xs text-muted-foreground mt-1">Prazo: {formatDateOnly(t.prazo)}</p>}
@@ -187,15 +190,15 @@ export function PlanoDetalheDialog({ open, onOpenChange, plano }: PlanoDetalheDi
                 <p className="text-center text-sm text-muted-foreground py-8">Nenhum teste registrado</p>
               ) : (
                 testes.map((t: any) => {
-                  const res = t.resultado ? (resultadoMap[t.resultado] || { label: t.resultado, variant: 'secondary' }) : null;
+                  const res = t.resultado ? (resultadoMap[t.resultado] || { label: t.resultado, tone: 'neutral' as StatusTone }) : null;
                   return (
                     <Card key={t.id} className="p-3">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-medium text-sm">{tipoTesteMap[t.tipo_teste] || t.tipo_teste}</span>
-                            <Badge variant="outline" size="sm">{formatDateOnly(t.data_teste)}</Badge>
-                            {res && <Badge variant={res.variant} size="sm">{res.label}</Badge>}
+                            <StatusBadge tone="neutral" variant="outline" size="sm">{formatDateOnly(t.data_teste)}</StatusBadge>
+                            {res && <StatusBadge tone={res.tone} size="sm">{res.label}</StatusBadge>}
                           </div>
                           {t.descricao && <p className="text-xs text-muted-foreground mt-1">{t.descricao}</p>}
                           {t.licoes_aprendidas && <p className="text-xs text-muted-foreground mt-1"><strong>Lições:</strong> {t.licoes_aprendidas}</p>}
@@ -215,8 +218,7 @@ export function PlanoDetalheDialog({ open, onOpenChange, plano }: PlanoDetalheDi
               )}
             </TabsContent>
           </Tabs>
-        </DialogContent>
-      </Dialog>
+      </DialogShell>
 
       <TarefaDialog
         open={tarefaDialog.open}

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+import { DialogShell } from '@/components/ui/dialog-shell';
+import { ShieldCheck } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -98,12 +98,16 @@ export function PlanoDialog({ open, onOpenChange, plano, onSuccess }: PlanoDialo
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{plano ? 'Editar Plano' : 'Novo Plano de Continuidade'}</DialogTitle>
-        </DialogHeader>
-
+    <DialogShell
+      open={open}
+      onOpenChange={onOpenChange}
+      icon={ShieldCheck}
+      title={plano ? 'Editar Plano' : 'Novo Plano de Continuidade'}
+      size="md"
+      onSubmit={handleSubmit}
+      submitLabel={plano ? 'Atualizar' : 'Criar Plano'}
+      isSubmitting={loading}
+    >
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -173,14 +177,6 @@ export function PlanoDialog({ open, onOpenChange, plano, onSuccess }: PlanoDialo
             </div>
           </div>
         </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={handleSubmit} disabled={loading}>
-            {loading ? 'Salvando...' : plano ? 'Atualizar' : 'Criar Plano'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </DialogShell>
   );
 }

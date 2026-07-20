@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+import { DialogShell } from '@/components/ui/dialog-shell';
+import { ListChecks } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -82,12 +82,16 @@ export function TarefaDialog({ open, onOpenChange, planoId, tarefa, onSuccess }:
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{tarefa ? 'Editar Tarefa' : 'Nova Tarefa'}</DialogTitle>
-        </DialogHeader>
-
+    <DialogShell
+      open={open}
+      onOpenChange={onOpenChange}
+      icon={ListChecks}
+      title={tarefa ? 'Editar Tarefa' : 'Nova Tarefa'}
+      size="sm"
+      onSubmit={handleSubmit}
+      submitLabel={tarefa ? 'Atualizar' : 'Criar'}
+      isSubmitting={loading}
+    >
         <div className="grid gap-4 py-4">
           <div className="space-y-2">
             <Label>Título *</Label>
@@ -127,14 +131,6 @@ export function TarefaDialog({ open, onOpenChange, planoId, tarefa, onSuccess }:
             </div>
           </div>
         </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={handleSubmit} disabled={loading}>
-            {loading ? 'Salvando...' : tarefa ? 'Atualizar' : 'Criar'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </DialogShell>
   );
 }

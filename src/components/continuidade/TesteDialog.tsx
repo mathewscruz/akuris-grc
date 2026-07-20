@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+import { DialogShell } from '@/components/ui/dialog-shell';
+import { FlaskConical } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -88,12 +88,16 @@ export function TesteDialog({ open, onOpenChange, planoId, teste, onSuccess }: T
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{teste ? 'Editar Teste' : 'Registrar Teste'}</DialogTitle>
-        </DialogHeader>
-
+    <DialogShell
+      open={open}
+      onOpenChange={onOpenChange}
+      icon={FlaskConical}
+      title={teste ? 'Editar Teste' : 'Registrar Teste'}
+      size="sm"
+      onSubmit={handleSubmit}
+      submitLabel={teste ? 'Atualizar' : 'Registrar'}
+      isSubmitting={loading}
+    >
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -140,14 +144,6 @@ export function TesteDialog({ open, onOpenChange, planoId, teste, onSuccess }: T
             <Textarea value={form.licoes_aprendidas} onChange={e => setForm(p => ({ ...p, licoes_aprendidas: e.target.value }))} rows={2} />
           </div>
         </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={handleSubmit} disabled={loading}>
-            {loading ? 'Salvando...' : teste ? 'Atualizar' : 'Registrar'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </DialogShell>
   );
 }
