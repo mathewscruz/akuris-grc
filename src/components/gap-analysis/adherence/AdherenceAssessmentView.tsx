@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { StatCard } from '@/components/ui/stat-card';
@@ -20,13 +20,23 @@ interface AdherenceAssessmentViewProps {
   onViewResult: (assessment: AdherenceAssessment) => void;
   frameworkId?: string;
   frameworkNome?: string;
+  /** Quando embutido sob o DocumentsHero, esconde guidance/stats/botão duplicados
+      e mostra apenas a lista de "Avaliações Recentes". */
+  embedded?: boolean;
+  /** Ao incrementar, abre o diálogo de nova avaliação (acionado pelos CTAs do hero). */
+  openSignal?: number;
 }
 
-export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNome }: AdherenceAssessmentViewProps) {
+export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNome, embedded, openSignal }: AdherenceAssessmentViewProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [assessmentToDelete, setAssessmentToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const { data: stats } = useAdherenceStats();
+
+  // CTAs do DocumentsHero abrem este mesmo diálogo (antes eram botões mortos).
+  useEffect(() => {
+    if (openSignal) setIsDialogOpen(true);
+  }, [openSignal]);
 
   const { data: assessments, loading: isLoading, refetch } = useOptimizedQuery(
     async () => {
@@ -177,7 +187,8 @@ export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNo
 
   return (
     <div className="space-y-6">
-      {/* Guidance Card */}
+      {/* Guidance Card — escondido quando embutido (o DocumentsHero já explica) */}
+      {!embedded && (
       <Card className="p-4 border-primary/20 bg-primary/5">
         <div className="flex items-start gap-3">
           <FileCheck className="h-5 w-5 text-primary shrink-0 mt-0.5" strokeWidth={1.5}/>
@@ -196,21 +207,26 @@ export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNo
           </div>
         </div>
       </Card>
+      )}
 
-      {/* Botão Nova Avaliação */}
+      {/* Botão Nova Avaliação — escondido quando embutido (CTAs vivem no hero) */}
+      {!embedded && (
       <div className="flex justify-end">
         <Button onClick={() => setIsDialogOpen(true)}>
           <Plus className="mr-2 h-4 w-4" strokeWidth={1.5}/>
           Nova Avaliação
         </Button>
       </div>
+      )}
 
-      {/* Stats */}
+      {/* Stats — escondido quando embutido (o DocumentsHero já traz os KPIs) */}
+      {!embedded && (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {statsCards.map((stat) => (
           <StatCard key={stat.title} {...stat} />
         ))}
       </div>
+      )}
 
       {/* Lista de Avaliações */}
       <Card className="p-6">

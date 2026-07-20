@@ -75,6 +75,7 @@ function GapAnalysisFrameworkDetailInner() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [selectedAdherenceAssessment, setSelectedAdherenceAssessment] = useState<any>(null);
   const [adherenceView, setAdherenceView] = useState<'list' | 'result'>('list');
+  const [docUploadSignal, setDocUploadSignal] = useState(0);
   const { openDocGen } = useDocGen();
 
   useEffect(() => {
@@ -453,9 +454,17 @@ function GapAnalysisFrameworkDetailInner() {
             ) : (
               <>
                 {empresaId && (
-                  <DocumentsHero frameworkId={frameworkId!} empresaId={empresaId} />
+                  <DocumentsHero
+                    frameworkId={frameworkId!}
+                    empresaId={empresaId}
+                    onUploadClick={() => setDocUploadSignal(s => s + 1)}
+                    onLinkClick={() => setDocUploadSignal(s => s + 1)}
+                    onAIGenerate={() => setDocUploadSignal(s => s + 1)}
+                  />
                 )}
                 <AdherenceAssessmentView
+                  embedded
+                  openSignal={docUploadSignal}
                   onViewResult={(assessment) => { setSelectedAdherenceAssessment(assessment); setAdherenceView('result'); }}
                   frameworkId={frameworkId}
                   frameworkNome={framework.nome}

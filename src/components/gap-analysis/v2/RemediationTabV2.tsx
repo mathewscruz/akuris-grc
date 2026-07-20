@@ -253,7 +253,7 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
         <KpiTiny
           eyebrow="IMPACTO POTENCIAL"
           value={`+${kpis.impactoPotencial}pts`}
-          foot="se aplicar todos os planos"
+          foot="se resolver todos os gaps"
           tone={kpis.impactoPotencial > 0 ? 'success' : 'neutral'}
         />
       </div>
@@ -322,7 +322,7 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
                 </div>
 
                 <div className="mt-3 flex items-center gap-2 text-[11px] text-muted-foreground">
-                  <span><strong className="text-foreground">{c.esforco}</strong> esforço</span>
+                  <span><strong className="text-foreground">{c.esforco === 'L' ? 'Baixo' : c.esforco === 'M' ? 'Médio' : 'Alto'}</strong> esforço</span>
                   <span>·</span>
                   <span><strong className="text-foreground">{c.dias}d</strong> estimado</span>
                   <span>·</span>

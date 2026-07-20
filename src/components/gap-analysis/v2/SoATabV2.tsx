@@ -315,6 +315,9 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion }: Props
             <FileText className="h-5 w-5 text-primary" strokeWidth={1.5} />
             Declaração de Aplicabilidade (SoA)
           </CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Para a certificação, cada controle aplicável precisa de uma justificativa de inclusão (e cada exclusão, sua razão). Preencha a coluna Justificativa e clique em "Salvar SoA".
+          </p>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">

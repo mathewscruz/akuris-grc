@@ -43,12 +43,14 @@ export function FrameworkHistoryTab({
     return { initialScore: first.score, currentScore: last.score, diff };
   }, [history]);
 
-  const trend = useMemo(() => {
-    if (!stats) return 'neutral';
-    if (stats.diff > 0) return 'up';
-    if (stats.diff < 0) return 'down';
-    return 'neutral';
-  }, [stats]);
+  // Delta calculado contra o "Score Atual" exibido (ao vivo), não contra o
+  // último snapshot — evita mostrar 49% com um "+22%" que na verdade era 47%−25%.
+  const liveDiff = stats
+    ? (scoreType === 'percentage'
+        ? Math.round(currentScore) - Math.round(stats.initialScore)
+        : currentScore - stats.initialScore)
+    : 0;
+  const trend: 'up' | 'down' | 'neutral' = liveDiff > 0 ? 'up' : liveDiff < 0 ? 'down' : 'neutral';
 
   const handleExportEvolution = async () => {
     try {
@@ -127,7 +129,7 @@ export function FrameworkHistoryTab({
                 <span className={`text-sm font-medium ${
                   trend === 'up' ? 'text-emerald-500' : trend === 'down' ? 'text-destructive' : 'text-muted-foreground'
                 }`}>
-                  {stats.diff > 0 ? '+' : ''}{formatScore(stats.diff)}
+                  {liveDiff > 0 ? '+' : ''}{formatScore(liveDiff)}
                 </span>
               </div>
             )}
@@ -160,6 +162,9 @@ export function FrameworkHistoryTab({
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Timeline de Avaliações</CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Medições registradas ao longo do tempo. O "Score Atual" acima reflete a avaliação em tempo real e pode diferir da última medição registrada.
+            </p>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
