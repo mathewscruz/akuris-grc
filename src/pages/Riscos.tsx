@@ -900,6 +900,8 @@ export function Riscos() {
           onOpenChange={setDeleteDialogOpen}
           title="Excluir Risco"
           description={`Tem certeza que deseja excluir o risco "${riscoToDelete?.nome}"? Esta ação não pode ser desfeita.`}
+          variant="destructive"
+          confirmText="Excluir"
           onConfirm={handleDelete}
         />
 

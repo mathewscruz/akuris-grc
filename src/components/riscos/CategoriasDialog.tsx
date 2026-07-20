@@ -336,6 +336,8 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess }: CategoriasDi
         onOpenChange={setDeleteDialogOpen}
         title="Excluir Categoria"
         description={`Tem certeza que deseja excluir a categoria "${categoriaToDelete?.nome}"? Esta ação não pode ser desfeita.`}
+        variant="destructive"
+        confirmText="Excluir"
         onConfirm={handleDelete}
       />
     </>
