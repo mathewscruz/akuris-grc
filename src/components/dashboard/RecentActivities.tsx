@@ -8,6 +8,7 @@ import { FileText, AlertTriangle, Shield, Users, Calendar, Building, MessageSqua
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR, enUS } from 'date-fns/locale';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { formatStatus } from '@/lib/text-utils';
 import { useQuery } from '@tanstack/react-query';
 import { CornerAccent } from '@/components/identity/CornerAccent';
 
@@ -67,7 +68,7 @@ const getStatusBadge = (status?: string) => {
   const normalizedStatus = status.toLowerCase().trim();
   const statusInfo = statusMap[normalizedStatus] || {
     variant: 'outline' as const,
-    label: status.charAt(0).toUpperCase() + status.slice(1)
+    label: formatStatus(status)
   };
   return (
     <Badge variant={statusInfo.variant} className="text-[10px] px-1.5 py-0 whitespace-nowrap">
