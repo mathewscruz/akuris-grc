@@ -67,7 +67,7 @@ async function callClaude(messages: { role: string; content: string }[], systemP
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-5',
       max_tokens: maxTokens,
       system: systemPrompt,
       messages: messages.filter(m => m.role !== 'system').map(m => ({
@@ -624,7 +624,7 @@ Responda APENAS com um JSON na seguinte estrutura:
         [{ role: 'user', content: 'Gere o documento agora.' }],
         documentPrompt,
         ANTHROPIC_API_KEY,
-        8000,
+        16000,
         0.4
       );
 

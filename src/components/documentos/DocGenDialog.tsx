@@ -19,6 +19,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { useFrameworkRequirementCount } from '@/hooks/useFrameworkRequirementCount';
 import { akurisToast } from '@/lib/akuris-toast';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -129,6 +130,15 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
   const [phase, setPhase] = useState<DocGenPhase>('gallery');
   const [selectedTemplate, setSelectedTemplate] = useState<DocGenTemplate | null>(null);
   const [briefingValue, setBriefingValue] = useState<BriefingDefaults | null>(null);
+
+  // Framework efetivo para alinhar a IA aos requisitos: quando o DocGen é aberto
+  // pelo Gap Analysis vem via prop; quando é aberto pela tela de Documentos (a
+  // partir de um template), resolvemos o framework escolhido no briefing para o
+  // seu ID — assim a IA recebe os requisitos de QUALQUER framework, não só ISO.
+  const briefingFrameworks = briefingValue?.frameworks ?? (frameworkName ? [frameworkName] : []);
+  const { data: fwReqData } = useFrameworkRequirementCount(briefingFrameworks);
+  const effFrameworkName = frameworkName || briefingFrameworks[0];
+  const effFrameworkId = frameworkId || fwReqData?.matchedIds?.[0];
 
   // Onda 2: contexto da empresa carregado via edge function
   const [companyContext, setCompanyContext] = useState<import('./DocGenContextPanel').CompanyContext | null>(null);
@@ -279,7 +289,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
           user_id: userInfo.user_id,
           empresa_id: userInfo.empresa_id,
           action: 'chat',
-          ...(frameworkName && { framework_context: { framework_name: frameworkName, framework_id: frameworkId } }),
+          ...(effFrameworkName && { framework_context: { framework_name: effFrameworkName, framework_id: effFrameworkId } }),
           ...(requirementContext && { requirement_context: requirementContext }),
           ...(companyContext && { company_context: companyContext }),
         }
@@ -385,7 +395,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
           document: generatedDocument,
           section_index: refiningSectionIndex,
           instruction,
-          ...(frameworkName && { framework_context: { framework_name: frameworkName, framework_id: frameworkId } }),
+          ...(effFrameworkName && { framework_context: { framework_name: effFrameworkName, framework_id: effFrameworkId } }),
         },
       });
       if (error) throw error;
@@ -443,7 +453,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
           empresa_id: userInfo.empresa_id,
           action: 'generate_document',
           doc_type_hint: currentDocName || currentDocType,
-          ...(frameworkName && { framework_context: { framework_name: frameworkName, framework_id: frameworkId } }),
+          ...(effFrameworkName && { framework_context: { framework_name: effFrameworkName, framework_id: effFrameworkId } }),
           ...(requirementContext && { requirement_context: requirementContext }),
         }
       });

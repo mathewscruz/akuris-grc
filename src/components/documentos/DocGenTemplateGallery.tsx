@@ -49,7 +49,7 @@ export const DocGenTemplateGallery: React.FC<DocGenTemplateGalleryProps> = ({
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div>
             <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">
-              Passo 1 de 3 · Começar a partir de
+              Começar a partir de
             </p>
             <h3 className="text-lg font-semibold mt-1">
               Escolha um modelo ou comece do zero
