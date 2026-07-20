@@ -2,7 +2,8 @@ import { useState } from "react";
 import { DialogShell } from "@/components/ui/dialog-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { resolveControleStatusTone, resolveCriticidadeTone } from "@/lib/status-tone";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DatePickerWithRange } from "@/components/ui/date-picker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -250,9 +251,9 @@ export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) 
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Controles Ativos</p>
-                      <p className="text-2xl font-bold text-green-600">{stats?.ativos || 0}</p>
+                      <p className="text-2xl font-bold text-success">{stats?.ativos || 0}</p>
                     </div>
-                    <TrendingUp className="h-8 w-8 text-green-600" />
+                    <TrendingUp className="h-8 w-8 text-success" />
                   </div>
                 </CardContent>
               </Card>
@@ -262,9 +263,9 @@ export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) 
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Críticos</p>
-                      <p className="text-2xl font-bold text-red-600">{stats?.criticos || 0}</p>
+                      <p className="text-2xl font-bold text-destructive">{stats?.criticos || 0}</p>
                     </div>
-                    <AlertTriangle className="h-8 w-8 text-red-600" />
+                    <AlertTriangle className="h-8 w-8 text-destructive" />
                   </div>
                 </CardContent>
               </Card>
@@ -274,9 +275,9 @@ export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) 
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Preventivos</p>
-                      <p className="text-2xl font-bold text-blue-600">{stats?.preventivos || 0}</p>
+                      <p className="text-2xl font-bold text-info">{stats?.preventivos || 0}</p>
                     </div>
-                    <PieChart className="h-8 w-8 text-blue-600" />
+                    <PieChart className="h-8 w-8 text-info" />
                   </div>
                 </CardContent>
               </Card>
@@ -314,17 +315,12 @@ export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) 
                         <p className="text-sm text-muted-foreground">{controle.area || 'Não especificada'}</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge 
-                          variant={controle.status === 'ativo' ? 'default' : 'secondary'}
-                        >
+                        <StatusBadge size="sm" {...resolveControleStatusTone(controle.status)}>
                           {formatStatus(controle.status)}
-                        </Badge>
-                        <Badge 
-                          variant={controle.criticidade === 'alto' ? 'destructive' : 
-                                  controle.criticidade === 'medio' ? 'secondary' : 'outline'}
-                        >
+                        </StatusBadge>
+                        <StatusBadge size="sm" {...resolveCriticidadeTone(controle.criticidade)}>
                           {formatStatus(controle.criticidade)}
-                        </Badge>
+                        </StatusBadge>
                       </div>
                     </div>
                   ))}
@@ -343,24 +339,20 @@ export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) 
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 border rounded-lg border-amber-200 bg-amber-50">
+                  <div className="flex items-center justify-between p-4 border rounded-lg border-warning/20 bg-warning/10">
                     <div>
-                      <h4 className="font-medium text-amber-800">Área Financeira</h4>
-                      <p className="text-sm text-amber-600">3 riscos sem controles preventivos</p>
+                      <h4 className="font-medium text-warning">Área Financeira</h4>
+                      <p className="text-sm text-muted-foreground">3 riscos sem controles preventivos</p>
                     </div>
-                    <Badge variant="warning">
-                      Gap Identificado
-                    </Badge>
+                    <StatusBadge tone="warning">Gap Identificado</StatusBadge>
                   </div>
-                  
-                  <div className="flex items-center justify-between p-4 border rounded-lg border-red-200 bg-red-50">
+
+                  <div className="flex items-center justify-between p-4 border rounded-lg border-destructive/20 bg-destructive/10">
                     <div>
-                      <h4 className="font-medium text-red-800">Área de TI</h4>
-                      <p className="text-sm text-red-600">2 riscos críticos sem controles</p>
+                      <h4 className="font-medium text-destructive">Área de TI</h4>
+                      <p className="text-sm text-muted-foreground">2 riscos críticos sem controles</p>
                     </div>
-                    <Badge variant="destructive">
-                      Gap Crítico
-                    </Badge>
+                    <StatusBadge tone="destructive" intensity="high">Gap Crítico</StatusBadge>
                   </div>
                 </div>
               </CardContent>
@@ -377,24 +369,24 @@ export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) 
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-3 gap-4">
-                  <Card className="bg-green-50 border-green-200">
+                  <Card className="bg-success/10 border-success/20">
                     <CardContent className="p-4 text-center">
-                      <p className="text-2xl font-bold text-green-600">85%</p>
-                      <p className="text-sm text-green-600">Cobertura Geral</p>
+                      <p className="text-2xl font-bold text-success">85%</p>
+                      <p className="text-sm text-success">Cobertura Geral</p>
                     </CardContent>
                   </Card>
-                  
-                  <Card className="bg-blue-50 border-blue-200">
+
+                  <Card className="bg-info/10 border-info/20">
                     <CardContent className="p-4 text-center">
-                      <p className="text-2xl font-bold text-blue-600">92%</p>
-                      <p className="text-sm text-blue-600">Riscos Críticos</p>
+                      <p className="text-2xl font-bold text-info">92%</p>
+                      <p className="text-sm text-info">Riscos Críticos</p>
                     </CardContent>
                   </Card>
-                  
-                  <Card className="bg-amber-50 border-amber-200">
+
+                  <Card className="bg-warning/10 border-warning/20">
                     <CardContent className="p-4 text-center">
-                      <p className="text-2xl font-bold text-amber-600">78%</p>
-                      <p className="text-sm text-amber-600">Riscos Médios</p>
+                      <p className="text-2xl font-bold text-warning">78%</p>
+                      <p className="text-sm text-warning">Riscos Médios</p>
                     </CardContent>
                   </Card>
                 </div>
