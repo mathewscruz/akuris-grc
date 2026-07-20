@@ -4,7 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { resolveCriticidadeTone } from "@/lib/status-tone";
 import { ShieldCheck, Settings2, Link2, Calendar as CalendarIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -46,10 +47,6 @@ interface ControleDialogProps {
   controle: Controle | null;
   categorias: Categoria[];
 }
-
-const CRITICIDADE_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-  critico: 'destructive', alto: 'default', medio: 'secondary', baixo: 'outline',
-};
 
 export default function ControleDialog({ open, onOpenChange, controle, categorias }: ControleDialogProps) {
   const [activeTab, setActiveTab] = useState('identificacao');
@@ -361,7 +358,7 @@ export default function ControleDialog({ open, onOpenChange, controle, categoria
       <WizardSummaryRow label="Tipo" value={<span>{formatStatus(formData.tipo)}</span>} />
       <WizardSummaryRow
         label="Criticidade"
-        value={<Badge variant={CRITICIDADE_VARIANT[formData.criticidade]} className="text-[10px]">{formatStatus(formData.criticidade)}</Badge>}
+        value={<StatusBadge size="sm" {...resolveCriticidadeTone(formData.criticidade)}>{formatStatus(formData.criticidade)}</StatusBadge>}
       />
       <WizardSummaryRow label="Status" value={<span>{formatStatus(formData.status)}</span>} />
       <WizardSummaryRow label="Auditorias" value={formData.auditorias_ids.length} />

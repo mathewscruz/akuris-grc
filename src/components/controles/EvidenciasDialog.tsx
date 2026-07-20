@@ -11,6 +11,7 @@ import { FileUp, Download, Eye, Trash2, Upload, File } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 interface EvidenciasDialogProps {
   open: boolean;
@@ -39,6 +40,7 @@ export function EvidenciasDialog({ open, onOpenChange, controleId, controleNome 
     nome: "",
     descricao: ""
   });
+  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: string; nome?: string }>({ open: false, id: '' });
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -101,6 +103,15 @@ export function EvidenciasDialog({ open, onOpenChange, controleId, controleNome 
         title: "Evidência removida",
         description: "A evidência foi removida com sucesso.",
       });
+      setDeleteConfirm({ open: false, id: '' });
+    },
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Não foi possível remover a evidência.",
+        variant: "destructive",
+      });
+      setDeleteConfirm({ open: false, id: '' });
     }
   });
 
@@ -181,6 +192,7 @@ export function EvidenciasDialog({ open, onOpenChange, controleId, controleNome 
   };
 
   return (
+    <>
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
@@ -247,7 +259,7 @@ export function EvidenciasDialog({ open, onOpenChange, controleId, controleNome 
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => deleteEvidenciaMutation.mutate(evidencia.id)}
+                            onClick={() => setDeleteConfirm({ open: true, id: evidencia.id, nome: evidencia.nome })}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -316,5 +328,18 @@ export function EvidenciasDialog({ open, onOpenChange, controleId, controleNome 
           </TabsContent>
         </Tabs>
     </DialogShell>
+
+    <ConfirmDialog
+      open={deleteConfirm.open}
+      onOpenChange={(open) => setDeleteConfirm(prev => ({ ...prev, open }))}
+      title="Excluir Evidência"
+      description={`Tem certeza que deseja excluir "${deleteConfirm.nome}"? Esta ação não pode ser desfeita.`}
+      confirmText="Excluir"
+      cancelText="Cancelar"
+      variant="destructive"
+      onConfirm={() => deleteEvidenciaMutation.mutate(deleteConfirm.id)}
+      loading={deleteEvidenciaMutation.isPending}
+    />
+    </>
   );
 }
