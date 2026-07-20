@@ -39,6 +39,8 @@ import {
 } from '@/components/riscos/risk-utils';
 import { useRiscoDetail } from '@/hooks/useRiscoDetail';
 import { VincularControleDialog } from '@/components/riscos/VincularControleDialog';
+import { RiscoComentarios } from '@/components/riscos/RiscoComentarios';
+import { MessageSquare } from 'lucide-react';
 
 interface Risco {
   id: string;
@@ -251,6 +253,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
               <TabsTrigger value="tratamentos" className="flex-1 text-[11px] px-2 gap-1.5 min-w-0 whitespace-nowrap"><Shield className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>Tratamento</span></TabsTrigger>
               <TabsTrigger value="historico" className="flex-1 text-[11px] px-2 gap-1.5 min-w-0 whitespace-nowrap"><History className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>Histórico</span></TabsTrigger>
               <TabsTrigger value="controles" className="flex-1 text-[11px] px-2 gap-1.5 min-w-0 whitespace-nowrap"><ShieldCheck className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>Controles</span></TabsTrigger>
+              <TabsTrigger value="comentarios" className="flex-1 text-[11px] px-2 gap-1.5 min-w-0 whitespace-nowrap"><MessageSquare className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>Coment.</span></TabsTrigger>
             </TabsList>
           </div>
 
@@ -478,6 +481,11 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
                   );
                 })
               )}
+            </TabsContent>
+
+            {/* Comentários */}
+            <TabsContent value="comentarios" className="m-0 data-[state=active]:animate-fade-in">
+              <RiscoComentarios riscoId={risco.id} />
             </TabsContent>
           </div>
         </Tabs>
