@@ -1,13 +1,12 @@
 
 import { logger } from '@/lib/logger';
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { DialogShell } from '@/components/ui/dialog-shell';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveAprovacaoTone } from '@/lib/status-tone';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { CheckCircle, XCircle, Send, Clock, User, MessageSquare, ShieldCheck } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
@@ -204,32 +203,21 @@ export function AprovacaoRiscoDialog({ open, onOpenChange, risco, onSuccess }: P
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-full sm:max-w-xl max-h-[100dvh] sm:max-h-[88vh] overflow-hidden flex flex-col p-0 gap-0">
-        <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b">
-          <DialogTitle className="flex items-center gap-3">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-              <CheckCircle className="h-5 w-5" strokeWidth={1.5} />
-            </span>
-            <span className="flex flex-col">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                Aprovação do risco
-              </span>
-              <span className="text-base font-semibold leading-tight">{risco?.nome}</span>
-            </span>
-          </DialogTitle>
-          <DialogDescription className="pl-[48px]">
-            Revise o risco, registre comentários e aprove ou rejeite o fluxo solicitado.
-          </DialogDescription>
-        </DialogHeader>
-
-        <ScrollArea className="flex-1">
-          <div className="space-y-4 px-6 py-5">
+    <DialogShell
+      open={open}
+      onOpenChange={onOpenChange}
+      icon={CheckCircle}
+      title="Aprovação do risco"
+      description={risco?.nome}
+      size="md"
+      hideFooter
+    >
+          <div className="space-y-4">
             {/* === SEÇÃO ACEITE DE RISCO === */}
             {statusAceite === 'pendente' && (
-              <div className="space-y-3 rounded-lg border border-amber-500/30 bg-amber-500/5 p-4">
+              <div className="space-y-3 rounded-lg border border-warning/30 bg-warning/5 p-4">
                 <div className="flex items-center gap-2">
-                  <ShieldCheck className="h-5 w-5 text-amber-600" strokeWidth={1.5} />
+                  <ShieldCheck className="h-5 w-5 text-warning" strokeWidth={1.5} />
                   <Label className="text-base font-semibold">Aceite de Risco — Pendente</Label>
                 </div>
                 <p className="text-sm text-muted-foreground">
@@ -267,7 +255,7 @@ export function AprovacaoRiscoDialog({ open, onOpenChange, risco, onSuccess }: P
             )}
 
             {statusAceite === 'aprovado' && (
-              <div className="flex items-center gap-2 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-400 text-sm">
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-success/10 border border-success/30 text-success text-sm">
                 <CheckCircle className="h-4 w-4" strokeWidth={1.5} /> Aceite de risco aprovado em {risco?.data_aceite ? format(new Date(risco.data_aceite), "dd/MM/yyyy", { locale: ptBR }) : '-'}
               </div>
             )}
@@ -365,8 +353,6 @@ export function AprovacaoRiscoDialog({ open, onOpenChange, risco, onSuccess }: P
               </div>
             )}
           </div>
-        </ScrollArea>
-      </DialogContent>
-    </Dialog>
+    </DialogShell>
   );
 }

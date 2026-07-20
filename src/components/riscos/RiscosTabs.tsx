@@ -44,31 +44,31 @@ export function RiscosTabs({ overview, matrix, table, aceite }: Props) {
 
   return (
     <Tabs value={urlView || initial} onValueChange={onChange} className="w-full">
-      <TabsList className="h-auto bg-transparent p-0 gap-1 rounded-none border-b border-border w-full justify-start">
+      <TabsList>
         <TabsTrigger
           value="overview"
-          className="text-xs gap-1.5 px-3 py-2.5 -mb-px rounded-none border-b-2 border-transparent bg-transparent shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:font-semibold text-muted-foreground hover:text-foreground/85 transition-colors"
+          className="text-xs gap-1.5"
         >
           <LayoutGrid className="h-3.5 w-3.5" strokeWidth={1.5} />
           Visão geral
         </TabsTrigger>
         <TabsTrigger
           value="matrix"
-          className="text-xs gap-1.5 px-3 py-2.5 -mb-px rounded-none border-b-2 border-transparent bg-transparent shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:font-semibold text-muted-foreground hover:text-foreground/85 transition-colors"
+          className="text-xs gap-1.5"
         >
           <Grid3x3 className="h-3.5 w-3.5" strokeWidth={1.5} />
           Matriz
         </TabsTrigger>
         <TabsTrigger
           value="table"
-          className="text-xs gap-1.5 px-3 py-2.5 -mb-px rounded-none border-b-2 border-transparent bg-transparent shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:font-semibold text-muted-foreground hover:text-foreground/85 transition-colors"
+          className="text-xs gap-1.5"
         >
           <TableIcon className="h-3.5 w-3.5" strokeWidth={1.5} />
           Tabela
         </TabsTrigger>
         <TabsTrigger
           value="aceite"
-          className="text-xs gap-1.5 px-3 py-2.5 -mb-px rounded-none border-b-2 border-transparent bg-transparent shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:font-semibold text-muted-foreground hover:text-foreground/85 transition-colors"
+          className="text-xs gap-1.5"
         >
           <ShieldCheck className="h-3.5 w-3.5" strokeWidth={1.5} />
           Aceite

@@ -1,12 +1,12 @@
 
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { DialogShell } from '@/components/ui/dialog-shell';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Tag } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { toast } from 'sonner';
@@ -190,15 +190,15 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess }: CategoriasDi
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Gerenciar Categorias de Risco</DialogTitle>
-            <DialogDescription>
-              Crie e gerencie as categorias utilizadas para classificar os riscos
-            </DialogDescription>
-          </DialogHeader>
-
+      <DialogShell
+        open={open}
+        onOpenChange={onOpenChange}
+        icon={Tag}
+        title="Gerenciar Categorias de Risco"
+        description="Crie e gerencie as categorias utilizadas para classificar os riscos"
+        size="lg"
+        hideFooter
+      >
           <div className="space-y-6">
             {!showForm && (
               <div className="flex justify-between items-center">
@@ -329,8 +329,7 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess }: CategoriasDi
               </Table>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+      </DialogShell>
 
       <ConfirmDialog
         open={deleteDialogOpen}

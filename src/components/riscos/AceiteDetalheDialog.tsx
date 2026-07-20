@@ -1,8 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
+import { DialogShell } from '@/components/ui/dialog-shell';
 import { Separator } from '@/components/ui/separator';
 import { formatDateOnly } from '@/lib/date-utils';
 import { formatStatus } from '@/lib/text-utils';
@@ -87,18 +86,15 @@ export function AceiteDetalheDialog({ open, onOpenChange, risco }: Props) {
   const revisaoStatus = getRevisaoStatus();
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <CheckCircle className="h-5 w-5 text-primary" strokeWidth={1.5} />
-            Detalhes do Aceite de Risco
-          </DialogTitle>
-          <DialogDescription>
-            Informações completas do aceite formal, anexos e histórico de auditoria.
-          </DialogDescription>
-        </DialogHeader>
-
+    <DialogShell
+      open={open}
+      onOpenChange={onOpenChange}
+      icon={CheckCircle}
+      title="Detalhes do Aceite de Risco"
+      description="Informações completas do aceite formal, anexos e histórico de auditoria."
+      size="md"
+      hideFooter
+    >
         <div className="space-y-6">
           {/* Info do Risco */}
           <div className="space-y-3">
@@ -227,7 +223,6 @@ export function AceiteDetalheDialog({ open, onOpenChange, risco }: Props) {
             </>
           )}
         </div>
-      </DialogContent>
-    </Dialog>
+    </DialogShell>
   );
 }

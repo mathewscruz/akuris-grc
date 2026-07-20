@@ -932,14 +932,25 @@ export function Riscos() {
         )}
 
         {/* Drawer de detalhe (global, abre via tabela / watchlist / heatmap) */}
-        <RiscoDetailDrawer
-          risco={(riscos.find((r) => r.id === drawerRiscoId) as Risco) || null}
-          open={!!drawerRiscoId}
-          onOpenChange={(o) => !o && setDrawerRiscoId(null)}
-          onEdit={(r) => { setDrawerRiscoId(null); handleEdit(r); }}
-          onAccept={(r) => { setDrawerRiscoId(null); setAprovacaoRisco(r); }}
-          onOpenTratamentos={(r) => { setDrawerRiscoId(null); openTratamentosDialog(r); }}
-        />
+        {(() => {
+          const idx = drawerRiscoId ? sortedRiscos.findIndex((r) => r.id === drawerRiscoId) : -1;
+          return (
+            <RiscoDetailDrawer
+              risco={(sortedRiscos[idx] as Risco) || null}
+              open={!!drawerRiscoId}
+              onOpenChange={(o) => !o && setDrawerRiscoId(null)}
+              onEdit={(r) => { setDrawerRiscoId(null); handleEdit(r); }}
+              onAccept={(r) => { setDrawerRiscoId(null); setAprovacaoRisco(r); }}
+              onOpenTratamentos={(r) => { setDrawerRiscoId(null); openTratamentosDialog(r); }}
+              nav={idx >= 0 ? {
+                current: idx + 1,
+                total: sortedRiscos.length,
+                onPrev: idx > 0 ? () => setDrawerRiscoId(sortedRiscos[idx - 1].id) : undefined,
+                onNext: idx < sortedRiscos.length - 1 ? () => setDrawerRiscoId(sortedRiscos[idx + 1].id) : undefined,
+              } : undefined}
+            />
+          );
+        })()}
 
       </div>
     </TooltipProvider>

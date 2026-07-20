@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import {
   resolveNivelRiscoTone,
   resolveRiscoStatusTone,
@@ -21,18 +22,27 @@ import {
 import { formatStatus } from '@/lib/text-utils';
 import { formatDateOnly } from '@/lib/date-utils';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
-import { Edit, ShieldCheck, Clock, AlertTriangle, Shield, History, Eye, X, Plus } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { useQueryClient } from '@tanstack/react-query';
+import { Edit, ShieldCheck, Clock, AlertTriangle, Shield, History, Eye, X, Plus, ArrowRight, ChevronLeft, ChevronRight, Wallet, Layers, Tag, User, CalendarClock, Timer, ChevronDown } from 'lucide-react';
 import {
   initials,
   scoreFromPI,
+  severityFromNivel,
   shortRiskId,
   slaFromRevisao,
   SLA_LABELS,
   financialExposure,
   formatBRL,
+  type Severity,
 } from '@/components/riscos/risk-utils';
 import { useRiscoDetail } from '@/hooks/useRiscoDetail';
 import { VincularControleDialog } from '@/components/riscos/VincularControleDialog';
+import { RiscoComentarios } from '@/components/riscos/RiscoComentarios';
+import { ScoreRing, ScoreBlock, StatTile, HeaderMeta, SEV_VAR } from '@/components/riscos/RiscoVisuals';
+import { RiscoPerfilCompleto } from '@/components/riscos/RiscoPerfilCompleto';
+import { MessageSquare, Maximize2 } from 'lucide-react';
 
 interface Risco {
   id: string;
@@ -65,11 +75,42 @@ interface Props {
   onEdit: (r: Risco) => void;
   onAccept: (r: Risco) => void;
   onOpenTratamentos: (r: Risco) => void;
+  /** Navegação entre riscos (‹ N de M ›) sem fechar o drawer. */
+  nav?: { current: number; total: number; onPrev?: () => void; onNext?: () => void };
 }
 
-export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept, onOpenTratamentos }: Props) {
+const STATUS_OPTIONS = [
+  { value: 'identificado', label: 'Identificado' },
+  { value: 'analisado', label: 'Analisado' },
+  { value: 'em_tratamento', label: 'Em Tratamento' },
+  { value: 'tratado', label: 'Tratado' },
+  { value: 'monitorado', label: 'Monitorado' },
+  { value: 'aceito', label: 'Aceito' },
+];
+
+export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept, onOpenTratamentos, nav }: Props) {
   const { data: detail, isLoading } = useRiscoDetail(risco?.id ?? null);
   const [vincularOpen, setVincularOpen] = useState(false);
+  const [perfilOpen, setPerfilOpen] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [statusSaving, setStatusSaving] = useState(false);
+
+  const handleStatusChange = async (novoStatus: string) => {
+    if (!risco || novoStatus === risco.status) return;
+    setStatusSaving(true);
+    try {
+      const { error } = await supabase.from('riscos').update({ status: novoStatus }).eq('id', risco.id);
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ['riscos'] });
+      queryClient.invalidateQueries({ queryKey: ['riscos-stats'] });
+      toast({ title: 'Status atualizado', description: `Agora: ${formatStatus(novoStatus)}` });
+    } catch (e: any) {
+      toast({ title: 'Erro', description: e.message, variant: 'destructive' });
+    } finally {
+      setStatusSaving(false);
+    }
+  };
 
   const inicialScore = useMemo(
     () => scoreFromPI(risco?.probabilidade_inicial, risco?.impacto_inicial),
@@ -91,6 +132,13 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
     const pendentes = t.filter((x) => x.status === 'pendente').length;
     return { total, concluidos, andamento, pendentes };
   })();
+  const sevAtual = severityFromNivel(risco.nivel_risco_residual || risco.nivel_risco_inicial);
+  const scoreAtual = residualScore || inicialScore;
+  const exposicao = financialExposure(
+    risco.impacto_financeiro,
+    risco.probabilidade_residual ?? risco.probabilidade_inicial,
+  );
+  const reduziu = residualScore > 0 && inicialScore > 0 && residualScore < inicialScore;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -98,27 +146,39 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
         side="right"
         className="w-full sm:max-w-[540px] p-0 flex flex-col gap-0 [&>button.absolute]:hidden"
       >
-        {/* Header */}
-        <SheetHeader className="px-6 py-6 border-b border-border space-y-4">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[10.5px] font-mono tracking-wider text-muted-foreground">
-                {shortRiskId(risco.id)}
-              </span>
-              <StatusBadge size="sm" {...resolveNivelRiscoTone(risco.nivel_risco_residual || risco.nivel_risco_inicial)}>
-                {formatStatus(risco.nivel_risco_residual || risco.nivel_risco_inicial)}
-              </StatusBadge>
-              <StatusBadge size="sm" {...resolveRiscoStatusTone(risco.status)}>
-                {formatStatus(risco.status)}
-              </StatusBadge>
-            </div>
-            <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2 text-xs"
-                onClick={() => onEdit(risco)}
-              >
+        {/* Header (hero) */}
+        <SheetHeader className="px-6 pt-5 pb-5 border-b border-border space-y-4 relative overflow-hidden">
+          {/* Faixa de severidade no topo */}
+          <div aria-hidden className="absolute inset-x-0 top-0 h-1" style={{ background: SEV_VAR[sevAtual] }} />
+          {/* Brilho sutil de severidade */}
+          <div
+            aria-hidden
+            className="absolute -top-16 -right-16 h-40 w-40 rounded-full blur-3xl opacity-[0.10] pointer-events-none"
+            style={{ background: SEV_VAR[sevAtual] }}
+          />
+
+          {/* Barra de ações */}
+          <div className="flex items-center justify-between gap-3 relative">
+            <span className="text-[10.5px] font-mono tracking-wider text-muted-foreground">
+              {shortRiskId(risco.id)}
+            </span>
+            <div className="flex items-center gap-1">
+              {nav && (
+                <div className="flex items-center gap-0.5 mr-1 text-[11px] text-muted-foreground">
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={nav.onPrev} disabled={!nav.onPrev || nav.current <= 1} aria-label="Risco anterior">
+                    <ChevronLeft className="h-4 w-4" strokeWidth={1.5} />
+                  </Button>
+                  <span className="tabular-nums whitespace-nowrap">{nav.current}<span className="opacity-60"> de </span>{nav.total}</span>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={nav.onNext} disabled={!nav.onNext || nav.current >= nav.total} aria-label="Próximo risco">
+                    <ChevronRight className="h-4 w-4" strokeWidth={1.5} />
+                  </Button>
+                </div>
+              )}
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setPerfilOpen(true)}>
+                <Maximize2 className="h-3.5 w-3.5 mr-1" strokeWidth={1.5} />
+                Perfil
+              </Button>
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => onEdit(risco)}>
                 <Edit className="h-3.5 w-3.5 mr-1" strokeWidth={1.5} />
                 Editar
               </Button>
@@ -129,37 +189,78 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
               </SheetClose>
             </div>
           </div>
-          <SheetTitle className="text-xl leading-tight font-semibold">
-            {risco.nome}
-          </SheetTitle>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-8 gap-y-2 pt-1">
-            {[
-              { l: 'Categoria', v: risco.categoria?.nome || '—' },
-              { l: 'Responsável', v: risco.responsavel_nome || '—' },
-              {
-                l: 'Próx. revisão',
-                v: risco.data_proxima_revisao ? formatDateOnly(risco.data_proxima_revisao) : '—',
-              },
-              { l: 'SLA', v: SLA_LABELS[sla] },
-            ].map((m) => (
-              <div key={m.l} className="min-w-0">
-                <div className="text-[10px] font-semibold uppercase tracking-[0.6px] text-muted-foreground">
-                  {m.l}
-                </div>
-                <div className="text-xs text-foreground mt-1 truncate">{m.v}</div>
+
+          {/* Título + anel de score */}
+          <div className="flex items-start justify-between gap-4 relative">
+            <div className="min-w-0 space-y-2.5">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <StatusBadge size="sm" {...resolveNivelRiscoTone(risco.nivel_risco_residual || risco.nivel_risco_inicial)}>
+                  {formatStatus(risco.nivel_risco_residual || risco.nivel_risco_inicial)}
+                </StatusBadge>
+                {/* Status editável */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button type="button" className="inline-flex items-center gap-0.5 rounded-full transition-opacity hover:opacity-80 disabled:opacity-50" disabled={statusSaving}>
+                      <StatusBadge size="sm" {...resolveRiscoStatusTone(risco.status)}>
+                        {statusSaving ? '…' : formatStatus(risco.status)}
+                        <ChevronDown className="h-3 w-3 ml-0.5 -mr-0.5 opacity-70" strokeWidth={2} />
+                      </StatusBadge>
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-44">
+                    {STATUS_OPTIONS.map((opt) => (
+                      <DropdownMenuItem key={opt.value} onClick={() => handleStatusChange(opt.value)} className={opt.value === risco.status ? 'font-semibold' : ''}>
+                        {opt.label}
+                        {opt.value === risco.status && <span className="ml-auto text-primary">✓</span>}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                {risco.aceito && (
+                  <StatusBadge size="sm" tone="info" variant="outline">Aceito</StatusBadge>
+                )}
               </div>
-            ))}
+              <SheetTitle className="text-xl leading-tight font-semibold">{risco.nome}</SheetTitle>
+            </div>
+            <ScoreRing score={scoreAtual} sev={sevAtual} />
+          </div>
+
+          {/* Metadados em linhas com ícone */}
+          <div className="grid grid-cols-2 gap-x-6 gap-y-2.5 pt-1 relative">
+            <HeaderMeta icon={<Tag />} label="Categoria" value={risco.categoria?.nome || '—'} />
+            <HeaderMeta
+              icon={<User />}
+              label="Responsável"
+              value={
+                risco.responsavel_nome ? (
+                  <span className="inline-flex items-center gap-1.5">
+                    <Avatar className="h-4 w-4">
+                      {risco.responsavel_foto && <AvatarImage src={risco.responsavel_foto} alt={risco.responsavel_nome} />}
+                      <AvatarFallback className="text-[8px] bg-primary/10 text-primary">{initials(risco.responsavel_nome)}</AvatarFallback>
+                    </Avatar>
+                    <span className="truncate">{risco.responsavel_nome}</span>
+                  </span>
+                ) : '—'
+              }
+            />
+            <HeaderMeta icon={<CalendarClock />} label="Próx. revisão" value={risco.data_proxima_revisao ? formatDateOnly(risco.data_proxima_revisao) : '—'} />
+            <HeaderMeta
+              icon={<Timer />}
+              label="SLA"
+              value={<StatusBadge size="sm" {...(sla === 'vencido' ? { tone: 'destructive' as const } : sla === 'atencao' ? { tone: 'warning' as const } : sla === 'no_prazo' ? { tone: 'success' as const } : { tone: 'neutral' as const })}>{SLA_LABELS[sla]}</StatusBadge>}
+            />
           </div>
         </SheetHeader>
 
         {/* Tabs */}
         <Tabs defaultValue="visao" className="flex-1 flex flex-col min-h-0">
           <div className="px-6 pt-4">
-            <TabsList className="grid grid-cols-4 h-9 gap-1.5 w-full">
-              <TabsTrigger value="visao" className="text-[11px] px-2 gap-1.5 min-w-0 whitespace-nowrap"><Eye className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>Visão</span></TabsTrigger>
-              <TabsTrigger value="tratamentos" className="text-[11px] px-2 gap-1.5 min-w-0 whitespace-nowrap"><Shield className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>Tratamento</span></TabsTrigger>
-              <TabsTrigger value="historico" className="text-[11px] px-2 gap-1.5 min-w-0 whitespace-nowrap"><History className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>Histórico</span></TabsTrigger>
-              <TabsTrigger value="controles" className="text-[11px] px-2 gap-1.5 min-w-0 whitespace-nowrap"><ShieldCheck className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>Controles</span></TabsTrigger>
+            <TabsList className="w-full">
+              <TabsTrigger value="visao" className="flex-1 text-[11px] px-2 gap-1.5 min-w-0 whitespace-nowrap"><Eye className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>Visão</span></TabsTrigger>
+              <TabsTrigger value="tratamentos" className="flex-1 text-[11px] px-2 gap-1.5 min-w-0 whitespace-nowrap"><Shield className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>Tratamento</span></TabsTrigger>
+              <TabsTrigger value="historico" className="flex-1 text-[11px] px-2 gap-1.5 min-w-0 whitespace-nowrap"><History className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>Histórico</span></TabsTrigger>
+              <TabsTrigger value="controles" className="flex-1 text-[11px] px-2 gap-1.5 min-w-0 whitespace-nowrap"><ShieldCheck className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>Controles</span></TabsTrigger>
+              <TabsTrigger value="comentarios" className="flex-1 text-[11px] px-2 gap-1.5 min-w-0 whitespace-nowrap"><MessageSquare className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>Coment.</span></TabsTrigger>
             </TabsList>
           </div>
 
@@ -173,35 +274,24 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
                 </section>
               )}
 
-              <section className="grid grid-cols-2 gap-3">
-                <div className="bg-card border border-border rounded-lg p-3">
-                  <SectionLabel>Nível inicial</SectionLabel>
-                  <div className="mt-1.5 flex items-center justify-between">
-                    <StatusBadge size="sm" {...resolveNivelRiscoTone(risco.nivel_risco_inicial)}>
-                      {formatStatus(risco.nivel_risco_inicial)}
-                    </StatusBadge>
-                    <span className="text-lg font-semibold tabular-nums">{inicialScore || '—'}</span>
+              {/* Movimento inerente → residual */}
+              <section>
+                <SectionLabel>Inerente → Residual</SectionLabel>
+                <div className="flex items-stretch gap-2 mt-0.5">
+                  <ScoreBlock label="Inerente" nivel={risco.nivel_risco_inicial} score={inicialScore} p={risco.probabilidade_inicial} i={risco.impacto_inicial} />
+                  <div className="flex flex-col items-center justify-center px-0.5 shrink-0">
+                    <ArrowRight className={reduziu ? 'h-5 w-5 text-success' : 'h-5 w-5 text-muted-foreground/50'} strokeWidth={2} />
+                    {reduziu && <span className="text-[9px] text-success font-semibold tabular-nums mt-0.5">−{inicialScore - residualScore}</span>}
                   </div>
-                  <div className="text-[11px] text-muted-foreground mt-1">
-                    P {risco.probabilidade_inicial || '—'} × I {risco.impacto_inicial || '—'}
-                  </div>
+                  <ScoreBlock label="Residual" nivel={risco.nivel_risco_residual} score={residualScore} p={risco.probabilidade_residual} i={risco.impacto_residual} emptyLabel="Não avaliado" />
                 </div>
-                <div className="bg-card border border-border rounded-lg p-3">
-                  <SectionLabel>Nível residual</SectionLabel>
-                  <div className="mt-1.5 flex items-center justify-between">
-                    {risco.nivel_risco_residual ? (
-                      <StatusBadge size="sm" {...resolveNivelRiscoTone(risco.nivel_risco_residual)}>
-                        {formatStatus(risco.nivel_risco_residual)}
-                      </StatusBadge>
-                    ) : (
-                      <StatusBadge size="sm" tone="neutral">Não avaliado</StatusBadge>
-                    )}
-                    <span className="text-lg font-semibold tabular-nums">{residualScore || '—'}</span>
-                  </div>
-                  <div className="text-[11px] text-muted-foreground mt-1">
-                    P {risco.probabilidade_residual || '—'} × I {risco.impacto_residual || '—'}
-                  </div>
-                </div>
+              </section>
+
+              {/* Tiles de contexto */}
+              <section className="grid grid-cols-3 gap-2">
+                <StatTile icon={<Wallet />} label="Exposição" value={exposicao !== null ? formatBRL(exposicao, true) : '—'} />
+                <StatTile icon={<Shield />} label="Tratamentos" value={`${tratStats.concluidos}/${tratStats.total}`} />
+                <StatTile icon={<Layers />} label="Controles" value={String(detail?.controles.length ?? 0)} />
               </section>
 
               {/* Exposição financeira + evolução do risco */}
@@ -399,6 +489,11 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
                 })
               )}
             </TabsContent>
+
+            {/* Comentários */}
+            <TabsContent value="comentarios" className="m-0 data-[state=active]:animate-fade-in">
+              <RiscoComentarios riscoId={risco.id} />
+            </TabsContent>
           </div>
         </Tabs>
 
@@ -428,6 +523,15 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
           onOpenChange={setVincularOpen}
           riscoId={risco.id}
           riscoNome={risco.nome}
+        />
+
+        <RiscoPerfilCompleto
+          risco={risco as any}
+          open={perfilOpen}
+          onOpenChange={setPerfilOpen}
+          onEdit={(r) => { setPerfilOpen(false); onEdit(r as any); }}
+          onAccept={(r) => { setPerfilOpen(false); onAccept(r as any); }}
+          onOpenTratamentos={(r) => { setPerfilOpen(false); onOpenTratamentos(r as any); }}
         />
       </SheetContent>
     </Sheet>

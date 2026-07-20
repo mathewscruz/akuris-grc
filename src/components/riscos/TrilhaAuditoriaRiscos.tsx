@@ -2,12 +2,10 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
+import { DialogShell } from '@/components/ui/dialog-shell';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { History, User, Calendar, Edit, Plus, Trash, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -78,9 +76,9 @@ export function TrilhaAuditoriaRiscos({ open, onOpenChange, riscoId, riscoNome }
 
   const getActionIcon = (action: string) => {
     switch (action) {
-      case 'INSERT': return <Plus className="h-4 w-4 text-green-600" />;
-      case 'UPDATE': return <Edit className="h-4 w-4 text-blue-600" />;
-      case 'DELETE': return <Trash className="h-4 w-4 text-red-600" />;
+      case 'INSERT': return <Plus className="h-4 w-4 text-success" />;
+      case 'UPDATE': return <Edit className="h-4 w-4 text-info" />;
+      case 'DELETE': return <Trash className="h-4 w-4 text-destructive" />;
       default: return <Eye className="h-4 w-4 text-muted-foreground" />;
     }
   };
@@ -112,9 +110,9 @@ export function TrilhaAuditoriaRiscos({ open, onOpenChange, riscoId, riscoNome }
               <p className="text-xs font-medium text-destructive">Anterior</p>
               <p className="text-sm text-destructive">{String(oldVal ?? 'N/A')}</p>
             </div>
-            <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 p-2">
-              <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400">Novo</p>
-              <p className="text-sm text-emerald-700 dark:text-emerald-400">{String(newVal ?? 'N/A')}</p>
+            <div className="rounded-md border border-success/30 bg-success/10 p-2">
+              <p className="text-xs font-medium text-success">Novo</p>
+              <p className="text-sm text-success">{String(newVal ?? 'N/A')}</p>
             </div>
           </div>
         </div>
@@ -123,37 +121,25 @@ export function TrilhaAuditoriaRiscos({ open, onOpenChange, riscoId, riscoNome }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-full sm:max-w-4xl max-h-[100dvh] sm:max-h-[92vh] overflow-hidden flex flex-col p-0 gap-0">
-        <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b">
-          <DialogTitle className="flex items-center gap-3">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-              <History className="h-5 w-5" strokeWidth={1.5} />
-            </span>
-            <span className="flex flex-col">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                Trilha de auditoria
-              </span>
-              <span className="text-base font-semibold leading-tight">{riscoNome}</span>
-            </span>
-          </DialogTitle>
-          <DialogDescription className="pl-[48px]">
-            Registro detalhado de todas as alterações realizadas neste risco.
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="flex-1 overflow-hidden">
+    <DialogShell
+      open={open}
+      onOpenChange={onOpenChange}
+      icon={History}
+      title="Trilha de auditoria"
+      description={riscoNome}
+      size="lg"
+      hideFooter
+    >
           {isLoading ? (
             <div className="flex items-center justify-center h-64">
               <AkurisPulse size={48} />
             </div>
           ) : !auditLogs || auditLogs.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground px-6">
+            <div className="text-center py-12 text-muted-foreground">
               <History className="h-12 w-12 mx-auto mb-4 opacity-50" strokeWidth={1.5} />
               Nenhum histórico de alterações encontrado.
             </div>
           ) : (
-            <ScrollArea className="h-full px-6 py-5">
               <div className="space-y-4">
                 {auditLogs.map((log) => (
                   <Card key={log.id} className="border-l-4 border-l-primary">
@@ -204,10 +190,7 @@ export function TrilhaAuditoriaRiscos({ open, onOpenChange, riscoId, riscoNome }
                   </Card>
                 ))}
               </div>
-            </ScrollArea>
           )}
-        </div>
-      </DialogContent>
-    </Dialog>
+    </DialogShell>
   );
 }

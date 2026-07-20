@@ -2,9 +2,8 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { DialogShell } from '@/components/ui/dialog-shell';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { TrendingDown, TrendingUp, Minus, Clock, User } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -62,36 +61,25 @@ export function HistoricoAvaliacoesDialog({ open, onOpenChange, riscoId, riscoNo
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-full sm:max-w-2xl max-h-[100dvh] sm:max-h-[88vh] overflow-hidden flex flex-col p-0 gap-0">
-        <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b">
-          <DialogTitle className="flex items-center gap-3">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-              <Clock className="h-5 w-5" strokeWidth={1.5} />
-            </span>
-            <span className="flex flex-col">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                Histórico de avaliações
-              </span>
-              <span className="text-base font-semibold leading-tight">{riscoNome}</span>
-            </span>
-          </DialogTitle>
-          <DialogDescription className="pl-[48px]">
-            Linha do tempo das reavaliações de probabilidade, impacto e nível do risco.
-          </DialogDescription>
-        </DialogHeader>
-
+    <DialogShell
+      open={open}
+      onOpenChange={onOpenChange}
+      icon={Clock}
+      title="Histórico de avaliações"
+      description={riscoNome}
+      size="md"
+      hideFooter
+    >
         {isLoading ? (
           <div className="flex items-center justify-center h-32">
             <AkurisPulse size={32} />
           </div>
         ) : !historico || historico.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground px-6">
+          <div className="text-center py-12 text-muted-foreground">
             <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" strokeWidth={1.5} />
             Nenhum histórico de reavaliação encontrado.
           </div>
         ) : (
-          <ScrollArea className="flex-1 px-6 py-5">
             <div className="relative pl-6">
               {/* Timeline line */}
               <div className="absolute left-2.5 top-0 bottom-0 w-0.5 bg-border" />
@@ -149,9 +137,7 @@ export function HistoricoAvaliacoesDialog({ open, onOpenChange, riscoId, riscoNo
                 })}
               </div>
             </div>
-          </ScrollArea>
         )}
-      </DialogContent>
-    </Dialog>
+    </DialogShell>
   );
 }
