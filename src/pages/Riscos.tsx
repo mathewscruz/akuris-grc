@@ -149,7 +149,7 @@ export function Riscos() {
         .from('riscos')
         .select(`
           id, nome, descricao, matriz_id, categoria_id,
-          probabilidade_inicial, impacto_inicial, impacto_financeiro,
+          probabilidade_inicial, impacto_inicial,
           probabilidade_residual, impacto_residual,
           nivel_risco_inicial, nivel_risco_residual,
           status, responsavel, controles_existentes,
@@ -167,26 +167,41 @@ export function Riscos() {
       // Buscar contagem de tratamentos
       const riscoIds = data?.map(r => r.id) || [];
       let tratamentosCount: Record<string, number> = {};
-      
+
       if (riscoIds.length > 0) {
         const { data: tratamentos } = await supabase
           .from('riscos_tratamentos')
           .select('risco_id')
           .in('risco_id', riscoIds);
-        
+
         tratamentosCount = (tratamentos || []).reduce((acc, t) => {
           acc[t.risco_id] = (acc[t.risco_id] || 0) + 1;
           return acc;
         }, {} as Record<string, number>);
       }
-      
+
+      // Impacto financeiro em query SEPARADA e tolerante a erro: se a coluna
+      // ainda não existir na base (migração não aplicada), a lista de riscos
+      // NÃO quebra — apenas a exposição fica indisponível até a migração.
+      let financeMap: Record<string, number | null> = {};
+      if (riscoIds.length > 0) {
+        const { data: fin, error: finErr } = await supabase
+          .from('riscos')
+          .select('id, impacto_financeiro')
+          .in('id', riscoIds);
+        if (!finErr && fin) {
+          financeMap = Object.fromEntries(fin.map((r: any) => [r.id, r.impacto_financeiro]));
+        }
+      }
+
       if (data && data.length > 0) {
         const normalizedData = data.map(risco => ({
           ...risco,
-          categoria: Array.isArray(risco.categoria) && risco.categoria.length > 0 
-            ? risco.categoria[0] 
+          categoria: Array.isArray(risco.categoria) && risco.categoria.length > 0
+            ? risco.categoria[0]
             : risco.categoria,
-          tratamentos_count: tratamentosCount[risco.id] || 0
+          tratamentos_count: tratamentosCount[risco.id] || 0,
+          impacto_financeiro: financeMap[risco.id] ?? null,
         }));
 
         const responsavelIds = normalizedData

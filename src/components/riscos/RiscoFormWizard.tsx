@@ -361,7 +361,6 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
         categoria_id: data.categoria_id || null,
         probabilidade_inicial: data.probabilidade_inicial,
         impacto_inicial: data.impacto_inicial,
-        impacto_financeiro: data.impacto_financeiro ? parseFloat(data.impacto_financeiro) : null,
         nivel_risco_inicial: nivelInicial,
         probabilidade_residual: data.probabilidade_residual || null,
         impacto_residual: data.impacto_residual || null,
@@ -433,6 +432,18 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
             }
           }
         }
+      }
+
+      // Grava impacto financeiro em passo à parte e TOLERANTE: se a coluna ainda
+      // não existir na base (migração não aplicada), o risco é salvo normalmente
+      // e apenas o valor financeiro é ignorado até a migração ser aplicada.
+      {
+        const impactoFinanceiro = data.impacto_financeiro ? parseFloat(data.impacto_financeiro) : null;
+        const { error: finErr } = await supabase
+          .from('riscos')
+          .update({ impacto_financeiro: impactoFinanceiro })
+          .eq('id', riscoId);
+        if (finErr) logger.error('impacto_financeiro não gravado (coluna ausente?)', { data: finErr });
       }
 
       // Atualizar vínculos com ativos
