@@ -1,11 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { DialogShell } from '@/components/ui/dialog-shell';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { StatCard } from '@/components/ui/stat-card';
@@ -21,7 +20,7 @@ import { ReportsSidebar } from './ReportsSidebar';
 import { IntegrationSuggestions } from './IntegrationSuggestions';
 import { formatDateOnly } from '@/lib/date-utils';
 import { formatStatus } from '@/lib/text-utils';
-import { StatusBadge } from '@/components/ui/status-badge';
+import { StatusBadge, type StatusTone } from '@/components/ui/status-badge';
 import { resolveDueDiligenceStatusTone } from '@/lib/status-tone';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
@@ -124,12 +123,23 @@ function ReminderDialog({ assessment, open, onOpenChange, onSuccess }: ReminderD
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Enviar Lembrete</DialogTitle>
-        </DialogHeader>
-        
+    <DialogShell
+      open={open}
+      onOpenChange={onOpenChange}
+      icon={Mail}
+      title="Enviar Lembrete"
+      size="sm"
+      footer={
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
+            Cancelar
+          </Button>
+          <Button size="sm" onClick={sendReminder} disabled={sending}>
+            {sending ? 'Enviando...' : 'Enviar Lembrete'}
+          </Button>
+        </div>
+      }
+    >
         {assessment && (
           <div className="space-y-4">
             <div className="space-y-2">
@@ -138,19 +148,9 @@ function ReminderDialog({ assessment, open, onOpenChange, onSuccess }: ReminderD
               <p><strong>Template:</strong> {assessment.template.nome}</p>
               <p><strong>Status:</strong> {formatStatus(assessment.status)}</p>
             </div>
-            
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => onOpenChange(false)}>
-                Cancelar
-              </Button>
-              <Button onClick={sendReminder} disabled={sending}>
-                {sending ? 'Enviando...' : 'Enviar Lembrete'}
-              </Button>
-            </div>
           </div>
         )}
-      </DialogContent>
-    </Dialog>
+    </DialogShell>
   );
 }
 
@@ -365,18 +365,18 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
 
   const getScoreColor = (score?: number) => {
     if (!score || score === 0) return 'text-muted-foreground';
-    if (score >= 8) return 'text-green-600 font-semibold';
-    if (score >= 6) return 'text-blue-600 font-semibold';
-    if (score >= 4) return 'text-yellow-600 font-semibold';
-    return 'text-red-600 font-semibold';
+    if (score >= 8) return 'text-success font-semibold';
+    if (score >= 6) return 'text-info font-semibold';
+    if (score >= 4) return 'text-warning font-semibold';
+    return 'text-destructive font-semibold';
   };
 
-  const getScoreBadge = (score?: number) => {
-    if (!score || score === 0) return { text: "Aguardando", variant: "outline" as const };
-    if (score >= 8) return { text: "Excelente", variant: "default" as const };
-    if (score >= 6) return { text: "Bom", variant: "secondary" as const };
-    if (score >= 4) return { text: "Regular", variant: "outline" as const };
-    return { text: "Ruim", variant: "destructive" as const };
+  const getScoreBadge = (score?: number): { text: string; tone: StatusTone } => {
+    if (!score || score === 0) return { text: "Aguardando", tone: "neutral" };
+    if (score >= 8) return { text: "Excelente", tone: "success" };
+    if (score >= 6) return { text: "Bom", tone: "info" };
+    if (score >= 4) return { text: "Regular", tone: "warning" };
+    return { text: "Ruim", tone: "destructive" };
   };
 
   const isExpired = (dateString: string) => {
@@ -542,7 +542,7 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
   // Função para obter classe de borda baseada na expiração
   const getExpirationBorderClass = (assessment: Assessment) => {
     if (assessment.status === 'concluido') return '';
-    if (isExpired(assessment.data_expiracao)) return 'border-l-4 border-l-red-500';
+    if (isExpired(assessment.data_expiracao)) return 'border-l-4 border-l-destructive';
     if (isExpiringSoon(assessment.data_expiracao)) return 'border-l-4 border-l-amber-500';
     return '';
   };
@@ -640,16 +640,14 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
                       <div className="flex items-center gap-2">
                         {getStatusBadge(assessment.status)}
                         {isExpired(assessment.data_expiracao) && assessment.status !== 'concluido' && (
-                          <Badge variant="destructive">
-                            <AlertTriangle className="h-3 w-3 mr-1" />
+                          <StatusBadge size="sm" tone="destructive" intensity="high" icon={<AlertTriangle className="h-3 w-3" />}>
                             Expirado
-                          </Badge>
+                          </StatusBadge>
                         )}
                         {isExpiringSoon(assessment.data_expiracao) && assessment.status !== 'concluido' && !isExpired(assessment.data_expiracao) && (
-                          <Badge variant="warning">
-                            <Clock className="h-3 w-3 mr-1" />
+                          <StatusBadge size="sm" tone="warning" icon={<Clock className="h-3 w-3" />}>
                             Vence em {getDaysUntilExpiration(assessment.data_expiracao)}d
-                          </Badge>
+                          </StatusBadge>
                         )}
                       </div>
                     </div>
@@ -679,16 +677,17 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
                               onClick={() => handleScoreClick(assessment)}
                               className="hover:underline cursor-pointer flex items-center gap-2"
                             >
-                              <Badge 
-                                variant={getScoreBadge(assessment.score_final).variant}
+                              <StatusBadge
+                                size="sm"
+                                tone={getScoreBadge(assessment.score_final).tone}
+                                icon={<Award className="h-3 w-3" />}
                                 className="transition-all hover:scale-105"
                               >
-                                <Award className="h-3 w-3 mr-1" />
                                 {getScoreBadge(assessment.score_final).text}
                                 <span className="ml-1 font-mono">
                                   {(assessment.score_final * 10).toFixed(1)}%
                                 </span>
-                              </Badge>
+                              </StatusBadge>
                             </button>
                           ) : assessment.status === 'concluido' ? (
                             <span className="text-sm text-muted-foreground">Calculando...</span>
@@ -767,9 +766,9 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
                               </DropdownMenuItem>
                             )}
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem 
+                            <DropdownMenuItem
                               onClick={() => setDeleteDialog({ open: true, assessment })}
-                              className="text-red-600"
+                              className="text-destructive"
                             >
                               <Trash2 className="h-4 w-4 mr-2" />
                               Excluir
@@ -867,15 +866,14 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
           />
 
           {/* Dialog de Score com Integrações */}
-          <Dialog open={scoreDialog.open} onOpenChange={(open) => setScoreDialog({ open, assessment: null, scoreData: null })}>
-            <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <Award className="h-5 w-5" />
-                  Resultado da Avaliação - {scoreDialog.assessment?.fornecedor_nome}
-                </DialogTitle>
-              </DialogHeader>
-              
+          <DialogShell
+            open={scoreDialog.open}
+            onOpenChange={(open) => setScoreDialog({ open, assessment: null, scoreData: null })}
+            icon={Award}
+            title={`Resultado da Avaliação — ${scoreDialog.assessment?.fornecedor_nome ?? ''}`}
+            size="xl"
+            hideFooter
+          >
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2">
                   {scoreDialog.assessment && (
@@ -895,8 +893,7 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
                   )}
                 </div>
               </div>
-            </DialogContent>
-          </Dialog>
+          </DialogShell>
 
           {/* Dialog de Respostas */}
           <AssessmentResponsesViewer

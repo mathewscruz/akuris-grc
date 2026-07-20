@@ -14,7 +14,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Plus, Edit, Trash2, MoveUp, MoveDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { DialogShell } from '@/components/ui/dialog-shell';
 import ConfirmDialog from '@/components/ConfirmDialog';
 
 interface Question {
@@ -273,20 +273,19 @@ export function QuestionsManager({ templateId, templateName }: QuestionsManagerP
           </p>
         </div>
 
-        <Dialog open={showDialog} onOpenChange={setShowDialog}>
-          <DialogTrigger asChild>
-            <Button onClick={resetForm}>
-              <Plus className="mr-2 h-4 w-4" />
-              Nova Pergunta
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>
-                {editingQuestion ? 'Editar Pergunta' : 'Nova Pergunta'}
-              </DialogTitle>
-            </DialogHeader>
-            
+        <Button onClick={() => { resetForm(); setShowDialog(true); }}>
+          <Plus className="mr-2 h-4 w-4" />
+          Nova Pergunta
+        </Button>
+        <DialogShell
+          open={showDialog}
+          onOpenChange={setShowDialog}
+          icon={Plus}
+          title={editingQuestion ? 'Editar Pergunta' : 'Nova Pergunta'}
+          size="md"
+          onSubmit={() => handleSubmit(new Event('submit') as unknown as React.FormEvent)}
+          submitLabel={editingQuestion ? 'Atualizar' : 'Criar'}
+        >
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -396,17 +395,8 @@ export function QuestionsManager({ templateId, templateName }: QuestionsManagerP
                 </div>
               </div>
 
-              <div className="flex justify-end space-x-2 pt-4">
-                <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>
-                  Cancelar
-                </Button>
-                <Button type="submit">
-                  {editingQuestion ? 'Atualizar' : 'Criar'} Pergunta
-                </Button>
-              </div>
             </form>
-          </DialogContent>
-        </Dialog>
+        </DialogShell>
       </div>
 
       {questions.length === 0 ? (

@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DialogShell } from '@/components/ui/dialog-shell';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { ClipboardCheck } from 'lucide-react';
 import { resolveDueDiligenceStatusTone } from '@/lib/status-tone';
 import { formatStatus } from '@/lib/text-utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -284,15 +284,19 @@ export function AssessmentDialog({
 
   if (mode === 'view' && assessment) {
     return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Detalhes da Avaliação</DialogTitle>
-            <DialogDescription>
-              Informações sobre a avaliação enviada ao fornecedor
-            </DialogDescription>
-          </DialogHeader>
-
+      <DialogShell
+        open={open}
+        onOpenChange={onOpenChange}
+        icon={ClipboardCheck}
+        title="Detalhes da Avaliação"
+        description="Informações sobre a avaliação enviada ao fornecedor"
+        size="md"
+        footer={
+          <div className="flex justify-end">
+            <Button size="sm" onClick={() => onOpenChange(false)}>Fechar</Button>
+          </div>
+        }
+      >
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -362,25 +366,22 @@ export function AssessmentDialog({
               </div>
             </div>
           </div>
-
-          <DialogFooter>
-            <Button onClick={() => onOpenChange(false)}>Fechar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      </DialogShell>
     );
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>Nova Avaliação</DialogTitle>
-          <DialogDescription>
-            Crie uma nova avaliação para enviar ao fornecedor
-          </DialogDescription>
-        </DialogHeader>
-
+    <DialogShell
+      open={open}
+      onOpenChange={onOpenChange}
+      icon={ClipboardCheck}
+      title="Nova Avaliação"
+      description="Crie uma nova avaliação para enviar ao fornecedor"
+      size="sm"
+      onSubmit={() => handleSubmit(new Event('submit') as unknown as React.FormEvent)}
+      submitLabel="Criar Avaliação"
+      isSubmitting={loading}
+    >
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="template">Template *</Label>
@@ -444,21 +445,7 @@ export function AssessmentDialog({
             />
           </div>
 
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={loading}
-            >
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Criando...' : 'Criar Avaliação'}
-            </Button>
-          </DialogFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+    </DialogShell>
   );
 }

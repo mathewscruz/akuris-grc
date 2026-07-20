@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DialogShell } from '@/components/ui/dialog-shell';
+import { ClipboardList } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -190,18 +191,25 @@ export function TemplateDialog({
     }
   };
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={mode === 'questions' ? "max-w-5xl" : "sm:max-w-[500px]"}>
-        <DialogHeader>
-          <DialogTitle>{getDialogTitle()}</DialogTitle>
-          <DialogDescription>{getDialogDescription()}</DialogDescription>
-        </DialogHeader>
+  const isQuestions = mode === 'questions';
 
-        {mode === 'questions' ? (
-          <QuestionsManager 
-            templateId={template?.id || ''} 
-            templateName={template?.nome || ''} 
+  return (
+    <DialogShell
+      open={open}
+      onOpenChange={onOpenChange}
+      icon={ClipboardList}
+      title={getDialogTitle()}
+      description={getDialogDescription()}
+      size={isQuestions ? 'xl' : 'sm'}
+      hideFooter={isQuestions}
+      onSubmit={isQuestions ? undefined : () => handleSubmit(new Event('submit') as unknown as React.FormEvent)}
+      submitLabel="Salvar"
+      isSubmitting={loading}
+    >
+        {isQuestions ? (
+          <QuestionsManager
+            templateId={template?.id || ''}
+            templateName={template?.nome || ''}
           />
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -246,22 +254,8 @@ export function TemplateDialog({
             </Select>
           </div>
 
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={loading}
-            >
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Salvando...' : 'Salvar'}
-            </Button>
-          </DialogFooter>
         </form>
         )}
-      </DialogContent>
-    </Dialog>
+    </DialogShell>
   );
 }

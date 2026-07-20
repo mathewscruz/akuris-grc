@@ -4,12 +4,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { DialogShell } from '@/components/ui/dialog-shell';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
@@ -308,13 +307,16 @@ export function FornecedoresManager() {
             )}
           </div>
           
-          <Dialog open={dialogOpen} onOpenChange={handleOpenChange}>
-            <DialogTrigger asChild><div /></DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>{editingFornecedor ? 'Editar Fornecedor' : 'Novo Fornecedor'}</DialogTitle>
-              </DialogHeader>
-              
+          <DialogShell
+            open={dialogOpen}
+            onOpenChange={handleOpenChange}
+            icon={Building}
+            title={editingFornecedor ? 'Editar Fornecedor' : 'Novo Fornecedor'}
+            size="md"
+            onSubmit={() => handleSubmit(new Event('submit') as unknown as React.FormEvent)}
+            submitLabel={editingFornecedor ? 'Atualizar' : 'Criar'}
+            isSubmitting={createMutation.isPending || updateMutation.isPending}
+          >
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -358,15 +360,8 @@ export function FornecedoresManager() {
                   </div>
                 </div>
                 
-                <div className="flex justify-end space-x-2 pt-4">
-                  <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>Cancelar</Button>
-                  <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
-                    {editingFornecedor ? 'Atualizar' : 'Criar'}
-                  </Button>
-                </div>
               </form>
-            </DialogContent>
-          </Dialog>
+          </DialogShell>
           
           <div className="p-6 pt-0">
             {isLoading ? (
@@ -383,9 +378,9 @@ export function FornecedoresManager() {
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-1 flex-wrap">
                                 <h3 className="text-lg font-semibold truncate">{fornecedor.nome}</h3>
-                                {fornecedor.status === 'inativo' && <Badge variant="secondary">Inativo</Badge>}
+                                {fornecedor.status === 'inativo' && <StatusBadge size="sm" tone="neutral">Inativo</StatusBadge>}
                                 {fornecedor.categoria && (
-                                  <Badge variant="outline" className="text-xs">{formatStatus(fornecedor.categoria)}</Badge>
+                                  <StatusBadge size="sm" tone="neutral" variant="outline">{formatStatus(fornecedor.categoria)}</StatusBadge>
                                 )}
                                 {getRiskBadge(fornecedor._assessmentStats)}
                               </div>

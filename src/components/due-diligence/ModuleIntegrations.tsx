@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Settings, Target, FileText, Building, TrendingUp, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Plus, Settings, Target, FileText, Building, TrendingUp, AlertTriangle, CheckCircle, Workflow } from 'lucide-react';
 
 interface IntegrationRule {
   id: string;
@@ -76,14 +76,15 @@ function IntegrationDialog({ rule, open, onOpenChange, onSave }: IntegrationDial
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>
-            {rule ? 'Editar Integração' : 'Nova Integração'}
-          </DialogTitle>
-        </DialogHeader>
-        
+    <DialogShell
+      open={open}
+      onOpenChange={onOpenChange}
+      icon={Workflow}
+      title={rule ? 'Editar Integração' : 'Nova Integração'}
+      size="md"
+      onSubmit={() => handleSubmit(new Event('submit') as unknown as React.FormEvent)}
+      submitLabel={rule ? 'Atualizar' : 'Criar'}
+    >
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <Label htmlFor="nome">Nome da Integração</Label>
@@ -162,17 +163,8 @@ function IntegrationDialog({ rule, open, onOpenChange, onSave }: IntegrationDial
             </div>
           </div>
           
-          <div className="flex justify-end space-x-2 pt-4">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancelar
-            </Button>
-            <Button type="submit">
-              {rule ? 'Atualizar' : 'Criar'}
-            </Button>
-          </div>
         </form>
-      </DialogContent>
-    </Dialog>
+    </DialogShell>
   );
 }
 
@@ -339,21 +331,17 @@ export function ModuleIntegrations() {
           </p>
         </div>
         
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={handleCreate}>
-              <Plus className="w-4 h-4 mr-2" />
-              Nova Integração
-            </Button>
-          </DialogTrigger>
-        </Dialog>
+        <Button onClick={handleCreate}>
+          <Plus className="w-4 h-4 mr-2" />
+          Nova Integração
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center space-x-2">
-              <CheckCircle className="w-8 h-8 text-green-500" />
+              <CheckCircle className="w-8 h-8 text-success" />
               <div>
                 <p className="text-2xl font-bold">{integrations.filter(i => i.ativo).length}</p>
                 <p className="text-sm text-muted-foreground">Integrações Ativas</p>
@@ -365,7 +353,7 @@ export function ModuleIntegrations() {
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center space-x-2">
-              <AlertTriangle className="w-8 h-8 text-orange-500" />
+              <AlertTriangle className="w-8 h-8 text-warning" />
               <div>
                 <p className="text-2xl font-bold">{integrations.filter(i => !i.ativo).length}</p>
                 <p className="text-sm text-muted-foreground">Integrações Inativas</p>
@@ -377,7 +365,7 @@ export function ModuleIntegrations() {
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center space-x-2">
-              <Target className="w-8 h-8 text-blue-500" />
+              <Target className="w-8 h-8 text-info" />
               <div>
                 <p className="text-2xl font-bold">{integrations.length}</p>
                 <p className="text-sm text-muted-foreground">Total de Regras</p>

@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DialogShell } from '@/components/ui/dialog-shell';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { resolveDueDiligenceStatusTone } from '@/lib/status-tone';
 import { Separator } from '@/components/ui/separator';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { ScoreVisualization } from './ScoreVisualization';
 import { FileText, Download, User, Calendar, Mail } from 'lucide-react';
@@ -178,16 +178,15 @@ export function AssessmentResponsesViewer({
   if (!assessment) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Visualizar Respostas - {assessment.fornecedor_nome}
-          </DialogTitle>
-        </DialogHeader>
-
-        <ScrollArea className="h-[80vh]">
+    <DialogShell
+      open={open}
+      onOpenChange={onOpenChange}
+      icon={FileText}
+      title={`Visualizar Respostas — ${assessment.fornecedor_nome}`}
+      size="xl"
+      hideFooter
+    >
+        <div>
           <div className="space-y-6 p-1">
             {/* Informações do Assessment */}
             <Card>
@@ -213,7 +212,7 @@ export function AssessmentResponsesViewer({
                   </div>
                   <div>
                     <span className="text-muted-foreground">Status:</span>
-                    <Badge variant="default">{formatStatus(assessment.status)}</Badge>
+                    <StatusBadge size="sm" {...resolveDueDiligenceStatusTone(assessment.status)}>{formatStatus(assessment.status)}</StatusBadge>
                   </div>
                   {assessment.data_conclusao && (
                     <div className="col-span-2">
@@ -273,17 +272,17 @@ export function AssessmentResponsesViewer({
                                   </span>
                                   <h4 className="font-medium">{question.titulo}</h4>
                                   {question.obrigatoria && (
-                                    <Badge variant="outline" className="text-xs">Obrigatória</Badge>
+                                    <StatusBadge size="sm" tone="neutral" variant="outline">Obrigatória</StatusBadge>
                                   )}
                                 </div>
                                 <div className="flex items-center gap-2 mb-2">
-                                  <Badge variant="secondary" className="text-xs">
+                                  <StatusBadge size="sm" tone="neutral">
                                     {getQuestionTypeLabel(question.tipo)}
-                                  </Badge>
+                                  </StatusBadge>
                                   {question.peso && (
-                                    <Badge variant="outline" className="text-xs">
+                                    <StatusBadge size="sm" tone="neutral" variant="outline">
                                       Peso: {question.peso}
-                                    </Badge>
+                                    </StatusBadge>
                                   )}
                                 </div>
                               </div>
@@ -350,8 +349,7 @@ export function AssessmentResponsesViewer({
               </div>
             </div>
           </div>
-        </ScrollArea>
-      </DialogContent>
-    </Dialog>
+        </div>
+    </DialogShell>
   );
 }
