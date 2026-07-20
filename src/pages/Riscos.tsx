@@ -53,7 +53,7 @@ import { AppetiteFooter } from '@/components/riscos/matrix/AppetiteFooter';
 import { RiscosViewChips, type SavedView } from '@/components/riscos/table/RiscosViewChips';
 import { SparklineCell } from '@/components/riscos/table/SparklineCell';
 import { SlaCell } from '@/components/riscos/table/SlaCell';
-import { isAcimaApetite, severityFromNivel, slaFromRevisao, scoreFromPI, shortRiskId, relativeShort, toScaleNumber, formatScaleValue } from '@/components/riscos/risk-utils';
+import { isAcimaApetite, severityFromNivel, slaFromRevisao, scoreFromPI, shortRiskId, relativeShort, toScaleNumber, formatScaleValue, financialExposure, formatBRL } from '@/components/riscos/risk-utils';
 
 
 import { TrilhaAuditoriaRiscos } from '@/components/riscos/TrilhaAuditoriaRiscos';
@@ -71,6 +71,7 @@ interface Risco {
   categoria_id?: string;
   probabilidade_inicial?: string;
   impacto_inicial?: string;
+  impacto_financeiro?: number;
   probabilidade_residual?: string;
   impacto_residual?: string;
   nivel_risco_inicial: string;
@@ -148,7 +149,7 @@ export function Riscos() {
         .from('riscos')
         .select(`
           id, nome, descricao, matriz_id, categoria_id,
-          probabilidade_inicial, impacto_inicial,
+          probabilidade_inicial, impacto_inicial, impacto_financeiro,
           probabilidade_residual, impacto_residual,
           nivel_risco_inicial, nivel_risco_residual,
           status, responsavel, controles_existentes,
@@ -368,7 +369,12 @@ export function Riscos() {
       aValue = a.categoria?.nome || '';
       bValue = b.categoria?.nome || '';
     }
-    
+
+    if (sortField === 'exposicao') {
+      aValue = financialExposure(a.impacto_financeiro, a.probabilidade_residual ?? a.probabilidade_inicial) ?? -1;
+      bValue = financialExposure(b.impacto_financeiro, b.probabilidade_residual ?? b.probabilidade_inicial) ?? -1;
+    }
+
     if (aValue === null || aValue === undefined) aValue = '';
     if (bValue === null || bValue === undefined) bValue = '';
     
@@ -472,6 +478,22 @@ export function Riscos() {
           {formatScaleValue(r.probabilidade_inicial)} × {formatScaleValue(r.impacto_inicial)}
         </span>
       ),
+    },
+    {
+      key: 'exposicao',
+      label: 'Exposição',
+      sortable: true,
+      className: 'w-[100px]',
+      render: (_v: any, r: Risco) => {
+        const exp = financialExposure(r.impacto_financeiro, r.probabilidade_residual ?? r.probabilidade_inicial);
+        return exp === null ? (
+          <span className="text-xs text-muted-foreground">—</span>
+        ) : (
+          <span className="font-mono tabular-nums text-xs font-medium text-foreground" title={formatBRL(exp)}>
+            {formatBRL(exp, true)}
+          </span>
+        );
+      },
     },
     {
       key: 'trend',

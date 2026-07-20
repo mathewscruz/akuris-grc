@@ -7015,6 +7015,7 @@ export type Database = {
           empresa_id: string
           historico_aprovacao: Json | null
           id: string
+          impacto_financeiro: number | null
           impacto_inicial: string
           impacto_residual: string | null
           justificativa_aceite: string | null
@@ -7051,6 +7052,7 @@ export type Database = {
           empresa_id: string
           historico_aprovacao?: Json | null
           id?: string
+          impacto_financeiro?: number | null
           impacto_inicial: string
           impacto_residual?: string | null
           justificativa_aceite?: string | null
@@ -7087,6 +7089,7 @@ export type Database = {
           empresa_id?: string
           historico_aprovacao?: Json | null
           id?: string
+          impacto_financeiro?: number | null
           impacto_inicial?: string
           impacto_residual?: string | null
           justificativa_aceite?: string | null

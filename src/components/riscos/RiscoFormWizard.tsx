@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { financialExposure, formatBRL } from './risk-utils';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -30,6 +31,7 @@ const riscoSchema = z.object({
   responsavel: z.string().optional(),
   probabilidade_inicial: z.string().min(1, 'Probabilidade inicial é obrigatória'),
   impacto_inicial: z.string().min(1, 'Impacto inicial é obrigatório'),
+  impacto_financeiro: z.string().optional(),
   causas: z.string().optional(),
   consequencias: z.string().optional(),
   status: z.string().min(1, 'Status é obrigatório'),
@@ -103,6 +105,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
       responsavel: '',
       probabilidade_inicial: '',
       impacto_inicial: '',
+      impacto_financeiro: '',
       probabilidade_residual: '',
       impacto_residual: '',
       status: 'identificado',
@@ -140,6 +143,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
         responsavel: risco.responsavel || '',
         probabilidade_inicial: risco.probabilidade_inicial?.toString() || '',
         impacto_inicial: risco.impacto_inicial?.toString() || '',
+        impacto_financeiro: (risco as any).impacto_financeiro != null ? String((risco as any).impacto_financeiro) : '',
         probabilidade_residual: risco.probabilidade_residual?.toString() || '',
         impacto_residual: risco.impacto_residual?.toString() || '',
         status: risco.status || 'identificado',
@@ -357,6 +361,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
         categoria_id: data.categoria_id || null,
         probabilidade_inicial: data.probabilidade_inicial,
         impacto_inicial: data.impacto_inicial,
+        impacto_financeiro: data.impacto_financeiro ? parseFloat(data.impacto_financeiro) : null,
         nivel_risco_inicial: nivelInicial,
         probabilidade_residual: data.probabilidade_residual || null,
         impacto_residual: data.impacto_residual || null,
@@ -891,6 +896,37 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                   </CardContent>
                 </Card>
               )}
+
+              {/* Impacto financeiro → exposição estimada (priorização por valor) */}
+              <FormField
+                control={form.control}
+                name="impacto_financeiro"
+                render={({ field }) => {
+                  const exp = financialExposure(field.value, watchProbabilidade);
+                  return (
+                    <FormItem>
+                      <FormLabel>Impacto financeiro estimado (R$)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="1000"
+                          placeholder="Ex.: 250000 (perda potencial se o risco ocorrer)"
+                          {...field}
+                        />
+                      </FormControl>
+                      {exp !== null && (
+                        <p className="text-xs text-muted-foreground">
+                          Exposição estimada:{' '}
+                          <span className="font-semibold text-foreground">{formatBRL(exp)}</span>{' '}
+                          (impacto × probabilidade). Usada para priorizar riscos por valor, não só por cor.
+                        </p>
+                      )}
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
+              />
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
