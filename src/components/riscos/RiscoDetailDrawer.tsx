@@ -40,7 +40,9 @@ import {
 import { useRiscoDetail } from '@/hooks/useRiscoDetail';
 import { VincularControleDialog } from '@/components/riscos/VincularControleDialog';
 import { RiscoComentarios } from '@/components/riscos/RiscoComentarios';
-import { MessageSquare } from 'lucide-react';
+import { ScoreRing, ScoreBlock, StatTile, HeaderMeta, SEV_VAR } from '@/components/riscos/RiscoVisuals';
+import { RiscoPerfilCompleto } from '@/components/riscos/RiscoPerfilCompleto';
+import { MessageSquare, Maximize2 } from 'lucide-react';
 
 interface Risco {
   id: string;
@@ -89,6 +91,7 @@ const STATUS_OPTIONS = [
 export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept, onOpenTratamentos, nav }: Props) {
   const { data: detail, isLoading } = useRiscoDetail(risco?.id ?? null);
   const [vincularOpen, setVincularOpen] = useState(false);
+  const [perfilOpen, setPerfilOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [statusSaving, setStatusSaving] = useState(false);
@@ -171,6 +174,10 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
                   </Button>
                 </div>
               )}
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setPerfilOpen(true)}>
+                <Maximize2 className="h-3.5 w-3.5 mr-1" strokeWidth={1.5} />
+                Perfil
+              </Button>
               <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => onEdit(risco)}>
                 <Edit className="h-3.5 w-3.5 mr-1" strokeWidth={1.5} />
                 Editar
@@ -517,6 +524,15 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
           riscoId={risco.id}
           riscoNome={risco.nome}
         />
+
+        <RiscoPerfilCompleto
+          risco={risco as any}
+          open={perfilOpen}
+          onOpenChange={setPerfilOpen}
+          onEdit={(r) => { setPerfilOpen(false); onEdit(r as any); }}
+          onAccept={(r) => { setPerfilOpen(false); onAccept(r as any); }}
+          onOpenTratamentos={(r) => { setPerfilOpen(false); onOpenTratamentos(r as any); }}
+        />
       </SheetContent>
     </Sheet>
   );
@@ -544,73 +560,6 @@ function RiskSparkline({ scores }: { scores: number[] }) {
       <polyline points={pts.join(' ')} fill="none" stroke={stroke} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
       <circle cx={(scores.length - 1) * step} cy={h - ((last - min) / range) * (h - 4) - 2} r={2.5} fill={stroke} />
     </svg>
-  );
-}
-
-const SEV_VAR: Record<Severity, string> = {
-  critico: 'hsl(var(--destructive))',
-  alto: 'hsl(var(--warning))',
-  medio: 'hsl(var(--warning))',
-  baixo: 'hsl(var(--success))',
-};
-
-/** Anel de score circular colorido por severidade (score/25 → %). */
-function ScoreRing({ score, sev }: { score: number; sev: Severity }) {
-  const color = SEV_VAR[sev];
-  const pct = Math.max(4, Math.min(100, (score / 25) * 100));
-  return (
-    <div className="relative h-[68px] w-[68px] shrink-0">
-      <svg viewBox="0 0 36 36" className="h-full w-full -rotate-90">
-        <circle cx="18" cy="18" r="15.5" fill="none" stroke="hsl(var(--muted))" strokeWidth="3" />
-        <circle cx="18" cy="18" r="15.5" fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" pathLength={100} strokeDasharray={`${pct} 100`} />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-xl font-bold tabular-nums leading-none" style={{ color }}>{score || '—'}</span>
-        <span className="text-[8px] uppercase tracking-[1px] text-muted-foreground mt-0.5">score</span>
-      </div>
-    </div>
-  );
-}
-
-/** Bloco de nível (Inerente/Residual) com badge, score e P×I. */
-function ScoreBlock({ label, nivel, score, p, i, emptyLabel }: { label: string; nivel?: string | null; score: number; p?: string; i?: string; emptyLabel?: string }) {
-  return (
-    <div className="flex-1 min-w-0 bg-card border border-border rounded-lg p-3">
-      <div className="text-[10px] font-semibold uppercase tracking-[0.6px] text-muted-foreground">{label}</div>
-      <div className="mt-1.5 flex items-center justify-between gap-2">
-        {nivel ? (
-          <StatusBadge size="sm" {...resolveNivelRiscoTone(nivel)}>{formatStatus(nivel)}</StatusBadge>
-        ) : (
-          <StatusBadge size="sm" tone="neutral">{emptyLabel || '—'}</StatusBadge>
-        )}
-        <span className="text-lg font-semibold tabular-nums">{score || '—'}</span>
-      </div>
-      <div className="text-[11px] text-muted-foreground mt-1">P {p || '—'} × I {i || '—'}</div>
-    </div>
-  );
-}
-
-/** Tile compacto de contexto (exposição, tratamentos, controles). */
-function StatTile({ icon, label, value }: { icon: React.ReactNode; label: string; value: React.ReactNode }) {
-  return (
-    <div className="bg-card border border-border rounded-lg p-3 flex flex-col gap-1">
-      <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.5px] text-muted-foreground [&_svg]:h-3 [&_svg]:w-3">
-        {icon}{label}
-      </span>
-      <span className="text-base font-semibold tabular-nums truncate">{value}</span>
-    </div>
-  );
-}
-
-/** Metadado do cabeçalho: ícone + rótulo + valor. */
-function HeaderMeta({ icon, label, value }: { icon: React.ReactNode; label: string; value: React.ReactNode }) {
-  return (
-    <div className="min-w-0">
-      <div className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.6px] text-muted-foreground [&_svg]:h-3 [&_svg]:w-3">
-        {icon}{label}
-      </div>
-      <div className="text-xs text-foreground mt-1 truncate">{value}</div>
-    </div>
   );
 }
 
