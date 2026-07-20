@@ -1,15 +1,9 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { DialogShell } from "@/components/ui/dialog-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
   Table,
@@ -231,15 +225,16 @@ export function ItensAuditoriaDialog({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
-              Itens de Verificação - {auditoriaNome}
-            </DialogTitle>
-          </DialogHeader>
-
+      <DialogShell
+        open={open}
+        onOpenChange={onOpenChange}
+        icon={FileText}
+        title={`Itens de Verificação — ${auditoriaNome}`}
+        size="xl"
+        noScroll
+        hideFooter
+      >
+        <div className="h-full flex flex-col min-h-0 gap-4 px-6 py-6">
           {/* Progresso */}
           <div className="bg-muted/50 rounded-lg p-4 space-y-2">
             <div className="flex items-center justify-between text-sm">
@@ -249,9 +244,9 @@ export function ItensAuditoriaDialog({
             <Progress value={progressPercent} className="h-2" />
             <div className="flex gap-4 text-xs text-muted-foreground">
               <span>Total: {stats.total}</span>
-              <span className="text-gray-600">Pendente: {stats.pendente}</span>
-              <span className="text-blue-600">Em Andamento: {stats.em_andamento}</span>
-              <span className="text-green-600">Concluído: {stats.concluido}</span>
+              <span className="text-muted-foreground">Pendente: {stats.pendente}</span>
+              <span className="text-info">Em Andamento: {stats.em_andamento}</span>
+              <span className="text-success">Concluído: {stats.concluido}</span>
             </div>
           </div>
 
@@ -348,9 +343,9 @@ export function ItensAuditoriaDialog({
                         <div className="flex flex-col">
                           <span className="font-medium">{item.titulo}</span>
                           {(item as any).is_controle_vinculado ? (
-                            <Badge variant="outline" className="w-fit mt-1 text-[10px] py-0 px-1">
+                            <StatusBadge size="sm" tone="neutral" variant="outline" className="w-fit mt-1">
                               Controle Vinculado
-                            </Badge>
+                            </StatusBadge>
                           ) : (
                             <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
                               <span className="flex items-center gap-1">
@@ -398,8 +393,8 @@ export function ItensAuditoriaDialog({
               </TableBody>
             </Table>
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      </DialogShell>
 
       <ItemAuditoriaFormDialog
         open={isFormOpen}

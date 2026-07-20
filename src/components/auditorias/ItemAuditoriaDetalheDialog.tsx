@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { DialogShell } from "@/components/ui/dialog-shell";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -326,9 +325,9 @@ export function ItemAuditoriaDetalheDialog({
         <div className="space-y-4">
           <div className="flex items-start justify-between gap-4">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="outline" className="font-mono">
+              <StatusBadge size="md" tone="neutral" variant="outline" className="font-mono">
                 {item.codigo}
-              </Badge>
+              </StatusBadge>
               <StatusBadge size="md" {...resolvePrioridadeTone(item.prioridade)}>
                 {formatStatus(item.prioridade)}
               </StatusBadge>

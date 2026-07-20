@@ -2,17 +2,10 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEmpresaId } from "@/hooks/useEmpresaId";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { DialogShell } from "@/components/ui/dialog-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Search, Shield } from 'lucide-react';
 import { toast } from "sonner";
@@ -138,15 +131,31 @@ export function ImportarControlesDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />
-            Importar Controles Existentes
-          </DialogTitle>
-        </DialogHeader>
-
+    <DialogShell
+      open={open}
+      onOpenChange={onOpenChange}
+      icon={Shield}
+      title="Importar Controles Existentes"
+      size="md"
+      noScroll
+      footer={
+        <div className="flex items-center justify-between w-full">
+          <span className="text-sm text-muted-foreground">
+            {selectedIds.length} controle(s) selecionado(s)
+          </span>
+          <div className="flex gap-2">
+            <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
+              Cancelar
+            </Button>
+            <Button size="sm" onClick={handleImport} disabled={selectedIds.length === 0 || isImporting}>
+              {isImporting && <AkurisPulse size={16} className="mr-2" />}
+              Importar Selecionados
+            </Button>
+          </div>
+        </div>
+      }
+    >
+      <div className="h-full flex flex-col min-h-0 gap-4 px-6 py-6">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -191,9 +200,9 @@ export function ImportarControlesDialog({
                         <span className="font-medium truncate">{controle.nome}</span>
                         {getCriticidadeBadge(controle.criticidade)}
                         {isJaVinculado && (
-                          <Badge variant="outline" className="text-xs">
+                          <StatusBadge size="sm" tone="neutral" variant="outline">
                             Já vinculado
-                          </Badge>
+                          </StatusBadge>
                         )}
                       </div>
                       {controle.descricao && (
@@ -216,22 +225,7 @@ export function ImportarControlesDialog({
             </div>
           )}
         </ScrollArea>
-
-        <DialogFooter className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">
-            {selectedIds.length} controle(s) selecionado(s)
-          </span>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={handleImport} disabled={selectedIds.length === 0 || isImporting}>
-              {isImporting && <AkurisPulse size={16} className="mr-2" />}
-              Importar Selecionados
-            </Button>
-          </div>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </DialogShell>
   );
 }

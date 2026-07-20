@@ -1,5 +1,4 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { 
@@ -55,9 +54,9 @@ export function AuditoriaCardAccordion({
 
           {/* Badges */}
           <div className="flex items-center gap-1.5 flex-1 flex-wrap">
-            <Badge variant="outline" className="text-[11px] py-0 h-5 px-2 whitespace-nowrap">
+            <StatusBadge size="sm" tone="neutral" variant="outline" className="whitespace-nowrap">
               {formatStatus(auditoria.tipo)}
-            </Badge>
+            </StatusBadge>
             <StatusBadge size="sm" {...resolveAuditoriaStatusTone(auditoria.status)}>
               {formatStatus(auditoria.status)}
             </StatusBadge>
@@ -74,9 +73,9 @@ export function AuditoriaCardAccordion({
             >
               <ClipboardList className="h-3 w-3" />
               <span>Itens</span>
-              <Badge variant="secondary" className="h-4 px-1 text-[10px] ml-1">
+              <StatusBadge size="sm" tone="neutral" className="ml-1">
                 {counts.itensConcluidos}/{counts.itens}
-              </Badge>
+              </StatusBadge>
             </Button>
 
             {/* Barra de progresso compacta */}
@@ -89,16 +88,14 @@ export function AuditoriaCardAccordion({
 
             {/* Data e Auditor */}
             {auditoria.data_inicio && (
-              <Badge variant="outline" className="text-[11px] py-0 h-5 px-2">
-                <Calendar className="h-3 w-3 mr-1" />
+              <StatusBadge size="sm" tone="neutral" variant="outline" icon={<Calendar className="h-3 w-3" />}>
                 {formatDateOnly(auditoria.data_inicio)}
-              </Badge>
+              </StatusBadge>
             )}
             {auditorNome && (
-              <Badge variant="outline" className="text-[11px] py-0 h-5 px-2">
-                <User className="h-3 w-3 mr-1" />
+              <StatusBadge size="sm" tone="neutral" variant="outline" icon={<User className="h-3 w-3" />}>
                 <span className="max-w-[100px] truncate">{auditorNome}</span>
-              </Badge>
+              </StatusBadge>
             )}
           </div>
 
