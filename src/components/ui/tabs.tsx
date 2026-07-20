@@ -5,27 +5,23 @@ import { cn } from "@/lib/utils"
 
 const Tabs = TabsPrimitive.Root
 
+/**
+ * TabsList — trilho segmentado (bg-muted) que contém as abas. A aba ativa vira
+ * uma pílula branca (bg-card) com sombra sutil. Padrão único de abas do Akuris.
+ */
 const TabsList = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.List>,
   React.ComponentPropsWithoutRef<typeof TabsPrimitive.List>
->(({ className, children, ...props }, ref) => {
-  return (
-    <div
-      className="relative w-full min-w-0 max-w-full border-b border-border"
-    >
-      <TabsPrimitive.List
-        ref={ref}
-        className={cn(
-          "flex h-auto w-full min-w-0 flex-wrap items-center justify-start gap-x-1 gap-y-1 bg-transparent pb-1 text-muted-foreground",
-          className,
-        )}
-        {...props}
-      >
-        {children}
-      </TabsPrimitive.List>
-    </div>
-  )
-})
+>(({ className, ...props }, ref) => (
+  <TabsPrimitive.List
+    ref={ref}
+    className={cn(
+      "inline-flex items-center gap-0.5 rounded-lg bg-muted/60 p-1 text-muted-foreground",
+      className,
+    )}
+    {...props}
+  />
+))
 TabsList.displayName = TabsPrimitive.List.displayName
 
 const TabsTrigger = React.forwardRef<
@@ -35,7 +31,7 @@ const TabsTrigger = React.forwardRef<
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      "relative inline-flex min-w-0 flex-none items-center justify-center whitespace-normal break-words px-3 py-3 text-center text-xs font-medium leading-tight ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 text-muted-foreground hover:text-foreground data-[state=active]:text-primary data-[state=active]:font-semibold data-[state=active]:after:absolute data-[state=active]:after:bottom-0 data-[state=active]:after:left-0 data-[state=active]:after:right-0 data-[state=active]:after:h-0.5 data-[state=active]:after:bg-primary data-[state=active]:after:rounded-t-sm sm:px-4 sm:text-sm lg:px-6",
+      "inline-flex min-w-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium leading-tight ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 text-muted-foreground hover:text-foreground/90 data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:font-semibold",
       className,
     )}
     {...props}
