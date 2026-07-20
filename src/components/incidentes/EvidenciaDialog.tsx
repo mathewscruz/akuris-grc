@@ -1,14 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
+import { DialogShell } from '@/components/ui/dialog-shell';
 import {
   Form,
   FormControl,
@@ -178,25 +170,29 @@ export function EvidenciaDialog({ incidenteId, evidencia, onSuccess, trigger, ex
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger || (
-          <Button size="sm" variant="outline">
-            <FileText className="mr-2 h-4 w-4" />
-            Nova Evidência
-          </Button>
-        )}
-      </DialogTrigger>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>
-            {evidencia ? 'Editar Evidência' : 'Nova Evidência'}
-          </DialogTitle>
-          <DialogDescription>
-            {evidencia ? 'Atualize os dados da evidência.' : 'Registre uma evidência relacionada ao incidente.'}
-          </DialogDescription>
-        </DialogHeader>
-
+    <>
+      {!isControlled && (
+        <span onClick={() => setOpen(true)} className="inline-flex">
+          {trigger || (
+            <Button size="sm" variant="outline">
+              <FileText className="mr-2 h-4 w-4" />
+              Nova Evidência
+            </Button>
+          )}
+        </span>
+      )}
+      <DialogShell
+        open={open}
+        onOpenChange={setOpen}
+        icon={FileText}
+        title={evidencia ? 'Editar Evidência' : 'Nova Evidência'}
+        description={evidencia ? 'Atualize os dados da evidência.' : 'Registre uma evidência relacionada ao incidente.'}
+        size="md"
+        onSubmit={form.handleSubmit(onSubmit)}
+        submitLabel={evidencia ? 'Atualizar' : 'Registrar'}
+        isSubmitting={loading || uploading}
+        isDirty={form.formState.isDirty || !!selectedFile}
+      >
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
@@ -291,17 +287,9 @@ export function EvidenciaDialog({ incidenteId, evidencia, onSuccess, trigger, ex
               )}
             />
 
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={loading || uploading}>
-                {uploading ? 'Enviando arquivo...' : loading ? 'Salvando...' : evidencia ? 'Atualizar' : 'Registrar'}
-              </Button>
-            </DialogFooter>
           </form>
         </Form>
-      </DialogContent>
-    </Dialog>
+      </DialogShell>
+    </>
   );
 }

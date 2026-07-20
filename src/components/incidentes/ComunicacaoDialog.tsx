@@ -1,14 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
+import { DialogShell } from '@/components/ui/dialog-shell';
 import {
   Form,
   FormControl,
@@ -158,25 +150,29 @@ export function ComunicacaoDialog({ incidenteId, comunicacao, onSuccess, trigger
   ];
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger || (
-          <Button size="sm" variant="outline">
-            <MessageSquare className="mr-2 h-4 w-4" />
-            Nova Comunicação
-          </Button>
-        )}
-      </DialogTrigger>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>
-            {comunicacao ? 'Editar Comunicação' : 'Nova Comunicação'}
-          </DialogTitle>
-          <DialogDescription>
-            {comunicacao ? 'Atualize os dados da comunicação.' : 'Registre uma comunicação relacionada ao incidente.'}
-          </DialogDescription>
-        </DialogHeader>
-
+    <>
+      {!isControlled && (
+        <span onClick={() => setOpen(true)} className="inline-flex">
+          {trigger || (
+            <Button size="sm" variant="outline">
+              <MessageSquare className="mr-2 h-4 w-4" />
+              Nova Comunicação
+            </Button>
+          )}
+        </span>
+      )}
+      <DialogShell
+        open={open}
+        onOpenChange={setOpen}
+        icon={MessageSquare}
+        title={comunicacao ? 'Editar Comunicação' : 'Nova Comunicação'}
+        description={comunicacao ? 'Atualize os dados da comunicação.' : 'Registre uma comunicação relacionada ao incidente.'}
+        size="md"
+        onSubmit={form.handleSubmit(onSubmit)}
+        submitLabel={comunicacao ? 'Atualizar' : 'Registrar'}
+        isSubmitting={loading}
+        isDirty={form.formState.isDirty}
+      >
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -332,17 +328,9 @@ export function ComunicacaoDialog({ incidenteId, comunicacao, onSuccess, trigger
               )}
             />
 
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={loading}>
-                {loading ? 'Salvando...' : comunicacao ? 'Atualizar' : 'Registrar'}
-              </Button>
-            </DialogFooter>
           </form>
         </Form>
-      </DialogContent>
-    </Dialog>
+      </DialogShell>
+    </>
   );
 }

@@ -8,7 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Badge } from '@/components/ui/badge';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { resolveCriticidadeTone } from '@/lib/status-tone';
 import { CalendarIcon, Plus, AlertTriangle, Shield, Database, FileText, Users, Layers } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -52,12 +53,6 @@ interface IncidenteDialogProps {
   onExternalOpenChange?: (open: boolean) => void;
 }
 
-const CRITICIDADE_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-  baixa: 'outline',
-  media: 'secondary',
-  alta: 'default',
-  critica: 'destructive',
-};
 
 const TIPO_LABELS: Record<string, string> = {
   seguranca: 'Segurança',
@@ -535,9 +530,9 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
       <WizardSummaryRow
         label="Criticidade"
         value={
-          <Badge variant={CRITICIDADE_VARIANT[watched.criticidade]} className="text-[10px]">
+          <StatusBadge size="sm" {...resolveCriticidadeTone(watched.criticidade)}>
             {formatStatus(watched.criticidade)}
-          </Badge>
+          </StatusBadge>
         }
       />
       <WizardSummaryRow

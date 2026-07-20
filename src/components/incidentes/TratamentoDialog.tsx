@@ -1,14 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
+import { DialogShell } from '@/components/ui/dialog-shell';
 import {
   Form,
   FormControl,
@@ -164,27 +156,29 @@ export function TratamentoDialog({ incidenteId, tratamento, onSuccess, trigger, 
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <>
       {!isControlled && (
-        <DialogTrigger asChild>
+        <span onClick={() => setOpen(true)} className="inline-flex">
           {trigger || (
             <Button size="sm">
               <Plus className="mr-2 h-4 w-4" />
               Nova Ação
             </Button>
           )}
-        </DialogTrigger>
+        </span>
       )}
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>
-            {tratamento ? 'Editar Ação de Tratamento' : 'Nova Ação de Tratamento'}
-          </DialogTitle>
-          <DialogDescription>
-            {tratamento ? 'Atualize a ação de tratamento.' : 'Registre uma nova ação para tratar o incidente.'}
-          </DialogDescription>
-        </DialogHeader>
-
+      <DialogShell
+        open={open}
+        onOpenChange={setOpen}
+        icon={Plus}
+        title={tratamento ? 'Editar Ação de Tratamento' : 'Nova Ação de Tratamento'}
+        description={tratamento ? 'Atualize a ação de tratamento.' : 'Registre uma nova ação para tratar o incidente.'}
+        size="md"
+        onSubmit={form.handleSubmit(onSubmit)}
+        submitLabel={tratamento ? 'Atualizar' : 'Registrar'}
+        isSubmitting={loading}
+        isDirty={form.formState.isDirty}
+      >
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
@@ -330,17 +324,9 @@ export function TratamentoDialog({ incidenteId, tratamento, onSuccess, trigger, 
               )}
             />
 
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={loading}>
-                {loading ? 'Salvando...' : tratamento ? 'Atualizar' : 'Registrar'}
-              </Button>
-            </DialogFooter>
           </form>
         </Form>
-      </DialogContent>
-    </Dialog>
+      </DialogShell>
+    </>
   );
 }
