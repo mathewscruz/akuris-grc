@@ -16,7 +16,6 @@ import { AIRecommendationsButton } from '@/components/gap-analysis/AIRecommendat
 import { FrameworkOnboarding } from '@/components/gap-analysis/FrameworkOnboarding';
 import { EvidenceLibraryHub } from '@/components/gap-analysis/EvidenceLibraryHub';
 import {
-  AssessmentInsightsStrip,
   SectionHeatmap,
   PriorityQueueCard,
   ConformityCard,
@@ -27,7 +26,6 @@ import {
   DocumentsHero,
   RemediationTabV2,
   SoATabV2,
-  type AssessmentInsight,
   type HeatCell,
 } from '@/components/gap-analysis/v2';
 import { useDocGen } from '@/contexts/DocGenContext';
@@ -334,50 +332,10 @@ function GapAnalysisFrameworkDetailInner() {
               />
             ) : (
               <>
-                {/* Onda 3+ — Strip de insights da avaliação */}
-                {(() => {
-                  const naoConformeCount = categoryData.reduce((s, c) => s + c.nao_conforme, 0);
-                  const parcialCount = categoryData.reduce((s, c) => s + c.parcial, 0);
-                  const coverage = totalRequirements > 0
-                    ? Math.round((evaluatedRequirements / totalRequirements) * 100)
-                    : 0;
-                  const insights: AssessmentInsight[] = [
-                    {
-                      eyebrow: 'COBERTURA',
-                      title: 'avaliados',
-                      value: `${coverage}%`,
-                      hint: `${evaluatedRequirements} de ${totalRequirements} requisitos passaram pela triagem.`,
-                      tone: coverage >= 70 ? 'positive' : coverage >= 40 ? 'warning' : 'neutral',
-                      ctaLabel: coverage < 100 && totalRequirements > 0 ? 'Continuar avaliação' : undefined,
-                      onCta: coverage < 100 ? () => {
-                        document.getElementById('reqs-table')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                      } : undefined,
-                    },
-                    {
-                      eyebrow: 'CRITICIDADE',
-                      title: 'não conformes',
-                      value: naoConformeCount,
-                      hint: naoConformeCount > 0
-                        ? `Crie planos de ação para fechar os gaps identificados.`
-                        : `Nenhum gap crítico no momento — mantenha a vigilância.`,
-                      tone: naoConformeCount > 0 ? 'critical' : 'positive',
-                      ctaLabel: naoConformeCount > 0 ? 'Ver remediação' : undefined,
-                      onCta: naoConformeCount > 0 ? () => setActiveTab('remediacao') : undefined,
-                    },
-                    {
-                      eyebrow: 'PARCIAIS',
-                      title: 'em evolução',
-                      value: parcialCount,
-                      hint: parcialCount > 0
-                        ? `Requisitos parcialmente atendidos — próximos a fechar.`
-                        : `Nenhum requisito parcialmente atendido no momento.`,
-                      tone: parcialCount > 0 ? 'warning' : 'neutral',
-                    },
-                  ];
-                  return <AssessmentInsightsStrip insights={insights} />;
-                })()}
-
-                {/* Onda 5+ — Conformidade + Fila de Prioridade lado a lado */}
+                {/* Conformidade + Fila de Prioridade lado a lado.
+                    A antiga faixa de 3 tiles foi removida — os mesmos números
+                    (cobertura, não-conformes, parciais) já vivem no ConformityCard,
+                    que agora carrega também os CTAs contextuais. */}
                 <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.6fr] gap-4">
                   <ConformityCard
                     overallScore={overallScore}
@@ -387,6 +345,16 @@ function GapAnalysisFrameworkDetailInner() {
                     parcial={categoryData.reduce((s, c) => s + c.parcial, 0)}
                     naoConforme={categoryData.reduce((s, c) => s + c.nao_conforme, 0)}
                     naoAplicavel={categoryData.reduce((s, c) => s + c.nao_aplicavel, 0)}
+                    onContinue={
+                      evaluatedRequirements < totalRequirements
+                        ? () => document.getElementById('reqs-table')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                        : undefined
+                    }
+                    onGoToRemediation={
+                      categoryData.reduce((s, c) => s + c.nao_conforme, 0) > 0
+                        ? () => setActiveTab('remediacao')
+                        : undefined
+                    }
                   />
                   {empresaId && evaluatedRequirements > 0 ? (
                     <PriorityQueueCard

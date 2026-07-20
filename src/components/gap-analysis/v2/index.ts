@@ -16,8 +16,6 @@ export { SectionHead } from './SectionHead';
 export { MaturityHero } from './MaturityHero';
 export { AIRecommendedTile } from './AIRecommendedTile';
 export { ActiveFrameworkRow } from './ActiveFrameworkRow';
-export { AssessmentInsightsStrip } from './AssessmentInsightsStrip';
-export type { AssessmentInsight } from './AssessmentInsightsStrip';
 export { SectionHeatmap } from './SectionHeatmap';
 export type { HeatCell } from './SectionHeatmap';
 export { PriorityQueueCard } from './PriorityQueueCard';
