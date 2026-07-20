@@ -38,7 +38,7 @@ interface RiscoAceito {
   responsavel_nome?: string;
 }
 
-export default function RiscosAceite() {
+export default function RiscosAceite({ embedded = false }: { embedded?: boolean } = {}) {
   const { profile } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -282,10 +282,12 @@ export default function RiscosAceite() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Aceite de Risco"
-        description="Gerencie riscos aceitos formalmente, suas revisões e fluxo de aprovação"
-      />
+      {!embedded && (
+        <PageHeader
+          title="Aceite de Risco"
+          description="Gerencie riscos aceitos formalmente, suas revisões e fluxo de aprovação"
+        />
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard title="Riscos Aceitos" value={totalAceitos} description="Total aprovados" icon={<CheckCircle />} variant="success" drillDown="riscos_aceite" showAccent emptyHint="Riscos aceitos formalmente aparecerão aqui." />

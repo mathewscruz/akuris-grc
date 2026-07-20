@@ -38,6 +38,7 @@ import { MatrizDialog } from '@/components/riscos/MatrizDialog';
 import { CategoriasDialog } from '@/components/riscos/CategoriasDialog';
 import { RiscoAnexosIcone } from '@/components/riscos/RiscoAnexosIcone';
 import { RiscosTabs } from '@/components/riscos/RiscosTabs';
+import RiscosAceite from '@/pages/RiscosAceite';
 import { RiscoDetailDrawer } from '@/components/riscos/RiscoDetailDrawer';
 import { AppetiteBanner } from '@/components/riscos/overview/AppetiteBanner';
 import { RiskKpiQuad } from '@/components/riscos/overview/RiskKpiQuad';
@@ -820,7 +821,7 @@ export function Riscos() {
             </div>
           );
 
-          return <RiscosTabs overview={overviewNode} matrix={matrixNode} table={tableNode} />;
+          return <RiscosTabs overview={overviewNode} matrix={matrixNode} table={tableNode} aceite={<RiscosAceite embedded />} />;
         })()}
         
         {/* Dialogs */}

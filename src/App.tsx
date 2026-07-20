@@ -19,7 +19,6 @@ const Ativos = React.lazy(() => import('@/pages/Ativos'));
 const AtivosLicencas = React.lazy(() => import('@/pages/AtivosLicencas'));
 const AtivosChaves = React.lazy(() => import('@/pages/AtivosChaves'));
 const Riscos = React.lazy(() => import('@/pages/Riscos').then(m => ({ default: m.Riscos })));
-const RiscosAceite = React.lazy(() => import('@/pages/RiscosAceite'));
 const Continuidade = React.lazy(() => import('@/pages/Continuidade'));
 const GapAnalysisFrameworks = React.lazy(() => import('@/pages/GapAnalysisFrameworks'));
 const GapAnalysisFrameworkDetail = React.lazy(() => import('@/pages/GapAnalysisFrameworkDetail'));
@@ -185,13 +184,8 @@ function App() {
                 </ProtectedRoute>
               </Layout>
             } />
-            <Route path="/riscos/aceite" element={
-              <Layout>
-                <ProtectedRoute moduleName="riscos" fallbackToRoleCheck={false}>
-                  <RiscosAceite />
-                </ProtectedRoute>
-              </Layout>
-            } />
+            {/* Aceite de Risco agora é uma aba dentro de /riscos — mantém o link antigo funcionando */}
+            <Route path="/riscos/aceite" element={<Navigate to="/riscos?view=aceite" replace />} />
             <Route path="/continuidade" element={
               <Layout>
                 <ProtectedRoute moduleName="continuidade" fallbackToRoleCheck={false}>

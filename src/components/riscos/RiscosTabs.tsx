@@ -5,19 +5,20 @@
 import { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { LayoutGrid, Grid3x3, Table as TableIcon } from 'lucide-react';
+import { LayoutGrid, Grid3x3, Table as TableIcon, ShieldCheck } from 'lucide-react';
 
-export type RiscosView = 'overview' | 'matrix' | 'table';
+export type RiscosView = 'overview' | 'matrix' | 'table' | 'aceite';
 const STORAGE_KEY = 'akuris.riscos.view';
-const VALID: RiscosView[] = ['overview', 'matrix', 'table'];
+const VALID: RiscosView[] = ['overview', 'matrix', 'table', 'aceite'];
 
 interface Props {
   overview: React.ReactNode;
   matrix: React.ReactNode;
   table: React.ReactNode;
+  aceite: React.ReactNode;
 }
 
-export function RiscosTabs({ overview, matrix, table }: Props) {
+export function RiscosTabs({ overview, matrix, table, aceite }: Props) {
   const [searchParams, setSearchParams] = useSearchParams();
   const urlView = searchParams.get('view') as RiscosView | null;
   const stored = (typeof window !== 'undefined' ? (localStorage.getItem(STORAGE_KEY) as RiscosView | null) : null);
@@ -65,10 +66,18 @@ export function RiscosTabs({ overview, matrix, table }: Props) {
           <TableIcon className="h-3.5 w-3.5" strokeWidth={1.5} />
           Tabela
         </TabsTrigger>
+        <TabsTrigger
+          value="aceite"
+          className="text-xs gap-1.5 px-3 py-2.5 -mb-px rounded-none border-b-2 border-transparent bg-transparent shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:font-semibold text-muted-foreground hover:text-foreground/85 transition-colors"
+        >
+          <ShieldCheck className="h-3.5 w-3.5" strokeWidth={1.5} />
+          Aceite
+        </TabsTrigger>
       </TabsList>
       <TabsContent value="overview" className="mt-5 data-[state=active]:animate-fade-in">{overview}</TabsContent>
       <TabsContent value="matrix" className="mt-5 data-[state=active]:animate-fade-in">{matrix}</TabsContent>
       <TabsContent value="table" className="mt-5 data-[state=active]:animate-fade-in">{table}</TabsContent>
+      <TabsContent value="aceite" className="mt-5 data-[state=active]:animate-fade-in">{aceite}</TabsContent>
     </Tabs>
   );
 }

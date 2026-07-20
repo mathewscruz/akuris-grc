@@ -98,14 +98,7 @@ const getMenuSections = (t: (key: string) => string): MenuSection[] => [
     id: 'grc-core',
     label: t('sidebar.sectionGrcCore'),
     items: [
-      {
-        title: t('sidebar.riskManagement'),
-        icon: RiscosIcon,
-        subItems: [
-          { title: t('sidebar.risks'), url: '/riscos', icon: RiscosIcon, moduleName: 'riscos' },
-          { title: t('sidebar.riskAcceptance'), url: '/riscos/aceite', icon: ShieldCheck, moduleName: 'riscos' },
-        ],
-      },
+      { title: t('sidebar.riskManagement'), url: '/riscos', icon: RiscosIcon, moduleName: 'riscos' },
       {
         title: t('sidebar.governance'),
         icon: FileCheck,
