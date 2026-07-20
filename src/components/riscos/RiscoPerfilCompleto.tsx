@@ -104,21 +104,22 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
         <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[1fr_380px]">
           {/* Resumo (esquerda) */}
           <aside className="relative border-b lg:border-b-0 lg:border-r border-border overflow-y-auto">
-            {/* Degradê suave vermelho → amarelo → verde */}
+            {/* Degradê suave vermelho → amarelo → verde: faixa fina + brilho no topo
+                que se dissolve (não tinge o fundo, que segue igual ao resto). */}
             <div
               aria-hidden
-              className="pointer-events-none absolute inset-0 opacity-[0.06]"
-              style={{ background: 'linear-gradient(135deg, hsl(var(--destructive)) 0%, hsl(var(--warning)) 45%, hsl(var(--success)) 100%)' }}
+              className="pointer-events-none absolute inset-x-0 top-0 h-1.5"
+              style={{ background: 'linear-gradient(90deg, hsl(var(--destructive)), hsl(var(--warning)), hsl(var(--success)))' }}
             />
             <div
               aria-hidden
-              className="pointer-events-none absolute inset-x-0 top-0 h-1"
-              style={{ background: 'linear-gradient(90deg, hsl(var(--destructive)), hsl(var(--warning)), hsl(var(--success)))' }}
+              className="pointer-events-none absolute inset-x-0 top-0 h-36"
+              style={{ background: 'linear-gradient(160deg, hsl(var(--destructive) / 0.10), hsl(var(--warning) / 0.06) 45%, transparent 80%)' }}
             />
             <div className="relative p-6 space-y-6">
             <div className="flex items-center gap-4">
               <ScoreRing score={scoreAtual} sev={sevAtual} size={84} />
-              <div className="min-w-0 space-y-1.5">
+              <div className="min-w-0 flex flex-col items-start gap-1.5">
                 <StatusBadge size="sm" {...resolveNivelRiscoTone(risco.nivel_risco_residual || risco.nivel_risco_inicial)}>
                   {formatStatus(risco.nivel_risco_residual || risco.nivel_risco_inicial)}
                 </StatusBadge>
@@ -194,15 +195,15 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
 
           {/* Abas (direita) */}
           <Tabs defaultValue="tratamentos" className="min-h-0 flex flex-col">
-            <div className="px-6 pt-4">
-              <TabsList>
-                <TabsTrigger value="tratamentos" className="gap-1.5"><Shield className="h-3.5 w-3.5" strokeWidth={1.5} />Tratamentos</TabsTrigger>
-                <TabsTrigger value="historico" className="gap-1.5"><History className="h-3.5 w-3.5" strokeWidth={1.5} />Histórico</TabsTrigger>
-                <TabsTrigger value="controles" className="gap-1.5"><ShieldCheck className="h-3.5 w-3.5" strokeWidth={1.5} />Controles</TabsTrigger>
-                <TabsTrigger value="comentarios" className="gap-1.5"><MessageSquare className="h-3.5 w-3.5" strokeWidth={1.5} />Comentários</TabsTrigger>
+            <div className="px-4 pt-4">
+              <TabsList className="w-full">
+                <TabsTrigger value="tratamentos" className="flex-1 min-w-0 gap-1 px-1.5 text-[11px]"><Shield className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} /><span className="truncate">Tratam.</span></TabsTrigger>
+                <TabsTrigger value="historico" className="flex-1 min-w-0 gap-1 px-1.5 text-[11px]"><History className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} /><span className="truncate">Histórico</span></TabsTrigger>
+                <TabsTrigger value="controles" className="flex-1 min-w-0 gap-1 px-1.5 text-[11px]"><ShieldCheck className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} /><span className="truncate">Controles</span></TabsTrigger>
+                <TabsTrigger value="comentarios" className="flex-1 min-w-0 gap-1 px-1.5 text-[11px]"><MessageSquare className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} /><span className="truncate">Coment.</span></TabsTrigger>
               </TabsList>
             </div>
-            <div className="flex-1 overflow-y-auto px-6 py-5">
+            <div className="flex-1 overflow-y-auto px-4 py-5">
               <TabsContent value="tratamentos" className="m-0 space-y-2.5">
                 {isLoading ? <div className="flex justify-center py-10"><AkurisPulse size={32} /></div>
                   : trat.length === 0 ? <div className="py-10 text-center text-sm text-muted-foreground">Nenhum tratamento cadastrado.</div>
