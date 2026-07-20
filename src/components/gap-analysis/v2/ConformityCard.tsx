@@ -66,7 +66,7 @@ export function ConformityCard({
   return (
     <article className="relative overflow-hidden rounded-2xl border border-border bg-card p-5">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-foreground">Conformidade</h3>
+        <h3 className="text-sm font-semibold text-foreground">Score de aderência</h3>
         <StatusBadge tone="info" size="sm">
           Nível {maturity.id} — {maturity.label}
         </StatusBadge>
@@ -105,7 +105,7 @@ export function ConformityCard({
               {score}<span className="text-base text-muted-foreground">%</span>
             </span>
             <span className="text-[9px] font-sans uppercase tracking-wider text-muted-foreground mt-1">
-              Conformidade
+              Aderência
             </span>
           </div>
         </div>
