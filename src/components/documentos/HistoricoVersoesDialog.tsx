@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DialogShell } from "@/components/ui/dialog-shell";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge, type StatusTone } from "@/components/ui/status-badge";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { FileText, Download, Eye, CheckCircle, Clock, User, Calendar, AlertCircle } from 'lucide-react';
@@ -136,30 +135,29 @@ export const HistoricoVersoesDialog = ({
   };
 
   const getStatusBadge = (status: string) => {
-    const statusConfig: Record<string, { label: string; variant: any }> = {
-      ativo: { label: 'Ativo', variant: 'default' },
-      inativo: { label: 'Inativo', variant: 'secondary' },
-      pendente_aprovacao: { label: 'Pendente', variant: 'warning' },
-      rejeitado: { label: 'Rejeitado', variant: 'destructive' },
+    const statusConfig: Record<string, { label: string; tone: StatusTone }> = {
+      ativo: { label: 'Ativo', tone: 'success' },
+      inativo: { label: 'Inativo', tone: 'neutral' },
+      pendente_aprovacao: { label: 'Pendente', tone: 'warning' },
+      rejeitado: { label: 'Rejeitado', tone: 'destructive' },
     };
 
-    const config = statusConfig[status] || { label: status, variant: 'secondary' };
-    return <Badge variant={config.variant}>{config.label}</Badge>;
+    const config = statusConfig[status] || { label: status, tone: 'neutral' as StatusTone };
+    return <StatusBadge size="sm" tone={config.tone}>{config.label}</StatusBadge>;
   };
 
   if (!documento) return null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[85vh]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Histórico de Versões - {documento.nome}
-          </DialogTitle>
-        </DialogHeader>
-
-        <ScrollArea className="h-[calc(85vh-120px)]">
+    <DialogShell
+      open={open}
+      onOpenChange={onOpenChange}
+      icon={FileText}
+      title={`Histórico de Versões — ${documento.nome}`}
+      size="lg"
+      hideFooter
+    >
+        <div>
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <AkurisPulse size={32} className="text-muted-foreground" />
@@ -259,7 +257,7 @@ export const HistoricoVersoesDialog = ({
                             <div className="flex items-center gap-2">
                               <h3 className="font-semibold">Versão {versao.versao}</h3>
                               {getStatusBadge(versao.status)}
-                              <Badge variant="secondary">Arquivada</Badge>
+                              <StatusBadge size="sm" tone="neutral">Arquivada</StatusBadge>
                             </div>
                             <p className="text-sm text-muted-foreground flex items-center gap-1">
                               <Calendar className="h-3 w-3" />
@@ -350,8 +348,7 @@ export const HistoricoVersoesDialog = ({
               )}
             </div>
           )}
-        </ScrollArea>
-      </DialogContent>
-    </Dialog>
+        </div>
+    </DialogShell>
   );
 };

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DialogShell } from '@/components/ui/dialog-shell';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -37,6 +38,7 @@ export function ComentariosDialog({ open, onOpenChange, documento }: Comentarios
   const [sending, setSending] = useState(false);
   const [novoComentario, setNovoComentario] = useState('');
   const [currentUserId, setCurrentUserId] = useState<string>('');
+  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: string }>({ open: false, id: '' });
   const { toast } = useToast();
 
   useEffect(() => {
@@ -153,12 +155,12 @@ export function ComentariosDialog({ open, onOpenChange, documento }: Comentarios
     }
   };
 
-  const handleDelete = async (comentarioId: string) => {
+  const handleDelete = async () => {
     try {
       const { error } = await supabase
         .from('documentos_comentarios')
         .delete()
-        .eq('id', comentarioId);
+        .eq('id', deleteConfirm.id);
 
       if (error) throw error;
 
@@ -175,6 +177,8 @@ export function ComentariosDialog({ open, onOpenChange, documento }: Comentarios
         description: "Tente novamente em alguns instantes.",
         variant: "destructive",
       });
+    } finally {
+      setDeleteConfirm({ open: false, id: '' });
     }
   };
 
@@ -188,18 +192,16 @@ export function ComentariosDialog({ open, onOpenChange, documento }: Comentarios
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <MessageSquare className="h-5 w-5" />
-            Comentários do Documento
-          </DialogTitle>
-          <DialogDescription>
-            Comentários sobre o documento "{documento.nome}".
-          </DialogDescription>
-        </DialogHeader>
-
+    <>
+    <DialogShell
+      open={open}
+      onOpenChange={onOpenChange}
+      icon={MessageSquare}
+      title="Comentários do Documento"
+      description={`Comentários sobre o documento "${documento.nome}".`}
+      size="md"
+      hideFooter
+    >
         <div className="space-y-4">
           {/* Lista de comentários */}
           <div className="space-y-4 max-h-96 overflow-y-auto">
@@ -237,8 +239,8 @@ export function ComentariosDialog({ open, onOpenChange, documento }: Comentarios
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleDelete(comentario.id)}
-                              className="text-red-600 hover:text-red-700"
+                              onClick={() => setDeleteConfirm({ open: true, id: comentario.id })}
+                              className="text-destructive hover:text-destructive"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -281,13 +283,18 @@ export function ComentariosDialog({ open, onOpenChange, documento }: Comentarios
             </div>
           </form>
         </div>
+    </DialogShell>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Fechar
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <ConfirmDialog
+      open={deleteConfirm.open}
+      onOpenChange={(open) => setDeleteConfirm(prev => ({ ...prev, open }))}
+      title="Excluir Comentário"
+      description="Tem certeza que deseja excluir este comentário? Esta ação não pode ser desfeita."
+      confirmText="Excluir"
+      cancelText="Cancelar"
+      variant="destructive"
+      onConfirm={handleDelete}
+    />
+    </>
   );
 }

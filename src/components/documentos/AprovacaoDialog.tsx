@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
+import { DialogShell } from '@/components/ui/dialog-shell';
+import { StatusBadge, type StatusTone } from '@/components/ui/status-badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -55,10 +55,10 @@ interface AprovacaoDialogProps {
   empresaId?: string | null;
 }
 
-const STATUS_INFO: Record<string, { label: string; icon: typeof Clock; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
-  pendente: { label: 'Pendente', icon: Clock, variant: 'secondary' },
-  aprovado: { label: 'Aprovado', icon: CheckCircle, variant: 'default' },
-  rejeitado: { label: 'Rejeitado', icon: XCircle, variant: 'destructive' },
+const STATUS_INFO: Record<string, { label: string; icon: typeof Clock; tone: StatusTone }> = {
+  pendente: { label: 'Pendente', icon: Clock, tone: 'warning' },
+  aprovado: { label: 'Aprovado', icon: CheckCircle, tone: 'success' },
+  rejeitado: { label: 'Rejeitado', icon: XCircle, tone: 'destructive' },
 };
 
 export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empresaId }: AprovacaoDialogProps) {
@@ -373,9 +373,9 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
           label: a.aprovador_nome || 'Aprovador',
           description: format(new Date(a.data_aprovacao || a.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }),
           badge: (
-            <Badge variant={info.variant} className="text-[10px] px-1.5 py-0 h-5">
+            <StatusBadge tone={info.tone} size="sm">
               {info.label}
-            </Badge>
+            </StatusBadge>
           ),
           icon: User,
           raw: a,
@@ -387,20 +387,21 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
   // ============ Early return: requer aprovação desabilitado ============
   if (!(documento as any).requer_aprovacao) {
     return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Sistema de Aprovação Desabilitado</DialogTitle>
-            <DialogDescription>
-              Este documento não requer aprovação. Para habilitar o sistema de aprovação, edite o documento e marque a opção "Requer
-              Aprovação".
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button onClick={() => onOpenChange(false)}>Fechar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <DialogShell
+        open={open}
+        onOpenChange={onOpenChange}
+        icon={ShieldCheck}
+        title="Sistema de Aprovação Desabilitado"
+        description='Este documento não requer aprovação. Para habilitar o sistema de aprovação, edite o documento e marque a opção "Requer Aprovação".'
+        size="md"
+        footer={
+          <div className="flex justify-end">
+            <Button size="sm" onClick={() => onOpenChange(false)}>Fechar</Button>
+          </div>
+        }
+      >
+        <div />
+      </DialogShell>
     );
   }
 
@@ -430,10 +431,9 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
               {a.tipo_acao === 'solicitacao' ? 'Solicitação de aprovação' : 'Registro de aprovação'}
             </p>
           </div>
-          <Badge variant={info.variant} className="gap-1">
-            <StatusIcon className="h-3 w-3" />
+          <StatusBadge tone={info.tone} icon={<StatusIcon className="h-3 w-3" />}>
             {info.label}
-          </Badge>
+          </StatusBadge>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -523,10 +523,13 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
         footer={
           <>
             {statusGeral && (
-              <Badge variant={STATUS_INFO[statusGeral].variant} className="mr-auto gap-1">
-                {React.createElement(STATUS_INFO[statusGeral].icon, { className: 'h-3 w-3' })}
+              <StatusBadge
+                tone={STATUS_INFO[statusGeral].tone}
+                icon={React.createElement(STATUS_INFO[statusGeral].icon, { className: 'h-3 w-3' })}
+                className="mr-auto"
+              >
                 Status geral: {STATUS_INFO[statusGeral].label}
-              </Badge>
+              </StatusBadge>
             )}
             {documento.arquivo_url && (
               <Button variant="outline" size="sm" onClick={() => setPreviewOpen(true)}>
@@ -542,13 +545,17 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
       />
 
       {/* Sub-dialog: nova solicitação */}
-      <Dialog open={requestOpen} onOpenChange={setRequestOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Nova Solicitação de Aprovação</DialogTitle>
-            <DialogDescription>Selecione um aprovador e adicione observações se necessário.</DialogDescription>
-          </DialogHeader>
-
+      <DialogShell
+        open={requestOpen}
+        onOpenChange={setRequestOpen}
+        icon={Plus}
+        title="Nova Solicitação de Aprovação"
+        description="Selecione um aprovador e adicione observações se necessário."
+        size="sm"
+        onSubmit={() => handleSubmitRequest(new Event('submit') as unknown as React.FormEvent)}
+        submitLabel="Enviar Solicitação"
+        isSubmitting={loading}
+      >
           <form onSubmit={handleSubmitRequest} className="space-y-4 pt-2">
             <div className="space-y-2">
               <Label htmlFor="aprovador_id">Aprovador *</Label>
@@ -586,38 +593,27 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
               />
             </div>
 
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setRequestOpen(false)}>
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={loading}>
-                {loading ? (
-                  <>
-                    <AkurisPulse size={16} className="mr-2" />
-                    Enviando...
-                  </>
-                ) : (
-                  <>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Enviar Solicitação
-                  </>
-                )}
-              </Button>
-            </DialogFooter>
           </form>
-        </DialogContent>
-      </Dialog>
+      </DialogShell>
 
       {/* Sub-dialog: preview do documento */}
-      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-        <DialogContent className="max-w-5xl h-[85vh] flex flex-col p-0 overflow-hidden">
-          <DialogHeader className="px-6 pt-6 pb-4 border-b">
-            <DialogTitle className="flex items-center gap-2">
-              <Eye className="h-5 w-5" />
-              {documento.nome}
-            </DialogTitle>
-            <DialogDescription>{documento.arquivo_nome || 'Visualização do documento'}</DialogDescription>
-          </DialogHeader>
+      <DialogShell
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        icon={Eye}
+        title={documento.nome}
+        description={documento.arquivo_nome || 'Visualização do documento'}
+        size="xl"
+        noScroll
+        className="h-[85vh]"
+        footer={
+          <div className="flex justify-end">
+            <Button variant="ghost" size="sm" onClick={() => setPreviewOpen(false)}>
+              Fechar
+            </Button>
+          </div>
+        }
+      >
           <div className="flex-1 overflow-hidden bg-muted/20">
             {loadingPreview ? (
               <div className="flex items-center justify-center h-full">
@@ -654,31 +650,37 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
               </div>
             )}
           </div>
-          <div className="border-t px-6 py-3 flex justify-end">
-            <Button variant="outline" onClick={() => setPreviewOpen(false)}>
-              Fechar
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      </DialogShell>
 
       {/* Sub-dialog: ação (aprovar / rejeitar / solicitar alterações) */}
-      <Dialog open={actionModal.open} onOpenChange={(o) => !o && closeActionModal()}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>
-              {actionModal.type === 'aprovar' && 'Aprovar Documento'}
-              {actionModal.type === 'rejeitar' && 'Rejeitar Documento'}
-              {actionModal.type === 'alteracoes' && 'Solicitar Alterações'}
-            </DialogTitle>
-            <DialogDescription>
-              {actionModal.type === 'aprovar' && 'Confirme a aprovação do documento. Você pode adicionar um comentário opcional.'}
-              {actionModal.type === 'rejeitar' && 'Informe o motivo da rejeição. Este campo é obrigatório.'}
-              {actionModal.type === 'alteracoes' &&
-                'Descreva as alterações necessárias. O documento permanecerá pendente até as correções serem realizadas.'}
-            </DialogDescription>
-          </DialogHeader>
-
+      <DialogShell
+        open={actionModal.open}
+        onOpenChange={(o) => !o && closeActionModal()}
+        icon={actionModal.type === 'rejeitar' ? XCircle : actionModal.type === 'alteracoes' ? MessageSquare : CheckCircle}
+        title={
+          actionModal.type === 'aprovar' ? 'Aprovar Documento'
+            : actionModal.type === 'rejeitar' ? 'Rejeitar Documento'
+            : 'Solicitar Alterações'
+        }
+        description={
+          actionModal.type === 'aprovar' ? 'Confirme a aprovação do documento. Você pode adicionar um comentário opcional.'
+            : actionModal.type === 'rejeitar' ? 'Informe o motivo da rejeição. Este campo é obrigatório.'
+            : 'Descreva as alterações necessárias. O documento permanecerá pendente até as correções serem realizadas.'
+        }
+        size="sm"
+        footer={
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" size="sm" onClick={closeActionModal}>
+              Cancelar
+            </Button>
+            <Button size="sm" onClick={executeAction} variant={actionModal.type === 'rejeitar' ? 'destructive' : 'default'}>
+              {actionModal.type === 'aprovar' && 'Confirmar Aprovação'}
+              {actionModal.type === 'rejeitar' && 'Confirmar Rejeição'}
+              {actionModal.type === 'alteracoes' && 'Enviar Solicitação'}
+            </Button>
+          </div>
+        }
+      >
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="action-comment">
@@ -701,19 +703,7 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
               />
             </div>
           </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={closeActionModal}>
-              Cancelar
-            </Button>
-            <Button onClick={executeAction} variant={actionModal.type === 'rejeitar' ? 'destructive' : 'default'}>
-              {actionModal.type === 'aprovar' && 'Confirmar Aprovação'}
-              {actionModal.type === 'rejeitar' && 'Confirmar Rejeição'}
-              {actionModal.type === 'alteracoes' && 'Enviar Solicitação'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      </DialogShell>
     </>
   );
 }

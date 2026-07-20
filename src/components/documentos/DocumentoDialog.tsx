@@ -8,6 +8,8 @@ import { Switch } from '@/components/ui/switch';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { resolveClassificacaoTone } from '@/lib/status-tone';
 import { Upload, X, CalendarIcon, File, Link2, FileText, Settings2, Tag, Paperclip } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
@@ -42,10 +44,6 @@ interface DocumentoDialogProps {
   /** Origem do dialog — quando "docgen", reformula textos para o fluxo de incorporação. */
   originSource?: 'docgen';
 }
-
-const CLASSIF_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-  publica: 'outline', interna: 'secondary', restrita: 'default', confidencial: 'destructive',
-};
 
 export function DocumentoDialog({ open, onOpenChange, documento, onSuccess, initialFile, initialData, originSource }: DocumentoDialogProps) {
   const isDocGenFlow = originSource === 'docgen';
@@ -392,7 +390,7 @@ export function DocumentoDialog({ open, onOpenChange, documento, onSuccess, init
       <WizardSummaryRow label="Tipo" value={<span>{formatStatus(formData.tipo)}</span>} />
       <WizardSummaryRow
         label="Classificação"
-        value={<Badge variant={CLASSIF_VARIANT[formData.classificacao]} className="text-[10px]">{formatStatus(formData.classificacao)}</Badge>}
+        value={<StatusBadge size="sm" {...resolveClassificacaoTone(formData.classificacao)}>{formatStatus(formData.classificacao)}</StatusBadge>}
       />
       <WizardSummaryRow label="Tags" value={formData.tags.length} />
       <WizardSummaryRow

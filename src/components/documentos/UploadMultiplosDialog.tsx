@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DialogShell } from '@/components/ui/dialog-shell';
 import { Button } from '@/components/ui/button';
 import { Upload, FileText, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -139,18 +139,31 @@ export function UploadMultiplosDialog({ open, onOpenChange, onSuccess, categoria
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Upload className="h-5 w-5" />
-            Upload Múltiplo de Documentos
-          </DialogTitle>
-          <DialogDescription>
-            Selecione múltiplos arquivos para upload simultâneo. Os documentos serão criados com status "Rascunho".
-          </DialogDescription>
-        </DialogHeader>
-
+    <DialogShell
+      open={open}
+      onOpenChange={onOpenChange}
+      icon={Upload}
+      title="Upload Múltiplo de Documentos"
+      description='Selecione múltiplos arquivos para upload simultâneo. Os documentos serão criados com status "Rascunho".'
+      size="md"
+      footer={
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
+            Cancelar
+          </Button>
+          <Button size="sm" onClick={handleUpload} disabled={uploading || files.length === 0}>
+            {uploading ? (
+              <>
+                <AkurisPulse size={16} className="mr-2" />
+                Enviando...
+              </>
+            ) : (
+              `Enviar ${files.length} arquivo(s)`
+            )}
+          </Button>
+        </div>
+      }
+    >
         <div className="space-y-4">
           <div>
             <input
@@ -200,23 +213,6 @@ export function UploadMultiplosDialog({ open, onOpenChange, onSuccess, categoria
             </div>
           )}
         </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancelar
-          </Button>
-          <Button onClick={handleUpload} disabled={uploading || files.length === 0}>
-            {uploading ? (
-              <>
-                <AkurisPulse size={16} className="mr-2" />
-                Enviando...
-              </>
-            ) : (
-              `Enviar ${files.length} arquivo(s)`
-            )}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </DialogShell>
   );
 }

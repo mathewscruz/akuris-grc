@@ -3,7 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DialogShell } from '@/components/ui/dialog-shell';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -37,6 +38,7 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess, empresaId }: C
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingCategoria, setEditingCategoria] = useState<Categoria | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: string; nome?: string }>({ open: false, id: '' });
   const [formData, setFormData] = useState({
     nome: '',
     descricao: '',
@@ -160,12 +162,12 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess, empresaId }: C
     setShowForm(true);
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async () => {
     try {
       const { error } = await supabase
         .from('documentos_categorias')
         .delete()
-        .eq('id', id);
+        .eq('id', deleteConfirm.id);
 
       if (error) throw error;
 
@@ -183,6 +185,8 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess, empresaId }: C
         description: "Tente novamente em alguns instantes.",
         variant: "destructive",
       });
+    } finally {
+      setDeleteConfirm({ open: false, id: '' });
     }
   };
 
@@ -197,18 +201,16 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess, empresaId }: C
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FolderOpen className="h-5 w-5" />
-            Gerenciar Categorias de Documentos
-          </DialogTitle>
-          <DialogDescription>
-            Organize seus documentos criando e gerenciando categorias.
-          </DialogDescription>
-        </DialogHeader>
-
+    <>
+    <DialogShell
+      open={open}
+      onOpenChange={onOpenChange}
+      icon={FolderOpen}
+      title="Gerenciar Categorias de Documentos"
+      description="Organize seus documentos criando e gerenciando categorias."
+      size="lg"
+      hideFooter
+    >
         <div className="space-y-6">
           {!showForm ? (
             <div className="space-y-4">
@@ -275,8 +277,8 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess, empresaId }: C
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handleDelete(categoria.id)}
-                              className="text-red-600 hover:text-red-700"
+                              onClick={() => setDeleteConfirm({ open: true, id: categoria.id, nome: categoria.nome })}
+                              className="text-destructive hover:text-destructive"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -378,13 +380,18 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess, empresaId }: C
             </form>
           )}
         </div>
+    </DialogShell>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Fechar
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <ConfirmDialog
+      open={deleteConfirm.open}
+      onOpenChange={(open) => setDeleteConfirm(prev => ({ ...prev, open }))}
+      title="Excluir Categoria"
+      description={`Tem certeza que deseja excluir a categoria "${deleteConfirm.nome}"? Esta ação não pode ser desfeita.`}
+      confirmText="Excluir"
+      cancelText="Cancelar"
+      variant="destructive"
+      onConfirm={handleDelete}
+    />
+    </>
   );
 }

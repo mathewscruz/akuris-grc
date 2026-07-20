@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DialogShell } from '@/components/ui/dialog-shell';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
@@ -69,6 +69,7 @@ export function VinculacoesDialog({ open, onOpenChange, documento, empresaId }: 
     observacoes: ''
   });
   const [itemsDisponiveis, setItemsDisponiveis] = useState<any[]>([]);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: string }>({ open: false, id: '' });
   const { toast } = useToast();
 
   useEffect(() => {
@@ -272,12 +273,12 @@ export function VinculacoesDialog({ open, onOpenChange, documento, empresaId }: 
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async () => {
     try {
       const { error } = await supabase
         .from('documentos_vinculacoes')
         .delete()
-        .eq('id', id);
+        .eq('id', deleteConfirm.id);
 
       if (error) throw error;
 
@@ -294,6 +295,8 @@ export function VinculacoesDialog({ open, onOpenChange, documento, empresaId }: 
         description: "Tente novamente em alguns instantes.",
         variant: "destructive",
       });
+    } finally {
+      setDeleteConfirm({ open: false, id: '' });
     }
   };
 
@@ -326,18 +329,16 @@ export function VinculacoesDialog({ open, onOpenChange, documento, empresaId }: 
   );
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Link className="h-5 w-5" />
-            Vinculações do Documento
-          </DialogTitle>
-          <DialogDescription>
-            Gerencie as vinculações do documento "{documento.nome}" com outros módulos do sistema.
-          </DialogDescription>
-        </DialogHeader>
-
+    <>
+    <DialogShell
+      open={open}
+      onOpenChange={onOpenChange}
+      icon={Link}
+      title="Vinculações do Documento"
+      description={`Gerencie as vinculações do documento "${documento.nome}" com outros módulos do sistema.`}
+      size="lg"
+      hideFooter
+    >
         <div className="space-y-6">
           {!showForm ? (
             <div className="space-y-4">
@@ -409,8 +410,8 @@ export function VinculacoesDialog({ open, onOpenChange, documento, empresaId }: 
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => handleDelete(vinculacao.id)}
-                              className="text-red-600 hover:text-red-700"
+                              onClick={() => setDeleteConfirm({ open: true, id: vinculacao.id })}
+                              className="text-destructive hover:text-destructive"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -525,13 +526,18 @@ export function VinculacoesDialog({ open, onOpenChange, documento, empresaId }: 
             </form>
           )}
         </div>
+    </DialogShell>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Fechar
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <ConfirmDialog
+      open={deleteConfirm.open}
+      onOpenChange={(open) => setDeleteConfirm(prev => ({ ...prev, open }))}
+      title="Remover Vinculação"
+      description="Tem certeza que deseja remover esta vinculação? Esta ação não pode ser desfeita."
+      confirmText="Remover"
+      cancelText="Cancelar"
+      variant="destructive"
+      onConfirm={handleDelete}
+    />
+    </>
   );
 }

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { DialogShell } from "@/components/ui/dialog-shell";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -146,15 +146,41 @@ export const RenovarDocumentoDialog = ({
     : null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Renovar Documento
-          </DialogTitle>
-        </DialogHeader>
-
+    <DialogShell
+      open={open}
+      onOpenChange={onOpenChange}
+      icon={FileText}
+      title="Renovar Documento"
+      size="md"
+      footer={
+        <div className="flex items-center justify-end gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              resetForm();
+              onOpenChange(false);
+            }}
+            disabled={loading}
+          >
+            Cancelar
+          </Button>
+          <Button size="sm" onClick={handleSubmit} disabled={loading || !novoArquivo}>
+            {loading ? (
+              <>
+                <AkurisPulse size={16} className="mr-2" />
+                Renovando...
+              </>
+            ) : (
+              <>
+                <Upload className="mr-2 h-4 w-4" />
+                Renovar para v{documento.versao + 1}
+              </>
+            )}
+          </Button>
+        </div>
+      }
+    >
         <div className="space-y-4">
           {/* Informações do documento atual */}
           <Alert>
@@ -264,33 +290,6 @@ export const RenovarDocumentoDialog = ({
             </Alert>
           )}
         </div>
-
-        <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => {
-              resetForm();
-              onOpenChange(false);
-            }}
-            disabled={loading}
-          >
-            Cancelar
-          </Button>
-          <Button onClick={handleSubmit} disabled={loading || !novoArquivo}>
-            {loading ? (
-              <>
-                <AkurisPulse size={16} className="mr-2" />
-                Renovando...
-              </>
-            ) : (
-              <>
-                <Upload className="mr-2 h-4 w-4" />
-                Renovar para v{documento.versao + 1}
-              </>
-            )}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </DialogShell>
   );
 };
