@@ -6,7 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { resolvePrioridadeTone } from '@/lib/status-tone';
 import { CalendarIcon, ClipboardList, Settings2, Link2, Target } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -41,13 +42,6 @@ const modulosOrigem = [
   { value: 'ativos', label: 'Ativos' },
   { value: 'contas-privilegiadas', label: 'Contas Privilegiadas' },
 ];
-
-const PRIORIDADE_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-  baixa: 'outline',
-  media: 'secondary',
-  alta: 'default',
-  critica: 'destructive',
-};
 
 export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading }: PlanoAcaoDialogProps) {
   const [titulo, setTitulo] = useState('');
@@ -302,7 +296,7 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading }: 
       <WizardSummaryRow label="Título" value={titulo || <span className="text-muted-foreground italic">Sem título</span>} highlight />
       <WizardSummaryRow
         label="Prioridade"
-        value={<Badge variant={PRIORIDADE_VARIANT[prioridade]} className="text-[10px]">{formatStatus(prioridade)}</Badge>}
+        value={<StatusBadge size="sm" {...resolvePrioridadeTone(prioridade)}>{formatStatus(prioridade)}</StatusBadge>}
       />
       <WizardSummaryRow label="Status" value={<span>{formatStatus(status)}</span>} />
       <WizardSummaryRow
