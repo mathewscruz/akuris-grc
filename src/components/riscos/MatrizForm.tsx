@@ -364,11 +364,20 @@ export function MatrizForm({ onSuccess }: Props) {
 
       limparFormularioMatriz();
       fetchData();
+      // Fecha o diálogo e propaga o refresh (matriz usada em todo o módulo).
+      onSuccess();
     } catch (error: any) {
       toast.error('Erro ao salvar matriz: ' + error.message);
     } finally {
       setLoading(false);
     }
+  };
+
+  // Feedback quando o submit é bloqueado pela validação (ex.: nome vazio) —
+  // o botão fica num rodapé fixo longe do campo, então sem isto "nada acontece".
+  const onInvalidMatriz = (errors: Record<string, { message?: string }>) => {
+    const primeiro = Object.values(errors)[0];
+    toast.error(primeiro?.message || 'Preencha os campos obrigatórios antes de salvar.');
   };
 
   const adicionarEscalaProbabilidade = () => {
@@ -530,7 +539,7 @@ export function MatrizForm({ onSuccess }: Props) {
           <Form {...matrizForm}>
             <form
               id="matriz-form"
-              onSubmit={matrizForm.handleSubmit(onSubmitMatriz)}
+              onSubmit={matrizForm.handleSubmit(onSubmitMatriz, onInvalidMatriz)}
               className="space-y-7"
             >
               <div className="space-y-5">
