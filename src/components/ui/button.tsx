@@ -3,6 +3,23 @@ import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
+/**
+ * Padrão oficial de botões Akuris — use SEMPRE uma destas variantes (não crie
+ * classes de fundo/borda soltas em `className`, para manter consistência e
+ * facilitar manutenção). Todas usam tokens de tema, funcionando em claro/escuro.
+ *
+ * Hierarquia de uso:
+ *  - default    → ação primária da tela/diálogo (só UMA por contexto): Salvar, Criar.
+ *  - outline    → ação secundária com fundo sólido (branco no claro): Cancelar,
+ *                 Exportar, Filtrar. NÃO é transparente — tem `bg-background`.
+ *  - secondary  → alternativa neutra preenchida (cinza) a `outline`.
+ *  - ghost      → ação terciária SEM fundo: botões só-ícone, itens de toolbar/menu,
+ *                 ações de linha em tabela. Fundo aparece só no hover.
+ *  - destructive→ ação destrutiva (Excluir).
+ *  - link       → navegação inline com aparência de texto.
+ *  - success/warning → confirmações/alertas semânticos preenchidos.
+ *  - soft/gradient/premium/glow → variantes de destaque; usar com parcimônia.
+ */
 const buttonVariants = cva(
   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
@@ -10,8 +27,11 @@ const buttonVariants = cva(
       variant: {
         default: "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 hover:shadow-elegant active:scale-[0.98]",
         destructive: "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90 active:scale-[0.98]",
-        outline: "border border-border bg-transparent text-foreground hover:bg-accent hover:text-accent-foreground hover:border-primary/30",
+        // Secundário com fundo sólido (branco puro via bg-card) — contrasta com a
+        // página (bg-background ~98%) nos dois temas; não fica transparente.
+        outline: "border border-border bg-card text-foreground shadow-sm hover:bg-accent hover:text-accent-foreground hover:border-primary/30",
         secondary: "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80 active:scale-[0.98]",
+        // Terciário sem fundo — ícones, toolbars, itens de menu, ações de linha.
         ghost: "text-foreground hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
         success: "bg-success text-success-foreground shadow-sm hover:bg-success/90 active:scale-[0.98]",

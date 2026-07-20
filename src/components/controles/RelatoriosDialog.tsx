@@ -349,7 +349,7 @@ export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) 
                       <h4 className="font-medium text-amber-800">Área Financeira</h4>
                       <p className="text-sm text-amber-600">3 riscos sem controles preventivos</p>
                     </div>
-                    <Badge variant="outline" className="text-amber-600 border-amber-600">
+                    <Badge variant="warning">
                       Gap Identificado
                     </Badge>
                   </div>
