@@ -655,9 +655,9 @@ export function Riscos() {
               <Tag className="h-4 w-4 sm:mr-2" strokeWidth={1.5} />
               <span className="hidden sm:inline">Categorias</span>
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setMatrizDialogOpen(true)} className="whitespace-nowrap">
+            <Button variant="outline" size="sm" onClick={() => setMatrizDialogOpen(true)} className="whitespace-nowrap" title="Configurar matriz de risco">
               <Settings className="h-4 w-4 sm:mr-2" strokeWidth={1.5} />
-              <span className="hidden sm:inline">Matriz</span>
+              <span className="hidden sm:inline">Configurar Matriz</span>
             </Button>
             <Button size="sm" onClick={openCreateDialog}>
               <Plus className="h-4 w-4 sm:mr-2" strokeWidth={1.5} />

@@ -1,3 +1,18 @@
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+
+/**
+ * Data + hora no padrão brasileiro: DD/MM/YYYY HH:mm (ano sempre com 4 dígitos).
+ * Fonte única para exibir timestamps na UI — evita a mistura de formatos
+ * (ex.: "11/05/26 14:47" vs "10/10/2025") entre telas.
+ */
+export const formatDateTime = (dateString: string | null | undefined): string => {
+  if (!dateString) return '-';
+  const d = new Date(dateString);
+  if (isNaN(d.getTime())) return '-';
+  return format(d, 'dd/MM/yyyy HH:mm', { locale: ptBR });
+};
+
 /**
  * Formata uma data do formato ISO (YYYY-MM-DD) para DD/MM/YYYY sem conversão de timezone
  * Resolve o problema de datas que aparecem diferentes entre o form e a tabela

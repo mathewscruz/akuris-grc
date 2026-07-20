@@ -19,7 +19,7 @@ import { ptBR } from 'date-fns/locale';
 import { PermissionMatrix } from './PermissionMatrix';
 import { DataTable, Column, Filter } from '@/components/ui/data-table';
 import { StatCard } from '@/components/ui/stat-card';
-import { formatDateOnly } from '@/lib/date-utils';
+import { formatDateOnly, formatDateTime } from '@/lib/date-utils';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 const usuarioSchema = z.object({
@@ -581,7 +581,7 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
                 <TooltipTrigger asChild>
                   <div className="flex items-center gap-1 text-green-600">
                     <UserCheck className="h-4 w-4" />
-                    <span className="text-sm">{format(new Date(accessInfo.last_sign_in_at), 'dd/MM/yy HH:mm', { locale: ptBR })}</span>
+                    <span className="text-sm">{formatDateTime(accessInfo.last_sign_in_at)}</span>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
