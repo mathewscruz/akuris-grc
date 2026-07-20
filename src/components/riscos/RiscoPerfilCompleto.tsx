@@ -100,10 +100,22 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
           </div>
         </div>
 
-        {/* Body master-detail */}
-        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[340px_1fr]">
+        {/* Body master-detail — esquerda grande (resumo), direita compacta (abas) */}
+        <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[1fr_380px]">
           {/* Resumo (esquerda) */}
-          <aside className="border-b lg:border-b-0 lg:border-r border-border overflow-y-auto p-6 space-y-6">
+          <aside className="relative border-b lg:border-b-0 lg:border-r border-border overflow-y-auto">
+            {/* Degradê suave vermelho → amarelo → verde */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 opacity-[0.06]"
+              style={{ background: 'linear-gradient(135deg, hsl(var(--destructive)) 0%, hsl(var(--warning)) 45%, hsl(var(--success)) 100%)' }}
+            />
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-x-0 top-0 h-1"
+              style={{ background: 'linear-gradient(90deg, hsl(var(--destructive)), hsl(var(--warning)), hsl(var(--success)))' }}
+            />
+            <div className="relative p-6 space-y-6">
             <div className="flex items-center gap-4">
               <ScoreRing score={scoreAtual} sev={sevAtual} size={84} />
               <div className="min-w-0 space-y-1.5">
@@ -139,7 +151,7 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
               <StatTile icon={<Layers />} label="Controles" value={String(detail?.controles.length ?? 0)} />
             </section>
 
-            <section className="grid grid-cols-2 gap-x-6 gap-y-3">
+            <section className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4">
               <HeaderMeta icon={<Tag />} label="Categoria" value={risco.categoria?.nome || '—'} />
               <HeaderMeta icon={<User />} label="Responsável" value={
                 risco.responsavel_nome ? (
@@ -152,8 +164,10 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
                   </span>
                 ) : '—'
               } />
-              <HeaderMeta icon={<CalendarClock />} label="Próx. revisão" value={risco.data_proxima_revisao ? formatDateOnly(risco.data_proxima_revisao) : '—'} />
               <HeaderMeta icon={<Timer />} label="SLA" value={<StatusBadge size="sm" {...(sla === 'vencido' ? { tone: 'destructive' as const } : sla === 'atencao' ? { tone: 'warning' as const } : sla === 'no_prazo' ? { tone: 'success' as const } : { tone: 'neutral' as const })}>{SLA_LABELS[sla]}</StatusBadge>} />
+              <HeaderMeta icon={<CalendarClock />} label="Próx. revisão" value={risco.data_proxima_revisao ? formatDateOnly(risco.data_proxima_revisao) : '—'} />
+              <HeaderMeta icon={<CalendarClock />} label="Criado em" value={risco.created_at ? formatDateOnly(risco.created_at) : '—'} />
+              <HeaderMeta icon={<History />} label="Avaliações" value={String(detail?.historico.length ?? 0)} />
             </section>
 
             {(risco.causas || risco.consequencias) && (
@@ -175,6 +189,7 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
                 </div>
               </section>
             )}
+            </div>
           </aside>
 
           {/* Abas (direita) */}
