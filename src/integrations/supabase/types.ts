@@ -1555,6 +1555,24 @@ export type Database = {
         }
         Relationships: []
       }
+      contact_form_rate_limits: {
+        Row: {
+          created_at: string
+          fingerprint_hash: string
+          id: number
+        }
+        Insert: {
+          created_at?: string
+          fingerprint_hash: string
+          id?: never
+        }
+        Update: {
+          created_at?: string
+          fingerprint_hash?: string
+          id?: never
+        }
+        Relationships: []
+      }
       contact_form_submissions: {
         Row: {
           company: string | null
@@ -2939,6 +2957,35 @@ export type Database = {
         }
         Relationships: []
       }
+      denuncia_submission_limits: {
+        Row: {
+          created_at: string
+          empresa_id: string
+          fingerprint_hash: string
+          id: number
+        }
+        Insert: {
+          created_at?: string
+          empresa_id: string
+          fingerprint_hash: string
+          id?: never
+        }
+        Update: {
+          created_at?: string
+          empresa_id?: string
+          fingerprint_hash?: string
+          id?: never
+        }
+        Relationships: [
+          {
+            foreignKeyName: "denuncia_submission_limits_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       denuncias: {
         Row: {
           anonima: boolean | null
@@ -2947,19 +2994,26 @@ export type Database = {
           data_atribuicao: string | null
           data_conclusao: string | null
           data_inicio_investigacao: string | null
+          data_ocorrencia: string | null
+          denunciante_telefone: string | null
           descricao: string
           email_denunciante: string | null
           empresa_id: string
+          evidencias_descricao: string | null
           gravidade: string | null
           id: string
           ip_origem: unknown
+          local_ocorrencia: string | null
           nome_denunciante: string | null
           parecer_final: string | null
           politica_aceita: boolean | null
           protocolo: string
           responsavel_id: string | null
           status: string | null
+          testemunhas: string | null
           titulo: string
+          token_acompanhamento_hash: string | null
+          token_acompanhamento_revoked_at: string | null
           token_publico: string
           updated_at: string | null
           user_agent: string | null
@@ -2971,19 +3025,26 @@ export type Database = {
           data_atribuicao?: string | null
           data_conclusao?: string | null
           data_inicio_investigacao?: string | null
+          data_ocorrencia?: string | null
+          denunciante_telefone?: string | null
           descricao: string
           email_denunciante?: string | null
           empresa_id: string
+          evidencias_descricao?: string | null
           gravidade?: string | null
           id?: string
           ip_origem?: unknown
+          local_ocorrencia?: string | null
           nome_denunciante?: string | null
           parecer_final?: string | null
           politica_aceita?: boolean | null
           protocolo: string
           responsavel_id?: string | null
           status?: string | null
+          testemunhas?: string | null
           titulo: string
+          token_acompanhamento_hash?: string | null
+          token_acompanhamento_revoked_at?: string | null
           token_publico: string
           updated_at?: string | null
           user_agent?: string | null
@@ -2995,19 +3056,26 @@ export type Database = {
           data_atribuicao?: string | null
           data_conclusao?: string | null
           data_inicio_investigacao?: string | null
+          data_ocorrencia?: string | null
+          denunciante_telefone?: string | null
           descricao?: string
           email_denunciante?: string | null
           empresa_id?: string
+          evidencias_descricao?: string | null
           gravidade?: string | null
           id?: string
           ip_origem?: unknown
+          local_ocorrencia?: string | null
           nome_denunciante?: string | null
           parecer_final?: string | null
           politica_aceita?: boolean | null
           protocolo?: string
           responsavel_id?: string | null
           status?: string | null
+          testemunhas?: string | null
           titulo?: string
+          token_acompanhamento_hash?: string | null
+          token_acompanhamento_revoked_at?: string | null
           token_publico?: string
           updated_at?: string | null
           user_agent?: string | null
@@ -3040,6 +3108,7 @@ export type Database = {
           tamanho_arquivo: number | null
           tipo_anexo: string | null
           tipo_arquivo: string
+          upload_status: string
           uploaded_by: string | null
         }
         Insert: {
@@ -3052,6 +3121,7 @@ export type Database = {
           tamanho_arquivo?: number | null
           tipo_anexo?: string | null
           tipo_arquivo: string
+          upload_status?: string
           uploaded_by?: string | null
         }
         Update: {
@@ -3064,6 +3134,7 @@ export type Database = {
           tamanho_arquivo?: number | null
           tipo_anexo?: string | null
           tipo_arquivo?: string
+          upload_status?: string
           uploaded_by?: string | null
         }
         Relationships: [
@@ -5676,6 +5747,24 @@ export type Database = {
           },
         ]
       }
+      password_reset_limits: {
+        Row: {
+          created_at: string
+          fingerprint_hash: string
+          id: number
+        }
+        Insert: {
+          created_at?: string
+          fingerprint_hash: string
+          id?: never
+        }
+        Update: {
+          created_at?: string
+          fingerprint_hash?: string
+          id?: never
+        }
+        Relationships: []
+      }
       permission_profile_modules: {
         Row: {
           can_access: boolean
@@ -6740,6 +6829,24 @@ export type Database = {
           owner_id?: string
           status?: Database["public"]["Enums"]["projeto_status"]
           updated_at?: string
+        }
+        Relationships: []
+      }
+      public_registration_limits: {
+        Row: {
+          created_at: string
+          fingerprint_hash: string
+          id: number
+        }
+        Insert: {
+          created_at?: string
+          fingerprint_hash: string
+          id?: never
+        }
+        Update: {
+          created_at?: string
+          fingerprint_hash?: string
+          id?: never
         }
         Relationships: []
       }
@@ -7954,6 +8061,14 @@ export type Database = {
       check_company_user_limit: { Args: { _empresa_id: string }; Returns: Json }
       check_trial_expiration: { Args: never; Returns: undefined }
       cleanup_expired_mfa_codes: { Args: never; Returns: undefined }
+      consult_denuncia_publica: {
+        Args: {
+          p_empresa_slug: string
+          p_protocolo: string
+          p_tracking_hash: string
+        }
+        Returns: Json
+      }
       consume_ai_credit: {
         Args: {
           p_descricao?: string
@@ -7961,6 +8076,18 @@ export type Database = {
           p_funcionalidade: string
           p_user_id: string
         }
+        Returns: boolean
+      }
+      consume_contact_form_attempt: {
+        Args: { p_fingerprint_hash: string }
+        Returns: boolean
+      }
+      consume_password_reset_attempt: {
+        Args: { p_fingerprint_hash: string; p_max_attempts?: number }
+        Returns: boolean
+      }
+      consume_public_registration_attempt: {
+        Args: { p_fingerprint_hash: string }
         Returns: boolean
       }
       conta_privilegiada_pertence_empresa: {
@@ -7986,6 +8113,32 @@ export type Database = {
         }
         Returns: undefined
       }
+      create_denuncia_publica: {
+        Args: {
+          p_anonima: boolean
+          p_categoria_id: string
+          p_client_ip: unknown
+          p_data_ocorrencia: string
+          p_denunciante_email: string
+          p_denunciante_nome: string
+          p_denunciante_telefone: string
+          p_descricao: string
+          p_empresa_slug: string
+          p_evidencias_descricao: string
+          p_fingerprint_hash: string
+          p_local_ocorrencia: string
+          p_politica_aceita: boolean
+          p_testemunhas: string
+          p_titulo: string
+          p_tracking_hash: string
+          p_user_agent: string
+        }
+        Returns: {
+          empresa_id: string
+          id: string
+          protocolo: string
+        }[]
+      }
       dados_pessoais_pertence_empresa: {
         Args: { dados_id: string }
         Returns: boolean
@@ -8002,6 +8155,17 @@ export type Database = {
       evaluation_pertence_empresa: {
         Args: { evaluation_id: string }
         Returns: boolean
+      }
+      finalize_denuncia_attachment: {
+        Args: {
+          p_mime_type: string
+          p_original_name: string
+          p_protocolo: string
+          p_size: number
+          p_storage_path: string
+          p_tracking_hash: string
+        }
+        Returns: string
       }
       generate_temp_password: { Args: never; Returns: string }
       gerar_protocolo_denuncia: { Args: never; Returns: string }
