@@ -27,8 +27,9 @@ const buttonVariants = cva(
       variant: {
         default: "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 hover:shadow-elegant active:scale-[0.98]",
         destructive: "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90 active:scale-[0.98]",
-        // Secundário com fundo sólido (branco no tema claro) — não transparente.
-        outline: "border border-border bg-background text-foreground shadow-sm hover:bg-accent hover:text-accent-foreground hover:border-primary/30",
+        // Secundário com fundo sólido (branco puro via bg-card) — contrasta com a
+        // página (bg-background ~98%) nos dois temas; não fica transparente.
+        outline: "border border-border bg-card text-foreground shadow-sm hover:bg-accent hover:text-accent-foreground hover:border-primary/30",
         secondary: "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80 active:scale-[0.98]",
         // Terciário sem fundo — ícones, toolbars, itens de menu, ações de linha.
         ghost: "text-foreground hover:bg-accent hover:text-accent-foreground",
