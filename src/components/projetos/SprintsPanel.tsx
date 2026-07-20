@@ -1,6 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { DialogShell } from '@/components/ui/dialog-shell';
+import ConfirmDialog from '@/components/ConfirmDialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -175,6 +176,7 @@ function ListaTarefasSprint({ tarefas, onSelect }: { tarefas: ProjetoTarefa[]; o
 function SprintDialog({ open, onOpenChange, projetoId, sprint }: { open: boolean; onOpenChange: (v: boolean) => void; projetoId: string; sprint: ProjetoSprint | null }) {
   const upsert = useUpsertSprint(projetoId);
   const del = useDeleteSprint(projetoId);
+  const [deleteConfirm, setDeleteConfirm] = React.useState(false);
   const [form, setForm] = React.useState({ nome: '', objetivo: '', data_inicio: '', data_fim: '', ativa: false, concluida: false });
   React.useEffect(() => {
     if (open) {
@@ -196,11 +198,25 @@ function SprintDialog({ open, onOpenChange, projetoId, sprint }: { open: boolean
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2"><Flag className="h-5 w-5 text-primary" />{sprint ? 'Editar sprint' : 'Nova sprint'}</DialogTitle>
-        </DialogHeader>
+    <>
+    <DialogShell
+      open={open}
+      onOpenChange={onOpenChange}
+      icon={Flag}
+      title={sprint ? 'Editar sprint' : 'Nova sprint'}
+      size="sm"
+      footer={
+        <div className="flex items-center justify-end gap-2 w-full">
+          {sprint && (
+            <Button variant="destructive" size="sm" className="mr-auto" onClick={() => setDeleteConfirm(true)}>
+              <Trash2 className="h-4 w-4" /> Excluir
+            </Button>
+          )}
+          <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button size="sm" onClick={submit} disabled={upsert.isPending}>Salvar</Button>
+        </div>
+      }
+    >
         <div className="space-y-3">
           <div><Label>Nome</Label><Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} /></div>
           <div><Label>Objetivo</Label><Textarea rows={2} value={form.objetivo} onChange={(e) => setForm({ ...form, objetivo: e.target.value })} /></div>
@@ -213,16 +229,19 @@ function SprintDialog({ open, onOpenChange, projetoId, sprint }: { open: boolean
             <label className="flex items-center gap-2"><input type="checkbox" checked={form.concluida} onChange={(e) => setForm({ ...form, concluida: e.target.checked })} /> Concluída</label>
           </div>
         </div>
-        <DialogFooter>
-          {sprint && (
-            <Button variant="destructive" size="sm" onClick={async () => { if (confirm('Remover sprint?')) { await del.mutateAsync(sprint.id); onOpenChange(false); } }}>
-              <Trash2 className="h-4 w-4" /> Excluir
-            </Button>
-          )}
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={submit} disabled={upsert.isPending}><Play className="h-4 w-4" /> Salvar</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </DialogShell>
+
+    <ConfirmDialog
+      open={deleteConfirm}
+      onOpenChange={setDeleteConfirm}
+      title="Excluir Sprint"
+      description="Tem certeza que deseja remover esta sprint? Esta ação não pode ser desfeita."
+      confirmText="Excluir"
+      cancelText="Cancelar"
+      variant="destructive"
+      onConfirm={async () => { if (sprint) { await del.mutateAsync(sprint.id); setDeleteConfirm(false); onOpenChange(false); } }}
+      loading={del.isPending}
+    />
+    </>
   );
 }

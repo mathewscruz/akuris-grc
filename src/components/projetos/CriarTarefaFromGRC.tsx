@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { DialogShell } from '@/components/ui/dialog-shell';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -97,13 +97,17 @@ export const CriarTarefaFromGRC: React.FC<CriarTarefaFromGRCProps> = ({
         </Button>
       )}
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><ListTodo className="h-5 w-5 text-primary" />Criar tarefa em um projeto</DialogTitle>
-            <DialogDescription>A tarefa será criada e vinculada automaticamente a este item.</DialogDescription>
-          </DialogHeader>
-
+      <DialogShell
+        open={open}
+        onOpenChange={setOpen}
+        icon={ListTodo}
+        title="Criar tarefa em um projeto"
+        description="A tarefa será criada e vinculada automaticamente a este item."
+        size="sm"
+        onSubmit={handleSalvar}
+        submitLabel="Criar tarefa"
+        isSubmitting={salvando}
+      >
           <div className="space-y-3">
             <div className="space-y-2">
               <Label>Projeto</Label>
@@ -144,13 +148,8 @@ export const CriarTarefaFromGRC: React.FC<CriarTarefaFromGRCProps> = ({
               </div>
             </div>
 
-            <div className="flex gap-2 pt-2">
-              <Button variant="outline" className="flex-1" onClick={() => setOpen(false)} disabled={salvando}>Cancelar</Button>
-              <Button className="flex-1" onClick={handleSalvar} disabled={salvando}>{salvando ? 'Salvando…' : 'Criar tarefa'}</Button>
-            </div>
           </div>
-        </DialogContent>
-      </Dialog>
+      </DialogShell>
     </>
   );
 };

@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { DialogShell } from '@/components/ui/dialog-shell';
+import { FolderKanban } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { UserSelect } from '@/components/riscos/UserSelect';
 import { useUpsertProjeto } from '@/hooks/useProjetos';
@@ -60,11 +60,16 @@ export function ProjetoDialog({ open, onOpenChange, projeto }: Props) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{projeto ? 'Editar projeto' : 'Novo projeto'}</DialogTitle>
-        </DialogHeader>
+    <DialogShell
+      open={open}
+      onOpenChange={onOpenChange}
+      icon={FolderKanban}
+      title={projeto ? 'Editar projeto' : 'Novo projeto'}
+      size="sm"
+      onSubmit={() => handleSubmit(new Event('submit') as unknown as React.FormEvent)}
+      submitLabel="Salvar"
+      isSubmitting={upsert.isPending}
+    >
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <Label>Nome *</Label>
@@ -106,12 +111,7 @@ export function ProjetoDialog({ open, onOpenChange, projeto }: Props) {
               <Input type="date" value={form.data_fim_prevista} onChange={(e) => setForm({ ...form, data_fim_prevista: e.target.value })} />
             </div>
           </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-            <Button type="submit" disabled={upsert.isPending}>Salvar</Button>
-          </DialogFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+    </DialogShell>
   );
 }

@@ -2,7 +2,6 @@ import React from 'react';
 import { DndContext, DragOverlay, useSensor, useSensors, PointerSensor, type DragEndEvent } from '@dnd-kit/core';
 import { useDroppable, useDraggable } from '@dnd-kit/core';
 import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Plus, Calendar, User as UserIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -160,14 +159,14 @@ function TaskCard({ tarefa, dragging }: { tarefa: ProjetoTarefa; dragging?: bool
           {tarefa.prioridade}
         </StatusBadge>
         {tarefa.prazo && (
-          <Badge variant={atrasada ? 'destructive' : 'outline'} size="sm" icon={<Calendar className="h-2.5 w-2.5" />}>
+          <StatusBadge tone={atrasada ? 'destructive' : 'neutral'} variant={atrasada ? 'soft' : 'outline'} size="sm" icon={<Calendar className="h-2.5 w-2.5" />}>
             {new Date(tarefa.prazo).toLocaleDateString('pt-BR')}
-          </Badge>
+          </StatusBadge>
         )}
         {tarefa.responsavel_id && (
-          <Badge variant="soft" size="sm" icon={<UserIcon className="h-2.5 w-2.5" />}>
+          <StatusBadge tone="info" size="sm" icon={<UserIcon className="h-2.5 w-2.5" />}>
             atribuída
-          </Badge>
+          </StatusBadge>
         )}
       </div>
     </Card>

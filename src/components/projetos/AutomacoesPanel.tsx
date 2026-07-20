@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { DialogShell } from '@/components/ui/dialog-shell';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -124,12 +124,16 @@ function AutomacaoDialog({ open, onOpenChange, projetoId, colunas, automacao }: 
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2"><Zap className="h-5 w-5 text-primary" strokeWidth={1.5} />{automacao ? 'Editar automação' : 'Nova automação'}</DialogTitle>
-        </DialogHeader>
-
+    <DialogShell
+      open={open}
+      onOpenChange={onOpenChange}
+      icon={Zap}
+      title={automacao ? 'Editar automação' : 'Nova automação'}
+      size="md"
+      onSubmit={submit}
+      submitLabel="Salvar"
+      isSubmitting={upsert.isPending}
+    >
         <div className="space-y-3">
           <div><Label>Nome</Label><Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} /></div>
           <div><Label>Descrição</Label><Textarea rows={2} value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} /></div>
@@ -193,11 +197,6 @@ function AutomacaoDialog({ open, onOpenChange, projetoId, colunas, automacao }: 
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={submit} disabled={upsert.isPending}><Play className="h-4 w-4" /> Salvar</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    </DialogShell>
   );
 }

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { DialogShell } from '@/components/ui/dialog-shell';
 import { Button } from '@/components/ui/button';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -51,13 +51,15 @@ export const StatusReportDialog: React.FC<StatusReportDialogProps> = ({ open, on
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2"><FileText className="h-5 w-5 text-primary" />Status Report — {projetoNome}</DialogTitle>
-          <DialogDescription>Resumo executivo gerado por IA com base nas tarefas, prazos e SLAs. Consome 1 crédito.</DialogDescription>
-        </DialogHeader>
-
+    <DialogShell
+      open={open}
+      onOpenChange={onOpenChange}
+      icon={FileText}
+      title={`Status Report — ${projetoNome}`}
+      description="Resumo executivo gerado por IA com base nas tarefas, prazos e SLAs. Consome 1 crédito."
+      size="lg"
+      hideFooter
+    >
         {!report && !loading && (
           <Button onClick={handleGerar} className="w-full">
             <Sparkles className="h-4 w-4 mr-2" />Gerar relatório
@@ -113,7 +115,6 @@ export const StatusReportDialog: React.FC<StatusReportDialogProps> = ({ open, on
             </Button>
           </div>
         )}
-      </DialogContent>
-    </Dialog>
+    </DialogShell>
   );
 };

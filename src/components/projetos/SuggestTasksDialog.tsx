@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { DialogShell } from '@/components/ui/dialog-shell';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -78,13 +78,15 @@ export const SuggestTasksDialog: React.FC<SuggestTasksDialogProps> = ({ open, on
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-primary" />Quebrar objetivo em tarefas com IA</DialogTitle>
-          <DialogDescription>A IA propõe tarefas acionáveis. Você escolhe quais criar. Consome 1 crédito.</DialogDescription>
-        </DialogHeader>
-
+    <DialogShell
+      open={open}
+      onOpenChange={onOpenChange}
+      icon={Sparkles}
+      title="Quebrar objetivo em tarefas com IA"
+      description="A IA propõe tarefas acionáveis. Você escolhe quais criar. Consome 1 crédito."
+      size="md"
+      hideFooter
+    >
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>Objetivo</Label>
@@ -130,7 +132,6 @@ export const SuggestTasksDialog: React.FC<SuggestTasksDialogProps> = ({ open, on
             </div>
           )}
         </div>
-      </DialogContent>
-    </Dialog>
+    </DialogShell>
   );
 };

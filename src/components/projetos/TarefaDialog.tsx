@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { DialogShell } from '@/components/ui/dialog-shell';
+import ConfirmDialog from '@/components/ConfirmDialog';
+import { ListChecks } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -36,6 +38,7 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
   const upsert = useUpsertTarefa();
   const remove = useDeleteTarefa(projetoId);
   const { data: sprints = [] } = useSprints(projetoId);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [form, setForm] = useState({
     titulo: '',
     descricao: '',
@@ -81,12 +84,31 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{tarefa ? 'Editar tarefa' : 'Nova tarefa'}</DialogTitle>
-        </DialogHeader>
-
+    <>
+    <DialogShell
+      open={open}
+      onOpenChange={onOpenChange}
+      icon={ListChecks}
+      title={tarefa ? 'Editar tarefa' : 'Nova tarefa'}
+      size="lg"
+      footer={
+        <div className="flex items-center justify-end gap-2 w-full">
+          {tarefa && (
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              className="mr-auto"
+              onClick={() => setDeleteConfirm(true)}
+            >
+              <Trash2 className="h-4 w-4" /> Excluir
+            </Button>
+          )}
+          <Button type="button" variant="ghost" size="sm" onClick={() => onOpenChange(false)}>Fechar</Button>
+          <Button type="submit" size="sm" form="tarefa-form" disabled={upsert.isPending}>Salvar</Button>
+        </div>
+      }
+    >
         <Tabs defaultValue="detalhes">
           <TabsList>
             <TabsTrigger value="detalhes">Detalhes</TabsTrigger>
@@ -182,28 +204,26 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
             </TabsContent>
           )}
         </Tabs>
+    </DialogShell>
 
-        <DialogFooter className="mt-4">
-          {tarefa && (
-            <Button
-              type="button"
-              variant="destructive"
-              size="sm"
-              onClick={async () => {
-                if (confirm('Remover esta tarefa?')) {
-                  await remove.mutateAsync(tarefa.id);
-                  onOpenChange(false);
-                }
-              }}
-            >
-              <Trash2 className="h-4 w-4" /> Excluir
-            </Button>
-          )}
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Fechar</Button>
-          <Button type="submit" form="tarefa-form" disabled={upsert.isPending}>Salvar</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <ConfirmDialog
+      open={deleteConfirm}
+      onOpenChange={setDeleteConfirm}
+      title="Excluir Tarefa"
+      description="Tem certeza que deseja excluir esta tarefa? Esta ação não pode ser desfeita."
+      confirmText="Excluir"
+      cancelText="Cancelar"
+      variant="destructive"
+      onConfirm={async () => {
+        if (tarefa) {
+          await remove.mutateAsync(tarefa.id);
+          setDeleteConfirm(false);
+          onOpenChange(false);
+        }
+      }}
+      loading={remove.isPending}
+    />
+    </>
   );
 }
 
