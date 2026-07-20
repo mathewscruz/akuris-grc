@@ -370,7 +370,7 @@ function GapAnalysisFrameworkDetailInner() {
                       value: parcialCount,
                       hint: parcialCount > 0
                         ? `Requisitos parcialmente atendidos — próximos a fechar.`
-                        : `Sem itens parciais. Avaliações são binárias por enquanto.`,
+                        : `Nenhum requisito parcialmente atendido no momento.`,
                       tone: parcialCount > 0 ? 'warning' : 'neutral',
                     },
                   ];
@@ -439,8 +439,7 @@ function GapAnalysisFrameworkDetailInner() {
                       total: totalRequirements,
                       semEvidencia: Math.max(0, totalRequirements - evaluatedRequirements),
                       criticos: categoryData.reduce((s, c) => s + c.nao_conforme, 0),
-                      prazoVencido: 0,
-                      sugeridosIA: categoryData.reduce((s, c) => s + c.parcial, 0),
+                      parciais: categoryData.reduce((s, c) => s + c.parcial, 0),
                     }}
                   />
                   <GenericRequirementsTable
