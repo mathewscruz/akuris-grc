@@ -58,36 +58,40 @@ function extractFrameworks(messageText: string): string[] {
   return frameworks;
 }
 
+// Chama a IA via gateway do Lovable (OpenAI-compatível), igual às demais
+// funções do projeto. Antes usava a API da Anthropic direto com um modelo
+// que retornava 404 nesta conta.
 async function callClaude(messages: { role: string; content: string }[], systemPrompt: string, apiKey: string, maxTokens = 2000, temperature = 0.8) {
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
+  const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
     method: 'POST',
     headers: {
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
+      'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-5',
+      model: 'google/gemini-3-flash-preview',
       max_tokens: maxTokens,
-      system: systemPrompt,
-      messages: messages.filter(m => m.role !== 'system').map(m => ({
-        role: m.role === 'assistant' ? 'assistant' : 'user',
-        content: m.content,
-      })),
       temperature,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        ...messages.filter(m => m.role !== 'system').map(m => ({
+          role: m.role === 'assistant' ? 'assistant' : 'user',
+          content: m.content,
+        })),
+      ],
     }),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('Anthropic API error:', response.status, errorText);
+    console.error('AI gateway error:', response.status, errorText);
     if (response.status === 429) throw new Error('Limite de requisições excedido. Tente novamente em alguns minutos.');
-    if (response.status === 401) throw new Error('Chave da API Anthropic inválida.');
-    throw new Error(`Erro na API Anthropic (${response.status})`);
+    if (response.status === 402) throw new Error('Créditos de IA insuficientes.');
+    throw new Error(`Erro na IA (${response.status})`);
   }
 
   const data = await response.json();
-  return data.content?.[0]?.text || '';
+  return data.choices?.[0]?.message?.content || '';
 }
 
 // Fetch non-compliant gaps for the framework
@@ -129,11 +133,11 @@ serve(async (req) => {
   }
 
   try {
-    const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-    if (!ANTHROPIC_API_KEY || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+    if (!LOVABLE_API_KEY || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
       throw new Error('Missing required environment variables');
     }
 
@@ -439,7 +443,7 @@ IMPORTANTE: Sempre responda em português brasileiro. Responda SOMENTE com uma m
       const aiMessage = await callClaude(
         messages.slice(-15),
         systemPrompt,
-        ANTHROPIC_API_KEY,
+        LOVABLE_API_KEY,
         2000,
         0.8
       );
@@ -623,7 +627,7 @@ Responda APENAS com um JSON na seguinte estrutura:
       const docContent = await callClaude(
         [{ role: 'user', content: 'Gere o documento agora.' }],
         documentPrompt,
-        ANTHROPIC_API_KEY,
+        LOVABLE_API_KEY,
         16000,
         0.4
       );
@@ -722,7 +726,7 @@ Reescreva o conteúdo da seção atendendo à instrução.`;
       const newContent = await callClaude(
         [{ role: 'user', content: userPrompt }],
         sysPrompt,
-        ANTHROPIC_API_KEY,
+        LOVABLE_API_KEY,
         2500,
         0.5
       );
@@ -786,7 +790,7 @@ Avalie e responda EXATAMENTE neste JSON:
       const raw = await callClaude(
         [{ role: 'user', content: userPrompt }],
         sysPrompt,
-        ANTHROPIC_API_KEY,
+        LOVABLE_API_KEY,
         3500,
         0.3
       );
