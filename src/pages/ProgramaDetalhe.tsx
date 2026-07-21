@@ -14,6 +14,7 @@ import { ProgramaDialog } from '@/components/programa/ProgramaDialog';
 import { FaseDialog } from '@/components/programa/FaseDialog';
 import { ItensListDialog } from '@/components/programa/ItensListDialog';
 import { FerramentasListDialog } from '@/components/programa/FerramentasListDialog';
+import { PriorizacaoIA } from '@/components/programa/PriorizacaoIA';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { useProgramaDetalhe, type ProgramaItem, type ProgramaFase } from '@/hooks/usePrograma';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
@@ -91,6 +92,16 @@ export default function ProgramaDetalhe() {
     };
     return { total, done, pct: total > 0 ? Math.round((done / total) * 100) : 0, custoItens, custoFerr, geral, atrasados, quad };
   }, [p.itens, p.ferramentas]);
+
+  const pendentes = useMemo(() => {
+    const faseNome = new Map(p.fases.map((f) => [f.id, f.nome]));
+    return p.itens.filter((i) => i.status !== 'concluido').map((i) => ({
+      titulo: i.titulo,
+      categoria: i.fase_id ? (faseNome.get(i.fase_id) ?? null) : null,
+      impacto: i.impacto,
+      status: i.status,
+    }));
+  }, [p.itens, p.fases]);
 
   const fasesInfo = useMemo(() =>
     p.fases.map((f) => {
@@ -177,7 +188,6 @@ export default function ProgramaDetalhe() {
                 </div>
               ) : (
                 <>
-                  <span className="inline-flex items-center gap-1 text-xs text-muted-foreground"><Sparkles className="h-3.5 w-3.5 text-primary" strokeWidth={1.5} /> modelo · editável</span>
                   <Button size="sm" variant="ghost" onClick={() => setAddingFase(true)}><Plus className="h-4 w-4 mr-1" /> Fase</Button>
                   <Button size="sm" onClick={() => setItemDialog({ open: true, item: null, faseId: null })}><Plus className="h-4 w-4 mr-1" /> Item</Button>
                 </>
@@ -215,34 +225,7 @@ export default function ProgramaDetalhe() {
 
       {/* Matriz + Orçamento */}
       <div className="grid gap-4 md:grid-cols-2">
-        <Card className="rounded-xl border">
-          <CardContent className="p-5">
-            <h3 className="text-base font-semibold">Por onde começar</h3>
-            <p className="text-xs text-muted-foreground mb-3">Impacto × esforço — priorize os quick wins</p>
-            <div className="grid grid-cols-2 gap-2">
-              <button onClick={() => openLista('Quick wins', s.quad.quickWins, null, 'Alto impacto · baixo esforço')} className="text-left rounded-lg p-3 transition-opacity hover:opacity-90" style={{ background: 'hsl(160 60% 94%)' }}>
-                <div className="text-xs font-medium" style={{ color: 'hsl(168 70% 24%)' }}>Quick wins</div>
-                <div className="text-2xl font-semibold" style={{ color: 'hsl(170 80% 14%)' }}>{s.quad.quickWins.length}</div>
-                <div className="text-[11px]" style={{ color: 'hsl(168 60% 30%)' }}>alto impacto · baixo esforço</div>
-              </button>
-              <button onClick={() => openLista('Grandes apostas', s.quad.bigBets, null, 'Alto impacto · alto esforço')} className="text-left rounded-lg p-3 transition-opacity hover:opacity-90" style={{ background: 'hsl(38 90% 92%)' }}>
-                <div className="text-xs font-medium" style={{ color: 'hsl(30 80% 30%)' }}>Grandes apostas</div>
-                <div className="text-2xl font-semibold" style={{ color: 'hsl(28 80% 18%)' }}>{s.quad.bigBets.length}</div>
-                <div className="text-[11px]" style={{ color: 'hsl(30 70% 34%)' }}>alto impacto · alto esforço</div>
-              </button>
-              <button onClick={() => openLista('Preencher folgas', s.quad.fill, null, 'Baixo impacto · baixo esforço')} className="text-left rounded-lg p-3 bg-muted/50 hover:bg-muted transition-colors">
-                <div className="text-xs font-medium text-muted-foreground">Preencher folgas</div>
-                <div className="text-2xl font-semibold">{s.quad.fill.length}</div>
-                <div className="text-[11px] text-muted-foreground">baixo impacto · baixo esforço</div>
-              </button>
-              <button onClick={() => openLista('Reavaliar', s.quad.reavaliar, null, 'Baixo impacto · alto esforço')} className="text-left rounded-lg p-3 bg-muted/50 hover:bg-muted transition-colors">
-                <div className="text-xs font-medium text-muted-foreground">Reavaliar</div>
-                <div className="text-2xl font-semibold">{s.quad.reavaliar.length}</div>
-                <div className="text-[11px] text-muted-foreground">baixo impacto · alto esforço</div>
-              </button>
-            </div>
-          </CardContent>
-        </Card>
+        <PriorizacaoIA frameworkNome={prog.framework_nome} itens={pendentes} />
 
         <Card className="rounded-xl border">
           <CardContent className="p-5">
