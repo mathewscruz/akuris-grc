@@ -49,6 +49,10 @@ export default {
 					DEFAULT: 'hsl(var(--warning))',
 					foreground: 'hsl(var(--warning-foreground))'
 				},
+				orange: {
+					DEFAULT: 'hsl(var(--orange))',
+					foreground: 'hsl(var(--orange-foreground))'
+				},
 				info: {
 					DEFAULT: 'hsl(var(--info))',
 					foreground: 'hsl(var(--info-foreground))'

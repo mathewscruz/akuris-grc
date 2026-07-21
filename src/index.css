@@ -108,7 +108,11 @@
     /* Warning */
     --warning: 35 78% 52%;
     --warning-foreground: 30 50% 15%;
-    
+
+    /* Orange — severidade "Alto" (entre Warning e Destructive) */
+    --orange: 24 85% 52%;
+    --orange-foreground: 0 0% 100%;
+
     /* Info */
     --info: 199 70% 50%;
     --info-foreground: 0 0% 100%;
@@ -246,7 +250,11 @@
     /* Warning */
     --warning: 38 70% 56%;
     --warning-foreground: 40 50% 10%;
-    
+
+    /* Orange — severidade "Alto" (dark) */
+    --orange: 24 80% 58%;
+    --orange-foreground: 0 0% 100%;
+
     /* Info */
     --info: 199 65% 56%;
     --info-foreground: 0 0% 100%;
