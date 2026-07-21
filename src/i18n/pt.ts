@@ -166,6 +166,7 @@ export const pt = {
     risks: 'Riscos',
     riskAcceptance: 'Aceite de Risco',
     gapAnalysis: 'Gap Analysis',
+    program: 'Programa',
     frameworks: 'Frameworks',
     adherenceAssessment: 'Avaliação de Aderência',
     governance: 'Governança',

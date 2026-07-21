@@ -21,6 +21,8 @@ const AtivosChaves = React.lazy(() => import('@/pages/AtivosChaves'));
 const Riscos = React.lazy(() => import('@/pages/Riscos').then(m => ({ default: m.Riscos })));
 const Continuidade = React.lazy(() => import('@/pages/Continuidade'));
 const GapAnalysisFrameworks = React.lazy(() => import('@/pages/GapAnalysisFrameworks'));
+const Programa = React.lazy(() => import('@/pages/Programa'));
+const ProgramaDetalhe = React.lazy(() => import('@/pages/ProgramaDetalhe'));
 const GapAnalysisFrameworkDetail = React.lazy(() => import('@/pages/GapAnalysisFrameworkDetail'));
 const Contratos = React.lazy(() => import('@/pages/Contratos'));
 const Governanca = React.lazy(() => import('@/pages/Governanca'));
@@ -211,6 +213,20 @@ function App() {
               </Layout>
             } />
             <Route path="/gap-analysis/avaliacao-aderencia" element={<Navigate to="/gap-analysis/frameworks" replace />} />
+            <Route path="/programa" element={
+              <Layout>
+                <ProtectedRoute moduleName="gap-analysis" fallbackToRoleCheck={false}>
+                  <Programa />
+                </ProtectedRoute>
+              </Layout>
+            } />
+            <Route path="/programa/:id" element={
+              <Layout>
+                <ProtectedRoute moduleName="gap-analysis" fallbackToRoleCheck={false}>
+                  <ProgramaDetalhe />
+                </ProtectedRoute>
+              </Layout>
+            } />
             <Route path="/governanca" element={
               <Layout>
                 <ProtectedRoute moduleName="controles" fallbackToRoleCheck={false}>

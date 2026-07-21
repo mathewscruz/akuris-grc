@@ -31,7 +31,8 @@ import {
   UserCheck,
   UserCog,
   BadgeCheck,
-  LifeBuoy
+  LifeBuoy,
+  Rocket
 } from 'lucide-react';
 import {
   RiscosIcon,
@@ -108,6 +109,7 @@ const getMenuSections = (t: (key: string) => string): MenuSection[] => [
         ],
       },
       { title: t('sidebar.gapAnalysis'), url: '/gap-analysis/frameworks', icon: GapAnalysisIcon, moduleName: 'gap-analysis' },
+      { title: t('sidebar.program'), url: '/programa', icon: Rocket, moduleName: 'gap-analysis' },
       {
         title: t('sidebar.assetManagement'),
         icon: AtivosIcon,

@@ -166,6 +166,7 @@ export const en = {
     risks: 'Risks',
     riskAcceptance: 'Risk Acceptance',
     gapAnalysis: 'Gap Analysis',
+    program: 'Program',
     frameworks: 'Frameworks',
     adherenceAssessment: 'Adherence Assessment',
     governance: 'Governance',
