@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { DialogShell } from '@/components/ui/dialog-shell';
+import { EvidenceLinksPanel } from '@/components/evidencias/EvidenceLinksPanel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -364,6 +365,10 @@ export function AssessmentDialog({
                   Abrir
                 </Button>
               </div>
+            </div>
+
+            <div className="pt-2 border-t border-border">
+              <EvidenceLinksPanel modulo="due_diligence" registroId={assessment.id} />
             </div>
           </div>
       </DialogShell>

@@ -5,6 +5,7 @@ import { DialogShell } from "@/components/ui/dialog-shell";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { EvidenceLinksPanel } from "@/components/evidencias/EvidenceLinksPanel";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Popover,
@@ -473,6 +474,15 @@ export function ItemAuditoriaDetalheDialog({
             </TabsContent>
 
             <TabsContent value="evidencias" className="flex-1 overflow-hidden flex flex-col mt-4">
+              {/* Biblioteca central de evidências (reaproveitável entre módulos) */}
+              {item?.id && (
+                <div className="flex-shrink-0 mb-4 pb-4 border-b border-border">
+                  <EvidenceLinksPanel modulo="auditoria_itens" registroId={item.id} />
+                </div>
+              )}
+
+              {/* Anexos específicos deste item */}
+              <p className="flex-shrink-0 text-xs font-medium text-muted-foreground mb-2">Anexos deste item</p>
               {/* Upload de evidência */}
               <div className="flex-shrink-0 mb-4">
                 <label className="cursor-pointer">

@@ -10,7 +10,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveCriticidadeTone } from '@/lib/status-tone';
-import { CalendarIcon, Plus, AlertTriangle, Shield, Database, FileText, Users, Layers } from 'lucide-react';
+import { CalendarIcon, Plus, AlertTriangle, Shield, Database, FileText, Users, Layers, Library } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useForm } from 'react-hook-form';
@@ -21,6 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { useIntegrationNotify } from '@/hooks/useIntegrationNotify';
 import { WizardDialog, WizardTab, WizardTabState } from '@/components/ui/wizard-dialog';
+import { EvidenceLinksPanel } from '@/components/evidencias/EvidenceLinksPanel';
 import { WizardSummaryCard, WizardSummaryRow } from '@/components/ui/wizard-summary-card';
 import { FieldHelpTooltip } from '@/components/ui/field-help-tooltip';
 import { useWizardDraft } from '@/hooks/useWizardDraft';
@@ -512,8 +513,20 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
           </div>
         ),
       },
+      ...(incidente?.id
+        ? [{
+            id: 'evidencias',
+            label: 'Evidências',
+            icon: Library,
+            content: (
+              <div className="max-w-3xl">
+                <EvidenceLinksPanel modulo="incidentes" registroId={incidente.id} />
+              </div>
+            ),
+          } as WizardTab]
+        : []),
     ],
-    [form, identState, detectState, impactoState, tratamentoState, watched]
+    [form, identState, detectState, impactoState, tratamentoState, watched, incidente?.id]
   );
 
   const summary = (
