@@ -17,6 +17,7 @@ import { ItemDialog } from '@/components/programa/ItemDialog';
 import { ProgramaDialog } from '@/components/programa/ProgramaDialog';
 import { useProgramaDetalhe, type ProgramaItem, type ItemStatus } from '@/hooks/usePrograma';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
+import { getTemplateForFramework } from '@/lib/programa-templates';
 
 const fmtBRL = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
 const NIVEL_LABEL: Record<string, string> = { baixo: 'Baixo', medio: 'Médio', alto: 'Alto' };
@@ -79,6 +80,7 @@ export default function ProgramaDetalhe() {
 
   const prog = p.programa;
   const dias = diasPara(prog.data_alvo);
+  const modelo = getTemplateForFramework(prog.framework_nome);
 
   const handleAddFase = async () => {
     if (!novaFase.trim()) return;
@@ -179,7 +181,12 @@ export default function ProgramaDetalhe() {
       </div>
 
       {p.fases.length === 0 && p.itens.length === 0 ? (
-        <EmptyState icon={<Layers className="h-8 w-8" />} title="Comece pelas fases" description="Crie fases (ex.: Escopo e SoA, Avaliação de riscos, Políticas...) e adicione itens do que precisa ser feito, com custo, prazo e ferramenta." />
+        <div className="space-y-4">
+          <EmptyState icon={<Layers className="h-8 w-8" />} title="Comece com um modelo pronto" description={`Gere o roadmap típico do framework — fases e itens já preenchidos com esforço, custo e ferramenta sugeridos. Você só ajusta os números e acompanha.`} />
+          <div className="flex justify-center">
+            <Button onClick={() => p.aplicarTemplate(modelo)}><Plus className="h-4 w-4 mr-2" /> Usar modelo {modelo.label}</Button>
+          </div>
+        </div>
       ) : (
         <div className="space-y-5">
           {grupos.g.map(({ fase, itens }) => {

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
 import { toast } from 'sonner';
+import type { ProgramaTemplate } from '@/lib/programa-templates';
 
 // Tabelas novas ainda não estão no types gerado — cast único.
 const sb = supabase as any;
@@ -59,6 +60,36 @@ async function currentUserId(): Promise<string | null> {
   return data.user?.id ?? null;
 }
 
+/** Semeia fases + itens de um modelo num programa recém-criado (ou vazio). */
+export async function seedProgramaFromTemplate(empresaId: string, programaId: string, template: ProgramaTemplate): Promise<void> {
+  const uid = await currentUserId();
+  for (let fi = 0; fi < template.fases.length; fi++) {
+    const fase = template.fases[fi];
+    const { data: f, error } = await sb.from('programa_fases')
+      .insert({ empresa_id: empresaId, programa_id: programaId, nome: fase.nome, ordem: fi })
+      .select('id').single();
+    if (error || !f) { logger.error('seedPrograma.fase', error); continue; }
+    const itens = fase.itens.map((it, ii) => ({
+      empresa_id: empresaId,
+      programa_id: programaId,
+      fase_id: f.id,
+      titulo: it.titulo,
+      descricao: it.descricao ?? null,
+      esforco: it.esforco ?? null,
+      impacto: it.impacto ?? null,
+      custo_estimado: it.custo_estimado ?? null,
+      ferramenta_sugerida: it.ferramenta_sugerida ?? null,
+      status: 'pendente',
+      ordem: ii,
+      created_by: uid,
+    }));
+    if (itens.length > 0) {
+      const { error: iErr } = await sb.from('programa_itens').insert(itens);
+      if (iErr) logger.error('seedPrograma.itens', iErr);
+    }
+  }
+}
+
 /** Lista de programas da empresa, com estatísticas agregadas. */
 export function useProgramas(empresaId: string | null) {
   const [programas, setProgramas] = useState<Programa[]>([]);
@@ -109,7 +140,7 @@ export function useProgramas(empresaId: string | null) {
 
   const createPrograma = useCallback(async (input: {
     nome: string; framework_id?: string | null; descricao?: string; data_alvo?: string | null; orcamento_total?: number | null;
-  }): Promise<Programa | null> => {
+  }, template?: ProgramaTemplate | null): Promise<Programa | null> => {
     if (!empresaId) return null;
     try {
       const { data, error } = await sb.from('implementacao_programas').insert({
@@ -122,6 +153,7 @@ export function useProgramas(empresaId: string | null) {
         created_by: await currentUserId(),
       }).select('*').single();
       if (error) throw error;
+      if (template) await seedProgramaFromTemplate(empresaId, data.id, template);
       await fetchAll();
       return data as Programa;
     } catch (e) {
@@ -185,6 +217,15 @@ export function useProgramaDetalhe(programaId: string | undefined, empresaId: st
       return true;
     } catch (e) { logger.error('updatePrograma', e); toast.error('Erro ao atualizar programa.'); return false; }
   }, [programaId, fetchAll]);
+
+  const aplicarTemplate = useCallback(async (template: ProgramaTemplate): Promise<boolean> => {
+    if (!programaId || !empresaId) return false;
+    try {
+      await seedProgramaFromTemplate(empresaId, programaId, template);
+      await fetchAll();
+      return true;
+    } catch (e) { logger.error('aplicarTemplate', e); toast.error('Erro ao aplicar o modelo.'); return false; }
+  }, [programaId, empresaId, fetchAll]);
 
   const addFase = useCallback(async (nome: string): Promise<boolean> => {
     if (!programaId || !empresaId) return false;
@@ -256,5 +297,5 @@ export function useProgramaDetalhe(programaId: string | undefined, empresaId: st
     } catch (e) { logger.error('deleteItem', e); toast.error('Erro ao excluir item.'); return false; }
   }, [fetchAll]);
 
-  return { programa, fases, itens, loading, fetchAll, updatePrograma, addFase, deleteFase, saveItem, setItemStatus, deleteItem };
+  return { programa, fases, itens, loading, fetchAll, updatePrograma, aplicarTemplate, addFase, deleteFase, saveItem, setItemStatus, deleteItem };
 }

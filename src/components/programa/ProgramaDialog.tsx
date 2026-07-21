@@ -5,14 +5,16 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import type { Programa } from '@/hooks/usePrograma';
+import { getTemplateForFramework, type ProgramaTemplate } from '@/lib/programa-templates';
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   programa?: Programa | null;
-  onSubmit: (values: { nome: string; framework_id: string | null; data_alvo: string | null; orcamento_total: number | null; descricao: string | null }) => Promise<boolean>;
+  onSubmit: (values: { nome: string; framework_id: string | null; data_alvo: string | null; orcamento_total: number | null; descricao: string | null }, template?: ProgramaTemplate | null) => Promise<boolean>;
 }
 
 export function ProgramaDialog({ open, onOpenChange, programa, onSubmit }: Props) {
@@ -23,6 +25,7 @@ export function ProgramaDialog({ open, onOpenChange, programa, onSubmit }: Props
   const [orcamento, setOrcamento] = useState('');
   const [descricao, setDescricao] = useState('');
   const [frameworks, setFrameworks] = useState<{ id: string; nome: string }[]>([]);
+  const [usarModelo, setUsarModelo] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -32,22 +35,27 @@ export function ProgramaDialog({ open, onOpenChange, programa, onSubmit }: Props
     setDataAlvo(programa?.data_alvo ?? '');
     setOrcamento(programa?.orcamento_total != null ? String(programa.orcamento_total) : '');
     setDescricao(programa?.descricao ?? '');
+    setUsarModelo(true);
     (async () => {
       const { data } = await supabase.from('gap_analysis_frameworks').select('id, nome').order('nome');
       setFrameworks((data || []) as any);
     })();
   }, [open, programa]);
 
+  const fwNome = frameworks.find((f) => f.id === frameworkId)?.nome;
+  const modelo = getTemplateForFramework(fwNome);
+
   const handleSubmit = async () => {
     if (!nome.trim()) return;
     setSaving(true);
+    const template = !isEdit && usarModelo ? modelo : null;
     const ok = await onSubmit({
       nome: nome.trim(),
       framework_id: frameworkId || null,
       data_alvo: dataAlvo || null,
       orcamento_total: orcamento ? Number(orcamento) : null,
       descricao: descricao.trim() || null,
-    });
+    }, template);
     setSaving(false);
     if (ok) onOpenChange(false);
   };
@@ -97,6 +105,16 @@ export function ProgramaDialog({ open, onOpenChange, programa, onSubmit }: Props
           <Label htmlFor="pg-desc">Descrição</Label>
           <Textarea id="pg-desc" value={descricao} onChange={(e) => setDescricao(e.target.value)} rows={2} placeholder="Escopo, objetivo, contexto..." />
         </div>
+
+        {!isEdit && (
+          <label className="flex items-start gap-3 rounded-lg border border-border bg-card p-3 cursor-pointer">
+            <Checkbox checked={usarModelo} onCheckedChange={(v) => setUsarModelo(!!v)} className="mt-0.5" />
+            <span className="text-sm">
+              Começar a partir do modelo <span className="font-medium">{modelo.label}</span>
+              <span className="block text-xs text-muted-foreground mt-0.5">Cria as fases e itens típicos já preenchidos com esforço, custo e ferramenta sugeridos — você só ajusta.</span>
+            </span>
+          </label>
+        )}
       </div>
     </DialogShell>
   );
