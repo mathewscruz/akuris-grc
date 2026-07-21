@@ -34,6 +34,21 @@ export interface ProgramaFase {
   nome: string;
   descricao: string | null;
   ordem: number;
+  orcamento: number | null;
+}
+
+export type FerramentaStatus = 'planejada' | 'avaliando' | 'contratada';
+export interface ProgramaFerramenta {
+  id: string;
+  programa_id: string;
+  fase_id: string | null;
+  nome: string;
+  categoria: string | null;
+  fornecedor: string | null;
+  custo: number | null;
+  recorrencia: 'unica' | 'mensal' | 'anual';
+  status: FerramentaStatus;
+  observacoes: string | null;
 }
 
 export interface ProgramaItem {
@@ -184,20 +199,23 @@ export function useProgramaDetalhe(programaId: string | undefined, empresaId: st
   const [programa, setPrograma] = useState<Programa | null>(null);
   const [fases, setFases] = useState<ProgramaFase[]>([]);
   const [itens, setItens] = useState<ProgramaItem[]>([]);
+  const [ferramentas, setFerramentas] = useState<ProgramaFerramenta[]>([]);
   const [loading, setLoading] = useState(false);
 
   const fetchAll = useCallback(async () => {
     if (!programaId) return;
     setLoading(true);
     try {
-      const [pRes, fRes, iRes] = await Promise.all([
+      const [pRes, fRes, iRes, tRes] = await Promise.all([
         sb.from('implementacao_programas').select('*, framework:gap_analysis_frameworks(nome)').eq('id', programaId).maybeSingle(),
         sb.from('programa_fases').select('*').eq('programa_id', programaId).order('ordem', { ascending: true }),
         sb.from('programa_itens').select('*').eq('programa_id', programaId).order('ordem', { ascending: true }),
+        sb.from('programa_ferramentas').select('*').eq('programa_id', programaId).order('created_at', { ascending: true }),
       ]);
       setPrograma(pRes.data ? { ...pRes.data, framework_nome: pRes.data.framework?.nome ?? null } : null);
       setFases((fRes.data || []) as ProgramaFase[]);
       setItens((iRes.data || []) as ProgramaItem[]);
+      setFerramentas((tRes.data || []) as ProgramaFerramenta[]);
     } catch (e) {
       logger.error('useProgramaDetalhe.fetchAll', e);
       toast.error('Não foi possível carregar o programa.');
@@ -238,6 +256,15 @@ export function useProgramaDetalhe(programaId: string | undefined, empresaId: st
     } catch (e) { logger.error('addFase', e); toast.error('Erro ao criar fase.'); return false; }
   }, [programaId, empresaId, fases.length, fetchAll]);
 
+  const updateFase = useCallback(async (id: string, patch: { nome?: string; orcamento?: number | null }): Promise<boolean> => {
+    try {
+      const { error } = await sb.from('programa_fases').update(patch).eq('id', id);
+      if (error) throw error;
+      await fetchAll();
+      return true;
+    } catch (e) { logger.error('updateFase', e); toast.error('Erro ao atualizar fase.'); return false; }
+  }, [fetchAll]);
+
   const deleteFase = useCallback(async (id: string): Promise<boolean> => {
     try {
       const { error } = await sb.from('programa_fases').delete().eq('id', id);
@@ -245,6 +272,43 @@ export function useProgramaDetalhe(programaId: string | undefined, empresaId: st
       await fetchAll();
       return true;
     } catch (e) { logger.error('deleteFase', e); toast.error('Erro ao excluir fase.'); return false; }
+  }, [fetchAll]);
+
+  const saveFerramenta = useCallback(async (input: Partial<ProgramaFerramenta> & { id?: string }): Promise<boolean> => {
+    if (!programaId || !empresaId) return false;
+    try {
+      const payload: any = {
+        nome: input.nome,
+        categoria: input.categoria ?? null,
+        fornecedor: input.fornecedor ?? null,
+        custo: input.custo ?? null,
+        recorrencia: input.recorrencia ?? 'anual',
+        status: input.status ?? 'planejada',
+        fase_id: input.fase_id ?? null,
+        observacoes: input.observacoes ?? null,
+      };
+      if (input.id) {
+        const { error } = await sb.from('programa_ferramentas').update(payload).eq('id', input.id);
+        if (error) throw error;
+      } else {
+        payload.empresa_id = empresaId;
+        payload.programa_id = programaId;
+        payload.created_by = await currentUserId();
+        const { error } = await sb.from('programa_ferramentas').insert(payload);
+        if (error) throw error;
+      }
+      await fetchAll();
+      return true;
+    } catch (e) { logger.error('saveFerramenta', e); toast.error('Erro ao salvar ferramenta.'); return false; }
+  }, [programaId, empresaId, fetchAll]);
+
+  const deleteFerramenta = useCallback(async (id: string): Promise<boolean> => {
+    try {
+      const { error } = await sb.from('programa_ferramentas').delete().eq('id', id);
+      if (error) throw error;
+      await fetchAll();
+      return true;
+    } catch (e) { logger.error('deleteFerramenta', e); toast.error('Erro ao excluir ferramenta.'); return false; }
   }, [fetchAll]);
 
   const saveItem = useCallback(async (input: Partial<ProgramaItem> & { id?: string }): Promise<boolean> => {
@@ -297,5 +361,5 @@ export function useProgramaDetalhe(programaId: string | undefined, empresaId: st
     } catch (e) { logger.error('deleteItem', e); toast.error('Erro ao excluir item.'); return false; }
   }, [fetchAll]);
 
-  return { programa, fases, itens, loading, fetchAll, updatePrograma, aplicarTemplate, addFase, deleteFase, saveItem, setItemStatus, deleteItem };
+  return { programa, fases, itens, ferramentas, loading, fetchAll, updatePrograma, aplicarTemplate, addFase, updateFase, deleteFase, saveItem, setItemStatus, deleteItem, saveFerramenta, deleteFerramenta };
 }
