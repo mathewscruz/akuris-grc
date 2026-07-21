@@ -30,8 +30,8 @@ export default function Programa() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleting, setDeleting] = useState<Programa | null>(null);
 
-  const handleCreate = async (values: any, template?: any) => {
-    const created = await lib.createPrograma(values, template);
+  const handleCreate = async (values: any, opts?: any) => {
+    const created = await lib.createPrograma(values, opts);
     if (created) { navigate(`/programa/${created.id}`); return true; }
     return false;
   };

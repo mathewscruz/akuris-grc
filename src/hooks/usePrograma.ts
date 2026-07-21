@@ -75,6 +75,66 @@ async function currentUserId(): Promise<string | null> {
   return data.user?.id ?? null;
 }
 
+/** Puxa controles do Gap Analysis para um programa. Retorna quantos itens criou/atualizou. */
+export async function syncProgramaFromGapAnalysis(
+  empresaId: string,
+  programaId: string,
+  frameworkId: string,
+  existingFases: { id: string; nome: string }[] = [],
+  existingItens: { id: string; requirement_id: string | null }[] = [],
+): Promise<{ added: number; updated: number }> {
+  const [reqRes, evalRes] = await Promise.all([
+    sb.from('gap_analysis_requirements').select('id, codigo, titulo, categoria, peso, orientacao_implementacao').eq('framework_id', frameworkId).order('ordem', { ascending: true }),
+    sb.from('gap_analysis_evaluations').select('requirement_id, conformity_status').eq('framework_id', frameworkId).eq('empresa_id', empresaId),
+  ]);
+  const reqs = (reqRes.data || []) as any[];
+  if (reqs.length === 0) return { added: 0, updated: 0 };
+  const evalMap = new Map((evalRes.data || []).map((e: any) => [e.requirement_id, e.conformity_status]));
+  const statusOf = (c?: string) => (c === 'conforme' ? 'concluido' : c === 'parcial' ? 'em_andamento' : 'pendente');
+  const impactoOf = (peso: any) => (Number(peso) >= 4 ? 'alto' : Number(peso) === 3 ? 'medio' : 'baixo');
+  const uid = await currentUserId();
+
+  const faseByName = new Map(existingFases.map((f) => [f.nome, f.id]));
+  const cats = Array.from(new Set(reqs.map((r) => r.categoria || 'Controles')));
+  let ordem = existingFases.length;
+  for (const cat of cats) {
+    if (!faseByName.has(cat)) {
+      const { data: f } = await sb.from('programa_fases').insert({ empresa_id: empresaId, programa_id: programaId, nome: cat, ordem: ordem++ }).select('id').single();
+      if (f) faseByName.set(cat, f.id);
+    }
+  }
+
+  const itemByReq = new Map(existingItens.filter((i) => i.requirement_id).map((i) => [i.requirement_id, i]));
+  let added = 0, updated = 0;
+  const toInsert: any[] = [];
+  for (const r of reqs) {
+    const conf = evalMap.get(r.id) as string | undefined;
+    if (conf === 'nao_aplicavel') continue;
+    const st = statusOf(conf);
+    const existing = itemByReq.get(r.id);
+    if (existing) {
+      await sb.from('programa_itens').update({ status: st }).eq('id', existing.id);
+      updated++;
+    } else {
+      toInsert.push({
+        empresa_id: empresaId, programa_id: programaId,
+        fase_id: faseByName.get(r.categoria || 'Controles') ?? null,
+        titulo: r.codigo ? `[${r.codigo}] ${r.titulo}` : r.titulo,
+        descricao: r.orientacao_implementacao || null,
+        requirement_id: r.id,
+        impacto: impactoOf(r.peso),
+        status: st, ordem: 0, created_by: uid,
+      });
+      added++;
+    }
+  }
+  for (let i = 0; i < toInsert.length; i += 200) {
+    const { error } = await sb.from('programa_itens').insert(toInsert.slice(i, i + 200));
+    if (error) throw error;
+  }
+  return { added, updated };
+}
+
 /** Semeia fases + itens de um modelo num programa recém-criado (ou vazio). */
 export async function seedProgramaFromTemplate(empresaId: string, programaId: string, template: ProgramaTemplate): Promise<void> {
   const uid = await currentUserId();
@@ -155,7 +215,7 @@ export function useProgramas(empresaId: string | null) {
 
   const createPrograma = useCallback(async (input: {
     nome: string; framework_id?: string | null; descricao?: string; data_alvo?: string | null; orcamento_total?: number | null;
-  }, template?: ProgramaTemplate | null): Promise<Programa | null> => {
+  }, opts?: { syncGap?: boolean; template?: ProgramaTemplate | null }): Promise<Programa | null> => {
     if (!empresaId) return null;
     try {
       const { data, error } = await sb.from('implementacao_programas').insert({
@@ -168,7 +228,15 @@ export function useProgramas(empresaId: string | null) {
         created_by: await currentUserId(),
       }).select('*').single();
       if (error) throw error;
-      if (template) await seedProgramaFromTemplate(empresaId, data.id, template);
+      // Framework com assessment → puxa do Gap Analysis; senão, cai no modelo (fallback).
+      let seeded = false;
+      if (opts?.syncGap && input.framework_id) {
+        try {
+          const res = await syncProgramaFromGapAnalysis(empresaId, data.id, input.framework_id);
+          seeded = res.added > 0;
+        } catch (e) { logger.error('createPrograma.syncGap', e); }
+      }
+      if (!seeded && opts?.template) await seedProgramaFromTemplate(empresaId, data.id, opts.template);
       await fetchAll();
       return data as Programa;
     } catch (e) {
@@ -251,61 +319,10 @@ export function useProgramaDetalhe(programaId: string | undefined, empresaId: st
     const fwId = programa?.framework_id;
     if (!fwId) { toast.error('Vincule um framework ao programa para puxar os controles.'); return null; }
     try {
-      const [reqRes, evalRes] = await Promise.all([
-        sb.from('gap_analysis_requirements').select('id, codigo, titulo, categoria, peso, orientacao_implementacao').eq('framework_id', fwId).order('ordem', { ascending: true }),
-        sb.from('gap_analysis_evaluations').select('requirement_id, conformity_status').eq('framework_id', fwId).eq('empresa_id', empresaId),
-      ]);
-      const reqs = (reqRes.data || []) as any[];
-      if (reqs.length === 0) { toast.info('Este framework não tem requisitos cadastrados no Gap Analysis.'); return { added: 0, updated: 0 }; }
-      const evalMap = new Map((evalRes.data || []).map((e: any) => [e.requirement_id, e.conformity_status]));
-      const statusOf = (c?: string) => (c === 'conforme' ? 'concluido' : c === 'parcial' ? 'em_andamento' : 'pendente');
-      const impactoOf = (peso: any) => (Number(peso) >= 4 ? 'alto' : Number(peso) === 3 ? 'medio' : 'baixo');
-      const uid = await currentUserId();
-
-      // Garante uma fase por categoria (reaproveita as existentes pelo nome)
-      const faseByName = new Map(fases.map((f) => [f.nome, f.id]));
-      const cats = Array.from(new Set(reqs.map((r) => r.categoria || 'Controles')));
-      let ordem = fases.length;
-      for (const cat of cats) {
-        if (!faseByName.has(cat)) {
-          const { data: f } = await sb.from('programa_fases').insert({ empresa_id: empresaId, programa_id: programaId, nome: cat, ordem: ordem++ }).select('id').single();
-          if (f) faseByName.set(cat, f.id);
-        }
-      }
-
-      const itemByReq = new Map(itens.filter((i) => i.requirement_id).map((i) => [i.requirement_id, i]));
-      let added = 0, updated = 0;
-      const toInsert: any[] = [];
-      for (const r of reqs) {
-        const conf = evalMap.get(r.id) as string | undefined;
-        if (conf === 'nao_aplicavel') continue;
-        const st = statusOf(conf);
-        const existing = itemByReq.get(r.id);
-        if (existing) {
-          await sb.from('programa_itens').update({ status: st }).eq('id', existing.id);
-          updated++;
-        } else {
-          toInsert.push({
-            empresa_id: empresaId,
-            programa_id: programaId,
-            fase_id: faseByName.get(r.categoria || 'Controles') ?? null,
-            titulo: r.codigo ? `[${r.codigo}] ${r.titulo}` : r.titulo,
-            descricao: r.orientacao_implementacao || null,
-            requirement_id: r.id,
-            impacto: impactoOf(r.peso),
-            status: st,
-            ordem: 0,
-            created_by: uid,
-          });
-          added++;
-        }
-      }
-      for (let i = 0; i < toInsert.length; i += 200) {
-        const { error } = await sb.from('programa_itens').insert(toInsert.slice(i, i + 200));
-        if (error) throw error;
-      }
+      const res = await syncProgramaFromGapAnalysis(empresaId, programaId, fwId, fases, itens);
+      if (res.added === 0 && res.updated === 0) toast.info('Este framework não tem requisitos avaliados no Gap Analysis.');
       await fetchAll();
-      return { added, updated };
+      return res;
     } catch (e) {
       logger.error('syncGapAnalysis', e);
       toast.error('Erro ao sincronizar com o Gap Analysis.');

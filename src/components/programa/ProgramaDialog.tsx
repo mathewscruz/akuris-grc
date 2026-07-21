@@ -14,7 +14,7 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   programa?: Programa | null;
-  onSubmit: (values: { nome: string; framework_id: string | null; data_alvo: string | null; orcamento_total: number | null; descricao: string | null }, template?: ProgramaTemplate | null) => Promise<boolean>;
+  onSubmit: (values: { nome: string; framework_id: string | null; data_alvo: string | null; orcamento_total: number | null; descricao: string | null }, opts?: { syncGap?: boolean; template?: ProgramaTemplate | null }) => Promise<boolean>;
 }
 
 export function ProgramaDialog({ open, onOpenChange, programa, onSubmit }: Props) {
@@ -48,14 +48,16 @@ export function ProgramaDialog({ open, onOpenChange, programa, onSubmit }: Props
   const handleSubmit = async () => {
     if (!nome.trim()) return;
     setSaving(true);
-    const template = !isEdit && usarModelo ? modelo : null;
+    const opts = !isEdit && usarModelo
+      ? (frameworkId ? { syncGap: true, template: modelo } : { template: modelo })
+      : undefined;
     const ok = await onSubmit({
       nome: nome.trim(),
       framework_id: frameworkId || null,
       data_alvo: dataAlvo || null,
       orcamento_total: orcamento ? Number(orcamento) : null,
       descricao: descricao.trim() || null,
-    }, template);
+    }, opts);
     setSaving(false);
     if (ok) onOpenChange(false);
   };
@@ -109,10 +111,17 @@ export function ProgramaDialog({ open, onOpenChange, programa, onSubmit }: Props
         {!isEdit && (
           <label className="flex items-start gap-3 rounded-lg border border-border bg-card p-3 cursor-pointer">
             <Checkbox checked={usarModelo} onCheckedChange={(v) => setUsarModelo(!!v)} className="mt-0.5" />
-            <span className="text-sm">
-              Começar a partir do modelo <span className="font-medium">{modelo.label}</span>
-              <span className="block text-xs text-muted-foreground mt-0.5">Cria as fases e itens típicos já preenchidos com esforço, custo e ferramenta sugeridos — você só ajusta.</span>
-            </span>
+            {frameworkId ? (
+              <span className="text-sm">
+                Vincular ao <span className="font-medium">Gap Analysis</span> e puxar os controles
+                <span className="block text-xs text-muted-foreground mt-0.5">Traz os controles do framework com o status de conformidade real. Se o framework não tiver avaliação, usa o modelo {modelo.label} como base.</span>
+              </span>
+            ) : (
+              <span className="text-sm">
+                Começar a partir do modelo <span className="font-medium">{modelo.label}</span>
+                <span className="block text-xs text-muted-foreground mt-0.5">Cria as fases e itens típicos já preenchidos com esforço, custo e ferramenta sugeridos — você só ajusta.</span>
+              </span>
+            )}
           </label>
         )}
       </div>
