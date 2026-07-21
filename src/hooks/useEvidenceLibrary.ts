@@ -270,6 +270,55 @@ export function useEvidenceLibrary(empresaId: string | null) {
     }
   }, [empresaId, fetchAll]);
 
+  /** Vincula uma evidência a um registro de qualquer módulo (polimórfico). */
+  const linkToRecord = useCallback(async (params: {
+    evidence_id: string;
+    modulo: string;
+    registro_id: string;
+  }): Promise<boolean> => {
+    if (!empresaId) return false;
+    try {
+      const { error } = await supabase
+        .from('evidence_library_links')
+        .insert({
+          empresa_id: empresaId,
+          evidence_id: params.evidence_id,
+          modulo: params.modulo,
+          registro_id: params.registro_id,
+          vinculo_tipo: 'manual',
+          aceito_em: new Date().toISOString(),
+        } as any);
+      // 23505 = unique_violation → já estava vinculado, tratamos como sucesso
+      if (error && (error as any).code !== '23505') throw error;
+      await fetchAll();
+      return true;
+    } catch (err) {
+      logger.error('useEvidenceLibrary.linkToRecord', err);
+      toast.error('Erro ao vincular evidência ao registro.');
+      return false;
+    }
+  }, [empresaId, fetchAll]);
+
+  /** Lista os vínculos (com a evidência embutida) de um registro de módulo. */
+  const fetchLinksForRecord = useCallback(async (
+    modulo: string,
+    registro_id: string,
+  ): Promise<Array<{ id: string; evidence: EvidenceLibraryItem }>> => {
+    if (!empresaId) return [];
+    const { data, error } = await supabase
+      .from('evidence_library_links')
+      .select('id, evidence:evidence_library(*)')
+      .eq('empresa_id', empresaId)
+      .eq('modulo', modulo)
+      .eq('registro_id', registro_id)
+      .order('created_at', { ascending: false });
+    if (error) {
+      logger.error('useEvidenceLibrary.fetchLinksForRecord', error);
+      return [];
+    }
+    return (data || []) as any;
+  }, [empresaId]);
+
   /** Aceita uma sugestão IA (preenche aceito_em/aceito_por). */
   const acceptSuggestion = useCallback(async (linkId: string): Promise<boolean> => {
     if (!empresaId) return false;
@@ -373,6 +422,8 @@ export function useEvidenceLibrary(empresaId: string | null) {
     uploadAndCreate,
     updateEvidence,
     deleteEvidence,
+    linkToRecord,
+    fetchLinksForRecord,
     linkToEvaluation,
     acceptSuggestion,
     unlink,
