@@ -191,6 +191,55 @@ export function useEvidenceLibrary(empresaId: string | null) {
     }
   }, [empresaId, fetchAll]);
 
+  /** Atualiza metadados de uma evidência (nome, descrição, tags, link). */
+  const updateEvidence = useCallback(async (id: string, patch: {
+    nome?: string;
+    descricao?: string | null;
+    tags?: string[];
+    link_externo?: string | null;
+  }): Promise<boolean> => {
+    if (!empresaId) return false;
+    try {
+      const { error } = await supabase
+        .from('evidence_library')
+        .update({ ...patch, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .eq('empresa_id', empresaId);
+      if (error) throw error;
+      await fetchAll();
+      return true;
+    } catch (err) {
+      logger.error('useEvidenceLibrary.updateEvidence', err);
+      toast.error('Erro ao atualizar evidência.');
+      return false;
+    }
+  }, [empresaId, fetchAll]);
+
+  /** Exclui uma evidência e seus vínculos. */
+  const deleteEvidence = useCallback(async (id: string): Promise<boolean> => {
+    if (!empresaId) return false;
+    try {
+      // Remove vínculos primeiro (evita erro de FK se não houver cascade)
+      await supabase
+        .from('evidence_library_links')
+        .delete()
+        .eq('evidence_id', id)
+        .eq('empresa_id', empresaId);
+      const { error } = await supabase
+        .from('evidence_library')
+        .delete()
+        .eq('id', id)
+        .eq('empresa_id', empresaId);
+      if (error) throw error;
+      await fetchAll();
+      return true;
+    } catch (err) {
+      logger.error('useEvidenceLibrary.deleteEvidence', err);
+      toast.error('Erro ao excluir evidência.');
+      return false;
+    }
+  }, [empresaId, fetchAll]);
+
   /** Vincula evidência a uma evaluation (manual). */
   const linkToEvaluation = useCallback(async (params: {
     evidence_id: string;
@@ -322,6 +371,8 @@ export function useEvidenceLibrary(empresaId: string | null) {
     stats,
     fetchAll,
     uploadAndCreate,
+    updateEvidence,
+    deleteEvidence,
     linkToEvaluation,
     acceptSuggestion,
     unlink,

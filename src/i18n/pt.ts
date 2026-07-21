@@ -171,6 +171,7 @@ export const pt = {
     governance: 'Governança',
     internalControls: 'Controles Internos',
     audits: 'Auditorias',
+    evidences: 'Evidências',
     systems: 'Sistemas',
     accessManagement: 'Gestão de Acessos',
     contracts: 'Contratos',

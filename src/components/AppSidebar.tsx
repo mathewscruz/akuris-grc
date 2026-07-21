@@ -31,6 +31,7 @@ import {
   UserCheck,
   UserCog,
   BadgeCheck,
+  Library,
   LifeBuoy
 } from 'lucide-react';
 import {
@@ -108,6 +109,7 @@ const getMenuSections = (t: (key: string) => string): MenuSection[] => [
         ],
       },
       { title: t('sidebar.gapAnalysis'), url: '/gap-analysis/frameworks', icon: GapAnalysisIcon, moduleName: 'gap-analysis' },
+      { title: t('sidebar.evidences'), url: '/evidencias', icon: Library, moduleName: 'gap-analysis' },
       {
         title: t('sidebar.assetManagement'),
         icon: AtivosIcon,

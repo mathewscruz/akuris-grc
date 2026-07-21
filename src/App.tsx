@@ -22,6 +22,7 @@ const Riscos = React.lazy(() => import('@/pages/Riscos').then(m => ({ default: m
 const Continuidade = React.lazy(() => import('@/pages/Continuidade'));
 const GapAnalysisFrameworks = React.lazy(() => import('@/pages/GapAnalysisFrameworks'));
 const GapAnalysisFrameworkDetail = React.lazy(() => import('@/pages/GapAnalysisFrameworkDetail'));
+const Evidencias = React.lazy(() => import('@/pages/Evidencias'));
 const Contratos = React.lazy(() => import('@/pages/Contratos'));
 const Governanca = React.lazy(() => import('@/pages/Governanca'));
 const Sistemas = React.lazy(() => import('@/pages/Sistemas'));
@@ -211,6 +212,13 @@ function App() {
               </Layout>
             } />
             <Route path="/gap-analysis/avaliacao-aderencia" element={<Navigate to="/gap-analysis/frameworks" replace />} />
+            <Route path="/evidencias" element={
+              <Layout>
+                <ProtectedRoute moduleName="gap-analysis" fallbackToRoleCheck={false}>
+                  <Evidencias />
+                </ProtectedRoute>
+              </Layout>
+            } />
             <Route path="/governanca" element={
               <Layout>
                 <ProtectedRoute moduleName="controles" fallbackToRoleCheck={false}>

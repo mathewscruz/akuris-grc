@@ -171,6 +171,7 @@ export const en = {
     governance: 'Governance',
     internalControls: 'Internal Controls',
     audits: 'Audits',
+    evidences: 'Evidence',
     systems: 'Systems',
     accessManagement: 'Access Management',
     contracts: 'Contracts',
