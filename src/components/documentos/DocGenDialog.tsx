@@ -459,7 +459,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
           empresa_id: userInfo.empresa_id,
           action: 'generate_document',
           doc_type_hint: currentDocName || currentDocType,
-          ...(effFrameworkName && { framework_context: { framework_name: effFrameworkName, framework_id: effFrameworkId } }),
+          ...(effFrameworkName && { framework_context: { framework_name: effFrameworkName, framework_id: effFrameworkId, framework_ids: fwReqData?.matchedIds } }),
           ...(requirementContext && { requirement_context: requirementContext }),
         }
       });

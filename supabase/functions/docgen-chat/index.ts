@@ -127,6 +127,52 @@ async function fetchFrameworkGaps(supabase: any, frameworkId: string, empresaId:
   }
 }
 
+// Busca TODOS os requisitos catalogados do(s) framework(s), com o que cada um
+// exige (descrição/orientação) e o status de conformidade da empresa. Assim a IA
+// pode identificar os requisitos relevantes ao tema do documento e garantir que
+// o documento cumpra o que o framework pede. Genérico para qualquer framework.
+async function fetchFrameworkRequirements(supabase: any, frameworkIds: string[], empresaId: string): Promise<string> {
+  try {
+    const ids = (frameworkIds || []).filter(Boolean);
+    if (!ids.length) return '';
+
+    const { data: reqs } = await supabase
+      .from('gap_analysis_requirements')
+      .select('id, codigo, titulo, descricao, orientacao_implementacao, categoria')
+      .in('framework_id', ids)
+      .order('ordem', { ascending: true })
+      .limit(600);
+    if (!reqs || reqs.length === 0) return '';
+
+    // Status de conformidade da empresa, para marcar os gaps (prioridade).
+    const { data: evals } = await supabase
+      .from('gap_analysis_evaluations')
+      .select('requirement_id, conformity_status')
+      .in('framework_id', ids)
+      .eq('empresa_id', empresaId)
+      .limit(5000);
+    const statusById = new Map<string, string>();
+    (evals || []).forEach((e: any) => statusById.set(e.requirement_id, e.conformity_status));
+
+    const trunc = (s: string | null, n: number) => (s && s.length > n ? `${s.slice(0, n)}…` : (s || ''));
+    const lines = reqs.map((r: any) => {
+      const st = statusById.get(r.id);
+      const gapTag = st === 'nao_conforme' ? ' [GAP: NÃO CONFORME]'
+        : st === 'parcialmente_conforme' ? ' [GAP: PARCIAL]' : '';
+      const exige = [
+        r.descricao && `O que exige: ${trunc(r.descricao, 320)}`,
+        r.orientacao_implementacao && `Como cumprir: ${trunc(r.orientacao_implementacao, 320)}`,
+      ].filter(Boolean).join(' | ');
+      return `- [${r.codigo || 'S/C'}] ${r.titulo}${r.categoria ? ` (${r.categoria})` : ''}${gapTag}${exige ? `\n    ${exige}` : ''}`;
+    });
+
+    return lines.join('\n');
+  } catch (error) {
+    console.error('Error fetching framework requirements:', error);
+    return '';
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -589,12 +635,34 @@ IMPORTANTE: Sempre responda em português brasileiro. Responda SOMENTE com uma m
         ? `\n\nIMPORTANTE — O documento deve endereçar os seguintes gaps de conformidade identificados no framework "${framework_context?.framework_name}":\n${frameworkGapsText}\n\nInclua seções, controles ou procedimentos específicos que resolvam cada gap listado.`
         : '';
 
+      // Busca TODOS os requisitos do(s) framework(s) para o documento cobrir o que
+      // o framework pede sobre o tema (não só os gaps).
+      const docFwIds: string[] = (framework_context?.framework_ids?.length
+        ? framework_context.framework_ids
+        : (framework_context?.framework_id ? [framework_context.framework_id] : [])) as string[];
+      const docNome = (context as any).documento_nome_identificado || doc_type_hint || context.tipo_documento_identificado;
+      let frameworkRequirementsText = '';
+      if (docFwIds.length && empresa_id) {
+        frameworkRequirementsText = await fetchFrameworkRequirements(supabase, docFwIds, empresa_id);
+      }
+      const frameworkRequirementsSection = frameworkRequirementsText
+        ? `\n\n=== REQUISITOS DO(S) FRAMEWORK(S) — COBERTURA OBRIGATÓRIA ===
+Abaixo estão os requisitos catalogados do(s) framework(s). Antes de escrever o documento:
+1) Identifique quais requisitos tratam do TEMA deste documento ("${docNome}").
+2) Garanta que o documento CUMPRA EXPLICITAMENTE cada requisito relevante — incorpore o que ele exige (descrição/orientação) nas seções apropriadas, com regras concretas e acionáveis.
+3) Cite o código do requisito entre colchetes onde ele é endereçado (ex.: "[A.8.13]").
+4) Priorize os requisitos marcados como GAP.
+5) Não invente requisitos fora desta lista.
+
+${frameworkRequirementsText}`
+        : '';
+
       const documentPrompt = `Gere um documento COMPLETO e ESPECÍFICO do tipo solicitado.
 
-DOCUMENTO_EXATO: ${(context as any).documento_nome_identificado || doc_type_hint || context.tipo_documento_identificado}
+DOCUMENTO_EXATO: ${docNome}
 FRAMEWORKS_REQUERIDOS: ${JSON.stringify((context as any).frameworks_relacionados || (framework_context ? [framework_context.framework_name] : []))}
 EMPRESA: ${context.empresa_nome}
-${frameworkGapsSection}
+${frameworkRequirementsSection || frameworkGapsSection}
 
 Use a estrutura do template abaixo e cubra explicitamente os requisitos do(s) framework(s) citado(s) quando aplicável.
 
