@@ -246,15 +246,25 @@ export const resolveTipoDocumentoTone = (raw?: string | null): ToneResult => {
 // ─────────────────────────────────────────────────────────────────────────────
 // Auditorias: status, tipo e prioridade
 // ─────────────────────────────────────────────────────────────────────────────
-export const resolveAuditoriaPrioridadeTone = (raw?: string | null): ToneResult => {
+/**
+ * Escala de severidade ÚNICA (heatmap) — mesma cor em todo o sistema para
+ * criticidade, prioridade, gravidade, severidade e nível de risco.
+ * 🔴 Crítico (destructive) · 🟠 Alto (orange) · 🟡 Médio (warning) · 🟢 Baixo (success).
+ * Todos os resolvers de severidade abaixo delegam para cá.
+ */
+export const resolveSeverityTone = (raw?: string | null): ToneResult => {
   const v = norm(raw);
-  if (v === 'critica' || v === 'critico')
+  if (v === 'critico' || v === 'critica' || v === 'muito alto' || v === 'muito_alto')
     return { tone: 'destructive', intensity: 'high', icon: <AlertTriangle {...ICON_PROPS} /> };
-  if (v === 'alta' || v === 'alto') return { tone: 'destructive' };
-  if (v === 'media' || v === 'medio') return { tone: 'warning' };
-  if (v === 'baixa' || v === 'baixo') return { tone: 'success' };
+  if (v === 'alto' || v === 'alta') return { tone: 'orange' };
+  if (v === 'medio' || v === 'media') return { tone: 'warning' };
+  if (v === 'baixo' || v === 'baixa' || v === 'muito baixo' || v === 'muito_baixo')
+    return { tone: 'success' };
+  if (v === 'informativa' || v === 'informativo' || v === 'info') return { tone: 'info' };
   return { tone: 'neutral' };
 };
+
+export const resolveAuditoriaPrioridadeTone = resolveSeverityTone;
 
 export const resolveAuditoriaStatusTone = (raw?: string | null): ToneResult => {
   const v = norm(raw);
@@ -320,18 +330,7 @@ export const resolveRiscoStatusTone = (raw?: string | null): ToneResult => {
 // ─────────────────────────────────────────────────────────────────────────────
 // Riscos: nível (escala de severidade)
 // ─────────────────────────────────────────────────────────────────────────────
-export const resolveNivelRiscoTone = (raw?: string | null): ToneResult => {
-  const v = norm(raw);
-  if (v === 'critico')
-    return { tone: 'destructive', intensity: 'high', icon: <AlertTriangle {...ICON_PROPS} /> };
-  if (v === 'muito alto') return { tone: 'destructive', intensity: 'high' };
-  if (v === 'alto') return { tone: 'destructive' };
-  if (v === 'medio') return { tone: 'warning' };
-  if (v === 'baixo') return { tone: 'success' };
-  if (v === 'muito baixo') return { tone: 'success' };
-  if (v === 'nao avaliado' || v === 'nao_avaliado' || v === '') return { tone: 'neutral' };
-  return { tone: 'neutral' };
-};
+export const resolveNivelRiscoTone = resolveSeverityTone;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tratamentos: tipo (categoria funcional)
@@ -425,16 +424,7 @@ export const resolveRevisaoTone = (diasParaRevisao: number): ToneResult => {
 // ─────────────────────────────────────────────────────────────────────────────
 // Severidade (vulnerabilidades, incidentes)
 // ─────────────────────────────────────────────────────────────────────────────
-export const resolveSeveridadeTone = (raw?: string | null): ToneResult => {
-  const v = norm(raw);
-  if (v === 'critica' || v === 'critico')
-    return { tone: 'destructive', intensity: 'high', icon: <AlertTriangle {...ICON_PROPS} /> };
-  if (v === 'alta' || v === 'alto') return { tone: 'destructive' };
-  if (v === 'media' || v === 'medio') return { tone: 'warning' };
-  if (v === 'baixa' || v === 'baixo') return { tone: 'success' };
-  if (v === 'informativa' || v === 'info') return { tone: 'info' };
-  return { tone: 'neutral' };
-};
+export const resolveSeveridadeTone = resolveSeverityTone;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Controles: status (ativo, inativo, em_revisao, descontinuado)
@@ -459,15 +449,7 @@ export const resolveControleStatusTone = (raw?: string | null): ToneResult => {
 // ─────────────────────────────────────────────────────────────────────────────
 // Criticidade (controles, ativos)
 // ─────────────────────────────────────────────────────────────────────────────
-export const resolveCriticidadeTone = (raw?: string | null): ToneResult => {
-  const v = norm(raw);
-  if (v === 'critico' || v === 'critica')
-    return { tone: 'destructive', intensity: 'high', icon: <AlertTriangle {...ICON_PROPS} /> };
-  if (v === 'alto' || v === 'alta') return { tone: 'destructive' };
-  if (v === 'medio' || v === 'media') return { tone: 'warning' };
-  if (v === 'baixo' || v === 'baixa') return { tone: 'success' };
-  return { tone: 'neutral' };
-};
+export const resolveCriticidadeTone = resolveSeverityTone;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Auditoria: status do item (pendente, em_andamento, concluido, nao_aplicavel)

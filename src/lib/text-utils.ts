@@ -34,15 +34,15 @@ const STATUS_LABELS: Record<string, string> = {
   'restrita': 'Restrita',
   'confidencial': 'Confidencial',
   
-  // Criticidade/Prioridade
+  // Criticidade/Prioridade/Severidade — forma ÚNICA (masculino) em todo o sistema
   'critico': 'Crítico',
-  'critica': 'Crítica',
+  'critica': 'Crítico',
   'alto': 'Alto',
-  'alta': 'Alta',
+  'alta': 'Alto',
   'medio': 'Médio',
-  'media': 'Média',
+  'media': 'Médio',
   'baixo': 'Baixo',
-  'baixa': 'Baixa',
+  'baixa': 'Baixo',
   'muito_alto': 'Muito Alto',
   'muito_baixo': 'Muito Baixo',
   

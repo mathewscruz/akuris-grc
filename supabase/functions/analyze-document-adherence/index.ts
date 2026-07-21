@@ -19,10 +19,10 @@ serve(async (req) => {
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY')!;
+    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY')!;
 
-    if (!anthropicApiKey) {
-      throw new Error('ANTHROPIC_API_KEY não configurada');
+    if (!lovableApiKey) {
+      throw new Error('LOVABLE_API_KEY não configurada');
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -231,20 +231,21 @@ FORMATO JSON OBRIGATÓRIO (retorne APENAS JSON válido, sem markdown):
   "analise_detalhada": "resumo executivo da análise (max 500 palavras) incluindo: visão geral da conformidade, áreas de maior risco, prioridades de remediação"
 }`;
 
-    // 5. Chamar Anthropic Claude API
-    console.log('Calling Anthropic Claude API...');
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    // 5. Chamar a IA via gateway do Lovable (OpenAI-compatível), igual às
+    //    demais funções. Antes chamava a API da Anthropic direto com um modelo
+    //    que retornava 404 nesta conta.
+    console.log('Calling AI gateway...');
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'x-api-key': anthropicApiKey,
-        'anthropic-version': '2023-06-01',
+        'Authorization': `Bearer ${lovableApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-5',
+        model: 'google/gemini-3-flash-preview',
         max_tokens: 32000,
-        system: 'Você é um auditor sênior de conformidade regulatória. Analise documentos com rigor e precisão. Retorne APENAS JSON válido seguindo exatamente o schema fornecido. Seja específico nas evidências e gaps.',
         messages: [
+          { role: 'system', content: 'Você é um auditor sênior de conformidade regulatória. Analise documentos com rigor e precisão. Retorne APENAS JSON válido seguindo exatamente o schema fornecido. Seja específico nas evidências e gaps.' },
           { role: 'user', content: prompt }
         ],
       }),
@@ -252,31 +253,32 @@ FORMATO JSON OBRIGATÓRIO (retorne APENAS JSON válido, sem markdown):
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Anthropic API error:', response.status, errorText);
+      console.error('AI gateway error:', response.status, errorText);
       if (response.status === 429) throw new Error('Limite de requisições excedido. Aguarde e tente novamente.');
-      if (response.status === 401) throw new Error('Chave da API Anthropic inválida.');
-      throw new Error(`Erro na API Anthropic (${response.status}): ${errorText}`);
+      if (response.status === 402) throw new Error('Créditos de IA insuficientes.');
+      throw new Error(`Erro na IA (${response.status}): ${errorText}`);
     }
 
     const aiResponse = await response.json();
-    console.log('Anthropic response received:', JSON.stringify({
-      hasContent: !!aiResponse.content,
-      contentLength: aiResponse.content?.[0]?.text?.length,
-      stopReason: aiResponse.stop_reason
+    const aiChoice = aiResponse.choices?.[0];
+    console.log('AI response received:', JSON.stringify({
+      hasContent: !!aiChoice?.message?.content,
+      contentLength: aiChoice?.message?.content?.length,
+      finishReason: aiChoice?.finish_reason
     }));
-    
-    if (aiResponse.stop_reason === 'max_tokens') {
+
+    if (aiChoice?.finish_reason === 'length') {
       console.error('Response truncated');
       throw new Error('Análise truncada. Tente com um framework com menos requisitos.');
     }
-    
-    if (!aiResponse.content?.[0]?.text) {
+
+    if (!aiChoice?.message?.content) {
       throw new Error('Resposta da IA inválida');
     }
 
     let analysisResult;
     try {
-      let content = aiResponse.content[0].text;
+      let content = aiChoice.message.content;
       console.log('AI response length:', content.length);
       
       // Remove markdown code blocks if present

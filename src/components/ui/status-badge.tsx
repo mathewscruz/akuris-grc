@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 export type StatusTone =
   | 'success'
   | 'warning'
+  | 'orange'
   | 'destructive'
   | 'info'
   | 'neutral'
@@ -42,6 +43,13 @@ const TONE_CLASSES: Record<
     outline: 'border-warning/40 text-warning bg-transparent',
     dot: 'bg-warning',
     ring: 'ring-2 ring-warning/30',
+  },
+  orange: {
+    soft: 'bg-orange/10 text-orange border-orange/25',
+    solid: 'bg-orange text-orange-foreground border-transparent',
+    outline: 'border-orange/40 text-orange bg-transparent',
+    dot: 'bg-orange',
+    ring: 'ring-2 ring-orange/30',
   },
   destructive: {
     soft: 'bg-destructive/10 text-destructive border-destructive/20',

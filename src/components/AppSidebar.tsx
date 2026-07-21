@@ -249,13 +249,6 @@ export function AppSidebar() {
     // Fecha o diálogo no mesmo frame para não competir com o overlay
     setShowLogoutConfirm(false);
     try {
-      // Limpa preferências locais não-críticas
-      try {
-        window.localStorage.removeItem('akuris.focusMode');
-      } catch {
-        /* ignore */
-      }
-
       try {
         await signOut();
       } catch (err) {

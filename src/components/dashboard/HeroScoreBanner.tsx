@@ -1,4 +1,4 @@
-import { Shield, AlertTriangle, Target } from 'lucide-react';
+import { Shield, AlertTriangle } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { GrcMaturity } from '@/hooks/useGrcMaturityScore';
 import { HealthScoreGauge } from './HealthScoreGauge';
@@ -9,8 +9,6 @@ interface HeroScoreBannerProps {
   maturity: GrcMaturity;
   criticalAlerts: number;
   activeControls: number;
-  /** Conformidade média 0–100. null quando a empresa ainda não tem frameworks/avaliações (base zero). */
-  complianceScore: number | null;
   userName: string;
 }
 
@@ -18,26 +16,9 @@ export function HeroScoreBanner({
   maturity,
   criticalAlerts,
   activeControls,
-  complianceScore,
   userName,
 }: HeroScoreBannerProps) {
   const { t } = useLanguage();
-
-  const hasCompliance = typeof complianceScore === 'number';
-  const complianceColor = !hasCompliance
-    ? 'text-muted-foreground'
-    : (complianceScore as number) >= 70
-    ? 'text-success'
-    : (complianceScore as number) >= 50
-    ? 'text-warning'
-    : 'text-destructive';
-  const complianceBg = !hasCompliance
-    ? 'bg-muted/40'
-    : (complianceScore as number) >= 70
-    ? 'bg-success/10'
-    : (complianceScore as number) >= 50
-    ? 'bg-warning/10'
-    : 'bg-destructive/10';
 
   const metrics = [
     {
@@ -55,14 +36,6 @@ export function HeroScoreBanner({
       color: 'text-primary',
       bgColor: 'bg-primary/10',
       title: undefined as string | undefined,
-    },
-    {
-      icon: Target,
-      label: t('dashboard.compliance'),
-      value: hasCompliance ? `${complianceScore}%` : '—',
-      color: complianceColor,
-      bgColor: complianceBg,
-      title: hasCompliance ? undefined : 'Sem frameworks avaliados',
     },
   ];
 
