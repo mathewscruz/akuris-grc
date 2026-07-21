@@ -54,7 +54,7 @@ export const DocGenContextPanel: React.FC<Props> = ({ context, loading, defaultO
           <Sparkles className="h-4 w-4 text-primary" strokeWidth={1.5} />
           <span className="font-medium">Contexto enviado à IA</span>
           <Badge variant="secondary" className="ml-1 text-[10px]">
-            {[emp.nome && 'empresa', fw.length && `${fw.length} fw`, ativos.length && `${ativos.length} ativos`, riscos.length && `${riscos.length} riscos`].filter(Boolean).join(' · ')}
+            {[emp.nome && 'Empresa', fw.length && `${fw.length} frameworks`, ativos.length && `${ativos.length} ativos`, riscos.length && `${riscos.length} riscos`].filter(Boolean).join(' · ')}
           </Badge>
         </div>
         <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" strokeWidth={1.5} />

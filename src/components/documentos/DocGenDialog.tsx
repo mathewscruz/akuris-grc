@@ -269,12 +269,14 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading, isGeneratingDoc, conversationId, messages.length, generatedDocument, userInfo]);
 
-  const sendMessageInternal = async (text: string) => {
+  const sendMessageInternal = async (text: string, displayText?: string) => {
     if (!text.trim() || !userInfo || isLoading) return;
 
+    // `text` é o que a IA recebe; `displayText` (opcional) é o que aparece no chat.
+    // Usado para não poluir a conversa com o briefing técnico completo.
     const userMessage: ChatMessage = {
       role: 'user',
-      content: text,
+      content: displayText ?? text,
       timestamp: new Date()
     };
 
@@ -351,12 +353,16 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     setMessages([{ role: 'assistant', content: greeting, timestamp: new Date() }]);
     setTimeout(() => inputRef.current?.focus(), 100);
     const seed = buildSeedPrompt(briefing, templateHint);
+    const fwSuffix = briefing.frameworks?.length ? ` alinhado a ${briefing.frameworks.join(', ')}` : '';
+    const briefingSummary = autoGen
+      ? `Briefing enviado ✓ — gerando o documento completo${fwSuffix}.`
+      : `Briefing enviado ✓ — vamos definir a estrutura${fwSuffix} e refinar antes de gerar.`;
     const waitForContext = async () => {
       const deadline = Date.now() + 3000;
       while (companyContextLoading && Date.now() < deadline) {
         await new Promise(r => setTimeout(r, 100));
       }
-      sendMessageInternal(seed);
+      sendMessageInternal(seed, briefingSummary);
     };
     setTimeout(waitForContext, 50);
   };
@@ -1212,13 +1218,14 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                   onClick={generateDocument}
                   disabled={isGeneratingDoc}
                   className="gap-2"
+                  title="Gera o documento completo (usa 1 crédito de IA)"
                 >
                   {isGeneratingDoc ? (
                     <AkurisPulse size={16} />
                   ) : (
                     <FileText className="h-4 w-4" />
                   )}
-                  {isGeneratingDoc ? 'Gerando Documento...' : 'Gerar Documento'}
+                  {isGeneratingDoc ? 'Gerando Documento...' : 'Gerar Documento (1 crédito)'}
                 </Button>
               </div>
             )}
@@ -1248,7 +1255,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                         <TooltipTrigger asChild>
                           <Button onClick={handleOpenCreateDialog} size="sm" className="gap-1">
                             <Save className="h-3 w-3" strokeWidth={1.5} />
-                            Incorporar ao módulo Documentos
+                            Salvar em Documentos
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>Salva como rascunho versionado no módulo Documentos (passo 2 confirma os metadados)</TooltipContent>
@@ -1276,7 +1283,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
               </div>
               {generatedDocument && !isEditingLayout && (
                 <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
-                  Revise o conteúdo abaixo. Ao <strong className="text-foreground font-semibold">incorporar</strong>, o documento será criado em <strong className="text-foreground font-semibold">Documentos</strong> como rascunho e poderá passar por aprovação.
+                  Revise o conteúdo abaixo. Ao <strong className="text-foreground font-semibold">salvar</strong>, o documento será criado em <strong className="text-foreground font-semibold">Documentos</strong> como rascunho e poderá passar por aprovação.
                 </p>
               )}
 
