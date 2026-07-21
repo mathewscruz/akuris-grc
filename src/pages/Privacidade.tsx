@@ -106,7 +106,7 @@ export default function Privacidade() {
       }));
 
       const dados = dadosRes.data || [];
-      const sensiveis = dados.filter((d: any) => d.tipo_dados === 'sensivel' || d.sensibilidade === 'muito_sensivel').length;
+      const sensiveis = dados.filter((d: any) => d.tipo_dados === 'sensivel' || d.sensibilidade === 'muito_sensivel' || d.sensibilidade === 'sensivel').length;
       const allSolicitacoes = solicitacoesRes.data || [];
       const pendentes = allSolicitacoes.filter((s: any) => s.status === 'pendente').length;
       
@@ -153,17 +153,16 @@ export default function Privacidade() {
   };
 
   const getSensibilidadeBadge = (tipo: string, sensibilidade: string) => {
-    const label = (tipo === 'sensivel' || sensibilidade === 'muito_sensivel') 
-      ? 'Sensível' 
-      : sensibilidade === 'sensivel' 
-        ? 'Moderado' 
-        : 'Comum';
-    const sensTone = (tipo === 'sensivel' || sensibilidade === 'muito_sensivel')
-      ? resolveSensibilidadeTone('muito_sensivel')
-      : sensibilidade === 'sensivel'
-        ? resolveSensibilidadeTone('moderado')
-        : resolveSensibilidadeTone('comum');
-    return <StatusBadge size="sm" {...sensTone}>{label}</StatusBadge>;
+    // Nível efetivo: tipo_dados 'sensivel' garante ao menos "Sensível"
+    let nivel = sensibilidade || 'comum';
+    if (tipo === 'sensivel' && nivel === 'comum') nivel = 'sensivel';
+    const labels: Record<string, string> = {
+      muito_sensivel: 'Muito Sensível',
+      sensivel: 'Sensível',
+      moderado: 'Moderado',
+      comum: 'Comum',
+    };
+    return <StatusBadge size="sm" {...resolveSensibilidadeTone(nivel)}>{labels[nivel] || 'Comum'}</StatusBadge>;
   };
 
   const getStatusBadge = (status: string) => {

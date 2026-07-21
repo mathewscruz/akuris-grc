@@ -50,6 +50,7 @@ const STATUS_LABELS: Record<string, string> = {
   'pendente': 'Pendente',
   'pendente_aprovacao': 'Pendente Aprovação',
   'em_andamento': 'Em Andamento',
+  'em_execucao': 'Em Execução',
   'em_analise': 'Em Análise',
   'em_revisao': 'Em Revisão',
   'em_investigacao': 'Em Investigação',
@@ -219,6 +220,9 @@ const STATUS_LABELS: Record<string, string> = {
   'revogacao_consentimento': 'Revogação de Consentimento',
   'formulario_web': 'Formulário Web',
   
+  // Tipos de Sistema
+  'autenticacao': 'Autenticação',
+
   // Infraestrutura
   'servidor_local': 'Servidor Local',
   'cloud_publica': 'Cloud Pública',

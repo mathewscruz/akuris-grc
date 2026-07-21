@@ -191,41 +191,41 @@ export default function RevisaoAcessos() {
       key: "sistema.nome_sistema",
       label: "Sistema",
       sortable: true,
-      render: (review) => review.sistema?.nome_sistema || "-",
+      render: (_value: any, review: any) => review.sistema?.nome_sistema || "-",
     },
     {
       key: "tipo_revisao",
       label: "Tipo",
       sortable: true,
-      render: (review) => formatStatus(review.tipo_revisao),
+      render: (_value: any, review: any) => formatStatus(review.tipo_revisao),
     },
     {
       key: "responsavel.nome",
       label: "Responsável",
       sortable: true,
-      render: (review) => review.responsavel?.nome || "-",
+      render: (_value: any, review: any) => review.responsavel?.nome || "-",
     },
     {
       key: "data_limite",
       label: "Prazo",
       sortable: true,
-      render: (review) => getVencimentoBadge(review.data_limite, review.status),
+      render: (_value: any, review: any) => getVencimentoBadge(review.data_limite, review.status),
     },
     {
       key: "progress",
       label: "Progresso",
-      render: (review) => `${review.contas_revisadas}/${review.total_contas}`,
+      render: (_value: any, review: any) => `${review.contas_revisadas}/${review.total_contas}`,
     },
     {
       key: "status",
       label: "Status",
       sortable: true,
-      render: (review) => getStatusBadge(review.status),
+      render: (_value: any, review: any) => getStatusBadge(review.status),
     },
     {
       key: "actions",
       label: "Ações",
-      render: (review) => (
+      render: (_value: any, review: any) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -264,38 +264,38 @@ export default function RevisaoAcessos() {
     {
       key: "sistema.nome_sistema",
       label: "Sistema",
-      render: (review) => review.sistema?.nome_sistema || "-",
+      render: (_value: any, review: any) => review.sistema?.nome_sistema || "-",
     },
     {
       key: "responsavel.nome",
       label: "Responsável",
-      render: (review) => review.responsavel?.nome || "-",
+      render: (_value: any, review: any) => review.responsavel?.nome || "-",
     },
     {
       key: "data_conclusao",
       label: "Data Conclusão",
       sortable: true,
-      render: (review) => review.data_conclusao ? formatDateOnly(review.data_conclusao) : "-",
+      render: (_value: any, review: any) => review.data_conclusao ? formatDateOnly(review.data_conclusao) : "-",
     },
     {
       key: "contas_revisadas",
       label: "Contas Revisadas",
-      render: (review) => `${review.contas_revisadas}/${review.total_contas}`,
+      render: (_value: any, review: any) => `${review.contas_revisadas}/${review.total_contas}`,
     },
     {
       key: "contas_aprovadas",
       label: "Aprovadas",
-      render: (review) => review.contas_aprovadas || 0,
+      render: (_value: any, review: any) => review.contas_aprovadas || 0,
     },
     {
       key: "contas_revogadas",
       label: "Revogadas",
-      render: (review) => review.contas_revogadas || 0,
+      render: (_value: any, review: any) => review.contas_revogadas || 0,
     },
     {
       key: "status",
       label: "Status",
-      render: (review) => getStatusBadge(review.status),
+      render: (_value: any, review: any) => getStatusBadge(review.status),
     },
   ];
 

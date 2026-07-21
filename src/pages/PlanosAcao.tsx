@@ -112,13 +112,25 @@ export default function PlanosAcao() {
     queryKey: ['planos-acao', empresaId],
     queryFn: async () => {
       if (!empresaId) return [];
+      // Nota: não há FK planos_acao.responsavel_id -> profiles, então o embed do PostgREST
+      // falha (PGRST200) e derrubava a lista inteira. Resolvemos o responsável em query separada.
       const { data, error } = await supabase
         .from('planos_acao')
-        .select('*, profiles:responsavel_id(nome, foto_url)')
+        .select('*')
         .eq('empresa_id', empresaId)
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return data || [];
+      const rows = data || [];
+      const ids = [...new Set(rows.map((r: any) => r.responsavel_id).filter(Boolean))];
+      let profMap: Record<string, { nome: string; foto_url: string | null }> = {};
+      if (ids.length) {
+        const { data: profs } = await supabase
+          .from('profiles')
+          .select('user_id, nome, foto_url')
+          .in('user_id', ids);
+        profMap = Object.fromEntries((profs || []).map((p: any) => [p.user_id, { nome: p.nome, foto_url: p.foto_url }]));
+      }
+      return rows.map((r: any) => ({ ...r, profiles: r.responsavel_id ? (profMap[r.responsavel_id] || null) : null }));
     },
     enabled: !!empresaId,
   });

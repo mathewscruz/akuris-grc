@@ -68,6 +68,24 @@ export default function ContaDialog({ open, onClose, conta, sistemas }: ContaDia
     },
   });
 
+  // Repopula o formulário ao abrir para editar (defaultValues só valem na 1ª montagem)
+  React.useEffect(() => {
+    if (!open) return;
+    form.reset({
+      usuario_beneficiario: conta?.usuario_beneficiario || '',
+      email_beneficiario: conta?.email_beneficiario || '',
+      sistema_id: conta?.sistema_id || '',
+      tipo_acesso: conta?.tipo_acesso || 'administrativo',
+      nivel_privilegio: conta?.nivel_privilegio || 'alto',
+      data_concessao: conta?.data_concessao ? new Date(conta.data_concessao) : new Date(),
+      data_expiracao: conta?.data_expiracao ? new Date(conta.data_expiracao) : new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+      justificativa_negocio: conta?.justificativa_negocio || '',
+      renovavel: conta?.renovavel ?? true,
+      observacoes: conta?.observacoes || '',
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, conta]);
+
   const onSubmit = async (data: ContaFormData) => {
     try {
       if (!empresaId) {

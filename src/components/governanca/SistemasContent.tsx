@@ -67,7 +67,7 @@ export default function SistemasContent() {
   });
 
   const sistemasAtivos = sistemas.filter(s => s.ativo).length;
-  const sistemasCriticos = sistemas.filter(s => s.criticidade === 'critica' || s.criticidade === 'alta').length;
+  const sistemasCriticos = sistemas.filter(s => ['critica', 'critico', 'alta'].includes(s.criticidade)).length;
 
   const handleEditSistema = (sistema: SistemaPrivilegiado) => {
     setSelectedSistema(sistema);

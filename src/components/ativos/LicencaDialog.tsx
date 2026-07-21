@@ -34,7 +34,7 @@ interface LicencaDialogProps {
 export function LicencaDialog({ open, onOpenChange, licenca }: LicencaDialogProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const empresaId = useEmpresaId();
+  const { empresaId } = useEmpresaId();
 
   const form = useForm({
     defaultValues: {
@@ -91,6 +91,11 @@ export function LicencaDialog({ open, onOpenChange, licenca }: LicencaDialogProp
         empresa_id: empresaId,
         valor_aquisicao: values.valor_aquisicao ? parseFloat(values.valor_aquisicao) : null,
         valor_renovacao: values.valor_renovacao ? parseFloat(values.valor_renovacao) : null,
+        // Datas/UUID vazios precisam ir como null (colunas date/uuid rejeitam "")
+        data_aquisicao: values.data_aquisicao || null,
+        data_inicio: values.data_inicio || null,
+        data_vencimento: values.data_vencimento || null,
+        responsavel: values.responsavel || null,
       };
 
       if (licenca?.id) {

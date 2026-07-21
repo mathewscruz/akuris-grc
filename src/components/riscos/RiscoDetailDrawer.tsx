@@ -604,6 +604,10 @@ function treatmentPct(status: string): number {
 function coberturaPct(eficacia?: string | null): number {
   if (!eficacia) return 0;
   const s = eficacia.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  // Vocabul\u00e1rio alta/media/baixa gravado pelos dialogs de v\u00ednculo de controle
+  if (s === 'alta') return 100;
+  if (s === 'media') return 60;
+  if (s === 'baixa') return 30;
   if (s.includes('eficaz') && !s.includes('parcial') && !s.includes('inef')) return 100;
   if (s.includes('parcial')) return 60;
   if (s.includes('implant') || s.includes('implement')) return 30;
