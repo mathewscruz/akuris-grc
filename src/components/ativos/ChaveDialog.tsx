@@ -34,7 +34,7 @@ interface ChaveDialogProps {
 export function ChaveDialog({ open, onOpenChange, chave }: ChaveDialogProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const empresaId = useEmpresaId();
+  const { empresaId } = useEmpresaId();
 
   const form = useForm({
     defaultValues: {
@@ -69,6 +69,11 @@ export function ChaveDialog({ open, onOpenChange, chave }: ChaveDialogProps) {
       const data = {
         ...values,
         empresa_id: empresaId,
+        // Datas/UUID opcionais vazios precisam ir como null (colunas date/uuid rejeitam "")
+        data_criacao: values.data_criacao || null,
+        data_ultima_rotacao: values.data_ultima_rotacao || null,
+        data_proxima_rotacao: values.data_proxima_rotacao || null,
+        responsavel: values.responsavel || null,
       };
 
       if (chave?.id) {

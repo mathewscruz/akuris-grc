@@ -104,11 +104,22 @@ async function fetchRiscosData(empresaId: string) {
     ? await supabase.from('riscos_tratamentos').select('*').in('risco_id', riscoIds)
     : { data: [] };
   const t = tratamentos || [];
-  const criticos = r.filter(x => x.nivel_risco_inicial === 'critico').length;
-  const altos = r.filter(x => x.nivel_risco_inicial === 'alto').length;
-  const medios = r.filter(x => x.nivel_risco_inicial === 'medio').length;
-  const baixos = r.filter(x => x.nivel_risco_inicial === 'baixo').length;
+  // Normaliza (sem acento/minúsculo) porque os dados misturam "Médio" e "medio" etc.
+  const nivel = (x: any) => (x.nivel_risco_inicial || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+  const criticos = r.filter(x => nivel(x) === 'critico').length;
+  const altos = r.filter(x => nivel(x) === 'alto').length;
+  const medios = r.filter(x => nivel(x) === 'medio').length;
+  const baixos = r.filter(x => nivel(x) === 'baixo').length;
   const concluidos = t.filter((x: any) => x.status === 'concluido').length;
+  // Resolve responsáveis gravados como UUID -> nome (dados legados têm ambos)
+  const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const respIds = [...new Set(r.map(x => x.responsavel).filter((v: any) => v && uuidRe.test(v)))] as string[];
+  let respMap: Record<string, string> = {};
+  if (respIds.length) {
+    const { data: profs } = await supabase.from('profiles').select('user_id, nome').in('user_id', respIds);
+    respMap = Object.fromEntries((profs || []).map((p: any) => [p.user_id, p.nome]));
+  }
+  const respLabel = (v: any) => (v ? (respMap[v] || v) : '-');
   return {
     sections: [
       { title: 'Resumo Executivo', metrics: [
@@ -120,7 +131,7 @@ async function fetchRiscosData(empresaId: string) {
         { label: 'Tratamentos Concluidos', value: `${concluidos}/${t.length}` },
       ]},
       { title: 'Detalhamento dos Riscos', tableHeaders: ['Nome', 'Nivel', 'Status', 'Responsavel'],
-        tableRows: r.map(x => [x.nome, x.nivel_risco_inicial || '-', x.status || '-', x.responsavel || '-']),
+        tableRows: r.map(x => [x.nome, x.nivel_risco_inicial || '-', x.status || '-', respLabel(x.responsavel)]),
         colWidths: [60, 30, 35, 45] },
     ] as Section[]
   };

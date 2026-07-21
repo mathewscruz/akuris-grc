@@ -103,15 +103,23 @@ export default function ContasPrivilegiadas() {
   });
 
   // Calcular métricas do dashboard
-  const contasAtivas = contas.filter(c => c.status === 'ativo').length;
-  const contasExpiradas = contas.filter(c => c.status === 'expirado').length;
-  const contasPendentes = contas.filter(c => c.status === 'pendente_aprovacao').length;
-  
-  // Contas que vencem nos próximos 30 dias
   const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
   const em30Dias = new Date(hoje.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+  // Uma conta está expirada se o status é 'expirado' OU se a data de expiração já passou
+  // (o status armazenado não é atualizado automaticamente quando a data vence)
+  const isExpirada = (c: ContaPrivilegiada) =>
+    c.status === 'expirado' ||
+    (c.status === 'ativo' && new Date(c.data_expiracao + 'T00:00:00') < hoje);
+
+  const contasExpiradas = contas.filter(isExpirada).length;
+  const contasAtivas = contas.filter(c => c.status === 'ativo' && !isExpirada(c)).length;
+  const contasPendentes = contas.filter(c => c.status === 'pendente_aprovacao').length;
+
+  // Contas que vencem nos próximos 30 dias (ainda não vencidas)
   const contasVencendo = contas.filter(c => {
-    const dataExpiracao = new Date(c.data_expiracao);
+    const dataExpiracao = new Date(c.data_expiracao + 'T00:00:00');
     return dataExpiracao <= em30Dias && dataExpiracao >= hoje && c.status === 'ativo';
   }).length;
 
@@ -291,7 +299,7 @@ export default function ContasPrivilegiadas() {
       key: 'status',
       label: 'Status',
       sortable: true,
-      render: (_: any, conta: ContaPrivilegiada) => getStatusBadge(conta.status)
+      render: (_: any, conta: ContaPrivilegiada) => getStatusBadge(isExpirada(conta) ? 'expirado' : conta.status)
     },
     {
       key: 'acoes',

@@ -12,7 +12,8 @@ export interface FrameworkOverview {
   tipo: string | null;
   totalRequisitos: number;
   requisitosAvaliados: number;
-  /** Conformidade média 0–100 (exclui N/A; conforme=100, parcial=50, nao_conforme=0). */
+  /** Conformidade 0–100 sobre requisitos aplicáveis (exclui N/A; não avaliados = 0;
+   *  conforme=100, parcial=50, nao_conforme=0). Alinhado ao score do Gap Analysis. */
   mediaConformidade: number;
   status: FrameworkStatus;
   ultimaAtividade: string | null;
@@ -50,15 +51,21 @@ export const useFrameworksOverview = () => {
         if (evErr) throw evErr;
 
         // Total de requisitos por framework (independente de empresa — são globais).
-        const { data: reqs, error: rqErr } = await supabase
-          .from('gap_analysis_requirements')
-          .select('framework_id');
-        if (rqErr) throw rqErr;
-
+        // Paginado: o PostgREST limita cada request a 1000 linhas e há >1000 requisitos
+        // no total, então sem paginar a contagem por framework vinha truncada.
         const totalsByFw = new Map<string, number>();
-        (reqs || []).forEach((r: any) => {
-          totalsByFw.set(r.framework_id, (totalsByFw.get(r.framework_id) || 0) + 1);
-        });
+        const PAGE = 1000;
+        for (let from = 0; ; from += PAGE) {
+          const { data: page, error: rqErr } = await supabase
+            .from('gap_analysis_requirements')
+            .select('framework_id')
+            .range(from, from + PAGE - 1);
+          if (rqErr) throw rqErr;
+          (page || []).forEach((r: any) => {
+            totalsByFw.set(r.framework_id, (totalsByFw.get(r.framework_id) || 0) + 1);
+          });
+          if (!page || page.length < PAGE) break;
+        }
 
         const evalsByFw = new Map<string, typeof evals>();
         (evals || []).forEach((e: any) => {
@@ -75,13 +82,20 @@ export const useFrameworksOverview = () => {
           );
           const avaliados = evaluated.length;
 
+          // Conformidade sobre TODOS os requisitos aplicáveis (exclui só N/A; os ainda
+          // não avaliados contam como 0), para bater com o score do Gap Analysis
+          // (useFrameworkScore). Antes dividíamos só pelos avaliados, o que inflava o %.
+          const naCount = list.filter(
+            (e) => e.conformity_status === 'nao_aplicavel'
+          ).length;
+          const aplicaveis = Math.max(total - naCount, 0);
           const media =
-            avaliados > 0
+            aplicaveis > 0
               ? Math.round(
                   evaluated.reduce(
                     (sum, e) => sum + (SCORE_OF[e.conformity_status] ?? 0),
                     0
-                  ) / avaliados
+                  ) / aplicaveis
                 )
               : 0;
 

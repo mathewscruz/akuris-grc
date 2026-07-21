@@ -57,12 +57,23 @@ export default function SistemaDialog({ open, onClose, sistema }: SistemaDialogP
     },
   });
 
-  // Reset image preview when dialog opens/closes
+  // Reset image preview + repopula o formulário quando abre (defaultValues só valem na 1ª montagem)
   React.useEffect(() => {
     if (open) {
       setImagePreview(sistema?.imagem_url || null);
       setImageFile(null);
+      form.reset({
+        nome_sistema: sistema?.nome_sistema || '',
+        tipo_sistema: sistema?.tipo_sistema || 'aplicacao',
+        criticidade: sistema?.criticidade || 'media',
+        responsavel_sistema: sistema?.responsavel_sistema || '',
+        url_sistema: sistema?.url_sistema || '',
+        categoria: sistema?.categoria || '',
+        observacoes: sistema?.observacoes || '',
+        ativo: sistema?.ativo ?? true,
+      });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, sistema]);
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -38,24 +38,45 @@ export const useGapAnalysisStats = () => {
           frameworkIds.has(e.framework_id)
         ) || [];
 
-        let averageCompliance = 0;
-        if (filteredEvaluations.length > 0) {
-          const evaluatedItems = filteredEvaluations.filter(e =>
-            e.conformity_status && e.conformity_status !== 'nao_aplicavel'
-          );
-
-          if (evaluatedItems.length > 0) {
-            const totalScore = evaluatedItems.reduce((score, evaluation) => {
-              switch (evaluation.conformity_status) {
-                case 'conforme': return score + 100;
-                case 'parcial': return score + 50;
-                case 'nao_conforme': return score + 0;
-                default: return score;
-              }
-            }, 0);
-            averageCompliance = totalScore / evaluatedItems.length;
-          }
+        // Total de requisitos por framework (paginado — PostgREST limita a 1000/req).
+        const totalsByFw = new Map<string, number>();
+        const PAGE = 1000;
+        for (let from = 0; ; from += PAGE) {
+          const { data: page, error: rqErr } = await supabase
+            .from('gap_analysis_requirements')
+            .select('framework_id')
+            .range(from, from + PAGE - 1);
+          if (rqErr) throw rqErr;
+          (page || []).forEach((r: any) => {
+            totalsByFw.set(r.framework_id, (totalsByFw.get(r.framework_id) || 0) + 1);
+          });
+          if (!page || page.length < PAGE) break;
         }
+
+        // Conformidade sobre requisitos APLICÁVEIS (exclui N/A; não avaliados = 0),
+        // igual ao Gap Analysis (useFrameworkScore) e ao card de frameworks. Antes
+        // dividíamos só pelos avaliados, o que dava um número mais otimista (ex.: 50% vs 48%).
+        const scoreByFw = new Map<string, number>();
+        const naByFw = new Map<string, number>();
+        const fwWithEvals = new Set<string>();
+        filteredEvaluations.forEach(e => {
+          if (!e.conformity_status) return;
+          fwWithEvals.add(e.framework_id);
+          if (e.conformity_status === 'nao_aplicavel') {
+            naByFw.set(e.framework_id, (naByFw.get(e.framework_id) || 0) + 1);
+          } else {
+            const s = e.conformity_status === 'conforme' ? 100 : e.conformity_status === 'parcial' ? 50 : 0;
+            scoreByFw.set(e.framework_id, (scoreByFw.get(e.framework_id) || 0) + s);
+          }
+        });
+        let numCompliance = 0;
+        let denCompliance = 0;
+        fwWithEvals.forEach(fid => {
+          const aplicaveis = Math.max((totalsByFw.get(fid) || 0) - (naByFw.get(fid) || 0), 0);
+          numCompliance += scoreByFw.get(fid) || 0;
+          denCompliance += aplicaveis;
+        });
+        const averageCompliance = denCompliance > 0 ? numCompliance / denCompliance : 0;
 
         const pendingItems = filteredEvaluations.filter(e =>
           e.evidence_status === 'pendente'

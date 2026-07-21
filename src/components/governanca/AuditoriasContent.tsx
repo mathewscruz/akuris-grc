@@ -240,7 +240,7 @@ export default function AuditoriasContent() {
     },
     {
       title: "Em Andamento",
-      value: auditorias?.filter(a => a.status === 'em_andamento').length || 0,
+      value: auditorias?.filter(a => a.status === 'em_andamento' || a.status === 'em_execucao').length || 0,
       description: "Auditorias ativas",
       icon: Clock,
     },
