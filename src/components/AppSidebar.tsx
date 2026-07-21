@@ -104,7 +104,7 @@ const getMenuSections = (t: (key: string) => string): MenuSection[] => [
         icon: FileCheck,
         subItems: [
           { title: t('sidebar.internalControls'), url: '/governanca', icon: ControlesIcon, moduleName: 'controles' },
-          { title: t('sidebar.systems'), url: '/sistemas', icon: Server, moduleName: 'controles' },
+          { title: t('sidebar.audits'), url: '/governanca/auditorias', icon: ShieldCheck, moduleName: 'controles' },
         ],
       },
       { title: t('sidebar.gapAnalysis'), url: '/gap-analysis/frameworks', icon: GapAnalysisIcon, moduleName: 'gap-analysis' },
@@ -127,14 +127,15 @@ const getMenuSections = (t: (key: string) => string): MenuSection[] => [
       { title: t('sidebar.documents'), url: '/documentos', icon: DocumentosIcon, moduleName: 'documentos' },
       { title: t('sidebar.privacy'), url: '/privacidade', icon: Shield, moduleName: 'dados' },
       {
-        title: t('sidebar.security'),
-        icon: Lock,
+        title: t('sidebar.accessManagement'),
+        icon: KeyRound,
         subItems: [
+          { title: t('sidebar.systems'), url: '/sistemas', icon: Server, moduleName: 'controles' },
           { title: t('sidebar.privilegedAccounts'), url: '/contas-privilegiadas', icon: UserCog, moduleName: 'contas-privilegiadas' },
           { title: t('sidebar.accessReview'), url: '/revisao-acessos', icon: UserCheck, moduleName: 'contas-privilegiadas' },
-          { title: t('sidebar.incidents'), url: '/incidentes', icon: IncidentesIcon, moduleName: 'incidentes' },
         ],
       },
+      { title: t('sidebar.incidents'), url: '/incidentes', icon: IncidentesIcon, moduleName: 'incidentes' },
       {
         title: t('sidebar.compliance'),
         icon: BadgeCheck,

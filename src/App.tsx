@@ -218,6 +218,13 @@ function App() {
                 </ProtectedRoute>
               </Layout>
             } />
+            <Route path="/governanca/auditorias" element={
+              <Layout>
+                <ProtectedRoute moduleName="controles" fallbackToRoleCheck={false}>
+                  <Governanca />
+                </ProtectedRoute>
+              </Layout>
+            } />
             <Route path="/sistemas" element={
               <Layout>
                 <ProtectedRoute moduleName="controles" fallbackToRoleCheck={false}>
