@@ -33,13 +33,16 @@ export function EvidenceLinksPanel({ modulo, registroId }: Props) {
   const [formOpen, setFormOpen] = useState(false);
   const [search, setSearch] = useState('');
 
+  // Depende só da função estável (useCallback no hook), NÃO do objeto lib inteiro
+  // — senão o useEffect de refresh dispara a cada render (loop infinito de fetch).
+  const { fetchLinksForRecord } = lib;
   const refresh = useCallback(async () => {
     if (!empresaId || !registroId) return;
     setLoading(true);
-    const data = await lib.fetchLinksForRecord(modulo, registroId);
+    const data = await fetchLinksForRecord(modulo, registroId);
     setLinks(data);
     setLoading(false);
-  }, [empresaId, registroId, modulo, lib]);
+  }, [empresaId, registroId, modulo, fetchLinksForRecord]);
 
   useEffect(() => { refresh(); }, [refresh]);
 
