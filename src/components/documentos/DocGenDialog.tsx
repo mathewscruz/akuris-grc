@@ -459,7 +459,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
           empresa_id: userInfo.empresa_id,
           action: 'generate_document',
           doc_type_hint: currentDocName || currentDocType,
-          ...(effFrameworkName && { framework_context: { framework_name: effFrameworkName, framework_id: effFrameworkId } }),
+          ...(effFrameworkName && { framework_context: { framework_name: effFrameworkName, framework_id: effFrameworkId, framework_ids: fwReqData?.matchedIds } }),
           ...(requirementContext && { requirement_context: requirementContext }),
         }
       });
@@ -472,7 +472,12 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
         return;
       }
 
-      setGeneratedDocument(data.document);
+      // A IA não conhece a data atual (chuta valores errados). Fixamos a data
+      // real do usuário na capa/preview/export, independentemente do que veio.
+      setGeneratedDocument({
+        ...data.document,
+        data_criacao: new Date().toISOString().slice(0, 10),
+      });
       toast({
         title: "Documento Gerado!",
         description: "Seu documento foi criado com sucesso. Agora você pode salvá-lo no sistema ou exportar.",
