@@ -376,15 +376,15 @@ const DOC_TYPE_LABEL: Record<DocType, string> = {
 };
 
 const TONE_LABEL: Record<DocTone, string> = {
-  formal: 'formal corporativo',
-  tecnico: 'técnico e objetivo',
-  didatico: 'didático e acessível',
+  formal: 'Formal corporativo',
+  tecnico: 'Técnico e objetivo',
+  didatico: 'Didático e acessível',
 };
 
 const LENGTH_LABEL: Record<DocLength, string> = {
-  executivo: 'executivo (3-5 páginas)',
-  padrao: 'padrão (8-15 páginas)',
-  detalhado: 'detalhado (20+ páginas)',
+  executivo: 'Executivo (3–5 páginas)',
+  padrao: 'Padrão (8–15 páginas)',
+  detalhado: 'Detalhado (20+ páginas)',
 };
 
 const LANGUAGE_LABEL: Record<DocLanguage, string> = {

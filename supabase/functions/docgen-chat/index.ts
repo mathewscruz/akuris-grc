@@ -653,6 +653,12 @@ Responda APENAS com um JSON na seguinte estrutura:
         };
       }
 
+      // A IA não conhece a data atual (chuta valores errados). Sempre sobrescrever
+      // com a data do servidor para a capa/versão do documento ficar correta.
+      if (documentContent && typeof documentContent === 'object') {
+        documentContent.data_criacao = new Date().toISOString().slice(0, 10);
+      }
+
       try {
         await supabase
           .from('docgen_feedback_implicit')

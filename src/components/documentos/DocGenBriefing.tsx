@@ -258,7 +258,7 @@ export const DocGenBriefing: React.FC<DocGenBriefingProps> = ({
                       {reqCountQuery.isLoading
                         ? 'Calculando cobertura…'
                         : reqCountQuery.data?.count
-                        ? `${reqCountQuery.data.count} requisitos serão considerados pela IA`
+                        ? `${reqCountQuery.data.count} requisitos mapeados — o documento será alinhado ao framework (a IA prioriza os gaps)`
                         : 'Nenhum requisito catalogado para esses frameworks'}
                     </div>
                     {reqCountQuery.data?.matched && reqCountQuery.data.matched.length > 0 && (
@@ -342,8 +342,8 @@ export const DocGenBriefing: React.FC<DocGenBriefingProps> = ({
                   />
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Pula a conversa inicial e produz o documento completo já no primeiro passo.
-                  Desligue se preferir revisar a estrutura proposta antes.
+                  Gera o documento completo agora — você refina seção por seção depois.
+                  Desligue para revisar a estrutura por chat antes de gerar.
                 </p>
               </div>
             </div>
