@@ -53,7 +53,7 @@ const FrameworkSEO = React.lazy(() => import('@/pages/FrameworkSEO'));
 const Blog = React.lazy(() => import('@/pages/Blog'));
 const BlogPost = React.lazy(() => import('@/pages/BlogPost'));
 
-const Planos = React.lazy(() => import('@/pages/Planos'));
+const PlanosAssinatura = React.lazy(() => import('@/pages/PlanosAssinatura'));
 const DefinirSenha = React.lazy(() => import('@/pages/DefinirSenha'));
 
 const isNetworkError = (error: unknown): boolean => {
@@ -102,7 +102,7 @@ function App() {
             <Route path="/blog/:slug" element={<Suspense fallback={<RouteFallback />}><BlogPost /></Suspense>} />
             <Route path="/frameworks/:slug" element={<Suspense fallback={<RouteFallback />}><FrameworkSEO /></Suspense>} />
             <Route path="/registro" element={<Navigate to="/auth" replace />} />
-            <Route path="/planos" element={<Suspense fallback={<RouteFallback />}><Planos /></Suspense>} />
+            <Route path="/planos" element={<Suspense fallback={<RouteFallback />}><PlanosAssinatura /></Suspense>} />
             <Route path="/checkout-success" element={<Navigate to="/dashboard" replace />} />
             <Route path="/review/:token" element={<Suspense fallback={<RouteFallback />}><ReviewExterna /></Suspense>} />
 
