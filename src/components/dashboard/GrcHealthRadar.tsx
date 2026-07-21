@@ -125,7 +125,7 @@ export function GrcHealthRadar() {
     <Card className="relative h-full w-full flex flex-col overflow-hidden min-w-0">
       <CornerAccent />
       {Header}
-      <CardContent className="flex-1 pt-0 pb-3 min-h-[260px]">
+      <CardContent className="flex-1 flex flex-col min-h-0 pt-0 pb-3">
         {!hasAny ? (
           <div className="flex flex-col items-center justify-center h-[240px] gap-3 rounded-lg border border-dashed border-border bg-muted/20">
             <div className="flex items-center justify-center h-10 w-10 rounded-full bg-muted">
@@ -136,27 +136,30 @@ export function GrcHealthRadar() {
             </p>
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height="100%">
-            <RadarChart data={chartData} outerRadius="70%" margin={{ top: 8, right: 28, bottom: 8, left: 28 }}>
-              <PolarGrid stroke="hsl(var(--border))" strokeOpacity={0.5} />
-              <PolarAngleAxis
-                dataKey="subject"
-                tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
-              />
-              <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
-              <Radar
-                dataKey="score"
-                stroke="hsl(var(--primary))"
-                strokeWidth={2}
-                fill="hsl(var(--primary))"
-                fillOpacity={0.22}
-                dot={{ r: 3, fill: 'hsl(var(--primary))', strokeWidth: 0 }}
-                activeDot={{ r: 5, fill: 'hsl(var(--primary))', stroke: 'hsl(var(--background))', strokeWidth: 2 }}
-                isAnimationActive
-              />
-              <Tooltip content={<RadarTooltip />} />
-            </RadarChart>
-          </ResponsiveContainer>
+          // Altura fixa evita o loop de crescimento do ResponsiveContainer do Recharts.
+          <div className="relative w-full h-[260px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <RadarChart data={chartData} outerRadius="70%" margin={{ top: 8, right: 28, bottom: 8, left: 28 }}>
+                <PolarGrid stroke="hsl(var(--border))" strokeOpacity={0.5} />
+                <PolarAngleAxis
+                  dataKey="subject"
+                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                />
+                <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
+                <Radar
+                  dataKey="score"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth={2}
+                  fill="hsl(var(--primary))"
+                  fillOpacity={0.22}
+                  dot={{ r: 3, fill: 'hsl(var(--primary))', strokeWidth: 0 }}
+                  activeDot={{ r: 5, fill: 'hsl(var(--primary))', stroke: 'hsl(var(--background))', strokeWidth: 2 }}
+                  isAnimationActive
+                />
+                <Tooltip content={<RadarTooltip />} />
+              </RadarChart>
+            </ResponsiveContainer>
+          </div>
         )}
       </CardContent>
     </Card>

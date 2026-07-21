@@ -20,7 +20,6 @@ import { useIncidentesStats } from '@/hooks/useIncidentesStats';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { useContratosStats } from '@/hooks/useContratosStats';
 import { useDocumentosStats } from '@/hooks/useDocumentosStats';
-import { useGapAnalysisStats } from '@/hooks/useGapAnalysisStats';
 import { useRiscosStats } from '@/hooks/useRiscosStats';
 import { usePlanosAcaoStats } from '@/hooks/usePlanosAcaoStats';
 import { useDueDiligenceStats } from '@/hooks/useDueDiligenceStats';
@@ -46,7 +45,6 @@ export default function Dashboard() {
   const incidentesStats = useIncidentesStats();
   const contratosStats = useContratosStats();
   const documentosStats = useDocumentosStats();
-  const gapStats = useGapAnalysisStats();
   const riscosStats = useRiscosStats();
   const planosStats = usePlanosAcaoStats();
   const ddStats = useDueDiligenceStats();
@@ -95,11 +93,6 @@ export default function Dashboard() {
           maturity={maturity}
           criticalAlerts={dashboardData?.criticalAlerts || 0}
           activeControls={controlesStats.data?.ativos || 0}
-          complianceScore={
-            (gapStats.data?.totalFrameworks || 0) > 0 && (gapStats.data?.assessmentsInProgress || 0) > 0
-              ? gapStats.data!.averageCompliance
-              : null
-          }
           userName={profile?.nome || 'Usuário'}
         />
 
