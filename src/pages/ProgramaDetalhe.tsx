@@ -1,32 +1,25 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft, Pencil, Plus, Wallet, CalendarClock, MoreHorizontal, Trash2,
-  Circle, CircleDot, CheckCircle2, Layers, ListChecks, Wrench,
+  ArrowLeft, Pencil, Plus, Flag, Wrench, CheckCircle2, PlayCircle, Circle, Award, ChevronRight, Sparkles,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { StatCard } from '@/components/ui/stat-card';
-import { StatusBadge } from '@/components/ui/status-badge';
 import { Input } from '@/components/ui/input';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { EmptyState } from '@/components/ui/empty-state';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import ConfirmDialog from '@/components/ConfirmDialog';
 import { ItemDialog } from '@/components/programa/ItemDialog';
 import { ProgramaDialog } from '@/components/programa/ProgramaDialog';
-import { FerramentaDialog } from '@/components/programa/FerramentaDialog';
 import { FaseDialog } from '@/components/programa/FaseDialog';
-import { useProgramaDetalhe, type ProgramaItem, type ItemStatus, type ProgramaFase, type ProgramaFerramenta } from '@/hooks/usePrograma';
+import { ItensListDialog } from '@/components/programa/ItensListDialog';
+import { FerramentasListDialog } from '@/components/programa/FerramentasListDialog';
+import ConfirmDialog from '@/components/ConfirmDialog';
+import { useProgramaDetalhe, type ProgramaItem, type ProgramaFase } from '@/hooks/usePrograma';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { getTemplateForFramework } from '@/lib/programa-templates';
 
+const fmtK = (n: number) => n >= 1000 ? `R$ ${Math.round(n / 1000)}k` : `R$ ${Math.round(n)}`;
 const fmtBRL = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
-const NIVEL_LABEL: Record<string, string> = { baixo: 'Baixo', medio: 'Médio', alto: 'Alto' };
-const REC_LABEL: Record<string, string> = { unica: 'única', mensal: '/mês', anual: '/ano' };
-const STATUS_CYCLE: Record<ItemStatus, ItemStatus> = { pendente: 'em_andamento', em_andamento: 'concluido', concluido: 'pendente' };
-const FERR_TONE: Record<string, 'success' | 'warning' | 'neutral'> = { contratada: 'success', avaliando: 'warning', planejada: 'neutral' };
-const FERR_LABEL: Record<string, string> = { contratada: 'Contratada', avaliando: 'Avaliando', planejada: 'Planejada' };
 
 function diasPara(data: string | null): number | null {
   if (!data) return null;
@@ -34,21 +27,26 @@ function diasPara(data: string | null): number | null {
   return Math.ceil((new Date(data + 'T00:00:00').getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
 }
 
-function ProgressRing({ pct }: { pct: number }) {
-  const r = 31, circ = 2 * Math.PI * r, off = circ * (1 - pct / 100);
-  return (
-    <svg width="76" height="76" viewBox="0 0 76 76" aria-hidden="true" className="shrink-0">
-      <circle cx="38" cy="38" r={r} fill="none" stroke="hsl(var(--muted))" strokeWidth="7" />
-      <circle cx="38" cy="38" r={r} fill="none" stroke="hsl(var(--primary))" strokeWidth="7" strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={off} transform="rotate(-90 38 38)" />
-      <text x="38" y="43" textAnchor="middle" fontSize="17" fontWeight="500" fill="hsl(var(--foreground))">{pct}%</text>
-    </svg>
-  );
+type FaseStatus = 'concluida' | 'andamento' | 'aseguir';
+function statusFase(itens: ProgramaItem[]): FaseStatus {
+  if (itens.length > 0 && itens.every((i) => i.status === 'concluido')) return 'concluida';
+  if (itens.some((i) => i.status !== 'pendente')) return 'andamento';
+  return 'aseguir';
 }
+const FASE_META: Record<FaseStatus, { label: string; icon: any; cls: string; bar: string }> = {
+  concluida: { label: 'Concluída', icon: CheckCircle2, cls: 'text-success', bar: 'bg-success' },
+  andamento: { label: 'Em andamento', icon: PlayCircle, cls: 'text-primary', bar: 'bg-primary' },
+  aseguir: { label: 'A seguir', icon: Circle, cls: 'text-muted-foreground', bar: 'bg-muted-foreground/40' },
+};
 
-function StatusIcon({ status }: { status: ItemStatus }) {
-  if (status === 'concluido') return <CheckCircle2 className="h-5 w-5 text-success" strokeWidth={1.5} />;
-  if (status === 'em_andamento') return <CircleDot className="h-5 w-5 text-primary" strokeWidth={1.5} />;
-  return <Circle className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />;
+function KpiCard({ label, value, sub, tone }: { label: string; value: ReactNode; sub?: ReactNode; tone?: 'warning' }) {
+  return (
+    <div className="rounded-lg bg-muted/40 p-4">
+      <div className="text-[13px] text-muted-foreground">{label}</div>
+      <div className={`text-2xl font-semibold mt-1 ${tone === 'warning' ? 'text-warning' : ''}`}>{value}</div>
+      {sub && <div className="text-xs text-muted-foreground mt-2">{sub}</div>}
+    </div>
+  );
 }
 
 export default function ProgramaDetalhe() {
@@ -56,40 +54,41 @@ export default function ProgramaDetalhe() {
   const navigate = useNavigate();
   const { empresaId } = useEmpresaId();
   const p = useProgramaDetalhe(id, empresaId);
-  const [itemDialog, setItemDialog] = useState<{ open: boolean; item: ProgramaItem | null; faseId: string | null }>({ open: false, item: null, faseId: null });
+
   const [editProg, setEditProg] = useState(false);
-  const [ferrDialog, setFerrDialog] = useState<{ open: boolean; ferramenta: ProgramaFerramenta | null }>({ open: false, ferramenta: null });
-  const [faseDialog, setFaseDialog] = useState<ProgramaFase | null>(null);
+  const [itemDialog, setItemDialog] = useState<{ open: boolean; item: ProgramaItem | null; faseId: string | null }>({ open: false, item: null, faseId: null });
+  const [faseEdit, setFaseEdit] = useState<ProgramaFase | null>(null);
+  const [ferrOpen, setFerrOpen] = useState(false);
+  const [lista, setLista] = useState<{ open: boolean; title: string; subtitle?: string; itens: ProgramaItem[]; fase: ProgramaFase | null }>({ open: false, title: '', itens: [], fase: null });
   const [novaFase, setNovaFase] = useState('');
   const [addingFase, setAddingFase] = useState(false);
   const [deleteItem, setDeleteItem] = useState<ProgramaItem | null>(null);
-  const [deleteFaseId, setDeleteFaseId] = useState<string | null>(null);
-  const [deleteFerr, setDeleteFerr] = useState<ProgramaFerramenta | null>(null);
 
-  const stats = useMemo(() => {
-    const total = p.itens.length;
-    const done = p.itens.filter((i) => i.status === 'concluido').length;
-    const custoItens = p.itens.reduce((s, i) => s + Number(i.custo_estimado || 0), 0);
-    const ferrTotal = p.ferramentas.reduce((s, f) => s + Number(f.custo || 0), 0);
-    const ferrContratada = p.ferramentas.filter((f) => f.status === 'contratada').reduce((s, f) => s + Number(f.custo || 0), 0);
-    const ferrAvaliando = p.ferramentas.filter((f) => f.status === 'avaliando').reduce((s, f) => s + Number(f.custo || 0), 0);
-    const ferrPlanejada = p.ferramentas.filter((f) => f.status === 'planejada').reduce((s, f) => s + Number(f.custo || 0), 0);
+  const s = useMemo(() => {
+    const itens = p.itens;
+    const total = itens.length;
+    const done = itens.filter((i) => i.status === 'concluido').length;
+    const custoItens = itens.reduce((a, i) => a + Number(i.custo_estimado || 0), 0);
+    const custoFerr = p.ferramentas.reduce((a, f) => a + Number(f.custo || 0), 0);
+    const geral = custoItens + custoFerr;
+    const atrasados = itens.filter((i) => i.status !== 'concluido' && i.prazo && diasPara(i.prazo)! < 0).length;
     const alto = (i: ProgramaItem) => i.impacto === 'alto';
     const leve = (i: ProgramaItem) => i.esforco === 'baixo';
-    const matriz = {
-      quickWins: p.itens.filter((i) => alto(i) && leve(i)).length,
-      bigBets: p.itens.filter((i) => alto(i) && !leve(i)).length,
-      fill: p.itens.filter((i) => !alto(i) && leve(i)).length,
-      reavaliar: p.itens.filter((i) => !alto(i) && !leve(i)).length,
+    const quad = {
+      quickWins: itens.filter((i) => alto(i) && leve(i)),
+      bigBets: itens.filter((i) => alto(i) && !leve(i)),
+      fill: itens.filter((i) => !alto(i) && leve(i)),
+      reavaliar: itens.filter((i) => !alto(i) && !leve(i)),
     };
-    return { total, done, pct: total > 0 ? Math.round((done / total) * 100) : 0, custoItens, ferrTotal, ferrContratada, ferrAvaliando, ferrPlanejada, matriz, geral: custoItens + ferrTotal };
+    return { total, done, pct: total > 0 ? Math.round((done / total) * 100) : 0, custoItens, custoFerr, geral, atrasados, quad };
   }, [p.itens, p.ferramentas]);
 
-  const grupos = useMemo(() => {
-    const g = p.fases.map((f) => ({ fase: f, itens: p.itens.filter((i) => i.fase_id === f.id) }));
-    const semFase = p.itens.filter((i) => !i.fase_id);
-    return { g, semFase };
-  }, [p.fases, p.itens]);
+  const fasesInfo = useMemo(() =>
+    p.fases.map((f) => {
+      const its = p.itens.filter((i) => i.fase_id === f.id);
+      const done = its.filter((i) => i.status === 'concluido').length;
+      return { fase: f, itens: its, done, st: statusFase(its), pct: its.length ? Math.round((done / its.length) * 100) : 0 };
+    }), [p.fases, p.itens]);
 
   if (p.loading && !p.programa) return <div className="py-24 flex justify-center"><AkurisPulse size={56} /></div>;
   if (!p.programa) return (
@@ -103,57 +102,37 @@ export default function ProgramaDetalhe() {
   const dias = diasPara(prog.data_alvo);
   const modelo = getTemplateForFramework(prog.framework_nome);
   const orcTotal = prog.orcamento_total ? Number(prog.orcamento_total) : 0;
-  const pctBudget = orcTotal > 0 ? Math.min(100, Math.round((stats.geral / orcTotal) * 100)) : 0;
+  const pctComprometido = orcTotal > 0 ? Math.round((s.geral / orcTotal) * 100) : 0;
+
+  const proxima = fasesInfo.find((f) => f.st !== 'concluida');
+  const nextItem = p.itens.filter((i) => i.status !== 'concluido' && i.prazo).sort((a, b) => (a.prazo! < b.prazo! ? -1 : 1))[0];
+  const marcoNome = proxima?.fase.nome ?? (s.total > 0 ? 'Concluído' : '—');
+  const marcoSub = nextItem ? (() => { const d = diasPara(nextItem.prazo!)!; return d < 0 ? 'entrega atrasada' : `vence em ${d} dias`; })() : 'sem prazo definido';
+
+  const openLista = (title: string, itens: ProgramaItem[], fase: ProgramaFase | null, subtitle?: string) =>
+    setLista({ open: true, title, subtitle, itens, fase });
+  // mantém a lista aberta sincronizada com os dados após um CRUD
+  const listaItens = lista.fase ? p.itens.filter((i) => i.fase_id === lista.fase!.id) : lista.itens;
 
   const handleAddFase = async () => {
     if (!novaFase.trim()) return;
-    const ok = await p.addFase(novaFase.trim());
-    if (ok) { setNovaFase(''); setAddingFase(false); }
+    if (await p.addFase(novaFase.trim())) { setNovaFase(''); setAddingFase(false); }
   };
 
-  const renderItem = (it: ProgramaItem) => (
-    <div key={it.id} className="flex items-center gap-3 rounded-lg border border-border/60 bg-background px-3 py-2.5">
-      <button onClick={() => p.setItemStatus(it.id, STATUS_CYCLE[it.status])} title="Alterar status" className="shrink-0"><StatusIcon status={it.status} /></button>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className={`text-sm font-medium truncate ${it.status === 'concluido' ? 'line-through text-muted-foreground' : ''}`}>{it.titulo}</span>
-          {it.impacto && <StatusBadge tone={it.impacto === 'alto' ? 'warning' : 'neutral'} size="sm" variant="outline">Impacto {NIVEL_LABEL[it.impacto]}</StatusBadge>}
-          {it.esforco && <StatusBadge tone="neutral" size="sm" variant="outline">Esforço {NIVEL_LABEL[it.esforco]}</StatusBadge>}
-          {it.ferramenta_sugerida && <StatusBadge tone="neutral" size="sm">{it.ferramenta_sugerida}</StatusBadge>}
-        </div>
-        <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
-          {it.custo_estimado != null && <span><Wallet className="h-3 w-3 inline mr-1" strokeWidth={1.5} />{fmtBRL(Number(it.custo_estimado))}</span>}
-          {it.prazo && <span className={diasPara(it.prazo)! < 0 && it.status !== 'concluido' ? 'text-destructive' : ''}><CalendarClock className="h-3 w-3 inline mr-1" strokeWidth={1.5} />{new Date(it.prazo + 'T00:00:00').toLocaleDateString('pt-BR')}</span>}
-        </div>
-      </div>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 shrink-0"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => setItemDialog({ open: true, item: it, faseId: it.fase_id })}><Pencil className="h-4 w-4 mr-2" /> Editar</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setDeleteItem(it)} className="text-destructive focus:text-destructive"><Trash2 className="h-4 w-4 mr-2" /> Excluir</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
-  );
-
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
       <Card className="rounded-xl border">
-        <CardContent className="p-5 flex items-start justify-between gap-4 flex-wrap">
-          <div>
-            <button onClick={() => navigate('/programa')} className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 mb-2"><ArrowLeft className="h-3.5 w-3.5" /> Programas</button>
-            <h1 className="text-2xl font-semibold tracking-tight">{prog.nome}</h1>
-            <p className="text-sm text-muted-foreground mt-1">{prog.framework_nome || 'Sem framework específico'}{prog.descricao ? ` · ${prog.descricao}` : ''}</p>
-            <div className="inline-flex items-center gap-2 mt-3 bg-muted/50 rounded-full px-3 py-1 text-xs text-muted-foreground">
-              <CalendarClock className="h-3.5 w-3.5" strokeWidth={1.5} />
-              {dias == null ? 'Sem data-alvo' : <>Data-alvo · {dias < 0 ? <span className="text-destructive ml-1">atrasado</span> : <span className="text-foreground ml-1">faltam {dias} dias</span>}</>}
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3">
-              <ProgressRing pct={stats.pct} />
-              <div className="text-xs text-muted-foreground leading-tight">rumo à<br />conclusão</div>
+        <CardContent className="p-5">
+          <button onClick={() => navigate('/programa')} className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 mb-2"><ArrowLeft className="h-3.5 w-3.5" /> Programas</button>
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight">{prog.nome}</h1>
+              <p className="text-sm text-muted-foreground mt-1">{prog.framework_nome || 'Sem framework específico'} · do diagnóstico à certificação</p>
+              <div className="inline-flex items-center gap-2 mt-3 bg-accent/10 text-primary rounded-full px-3 py-1.5 text-xs">
+                <Flag className="h-3.5 w-3.5" strokeWidth={1.5} />
+                {dias == null ? 'Sem data-alvo' : <>Meta: certificar em {new Date(prog.data_alvo! + 'T00:00:00').toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })} · {dias < 0 ? <span className="text-destructive font-medium">atrasado</span> : <span className="font-medium">faltam {dias} dias</span>}</>}
+              </div>
             </div>
             <Button variant="outline" size="sm" onClick={() => setEditProg(true)}><Pencil className="h-4 w-4 mr-2" /> Editar</Button>
           </div>
@@ -161,159 +140,142 @@ export default function ProgramaDetalhe() {
       </Card>
 
       {/* KPIs */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <StatCard title="Estimativa total" value={fmtBRL(stats.geral)} icon={<Wallet />} variant="primary" showAccent />
-        <StatCard title="Ferramentas" value={`${p.ferramentas.length}`} icon={<Wrench />} variant="info" />
-        <StatCard title="Data-alvo" value={dias == null ? '—' : dias < 0 ? 'Atrasado' : `${dias} dias`} icon={<CalendarClock />} variant={dias != null && dias < 0 ? 'destructive' : 'default'} />
-        <StatCard title="Itens" value={`${stats.done}/${stats.total}`} icon={<ListChecks />} variant="default" />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <KpiCard label="Rumo à conclusão" value={`${s.pct}%`} sub={<div className="h-1.5 rounded-full bg-border overflow-hidden mt-1"><div className="h-full bg-primary" style={{ width: `${s.pct}%` }} /></div>} />
+        <KpiCard label="Orçamento" value={<>{fmtK(s.geral)} <span className="text-sm text-muted-foreground font-normal">/ {orcTotal ? fmtK(orcTotal) : '—'}</span></>} sub={orcTotal ? `planejado · ${pctComprometido}% comprometido` : 'defina em "Editar"'} />
+        <KpiCard label="Próximo marco" value={<span className="text-xl">{marcoNome}</span>} sub={marcoSub} />
+        <KpiCard label="Atrasados" value={s.atrasados} sub="itens vencidos" tone={s.atrasados > 0 ? 'warning' : undefined} />
       </div>
+
+      {/* Fases do roadmap */}
+      <Card className="rounded-xl border">
+        <CardContent className="p-5">
+          <div className="flex items-center justify-between gap-2 mb-4 flex-wrap">
+            <h2 className="text-base font-semibold">Fases do roadmap</h2>
+            <div className="flex items-center gap-2">
+              {addingFase ? (
+                <div className="flex items-center gap-2">
+                  <Input autoFocus value={novaFase} onChange={(e) => setNovaFase(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAddFase()} placeholder="Nome da fase" className="h-8 w-44" />
+                  <Button size="sm" onClick={handleAddFase}>Adicionar</Button>
+                  <Button size="sm" variant="ghost" onClick={() => { setAddingFase(false); setNovaFase(''); }}>Cancelar</Button>
+                </div>
+              ) : (
+                <>
+                  <span className="inline-flex items-center gap-1 text-xs text-muted-foreground"><Sparkles className="h-3.5 w-3.5 text-primary" strokeWidth={1.5} /> modelo · editável</span>
+                  <Button size="sm" variant="ghost" onClick={() => setAddingFase(true)}><Plus className="h-4 w-4 mr-1" /> Fase</Button>
+                  <Button size="sm" onClick={() => setItemDialog({ open: true, item: null, faseId: null })}><Plus className="h-4 w-4 mr-1" /> Item</Button>
+                </>
+              )}
+            </div>
+          </div>
+
+          {fasesInfo.length === 0 ? (
+            <div className="space-y-3">
+              <EmptyState icon={<Award className="h-8 w-8" />} title="Comece com um modelo pronto" description="Gere o roadmap típico do framework — fases e itens já preenchidos com esforço, custo e ferramenta. Você só ajusta." />
+              <div className="flex justify-center"><Button onClick={() => p.aplicarTemplate(modelo)}><Plus className="h-4 w-4 mr-2" /> Usar modelo {modelo.label}</Button></div>
+            </div>
+          ) : (
+            <div className="flex gap-3 flex-wrap">
+              {fasesInfo.map(({ fase, itens, done, st, pct }) => {
+                const meta = FASE_META[st];
+                const MetaIcon = meta.icon;
+                return (
+                  <button key={fase.id} onClick={() => openLista(fase.nome, itens, fase, `${done}/${itens.length} itens`)}
+                    className={`flex-1 min-w-[130px] text-left rounded-lg border p-3 transition-colors hover:border-primary/40 ${st === 'andamento' ? 'border-primary/50' : 'border-border'}`}>
+                    <div className={`flex items-center gap-1.5 text-xs ${meta.cls}`}><MetaIcon className="h-3.5 w-3.5" strokeWidth={1.5} /> {meta.label}</div>
+                    <div className="text-sm font-medium mt-1.5 leading-snug">{fase.nome}</div>
+                    <div className="text-[11px] text-muted-foreground mt-0.5">{done}/{itens.length} itens</div>
+                    <div className="h-1.5 rounded-full bg-border overflow-hidden mt-2"><div className={`h-full ${meta.bar}`} style={{ width: `${pct}%` }} /></div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Matriz + Orçamento */}
       <div className="grid gap-4 md:grid-cols-2">
         <Card className="rounded-xl border">
           <CardContent className="p-5">
-            <h3 className="text-sm font-semibold mb-1">Por onde começar</h3>
-            <p className="text-xs text-muted-foreground mb-3">Impacto × esforço</p>
+            <h3 className="text-base font-semibold">Por onde começar</h3>
+            <p className="text-xs text-muted-foreground mb-3">Impacto × esforço — priorize os quick wins</p>
             <div className="grid grid-cols-2 gap-2">
-              <div className="rounded-lg p-3" style={{ background: 'hsl(160 60% 94%)' }}><div className="text-xs font-medium" style={{ color: 'hsl(168 70% 24%)' }}>Quick wins</div><div className="text-2xl font-semibold" style={{ color: 'hsl(170 80% 14%)' }}>{stats.matriz.quickWins}</div></div>
-              <div className="rounded-lg p-3" style={{ background: 'hsl(38 90% 92%)' }}><div className="text-xs font-medium" style={{ color: 'hsl(30 80% 30%)' }}>Grandes apostas</div><div className="text-2xl font-semibold" style={{ color: 'hsl(28 80% 18%)' }}>{stats.matriz.bigBets}</div></div>
-              <div className="rounded-lg p-3 bg-muted/50"><div className="text-xs font-medium text-muted-foreground">Preencher folgas</div><div className="text-2xl font-semibold">{stats.matriz.fill}</div></div>
-              <div className="rounded-lg p-3 bg-muted/50"><div className="text-xs font-medium text-muted-foreground">Reavaliar</div><div className="text-2xl font-semibold">{stats.matriz.reavaliar}</div></div>
+              <button onClick={() => openLista('Quick wins', s.quad.quickWins, null, 'Alto impacto · baixo esforço')} className="text-left rounded-lg p-3 transition-opacity hover:opacity-90" style={{ background: 'hsl(160 60% 94%)' }}>
+                <div className="text-xs font-medium" style={{ color: 'hsl(168 70% 24%)' }}>Quick wins</div>
+                <div className="text-2xl font-semibold" style={{ color: 'hsl(170 80% 14%)' }}>{s.quad.quickWins.length}</div>
+                <div className="text-[11px]" style={{ color: 'hsl(168 60% 30%)' }}>alto impacto · baixo esforço</div>
+              </button>
+              <button onClick={() => openLista('Grandes apostas', s.quad.bigBets, null, 'Alto impacto · alto esforço')} className="text-left rounded-lg p-3 transition-opacity hover:opacity-90" style={{ background: 'hsl(38 90% 92%)' }}>
+                <div className="text-xs font-medium" style={{ color: 'hsl(30 80% 30%)' }}>Grandes apostas</div>
+                <div className="text-2xl font-semibold" style={{ color: 'hsl(28 80% 18%)' }}>{s.quad.bigBets.length}</div>
+                <div className="text-[11px]" style={{ color: 'hsl(30 70% 34%)' }}>alto impacto · alto esforço</div>
+              </button>
+              <button onClick={() => openLista('Preencher folgas', s.quad.fill, null, 'Baixo impacto · baixo esforço')} className="text-left rounded-lg p-3 bg-muted/50 hover:bg-muted transition-colors">
+                <div className="text-xs font-medium text-muted-foreground">Preencher folgas</div>
+                <div className="text-2xl font-semibold">{s.quad.fill.length}</div>
+                <div className="text-[11px] text-muted-foreground">baixo impacto · baixo esforço</div>
+              </button>
+              <button onClick={() => openLista('Reavaliar', s.quad.reavaliar, null, 'Baixo impacto · alto esforço')} className="text-left rounded-lg p-3 bg-muted/50 hover:bg-muted transition-colors">
+                <div className="text-xs font-medium text-muted-foreground">Reavaliar</div>
+                <div className="text-2xl font-semibold">{s.quad.reavaliar.length}</div>
+                <div className="text-[11px] text-muted-foreground">baixo impacto · alto esforço</div>
+              </button>
             </div>
           </CardContent>
         </Card>
 
         <Card className="rounded-xl border">
           <CardContent className="p-5">
-            <h3 className="text-sm font-semibold mb-1">Orçamento</h3>
-            <p className="text-xs text-muted-foreground mb-3">Itens + ferramentas vs. o quanto você quer gastar</p>
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-semibold">{fmtBRL(stats.geral)}</span>
-              {orcTotal > 0 ? <span className="text-sm text-muted-foreground">de {fmtBRL(orcTotal)}</span> : <span className="text-xs text-muted-foreground">defina o orçamento em "Editar"</span>}
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-base font-semibold">Orçamento e ferramentas</h3>
+                <p className="text-xs text-muted-foreground mb-3">O quanto você quer gastar, e com o quê</p>
+              </div>
             </div>
-            {orcTotal > 0 && (
-              <div className="h-2 rounded-full bg-muted overflow-hidden mt-3"><div className={`h-full ${stats.geral > orcTotal ? 'bg-destructive' : 'bg-primary'}`} style={{ width: `${pctBudget}%` }} /></div>
-            )}
-            <div className="mt-4 space-y-1.5 text-sm">
-              <div className="flex justify-between"><span className="text-muted-foreground">Itens (implementação)</span><span>{fmtBRL(stats.custoItens)}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Ferramentas</span><span>{fmtBRL(stats.ferrTotal)}</span></div>
-              {stats.ferrTotal > 0 && (
-                <div className="flex gap-3 text-xs text-muted-foreground pt-1">
-                  <span className="text-success">● contratadas {fmtBRL(stats.ferrContratada)}</span>
-                  <span className="text-warning">● avaliando {fmtBRL(stats.ferrAvaliando)}</span>
-                  <span>● planejadas {fmtBRL(stats.ferrPlanejada)}</span>
+            <div className="space-y-3">
+              <div>
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Implementação (itens)</span><span className="font-medium">{fmtBRL(s.custoItens)}</span></div>
+                <div className="h-1.5 rounded-full bg-border overflow-hidden mt-1.5"><div className="h-full bg-primary" style={{ width: `${s.geral ? Math.round((s.custoItens / s.geral) * 100) : 0}%` }} /></div>
+              </div>
+              <button onClick={() => setFerrOpen(true)} className="w-full text-left group">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground flex items-center gap-1"><Wrench className="h-3.5 w-3.5" strokeWidth={1.5} />Ferramentas <span className="text-xs">({p.ferramentas.length})</span> <ChevronRight className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity" /></span>
+                  <span className="font-medium">{fmtBRL(s.custoFerr)}</span>
                 </div>
-              )}
+                <div className="h-1.5 rounded-full bg-border overflow-hidden mt-1.5"><div className="h-full" style={{ width: `${s.geral ? Math.round((s.custoFerr / s.geral) * 100) : 0}%`, background: '#5DCAA5' }} /></div>
+              </button>
+              <div className="border-t border-border pt-3 flex justify-between text-sm">
+                <span className="font-medium">Total estimado</span>
+                <span className="font-medium">{fmtBRL(s.geral)}{orcTotal ? <span className="text-muted-foreground font-normal"> de {fmtBRL(orcTotal)}</span> : ''}</span>
+              </div>
+              <Button variant="outline" size="sm" className="w-full" onClick={() => setFerrOpen(true)}><Wrench className="h-4 w-4 mr-2" /> Gerir ferramentas</Button>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Ferramentas */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            <h2 className="text-lg font-semibold">Ferramentas técnicas</h2>
-            <p className="text-xs text-muted-foreground">O que você está ou vai contratar para se adequar.</p>
-          </div>
-          <Button size="sm" onClick={() => setFerrDialog({ open: true, ferramenta: null })}><Plus className="h-4 w-4 mr-2" /> Nova ferramenta</Button>
-        </div>
-        {p.ferramentas.length === 0 ? (
-          <EmptyState icon={<Wrench className="h-8 w-8" />} title="Nenhuma ferramenta ainda" description="Cadastre as ferramentas (IdP, SIEM, EDR, backup...) com custo e status — o orçamento se atualiza sozinho." />
-        ) : (
-          <div className="grid gap-2 md:grid-cols-2">
-            {p.ferramentas.map((f) => (
-              <div key={f.id} className="flex items-center gap-3 rounded-lg border border-border/60 bg-background px-3 py-2.5">
-                <div className="h-9 w-9 rounded-md bg-muted/50 flex items-center justify-center shrink-0"><Wrench className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} /></div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-medium truncate">{f.nome}</span>
-                    <StatusBadge tone={FERR_TONE[f.status]} size="sm">{FERR_LABEL[f.status]}</StatusBadge>
-                  </div>
-                  <div className="text-xs text-muted-foreground mt-0.5 truncate">
-                    {[f.categoria, f.fornecedor].filter(Boolean).join(' · ')}
-                    {f.custo != null && <span className="text-foreground/80"> · {fmtBRL(Number(f.custo))} {REC_LABEL[f.recorrencia]}</span>}
-                  </div>
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8 shrink-0"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => setFerrDialog({ open: true, ferramenta: f })}><Pencil className="h-4 w-4 mr-2" /> Editar</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setDeleteFerr(f)} className="text-destructive focus:text-destructive"><Trash2 className="h-4 w-4 mr-2" /> Excluir</DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      {/* Dialogs (desdobramentos) */}
+      <ItensListDialog
+        open={lista.open}
+        onOpenChange={(o) => setLista((st) => ({ ...st, open: o }))}
+        title={lista.title}
+        subtitle={lista.subtitle}
+        itens={listaItens}
+        fase={lista.fase}
+        onToggleStatus={p.setItemStatus}
+        onEdit={(it) => setItemDialog({ open: true, item: it, faseId: it.fase_id })}
+        onDelete={(it) => setDeleteItem(it)}
+        onAdd={lista.fase ? () => setItemDialog({ open: true, item: null, faseId: lista.fase!.id }) : undefined}
+        onEditFase={lista.fase ? () => setFaseEdit(lista.fase) : undefined}
+      />
+      <FerramentasListDialog open={ferrOpen} onOpenChange={setFerrOpen} ferramentas={p.ferramentas} fases={p.fases} onSave={p.saveFerramenta} onDelete={p.deleteFerramenta} />
 
-      {/* Fases e itens */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Fases e itens</h2>
-        <div className="flex items-center gap-2">
-          {addingFase ? (
-            <div className="flex items-center gap-2">
-              <Input autoFocus value={novaFase} onChange={(e) => setNovaFase(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAddFase()} placeholder="Nome da fase" className="h-9 w-48" />
-              <Button size="sm" onClick={handleAddFase}>Adicionar</Button>
-              <Button size="sm" variant="ghost" onClick={() => { setAddingFase(false); setNovaFase(''); }}>Cancelar</Button>
-            </div>
-          ) : (
-            <Button size="sm" variant="outline" onClick={() => setAddingFase(true)}><Layers className="h-4 w-4 mr-2" /> Nova fase</Button>
-          )}
-          <Button size="sm" onClick={() => setItemDialog({ open: true, item: null, faseId: null })}><Plus className="h-4 w-4 mr-2" /> Novo item</Button>
-        </div>
-      </div>
-
-      {p.fases.length === 0 && p.itens.length === 0 ? (
-        <div className="space-y-4">
-          <EmptyState icon={<Layers className="h-8 w-8" />} title="Comece com um modelo pronto" description="Gere o roadmap típico do framework — fases e itens já preenchidos com esforço, custo e ferramenta sugeridos. Você só ajusta os números e acompanha." />
-          <div className="flex justify-center"><Button onClick={() => p.aplicarTemplate(modelo)}><Plus className="h-4 w-4 mr-2" /> Usar modelo {modelo.label}</Button></div>
-        </div>
-      ) : (
-        <div className="space-y-5">
-          {grupos.g.map(({ fase, itens }) => {
-            const fdone = itens.filter((i) => i.status === 'concluido').length;
-            const faseCusto = itens.reduce((s, i) => s + Number(i.custo_estimado || 0), 0);
-            return (
-              <div key={fase.id} className="space-y-2">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <StatusBadge tone={itens.length > 0 && fdone === itens.length ? 'success' : 'neutral'} size="sm">{fase.nome}</StatusBadge>
-                    <span className="text-xs text-muted-foreground">{fdone}/{itens.length} concluídos</span>
-                    <span className="text-xs text-muted-foreground">·</span>
-                    <span className="text-xs text-muted-foreground">
-                      <Wallet className="h-3 w-3 inline mr-1" strokeWidth={1.5} />
-                      itens {fmtBRL(faseCusto)}{fase.orcamento != null ? <> de <span className={faseCusto > Number(fase.orcamento) ? 'text-destructive' : ''}>{fmtBRL(Number(fase.orcamento))}</span></> : ''}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button size="sm" variant="ghost" onClick={() => setItemDialog({ open: true, item: null, faseId: fase.id })}><Plus className="h-4 w-4 mr-1" /> Item</Button>
-                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setFaseDialog(fase)} title="Editar fase / orçamento"><Pencil className="h-4 w-4" /></Button>
-                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => setDeleteFaseId(fase.id)}><Trash2 className="h-4 w-4" /></Button>
-                  </div>
-                </div>
-                {itens.length === 0 ? <p className="text-xs text-muted-foreground px-1 py-2">Nenhum item nesta fase.</p> : <div className="space-y-2">{itens.map(renderItem)}</div>}
-              </div>
-            );
-          })}
-          {grupos.semFase.length > 0 && (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2"><StatusBadge tone="neutral" variant="outline" size="sm">Sem fase</StatusBadge><span className="text-xs text-muted-foreground">{grupos.semFase.length} itens</span></div>
-              <div className="space-y-2">{grupos.semFase.map(renderItem)}</div>
-            </div>
-          )}
-        </div>
-      )}
-
-      <ItemDialog open={itemDialog.open} onOpenChange={(o) => setItemDialog((s) => ({ ...s, open: o }))} item={itemDialog.item} fases={p.fases} defaultFaseId={itemDialog.faseId} onSubmit={p.saveItem} />
+      <ItemDialog open={itemDialog.open} onOpenChange={(o) => setItemDialog((st) => ({ ...st, open: o }))} item={itemDialog.item} fases={p.fases} defaultFaseId={itemDialog.faseId} onSubmit={p.saveItem} />
       <ProgramaDialog open={editProg} onOpenChange={setEditProg} programa={prog} onSubmit={async (v) => p.updatePrograma(v)} />
-      <FerramentaDialog open={ferrDialog.open} onOpenChange={(o) => setFerrDialog((s) => ({ ...s, open: o }))} ferramenta={ferrDialog.ferramenta} fases={p.fases} onSubmit={p.saveFerramenta} />
-      <FaseDialog open={!!faseDialog} onOpenChange={(o) => !o && setFaseDialog(null)} fase={faseDialog} onSubmit={p.updateFase} />
+      <FaseDialog open={!!faseEdit} onOpenChange={(o) => !o && setFaseEdit(null)} fase={faseEdit} onSubmit={p.updateFase} />
 
       <ConfirmDialog open={!!deleteItem} onOpenChange={(o) => !o && setDeleteItem(null)} onConfirm={async () => { if (deleteItem) await p.deleteItem(deleteItem.id); setDeleteItem(null); }} title="Excluir item" description={`Excluir "${deleteItem?.titulo}"?`} variant="destructive" />
-      <ConfirmDialog open={!!deleteFaseId} onOpenChange={(o) => !o && setDeleteFaseId(null)} onConfirm={async () => { if (deleteFaseId) await p.deleteFase(deleteFaseId); setDeleteFaseId(null); }} title="Excluir fase" description="A fase será removida. Os itens dela ficam sem fase (não são excluídos)." variant="destructive" />
-      <ConfirmDialog open={!!deleteFerr} onOpenChange={(o) => !o && setDeleteFerr(null)} onConfirm={async () => { if (deleteFerr) await p.deleteFerramenta(deleteFerr.id); setDeleteFerr(null); }} title="Excluir ferramenta" description={`Excluir "${deleteFerr?.nome}"?`} variant="destructive" />
     </div>
   );
 }
