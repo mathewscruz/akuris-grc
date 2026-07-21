@@ -64,6 +64,7 @@ export function ItensListDialog({ open, onOpenChange, title, subtitle, itens, fa
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className={`text-sm font-medium ${it.status === 'concluido' ? 'line-through text-muted-foreground' : ''}`}>{it.titulo}</span>
+                    {it.requirement_id && <StatusBadge tone="info" size="sm" variant="outline">Gap Analysis</StatusBadge>}
                     {it.impacto && <StatusBadge tone={it.impacto === 'alto' ? 'warning' : 'neutral'} size="sm" variant="outline">Impacto {NIVEL_LABEL[it.impacto]}</StatusBadge>}
                     {it.esforco && <StatusBadge tone="neutral" size="sm" variant="outline">Esforço {NIVEL_LABEL[it.esforco]}</StatusBadge>}
                     {it.ferramenta_sugerida && <StatusBadge tone="neutral" size="sm">{it.ferramenta_sugerida}</StatusBadge>}

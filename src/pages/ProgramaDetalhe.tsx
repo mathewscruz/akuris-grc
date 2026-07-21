@@ -1,8 +1,9 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft, Pencil, Plus, Flag, Wrench, CheckCircle2, PlayCircle, Circle, Award, ChevronRight, Sparkles,
+  ArrowLeft, Pencil, Plus, Flag, Wrench, CheckCircle2, PlayCircle, Circle, Award, ChevronRight, Sparkles, RefreshCw,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -63,6 +64,14 @@ export default function ProgramaDetalhe() {
   const [novaFase, setNovaFase] = useState('');
   const [addingFase, setAddingFase] = useState(false);
   const [deleteItem, setDeleteItem] = useState<ProgramaItem | null>(null);
+  const [syncing, setSyncing] = useState(false);
+
+  const handleSync = async () => {
+    setSyncing(true);
+    const res = await p.syncGapAnalysis();
+    setSyncing(false);
+    if (res) toast.success(`Gap Analysis sincronizado: ${res.added} controle(s) puxado(s), ${res.updated} atualizado(s).`);
+  };
 
   const s = useMemo(() => {
     const itens = p.itens;
@@ -134,7 +143,14 @@ export default function ProgramaDetalhe() {
                 {dias == null ? 'Sem data-alvo' : <>Meta: certificar em {new Date(prog.data_alvo! + 'T00:00:00').toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })} · {dias < 0 ? <span className="text-destructive font-medium">atrasado</span> : <span className="font-medium">faltam {dias} dias</span>}</>}
               </div>
             </div>
-            <Button variant="outline" size="sm" onClick={() => setEditProg(true)}><Pencil className="h-4 w-4 mr-2" /> Editar</Button>
+            <div className="flex items-center gap-2">
+              {prog.framework_id && (
+                <Button variant="outline" size="sm" onClick={handleSync} disabled={syncing} title="Puxa os controles e o status de conformidade do Gap Analysis">
+                  {syncing ? <AkurisPulse size={16} /> : <RefreshCw className="h-4 w-4 mr-2" />} Sincronizar Gap Analysis
+                </Button>
+              )}
+              <Button variant="outline" size="sm" onClick={() => setEditProg(true)}><Pencil className="h-4 w-4 mr-2" /> Editar</Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -171,8 +187,11 @@ export default function ProgramaDetalhe() {
 
           {fasesInfo.length === 0 ? (
             <div className="space-y-3">
-              <EmptyState icon={<Award className="h-8 w-8" />} title="Comece com um modelo pronto" description="Gere o roadmap típico do framework — fases e itens já preenchidos com esforço, custo e ferramenta. Você só ajusta." />
-              <div className="flex justify-center"><Button onClick={() => p.aplicarTemplate(modelo)}><Plus className="h-4 w-4 mr-2" /> Usar modelo {modelo.label}</Button></div>
+              <EmptyState icon={<Award className="h-8 w-8" />} title="Puxe os controles ou use um modelo" description={prog.framework_id ? 'Vincule ao Gap Analysis para trazer os controles do framework com o status de conformidade real — ou comece com um modelo pronto.' : 'Gere o roadmap típico do framework — fases e itens já preenchidos com esforço, custo e ferramenta. Você só ajusta.'} />
+              <div className="flex justify-center gap-2 flex-wrap">
+                {prog.framework_id && <Button variant="outline" onClick={handleSync} disabled={syncing}>{syncing ? <AkurisPulse size={16} /> : <RefreshCw className="h-4 w-4 mr-2" />} Puxar controles do Gap Analysis</Button>}
+                <Button onClick={() => p.aplicarTemplate(modelo)}><Plus className="h-4 w-4 mr-2" /> Usar modelo {modelo.label}</Button>
+              </div>
             </div>
           ) : (
             <div className="flex gap-3 flex-wrap">

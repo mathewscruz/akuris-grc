@@ -245,6 +245,74 @@ export function useProgramaDetalhe(programaId: string | undefined, empresaId: st
     } catch (e) { logger.error('aplicarTemplate', e); toast.error('Erro ao aplicar o modelo.'); return false; }
   }, [programaId, empresaId, fetchAll]);
 
+  /** Puxa/atualiza os controles do framework vinculado a partir do Gap Analysis. */
+  const syncGapAnalysis = useCallback(async (): Promise<{ added: number; updated: number } | null> => {
+    if (!programaId || !empresaId) return null;
+    const fwId = programa?.framework_id;
+    if (!fwId) { toast.error('Vincule um framework ao programa para puxar os controles.'); return null; }
+    try {
+      const [reqRes, evalRes] = await Promise.all([
+        sb.from('gap_analysis_requirements').select('id, codigo, titulo, categoria, peso, orientacao_implementacao').eq('framework_id', fwId).order('ordem', { ascending: true }),
+        sb.from('gap_analysis_evaluations').select('requirement_id, conformity_status').eq('framework_id', fwId).eq('empresa_id', empresaId),
+      ]);
+      const reqs = (reqRes.data || []) as any[];
+      if (reqs.length === 0) { toast.info('Este framework não tem requisitos cadastrados no Gap Analysis.'); return { added: 0, updated: 0 }; }
+      const evalMap = new Map((evalRes.data || []).map((e: any) => [e.requirement_id, e.conformity_status]));
+      const statusOf = (c?: string) => (c === 'conforme' ? 'concluido' : c === 'parcial' ? 'em_andamento' : 'pendente');
+      const impactoOf = (peso: any) => (Number(peso) >= 4 ? 'alto' : Number(peso) === 3 ? 'medio' : 'baixo');
+      const uid = await currentUserId();
+
+      // Garante uma fase por categoria (reaproveita as existentes pelo nome)
+      const faseByName = new Map(fases.map((f) => [f.nome, f.id]));
+      const cats = Array.from(new Set(reqs.map((r) => r.categoria || 'Controles')));
+      let ordem = fases.length;
+      for (const cat of cats) {
+        if (!faseByName.has(cat)) {
+          const { data: f } = await sb.from('programa_fases').insert({ empresa_id: empresaId, programa_id: programaId, nome: cat, ordem: ordem++ }).select('id').single();
+          if (f) faseByName.set(cat, f.id);
+        }
+      }
+
+      const itemByReq = new Map(itens.filter((i) => i.requirement_id).map((i) => [i.requirement_id, i]));
+      let added = 0, updated = 0;
+      const toInsert: any[] = [];
+      for (const r of reqs) {
+        const conf = evalMap.get(r.id) as string | undefined;
+        if (conf === 'nao_aplicavel') continue;
+        const st = statusOf(conf);
+        const existing = itemByReq.get(r.id);
+        if (existing) {
+          await sb.from('programa_itens').update({ status: st }).eq('id', existing.id);
+          updated++;
+        } else {
+          toInsert.push({
+            empresa_id: empresaId,
+            programa_id: programaId,
+            fase_id: faseByName.get(r.categoria || 'Controles') ?? null,
+            titulo: r.codigo ? `[${r.codigo}] ${r.titulo}` : r.titulo,
+            descricao: r.orientacao_implementacao || null,
+            requirement_id: r.id,
+            impacto: impactoOf(r.peso),
+            status: st,
+            ordem: 0,
+            created_by: uid,
+          });
+          added++;
+        }
+      }
+      for (let i = 0; i < toInsert.length; i += 200) {
+        const { error } = await sb.from('programa_itens').insert(toInsert.slice(i, i + 200));
+        if (error) throw error;
+      }
+      await fetchAll();
+      return { added, updated };
+    } catch (e) {
+      logger.error('syncGapAnalysis', e);
+      toast.error('Erro ao sincronizar com o Gap Analysis.');
+      return null;
+    }
+  }, [programaId, empresaId, programa?.framework_id, fases, itens, fetchAll]);
+
   const addFase = useCallback(async (nome: string): Promise<boolean> => {
     if (!programaId || !empresaId) return false;
     try {
@@ -361,5 +429,5 @@ export function useProgramaDetalhe(programaId: string | undefined, empresaId: st
     } catch (e) { logger.error('deleteItem', e); toast.error('Erro ao excluir item.'); return false; }
   }, [fetchAll]);
 
-  return { programa, fases, itens, ferramentas, loading, fetchAll, updatePrograma, aplicarTemplate, addFase, updateFase, deleteFase, saveItem, setItemStatus, deleteItem, saveFerramenta, deleteFerramenta };
+  return { programa, fases, itens, ferramentas, loading, fetchAll, updatePrograma, aplicarTemplate, syncGapAnalysis, addFase, updateFase, deleteFase, saveItem, setItemStatus, deleteItem, saveFerramenta, deleteFerramenta };
 }
