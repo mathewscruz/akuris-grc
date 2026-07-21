@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Clock, RefreshCw, Focus, Eye } from 'lucide-react';
+import { Clock, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Icon } from '@/components/icons/Icon';
@@ -13,8 +13,6 @@ interface DashboardHeaderProps {
   /** Mantido por compatibilidade — não é mais exibido (info já no Hero). */
   criticalCount?: number;
   dataUpdatedAt?: number;
-  isFocusMode: boolean;
-  onToggleFocus: () => void;
   onRefresh: () => void;
 }
 
@@ -25,8 +23,6 @@ interface DashboardHeaderProps {
  */
 export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   dataUpdatedAt,
-  isFocusMode,
-  onToggleFocus,
   onRefresh,
 }) => {
   const { t, locale } = useLanguage();
@@ -53,26 +49,6 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
             </Button>
           </TooltipTrigger>
           <TooltipContent>{timeStr}</TooltipContent>
-        </Tooltip>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant={isFocusMode ? 'default' : 'outline'}
-              size="sm"
-              onClick={onToggleFocus}
-              className="h-8"
-              aria-pressed={isFocusMode}
-            >
-              <Icon as={isFocusMode ? Eye : Focus} size="sm" className="mr-1.5" />
-              <span className="text-xs hidden sm:inline">
-                {isFocusMode ? t('dashboard_v3.focusOff') : t('dashboard_v3.focusOn')}
-              </span>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            {isFocusMode ? t('dashboard_v3.focusOff') : t('dashboard_v3.focusOn')}
-          </TooltipContent>
         </Tooltip>
       </div>
     </div>

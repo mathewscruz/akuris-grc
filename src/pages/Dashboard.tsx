@@ -7,7 +7,7 @@ import { FrameworksOverviewCard } from '@/components/dashboard/FrameworksOvervie
 import { RecentActivities } from '@/components/dashboard/RecentActivities';
 import { RiskScoreTimeline } from '@/components/dashboard/RiskScoreTimeline';
 import AlertsDetailDialog from '@/components/dashboard/AlertsDetailDialog';
-import { UpcomingExpirations } from '@/components/dashboard/UpcomingExpirations';
+import { GrcHealthRadar } from '@/components/dashboard/GrcHealthRadar';
 
 
 import { useTrendData } from '@/components/dashboard/TrendIndicators';
@@ -25,9 +25,8 @@ import { useRiscosStats } from '@/hooks/useRiscosStats';
 import { usePlanosAcaoStats } from '@/hooks/usePlanosAcaoStats';
 import { useDueDiligenceStats } from '@/hooks/useDueDiligenceStats';
 import { useDenunciasStats } from '@/hooks/useDenunciasStats';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useRadarChartData } from '@/hooks/useRadarChartData';
 import { useGrcMaturityScore } from '@/hooks/useGrcMaturityScore';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -40,17 +39,6 @@ export default function Dashboard() {
   // para o dashboard. Não disparamos aqui para evitar reaparecer ao navegar
   // de volta para o dashboard a partir de outras páginas.
   const [drillKey, setDrillKey] = useState<DrillDownKey | null>(null);
-  const [isFocusMode, setIsFocusMode] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false;
-    return window.localStorage.getItem('akuris.focusMode') === '1';
-  });
-  useEffect(() => {
-    try {
-      window.localStorage.setItem('akuris.focusMode', isFocusMode ? '1' : '0');
-    } catch {
-      /* ignore */
-    }
-  }, [isFocusMode]);
   const queryClient = useQueryClient();
   
   const ativosStats = useAtivosStats();
@@ -65,7 +53,6 @@ export default function Dashboard() {
   const denunciasStats = useDenunciasStats();
   const { data: dashboardData, isLoading: dashboardLoading, dataUpdatedAt } = useDashboardStats();
   const { data: trends } = useTrendData();
-  const { data: radarData } = useRadarChartData();
   const maturity = useGrcMaturityScore();
 
   const isLoading = ativosStats.isLoading || controlesStats.isLoading || incidentesStats.isLoading || dashboardLoading;
@@ -95,13 +82,11 @@ export default function Dashboard() {
   return (
     <TooltipProvider>
       <div className="space-y-5 animate-fade-in w-full max-w-full overflow-x-hidden">
-        {/* Header contextual com saudação, Modo Foco e timestamp */}
+        {/* Header contextual com título, refresh e timestamp */}
         <DashboardHeader
           userName={profile?.nome || 'Usuário'}
           criticalCount={dashboardData?.criticalAlerts || 0}
           dataUpdatedAt={dataUpdatedAt}
-          isFocusMode={isFocusMode}
-          onToggleFocus={() => setIsFocusMode((v) => !v)}
           onRefresh={handleRefreshAll}
         />
 
@@ -118,10 +103,9 @@ export default function Dashboard() {
           userName={profile?.nome || 'Usuário'}
         />
 
-        {/* KPI Pills — escondidos em Modo Foco */}
-        {!isFocusMode && (
-          <KPIPills
-            ativos={ativosStats.data?.total || 0}
+        {/* KPI Pills */}
+        <KPIPills
+          ativos={ativosStats.data?.total || 0}
             activeIncidents={activeIncidents}
             incidentsThisMonth={incidentesStats.data?.mes || 0}
             activeContracts={contratosStats.data?.ativos || 0}
@@ -141,7 +125,6 @@ export default function Dashboard() {
             denunciasNovas={denunciasStats.data?.novas || 0}
             onPillClick={(key: KpiKey) => setDrillKey(key as DrillDownKey)}
           />
-        )}
 
         <KpiDrillDownDrawer
           open={!!drillKey}
@@ -150,9 +133,9 @@ export default function Dashboard() {
         />
 
 
-        {/* Vencimentos + Radar + Timeline */}
+        {/* Saúde do GRC (radar) + Frameworks + Evolução dos Riscos */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-5 w-full">
-          <div className="min-w-0"><UpcomingExpirations /></div>
+          <div className="min-w-0"><GrcHealthRadar /></div>
           <div className="min-w-0"><FrameworksOverviewCard /></div>
           <div className="min-w-0 md:col-span-2 xl:col-span-1"><RiskScoreTimeline /></div>
         </div>

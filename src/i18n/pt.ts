@@ -206,8 +206,6 @@ export const pt = {
     greetingMorning: 'Bom dia',
     greetingAfternoon: 'Boa tarde',
     greetingEvening: 'Boa noite',
-    focusOn: 'Modo foco',
-    focusOff: 'Sair do foco',
     criticalSummary: '{{count}} item crítico exige sua atenção',
     criticalSummaryPlural: '{{count}} itens críticos exigem sua atenção',
     allClear: 'Nada crítico no momento',

@@ -206,8 +206,6 @@ export const en = {
     greetingMorning: 'Good morning',
     greetingAfternoon: 'Good afternoon',
     greetingEvening: 'Good evening',
-    focusOn: 'Focus mode',
-    focusOff: 'Exit focus',
     criticalSummary: '{{count}} critical item needs your attention',
     criticalSummaryPlural: '{{count}} critical items need your attention',
     allClear: 'Nothing critical right now',
