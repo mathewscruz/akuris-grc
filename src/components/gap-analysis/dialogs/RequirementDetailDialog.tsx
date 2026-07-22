@@ -347,6 +347,8 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
   const [uploading, setUploading] = useState(false);
   const [planoAcaoDialogOpen, setPlanoAcaoDialogOpen] = useState(false);
   const [planoAcaoVinculado, setPlanoAcaoVinculado] = useState<any>(null);
+  // Concorrência otimista: guarda o updated_at carregado para detectar sobrescrita.
+  const loadedUpdatedAtRef = useRef<string | null>(null);
   const [savingPlano, setSavingPlano] = useState(false);
   const [guidanceText, setGuidanceText] = useState<string | null>(null);
   const [evidenciasText, setEvidenciasText] = useState<string | null>(null);
