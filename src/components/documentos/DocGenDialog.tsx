@@ -985,8 +985,28 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
       setPhase('chat');
       setCurrentDocType(data.tipo_documento_identificado || null);
       setCurrentDocName((data.contexto as any)?.documento_nome_identificado || null);
-      setGeneratedDocument(null);
-      setDocumentReady(false);
+
+      // Rehidrata o documento gerado mais recente desta conversa (se existir).
+      try {
+        const { data: latestDoc } = await supabase
+          .from('docgen_generated_docs')
+          .select('conteudo')
+          .eq('conversation_id', data.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (latestDoc?.conteudo) {
+          setGeneratedDocument(latestDoc.conteudo as any);
+          setDocumentReady(true);
+        } else {
+          setGeneratedDocument(null);
+          setDocumentReady((data.contexto as any)?.documento_pronto === true);
+        }
+      } catch {
+        setGeneratedDocument(null);
+        setDocumentReady((data.contexto as any)?.documento_pronto === true);
+      }
+
       setHasUnsavedChanges(false);
       setHistoryOpen(false);
       setTimeout(() => inputRef.current?.focus(), 100);
