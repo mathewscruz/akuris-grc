@@ -179,16 +179,18 @@ export function AceiteDetalheDialog({ open, onOpenChange, risco }: Props) {
                 <h4 className="text-sm font-semibold">Anexos do Aceite ({anexos.length})</h4>
                 <div className="space-y-1">
                   {anexos.map(anexo => (
-                    <a
+                    <button
                       key={anexo.id}
-                      href={anexo.url_arquivo}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-sm text-primary hover:underline p-2 rounded-md hover:bg-muted/50"
+                      type="button"
+                      onClick={async () => {
+                        const { openStorageFile } = await import('@/lib/storage');
+                        await openStorageFile('riscos-anexos', anexo.url_arquivo);
+                      }}
+                      className="flex items-center gap-2 text-sm text-primary hover:underline p-2 rounded-md hover:bg-muted/50 w-full text-left"
                     >
                       <FileText className="h-4 w-4" />
                       {anexo.nome_arquivo}
-                    </a>
+                    </button>
                   ))}
                 </div>
               </div>
