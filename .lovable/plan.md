@@ -1,77 +1,92 @@
-## Achados reais no fluxo DocGen
+# Plano — Correção do Módulo Gap Analysis
 
-Percorri o fluxo ponta-a-ponta (`DocGenDialog.tsx`, `docgen-chat/index.ts` e integrações com `docgen_conversations` / `docgen_generated_docs`). Encontrei **6 inconsistências reais** que merecem correção agora, além de código morto. Nenhuma quebra o fluxo feliz — mas causam perda silenciosa de trabalho do usuário e um cenário de cobrança indevida.
+Auditoria completa identificou 15 problemas reais que impedem o usuário de usar a ferramenta com confiança. Plano abaixo prioriza correções por impacto no usuário e integridade do produto.
 
----
+## Wave 1 — Críticos (bloqueiam uso correto da ferramenta)
 
-### 1. `refine_section` e `refine_document` não persistem o documento no banco
-`generate_document` grava em `docgen_generated_docs`, mas os dois fluxos de refino (por seção — botão "Refinar" — e global — chat pós-geração) devolvem o documento atualizado apenas em memória. Se o usuário fechar o diálogo ou usar "Restaurar conversa" antes de exportar/salvar em Documentos, **todo refino é perdido**.
+### 1. SoA desconectada do score real
+Hoje o usuário marca 30 controles como "não aplicáveis" na aba SoA (ISO 27001 Anexo A), salva, gera o PDF do Statement of Applicability — mas o score do framework continua penalizando esses controles. Quebra o propósito da SoA.
 
-**Fix:** ao final de `refine_section` e `refine_document`, dar `UPDATE` em `docgen_generated_docs` (row mais recente da conversa) com o novo `conteudo`.
+**Fix em `src/components/gap-analysis/v2/SoATabV2.tsx` (`handleSave`):** ao gravar em `gap_analysis_soa`, fazer upsert paralelo em `gap_analysis_evaluations` setando `conformity_status='nao_aplicavel'` para itens marcados não-aplicáveis, e revertendo para `nao_avaliado` quando o usuário voltar a marcar como aplicável (preservando status "conforme/parcial/nao_conforme" pré-existentes quando havia avaliação real).
 
----
+### 2. `evidence-cross-match` inoperante em produção
+A função consulta `gap_analysis_assessments` para descobrir frameworks ativos, mas nenhuma tela do produto grava nessa tabela — o fluxo real usa `gap_analysis_evaluations`. Sempre retorna "nenhum framework ativo".
 
-### 2. `loadConversation` sempre zera o documento gerado
-`src/components/documentos/DocGenDialog.tsx:988` faz `setGeneratedDocument(null)` ao restaurar. Combinado com o item 1, uma conversa restaurada nunca reexibe o documento — mesmo que ele exista no banco.
+**Fix em `supabase/functions/evidence-cross-match/index.ts`:** trocar a fonte de frameworks ativos para `SELECT DISTINCT framework_id FROM gap_analysis_evaluations WHERE empresa_id = ?`, mesmo padrão de `GapAnalysisFrameworks.tsx`.
 
-**Fix:** após restaurar a conversa, buscar o registro mais recente em `docgen_generated_docs` por `conversation_id` (com filtro de `empresa_id`) e hidratar `generatedDocument`.
+### 3–4. Crédito de IA consumido antes de validação/entrega
+`populate-requirement-guidance` e `analyze-evidence-against-requirement` debitam crédito antes da chamada ao gateway. Se o payload for inválido ou o gateway devolver 429/500, o usuário paga sem receber nada. Padrão já corrigido em `gap-analysis-ai-diagnostic` mas não replicado.
 
----
+**Fix:** mover `consume_ai_credit` para depois de validar payload e confirmar `aiResp.ok`, replicando exatamente o padrão de `gap-analysis-ai-diagnostic/index.ts`. Aplicar em ambas as funções (inclusive no loop batch de `populate-requirement-guidance`).
 
-### 3. Cobrança de crédito acontece antes de validar payload das actions de refino
-Em `docgen-chat/index.ts:319-334` o `consume_ai_credit` roda antes do bloco que valida `document`/`instruction` (`refine_section`, `refine_document`, `quick_adherence`). Chamadas malformadas cobram 1 crédito e depois retornam `400`.
+## Wave 2 — Alto impacto
 
-**Fix:** mover a validação de payload das actions que exigem `document`/`instruction`/`section_index`/`framework_context.framework_id` para **antes** do `consume_ai_credit`. Manter cobrança só se o payload estiver válido.
+### 5. Hooks de dashboard sem filtro `empresa_id`/`is_template` em `gap_analysis_frameworks`
+`useFrameworksOverview.ts`, `useGapAnalysisStats.tsx`, `useFrameworkRequirementCount.ts` fazem `select` sem filtro, contrariando o padrão de `GapAnalysisFrameworks.tsx`. Risco de defesa-em-profundidade quebrada + contagens incorretas quando existirem frameworks customizados por empresa.
 
----
+**Fix:** padronizar os três hooks com `.or('empresa_id.is.null,empresa_id.eq.<id>')` + `.eq('is_template', true)` conforme aplicável.
 
-### 4. `extractFrameworks` zera frameworks já detectados
-`extractFrameworks` retorna sempre `string[]` (nunca `null`). O merge `extractFrameworks(messageText) || (context as any).frameworks_relacionados` (linhas 526–527 e 544–546) resolve para o array vazio recém-criado e **descarta** os frameworks detectados em turnos anteriores.
+### 6. `AdherenceAssessmentView` sem `.eq('empresa_id')`
+Depende só de RLS. Adicionar filtro explícito por empresa em `src/components/gap-analysis/adherence/AdherenceAssessmentView.tsx` (query de listagem).
 
-**Fix:** trocar por `const detected = extractFrameworks(messageText); frameworks_relacionados: detected.length ? detected : (context as any).frameworks_relacionados`. Aplicar em ambos os pontos.
+### 7. Metadado de modelo/provider incorreto em `analyze-document-adherence`
+Grava `claude-sonnet-4` / `anthropic`, mas chama `google/gemini-3-flash-preview`. Problema de integridade para trilha de auditoria — o produto vende evidência de compliance.
 
----
+**Fix:** atualizar `metadados_analise` para refletir modelo real usado (`google/gemini-3-flash-preview`, provider `lovable-ai-gateway`).
 
-### 5. `documento_pronto` não é persistido no `contexto` da conversa
-O flag `documento_pronto` é devolvido no response e usado para exibir o botão "Gerar Documento", mas nunca é gravado em `docgen_conversations.contexto`. Ao restaurar a conversa, o botão desaparece até o usuário mandar mais uma mensagem.
+### 8. Corte silencioso de 150 requisitos em análises de aderência
+Frameworks grandes (PCI DSS ~288) são analisados apenas sobre a primeira metade sem qualquer aviso ao usuário — score exibido é enganoso.
 
-**Fix:** incluir `documento_pronto: isDocumentReady` no `updatedContext` salvo em `docgen_conversations`, e no `loadConversation` do frontend rehidratar `setDocumentReady((contexto as any)?.documento_pronto === true)`.
+**Fix:** incluir `total_requisitos_analisados` e `total_requisitos_framework` no payload de resposta e exibir aviso na UI (`AdherenceResultView`) quando houver truncamento. Idealmente processar em batches, mas para escopo curto: pelo menos avisar.
 
----
+## Wave 3 — Médio
 
-### 6. `refine_document` não recebe o contexto da empresa
-O refino global usa apenas título, framework name e transcrição — sem `company_context`. Assim, refinos podem perder aderência aos dados reais da empresa que a geração inicial já tinha.
+### 9. `GenericRequirementsTable.loadRequirements` sem paginação
+Aplicar `fetchAllPaginated` (helper já criado no projeto conforme memória) na query de `gap_analysis_requirements` por `framework_id`.
 
-**Fix:** no frontend, incluir `company_context: companyContext` no body do `refine_document`; no backend, se `company_context_input` (ou `context.company_context`) existir, injetar um bloco "CONTEXTO REAL DA EMPRESA" no `userPrompt` do `refine_document` (mesmo padrão já usado em `chat`/`generate_document`).
+### 10. Extrair função pura `computeConformityScore`
+Consolidar 3 implementações duplicadas do cálculo de score em `src/lib/gap-analysis-scoring.ts` e reutilizar em `useFrameworkScore`, `useFrameworksOverview`, `useGapAnalysisStats`, `GenericRequirementsTable`.
 
----
+### 11. Concorrência otimista em `RequirementDetailDialog.handleSave`
+Adicionar comparação por `updated_at` no `.update(...)` e, em conflito, mostrar toast "Este requisito foi atualizado por outro usuário. Recarregue para ver as mudanças." antes de sobrescrever `observacoes`/`plano_acao`/`evidence_files`.
 
-### 7. Código morto — `saveDocument`
-`src/components/documentos/DocGenDialog.tsx:542-581` define `saveDocument` que **não é referenciado por nada**. O botão "Salvar em Documentos" chama `handleOpenCreateDialog` e abre o `DocumentoDialog`. `saveDocument` também referencia `setIsDocumentSaved` e `setHasUnsavedChanges` que existem, mas o resultado nunca é executado.
+### 12–13. Upload de evidências
+- Validar `file.size` (limite 20MB) e `file.type` (whitelist: pdf/docx/xlsx/png/jpg/zip) antes do upload.
+- Trocar `getPublicUrl` por `createSignedUrl` (bucket privado por padrão para evidências de compliance) e salvar path + gerar signed URL on-demand na visualização.
+- Coletar sucessos/falhas do loop de upload e reportar resumo em vez de abortar no primeiro erro.
 
-**Fix:** remover a função `saveDocument` para evitar confusão futura. Nenhuma UI depende dela.
+## Wave 4 — Baixo (crash-prevention)
 
----
+### 14. Fallback seguro em `getStatusBadge`
+`GenericRequirementsTable.tsx`: `const s = statusMap[status] ?? statusMap.nao_avaliado;`
 
-## Fora do escopo (não vou tocar agora)
+### 15. Log + toast em `loadCategoryData` do `GapAnalysisFrameworkDetail`
+Remover `catch { /* silent */ }` e usar `logger.error` + toast discreto.
 
-- **Ordem dos hooks fragmentada** (`useState` na linha 863 depois de várias funções): funciona porque React só exige mesma ordem por render — não é bug.
-- **`docgen_learning_patterns.numero_usos: 1`** sempre reescrito: comportamento antigo, não afeta o fluxo do usuário. Se você quiser, faço em separado.
-- **`renderLineWithTooltips` sobre HTML já processado** pode envolver termos dentro de `<strong>`: cosmético, não corrompe renderização (DOMPurify limpa).
+## Detalhes técnicos
 
----
+```text
+Ordem de execução (uma migration não é necessária; tudo é código):
 
-## Arquivos afetados
+Wave 1 → 4 edge functions + 1 componente frontend (SoATabV2)
+Wave 2 → 3 hooks + 1 view + 1 edge function
+Wave 3 → 1 lib nova + 4 arquivos refatorados + 1 componente (RequirementDetailDialog)
+Wave 4 → 2 arquivos, patches pequenos
 
-- `supabase/functions/docgen-chat/index.ts` — itens 1, 3, 4, 5, 6 (backend)
-- `src/components/documentos/DocGenDialog.tsx` — itens 2, 5, 6, 7 (frontend)
-- Redeploy da edge function `docgen-chat` ao final.
+Redeploy das edge functions afetadas:
+- evidence-cross-match
+- populate-requirement-guidance
+- analyze-evidence-against-requirement
+- analyze-document-adherence
+```
 
-Sem migrações de banco — as tabelas envolvidas (`docgen_generated_docs`, `docgen_conversations`) já têm as colunas necessárias.
+## Validação após implementação
 
-## Validação
+1. SoA: marcar 5 controles como não-aplicáveis, salvar, conferir que score subiu (ou pelo menos denominador diminuiu) no card do framework e no dashboard.
+2. Evidence cross-match: chamar a função com uma empresa que tenha avaliações reais e conferir que retorna sugestões.
+3. Crédito IA: chamar `populate-requirement-guidance` com `requirementId` inválido e conferir via `creditos_consumo` que nada foi debitado.
+4. Hooks: contagens do dashboard batem com a página de frameworks para uma empresa com dados reais.
+5. Aderência: rodar contra PCI DSS 4.0 e conferir aviso de truncamento + metadados corretos do modelo.
+6. Upload: tentar enviar `.exe` de 100MB e conferir bloqueio com toast claro.
 
-Após implementar:
-1. Abrir DocGen, gerar um documento com briefing "gerar direto", refinar uma seção → fechar → reabrir "Restaurar conversa" → o documento refinado deve reaparecer.
-2. Enviar mensagem de refino pós-geração citando dados concretos → conferir se a resposta injeta esses dados e se, ao reabrir, persistem.
-3. Chamar `refine_document` sem `instruction` (via curl) → deve retornar `400` sem consumir crédito (checar log).
+Fora do escopo: mudanças de RLS/policies, mudança de bucket público→privado (requer migração de arquivos existentes — apenas sinalizar ao usuário se optar por privatizar).

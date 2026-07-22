@@ -13,15 +13,19 @@ export const useGapAnalysisStats = () => {
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       try {
+        // Filtro multi-tenant: templates globais + frameworks da empresa.
+        const fwFilter = `empresa_id.is.null,empresa_id.eq.${empresaId}`;
         const { count: totalFrameworks, error: frameworksError } = await supabase
           .from('gap_analysis_frameworks')
-          .select('*', { count: 'exact', head: true });
+          .select('*', { count: 'exact', head: true })
+          .or(fwFilter);
 
         if (frameworksError) throw frameworksError;
 
         const { data: frameworks, error: frameworksListError } = await supabase
           .from('gap_analysis_frameworks')
-          .select('id');
+          .select('id')
+          .or(fwFilter);
 
         if (frameworksListError) throw frameworksListError;
 

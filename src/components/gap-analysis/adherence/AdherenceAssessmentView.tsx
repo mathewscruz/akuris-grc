@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import type { AdherenceAssessment } from './types';
 import { logger } from '@/lib/logger';
+import { useEmpresaId } from '@/hooks/useEmpresaId';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 interface AdherenceAssessmentViewProps {
@@ -32,6 +33,7 @@ export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNo
   const [assessmentToDelete, setAssessmentToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const { data: stats } = useAdherenceStats();
+  const { empresaId } = useEmpresaId();
 
   // CTAs do DocumentsHero abrem este mesmo diálogo (antes eram botões mortos).
   useEffect(() => {
@@ -40,9 +42,13 @@ export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNo
 
   const { data: assessments, loading: isLoading, refetch } = useOptimizedQuery(
     async () => {
+      if (!empresaId) return { data: [], error: null };
       let query = supabase
         .from('gap_analysis_adherence_assessments')
         .select('*')
+        // Defesa-em-profundidade: além da RLS, filtramos explicitamente pela empresa
+        // do usuário — se a policy for relaxada no futuro, não vazamos silenciosamente.
+        .eq('empresa_id', empresaId)
         .order('created_at', { ascending: false });
 
       // Filtrar por framework se informado
@@ -55,8 +61,8 @@ export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNo
       if (error) throw error;
       return { data, error: null };
     },
-    [frameworkId],
-    { cacheKey: `adherence-assessments-${frameworkId || 'all'}`, cacheDuration: 0 }
+    [frameworkId, empresaId],
+    { cacheKey: `adherence-assessments-${empresaId || 'none'}-${frameworkId || 'all'}`, cacheDuration: 0 }
   );
 
   type Variant = 'success' | 'warning' | 'destructive' | 'secondary' | 'outline';

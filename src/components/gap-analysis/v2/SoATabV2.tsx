@@ -208,18 +208,52 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion }: Props
     if (!empresaId) return;
     setSaving(true);
     try {
-      const records = items.map(item => ({
+      // 1) Grava a SoA (aplicabilidade + justificativa)
+      const soaRecords = items.map(item => ({
         framework_id: frameworkId,
         empresa_id: empresaId,
         requirement_id: item.id,
         aplicavel: item.aplicavel,
         justificativa: justificativas[item.id] || '',
       }));
-      const { error } = await supabase
+      const { error: soaErr } = await supabase
         .from('gap_analysis_soa')
-        .upsert(records, { onConflict: 'framework_id,empresa_id,requirement_id' });
-      if (error) throw error;
-      toast.success('Declaração de Aplicabilidade salva com sucesso');
+        .upsert(soaRecords, { onConflict: 'framework_id,empresa_id,requirement_id' });
+      if (soaErr) throw soaErr;
+
+      // 2) Reflete a aplicabilidade no score: marca N/A no evaluations quando
+      //    !aplicavel, e reverte para 'nao_avaliado' quando aplicavel mas o
+      //    status atual está travado em 'nao_aplicavel'. Sem essa etapa a SoA
+      //    ficava desconectada do score real (bug histórico).
+      const naRecords = items
+        .filter(item => !item.aplicavel)
+        .map(item => ({
+          framework_id: frameworkId,
+          empresa_id: empresaId,
+          requirement_id: item.id,
+          conformity_status: 'nao_aplicavel',
+          observacoes: justificativas[item.id] || null,
+          updated_at: new Date().toISOString(),
+        }));
+      const revertRecords = items
+        .filter(item => item.aplicavel && item.conformity_status === 'nao_aplicavel')
+        .map(item => ({
+          framework_id: frameworkId,
+          empresa_id: empresaId,
+          requirement_id: item.id,
+          conformity_status: 'nao_avaliado',
+          updated_at: new Date().toISOString(),
+        }));
+      const evalRecords = [...naRecords, ...revertRecords];
+      if (evalRecords.length > 0) {
+        const { error: evalErr } = await supabase
+          .from('gap_analysis_evaluations')
+          .upsert(evalRecords, { onConflict: 'framework_id,empresa_id,requirement_id' });
+        if (evalErr) throw evalErr;
+      }
+
+      toast.success('Declaração de Aplicabilidade salva. Score do framework atualizado.');
+      loadSoAData();
     } catch {
       toast.error('Erro ao salvar SoA');
     } finally {

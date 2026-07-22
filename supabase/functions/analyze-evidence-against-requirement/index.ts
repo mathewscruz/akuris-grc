@@ -70,19 +70,7 @@ serve(async (req) => {
       });
     }
 
-    // Consome crédito de IA
-    const { data: creditOk, error: creditErr } = await supabase.rpc('consume_ai_credit', {
-      p_empresa_id: empresaId,
-      p_user_id: userId,
-      p_funcionalidade: 'analyze_evidence_against_requirement',
-      p_descricao: `Validação IA de evidência para requisito ${requirementId}`,
-    });
-    if (creditErr || creditOk === false) {
-      return new Response(
-        JSON.stringify({ error: 'Créditos de IA esgotados.', creditsExhausted: true }),
-        { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      );
-    }
+    // Crédito é debitado APÓS a IA aceitar (evita gastar em 429/500).
 
     // Busca o requisito
     const { data: req_, error: reqErr } = await supabase
@@ -191,6 +179,14 @@ Retorne APENAS JSON válido (sem markdown), neste formato:
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
+
+    // Debita crédito só após o gateway ter aceitado.
+    await supabase.rpc('consume_ai_credit', {
+      p_empresa_id: empresaId,
+      p_user_id: userId,
+      p_funcionalidade: 'analyze_evidence_against_requirement',
+      p_descricao: `Validação IA de evidência para requisito ${requirementId}`,
+    });
 
     const aiData = await aiResp.json();
     const raw: string = aiData?.choices?.[0]?.message?.content ?? '';

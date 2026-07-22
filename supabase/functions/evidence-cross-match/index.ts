@@ -102,16 +102,20 @@ serve(async (req) => {
 
     const alreadyLinked = new Set((existingLinks || []).map((l: any) => l.requirement_id));
 
-    // 3) Frameworks da empresa (assessments) — limita o universo
-    let assessmentsQuery = supabase
-      .from('gap_analysis_assessments')
+    // 3) Frameworks ativos da empresa: derivados das avaliações reais
+    //    (o produto atual não usa `gap_analysis_assessments`; a tela grava
+    //    direto em `gap_analysis_evaluations`).
+    let activeFwQuery = supabase
+      .from('gap_analysis_evaluations')
       .select('framework_id')
       .eq('empresa_id', empresa_id);
     if (framework_ids && framework_ids.length > 0) {
-      assessmentsQuery = assessmentsQuery.in('framework_id', framework_ids);
+      activeFwQuery = activeFwQuery.in('framework_id', framework_ids);
     }
-    const { data: assessments } = await assessmentsQuery;
-    const empresaFrameworkIds = Array.from(new Set((assessments || []).map((a: any) => a.framework_id))).filter(Boolean);
+    const { data: activeFwRows } = await activeFwQuery;
+    const empresaFrameworkIds = Array.from(
+      new Set((activeFwRows || []).map((a: any) => a.framework_id)),
+    ).filter(Boolean);
 
     if (empresaFrameworkIds.length === 0) {
       return new Response(
@@ -292,25 +296,12 @@ Score: 1.00 = atende plenamente, 0.80 = atende com alta probabilidade, 0.60 = at
     // 9) Para cada sugestão: garante uma evaluation existente para o requisito e cria o link pendente
     const requirementsById = new Map(shortlist.map((r: any) => [r.id, r]));
 
-    // Carrega assessments por framework para vincular evaluation
-    const { data: assessmentsAll } = await supabase
-      .from('gap_analysis_assessments')
-      .select('id, framework_id')
-      .eq('empresa_id', empresa_id)
-      .in('framework_id', empresaFrameworkIds);
-    const assessmentByFw = new Map<string, string>();
-    for (const a of (assessmentsAll || []) as any[]) {
-      if (!assessmentByFw.has(a.framework_id)) assessmentByFw.set(a.framework_id, a.id);
-    }
-
     let persisted = 0;
     const enriched: any[] = [];
 
     for (const s of suggestions) {
       const r = requirementsById.get(s.requirement_id);
       if (!r) continue;
-      const assessmentId = assessmentByFw.get(r.framework_id);
-      if (!assessmentId) continue;
 
       // Garante evaluation
       let evaluationId: string | null = null;
@@ -331,8 +322,8 @@ Score: 1.00 = atende plenamente, 0.80 = atende com alta probabilidade, 0.60 = at
             empresa_id,
             framework_id: r.framework_id,
             requirement_id: r.id,
-            assessment_id: assessmentId,
-            status: 'pendente',
+            conformity_status: 'nao_avaliado',
+            evidence_status: 'pendente',
             created_by: userId,
           })
           .select('id')
