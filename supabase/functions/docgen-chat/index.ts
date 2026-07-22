@@ -511,6 +511,7 @@ IMPORTANTE: Sempre responda em português brasileiro. Responda SOMENTE com uma m
         2000,
         0.8
       );
+      await chargeAiCredit();
 
       console.log('AI Response length:', aiMessage.length);
 
@@ -741,6 +742,7 @@ Responda APENAS com um JSON na seguinte estrutura:
         16000,
         0.4
       );
+      await chargeAiCredit();
 
       let documentContent;
       try {
@@ -841,6 +843,7 @@ Reescreva o conteúdo da seção atendendo à instrução.`;
         2500,
         0.5
       );
+      await chargeAiCredit();
 
       const updatedSecoes = secoes.map((s: any, i: number) =>
         i === section_index ? { ...s, conteudo: newContent.trim() } : s
@@ -921,6 +924,7 @@ Avalie e responda EXATAMENTE neste JSON:
         3500,
         0.3
       );
+      await chargeAiCredit();
 
       let parsed: any;
       try {
@@ -983,6 +987,7 @@ Aplique a instrução conforme as regras do sistema e devolva o JSON completo.`;
         16000,
         0.4
       );
+      await chargeAiCredit();
 
       let parsed: any = null;
       try {
