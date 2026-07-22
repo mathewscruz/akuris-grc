@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Upload, File, Download, Trash2, Eye } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { openStorageFile } from '@/lib/storage';
 import { useToast } from '@/hooks/use-toast';
 
 interface AnexoFile {
@@ -186,8 +187,9 @@ export function RiscoAnexosUpload({
     }
   };
 
-  const handleFileDownload = (anexo: AnexoFile) => {
-    window.open(anexo.url_arquivo, '_blank');
+  const handleFileDownload = async (anexo: AnexoFile) => {
+    const ok = await openStorageFile('riscos-anexos', anexo.url_arquivo);
+    if (!ok) toast({ title: 'Não foi possível abrir o arquivo', variant: 'destructive' });
   };
 
   return (

@@ -15,6 +15,7 @@ import { Edit, Paperclip, MessageSquare, Send, Upload, Trash2, User, Calendar, D
 import { toast } from "sonner";
 import { formatDateOnly } from "@/lib/date-utils";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import { openStorageFile } from "@/lib/storage";
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 interface ItemAuditoriaDetalheDialogProps {
@@ -289,9 +290,9 @@ export function ItemAuditoriaDetalheDialog({
   };
 
   const handleDownload = async (evidencia: any) => {
-    if (evidencia.arquivo_url) {
-      window.open(evidencia.arquivo_url, "_blank");
-    }
+    if (!evidencia?.arquivo_url) return;
+    const ok = await openStorageFile("auditoria-evidencias", evidencia.arquivo_url);
+    if (!ok) toast.error("Não foi possível abrir o arquivo");
   };
 
   // Renderizar comentário com menções destacadas

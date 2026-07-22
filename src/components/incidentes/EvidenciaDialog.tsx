@@ -98,11 +98,9 @@ export function EvidenciaDialog({ incidenteId, evidencia, onSuccess, trigger, ex
       throw uploadError;
     }
 
-    const { data } = supabase.storage
-      .from('incidentes-evidencias')
-      .getPublicUrl(filePath);
-
-    return data.publicUrl;
+    // Bucket privado — armazenamos o PATH; consumidores devem usar
+    // openStorageFile('incidentes-evidencias', path) para gerar signed URL.
+    return filePath;
   };
 
   const onSubmit = async (data: EvidenciaFormData) => {

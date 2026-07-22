@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Paperclip, Download, Eye } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { openStorageFile } from '@/lib/storage';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -53,8 +54,8 @@ export function RiscoAnexosIcone({ riscoId }: RiscoAnexosIconeProps) {
     }
   }, [riscoId]);
 
-  const handleDownload = (anexo: Anexo) => {
-    window.open(anexo.url_arquivo, '_blank');
+  const handleDownload = async (anexo: Anexo) => {
+    await openStorageFile('riscos-anexos', anexo.url_arquivo);
   };
 
   const formatFileSize = (bytes?: number) => {

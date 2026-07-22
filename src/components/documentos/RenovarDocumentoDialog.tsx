@@ -72,16 +72,13 @@ export const RenovarDocumentoDialog = ({
         throw new Error('Erro ao fazer upload do arquivo');
       }
 
-      // 2. Obter URL pública do arquivo
-      const { data: { publicUrl } } = supabase.storage
-        .from('documentos')
-        .getPublicUrl(filePath);
-
+      // 2. Armazenar PATH (bucket é privado; HistoricoVersoesDialog/DocumentoPreview
+      //    geram signed URL sob demanda). Nunca guardar getPublicUrl aqui.
       // 3. Atualizar o documento com o novo arquivo antes de renovar
       const { error: updateArquivoError } = await supabase
         .from('documentos')
         .update({
-          arquivo_url: publicUrl,
+          arquivo_url: filePath,
           arquivo_nome: novoArquivo.name,
           arquivo_tipo: novoArquivo.type,
           arquivo_tamanho: novoArquivo.size,

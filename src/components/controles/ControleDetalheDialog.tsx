@@ -15,6 +15,7 @@ import ConfirmDialog from "@/components/ConfirmDialog";
 import { capitalizeText, formatStatus } from "@/lib/text-utils";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { resolveControleStatusTone, resolveCriticidadeTone } from "@/lib/status-tone";
+import { openStorageFile } from "@/lib/storage";
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 interface ControleDetalheDialogProps {
@@ -337,11 +338,11 @@ export function ControleDetalheDialog({
     setDeleteTarget(null);
   };
 
-  // Download de evidência
+  // Download de evidência (bucket privado — signed URL)
   const handleDownload = async (evidencia: any) => {
-    if (evidencia.arquivo_url) {
-      window.open(evidencia.arquivo_url, "_blank");
-    }
+    if (!evidencia?.arquivo_url) return;
+    const ok = await openStorageFile("controles-evidencias", evidencia.arquivo_url);
+    if (!ok) toast.error("Não foi possível abrir o arquivo");
   };
 
   // Formatar tamanho do arquivo
