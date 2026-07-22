@@ -534,6 +534,9 @@ IMPORTANTE: Sempre responda em português brasileiro. Responda SOMENTE com uma m
       ].filter(Boolean).length;
       const isDocumentReady = hasExplicitReady || fallbackSignals >= 1;
 
+      // extractFrameworks retorna sempre string[] (possivelmente vazio) — não sobrescrever
+      // frameworks já detectados em turnos anteriores só porque este turno não citou nenhum.
+      const detectedFrameworks = extractFrameworks(messageText);
       const parsedResponse: any = {
         message: cleanMessage,
         tipo_documento_identificado:
@@ -541,7 +544,7 @@ IMPORTANTE: Sempre responda em português brasileiro. Responda SOMENTE com uma m
         documento_nome_identificado:
           extractDocumentName(messageText) || (context as any).documento_nome_identificado,
         frameworks_relacionados:
-          extractFrameworks(messageText) || (context as any).frameworks_relacionados,
+          detectedFrameworks.length ? detectedFrameworks : (context as any).frameworks_relacionados,
         etapa_atual: isDocumentReady ? 'pronto' : (context.etapa_atual || 'coleta'),
         documento_pronto: isDocumentReady,
         termos_com_tooltip: [],
@@ -558,10 +561,10 @@ IMPORTANTE: Sempre responda em português brasileiro. Responda SOMENTE com uma m
         documento_nome_identificado: parsedResponse.documento_nome_identificado || 
                                     extractDocumentName(messageText) || 
                                     (context as any).documento_nome_identificado,
-        frameworks_relacionados: parsedResponse.frameworks_relacionados || 
-                                extractFrameworks(messageText) || 
+        frameworks_relacionados: parsedResponse.frameworks_relacionados ||
                                 (context as any).frameworks_relacionados,
         etapa_atual: isDocumentReady ? 'pronto' : (parsedResponse.etapa_atual || 'coleta'),
+        documento_pronto: isDocumentReady,
         informacoes_coletadas: {
           ...context.informacoes_coletadas,
           ...(parsedResponse.informacoes_coletadas || {})
