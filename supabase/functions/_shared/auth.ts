@@ -63,6 +63,32 @@ export async function requireUserContext(req: Request): Promise<AuthContext> {
   };
 }
 
+/**
+ * Ensures the caller has a valid (unexpired) MFA session in `mfa_sessions`.
+ * Skips the check when MFA_ENFORCED env var is set to '0' or 'false'
+ * (allows disabling for internal service-role invocations only).
+ */
+export async function requireValidMfa(ctx: AuthContext): Promise<void> {
+  const flag = (Deno.env.get('MFA_ENFORCED') || '1').toLowerCase();
+  if (flag === '0' || flag === 'false' || flag === 'off') return;
+
+  const { data, error } = await ctx.supabase
+    .from('mfa_sessions')
+    .select('id, expires_at')
+    .eq('user_id', ctx.userId)
+    .gt('expires_at', new Date().toISOString())
+    .order('expires_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw new AuthError('Failed to verify MFA session', 500);
+  }
+  if (!data) {
+    throw new AuthError('MFA verification required', 403);
+  }
+}
+
 export function authErrorResponse(err: unknown, corsHeaders: Record<string, string>) {
   const status = err instanceof AuthError ? err.status : 500;
   const message = err instanceof Error ? err.message : "Unknown error";
