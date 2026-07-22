@@ -636,15 +636,33 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
     try {
       let evaluationId = formData.id || requirement.evaluation_id;
       if (evaluationId) {
+        // Concorrência otimista: rejeita a gravação se outro usuário alterou
+        // a avaliação depois que abrimos o diálogo. Evita sobrescrita silenciosa.
+        if (loadedUpdatedAtRef.current) {
+          const { data: current } = await supabase
+            .from('gap_analysis_evaluations')
+            .select('updated_at')
+            .eq('id', evaluationId)
+            .eq('empresa_id', empresaId)
+            .maybeSingle();
+          const currentUpdatedAt = (current as any)?.updated_at as string | undefined;
+          if (currentUpdatedAt && currentUpdatedAt !== loadedUpdatedAtRef.current) {
+            toast.error('Este requisito foi atualizado por outro usuário. Feche e reabra para não perder as alterações mais recentes.');
+            setSaving(false);
+            return;
+          }
+        }
+        const nowIso = new Date().toISOString();
         const { error } = await supabase.from('gap_analysis_evaluations').update({
           responsavel_avaliacao: formData.responsavel_avaliacao || null,
           plano_acao: formData.plano_acao || null, observacoes: formData.observacoes || null,
           prazo_implementacao: formData.prazo_implementacao ? parseDateForDB(formData.prazo_implementacao) : null,
           evidence_files: formData.evidence_files, plano_acao_id: formData.plano_acao_id || null,
           diagnostic_answers: Object.keys(diagnosticAnswers).length > 0 ? diagnosticAnswers : null,
-          updated_at: new Date().toISOString()
+          updated_at: nowIso
         }).eq('id', evaluationId).eq('empresa_id', empresaId);
         if (error) throw error;
+        loadedUpdatedAtRef.current = nowIso;
       } else {
         const { data: newEval, error } = await supabase.from('gap_analysis_evaluations').insert({
           framework_id: frameworkId, requirement_id: requirement.id, empresa_id: empresaId,
