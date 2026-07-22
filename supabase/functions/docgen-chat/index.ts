@@ -316,6 +316,23 @@ serve(async (req) => {
     user_id = authedUserId;
     empresa_id = authedEmpresaId;
 
+    // Validação de payload ANTES de consumir crédito (evita cobrança em chamadas malformadas).
+    if (action === 'refine_section' && (!document || typeof section_index !== 'number' || !instruction)) {
+      return new Response(JSON.stringify({ error: 'document, section_index e instruction são obrigatórios' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    if (action === 'refine_document' && (!document || !instruction)) {
+      return new Response(JSON.stringify({ error: 'document e instruction são obrigatórios' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    if (action === 'quick_adherence' && (!document || !framework_context?.framework_id)) {
+      return new Response(JSON.stringify({ error: 'document e framework_context.framework_id são obrigatórios' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Consume AI credit before processing
     {
       const { data: creditResult } = await supabase.rpc('consume_ai_credit', {
@@ -517,6 +534,9 @@ IMPORTANTE: Sempre responda em português brasileiro. Responda SOMENTE com uma m
       ].filter(Boolean).length;
       const isDocumentReady = hasExplicitReady || fallbackSignals >= 1;
 
+      // extractFrameworks retorna sempre string[] (possivelmente vazio) — não sobrescrever
+      // frameworks já detectados em turnos anteriores só porque este turno não citou nenhum.
+      const detectedFrameworks = extractFrameworks(messageText);
       const parsedResponse: any = {
         message: cleanMessage,
         tipo_documento_identificado:
@@ -524,7 +544,7 @@ IMPORTANTE: Sempre responda em português brasileiro. Responda SOMENTE com uma m
         documento_nome_identificado:
           extractDocumentName(messageText) || (context as any).documento_nome_identificado,
         frameworks_relacionados:
-          extractFrameworks(messageText) || (context as any).frameworks_relacionados,
+          detectedFrameworks.length ? detectedFrameworks : (context as any).frameworks_relacionados,
         etapa_atual: isDocumentReady ? 'pronto' : (context.etapa_atual || 'coleta'),
         documento_pronto: isDocumentReady,
         termos_com_tooltip: [],
@@ -541,10 +561,10 @@ IMPORTANTE: Sempre responda em português brasileiro. Responda SOMENTE com uma m
         documento_nome_identificado: parsedResponse.documento_nome_identificado || 
                                     extractDocumentName(messageText) || 
                                     (context as any).documento_nome_identificado,
-        frameworks_relacionados: parsedResponse.frameworks_relacionados || 
-                                extractFrameworks(messageText) || 
+        frameworks_relacionados: parsedResponse.frameworks_relacionados ||
                                 (context as any).frameworks_relacionados,
         etapa_atual: isDocumentReady ? 'pronto' : (parsedResponse.etapa_atual || 'coleta'),
+        documento_pronto: isDocumentReady,
         informacoes_coletadas: {
           ...context.informacoes_coletadas,
           ...(parsedResponse.informacoes_coletadas || {})
@@ -790,11 +810,6 @@ Responda APENAS com um JSON na seguinte estrutura:
 
     // ============ ACTION: refine_section (Onda 3 - 1 crédito já consumido acima) ============
     if (action === 'refine_section') {
-      if (!document || typeof section_index !== 'number' || !instruction) {
-        return new Response(JSON.stringify({ error: 'document, section_index e instruction são obrigatórios' }), {
-          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
       const secoes = document.secoes || [];
       const target = secoes[section_index];
       if (!target) {
@@ -829,21 +844,37 @@ Reescreva o conteúdo da seção atendendo à instrução.`;
       const updatedSecoes = secoes.map((s: any, i: number) =>
         i === section_index ? { ...s, conteudo: newContent.trim() } : s
       );
+      const updatedDoc = { ...document, secoes: updatedSecoes };
+
+      // Persiste o refino no snapshot mais recente da conversa em docgen_generated_docs.
+      try {
+        const { data: latestDoc } = await supabase
+          .from('docgen_generated_docs')
+          .select('id')
+          .eq('conversation_id', conversation.id)
+          .eq('empresa_id', empresa_id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (latestDoc?.id) {
+          await supabase
+            .from('docgen_generated_docs')
+            .update({ conteudo: updatedDoc, updated_at: new Date().toISOString() })
+            .eq('id', latestDoc.id);
+        }
+      } catch (_e) { /* não bloqueia resposta */ }
 
       return new Response(JSON.stringify({
         section_index,
         new_content: newContent.trim(),
-        document: { ...document, secoes: updatedSecoes },
+        document: updatedDoc,
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
+
     // ============ ACTION: quick_adherence (Onda 3) ============
     if (action === 'quick_adherence') {
-      if (!document || !framework_context?.framework_id) {
-        return new Response(JSON.stringify({ error: 'document e framework_context.framework_id são obrigatórios' }), {
-          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
+
 
       const { data: reqs } = await supabase
         .from('gap_analysis_requirements')
@@ -904,12 +935,6 @@ Avalie e responda EXATAMENTE neste JSON:
 
     // ============ ACTION: refine_document (chat pós-geração aplica refinos no documento inteiro) ============
     if (action === 'refine_document') {
-      if (!document || !instruction) {
-        return new Response(JSON.stringify({ error: 'document e instruction são obrigatórios' }), {
-          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
       // Persistir a instrução como turno de usuário na conversa (para futuros refinos verem o histórico).
       messages.push({ role: 'user', content: instruction });
 
@@ -920,11 +945,15 @@ Avalie e responda EXATAMENTE neste JSON:
         secoes: secoes.map((s: any) => ({ nome: s.nome, conteudo: s.conteudo })),
       });
 
+      // Injeta contexto real da empresa (mesmo padrão do generate_document/chat).
+      const ccRefine: any = company_context_input || (context as any).company_context || null;
+      const companyBlock = ccRefine ? `\nCONTEXTO REAL DA EMPRESA (use estes dados; não invente):\n${JSON.stringify(ccRefine).slice(0, 6000)}\n` : '';
+
       const sysPrompt = `Você é um editor sênior de documentos corporativos. Você receberá um documento em JSON e uma instrução do usuário. Sua tarefa:
 1) Identifique QUAIS seções devem ser alteradas para atender à instrução.
 2) Reescreva SOMENTE o conteúdo dessas seções, preservando literalmente o conteúdo das demais.
 3) Mantenha exatamente a mesma lista de seções (mesmos nomes e mesma ordem).
-4) Incorpore dados concretos citados pelo usuário (prazos, sistemas, papéis, valores, exceções, retenções).
+4) Incorpore dados concretos citados pelo usuário (prazos, sistemas, papéis, valores, exceções, retenções) e o CONTEXTO REAL DA EMPRESA quando disponível.
 5) Responda SOMENTE com JSON válido, sem markdown, no formato:
 {
   "sections_changed": ["Nome da seção 1", ...],
@@ -937,7 +966,7 @@ Avalie e responda EXATAMENTE neste JSON:
 }`;
 
       const userPrompt = `EMPRESA: ${context.empresa_nome}
-${framework_context?.framework_name ? `FRAMEWORK: ${framework_context.framework_name}\n` : ''}
+${framework_context?.framework_name ? `FRAMEWORK: ${framework_context.framework_name}\n` : ''}${companyBlock}
 DOCUMENTO ATUAL (JSON):
 ${docJson}
 
@@ -991,12 +1020,31 @@ Aplique a instrução conforme as regras do sistema e devolva o JSON completo.`;
           .eq('id', conversation.id);
       } catch (_e) { /* não bloqueia resposta */ }
 
+      // Persiste o refino no snapshot mais recente em docgen_generated_docs.
+      try {
+        const { data: latestDoc } = await supabase
+          .from('docgen_generated_docs')
+          .select('id')
+          .eq('conversation_id', conversation.id)
+          .eq('empresa_id', empresa_id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (latestDoc?.id) {
+          await supabase
+            .from('docgen_generated_docs')
+            .update({ conteudo: mergedDoc, updated_at: new Date().toISOString() })
+            .eq('id', latestDoc.id);
+        }
+      } catch (_e) { /* não bloqueia resposta */ }
+
       return new Response(JSON.stringify({
         document: mergedDoc,
         sections_changed: changed,
         summary,
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
+
 
     return new Response(JSON.stringify({ error: 'Action not supported' }), {
       status: 400,

@@ -342,6 +342,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
           document: generatedDocument,
           instruction,
           ...(effFrameworkName && { framework_context: { framework_name: effFrameworkName, framework_id: effFrameworkId } }),
+          ...(companyContext && { company_context: companyContext }),
         },
       });
       if (error) throw error;
@@ -539,46 +540,6 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     }
   };
 
-  const saveDocument = async () => {
-    if (!generatedDocument || !userInfo) return;
-
-    try {
-      const { error } = await supabase
-        .from('documentos')
-        .insert({
-          nome: generatedDocument.titulo,
-          tipo: currentDocType || 'outros',
-          conteudo: generatedDocument,
-          status: 'rascunho',
-          versao: generatedDocument.versao,
-          empresa_id: userInfo.empresa_id,
-          created_by: userInfo.user_id,
-          data_criacao: new Date().toISOString(),
-          classificacao: generatedDocument.metadados?.classificacao || 'interno'
-        });
-
-      if (error) throw error;
-
-      setIsDocumentSaved(true);
-      setHasUnsavedChanges(false);
-
-      toast({
-        title: "Documento Salvo!",
-        description: "O documento foi salvo no sistema com sucesso.",
-      });
-
-      onDocumentSaved?.();
-      onOpenChange(false);
-
-    } catch (error) {
-      console.error('Erro ao salvar documento:', error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível salvar o documento. Tente novamente.",
-        variant: "destructive",
-      });
-    }
-  };
 
   // Geração e exportação de arquivos
   const generateDocxBlob = async () => {
@@ -985,8 +946,28 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
       setPhase('chat');
       setCurrentDocType(data.tipo_documento_identificado || null);
       setCurrentDocName((data.contexto as any)?.documento_nome_identificado || null);
-      setGeneratedDocument(null);
-      setDocumentReady(false);
+
+      // Rehidrata o documento gerado mais recente desta conversa (se existir).
+      try {
+        const { data: latestDoc } = await supabase
+          .from('docgen_generated_docs')
+          .select('conteudo')
+          .eq('conversation_id', data.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (latestDoc?.conteudo) {
+          setGeneratedDocument(latestDoc.conteudo as any);
+          setDocumentReady(true);
+        } else {
+          setGeneratedDocument(null);
+          setDocumentReady((data.contexto as any)?.documento_pronto === true);
+        }
+      } catch {
+        setGeneratedDocument(null);
+        setDocumentReady((data.contexto as any)?.documento_pronto === true);
+      }
+
       setHasUnsavedChanges(false);
       setHistoryOpen(false);
       setTimeout(() => inputRef.current?.focus(), 100);

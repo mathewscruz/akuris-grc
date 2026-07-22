@@ -1,63 +1,77 @@
-## Problema confirmado
+## Achados reais no fluxo DocGen
 
-Após a IA fazer perguntas de refinamento, as respostas do usuário não alteram o documento. Duas causas concretas no fluxo atual:
+Percorri o fluxo ponta-a-ponta (`DocGenDialog.tsx`, `docgen-chat/index.ts` e integrações com `docgen_conversations` / `docgen_generated_docs`). Encontrei **6 inconsistências reais** que merecem correção agora, além de código morto. Nenhuma quebra o fluxo feliz — mas causam perda silenciosa de trabalho do usuário e um cenário de cobrança indevida.
 
-1. **Geração inicial ignora o histórico do chat.** Em `supabase/functions/docgen-chat/index.ts` (action `generate_document`, linhas ~660‑694) o prompt monta o documento a partir de `context.informacoes_coletadas`. Esse objeto nunca é populado: no action `chat` (linha ~548) ele apenas faz `{ ...context.informacoes_coletadas, ...(parsedResponse.informacoes_coletadas || {}) }`, e a IA nunca devolve `informacoes_coletadas` (a resposta é texto puro). O array `messages` (com as respostas do usuário) fica salvo em `docgen_conversations.mensagens`, mas **não é enviado** para o prompt de geração. Resultado: o documento sai genérico, sem refletir o que o usuário respondeu.
+---
 
-2. **Depois de gerado, mensagens no chat não modificam o documento.** O `DocGenDialog` só altera o `generatedDocument` via `refine_section` (dialog `DocGenSectionRefiner`) ou `quick_adherence`. Se o usuário responder no chat "no nosso caso a retenção é 5 anos", a mensagem vai como `action: 'chat'` e volta uma resposta textual — o documento permanece intocado.
+### 1. `refine_section` e `refine_document` não persistem o documento no banco
+`generate_document` grava em `docgen_generated_docs`, mas os dois fluxos de refino (por seção — botão "Refinar" — e global — chat pós-geração) devolvem o documento atualizado apenas em memória. Se o usuário fechar o diálogo ou usar "Restaurar conversa" antes de exportar/salvar em Documentos, **todo refino é perdido**.
 
-## Correções
+**Fix:** ao final de `refine_section` e `refine_document`, dar `UPDATE` em `docgen_generated_docs` (row mais recente da conversa) com o novo `conteudo`.
 
-### 1. Enviar o diálogo real para a geração (backend)
+---
 
-Em `supabase/functions/docgen-chat/index.ts`, action `generate_document`:
+### 2. `loadConversation` sempre zera o documento gerado
+`src/components/documentos/DocGenDialog.tsx:988` faz `setGeneratedDocument(null)` ao restaurar. Combinado com o item 1, uma conversa restaurada nunca reexibe o documento — mesmo que ele exista no banco.
 
-- Recuperar `messages` da `conversation` (já disponível como `conversation.mensagens`).
-- Filtrar mensagens `user`/`assistant` e formatar como transcrição no prompt do documento, ex.:
-  ```
-  === RESPOSTAS DO USUÁRIO NO BRIEFING ===
-  [user] ...
-  [assistant] ...
-  ```
-- Instruir explicitamente: "Incorpore literalmente prazos, nomes de sistemas, papéis, retenções, valores e exceções mencionados pelo usuário abaixo. Se houver conflito entre o template e a resposta do usuário, prevaleça a resposta do usuário."
-- Passar essa transcrição (últimas ~30 mensagens) tanto no `systemPrompt` quanto na `user message` para a chamada `callClaude`.
+**Fix:** após restaurar a conversa, buscar o registro mais recente em `docgen_generated_docs` por `conversation_id` (com filtro de `empresa_id`) e hidratar `generatedDocument`.
 
-### 2. Extrair `informacoes_coletadas` estruturado no chat (backend)
+---
 
-Ainda em action `chat`, após a resposta do modelo, fazer uma segunda chamada leve à IA (ou reaproveitar a mesma resposta pedindo JSON adicional oculto) que retorne `informacoes_coletadas` com chaves livres (`escopo`, `responsavel`, `retencao`, `sistemas`, etc.). Persistir no `updatedContext.informacoes_coletadas` para uso posterior na geração.
+### 3. Cobrança de crédito acontece antes de validar payload das actions de refino
+Em `docgen-chat/index.ts:319-334` o `consume_ai_credit` roda antes do bloco que valida `document`/`instruction` (`refine_section`, `refine_document`, `quick_adherence`). Chamadas malformadas cobram 1 crédito e depois retornam `400`.
 
-Se preferir manter simples (1 chamada), pular esta etapa — a transcrição do item 1 já resolve o caso do usuário. Mantida no plano como melhoria opcional.
+**Fix:** mover a validação de payload das actions que exigem `document`/`instruction`/`section_index`/`framework_context.framework_id` para **antes** do `consume_ai_credit`. Manter cobrança só se o payload estiver válido.
 
-### 3. Nova action `refine_document` (backend)
+---
 
-Adicionar em `docgen-chat/index.ts` um branch `action === 'refine_document'` que:
+### 4. `extractFrameworks` zera frameworks já detectados
+`extractFrameworks` retorna sempre `string[]` (nunca `null`). O merge `extractFrameworks(messageText) || (context as any).frameworks_relacionados` (linhas 526–527 e 544–546) resolve para o array vazio recém-criado e **descarta** os frameworks detectados em turnos anteriores.
 
-- Recebe `document` (atual) + `instruction` (mensagem do usuário) + `conversation_id`.
-- Prompt: "Reescreva APENAS as seções afetadas pela instrução do usuário, preservando o restante literalmente. Devolva o documento JSON completo no mesmo schema."
-- Consome 1 crédito (`consume_ai_credit`), mesmo padrão de `refine_section`.
-- Retorna `{ document }`.
+**Fix:** trocar por `const detected = extractFrameworks(messageText); frameworks_relacionados: detected.length ? detected : (context as any).frameworks_relacionados`. Aplicar em ambos os pontos.
 
-### 4. Ligar o chat pós-geração ao `refine_document` (frontend)
+---
 
-Em `src/components/documentos/DocGenDialog.tsx`:
+### 5. `documento_pronto` não é persistido no `contexto` da conversa
+O flag `documento_pronto` é devolvido no response e usado para exibir o botão "Gerar Documento", mas nunca é gravado em `docgen_conversations.contexto`. Ao restaurar a conversa, o botão desaparece até o usuário mandar mais uma mensagem.
 
-- Enquanto `!generatedDocument`, `sendMessage` continua usando `action: 'chat'` (comportamento atual).
-- Quando `generatedDocument` já existe, `sendMessage` passa a chamar `action: 'refine_document'` com o documento atual e a instrução do usuário; ao voltar, `setGeneratedDocument(data.document)` e adiciona uma mensagem do assistente ("Atualizei as seções X e Y com base na sua observação").
-- Manter o botão de refino por seção como opção avançada.
-- Invalidar `adherenceResult` após refino global (igual ao `refine_section`).
+**Fix:** incluir `documento_pronto: isDocumentReady` no `updatedContext` salvo em `docgen_conversations`, e no `loadConversation` do frontend rehidratar `setDocumentReady((contexto as any)?.documento_pronto === true)`.
 
-### 5. Feedback visual
+---
 
-- Toast `akurisToast({ module: 'documentos', tone: 'success', title: 'Documento atualizado' })` após `refine_document`.
-- Loader `AkurisPulse` no botão de envio enquanto o refino roda.
+### 6. `refine_document` não recebe o contexto da empresa
+O refino global usa apenas título, framework name e transcrição — sem `company_context`. Assim, refinos podem perder aderência aos dados reais da empresa que a geração inicial já tinha.
 
-## Fora de escopo
+**Fix:** no frontend, incluir `company_context: companyContext` no body do `refine_document`; no backend, se `company_context_input` (ou `context.company_context`) existir, injetar um bloco "CONTEXTO REAL DA EMPRESA" no `userPrompt` do `refine_document` (mesmo padrão já usado em `chat`/`generate_document`).
 
-- Não muda schema do banco.
-- Não altera `docgen_templates`, `DocGenBriefing` ou `DocGenTemplateGallery`.
-- Sem mudanças em créditos além do consumo padrão já existente para `refine_section`.
+---
+
+### 7. Código morto — `saveDocument`
+`src/components/documentos/DocGenDialog.tsx:542-581` define `saveDocument` que **não é referenciado por nada**. O botão "Salvar em Documentos" chama `handleOpenCreateDialog` e abre o `DocumentoDialog`. `saveDocument` também referencia `setIsDocumentSaved` e `setHasUnsavedChanges` que existem, mas o resultado nunca é executado.
+
+**Fix:** remover a função `saveDocument` para evitar confusão futura. Nenhuma UI depende dela.
+
+---
+
+## Fora do escopo (não vou tocar agora)
+
+- **Ordem dos hooks fragmentada** (`useState` na linha 863 depois de várias funções): funciona porque React só exige mesma ordem por render — não é bug.
+- **`docgen_learning_patterns.numero_usos: 1`** sempre reescrito: comportamento antigo, não afeta o fluxo do usuário. Se você quiser, faço em separado.
+- **`renderLineWithTooltips` sobre HTML já processado** pode envolver termos dentro de `<strong>`: cosmético, não corrompe renderização (DOMPurify limpa).
+
+---
 
 ## Arquivos afetados
 
-- `supabase/functions/docgen-chat/index.ts` — items 1, 2 (opcional) e 3.
-- `src/components/documentos/DocGenDialog.tsx` — item 4 e 5.
+- `supabase/functions/docgen-chat/index.ts` — itens 1, 3, 4, 5, 6 (backend)
+- `src/components/documentos/DocGenDialog.tsx` — itens 2, 5, 6, 7 (frontend)
+- Redeploy da edge function `docgen-chat` ao final.
+
+Sem migrações de banco — as tabelas envolvidas (`docgen_generated_docs`, `docgen_conversations`) já têm as colunas necessárias.
+
+## Validação
+
+Após implementar:
+1. Abrir DocGen, gerar um documento com briefing "gerar direto", refinar uma seção → fechar → reabrir "Restaurar conversa" → o documento refinado deve reaparecer.
+2. Enviar mensagem de refino pós-geração citando dados concretos → conferir se a resposta injeta esses dados e se, ao reabrir, persistem.
+3. Chamar `refine_document` sem `instruction` (via curl) → deve retornar `400` sem consumir crédito (checar log).
