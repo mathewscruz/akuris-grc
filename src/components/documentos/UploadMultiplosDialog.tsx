@@ -57,22 +57,19 @@ export function UploadMultiplosDialog({ open, onOpenChange, onSuccess, categoria
 
       for (const file of files) {
         try {
-          // Upload do arquivo ao storage
+          // Upload do arquivo ao storage (bucket privado — salvamos apenas o path)
           const filePath = `${profile.empresa_id}/${Date.now()}_${file.name}`;
           const { error: storageError } = await supabase.storage
             .from('documentos')
             .upload(filePath, file);
 
           if (storageError) {
-            // Se o bucket não existe, criar registro sem arquivo
-            logger.warn('Erro no storage, criando registro sem arquivo', { error: storageError.message, module: 'documentos' });
+            errorCount++;
+            logger.error('Erro no storage', { error: storageError.message, module: 'documentos' });
+            continue;
           }
 
-          const { data: publicUrl } = supabase.storage
-            .from('documentos')
-            .getPublicUrl(filePath);
-
-          // Criar registro na tabela documentos
+          // Criar registro na tabela documentos — arquivo_url guarda o PATH (não URL pública)
           const nomeBase = file.name.replace(/\.[^/.]+$/, '');
           const { error: dbError } = await supabase
             .from('documentos')
@@ -81,7 +78,7 @@ export function UploadMultiplosDialog({ open, onOpenChange, onSuccess, categoria
               nome: nomeBase,
               tipo: 'outros',
               status: 'rascunho',
-              arquivo_url: storageError ? null : publicUrl?.publicUrl,
+              arquivo_url: filePath,
               arquivo_nome: file.name,
               arquivo_tipo: file.type,
               arquivo_tamanho: file.size,

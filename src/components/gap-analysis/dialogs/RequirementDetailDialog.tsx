@@ -568,8 +568,8 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
         const filePath = `${empresaId}/gap-analysis/${fileName}`;
         const { error: uploadError } = await supabase.storage.from('documentos').upload(filePath, file);
         if (uploadError) throw uploadError;
-        const { data: { publicUrl } } = supabase.storage.from('documentos').getPublicUrl(filePath);
-        uploadedFiles.push({ name: file.name, url: publicUrl, size: file.size, type: file.type });
+        // Bucket privado — armazenamos apenas o path; URL assinada é gerada sob demanda
+        uploadedFiles.push({ name: file.name, path: filePath, url: filePath, size: file.size, type: file.type });
       }
       setFormData(prev => ({ ...prev, evidence_files: [...prev.evidence_files, ...uploadedFiles] }));
       toast.success(`${uploadedFiles.length} arquivo(s) anexado(s)`);
