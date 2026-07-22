@@ -421,11 +421,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [user?.id]);
 
   const signOut = async () => {
-    setCachedMfaUntil(0);
-    setMfaPendingFlag(false);
     try { sessionStorage.removeItem('akuris_show_login_toast'); } catch { /* ignore */ }
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
+    // Só limpa o cache MFA/flag DEPOIS de confirmar o signOut bem-sucedido
+    setCachedMfaUntil(0);
+    setMfaPendingFlag(false);
   };
 
   const value = {
