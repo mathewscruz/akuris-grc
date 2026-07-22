@@ -471,8 +471,10 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
           evidence_files: Array.isArray(evalData.evidence_files) ? evalData.evidence_files : [],
           plano_acao_id: evalData.plano_acao_id || null
         });
+        loadedUpdatedAtRef.current = (evalData as any).updated_at || null;
       } else {
         setPlanoAcaoVinculado(null);
+        loadedUpdatedAtRef.current = null;
       }
     } catch (error: any) {
       logger.error('Error loading data:', { error: error instanceof Error ? error.message : String(error) });
