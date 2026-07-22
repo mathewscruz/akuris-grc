@@ -590,10 +590,19 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
     if (!empresaId || !file?.url) return;
     setValidatingUrl(file.url);
     try {
+      // Se for arquivo no bucket (não link externo), gera URL assinada temporária
+      let fileUrl: string = file.url;
+      if (file.type !== 'link') {
+        const path = file.path || file.url;
+        const { data: signed, error: signErr } = await supabase.storage
+          .from('documentos').createSignedUrl(path, 300);
+        if (signErr || !signed?.signedUrl) throw signErr || new Error('Signed URL failed');
+        fileUrl = signed.signedUrl;
+      }
       const { data, error } = await supabase.functions.invoke('analyze-evidence-against-requirement', {
         body: {
           requirementId: requirement.id,
-          fileUrl: file.url,
+          fileUrl,
           fileName: file.name,
           empresaId,
         },
