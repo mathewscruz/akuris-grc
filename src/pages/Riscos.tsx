@@ -230,10 +230,10 @@ export function Riscos() {
           });
         }
         
-        return normalizedData;
+        return normalizedData as unknown as Risco[];
       }
       
-      return data || [];
+      return (data || []) as unknown as Risco[];
     },
     enabled: !!profile?.empresa_id,
     staleTime: 1000 * 60 * 2,
