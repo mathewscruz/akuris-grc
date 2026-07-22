@@ -142,7 +142,7 @@ export function Riscos() {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
   // React Query for riscos
-  const { data: riscos = [], isLoading: loading } = useQuery({
+  const { data: riscos = [], isLoading: loading } = useQuery<Risco[]>({
     queryKey: ['riscos', profile?.empresa_id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -227,13 +227,13 @@ export function Riscos() {
               responsavel_nome: profileData?.nome || null,
               responsavel_foto: profileData?.foto_url || null
             };
-          });
+          }) as unknown as Risco[];
         }
         
-        return normalizedData;
+        return normalizedData as unknown as Risco[];
       }
       
-      return data || [];
+      return (data || []) as unknown as Risco[];
     },
     enabled: !!profile?.empresa_id,
     staleTime: 1000 * 60 * 2,
