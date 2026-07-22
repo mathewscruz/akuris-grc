@@ -3,9 +3,8 @@
 export const AI_GATEWAY_URL = 'https://ai.gateway.lovable.dev/v1/chat/completions';
 
 // Modelos suportados centralizados. Usar SEMPRE via DEFAULT_CHAT_MODEL.
-// Fonte: catálogo do Lovable AI Gateway.
-export const DEFAULT_CHAT_MODEL = 'google/gemini-2.5-flash';
-export const DEFAULT_CHAT_MODEL_LITE = 'google/gemini-2.5-flash-lite';
+export const DEFAULT_CHAT_MODEL = 'google/gemini-3-flash-preview';
+export const DEFAULT_CHAT_MODEL_LITE = 'google/gemini-3-flash-preview';
 
 /**
  * fetch com AbortController + timeout. Retorna Response ou lança Error("timeout").
