@@ -172,19 +172,8 @@ serve(async (req) => {
     scored.sort((a, b) => b.lexical - a.lexical);
     const shortlist = scored.slice(0, max_candidates).map((s) => s.req);
 
-    // 6) Consome 1 crédito de IA
-    const { data: creditOk, error: creditErr } = await supabase.rpc('consume_ai_credit', {
-      p_empresa_id: empresa_id,
-      p_user_id: userId,
-      p_funcionalidade: 'evidence_cross_match',
-      p_descricao: `Cross-match IA para evidência ${evidence.nome}`,
-    });
-    if (creditErr || creditOk === false) {
-      return new Response(
-        JSON.stringify({ error: 'Créditos de IA esgotados.', creditsExhausted: true }),
-        { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      );
-    }
+    // 6) Crédito consumido só após sucesso da IA (ver bloco pós-response).
+
 
     // 7) Monta prompt único comparativo
     const candidatesDescription = shortlist.map((r: any, idx: number) => {
@@ -261,6 +250,17 @@ Score: 1.00 = atende plenamente, 0.80 = atende com alta probabilidade, 0.60 = at
     }
 
     const aiData = await aiResp.json();
+
+    // Consumir crédito apenas após sucesso da IA
+    try {
+      await supabase.rpc('consume_ai_credit', {
+        p_empresa_id: empresa_id,
+        p_user_id: userId,
+        p_funcionalidade: 'evidence_cross_match',
+        p_descricao: `Cross-match IA para evidência ${evidence.nome}`,
+      });
+    } catch (e) { console.warn('consume_ai_credit falhou (não bloqueante):', e); }
+
     const raw: string = aiData?.choices?.[0]?.message?.content ?? '';
     const cleaned = raw.replace(/```json\s*|\s*```/g, '').trim();
     let parsed: any = null;

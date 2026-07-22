@@ -41,28 +41,8 @@ serve(async (req) => {
 
     const { nome, descricao, categoria, nivel_risco } = await req.json();
 
-    // Consumir crédito de IA
-    if (empresa_id && user_id) {
+    // Crédito consumido só APÓS resposta bem-sucedida da IA (ver bloco pós-response).
 
-      const { data: creditResult, error: creditError } = await supabase
-        .rpc('consume_ai_credit', {
-          p_empresa_id: empresa_id,
-          p_user_id: user_id,
-          p_funcionalidade: 'suggest_risk_treatment',
-          p_descricao: `Sugestão de tratamento para risco: ${nome}`
-        });
-
-      if (creditError || creditResult === false) {
-        return new Response(JSON.stringify({ 
-          success: false,
-          error: 'Créditos de IA esgotados. Entre em contato para adquirir mais créditos.',
-          creditsExhausted: true
-        }), {
-          status: 402,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
-    }
 
     const prompt = `Você é um especialista em gestão de riscos corporativos. Analise o seguinte risco e forneça sugestões de tratamento:
 
@@ -130,6 +110,19 @@ Seja específico e prático, focando em ações implementáveis no contexto empr
 
     const data = await response.json();
     const suggestion = data.choices[0].message.content;
+
+    // Consumir crédito apenas após sucesso comprovado da IA.
+    if (empresa_id && user_id) {
+      try {
+        await supabase.rpc('consume_ai_credit', {
+          p_empresa_id: empresa_id,
+          p_user_id: user_id,
+          p_funcionalidade: 'suggest_risk_treatment',
+          p_descricao: `Sugestão de tratamento para risco: ${nome}`,
+        });
+      } catch (e) { console.warn('consume_ai_credit falhou (não bloqueante):', e); }
+    }
+
 
     // Parse the suggestion to extract structured data
     const parseStructuredSuggestion = (text: string) => {

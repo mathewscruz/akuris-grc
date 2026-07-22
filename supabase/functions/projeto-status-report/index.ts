@@ -61,18 +61,8 @@ serve(async (req) => {
       });
     }
 
-    // Consome crédito
-    const { data: creditOk, error: creditErr } = await supabase.rpc('consume_ai_credit', {
-      p_empresa_id: empresaId,
-      p_user_id: userId,
-      p_funcionalidade: 'projeto_status_report',
-      p_descricao: `Status report IA — ${proj.nome}`,
-    });
-    if (creditErr || creditOk === false) {
-      return new Response(JSON.stringify({ error: 'Créditos esgotados', creditsExhausted: true }), {
-        status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    // Crédito consumido só após sucesso da IA (ver bloco pós-response).
+
 
     // Agrega métricas
     const { data: tarefas } = await supabase
@@ -138,6 +128,13 @@ Retorne APENAS JSON válido (sem markdown):
       return new Response(JSON.stringify({ error: 'Falha na IA', detail: await aiResp.text() }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
     const aiJson = await aiResp.json();
+    try {
+      await supabase.rpc('consume_ai_credit', {
+        p_empresa_id: empresaId, p_user_id: userId,
+        p_funcionalidade: 'projeto_status_report',
+        p_descricao: `Status report IA — ${proj.nome}`,
+      });
+    } catch (e) { console.warn('consume_ai_credit falhou:', e); }
     let content: string = aiJson?.choices?.[0]?.message?.content ?? '{}';
     content = content.replace(/```json|```/g, '').trim();
     const idx = content.indexOf('{');

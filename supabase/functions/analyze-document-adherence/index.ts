@@ -84,34 +84,8 @@ serve(async (req) => {
       });
     }
 
-    // Consumir crédito de IA (empresa derivada do JWT, não do body)
-    {
-      const { data: creditResult, error: creditError } = await supabase
-        .rpc('consume_ai_credit', {
-          p_empresa_id: empresaId,
-          p_user_id: userId,
-          p_funcionalidade: 'analyze_document_adherence',
-          p_descricao: `Análise de aderência do documento para framework`
-        });
+    // Crédito consumido só após sucesso da IA (ver bloco pós-response).
 
-      if (creditError || creditResult === false) {
-        await supabase
-          .from('gap_analysis_adherence_assessments')
-          .update({
-            status: 'erro',
-            metadados_analise: { erro: 'Créditos de IA esgotados' }
-          })
-          .eq('id', assessmentId);
-
-        return new Response(JSON.stringify({ 
-          error: 'Créditos de IA esgotados.',
-          creditsExhausted: true
-        }), {
-          status: 402,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
-    }
 
     console.log('Starting adherence analysis:', { assessmentId, frameworkId: safeFrameworkId, storageFileName: safeStorageFileName });
 
@@ -258,6 +232,15 @@ FORMATO JSON OBRIGATÓRIO (retorne APENAS JSON válido, sem markdown):
       if (response.status === 402) throw new Error('Créditos de IA insuficientes.');
       throw new Error(`Erro na IA (${response.status}): ${errorText}`);
     }
+
+    // Consumir crédito apenas após sucesso da IA
+    try {
+      await supabase.rpc('consume_ai_credit', {
+        p_empresa_id: empresaId, p_user_id: userId,
+        p_funcionalidade: 'analyze_document_adherence',
+        p_descricao: `Análise de aderência do documento para framework`,
+      });
+    } catch (e) { console.warn('consume_ai_credit falhou:', e); }
 
     const aiResponse = await response.json();
     const aiChoice = aiResponse.choices?.[0];

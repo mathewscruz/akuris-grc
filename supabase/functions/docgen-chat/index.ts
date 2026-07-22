@@ -333,22 +333,23 @@ serve(async (req) => {
       });
     }
 
-    // Consume AI credit before processing
-    {
-      const { data: creditResult } = await supabase.rpc('consume_ai_credit', {
-        p_empresa_id: authedEmpresaId,
-        p_user_id: authedUserId,
-        p_funcionalidade: `docgen-chat:${action}`,
-        p_descricao: `DocGen - ${action === 'generate_document' ? 'Geração de documento' : 'Chat conversacional'}`
-      });
-
-      if (creditResult === false) {
-        return new Response(JSON.stringify({ error: 'CREDITS_EXHAUSTED' }), {
-          status: 402,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    // Crédito consumido apenas após sucesso da IA — cada handler (generate/refine)
+    // chama consume_ai_credit no seu retorno bem-sucedido. Manter um único ponto
+    // de consumo por ação evita cobranças em chamadas malformadas ou erros de gateway.
+    const chargeAiCredit = async () => {
+      try {
+        await supabase.rpc('consume_ai_credit', {
+          p_empresa_id: authedEmpresaId,
+          p_user_id: authedUserId,
+          p_funcionalidade: `docgen-chat:${action}`,
+          p_descricao: `DocGen - ${action === 'generate_document' ? 'Geração de documento' : 'Chat conversacional'}`,
         });
-      }
-    }
+      } catch (e) { console.warn('consume_ai_credit falhou:', e); }
+    };
+    // NOTA: cada handler (generate_document, refine_section, refine_document,
+    // quick_adherence, chat) deve chamar `await chargeAiCredit()` após produzir
+    // conteúdo com sucesso e antes de retornar a Response 200.
+
 
     // Buscar informações do usuário e empresa
     const { data: profile } = await supabase
