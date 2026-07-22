@@ -70,18 +70,8 @@ serve(async (req) => {
       });
     }
 
-    // Consome crédito
-    const { data: creditOk, error: creditErr } = await supabase.rpc('consume_ai_credit', {
-      p_empresa_id: empresaId,
-      p_user_id: userId,
-      p_funcionalidade: 'projeto_suggest_tasks',
-      p_descricao: `Quebra de tarefas IA — ${proj.nome}`,
-    });
-    if (creditErr || creditOk === false) {
-      return new Response(JSON.stringify({ error: 'Créditos de IA esgotados.', creditsExhausted: true }), {
-        status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    // Crédito consumido só após sucesso da IA (ver bloco pós-response).
+
 
     const prompt = `Você é um gerente de projetos sênior em GRC.
 Projeto: ${proj.nome}
@@ -115,6 +105,13 @@ Sem saudações. Retorne APENAS JSON válido (sem markdown):
       return new Response(JSON.stringify({ error: 'Falha na IA', detail: await aiResp.text() }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
     const aiJson = await aiResp.json();
+    try {
+      await supabase.rpc('consume_ai_credit', {
+        p_empresa_id: empresaId, p_user_id: userId,
+        p_funcionalidade: 'projeto_suggest_tasks',
+        p_descricao: `Quebra de tarefas IA — ${proj.nome}`,
+      });
+    } catch (e) { console.warn('consume_ai_credit falhou:', e); }
     let content: string = aiJson?.choices?.[0]?.message?.content ?? '{}';
     content = content.replace(/```json|```/g, '').trim();
     const idx = content.indexOf('{');

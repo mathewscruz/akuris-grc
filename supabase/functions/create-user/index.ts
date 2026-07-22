@@ -1,5 +1,6 @@
 
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import { requireUserContext, requireValidMfa, authErrorResponse } from '../_shared/auth.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -29,13 +30,17 @@ Deno.serve(async (req) => {
   }
 
   if (req.method !== 'POST') {
-    return new Response('Method not allowed', { 
-      status: 405, 
-      headers: corsHeaders 
+    return new Response('Method not allowed', {
+      status: 405,
+      headers: corsHeaders
     })
   }
 
   try {
+    // ✳️ Auth + MFA obrigatórios
+    const ctx = await requireUserContext(req)
+    await requireValidMfa(ctx)
+
     console.log('Recebendo requisição para criar usuário')
 
     const supabaseAdmin = createClient(
@@ -43,34 +48,16 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: {
-            Authorization: req.headers.get('Authorization') ?? '',
-          },
-        },
-      }
-    )
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      throw new Error('Usuário não autenticado')
-    }
-
-    const { data: currentUserProfile, error: profileError } = await supabase
-      .from('profiles')
-      .select('role, empresa_id')
-      .eq('user_id', user.id)
-      .single()
-
-    if (profileError || !currentUserProfile) {
-      throw new Error('Perfil do usuário não encontrado')
-    }
+    const user = { id: ctx.userId }
+    const currentUserProfile = { role: ctx.role, empresa_id: ctx.empresaId }
 
     const { nome, email, role, empresa_id, permission_profile_id }: CreateUserRequest = await req.json()
+
+    // Validação de enum (item Onda 2 #13 antecipado)
+    const allowedRoles = ['super_admin', 'admin', 'user', 'readonly']
+    if (!allowedRoles.includes(role)) {
+      throw new Error('Role inválido')
+    }
 
     const isSuperAdmin = currentUserProfile.role === 'super_admin'
     const isAdmin = currentUserProfile.role === 'admin'
@@ -89,6 +76,22 @@ Deno.serve(async (req) => {
     } else if (!empresa_id) {
       finalEmpresaId = currentUserProfile.empresa_id
     }
+
+    // Valida que permission_profile_id pertence à mesma empresa (item Onda 2 #14)
+    if (permission_profile_id) {
+      const { data: profileExists } = await supabaseAdmin
+        .from('permission_profiles')
+        .select('id, empresa_id')
+        .eq('id', permission_profile_id)
+        .maybeSingle()
+      if (!profileExists) {
+        throw new Error('Perfil de permissão não encontrado')
+      }
+      if (profileExists.empresa_id && profileExists.empresa_id !== finalEmpresaId) {
+        throw new Error('Perfil de permissão não pertence à empresa de destino')
+      }
+    }
+
 
     // Enforcement de limite de usuários do plano da empresa
     if (finalEmpresaId) {

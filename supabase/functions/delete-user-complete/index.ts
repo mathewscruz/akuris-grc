@@ -1,4 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import { requireUserContext, requireValidMfa } from '../_shared/auth.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,62 +12,41 @@ interface DeleteUserRequest {
 }
 
 Deno.serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
 
   if (req.method !== 'POST') {
-    return new Response('Method not allowed', { 
-      status: 405, 
-      headers: corsHeaders 
+    return new Response('Method not allowed', {
+      status: 405,
+      headers: corsHeaders
     })
   }
 
   try {
+    // ✳️ Auth + MFA obrigatórios
+    const ctx = await requireUserContext(req)
+    await requireValidMfa(ctx)
+
     console.log('Iniciando exclusão completa de usuário')
 
-    // Criar cliente Supabase com service role para operações administrativas
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Criar cliente normal para verificações de RLS
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: {
-            Authorization: req.headers.get('Authorization') ?? '',
-          },
-        },
-      }
-    )
-
-    // Verificar autenticação do usuário atual
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      throw new Error('Usuário não autenticado')
-    }
-
-    // Buscar perfil do usuário atual para verificar permissões
-    const { data: currentUserProfile, error: profileError } = await supabase
-      .from('profiles')
-      .select('role, empresa_id')
-      .eq('user_id', user.id)
-      .single()
-
-    if (profileError || !currentUserProfile) {
-      throw new Error('Perfil do usuário não encontrado')
-    }
+    const user = { id: ctx.userId }
+    const currentUserProfile = { role: ctx.role, empresa_id: ctx.empresaId }
 
     const { user_id, profile_id }: DeleteUserRequest = await req.json()
 
+    // Bloqueia autoexclusão
+    if (user_id === user.id) {
+      throw new Error('Você não pode excluir o próprio usuário')
+    }
+
     console.log(`Excluindo usuário: ${user_id}`)
 
-    // Verificar se o usuário alvo existe
     const { data: targetProfile, error: targetError } = await supabaseAdmin
       .from('profiles')
       .select('role, empresa_id, nome, email')
@@ -77,7 +57,6 @@ Deno.serve(async (req) => {
       console.log('Profile não encontrado, apenas removendo do Auth se necessário')
     }
 
-    // Validar permissões
     const isSuperAdmin = currentUserProfile.role === 'super_admin'
     const isAdmin = currentUserProfile.role === 'admin'
 
@@ -85,7 +64,6 @@ Deno.serve(async (req) => {
       throw new Error('Usuário não tem permissão para excluir outros usuários')
     }
 
-    // Se não for super admin, verificar restrições adicionais
     if (!isSuperAdmin && targetProfile) {
       if (targetProfile.empresa_id !== currentUserProfile.empresa_id) {
         throw new Error('Você só pode excluir usuários da sua empresa')
@@ -94,6 +72,20 @@ Deno.serve(async (req) => {
         throw new Error('Você não pode excluir outros administradores')
       }
     }
+
+    // 🧹 Cleanup completo de RBAC/MFA/dados relacionados (item Onda 2 #12)
+    try {
+      await Promise.all([
+        supabaseAdmin.from('user_roles').delete().eq('user_id', user_id),
+        supabaseAdmin.from('user_module_permissions').delete().eq('user_id', user_id),
+        supabaseAdmin.from('mfa_sessions').delete().eq('user_id', user_id),
+        supabaseAdmin.from('mfa_codes').delete().eq('user_id', user_id),
+        supabaseAdmin.from('temporary_passwords').delete().eq('user_id', user_id),
+      ])
+    } catch (cleanupErr) {
+      console.warn('Falha parcial em cleanup RBAC/MFA:', cleanupErr)
+    }
+
 
     let deletedProfile = false
     let deletedAuth = false

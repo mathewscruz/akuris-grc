@@ -62,21 +62,8 @@ serve(async (req) => {
       });
     }
 
-    if (empresaId && userId) {
-      const { data: creditResult } = await supabase.rpc('consume_ai_credit', {
-        p_empresa_id: empresaId,
-        p_user_id: userId,
-        p_funcionalidade: 'calculate-assessment-score',
-        p_descricao: 'Cálculo de score Due Diligence com IA'
-      });
+    // Crédito consumido só após sucesso da IA (ver após analyzeWithAI).
 
-      if (creditResult === false) {
-        return new Response(JSON.stringify({ error: 'Créditos de IA esgotados.' }), {
-          status: 402,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
-    }
 
     const { data: responses, error: responsesError } = await supabase
       .from('due_diligence_responses')
@@ -116,6 +103,18 @@ serve(async (req) => {
     }));
 
     const aiAnalysis = await analyzeWithAI(analysisData, lovableApiKey);
+
+    // Consumir crédito apenas após sucesso da IA
+    if (empresaId && userId) {
+      try {
+        await supabase.rpc('consume_ai_credit', {
+          p_empresa_id: empresaId, p_user_id: userId,
+          p_funcionalidade: 'calculate-assessment-score',
+          p_descricao: 'Cálculo de score Due Diligence com IA',
+        });
+      } catch (e) { console.warn('consume_ai_credit falhou:', e); }
+    }
+
     
     const totalWeight = analysisData.reduce((sum, item) => sum + item.weight, 0);
     const weightedScore = aiAnalysis.scores.reduce((sum: number, score: number, index: number) => {

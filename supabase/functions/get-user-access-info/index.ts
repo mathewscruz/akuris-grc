@@ -1,5 +1,6 @@
 
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import { requireUserContext, requireValidMfa } from '../_shared/auth.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,56 +8,32 @@ const corsHeaders = {
 }
 
 Deno.serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
 
   if (req.method !== 'POST') {
-    return new Response('Method not allowed', { 
-      status: 405, 
-      headers: corsHeaders 
+    return new Response('Method not allowed', {
+      status: 405,
+      headers: corsHeaders
     })
   }
 
   try {
+    // ✳️ Auth + MFA obrigatórios
+    const ctx = await requireUserContext(req)
+    await requireValidMfa(ctx)
+
     console.log('Recebendo requisição para obter informações de acesso dos usuários')
-    
-    // Criar cliente Supabase com service role para operações administrativas
+
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    // Criar cliente normal para verificações de RLS
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: {
-            Authorization: req.headers.get('Authorization') ?? '',
-          },
-        },
-      }
-    )
+    const user = { id: ctx.userId }
+    const currentUserProfile = { role: ctx.role, empresa_id: ctx.empresaId }
 
-    // Verificar autenticação do usuário atual
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      throw new Error('Usuário não autenticado')
-    }
-
-    // Buscar perfil do usuário atual para verificar permissões
-    const { data: currentUserProfile, error: profileError } = await supabase
-      .from('profiles')
-      .select('role, empresa_id')
-      .eq('user_id', user.id)
-      .single()
-
-    if (profileError || !currentUserProfile) {
-      throw new Error('Perfil do usuário não encontrado')
-    }
 
     // Validar permissões - apenas admins e super_admins podem acessar
     const isSuperAdmin = currentUserProfile.role === 'super_admin'
