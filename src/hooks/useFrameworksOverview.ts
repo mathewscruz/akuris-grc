@@ -36,9 +36,12 @@ export const useFrameworksOverview = () => {
     queryFn: async (): Promise<FrameworkOverview[]> => {
       try {
         // Frameworks são templates globais (empresa_id NULL) + os da empresa.
+        // Sem o filtro, dashboards de uma empresa vazavam metadados de frameworks
+        // customizados de outras empresas.
         const { data: frameworks, error: fwErr } = await supabase
           .from('gap_analysis_frameworks')
-          .select('id, nome, versao, tipo');
+          .select('id, nome, versao, tipo')
+          .or(`empresa_id.is.null,empresa_id.eq.${empresaId}`);
         if (fwErr) throw fwErr;
         if (!frameworks?.length) return [];
 
