@@ -102,16 +102,20 @@ serve(async (req) => {
 
     const alreadyLinked = new Set((existingLinks || []).map((l: any) => l.requirement_id));
 
-    // 3) Frameworks da empresa (assessments) — limita o universo
-    let assessmentsQuery = supabase
-      .from('gap_analysis_assessments')
+    // 3) Frameworks ativos da empresa: derivados das avaliações reais
+    //    (o produto atual não usa `gap_analysis_assessments`; a tela grava
+    //    direto em `gap_analysis_evaluations`).
+    let activeFwQuery = supabase
+      .from('gap_analysis_evaluations')
       .select('framework_id')
       .eq('empresa_id', empresa_id);
     if (framework_ids && framework_ids.length > 0) {
-      assessmentsQuery = assessmentsQuery.in('framework_id', framework_ids);
+      activeFwQuery = activeFwQuery.in('framework_id', framework_ids);
     }
-    const { data: assessments } = await assessmentsQuery;
-    const empresaFrameworkIds = Array.from(new Set((assessments || []).map((a: any) => a.framework_id))).filter(Boolean);
+    const { data: activeFwRows } = await activeFwQuery;
+    const empresaFrameworkIds = Array.from(
+      new Set((activeFwRows || []).map((a: any) => a.framework_id)),
+    ).filter(Boolean);
 
     if (empresaFrameworkIds.length === 0) {
       return new Response(
