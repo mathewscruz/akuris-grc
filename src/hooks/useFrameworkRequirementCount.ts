@@ -1,22 +1,29 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/components/AuthProvider';
 
 /**
  * Retorna a contagem total de requisitos cobertos pelos frameworks
  * informados (matching por substring no nome — ex: "ISO 27001" casa
  * com "ISO/IEC 27001"). Usado no briefing do DocGen para mostrar ao
  * usuário quantos requisitos serão considerados pela IA.
+ *
+ * Multi-tenant: só considera templates globais + frameworks da empresa
+ * do usuário logado.
  */
 export function useFrameworkRequirementCount(frameworkNames: string[]) {
+  const { profile } = useAuth();
+  const empresaId = profile?.empresa_id;
   const key = [...frameworkNames].map((n) => n.trim().toLowerCase()).sort();
   return useQuery({
-    queryKey: ['docgen-fw-req-count', key],
-    enabled: frameworkNames.length > 0,
+    queryKey: ['docgen-fw-req-count', empresaId, key],
+    enabled: frameworkNames.length > 0 && !!empresaId,
     staleTime: 10 * 60 * 1000,
     queryFn: async () => {
       const { data: frameworks, error } = await supabase
         .from('gap_analysis_frameworks')
-        .select('id, nome');
+        .select('id, nome')
+        .or(`empresa_id.is.null,empresa_id.eq.${empresaId}`);
       if (error || !frameworks) return { count: 0, matched: [] as string[], matchedIds: [] as string[] };
 
       const tokens = frameworkNames.map((n) => n.trim().toLowerCase()).filter(Boolean);
@@ -51,3 +58,4 @@ export function useFrameworkRequirementCount(frameworkNames: string[]) {
     },
   });
 }
+
