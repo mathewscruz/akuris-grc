@@ -342,6 +342,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
           document: generatedDocument,
           instruction,
           ...(effFrameworkName && { framework_context: { framework_name: effFrameworkName, framework_id: effFrameworkId } }),
+          ...(companyContext && { company_context: companyContext }),
         },
       });
       if (error) throw error;
