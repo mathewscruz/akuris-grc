@@ -540,46 +540,6 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     }
   };
 
-  const saveDocument = async () => {
-    if (!generatedDocument || !userInfo) return;
-
-    try {
-      const { error } = await supabase
-        .from('documentos')
-        .insert({
-          nome: generatedDocument.titulo,
-          tipo: currentDocType || 'outros',
-          conteudo: generatedDocument,
-          status: 'rascunho',
-          versao: generatedDocument.versao,
-          empresa_id: userInfo.empresa_id,
-          created_by: userInfo.user_id,
-          data_criacao: new Date().toISOString(),
-          classificacao: generatedDocument.metadados?.classificacao || 'interno'
-        });
-
-      if (error) throw error;
-
-      setIsDocumentSaved(true);
-      setHasUnsavedChanges(false);
-
-      toast({
-        title: "Documento Salvo!",
-        description: "O documento foi salvo no sistema com sucesso.",
-      });
-
-      onDocumentSaved?.();
-      onOpenChange(false);
-
-    } catch (error) {
-      console.error('Erro ao salvar documento:', error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível salvar o documento. Tente novamente.",
-        variant: "destructive",
-      });
-    }
-  };
 
   // Geração e exportação de arquivos
   const generateDocxBlob = async () => {
