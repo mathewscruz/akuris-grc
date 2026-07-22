@@ -77,6 +77,22 @@ Deno.serve(async (req) => {
       finalEmpresaId = currentUserProfile.empresa_id
     }
 
+    // Valida que permission_profile_id pertence à mesma empresa (item Onda 2 #14)
+    if (permission_profile_id) {
+      const { data: profileExists } = await supabaseAdmin
+        .from('permission_profiles')
+        .select('id, empresa_id')
+        .eq('id', permission_profile_id)
+        .maybeSingle()
+      if (!profileExists) {
+        throw new Error('Perfil de permissão não encontrado')
+      }
+      if (profileExists.empresa_id && profileExists.empresa_id !== finalEmpresaId) {
+        throw new Error('Perfil de permissão não pertence à empresa de destino')
+      }
+    }
+
+
     // Enforcement de limite de usuários do plano da empresa
     if (finalEmpresaId) {
       const { data: empresaPlan } = await supabaseAdmin
