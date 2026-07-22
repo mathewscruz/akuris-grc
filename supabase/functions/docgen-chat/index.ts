@@ -316,6 +316,23 @@ serve(async (req) => {
     user_id = authedUserId;
     empresa_id = authedEmpresaId;
 
+    // Validação de payload ANTES de consumir crédito (evita cobrança em chamadas malformadas).
+    if (action === 'refine_section' && (!document || typeof section_index !== 'number' || !instruction)) {
+      return new Response(JSON.stringify({ error: 'document, section_index e instruction são obrigatórios' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    if (action === 'refine_document' && (!document || !instruction)) {
+      return new Response(JSON.stringify({ error: 'document e instruction são obrigatórios' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    if (action === 'quick_adherence' && (!document || !framework_context?.framework_id)) {
+      return new Response(JSON.stringify({ error: 'document e framework_context.framework_id são obrigatórios' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Consume AI credit before processing
     {
       const { data: creditResult } = await supabase.rpc('consume_ai_credit', {
