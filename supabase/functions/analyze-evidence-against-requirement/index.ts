@@ -180,6 +180,14 @@ Retorne APENAS JSON válido (sem markdown), neste formato:
       );
     }
 
+    // Debita crédito só após o gateway ter aceitado.
+    await supabase.rpc('consume_ai_credit', {
+      p_empresa_id: empresaId,
+      p_user_id: userId,
+      p_funcionalidade: 'analyze_evidence_against_requirement',
+      p_descricao: `Validação IA de evidência para requisito ${requirementId}`,
+    });
+
     const aiData = await aiResp.json();
     const raw: string = aiData?.choices?.[0]?.message?.content ?? '';
 
