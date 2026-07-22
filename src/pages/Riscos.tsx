@@ -142,7 +142,7 @@ export function Riscos() {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
   // React Query for riscos
-  const { data: riscos = [], isLoading: loading } = useQuery({
+  const { data: riscos = [], isLoading: loading } = useQuery<Risco[]>({
     queryKey: ['riscos', profile?.empresa_id],
     queryFn: async () => {
       const { data, error } = await supabase
