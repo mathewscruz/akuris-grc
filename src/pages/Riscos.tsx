@@ -227,7 +227,7 @@ export function Riscos() {
               responsavel_nome: profileData?.nome || null,
               responsavel_foto: profileData?.foto_url || null
             };
-          });
+          }) as unknown as Risco[];
         }
         
         return normalizedData as unknown as Risco[];
