@@ -810,11 +810,6 @@ Responda APENAS com um JSON na seguinte estrutura:
 
     // ============ ACTION: refine_section (Onda 3 - 1 crédito já consumido acima) ============
     if (action === 'refine_section') {
-      if (!document || typeof section_index !== 'number' || !instruction) {
-        return new Response(JSON.stringify({ error: 'document, section_index e instruction são obrigatórios' }), {
-          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
       const secoes = document.secoes || [];
       const target = secoes[section_index];
       if (!target) {
@@ -849,13 +844,33 @@ Reescreva o conteúdo da seção atendendo à instrução.`;
       const updatedSecoes = secoes.map((s: any, i: number) =>
         i === section_index ? { ...s, conteudo: newContent.trim() } : s
       );
+      const updatedDoc = { ...document, secoes: updatedSecoes };
+
+      // Persiste o refino no snapshot mais recente da conversa em docgen_generated_docs.
+      try {
+        const { data: latestDoc } = await supabase
+          .from('docgen_generated_docs')
+          .select('id')
+          .eq('conversation_id', conversation.id)
+          .eq('empresa_id', empresa_id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (latestDoc?.id) {
+          await supabase
+            .from('docgen_generated_docs')
+            .update({ conteudo: updatedDoc, updated_at: new Date().toISOString() })
+            .eq('id', latestDoc.id);
+        }
+      } catch (_e) { /* não bloqueia resposta */ }
 
       return new Response(JSON.stringify({
         section_index,
         new_content: newContent.trim(),
-        document: { ...document, secoes: updatedSecoes },
+        document: updatedDoc,
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
+
 
     // ============ ACTION: quick_adherence (Onda 3) ============
     if (action === 'quick_adherence') {
