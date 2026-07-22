@@ -54,22 +54,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Consume credit before AI call
-    {
-      const { data: creditResult } = await supabase.rpc('consume_ai_credit', {
-        p_empresa_id: empresaId,
-        p_user_id: userId,
-        p_funcionalidade: 'populate-requirement-guidance',
-        p_descricao: 'Geração de orientações para requisito de framework'
-      });
-
-      if (creditResult === false) {
-        return new Response(JSON.stringify({ error: "Créditos de IA esgotados." }), {
-          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-    }
-
     const body = await req.json().catch(() => ({}));
     const requirementId = body.requirement_id;
     const frameworkId = body.framework_id;
@@ -83,12 +67,30 @@ Deno.serve(async (req) => {
         .eq("id", requirementId)
         .single();
 
-      if (fetchError) throw fetchError;
+      if (fetchError || !req_data) {
+        return new Response(JSON.stringify({ error: "Requisito não encontrado" }), {
+          status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
 
       const guidance = await generateGuidance(req_data, lovableKey);
       if (!guidance) {
+        // AI falhou — NÃO consumir crédito
         return new Response(JSON.stringify({ error: "Failed to generate guidance" }), {
-          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Só debita o crédito quando a IA entregou conteúdo
+      const { data: creditResult } = await supabase.rpc('consume_ai_credit', {
+        p_empresa_id: empresaId,
+        p_user_id: userId,
+        p_funcionalidade: 'populate-requirement-guidance',
+        p_descricao: `Orientação para requisito ${req_data.codigo || req_data.titulo}`
+      });
+      if (creditResult === false) {
+        return new Response(JSON.stringify({ error: "Créditos de IA esgotados." }), {
+          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
@@ -136,15 +138,23 @@ Deno.serve(async (req) => {
 
     let processed = 0;
     for (const r of requirements) {
-      if (userId && empresaId) {
-        const { data: batchCredit } = await supabase.rpc('consume_ai_credit', {
-          p_empresa_id: empresaId,
-          p_user_id: userId,
-          p_funcionalidade: 'populate-requirement-guidance-batch',
-          p_descricao: `Orientação requisito ${r.codigo || r.titulo}`
-        });
-        if (batchCredit === false) break;
+      // Gera primeiro; só cobra se a IA entregar conteúdo válido
+      let guidance: GuidanceResult | null = null;
+      try {
+        guidance = await generateGuidance(r, lovableKey);
+      } catch (e) {
+        console.error(`Error processing ${r.codigo}:`, e);
+        continue;
       }
+      if (!guidance) continue;
+
+      const { data: batchCredit } = await supabase.rpc('consume_ai_credit', {
+        p_empresa_id: empresaId,
+        p_user_id: userId,
+        p_funcionalidade: 'populate-requirement-guidance-batch',
+        p_descricao: `Orientação requisito ${r.codigo || r.titulo}`
+      });
+      if (batchCredit === false) break;
 
       try {
         const guidance = await generateGuidance(r, lovableKey);
