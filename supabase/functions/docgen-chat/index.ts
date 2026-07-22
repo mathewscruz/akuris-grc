@@ -657,13 +657,32 @@ Abaixo estão os requisitos catalogados do(s) framework(s). Antes de escrever o 
 ${frameworkRequirementsText}`
         : '';
 
+      // Transcrição real do briefing/chat — as respostas do usuário PRECISAM
+      // chegar ao prompt de geração, senão o documento sai genérico.
+      const transcript = (messages || [])
+        .filter((m: any) => m && (m.role === 'user' || m.role === 'assistant') && m.content)
+        .slice(-30)
+        .map((m: any) => `[${m.role === 'user' ? 'USUÁRIO' : 'ASSISTENTE'}] ${String(m.content).slice(0, 1500)}`)
+        .join('\n\n');
+      const transcriptSection = transcript
+        ? `\n\n=== RESPOSTAS DO USUÁRIO NO BRIEFING (FONTE DE VERDADE) ===
+Abaixo está a conversa real entre o assistente e o usuário. INCORPORE LITERALMENTE prazos,
+nomes de sistemas, papéis, valores, exceções, políticas internas, retenções, responsáveis e
+qualquer particularidade citada pelo usuário. Se houver conflito entre o template padrão e o
+que o usuário disse, PREVALEÇA A RESPOSTA DO USUÁRIO. Não repita perguntas — use o que já
+foi respondido.
+
+${transcript}
+=== FIM DAS RESPOSTAS DO USUÁRIO ===`
+        : '';
+
       const documentPrompt = `Gere um documento COMPLETO e ESPECÍFICO do tipo solicitado.
 
 DOCUMENTO_EXATO: ${docNome}
 FRAMEWORKS_REQUERIDOS: ${JSON.stringify((context as any).frameworks_relacionados || (framework_context ? [framework_context.framework_name] : []))}
 EMPRESA: ${context.empresa_nome}
 DATA_ATUAL: ${new Date().toISOString().slice(0, 10)} (use EXATAMENTE esta data onde precisar de data; NÃO invente outra)
-${frameworkRequirementsSection || frameworkGapsSection}
+${frameworkRequirementsSection || frameworkGapsSection}${transcriptSection}
 
 Use a estrutura do template abaixo e cubra explicitamente os requisitos do(s) framework(s) citado(s) quando aplicável.
 
@@ -675,6 +694,7 @@ Requisitos obrigatórios de formatação:
 - Sumário
 - Todas as seções definidas no template
 - Conteúdo detalhado e profissional alinhado aos frameworks
+- Personalização real: reflita as respostas do usuário na conversa (item acima) — não use frases genéricas quando o usuário deu um dado concreto
 - Rodapé com informações da empresa
 
 Responda APENAS com um JSON na seguinte estrutura:
@@ -880,6 +900,102 @@ Avalie e responda EXATAMENTE neste JSON:
       return new Response(JSON.stringify({ adherence: parsed }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    }
+
+    // ============ ACTION: refine_document (chat pós-geração aplica refinos no documento inteiro) ============
+    if (action === 'refine_document') {
+      if (!document || !instruction) {
+        return new Response(JSON.stringify({ error: 'document e instruction são obrigatórios' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Persistir a instrução como turno de usuário na conversa (para futuros refinos verem o histórico).
+      messages.push({ role: 'user', content: instruction });
+
+      const secoes = document.secoes || [];
+      const docJson = JSON.stringify({
+        titulo: document.titulo,
+        versao: document.versao,
+        secoes: secoes.map((s: any) => ({ nome: s.nome, conteudo: s.conteudo })),
+      });
+
+      const sysPrompt = `Você é um editor sênior de documentos corporativos. Você receberá um documento em JSON e uma instrução do usuário. Sua tarefa:
+1) Identifique QUAIS seções devem ser alteradas para atender à instrução.
+2) Reescreva SOMENTE o conteúdo dessas seções, preservando literalmente o conteúdo das demais.
+3) Mantenha exatamente a mesma lista de seções (mesmos nomes e mesma ordem).
+4) Incorpore dados concretos citados pelo usuário (prazos, sistemas, papéis, valores, exceções, retenções).
+5) Responda SOMENTE com JSON válido, sem markdown, no formato:
+{
+  "sections_changed": ["Nome da seção 1", ...],
+  "summary": "1 frase descrevendo a mudança",
+  "document": {
+    "titulo": "...",
+    "versao": "...",
+    "secoes": [ { "nome": "...", "conteudo": "..." } ]
+  }
+}`;
+
+      const userPrompt = `EMPRESA: ${context.empresa_nome}
+${framework_context?.framework_name ? `FRAMEWORK: ${framework_context.framework_name}\n` : ''}
+DOCUMENTO ATUAL (JSON):
+${docJson}
+
+INSTRUÇÃO DO USUÁRIO:
+${instruction}
+
+Aplique a instrução conforme as regras do sistema e devolva o JSON completo.`;
+
+      const raw = await callClaude(
+        [{ role: 'user', content: userPrompt }],
+        sysPrompt,
+        LOVABLE_API_KEY,
+        16000,
+        0.4
+      );
+
+      let parsed: any = null;
+      try {
+        parsed = JSON.parse(raw.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim());
+      } catch (_e) {
+        parsed = null;
+      }
+
+      if (!parsed?.document?.secoes?.length) {
+        return new Response(JSON.stringify({
+          error: 'Não foi possível interpretar a resposta da IA',
+        }), { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
+      // Preserva metadados/data/logo originais; troca apenas título/versão/seções.
+      const mergedDoc = {
+        ...document,
+        titulo: parsed.document.titulo || document.titulo,
+        versao: parsed.document.versao || document.versao,
+        secoes: parsed.document.secoes,
+      };
+
+      const changed: string[] = Array.isArray(parsed.sections_changed) ? parsed.sections_changed : [];
+      const summary: string = typeof parsed.summary === 'string' && parsed.summary.trim()
+        ? parsed.summary.trim()
+        : (changed.length
+            ? `Atualizei ${changed.length === 1 ? 'a seção' : 'as seções'} ${changed.join(', ')} com base na sua observação.`
+            : 'Documento atualizado com base na sua observação.');
+
+      messages.push({ role: 'assistant', content: summary });
+
+      try {
+        await supabase
+          .from('docgen_conversations')
+          .update({ mensagens: messages, updated_at: new Date().toISOString() })
+          .eq('id', conversation.id);
+      } catch (_e) { /* não bloqueia resposta */ }
+
+      return new Response(JSON.stringify({
+        document: mergedDoc,
+        sections_changed: changed,
+        summary,
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     return new Response(JSON.stringify({ error: 'Action not supported' }), {

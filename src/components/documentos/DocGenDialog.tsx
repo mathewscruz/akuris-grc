@@ -328,10 +328,54 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     }
   };
 
+  const refineDocumentWithInstruction = async (instruction: string) => {
+    if (!userInfo || !generatedDocument || isLoading) return;
+    setMessages(prev => [...prev, { role: 'user', content: instruction, timestamp: new Date() }]);
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('docgen-chat', {
+        body: {
+          action: 'refine_document',
+          user_id: userInfo.user_id,
+          empresa_id: userInfo.empresa_id,
+          conversation_id: conversationId,
+          document: generatedDocument,
+          instruction,
+          ...(effFrameworkName && { framework_context: { framework_name: effFrameworkName, framework_id: effFrameworkId } }),
+        },
+      });
+      if (error) throw error;
+      if (data?.error === 'CREDITS_EXHAUSTED') {
+        setShowCreditsDialog(true);
+        return;
+      }
+      if (data?.document) {
+        setGeneratedDocument({
+          ...data.document,
+          data_criacao: generatedDocument.data_criacao || new Date().toISOString().slice(0, 10),
+        });
+        setAdherenceResult(null);
+        const summary: string = data.summary || 'Documento atualizado com base na sua observação.';
+        setMessages(prev => [...prev, { role: 'assistant', content: summary, timestamp: new Date() }]);
+        akurisToast({ module: 'documentos', tone: 'success', title: 'Documento atualizado', description: summary });
+      }
+    } catch (err) {
+      console.error('Erro ao refinar documento:', err);
+      toast({ title: 'Erro', description: 'Não foi possível aplicar o refinamento no documento.', variant: 'destructive' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const sendMessage = async () => {
     if (!inputMessage.trim()) return;
     const text = inputMessage;
     setInputMessage('');
+    // Após o documento existir, cada mensagem do usuário refina o documento inteiro.
+    if (generatedDocument) {
+      await refineDocumentWithInstruction(text);
+      return;
+    }
     await sendMessageInternal(text);
   };
 
