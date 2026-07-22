@@ -120,7 +120,14 @@ function GapAnalysisFrameworkDetailInner() {
         else catMap[cat].nao_avaliado++;
       });
       setCategoryData(Object.entries(catMap).map(([categoria, data]) => ({ categoria, ...data })).sort((a, b) => a.categoria.localeCompare(b.categoria)));
-    } catch (e) { /* silent */ }
+    } catch (e: any) {
+      // Antes silenciávamos qualquer falha aqui, o que mascarava problemas de
+      // permissão/RLS. Loga com contexto para diagnóstico sem quebrar a UI.
+      logger.error('Erro ao carregar contagem por categoria', {
+        error: e instanceof Error ? e.message : String(e),
+        frameworkId,
+      });
+    }
   }, [frameworkId, empresaId]);
 
   useEffect(() => { loadCategoryData(); }, [loadCategoryData]);

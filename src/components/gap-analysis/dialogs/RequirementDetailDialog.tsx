@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import DOMPurify from 'dompurify';
 import { DialogShell } from "@/components/ui/dialog-shell";
 import { Button } from "@/components/ui/button";
@@ -347,6 +347,8 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
   const [uploading, setUploading] = useState(false);
   const [planoAcaoDialogOpen, setPlanoAcaoDialogOpen] = useState(false);
   const [planoAcaoVinculado, setPlanoAcaoVinculado] = useState<any>(null);
+  // Concorrência otimista: guarda o updated_at carregado para detectar sobrescrita.
+  const loadedUpdatedAtRef = useRef<string | null>(null);
   const [savingPlano, setSavingPlano] = useState(false);
   const [guidanceText, setGuidanceText] = useState<string | null>(null);
   const [evidenciasText, setEvidenciasText] = useState<string | null>(null);
@@ -469,8 +471,10 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
           evidence_files: Array.isArray(evalData.evidence_files) ? evalData.evidence_files : [],
           plano_acao_id: evalData.plano_acao_id || null
         });
+        loadedUpdatedAtRef.current = (evalData as any).updated_at || null;
       } else {
         setPlanoAcaoVinculado(null);
+        loadedUpdatedAtRef.current = null;
       }
     } catch (error: any) {
       logger.error('Error loading data:', { error: error instanceof Error ? error.message : String(error) });
@@ -527,6 +531,33 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
+
+    const MAX_BYTES = 25 * 1024 * 1024; // 25MB por arquivo
+    const ALLOWED = new Set([
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'text/plain', 'text/csv', 'text/markdown',
+      'image/png', 'image/jpeg', 'image/webp',
+    ]);
+
+    const oversize = Array.from(files).find(f => f.size > MAX_BYTES);
+    if (oversize) {
+      toast.error(`Arquivo "${oversize.name}" excede 25MB. Comprima ou divida antes de anexar.`);
+      event.target.value = '';
+      return;
+    }
+    const invalidType = Array.from(files).find(f => f.type && !ALLOWED.has(f.type));
+    if (invalidType) {
+      toast.error(`Tipo não permitido: ${invalidType.type || invalidType.name}. Envie PDF, Office, texto ou imagem.`);
+      event.target.value = '';
+      return;
+    }
+
     setUploading(true);
     try {
       const uploadedFiles = [];
@@ -547,6 +578,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
       toast.error('Erro ao fazer upload');
     } finally {
       setUploading(false);
+      event.target.value = '';
     }
   };
 
@@ -604,15 +636,33 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
     try {
       let evaluationId = formData.id || requirement.evaluation_id;
       if (evaluationId) {
+        // Concorrência otimista: rejeita a gravação se outro usuário alterou
+        // a avaliação depois que abrimos o diálogo. Evita sobrescrita silenciosa.
+        if (loadedUpdatedAtRef.current) {
+          const { data: current } = await supabase
+            .from('gap_analysis_evaluations')
+            .select('updated_at')
+            .eq('id', evaluationId)
+            .eq('empresa_id', empresaId)
+            .maybeSingle();
+          const currentUpdatedAt = (current as any)?.updated_at as string | undefined;
+          if (currentUpdatedAt && currentUpdatedAt !== loadedUpdatedAtRef.current) {
+            toast.error('Este requisito foi atualizado por outro usuário. Feche e reabra para não perder as alterações mais recentes.');
+            setSaving(false);
+            return;
+          }
+        }
+        const nowIso = new Date().toISOString();
         const { error } = await supabase.from('gap_analysis_evaluations').update({
           responsavel_avaliacao: formData.responsavel_avaliacao || null,
           plano_acao: formData.plano_acao || null, observacoes: formData.observacoes || null,
           prazo_implementacao: formData.prazo_implementacao ? parseDateForDB(formData.prazo_implementacao) : null,
           evidence_files: formData.evidence_files, plano_acao_id: formData.plano_acao_id || null,
           diagnostic_answers: Object.keys(diagnosticAnswers).length > 0 ? diagnosticAnswers : null,
-          updated_at: new Date().toISOString()
+          updated_at: nowIso
         }).eq('id', evaluationId).eq('empresa_id', empresaId);
         if (error) throw error;
+        loadedUpdatedAtRef.current = nowIso;
       } else {
         const { data: newEval, error } = await supabase.from('gap_analysis_evaluations').insert({
           framework_id: frameworkId, requirement_id: requirement.id, empresa_id: empresaId,

@@ -117,34 +117,42 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
     if (!empresaId) return;
     try {
       setLoading(true);
-      const { data: reqs, error: reqError } = await supabase
-        .from('gap_analysis_requirements')
-        .select('*')
-        .eq('framework_id', frameworkId)
-        .order('ordem', { ascending: true });
+      // Paginação: frameworks grandes (PCI DSS 4.0 ~288, CIS ~153) podem ultrapassar
+      // o teto padrão de 1000 do PostgREST ao unir com evaluations; usamos o helper
+      // para evitar truncamento silencioso.
+      const { fetchAllPaginated } = await import('@/lib/supabase-paginate');
 
+      const { data: reqs, error: reqError } = await fetchAllPaginated<any>(() =>
+        supabase
+          .from('gap_analysis_requirements')
+          .select('*')
+          .eq('framework_id', frameworkId)
+          .order('ordem', { ascending: true }),
+      );
       if (reqError) throw reqError;
 
-      const { data: evals, error: evalError } = await supabase
-        .from('gap_analysis_evaluations')
-        .select('id, requirement_id, conformity_status, plano_acao_id, evidence_files, prazo_implementacao, responsavel_avaliacao')
-        .eq('framework_id', frameworkId)
-        .eq('empresa_id', empresaId);
-
+      const { data: evals, error: evalError } = await fetchAllPaginated<any>(() =>
+        supabase
+          .from('gap_analysis_evaluations')
+          .select('id, requirement_id, conformity_status, plano_acao_id, evidence_files, prazo_implementacao, responsavel_avaliacao, updated_at')
+          .eq('framework_id', frameworkId)
+          .eq('empresa_id', empresaId),
+      );
       if (evalError) throw evalError;
 
       const evalMap = new Map(
-        evals?.map(e => [e.requirement_id, {
+        evals?.map((e: any) => [e.requirement_id, {
           id: e.id,
           conformity_status: e.conformity_status,
           plano_acao_id: e.plano_acao_id,
           evidence_files: e.evidence_files,
           prazo_implementacao: e.prazo_implementacao,
           responsavel_avaliacao: e.responsavel_avaliacao,
+          updated_at: e.updated_at,
         }]) || []
       );
 
-      const merged = (reqs || []).map(req => {
+      const merged = (reqs || []).map((req: any) => {
         const evaluation = evalMap.get(req.id);
         return {
           ...req,
@@ -153,6 +161,7 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
           categoria: req.categoria || 'Outros',
           conformity_status: evaluation?.conformity_status || 'nao_avaliado',
           evaluation_id: evaluation?.id || null,
+          evaluation_updated_at: evaluation?.updated_at || null,
           plano_acao_id: evaluation?.plano_acao_id || null,
           evidence_files: Array.isArray(evaluation?.evidence_files) ? evaluation.evidence_files : [],
           prazo_implementacao: evaluation?.prazo_implementacao || null,
