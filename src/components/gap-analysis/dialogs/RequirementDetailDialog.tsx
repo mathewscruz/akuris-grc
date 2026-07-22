@@ -527,6 +527,33 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
+
+    const MAX_BYTES = 25 * 1024 * 1024; // 25MB por arquivo
+    const ALLOWED = new Set([
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'text/plain', 'text/csv', 'text/markdown',
+      'image/png', 'image/jpeg', 'image/webp',
+    ]);
+
+    const oversize = Array.from(files).find(f => f.size > MAX_BYTES);
+    if (oversize) {
+      toast.error(`Arquivo "${oversize.name}" excede 25MB. Comprima ou divida antes de anexar.`);
+      event.target.value = '';
+      return;
+    }
+    const invalidType = Array.from(files).find(f => f.type && !ALLOWED.has(f.type));
+    if (invalidType) {
+      toast.error(`Tipo não permitido: ${invalidType.type || invalidType.name}. Envie PDF, Office, texto ou imagem.`);
+      event.target.value = '';
+      return;
+    }
+
     setUploading(true);
     try {
       const uploadedFiles = [];
@@ -547,6 +574,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
       toast.error('Erro ao fazer upload');
     } finally {
       setUploading(false);
+      event.target.value = '';
     }
   };
 
