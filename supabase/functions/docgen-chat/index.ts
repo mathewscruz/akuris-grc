@@ -657,13 +657,32 @@ Abaixo estão os requisitos catalogados do(s) framework(s). Antes de escrever o 
 ${frameworkRequirementsText}`
         : '';
 
+      // Transcrição real do briefing/chat — as respostas do usuário PRECISAM
+      // chegar ao prompt de geração, senão o documento sai genérico.
+      const transcript = (messages || [])
+        .filter((m: any) => m && (m.role === 'user' || m.role === 'assistant') && m.content)
+        .slice(-30)
+        .map((m: any) => `[${m.role === 'user' ? 'USUÁRIO' : 'ASSISTENTE'}] ${String(m.content).slice(0, 1500)}`)
+        .join('\n\n');
+      const transcriptSection = transcript
+        ? `\n\n=== RESPOSTAS DO USUÁRIO NO BRIEFING (FONTE DE VERDADE) ===
+Abaixo está a conversa real entre o assistente e o usuário. INCORPORE LITERALMENTE prazos,
+nomes de sistemas, papéis, valores, exceções, políticas internas, retenções, responsáveis e
+qualquer particularidade citada pelo usuário. Se houver conflito entre o template padrão e o
+que o usuário disse, PREVALEÇA A RESPOSTA DO USUÁRIO. Não repita perguntas — use o que já
+foi respondido.
+
+${transcript}
+=== FIM DAS RESPOSTAS DO USUÁRIO ===`
+        : '';
+
       const documentPrompt = `Gere um documento COMPLETO e ESPECÍFICO do tipo solicitado.
 
 DOCUMENTO_EXATO: ${docNome}
 FRAMEWORKS_REQUERIDOS: ${JSON.stringify((context as any).frameworks_relacionados || (framework_context ? [framework_context.framework_name] : []))}
 EMPRESA: ${context.empresa_nome}
 DATA_ATUAL: ${new Date().toISOString().slice(0, 10)} (use EXATAMENTE esta data onde precisar de data; NÃO invente outra)
-${frameworkRequirementsSection || frameworkGapsSection}
+${frameworkRequirementsSection || frameworkGapsSection}${transcriptSection}
 
 Use a estrutura do template abaixo e cubra explicitamente os requisitos do(s) framework(s) citado(s) quando aplicável.
 
@@ -675,6 +694,7 @@ Requisitos obrigatórios de formatação:
 - Sumário
 - Todas as seções definidas no template
 - Conteúdo detalhado e profissional alinhado aos frameworks
+- Personalização real: reflita as respostas do usuário na conversa (item acima) — não use frases genéricas quando o usuário deu um dado concreto
 - Rodapé com informações da empresa
 
 Responda APENAS com um JSON na seguinte estrutura:
