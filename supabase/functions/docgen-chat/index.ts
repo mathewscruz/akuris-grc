@@ -874,11 +874,7 @@ Reescreva o conteúdo da seção atendendo à instrução.`;
 
     // ============ ACTION: quick_adherence (Onda 3) ============
     if (action === 'quick_adherence') {
-      if (!document || !framework_context?.framework_id) {
-        return new Response(JSON.stringify({ error: 'document e framework_context.framework_id são obrigatórios' }), {
-          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
+
 
       const { data: reqs } = await supabase
         .from('gap_analysis_requirements')
