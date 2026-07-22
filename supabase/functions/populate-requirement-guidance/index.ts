@@ -157,9 +157,7 @@ Deno.serve(async (req) => {
       if (batchCredit === false) break;
 
       try {
-        const guidance = await generateGuidance(r, lovableKey);
-        if (!guidance) continue;
-
+        // guidance já foi gerado antes de debitar o crédito
         const { error: updateError } = await supabase
           .from("gap_analysis_requirements")
           .update({
