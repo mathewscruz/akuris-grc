@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import type { AdherenceAssessment } from './types';
 import { logger } from '@/lib/logger';
+import { useEmpresaId } from '@/hooks/useEmpresaId';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 interface AdherenceAssessmentViewProps {
