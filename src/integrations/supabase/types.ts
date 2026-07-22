@@ -4440,13 +4440,15 @@ export type Database = {
           created_at: string
           created_by: string | null
           empresa_id: string
-          evaluation_id: string
+          evaluation_id: string | null
           evidence_id: string
-          framework_id: string
+          framework_id: string | null
           ia_justificativa: string | null
           ia_score: number | null
           id: string
-          requirement_id: string
+          modulo: string | null
+          registro_id: string | null
+          requirement_id: string | null
           updated_at: string
           vinculo_tipo: string
         }
@@ -4456,13 +4458,15 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           empresa_id: string
-          evaluation_id: string
+          evaluation_id?: string | null
           evidence_id: string
-          framework_id: string
+          framework_id?: string | null
           ia_justificativa?: string | null
           ia_score?: number | null
           id?: string
-          requirement_id: string
+          modulo?: string | null
+          registro_id?: string | null
+          requirement_id?: string | null
           updated_at?: string
           vinculo_tipo?: string
         }
@@ -4472,13 +4476,15 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           empresa_id?: string
-          evaluation_id?: string
+          evaluation_id?: string | null
           evidence_id?: string
-          framework_id?: string
+          framework_id?: string | null
           ia_justificativa?: string | null
           ia_score?: number | null
           id?: string
-          requirement_id?: string
+          modulo?: string | null
+          registro_id?: string | null
+          requirement_id?: string | null
           updated_at?: string
           vinculo_tipo?: string
         }
@@ -5267,6 +5273,56 @@ export type Database = {
             columns: ["risco_id"]
             isOneToOne: false
             referencedRelation: "riscos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      implementacao_programas: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          data_alvo: string | null
+          descricao: string | null
+          empresa_id: string
+          framework_id: string | null
+          id: string
+          nome: string
+          orcamento_total: number | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          data_alvo?: string | null
+          descricao?: string | null
+          empresa_id: string
+          framework_id?: string | null
+          id?: string
+          nome: string
+          orcamento_total?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          data_alvo?: string | null
+          descricao?: string | null
+          empresa_id?: string
+          framework_id?: string | null
+          id?: string
+          nome?: string
+          orcamento_total?: number | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "implementacao_programas_framework_id_fkey"
+            columns: ["framework_id"]
+            isOneToOne: false
+            referencedRelation: "gap_analysis_frameworks"
             referencedColumns: ["id"]
           },
         ]
@@ -6088,6 +6144,200 @@ export type Database = {
             columns: ["permission_profile_id"]
             isOneToOne: false
             referencedRelation: "permission_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      programa_fases: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          empresa_id: string
+          id: string
+          nome: string
+          orcamento: number | null
+          ordem: number
+          programa_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          empresa_id: string
+          id?: string
+          nome: string
+          orcamento?: number | null
+          ordem?: number
+          programa_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          empresa_id?: string
+          id?: string
+          nome?: string
+          orcamento?: number | null
+          ordem?: number
+          programa_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "programa_fases_programa_id_fkey"
+            columns: ["programa_id"]
+            isOneToOne: false
+            referencedRelation: "implementacao_programas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      programa_ferramentas: {
+        Row: {
+          categoria: string | null
+          created_at: string
+          created_by: string | null
+          custo: number | null
+          empresa_id: string
+          fase_id: string | null
+          fornecedor: string | null
+          id: string
+          nome: string
+          observacoes: string | null
+          programa_id: string
+          recorrencia: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          categoria?: string | null
+          created_at?: string
+          created_by?: string | null
+          custo?: number | null
+          empresa_id: string
+          fase_id?: string | null
+          fornecedor?: string | null
+          id?: string
+          nome: string
+          observacoes?: string | null
+          programa_id: string
+          recorrencia?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          categoria?: string | null
+          created_at?: string
+          created_by?: string | null
+          custo?: number | null
+          empresa_id?: string
+          fase_id?: string | null
+          fornecedor?: string | null
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          programa_id?: string
+          recorrencia?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "programa_ferramentas_fase_id_fkey"
+            columns: ["fase_id"]
+            isOneToOne: false
+            referencedRelation: "programa_fases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "programa_ferramentas_programa_id_fkey"
+            columns: ["programa_id"]
+            isOneToOne: false
+            referencedRelation: "implementacao_programas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      programa_itens: {
+        Row: {
+          controle_id: string | null
+          created_at: string
+          created_by: string | null
+          custo_estimado: number | null
+          descricao: string | null
+          empresa_id: string
+          esforco: string | null
+          fase_id: string | null
+          ferramenta_sugerida: string | null
+          id: string
+          impacto: string | null
+          ordem: number
+          plano_acao_id: string | null
+          prazo: string | null
+          programa_id: string
+          requirement_id: string | null
+          responsavel_id: string | null
+          status: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          controle_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          custo_estimado?: number | null
+          descricao?: string | null
+          empresa_id: string
+          esforco?: string | null
+          fase_id?: string | null
+          ferramenta_sugerida?: string | null
+          id?: string
+          impacto?: string | null
+          ordem?: number
+          plano_acao_id?: string | null
+          prazo?: string | null
+          programa_id: string
+          requirement_id?: string | null
+          responsavel_id?: string | null
+          status?: string
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          controle_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          custo_estimado?: number | null
+          descricao?: string | null
+          empresa_id?: string
+          esforco?: string | null
+          fase_id?: string | null
+          ferramenta_sugerida?: string | null
+          id?: string
+          impacto?: string | null
+          ordem?: number
+          plano_acao_id?: string | null
+          prazo?: string | null
+          programa_id?: string
+          requirement_id?: string | null
+          responsavel_id?: string | null
+          status?: string
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "programa_itens_fase_id_fkey"
+            columns: ["fase_id"]
+            isOneToOne: false
+            referencedRelation: "programa_fases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "programa_itens_programa_id_fkey"
+            columns: ["programa_id"]
+            isOneToOne: false
+            referencedRelation: "implementacao_programas"
             referencedColumns: ["id"]
           },
         ]
