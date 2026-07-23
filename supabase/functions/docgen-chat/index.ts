@@ -1,5 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+import {
+  computeCoverageScore,
+  computeAnalyzedScore,
+  reconcileReportedScore,
+  applyRefineCoverage,
+  complianceImpactFrom,
+  filterInScope,
+} from '../_shared/compliance-score.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -786,12 +794,8 @@ Responda APENAS com um JSON na seguinte estrutura:
       const coverageMap: any[] = Array.isArray(documentContent?.coverage_map) ? documentContent.coverage_map : [];
       const naoCobertos: any[] = Array.isArray(documentContent?.requisitos_nao_cobertos_justificativa)
         ? documentContent.requisitos_nao_cobertos_justificativa : [];
-      const inScopeNaoCobertos = naoCobertos.filter((r: any) => {
-        const motivo = String(r?.motivo || '').toLowerCase();
-        return !(motivo.includes('fora do escopo') || motivo.includes('nao aplic') || motivo.includes('não aplic'));
-      });
-      const denom = coverageMap.length + inScopeNaoCobertos.length;
-      const initial_score = denom === 0 ? 0 : Math.round((coverageMap.length / denom) * 100);
+      const inScopeNaoCobertos = filterInScope(naoCobertos);
+      const initial_score = computeCoverageScore(coverageMap, naoCobertos);
       const warnings: string[] = [];
       if (coverageMap.length === 0 && docFwIds.length > 0) {
         warnings.push('A IA não devolveu coverage_map — a análise de compliance pode ficar inconsistente.');
@@ -922,41 +926,26 @@ Responda EXATAMENTE neste JSON:
 
       // Atualiza coverage_map: mantém entradas de outras seções; para esta seção,
       // preserva itens mantidos com evidência atualizada; remove os informados em removed_coverage.
-      const removedCodes = new Set((parsedRefine?.removed_coverage || []).map((r: any) => String(r?.requirement_codigo || '')));
+      const removedCodesArr: string[] = (parsedRefine?.removed_coverage || []).map((r: any) => String(r?.requirement_codigo || ''));
+      const removedCodes = new Set(removedCodesArr);
       const keptCodes = new Set((parsedRefine?.coverage_kept || []).map((c: any) => String(c)));
-      const evidenceUpdates = new Map<string, string>(
-        (parsedRefine?.coverage_updated_evidence || []).map((e: any) => [String(e?.requirement_codigo || ''), String(e?.evidencia || '')])
-      );
-      const nextCoverage = currentCoverage
-        .filter((c: any) => {
-          const belongsHere = Array.isArray(c?.section_indexes) && c.section_indexes.includes(section_index);
-          if (!belongsHere) return true; // não é desta seção → intocado
-          const code = String(c?.requirement_codigo || '');
-          if (removedCodes.has(code)) return false;
-          // Se a IA não confirmou o code em coverage_kept mas também não colocou em removed,
-          // mantemos por segurança (compliance-first) — evita drop silencioso.
-          return true;
-        })
-        .map((c: any) => {
-          const code = String(c?.requirement_codigo || '');
-          if (evidenceUpdates.has(code)) {
-            return { ...c, evidencia: evidenceUpdates.get(code) };
-          }
-          return c;
-        });
+      const evidenceUpdatesArr: [string, string][] = (parsedRefine?.coverage_updated_evidence || [])
+        .map((e: any) => [String(e?.requirement_codigo || ''), String(e?.evidencia || '')] as [string, string]);
+      const nextCoverage = applyRefineCoverage({
+        currentCoverage,
+        sectionIndex: section_index,
+        removedCodes: removedCodesArr,
+        keptCodes: Array.from(keptCodes),
+        evidenceUpdates: evidenceUpdatesArr,
+      });
 
-      const complianceImpact = removedCodes.size > 0 ? 'reduced' : 'preserved';
+      const complianceImpact = complianceImpactFrom(removedCodes.size);
       const updatedDoc = { ...document, secoes: updatedSecoes, coverage_map: nextCoverage };
 
       // Recalcula score determinístico
       const naoCobertos: any[] = Array.isArray(updatedDoc?.requisitos_nao_cobertos_justificativa)
         ? updatedDoc.requisitos_nao_cobertos_justificativa : [];
-      const inScopeNaoCobertos = naoCobertos.filter((r: any) => {
-        const motivo = String(r?.motivo || '').toLowerCase();
-        return !(motivo.includes('fora do escopo') || motivo.includes('nao aplic') || motivo.includes('não aplic'));
-      });
-      const denomR = nextCoverage.length + inScopeNaoCobertos.length + removedCodes.size;
-      const newScore = denomR === 0 ? 0 : Math.round((nextCoverage.length / denomR) * 100);
+      const newScore = computeCoverageScore(nextCoverage, naoCobertos, removedCodes.size);
       updatedDoc._initial_score = newScore;
       updatedDoc._score_source = 'coverage_map';
 
@@ -1092,24 +1081,18 @@ Responda EXATAMENTE neste JSON:
       // fórmula canônica (conforme=100, parcial=50, nao_conforme=0, N/A fora do denominador).
       const analisados: any[] = Array.isArray(parsed?.requisitos_analisados) ? parsed.requisitos_analisados : [];
       if (analisados.length > 0) {
-        const scoreMap: Record<string, number> = { conforme: 100, parcial: 50, nao_conforme: 0 };
-        const naCount = analisados.filter(r => r?.status_aderencia === 'nao_aplicavel').length;
-        const denom = Math.max(analisados.length - naCount, 0);
-        const num = analisados
-          .filter(r => r?.status_aderencia && r.status_aderencia !== 'nao_aplicavel')
-          .reduce((sum, r) => sum + (scoreMap[r.status_aderencia] ?? 0), 0);
-        const calc = denom === 0 ? 0 : Math.round(num / denom);
-        const raiaValida = typeof parsed?.score === 'number' && parsed.score > 0 && parsed.score <= 100;
-        if (!raiaValida || Math.abs(calc - parsed.score) > 25) {
-          parsed.score = calc;
+        const { score: calc, contagem } = computeAnalyzedScore(analisados);
+        const { score: finalScore, source } = reconcileReportedScore(parsed?.score, calc);
+        parsed.score = finalScore;
+        if (source === 'deterministic') {
           parsed.score_fonte = 'determinístico (statuses por requisito)';
         }
         parsed.contagem = {
-          total: analisados.length,
-          conformes: analisados.filter(r => r?.status_aderencia === 'conforme').length,
-          parciais: analisados.filter(r => r?.status_aderencia === 'parcial').length,
-          nao_conformes: analisados.filter(r => r?.status_aderencia === 'nao_conforme').length,
-          nao_aplicaveis: naCount,
+          total: contagem.total,
+          conformes: contagem.conformes,
+          parciais: contagem.parciais,
+          nao_conformes: contagem.nao_conformes,
+          nao_aplicaveis: contagem.nao_aplicaveis,
         };
       }
 
@@ -1218,16 +1201,11 @@ Aplique a instrução conforme as regras do sistema e devolva o JSON completo CO
       // Recalcula score determinístico
       const naoCobertos: any[] = Array.isArray(mergedDoc?.requisitos_nao_cobertos_justificativa)
         ? mergedDoc.requisitos_nao_cobertos_justificativa : [];
-      const inScopeNaoCobertos = naoCobertos.filter((r: any) => {
-        const motivo = String(r?.motivo || '').toLowerCase();
-        return !(motivo.includes('fora do escopo') || motivo.includes('nao aplic') || motivo.includes('não aplic'));
-      });
-      const denomR = nextCoverage.length + inScopeNaoCobertos.length + removedCodes.size;
-      const newScore = denomR === 0 ? 0 : Math.round((nextCoverage.length / denomR) * 100);
+      const newScore = computeCoverageScore(nextCoverage, naoCobertos, removedCodes.size);
       mergedDoc._initial_score = newScore;
       mergedDoc._score_source = 'coverage_map';
 
-      const complianceImpact = removedCodes.size > 0 ? 'reduced' : 'preserved';
+      const complianceImpact = complianceImpactFrom(removedCodes.size);
       const changed: string[] = Array.isArray(parsed.sections_changed) ? parsed.sections_changed : [];
       const summary: string = typeof parsed.summary === 'string' && parsed.summary.trim()
         ? parsed.summary.trim()
