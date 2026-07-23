@@ -1081,24 +1081,18 @@ Responda EXATAMENTE neste JSON:
       // fórmula canônica (conforme=100, parcial=50, nao_conforme=0, N/A fora do denominador).
       const analisados: any[] = Array.isArray(parsed?.requisitos_analisados) ? parsed.requisitos_analisados : [];
       if (analisados.length > 0) {
-        const scoreMap: Record<string, number> = { conforme: 100, parcial: 50, nao_conforme: 0 };
-        const naCount = analisados.filter(r => r?.status_aderencia === 'nao_aplicavel').length;
-        const denom = Math.max(analisados.length - naCount, 0);
-        const num = analisados
-          .filter(r => r?.status_aderencia && r.status_aderencia !== 'nao_aplicavel')
-          .reduce((sum, r) => sum + (scoreMap[r.status_aderencia] ?? 0), 0);
-        const calc = denom === 0 ? 0 : Math.round(num / denom);
-        const raiaValida = typeof parsed?.score === 'number' && parsed.score > 0 && parsed.score <= 100;
-        if (!raiaValida || Math.abs(calc - parsed.score) > 25) {
-          parsed.score = calc;
+        const { score: calc, contagem } = computeAnalyzedScore(analisados);
+        const { score: finalScore, source } = reconcileReportedScore(parsed?.score, calc);
+        parsed.score = finalScore;
+        if (source === 'deterministic') {
           parsed.score_fonte = 'determinístico (statuses por requisito)';
         }
         parsed.contagem = {
-          total: analisados.length,
-          conformes: analisados.filter(r => r?.status_aderencia === 'conforme').length,
-          parciais: analisados.filter(r => r?.status_aderencia === 'parcial').length,
-          nao_conformes: analisados.filter(r => r?.status_aderencia === 'nao_conforme').length,
-          nao_aplicaveis: naCount,
+          total: contagem.total,
+          conformes: contagem.conformes,
+          parciais: contagem.parciais,
+          nao_conformes: contagem.nao_conformes,
+          nao_aplicaveis: contagem.nao_aplicaveis,
         };
       }
 
