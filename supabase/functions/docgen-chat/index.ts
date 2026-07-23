@@ -926,41 +926,26 @@ Responda EXATAMENTE neste JSON:
 
       // Atualiza coverage_map: mantém entradas de outras seções; para esta seção,
       // preserva itens mantidos com evidência atualizada; remove os informados em removed_coverage.
-      const removedCodes = new Set((parsedRefine?.removed_coverage || []).map((r: any) => String(r?.requirement_codigo || '')));
+      const removedCodesArr: string[] = (parsedRefine?.removed_coverage || []).map((r: any) => String(r?.requirement_codigo || ''));
+      const removedCodes = new Set(removedCodesArr);
       const keptCodes = new Set((parsedRefine?.coverage_kept || []).map((c: any) => String(c)));
-      const evidenceUpdates = new Map<string, string>(
-        (parsedRefine?.coverage_updated_evidence || []).map((e: any) => [String(e?.requirement_codigo || ''), String(e?.evidencia || '')])
-      );
-      const nextCoverage = currentCoverage
-        .filter((c: any) => {
-          const belongsHere = Array.isArray(c?.section_indexes) && c.section_indexes.includes(section_index);
-          if (!belongsHere) return true; // não é desta seção → intocado
-          const code = String(c?.requirement_codigo || '');
-          if (removedCodes.has(code)) return false;
-          // Se a IA não confirmou o code em coverage_kept mas também não colocou em removed,
-          // mantemos por segurança (compliance-first) — evita drop silencioso.
-          return true;
-        })
-        .map((c: any) => {
-          const code = String(c?.requirement_codigo || '');
-          if (evidenceUpdates.has(code)) {
-            return { ...c, evidencia: evidenceUpdates.get(code) };
-          }
-          return c;
-        });
+      const evidenceUpdatesArr: [string, string][] = (parsedRefine?.coverage_updated_evidence || [])
+        .map((e: any) => [String(e?.requirement_codigo || ''), String(e?.evidencia || '')] as [string, string]);
+      const nextCoverage = applyRefineCoverage({
+        currentCoverage,
+        sectionIndex: section_index,
+        removedCodes: removedCodesArr,
+        keptCodes: Array.from(keptCodes),
+        evidenceUpdates: evidenceUpdatesArr,
+      });
 
-      const complianceImpact = removedCodes.size > 0 ? 'reduced' : 'preserved';
+      const complianceImpact = complianceImpactFrom(removedCodes.size);
       const updatedDoc = { ...document, secoes: updatedSecoes, coverage_map: nextCoverage };
 
       // Recalcula score determinístico
       const naoCobertos: any[] = Array.isArray(updatedDoc?.requisitos_nao_cobertos_justificativa)
         ? updatedDoc.requisitos_nao_cobertos_justificativa : [];
-      const inScopeNaoCobertos = naoCobertos.filter((r: any) => {
-        const motivo = String(r?.motivo || '').toLowerCase();
-        return !(motivo.includes('fora do escopo') || motivo.includes('nao aplic') || motivo.includes('não aplic'));
-      });
-      const denomR = nextCoverage.length + inScopeNaoCobertos.length + removedCodes.size;
-      const newScore = denomR === 0 ? 0 : Math.round((nextCoverage.length / denomR) * 100);
+      const newScore = computeCoverageScore(nextCoverage, naoCobertos, removedCodes.size);
       updatedDoc._initial_score = newScore;
       updatedDoc._score_source = 'coverage_map';
 
