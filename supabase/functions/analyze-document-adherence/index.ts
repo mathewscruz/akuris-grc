@@ -15,7 +15,8 @@ serve(async (req) => {
   
   try {
     requestBody = await req.json();
-    const { assessmentId, frameworkId, storageFileName } = requestBody;
+    const { assessmentId, frameworkId, storageFileName, source, docgenDocument } = requestBody;
+    const isDocgen = source === 'docgen';
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -75,19 +76,30 @@ serve(async (req) => {
     }
     // Framework é o persistido no assessment (não confiar no body)
     const safeFrameworkId = assessmentRow.framework_id;
-    // O path do storage precisa estar dentro da pasta da empresa (convenção do bucket)
-    const safeStorageFileName = String(storageFileName || '');
-    if (!safeStorageFileName.startsWith(`${empresaId}/`)) {
-      console.warn('Storage path outside empresa folder', { userId, empresaId, safeStorageFileName });
-      return new Response(JSON.stringify({ error: 'Arquivo inválido para esta empresa' }), {
-        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+
+    let safeStorageFileName = '';
+    if (!isDocgen) {
+      // O path do storage precisa estar dentro da pasta da empresa (convenção do bucket)
+      safeStorageFileName = String(storageFileName || '');
+      if (!safeStorageFileName.startsWith(`${empresaId}/`)) {
+        console.warn('Storage path outside empresa folder', { userId, empresaId, safeStorageFileName });
+        return new Response(JSON.stringify({ error: 'Arquivo inválido para esta empresa' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+    } else {
+      // source === 'docgen': validar que veio o documento em memória
+      if (!docgenDocument || !Array.isArray(docgenDocument?.secoes) || docgenDocument.secoes.length === 0) {
+        return new Response(JSON.stringify({ error: 'docgenDocument.secoes obrigatório quando source=docgen' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
     }
 
     // Crédito consumido só após sucesso da IA (ver bloco pós-response).
 
 
-    console.log('Starting adherence analysis:', { assessmentId, frameworkId: safeFrameworkId, storageFileName: safeStorageFileName });
+    console.log('Starting adherence analysis:', { assessmentId, frameworkId: safeFrameworkId, source: isDocgen ? 'docgen' : 'storage', storageFileName: safeStorageFileName });
 
     // 1. Buscar framework e requisitos (framework é template global, não tem empresa_id)
     const { data: framework, error: frameworkError } = await supabase
@@ -111,25 +123,31 @@ serve(async (req) => {
 
     console.log(`Framework: ${framework.nome}, Requirements: ${requirements.length}`);
 
-    // 2. Baixar arquivo do storage (path derivado do assessment persistido, não do client)
-    const { data: fileData, error: downloadError } = await supabase.storage
-      .from('adherence-documents')
-      .download(safeStorageFileName);
-
-    if (downloadError || !fileData) {
-      throw new Error(`Erro ao baixar documento: ${downloadError?.message}`);
-    }
-
-    console.log('Document downloaded, size:', fileData.size);
-
-    // 3. Extrair texto
+    // 2. Obter texto do documento — do storage ou do payload docgen
     let documentText = '';
-    const fileExtension = safeStorageFileName.toLowerCase().split('.').pop();
-
-    if (fileExtension === 'txt') {
-      documentText = await fileData.text();
+    if (isDocgen) {
+      const secoes = docgenDocument.secoes || [];
+      documentText = `# ${docgenDocument.titulo || 'Documento'}\n\n` +
+        secoes.map((s: any, i: number) => `## Seção ${i + 1}: ${s?.nome || ''}\n${String(s?.conteudo || '')}`).join('\n\n');
     } else {
-      throw new Error(`Tipo de arquivo não suportado: ${fileExtension}. Apenas TXT pré-processados são aceitos.`);
+      const { data: fileData, error: downloadError } = await supabase.storage
+        .from('adherence-documents')
+        .download(safeStorageFileName);
+
+      if (downloadError || !fileData) {
+        throw new Error(`Erro ao baixar documento: ${downloadError?.message}`);
+      }
+
+      console.log('Document downloaded, size:', fileData.size);
+
+      // 3. Extrair texto
+      const fileExtension = safeStorageFileName.toLowerCase().split('.').pop();
+
+      if (fileExtension === 'txt') {
+        documentText = await fileData.text();
+      } else {
+        throw new Error(`Tipo de arquivo não suportado: ${fileExtension}. Apenas TXT pré-processados são aceitos.`);
+      }
     }
 
     if (!documentText || documentText.trim().length < 100) {
@@ -283,11 +301,39 @@ FORMATO JSON OBRIGATÓRIO (retorne APENAS JSON válido, sem markdown):
           justificativa_relevancia: (req.justificativa_relevancia || '').substring(0, 80)
         }));
       }
-      
+
+      // === Fallback determinístico do score ===
+      // Se a IA devolveu 0/nulo mas há requisitos avaliados como conforme/parcial,
+      // recalculamos pela fórmula canônica (conforme=100, parcial=50, nao_conforme=0,
+      // N/A fora do denominador). Também sobrescrevemos quando a divergência do
+      // score reportado vs. o calculado é grande (>25 pontos) — evita o caso do
+      // usuário em que política com múltiplos "conforme" ficava com 0%.
+      const analisados: any[] = analysisResult.requisitos_analisados || [];
+      const scoreMap: Record<string, number> = { conforme: 100, parcial: 50, nao_conforme: 0 };
+      const naCount = analisados.filter((r: any) => r?.status_aderencia === 'nao_aplicavel').length;
+      const denom = Math.max(analisados.length - naCount, 0);
+      const num = analisados
+        .filter((r: any) => r?.status_aderencia && r.status_aderencia !== 'nao_aplicavel')
+        .reduce((s: number, r: any) => s + (scoreMap[r.status_aderencia] ?? 0), 0);
+      const scoreCalc = denom === 0 ? 0 : Math.round(num / denom);
+      const reportado = Number(analysisResult.percentual_conformidade);
+      const reportadoValido = Number.isFinite(reportado) && reportado > 0 && reportado <= 100;
+      if (!reportadoValido || Math.abs(scoreCalc - reportado) > 25) {
+        console.log('Applying deterministic score fallback', { reportado, scoreCalc, denom, num });
+        analysisResult.percentual_conformidade = scoreCalc;
+        analysisResult._score_fonte = 'deterministic';
+      }
+      // Reconciliar resultado_geral com o score final
+      const finalPct = analysisResult.percentual_conformidade;
+      if (finalPct >= 80) analysisResult.resultado_geral = 'conforme';
+      else if (finalPct >= 40) analysisResult.resultado_geral = 'parcial';
+      else analysisResult.resultado_geral = 'nao_conforme';
+
       console.log('Parsed:', {
         resultado: analysisResult.resultado_geral,
         percentual: analysisResult.percentual_conformidade,
-        requisitos: analysisResult.requisitos_analisados?.length || 0
+        requisitos: analysisResult.requisitos_analisados?.length || 0,
+        score_fonte: analysisResult._score_fonte || 'ia',
       });
     } catch (e) {
       console.error('Parse error:', e);

@@ -1,144 +1,61 @@
-# Pente Fino Akuris — Plano de Correções
+# Aderência do DocGen: acabar com o "0% sem sentido"
 
-4 subagentes auditaram o app inteiro. Abaixo, apenas achados **confirmados** (arquivo:linha, causa e correção), agrupados em 4 ondas por prioridade e risco.
+## Diagnóstico
 
----
+Investiguei os dois caminhos de análise que hoje existem para um documento vindo do DocGen e encontrei três causas concretas para o score zerar:
 
-## Onda 1 — Crítico (segurança / vazamento cross-tenant / bypass)
+1. **`quick_adherence` (botão "Avaliar aderência" dentro do DocGen)** — `supabase/functions/docgen-chat/index.ts` §879–939:
+   - Envia à IA só `codigo + titulo + categoria` dos requisitos (sem `descricao`, sem `orientacao_implementacao`, sem `exemplos_evidencias`). A IA não tem como decidir se a seção da política atende ao requisito e tende a marcar tudo como fraco/ausente.
+   - Trunca cada seção em 1500 caracteres (`(s.conteudo || '').slice(0, 1500)`) — políticas geradas pelo DocGen frequentemente têm seções maiores, então o texto que provaria conformidade é cortado.
+   - `score` vem 100% do JSON da IA. Se a IA não retornar JSON válido, o fallback grava `score: 0` (linha 933).
 
-1. **MFA bypassável via API direta** — `src/components/AuthProvider.tsx:300-358`
-   MFA é apenas gate de UI: `signInWithPassword` já grava `access_token` válido no localStorage antes do código. Nenhuma policy nem Edge Function crítica valida `mfa_sessions`.
-   → Criar função `SECURITY DEFINER` `public.has_valid_mfa(uid)` e aplicar em policies sensíveis; nas Edge Functions admin (`create-user`, `delete-user-complete`, `get-user-access-info`), checar MFA server-side.
+2. **Upload manual em Gap Analysis → Análise de Aderência** (`AdherenceAssessmentDialog.tsx` + `analyze-document-adherence`):
+   - O usuário tem que **exportar** o documento do DocGen (PDF/DOCX via jsPDF/docx), fazer download, e depois re-upload. Nesse caminho a extração de texto do PDF gerado pelo jsPDF frequentemente perde formatação/quebra de seções → a IA recebe um blob "sujo" e não identifica as evidências.
+   - `percentual_conformidade` também vem só do JSON da IA, sem fallback determinístico calculado a partir de `requisitos_analisados[].status_aderencia` (que existe no payload). Se a IA erra o campo mas acerta o detalhamento, o score gravado é 0.
 
-2. **`send-password-reset` aceita `userId` sem auth** — `supabase/functions/send-password-reset/index.ts:69-108`
-   Qualquer pessoa pode gerar link de recovery para qualquer UUID. Também permite enumerar `user_id`s válidos.
-   → Remover branch por `userId`; manter apenas por e-mail com resposta uniforme (200).
+3. **Refinos pós-geração não são reavaliados** — `DocGenDialog.tsx` L456 invalida `adherenceResult` quando o usuário refina, mas não há CTA claro para reanalisar; e mesmo reanalisando cai no mesmo `quick_adherence` fraco.
 
-3. **Bucket `documentos`: SELECT sem filtro por empresa** — migration `20250723112905`
-   Policy `USING (bucket_id = 'documentos')` permite qualquer usuário autenticado baixar arquivo de qualquer tenant.
-   → Reescrever policy usando `(storage.foldername(name))[1] = get_user_empresa_id()::text`.
+## Escopo
 
-4. **URLs públicas em bucket privado quebram downloads** — `UploadMultiplosDialog.tsx:71-84`, `RequirementDetailDialog.tsx:569-571`
-   `getPublicUrl` em bucket `public:false` — link salvo nunca funciona.
-   → Salvar apenas o `path`; gerar `createSignedUrl` sob demanda.
+Corrigir os três pontos, sem tocar em outros módulos. Nenhuma migração de schema.
 
-5. **Aprovação/aceite de risco sem enforcement server-side** — `AprovacaoRiscoDialog.tsx:34-195`
-   `isAprovador` é só UI; UPDATE em `riscos` filtra só por `empresa_id`. Qualquer usuário aprova risco alheio via API.
-   → Policy RLS `UPDATE ... WITH CHECK (aprovador_id = auth.uid())` ou mover para Edge Function.
+## Mudanças
 
-6. **`process-due-diligence-reminders` quebrado + público** — `supabase/functions/process-due-diligence-reminders/index.ts:28-51`
-   Faz `select('token')` mas coluna é `link_token`; rota do link diverge de `send-due-diligence-email`. `verify_jwt=false` sem checagem interna → vetor de spam.
-   → Corrigir coluna/rota; exigir Authorization (service-role) como `daily-reminder-processor`.
+### 1) `supabase/functions/docgen-chat/index.ts` — `quick_adherence` (Onda 3, ~L879–939)
+- Buscar requisitos com `codigo, titulo, descricao, orientacao_implementacao, exemplos_evidencias, categoria`.
+- Enviar o documento **completo** (sem `.slice(0,1500)`); apenas aplicar um teto global de ~28k chars para caber no contexto, iterando por seções inteiras.
+- Reescrever o system/user prompt no mesmo espírito de `analyze-document-adherence`: auditor sênior avalia política corporativa contra requisitos, cita trechos como evidência, marca `nao_aplicavel` quando o escopo do documento não cobre aquele requisito.
+- Pedir no JSON, além do score, um array `requisitos_analisados[]` com `status_aderencia` (conforme/parcial/nao_conforme/nao_aplicavel).
+- **Fallback determinístico**: se `score` vier ausente/0 mas houver `requisitos_analisados`, recalcular via a fórmula canônica de `src/lib/gap-analysis-scoring.ts` (conforme=100, parcial=50, resto=0, excluir N/A do denominador). Assim o número gravado passa a refletir os detalhes, não um campo isolado.
+- Log estruturado com contagens (`total`, `conformes`, `parciais`, `nao_conformes`, `n_a`) para facilitar diagnóstico futuro.
 
----
+### 2) `supabase/functions/analyze-document-adherence/index.ts`
+- Fallback determinístico igual ao acima: após parse do JSON, se `percentual_conformidade` for 0/ausente e `requisitos_analisados` tiver itens com score, recalcular a partir dos statuses e sobrescrever antes do `update`.
+- Aceitar um novo modo `source: 'docgen'` no body: quando o front enviar `docgenDocument` (JSON `{ titulo, secoes: [{nome, conteudo}] }`), usar esse texto reconstruído (`## Seção X: nome\nconteudo`) em vez de baixar do storage. Elimina a rota lossy PDF→extract.
+  - Guardas: quando `source === 'docgen'`, `storageFileName` continua opcional; o registro em `gap_analysis_adherence_assessments` grava `documento_nome` como "{titulo} (DocGen)" e `metadados_analise.origem = 'docgen'`.
+  - Segurança: mantém `assessmentRow.empresa_id === empresaId`.
 
-## Onda 2 — Alto (integridade de dados / créditos IA / silent failures)
+### 3) `src/components/documentos/DocGenDialog.tsx`
+- `handleRunAdherence` continua chamando `quick_adherence` (rápido, inline), mas agora recebe payload correto graças ao item 1.
+- Adicionar botão secundário "Análise completa (salvar no Gap Analysis)" que:
+  - Cria assessment em `gap_analysis_adherence_assessments` com `status: 'processando'`, `framework_id`, `nome_analise = titulo do documento`.
+  - Chama `analyze-document-adherence` com `source: 'docgen'` + `docgenDocument` (sem upload de arquivo).
+  - Ao concluir, mostra o link para o assessment persistido.
+- Após `refine_document` bem-sucedido: manter invalidação, mas destacar o botão "Reavaliar aderência" (já existe estado; só melhora affordance visual).
 
-7. **7 Edge Functions de IA debitam crédito ANTES do sucesso** — `suggest-risk-treatment:47`, `evidence-cross-match:176`, `projeto-suggest-tasks:74`, `projeto-status-report:65`, `analyze-document-adherence:88`, `calculate-assessment-score:65`, `docgen-chat:336`
-   Usuário perde crédito em erro 429/500/timeout/JSON inválido. Padrão correto já existe em `akuria-chat` e `gap-analysis-ai-diagnostic`.
-   → Mover `consume_ai_credit` para depois de `response.ok` e parse bem-sucedido.
+### 4) `src/components/gap-analysis/adherence/AdherenceAssessmentDialog.tsx`
+- Nenhuma mudança funcional obrigatória. Apenas expor mensagem: "Para documentos gerados pelo DocGen, use o botão 'Análise completa' dentro do DocGen — evita perda de formatação na exportação/re-upload."
 
-8. **Sem timeout/AbortController em `fetch` ao AI Gateway** — todas as functions de IA
-   Chamada lenta trava função até 150s sem feedback; combinado com #7 gera perda de crédito garantida.
-   → Criar helper `_shared/fetchWithTimeout.ts` (30s) e usar em todas as chamadas ao gateway.
+## Detalhes técnicos
 
-9. **Modelo `google/gemini-3-flash-preview` inválido em 10+ functions** — `akuria-chat:389`, `docgen-chat:72`, etc.
-   ID não documentado no gateway; família suportada é `gemini-2.5-*` ou `gemini-3.6-flash`.
-   → Centralizar em `_shared/ai-model.ts` e padronizar para modelo válido atual.
+- Fórmula do fallback (idêntica ao `computeConformityScore` já usado no front): `round( sum(score_por_status) / (total - naCount) )` com `conforme=100, parcial=50, nao_conforme=0`. Não avaliados contam 0 no numerador e permanecem no denominador (mesmo comportamento canônico do módulo).
+- Limite de requisitos analisados por chamada permanece em 150 (mesmo do analyzer atual), para frameworks grandes cair em modo truncado com aviso — não é regressão.
+- Sem alteração de tabelas/RLS/grants; sem novos secrets.
 
-10. **Renderização "Titular" sempre "-"** — `src/pages/Privacidade.tsx:388-397`
-    `dados_titular` é `jsonb`; `JSON.parse(objeto)` lança e cai no catch.
-    → `typeof value === 'string' ? JSON.parse(value) : value`.
+## Validação
 
-11. **Denúncia pública não notifica admins** — `DenunciaFormulario.tsx`
-    `send-denuncia-notification` existe mas nunca é chamado (nem via trigger).
-    → Invocar após insert; ajustar `verify_jwt` para permitir fluxo anônimo com validação de protocolo server-side.
-
-12. **`delete-user-complete` deixa RBAC/MFA órfãos e permite autoexclusão** — `supabase/functions/delete-user-complete/index.ts:98-132`
-    Não remove `user_roles`, `user_module_permissions`, `mfa_sessions`, `mfa_codes`, `temporary_passwords`.
-    → Cleanup explícito + bloquear autoexclusão.
-
-13. **Duas fontes de verdade para role: `profiles.role` vs `user_roles`** — `create-user:194-250`
-    `role` do body sem validação de enum; `readonly`→`user` só em `user_roles`.
-    → Zod enum no body; unificar via trigger que sincroniza `profiles.role` a partir de `user_roles`.
-
-14. **`create-user` não valida `permission_profile_id` do mesmo tenant** — `create-user:201-207`
-    Admin pode atribuir perfil de outra empresa (leak potencial de permissões).
-    → Validar `empresa_id = finalEmpresaId` antes de aplicar.
-
----
-
-## Onda 3 — Médio (defesa em profundidade / paginação / concorrência)
-
-15. **Paginação ausente (corte silencioso em 1000)** — `Riscos.tsx`, `useRiscosStats:57`, `useControlesStats:29`, `useIncidentesStats:26`, `generateTemplatePDF:100/141/187/218`
-    → Usar `fetchAllPaginated` (já existe em `src/lib/supabase-paginate.ts`) ou `count:'exact', head:true` para stats.
-
-16. **Hooks/queries sem `.eq('empresa_id')` explícito** — `useRiscoDetail.ts:44-56`, `Riscos.tsx` (query impacto financeiro), `useNotifications.tsx:24`, `NotificationCenter.tsx:68`, `markAllAsRead`
-    Dependência única de RLS.
-    → Adicionar filtro redundante (defesa em profundidade).
-
-17. **`continuidade_planos` delete sem `empresa_id`** — `Continuidade.tsx:83`.
-
-18. **Tabelas LGPD `ropa_dados_vinculados` e `dados_mapeamento` sem `empresa_id`** — schema
-    Isolamento só via JOIN em FK.
-    → Migration adicionando coluna denormalizada + policies diretas.
-
-19. **`documentos.contrato_id` NOT NULL quebra upload solto** — `UploadMultiplosDialog.tsx:79-89`
-    → Tornar nullable e adicionar `empresa_id` próprio na tabela.
-
-20. **`send-password-reset` / `provision-new-account` rate-limit em memória** — inefetivo em serverless
-    → Migrar para tabela Postgres (padrão de `password_reset_limits`).
-
-21. **`signOut()` limpa cache MFA antes de confirmar sucesso** — `AuthProvider.tsx:423-429`.
-
-22. **`api-public` conta `total_requisicoes` sem atomicidade** — `api-public/index.ts:284-290`
-    → RPC `increment_api_key_usage` com `total_requisicoes + 1` em SQL.
-
-23. **CSV de Ativos usa `split(',')` — corrompe linhas com vírgula/aspas** — `ImportacaoAtivos.tsx:168-177`
-    → Trocar para `papaparse`.
-
----
-
-## Onda 4 — Baixo (UX / KPIs incorretos / validações leves)
-
-24. **`usePlanosAcaoStats`: "concluídos = total − pendentes"** — `usePlanosAcaoStats.ts:44`
-    Mistura `cancelado` com `concluído`.
-    → Contadores separados por status real.
-
-25. **`useRiscosStats`: variação percentual pode ser Infinity/NaN** — `useRiscosStats.tsx:138-141`
-    → Guard `scoreAntigo > 0`.
-
-26. **`RiscoSelect` filtra status incompatível com enum real** — `RiscoSelect.tsx:44`
-    Riscos aceitos ficam invisíveis para vinculação a controles.
-    → Alinhar com enum real.
-
-27. **`SprintDialog`: sem validação `data_fim > data_inicio`** — `SprintsPanel.tsx:110`, `SprintDialog:224-225`
-    Burndown quebra silenciosamente.
-
-28. **`projeto-status-report` / `projeto-suggest-tasks` não persistem resultado** — retornam só ao frontend
-    Fechou aba, perdeu o crédito.
-    → Persistir rascunho ligado ao `projetoId`.
-
-29. **`ForgotPasswordDialog` sempre exibe sucesso** — `ForgotPasswordDialog.tsx:45-53` (correto para anti-enumeração, mas `create-user` também esconde falha de e-mail sem highlight persistente)
-    → No fluxo admin, exibir badge persistente "convite não entregue" na lista de usuários.
-
-30. **`docgen-chat` sem limite/sanitização de `message`/`instruction`** — `docgen-chat:416,682`
-    Prompt injection controla documento final.
-    → Truncar 4000 chars; escapar marcadores `===`, `[DOCGEN_READY]`.
-
-31. **`integration-webhook-dispatcher`: sem backoff exponencial nem `error_detail` claro** — `:341-349, :463-469`.
-
----
-
-## Técnico — como executar
-
-- **Onda 1** = 1 migration (policies MFA, storage, riscos) + edições nas 3 Edge Functions críticas + 2 refactors de client.
-- **Onda 2** = 1 helper compartilhado (`fetchWithTimeout`, `ai-model.ts`), retrabalho em 10 Edge Functions (mover `consume_ai_credit`), 1 bugfix client (Privacidade), 1 fluxo novo (denúncia → notificação), 1 migration (cleanup user + trigger role sync).
-- **Onda 3** = migrations (colunas `empresa_id`, rate limit em DB) + refactors client-side (paginação, papaparse, empresa_id redundante).
-- **Onda 4** = ajustes pontuais em hooks/dialogs, sem migration.
-
-Todas as Edge Functions modificadas serão re-deployadas ao final de cada onda; migrations rodam via ferramenta padrão com aprovação do usuário.
-
-## Confirmação pedida
-
-Confirma execução na ordem Onda 1 → 2 → 3 → 4? Ou prefere que eu foque só em uma onda específica primeiro (ex.: só Onda 1 crítica de segurança)?
+1. Gerar uma política no DocGen com framework ISO 27001 → clicar "Avaliar aderência" → esperar score > 0 coerente com o conteúdo.
+2. Refinar uma seção com dados adicionais → clicar "Reavaliar aderência" → score reflete o refino.
+3. Clicar "Análise completa" → assessment aparece em Gap Analysis com o mesmo score sem precisar exportar/re-upload.
+4. Upload manual de um PDF/DOCX real continua funcionando (regressão zero no fluxo existente).
+5. Rodar um caso onde a IA volta `percentual_conformidade: 0` mas `requisitos_analisados` com maioria "conforme" — confirmar que o fallback grava o valor calculado, não 0.
