@@ -173,6 +173,15 @@ serve(async (req) => {
       return entry;
     }).join('\n\n');
 
+    // Coverage_map do DocGen entra como âncora — não substitui a análise, apenas
+    // ajuda o auditor a validar que o autor DECLAROU a cobertura em determinada seção.
+    const coverageMap: any[] = (isDocgen && Array.isArray((docgenDocument as any)?.coverage_map))
+      ? (docgenDocument as any).coverage_map
+      : (Array.isArray(providedCoverageMap) ? providedCoverageMap : []);
+    const coverageBlock = coverageMap.length
+      ? `\n\nCOVERAGE_MAP DECLARADO PELO AUTOR (${coverageMap.length} itens — validar contra o texto):\n${coverageMap.map((c: any) => `- [${c.requirement_codigo || 'S/C'}] ${c.requirement_titulo || ''} → evidência declarada: "${(c.evidencia || '').slice(0, 160)}"`).join('\n')}\n\nAo validar, se a evidência declarada de fato está no documento, tenda para "conforme". Se não encontrar, marque como "nao_conforme" com o gap.`
+      : '';
+
     const prompt = `Você é um AUDITOR SÊNIOR de conformidade regulatória com 15+ anos de experiência em frameworks como ISO 27001, LGPD, NIST CSF, SOC 2, GDPR, PCI DSS e outros.
 
 TAREFA PRINCIPAL: Analise o documento corporativo abaixo e compare ITEM A ITEM com os requisitos do framework ${framework.nome} (${framework.versao || ''}). Você deve agir exatamente como um auditor que recebe um documento (ex: Política de Mesa e Tela Limpa) e precisa verificar se ele atende a todos os pontos exigidos pela norma.
@@ -184,6 +193,8 @@ MÉTODO DE ANÁLISE (siga rigorosamente):
 4. Quando o documento NÃO abordar um requisito, indique claramente o GAP e o que deveria conter
 5. Marque como "nao_aplicavel" APENAS requisitos que genuinamente não se relacionam com o escopo do documento
 6. Seja CRITERIOSO: "conforme" = cobre adequadamente; "parcial" = menciona mas incompleto; "nao_conforme" = ausente ou inadequado
+7. OBRIGATÓRIO: devolver "requisitos_analisados" para TODOS os ${reqsForAnalysis.length} requisitos abaixo (não pule nenhum) — o campo "total_requisitos_relevantes" deve refletir quantos são REALMENTE relevantes ao escopo (não conte "nao_aplicavel").
+${coverageBlock}
 
 DOCUMENTO ANALISADO:
 ---
