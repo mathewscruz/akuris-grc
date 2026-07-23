@@ -779,6 +779,37 @@ Responda APENAS com um JSON na seguinte estrutura:
         documentContent.data_criacao = new Date().toISOString().slice(0, 10);
       }
 
+      // === Onda 1: contrato de cobertura + score inicial determinístico ===
+      // Normaliza coverage_map e calcula initial_score sem consumir crédito extra.
+      // O score reflete: coberto / (coberto + relevante-não-coberto). Fora de escopo
+      // (requisitos_nao_cobertos_justificativa) NÃO conta no denominador.
+      const coverageMap: any[] = Array.isArray(documentContent?.coverage_map) ? documentContent.coverage_map : [];
+      const naoCobertos: any[] = Array.isArray(documentContent?.requisitos_nao_cobertos_justificativa)
+        ? documentContent.requisitos_nao_cobertos_justificativa : [];
+      const inScopeNaoCobertos = naoCobertos.filter((r: any) => {
+        const motivo = String(r?.motivo || '').toLowerCase();
+        return !(motivo.includes('fora do escopo') || motivo.includes('nao aplic') || motivo.includes('não aplic'));
+      });
+      const denom = coverageMap.length + inScopeNaoCobertos.length;
+      const initial_score = denom === 0 ? 0 : Math.round((coverageMap.length / denom) * 100);
+      const warnings: string[] = [];
+      if (coverageMap.length === 0 && docFwIds.length > 0) {
+        warnings.push('A IA não devolveu coverage_map — a análise de compliance pode ficar inconsistente.');
+      }
+      if (initial_score > 0 && initial_score < 80) {
+        warnings.push(`Score inicial de ${initial_score}% — ${inScopeNaoCobertos.length} requisito(s) relevante(s) ficaram sem cobertura explícita.`);
+      }
+      documentContent._initial_score = initial_score;
+      documentContent._score_source = 'coverage_map';
+
+      console.log('DocGen generate_document compliance', {
+        framework: framework_context?.framework_name,
+        coverage_items: coverageMap.length,
+        nao_cobertos_in_scope: inScopeNaoCobertos.length,
+        nao_cobertos_out_scope: naoCobertos.length - inScopeNaoCobertos.length,
+        initial_score,
+      });
+
       try {
         await supabase
           .from('docgen_feedback_implicit')
@@ -790,7 +821,9 @@ Responda APENAS com um JSON na seguinte estrutura:
             padroes_identificados: {
               tipo_documento: context.tipo_documento_identificado,
               secoes_geradas: documentContent.secoes?.length || 0,
-              frameworks_utilizados: context.informacoes_coletadas?.frameworks || []
+              frameworks_utilizados: context.informacoes_coletadas?.frameworks || [],
+              initial_score,
+              coverage_items: coverageMap.length,
             }
           });
       } catch (feedbackError) {
@@ -813,7 +846,10 @@ Responda APENAS com um JSON na seguinte estrutura:
 
       return new Response(JSON.stringify({
         document_id: generatedDoc.id,
-        document: documentContent
+        document: documentContent,
+        initial_score,
+        coverage_map: coverageMap,
+        warnings,
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
