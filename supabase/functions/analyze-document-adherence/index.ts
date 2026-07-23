@@ -15,7 +15,7 @@ serve(async (req) => {
   
   try {
     requestBody = await req.json();
-    const { assessmentId, frameworkId, storageFileName, source, docgenDocument } = requestBody;
+    const { assessmentId, frameworkId, storageFileName, source, docgenDocument, coverage_map: providedCoverageMap } = requestBody;
     const isDocgen = source === 'docgen';
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
