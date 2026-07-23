@@ -1201,16 +1201,11 @@ Aplique a instrução conforme as regras do sistema e devolva o JSON completo CO
       // Recalcula score determinístico
       const naoCobertos: any[] = Array.isArray(mergedDoc?.requisitos_nao_cobertos_justificativa)
         ? mergedDoc.requisitos_nao_cobertos_justificativa : [];
-      const inScopeNaoCobertos = naoCobertos.filter((r: any) => {
-        const motivo = String(r?.motivo || '').toLowerCase();
-        return !(motivo.includes('fora do escopo') || motivo.includes('nao aplic') || motivo.includes('não aplic'));
-      });
-      const denomR = nextCoverage.length + inScopeNaoCobertos.length + removedCodes.size;
-      const newScore = denomR === 0 ? 0 : Math.round((nextCoverage.length / denomR) * 100);
+      const newScore = computeCoverageScore(nextCoverage, naoCobertos, removedCodes.size);
       mergedDoc._initial_score = newScore;
       mergedDoc._score_source = 'coverage_map';
 
-      const complianceImpact = removedCodes.size > 0 ? 'reduced' : 'preserved';
+      const complianceImpact = complianceImpactFrom(removedCodes.size);
       const changed: string[] = Array.isArray(parsed.sections_changed) ? parsed.sections_changed : [];
       const summary: string = typeof parsed.summary === 'string' && parsed.summary.trim()
         ? parsed.summary.trim()
