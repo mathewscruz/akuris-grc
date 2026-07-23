@@ -15,7 +15,8 @@ serve(async (req) => {
   
   try {
     requestBody = await req.json();
-    const { assessmentId, frameworkId, storageFileName } = requestBody;
+    const { assessmentId, frameworkId, storageFileName, source, docgenDocument } = requestBody;
+    const isDocgen = source === 'docgen';
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -75,19 +76,30 @@ serve(async (req) => {
     }
     // Framework é o persistido no assessment (não confiar no body)
     const safeFrameworkId = assessmentRow.framework_id;
-    // O path do storage precisa estar dentro da pasta da empresa (convenção do bucket)
-    const safeStorageFileName = String(storageFileName || '');
-    if (!safeStorageFileName.startsWith(`${empresaId}/`)) {
-      console.warn('Storage path outside empresa folder', { userId, empresaId, safeStorageFileName });
-      return new Response(JSON.stringify({ error: 'Arquivo inválido para esta empresa' }), {
-        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+
+    let safeStorageFileName = '';
+    if (!isDocgen) {
+      // O path do storage precisa estar dentro da pasta da empresa (convenção do bucket)
+      safeStorageFileName = String(storageFileName || '');
+      if (!safeStorageFileName.startsWith(`${empresaId}/`)) {
+        console.warn('Storage path outside empresa folder', { userId, empresaId, safeStorageFileName });
+        return new Response(JSON.stringify({ error: 'Arquivo inválido para esta empresa' }), {
+          status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+    } else {
+      // source === 'docgen': validar que veio o documento em memória
+      if (!docgenDocument || !Array.isArray(docgenDocument?.secoes) || docgenDocument.secoes.length === 0) {
+        return new Response(JSON.stringify({ error: 'docgenDocument.secoes obrigatório quando source=docgen' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
     }
 
     // Crédito consumido só após sucesso da IA (ver bloco pós-response).
 
 
-    console.log('Starting adherence analysis:', { assessmentId, frameworkId: safeFrameworkId, storageFileName: safeStorageFileName });
+    console.log('Starting adherence analysis:', { assessmentId, frameworkId: safeFrameworkId, source: isDocgen ? 'docgen' : 'storage', storageFileName: safeStorageFileName });
 
     // 1. Buscar framework e requisitos (framework é template global, não tem empresa_id)
     const { data: framework, error: frameworkError } = await supabase
@@ -111,25 +123,31 @@ serve(async (req) => {
 
     console.log(`Framework: ${framework.nome}, Requirements: ${requirements.length}`);
 
-    // 2. Baixar arquivo do storage (path derivado do assessment persistido, não do client)
-    const { data: fileData, error: downloadError } = await supabase.storage
-      .from('adherence-documents')
-      .download(safeStorageFileName);
-
-    if (downloadError || !fileData) {
-      throw new Error(`Erro ao baixar documento: ${downloadError?.message}`);
-    }
-
-    console.log('Document downloaded, size:', fileData.size);
-
-    // 3. Extrair texto
+    // 2. Obter texto do documento — do storage ou do payload docgen
     let documentText = '';
-    const fileExtension = safeStorageFileName.toLowerCase().split('.').pop();
-
-    if (fileExtension === 'txt') {
-      documentText = await fileData.text();
+    if (isDocgen) {
+      const secoes = docgenDocument.secoes || [];
+      documentText = `# ${docgenDocument.titulo || 'Documento'}\n\n` +
+        secoes.map((s: any, i: number) => `## Seção ${i + 1}: ${s?.nome || ''}\n${String(s?.conteudo || '')}`).join('\n\n');
     } else {
-      throw new Error(`Tipo de arquivo não suportado: ${fileExtension}. Apenas TXT pré-processados são aceitos.`);
+      const { data: fileData, error: downloadError } = await supabase.storage
+        .from('adherence-documents')
+        .download(safeStorageFileName);
+
+      if (downloadError || !fileData) {
+        throw new Error(`Erro ao baixar documento: ${downloadError?.message}`);
+      }
+
+      console.log('Document downloaded, size:', fileData.size);
+
+      // 3. Extrair texto
+      const fileExtension = safeStorageFileName.toLowerCase().split('.').pop();
+
+      if (fileExtension === 'txt') {
+        documentText = await fileData.text();
+      } else {
+        throw new Error(`Tipo de arquivo não suportado: ${fileExtension}. Apenas TXT pré-processados são aceitos.`);
+      }
     }
 
     if (!documentText || documentText.trim().length < 100) {
