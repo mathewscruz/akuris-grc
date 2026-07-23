@@ -878,13 +878,13 @@ Reescreva o conteúdo da seção atendendo à instrução.`;
 
     // ============ ACTION: quick_adherence (Onda 3) ============
     if (action === 'quick_adherence') {
-
-
+      const MAX_REQS = 150;
       const { data: reqs } = await supabase
         .from('gap_analysis_requirements')
-        .select('codigo, titulo, categoria')
+        .select('codigo, titulo, descricao, orientacao_implementacao, exemplos_evidencias, categoria')
         .eq('framework_id', framework_context.framework_id)
-        .limit(80);
+        .order('ordem')
+        .limit(MAX_REQS);
 
       if (!reqs || reqs.length === 0) {
         return new Response(JSON.stringify({ error: 'Framework sem requisitos cadastrados' }), {
@@ -892,36 +892,70 @@ Reescreva o conteúdo da seção atendendo à instrução.`;
         });
       }
 
+      // Montar o documento completo (sem cortar por seção) respeitando um teto global.
       const secoes = document.secoes || [];
-      const docDigest = secoes.map((s: any, i: number) =>
-        `### Seção ${i + 1}: ${s.nome}\n${(s.conteudo || '').slice(0, 1500)}`
-      ).join('\n\n');
+      const MAX_DOC_CHARS = 28000;
+      let docDigest = '';
+      let usedChars = 0;
+      let truncatedDoc = false;
+      for (let i = 0; i < secoes.length; i++) {
+        const s = secoes[i];
+        const header = `### Seção ${i + 1}: ${s?.nome || ''}\n`;
+        const body = String(s?.conteudo || '');
+        const remaining = MAX_DOC_CHARS - usedChars - header.length;
+        if (remaining <= 200) {
+          truncatedDoc = true;
+          break;
+        }
+        const chunk = body.length > remaining ? (body.slice(0, remaining) + '\n[...trecho da seção truncado por limite de contexto...]') : body;
+        if (body.length > remaining) truncatedDoc = true;
+        docDigest += (docDigest ? '\n\n' : '') + header + chunk;
+        usedChars += header.length + chunk.length;
+        if (body.length > remaining) break;
+      }
 
-      const reqList = reqs.map((r: any) => `- [${r.codigo || 'S/C'}] ${r.titulo}`).join('\n');
+      const reqList = reqs.map((r: any) => {
+        let entry = `- ID:${r.codigo || 'S/C'} | ${r.titulo}`;
+        if (r.descricao) entry += `\n  Descrição: ${String(r.descricao).slice(0, 260)}`;
+        if (r.orientacao_implementacao) entry += `\n  Norma exige: ${String(r.orientacao_implementacao).slice(0, 180)}`;
+        if (r.exemplos_evidencias) entry += `\n  Evidências esperadas: ${String(r.exemplos_evidencias).slice(0, 140)}`;
+        return entry;
+      }).join('\n');
 
-      const sysPrompt = `Você é um auditor de compliance. Avalie a aderência de um documento corporativo aos requisitos de um framework. Seja rigoroso e factual. Responda APENAS com JSON válido, sem markdown.`;
+      const sysPrompt = `Você é um AUDITOR SÊNIOR de conformidade com 15+ anos de experiência. Avalie um documento corporativo (política/procedimento/manual) frente aos requisitos do framework. Seja criterioso e JUSTO: cite trechos do próprio documento como evidência. Marque "nao_aplicavel" APENAS quando o requisito genuinamente não pertence ao escopo do documento. Responda APENAS com JSON válido, sem markdown.`;
+
       const userPrompt = `FRAMEWORK: ${framework_context.framework_name}
-REQUISITOS (${reqs.length}):
+
+REQUISITOS (${reqs.length}${truncatedDoc ? ' — documento parcialmente truncado por tamanho' : ''}):
 ${reqList}
 
-DOCUMENTO "${document.titulo}":
+DOCUMENTO CORPORATIVO "${document.titulo}":
 ${docDigest}
 
-Avalie e responda EXATAMENTE neste JSON:
+CRITÉRIOS DE AVALIAÇÃO:
+- "conforme": o documento cobre adequadamente o requisito com cláusulas claras.
+- "parcial": menciona ou aborda em parte, mas falta detalhamento/rigor.
+- "nao_conforme": o requisito é relevante ao escopo e o documento NÃO o aborda.
+- "nao_aplicavel": o requisito é fora do escopo deste documento específico (ex.: firewall em política de mesa limpa).
+
+Responda EXATAMENTE neste JSON:
 {
   "score": 0-100,
   "resumo": "1-2 frases sobre aderência geral",
   "secoes": [
-    { "section_index": 0, "section_name": "...", "status": "forte|parcial|fraco|ausente", "requisitos_cobertos": ["código", ...], "gaps": ["o que está faltando"] }
+    { "section_index": 0, "section_name": "...", "status": "forte|parcial|fraco|ausente", "requisitos_cobertos": ["ID/código", ...], "gaps": ["o que está faltando"] }
   ],
-  "requisitos_nao_cobertos": ["códigos dos requisitos não endereçados em nenhuma seção"]
+  "requisitos_analisados": [
+    { "requisito_codigo": "ID/código", "status_aderencia": "conforme|parcial|nao_conforme|nao_aplicavel", "evidencias": "citação ou referência do documento (max 120 chars)", "gaps": "o que falta (max 100 chars)" }
+  ],
+  "requisitos_nao_cobertos": ["códigos dos requisitos relevantes ainda não endereçados"]
 }`;
 
       const raw = await callClaude(
         [{ role: 'user', content: userPrompt }],
         sysPrompt,
         LOVABLE_API_KEY,
-        3500,
+        6000,
         0.3
       );
       await chargeAiCredit();
@@ -930,8 +964,40 @@ Avalie e responda EXATAMENTE neste JSON:
       try {
         parsed = JSON.parse(raw.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim());
       } catch {
-        parsed = { score: 0, resumo: 'Não foi possível avaliar.', secoes: [], requisitos_nao_cobertos: [] };
+        parsed = { score: 0, resumo: 'Não foi possível avaliar.', secoes: [], requisitos_analisados: [], requisitos_nao_cobertos: [] };
       }
+
+      // Fallback determinístico: se a IA não devolveu score coerente, calcular pela
+      // fórmula canônica (conforme=100, parcial=50, nao_conforme=0, N/A fora do denominador).
+      const analisados: any[] = Array.isArray(parsed?.requisitos_analisados) ? parsed.requisitos_analisados : [];
+      if (analisados.length > 0) {
+        const scoreMap: Record<string, number> = { conforme: 100, parcial: 50, nao_conforme: 0 };
+        const naCount = analisados.filter(r => r?.status_aderencia === 'nao_aplicavel').length;
+        const denom = Math.max(analisados.length - naCount, 0);
+        const num = analisados
+          .filter(r => r?.status_aderencia && r.status_aderencia !== 'nao_aplicavel')
+          .reduce((sum, r) => sum + (scoreMap[r.status_aderencia] ?? 0), 0);
+        const calc = denom === 0 ? 0 : Math.round(num / denom);
+        const raiaValida = typeof parsed?.score === 'number' && parsed.score > 0 && parsed.score <= 100;
+        if (!raiaValida || Math.abs(calc - parsed.score) > 25) {
+          parsed.score = calc;
+          parsed.score_fonte = 'determinístico (statuses por requisito)';
+        }
+        parsed.contagem = {
+          total: analisados.length,
+          conformes: analisados.filter(r => r?.status_aderencia === 'conforme').length,
+          parciais: analisados.filter(r => r?.status_aderencia === 'parcial').length,
+          nao_conformes: analisados.filter(r => r?.status_aderencia === 'nao_conforme').length,
+          nao_aplicaveis: naCount,
+        };
+      }
+
+      console.log('quick_adherence result', {
+        framework: framework_context.framework_name,
+        score: parsed?.score,
+        contagem: parsed?.contagem,
+        truncated: truncatedDoc,
+      });
 
       return new Response(JSON.stringify({ adherence: parsed }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
