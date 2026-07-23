@@ -794,12 +794,8 @@ Responda APENAS com um JSON na seguinte estrutura:
       const coverageMap: any[] = Array.isArray(documentContent?.coverage_map) ? documentContent.coverage_map : [];
       const naoCobertos: any[] = Array.isArray(documentContent?.requisitos_nao_cobertos_justificativa)
         ? documentContent.requisitos_nao_cobertos_justificativa : [];
-      const inScopeNaoCobertos = naoCobertos.filter((r: any) => {
-        const motivo = String(r?.motivo || '').toLowerCase();
-        return !(motivo.includes('fora do escopo') || motivo.includes('nao aplic') || motivo.includes('não aplic'));
-      });
-      const denom = coverageMap.length + inScopeNaoCobertos.length;
-      const initial_score = denom === 0 ? 0 : Math.round((coverageMap.length / denom) * 100);
+      const inScopeNaoCobertos = filterInScope(naoCobertos);
+      const initial_score = computeCoverageScore(coverageMap, naoCobertos);
       const warnings: string[] = [];
       if (coverageMap.length === 0 && docFwIds.length > 0) {
         warnings.push('A IA não devolveu coverage_map — a análise de compliance pode ficar inconsistente.');
