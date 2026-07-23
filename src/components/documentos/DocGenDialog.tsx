@@ -358,7 +358,10 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
         setAdherenceResult(null);
         const summary: string = data.summary || 'Documento atualizado com base na sua observação.';
         setMessages(prev => [...prev, { role: 'assistant', content: summary, timestamp: new Date() }]);
-        akurisToast({ module: 'documentos', tone: 'success', title: 'Documento atualizado', description: summary });
+        const impact = data?.compliance_impact;
+        const tone = impact === 'reduced' ? 'warning' as const : 'success' as const;
+        const title = impact === 'reduced' ? 'Compliance impactado' : 'Documento atualizado';
+        akurisToast({ module: 'documentos', tone, title, description: summary });
       }
     } catch (err) {
       console.error('Erro ao refinar documento:', err);

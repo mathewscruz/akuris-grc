@@ -675,6 +675,7 @@ Abaixo estão os requisitos catalogados do(s) framework(s). Antes de escrever o 
 3) Cite o código do requisito entre colchetes onde ele é endereçado (ex.: "[A.8.13]").
 4) Priorize os requisitos marcados como GAP.
 5) Não invente requisitos fora desta lista.
+6) OBRIGATÓRIO: no final devolva um coverage_map explícito ligando cada requisito relevante à(s) seção(ões) que o endereça(m), com o trecho-evidência.
 
 ${frameworkRequirementsText}`
         : '';
@@ -698,7 +699,7 @@ ${transcript}
 === FIM DAS RESPOSTAS DO USUÁRIO ===`
         : '';
 
-      const documentPrompt = `Gere um documento COMPLETO e ESPECÍFICO do tipo solicitado.
+      const documentPrompt = `Gere um documento COMPLETO e ESPECÍFICO do tipo solicitado, JÁ EM CONFORMIDADE com o(s) framework(s) informado(s).
 
 DOCUMENTO_EXATO: ${docNome}
 FRAMEWORKS_REQUERIDOS: ${JSON.stringify((context as any).frameworks_relacionados || (framework_context ? [framework_context.framework_name] : []))}
@@ -718,6 +719,7 @@ Requisitos obrigatórios de formatação:
 - Conteúdo detalhado e profissional alinhado aos frameworks
 - Personalização real: reflita as respostas do usuário na conversa (item acima) — não use frases genéricas quando o usuário deu um dado concreto
 - Rodapé com informações da empresa
+- CADA cláusula que satisfaz um requisito do framework deve conter o CÓDIGO do requisito entre colchetes (ex.: "[A.8.13]")
 
 Responda APENAS com um JSON na seguinte estrutura:
 {
@@ -732,7 +734,13 @@ Responda APENAS com um JSON na seguinte estrutura:
     "responsavel_elaboracao": "${context.user_name}",
     "responsavel_aprovacao": "",
     "frequencia_revisao": "Anual"
-  }
+  },
+  "coverage_map": [
+    { "requirement_codigo": "A.8.13", "requirement_titulo": "...", "section_indexes": [2,5], "evidencia": "trecho literal do documento (max 220 chars) que satisfaz o requisito" }
+  ],
+  "requisitos_nao_cobertos_justificativa": [
+    { "codigo": "A.5.30", "motivo": "fora do escopo desta política específica" }
+  ]
 }`;
 
       const docContent = await callClaude(
@@ -771,6 +779,37 @@ Responda APENAS com um JSON na seguinte estrutura:
         documentContent.data_criacao = new Date().toISOString().slice(0, 10);
       }
 
+      // === Onda 1: contrato de cobertura + score inicial determinístico ===
+      // Normaliza coverage_map e calcula initial_score sem consumir crédito extra.
+      // O score reflete: coberto / (coberto + relevante-não-coberto). Fora de escopo
+      // (requisitos_nao_cobertos_justificativa) NÃO conta no denominador.
+      const coverageMap: any[] = Array.isArray(documentContent?.coverage_map) ? documentContent.coverage_map : [];
+      const naoCobertos: any[] = Array.isArray(documentContent?.requisitos_nao_cobertos_justificativa)
+        ? documentContent.requisitos_nao_cobertos_justificativa : [];
+      const inScopeNaoCobertos = naoCobertos.filter((r: any) => {
+        const motivo = String(r?.motivo || '').toLowerCase();
+        return !(motivo.includes('fora do escopo') || motivo.includes('nao aplic') || motivo.includes('não aplic'));
+      });
+      const denom = coverageMap.length + inScopeNaoCobertos.length;
+      const initial_score = denom === 0 ? 0 : Math.round((coverageMap.length / denom) * 100);
+      const warnings: string[] = [];
+      if (coverageMap.length === 0 && docFwIds.length > 0) {
+        warnings.push('A IA não devolveu coverage_map — a análise de compliance pode ficar inconsistente.');
+      }
+      if (initial_score > 0 && initial_score < 80) {
+        warnings.push(`Score inicial de ${initial_score}% — ${inScopeNaoCobertos.length} requisito(s) relevante(s) ficaram sem cobertura explícita.`);
+      }
+      documentContent._initial_score = initial_score;
+      documentContent._score_source = 'coverage_map';
+
+      console.log('DocGen generate_document compliance', {
+        framework: framework_context?.framework_name,
+        coverage_items: coverageMap.length,
+        nao_cobertos_in_scope: inScopeNaoCobertos.length,
+        nao_cobertos_out_scope: naoCobertos.length - inScopeNaoCobertos.length,
+        initial_score,
+      });
+
       try {
         await supabase
           .from('docgen_feedback_implicit')
@@ -782,7 +821,9 @@ Responda APENAS com um JSON na seguinte estrutura:
             padroes_identificados: {
               tipo_documento: context.tipo_documento_identificado,
               secoes_geradas: documentContent.secoes?.length || 0,
-              frameworks_utilizados: context.informacoes_coletadas?.frameworks || []
+              frameworks_utilizados: context.informacoes_coletadas?.frameworks || [],
+              initial_score,
+              coverage_items: coverageMap.length,
             }
           });
       } catch (feedbackError) {
@@ -805,7 +846,10 @@ Responda APENAS com um JSON na seguinte estrutura:
 
       return new Response(JSON.stringify({
         document_id: generatedDoc.id,
-        document: documentContent
+        document: documentContent,
+        initial_score,
+        coverage_map: coverageMap,
+        warnings,
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -821,7 +865,17 @@ Responda APENAS com um JSON na seguinte estrutura:
         });
       }
 
-      const sysPrompt = `Você é um editor sênior de documentos corporativos. Refine APENAS a seção indicada, mantendo o tom, a estrutura geral do documento e a coerência com as demais seções. Responda SOMENTE com o novo conteúdo da seção em texto corrido, sem títulos, sem markdown de cabeçalho, sem JSON.`;
+      // === Onda 2: refino ciente de compliance ===
+      // Códigos de requisitos que esta seção sustenta hoje (para não perder cobertura).
+      const currentCoverage: any[] = Array.isArray(document?.coverage_map) ? document.coverage_map : [];
+      const sectionCoverage = currentCoverage.filter((c: any) =>
+        Array.isArray(c?.section_indexes) && c.section_indexes.includes(section_index)
+      );
+      const coverageAnchor = sectionCoverage.length
+        ? `\n\n=== REQUISITOS QUE ESTA SEÇÃO SUSTENTA (NÃO REMOVER) ===\n${sectionCoverage.map((c: any) => `- [${c.requirement_codigo || 'S/C'}] ${c.requirement_titulo || ''} — evidência atual: "${(c.evidencia || '').slice(0, 160)}"`).join('\n')}\n\nRegra: preserve (ou substitua por equivalente melhor) qualquer cláusula que sustenta esses requisitos. Se removê-los intencionalmente, sinalize em removed_coverage.`
+        : '';
+
+      const sysPrompt = `Você é um editor sênior de documentos corporativos com foco em compliance. Refine APENAS a seção indicada, mantendo o tom, a estrutura geral do documento, a coerência com as demais seções E toda a cobertura de requisitos que a seção sustenta. Responda SOMENTE com JSON válido no formato pedido, sem markdown.`;
       const userPrompt = `DOCUMENTO: ${document.titulo}
 EMPRESA: ${context.empresa_nome}
 ${framework_context?.framework_name ? `FRAMEWORK: ${framework_context.framework_name}\n` : ''}
@@ -830,25 +884,89 @@ ${target.conteudo}
 
 OUTRAS SEÇÕES (apenas títulos para contexto):
 ${secoes.map((s: any, i: number) => `${i + 1}. ${s.nome}`).join('\n')}
+${coverageAnchor}
 
 INSTRUÇÃO DO USUÁRIO:
 ${instruction}
 
-Reescreva o conteúdo da seção atendendo à instrução.`;
+Reescreva o conteúdo da seção atendendo à instrução SEM perder a cobertura de compliance.
 
-      const newContent = await callClaude(
+Responda EXATAMENTE neste JSON:
+{
+  "new_content": "novo texto da seção",
+  "coverage_kept": ["A.8.13", ...],
+  "coverage_updated_evidence": [ { "requirement_codigo": "A.8.13", "evidencia": "novo trecho literal (max 220 chars)" } ],
+  "removed_coverage": [ { "requirement_codigo": "...", "motivo": "..." } ]
+}`;
+
+      const raw = await callClaude(
         [{ role: 'user', content: userPrompt }],
         sysPrompt,
         LOVABLE_API_KEY,
-        2500,
-        0.5
+        3000,
+        0.4
       );
       await chargeAiCredit();
 
+      let parsedRefine: any = null;
+      try {
+        parsedRefine = JSON.parse(raw.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim());
+      } catch (_e) {
+        parsedRefine = { new_content: raw.trim(), coverage_kept: [], removed_coverage: [], coverage_updated_evidence: [] };
+      }
+      const newContent = String(parsedRefine?.new_content || raw).trim();
+
       const updatedSecoes = secoes.map((s: any, i: number) =>
-        i === section_index ? { ...s, conteudo: newContent.trim() } : s
+        i === section_index ? { ...s, conteudo: newContent } : s
       );
-      const updatedDoc = { ...document, secoes: updatedSecoes };
+
+      // Atualiza coverage_map: mantém entradas de outras seções; para esta seção,
+      // preserva itens mantidos com evidência atualizada; remove os informados em removed_coverage.
+      const removedCodes = new Set((parsedRefine?.removed_coverage || []).map((r: any) => String(r?.requirement_codigo || '')));
+      const keptCodes = new Set((parsedRefine?.coverage_kept || []).map((c: any) => String(c)));
+      const evidenceUpdates = new Map<string, string>(
+        (parsedRefine?.coverage_updated_evidence || []).map((e: any) => [String(e?.requirement_codigo || ''), String(e?.evidencia || '')])
+      );
+      const nextCoverage = currentCoverage
+        .filter((c: any) => {
+          const belongsHere = Array.isArray(c?.section_indexes) && c.section_indexes.includes(section_index);
+          if (!belongsHere) return true; // não é desta seção → intocado
+          const code = String(c?.requirement_codigo || '');
+          if (removedCodes.has(code)) return false;
+          // Se a IA não confirmou o code em coverage_kept mas também não colocou em removed,
+          // mantemos por segurança (compliance-first) — evita drop silencioso.
+          return true;
+        })
+        .map((c: any) => {
+          const code = String(c?.requirement_codigo || '');
+          if (evidenceUpdates.has(code)) {
+            return { ...c, evidencia: evidenceUpdates.get(code) };
+          }
+          return c;
+        });
+
+      const complianceImpact = removedCodes.size > 0 ? 'reduced' : 'preserved';
+      const updatedDoc = { ...document, secoes: updatedSecoes, coverage_map: nextCoverage };
+
+      // Recalcula score determinístico
+      const naoCobertos: any[] = Array.isArray(updatedDoc?.requisitos_nao_cobertos_justificativa)
+        ? updatedDoc.requisitos_nao_cobertos_justificativa : [];
+      const inScopeNaoCobertos = naoCobertos.filter((r: any) => {
+        const motivo = String(r?.motivo || '').toLowerCase();
+        return !(motivo.includes('fora do escopo') || motivo.includes('nao aplic') || motivo.includes('não aplic'));
+      });
+      const denomR = nextCoverage.length + inScopeNaoCobertos.length + removedCodes.size;
+      const newScore = denomR === 0 ? 0 : Math.round((nextCoverage.length / denomR) * 100);
+      updatedDoc._initial_score = newScore;
+      updatedDoc._score_source = 'coverage_map';
+
+      console.log('DocGen refine_section compliance', {
+        section_index,
+        removed: Array.from(removedCodes),
+        kept: nextCoverage.length,
+        newScore,
+        complianceImpact,
+      });
 
       // Persiste o refino no snapshot mais recente da conversa em docgen_generated_docs.
       try {
@@ -870,8 +988,11 @@ Reescreva o conteúdo da seção atendendo à instrução.`;
 
       return new Response(JSON.stringify({
         section_index,
-        new_content: newContent.trim(),
+        new_content: newContent,
         document: updatedDoc,
+        compliance_impact: complianceImpact,
+        removed_coverage: parsedRefine?.removed_coverage || [],
+        new_score: newScore,
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
@@ -1020,31 +1141,41 @@ Responda EXATAMENTE neste JSON:
       const ccRefine: any = company_context_input || (context as any).company_context || null;
       const companyBlock = ccRefine ? `\nCONTEXTO REAL DA EMPRESA (use estes dados; não invente):\n${JSON.stringify(ccRefine).slice(0, 6000)}\n` : '';
 
-      const sysPrompt = `Você é um editor sênior de documentos corporativos. Você receberá um documento em JSON e uma instrução do usuário. Sua tarefa:
+      // === Onda 2: refino ciente de compliance ===
+      const currentCoverage: any[] = Array.isArray(document?.coverage_map) ? document.coverage_map : [];
+      const coverageBlock = currentCoverage.length
+        ? `\n\n=== COVERAGE MAP ATUAL (NÃO PERDER COBERTURA) ===\n${currentCoverage.map((c: any) => `- [${c.requirement_codigo || 'S/C'}] ${c.requirement_titulo || ''} → seções ${JSON.stringify(c.section_indexes || [])} — evidência: "${(c.evidencia || '').slice(0, 160)}"`).join('\n')}`
+        : '';
+
+      const sysPrompt = `Você é um editor sênior de documentos corporativos com foco em compliance. Você receberá um documento em JSON, seu coverage_map atual e uma instrução do usuário. Sua tarefa:
 1) Identifique QUAIS seções devem ser alteradas para atender à instrução.
 2) Reescreva SOMENTE o conteúdo dessas seções, preservando literalmente o conteúdo das demais.
 3) Mantenha exatamente a mesma lista de seções (mesmos nomes e mesma ordem).
-4) Incorpore dados concretos citados pelo usuário (prazos, sistemas, papéis, valores, exceções, retenções) e o CONTEXTO REAL DA EMPRESA quando disponível.
-5) Responda SOMENTE com JSON válido, sem markdown, no formato:
+4) Incorpore dados concretos citados pelo usuário e o CONTEXTO REAL DA EMPRESA quando disponível.
+5) NUNCA remova uma cláusula que sustenta um requisito coberto sem substituir por equivalente. Se a instrução obrigar a remoção, sinalize o requisito impactado em removed_coverage.
+6) Devolva o coverage_map ATUALIZADO refletindo onde cada requisito agora é sustentado.
+7) Responda SOMENTE com JSON válido, sem markdown, no formato:
 {
   "sections_changed": ["Nome da seção 1", ...],
   "summary": "1 frase descrevendo a mudança",
   "document": {
     "titulo": "...",
     "versao": "...",
-    "secoes": [ { "nome": "...", "conteudo": "..." } ]
-  }
+    "secoes": [ { "nome": "...", "conteudo": "..." } ],
+    "coverage_map": [ { "requirement_codigo": "A.8.13", "requirement_titulo": "...", "section_indexes": [2], "evidencia": "trecho literal atualizado (max 220 chars)" } ]
+  },
+  "removed_coverage": [ { "requirement_codigo": "...", "motivo": "..." } ]
 }`;
 
       const userPrompt = `EMPRESA: ${context.empresa_nome}
 ${framework_context?.framework_name ? `FRAMEWORK: ${framework_context.framework_name}\n` : ''}${companyBlock}
 DOCUMENTO ATUAL (JSON):
-${docJson}
+${docJson}${coverageBlock}
 
 INSTRUÇÃO DO USUÁRIO:
 ${instruction}
 
-Aplique a instrução conforme as regras do sistema e devolva o JSON completo.`;
+Aplique a instrução conforme as regras do sistema e devolva o JSON completo COM coverage_map atualizado.`;
 
       const raw = await callClaude(
         [{ role: 'user', content: userPrompt }],
@@ -1068,14 +1199,35 @@ Aplique a instrução conforme as regras do sistema e devolva o JSON completo.`;
         }), { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
-      // Preserva metadados/data/logo originais; troca apenas título/versão/seções.
+      // Coverage map final: preferir o que a IA devolveu; senão preservar o atual
+      // menos os removidos explicitamente.
+      const removedCodes = new Set((parsed?.removed_coverage || []).map((r: any) => String(r?.requirement_codigo || '')));
+      let nextCoverage: any[] = Array.isArray(parsed?.document?.coverage_map) && parsed.document.coverage_map.length
+        ? parsed.document.coverage_map
+        : currentCoverage.filter((c: any) => !removedCodes.has(String(c?.requirement_codigo || '')));
+
+      // Preserva metadados/data/logo originais; troca título/versão/seções/coverage.
       const mergedDoc = {
         ...document,
         titulo: parsed.document.titulo || document.titulo,
         versao: parsed.document.versao || document.versao,
         secoes: parsed.document.secoes,
+        coverage_map: nextCoverage,
       };
 
+      // Recalcula score determinístico
+      const naoCobertos: any[] = Array.isArray(mergedDoc?.requisitos_nao_cobertos_justificativa)
+        ? mergedDoc.requisitos_nao_cobertos_justificativa : [];
+      const inScopeNaoCobertos = naoCobertos.filter((r: any) => {
+        const motivo = String(r?.motivo || '').toLowerCase();
+        return !(motivo.includes('fora do escopo') || motivo.includes('nao aplic') || motivo.includes('não aplic'));
+      });
+      const denomR = nextCoverage.length + inScopeNaoCobertos.length + removedCodes.size;
+      const newScore = denomR === 0 ? 0 : Math.round((nextCoverage.length / denomR) * 100);
+      mergedDoc._initial_score = newScore;
+      mergedDoc._score_source = 'coverage_map';
+
+      const complianceImpact = removedCodes.size > 0 ? 'reduced' : 'preserved';
       const changed: string[] = Array.isArray(parsed.sections_changed) ? parsed.sections_changed : [];
       const summary: string = typeof parsed.summary === 'string' && parsed.summary.trim()
         ? parsed.summary.trim()
@@ -1083,7 +1235,18 @@ Aplique a instrução conforme as regras do sistema e devolva o JSON completo.`;
             ? `Atualizei ${changed.length === 1 ? 'a seção' : 'as seções'} ${changed.join(', ')} com base na sua observação.`
             : 'Documento atualizado com base na sua observação.');
 
-      messages.push({ role: 'assistant', content: summary });
+      const summaryWithScore = complianceImpact === 'reduced'
+        ? `${summary} Atenção: ${removedCodes.size} requisito(s) perderam cobertura — nova pontuação: ${newScore}%.`
+        : (newScore > 0 ? `${summary} Compliance preservado: ${newScore}%.` : summary);
+
+      messages.push({ role: 'assistant', content: summaryWithScore });
+
+      console.log('DocGen refine_document compliance', {
+        removed: Array.from(removedCodes),
+        kept: nextCoverage.length,
+        newScore,
+        complianceImpact,
+      });
 
       try {
         await supabase
@@ -1113,7 +1276,10 @@ Aplique a instrução conforme as regras do sistema e devolva o JSON completo.`;
       return new Response(JSON.stringify({
         document: mergedDoc,
         sections_changed: changed,
-        summary,
+        summary: summaryWithScore,
+        compliance_impact: complianceImpact,
+        removed_coverage: parsed?.removed_coverage || [],
+        new_score: newScore,
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 

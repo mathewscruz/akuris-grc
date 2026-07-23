@@ -1,61 +1,69 @@
-# Aderência do DocGen: acabar com o "0% sem sentido"
 
-## Diagnóstico
+# Pente fino: DocGen gerando em compliance e mantendo em compliance
 
-Investiguei os dois caminhos de análise que hoje existem para um documento vindo do DocGen e encontrei três causas concretas para o score zerar:
+## Problema (o que o pente fino encontrou)
 
-1. **`quick_adherence` (botão "Avaliar aderência" dentro do DocGen)** — `supabase/functions/docgen-chat/index.ts` §879–939:
-   - Envia à IA só `codigo + titulo + categoria` dos requisitos (sem `descricao`, sem `orientacao_implementacao`, sem `exemplos_evidencias`). A IA não tem como decidir se a seção da política atende ao requisito e tende a marcar tudo como fraco/ausente.
-   - Trunca cada seção em 1500 caracteres (`(s.conteudo || '').slice(0, 1500)`) — políticas geradas pelo DocGen frequentemente têm seções maiores, então o texto que provaria conformidade é cortado.
-   - `score` vem 100% do JSON da IA. Se a IA não retornar JSON válido, o fallback grava `score: 0` (linha 933).
+Ao ler o pipeline completo (`docgen-chat` → `docgen_generated_docs` → `quick_adherence` e `analyze-document-adherence`), aparecem 6 pontos que quebram a promessa de "gerado em compliance e continua em compliance após refinos":
 
-2. **Upload manual em Gap Analysis → Análise de Aderência** (`AdherenceAssessmentDialog.tsx` + `analyze-document-adherence`):
-   - O usuário tem que **exportar** o documento do DocGen (PDF/DOCX via jsPDF/docx), fazer download, e depois re-upload. Nesse caminho a extração de texto do PDF gerado pelo jsPDF frequentemente perde formatação/quebra de seções → a IA recebe um blob "sujo" e não identifica as evidências.
-   - `percentual_conformidade` também vem só do JSON da IA, sem fallback determinístico calculado a partir de `requisitos_analisados[].status_aderencia` (que existe no payload). Se a IA erra o campo mas acerta o detalhamento, o score gravado é 0.
+1. **Geração sem contrato de cobertura.** O prompt de `generate_document` pede para citar `[A.8.13]` no texto, mas não devolve um mapa estruturado "requisito → seção → citação". O analisador precisa re-parsear texto livre — daí resultados instáveis.
+2. **Refino é cego ao framework.** `refine_document` e `refine_section` recebem só o nome do framework — sem a lista de requisitos, sem os gaps, sem o coverage map. Um "simplifique a linguagem" pode remover cláusulas que satisfazem controles e derrubar o score sem aviso.
+3. **Analisador silenciosamente ignora requisitos.** `quick_adherence` limita 150 requisitos e `analyze-document-adherence` limita 150 + 30 000 chars de documento. Frameworks grandes (PCI DSS 4.0 = 288, CIS v8 = 153) são truncados sem sinal.
+4. **Fallback determinístico do score só considera "analisados".** Se a IA devolve avaliação para 30 de 121 requisitos, o score sai sobre 30 (parece bom) — os 91 silenciosos deveriam entrar no denominador como não conformes ou como "não avaliado".
+5. **Frontend não usa `source: 'docgen'`.** Já criamos o caminho em memória no analisador; o `DocGenDialog` ainda depende do fluxo export→upload TXT, que perde texto e artificialmente zera o score.
+6. **Refino invalida a análise mas não re-avalia.** `setAdherenceResult(null)` some com o badge; usuário exporta achando que continua 92%.
 
-3. **Refinos pós-geração não são reavaliados** — `DocGenDialog.tsx` L456 invalida `adherenceResult` quando o usuário refina, mas não há CTA claro para reanalisar; e mesmo reanalisando cai no mesmo `quick_adherence` fraco.
+## O que este plano entrega
 
-## Escopo
+Um contrato único de conformidade compartilhado entre geração, refino e análise:
 
-Corrigir os três pontos, sem tocar em outros módulos. Nenhuma migração de schema.
+```text
+generate_document ──► coverage_map + score inicial ──► docgen_generated_docs
+        │                                                        │
+        ▼                                                        ▼
+   refine_section / refine_document ──► preserva/atualiza ──► re-analisa ──► novo score
+                              (com lista de requisitos + gaps injetada no prompt)
+```
 
-## Mudanças
+## Onda 1 — Contrato de cobertura na geração
 
-### 1) `supabase/functions/docgen-chat/index.ts` — `quick_adherence` (Onda 3, ~L879–939)
-- Buscar requisitos com `codigo, titulo, descricao, orientacao_implementacao, exemplos_evidencias, categoria`.
-- Enviar o documento **completo** (sem `.slice(0,1500)`); apenas aplicar um teto global de ~28k chars para caber no contexto, iterando por seções inteiras.
-- Reescrever o system/user prompt no mesmo espírito de `analyze-document-adherence`: auditor sênior avalia política corporativa contra requisitos, cita trechos como evidência, marca `nao_aplicavel` quando o escopo do documento não cobre aquele requisito.
-- Pedir no JSON, além do score, um array `requisitos_analisados[]` com `status_aderencia` (conforme/parcial/nao_conforme/nao_aplicavel).
-- **Fallback determinístico**: se `score` vier ausente/0 mas houver `requisitos_analisados`, recalcular via a fórmula canônica de `src/lib/gap-analysis-scoring.ts` (conforme=100, parcial=50, resto=0, excluir N/A do denominador). Assim o número gravado passa a refletir os detalhes, não um campo isolado.
-- Log estruturado com contagens (`total`, `conformes`, `parciais`, `nao_conformes`, `n_a`) para facilitar diagnóstico futuro.
+- Em `supabase/functions/docgen-chat/index.ts`, `generate_document`:
+  - Adicionar ao JSON de saída um campo `coverage_map: [{ requirement_id, requirement_codigo, requirement_titulo, section_indexes: [n], evidencia: "citação/trecho" }]` e uma lista `requisitos_nao_cobertos_justificativa: [{ codigo, motivo }]`.
+  - Passar a lista completa de requisitos (usa `fetchFrameworkRequirements`, já existe) ao prompt e obrigar a IA a marcar cada requisito relevante como coberto, parcial ou fora de escopo, com justificativa.
+  - Persistir `coverage_map` dentro de `docgen_generated_docs.conteudo` (mesma coluna JSONB).
+- Rodar auto-auditoria embutida: após montar o documento, chamar internamente `quick_adherence` com o `coverage_map` como âncora e devolver `initial_score` junto com o `document`. Se `initial_score < 80`, incluir `warnings` no retorno para o UI mostrar antes do usuário exportar.
 
-### 2) `supabase/functions/analyze-document-adherence/index.ts`
-- Fallback determinístico igual ao acima: após parse do JSON, se `percentual_conformidade` for 0/ausente e `requisitos_analisados` tiver itens com score, recalcular a partir dos statuses e sobrescrever antes do `update`.
-- Aceitar um novo modo `source: 'docgen'` no body: quando o front enviar `docgenDocument` (JSON `{ titulo, secoes: [{nome, conteudo}] }`), usar esse texto reconstruído (`## Seção X: nome\nconteudo`) em vez de baixar do storage. Elimina a rota lossy PDF→extract.
-  - Guardas: quando `source === 'docgen'`, `storageFileName` continua opcional; o registro em `gap_analysis_adherence_assessments` grava `documento_nome` como "{titulo} (DocGen)" e `metadados_analise.origem = 'docgen'`.
-  - Segurança: mantém `assessmentRow.empresa_id === empresaId`.
+## Onda 2 — Refino ciente de compliance
 
-### 3) `src/components/documentos/DocGenDialog.tsx`
-- `handleRunAdherence` continua chamando `quick_adherence` (rápido, inline), mas agora recebe payload correto graças ao item 1.
-- Adicionar botão secundário "Análise completa (salvar no Gap Analysis)" que:
-  - Cria assessment em `gap_analysis_adherence_assessments` com `status: 'processando'`, `framework_id`, `nome_analise = titulo do documento`.
-  - Chama `analyze-document-adherence` com `source: 'docgen'` + `docgenDocument` (sem upload de arquivo).
-  - Ao concluir, mostra o link para o assessment persistido.
-- Após `refine_document` bem-sucedido: manter invalidação, mas destacar o botão "Reavaliar aderência" (já existe estado; só melhora affordance visual).
+- Em `refine_section` e `refine_document`:
+  - Injetar `fetchFrameworkRequirements(...)` + `fetchFrameworkGaps(...)` no prompt.
+  - Passar o `coverage_map` atual e exigir que a IA devolva `coverage_map` atualizado indicando quais requisitos permanecem cobertos, quais foram afetados e a nova evidência.
+  - Regra de sistema: "nunca remova cláusula que sustenta um requisito coberto sem substituir por equivalente".
+  - Se o refino remover cobertura, o handler devolve `compliance_impact: 'reduced'` no payload e re-executa `quick_adherence` para calcular o novo score.
 
-### 4) `src/components/gap-analysis/adherence/AdherenceAssessmentDialog.tsx`
-- Nenhuma mudança funcional obrigatória. Apenas expor mensagem: "Para documentos gerados pelo DocGen, use o botão 'Análise completa' dentro do DocGen — evita perda de formatação na exportação/re-upload."
+## Onda 3 — Analisador alinhado à fonte real do DocGen
+
+- `supabase/functions/analyze-document-adherence/index.ts`:
+  - Elevar `MAX_REQS_POR_ANALISE` para o total do framework via batching (chunks de 60 requisitos, agregando o resultado).
+  - Trocar o fallback determinístico para dividir por `total_requisitos_relevantes` (que a IA já devolve) e não pelo tamanho de `requisitos_analisados`, para não mascarar requisitos silenciosos.
+  - Aceitar `coverage_map` opcional no body e usá-lo como âncora de evidência (aumenta precisão do "conforme").
+- `src/components/documentos/DocGenDialog.tsx`:
+  - Novo botão "Análise formal" que invoca `analyze-document-adherence` com `source: 'docgen'`, `docgenDocument` (JSON em memória) e `coverage_map` — sem depender de export/upload.
+  - Após qualquer `refine_section` / `refine_document` bem-sucedido, disparar automaticamente `quick_adherence` em background e atualizar o badge de compliance ao invés de zerar; se `compliance_impact === 'reduced'`, exibir toast âmbar "O refino afetou a cobertura de 3 requisitos; nova pontuação: 78%".
+
+## Onda 4 — Validação end-to-end
+
+- Adicionar teste manual documentado em `.lovable/plan.md` cobrindo: gerar política de mesa limpa contra ISO 27001 → verificar `initial_score ≥ 80` → refinar seção "Definições" para "linguagem simples" → confirmar que `coverage_map` mantém os mesmos códigos e o novo score fica dentro de ±5 pontos.
+- Log estruturado em cada handler com `{ score_antes, score_depois, requisitos_afetados }` para diagnóstico.
 
 ## Detalhes técnicos
 
-- Fórmula do fallback (idêntica ao `computeConformityScore` já usado no front): `round( sum(score_por_status) / (total - naCount) )` com `conforme=100, parcial=50, nao_conforme=0`. Não avaliados contam 0 no numerador e permanecem no denominador (mesmo comportamento canônico do módulo).
-- Limite de requisitos analisados por chamada permanece em 150 (mesmo do analyzer atual), para frameworks grandes cair em modo truncado com aviso — não é regressão.
-- Sem alteração de tabelas/RLS/grants; sem novos secrets.
+Arquivos:
+- `supabase/functions/docgen-chat/index.ts` — handlers `generate_document`, `refine_section`, `refine_document`, `quick_adherence`.
+- `supabase/functions/analyze-document-adherence/index.ts` — batching e fallback.
+- `src/components/documentos/DocGenDialog.tsx` — botão "Análise formal", re-análise automática pós-refino, exibição de `warnings` e `compliance_impact`.
 
-## Validação
+Modelo de dados: nenhuma migração — `coverage_map` vive dentro de `docgen_generated_docs.conteudo` (JSONB já existente). Nada muda em `gap_analysis_*`.
 
-1. Gerar uma política no DocGen com framework ISO 27001 → clicar "Avaliar aderência" → esperar score > 0 coerente com o conteúdo.
-2. Refinar uma seção com dados adicionais → clicar "Reavaliar aderência" → score reflete o refino.
-3. Clicar "Análise completa" → assessment aparece em Gap Analysis com o mesmo score sem precisar exportar/re-upload.
-4. Upload manual de um PDF/DOCX real continua funcionando (regressão zero no fluxo existente).
-5. Rodar um caso onde a IA volta `percentual_conformidade: 0` mas `requisitos_analisados` com maioria "conforme" — confirmar que o fallback grava o valor calculado, não 0.
+Créditos IA: continua 1 crédito por handler já consumido. A auto-auditoria pós-geração e re-análise pós-refino consomem crédito adicional cada — vou avisar o usuário via toast e deixar a re-análise automática opcional (default ligado, com toggle no header do diálogo).
+
+Confirma execução das 4 ondas? Ou prefere que eu comece só pela Onda 2 (refino compliance-aware), que é o cenário exato que você descreveu?
