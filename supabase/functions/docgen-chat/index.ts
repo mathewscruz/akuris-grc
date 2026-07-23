@@ -1141,31 +1141,41 @@ Responda EXATAMENTE neste JSON:
       const ccRefine: any = company_context_input || (context as any).company_context || null;
       const companyBlock = ccRefine ? `\nCONTEXTO REAL DA EMPRESA (use estes dados; não invente):\n${JSON.stringify(ccRefine).slice(0, 6000)}\n` : '';
 
-      const sysPrompt = `Você é um editor sênior de documentos corporativos. Você receberá um documento em JSON e uma instrução do usuário. Sua tarefa:
+      // === Onda 2: refino ciente de compliance ===
+      const currentCoverage: any[] = Array.isArray(document?.coverage_map) ? document.coverage_map : [];
+      const coverageBlock = currentCoverage.length
+        ? `\n\n=== COVERAGE MAP ATUAL (NÃO PERDER COBERTURA) ===\n${currentCoverage.map((c: any) => `- [${c.requirement_codigo || 'S/C'}] ${c.requirement_titulo || ''} → seções ${JSON.stringify(c.section_indexes || [])} — evidência: "${(c.evidencia || '').slice(0, 160)}"`).join('\n')}`
+        : '';
+
+      const sysPrompt = `Você é um editor sênior de documentos corporativos com foco em compliance. Você receberá um documento em JSON, seu coverage_map atual e uma instrução do usuário. Sua tarefa:
 1) Identifique QUAIS seções devem ser alteradas para atender à instrução.
 2) Reescreva SOMENTE o conteúdo dessas seções, preservando literalmente o conteúdo das demais.
 3) Mantenha exatamente a mesma lista de seções (mesmos nomes e mesma ordem).
-4) Incorpore dados concretos citados pelo usuário (prazos, sistemas, papéis, valores, exceções, retenções) e o CONTEXTO REAL DA EMPRESA quando disponível.
-5) Responda SOMENTE com JSON válido, sem markdown, no formato:
+4) Incorpore dados concretos citados pelo usuário e o CONTEXTO REAL DA EMPRESA quando disponível.
+5) NUNCA remova uma cláusula que sustenta um requisito coberto sem substituir por equivalente. Se a instrução obrigar a remoção, sinalize o requisito impactado em removed_coverage.
+6) Devolva o coverage_map ATUALIZADO refletindo onde cada requisito agora é sustentado.
+7) Responda SOMENTE com JSON válido, sem markdown, no formato:
 {
   "sections_changed": ["Nome da seção 1", ...],
   "summary": "1 frase descrevendo a mudança",
   "document": {
     "titulo": "...",
     "versao": "...",
-    "secoes": [ { "nome": "...", "conteudo": "..." } ]
-  }
+    "secoes": [ { "nome": "...", "conteudo": "..." } ],
+    "coverage_map": [ { "requirement_codigo": "A.8.13", "requirement_titulo": "...", "section_indexes": [2], "evidencia": "trecho literal atualizado (max 220 chars)" } ]
+  },
+  "removed_coverage": [ { "requirement_codigo": "...", "motivo": "..." } ]
 }`;
 
       const userPrompt = `EMPRESA: ${context.empresa_nome}
 ${framework_context?.framework_name ? `FRAMEWORK: ${framework_context.framework_name}\n` : ''}${companyBlock}
 DOCUMENTO ATUAL (JSON):
-${docJson}
+${docJson}${coverageBlock}
 
 INSTRUÇÃO DO USUÁRIO:
 ${instruction}
 
-Aplique a instrução conforme as regras do sistema e devolva o JSON completo.`;
+Aplique a instrução conforme as regras do sistema e devolva o JSON completo COM coverage_map atualizado.`;
 
       const raw = await callClaude(
         [{ role: 'user', content: userPrompt }],
@@ -1189,14 +1199,35 @@ Aplique a instrução conforme as regras do sistema e devolva o JSON completo.`;
         }), { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
-      // Preserva metadados/data/logo originais; troca apenas título/versão/seções.
+      // Coverage map final: preferir o que a IA devolveu; senão preservar o atual
+      // menos os removidos explicitamente.
+      const removedCodes = new Set((parsed?.removed_coverage || []).map((r: any) => String(r?.requirement_codigo || '')));
+      let nextCoverage: any[] = Array.isArray(parsed?.document?.coverage_map) && parsed.document.coverage_map.length
+        ? parsed.document.coverage_map
+        : currentCoverage.filter((c: any) => !removedCodes.has(String(c?.requirement_codigo || '')));
+
+      // Preserva metadados/data/logo originais; troca título/versão/seções/coverage.
       const mergedDoc = {
         ...document,
         titulo: parsed.document.titulo || document.titulo,
         versao: parsed.document.versao || document.versao,
         secoes: parsed.document.secoes,
+        coverage_map: nextCoverage,
       };
 
+      // Recalcula score determinístico
+      const naoCobertos: any[] = Array.isArray(mergedDoc?.requisitos_nao_cobertos_justificativa)
+        ? mergedDoc.requisitos_nao_cobertos_justificativa : [];
+      const inScopeNaoCobertos = naoCobertos.filter((r: any) => {
+        const motivo = String(r?.motivo || '').toLowerCase();
+        return !(motivo.includes('fora do escopo') || motivo.includes('nao aplic') || motivo.includes('não aplic'));
+      });
+      const denomR = nextCoverage.length + inScopeNaoCobertos.length + removedCodes.size;
+      const newScore = denomR === 0 ? 0 : Math.round((nextCoverage.length / denomR) * 100);
+      mergedDoc._initial_score = newScore;
+      mergedDoc._score_source = 'coverage_map';
+
+      const complianceImpact = removedCodes.size > 0 ? 'reduced' : 'preserved';
       const changed: string[] = Array.isArray(parsed.sections_changed) ? parsed.sections_changed : [];
       const summary: string = typeof parsed.summary === 'string' && parsed.summary.trim()
         ? parsed.summary.trim()
@@ -1204,7 +1235,18 @@ Aplique a instrução conforme as regras do sistema e devolva o JSON completo.`;
             ? `Atualizei ${changed.length === 1 ? 'a seção' : 'as seções'} ${changed.join(', ')} com base na sua observação.`
             : 'Documento atualizado com base na sua observação.');
 
-      messages.push({ role: 'assistant', content: summary });
+      const summaryWithScore = complianceImpact === 'reduced'
+        ? `${summary} Atenção: ${removedCodes.size} requisito(s) perderam cobertura — nova pontuação: ${newScore}%.`
+        : (newScore > 0 ? `${summary} Compliance preservado: ${newScore}%.` : summary);
+
+      messages.push({ role: 'assistant', content: summaryWithScore });
+
+      console.log('DocGen refine_document compliance', {
+        removed: Array.from(removedCodes),
+        kept: nextCoverage.length,
+        newScore,
+        complianceImpact,
+      });
 
       try {
         await supabase
@@ -1234,7 +1276,10 @@ Aplique a instrução conforme as regras do sistema e devolva o JSON completo.`;
       return new Response(JSON.stringify({
         document: mergedDoc,
         sections_changed: changed,
-        summary,
+        summary: summaryWithScore,
+        compliance_impact: complianceImpact,
+        removed_coverage: parsed?.removed_coverage || [],
+        new_score: newScore,
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
