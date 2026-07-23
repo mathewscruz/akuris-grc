@@ -675,6 +675,7 @@ Abaixo estão os requisitos catalogados do(s) framework(s). Antes de escrever o 
 3) Cite o código do requisito entre colchetes onde ele é endereçado (ex.: "[A.8.13]").
 4) Priorize os requisitos marcados como GAP.
 5) Não invente requisitos fora desta lista.
+6) OBRIGATÓRIO: no final devolva um coverage_map explícito ligando cada requisito relevante à(s) seção(ões) que o endereça(m), com o trecho-evidência.
 
 ${frameworkRequirementsText}`
         : '';
@@ -698,7 +699,7 @@ ${transcript}
 === FIM DAS RESPOSTAS DO USUÁRIO ===`
         : '';
 
-      const documentPrompt = `Gere um documento COMPLETO e ESPECÍFICO do tipo solicitado.
+      const documentPrompt = `Gere um documento COMPLETO e ESPECÍFICO do tipo solicitado, JÁ EM CONFORMIDADE com o(s) framework(s) informado(s).
 
 DOCUMENTO_EXATO: ${docNome}
 FRAMEWORKS_REQUERIDOS: ${JSON.stringify((context as any).frameworks_relacionados || (framework_context ? [framework_context.framework_name] : []))}
@@ -718,6 +719,7 @@ Requisitos obrigatórios de formatação:
 - Conteúdo detalhado e profissional alinhado aos frameworks
 - Personalização real: reflita as respostas do usuário na conversa (item acima) — não use frases genéricas quando o usuário deu um dado concreto
 - Rodapé com informações da empresa
+- CADA cláusula que satisfaz um requisito do framework deve conter o CÓDIGO do requisito entre colchetes (ex.: "[A.8.13]")
 
 Responda APENAS com um JSON na seguinte estrutura:
 {
@@ -732,7 +734,13 @@ Responda APENAS com um JSON na seguinte estrutura:
     "responsavel_elaboracao": "${context.user_name}",
     "responsavel_aprovacao": "",
     "frequencia_revisao": "Anual"
-  }
+  },
+  "coverage_map": [
+    { "requirement_codigo": "A.8.13", "requirement_titulo": "...", "section_indexes": [2,5], "evidencia": "trecho literal do documento (max 220 chars) que satisfaz o requisito" }
+  ],
+  "requisitos_nao_cobertos_justificativa": [
+    { "codigo": "A.5.30", "motivo": "fora do escopo desta política específica" }
+  ]
 }`;
 
       const docContent = await callClaude(
