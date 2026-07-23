@@ -322,7 +322,10 @@ FORMATO JSON OBRIGATÓRIO (retorne APENAS JSON válido, sem markdown):
       const analisados: any[] = analysisResult.requisitos_analisados || [];
       const scoreMap: Record<string, number> = { conforme: 100, parcial: 50, nao_conforme: 0 };
       const naCount = analisados.filter((r: any) => r?.status_aderencia === 'nao_aplicavel').length;
-      const denom = Math.max(analisados.length - naCount, 0);
+      // Requisitos silenciosamente omitidos pela IA contam como nao_conforme para
+      // não inflar o score em frameworks grandes (ex.: PCI DSS ~288 requisitos).
+      const missingReqs = Math.max(reqsForAnalysis.length - analisados.length, 0);
+      const denom = Math.max((analisados.length - naCount) + missingReqs, 0);
       const num = analisados
         .filter((r: any) => r?.status_aderencia && r.status_aderencia !== 'nao_aplicavel')
         .reduce((s: number, r: any) => s + (scoreMap[r.status_aderencia] ?? 0), 0);
@@ -330,9 +333,12 @@ FORMATO JSON OBRIGATÓRIO (retorne APENAS JSON válido, sem markdown):
       const reportado = Number(analysisResult.percentual_conformidade);
       const reportadoValido = Number.isFinite(reportado) && reportado > 0 && reportado <= 100;
       if (!reportadoValido || Math.abs(scoreCalc - reportado) > 25) {
-        console.log('Applying deterministic score fallback', { reportado, scoreCalc, denom, num });
+        console.log('Applying deterministic score fallback', { reportado, scoreCalc, denom, num, missingReqs });
         analysisResult.percentual_conformidade = scoreCalc;
         analysisResult._score_fonte = 'deterministic';
+      }
+      if (requirements.length > reqsForAnalysis.length) {
+        analysisResult._requisitos_nao_analisados = requirements.length - reqsForAnalysis.length;
       }
       // Reconciliar resultado_geral com o score final
       const finalPct = analysisResult.percentual_conformidade;
