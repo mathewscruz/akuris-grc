@@ -1,87 +1,107 @@
-
 ## Objetivo
-Percorrer o fluxo real do DocGen como usuário (briefing → geração → refino via chat → refino de seção → análise de aderência → publicação em Documentos), corrigir o que estiver quebrado e elevar a qualidade do documento gerado.
+
+Replicar no Gap Analysis a mesma bateria de garantia que fizemos no DocGen: testes determinísticos do scoring canônico, testes E2E das Edge Functions de IA, simulação Playwright do fluxo do usuário e auditoria de consistência de score entre as telas. Cobrir tudo com créditos reais no gateway (autorizado).
 
 ---
 
-## Onda 1 — Simulação ponta a ponta (diagnóstico)
+## Onda 1 — Testes determinísticos do scoring canônico
 
-Rodar Playwright headless contra `http://localhost:8080` usando a sessão Supabase já injetada:
+Novo arquivo: `src/lib/__tests__/gap-analysis-scoring.test.ts` (Vitest — já configurado no projeto).
 
-1. Abrir `/documentos` e disparar o DocGen (`useDocGen().openDocGen`).
-2. Responder o briefing conversacional para uma **Política de Mesa Limpa** (ISO 27001).
-3. Acionar **Gerar documento** e capturar `initial_score`, `coverage_map`, warnings.
-4. Enviar mensagem de refino no chat ("adicione responsabilidades do DPO e um item sobre impressoras compartilhadas") — validar `refine_document` e atualização do preview.
-5. Abrir **Refinar seção** em 1 seção — validar `refine_section` e `compliance_impact`.
-6. Rodar **Análise rápida de aderência** (`quick_adherence`) e comparar score com `initial_score` (esperado: ≥ 80% e paridade).
-7. Clicar **Publicar em Documentos** → confirmar `DocumentoDialog` recebe arquivo, tipo, categoria, framework e persiste em `documentos` com `origin_source='docgen'`.
-8. Recarregar `/documentos` e confirmar que aparece na lista com metadados corretos.
+Cobre `src/lib/gap-analysis-scoring.ts`:
+- Fórmula 100/50/0 com mix de status → score correto arredondado.
+- `nao_aplicavel` sai do denominador.
+- Requisitos sem avaliação contam como 0 no numerador mas permanecem no denominador (parity com `useFrameworkScore`).
+- `totalRequirements = 0` → score 0 sem divisão por zero.
+- `countEvaluated` ignora `nao_avaliado` e vazio, aceita N/A.
+- Regressão do bug "50% vs 48%": simula 10 conformes, 5 parciais, 5 não avaliados, 2 N/A e trava o número exato.
 
-Cada passo gera screenshot em `/tmp/browser/docgen/screenshots/` + log de console/rede. O relatório da Onda 1 vira a lista final de bugs.
-
----
-
-## Onda 2 — Correções de fluxo (o que a Onda 1 revelar)
-
-Placeholders esperados com base no código atual:
-
-- **Anexar arquivo gerado ao salvar**: hoje `initialGeneratedFile` só é setado se o usuário exportar antes; garantir que **Publicar em Documentos** gere o DOCX in-memory e passe para `DocumentoDialog` mesmo sem export manual.
-- **Vincular framework ao documento salvo**: `initialData` não envia `framework_id` nem `requirement_id`; incluir para o documento nascer já linkado à Análise de Aderência.
-- **Anexar `coverage_map` como metadado JSON do documento** (para reuso pelo analisador oficial sem re-inferência).
-- **Categoria automática**: mapear `currentDocType` → categoria correspondente (política/procedimento/norma) via `docgen_categorias` em vez de deixar o usuário escolher toda vez.
-- **Bloquear "Publicar" enquanto `isGeneratingDoc` ou refino em andamento** para evitar salvar snapshot desatualizado.
-- **Persistir versão + snapshot JSON** em `docgen_generated_documents` (se a tabela existir) para trilha de auditoria do próprio DocGen.
+Novo arquivo: `supabase/functions/_shared/gap-scoring-parity_test.ts`.
+- Garante que `computeConformityScore` (frontend) e a fórmula usada em `computeAnalyzedScore` (`_shared/compliance-score.ts`) devolvem o MESMO score para o mesmo conjunto de status. Isso trava o contrato compartilhado entre Gap Analysis, DocGen e o analisador.
 
 ---
 
-## Onda 3 — Qualidade da geração (o núcleo do pedido)
+## Onda 2 — Testes E2E das Edge Functions de IA
 
-Alvo em `supabase/functions/docgen-chat/index.ts` handler `generate_document`:
+Novos arquivos Deno test (`--allow-net --allow-env`, seguindo a convenção `*_test.ts`):
 
-1. **Modelo mais forte para o corpo do documento**: trocar `google/gemini-3-flash-preview` por `google/gemini-3-pro-preview` (ou `anthropic/claude-3-5-sonnet` conforme `ai/model-selection-strategy-2025`) apenas para `generate_document` e `refine_document`. `chat` e `quick_adherence` continuam no flash (economia de crédito). Temperatura 0.3, `max_tokens` 24000.
-2. **System prompt de qualidade editorial** (novo, sobrepõe o atual):
-   - Persona: consultor sênior GRC com estilo Big4.
-   - Estrutura obrigatória para toda política/procedimento: `Objetivo`, `Escopo e Aplicabilidade`, `Termos e Definições`, `Papéis e Responsabilidades` (tabela RACI textual), `Diretrizes/Procedimentos` (numeradas 1., 1.1, 1.2), `Controles e Medidas de Segurança`, `Indicadores e Métricas`, `Exceções e Desvios`, `Vigência, Revisão e Comunicação`, `Referências Normativas`, `Histórico de Revisões`.
-   - Regras de redação: voz ativa, verbos imperativos ("deve", "não deve"), evitar frases genéricas, incorporar literalmente valores/prazos/sistemas citados no briefing, sem "lorem ipsum" nem "[preencher]".
-   - Cada cláusula que atende requisito recebe `[CÓDIGO]` inline (já pedido, reforçar).
-3. **Quality gate pós-IA** (determinístico, no próprio Edge Function):
-   - Seções com `< 200` chars ou contendo `[preencher|inserir|exemplo|TBD]` → 1 retry automático pedindo para reescrever apenas as seções fracas (sem cobrar novo crédito, mesma conversação).
-   - Se ao final ainda houver seção fraca, marcar no warnings.
-   - Se `coverage_map` estiver vazio mas houver framework, forçar retry pedindo o mapa (regra atual só avisa).
-4. **Enriquecer contexto**: incluir no prompt o **guia de implementação** e **exemplos de evidência** de cada requisito relevante (já buscado em `fetchFrameworkRequirements`; verificar se está incluindo o guidance completo — se estiver truncado, aumentar para 800 chars/requisito).
-5. **Metadados de saída**: acrescentar `siglas_glossario`, `versoes_historico`, `matriz_raci` em `documentContent.metadados` para render mais rico no preview e exports.
+1. `supabase/functions/gap-analysis-ai-diagnostic/index_test.ts`
+   - Sem JWT → 401.
+   - JWT válido sem empresa_id no framework do usuário → 403.
+   - Payload válido → 200, resposta contém `diagnostico`, `pontos_fortes`, `gaps`, `recomendacoes`, `roadmap`. Consome crédito real.
+   - Sem créditos → 402 (verifica o wrapper `_shared/ai.ts`).
+   - Framework de outra empresa → 403 (multi-tenant).
 
----
+2. `supabase/functions/calculate-assessment-score/index_test.ts`
+   - Score determinístico bate com `computeConformityScore` do frontend para o mesmo dataset (mocka 20 avaliações mistas via seed no banco de teste).
+   - N/A fora do denominador.
+   - Framework sem requisitos → score 0.
 
-## Onda 4 — Exportação (PDF/DOCX) mais profissional
+3. `supabase/functions/evidence-cross-match/index_test.ts`
+   - Requisito de uma empresa X não recebe evidence match de empresa Y (regressão do bug de framework lookup que corrigimos).
+   - Retorna 402 quando sem crédito.
 
-Alvo em `DocGenDialog.tsx` (`generatePdfBlob`, `generateDocxBlob`):
+4. `supabase/functions/analyze-evidence-against-requirement/index_test.ts`
+   - Evidência claramente aderente → status `conforme` com justificativa.
+   - Evidência claramente vazia → `nao_conforme`.
+   - Reconciliação: se IA responder inconsistente com o texto, o wrapper prevalece.
 
-- **PDF**: capa dedicada com logo grande + título + classificação + versão + data + empresa; página em branco para sumário automático (com números de página reais); cabeçalho e rodapé em todas as páginas (nome do doc + confidencialidade + `pág X de Y`); numeração hierárquica; quebra de página entre seções principais; fontes: título 22pt bold, H2 14pt bold, corpo 11pt justificado com entrelinha 1.4.
-- **DOCX**: usar `HeadingLevel.HEADING_1/2/3`, `TableOfContents` (docx suporta via `TableOfContents`), header/footer com `PageNumber`, estilos consistentes. Renderizar Papéis/Responsabilidades como `Table` real quando `matriz_raci` estiver presente.
-- **Tanto PDF quanto DOCX**: renderizar Histórico de Revisões e Referências Normativas como tabela.
-
----
-
-## Onda 5 — Reexecutar simulação e validar
-
-Rodar a mesma bateria da Onda 1, comparando *antes/depois*:
-- `initial_score` ≥ 80% para o caso ISO 27001 Mesa Limpa (baseline).
-- Documento salvo em `/documentos` já vinculado ao framework e com `coverage_map` anexado.
-- Preview do PDF/DOCX inspecionado imagem por imagem (renderizar as páginas com PIL antes de entregar).
-- Rodar `docgen-chat/compliance_test.ts` para confirmar que Onda 3 não quebrou a fórmula compartilhada.
+Todos usam `dotenv/load.ts` e `VITE_SUPABASE_URL` + `VITE_SUPABASE_PUBLISHABLE_KEY` do `.env` local (padrão já documentado). Consomem sempre `await response.text()` para evitar leak.
 
 ---
 
-## Detalhes técnicos (para a equipe)
+## Onda 3 — Simulação Playwright do fluxo do usuário
 
-**Arquivos que serão editados:**
-- `supabase/functions/docgen-chat/index.ts` — modelo, prompt, quality gate.
-- `src/components/documentos/DocGenDialog.tsx` — auto-anexar DOCX na publicação, vincular framework, PDF/DOCX profissionais, gate no botão Publicar.
-- (Opcional) `src/lib/docgen-templates.ts` — nova baseline de estrutura Big4 usada pelo prompt.
+Script `/tmp/browser/gap-analysis/run.py` (headless chromium, viewport 1280x1800, sessão Supabase injetada pelo sandbox).
 
-**Não muda:** `_shared/compliance-score.ts`, testes existentes, fluxo de créditos, RLS.
+Passos:
+1. Autenticar via `LOVABLE_BROWSER_SUPABASE_*` → abrir `/gap-analysis`.
+2. Screenshot da lista de frameworks. Ler contadores de requisitos e conferir contra o banco via `supabase--read_query` (regressão do bug de paginação de 1000).
+3. Abrir 1 framework (ex.: ISO 27001). Screenshot.
+4. Editar 3 requisitos: 1 conforme, 1 parcial, 1 N/A. Salvar cada um pelo `RequirementDetailDialog`.
+5. Anexar uma evidência PDF pequena a 1 requisito. Validar upload multi-tenant.
+6. Rodar diagnóstico IA (`gap-analysis-ai-diagnostic`). Screenshot da resposta.
+7. Ir para o Dashboard (`/`) e confirmar que o "GRC Maturity" e o card do framework refletem o score novo.
+8. Ir para SoA e confirmar que N/A sai do denominador.
 
-**Nenhuma migration** necessária a princípio (se a Onda 1 revelar necessidade de coluna `coverage_map` em `documentos`, incluir).
+Cada passo gera screenshot inspecionado com `code--view`. Falha se qualquer score divergir entre tela e recomputação determinística.
 
-**Custo IA:** troca do modelo aumenta ~2–3× o custo por geração; refino de seção continua no flash barato.
+---
+
+## Onda 4 — Auditoria de consistência de score entre telas
+
+Novo arquivo `docs/audits/gap-analysis-score-parity.md` gerado a partir de:
+- Grep de todos os call sites que calculam score de conformidade (Dashboard, GapAnalysisFrameworks, GapAnalysisFrameworkDetail, SoA, useGrcMaturityScore, useAdherenceStats, useFrameworksOverview, useGapAnalysisStats).
+- Confirmar que todos usam `computeConformityScore`/`gap-analysis-scoring.ts` ou a mesma fórmula do `_shared/compliance-score.ts`.
+- Qualquer implementação divergente → refatorar para o módulo canônico na mesma onda.
+
+Se detectar um segundo cálculo paralelo, ele é substituído pelo canônico (mesmo padrão do fix "50% vs 48%").
+
+---
+
+## Onda 5 — Rodar, corrigir, revalidar
+
+- `bunx vitest run src/lib/__tests__/gap-analysis-scoring.test.ts`.
+- `supabase--test_edge_functions` para as 4 funções da Onda 2.
+- Rodar Playwright da Onda 3.
+- Se algum teste falhar, corrigir na fonte (nunca afrouxar a asserção) e rodar de novo até 100%.
+- Relatório final: quantos testes passaram, quais bugs a bateria capturou, quais foram corrigidos.
+
+---
+
+## Detalhes técnicos
+
+**Arquivos criados:**
+- `src/lib/__tests__/gap-analysis-scoring.test.ts`
+- `supabase/functions/_shared/gap-scoring-parity_test.ts`
+- `supabase/functions/gap-analysis-ai-diagnostic/index_test.ts`
+- `supabase/functions/calculate-assessment-score/index_test.ts`
+- `supabase/functions/evidence-cross-match/index_test.ts`
+- `supabase/functions/analyze-evidence-against-requirement/index_test.ts`
+- `/tmp/browser/gap-analysis/run.py` (fora do repo — apenas para a simulação)
+- `docs/audits/gap-analysis-score-parity.md`
+
+**Arquivos possivelmente alterados (só se a auditoria da Onda 4 achar divergência):**
+- Qualquer hook/página que ainda calcule score fora do módulo canônico.
+
+**Sem migrations. Sem alteração de RLS.** Custo IA: ~10-20 créditos entre Onda 2 e Onda 3.
