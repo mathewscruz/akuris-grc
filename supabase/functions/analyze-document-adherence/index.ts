@@ -252,8 +252,9 @@ FORMATO JSON OBRIGATÓRIO (retorne APENAS JSON válido, sem markdown):
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-3-flash-preview',
-        max_tokens: 32000,
+        // Mesmo modelo/qualidade que o docgen-chat usa em generate_document — juiz único.
+        model: 'google/gemini-3.1-pro-preview',
+        max_tokens: 48000,
         messages: [
           { role: 'system', content: 'Você é um auditor sênior de conformidade regulatória. Analise documentos com rigor e precisão. Retorne APENAS JSON válido seguindo exatamente o schema fornecido. Seja específico nas evidências e gaps.' },
           { role: 'user', content: prompt }
