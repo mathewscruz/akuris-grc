@@ -172,6 +172,41 @@ export function RequirementDrawer({
     }
   };
 
+  // Atalhos de teclado dentro do drawer: 1/2/3/4 selecionam status, Cmd/Ctrl+Enter salva.
+  // Ignora se o foco está em input/textarea (para não sequestrar digitação).
+  useEffect(() => {
+    if (!open || !requirement) return;
+    const handler = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName?.toLowerCase();
+      const isEditable = tag === 'input' || tag === 'textarea' || target?.isContentEditable;
+      // Cmd/Ctrl+Enter salva mesmo dentro de textarea
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+        if (evaluation.conformity_status && !saving) {
+          e.preventDefault();
+          handleSave();
+        }
+        return;
+      }
+      if (isEditable) return;
+      const map: Record<string, string> = {
+        '1': 'conforme',
+        '2': 'parcial',
+        '3': 'nao_conforme',
+        '4': 'nao_aplicavel',
+      };
+      const next = map[e.key];
+      if (next) {
+        e.preventDefault();
+        setEvaluation((prev) => ({ ...prev, conformity_status: next }));
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, requirement, evaluation.conformity_status, saving]);
+
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
