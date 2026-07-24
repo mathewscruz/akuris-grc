@@ -1441,7 +1441,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                       </Tooltip>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Button onClick={handleOpenCreateDialog} size="sm" className="gap-1">
+                          <Button onClick={handleSaveClick} size="sm" className="gap-1">
                             <Save className="h-3 w-3" strokeWidth={1.5} />
                             Salvar em Documentos
                           </Button>
