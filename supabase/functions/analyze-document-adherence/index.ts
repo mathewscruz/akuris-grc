@@ -366,7 +366,7 @@ FORMATO JSON OBRIGATÓRIO (retorne APENAS JSON válido, sem markdown):
         recomendacoes: analysisResult.recomendacoes || [],
         analise_detalhada: analysisResult.analise_detalhada,
         metadados_analise: {
-          modelo_usado: 'google/gemini-3-flash-preview',
+          modelo_usado: 'google/gemini-3.1-pro-preview',
           provider: 'lovable-ai-gateway',
           tempo_processamento: Date.now(),
           total_requisitos: requirements?.length || 0,
