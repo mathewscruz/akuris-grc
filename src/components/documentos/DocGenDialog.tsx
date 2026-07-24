@@ -39,7 +39,23 @@ import {
 import { formatStatus } from '@/lib/text-utils';
 import { DocumentoDialog } from '@/components/documentos/DocumentoDialog';
 import jsPDF from 'jspdf';
-import { Document as DocxDocument, Packer, Paragraph, HeadingLevel, TextRun, ImageRun } from 'docx';
+import {
+  Document as DocxDocument,
+  Packer,
+  Paragraph,
+  HeadingLevel,
+  TextRun,
+  ImageRun,
+  Footer,
+  PageNumber,
+  PageBreak,
+  AlignmentType,
+  Table,
+  TableRow,
+  TableCell,
+  WidthType,
+  BorderStyle,
+} from 'docx';
 import { CreditsExhaustedDialog } from '@/components/CreditsExhaustedDialog';
 import { useAuth } from '@/components/AuthProvider';
 
