@@ -17,6 +17,10 @@ import {
   complianceImpactFrom,
   resolveResultadoGeral,
   filterInScope,
+  expandNaoCobertosFromCatalog,
+  computeResidualGaps,
+  AUDIT_THRESHOLD,
+  FRAMEWORK_REQ_CAP,
   type CoverageItem,
   type NaoCobertoJustificativa,
 } from "../_shared/compliance-score.ts";
