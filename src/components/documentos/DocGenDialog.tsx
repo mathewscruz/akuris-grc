@@ -937,6 +937,32 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     }
   }, [generatedDocument]);
 
+  // Score ao vivo + delta: guarda o score anterior antes de aplicar o novo.
+  // Depende só do documento gerado atual — o próprio backend garante que
+  // `_initial_score` é recalculado a cada refino sem consumir crédito extra.
+  const currentScore: number | null =
+    typeof generatedDocument?._initial_score === 'number' ? generatedDocument._initial_score : null;
+  useEffect(() => {
+    if (currentScore === null) {
+      setPreviousScore(null);
+      return;
+    }
+    setPreviousScore((prev) => {
+      // Primeira medição: sem delta. Depois, mantém o valor anterior para calcular delta.
+      if (prev === null) return currentScore;
+      return prev === currentScore ? prev : prev;
+    });
+    // Depois que renderizamos com o delta, o "anterior" precisa passar a ser o atual
+    // para a próxima medição. Fazemos isso via microtask para preservar 1 render de delta.
+    const t = setTimeout(() => setPreviousScore(currentScore), 4000);
+    return () => clearTimeout(t);
+  }, [currentScore]);
+  const scoreDelta =
+    currentScore !== null && previousScore !== null && previousScore !== currentScore
+      ? currentScore - previousScore
+      : null;
+
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     // Enter envia, Shift+Enter quebra linha. Ignora durante composição IME (acentos compostos).
     if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
