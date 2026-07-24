@@ -17,6 +17,10 @@ import {
   complianceImpactFrom,
   resolveResultadoGeral,
   filterInScope,
+  expandNaoCobertosFromCatalog,
+  computeResidualGaps,
+  AUDIT_THRESHOLD,
+  FRAMEWORK_REQ_CAP,
   type CoverageItem,
   type NaoCobertoJustificativa,
 } from "../_shared/compliance-score.ts";
@@ -128,4 +132,57 @@ Deno.test("Onda 2 — remoção NÃO confirmada em coverage_kept é preservada (
     keptCodes: ["A.5.10"], // A.7.7 fica de fora, MAS não foi marcada como removida
   });
   assert(next.some((c) => c.requirement_codigo === "A.7.7"), "A.7.7 mantido por segurança");
+});
+
+// ============================================================================
+// Onda de alinhamento gerador ⇄ analisador:
+// - expandNaoCobertosFromCatalog garante que o denominador do score inclui
+//   TODOS os requisitos do framework, não só os que a IA lembrou de declarar.
+// - computeResidualGaps entrega o top-N para refino gap-driven.
+// - AUDIT_THRESHOLD e FRAMEWORK_REQ_CAP são as constantes canônicas usadas
+//   simultaneamente no DocGen e no analyze-document-adherence.
+// ============================================================================
+
+Deno.test("Alinhamento — denominador expandido penaliza IA que declarou só metade do framework", () => {
+  const catalog = ["A.5.1", "A.5.2", "A.5.3", "A.7.7", "A.8.13"];
+  const coverage: CoverageItem[] = [
+    { requirement_codigo: "A.7.7", section_indexes: [1] },
+    { requirement_codigo: "A.8.13", section_indexes: [2] },
+  ];
+  const naoCobertosDeclarados: NaoCobertoJustificativa[] = []; // IA "esqueceu" os demais
+  const expandido = expandNaoCobertosFromCatalog(catalog, coverage, naoCobertosDeclarados);
+  // 3 códigos silenciosamente omitidos entram como in-scope
+  assertEquals(expandido.length, 3);
+  const score = computeCoverageScore(coverage, expandido);
+  // 2 / (2 + 3) = 40%
+  assertEquals(score, 40);
+  assert(score < AUDIT_THRESHOLD, "score abaixo do threshold — a IA não pode mais inflar declarando pouco");
+});
+
+Deno.test("Alinhamento — 'fora de escopo' declarado explicitamente NÃO é sobrescrito na expansão", () => {
+  const catalog = ["A.5.1", "A.5.2", "A.9.1"];
+  const coverage: CoverageItem[] = [{ requirement_codigo: "A.5.1", section_indexes: [1] }];
+  const declarados: NaoCobertoJustificativa[] = [
+    { codigo: "A.9.1", motivo: "fora do escopo desta política" },
+  ];
+  const expandido = expandNaoCobertosFromCatalog(catalog, coverage, declarados);
+  // A.9.1 preservado como out-of-scope; A.5.2 adicionado como in-scope
+  const inScope = filterInScope(expandido);
+  assertEquals(inScope.length, 1);
+  assertEquals(inScope[0].codigo, "A.5.2");
+});
+
+Deno.test("Alinhamento — computeResidualGaps devolve códigos priorizados por profundidade", () => {
+  const catalog = ["A.5.1", "A.5.1.1", "A.5.1.2", "A.7.7", "A.8.13"];
+  const coverage: CoverageItem[] = [{ requirement_codigo: "A.7.7", section_indexes: [1] }];
+  const naoCobertos: NaoCobertoJustificativa[] = [
+    { codigo: "A.8.13", motivo: "fora do escopo" },
+  ];
+  const gaps = computeResidualGaps(catalog, coverage, naoCobertos, 10);
+  assertEquals(gaps, ["A.5.1", "A.5.1.1", "A.5.1.2"]);
+});
+
+Deno.test("Alinhamento — constantes canônicas expostas para gerador e analisador", () => {
+  assert(AUDIT_THRESHOLD >= 60 && AUDIT_THRESHOLD <= 90, "threshold razoável de compliance");
+  assert(FRAMEWORK_REQ_CAP >= 200, "cap comporta PCI DSS (~288 sub-requisitos)");
 });

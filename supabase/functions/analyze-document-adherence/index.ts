@@ -4,6 +4,7 @@ import {
   computeAnalyzedScore,
   reconcileReportedScore,
   resolveResultadoGeral,
+  FRAMEWORK_REQ_CAP,
 } from "../_shared/compliance-score.ts";
 
 const corsHeaders = {
@@ -160,14 +161,15 @@ serve(async (req) => {
     }
 
     // 4. Montar prompt
-    // Sonnet 5 comporta um contexto grande; 150 requisitos cobrem os frameworks
-    // usuais (ISO 27001 tem ~121). Frameworks muito grandes (ex.: PCI DSS ~288)
-    // ainda pedem processamento em lotes — melhoria futura.
-    const MAX_REQS_POR_ANALISE = 150;
+    // FRAMEWORK_REQ_CAP alinha o universo do analisador com o gerador (DocGen).
+    // Frameworks acima do cap (raro) processam parcialmente e o restante é
+    // computado como "silenciosamente omitido" pelo computeAnalyzedScore, o que
+    // penaliza corretamente a cobertura ao invés de inflar o score.
+    const MAX_REQS_POR_ANALISE = FRAMEWORK_REQ_CAP;
     const docTextForAnalysis = documentText.substring(0, 30000);
     const reqsForAnalysis = requirements.slice(0, MAX_REQS_POR_ANALISE);
     if (requirements.length > MAX_REQS_POR_ANALISE) {
-      console.warn(`Framework com ${requirements.length} requisitos excede o limite de ${MAX_REQS_POR_ANALISE} por análise; ${requirements.length - MAX_REQS_POR_ANALISE} não foram analisados nesta rodada.`);
+      console.warn(`Framework com ${requirements.length} requisitos excede o cap ${MAX_REQS_POR_ANALISE}; ${requirements.length - MAX_REQS_POR_ANALISE} não foram analisados nesta rodada (contam como silenciosamente omitidos no score).`);
     }
 
     const reqsText = reqsForAnalysis.map((r: any, i: number) => {
@@ -250,8 +252,9 @@ FORMATO JSON OBRIGATÓRIO (retorne APENAS JSON válido, sem markdown):
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-3-flash-preview',
-        max_tokens: 32000,
+        // Mesmo modelo/qualidade que o docgen-chat usa em generate_document — juiz único.
+        model: 'google/gemini-3.1-pro-preview',
+        max_tokens: 48000,
         messages: [
           { role: 'system', content: 'Você é um auditor sênior de conformidade regulatória. Analise documentos com rigor e precisão. Retorne APENAS JSON válido seguindo exatamente o schema fornecido. Seja específico nas evidências e gaps.' },
           { role: 'user', content: prompt }
@@ -363,7 +366,7 @@ FORMATO JSON OBRIGATÓRIO (retorne APENAS JSON válido, sem markdown):
         recomendacoes: analysisResult.recomendacoes || [],
         analise_detalhada: analysisResult.analise_detalhada,
         metadados_analise: {
-          modelo_usado: 'google/gemini-3-flash-preview',
+          modelo_usado: 'google/gemini-3.1-pro-preview',
           provider: 'lovable-ai-gateway',
           tempo_processamento: Date.now(),
           total_requisitos: requirements?.length || 0,

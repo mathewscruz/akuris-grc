@@ -7,6 +7,9 @@ import {
   applyRefineCoverage,
   complianceImpactFrom,
   filterInScope,
+  expandNaoCobertosFromCatalog,
+  computeResidualGaps,
+  AUDIT_THRESHOLD,
 } from '../_shared/compliance-score.ts';
 
 const corsHeaders = {
@@ -871,31 +874,65 @@ ${weak.map(w => `- índice ${w.index} ("${w.nome}") — motivo: ${w.motivo}\n  C
 
 
       // === Onda 1: contrato de cobertura + score inicial determinístico ===
-      // Normaliza coverage_map e calcula initial_score sem consumir crédito extra.
-      // O score reflete: coberto / (coberto + relevante-não-coberto). Fora de escopo
-      // (requisitos_nao_cobertos_justificativa) NÃO conta no denominador.
+      // O denominador do score reflete o UNIVERSO REAL do(s) framework(s), não
+      // só os requisitos que a IA lembrou de declarar. Isso alinha o gerador
+      // com o analisador (analyze-document-adherence), eliminando o buraco em
+      // que o DocGen entregava 100% e o Akuris avaliava o mesmo doc como 0%.
       const coverageMap: any[] = Array.isArray(documentContent?.coverage_map) ? documentContent.coverage_map : [];
-      const naoCobertos: any[] = Array.isArray(documentContent?.requisitos_nao_cobertos_justificativa)
+      let naoCobertos: any[] = Array.isArray(documentContent?.requisitos_nao_cobertos_justificativa)
         ? documentContent.requisitos_nao_cobertos_justificativa : [];
+
+      let catalogCodes: string[] = [];
+      let residualGaps: string[] = [];
+      if (docFwIds.length) {
+        try {
+          const { data: catalogRows } = await supabase
+            .from('gap_analysis_requirements')
+            .select('codigo')
+            .in('framework_id', docFwIds)
+            .order('ordem', { ascending: true })
+            .limit(600);
+          catalogCodes = (catalogRows || [])
+            .map((r: any) => String(r?.codigo || '').trim())
+            .filter(Boolean);
+        } catch (catErr) {
+          console.log('DocGen catalog fetch failed (score usará somente o coverage_map declarado)', catErr);
+        }
+        if (catalogCodes.length) {
+          naoCobertos = expandNaoCobertosFromCatalog(catalogCodes, coverageMap, naoCobertos);
+          residualGaps = computeResidualGaps(catalogCodes, coverageMap, naoCobertos, 15);
+          // Reflete o denominador expandido de volta no documento persistido.
+          documentContent.requisitos_nao_cobertos_justificativa = naoCobertos;
+        }
+      }
+
       const inScopeNaoCobertos = filterInScope(naoCobertos);
       const initial_score = computeCoverageScore(coverageMap, naoCobertos);
       const warnings: string[] = [];
       if (coverageMap.length === 0 && docFwIds.length > 0) {
         warnings.push('A IA não devolveu coverage_map — a análise de compliance pode ficar inconsistente.');
       }
-      if (initial_score > 0 && initial_score < 80) {
-        warnings.push(`Score inicial de ${initial_score}% — ${inScopeNaoCobertos.length} requisito(s) relevante(s) ficaram sem cobertura explícita.`);
+      if (catalogCodes.length && coverageMap.length < catalogCodes.length && initial_score < AUDIT_THRESHOLD) {
+        warnings.push(`${residualGaps.length} requisito(s) do framework não foram endereçados pelo documento. Peça um refino no chat para incluí-los.`);
+      }
+      if (initial_score > 0 && initial_score < AUDIT_THRESHOLD) {
+        warnings.push(`Score inicial de ${initial_score}% — ${inScopeNaoCobertos.length} requisito(s) sem cobertura explícita.`);
       }
       documentContent._initial_score = initial_score;
-      documentContent._score_source = 'coverage_map';
+      documentContent._score_source = catalogCodes.length ? 'coverage_map+catalog' : 'coverage_map';
+      documentContent._catalog_size = catalogCodes.length;
+      documentContent._residual_gaps = residualGaps;
 
       console.log('DocGen generate_document compliance', {
         framework: framework_context?.framework_name,
         coverage_items: coverageMap.length,
+        catalog_size: catalogCodes.length,
         nao_cobertos_in_scope: inScopeNaoCobertos.length,
         nao_cobertos_out_scope: naoCobertos.length - inScopeNaoCobertos.length,
+        residual_gaps_top: residualGaps.slice(0, 8),
         initial_score,
       });
+
 
       try {
         await supabase
@@ -936,6 +973,8 @@ ${weak.map(w => `- índice ${w.index} ("${w.nome}") — motivo: ${w.motivo}\n  C
         document: documentContent,
         initial_score,
         coverage_map: coverageMap,
+        residual_gaps: residualGaps,
+        catalog_size: catalogCodes.length,
         warnings,
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
