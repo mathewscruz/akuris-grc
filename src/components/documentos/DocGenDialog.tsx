@@ -564,7 +564,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
   const generateDocxBlob = async () => {
     if (!generatedDocument) return null;
     const children: any[] = [];
-    const empresaNome = userInfo?.empresa_nome || '';
+    const empresaNome = (userInfo as any)?.empresa_nome || companyInfo?.nome || '';
     const titulo = generatedDocument.titulo || 'Documento';
     const versao = generatedDocument.versao || '1.0';
     const dataCriacao = generatedDocument.data_criacao || new Date().toISOString().slice(0, 10);
