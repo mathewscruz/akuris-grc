@@ -39,7 +39,23 @@ import {
 import { formatStatus } from '@/lib/text-utils';
 import { DocumentoDialog } from '@/components/documentos/DocumentoDialog';
 import jsPDF from 'jspdf';
-import { Document as DocxDocument, Packer, Paragraph, HeadingLevel, TextRun, ImageRun } from 'docx';
+import {
+  Document as DocxDocument,
+  Packer,
+  Paragraph,
+  HeadingLevel,
+  TextRun,
+  ImageRun,
+  Footer,
+  PageNumber,
+  PageBreak,
+  AlignmentType,
+  Table,
+  TableRow,
+  TableCell,
+  WidthType,
+  BorderStyle,
+} from 'docx';
 import { CreditsExhaustedDialog } from '@/components/CreditsExhaustedDialog';
 import { useAuth } from '@/components/AuthProvider';
 
@@ -544,73 +560,115 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
   };
 
 
-  // Geração e exportação de arquivos
+  // Geração e exportação de arquivos (padrão editorial Big4)
   const generateDocxBlob = async () => {
     if (!generatedDocument) return null;
     const children: any[] = [];
+    const empresaNome = (userInfo as any)?.empresa_nome || (companyInfo as any)?.nome || '';
+    const titulo = generatedDocument.titulo || 'Documento';
+    const versao = generatedDocument.versao || '1.0';
+    const dataCriacao = generatedDocument.data_criacao || new Date().toISOString().slice(0, 10);
+    const classificacao = generatedDocument.metadados?.classificacao || 'Interno';
 
-    // Logo no topo (se houver)
     const logoUrl: string | undefined = generatedDocument.metadados?.logo_url || companyInfo?.logo_url;
     const logoAltura: number = parseInt(generatedDocument.metadados?.logo_altura || '48', 10);
-    const logoPosicao: string = generatedDocument.metadados?.logo_posicao || 'esquerda';
-    
+    const logoPosicao: string = generatedDocument.metadados?.logo_posicao || 'centro';
+
+    // ===== CAPA =====
     if (logoUrl) {
       try {
         const resp = await fetch(logoUrl);
         const buf = await resp.arrayBuffer();
-        
-        const alignment = logoPosicao === 'centro' ? 'center' : 
-                         logoPosicao === 'direita' ? 'right' : 'left';
-        
-        children.push(
-          new Paragraph({
-            alignment: alignment as any,
-            children: [
-              new ImageRun({ data: buf, transformation: { width: Math.round(logoAltura * 2), height: logoAltura } })
-            ]
-          })
-        );
-      } catch (_) { /* ignora erro de logo */ }
+        const alignment = logoPosicao === 'centro' ? AlignmentType.CENTER
+          : logoPosicao === 'direita' ? AlignmentType.RIGHT : AlignmentType.LEFT;
+        children.push(new Paragraph({
+          alignment,
+          children: [new ImageRun({ data: buf, transformation: { width: Math.round(logoAltura * 2), height: logoAltura } })],
+        }));
+      } catch (_) { /* ignora */ }
     }
+    // espaço até o meio da página
+    for (let i = 0; i < 6; i++) children.push(new Paragraph({ text: '' }));
+    children.push(new Paragraph({
+      alignment: AlignmentType.CENTER,
+      heading: HeadingLevel.TITLE,
+      children: [new TextRun({ text: titulo, bold: true, size: 48 })],
+    }));
+    children.push(new Paragraph({ text: '' }));
+    children.push(new Paragraph({
+      alignment: AlignmentType.CENTER,
+      children: [new TextRun({ text: empresaNome, size: 28 })],
+    }));
+    for (let i = 0; i < 8; i++) children.push(new Paragraph({ text: '' }));
+    children.push(new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: `Versão ${versao}`, size: 22 })] }));
+    children.push(new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: `Data de emissão: ${dataCriacao}`, size: 22 })] }));
+    children.push(new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: `Classificação: ${classificacao}`, size: 22 })] }));
+    // quebra de página após a capa
+    children.push(new Paragraph({ children: [new PageBreak()] }));
 
-    children.push(
-      new Paragraph({
-        text: generatedDocument.titulo || 'Documento',
-        heading: HeadingLevel.TITLE,
-      })
-    );
-    children.push(new Paragraph({ text: `Versão: ${generatedDocument.versao || ''}` }));
-    children.push(new Paragraph({ text: `Data: ${generatedDocument.data_criacao || ''}` }));
+    // ===== SUMÁRIO (lista simples de seções, com numeração) =====
+    children.push(new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun({ text: 'Sumário', bold: true })] }));
+    (generatedDocument.secoes || []).forEach((s: any, i: number) => {
+      children.push(new Paragraph({ children: [new TextRun(`${i + 1}. ${s.nome || 'Seção'}`)] }));
+    });
+    children.push(new Paragraph({ children: [new PageBreak()] }));
 
-    (generatedDocument.secoes || []).forEach((secao: any) => {
-      children.push(
-        new Paragraph({ text: ' ' }),
-      );
-      children.push(
-        new Paragraph({ text: secao.nome || 'Seção', heading: HeadingLevel.HEADING_2 })
-      );
-      const conteudo = (secao.conteudo || '').toString().split('\n');
-      conteudo.forEach((line: string) =>
-        children.push(new Paragraph({ children: [new TextRun(line)] }))
-      );
+    // ===== SEÇÕES =====
+    (generatedDocument.secoes || []).forEach((secao: any, idx: number) => {
+      children.push(new Paragraph({
+        heading: HeadingLevel.HEADING_1,
+        children: [new TextRun({ text: `${idx + 1}. ${secao.nome || 'Seção'}`, bold: true })],
+      }));
+      const conteudo = String(secao.conteudo || '');
+      // preservar parágrafos vazios; cada linha vira um Paragraph
+      conteudo.split('\n').forEach((line: string) => {
+        children.push(new Paragraph({ children: [new TextRun(line)] }));
+      });
+      children.push(new Paragraph({ text: '' }));
     });
 
-    const doc = new DocxDocument({ sections: [{ properties: {}, children }] });
-    const blob = await Packer.toBlob(doc);
-    return blob;
+    // ===== Rodapé com paginação =====
+    const footer = new Footer({
+      children: [
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          children: [
+            new TextRun({ text: `${empresaNome} · ${titulo} · v${versao} · Página `, size: 18 }),
+            new TextRun({ children: [PageNumber.CURRENT], size: 18 }),
+            new TextRun({ text: ' de ', size: 18 }),
+            new TextRun({ children: [PageNumber.TOTAL_PAGES], size: 18 }),
+          ],
+        }),
+      ],
+    });
+
+    const doc = new DocxDocument({
+      sections: [{
+        properties: { page: { margin: { top: 1080, right: 1080, bottom: 1080, left: 1080 } } },
+        footers: { default: footer },
+        children,
+      }],
+    });
+    return await Packer.toBlob(doc);
   };
 
   const generatePdfBlob = async () => {
     if (!generatedDocument) return null;
     const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
-    const marginX = 40;
-    let y = 50;
+    const marginX = 48;
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const maxWidth = pageWidth - marginX * 2;
+    const empresaNome = (userInfo as any)?.empresa_nome || (companyInfo as any)?.nome || '';
+    const titulo = generatedDocument.titulo || 'Documento';
+    const versao = generatedDocument.versao || '1.0';
+    const dataCriacao = generatedDocument.data_criacao || new Date().toISOString().slice(0, 10);
+    const classificacao = generatedDocument.metadados?.classificacao || 'Interno';
 
-    // Tentar carregar logo da empresa
     const logoUrl: string | undefined = generatedDocument.metadados?.logo_url || companyInfo?.logo_url;
     const logoAltura: number = parseInt(generatedDocument.metadados?.logo_altura || '48', 10);
-    const logoPosicao: string = generatedDocument.metadados?.logo_posicao || 'esquerda';
-    
+
+    // ===== CAPA (página 1 dedicada) =====
     if (logoUrl) {
       try {
         const resp = await fetch(logoUrl);
@@ -618,66 +676,76 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
         const reader = new FileReader();
         const dataUrl: string = await new Promise((resolve, reject) => {
           reader.onload = () => resolve(reader.result as string);
-          reader.onerror = () => reject(new Error('Falha ao carregar logo'));
+          reader.onerror = () => reject(new Error('logo'));
           reader.readAsDataURL(blob);
         });
-        
-        const logoWidth = Math.round(logoAltura * 2);
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        
-        let logoX = marginX; // posição padrão (esquerda)
-        if (logoPosicao === 'centro') {
-          logoX = (pageWidth - logoWidth) / 2;
-        } else if (logoPosicao === 'direita') {
-          logoX = pageWidth - marginX - logoWidth;
-        }
-        
-        pdf.addImage(dataUrl, (blob.type.includes('png') ? 'PNG' : 'JPEG') as any, logoX, y, logoWidth, logoAltura);
-        y += logoAltura + 16;
-      } catch (_) { /* ignora erro de logo */ }
+        const logoW = Math.round(logoAltura * 2);
+        pdf.addImage(dataUrl, (blob.type.includes('png') ? 'PNG' : 'JPEG') as any,
+          (pageWidth - logoW) / 2, 100, logoW, logoAltura);
+      } catch (_) { /* ignora */ }
     }
-
     pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(16);
-    pdf.text(generatedDocument.titulo || 'Documento', marginX, y);
-    y += 24;
-
+    pdf.setFontSize(24);
+    const tituloLines = pdf.splitTextToSize(titulo, maxWidth);
+    let capaY = pageHeight / 2 - 40;
+    tituloLines.forEach((line: string) => {
+      pdf.text(line, pageWidth / 2, capaY, { align: 'center' });
+      capaY += 30;
+    });
     pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(10);
-    pdf.text(`Versão: ${generatedDocument.versao || ''}`, marginX, y);
-    y += 16;
-    pdf.text(`Data: ${generatedDocument.data_criacao || ''}`, marginX, y);
-    y += 24;
+    pdf.setFontSize(14);
+    pdf.text(empresaNome, pageWidth / 2, capaY + 10, { align: 'center' });
+    pdf.setFontSize(11);
+    pdf.text(`Versão ${versao}`, pageWidth / 2, pageHeight - 160, { align: 'center' });
+    pdf.text(`Data de emissão: ${dataCriacao}`, pageWidth / 2, pageHeight - 144, { align: 'center' });
+    pdf.text(`Classificação: ${classificacao}`, pageWidth / 2, pageHeight - 128, { align: 'center' });
 
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    const maxWidth = pdf.internal.pageSize.getWidth() - marginX * 2;
+    // ===== SUMÁRIO =====
+    pdf.addPage();
+    let y = 60;
+    pdf.setFont('helvetica', 'bold'); pdf.setFontSize(16);
+    pdf.text('Sumário', marginX, y); y += 24;
+    pdf.setFont('helvetica', 'normal'); pdf.setFontSize(11);
+    (generatedDocument.secoes || []).forEach((s: any, i: number) => {
+      if (y > pageHeight - 60) { pdf.addPage(); y = 60; }
+      pdf.text(`${i + 1}. ${s.nome || 'Seção'}`, marginX, y);
+      y += 16;
+    });
 
+    // ===== SEÇÕES =====
+    pdf.addPage();
+    y = 60;
     (generatedDocument.secoes || []).forEach((secao: any, idx: number) => {
-      if (idx > 0) y += 10;
-      pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(13);
-      const titleLines = pdf.splitTextToSize(secao.nome || 'Seção', maxWidth);
+      if (y > pageHeight - 80) { pdf.addPage(); y = 60; }
+      if (idx > 0) y += 12;
+      pdf.setFont('helvetica', 'bold'); pdf.setFontSize(13);
+      const titleLines = pdf.splitTextToSize(`${idx + 1}. ${secao.nome || 'Seção'}`, maxWidth);
       titleLines.forEach((line: string) => {
-        if (y > pageHeight - 60) {
-          pdf.addPage();
-          y = 50;
-        }
-        pdf.text(line, marginX, y);
-        y += 18;
+        if (y > pageHeight - 70) { pdf.addPage(); y = 60; }
+        pdf.text(line, marginX, y); y += 18;
       });
-
-      pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(11);
-      const lines = pdf.splitTextToSize((secao.conteudo || '').toString(), maxWidth);
-      lines.forEach((line: string) => {
-        if (y > pageHeight - 40) {
-          pdf.addPage();
-          y = 50;
-        }
-        pdf.text(line, marginX, y);
-        y += 16;
+      pdf.setFont('helvetica', 'normal'); pdf.setFontSize(11);
+      const conteudo = String(secao.conteudo || '');
+      conteudo.split('\n').forEach((paragraph: string) => {
+        const lines = pdf.splitTextToSize(paragraph, maxWidth);
+        lines.forEach((line: string) => {
+          if (y > pageHeight - 60) { pdf.addPage(); y = 60; }
+          pdf.text(line, marginX, y); y += 15;
+        });
+        y += 4;
       });
     });
+
+    // ===== Rodapé com paginação em todas as páginas =====
+    const totalPages = (pdf as any).internal.getNumberOfPages();
+    for (let p = 1; p <= totalPages; p++) {
+      pdf.setPage(p);
+      pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8);
+      pdf.setTextColor(120);
+      const footerText = `${empresaNome} · ${titulo} · v${versao} · Página ${p} de ${totalPages}`;
+      pdf.text(footerText, pageWidth / 2, pageHeight - 20, { align: 'center' });
+      pdf.setTextColor(0);
+    }
 
     return pdf.output('blob');
   };

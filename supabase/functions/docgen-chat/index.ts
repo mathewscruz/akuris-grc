@@ -69,7 +69,19 @@ function extractFrameworks(messageText: string): string[] {
 // Chama a IA via gateway do Lovable (OpenAI-compatível), igual às demais
 // funções do projeto. Antes usava a API da Anthropic direto com um modelo
 // que retornava 404 nesta conta.
-async function callClaude(messages: { role: string; content: string }[], systemPrompt: string, apiKey: string, maxTokens = 2000, temperature = 0.8) {
+// Modelo padrão (chat/quick_adherence): rápido e barato.
+// Modelo de qualidade editorial (generate_document / refine_document / retry): pro.
+const MODEL_FAST = 'google/gemini-3-flash-preview';
+const MODEL_QUALITY = 'google/gemini-3.1-pro-preview';
+
+async function callClaude(
+  messages: { role: string; content: string }[],
+  systemPrompt: string,
+  apiKey: string,
+  maxTokens = 2000,
+  temperature = 0.8,
+  model: string = MODEL_FAST,
+) {
   const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -77,7 +89,7 @@ async function callClaude(messages: { role: string; content: string }[], systemP
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'google/gemini-3-flash-preview',
+      model,
       max_tokens: maxTokens,
       temperature,
       messages: [
@@ -92,7 +104,7 @@ async function callClaude(messages: { role: string; content: string }[], systemP
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('AI gateway error:', response.status, errorText);
+    console.error('AI gateway error:', response.status, errorText, 'model:', model);
     if (response.status === 429) throw new Error('Limite de requisições excedido. Tente novamente em alguns minutos.');
     if (response.status === 402) throw new Error('Créditos de IA insuficientes.');
     throw new Error(`Erro na IA (${response.status})`);
@@ -100,6 +112,21 @@ async function callClaude(messages: { role: string; content: string }[], systemP
 
   const data = await response.json();
   return data.choices?.[0]?.message?.content || '';
+}
+
+// ============ Quality gate helpers (Onda 3) ============
+const PLACEHOLDER_RX = /\b(preencher|inserir|exemplo|TBD|lorem ipsum|xxx|xxxx|\.\.\.)\b/i;
+function findWeakSections(secoes: any[]): { index: number; nome: string; motivo: string }[] {
+  const weak: { index: number; nome: string; motivo: string }[] = [];
+  (secoes || []).forEach((s, i) => {
+    const conteudo = String(s?.conteudo || '').trim();
+    if (conteudo.length < 200) {
+      weak.push({ index: i, nome: s?.nome || `Seção ${i + 1}`, motivo: `curta (${conteudo.length} chars)` });
+    } else if (PLACEHOLDER_RX.test(conteudo)) {
+      weak.push({ index: i, nome: s?.nome || `Seção ${i + 1}`, motivo: 'contém placeholder' });
+    }
+  });
+  return weak;
 }
 
 // Fetch non-compliant gaps for the framework
@@ -707,7 +734,7 @@ ${transcript}
 === FIM DAS RESPOSTAS DO USUÁRIO ===`
         : '';
 
-      const documentPrompt = `Gere um documento COMPLETO e ESPECÍFICO do tipo solicitado, JÁ EM CONFORMIDADE com o(s) framework(s) informado(s).
+      const documentPrompt = `Você é um consultor sênior de GRC de uma firma Big Four com 20+ anos redigindo políticas e procedimentos corporativos auditáveis. Escreva no idioma português (Brasil), tom formal-institucional, voz ativa, frases curtas e verificáveis. NUNCA use jargão vazio ("robusto", "estado da arte", "world class"), NUNCA use placeholders ("preencher", "TBD", "XXX", "lorem ipsum"), NUNCA copie o nome do requisito como se fosse conteúdo. Cada afirmação deve ser AUDITÁVEL (quem faz, o quê, quando, com que evidência).
 
 DOCUMENTO_EXATO: ${docNome}
 FRAMEWORKS_REQUERIDOS: ${JSON.stringify((context as any).frameworks_relacionados || (framework_context ? [framework_context.framework_name] : []))}
@@ -720,16 +747,25 @@ Use a estrutura do template abaixo e cubra explicitamente os requisitos do(s) fr
 TEMPLATE: ${JSON.stringify(templateEstrutura || template.estrutura)}
 INFORMAÇÕES COLETADAS: ${JSON.stringify(context.informacoes_coletadas)}
 
-Requisitos obrigatórios de formatação:
-- Capa com título igual a DOCUMENTO_EXATO, versão 1.0, a data DATA_ATUAL e nome da empresa
-- Sumário
-- Todas as seções definidas no template
-- Conteúdo detalhado e profissional alinhado aos frameworks
-- Personalização real: reflita as respostas do usuário na conversa (item acima) — não use frases genéricas quando o usuário deu um dado concreto
-- Rodapé com informações da empresa
-- CADA cláusula que satisfaz um requisito do framework deve conter o CÓDIGO do requisito entre colchetes (ex.: "[A.8.13]")
+Regras editoriais (obrigatórias):
+- Cada seção com no mínimo 3 parágrafos SUBSTANTIVOS (300+ caracteres cada) ou uma lista numerada com pelo menos 5 itens acionáveis.
+- Seções "Papéis e Responsabilidades" DEVEM conter uma tabela RACI textual: linhas = atividades; colunas = R/A/C/I, com papéis reais (CISO, DPO, Gestor de TI, Colaborador, Comitê de Segurança).
+- Seções "Vigência", "Aprovação" e "Controle de Versões" DEVEM citar data real (DATA_ATUAL), responsável e frequência de revisão.
+- Onde houver métrica (retenção, RTO/RPO, prazos), traga valores CONCRETOS coerentes com o briefing do usuário. Se o usuário não deu, escolha um valor de mercado defensável e cite "(valor sugerido — validar)".
+- CADA cláusula que satisfaz um requisito do framework deve conter o CÓDIGO do requisito entre colchetes (ex.: "[A.8.13]") na primeira frase da cláusula.
+- Personalização real: reflita as respostas do usuário na conversa acima — não use frases genéricas quando o usuário deu um dado concreto.
 
-Responda APENAS com um JSON na seguinte estrutura:
+Estrutura obrigatória do documento:
+- Capa: título=DOCUMENTO_EXATO, versão=1.0, data=DATA_ATUAL, empresa=EMPRESA, classificação
+- Seção "Objetivo" com escopo, aplicabilidade e público-alvo
+- Todas as seções definidas no template acima, em ordem
+- Seção "Papéis e Responsabilidades" com matriz RACI
+- Seção "Referências Normativas" listando os frameworks e artigos relevantes
+- Seção "Glossário" com termos técnicos usados no documento
+- Seção "Histórico de Versões" com linha inicial (1.0, DATA_ATUAL, autor, "Emissão inicial")
+- Seção "Aprovação" com responsáveis e data
+
+Responda APENAS com um JSON na seguinte estrutura (sem markdown, sem comentários):
 {
   "titulo": "título do documento (igual a DOCUMENTO_EXATO)",
   "versao": "1.0",
@@ -741,8 +777,11 @@ Responda APENAS com um JSON na seguinte estrutura:
     "classificacao": "Interno",
     "responsavel_elaboracao": "${context.user_name}",
     "responsavel_aprovacao": "",
-    "frequencia_revisao": "Anual"
+    "frequencia_revisao": "Anual",
+    "publico_alvo": "Todos os colaboradores"
   },
+  "glossario": [ { "termo": "RTO", "definicao": "Recovery Time Objective — tempo máximo tolerável para restaurar um serviço" } ],
+  "historico_versoes": [ { "versao": "1.0", "data": "DATA_ATUAL", "autor": "${context.user_name}", "descricao": "Emissão inicial" } ],
   "coverage_map": [
     { "requirement_codigo": "A.8.13", "requirement_titulo": "...", "section_indexes": [2,5], "evidencia": "trecho literal do documento (max 220 chars) que satisfaz o requisito" }
   ],
@@ -752,11 +791,12 @@ Responda APENAS com um JSON na seguinte estrutura:
 }`;
 
       const docContent = await callClaude(
-        [{ role: 'user', content: 'Gere o documento agora.' }],
+        [{ role: 'user', content: 'Gere o documento agora, respeitando TODAS as regras editoriais.' }],
         documentPrompt,
         LOVABLE_API_KEY,
-        16000,
-        0.4
+        20000,
+        0.35,
+        MODEL_QUALITY,
       );
       await chargeAiCredit();
 
@@ -786,6 +826,49 @@ Responda APENAS com um JSON na seguinte estrutura:
       if (documentContent && typeof documentContent === 'object') {
         documentContent.data_criacao = new Date().toISOString().slice(0, 10);
       }
+
+      // === Onda 3: Quality gate — reescreve seções curtas ou com placeholders ===
+      try {
+        const weak = findWeakSections(documentContent?.secoes || []);
+        if (weak.length > 0 && weak.length <= 6) {
+          console.log('DocGen quality gate — retry weak sections', weak);
+          const secoesTitulos = (documentContent.secoes || []).map((s: any, i: number) => `${i + 1}. ${s.nome}`).join('\n');
+          const retryPrompt = `Você é o mesmo consultor sênior de GRC Big Four. As seções abaixo saíram fracas (curtas ou com placeholders). Reescreva CADA uma delas com no mínimo 3 parágrafos substantivos ou lista numerada com 5+ itens acionáveis, mantendo códigos de framework [XX.X] onde já existiam, sem placeholders, sem jargão vazio, com regras concretas. Responda APENAS JSON: { "rewrites": [ { "section_index": N, "conteudo": "..." } ] }
+
+DOCUMENTO: ${documentContent.titulo}
+EMPRESA: ${context.empresa_nome}
+SEÇÕES (índice.nome): 
+${secoesTitulos}
+
+SEÇÕES PARA REESCREVER:
+${weak.map(w => `- índice ${w.index} ("${w.nome}") — motivo: ${w.motivo}\n  CONTEÚDO ATUAL:\n  ${String(documentContent.secoes[w.index]?.conteudo || '').slice(0, 800)}`).join('\n\n')}`;
+          const retryRaw = await callClaude(
+            [{ role: 'user', content: 'Reescreva as seções fracas agora.' }],
+            retryPrompt,
+            LOVABLE_API_KEY,
+            6000,
+            0.35,
+            MODEL_QUALITY,
+          );
+          try {
+            const cleanedRetry = retryRaw.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+            const retryParsed = JSON.parse(cleanedRetry);
+            const rewrites: any[] = Array.isArray(retryParsed?.rewrites) ? retryParsed.rewrites : [];
+            rewrites.forEach((r: any) => {
+              const idx = Number(r?.section_index);
+              const conteudo = String(r?.conteudo || '').trim();
+              if (Number.isInteger(idx) && conteudo.length > 200 && documentContent.secoes[idx]) {
+                documentContent.secoes[idx].conteudo = conteudo;
+              }
+            });
+          } catch (retryParseErr) {
+            console.log('DocGen quality gate parse failed', retryParseErr);
+          }
+        }
+      } catch (qgErr) {
+        console.log('DocGen quality gate skipped', qgErr);
+      }
+
 
       // === Onda 1: contrato de cobertura + score inicial determinístico ===
       // Normaliza coverage_map e calcula initial_score sem consumir crédito extra.
@@ -1164,8 +1247,9 @@ Aplique a instrução conforme as regras do sistema e devolva o JSON completo CO
         [{ role: 'user', content: userPrompt }],
         sysPrompt,
         LOVABLE_API_KEY,
-        16000,
-        0.4
+        18000,
+        0.35,
+        MODEL_QUALITY,
       );
       await chargeAiCredit();
 
