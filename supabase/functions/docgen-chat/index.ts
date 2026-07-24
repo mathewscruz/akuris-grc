@@ -7,6 +7,9 @@ import {
   applyRefineCoverage,
   complianceImpactFrom,
   filterInScope,
+  expandNaoCobertosFromCatalog,
+  computeResidualGaps,
+  AUDIT_THRESHOLD,
 } from '../_shared/compliance-score.ts';
 
 const corsHeaders = {
