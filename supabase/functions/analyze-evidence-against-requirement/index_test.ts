@@ -17,7 +17,7 @@ Deno.test("CORS preflight", async () => {
   assertEquals(r.status, 200);
 });
 
-Deno.test("Sem Authorization → 401", async () => {
+Deno.test("Sem Authorization → 401 (verify_jwt=true, gateway rejeita antes do handler)", async () => {
   const r = await fetch(FN, {
     method: "POST",
     headers: { "Content-Type": "application/json", apikey: ANON },
@@ -29,10 +29,11 @@ Deno.test("Sem Authorization → 401", async () => {
   });
   const body = await r.json();
   assertEquals(r.status, 401);
-  assertEquals(body.error, "Unauthorized");
+  // Pode vir do gateway (verify_jwt) OU do handler; ambos devem ter mensagem.
+  assert(body.error || body.message, `resposta 401 deve conter error/message: ${JSON.stringify(body)}`);
 });
 
-Deno.test("Body sem requirementId/fileUrl → 400", async () => {
+Deno.test("Body sem requirementId/fileUrl → 400 ou 401 (rejeitado sem IA)", async () => {
   const r = await fetch(FN, {
     method: "POST",
     headers: { "Content-Type": "application/json", apikey: ANON },
@@ -40,5 +41,6 @@ Deno.test("Body sem requirementId/fileUrl → 400", async () => {
   });
   const body = await r.json();
   assert(r.status === 400 || r.status === 401, `esperado 400 ou 401, veio ${r.status}`);
-  assert(body.error);
+  assert(body.error || body.message);
 });
+
