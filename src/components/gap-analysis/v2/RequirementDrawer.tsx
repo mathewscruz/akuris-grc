@@ -368,9 +368,15 @@ export function RequirementDrawer({
 
             {/* Footer */}
             <footer className="border-t border-border bg-card px-6 py-4 shrink-0 flex items-center justify-between gap-3">
-              <span className="text-[11px] text-muted-foreground">
-                Edição completa abre o painel detalhado com planos, riscos e evidências.
+              <span className="text-[11px] text-muted-foreground hidden sm:inline-flex items-center gap-2">
+                Atalhos:
+                <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted font-mono text-[10px]">1</kbd>conforme
+                <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted font-mono text-[10px]">2</kbd>parcial
+                <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted font-mono text-[10px]">3</kbd>não conforme
+                <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted font-mono text-[10px]">4</kbd>N/A
+                <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted font-mono text-[10px]">⌘↵</kbd>salvar
               </span>
+
               <div className="flex items-center gap-2">
                 <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)} disabled={saving}>
                   Cancelar
