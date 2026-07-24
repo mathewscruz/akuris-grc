@@ -10,6 +10,7 @@ import {
   expandNaoCobertosFromCatalog,
   computeResidualGaps,
   AUDIT_THRESHOLD,
+  MAX_REFINE_ATTEMPTS,
 } from '../_shared/compliance-score.ts';
 
 const corsHeaders = {
