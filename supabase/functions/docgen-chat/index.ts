@@ -734,7 +734,7 @@ ${transcript}
 === FIM DAS RESPOSTAS DO USUÁRIO ===`
         : '';
 
-      const documentPrompt = `Gere um documento COMPLETO e ESPECÍFICO do tipo solicitado, JÁ EM CONFORMIDADE com o(s) framework(s) informado(s).
+      const documentPrompt = `Você é um consultor sênior de GRC de uma firma Big Four com 20+ anos redigindo políticas e procedimentos corporativos auditáveis. Escreva no idioma português (Brasil), tom formal-institucional, voz ativa, frases curtas e verificáveis. NUNCA use jargão vazio ("robusto", "estado da arte", "world class"), NUNCA use placeholders ("preencher", "TBD", "XXX", "lorem ipsum"), NUNCA copie o nome do requisito como se fosse conteúdo. Cada afirmação deve ser AUDITÁVEL (quem faz, o quê, quando, com que evidência).
 
 DOCUMENTO_EXATO: ${docNome}
 FRAMEWORKS_REQUERIDOS: ${JSON.stringify((context as any).frameworks_relacionados || (framework_context ? [framework_context.framework_name] : []))}
@@ -747,16 +747,25 @@ Use a estrutura do template abaixo e cubra explicitamente os requisitos do(s) fr
 TEMPLATE: ${JSON.stringify(templateEstrutura || template.estrutura)}
 INFORMAÇÕES COLETADAS: ${JSON.stringify(context.informacoes_coletadas)}
 
-Requisitos obrigatórios de formatação:
-- Capa com título igual a DOCUMENTO_EXATO, versão 1.0, a data DATA_ATUAL e nome da empresa
-- Sumário
-- Todas as seções definidas no template
-- Conteúdo detalhado e profissional alinhado aos frameworks
-- Personalização real: reflita as respostas do usuário na conversa (item acima) — não use frases genéricas quando o usuário deu um dado concreto
-- Rodapé com informações da empresa
-- CADA cláusula que satisfaz um requisito do framework deve conter o CÓDIGO do requisito entre colchetes (ex.: "[A.8.13]")
+Regras editoriais (obrigatórias):
+- Cada seção com no mínimo 3 parágrafos SUBSTANTIVOS (300+ caracteres cada) ou uma lista numerada com pelo menos 5 itens acionáveis.
+- Seções "Papéis e Responsabilidades" DEVEM conter uma tabela RACI textual: linhas = atividades; colunas = R/A/C/I, com papéis reais (CISO, DPO, Gestor de TI, Colaborador, Comitê de Segurança).
+- Seções "Vigência", "Aprovação" e "Controle de Versões" DEVEM citar data real (DATA_ATUAL), responsável e frequência de revisão.
+- Onde houver métrica (retenção, RTO/RPO, prazos), traga valores CONCRETOS coerentes com o briefing do usuário. Se o usuário não deu, escolha um valor de mercado defensável e cite "(valor sugerido — validar)".
+- CADA cláusula que satisfaz um requisito do framework deve conter o CÓDIGO do requisito entre colchetes (ex.: "[A.8.13]") na primeira frase da cláusula.
+- Personalização real: reflita as respostas do usuário na conversa acima — não use frases genéricas quando o usuário deu um dado concreto.
 
-Responda APENAS com um JSON na seguinte estrutura:
+Estrutura obrigatória do documento:
+- Capa: título=DOCUMENTO_EXATO, versão=1.0, data=DATA_ATUAL, empresa=EMPRESA, classificação
+- Seção "Objetivo" com escopo, aplicabilidade e público-alvo
+- Todas as seções definidas no template acima, em ordem
+- Seção "Papéis e Responsabilidades" com matriz RACI
+- Seção "Referências Normativas" listando os frameworks e artigos relevantes
+- Seção "Glossário" com termos técnicos usados no documento
+- Seção "Histórico de Versões" com linha inicial (1.0, DATA_ATUAL, autor, "Emissão inicial")
+- Seção "Aprovação" com responsáveis e data
+
+Responda APENAS com um JSON na seguinte estrutura (sem markdown, sem comentários):
 {
   "titulo": "título do documento (igual a DOCUMENTO_EXATO)",
   "versao": "1.0",
@@ -768,8 +777,11 @@ Responda APENAS com um JSON na seguinte estrutura:
     "classificacao": "Interno",
     "responsavel_elaboracao": "${context.user_name}",
     "responsavel_aprovacao": "",
-    "frequencia_revisao": "Anual"
+    "frequencia_revisao": "Anual",
+    "publico_alvo": "Todos os colaboradores"
   },
+  "glossario": [ { "termo": "RTO", "definicao": "Recovery Time Objective — tempo máximo tolerável para restaurar um serviço" } ],
+  "historico_versoes": [ { "versao": "1.0", "data": "DATA_ATUAL", "autor": "${context.user_name}", "descricao": "Emissão inicial" } ],
   "coverage_map": [
     { "requirement_codigo": "A.8.13", "requirement_titulo": "...", "section_indexes": [2,5], "evidencia": "trecho literal do documento (max 220 chars) que satisfaz o requisito" }
   ],
@@ -779,11 +791,12 @@ Responda APENAS com um JSON na seguinte estrutura:
 }`;
 
       const docContent = await callClaude(
-        [{ role: 'user', content: 'Gere o documento agora.' }],
+        [{ role: 'user', content: 'Gere o documento agora, respeitando TODAS as regras editoriais.' }],
         documentPrompt,
         LOVABLE_API_KEY,
-        16000,
-        0.4
+        20000,
+        0.35,
+        MODEL_QUALITY,
       );
       await chargeAiCredit();
 
