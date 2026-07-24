@@ -1379,7 +1379,12 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Digite sua mensagem aqui... (Enter envia, Shift+Enter quebra linha)"
+                placeholder={
+                  generatedDocument
+                    ? 'Peça um ajuste específico: adicionar cláusula, reforçar responsabilidades, incluir sistema/prazo, remover trecho…'
+                    : 'Digite sua mensagem aqui… (Enter envia, Shift+Enter quebra linha)'
+                }
+
                 className="flex-1 min-h-[60px] resize-none"
                 disabled={isLoading}
               />
