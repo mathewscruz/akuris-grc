@@ -130,6 +130,13 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
   const [docCategorias, setDocCategorias] = useState<any[]>([]);
   const [initialGeneratedFile, setInitialGeneratedFile] = useState<File | null>(null);
 
+  // Rastreia score anterior para calcular delta após refinos.
+  const [previousScore, setPreviousScore] = useState<number | null>(null);
+
+  // Confirmação antes de publicar quando o score está baixo.
+  const [publishConfirmOpen, setPublishConfirmOpen] = useState(false);
+
+
   // Buscar informações do usuário
   const [userInfo, setUserInfo] = useState<{ user_id: string; empresa_id: string; nome: string } | null>(null);
 
