@@ -1632,6 +1632,34 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Confirmação antes de publicar quando o score de compliance está baixo. */}
+      <AlertDialog open={publishConfirmOpen} onOpenChange={setPublishConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Publicar mesmo com compliance baixo?</AlertDialogTitle>
+            <AlertDialogDescription>
+              O score estimado deste documento é{' '}
+              <strong className="text-foreground">{currentScore ?? 0}%</strong>
+              {effFrameworkName ? <> em relação a <strong className="text-foreground">{effFrameworkName}</strong></> : null}.
+              Recomendamos refinar as seções fracas ou pedir ajustes no chat antes de salvar em Documentos —
+              você pode aumentar a cobertura sem gastar novo crédito de geração completa.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Continuar refinando</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                setPublishConfirmOpen(false);
+                await handleOpenCreateDialog();
+              }}
+            >
+              Publicar mesmo assim
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
     </DialogShell>
   );
 };
