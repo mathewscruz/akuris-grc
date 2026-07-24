@@ -207,3 +207,66 @@ export function applyRefineCoverage(input: RefineCoverageInput): CoverageItem[] 
 export function complianceImpactFrom(removedCount: number): ComplianceImpact {
   return removedCount > 0 ? 'reduced' : 'preserved';
 }
+
+/**
+ * Expande a lista `nao_cobertos` incluindo TODOS os códigos do catálogo do
+ * framework que não aparecem no coverage_map nem já estavam em nao_cobertos.
+ * Isso garante que o denominador do score reflita o universo REAL do framework
+ * (não apenas os requisitos que a IA "lembrou" de declarar).
+ */
+export function expandNaoCobertosFromCatalog(
+  catalogCodes: Iterable<string>,
+  coverageMap: CoverageItem[] | null | undefined,
+  naoCobertos: NaoCobertoJustificativa[] | null | undefined,
+  defaultMotivo = 'não coberto pela versão atual do documento (silêncio da IA)',
+): NaoCobertoJustificativa[] {
+  const covered = new Set(
+    (coverageMap || [])
+      .map((c) => String(c?.requirement_codigo || '').trim())
+      .filter(Boolean),
+  );
+  const known = new Map<string, NaoCobertoJustificativa>();
+  for (const n of naoCobertos || []) {
+    const code = String(n?.codigo || '').trim();
+    if (code) known.set(code, n);
+  }
+  const codes = Array.from(catalogCodes).map((c) => String(c || '').trim()).filter(Boolean);
+  for (const code of codes) {
+    if (covered.has(code)) continue;
+    if (known.has(code)) continue;
+    known.set(code, { codigo: code, motivo: defaultMotivo });
+  }
+  return Array.from(known.values());
+}
+
+/**
+ * Gaps residuais para alimentar o refino gap-driven: retorna os códigos do
+ * catálogo que estão dentro do escopo e ainda não têm cobertura, ordenados
+ * para priorizar códigos mais curtos (geralmente requisitos-pai).
+ */
+export function computeResidualGaps(
+  catalogCodes: Iterable<string>,
+  coverageMap: CoverageItem[] | null | undefined,
+  naoCobertos: NaoCobertoJustificativa[] | null | undefined,
+  limit = 15,
+): string[] {
+  const covered = new Set(
+    (coverageMap || []).map((c) => String(c?.requirement_codigo || '').trim()).filter(Boolean),
+  );
+  const outOfScope = new Set(
+    (naoCobertos || [])
+      .filter((n) => !isInScope(n))
+      .map((n) => String(n?.codigo || '').trim())
+      .filter(Boolean),
+  );
+  const gaps: string[] = [];
+  for (const raw of catalogCodes) {
+    const code = String(raw || '').trim();
+    if (!code) continue;
+    if (covered.has(code)) continue;
+    if (outOfScope.has(code)) continue;
+    gaps.push(code);
+  }
+  gaps.sort((a, b) => a.length - b.length || a.localeCompare(b));
+  return gaps.slice(0, Math.max(1, limit));
+}
