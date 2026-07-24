@@ -560,60 +560,96 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
   };
 
 
-  // Geração e exportação de arquivos
+  // Geração e exportação de arquivos (padrão editorial Big4)
   const generateDocxBlob = async () => {
     if (!generatedDocument) return null;
     const children: any[] = [];
+    const empresaNome = userInfo?.empresa_nome || '';
+    const titulo = generatedDocument.titulo || 'Documento';
+    const versao = generatedDocument.versao || '1.0';
+    const dataCriacao = generatedDocument.data_criacao || new Date().toISOString().slice(0, 10);
+    const classificacao = generatedDocument.metadados?.classificacao || 'Interno';
 
-    // Logo no topo (se houver)
     const logoUrl: string | undefined = generatedDocument.metadados?.logo_url || companyInfo?.logo_url;
     const logoAltura: number = parseInt(generatedDocument.metadados?.logo_altura || '48', 10);
-    const logoPosicao: string = generatedDocument.metadados?.logo_posicao || 'esquerda';
-    
+    const logoPosicao: string = generatedDocument.metadados?.logo_posicao || 'centro';
+
+    // ===== CAPA =====
     if (logoUrl) {
       try {
         const resp = await fetch(logoUrl);
         const buf = await resp.arrayBuffer();
-        
-        const alignment = logoPosicao === 'centro' ? 'center' : 
-                         logoPosicao === 'direita' ? 'right' : 'left';
-        
-        children.push(
-          new Paragraph({
-            alignment: alignment as any,
-            children: [
-              new ImageRun({ data: buf, transformation: { width: Math.round(logoAltura * 2), height: logoAltura } })
-            ]
-          })
-        );
-      } catch (_) { /* ignora erro de logo */ }
+        const alignment = logoPosicao === 'centro' ? AlignmentType.CENTER
+          : logoPosicao === 'direita' ? AlignmentType.RIGHT : AlignmentType.LEFT;
+        children.push(new Paragraph({
+          alignment,
+          children: [new ImageRun({ data: buf, transformation: { width: Math.round(logoAltura * 2), height: logoAltura } })],
+        }));
+      } catch (_) { /* ignora */ }
     }
+    // espaço até o meio da página
+    for (let i = 0; i < 6; i++) children.push(new Paragraph({ text: '' }));
+    children.push(new Paragraph({
+      alignment: AlignmentType.CENTER,
+      heading: HeadingLevel.TITLE,
+      children: [new TextRun({ text: titulo, bold: true, size: 48 })],
+    }));
+    children.push(new Paragraph({ text: '' }));
+    children.push(new Paragraph({
+      alignment: AlignmentType.CENTER,
+      children: [new TextRun({ text: empresaNome, size: 28 })],
+    }));
+    for (let i = 0; i < 8; i++) children.push(new Paragraph({ text: '' }));
+    children.push(new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: `Versão ${versao}`, size: 22 })] }));
+    children.push(new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: `Data de emissão: ${dataCriacao}`, size: 22 })] }));
+    children.push(new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: `Classificação: ${classificacao}`, size: 22 })] }));
+    // quebra de página após a capa
+    children.push(new Paragraph({ children: [new PageBreak()] }));
 
-    children.push(
-      new Paragraph({
-        text: generatedDocument.titulo || 'Documento',
-        heading: HeadingLevel.TITLE,
-      })
-    );
-    children.push(new Paragraph({ text: `Versão: ${generatedDocument.versao || ''}` }));
-    children.push(new Paragraph({ text: `Data: ${generatedDocument.data_criacao || ''}` }));
+    // ===== SUMÁRIO (lista simples de seções, com numeração) =====
+    children.push(new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun({ text: 'Sumário', bold: true })] }));
+    (generatedDocument.secoes || []).forEach((s: any, i: number) => {
+      children.push(new Paragraph({ children: [new TextRun(`${i + 1}. ${s.nome || 'Seção'}`)] }));
+    });
+    children.push(new Paragraph({ children: [new PageBreak()] }));
 
-    (generatedDocument.secoes || []).forEach((secao: any) => {
-      children.push(
-        new Paragraph({ text: ' ' }),
-      );
-      children.push(
-        new Paragraph({ text: secao.nome || 'Seção', heading: HeadingLevel.HEADING_2 })
-      );
-      const conteudo = (secao.conteudo || '').toString().split('\n');
-      conteudo.forEach((line: string) =>
-        children.push(new Paragraph({ children: [new TextRun(line)] }))
-      );
+    // ===== SEÇÕES =====
+    (generatedDocument.secoes || []).forEach((secao: any, idx: number) => {
+      children.push(new Paragraph({
+        heading: HeadingLevel.HEADING_1,
+        children: [new TextRun({ text: `${idx + 1}. ${secao.nome || 'Seção'}`, bold: true })],
+      }));
+      const conteudo = String(secao.conteudo || '');
+      // preservar parágrafos vazios; cada linha vira um Paragraph
+      conteudo.split('\n').forEach((line: string) => {
+        children.push(new Paragraph({ children: [new TextRun(line)] }));
+      });
+      children.push(new Paragraph({ text: '' }));
     });
 
-    const doc = new DocxDocument({ sections: [{ properties: {}, children }] });
-    const blob = await Packer.toBlob(doc);
-    return blob;
+    // ===== Rodapé com paginação =====
+    const footer = new Footer({
+      children: [
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          children: [
+            new TextRun({ text: `${empresaNome} · ${titulo} · v${versao} · Página `, size: 18 }),
+            new TextRun({ children: [PageNumber.CURRENT], size: 18 }),
+            new TextRun({ text: ' de ', size: 18 }),
+            new TextRun({ children: [PageNumber.TOTAL_PAGES], size: 18 }),
+          ],
+        }),
+      ],
+    });
+
+    const doc = new DocxDocument({
+      sections: [{
+        properties: { page: { margin: { top: 1080, right: 1080, bottom: 1080, left: 1080 } } },
+        footers: { default: footer },
+        children,
+      }],
+    });
+    return await Packer.toBlob(doc);
   };
 
   const generatePdfBlob = async () => {
