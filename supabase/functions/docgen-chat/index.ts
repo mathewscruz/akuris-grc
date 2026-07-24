@@ -1247,8 +1247,9 @@ Aplique a instrução conforme as regras do sistema e devolva o JSON completo CO
         [{ role: 'user', content: userPrompt }],
         sysPrompt,
         LOVABLE_API_KEY,
-        16000,
-        0.4
+        18000,
+        0.35,
+        MODEL_QUALITY,
       );
       await chargeAiCredit();
 
