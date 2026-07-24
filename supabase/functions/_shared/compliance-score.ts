@@ -18,6 +18,21 @@ export const SCORE_MAP: Record<Exclude<StatusAderencia, 'nao_aplicavel'>, number
   nao_conforme: 0,
 };
 
+/**
+ * Constantes canônicas do pipeline gerador ⇄ analisador.
+ * - FRAMEWORK_REQ_CAP: teto de requisitos usado em BOTH generate_document e analyze
+ *   para que os dois lados falem do mesmo universo. Frameworks maiores (PCI DSS,
+ *   CIS v8) são paginados no analisador em lotes de ANALYZER_BATCH_SIZE.
+ * - AUDIT_THRESHOLD: nota mínima que a self-audit exige antes de devolver o doc.
+ * - MAX_REFINE_ATTEMPTS: quantas rodadas de refino gap-driven o gerador executa.
+ */
+export const FRAMEWORK_REQ_CAP = 300;
+export const ANALYZER_BATCH_SIZE = 60;
+export const ANALYZER_CONCURRENCY = 2;
+export const AUDIT_THRESHOLD = 80;
+export const MAX_REFINE_ATTEMPTS = 2;
+
+
 export interface CoverageItem {
   requirement_codigo?: string;
   requirement_titulo?: string;
