@@ -827,6 +827,49 @@ Responda APENAS com um JSON na seguinte estrutura (sem markdown, sem comentário
         documentContent.data_criacao = new Date().toISOString().slice(0, 10);
       }
 
+      // === Onda 3: Quality gate — reescreve seções curtas ou com placeholders ===
+      try {
+        const weak = findWeakSections(documentContent?.secoes || []);
+        if (weak.length > 0 && weak.length <= 6) {
+          console.log('DocGen quality gate — retry weak sections', weak);
+          const secoesTitulos = (documentContent.secoes || []).map((s: any, i: number) => `${i + 1}. ${s.nome}`).join('\n');
+          const retryPrompt = `Você é o mesmo consultor sênior de GRC Big Four. As seções abaixo saíram fracas (curtas ou com placeholders). Reescreva CADA uma delas com no mínimo 3 parágrafos substantivos ou lista numerada com 5+ itens acionáveis, mantendo códigos de framework [XX.X] onde já existiam, sem placeholders, sem jargão vazio, com regras concretas. Responda APENAS JSON: { "rewrites": [ { "section_index": N, "conteudo": "..." } ] }
+
+DOCUMENTO: ${documentContent.titulo}
+EMPRESA: ${context.empresa_nome}
+SEÇÕES (índice.nome): 
+${secoesTitulos}
+
+SEÇÕES PARA REESCREVER:
+${weak.map(w => `- índice ${w.index} ("${w.nome}") — motivo: ${w.motivo}\n  CONTEÚDO ATUAL:\n  ${String(documentContent.secoes[w.index]?.conteudo || '').slice(0, 800)}`).join('\n\n')}`;
+          const retryRaw = await callClaude(
+            [{ role: 'user', content: 'Reescreva as seções fracas agora.' }],
+            retryPrompt,
+            LOVABLE_API_KEY,
+            6000,
+            0.35,
+            MODEL_QUALITY,
+          );
+          try {
+            const cleanedRetry = retryRaw.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+            const retryParsed = JSON.parse(cleanedRetry);
+            const rewrites: any[] = Array.isArray(retryParsed?.rewrites) ? retryParsed.rewrites : [];
+            rewrites.forEach((r: any) => {
+              const idx = Number(r?.section_index);
+              const conteudo = String(r?.conteudo || '').trim();
+              if (Number.isInteger(idx) && conteudo.length > 200 && documentContent.secoes[idx]) {
+                documentContent.secoes[idx].conteudo = conteudo;
+              }
+            });
+          } catch (retryParseErr) {
+            console.log('DocGen quality gate parse failed', retryParseErr);
+          }
+        }
+      } catch (qgErr) {
+        console.log('DocGen quality gate skipped', qgErr);
+      }
+
+
       // === Onda 1: contrato de cobertura + score inicial determinístico ===
       // Normaliza coverage_map e calcula initial_score sem consumir crédito extra.
       // O score reflete: coberto / (coberto + relevante-não-coberto). Fora de escopo
