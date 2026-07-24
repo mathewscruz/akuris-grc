@@ -655,14 +655,20 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
   const generatePdfBlob = async () => {
     if (!generatedDocument) return null;
     const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
-    const marginX = 40;
-    let y = 50;
+    const marginX = 48;
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const maxWidth = pageWidth - marginX * 2;
+    const empresaNome = (userInfo as any)?.empresa_nome || (companyInfo as any)?.nome || '';
+    const titulo = generatedDocument.titulo || 'Documento';
+    const versao = generatedDocument.versao || '1.0';
+    const dataCriacao = generatedDocument.data_criacao || new Date().toISOString().slice(0, 10);
+    const classificacao = generatedDocument.metadados?.classificacao || 'Interno';
 
-    // Tentar carregar logo da empresa
     const logoUrl: string | undefined = generatedDocument.metadados?.logo_url || companyInfo?.logo_url;
     const logoAltura: number = parseInt(generatedDocument.metadados?.logo_altura || '48', 10);
-    const logoPosicao: string = generatedDocument.metadados?.logo_posicao || 'esquerda';
-    
+
+    // ===== CAPA (página 1 dedicada) =====
     if (logoUrl) {
       try {
         const resp = await fetch(logoUrl);
@@ -670,66 +676,76 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
         const reader = new FileReader();
         const dataUrl: string = await new Promise((resolve, reject) => {
           reader.onload = () => resolve(reader.result as string);
-          reader.onerror = () => reject(new Error('Falha ao carregar logo'));
+          reader.onerror = () => reject(new Error('logo'));
           reader.readAsDataURL(blob);
         });
-        
-        const logoWidth = Math.round(logoAltura * 2);
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        
-        let logoX = marginX; // posição padrão (esquerda)
-        if (logoPosicao === 'centro') {
-          logoX = (pageWidth - logoWidth) / 2;
-        } else if (logoPosicao === 'direita') {
-          logoX = pageWidth - marginX - logoWidth;
-        }
-        
-        pdf.addImage(dataUrl, (blob.type.includes('png') ? 'PNG' : 'JPEG') as any, logoX, y, logoWidth, logoAltura);
-        y += logoAltura + 16;
-      } catch (_) { /* ignora erro de logo */ }
+        const logoW = Math.round(logoAltura * 2);
+        pdf.addImage(dataUrl, (blob.type.includes('png') ? 'PNG' : 'JPEG') as any,
+          (pageWidth - logoW) / 2, 100, logoW, logoAltura);
+      } catch (_) { /* ignora */ }
     }
-
     pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(16);
-    pdf.text(generatedDocument.titulo || 'Documento', marginX, y);
-    y += 24;
-
+    pdf.setFontSize(24);
+    const tituloLines = pdf.splitTextToSize(titulo, maxWidth);
+    let capaY = pageHeight / 2 - 40;
+    tituloLines.forEach((line: string) => {
+      pdf.text(line, pageWidth / 2, capaY, { align: 'center' });
+      capaY += 30;
+    });
     pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(10);
-    pdf.text(`Versão: ${generatedDocument.versao || ''}`, marginX, y);
-    y += 16;
-    pdf.text(`Data: ${generatedDocument.data_criacao || ''}`, marginX, y);
-    y += 24;
+    pdf.setFontSize(14);
+    pdf.text(empresaNome, pageWidth / 2, capaY + 10, { align: 'center' });
+    pdf.setFontSize(11);
+    pdf.text(`Versão ${versao}`, pageWidth / 2, pageHeight - 160, { align: 'center' });
+    pdf.text(`Data de emissão: ${dataCriacao}`, pageWidth / 2, pageHeight - 144, { align: 'center' });
+    pdf.text(`Classificação: ${classificacao}`, pageWidth / 2, pageHeight - 128, { align: 'center' });
 
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    const maxWidth = pdf.internal.pageSize.getWidth() - marginX * 2;
+    // ===== SUMÁRIO =====
+    pdf.addPage();
+    let y = 60;
+    pdf.setFont('helvetica', 'bold'); pdf.setFontSize(16);
+    pdf.text('Sumário', marginX, y); y += 24;
+    pdf.setFont('helvetica', 'normal'); pdf.setFontSize(11);
+    (generatedDocument.secoes || []).forEach((s: any, i: number) => {
+      if (y > pageHeight - 60) { pdf.addPage(); y = 60; }
+      pdf.text(`${i + 1}. ${s.nome || 'Seção'}`, marginX, y);
+      y += 16;
+    });
 
+    // ===== SEÇÕES =====
+    pdf.addPage();
+    y = 60;
     (generatedDocument.secoes || []).forEach((secao: any, idx: number) => {
-      if (idx > 0) y += 10;
-      pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(13);
-      const titleLines = pdf.splitTextToSize(secao.nome || 'Seção', maxWidth);
+      if (y > pageHeight - 80) { pdf.addPage(); y = 60; }
+      if (idx > 0) y += 12;
+      pdf.setFont('helvetica', 'bold'); pdf.setFontSize(13);
+      const titleLines = pdf.splitTextToSize(`${idx + 1}. ${secao.nome || 'Seção'}`, maxWidth);
       titleLines.forEach((line: string) => {
-        if (y > pageHeight - 60) {
-          pdf.addPage();
-          y = 50;
-        }
-        pdf.text(line, marginX, y);
-        y += 18;
+        if (y > pageHeight - 70) { pdf.addPage(); y = 60; }
+        pdf.text(line, marginX, y); y += 18;
       });
-
-      pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(11);
-      const lines = pdf.splitTextToSize((secao.conteudo || '').toString(), maxWidth);
-      lines.forEach((line: string) => {
-        if (y > pageHeight - 40) {
-          pdf.addPage();
-          y = 50;
-        }
-        pdf.text(line, marginX, y);
-        y += 16;
+      pdf.setFont('helvetica', 'normal'); pdf.setFontSize(11);
+      const conteudo = String(secao.conteudo || '');
+      conteudo.split('\n').forEach((paragraph: string) => {
+        const lines = pdf.splitTextToSize(paragraph, maxWidth);
+        lines.forEach((line: string) => {
+          if (y > pageHeight - 60) { pdf.addPage(); y = 60; }
+          pdf.text(line, marginX, y); y += 15;
+        });
+        y += 4;
       });
     });
+
+    // ===== Rodapé com paginação em todas as páginas =====
+    const totalPages = (pdf as any).internal.getNumberOfPages();
+    for (let p = 1; p <= totalPages; p++) {
+      pdf.setPage(p);
+      pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8);
+      pdf.setTextColor(120);
+      const footerText = `${empresaNome} · ${titulo} · v${versao} · Página ${p} de ${totalPages}`;
+      pdf.text(footerText, pageWidth / 2, pageHeight - 20, { align: 'center' });
+      pdf.setTextColor(0);
+    }
 
     return pdf.output('blob');
   };
