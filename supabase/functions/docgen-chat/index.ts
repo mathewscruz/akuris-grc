@@ -973,6 +973,8 @@ ${weak.map(w => `- índice ${w.index} ("${w.nome}") — motivo: ${w.motivo}\n  C
         document: documentContent,
         initial_score,
         coverage_map: coverageMap,
+        residual_gaps: residualGaps,
+        catalog_size: catalogCodes.length,
         warnings,
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
