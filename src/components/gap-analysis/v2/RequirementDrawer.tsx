@@ -172,6 +172,41 @@ export function RequirementDrawer({
     }
   };
 
+  // Atalhos de teclado dentro do drawer: 1/2/3/4 selecionam status, Cmd/Ctrl+Enter salva.
+  // Ignora se o foco está em input/textarea (para não sequestrar digitação).
+  useEffect(() => {
+    if (!open || !requirement) return;
+    const handler = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName?.toLowerCase();
+      const isEditable = tag === 'input' || tag === 'textarea' || target?.isContentEditable;
+      // Cmd/Ctrl+Enter salva mesmo dentro de textarea
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+        if (evaluation.conformity_status && !saving) {
+          e.preventDefault();
+          handleSave();
+        }
+        return;
+      }
+      if (isEditable) return;
+      const map: Record<string, string> = {
+        '1': 'conforme',
+        '2': 'parcial',
+        '3': 'nao_conforme',
+        '4': 'nao_aplicavel',
+      };
+      const next = map[e.key];
+      if (next) {
+        e.preventDefault();
+        setEvaluation((prev) => ({ ...prev, conformity_status: next }));
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, requirement, evaluation.conformity_status, saving]);
+
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
@@ -333,9 +368,15 @@ export function RequirementDrawer({
 
             {/* Footer */}
             <footer className="border-t border-border bg-card px-6 py-4 shrink-0 flex items-center justify-between gap-3">
-              <span className="text-[11px] text-muted-foreground">
-                Edição completa abre o painel detalhado com planos, riscos e evidências.
+              <span className="text-[11px] text-muted-foreground hidden sm:inline-flex items-center gap-2">
+                Atalhos:
+                <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted font-mono text-[10px]">1</kbd>conforme
+                <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted font-mono text-[10px]">2</kbd>parcial
+                <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted font-mono text-[10px]">3</kbd>não conforme
+                <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted font-mono text-[10px]">4</kbd>N/A
+                <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted font-mono text-[10px]">⌘↵</kbd>salvar
               </span>
+
               <div className="flex items-center gap-2">
                 <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)} disabled={saving}>
                   Cancelar

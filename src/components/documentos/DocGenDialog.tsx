@@ -130,6 +130,13 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
   const [docCategorias, setDocCategorias] = useState<any[]>([]);
   const [initialGeneratedFile, setInitialGeneratedFile] = useState<File | null>(null);
 
+  // Rastreia score anterior para calcular delta após refinos.
+  const [previousScore, setPreviousScore] = useState<number | null>(null);
+
+  // Confirmação antes de publicar quando o score está baixo.
+  const [publishConfirmOpen, setPublishConfirmOpen] = useState(false);
+
+
   // Buscar informações do usuário
   const [userInfo, setUserInfo] = useState<{ user_id: string; empresa_id: string; nome: string } | null>(null);
 
@@ -801,6 +808,21 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     }
   };
 
+  /**
+   * Handler do botão "Salvar em Documentos".
+   * Se o score de compliance estiver abaixo de 80, mostra confirmação antes de
+   * abrir o diálogo de salvar — evita publicar um rascunho capenga por acidente.
+   * O score é derivado do `_initial_score` que o próprio backend calcula.
+   */
+  const handleSaveClick = async () => {
+    if (currentScore !== null && currentScore < 80) {
+      setPublishConfirmOpen(true);
+      return;
+    }
+    await handleOpenCreateDialog();
+  };
+
+
   const formatMessage = (content: string) => {
     // Processar markdown básico
     let formatted = content
@@ -929,6 +951,32 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
       setIsDocumentExported(false);
     }
   }, [generatedDocument]);
+
+  // Score ao vivo + delta: guarda o score anterior antes de aplicar o novo.
+  // Depende só do documento gerado atual — o próprio backend garante que
+  // `_initial_score` é recalculado a cada refino sem consumir crédito extra.
+  const currentScore: number | null =
+    typeof generatedDocument?._initial_score === 'number' ? generatedDocument._initial_score : null;
+  useEffect(() => {
+    if (currentScore === null) {
+      setPreviousScore(null);
+      return;
+    }
+    setPreviousScore((prev) => {
+      // Primeira medição: sem delta. Depois, mantém o valor anterior para calcular delta.
+      if (prev === null) return currentScore;
+      return prev === currentScore ? prev : prev;
+    });
+    // Depois que renderizamos com o delta, o "anterior" precisa passar a ser o atual
+    // para a próxima medição. Fazemos isso via microtask para preservar 1 render de delta.
+    const t = setTimeout(() => setPreviousScore(currentScore), 4000);
+    return () => clearTimeout(t);
+  }, [currentScore]);
+  const scoreDelta =
+    currentScore !== null && previousScore !== null && previousScore !== currentScore
+      ? currentScore - previousScore
+      : null;
+
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     // Enter envia, Shift+Enter quebra linha. Ignora durante composição IME (acentos compostos).
@@ -1096,7 +1144,41 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                 {' · '}
                 {messages.length} mensagem{messages.length === 1 ? '' : 's'}
               </span>
+              {/* Chip de score ao vivo: aparece assim que o documento é gerado. */}
+              {currentScore !== null && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span
+                        className={`ml-1 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium tabular-nums shrink-0 ${
+                          currentScore >= 80
+                            ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
+                            : currentScore >= 60
+                              ? 'border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300'
+                              : 'border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-300'
+                        }`}
+                      >
+                        Compliance {currentScore}%
+                        {scoreDelta !== null && (
+                          <span
+                            className={`font-mono text-[10px] ${
+                              scoreDelta > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                            }`}
+                          >
+                            {scoreDelta > 0 ? '+' : ''}{scoreDelta}
+                          </span>
+                        )}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Score estimado com base na cobertura dos requisitos do framework.
+                      {scoreDelta !== null && ` Delta em relação ao último refino: ${scoreDelta > 0 ? '+' : ''}${scoreDelta} pontos.`}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
             </div>
+
             <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
@@ -1297,7 +1379,12 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Digite sua mensagem aqui... (Enter envia, Shift+Enter quebra linha)"
+                placeholder={
+                  generatedDocument
+                    ? 'Peça um ajuste específico: adicionar cláusula, reforçar responsabilidades, incluir sistema/prazo, remover trecho…'
+                    : 'Digite sua mensagem aqui… (Enter envia, Shift+Enter quebra linha)'
+                }
+
                 className="flex-1 min-h-[60px] resize-none"
                 disabled={isLoading}
               />
@@ -1354,7 +1441,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                       </Tooltip>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Button onClick={handleOpenCreateDialog} size="sm" className="gap-1">
+                          <Button onClick={handleSaveClick} size="sm" className="gap-1">
                             <Save className="h-3 w-3" strokeWidth={1.5} />
                             Salvar em Documentos
                           </Button>
@@ -1545,6 +1632,34 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Confirmação antes de publicar quando o score de compliance está baixo. */}
+      <AlertDialog open={publishConfirmOpen} onOpenChange={setPublishConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Publicar mesmo com compliance baixo?</AlertDialogTitle>
+            <AlertDialogDescription>
+              O score estimado deste documento é{' '}
+              <strong className="text-foreground">{currentScore ?? 0}%</strong>
+              {effFrameworkName ? <> em relação a <strong className="text-foreground">{effFrameworkName}</strong></> : null}.
+              Recomendamos refinar as seções fracas ou pedir ajustes no chat antes de salvar em Documentos —
+              você pode aumentar a cobertura sem gastar novo crédito de geração completa.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Continuar refinando</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                setPublishConfirmOpen(false);
+                await handleOpenCreateDialog();
+              }}
+            >
+              Publicar mesmo assim
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
     </DialogShell>
   );
 };
