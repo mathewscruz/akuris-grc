@@ -69,7 +69,19 @@ function extractFrameworks(messageText: string): string[] {
 // Chama a IA via gateway do Lovable (OpenAI-compatível), igual às demais
 // funções do projeto. Antes usava a API da Anthropic direto com um modelo
 // que retornava 404 nesta conta.
-async function callClaude(messages: { role: string; content: string }[], systemPrompt: string, apiKey: string, maxTokens = 2000, temperature = 0.8) {
+// Modelo padrão (chat/quick_adherence): rápido e barato.
+// Modelo de qualidade editorial (generate_document / refine_document / retry): pro.
+const MODEL_FAST = 'google/gemini-3-flash-preview';
+const MODEL_QUALITY = 'google/gemini-3.1-pro-preview';
+
+async function callClaude(
+  messages: { role: string; content: string }[],
+  systemPrompt: string,
+  apiKey: string,
+  maxTokens = 2000,
+  temperature = 0.8,
+  model: string = MODEL_FAST,
+) {
   const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -77,7 +89,7 @@ async function callClaude(messages: { role: string; content: string }[], systemP
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'google/gemini-3-flash-preview',
+      model,
       max_tokens: maxTokens,
       temperature,
       messages: [
@@ -92,7 +104,7 @@ async function callClaude(messages: { role: string; content: string }[], systemP
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('AI gateway error:', response.status, errorText);
+    console.error('AI gateway error:', response.status, errorText, 'model:', model);
     if (response.status === 429) throw new Error('Limite de requisições excedido. Tente novamente em alguns minutos.');
     if (response.status === 402) throw new Error('Créditos de IA insuficientes.');
     throw new Error(`Erro na IA (${response.status})`);
@@ -100,6 +112,21 @@ async function callClaude(messages: { role: string; content: string }[], systemP
 
   const data = await response.json();
   return data.choices?.[0]?.message?.content || '';
+}
+
+// ============ Quality gate helpers (Onda 3) ============
+const PLACEHOLDER_RX = /\b(preencher|inserir|exemplo|TBD|lorem ipsum|xxx|xxxx|\.\.\.)\b/i;
+function findWeakSections(secoes: any[]): { index: number; nome: string; motivo: string }[] {
+  const weak: { index: number; nome: string; motivo: string }[] = [];
+  (secoes || []).forEach((s, i) => {
+    const conteudo = String(s?.conteudo || '').trim();
+    if (conteudo.length < 200) {
+      weak.push({ index: i, nome: s?.nome || `Seção ${i + 1}`, motivo: `curta (${conteudo.length} chars)` });
+    } else if (PLACEHOLDER_RX.test(conteudo)) {
+      weak.push({ index: i, nome: s?.nome || `Seção ${i + 1}`, motivo: 'contém placeholder' });
+    }
+  });
+  return weak;
 }
 
 // Fetch non-compliant gaps for the framework
