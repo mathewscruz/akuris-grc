@@ -1,14 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { useFocusRow } from '@/hooks/useFocusRow';
-import { Plus, Search, Filter, Upload, FileText, FolderOpen, Eye, Download, Edit, Trash2, MessageSquare, CheckCircle, Clock, History, Activity, Shield, TrendingUp, RefreshCw, MoreHorizontal } from 'lucide-react';
+import { Plus, Search, Filter, Upload, FileText, FolderOpen, Download, CheckCircle, Clock, Shield, TrendingUp } from 'lucide-react';
 import { AkurisAIIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
@@ -27,6 +25,7 @@ import { DocumentoPreview } from '@/components/documentos/DocumentoPreview';
 import { TrilhaAuditoriaDocumentos } from '@/components/documentos/TrilhaAuditoriaDocumentos';
 import { useDocGen } from '@/contexts/DocGenContext';
 import { RenovarDocumentoDialog } from '@/components/documentos/RenovarDocumentoDialog';
+import { DocumentosLista } from '@/components/documentos/DocumentosLista';
 import { HistoricoVersoesDialog } from '@/components/documentos/HistoricoVersoesDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -37,9 +36,6 @@ import { logger } from '@/lib/logger';
 import { useDocumentosStats } from '@/hooks/useDocumentosStats';
 import { PageSkeleton } from '@/components/ui/page-skeleton';
 import ConfirmDialog from '@/components/ConfirmDialog';
-import { capitalizeText, formatStatus } from '@/lib/text-utils';
-import { StatusBadge } from '@/components/ui/status-badge';
-import { resolveItemStatusTone, resolveTipoDocumentoTone, resolveClassificacaoTone, resolveRevisaoTone } from '@/lib/status-tone';
 import { formatDateOnly } from '@/lib/date-utils';
 
 interface Documento {
@@ -380,29 +376,13 @@ export default function Documentos() {
     });
   };
 
-  const getTipoBadge = (tipo: string) => {
-    return (
-      <StatusBadge size="sm" {...resolveTipoDocumentoTone(tipo)}>
-        {capitalizeText(tipo)}
-      </StatusBadge>
-    );
-  };
-
-  const getVencimentoBadge = (dataVencimento: string | null) => {
-    if (!dataVencimento) return null;
-    
-    const hoje = new Date();
-    hoje.setHours(0, 0, 0, 0);
-    const dataVenc = new Date(dataVencimento + 'T00:00:00');
-    const diffDays = Math.ceil((dataVenc.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
-    
-    if (diffDays < 0) {
-      return <StatusBadge size="sm" {...resolveRevisaoTone(diffDays)} className="ml-2">Vencido</StatusBadge>;
-    } else if (diffDays <= 30) {
-      return <StatusBadge size="sm" {...resolveRevisaoTone(diffDays)} className="ml-2">{diffDays}d</StatusBadge>;
-    }
-    return null;
-  };
+  const temFiltrosAtivos = Boolean(
+    filtrosAvancados ||
+    searchTerm ||
+    selectedCategoria !== 'all' ||
+    selectedStatus !== 'all' ||
+    selectedTipo !== 'all'
+  );
 
   // Paginação
   const totalPages = Math.ceil(documentosFiltrados.length / itemsPerPage);
@@ -634,158 +614,34 @@ export default function Documentos() {
               )}
             </div>
             
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Classificação</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Versão</TableHead>
-                  <TableHead>Validade</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedDocumentos.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="p-0">
-                      <EmptyState
-                        icon={<FileText className="h-8 w-8" />}
-                        title={filtrosAvancados || searchTerm || selectedCategoria !== 'all' || selectedStatus !== 'all' || selectedTipo !== 'all' 
-                          ? 'Nenhum documento encontrado'
-                          : 'Nenhum documento cadastrado'}
-                        description={filtrosAvancados || searchTerm || selectedCategoria !== 'all' || selectedStatus !== 'all' || selectedTipo !== 'all' 
-                          ? 'Tente ajustar os filtros para encontrar o que procura.'
-                          : 'Comece criando documentos para gerenciar suas políticas e procedimentos.'}
-                        action={!filtrosAvancados && !searchTerm && selectedCategoria === 'all' && selectedStatus === 'all' && selectedTipo === 'all' ? {
-                          label: 'Novo Documento',
-                          onClick: () => setDocumentoDialog({ open: true })
-                        } : undefined}
-                      />
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  paginatedDocumentos.map((documento) => (
-                    <TableRow key={documento.id} data-focus-id={documento.id}>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <div className="font-medium">{documento.nome}</div>
-                          {documento.descricao && (
-                            <div className="text-sm text-muted-foreground line-clamp-1">
-                              {documento.descricao}
-                            </div>
-                          )}
-                          {documento.classificacao === 'confidencial' && (
-                            <Badge variant="destructive" className="text-xs">
-                              <Shield className="h-3 w-3 mr-1" />
-                              Confidencial
-                            </Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>{getTipoBadge(documento.tipo)}</TableCell>
-                      <TableCell>
-                        <StatusBadge size="sm" {...resolveClassificacaoTone(documento.classificacao || 'interna')}>
-                          {capitalizeText(documento.classificacao || 'interna')}
-                        </StatusBadge>
-                      </TableCell>
-                      <TableCell>
-                        <StatusBadge size="sm" {...resolveItemStatusTone(documento.status)}>
-                          {formatStatus(documento.status)}
-                        </StatusBadge>
-                      </TableCell>
-                      <TableCell>v{documento.versao}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center whitespace-nowrap">
-                          {formatDateOnly(documento.data_vencimento)}
-                          {getVencimentoBadge(documento.data_vencimento)}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="h-8 w-8 p-0">
-                                  <span className="sr-only">Abrir menu</span>
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                            </TooltipTrigger>
-                            <TooltipContent>Ações</TooltipContent>
-                          </Tooltip>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={() => setPreviewDialog({ open: true, documento })}
-                            >
-                              <Eye className="mr-2 h-4 w-4" />
-                              Preview
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => setDocumentoDialog({ open: true, documento })}
-                            >
-                              <Edit className="mr-2 h-4 w-4" />
-                              Editar
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              onClick={() => setVinculacoesDialog({ open: true, documento })}
-                            >
-                              <Eye className="mr-2 h-4 w-4" />
-                              Vinculações
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => setComentariosDialog({ open: true, documento })}
-                            >
-                              <MessageSquare className="mr-2 h-4 w-4" />
-                              Comentários
-                            </DropdownMenuItem>
-                            {documento.requer_aprovacao && (
-                              <DropdownMenuItem
-                                onClick={() => setAprovacaoDialog({ open: true, documento })}
-                              >
-                                <CheckCircle className="mr-2 h-4 w-4" />
-                                Aprovação
-                              </DropdownMenuItem>
-                            )}
-                            {podeRenovar(documento) && (
-                              <DropdownMenuItem
-                                onClick={() => setRenovarDialog({ open: true, documento })}
-                              >
-                                <RefreshCw className="mr-2 h-4 w-4" />
-                                Renovar Documento
-                              </DropdownMenuItem>
-                            )}
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              onClick={() => setHistoricoDialog({ open: true, documento })}
-                            >
-                              <History className="mr-2 h-4 w-4" />
-                              Histórico de Versões
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => setAuditoriaDialog({ open: true, documento })}
-                            >
-                              <Activity className="mr-2 h-4 w-4" />
-                              Trilha de Auditoria
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              onClick={() => handleDeleteDocumento(documento.id)}
-                              className="text-red-600"
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Excluir
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+            <DocumentosLista
+              documentos={paginatedDocumentos}
+              podeRenovar={podeRenovar}
+              emptyState={
+                <EmptyState
+                  icon={<FileText className="h-8 w-8" />}
+                  title={temFiltrosAtivos
+                    ? 'Nenhum documento encontrado'
+                    : 'Nenhum documento cadastrado'}
+                  description={temFiltrosAtivos
+                    ? 'Tente ajustar os filtros para encontrar o que procura.'
+                    : 'Comece criando documentos para gerenciar suas políticas e procedimentos.'}
+                  action={!temFiltrosAtivos ? {
+                    label: 'Novo Documento',
+                    onClick: () => setDocumentoDialog({ open: true })
+                  } : undefined}
+                />
+              }
+              onPreview={(documento) => setPreviewDialog({ open: true, documento })}
+              onEditar={(documento) => setDocumentoDialog({ open: true, documento })}
+              onVinculacoes={(documento) => setVinculacoesDialog({ open: true, documento })}
+              onComentarios={(documento) => setComentariosDialog({ open: true, documento })}
+              onAprovacao={(documento) => setAprovacaoDialog({ open: true, documento })}
+              onRenovar={(documento) => setRenovarDialog({ open: true, documento })}
+              onHistorico={(documento) => setHistoricoDialog({ open: true, documento })}
+              onAuditoria={(documento) => setAuditoriaDialog({ open: true, documento })}
+              onExcluir={(documento) => handleDeleteDocumento(documento.id)}
+            />
 
             {/* Paginação */}
             {totalPages > 1 && (
