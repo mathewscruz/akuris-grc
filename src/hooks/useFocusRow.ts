@@ -8,6 +8,9 @@ import { useSearchParams } from 'react-router-dom';
  *
  * Fica em polling leve por até 5s para esperar a tabela carregar.
  *
+ * Quando o mesmo id aparece em representações responsivas diferentes (card
+ * mobile + linha da tabela), o destaque vai para a que estiver visível.
+ *
  * Uso:
  *   useFocusRow();
  *   <tr data-focus-id={item.id}>...</tr>
@@ -23,7 +26,16 @@ export function useFocusRow(options?: { onFound?: (id: string) => void }) {
 
     const tryFocus = () => {
       if (cancelled) return;
-      const el = document.querySelector<HTMLElement>(`[data-focus-id="${focusId}"]`);
+      // A mesma linha pode existir em mais de uma representação responsiva
+      // (ex.: card mobile `md:hidden` + linha da tabela `hidden md:block`).
+      // Destacar o primeiro do DOM cairia sobre o elemento oculto, sem scroll
+      // nem realce perceptível — por isso escolhemos o candidato visível.
+      const candidatos = Array.from(
+        document.querySelectorAll<HTMLElement>(`[data-focus-id="${focusId}"]`)
+      );
+      const el =
+        candidatos.find((candidato) => candidato.getClientRects().length > 0) ?? candidatos[0];
+
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
         el.classList.add('ring-2', 'ring-primary', 'ring-offset-2', 'bg-accent/40', 'transition-all', 'duration-300');

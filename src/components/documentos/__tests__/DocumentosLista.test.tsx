@@ -1,0 +1,219 @@
+import { render, screen, within, fireEvent, cleanup } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import {
+  DocumentosLista,
+  type DocumentoListaItem,
+} from '@/components/documentos/DocumentosLista';
+
+afterEach(() => cleanup());
+
+const documento: DocumentoListaItem = {
+  id: 'doc-1',
+  nome: 'Política de Segurança da Informação',
+  descricao: 'Diretrizes gerais de segurança',
+  tipo: 'politica',
+  classificacao: 'confidencial',
+  status: 'ativo',
+  versao: 3,
+  data_vencimento: '2027-01-15',
+  requer_aprovacao: true,
+};
+
+function renderLista(overrides: Partial<React.ComponentProps<typeof DocumentosLista>> = {}) {
+  const handlers = {
+    onPreview: vi.fn(),
+    onEditar: vi.fn(),
+    onVinculacoes: vi.fn(),
+    onComentarios: vi.fn(),
+    onAprovacao: vi.fn(),
+    onRenovar: vi.fn(),
+    onHistorico: vi.fn(),
+    onAuditoria: vi.fn(),
+    onExcluir: vi.fn(),
+  };
+
+  const utils = render(
+    <TooltipProvider>
+      <DocumentosLista
+        documentos={[documento]}
+        podeRenovar={() => true}
+        emptyState={<div>Nenhum documento cadastrado</div>}
+        {...handlers}
+        {...overrides}
+      />
+    </TooltipProvider>
+  );
+
+  return { ...utils, handlers };
+}
+
+describe('DocumentosLista — listagem responsiva (AKURIS QA-001)', () => {
+  it('no mobile expõe Nome, Tipo, Status, Validade e Ações sem tabela/rolagem horizontal', () => {
+    renderLista();
+
+    const mobile = screen.getByTestId('documentos-lista-mobile');
+
+    // A representação mobile não pode ser a tabela de 7 colunas
+    expect(within(mobile).queryByRole('table')).toBeNull();
+
+    expect(within(mobile).getByText(documento.nome)).toBeInTheDocument();
+
+    // Pares rótulo-valor críticos
+    expect(within(mobile).getByText('Status')).toBeInTheDocument();
+    expect(within(mobile).getByText('Ativo')).toBeInTheDocument();
+    expect(within(mobile).getByText('Validade')).toBeInTheDocument();
+    expect(within(mobile).getByText('15/01/2027')).toBeInTheDocument();
+    expect(within(mobile).getByText('Classificação')).toBeInTheDocument();
+    expect(within(mobile).getByText('Confidencial')).toBeInTheDocument();
+    expect(within(mobile).getByText('Versão')).toBeInTheDocument();
+    expect(within(mobile).getByText('v3')).toBeInTheDocument();
+
+    // Ações discoberíveis com nome acessível
+    expect(
+      within(mobile).getByRole('button', { name: `Ações do documento ${documento.nome}` })
+    ).toBeInTheDocument();
+  });
+
+  it('mantém a tabela apenas de md para cima e os cards apenas abaixo de md', () => {
+    renderLista();
+
+    const mobile = screen.getByTestId('documentos-lista-mobile');
+    const desktop = screen.getByTestId('documentos-tabela-desktop');
+
+    expect(mobile).toHaveClass('md:hidden');
+    expect(desktop.className).toContain('hidden');
+    expect(desktop).toHaveClass('md:block');
+  });
+
+  it('preserva a tabela desktop com todas as colunas', () => {
+    renderLista();
+
+    const desktop = screen.getByTestId('documentos-tabela-desktop');
+    const table = within(desktop).getByRole('table');
+    const headers = within(table)
+      .getAllByRole('columnheader')
+      .map((th) => th.textContent?.trim());
+
+    expect(headers).toEqual([
+      'Nome',
+      'Tipo',
+      'Classificação',
+      'Status',
+      'Versão',
+      'Validade',
+      'Ações',
+    ]);
+    expect(within(table).getByText(documento.nome)).toBeInTheDocument();
+  });
+
+  it('o menu de ações do card mobile abre por teclado e dispara as ações', () => {
+    const { handlers } = renderLista();
+
+    const mobile = screen.getByTestId('documentos-lista-mobile');
+    const trigger = within(mobile).getByRole('button', {
+      name: `Ações do documento ${documento.nome}`,
+    });
+
+    trigger.focus();
+    fireEvent.keyDown(trigger, { key: 'Enter' });
+
+    const menu = screen.getByRole('menu');
+    expect(within(menu).getByRole('menuitem', { name: /Preview/ })).toBeInTheDocument();
+    expect(within(menu).getByRole('menuitem', { name: /Renovar Documento/ })).toBeInTheDocument();
+
+    fireEvent.click(within(menu).getByRole('menuitem', { name: /Editar/ }));
+    expect(handlers.onEditar).toHaveBeenCalledWith(documento);
+  });
+
+  it('preserva a saliência visual de documentos confidenciais no card mobile', () => {
+    renderLista();
+
+    const mobile = screen.getByTestId('documentos-lista-mobile');
+    const badge = within(mobile).getByText('Confidencial');
+
+    // Mesmo destaque de risco usado na tabela desktop (token destructive + ícone)
+    expect(badge.className).toMatch(/destructive/);
+    expect(badge.querySelector('svg')).not.toBeNull();
+  });
+
+  it('aceita campos anuláveis vindos do banco sem quebrar a exibição', () => {
+    renderLista({
+      documentos: [
+        {
+          id: 'doc-nulo',
+          nome: 'Documento sem metadados',
+          descricao: null,
+          tipo: 'documento',
+          classificacao: null,
+          status: 'rascunho',
+          versao: null,
+          data_vencimento: null,
+          requer_aprovacao: null,
+        },
+      ],
+    });
+
+    const mobile = screen.getByTestId('documentos-lista-mobile');
+
+    expect(within(mobile).getByText('Documento sem metadados')).toBeInTheDocument();
+    // Classificação ausente cai no padrão "Interna"
+    expect(within(mobile).getByText('Interna')).toBeInTheDocument();
+    // Validade e Versão ausentes exibem placeholder, sem "undefined"/"vnull"
+    expect(within(mobile).getAllByText('-').length).toBeGreaterThanOrEqual(2);
+    expect(mobile.textContent).not.toMatch(/undefined|null|NaN/);
+  });
+
+  it('não depende de um TooltipProvider externo', () => {
+    const noop = () => {};
+
+    expect(() =>
+      render(
+        <DocumentosLista
+          documentos={[documento]}
+          podeRenovar={() => false}
+          emptyState={<div>vazio</div>}
+          onPreview={noop}
+          onEditar={noop}
+          onVinculacoes={noop}
+          onComentarios={noop}
+          onAprovacao={noop}
+          onRenovar={noop}
+          onHistorico={noop}
+          onAuditoria={noop}
+          onExcluir={noop}
+        />
+      )
+    ).not.toThrow();
+
+    expect(screen.getByTestId('documentos-tabela-desktop')).toBeInTheDocument();
+  });
+
+  it('renderiza o estado vazio nas duas representações', () => {
+    renderLista({ documentos: [] });
+
+    const mobile = screen.getByTestId('documentos-lista-mobile');
+    const desktop = screen.getByTestId('documentos-tabela-desktop');
+
+    expect(within(mobile).getByText('Nenhum documento cadastrado')).toBeInTheDocument();
+    expect(within(desktop).getByText('Nenhum documento cadastrado')).toBeInTheDocument();
+  });
+
+  it('omite ações condicionais quando não se aplicam', () => {
+    renderLista({
+      documentos: [{ ...documento, requer_aprovacao: false }],
+      podeRenovar: () => false,
+    });
+
+    const mobile = screen.getByTestId('documentos-lista-mobile');
+    const trigger = within(mobile).getByRole('button', {
+      name: `Ações do documento ${documento.nome}`,
+    });
+
+    fireEvent.keyDown(trigger, { key: 'Enter' });
+
+    const menu = screen.getByRole('menu');
+    expect(within(menu).queryByRole('menuitem', { name: /Aprovação/ })).toBeNull();
+    expect(within(menu).queryByRole('menuitem', { name: /Renovar Documento/ })).toBeNull();
+  });
+});

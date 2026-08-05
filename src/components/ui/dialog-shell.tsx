@@ -31,6 +31,8 @@ interface DialogShellProps {
   onOpenChange: (open: boolean) => void;
   title: string;
   description?: string;
+  /** Renderiza a descrição apenas para leitores de tela (mantém o header compacto) */
+  descriptionSrOnly?: boolean;
   icon?: LucideIcon;
   /** Main content; will be wrapped in a ScrollArea */
   children: ReactNode;
@@ -56,6 +58,18 @@ interface DialogShellProps {
   hideFooter?: boolean;
 }
 
+/**
+ * Descrição acessível de reserva (AKURIS QA-002).
+ * O Radix exige que todo `DialogContent` tenha `DialogDescription` ou
+ * `aria-describedby`; sem isso emite
+ * "Missing `Description` or `aria-describedby={undefined}` for {DialogContent}"
+ * e o leitor de tela anuncia o diálogo sem contexto. Consumidores que não
+ * informam `description` recebem este texto de forma visualmente oculta.
+ */
+function fallbackDialogDescription(title: string): string {
+  return `Janela de diálogo ${title}.`;
+}
+
 const SIZE_CLASSES: Record<DialogShellSize, string> = {
   sm: 'sm:max-w-lg',
   md: 'sm:max-w-2xl',
@@ -78,6 +92,7 @@ export function DialogShell({
   onOpenChange,
   title,
   description,
+  descriptionSrOnly = false,
   icon: Icon,
   children,
   footer,
@@ -132,7 +147,13 @@ export function DialogShell({
               )}
               {title}
             </DialogTitle>
-            {description && <DialogDescription>{description}</DialogDescription>}
+            {/*
+              Sempre exatamente uma DialogDescription: o Radix a associa ao
+              DialogContent via aria-describedby, sem duplicidade/conflito.
+            */}
+            <DialogDescription className={cn((!description || descriptionSrOnly) && 'sr-only')}>
+              {description || fallbackDialogDescription(title)}
+            </DialogDescription>
           </DialogHeader>
 
           <div className="flex-1 min-h-0 overflow-hidden">

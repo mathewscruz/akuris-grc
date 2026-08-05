@@ -18,6 +18,7 @@ import { resolveNotificationModule } from '@/lib/notification-icons';
 import { cn } from '@/lib/utils';
 import { formatStatus } from '@/lib/text-utils';
 import { logger } from '@/lib/logger';
+import { APROVACOES_PENDENTES_SELECT } from '@/components/documentos/aprovacoes-query';
 
 interface Notification {
   id: string;
@@ -123,7 +124,7 @@ const NotificationCenter: React.FC = () => {
 
       const { data: aprovacoesDocumentos } = await supabase
         .from('documentos_aprovacoes')
-        .select('id, documento_id, status, tipo_acao, solicitado_por, created_at, documentos(nome), profiles(nome)')
+        .select(APROVACOES_PENDENTES_SELECT)
         .eq('aprovador_id', user?.id || '')
         .eq('status', 'pendente')
         .eq('tipo_acao', 'solicitacao');

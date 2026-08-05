@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import DOMPurify from 'dompurify';
 import { DialogShell } from '@/components/ui/dialog-shell';
+import { DOCGEN_DIALOG_DESCRIPTION } from '@/components/documentos/docgen-copy';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -1115,6 +1116,8 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
       open={open}
       onOpenChange={handleDialogClose}
       title={`Gerador de Documentos (IA)${currentDocType ? ` · ${currentDocType}` : ''}${requirementContext ? ` — ${requirementContext.requirementCode}` : ''}`}
+      description={DOCGEN_DIALOG_DESCRIPTION}
+      descriptionSrOnly
       icon={AkurisAIIcon}
       size="xl"
       noScroll
