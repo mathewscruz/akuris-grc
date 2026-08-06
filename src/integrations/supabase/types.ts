@@ -3665,7 +3665,22 @@ export type Database = {
           status?: string
           tipo_acao?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "documentos_aprovacoes_documento_id_fkey"
+            columns: ["documento_id"]
+            isOneToOne: false
+            referencedRelation: "documentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documentos_aprovacoes_solicitado_por_profiles_fkey"
+            columns: ["solicitado_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       documentos_categorias: {
         Row: {
