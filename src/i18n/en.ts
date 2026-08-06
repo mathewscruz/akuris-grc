@@ -212,6 +212,9 @@ export const en = {
     criticalSummaryPlural: '{{count}} critical items need your attention',
     allClear: 'Nothing critical right now',
     updatedAt: 'Updated at {{time}}',
+    refresh: 'Refresh indicators',
+    refreshing: 'Refreshing…',
+    refreshed: 'Updated',
   },
   userProfile: {
     myProfile: 'My profile',
