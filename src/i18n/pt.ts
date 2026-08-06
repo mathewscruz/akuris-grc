@@ -212,6 +212,9 @@ export const pt = {
     criticalSummaryPlural: '{{count}} itens críticos exigem sua atenção',
     allClear: 'Nada crítico no momento',
     updatedAt: 'Atualizado às {{time}}',
+    refresh: 'Atualizar indicadores',
+    refreshing: 'Atualizando…',
+    refreshed: 'Atualizado',
   },
   userProfile: {
     myProfile: 'Meu perfil',

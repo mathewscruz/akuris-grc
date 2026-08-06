@@ -16,6 +16,11 @@ interface DashboardHeaderProps {
   onRefresh: () => void;
 }
 
+/** Trava de segurança: sem ela um refresh que falha deixaria "Atualizando…" preso. */
+const TIMEOUT_ATUALIZANDO_MS = 8000;
+/** Quanto tempo o "Atualizado" permanece antes de voltar ao estado neutro. */
+const DURACAO_ATUALIZADO_MS = 2500;
+
 /**
  * Header do Dashboard: título "Dashboard" + ações (refresh, modo foco, timestamp).
  * Sumário contextual foi removido — informação crítica já é exposta pelo
@@ -30,8 +35,51 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 
   const timeStr = dataUpdatedAt ? format(new Date(dataUpdatedAt), 'HH:mm', { locale: dateLocale }) : '--:--';
 
+  // AKURIS QA-016: feedback do refresh. O estado "atualizando" só termina
+  // quando os indicadores voltam com um timestamp novo — nada de tempo fixo
+  // fingindo conclusão.
+  const [atualizando, setAtualizando] = React.useState(false);
+  const [concluido, setConcluido] = React.useState(false);
+  const timestampNoClique = React.useRef<number | undefined>(undefined);
+
+  const handleRefresh = () => {
+    timestampNoClique.current = dataUpdatedAt;
+    setConcluido(false);
+    setAtualizando(true);
+    onRefresh();
+  };
+
+  React.useEffect(() => {
+    if (!atualizando) return;
+
+    if (dataUpdatedAt !== undefined && dataUpdatedAt !== timestampNoClique.current) {
+      setAtualizando(false);
+      setConcluido(true);
+      return;
+    }
+
+    const id = setTimeout(() => setAtualizando(false), TIMEOUT_ATUALIZANDO_MS);
+    return () => clearTimeout(id);
+  }, [atualizando, dataUpdatedAt]);
+
+  React.useEffect(() => {
+    if (!concluido) return;
+    const id = setTimeout(() => setConcluido(false), DURACAO_ATUALIZADO_MS);
+    return () => clearTimeout(id);
+  }, [concluido]);
+
+  const statusLabel = atualizando
+    ? t('dashboard_v3.refreshing')
+    : concluido
+      ? t('dashboard_v3.refreshed')
+      : null;
+
+  const refreshLabel = t('dashboard_v3.refresh');
+
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    // AKURIS QA-016: linha única também no mobile — `flex-col` empilhava o
+    // ícone numa linha própria, solto e sem relação visível com o título.
+    <div className="flex flex-row items-center justify-between gap-3">
       <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight truncate">
         Dashboard
       </h1>
@@ -42,15 +90,35 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
           <span className="tabular-nums">{t('dashboard_v3.updatedAt').replace('{{time}}', timeStr)}</span>
         </div>
 
+        {/*
+          Contexto textual do refresh, visível também no mobile enquanto dura.
+          `aria-hidden` porque a região viva abaixo já anuncia o mesmo texto.
+        */}
+        {statusLabel && (
+          <span aria-hidden="true" className="text-xs text-muted-foreground whitespace-nowrap">
+            {statusLabel}
+          </span>
+        )}
+
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onRefresh} aria-label="Refresh">
-              <Icon as={RefreshCw} size="sm" />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={handleRefresh}
+              aria-label={refreshLabel}
+            >
+              <Icon as={RefreshCw} size="sm" className={atualizando ? 'animate-spin' : undefined} />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>{timeStr}</TooltipContent>
+          <TooltipContent>{statusLabel ?? refreshLabel}</TooltipContent>
         </Tooltip>
       </div>
+
+      <span role="status" aria-live="polite" className="sr-only">
+        {statusLabel ?? ''}
+      </span>
     </div>
   );
 };
