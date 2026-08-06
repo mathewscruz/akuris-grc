@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
@@ -77,6 +77,11 @@ const queryClient = new QueryClient({
   },
 });
 
+function AssessmentLinkRedirect() {
+  const { token } = useParams<{ token: string }>();
+  return <Navigate to={`/assessment/${token ?? ''}`} replace />;
+}
+
 function App() {
   return (
     <LanguageProvider>
@@ -91,6 +96,8 @@ function App() {
             <Route path="/auth" element={<Suspense fallback={<RouteFallback />}><Auth /></Suspense>} />
             <Route path="/definir-senha" element={<Suspense fallback={<RouteFallback />}><DefinirSenha /></Suspense>} />
             <Route path="/assessment/:token" element={<Suspense fallback={<RouteFallback />}><Assessment /></Suspense>} />
+            {/* Compatibilidade: links antigos enviados por e-mail */}
+            <Route path="/due-diligence/responder/:token" element={<AssessmentLinkRedirect />} />
             <Route path="/denuncia/externa/:token" element={<Suspense fallback={<RouteFallback />}><DenunciaExternaRedirect /></Suspense>} />
             <Route path="/:empresa/denuncia" element={<Suspense fallback={<RouteFallback />}><DenunciaMenu /></Suspense>} />
             <Route path="/:empresa/denuncia/registrar" element={<Suspense fallback={<RouteFallback />}><DenunciaFormulario /></Suspense>} />
