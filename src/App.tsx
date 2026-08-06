@@ -77,6 +77,11 @@ const queryClient = new QueryClient({
   },
 });
 
+function AssessmentLinkRedirect() {
+  const { token } = useParams<{ token: string }>();
+  return <Navigate to={`/assessment/${token ?? ''}`} replace />;
+}
+
 function App() {
   return (
     <LanguageProvider>
