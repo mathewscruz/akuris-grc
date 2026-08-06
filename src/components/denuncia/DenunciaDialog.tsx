@@ -183,7 +183,7 @@ export function DenunciaDialog({
         await notify('denuncia_recebida', {
           titulo: `Denúncia ${denuncia.protocolo} atualizada para ${statusNovo}`,
           descricao: `A denúncia "${denuncia.titulo}" teve seu status alterado de ${statusAnterior} para ${statusNovo}.${formData.observacoes ? ` Observação: ${formData.observacoes}` : ''}`,
-          link: `${window.location.origin}/denuncias`,
+          link: `${window.location.origin}/denuncia`,
           gravidade: denuncia.gravidade === 'critica' ? 'critica' : denuncia.gravidade === 'alta' ? 'alta' : 'media',
           dados: { protocolo: denuncia.protocolo, status_anterior: statusAnterior, status_novo: statusNovo }
         });
