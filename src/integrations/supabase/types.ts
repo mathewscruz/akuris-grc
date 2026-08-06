@@ -847,7 +847,15 @@ export type Database = {
           tipo_manutencao?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "ativos_manutencoes_ativo_id_ativos_fkey"
+            columns: ["ativo_id"]
+            isOneToOne: false
+            referencedRelation: "ativos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ativos_notificacoes_enviadas: {
         Row: {
@@ -3665,7 +3673,22 @@ export type Database = {
           status?: string
           tipo_acao?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "documentos_aprovacoes_documento_id_fkey"
+            columns: ["documento_id"]
+            isOneToOne: false
+            referencedRelation: "documentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documentos_aprovacoes_solicitado_por_profiles_fkey"
+            columns: ["solicitado_por"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       documentos_categorias: {
         Row: {
