@@ -54,7 +54,6 @@ interface QuestionData {
 interface AssessmentData {
   id: string;
   fornecedor_nome: string;
-  fornecedor_email: string;
   status: 'enviado' | 'em_andamento' | 'concluido';
   data_envio: string;
   data_limite: string;
@@ -69,42 +68,18 @@ interface AssessmentData {
   };
 }
 
-const createSupabaseRequest = (assessmentToken: string | undefined) => {
-  return async (endpoint: string, options: any = {}) => {
-    const url = `https://lnlkahtugwmkznasapfd.supabase.co/rest/v1/${endpoint}`;
-    const headers: Record<string, string> = {
-      'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxubGthaHR1Z3dta3puYXNhcGZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMxOTk4MjcsImV4cCI6MjA2ODc3NTgyN30.DRHZ_55_8aH8fEDghoY84fl3rChFNgVyPA9UM3y-KCY',
-      'Content-Type': 'application/json',
-      'Prefer': 'return=representation',
-      ...options.headers
-    };
+type PublicAssessmentErrorCode = 'NOT_FOUND' | 'EXPIRED' | 'COMPLETED' | 'UNAVAILABLE' | 'INTERNAL_ERROR';
 
-    if (assessmentToken) {
-      headers['x-assessment-token'] = assessmentToken;
-    }
-
-    assessmentLogger.info(`Fazendo requisição para: ${endpoint}`);
-
-    try {
-      const response = await fetch(url, { ...options, headers });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        assessmentLogger.error(`Erro na requisição ${endpoint}:`, {
-          status: response.status,
-          error: errorText
-        });
-        throw new Error(`Erro ${response.status}: ${errorText}`);
-      }
-
-      const data = await response.json();
-      assessmentLogger.info(`Sucesso na requisição ${endpoint}`);
-      return data;
-    } catch (error) {
-      assessmentLogger.error(`Falha na requisição ${endpoint}:`, error);
-      throw error;
-    }
-  };
+const invokePublicAssessment = async <T,>(body: Record<string, unknown> | FormData): Promise<T> => {
+  const { data, error } = await supabase.functions.invoke('public-assessment', { body });
+  if (error) {
+    const context = error.context as Response | undefined;
+    const payload = context ? await context.clone().json().catch(() => null) : null;
+    const apiError = new Error(payload?.error || 'Não foi possível acessar o questionário') as Error & { code?: PublicAssessmentErrorCode };
+    apiError.code = payload?.code;
+    throw apiError;
+  }
+  return data as T;
 };
 
 // Wrapper component: light background with bottom purple glow preserved
@@ -319,8 +294,6 @@ const WelcomeScreen = ({
 export default function Assessment() {
   const { token } = useParams();
   
-  const supabaseRequest = useMemo(() => createSupabaseRequest(token), [token]);
-  
   const [assessment, setAssessment] = useState<AssessmentData | null>(null);
   const [questions, setQuestions] = useState<QuestionData[]>([]);
   const [responses, setResponses] = useState<Record<string, any>>({});
@@ -333,6 +306,7 @@ export default function Assessment() {
   const [logoLoading, setLogoLoading] = useState(true);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [saving, setSaving] = useState(false);
+  const [loadError, setLoadError] = useState<{ title: string; message: string } | null>(null);
   const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const questionsPerPage = 5;
@@ -386,87 +360,30 @@ export default function Assessment() {
 
     try {
       setLoading(true);
-      const assessmentData = await supabaseRequest(
-        `due_diligence_assessments?select=*&link_token=eq.${token}`,
-        { method: 'GET' }
-      );
-
-      if (!assessmentData || assessmentData.length === 0) {
-        throw new Error('Assessment não encontrado');
-      }
-
-      const assessment = assessmentData[0];
-
-      let empresaData: { nome: string; logo_url: string | null } = { nome: 'Empresa', logo_url: null };
-      try {
-        const { data: empresaInfo, error: empresaErr } = await supabase
-          .rpc('get_assessment_empresa_info', { p_token: token });
-        if (!empresaErr && empresaInfo && empresaInfo.length > 0) {
-          empresaData = {
-            nome: empresaInfo[0].empresa_nome || 'Empresa',
-            logo_url: empresaInfo[0].empresa_logo_url || null,
-          };
-        } else if (empresaErr) {
-          assessmentLogger.warn('RPC empresa info erro:', empresaErr);
-        }
-      } catch (error) {
-        assessmentLogger.warn('Erro ao carregar dados da empresa via RPC:', error);
-      }
-
-      let templateData = { nome: 'Assessment', descricao: null };
-      try {
-        const templateResponse = await supabaseRequest(
-          `due_diligence_templates?select=nome,descricao&id=eq.${assessment.template_id}`,
-          { method: 'GET' }
-        );
-        if (templateResponse && templateResponse.length > 0) {
-          templateData = templateResponse[0];
-        }
-      } catch (error) {
-        assessmentLogger.warn('Erro ao carregar dados do template, usando fallback:', error);
-      }
+      const payload = await invokePublicAssessment<{
+        assessment: AssessmentData;
+        questions: QuestionData[];
+        responses: Array<{ question_id: string; resposta: string | null; pontuacao: number | null; evidencia: string | null; justificativa: string | null; arquivo_url: string | null; arquivo_signed_url: string | null }>;
+      }>({ action: 'load', token });
+      const assessment = payload.assessment;
 
       if (assessment.status === 'concluido') {
         setIsFinished(true);
         setAssessment({
           id: assessment.id,
           fornecedor_nome: assessment.fornecedor_nome,
-          fornecedor_email: assessment.fornecedor_email,
           status: assessment.status,
           data_envio: assessment.data_envio,
           data_limite: assessment.data_limite,
           data_conclusao: assessment.data_conclusao,
-          empresa: empresaData,
-          template: templateData
+          empresa: assessment.empresa,
+          template: assessment.template
         });
         return;
       }
 
-      if (assessment.status === 'enviado') {
-        try {
-          await supabaseRequest(`due_diligence_assessments?id=eq.${assessment.id}`, {
-            method: 'PATCH',
-            body: JSON.stringify({ 
-              status: 'em_andamento',
-              data_inicio: new Date().toISOString()
-            })
-          });
-          assessment.status = 'em_andamento';
-        } catch (error) {
-          assessmentLogger.warn('Erro ao atualizar status para em_andamento:', error);
-        }
-      }
-
-      const [questionsData, responsesData] = await Promise.all([
-        supabaseRequest(
-          `due_diligence_questions?template_id=eq.${assessment.template_id}&order=ordem.asc`,
-          { method: 'GET' }
-        ),
-        supabaseRequest(
-          `due_diligence_responses?select=question_id,resposta,pontuacao,evidencia,justificativa,arquivo_url&assessment_id=eq.${assessment.id}`,
-          { method: 'GET' }
-        ).catch(() => [])
-      ]);
+      const questionsData = payload.questions;
+      const responsesData = payload.responses;
 
       if (!questionsData || questionsData.length === 0) {
         throw new Error('Este questionário não possui perguntas configuradas. Por favor, entre em contato com o remetente.');
@@ -478,18 +395,18 @@ export default function Assessment() {
         if (response.evidencia) responsesMap[`${response.question_id}_evidencia`] = response.evidencia;
         if (response.justificativa) responsesMap[`${response.question_id}_justificativa`] = response.justificativa;
         if (response.arquivo_url) responsesMap[`${response.question_id}_arquivo`] = response.arquivo_url;
+        if (response.arquivo_signed_url) responsesMap[`${response.question_id}_arquivo_url`] = response.arquivo_signed_url;
       });
 
       setAssessment({
         id: assessment.id,
         fornecedor_nome: assessment.fornecedor_nome,
-        fornecedor_email: assessment.fornecedor_email,
         status: assessment.status,
         data_envio: assessment.data_envio,
         data_limite: assessment.data_limite,
         data_conclusao: assessment.data_conclusao,
-        empresa: empresaData,
-        template: templateData
+        empresa: assessment.empresa,
+        template: assessment.template
       });
       
       setQuestions(questionsData.map((q: any) => ({
@@ -513,14 +430,21 @@ export default function Assessment() {
       
     } catch (error) {
       assessmentLogger.error('Erro ao carregar assessment:', error);
-      toast.error('Erro ao carregar o questionário. Por favor, verifique o link.');
+      const code = (error as Error & { code?: PublicAssessmentErrorCode }).code;
+      setLoadError(code === 'EXPIRED'
+        ? { title: 'Link expirado', message: 'O prazo para responder este questionário terminou. Solicite um novo link ao remetente.' }
+        : code === 'NOT_FOUND'
+          ? { title: 'Link inválido', message: 'Este link não corresponde a um questionário disponível.' }
+          : code === 'UNAVAILABLE'
+            ? { title: 'Questionário indisponível', message: 'Este questionário não está disponível para resposta.' }
+            : { title: 'Não foi possível carregar', message: 'Ocorreu uma falha temporária. Tente novamente em alguns instantes.' });
     } finally {
       setLoading(false);
     }
-  }, [token, supabaseRequest]);
+  }, [token]);
 
   const saveResponse = useCallback(async (questionId: string, value: any) => {
-    if (!assessment) return;
+    if (!assessment || !token) return;
 
     try {
       setSaving(true);
@@ -531,77 +455,25 @@ export default function Assessment() {
         questionId.replace(/_evidencia|_justificativa|_arquivo$/, '') : questionId;
 
       const question = questions.find(q => q.id === baseQuestionId);
-      const responseData: any = {
-        assessment_id: assessment.id,
-        question_id: baseQuestionId
-      };
-
-      if (isEvidencia || isJustificativa || isArquivo) {
-        try {
-          const existingResponse = await supabaseRequest(
-            `due_diligence_responses?assessment_id=eq.${assessment.id}&question_id=eq.${baseQuestionId}`,
-            { method: 'GET' }
-          );
-          
-          if (existingResponse && existingResponse.length > 0) {
-            const updateData: any = {};
-            if (isEvidencia) updateData.evidencia = value;
-            else if (isJustificativa) updateData.justificativa = value;
-            else if (isArquivo) updateData.arquivo_url = value;
-
-            await supabaseRequest(
-              `due_diligence_responses?assessment_id=eq.${assessment.id}&question_id=eq.${baseQuestionId}`,
-              { method: 'PATCH', body: JSON.stringify(updateData) }
-            );
-          } else {
-            if (isEvidencia) responseData.evidencia = value;
-            else if (isJustificativa) responseData.justificativa = value;
-            else if (isArquivo) responseData.arquivo_url = value;
-            await supabaseRequest('due_diligence_responses', {
-              method: 'POST', body: JSON.stringify(responseData)
-            });
-          }
-        } catch (error) {
-          assessmentLogger.error('Erro ao salvar evidência/justificativa:', error);
-        }
-        setSavedAt(new Date());
-        return;
-      }
-
-      if (question?.tipo === 'numerico') {
-        responseData.pontuacao = parseFloat(value) || 0;
-      } else {
-        responseData.resposta = value;
-      }
-
-      try {
-        const existingResponse = await supabaseRequest(
-          `due_diligence_responses?assessment_id=eq.${assessment.id}&question_id=eq.${questionId}`,
-          { method: 'GET' }
-        );
-        
-        if (existingResponse && existingResponse.length > 0) {
-          await supabaseRequest(
-            `due_diligence_responses?assessment_id=eq.${assessment.id}&question_id=eq.${questionId}`,
-            { method: 'PATCH', body: JSON.stringify(responseData) }
-          );
-        } else {
-          await supabaseRequest('due_diligence_responses', {
-            method: 'POST', body: JSON.stringify(responseData)
-          });
-        }
-      } catch (error) {
-        await supabaseRequest('due_diligence_responses', {
-          method: 'POST', body: JSON.stringify(responseData)
-        });
-      }
+      const field = isEvidencia ? 'evidencia' : isJustificativa ? 'justificativa' : isArquivo ? 'arquivo_url' : question?.tipo === 'numerico' ? 'pontuacao' : 'resposta';
+      const normalizedValue = field === 'pontuacao' ? (parseFloat(value) || 0) : value;
+      await invokePublicAssessment({ action: 'save', token, questionId: baseQuestionId, field, value: normalizedValue });
       setSavedAt(new Date());
     } catch (error) {
       assessmentLogger.error('Erro ao salvar resposta:', error);
     } finally {
       setSaving(false);
     }
-  }, [assessment, questions, supabaseRequest]);
+  }, [assessment, questions, token]);
+
+  const uploadEvidence = useCallback(async (questionId: string, file: File) => {
+    if (!token) throw new Error('Link inválido');
+    const form = new FormData();
+    form.append('token', token);
+    form.append('questionId', questionId);
+    form.append('file', file);
+    return invokePublicAssessment<{ path: string; fileName: string; signedUrl: string | null }>(form);
+  }, [token]);
 
   const handleResponseChange = useCallback((questionId: string, value: any) => {
     setResponses(prev => ({ ...prev, [questionId]: value }));
@@ -630,38 +502,13 @@ export default function Assessment() {
         return;
       }
 
-      for (const [questionId, value] of Object.entries(responses)) {
-        if (value && value.toString().trim()) {
-          await saveResponse(questionId, value);
-        }
-      }
-
-      const { error: updateError } = await supabase
-        .from('due_diligence_assessments')
-        .update({
-          status: 'concluido',
-          data_conclusao: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('link_token', token)
-        .select();
-
-      if (updateError) {
-        throw new Error(`Erro ao finalizar assessment: ${updateError.message}`);
-      }
-
-      try {
-        await supabase.functions.invoke('calculate-assessment-score', {
-          body: { assessment_id: assessment.id }
-        });
-      } catch (scoreError) {
-        assessmentLogger.warn('Erro ao calcular score:', scoreError);
-      }
+      if (!token) throw new Error('Link inválido');
+      const result = await invokePublicAssessment<{ completedAt: string }>({ action: 'complete', token, responses });
 
       setAssessment(prev => prev ? {
         ...prev,
         status: 'concluido',
-        data_conclusao: new Date().toISOString()
+        data_conclusao: result.completedAt
       } : null);
 
       setIsFinished(true);
@@ -674,7 +521,7 @@ export default function Assessment() {
       setSubmitting(false);
       setShowConfirmDialog(false);
     }
-  }, [assessment, questions, responses, saveResponse, token, isAnswered]);
+  }, [assessment, questions, responses, token, isAnswered]);
 
   useEffect(() => {
     fetchAssessment();
@@ -702,9 +549,9 @@ export default function Assessment() {
           <Card className="w-full max-w-md bg-white border-slate-200 shadow-xl">
             <CardContent className="pt-6 text-center">
               <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-              <h2 className="text-xl font-semibold mb-2 text-slate-900">Questionário não encontrado</h2>
+              <h2 className="text-xl font-semibold mb-2 text-slate-900">{loadError?.title || 'Questionário não encontrado'}</h2>
               <p className="text-slate-500">
-                O link pode ter expirado ou ser inválido.
+                {loadError?.message || 'O link pode ter expirado ou ser inválido.'}
               </p>
             </CardContent>
           </Card>
@@ -1191,17 +1038,13 @@ export default function Assessment() {
                                   }
                                   try {
                                     toast.info('Enviando arquivo...');
-                                    const fileName = `${Date.now()}-${file.name}`;
-                                    const filePath = `${assessment?.id || 'temp'}/${question.id}/${fileName}`;
-                                    const { error: uploadError } = await supabase.storage
-                                      .from('due-diligence-evidencias')
-                                      .upload(filePath, file);
-                                    if (uploadError) throw uploadError;
-                                    const { data: { publicUrl } } = supabase.storage
-                                      .from('due-diligence-evidencias')
-                                      .getPublicUrl(filePath);
+                                    const upload = await uploadEvidence(question.id, file);
                                     handleResponseChange(question.id, file.name);
-                                    handleResponseChange(`${question.id}_arquivo`, publicUrl);
+                                    setResponses(prev => ({
+                                      ...prev,
+                                      [`${question.id}_arquivo`]: upload.path,
+                                      [`${question.id}_arquivo_url`]: upload.signedUrl,
+                                    }));
                                     toast.success('Arquivo enviado com sucesso!');
                                   } catch (err: any) {
                                     assessmentLogger.error('Erro no upload:', err);
@@ -1214,8 +1057,8 @@ export default function Assessment() {
                               <div className="flex items-center space-x-3 text-sm text-slate-700 p-3 bg-slate-50 rounded-lg border border-slate-200">
                                 <FileText className="h-4 w-4 text-slate-500" />
                                 <span className="font-medium">{responses[question.id]}</span>
-                                {responses[`${question.id}_arquivo`] && (
-                                  <a href={responses[`${question.id}_arquivo`]} target="_blank" rel="noopener noreferrer" className="text-[hsl(250,80%,55%)] underline text-xs ml-auto">
+                                {responses[`${question.id}_arquivo_url`] && (
+                                  <a href={responses[`${question.id}_arquivo_url`]} target="_blank" rel="noopener noreferrer" className="text-[hsl(250,80%,55%)] underline text-xs ml-auto">
                                     Ver arquivo
                                   </a>
                                 )}
@@ -1261,16 +1104,12 @@ export default function Assessment() {
                                         }
                                         try {
                                           toast.info('Enviando evidência...');
-                                          const fileName = `${Date.now()}-${file.name}`;
-                                          const filePath = `${assessment?.id || 'temp'}/evidencias/${question.id}/${fileName}`;
-                                          const { error: uploadError } = await supabase.storage
-                                            .from('due-diligence-evidencias')
-                                            .upload(filePath, file);
-                                          if (uploadError) throw uploadError;
-                                          const { data: { publicUrl } } = supabase.storage
-                                            .from('due-diligence-evidencias')
-                                            .getPublicUrl(filePath);
-                                          handleResponseChange(`${question.id}_arquivo`, publicUrl);
+                                          const upload = await uploadEvidence(question.id, file);
+                                          setResponses(prev => ({
+                                            ...prev,
+                                            [`${question.id}_arquivo`]: upload.path,
+                                            [`${question.id}_arquivo_url`]: upload.signedUrl,
+                                          }));
                                           toast.success('Evidência anexada com sucesso!');
                                         } catch (err: any) {
                                           assessmentLogger.error('Erro no upload de evidência:', err);
@@ -1283,7 +1122,7 @@ export default function Assessment() {
                                     <div className="flex items-center space-x-2 text-xs text-slate-700 bg-white p-2 rounded border border-slate-200">
                                       <FileText className="h-3 w-3 text-slate-500" />
                                       <span>Evidência anexada</span>
-                                      <a href={responses[`${question.id}_arquivo`]} target="_blank" rel="noopener noreferrer" className="text-[hsl(250,80%,55%)] underline ml-auto">
+                                      <a href={responses[`${question.id}_arquivo_url`]} target="_blank" rel="noopener noreferrer" className="text-[hsl(250,80%,55%)] underline ml-auto">
                                         Ver
                                       </a>
                                     </div>
