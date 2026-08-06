@@ -4,14 +4,17 @@ Varredura de todos os links gerados em e-mails, notificações e integrações, 
 
 ## Problemas confirmados
 
-1. **Link de denúncia em notificações de integração** — `src/components/denuncia/DenunciaDialog.tsx` envia para webhooks/integrações o endereço `/denuncias` (plural). A rota registrada é `/denuncia`, então quem clica cai em 404.
-2. **Link do e-mail de expiração de trial** — `supabase/functions/check-trial-expiration/index.ts` usa `https://akuris.com.br/contato` como URL de ação. Não existe rota `/contato`; o usuário cai em 404.
+1. **Link antigo de due diligence ainda dá 404 no site publicado** — a rota de compatibilidade `/due-diligence/responder/:token` já existe no código (`src/App.tsx`), mas o site em `akuris.pt` ainda roda a versão publicada anterior, sem essa rota. Enquanto não houver uma nova publicação, o link continua caindo em 404.
+2. **Link de denúncia em notificações de integração** — `src/components/denuncia/DenunciaDialog.tsx` envia para webhooks/integrações o endereço `/denuncias` (plural). A rota registrada é `/denuncia`, então quem clica cai em 404.
+3. **Link do e-mail de expiração de trial** — `supabase/functions/check-trial-expiration/index.ts` usa `https://akuris.com.br/contato` como URL de ação. Não existe rota `/contato`; o usuário cai em 404.
 
 ## Correções
 
-1. Trocar `/denuncias` por `/denuncia` no link enviado pela notificação de integração.
-2. Apontar o e-mail de trial expirado para a página inicial (onde fica o formulário de contato/demonstração), em vez de `/contato`.
-3. Reimplantar a função `check-trial-expiration`.
+1. Publicar o app para que a rota de compatibilidade `/due-diligence/responder/:token` passe a valer em `akuris.pt`, `akuris.com.br` e `www.akuris.com.br`. Reforçar o redirecionamento também para variações de caminho (`/due-diligence/responder/:token` e `/dd/responder/:token`) para cobrir links antigos.
+2. Trocar `/denuncias` por `/denuncia` no link enviado pela notificação de integração.
+3. Apontar o e-mail de trial expirado para a página inicial (onde fica o formulário de contato/demonstração), em vez de `/contato`.
+4. Reimplantar a função `check-trial-expiration`.
+
 
 ## Verificados e OK (sem alteração)
 
