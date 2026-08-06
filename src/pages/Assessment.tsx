@@ -1038,17 +1038,13 @@ export default function Assessment() {
                                   }
                                   try {
                                     toast.info('Enviando arquivo...');
-                                    const fileName = `${Date.now()}-${file.name}`;
-                                    const filePath = `${assessment?.id || 'temp'}/${question.id}/${fileName}`;
-                                    const { error: uploadError } = await supabase.storage
-                                      .from('due-diligence-evidencias')
-                                      .upload(filePath, file);
-                                    if (uploadError) throw uploadError;
-                                    const { data: { publicUrl } } = supabase.storage
-                                      .from('due-diligence-evidencias')
-                                      .getPublicUrl(filePath);
+                                    const upload = await uploadEvidence(question.id, file);
                                     handleResponseChange(question.id, file.name);
-                                    handleResponseChange(`${question.id}_arquivo`, publicUrl);
+                                    setResponses(prev => ({
+                                      ...prev,
+                                      [`${question.id}_arquivo`]: upload.path,
+                                      [`${question.id}_arquivo_url`]: upload.signedUrl,
+                                    }));
                                     toast.success('Arquivo enviado com sucesso!');
                                   } catch (err: any) {
                                     assessmentLogger.error('Erro no upload:', err);
@@ -1061,8 +1057,8 @@ export default function Assessment() {
                               <div className="flex items-center space-x-3 text-sm text-slate-700 p-3 bg-slate-50 rounded-lg border border-slate-200">
                                 <FileText className="h-4 w-4 text-slate-500" />
                                 <span className="font-medium">{responses[question.id]}</span>
-                                {responses[`${question.id}_arquivo`] && (
-                                  <a href={responses[`${question.id}_arquivo`]} target="_blank" rel="noopener noreferrer" className="text-[hsl(250,80%,55%)] underline text-xs ml-auto">
+                                {responses[`${question.id}_arquivo_url`] && (
+                                  <a href={responses[`${question.id}_arquivo_url`]} target="_blank" rel="noopener noreferrer" className="text-[hsl(250,80%,55%)] underline text-xs ml-auto">
                                     Ver arquivo
                                   </a>
                                 )}
@@ -1108,16 +1104,12 @@ export default function Assessment() {
                                         }
                                         try {
                                           toast.info('Enviando evidência...');
-                                          const fileName = `${Date.now()}-${file.name}`;
-                                          const filePath = `${assessment?.id || 'temp'}/evidencias/${question.id}/${fileName}`;
-                                          const { error: uploadError } = await supabase.storage
-                                            .from('due-diligence-evidencias')
-                                            .upload(filePath, file);
-                                          if (uploadError) throw uploadError;
-                                          const { data: { publicUrl } } = supabase.storage
-                                            .from('due-diligence-evidencias')
-                                            .getPublicUrl(filePath);
-                                          handleResponseChange(`${question.id}_arquivo`, publicUrl);
+                                          const upload = await uploadEvidence(question.id, file);
+                                          setResponses(prev => ({
+                                            ...prev,
+                                            [`${question.id}_arquivo`]: upload.path,
+                                            [`${question.id}_arquivo_url`]: upload.signedUrl,
+                                          }));
                                           toast.success('Evidência anexada com sucesso!');
                                         } catch (err: any) {
                                           assessmentLogger.error('Erro no upload de evidência:', err);
@@ -1130,7 +1122,7 @@ export default function Assessment() {
                                     <div className="flex items-center space-x-2 text-xs text-slate-700 bg-white p-2 rounded border border-slate-200">
                                       <FileText className="h-3 w-3 text-slate-500" />
                                       <span>Evidência anexada</span>
-                                      <a href={responses[`${question.id}_arquivo`]} target="_blank" rel="noopener noreferrer" className="text-[hsl(250,80%,55%)] underline ml-auto">
+                                      <a href={responses[`${question.id}_arquivo_url`]} target="_blank" rel="noopener noreferrer" className="text-[hsl(250,80%,55%)] underline ml-auto">
                                         Ver
                                       </a>
                                     </div>
