@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
           body: {
             userName: r.nome,
             userEmail: r.email,
-            setupPasswordUrl: 'https://akuris.com.br/contato',
+            setupPasswordUrl: 'https://akuris.com.br/',
             companyName: 'Akuris',
             companyLogoUrl: '',
             customSubject: subject,
