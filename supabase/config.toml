@@ -84,6 +84,9 @@ verify_jwt = false
 [functions.calculate-assessment-score]
 verify_jwt = false
 
+[functions.public-assessment]
+verify_jwt = false
+
 [functions.apply-default-permissions-all-users]
 verify_jwt = true
 
