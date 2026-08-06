@@ -56,6 +56,16 @@ export function useRiscoDetail(riscoId: string | null) {
           .eq('risco_id', riscoId!),
       ]);
 
+      const failedQuery = [
+        ['tratamentos', tratRes.error],
+        ['histórico', histRes.error],
+        ['controles', ctrlRes.error],
+      ].find(([, error]) => error);
+      if (failedQuery) {
+        const [resource, error] = failedQuery as [string, { message?: string }];
+        throw new Error(`Não foi possível carregar ${resource} do risco: ${error.message || 'erro desconhecido'}`);
+      }
+
       return {
         tratamentos: (tratRes.data || []) as RiscoTratamento[],
         historico: (histRes.data || []) as RiscoHistoricoItem[],

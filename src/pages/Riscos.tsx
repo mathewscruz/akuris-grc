@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { DataTable, Column } from '@/components/ui/data-table';
 import { PageHeader } from '@/components/ui/page-header';
 import { Input } from '@/components/ui/input';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { formatStatus } from '@/lib/text-utils';
@@ -54,6 +55,14 @@ import { RiscosViewChips, type SavedView } from '@/components/riscos/table/Risco
 import { SparklineCell } from '@/components/riscos/table/SparklineCell';
 import { SlaCell } from '@/components/riscos/table/SlaCell';
 import { isAcimaApetite, severityFromNivel, slaFromRevisao, scoreFromPI, shortRiskId, relativeShort, toScaleNumber, formatScaleValue, financialExposure, formatBRL } from '@/components/riscos/risk-utils';
+import { assertTratamentosLookup, deriveRiscoStatus, isTratamentoConcluido, isTratamentoRequerido } from '@/components/riscos/risk-status';
+import {
+  apetiteScoreFromNiveis,
+  MATRIZ_CONFIG_ERRO_DESCRICAO,
+  MATRIZ_CONFIG_ERRO_TITULO,
+  type NivelRisco,
+} from '@/components/riscos/matriz-config';
+import { filterUuids, splitResponsavel } from '@/lib/uuid';
 
 
 import { TrilhaAuditoriaRiscos } from '@/components/riscos/TrilhaAuditoriaRiscos';
@@ -89,6 +98,14 @@ interface Risco {
   matriz?: { nome: string };
   created_at: string;
   tratamentos_count?: number;
+  /** Tratamentos exigidos (total menos cancelados) — base da regra de "Tratado". */
+  tratamentos_requeridos?: number;
+  /** Tratamentos exigidos já concluídos. */
+  tratamentos_concluidos?: number;
+  /** Status coerente com os tratamentos (AKURIS QA-065). Só difere quando o valor gravado é 'tratado' sem evidência. */
+  status_efetivo?: string;
+  /** Explicação do ajuste de status, quando houve. */
+  status_ajuste_motivo?: string | null;
   data_proxima_revisao?: string;
   status_aprovacao?: string;
   aprovador_id?: string;
@@ -98,7 +115,7 @@ interface Risco {
 
 
 interface MatrizConfig {
-  niveis_risco: Array<{ min: number; max: number; nivel: string; cor?: string; apetite?: boolean }>;
+  niveis_risco: NivelRisco[];
 }
 
 export function Riscos() {
@@ -142,7 +159,10 @@ export function Riscos() {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
   // React Query for riscos
-  const { data: riscos = [], isLoading: loading } = useQuery<Risco[]>({
+  const {
+    data: riscos = [], isLoading: loading, isError: riscosError,
+    error: riscosQueryError, refetch: refetchRiscos,
+  } = useQuery<Risco[]>({
     queryKey: ['riscos', profile?.empresa_id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -164,18 +184,29 @@ export function Riscos() {
 
       if (error) throw error;
       
-      // Buscar contagem de tratamentos
+      // Tratamentos: além da contagem total, o status de cada um — a regra de
+      // "Tratado" (AKURIS QA-065) depende de quantos são exigidos e concluídos.
       const riscoIds = data?.map(r => r.id) || [];
       let tratamentosCount: Record<string, number> = {};
+      const tratamentosRequeridos: Record<string, number> = {};
+      const tratamentosConcluidos: Record<string, number> = {};
 
       if (riscoIds.length > 0) {
-        const { data: tratamentos } = await supabase
+        const { data: tratamentos, error: tratamentosError } = await supabase
           .from('riscos_tratamentos')
-          .select('risco_id')
+          .select('risco_id, status')
           .in('risco_id', riscoIds);
+
+        assertTratamentosLookup(tratamentosError);
 
         tratamentosCount = (tratamentos || []).reduce((acc, t) => {
           acc[t.risco_id] = (acc[t.risco_id] || 0) + 1;
+          if (isTratamentoRequerido(t.status)) {
+            tratamentosRequeridos[t.risco_id] = (tratamentosRequeridos[t.risco_id] || 0) + 1;
+            if (isTratamentoConcluido(t.status)) {
+              tratamentosConcluidos[t.risco_id] = (tratamentosConcluidos[t.risco_id] || 0) + 1;
+            }
+          }
           return acc;
         }, {} as Record<string, number>);
       }
@@ -195,44 +226,53 @@ export function Riscos() {
       }
 
       if (data && data.length > 0) {
-        const normalizedData = data.map(risco => ({
-          ...risco,
-          categoria: Array.isArray(risco.categoria) && risco.categoria.length > 0
-            ? risco.categoria[0]
-            : risco.categoria,
-          tratamentos_count: tratamentosCount[risco.id] || 0,
-          impacto_financeiro: financeMap[risco.id] ?? null,
-        }));
+        const normalizedData = data.map(risco => {
+          const requeridos = tratamentosRequeridos[risco.id] || 0;
+          const concluidos = tratamentosConcluidos[risco.id] || 0;
+          const coerente = deriveRiscoStatus(risco.status, { requeridos, concluidos });
+          return {
+            ...risco,
+            categoria: Array.isArray(risco.categoria) && risco.categoria.length > 0
+              ? risco.categoria[0]
+              : risco.categoria,
+            tratamentos_count: tratamentosCount[risco.id] || 0,
+            tratamentos_requeridos: requeridos,
+            tratamentos_concluidos: concluidos,
+            status_efetivo: coerente.status,
+            status_ajuste_motivo: coerente.motivo,
+            impacto_financeiro: financeMap[risco.id] ?? null,
+          };
+        });
 
-        const responsavelIds = normalizedData
-          .map(r => r.responsavel)
-          .filter(r => r && r.trim() !== '');
-        
+        // AKURIS QA-064: `riscos.responsavel` é TEXT e guarda tanto UUID de
+        // perfil quanto rótulo legado ("Mathews Cruz - CISO", "DPO"). Enviar o
+        // rótulo ao filtro uuid `profiles.user_id` devolvia HTTP 400/22P02.
+        // Só UUIDs vão ao backend; o rótulo continua sendo exibido.
+        const responsavelIds = filterUuids(normalizedData.map(r => r.responsavel));
+
+        let profileMap = new Map<string, { nome: string | null; foto_url: string | null }>();
         if (responsavelIds.length > 0) {
           const { data: profiles } = await supabase
             .from('profiles')
             .select('user_id, nome, foto_url')
             .in('user_id', responsavelIds);
-          
-          const profileMap = new Map(
+
+          profileMap = new Map(
             profiles?.map(p => [p.user_id, { nome: p.nome, foto_url: p.foto_url }]) || []
           );
-          
-          return normalizedData.map(risco => {
-            const profileData = (risco.responsavel && risco.responsavel.trim() !== '') 
-              ? profileMap.get(risco.responsavel) 
-              : null;
-            return {
-              ...risco,
-              responsavel_nome: profileData?.nome || null,
-              responsavel_foto: profileData?.foto_url || null
-            };
-          }) as unknown as Risco[];
         }
-        
-        return normalizedData as unknown as Risco[];
+
+        return normalizedData.map(risco => {
+          const { userId, label } = splitResponsavel(risco.responsavel);
+          const profileData = userId ? profileMap.get(userId) : null;
+          return {
+            ...risco,
+            responsavel_nome: profileData?.nome || label || null,
+            responsavel_foto: profileData?.foto_url || null,
+          };
+        }) as unknown as Risco[];
       }
-      
+
       return (data || []) as unknown as Risco[];
     },
     enabled: !!profile?.empresa_id,
@@ -240,25 +280,40 @@ export function Riscos() {
   });
 
   // React Query for matriz config
-  const { data: matrizConfig = null } = useQuery({
+  //
+  // AKURIS QA-055: `.single()` respondia HTTP 406/PGRST116 quando a empresa não
+  // tinha linha de configuração, e o erro era engolido (`const { data }`).
+  // Agora: `.maybeSingle()` distingue "não existe" (null, estado acionável) de
+  // erro real (lançado, tratado por `isError`), com o tenant explícito no filtro
+  // além da RLS.
+  const {
+    data: matrizConfig = null,
+    isLoading: matrizConfigLoading,
+    isError: matrizConfigError,
+    refetch: refetchMatrizConfig,
+  } = useQuery({
     queryKey: ['riscos-matriz-config', profile?.empresa_id],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('riscos_matriz_configuracao')
-        .select('niveis_risco')
+        .select('niveis_risco, matriz:riscos_matrizes!inner(empresa_id)')
+        .eq('matriz.empresa_id', profile!.empresa_id)
+        .order('created_at', { ascending: true })
         .limit(1)
-        .single();
+        .maybeSingle();
 
-      if (data) {
-        return {
-          niveis_risco: data.niveis_risco as Array<{ min: number; max: number; nivel: string; cor?: string }>
-        } as MatrizConfig;
-      }
-      return null;
+      if (error) throw error;
+      if (!data) return null;
+
+      return { niveis_risco: data.niveis_risco as unknown as NivelRisco[] } as MatrizConfig;
     },
     enabled: !!profile?.empresa_id,
+    retry: 1,
     staleTime: 1000 * 60 * 5,
   });
+
+  /** Configuração indisponível: sem linha (ausente) ou consulta com erro. */
+  const matrizConfigIndisponivel = !matrizConfigLoading && (matrizConfigError || !matrizConfig);
 
   const invalidateRiscos = () => {
     queryClient.invalidateQueries({ queryKey: ['riscos'] });
@@ -287,7 +342,8 @@ export function Riscos() {
   const filteredRiscos = riscos.filter(risco => {
     const matchesSearch = risco.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          risco.responsavel?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = !statusFilter || statusFilter === 'all' || risco.status === statusFilter;
+    // Filtra pelo status exibido (AKURIS QA-065) para que o resultado bata com o badge.
+    const matchesStatus = !statusFilter || statusFilter === 'all' || (risco.status_efetivo ?? risco.status) === statusFilter;
     const matchesNivel = !nivelFilter || nivelFilter === 'all' || risco.nivel_risco_inicial === nivelFilter;
     const matchesAceito = !aceitoFilter || aceitoFilter === 'all' || 
                          (aceitoFilter === 'aceito' && risco.aceito) ||
@@ -433,6 +489,19 @@ export function Riscos() {
     );
   }
 
+  if (riscosError) {
+    return (
+      <Alert variant="destructive" role="alert" className="my-6">
+        <AlertTriangle className="h-4 w-4" />
+        <AlertTitle>Não foi possível carregar os riscos</AlertTitle>
+        <AlertDescription className="space-y-3">
+          <p>{(riscosQueryError as Error)?.message || 'Falha ao consultar riscos e tratamentos.'}</p>
+          <Button variant="outline" size="sm" onClick={() => refetchRiscos()}>Tentar novamente</Button>
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
   const riscoColumns: Array<{
     key: string;
     label: string;
@@ -526,9 +595,16 @@ export function Riscos() {
     {
       key: 'status',
       label: 'Status',
-      render: (value: string) => (
-        <StatusBadge size="sm" {...resolveRiscoStatusTone(value)}>{formatStatus(value)}</StatusBadge>
-      ),
+      render: (value: string, risco: Risco) => {
+        // AKURIS QA-065: "Tratado" sem tratamento concluído é exibido no status
+        // coerente com a evidência; o dado gravado não é alterado.
+        const efetivo = risco.status_efetivo ?? value;
+        return (
+          <span title={risco.status_ajuste_motivo ?? undefined}>
+            <StatusBadge size="sm" {...resolveRiscoStatusTone(efetivo)}>{formatStatus(efetivo)}</StatusBadge>
+          </span>
+        );
+      },
     },
     {
       key: 'responsavel',
@@ -661,6 +737,29 @@ export function Riscos() {
 
         {/* KPI cards antigos removidos — KPIs agora vivem dentro das abas (Visão geral / Matriz). */}
 
+        {/* AKURIS QA-055 — sem configuração de matriz não há nível de risco
+            calculável. Antes o erro era silencioso; agora é explícito e acionável. */}
+        {matrizConfigIndisponivel && (
+          <Alert variant="destructive" data-testid="matriz-config-indisponivel">
+            <AlertTriangle className="h-4 w-4" strokeWidth={1.5} />
+            <AlertTitle>{MATRIZ_CONFIG_ERRO_TITULO}</AlertTitle>
+            <AlertDescription className="space-y-3">
+              <p>{MATRIZ_CONFIG_ERRO_DESCRICAO}</p>
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" variant="outline" onClick={() => setMatrizDialogOpen(true)}>
+                  <Settings className="h-4 w-4 mr-2" strokeWidth={1.5} />
+                  Configurar Matriz
+                </Button>
+                {matrizConfigError && (
+                  <Button size="sm" variant="ghost" onClick={() => refetchMatrizConfig()}>
+                    Tentar novamente
+                  </Button>
+                )}
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Toolbar global */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <div className="flex items-center gap-2 flex-wrap">
@@ -711,19 +810,14 @@ export function Riscos() {
           // Derivações compartilhadas para Visão geral e Matriz
           // Apetite score = max do nível marcado como limite de apetite na config da
           // matriz (fallback: nível "médio", para matrizes sem a marcação).
-          const apetiteScore: number | null = (() => {
-            const niveis = matrizConfig?.niveis_risco;
-            if (!niveis) return null;
-            const norm = (s?: string) => s?.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
-            const lvl = niveis.find((n) => n.apetite) || niveis.find((n) => norm(n.nivel) === 'medio');
-            return lvl ? lvl.max : null;
-          })();
+          const apetiteScore: number | null = apetiteScoreFromNiveis(matrizConfig?.niveis_risco);
           const acimaApetite = riscos.filter((r) => isAcimaApetite(r, apetiteScore)).length;
           // Alinhado à coluna Resp. da tabela: conta riscos sem nome de responsável
           // resolvido (um ID que não resolve para um perfil também aparece como "—").
           const semResponsavel = riscos.filter((r) => !r.responsavel_nome).length;
           const revisaoVencida = riscos.filter((r) => slaFromRevisao(r.data_proxima_revisao) === 'vencido').length;
-          const emTratamento = riscos.filter((r) => r.status === 'em_tratamento').length;
+          // Status efetivo (AKURIS QA-065): o KPI acompanha o badge exibido.
+          const emTratamento = riscos.filter((r) => (r.status_efetivo ?? r.status) === 'em_tratamento').length;
 
           // Counts por severidade (residual||inicial)
           const sevCounts = riscos.reduce(
@@ -737,11 +831,14 @@ export function Riscos() {
 
           // Risks da célula selecionada — respeita o modo do heatmap (inerente/residual)
           const cellRisks = matrixCell
-            ? riscos.filter((r) => {
-                const p = toScaleNumber(matrixMode === 'residual' ? r.probabilidade_residual : r.probabilidade_inicial);
-                const i = toScaleNumber(matrixMode === 'residual' ? r.impacto_residual : r.impacto_inicial);
-                return p === matrixCell.p && i === matrixCell.i;
-              })
+            ? riscos
+                .filter((r) => {
+                  const p = toScaleNumber(matrixMode === 'residual' ? r.probabilidade_residual : r.probabilidade_inicial);
+                  const i = toScaleNumber(matrixMode === 'residual' ? r.impacto_residual : r.impacto_inicial);
+                  return p === matrixCell.p && i === matrixCell.i;
+                })
+                // O painel exibe o status coerente, igual à tabela (AKURIS QA-065).
+                .map((r) => ({ ...r, status: r.status_efetivo ?? r.status }))
             : [];
 
           const overviewNode = (
@@ -794,6 +891,7 @@ export function Riscos() {
                     riscos={riscos as any}
                     selected={matrixCell}
                     onSelectCell={(c) => setMatrixCell(c)}
+                    onClearSelection={() => setMatrixCell(undefined)}
                     onOpenRisk={(id) => setDrawerRiscoId(id)}
                     mode={matrixMode}
                     onModeChange={(m) => { setMatrixMode(m); setMatrixCell(undefined); }}
@@ -805,6 +903,7 @@ export function Riscos() {
                     cell={matrixCell}
                     risks={cellRisks as any}
                     onOpenRisk={(id) => setDrawerRiscoId(id)}
+                    onClearSelection={() => setMatrixCell(undefined)}
                   />
                 )}
               </div>

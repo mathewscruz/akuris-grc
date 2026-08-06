@@ -22,6 +22,7 @@ import { UserSelect } from './UserSelect';
 import { RiscoAnexosUpload } from './RiscoAnexosUpload';
 import { cn } from '@/lib/utils';
 import { useIntegrationNotify } from '@/hooks/useIntegrationNotify';
+import { motivoBloqueioTratado, podeMarcarTratado, resumirTratamentos, STATUS_TRATADO } from './risk-status';
 
 const riscoSchema = z.object({
   nome: z.string().min(1, 'Nome é obrigatório'),
@@ -312,6 +313,28 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
     if (!selectedMatriz) {
       toast.error('Erro: Configuração da matriz não carregada');
       return;
+    }
+
+    // QA-065: criação não pode começar como Tratado; em edição, a evidência
+    // persistida precisa conter >= 1 tratamento requerido e todos concluídos.
+    if (data.status === STATUS_TRATADO) {
+      if (!risco?.id) {
+        toast.error(motivoBloqueioTratado({ requeridos: 0, concluidos: 0 }));
+        return;
+      }
+      const { data: tratamentos, error: tratamentosError } = await supabase
+        .from('riscos_tratamentos')
+        .select('status')
+        .eq('risco_id', risco.id);
+      if (tratamentosError) {
+        toast.error('Não foi possível validar os tratamentos. Tente novamente antes de marcar o risco como Tratado.');
+        return;
+      }
+      const resumo = resumirTratamentos(tratamentos);
+      if (!podeMarcarTratado(resumo)) {
+        toast.error(motivoBloqueioTratado(resumo));
+        return;
+      }
     }
 
     // Validar aceite: aprovador e justificativa obrigatórios
