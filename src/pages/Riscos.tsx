@@ -775,7 +775,7 @@ export function Riscos() {
           <div className="flex gap-2 flex-wrap">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" aria-label="Exportar riscos">
                   <Download className="h-4 w-4 sm:mr-2" strokeWidth={1.5} />
                   <span className="hidden sm:inline">Exportar</span>
                 </Button>
@@ -791,7 +791,7 @@ export function Riscos() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button variant="outline" size="sm" onClick={() => setCategoriasDialogOpen(true)} className="whitespace-nowrap">
+            <Button variant="outline" size="sm" onClick={() => setCategoriasDialogOpen(true)} className="whitespace-nowrap" aria-label="Categorias de riscos">
               <Tag className="h-4 w-4 sm:mr-2" strokeWidth={1.5} />
               <span className="hidden sm:inline">Categorias</span>
             </Button>
@@ -799,7 +799,7 @@ export function Riscos() {
               <Settings className="h-4 w-4 sm:mr-2" strokeWidth={1.5} />
               <span className="hidden sm:inline">Configurar Matriz</span>
             </Button>
-            <Button size="sm" onClick={openCreateDialog}>
+            <Button size="sm" onClick={openCreateDialog} aria-label="Novo risco">
               <Plus className="h-4 w-4 sm:mr-2" strokeWidth={1.5} />
               <span className="hidden sm:inline">Novo Risco</span>
             </Button>
