@@ -847,7 +847,15 @@ export type Database = {
           tipo_manutencao?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "ativos_manutencoes_ativo_id_ativos_fkey"
+            columns: ["ativo_id"]
+            isOneToOne: false
+            referencedRelation: "ativos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ativos_notificacoes_enviadas: {
         Row: {
