@@ -38,6 +38,14 @@ import {
   type Severity,
 } from '@/components/riscos/risk-utils';
 import { useRiscoDetail } from '@/hooks/useRiscoDetail';
+import {
+  deriveRiscoStatus,
+  isTratamentoConcluido,
+  motivoBloqueioTratado,
+  podeMarcarTratado,
+  resumirTratamentos,
+  STATUS_TRATADO,
+} from '@/components/riscos/risk-status';
 import { VincularControleDialog } from '@/components/riscos/VincularControleDialog';
 import { RiscoComentarios } from '@/components/riscos/RiscoComentarios';
 import { ScoreRing, ScoreBlock, StatTile, HeaderMeta, SEV_VAR } from '@/components/riscos/RiscoVisuals';
@@ -88,8 +96,24 @@ const STATUS_OPTIONS = [
   { value: 'aceito', label: 'Aceito' },
 ];
 
+export function TratadoBlockedOption({ motivo, onActivate }: { motivo: string; onActivate: () => void }) {
+  return (
+    <DropdownMenuItem
+      onSelect={(event) => {
+        event.preventDefault();
+        onActivate();
+      }}
+      aria-label={`Tratado indisponível: ${motivo}`}
+      className="flex-col items-start gap-0.5 text-muted-foreground"
+    >
+      <span>Tratado — indisponível</span>
+      <span className="text-[10px] leading-tight">{motivo}</span>
+    </DropdownMenuItem>
+  );
+}
+
 export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept, onOpenTratamentos, nav }: Props) {
-  const { data: detail, isLoading } = useRiscoDetail(risco?.id ?? null);
+  const { data: detail, isLoading, isError, error: detailError } = useRiscoDetail(risco?.id ?? null);
   const [vincularOpen, setVincularOpen] = useState(false);
   const [perfilOpen, setPerfilOpen] = useState(false);
   const { toast } = useToast();
@@ -98,6 +122,21 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
 
   const handleStatusChange = async (novoStatus: string) => {
     if (!risco || novoStatus === risco.status) return;
+
+    // AKURIS QA-065: "Tratado" exige ao menos um tratamento e todos concluídos.
+    // Bloqueia ANTES do UPDATE — nada é gravado quando a regra não é atendida.
+    if (novoStatus === STATUS_TRATADO) {
+      const resumo = resumirTratamentos(detail?.tratamentos);
+      if (!podeMarcarTratado(resumo)) {
+        toast({
+          title: 'Status não permitido',
+          description: motivoBloqueioTratado(resumo),
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+
     setStatusSaving(true);
     try {
       const { error } = await supabase.from('riscos').update({ status: novoStatus }).eq('id', risco.id);
@@ -127,11 +166,18 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
   const tratStats = (() => {
     const t = detail?.tratamentos || [];
     const total = t.length;
-    const concluidos = t.filter((x) => x.status === 'concluído').length;
+    const concluidos = t.filter((x) => isTratamentoConcluido(x.status)).length;
     const andamento = t.filter((x) => x.status === 'em andamento').length;
     const pendentes = t.filter((x) => x.status === 'pendente').length;
     return { total, concluidos, andamento, pendentes };
   })();
+  // AKURIS QA-065 — status coerente com os tratamentos, só para exibição.
+  // Durante o carregamento mantém o valor gravado para não "piscar" o badge.
+  const detailUnavailable = isLoading || isError;
+  const statusCoerente = detailUnavailable
+    ? { status: risco.status, ajustado: false, motivo: null as string | null }
+    : deriveRiscoStatus(risco.status, detail?.tratamentos ?? []);
+  const tratadoBloqueado = !detailUnavailable && !podeMarcarTratado(detail?.tratamentos ?? []);
   const sevAtual = severityFromNivel(risco.nivel_risco_residual || risco.nivel_risco_inicial);
   const scoreAtual = residualScore || inicialScore;
   const exposicao = financialExposure(
@@ -200,22 +246,33 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
                 {/* Status editável */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button type="button" className="inline-flex items-center gap-0.5 rounded-full transition-opacity hover:opacity-80 disabled:opacity-50" disabled={statusSaving}>
-                      <StatusBadge size="sm" {...resolveRiscoStatusTone(risco.status)}>
-                        {statusSaving ? '…' : formatStatus(risco.status)}
+                    <button type="button" className="inline-flex items-center gap-0.5 rounded-full transition-opacity hover:opacity-80 disabled:opacity-50" disabled={statusSaving || isError}>
+                      <StatusBadge size="sm" {...(isError ? { tone: 'neutral' as const } : resolveRiscoStatusTone(statusCoerente.status))}>
+                        {statusSaving ? '…' : isError ? 'Status indisponível' : formatStatus(statusCoerente.status)}
                         <ChevronDown className="h-3 w-3 ml-0.5 -mr-0.5 opacity-70" strokeWidth={2} />
                       </StatusBadge>
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start" className="w-44">
-                    {STATUS_OPTIONS.map((opt) => (
-                      <DropdownMenuItem key={opt.value} onClick={() => handleStatusChange(opt.value)} className={opt.value === risco.status ? 'font-semibold' : ''}>
+                    {STATUS_OPTIONS.filter((opt) => !(opt.value === STATUS_TRATADO && tratadoBloqueado)).map((opt) => (
+                      <DropdownMenuItem
+                        key={opt.value}
+                        onClick={() => handleStatusChange(opt.value)}
+                        className={opt.value === statusCoerente.status ? 'font-semibold' : ''}
+                      >
                         {opt.label}
-                        {opt.value === risco.status && <span className="ml-auto text-primary">✓</span>}
+                        {opt.value === statusCoerente.status && <span className="ml-auto text-primary">✓</span>}
                       </DropdownMenuItem>
                     ))}
+                    {tratadoBloqueado && (
+                      <TratadoBlockedOption
+                        motivo={motivoBloqueioTratado(resumirTratamentos(detail?.tratamentos))}
+                        onActivate={() => handleStatusChange(STATUS_TRATADO)}
+                      />
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
+                {statusCoerente.ajustado && <span className="sr-only" role="status">{statusCoerente.motivo}</span>}
                 {risco.aceito && (
                   <StatusBadge size="sm" tone="info" variant="outline">Aceito</StatusBadge>
                 )}
@@ -368,6 +425,8 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
             <TabsContent value="tratamentos" className="m-0 space-y-3 data-[state=active]:animate-fade-in">
               {isLoading ? (
                 <div className="flex justify-center py-10"><AkurisPulse size={32} /></div>
+              ) : isError ? (
+                <EmptyHint text={detailError instanceof Error ? detailError.message : 'Não foi possível carregar os tratamentos do risco.'} />
               ) : detail?.tratamentos.length === 0 ? (
                 <EmptyHint text="Nenhum tratamento cadastrado." />
               ) : (
@@ -417,6 +476,10 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
             <TabsContent value="historico" className="m-0 data-[state=active]:animate-fade-in">
               {isLoading ? (
                 <div className="flex justify-center py-10"><AkurisPulse size={32} /></div>
+              ) : isError ? (
+                <div className="py-10 text-center text-sm text-destructive">
+                  {detailError instanceof Error ? detailError.message : 'Não foi possível carregar o histórico do risco.'}
+                </div>
               ) : detail?.historico.length === 0 ? (
                 <EmptyHint text="Sem histórico de avaliações." />
               ) : (
@@ -456,6 +519,10 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
               </div>
               {isLoading ? (
                 <div className="flex justify-center py-10"><AkurisPulse size={32} /></div>
+              ) : isError ? (
+                <div className="py-10 text-center text-sm text-destructive">
+                  {detailError instanceof Error ? detailError.message : 'Não foi possível carregar os controles do risco.'}
+                </div>
               ) : detail?.controles.length === 0 ? (
                 <div className="py-8 text-center space-y-3">
                   <p className="text-sm text-muted-foreground">Nenhum controle vinculado.</p>

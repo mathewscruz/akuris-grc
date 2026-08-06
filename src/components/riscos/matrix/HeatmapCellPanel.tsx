@@ -1,6 +1,7 @@
 /**
  * HeatmapCellPanel — painel lateral sticky exibindo riscos da célula selecionada.
  */
+import { X } from 'lucide-react';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveNivelRiscoTone, resolveRiscoStatusTone } from '@/lib/status-tone';
 import { formatStatus } from '@/lib/text-utils';
@@ -21,9 +22,11 @@ interface Props {
   cell: { p: number; i: number };
   risks: Risco[];
   onOpenRisk: (id: string) => void;
+  /** Limpa a seleção (AKURIS QA-060). Sem a prop, a ação não é renderizada. */
+  onClearSelection?: () => void;
 }
 
-export function HeatmapCellPanel({ cell, risks, onOpenRisk }: Props) {
+export function HeatmapCellPanel({ cell, risks, onOpenRisk, onClearSelection }: Props) {
   const score = cell.p * cell.i;
   const sev = severityFromScore(score);
   return (
@@ -41,9 +44,22 @@ export function HeatmapCellPanel({ cell, risks, onOpenRisk }: Props) {
               Score {score} · {risks.length} {risks.length === 1 ? 'risco' : 'riscos'}
             </div>
           </div>
-          <StatusBadge size="sm" {...resolveNivelRiscoTone(sev === 'medio' ? 'Médio' : sev === 'critico' ? 'Crítico' : sev === 'alto' ? 'Alto' : 'Baixo')}>
-            {sev === 'critico' ? 'Crítico' : sev === 'alto' ? 'Alto' : sev === 'medio' ? 'Médio' : 'Baixo'}
-          </StatusBadge>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <StatusBadge size="sm" {...resolveNivelRiscoTone(sev === 'medio' ? 'Médio' : sev === 'critico' ? 'Crítico' : sev === 'alto' ? 'Alto' : 'Baixo')}>
+              {sev === 'critico' ? 'Crítico' : sev === 'alto' ? 'Alto' : sev === 'medio' ? 'Médio' : 'Baixo'}
+            </StatusBadge>
+            {onClearSelection && (
+              <button
+                type="button"
+                onClick={onClearSelection}
+                aria-label="Limpar seleção da célula"
+                title="Limpar seleção da célula"
+                className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+              >
+                <X className="h-3.5 w-3.5" strokeWidth={2} />
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

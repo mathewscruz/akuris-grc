@@ -318,18 +318,24 @@ export function MatrizForm({ onSuccess }: Props) {
 
         if (matrizError) throw matrizError;
 
-        // Atualizar configuração da matriz
-        const { error: configError } = await supabase
+        // Upsert repara matrizes legadas sem configuração. O retorno é verificado:
+        // UPDATE sem linha correspondente não produz erro no PostgREST.
+        const { data: configSalva, error: configError } = await supabase
           .from('riscos_matriz_configuracao')
-          .update({
+          .upsert({
+            matriz_id: editingMatriz.id,
             escala_probabilidade: escalaProbabilidade as any,
             escala_impacto: escalaImpacto as any,
             niveis_risco: niveisRisco as any,
             metodo_calculo: metodoCalculo
-          })
-          .eq('matriz_id', editingMatriz.id);
+          }, { onConflict: 'matriz_id' })
+          .select('matriz_id')
+          .single();
 
         if (configError) throw configError;
+        if (!configSalva || configSalva.matriz_id !== editingMatriz.id) {
+          throw new Error('A configuração da matriz não foi confirmada após a gravação.');
+        }
 
         toast.success('Matriz de risco atualizada com sucesso!');
       } else {
@@ -346,18 +352,23 @@ export function MatrizForm({ onSuccess }: Props) {
 
         if (matrizError) throw matrizError;
 
-        // Criar configuração da matriz
-        const { error: configError } = await supabase
+        // Criar configuração da matriz (idempotente sob repetição do pedido)
+        const { data: configSalva, error: configError } = await supabase
           .from('riscos_matriz_configuracao')
-          .insert({
+          .upsert({
             matriz_id: novaMatriz.id,
             escala_probabilidade: escalaProbabilidade as any,
             escala_impacto: escalaImpacto as any,
             niveis_risco: niveisRisco as any,
             metodo_calculo: metodoCalculo
-          });
+          }, { onConflict: 'matriz_id' })
+          .select('matriz_id')
+          .single();
 
         if (configError) throw configError;
+        if (!configSalva || configSalva.matriz_id !== novaMatriz.id) {
+          throw new Error('A configuração da matriz não foi confirmada após a gravação.');
+        }
 
         toast.success('Matriz de risco criada com sucesso!');
       }

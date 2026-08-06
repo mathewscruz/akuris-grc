@@ -5,6 +5,7 @@
  * - Clique numa célula seleciona-a (callback). Clique num badge dispara onOpenRisk.
  */
 import { useMemo } from 'react';
+import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { severityFromScore, shortRiskId, toScaleNumber, type Severity } from '@/components/riscos/risk-utils';
 
@@ -26,6 +27,11 @@ interface Props {
   selected?: { p: number; i: number };
   onSelectCell: (cell: { p: number; i: number }) => void;
   onOpenRisk: (id: string) => void;
+  /**
+   * Limpa a célula selecionada (AKURIS QA-060). Sem esta prop a ação não é
+   * renderizada; com ela, o botão fica desabilitado enquanto nada está selecionado.
+   */
+  onClearSelection?: () => void;
   /** Inerente = P×I inicial (antes dos controles); Residual = P×I residual (após tratamento). */
   mode?: HeatmapMode;
   onModeChange?: (mode: HeatmapMode) => void;
@@ -52,7 +58,7 @@ const SEV_BADGE: Record<Severity, string> = {
   baixo: 'bg-success text-success-foreground',
 };
 
-export function RiskHeatmap({ riscos, selected, onSelectCell, onOpenRisk, mode = 'inerente', onModeChange }: Props) {
+export function RiskHeatmap({ riscos, selected, onSelectCell, onClearSelection, onOpenRisk, mode = 'inerente', onModeChange }: Props) {
   // Quantos riscos não têm avaliação residual (não aparecem no mapa residual).
   const semResidual = useMemo(
     () =>
@@ -105,24 +111,45 @@ export function RiskHeatmap({ riscos, selected, onSelectCell, onOpenRisk, mode =
           </div>
         </div>
         <div className="flex flex-col items-end gap-2">
-          {/* Toggle Inerente / Residual */}
-          {onModeChange && (
-            <div className="inline-flex p-0.5 bg-muted/60 rounded-md text-[11px]">
-              {(['inerente', 'residual'] as HeatmapMode[]).map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => onModeChange(m)}
-                  className={cn(
-                    'px-2.5 py-1 rounded font-medium transition-colors capitalize',
-                    mode === m ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
-                  )}
-                >
-                  {m}
-                </button>
-              ))}
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            {/* Limpar seleção (AKURIS QA-060) — ação explícita; antes só dava
+                para "limpar" alternando Inerente/Residual, que é um desvio. */}
+            {onClearSelection && (
+              <button
+                type="button"
+                onClick={onClearSelection}
+                disabled={!selected}
+                aria-label="Limpar seleção da célula"
+                title={selected ? 'Limpar seleção da célula' : 'Nenhuma célula selecionada'}
+                className={cn(
+                  'inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors',
+                  'text-muted-foreground hover:text-foreground hover:bg-muted/60',
+                  'disabled:opacity-40 disabled:pointer-events-none',
+                )}
+              >
+                <X className="h-3 w-3" strokeWidth={2} />
+                Limpar seleção
+              </button>
+            )}
+            {/* Toggle Inerente / Residual */}
+            {onModeChange && (
+              <div className="inline-flex p-0.5 bg-muted/60 rounded-md text-[11px]">
+                {(['inerente', 'residual'] as HeatmapMode[]).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => onModeChange(m)}
+                    className={cn(
+                      'px-2.5 py-1 rounded font-medium transition-colors capitalize',
+                      mode === m ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
+                    )}
+                  >
+                    {m}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <div className="flex flex-wrap gap-x-3.5 gap-y-1 items-center text-[11px] text-muted-foreground">
             {legend.map((l) => (
               <div key={l.sev} className="inline-flex items-center gap-1.5">
@@ -172,6 +199,8 @@ export function RiskHeatmap({ riscos, selected, onSelectCell, onOpenRisk, mode =
                       key={`${p}-${i}`}
                       type="button"
                       onClick={() => onSelectCell({ p, i })}
+                      aria-pressed={isSel}
+                      aria-label={`Probabilidade ${p} por impacto ${i}, score ${score}, ${cellRisks.length} ${cellRisks.length === 1 ? 'risco' : 'riscos'}`}
                       className={cn(
                         'rounded-lg border p-2 flex flex-col justify-between transition-transform text-left',
                         SEV_BG[sev],

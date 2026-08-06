@@ -5,7 +5,7 @@
  * e os visuais compartilhados (RiscoVisuals).
  */
 import { useMemo } from 'react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -28,6 +28,7 @@ const SEV_TINT: Record<Severity, string> = {
 };
 import { ScoreRing, ScoreBlock, StatTile, HeaderMeta } from '@/components/riscos/RiscoVisuals';
 import { useRiscoDetail } from '@/hooks/useRiscoDetail';
+import { deriveRiscoStatus, isTratamentoConcluido, resumirTratamentos } from '@/components/riscos/risk-status';
 import { RiscoComentarios } from '@/components/riscos/RiscoComentarios';
 
 interface Risco {
@@ -59,14 +60,14 @@ function splitLines(text?: string): string[] {
   return text.split(/\r?\n|;|•/).map((s) => s.trim()).filter(Boolean);
 }
 function treatmentPct(status: string): number {
+  if (isTratamentoConcluido(status)) return 100;
   const s = (status || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
-  if (s.includes('conclu')) return 100;
   if (s.includes('andamento') || s.includes('progress')) return 60;
   return 0;
 }
 
 export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccept, onOpenTratamentos }: Props) {
-  const { data: detail, isLoading } = useRiscoDetail(risco?.id ?? null);
+  const { data: detail, isLoading, isError, error: detailError } = useRiscoDetail(risco?.id ?? null);
   const inicialScore = useMemo(() => scoreFromPI(risco?.probabilidade_inicial, risco?.impacto_inicial), [risco]);
   const residualScore = useMemo(() => scoreFromPI(risco?.probabilidade_residual, risco?.impacto_residual), [risco]);
 
@@ -78,7 +79,13 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
   const exposicao = financialExposure(risco.impacto_financeiro, risco.probabilidade_residual ?? risco.probabilidade_inicial);
   const reduziu = residualScore > 0 && inicialScore > 0 && residualScore < inicialScore;
   const trat = detail?.tratamentos || [];
-  const concluidos = trat.filter((t) => t.status === 'concluído').length;
+  // AKURIS QA-065: contagem e status derivam da MESMA regra de conclusão.
+  const resumoTrat = resumirTratamentos(trat);
+  const concluidos = resumoTrat.concluidos;
+  // Enquanto os tratamentos carregam, mantém o status gravado (evita "piscar").
+  const statusCoerente = isLoading || isError
+    ? { status: risco.status, ajustado: false, motivo: null }
+    : deriveRiscoStatus(risco.status, resumoTrat);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -86,13 +93,21 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
         className="!w-[95vw] !max-w-[1120px] h-[90vh] p-0 gap-0 flex flex-col overflow-hidden [&>button.absolute]:hidden"
         style={{ background: `linear-gradient(0deg, hsl(var(${SEV_TINT[sevAtual]}) / 0.03), hsl(var(${SEV_TINT[sevAtual]}) / 0.03)), hsl(var(--background))` }}
       >
-        {/* Top bar */}
+        {/* Top bar — o nome do risco JÁ é o título visível do modal, então ele
+            vira o DialogTitle via asChild (AKURIS QA-062). Sem isso o Radix
+            registra "DialogContent requires a DialogTitle" e o leitor de tela
+            anuncia o diálogo sem contexto. A descrição fica só para leitores. */}
+        <DialogDescription className="sr-only">
+          Perfil completo do risco {risco.nome}: resumo, tratamentos, histórico, controles e comentários.
+        </DialogDescription>
         <div className="flex items-center justify-between gap-4 px-6 py-4 border-b border-border">
           <div className="flex items-center gap-3 min-w-0">
             <span className="font-mono text-[11px] text-muted-foreground">{shortRiskId(risco.id)}</span>
             <div className="min-w-0">
               <div className="text-[10.5px] font-semibold uppercase tracking-[1.2px] text-muted-foreground">Perfil do risco</div>
-              <div className="text-base font-semibold truncate">{risco.nome}</div>
+              <DialogTitle asChild>
+                <div className="text-base font-semibold truncate">{risco.nome}</div>
+              </DialogTitle>
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
@@ -122,7 +137,11 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
                 <StatusBadge size="sm" {...resolveNivelRiscoTone(risco.nivel_risco_residual || risco.nivel_risco_inicial)}>
                   {formatStatus(risco.nivel_risco_residual || risco.nivel_risco_inicial)}
                 </StatusBadge>
-                <StatusBadge size="sm" {...resolveRiscoStatusTone(risco.status)}>{formatStatus(risco.status)}</StatusBadge>
+                <span title={isError ? (detailError instanceof Error ? detailError.message : 'Falha ao carregar detalhes') : statusCoerente.motivo ?? undefined}>
+                  <StatusBadge size="sm" {...(isError ? { tone: 'neutral' as const } : resolveRiscoStatusTone(statusCoerente.status))}>
+                    {isError ? 'Status indisponível' : formatStatus(statusCoerente.status)}
+                  </StatusBadge>
+                </span>
               </div>
             </div>
 
@@ -205,6 +224,7 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
             <div className="flex-1 overflow-y-auto px-4 py-5">
               <TabsContent value="tratamentos" className="m-0 space-y-2.5">
                 {isLoading ? <div className="flex justify-center py-10"><AkurisPulse size={32} /></div>
+                  : isError ? <div className="py-10 text-center text-sm text-destructive">{detailError instanceof Error ? detailError.message : 'Não foi possível carregar os tratamentos do risco.'}</div>
                   : trat.length === 0 ? <div className="py-10 text-center text-sm text-muted-foreground">Nenhum tratamento cadastrado.</div>
                   : trat.map((t) => {
                     const pct = treatmentPct(t.status);
@@ -227,6 +247,7 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
 
               <TabsContent value="historico" className="m-0">
                 {isLoading ? <div className="flex justify-center py-10"><AkurisPulse size={32} /></div>
+                  : isError ? <div className="py-10 text-center text-sm text-destructive">{detailError instanceof Error ? detailError.message : 'Não foi possível carregar o histórico do risco.'}</div>
                   : detail?.historico.length === 0 ? <div className="py-10 text-center text-sm text-muted-foreground">Sem histórico de avaliações.</div>
                   : (
                     <ol className="relative border-l border-border ml-2 space-y-4 py-1">
@@ -250,6 +271,7 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
 
               <TabsContent value="controles" className="m-0 space-y-2">
                 {isLoading ? <div className="flex justify-center py-10"><AkurisPulse size={32} /></div>
+                  : isError ? <div className="py-10 text-center text-sm text-destructive">{detailError instanceof Error ? detailError.message : 'Não foi possível carregar os controles do risco.'}</div>
                   : detail?.controles.length === 0 ? <div className="py-10 text-center text-sm text-muted-foreground">Nenhum controle vinculado.</div>
                   : detail!.controles.map((c) => (
                     <div key={c.id} className="bg-card border border-border rounded-lg p-3">
