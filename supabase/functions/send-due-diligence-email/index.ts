@@ -92,8 +92,9 @@ const handler = async (req: Request): Promise<Response> => {
     const fornecedor_nome = assessment.fornecedor_nome || 'Fornecedor';
     const fornecedor_email = assessment.fornecedor_email;
     const data_expiracao = assessment.data_expiracao;
+    const siteUrl = Deno.env.get('SITE_URL') || 'https://akuris.com.br';
     const assessment_link = assessment.link_token
-      ? `https://akuris.com.br/due-diligence/responder/${assessment.link_token}`
+      ? `${siteUrl}/assessment/${assessment.link_token}`
       : undefined;
 
     const sysName = 'Akuris';
