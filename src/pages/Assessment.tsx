@@ -444,7 +444,7 @@ export default function Assessment() {
   }, [token]);
 
   const saveResponse = useCallback(async (questionId: string, value: any) => {
-    if (!assessment) return;
+    if (!assessment || !token) return;
 
     try {
       setSaving(true);
@@ -455,77 +455,25 @@ export default function Assessment() {
         questionId.replace(/_evidencia|_justificativa|_arquivo$/, '') : questionId;
 
       const question = questions.find(q => q.id === baseQuestionId);
-      const responseData: any = {
-        assessment_id: assessment.id,
-        question_id: baseQuestionId
-      };
-
-      if (isEvidencia || isJustificativa || isArquivo) {
-        try {
-          const existingResponse = await supabaseRequest(
-            `due_diligence_responses?assessment_id=eq.${assessment.id}&question_id=eq.${baseQuestionId}`,
-            { method: 'GET' }
-          );
-          
-          if (existingResponse && existingResponse.length > 0) {
-            const updateData: any = {};
-            if (isEvidencia) updateData.evidencia = value;
-            else if (isJustificativa) updateData.justificativa = value;
-            else if (isArquivo) updateData.arquivo_url = value;
-
-            await supabaseRequest(
-              `due_diligence_responses?assessment_id=eq.${assessment.id}&question_id=eq.${baseQuestionId}`,
-              { method: 'PATCH', body: JSON.stringify(updateData) }
-            );
-          } else {
-            if (isEvidencia) responseData.evidencia = value;
-            else if (isJustificativa) responseData.justificativa = value;
-            else if (isArquivo) responseData.arquivo_url = value;
-            await supabaseRequest('due_diligence_responses', {
-              method: 'POST', body: JSON.stringify(responseData)
-            });
-          }
-        } catch (error) {
-          assessmentLogger.error('Erro ao salvar evidência/justificativa:', error);
-        }
-        setSavedAt(new Date());
-        return;
-      }
-
-      if (question?.tipo === 'numerico') {
-        responseData.pontuacao = parseFloat(value) || 0;
-      } else {
-        responseData.resposta = value;
-      }
-
-      try {
-        const existingResponse = await supabaseRequest(
-          `due_diligence_responses?assessment_id=eq.${assessment.id}&question_id=eq.${questionId}`,
-          { method: 'GET' }
-        );
-        
-        if (existingResponse && existingResponse.length > 0) {
-          await supabaseRequest(
-            `due_diligence_responses?assessment_id=eq.${assessment.id}&question_id=eq.${questionId}`,
-            { method: 'PATCH', body: JSON.stringify(responseData) }
-          );
-        } else {
-          await supabaseRequest('due_diligence_responses', {
-            method: 'POST', body: JSON.stringify(responseData)
-          });
-        }
-      } catch (error) {
-        await supabaseRequest('due_diligence_responses', {
-          method: 'POST', body: JSON.stringify(responseData)
-        });
-      }
+      const field = isEvidencia ? 'evidencia' : isJustificativa ? 'justificativa' : isArquivo ? 'arquivo_url' : question?.tipo === 'numerico' ? 'pontuacao' : 'resposta';
+      const normalizedValue = field === 'pontuacao' ? (parseFloat(value) || 0) : value;
+      await invokePublicAssessment({ action: 'save', token, questionId: baseQuestionId, field, value: normalizedValue });
       setSavedAt(new Date());
     } catch (error) {
       assessmentLogger.error('Erro ao salvar resposta:', error);
     } finally {
       setSaving(false);
     }
-  }, [assessment, questions, supabaseRequest]);
+  }, [assessment, questions, token]);
+
+  const uploadEvidence = useCallback(async (questionId: string, file: File) => {
+    if (!token) throw new Error('Link inválido');
+    const form = new FormData();
+    form.append('token', token);
+    form.append('questionId', questionId);
+    form.append('file', file);
+    return invokePublicAssessment<{ path: string; fileName: string; signedUrl: string | null }>(form);
+  }, [token]);
 
   const handleResponseChange = useCallback((questionId: string, value: any) => {
     setResponses(prev => ({ ...prev, [questionId]: value }));
@@ -554,38 +502,13 @@ export default function Assessment() {
         return;
       }
 
-      for (const [questionId, value] of Object.entries(responses)) {
-        if (value && value.toString().trim()) {
-          await saveResponse(questionId, value);
-        }
-      }
-
-      const { error: updateError } = await supabase
-        .from('due_diligence_assessments')
-        .update({
-          status: 'concluido',
-          data_conclusao: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('link_token', token)
-        .select();
-
-      if (updateError) {
-        throw new Error(`Erro ao finalizar assessment: ${updateError.message}`);
-      }
-
-      try {
-        await supabase.functions.invoke('calculate-assessment-score', {
-          body: { assessment_id: assessment.id }
-        });
-      } catch (scoreError) {
-        assessmentLogger.warn('Erro ao calcular score:', scoreError);
-      }
+      if (!token) throw new Error('Link inválido');
+      const result = await invokePublicAssessment<{ completedAt: string }>({ action: 'complete', token, responses });
 
       setAssessment(prev => prev ? {
         ...prev,
         status: 'concluido',
-        data_conclusao: new Date().toISOString()
+        data_conclusao: result.completedAt
       } : null);
 
       setIsFinished(true);
@@ -598,7 +521,7 @@ export default function Assessment() {
       setSubmitting(false);
       setShowConfirmDialog(false);
     }
-  }, [assessment, questions, responses, saveResponse, token, isAnswered]);
+  }, [assessment, questions, responses, token, isAnswered]);
 
   useEffect(() => {
     fetchAssessment();
@@ -626,9 +549,9 @@ export default function Assessment() {
           <Card className="w-full max-w-md bg-white border-slate-200 shadow-xl">
             <CardContent className="pt-6 text-center">
               <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-              <h2 className="text-xl font-semibold mb-2 text-slate-900">Questionário não encontrado</h2>
+              <h2 className="text-xl font-semibold mb-2 text-slate-900">{loadError?.title || 'Questionário não encontrado'}</h2>
               <p className="text-slate-500">
-                O link pode ter expirado ou ser inválido.
+                {loadError?.message || 'O link pode ter expirado ou ser inválido.'}
               </p>
             </CardContent>
           </Card>
