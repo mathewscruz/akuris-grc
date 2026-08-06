@@ -15,6 +15,13 @@ function createPolicy(sql: string, name: string) {
 }
 
 describe('regressões do módulo de riscos', () => {
+  it('mantém nomes acessíveis nas ações que viram apenas ícones no mobile', () => {
+    const riscosPage = source('src/pages/Riscos.tsx');
+    expect(riscosPage).toContain('aria-label="Exportar riscos"');
+    expect(riscosPage).toContain('aria-label="Categorias de riscos"');
+    expect(riscosPage).toContain('aria-label="Novo risco"');
+  });
+
   it('filtra valores legados antes de consultas UUID', () => {
     expect(filterUuids(['DPO', '550e8400-e29b-41d4-a716-446655440000', '', null])).toEqual(['550e8400-e29b-41d4-a716-446655440000']);
     expect(splitResponsavel('Mathews Cruz - CISO')).toEqual({ userId: null, label: 'Mathews Cruz - CISO' });
