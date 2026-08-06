@@ -98,6 +98,7 @@ function App() {
             <Route path="/assessment/:token" element={<Suspense fallback={<RouteFallback />}><Assessment /></Suspense>} />
             {/* Compatibilidade: links antigos enviados por e-mail */}
             <Route path="/due-diligence/responder/:token" element={<AssessmentLinkRedirect />} />
+            <Route path="/dd/responder/:token" element={<AssessmentLinkRedirect />} />
             <Route path="/denuncia/externa/:token" element={<Suspense fallback={<RouteFallback />}><DenunciaExternaRedirect /></Suspense>} />
             <Route path="/:empresa/denuncia" element={<Suspense fallback={<RouteFallback />}><DenunciaMenu /></Suspense>} />
             <Route path="/:empresa/denuncia/registrar" element={<Suspense fallback={<RouteFallback />}><DenunciaFormulario /></Suspense>} />
