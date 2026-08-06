@@ -57,7 +57,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     for (const assessment of assessments || []) {
       try {
-        const assessmentLink = `${siteUrl}/due-diligence/responder/${assessment.link_token}`;
+        const assessmentLink = `${siteUrl}/assessment/${assessment.link_token}`;
 
         const response = await supabase.functions.invoke('send-due-diligence-email', {
           body: {
