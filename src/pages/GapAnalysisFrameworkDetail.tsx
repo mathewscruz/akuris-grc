@@ -61,7 +61,7 @@ export default function GapAnalysisFrameworkDetail() {
 }
 
 function GapAnalysisFrameworkDetailInner() {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const { frameworkId } = useParams<{ frameworkId: string }>();
   const navigate = useNavigate();
   const [, setSearchParams] = useSearchParams();
