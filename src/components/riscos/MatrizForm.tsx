@@ -272,6 +272,8 @@ export function MatrizForm({ onSuccess }: Props) {
 
   const limparFormularioMatriz = () => {
     setEditingMatriz(null);
+    setModoNovo(false);
+
     matrizForm.reset();
     setEscalaProbabilidade([
       { valor: '1', descricao: 'Muito Raro' },
@@ -383,7 +385,8 @@ export function MatrizForm({ onSuccess }: Props) {
       );
 
       limparFormularioMatriz();
-      fetchData();
+      fetchData(true);
+
       // Fecha o diálogo e propaga o refresh (matriz usada em todo o módulo).
       onSuccess();
     } catch (error: any) {
