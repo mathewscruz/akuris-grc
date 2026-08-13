@@ -105,7 +105,7 @@ export function RequirementsTableToolbar({ counts }: Props) {
             </button>
           </TooltipTrigger>
           <TooltipContent>
-            <span className="text-xs">Visualização em quadro chega na próxima onda.</span>
+            <span className="text-xs">{t('residuos.score.quadroEmBreve')}</span>
           </TooltipContent>
         </Tooltip>
       </div>

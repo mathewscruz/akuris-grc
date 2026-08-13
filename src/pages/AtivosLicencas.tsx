@@ -382,13 +382,13 @@ export default function AtivosLicencas() {
           loading={statsLoading}
           drillDown="ativos_licencas"
           showAccent
-          emptyHint="Cadastre licenças para acompanhar vencimentos."
+          emptyHint={t('residuos.empty.licencas')}
         />
 
         <StatCard
           title={t('cardsKpi.licencas.licencasAtivas')}
           value={stats?.ativas ?? 0}
-          description="Em vigor"
+          description={t('residuos.geral.emVigor')}
           icon={<CheckCircle />}
           loading={statsLoading}
           variant="success"

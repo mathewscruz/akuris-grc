@@ -286,7 +286,7 @@ export function MatrizVisualizacao({ onNavigate, onConfigure }: Props) {
                                 )}
                               </div>
                             ) : (
-                              <div className="text-xs text-muted-foreground italic">Sem riscos nesta célula</div>
+                              <div className="text-xs text-muted-foreground italic">{t('residuos.risco.semRiscosCelula')}</div>
                             )}
                           </div>
                         </TooltipContent>

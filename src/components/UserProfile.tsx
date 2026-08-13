@@ -113,7 +113,7 @@ const UserProfile: React.FC = () => {
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Editar Perfil</DialogTitle>
+          <DialogTitle>{t('residuos.geral.editarPerfil')}</DialogTitle>
         </DialogHeader>
         <UserProfilePopover onClose={() => setPopoverOpen(false)} />
       </DialogContent>

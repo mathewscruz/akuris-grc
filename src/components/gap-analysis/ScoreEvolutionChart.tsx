@@ -71,11 +71,11 @@ export const ScoreEvolutionChart = ({ frameworkId, scoreType = 'scale_0_5' }: Sc
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Evolução do Score</CardTitle>
+          <CardTitle className="text-base">{t('residuos.score.evolucao')}</CardTitle>
         </CardHeader>
         <CardContent className="min-h-[260px] flex flex-col items-center justify-center gap-2">
           <AkurisPulse size={56} />
-          <p className="text-xs text-muted-foreground">Carregando histórico...</p>
+          <p className="text-xs text-muted-foreground">{t('residuos.score.carregandoHistorico')}</p>
         </CardContent>
       </Card>
     );
@@ -85,7 +85,7 @@ export const ScoreEvolutionChart = ({ frameworkId, scoreType = 'scale_0_5' }: Sc
     <Card>
       <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 pb-2">
         <div className="space-y-1 min-w-0">
-          <CardTitle className="text-base">Evolução do Score</CardTitle>
+          <CardTitle className="text-base">{t('residuos.score.evolucao')}</CardTitle>
           {latestScore !== null && (
             <div className="flex items-center gap-2 text-sm flex-wrap">
               <span className="font-bold text-foreground">{formatValue(latestScore)}</span>
@@ -136,7 +136,7 @@ export const ScoreEvolutionChart = ({ frameworkId, scoreType = 'scale_0_5' }: Sc
               <LineChartIcon className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
             </div>
             <div className="text-center space-y-1 max-w-[280px]">
-              <p className="text-sm font-medium text-foreground">Sem histórico ainda</p>
+              <p className="text-sm font-medium text-foreground">{t('residuos.score.semHistorico')}</p>
               <p className="text-xs text-muted-foreground">
                 Avalie alguns requisitos para começar a registrar a evolução do seu score nesse período.
               </p>

@@ -135,7 +135,7 @@ export default function PlanosAssinatura() {
       </div>
 
       <div className="text-center text-sm text-muted-foreground">
-        <p>Precisa de algo customizado? <a href="mailto:contato@akuris.com.br" className="text-primary hover:underline">Fale com a gente</a>.</p>
+        <p>{t('residuos.geral.precisaCustomizado')}<a href="mailto:contato@akuris.com.br" className="text-primary hover:underline">{t('residuos.geral.faleConosco')}</a>.</p>
       </div>
     </div>
   );

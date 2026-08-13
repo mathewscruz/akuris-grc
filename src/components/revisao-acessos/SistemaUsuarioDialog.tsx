@@ -251,7 +251,7 @@ export function SistemaUsuarioDialog({
                   <FormItem>
                     <FormLabel>{t('campos.sistemaUsuario.email')}</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="email@exemplo.com" {...field} />
+                      <Input type="email" placeholder={t('residuos.placeholders.emailExemplo')} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

@@ -407,7 +407,7 @@ export default function AtivosChaves() {
         <StatCard
           title="Chaves Ativas"
           value={stats?.ativas ?? 0}
-          description="Em uso"
+          description={t('residuos.geral.emUso')}
           icon={<CheckCircle />}
           loading={statsLoading}
           variant="success"

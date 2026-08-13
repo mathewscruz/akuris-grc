@@ -188,7 +188,7 @@ export function TratamentosList({ riscoId, riscoNome, embedded = false, riscoDat
     <div className="flex items-center justify-between gap-3 mb-4">
       <div className="flex items-center gap-2">
         {!embedded && (
-          <CardTitle className="text-lg">Tratamentos do Risco</CardTitle>
+          <CardTitle className="text-lg">{t('residuos.risco.tratamentosRisco')}</CardTitle>
         )}
         <span className="text-xs text-muted-foreground">
           {count} {count === 1 ? 'tratamento cadastrado' : 'tratamentos cadastrados'}

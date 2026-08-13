@@ -68,7 +68,7 @@ export function EvidenceLibraryHub() {
             <div className="flex items-center gap-2">
               <Library className="h-5 w-5 text-primary" strokeWidth={1.5} />
               <div>
-                <h3 className="text-sm font-semibold">Biblioteca de Evidências</h3>
+                <h3 className="text-sm font-semibold">{t('residuos.evidencias.biblioteca')}</h3>
                 <p className="text-xs text-muted-foreground">
                   Documentos e links da empresa que podem ser reaproveitados em vários requisitos e frameworks.
                 </p>
@@ -170,14 +170,14 @@ export function EvidenceLibraryHub() {
           {running === openItem?.id ? (
             <div className="py-10 flex flex-col items-center gap-3">
               <AkurisPulse />
-              <p className="text-xs text-muted-foreground">A IA está comparando esta evidência com os requisitos da empresa...</p>
+              <p className="text-xs text-muted-foreground">{t('residuos.evidencias.iaComparando')}</p>
             </div>
           ) : !matchResult ? (
-            <p className="text-sm text-muted-foreground py-6 text-center">Aguardando análise.</p>
+            <p className="text-sm text-muted-foreground py-6 text-center">{t('residuos.evidencias.aguardandoAnalise')}</p>
           ) : matchResult.suggestions.length === 0 ? (
             <EmptyState
-              title="Nenhum cruzamento"
-              description="A IA não identificou outros requisitos onde esta evidência se aplique de forma clara."
+              title={t('residuos.evidencias.nenhumCruzamento')}
+              description={t('residuos.evidencias.nenhumCruzamentoDesc')}
             />
           ) : (
             <ScrollArea className="max-h-[480px]">

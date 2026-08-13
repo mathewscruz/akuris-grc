@@ -141,7 +141,7 @@ function Burndown({ sprint, tarefas }: { sprint?: ProjetoSprint; tarefas: Projet
           <span className="inline-flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-primary" />{t('projetos.sprints.real')}</span>
         </div>
       </div>
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" role="img" aria-label="Burndown da sprint">
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" role="img" aria-label={t('residuos.geral.burndownSprint')}>
         <line x1={PAD} y1={H - PAD} x2={W - PAD} y2={H - PAD} stroke="hsl(var(--border))" />
         <line x1={PAD} y1={PAD} x2={PAD} y2={H - PAD} stroke="hsl(var(--border))" />
         <path d={toPath(idealPts)} fill="none" stroke="hsl(var(--muted-foreground))" strokeDasharray="4 4" />

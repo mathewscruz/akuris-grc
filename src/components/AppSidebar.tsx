@@ -320,7 +320,7 @@ export function AppSidebar() {
         style={{ backgroundColor: '#06060e' }}
         role="status"
         aria-live="polite"
-        aria-label="Encerrando sessão"
+        aria-label={t('residuos.geral.encerrandoSessao')}
       >
         <AkurisPulse size={80} />
       </div>

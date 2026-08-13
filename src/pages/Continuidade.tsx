@@ -188,7 +188,7 @@ export default function Continuidade() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <StatCard title={t('cardsKpi.continuidade.totalPlanos')} value={stats?.total ?? 0} icon={<Shield />} variant="primary" loading={statsLoading} drillDown="continuidade" showAccent emptyHint="Cadastre o primeiro plano de continuidade." />
+        <StatCard title={t('cardsKpi.continuidade.totalPlanos')} value={stats?.total ?? 0} icon={<Shield />} variant="primary" loading={statsLoading} drillDown="continuidade" showAccent emptyHint={t('residuos.empty.continuidade')} />
         <StatCard title="Planos Ativos" value={stats?.ativos ?? 0} icon={<FileCheck />} variant="success" loading={statsLoading} drillDown="continuidade" />
         <StatCard title={t('cardsKpi.continuidade.emRevisao')} value={stats?.emRevisao ?? 0} icon={<Clock />} variant="warning" loading={statsLoading} drillDown="continuidade" />
         <StatCard title="Testes Realizados" value={stats?.testesRealizados ?? 0} icon={<TestTube />} variant="info" loading={statsLoading} />

@@ -208,7 +208,7 @@ export default function Relatorios() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="meus">{t('fin.relatorios.meus')}</TabsTrigger>
-          <TabsTrigger value="templates">Templates Pré-definidos</TabsTrigger>
+          <TabsTrigger value="templates">{t('residuos.geral.templatesPredefinidos')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="meus" className="mt-4">

@@ -429,7 +429,7 @@ export function VinculacoesDialog({ open, onOpenChange, documento, empresaId }: 
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="flex justify-between items-center">
-                <h3 className="text-lg font-medium">Nova Vinculação</h3>
+                <h3 className="text-lg font-medium">{t('residuos.geral.novaVinculacao')}</h3>
                 <Button type="button" variant="outline" onClick={resetForm}>
                   {t('documentosExtras.vinculacoes.voltar')}
                 </Button>

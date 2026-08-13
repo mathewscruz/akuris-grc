@@ -529,7 +529,7 @@ export default function Privacidade() {
           description="Tipos catalogados"
           icon={<Database />}
           showAccent
-          emptyHint="Cadastre o catálogo de dados pessoais."
+          emptyHint={t('residuos.privacidade.cadastreCatalogo')}
         />
         <StatCard
           title={t('cardsKpi.privacidade.dadosSensiveis')}
@@ -547,7 +547,7 @@ export default function Privacidade() {
         <StatCard
           title={t('cardsKpi.privacidade.solicitacoesPendentes')}
           value={stats.solicitacoesPendentes}
-          description="De titulares"
+          description={t('residuos.privacidade.deTitulares')}
           icon={<Users />}
           drillDown="privacidade"
         />
@@ -773,8 +773,8 @@ export default function Privacidade() {
       <ConfirmDialog
         open={deleteConfirm.open}
         onOpenChange={(open) => setDeleteConfirm(prev => ({ ...prev, open }))}
-        title="Excluir Item"
-        description="Tem certeza que deseja excluir este item? Esta ação não pode ser desfeita."
+        title={t('residuos.privacidade.excluirItem')}
+        description={t('residuos.privacidade.excluirItemConfirm')}
         confirmText="Excluir"
         variant="destructive"
         onConfirm={confirmDelete}

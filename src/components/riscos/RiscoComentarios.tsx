@@ -147,7 +147,7 @@ export function RiscoComentarios({ riscoId }: { riscoId: string }) {
           }}
         />
         <div className="flex items-center justify-between pt-1">
-          <span className="text-[10.5px] text-muted-foreground">Ctrl+Enter para enviar</span>
+          <span className="text-[10.5px] text-muted-foreground">{t('residuos.risco.ctrlEnter')}</span>
           <Button size="sm" className="h-7 px-3 text-xs" onClick={submit} disabled={!texto.trim() || add.isPending || isError}>
             <Send className="h-3.5 w-3.5 mr-1" strokeWidth={1.5} />
             {add.isPending ? 'Enviando…' : 'Comentar'}

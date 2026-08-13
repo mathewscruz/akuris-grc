@@ -651,7 +651,7 @@ export function MatrizForm({ onSuccess }: Props) {
                             onChange={(e) => atualizarEscalaProbabilidade(index, 'valor', e.target.value)}
                             placeholder={t('campos.matriz.numeroPlaceholder')}
                             className="w-14 text-center font-medium"
-                            aria-label="Valor da probabilidade"
+                            aria-label={t('residuos.risco.valorProbabilidade')}
                           />
                           <Input
                             value={item.descricao}
@@ -705,7 +705,7 @@ export function MatrizForm({ onSuccess }: Props) {
                             onChange={(e) => atualizarEscalaImpacto(index, 'valor', e.target.value)}
                             placeholder={t('campos.matriz.numeroPlaceholder')}
                             className="w-14 text-center font-medium"
-                            aria-label="Valor do impacto"
+                            aria-label={t('residuos.risco.valorImpacto')}
                           />
                           <Input
                             value={item.descricao}
@@ -826,7 +826,7 @@ export function MatrizForm({ onSuccess }: Props) {
 
                 {/* Limite de apetite de risco — configurável (antes era fixo em "Médio") */}
                 <div className="mt-4 pt-4 border-t border-border/40">
-                  <span className="text-sm font-medium text-foreground">Limite de apetite de risco</span>
+                  <span className="text-sm font-medium text-foreground">{t('residuos.risco.limiteApetite')}</span>
                   <p className="text-xs text-muted-foreground mt-0.5 mb-2">
                     Riscos com score acima do nível escolhido são considerados <strong>acima do apetite</strong> e
                     exigem tratamento ou aceite formal. Define a linha de apetite no gráfico e o filtro "Acima do apetite".

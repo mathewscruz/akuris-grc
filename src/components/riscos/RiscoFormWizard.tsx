@@ -1182,7 +1182,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
             {/* ACEITE */}
             <TabsContent value="aceite" className="mt-0 space-y-4 max-w-3xl mx-auto">
               <div>
-                <h2 className="text-lg font-semibold flex items-center gap-2"><ShieldCheck className="h-5 w-5" /> Aceite do Risco</h2>
+                <h2 className="text-lg font-semibold flex items-center gap-2"><ShieldCheck className="h-5 w-5" />{t('residuos.risco.aceiteRisco')}</h2>
                 <p className="text-sm text-muted-foreground">{t('fin.riscos.wizard.aceiteDesc')}</p>
               </div>
 

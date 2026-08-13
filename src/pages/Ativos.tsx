@@ -493,7 +493,7 @@ const Ativos = () => {
                       Azure Sync
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent><p>Sincronizar dispositivos do Microsoft Intune/Azure AD</p></TooltipContent>
+                  <TooltipContent><p>{t('residuos.geral.sincronizarIntune')}</p></TooltipContent>
                 </Tooltip>
               </TooltipProvider>
             )}

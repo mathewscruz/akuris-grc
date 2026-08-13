@@ -176,7 +176,7 @@ const DefinirSenha = () => {
       <div className="w-full max-w-sm space-y-8">
         <div className="text-center">
           <img src={logoImage} alt="Akuris" className="h-16 mx-auto" />
-          <p className="text-white/40 text-xs mt-2">Governança, Risco e Compliance</p>
+          <p className="text-white/40 text-xs mt-2">{t('residuos.geral.grcTagline')}</p>
         </div>
 
         <div className="rounded-2xl border border-white/[0.08] bg-white/[0.04] backdrop-blur-md p-8 space-y-6">

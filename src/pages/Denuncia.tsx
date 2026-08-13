@@ -49,7 +49,7 @@ export default function Denuncia() {
           loading={statsLoading}
           drillDown="denuncias"
           showAccent
-          emptyHint="As denúncias aparecerão conforme forem recebidas."
+          emptyHint={t('residuos.empty.denuncias')}
         />
         
         <StatCard
@@ -63,7 +63,7 @@ export default function Denuncia() {
         />
         
         <StatCard
-          title="Em Andamento"
+          title={t('residuos.geral.emAndamento')}
           value={stats?.em_andamento ?? 0}
           icon={<Clock />}
           description="Sendo investigadas"

@@ -161,7 +161,7 @@ export function FrameworkHistoryTab({
       {history && history.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Timeline de Avaliações</CardTitle>
+            <CardTitle className="text-base">{t('residuos.score.timelineAvaliacoes')}</CardTitle>
             <p className="text-xs text-muted-foreground">
               Medições registradas ao longo do tempo. O "Score Atual" acima reflete a avaliação em tempo real e pode diferir da última medição registrada.
             </p>

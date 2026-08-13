@@ -310,7 +310,7 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div className="space-y-2">
-          <Label htmlFor="responsavel">Responsável</Label>
+          <Label htmlFor="responsavel">{t('residuos.risco.responsavel')}</Label>
           <UserSelect
             value={form.watch('responsavel') || ''}
             onValueChange={(value) => form.setValue('responsavel', value, { shouldDirty: true })}

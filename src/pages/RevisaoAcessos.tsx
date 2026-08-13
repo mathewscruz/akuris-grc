@@ -308,12 +308,12 @@ export default function RevisaoAcessos() {
 
       <div className="grid gap-4 md:grid-cols-4">
         <StatCard
-          title="Em Andamento"
+          title={t('residuos.geral.emAndamento')}
           value={stats?.emAndamento || 0}
           loading={statsLoading}
           drillDown="revisao_acessos"
           showAccent
-          emptyHint="Crie a primeira revisão de acessos."
+          emptyHint={t('residuos.empty.revisaoAcessos')}
         />
         <StatCard
           title={t('fin.comum.concluidas')}

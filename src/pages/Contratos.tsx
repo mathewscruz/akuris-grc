@@ -350,7 +350,7 @@ export default function Contratos() {
             loading={!statsContratos}
             drillDown="contratos"
             showAccent
-            emptyHint="Cadastre contratos para acompanhar vencimentos."
+            emptyHint={t('residuos.empty.contratos')}
           />
 
           <StatCard

@@ -63,7 +63,7 @@ export function StatusSeg({
         className
       )}
       role="radiogroup"
-      aria-label="Status de conformidade"
+      aria-label={t('residuos.score.statusConformidade')}
     >
       {OPTIONS.map((opt) => {
         const isActive = value === opt.id;
@@ -96,7 +96,7 @@ export function StatusSeg({
             {showAiPip && (
               <span
                 className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-primary ring-2 ring-background"
-                aria-label="Sugestão"
+                aria-label={t('residuos.score.sugestao')}
               />
             )}
           </button>
