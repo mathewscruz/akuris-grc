@@ -39,24 +39,9 @@ import {
 } from '@/lib/docgen-templates';
 import { formatStatus } from '@/lib/text-utils';
 import { DocumentoDialog } from '@/components/documentos/DocumentoDialog';
-import jsPDF from 'jspdf';
-import {
-  Document as DocxDocument,
-  Packer,
-  Paragraph,
-  HeadingLevel,
-  TextRun,
-  ImageRun,
-  Footer,
-  PageNumber,
-  PageBreak,
-  AlignmentType,
-  Table,
-  TableRow,
-  TableCell,
-  WidthType,
-  BorderStyle,
-} from 'docx';
+import { buildDocGenDocxBlob, type DocxLabels } from '@/lib/docgen-docx';
+import { buildDocGenPdfBlob } from '@/lib/docgen-pdf';
+import { DocGenMarkdown } from './DocGenMarkdown';
 import { CreditsExhaustedDialog } from '@/components/CreditsExhaustedDialog';
 import { useAuth } from '@/components/AuthProvider';
 
@@ -1523,9 +1508,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                               {t('docgen.dialog.refineSection')}
                             </Button>
                           </div>
-                          <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                            {secao.conteudo}
-                          </p>
+                          <DocGenMarkdown content={secao.conteudo || ''} />
                         </div>
                       );
                     })}
