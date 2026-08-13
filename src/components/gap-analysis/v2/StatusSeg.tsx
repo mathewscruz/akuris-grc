@@ -15,12 +15,14 @@ interface Option {
   activeBg: string;
 }
 
-const OPTIONS: Option[] = [
-  { id: 'conforme', label: 'Conforme', shortcut: 'C', activeBg: 'bg-success text-success-foreground' },
-  { id: 'parcial', label: 'Parcial', shortcut: 'P', activeBg: 'bg-warning text-warning-foreground' },
-  { id: 'nao_conforme', label: 'Não Conforme', shortcut: 'N', activeBg: 'bg-destructive text-destructive-foreground' },
-  { id: 'nao_aplicavel', label: 'N/A', shortcut: 'A', activeBg: 'bg-muted-foreground text-background' },
-];
+function getOptions(t: (key: string) => string): Option[] {
+  return [
+    { id: 'conforme', label: t('sweepRiscos.gap.statusLabels.conforme'), shortcut: 'C', activeBg: 'bg-success text-success-foreground' },
+    { id: 'parcial', label: t('sweepRiscos.gap.statusLabels.parcial'), shortcut: 'P', activeBg: 'bg-warning text-warning-foreground' },
+    { id: 'nao_conforme', label: t('sweepRiscos.gap.statusLabels.naoConforme'), shortcut: 'N', activeBg: 'bg-destructive text-destructive-foreground' },
+    { id: 'nao_aplicavel', label: t('sweepRiscos.gap.statusLabels.na'), shortcut: 'A', activeBg: 'bg-muted-foreground text-background' },
+  ];
+}
 
 interface StatusSegProps {
   value: ConformityStatus;
@@ -40,6 +42,7 @@ export function StatusSeg({
   className,
 }: StatusSegProps) {
   const { t } = useLanguage();
+  const OPTIONS = getOptions(t);
   useEffect(() => {
     if (!enableShortcuts) return;
     const handler = (e: KeyboardEvent) => {

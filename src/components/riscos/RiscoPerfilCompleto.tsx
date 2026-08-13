@@ -16,7 +16,7 @@ import { formatDateOnly } from '@/lib/date-utils';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { Edit, ShieldCheck, Shield, X, ArrowRight, Wallet, Layers, Tag, User, CalendarClock, Timer, History, Eye, MessageSquare } from 'lucide-react';
 import {
-  initials, scoreFromPI, severityFromNivel, shortRiskId, slaFromRevisao, SLA_LABELS, financialExposure, formatBRL, type Severity,
+  initials, scoreFromPI, severityFromNivel, shortRiskId, slaFromRevisao, getSlaLabels, financialExposure, formatBRL, type Severity,
 } from '@/components/riscos/risk-utils';
 
 /** Variável de cor da severidade para o fundo levíssimo do painel. */
@@ -185,7 +185,7 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
                   </span>
                 ) : '—'
               } />
-              <HeaderMeta icon={<Timer />} label="SLA" value={<StatusBadge size="sm" {...(sla === 'vencido' ? { tone: 'destructive' as const } : sla === 'atencao' ? { tone: 'warning' as const } : sla === 'no_prazo' ? { tone: 'success' as const } : { tone: 'neutral' as const })}>{SLA_LABELS[sla]}</StatusBadge>} />
+              <HeaderMeta icon={<Timer />} label="SLA" value={<StatusBadge size="sm" {...(sla === 'vencido' ? { tone: 'destructive' as const } : sla === 'atencao' ? { tone: 'warning' as const } : sla === 'no_prazo' ? { tone: 'success' as const } : { tone: 'neutral' as const })}>{getSlaLabels()[sla]}</StatusBadge>} />
               <HeaderMeta icon={<CalendarClock />} label={t('fin.riscos.proxRevisao')} value={risco.data_proxima_revisao ? formatDateOnly(risco.data_proxima_revisao) : '—'} />
               <HeaderMeta icon={<CalendarClock />} label={t('residuos.risco.criadoEm')} value={risco.created_at ? formatDateOnly(risco.created_at) : '—'} />
               <HeaderMeta icon={<History />} label={t('fin.riscos.avaliacoes')} value={String(detail?.historico.length ?? 0)} />

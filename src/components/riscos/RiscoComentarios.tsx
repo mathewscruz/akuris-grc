@@ -150,7 +150,7 @@ export function RiscoComentarios({ riscoId }: { riscoId: string }) {
           <span className="text-[10.5px] text-muted-foreground">{t('residuos.risco.ctrlEnter')}</span>
           <Button size="sm" className="h-7 px-3 text-xs" onClick={submit} disabled={!texto.trim() || add.isPending || isError}>
             <Send className="h-3.5 w-3.5 mr-1" strokeWidth={1.5} />
-            {add.isPending ? 'Enviando…' : 'Comentar'}
+            {add.isPending ? t('sweepRiscos.riscos.comentarios.enviando') : t('sweepRiscos.riscos.comentarios.comentar')}
           </Button>
         </div>
       </div>
@@ -173,7 +173,7 @@ export function RiscoComentarios({ riscoId }: { riscoId: string }) {
               <p className="text-muted-foreground">{mensagemErroComentarios(error, t)}</p>
               <Button size="sm" variant="outline" className="h-7 px-3 text-xs" onClick={() => refetch()} disabled={isFetching}>
                 <RotateCcw className="h-3.5 w-3.5 mr-1" strokeWidth={1.5} />
-                {isFetching ? 'Tentando…' : 'Tentar novamente'}
+                {isFetching ? t('sweepRiscos.riscos.comentarios.tentando') : t('sweepRiscos.riscos.comentarios.tentarNovamente')}
               </Button>
             </div>
           </div>
@@ -181,7 +181,7 @@ export function RiscoComentarios({ riscoId }: { riscoId: string }) {
       ) : comentarios.length === 0 ? (
         <div className="py-8 text-center text-sm text-muted-foreground" data-testid="comentarios-vazio">
           <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-40" strokeWidth={1.5} />
-          Nenhum comentário ainda. Seja o primeiro a comentar.
+          {t('sweepRiscos.riscos.comentarios.vazio')}
         </div>
       ) : (
         <ul className="space-y-3">

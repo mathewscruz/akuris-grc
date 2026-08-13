@@ -28,18 +28,20 @@ import { severityFromNivel } from './risk-utils';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { AiCostHint } from '@/components/ui/ai-cost-hint';
 import { useLanguage } from '@/contexts/LanguageContext';
-const tratamentoSchema = z.object({
-  tipo_tratamento: z.string().min(1, 'Tipo de tratamento é obrigatório'),
-  descricao: z.string().min(1, 'Descrição é obrigatória'),
-  responsavel: z.string().optional(),
-  custo: z.string().optional(),
-  prazo: z.date().optional(),
-  data_inicio: z.date().optional(),
-  status: z.string().default('pendente'),
-  eficacia: z.string().optional()
-});
+function makeTratamentoSchema(t: (key: string) => string) {
+  return z.object({
+    tipo_tratamento: z.string().min(1, t('sweepRiscos.riscos.tratForm2.tipoObrigatorio')),
+    descricao: z.string().min(1, t('sweepRiscos.riscos.tratForm2.descricaoObrigatoria')),
+    responsavel: z.string().optional(),
+    custo: z.string().optional(),
+    prazo: z.date().optional(),
+    data_inicio: z.date().optional(),
+    status: z.string().default('pendente'),
+    eficacia: z.string().optional()
+  });
+}
 
-type TratamentoFormData = z.infer<typeof tratamentoSchema>;
+type TratamentoFormData = z.infer<ReturnType<typeof makeTratamentoSchema>>;
 
 interface TratamentoFormProps {
   riscoId: string;
@@ -73,6 +75,7 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
   // Gerar plano de ação vinculado ao criar tratamento (só faz sentido em novos)
   const [gerarPlano, setGerarPlano] = useState(true);
 
+  const tratamentoSchema = makeTratamentoSchema(t);
   const form = useForm<TratamentoFormData>({
     resolver: zodResolver(tratamentoSchema),
     defaultValues: {
@@ -250,7 +253,7 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="status">Status</Label>
+          <Label htmlFor="status">{t('sweepRiscos.riscos.tratForm2.statusLabel')}</Label>
           <Select 
             value={form.watch('status')} 
             onValueChange={(value) => form.setValue('status', value)}
@@ -271,10 +274,10 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
       <div className="space-y-3 rounded-lg border border-border/60 bg-muted/20 p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <Label htmlFor="descricao" className="text-base font-semibold">
-            Descrição do Tratamento *
+            {t('sweepRiscos.riscos.tratForm2.descricaoLabel')}
           </Label>
           <div className="flex items-center gap-2">
-            <AiCostHint action="cada sugestão de tratamento" />
+            <AiCostHint action={t('sweepRiscos.riscos.tratForm2.aiCostAction')} />
             {riscoData && !tratamento && (
               <Button
                 type="button"
@@ -286,12 +289,12 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
                 {iaSuggestionLoading ? (
                   <>
                     <AkurisPulse size={14} className="mr-2" />
-                    Gerando...
+                    {t('sweepRiscos.riscos.tratForm2.gerandoSugestao')}
                   </>
                 ) : (
                   <>
                     <AkurisAIIcon className="mr-2 h-4 w-4" />
-                    Sugerir Tratamento
+                    {t('sweepRiscos.riscos.tratForm2.sugerirTratamento')}
                   </>
                 )}
               </Button>
@@ -319,7 +322,7 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="custo">Custo Estimado (R$)</Label>
+          <Label htmlFor="custo">{t('sweepRiscos.riscos.tratForm2.custoLabel')}</Label>
           <Input
             {...form.register('custo')}
             placeholder="0,00"
@@ -342,7 +345,7 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
                 )}
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
-                {form.watch('data_inicio') ? format(form.watch('data_inicio')!, "PPP", { locale: ptBR }) : "Selecionar data"}
+                {form.watch('data_inicio') ? format(form.watch('data_inicio')!, "PPP", { locale: ptBR }) : t('sweepRiscos.riscos.tratForm2.selecionarData')}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
@@ -369,7 +372,7 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
                 )}
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
-                {form.watch('prazo') ? format(form.watch('prazo')!, "PPP", { locale: ptBR }) : "Selecionar prazo"}
+                {form.watch('prazo') ? format(form.watch('prazo')!, "PPP", { locale: ptBR }) : t('sweepRiscos.riscos.tratForm2.selecionarPrazo')}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
@@ -414,11 +417,10 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
           <div className="space-y-0.5">
             <div className="flex items-center gap-2 text-sm font-medium">
               <ClipboardList className="h-4 w-4 text-primary" strokeWidth={1.5} />
-              Gerar plano de ação vinculado
+              {t('sweepRiscos.riscos.tratForm2.gerarPlanoLabel')}
             </div>
             <p className="text-xs text-muted-foreground">
-              Cria um item em Planos de Ação (origem: Riscos) com responsável e prazo deste
-              tratamento, para acompanhar a execução e manter a rastreabilidade risco → ação.
+              {t('sweepRiscos.riscos.tratForm2.gerarPlanoDesc')}
             </p>
           </div>
         </label>
@@ -433,10 +435,10 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AkurisAIIcon className="h-5 w-5" />
-              Sugestões Inteligentes de Tratamento
+              {t('sweepRiscos.riscos.tratForm2.sugestoesTitulo')}
             </DialogTitle>
             <DialogDescription>
-              Baseado na análise do risco "{riscoData?.nome}", aqui estão as sugestões de tratamento:
+              {t('sweepRiscos.riscos.tratForm2.sugestoesDesc', { nome: riscoData?.nome || '' })}
             </DialogDescription>
           </DialogHeader>
 
@@ -448,7 +450,7 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
                     <CardTitle className="text-lg flex items-center justify-between gap-3">
                       <span className="flex items-center gap-2">
                         <Shield className="h-4 w-4 text-primary" strokeWidth={1.5} />
-                        Plano de Mitigação
+                        {t('sweepRiscos.riscos.tratForm2.planoMitigacao')}
                       </span>
                       <div className="flex gap-2">
                         <Button
@@ -457,14 +459,14 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
                           onClick={() => copyToClipboard(iaSuggestions.mitigacao)}
                         >
                           <Copy className="h-3 w-3 mr-1" />
-                          Copiar
+                          {t('sweepRiscos.riscos.tratForm2.copiar')}
                         </Button>
                         <Button
                           variant="default"
                           size="sm"
                           onClick={() => applySuggestion(iaSuggestions.mitigacao, 'mitigar')}
                         >
-                          Aplicar Sugestão
+                          {t('sweepRiscos.riscos.tratForm2.aplicarSugestao')}
                         </Button>
                       </div>
                     </CardTitle>
@@ -483,7 +485,7 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
                     <CardTitle className="text-lg flex items-center justify-between gap-3">
                       <span className="flex items-center gap-2">
                         <AlertTriangle className="h-4 w-4 text-amber-500" strokeWidth={1.5} />
-                        Plano de Contingenciamento
+                        {t('sweepRiscos.riscos.tratForm2.planoContingenciamento')}
                       </span>
                       <div className="flex gap-2">
                         <Button
@@ -492,14 +494,14 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
                           onClick={() => copyToClipboard(iaSuggestions.contingenciamento)}
                         >
                           <Copy className="h-3 w-3 mr-1" />
-                          Copiar
+                          {t('sweepRiscos.riscos.tratForm2.copiar')}
                         </Button>
                         <Button
                           variant="default"
                           size="sm"
                           onClick={() => applySuggestion(iaSuggestions.contingenciamento, 'transferir')}
                         >
-                          Aplicar Sugestão
+                          {t('sweepRiscos.riscos.tratForm2.aplicarSugestao')}
                         </Button>
                       </div>
                     </CardTitle>
@@ -515,8 +517,7 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
               <div className="mt-6 p-4 bg-muted rounded-lg flex gap-3">
                 <Lightbulb className="h-4 w-4 text-primary shrink-0 mt-0.5" strokeWidth={1.5} />
                 <p className="text-sm text-muted-foreground">
-                  <strong className="text-foreground">Dica:</strong> Essas sugestões são geradas automaticamente com base nas informações do risco.
-                  Revise e ajuste conforme necessário para adequar à realidade da sua organização.
+                  <strong className="text-foreground">{t('sweepRiscos.riscos.tratForm2.dicaTitulo')}</strong> {t('sweepRiscos.riscos.tratForm2.dicaTexto')}
                 </p>
               </div>
             </div>

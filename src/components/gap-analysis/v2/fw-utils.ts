@@ -12,12 +12,18 @@ export function getFwCategory(tipo?: string | null): FwCategory {
   return 'seguranca';
 }
 
-export const FW_CATEGORY_LABEL: Record<FwCategory, string> = {
-  seguranca: 'Segurança da Informação',
-  privacidade: 'Privacidade & Dados',
-  governanca: 'Governança',
-  qualidade: 'Qualidade & Processos',
-};
+import { tGlobal } from '@/lib/i18n-global';
+
+export function getFwCategoryLabel(): Record<FwCategory, string> {
+  return {
+    seguranca: tGlobal('sweepRiscos.gap.fwCategoryLong.seguranca'),
+    privacidade: tGlobal('sweepRiscos.gap.fwCategoryLong.privacidade'),
+    governanca: tGlobal('sweepRiscos.gap.fwCategoryLong.governanca'),
+    qualidade: tGlobal('sweepRiscos.gap.fwCategoryLong.qualidade'),
+  };
+}
+
+
 
 /**
  * Quebra o nome do framework em duas linhas para o selo FwMono.

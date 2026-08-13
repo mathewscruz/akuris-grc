@@ -47,7 +47,7 @@ export function ConformityCard({
 }: ConformityCardProps) {
   const { t } = useLanguage();
   const score = Math.round(Number(overallScore) || 0);
-  const maturity = getMaturityLevel(score);
+  const maturity = getMaturityLevel(score, t);
   const total = conforme + parcial + naoConforme + naoAplicavel || 1;
   const segs = [
     { kind: 'conforme', value: conforme, color: 'hsl(var(--success))' },

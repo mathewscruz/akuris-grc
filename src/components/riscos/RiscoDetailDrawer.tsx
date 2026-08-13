@@ -32,7 +32,7 @@ import {
   severityFromNivel,
   shortRiskId,
   slaFromRevisao,
-  SLA_LABELS,
+  getSlaLabels,
   financialExposure,
   formatBRL,
   type Severity,
@@ -106,7 +106,7 @@ export function TratadoBlockedOption({ motivo, onActivate }: { motivo: string; o
         event.preventDefault();
         onActivate();
       }}
-      aria-label={`Tratado indisponível: ${motivo}`}
+      aria-label={t("sweepRiscos.riscos.tratadoIndisponivelAria", { motivo })}
       className="flex-col items-start gap-0.5 text-muted-foreground"
     >
       <span>{t('fin.riscos.tratadoIndisponivel')}</span>
@@ -308,7 +308,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
             <HeaderMeta
               icon={<Timer />}
               label="SLA"
-              value={<StatusBadge size="sm" {...(sla === 'vencido' ? { tone: 'destructive' as const } : sla === 'atencao' ? { tone: 'warning' as const } : sla === 'no_prazo' ? { tone: 'success' as const } : { tone: 'neutral' as const })}>{SLA_LABELS[sla]}</StatusBadge>}
+              value={<StatusBadge size="sm" {...(sla === 'vencido' ? { tone: 'destructive' as const } : sla === 'atencao' ? { tone: 'warning' as const } : sla === 'no_prazo' ? { tone: 'success' as const } : { tone: 'neutral' as const })}>{getSlaLabels()[sla]}</StatusBadge>}
             />
           </div>
         </SheetHeader>

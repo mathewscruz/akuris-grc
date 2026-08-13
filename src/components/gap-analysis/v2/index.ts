@@ -32,5 +32,5 @@ export { BulkActionBar } from './BulkActionBar';
 export { ConformityCard } from './ConformityCard';
 export { RequirementsTableToolbar } from './RequirementsTableToolbar';
 export type { RequirementsToolbarCounts } from './RequirementsTableToolbar';
-export { deriveFwMono, getFwCategory, FW_CATEGORY_LABEL } from './fw-utils';
+export { deriveFwMono, getFwCategory, getFwCategoryLabel } from './fw-utils';
 export type { FwCategory } from './fw-utils';

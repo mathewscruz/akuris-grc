@@ -41,6 +41,9 @@ export const sweepRiscos = {
           baixo: 'Baixo',
           medio: 'Médio',
           alto: 'Alto',
+          bucketBaixo: 'Esforço Baixo',
+          bucketMedio: 'Esforço Médio',
+          bucketAlto: 'Esforço Alto',
         },
         pdf: {
           resultadoGeral: 'Resultado Geral',
@@ -152,6 +155,7 @@ export const sweepRiscos = {
           emTratamento: 'Em Tratamento',
         },
         tratForm2: {
+          aiCostAction: 'cada sugestão de tratamento',
           statusLabel: 'Status',
           tipoObrigatorio: 'Tipo de tratamento é obrigatório',
           descricaoObrigatoria: 'Descrição é obrigatória',
@@ -182,6 +186,25 @@ export const sweepRiscos = {
           relMeses: 'há {n}m',
           relAnos: 'há {n}a',
         },
+        comentarios: {
+          enviando: 'Enviando…',
+          comentar: 'Comentar',
+          tentando: 'Tentando…',
+          tentarNovamente: 'Tentar novamente',
+          vazio: 'Nenhum comentário ainda. Seja o primeiro a comentar.',
+        },
+        matrizVis: {
+          calculo: 'Cálculo:',
+          probabilidadeEixo: 'Probabilidade ↑',
+          impactoEixo: 'Impacto →',
+          niveis: 'Níveis',
+          nivelFallback: 'Nível {n}',
+          outrosClique: '+ {n} outros — clique para ver todos',
+        },
+        anexos: {
+          tipoNaoPermitidoDesc: 'Apenas PDF, DOC, DOCX e imagens são permitidos.',
+        },
+        tratadoIndisponivelAria: 'Tratado indisponível: {motivo}',
       },
       controles: {
         notifyControleAtualizado: 'Controle atualizado: {nome}',
@@ -266,6 +289,9 @@ export const sweepRiscos = {
           baixo: 'Low',
           medio: 'Medium',
           alto: 'High',
+          bucketBaixo: 'Low Effort',
+          bucketMedio: 'Medium Effort',
+          bucketAlto: 'High Effort',
         },
         pdf: {
           resultadoGeral: 'Overall Result',
@@ -377,6 +403,7 @@ export const sweepRiscos = {
           emTratamento: 'Under treatment',
         },
         tratForm2: {
+          aiCostAction: 'each treatment suggestion',
           statusLabel: 'Status',
           tipoObrigatorio: 'Treatment type is required',
           descricaoObrigatoria: 'Description is required',
@@ -407,6 +434,25 @@ export const sweepRiscos = {
           relMeses: '{n}mo ago',
           relAnos: '{n}y ago',
         },
+        comentarios: {
+          enviando: 'Sending…',
+          comentar: 'Comment',
+          tentando: 'Retrying…',
+          tentarNovamente: 'Try again',
+          vazio: 'No comments yet. Be the first to comment.',
+        },
+        matrizVis: {
+          calculo: 'Calculation:',
+          probabilidadeEixo: 'Probability ↑',
+          impactoEixo: 'Impact →',
+          niveis: 'Levels',
+          nivelFallback: 'Level {n}',
+          outrosClique: '+ {n} others — click to see all',
+        },
+        anexos: {
+          tipoNaoPermitidoDesc: 'Only PDF, DOC, DOCX and images are allowed.',
+        },
+        tratadoIndisponivelAria: 'Treatment unavailable: {motivo}',
       },
       controles: {
         notifyControleAtualizado: 'Control updated: {nome}',

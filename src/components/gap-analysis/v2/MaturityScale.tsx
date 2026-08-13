@@ -4,6 +4,7 @@
  * Cores via tokens semânticos. Nível atual derivado de score 0-100.
  */
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface MaturityScaleProps {
   /** Score 0-100. */
@@ -13,22 +14,27 @@ interface MaturityScaleProps {
   showLabels?: boolean;
 }
 
-const LEVELS = [
-  { id: 1, label: 'Inicial', min: 0, color: 'bg-destructive' },
-  { id: 2, label: 'Gerenciado', min: 20, color: 'bg-destructive/70' },
-  { id: 3, label: 'Definido', min: 40, color: 'bg-warning' },
-  { id: 4, label: 'Medido', min: 60, color: 'bg-primary' },
-  { id: 5, label: 'Otimizado', min: 80, color: 'bg-success' },
-];
+function getLevels(t: (key: string) => string) {
+  return [
+    { id: 1, label: t('sweepRiscos.gap.maturity.inicial'), min: 0, color: 'bg-destructive' },
+    { id: 2, label: t('sweepRiscos.gap.maturity.gerenciado'), min: 20, color: 'bg-destructive/70' },
+    { id: 3, label: t('sweepRiscos.gap.maturity.definido'), min: 40, color: 'bg-warning' },
+    { id: 4, label: t('sweepRiscos.gap.maturity.medido'), min: 60, color: 'bg-primary' },
+    { id: 5, label: t('sweepRiscos.gap.maturity.otimizado'), min: 80, color: 'bg-success' },
+  ];
+}
 
-export function getMaturityLevel(score: number) {
-  let current = LEVELS[0];
-  for (const l of LEVELS) if (score >= l.min) current = l;
+export function getMaturityLevel(score: number, t: (key: string) => string) {
+  const levels = getLevels(t);
+  let current = levels[0];
+  for (const l of levels) if (score >= l.min) current = l;
   return current;
 }
 
 export function MaturityScale({ score, className, showLabels = true }: MaturityScaleProps) {
-  const current = getMaturityLevel(score);
+  const { t } = useLanguage();
+  const LEVELS = getLevels(t);
+  const current = getMaturityLevel(score, t);
 
   return (
     <div className={cn('w-full', className)}>

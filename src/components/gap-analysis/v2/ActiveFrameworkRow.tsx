@@ -51,7 +51,7 @@ export function ActiveFrameworkRow({
   const coverage = totalRequirements > 0
     ? Math.round((evaluatedRequirements / totalRequirements) * 100)
     : 0;
-  const maturity = getMaturityLevel(averageScore);
+  const maturity = getMaturityLevel(averageScore, t);
   const scoreTone =
     averageScore >= 80 ? 'text-success' :
     averageScore >= 60 ? 'text-primary' :

@@ -5,6 +5,7 @@
  */
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export type StackSegmentKind = 'conforme' | 'parcial' | 'nao_conforme' | 'nao_aplicavel' | 'nao_avaliado';
 
@@ -29,15 +30,19 @@ const SEG_COLOR: Record<StackSegmentKind, string> = {
   nao_avaliado: 'bg-muted-foreground/40',
 };
 
-const SEG_LABEL: Record<StackSegmentKind, string> = {
-  conforme: 'Conforme',
-  parcial: 'Parcial',
-  nao_conforme: 'Não Conforme',
-  nao_aplicavel: 'N/A',
-  nao_avaliado: 'Não Avaliado',
-};
+function getSegLabel(t: (key: string) => string): Record<StackSegmentKind, string> {
+  return {
+    conforme: t('sweepRiscos.gap.statusLabels.conforme'),
+    parcial: t('sweepRiscos.gap.statusLabels.parcial'),
+    nao_conforme: t('sweepRiscos.gap.statusLabels.naoConforme'),
+    nao_aplicavel: t('sweepRiscos.gap.statusLabels.na'),
+    nao_avaliado: t('sweepRiscos.gap.statusLabels.naoAvaliado'),
+  };
+}
 
 export function StackBar({ segments, height = 8, showLegend = false, className }: StackBarProps) {
+  const { t } = useLanguage();
+  const SEG_LABEL = getSegLabel(t);
   const total = segments.reduce((acc, s) => acc + s.count, 0) || 1;
 
   return (
