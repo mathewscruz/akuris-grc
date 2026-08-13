@@ -80,6 +80,7 @@ async function callDocGen(body: Record<string, unknown>, timeoutMs = DOCGEN_TIME
       return { error: payload?.error || error.message };
     }
     if (data?.code === 'CREDITS_EXHAUSTED' || data?.error === 'CREDITS_EXHAUSTED') return { credits: true };
+    if (data?.error === 'INVALID_DOCUMENT') return { error: 'INVALID_DOCUMENT' };
     return { data };
   } catch (e: any) {
     if (e?.message === '__DOCGEN_TIMEOUT__') return { timeout: true };
