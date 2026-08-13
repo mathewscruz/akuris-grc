@@ -138,7 +138,7 @@ export function EvidenceReusePanel({ requirementId, frameworkId, evaluationId, o
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
                             <FileText className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.5} />
-                            <span className="text-sm font-medium truncate">{s.evidence?.nome || 'Evidência'}</span>
+                            <span className="text-sm font-medium truncate">{s.evidence?.nome || t('sweepRiscos.gap.fallbacks.evidencia')}</span>
                           </div>
                           {s.ia_justificativa && (
                             <p className="mt-1 text-[11px] text-muted-foreground line-clamp-2">{s.ia_justificativa}</p>

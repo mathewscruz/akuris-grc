@@ -24,15 +24,15 @@ type ChipKey = 'all' | 'sem_evidencia' | 'criticos' | 'parciais';
 
 const CHIPS: Array<{
   key: ChipKey;
-  label: string;
+  labelKey: string;
   field: keyof RequirementsToolbarCounts;
   /** Filtros a serem aplicados aos searchParams. */
   apply: (sp: URLSearchParams) => void;
 }> = [
-  { key: 'all', label: 'Todos', field: 'total', apply: (sp) => { sp.delete('status'); sp.delete('prio'); } },
-  { key: 'sem_evidencia', label: 'Sem evidência', field: 'semEvidencia', apply: (sp) => { sp.set('status', 'nao_avaliado'); sp.delete('prio'); } },
-  { key: 'criticos', label: 'Críticos', field: 'criticos', apply: (sp) => { sp.set('status', 'nao_conforme'); sp.set('prio', '1'); } },
-  { key: 'parciais', label: 'Parciais', field: 'parciais', apply: (sp) => { sp.set('status', 'parcial'); sp.delete('prio'); } },
+  { key: 'all', labelKey: 'sweepRiscos.gap.toolbar.todos', field: 'total', apply: (sp) => { sp.delete('status'); sp.delete('prio'); } },
+  { key: 'sem_evidencia', labelKey: 'sweepRiscos.gap.toolbar.semEvidencia', field: 'semEvidencia', apply: (sp) => { sp.set('status', 'nao_avaliado'); sp.delete('prio'); } },
+  { key: 'criticos', labelKey: 'sweepRiscos.gap.toolbar.criticos', field: 'criticos', apply: (sp) => { sp.set('status', 'nao_conforme'); sp.set('prio', '1'); } },
+  { key: 'parciais', labelKey: 'sweepRiscos.gap.toolbar.parciais', field: 'parciais', apply: (sp) => { sp.set('status', 'parcial'); sp.delete('prio'); } },
 ];
 
 function detectActive(sp: URLSearchParams): ChipKey {
@@ -73,7 +73,7 @@ export function RequirementsTableToolbar({ counts }: Props) {
                   : 'border-border bg-card text-muted-foreground hover:text-foreground hover:border-foreground/40'
               )}
             >
-              <span>{chip.label}</span>
+              <span>{t(chip.labelKey)}</span>
               <span
                 className={cn(
                   'tabular-nums text-[10px] font-mono',
@@ -93,7 +93,7 @@ export function RequirementsTableToolbar({ counts }: Props) {
           className="inline-flex items-center gap-1.5 rounded-full bg-foreground text-background px-3 py-1 text-xs font-medium"
         >
           <Rows3 className="h-3 w-3" strokeWidth={1.5} />
-          Tabela
+          {t('sweepRiscos.gap.toolbar.tabela')}
         </button>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -103,7 +103,7 @@ export function RequirementsTableToolbar({ counts }: Props) {
               className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs text-muted-foreground/60 cursor-not-allowed"
             >
               <LayoutGrid className="h-3 w-3" strokeWidth={1.5} />
-              Quadro
+              {t('sweepRiscos.gap.toolbar.quadro')}
             </button>
           </TooltipTrigger>
           <TooltipContent>

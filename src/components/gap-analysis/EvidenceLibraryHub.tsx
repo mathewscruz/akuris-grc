@@ -43,15 +43,15 @@ export function EvidenceLibraryHub() {
           akurisToast({
             module: 'gap',
             tone: 'success',
-            title: 'Cruzamentos identificados',
-            description: `${result.persisted} requisito(s) podem usar esta evidência.`,
+            title: t('sweepRiscos.gap.evidenceHub.cruzamentosIdentificados'),
+            description: t('sweepRiscos.gap.evidenceHub.cruzamentosIdentificadosDesc', { count: result.persisted }),
           });
         } else {
           akurisToast({
             module: 'gap',
             tone: 'info',
-            title: 'Nenhum cruzamento encontrado',
-            description: 'Nenhum outro requisito compatível foi identificado.',
+            title: t('sweepRiscos.gap.evidenceHub.nenhumCruzamentoEncontrado'),
+            description: t('sweepRiscos.gap.evidenceHub.nenhumCruzamentoEncontradoDesc'),
           });
         }
       }
@@ -70,7 +70,7 @@ export function EvidenceLibraryHub() {
               <div>
                 <h3 className="text-sm font-semibold">{t('residuos.evidencias.biblioteca')}</h3>
                 <p className="text-xs text-muted-foreground">
-                  Documentos e links da empresa que podem ser reaproveitados em vários requisitos e frameworks.
+                  {t('sweepRiscos.gap.evidenceHub.bibliotecaDesc')}
                 </p>
               </div>
             </div>
@@ -97,11 +97,11 @@ export function EvidenceLibraryHub() {
             <div className="py-10 flex justify-center"><AkurisPulse /></div>
           ) : filtered.length === 0 ? (
             <EmptyState
-              title={lib.items.length === 0 ? 'Sem evidências ainda' : 'Nenhum resultado'}
+              title={lib.items.length === 0 ? t('sweepRiscos.gap.evidenceHub.semEvidencias') : t('sweepRiscos.gap.evidenceHub.nenhumResultado')}
               description={
                 lib.items.length === 0
-                  ? 'Faça upload de evidências dentro de qualquer requisito do Gap Analysis. Elas aparecerão aqui automaticamente para reuso.'
-                  : 'Tente outro termo de busca.'
+                  ? t('sweepRiscos.gap.evidenceHub.semEvidenciasDesc')
+                  : t('sweepRiscos.gap.evidenceHub.nenhumResultadoDesc')
               }
             />
           ) : (
@@ -123,10 +123,10 @@ export function EvidenceLibraryHub() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-sm font-medium truncate">{ev.nome}</span>
                         {(ev.total_links || 0) > 0 && (
-                          <StatusBadge tone="neutral" size="sm">{ev.total_links} usos</StatusBadge>
+                          <StatusBadge tone="neutral" size="sm">{ev.total_links} {t('sweepRiscos.gap.evidenceHub.usos')}</StatusBadge>
                         )}
                         {(ev.total_sugestoes || 0) > 0 && (
-                          <StatusBadge tone="warning" size="sm">{ev.total_sugestoes} cruzamentos pendentes</StatusBadge>
+                          <StatusBadge tone="warning" size="sm">{ev.total_sugestoes} {t('sweepRiscos.gap.evidenceHub.cruzamentosPendentes')}</StatusBadge>
                         )}
                         {(ev.tags || []).slice(0, 3).map((t) => (
                           <StatusBadge key={t} tone="neutral" variant="outline" size="sm">{t}</StatusBadge>
@@ -147,7 +147,7 @@ export function EvidenceLibraryHub() {
                         <AkurisPulse size={16} />
                       ) : (
                         <>
-                          <Sparkles className="h-3.5 w-3.5" strokeWidth={1.5} /> Cruzar com IA
+                          <Sparkles className="h-3.5 w-3.5" strokeWidth={1.5} /> {t('sweepRiscos.gap.evidenceHub.cruzarComIA')}
                         </>
                       )}
                     </Button>
@@ -163,7 +163,7 @@ export function EvidenceLibraryHub() {
         open={!!openItem}
         onOpenChange={(o) => { if (!o) { setOpenItem(null); setMatchResult(null); } }}
         icon={SparklesIcon}
-        title={`Cruzamentos para "${openItem?.nome ?? ''}"`}
+        title={t('sweepRiscos.gap.evidenceHub.cruzamentosPara', { nome: openItem?.nome ?? '' })}
         size="md"
         hideFooter
       >
@@ -208,7 +208,7 @@ export function EvidenceLibraryHub() {
                 ))}
                 <p className="text-[11px] text-muted-foreground pt-2 px-1 flex items-center gap-1">
                   <CheckCircle2 className="h-3 w-3" strokeWidth={1.5} />
-                  Cruzamentos salvos como pendentes em cada requisito. Acesse o requisito para aceitar e marcar como Conforme.
+                  {t('sweepRiscos.gap.evidenceHub.cruzamentosSalvos')}
                 </p>
               </div>
             </ScrollArea>

@@ -114,6 +114,11 @@ export const sweepRiscos = {
         fallbacks: {
           outros: 'Outros',
           naoAtribuida: 'Não Atribuída',
+          evidencia: 'Evidência',
+        },
+        heatmap: {
+          tituloPadrao: 'Aderência por Categoria',
+          cliqueParaFiltrar: 'Clique para filtrar',
         },
       },
       riscos: {
@@ -368,6 +373,11 @@ export const sweepRiscos = {
         fallbacks: {
           outros: 'Other',
           naoAtribuida: 'Unassigned',
+          evidencia: 'Evidence',
+        },
+        heatmap: {
+          tituloPadrao: 'Adherence by Category',
+          cliqueParaFiltrar: 'Click to filter',
         },
       },
       riscos: {
