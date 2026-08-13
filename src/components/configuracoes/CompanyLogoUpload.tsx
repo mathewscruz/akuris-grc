@@ -5,10 +5,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { toast } from 'sonner';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Upload, Building2 } from 'lucide-react';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 export function CompanyLogoUpload() {
+  const { t } = useLanguage();
   const { user, company, refetchProfile, forceLogoUpdate } = useAuth();
   const [empresaId, setEmpresaId] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -36,10 +38,10 @@ export function CompanyLogoUpload() {
 
   const validateImageFile = (file: File): string | null => {
     if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
-      return 'Formato de arquivo não suportado. Use: JPG, PNG, GIF, SVG ou WebP';
+      return t('configGeral.logoUpload.errorInvalidFormat');
     }
     if (file.size > MAX_FILE_SIZE) {
-      return 'Arquivo muito grande. Tamanho máximo: 5MB';
+      return t('configGeral.logoUpload.errorFileTooLarge');
     }
     return null;
   };
@@ -55,7 +57,7 @@ export function CompanyLogoUpload() {
 
   const handleCompanyLogoUpload = async (file: File) => {
     if (!empresaId) {
-      toast.error('Empresa não encontrada');
+      toast.error(t('configGeral.logoUpload.errorNoEmpresa'));
       return;
     }
 
@@ -101,13 +103,13 @@ export function CompanyLogoUpload() {
 
       await refetchProfile();
       forceLogoUpdate();
-      toast.success('Logo da empresa atualizado com sucesso');
+      toast.success(t('configGeral.logoUpload.toastSuccess'));
     } catch (error: any) {
       console.error('Erro no upload do logo:', error);
-      let errorMessage = 'Erro ao fazer upload do logo da empresa';
-      if (error.message?.includes('upload')) errorMessage = 'Erro ao enviar arquivo para o servidor';
-      else if (error.message?.includes('banco')) errorMessage = 'Erro ao salvar informações no banco de dados';
-      else if (error.message?.includes('not allowed') || error.message?.includes('policy')) errorMessage = 'Você não tem permissão para atualizar o logo da empresa';
+      let errorMessage = t('configGeral.logoUpload.errorGeneric');
+      if (error.message?.includes('upload')) errorMessage = t('configGeral.logoUpload.errorUpload');
+      else if (error.message?.includes('banco')) errorMessage = t('configGeral.logoUpload.errorDatabase');
+      else if (error.message?.includes('not allowed') || error.message?.includes('policy')) errorMessage = t('configGeral.logoUpload.errorPermission');
       toast.error(errorMessage);
       setLogoPreview(null);
     } finally {
@@ -129,10 +131,10 @@ export function CompanyLogoUpload() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Building2 className="h-5 w-5" />
-          Identidade Visual
+          {t('configGeral.logoUpload.title')}
         </CardTitle>
         <CardDescription>
-          Configure o logo da empresa que será exibido no sistema
+          {t('configGeral.logoUpload.description')}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -143,7 +145,7 @@ export function CompanyLogoUpload() {
                 <img
                   key={`company-logo-${Date.now()}`}
                   src={getCurrentCompanyLogo()!}
-                  alt="Logo da empresa"
+                  alt={t('configGeral.logoUpload.altText')}
                   className={`h-20 w-auto max-w-[140px] object-contain border-2 border-border rounded-lg bg-background ${
                     uploading ? 'opacity-50' : ''
                   }`}
@@ -164,9 +166,9 @@ export function CompanyLogoUpload() {
             )}
           </div>
           <div className="space-y-2">
-            <Label>Logo da Empresa</Label>
+            <Label>{t('configGeral.logoUpload.label')}</Label>
             <p className="text-sm text-muted-foreground">
-              Será exibido no menu lateral e tela de login
+              {t('configGeral.logoUpload.hint')}
             </p>
             <label className="cursor-pointer">
               <input
@@ -182,12 +184,12 @@ export function CompanyLogoUpload() {
               <Button variant="outline" disabled={uploading} asChild>
                 <span className="flex items-center gap-2">
                   <Upload className="h-4 w-4" />
-                  {uploading ? 'Enviando...' : 'Alterar Logo'}
+                  {uploading ? t('configGeral.logoUpload.uploading') : t('configGeral.logoUpload.changeButton')}
                 </span>
               </Button>
             </label>
             <p className="text-xs text-muted-foreground">
-              Formatos aceitos: JPG, PNG, GIF, SVG, WebP (máx. 5MB)
+              {t('configGeral.logoUpload.formatsHint')}
             </p>
           </div>
         </div>

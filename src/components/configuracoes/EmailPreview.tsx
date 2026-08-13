@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface EmailPreviewProps {
   assunto: string;
@@ -11,12 +12,13 @@ interface EmailPreviewProps {
  * idênticos ao BaseEmailTemplate usado nos disparos reais.
  */
 export function EmailPreview({ assunto, conteudoHtml, imagemUrl }: EmailPreviewProps) {
+  const { t } = useLanguage();
   const srcDoc = useMemo(() => {
     const safeImage = imagemUrl
       ? `<img src="${imagemUrl}" alt="" style="display:block;width:100%;max-width:512px;height:auto;border-radius:8px;margin:0 0 24px" />`
       : '';
 
-    const title = (assunto || 'Assunto do e-mail').replace(/[<>]/g, '');
+    const title = (assunto || t('configGeral.emailPreview.defaultSubject')).replace(/[<>]/g, '');
 
     return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>
       body{margin:0;background:#ffffff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;padding:24px 0}
@@ -43,19 +45,19 @@ export function EmailPreview({ assunto, conteudoHtml, imagemUrl }: EmailPreviewP
         <div class="header"><img src="https://akuris-grc.lovable.app/akuris-logo-email.png" alt="Akuris" /></div>
         <div class="accent"></div>
         <div class="titleSection"><h1>${title}</h1></div>
-        <div class="content">${safeImage}${conteudoHtml || '<p style="color:#a0aec0">Conteúdo do e-mail aparecerá aqui…</p>'}</div>
-        <div class="signature"><p>Atenciosamente,</p><p class="name">Equipe Akuris</p></div>
+        <div class="content">${safeImage}${conteudoHtml || `<p style="color:#a0aec0">${t('configGeral.emailPreview.placeholderContent')}</p>`}</div>
+        <div class="signature"><p>${t('configGeral.emailPreview.signatureThanks')}</p><p class="name">${t('configGeral.emailPreview.signatureTeam')}</p></div>
         <div class="footer">
-          <p>Este é um e-mail automático enviado pela plataforma <a href="https://akuris.com.br">Akuris</a>.</p>
-          <p>© ${new Date().getFullYear()} Akuris · Governança, Risco e Compliance</p>
+          <p>${t('configGeral.emailPreview.footerLine1')}</p>
+          <p>© ${new Date().getFullYear()} Akuris · ${t('configGeral.emailPreview.footerLine2')}</p>
         </div>
       </div>
     </body></html>`;
-  }, [assunto, conteudoHtml, imagemUrl]);
+  }, [assunto, conteudoHtml, imagemUrl, t]);
 
   return (
     <iframe
-      title="Pré-visualização do e-mail"
+      title={t('configGeral.emailPreview.iframeTitle')}
       srcDoc={srcDoc}
       sandbox=""
       className="w-full h-[640px] rounded-md border border-border bg-white"

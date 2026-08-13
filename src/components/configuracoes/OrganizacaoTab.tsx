@@ -5,8 +5,10 @@ import { Mail } from 'lucide-react';
 import { CompanyContextSettings } from './CompanyContextSettings';
 import { CompanyLogoUpload } from './CompanyLogoUpload';
 import { EmailTestDialog } from './EmailTestDialog';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export function OrganizacaoTab() {
+  const { t } = useLanguage();
   const [emailTestDialogOpen, setEmailTestDialogOpen] = useState(false);
 
   return (
@@ -19,23 +21,23 @@ export function OrganizacaoTab() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Mail className="h-5 w-5" />
-            Configuração de Email
+            {t('configGeral.organizacaoTab.emailConfigTitle')}
           </CardTitle>
           <CardDescription>
-            Teste se o sistema está enviando emails corretamente
+            {t('configGeral.organizacaoTab.emailConfigDescription')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <p className="font-medium">Testar Envio de Email</p>
+              <p className="font-medium">{t('configGeral.organizacaoTab.testEmailLabel')}</p>
               <p className="text-sm text-muted-foreground">
-                Envia um email de teste para verificar a configuração
+                {t('configGeral.organizacaoTab.testEmailDescription')}
               </p>
             </div>
             <Button variant="outline" onClick={() => setEmailTestDialogOpen(true)}>
               <Mail className="h-4 w-4 mr-2" />
-              Enviar Email de Teste
+              {t('configGeral.organizacaoTab.testEmailButton')}
             </Button>
           </div>
         </CardContent>
