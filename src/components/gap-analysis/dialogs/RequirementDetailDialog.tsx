@@ -401,8 +401,10 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
   const triggerGuidanceGeneration = useCallback(async (forceRegenerate = false) => {
     setGeneratingGuidance(true);
     try {
+      // O conteúdo é global (compartilhado por todas as empresas) e por idioma:
+      // a função devolve o texto salvo quando já existir, sem consumir crédito.
       const { data, error } = await supabase.functions.invoke('populate-requirement-guidance', {
-        body: { requirement_id: requirement.id }
+        body: { requirement_id: requirement.id, locale: getAppLocale(), force: forceRegenerate }
       });
       if (error) throw error;
       if (data?.orientacao_implementacao) {
@@ -425,7 +427,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
     } finally {
       setGeneratingGuidance(false);
     }
-  }, [requirement.id]);
+  }, [requirement.id, t]);
 
   const loadData = async () => {
     setLoading(true);
@@ -441,7 +443,8 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
       setRiscos(riscosRes.data || []);
 
       // Conteúdo bilíngue: exibe a versão em inglês quando existir, senão a portuguesa.
-      const details = localizeRequirement((reqDetailsRes.data || {}) as any) as {
+      const rawDetails = (reqDetailsRes.data || {}) as Record<string, string | null>;
+      const details = localizeRequirement(rawDetails as any) as {
         orientacao_implementacao?: string | null; exemplos_evidencias?: string | null; perguntas_diagnostico?: string | null;
       };
       setGuidanceText(details.orientacao_implementacao || null);
@@ -457,9 +460,13 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
       }
       setDiagnosticAnswers({});
 
-      if (!details.orientacao_implementacao) {
+      // Falta no idioma atual? Gera (e salva no banco) a versão desse idioma —
+      // mesmo que exista fallback em português sendo exibido.
+      const localeCol = getAppLocale() === 'en' ? 'orientacao_implementacao_en' : 'orientacao_implementacao';
+      if (!(rawDetails[localeCol] || '').trim()) {
         triggerGuidanceGeneration();
       }
+
 
       if (requirement.evaluation_id) {
         const { data: evalData, error: evalError } = await supabase
