@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -23,14 +24,14 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Info } from "lucide-react";
 
-const decisionSchema = z.object({
+const buildDecisionSchema = (t: (key: string) => string) => z.object({
   decisao: z.enum(["aprovar", "revogar", "modificar"]),
-  justificativa_revisor: z.string().min(10, "Justificativa deve ter no mínimo 10 caracteres"),
+  justificativa_revisor: z.string().min(10, t("acessosDd.revisao.itemDecisionDialog.zodJustificativaMinima")),
   nova_data_expiracao: z.string().optional(),
   observacoes_revisor: z.string().optional(),
 });
 
-type DecisionFormData = z.infer<typeof decisionSchema>;
+type DecisionFormData = z.infer<ReturnType<typeof buildDecisionSchema>>;
 
 interface ReviewItemDecisionDialogProps {
   open: boolean;
@@ -46,6 +47,8 @@ export function ReviewItemDecisionDialog({
   onSuccess,
 }: ReviewItemDecisionDialogProps) {
   const { updateReviewItem } = useReviewData();
+  const { t } = useLanguage();
+  const decisionSchema = buildDecisionSchema(t);
 
   const form = useForm<DecisionFormData>({
     resolver: zodResolver(decisionSchema),
@@ -73,7 +76,7 @@ export function ReviewItemDecisionDialog({
   const onSubmit = async (data: DecisionFormData) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não autenticado");
+      if (!user) throw new Error(t("revisaoAcessosComp.itemDecisionDialog.toastErrorNaoAutenticado"));
 
       const payload = {
         decisao: data.decisao,
@@ -97,10 +100,10 @@ export function ReviewItemDecisionDialog({
       open={open}
       onOpenChange={(o) => { if (!o) onClose(); }}
       icon={ShieldCheck}
-      title={`Revisão de Acesso — ${item?.usuario_beneficiario ?? ''}`}
+      title={t("revisaoAcessosComp.itemDecisionDialog.title").replace("{nome}", item?.usuario_beneficiario ?? '')}
       size="md"
       onSubmit={form.handleSubmit(onSubmit)}
-      submitLabel="Salvar Decisão"
+      submitLabel={t("revisaoAcessosComp.itemDecisionDialog.submitLabel")}
       isDirty={form.formState.isDirty}
     >
         <div className="space-y-4">
@@ -108,13 +111,13 @@ export function ReviewItemDecisionDialog({
             <Info className="h-4 w-4" />
             <AlertDescription>
               <div className="space-y-1 text-sm">
-                <p><strong>Email:</strong> {item?.email_beneficiario || "-"}</p>
-                <p><strong>Tipo de Acesso:</strong> {formatStatus(item?.tipo_acesso || '')}</p>
-                <p><strong>Nível:</strong> <StatusBadge size="sm" tone="neutral">{formatStatus(item?.nivel_privilegio || '')}</StatusBadge></p>
-                <p><strong>Data Concessão:</strong> {item?.data_concessao ? formatDateForInput(item.data_concessao) : "-"}</p>
-                <p><strong>Data Expiração:</strong> {item?.data_expiracao ? formatDateForInput(item.data_expiracao) : "-"}</p>
+                <p><strong>{t("revisaoAcessosComp.itemDecisionDialog.email")}</strong> {item?.email_beneficiario || "-"}</p>
+                <p><strong>{t("revisaoAcessosComp.itemDecisionDialog.tipoAcesso")}</strong> {formatStatus(item?.tipo_acesso || '')}</p>
+                <p><strong>{t("revisaoAcessosComp.itemDecisionDialog.nivel")}</strong> <StatusBadge size="sm" tone="neutral">{formatStatus(item?.nivel_privilegio || '')}</StatusBadge></p>
+                <p><strong>{t("revisaoAcessosComp.itemDecisionDialog.dataConcessao")}</strong> {item?.data_concessao ? formatDateForInput(item.data_concessao) : "-"}</p>
+                <p><strong>{t("revisaoAcessosComp.itemDecisionDialog.dataExpiracao")}</strong> {item?.data_expiracao ? formatDateForInput(item.data_expiracao) : "-"}</p>
                 {item?.justificativa_original && (
-                  <p><strong>Justificativa Original:</strong> {item.justificativa_original}</p>
+                  <p><strong>{t("revisaoAcessosComp.itemDecisionDialog.justificativaOriginal")}</strong> {item.justificativa_original}</p>
                 )}
               </div>
             </AlertDescription>
@@ -127,7 +130,7 @@ export function ReviewItemDecisionDialog({
                 name="decisao"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Decisão *</FormLabel>
+                    <FormLabel>{t("revisaoAcessosComp.itemDecisionDialog.fieldDecisao")}</FormLabel>
                     <FormControl>
                       <RadioGroup
                         onValueChange={field.onChange}
@@ -137,19 +140,19 @@ export function ReviewItemDecisionDialog({
                         <div className="flex items-center space-x-2">
                           <RadioGroupItem value="aprovar" id="aprovar" />
                           <label htmlFor="aprovar" className="cursor-pointer">
-                            ✅ Aprovar (Manter Acesso)
+                            {t("revisaoAcessosComp.itemDecisionDialog.decisaoAprovar")}
                           </label>
                         </div>
                         <div className="flex items-center space-x-2">
                           <RadioGroupItem value="revogar" id="revogar" />
                           <label htmlFor="revogar" className="cursor-pointer">
-                            ❌ Revogar (Remover Acesso)
+                            {t("revisaoAcessosComp.itemDecisionDialog.decisaoRevogar")}
                           </label>
                         </div>
                         <div className="flex items-center space-x-2">
                           <RadioGroupItem value="modificar" id="modificar" />
                           <label htmlFor="modificar" className="cursor-pointer">
-                            ✏️ Modificar (Alterar Data)
+                            {t("revisaoAcessosComp.itemDecisionDialog.decisaoModificar")}
                           </label>
                         </div>
                       </RadioGroup>
@@ -165,7 +168,7 @@ export function ReviewItemDecisionDialog({
                   name="nova_data_expiracao"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Nova Data de Expiração *</FormLabel>
+                      <FormLabel>{t("revisaoAcessosComp.itemDecisionDialog.fieldNovaData")}</FormLabel>
                       <FormControl>
                         <Input type="date" {...field} />
                       </FormControl>
@@ -180,17 +183,17 @@ export function ReviewItemDecisionDialog({
                 name="justificativa_revisor"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Justificativa da Decisão *</FormLabel>
+                    <FormLabel>{t("revisaoAcessosComp.itemDecisionDialog.fieldJustificativa")}</FormLabel>
                     <FormControl>
                       <Textarea
                         {...field}
                         rows={4}
                         placeholder={
                           decisao === "aprovar"
-                            ? "Ex: Acesso necessário para função atual..."
+                            ? t("revisaoAcessosComp.itemDecisionDialog.justificativaPlaceholderAprovar")
                             : decisao === "revogar"
-                            ? "Ex: Colaborador mudou de área, não necessita mais..."
-                            : "Ex: Renovação de acesso por mais 90 dias..."
+                            ? t("revisaoAcessosComp.itemDecisionDialog.justificativaPlaceholderRevogar")
+                            : t("revisaoAcessosComp.itemDecisionDialog.justificativaPlaceholderModificar")
                         }
                       />
                     </FormControl>
@@ -204,7 +207,7 @@ export function ReviewItemDecisionDialog({
                 name="observacoes_revisor"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Observações Adicionais</FormLabel>
+                    <FormLabel>{t("revisaoAcessosComp.itemDecisionDialog.fieldObservacoes")}</FormLabel>
                     <FormControl>
                       <Textarea {...field} rows={3} />
                     </FormControl>

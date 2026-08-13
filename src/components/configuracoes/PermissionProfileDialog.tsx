@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { CheckSquare, Square, BookOpen, ShieldCheck } from 'lucide-react';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { useLanguage } from '@/contexts/LanguageContext';
 interface Module {
   id: string;
   name: string;
@@ -42,17 +43,19 @@ interface Props {
   onSaved: () => void;
 }
 
-const PERM_LABELS = [
-  { key: 'can_access' as const, label: 'Acessar' },
-  { key: 'can_create' as const, label: 'Criar' },
-  { key: 'can_read' as const, label: 'Ler' },
-  { key: 'can_update' as const, label: 'Editar' },
-  { key: 'can_delete' as const, label: 'Excluir' },
+const usePermLabels = (t: (k: string) => string) => [
+  { key: 'can_access' as const, label: t('configPerms.profileDialog.perm.access') },
+  { key: 'can_create' as const, label: t('configPerms.profileDialog.perm.create') },
+  { key: 'can_read' as const, label: t('configPerms.profileDialog.perm.read') },
+  { key: 'can_update' as const, label: t('configPerms.profileDialog.perm.update') },
+  { key: 'can_delete' as const, label: t('configPerms.profileDialog.perm.delete') },
 ];
 
 export const PermissionProfileDialog: React.FC<Props> = ({
   open, onOpenChange, profile, empresaId, onSaved
 }) => {
+  const { t } = useLanguage();
+  const PERM_LABELS = usePermLabels(t);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [isDefault, setIsDefault] = useState(false);
@@ -145,7 +148,7 @@ export const PermissionProfileDialog: React.FC<Props> = ({
 
   const handleSave = async () => {
     if (!name.trim()) {
-      toast.error('Nome é obrigatório');
+      toast.error(t('configPerms.profileDialog.nameRequired'));
       return;
     }
 
@@ -200,16 +203,16 @@ export const PermissionProfileDialog: React.FC<Props> = ({
               _profile_id: profileId,
             });
           }
-          toast.success(`Permissões propagadas para ${usersWithProfile.length} usuário(s)`);
+          toast.success(t('configPerms.profileDialog.propagatedSuccess').replace('{count}', String(usersWithProfile.length)));
         }
       }
 
-      toast.success(profile ? 'Perfil atualizado' : 'Perfil criado');
+      toast.success(profile ? t('configPerms.profileDialog.profileUpdated') : t('configPerms.profileDialog.profileCreated'));
       onSaved();
       onOpenChange(false);
     } catch (error: any) {
       console.error('Error saving profile:', error);
-      toast.error(error.message || 'Erro ao salvar perfil');
+      toast.error(error.message || t('configPerms.profileDialog.errorSaving'));
     } finally {
       setSaving(false);
     }
@@ -217,10 +220,10 @@ export const PermissionProfileDialog: React.FC<Props> = ({
 
   const footer = (
     <div className="flex justify-end gap-2 w-full">
-      <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>Cancelar</Button>
+      <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>{t('configPerms.profileDialog.cancel')}</Button>
       <Button size="sm" onClick={handleSave} disabled={saving}>
         {saving && <AkurisPulse size={16} className="mr-2" />}
-        {profile ? 'Atualizar' : 'Criar'}
+        {profile ? t('configPerms.profileDialog.update') : t('configPerms.profileDialog.create')}
       </Button>
     </div>
   );
@@ -229,7 +232,7 @@ export const PermissionProfileDialog: React.FC<Props> = ({
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      title={profile ? 'Editar Perfil de Permissão' : 'Novo Perfil de Permissão'}
+      title={profile ? t('configPerms.profileDialog.titleEdit') : t('configPerms.profileDialog.titleNew')}
       icon={ShieldCheck}
       size="lg"
       footer={footer}
@@ -239,20 +242,20 @@ export const PermissionProfileDialog: React.FC<Props> = ({
       <div className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <Label>Nome</Label>
-            <Input value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Auditor Interno" />
+            <Label>{t('configPerms.profileDialog.fieldName')}</Label>
+            <Input value={name} onChange={e => setName(e.target.value)} placeholder={t('configPerms.profileDialog.fieldNamePlaceholder')} />
           </div>
           <div className="flex items-end gap-2">
             <div className="flex items-center gap-2">
               <Switch checked={isDefault} onCheckedChange={setIsDefault} />
-              <Label>Perfil padrão</Label>
+              <Label>{t('configPerms.profileDialog.defaultProfile')}</Label>
             </div>
           </div>
         </div>
 
         <div>
-          <Label>Descrição</Label>
-          <Textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Descreva o perfil..." rows={2} />
+          <Label>{t('configPerms.profileDialog.fieldDescription')}</Label>
+          <Textarea value={description} onChange={e => setDescription(e.target.value)} placeholder={t('configPerms.profileDialog.fieldDescriptionPlaceholder')} rows={2} />
         </div>
 
         <Separator />
@@ -260,15 +263,15 @@ export const PermissionProfileDialog: React.FC<Props> = ({
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="outline" size="sm" onClick={() => setAllPermissions(true)}>
             <CheckSquare className="h-3.5 w-3.5 mr-1" />
-            Marcar Todos
+            {t('configPerms.profileDialog.markAll')}
           </Button>
           <Button type="button" variant="outline" size="sm" onClick={setReadOnly}>
             <BookOpen className="h-3.5 w-3.5 mr-1" />
-            Somente Leitura
+            {t('configPerms.profileDialog.readOnly')}
           </Button>
           <Button type="button" variant="outline" size="sm" onClick={() => setAllPermissions(false)}>
             <Square className="h-3.5 w-3.5 mr-1" />
-            Desmarcar Todos
+            {t('configPerms.profileDialog.unmarkAll')}
           </Button>
         </div>
 
@@ -281,7 +284,7 @@ export const PermissionProfileDialog: React.FC<Props> = ({
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/50">
-                  <th className="text-left px-3 py-2 font-medium">Módulo</th>
+                  <th className="text-left px-3 py-2 font-medium">{t('configPerms.profileDialog.colModule')}</th>
                   {PERM_LABELS.map(p => (
                     <th key={p.key} className="text-center px-2 py-2 font-medium">{p.label}</th>
                   ))}
@@ -313,7 +316,7 @@ export const PermissionProfileDialog: React.FC<Props> = ({
         {profile && (
           <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
             <Switch checked={propagate} onCheckedChange={setPropagate} />
-            <Label className="text-sm">Aplicar alterações a todos os usuários deste perfil</Label>
+            <Label className="text-sm">{t('configPerms.profileDialog.propagateLabel')}</Label>
           </div>
         )}
       </div>
