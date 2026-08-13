@@ -68,6 +68,7 @@ export function SistemaUsuarioDialog({
   sistemaIdPadrao,
 }: SistemaUsuarioDialogProps) {
   const { empresaId } = useEmpresaId();
+  const { t } = useLanguage();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
