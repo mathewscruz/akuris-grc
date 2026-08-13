@@ -10,6 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { FileText, Plus, Edit, Trash2, Copy, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface TemplateContrato {
   id?: string;
@@ -30,14 +31,14 @@ interface TemplatesContratosProps {
   onTemplateSelect?: (template: TemplateContrato) => void;
 }
 
-const tiposContrato = [
-  { value: 'prestacao_servicos', label: 'Prestação de Serviços' },
-  { value: 'fornecimento', label: 'Fornecimento' },
-  { value: 'locacao', label: 'Locação' },
-  { value: 'licenciamento', label: 'Licenciamento' },
-  { value: 'manutencao', label: 'Manutenção' },
-  { value: 'consultoria', label: 'Consultoria' },
-  { value: 'outros', label: 'Outros' }
+const tiposContratoValues = [
+  'prestacao_servicos',
+  'fornecimento',
+  'locacao',
+  'licenciamento',
+  'manutencao',
+  'consultoria',
+  'outros'
 ];
 
 const camposDisponiveis = [
@@ -55,6 +56,7 @@ const camposDisponiveis = [
 ];
 
 export default function TemplatesContratos({ onTemplateSelect }: TemplatesContratosProps) {
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [templates, setTemplates] = useState<TemplateContrato[]>([]);
@@ -73,6 +75,19 @@ export default function TemplatesContratos({ onTemplateSelect }: TemplatesContra
     penalidades_padrao: '',
     prazo_pagamento_padrao: 30
   });
+
+  const tiposContrato = tiposContratoValues.map(value => ({
+    value,
+    label: t(`contratosAtivos.templatesContratos.${{
+      prestacao_servicos: 'typePrestacaoServicos',
+      fornecimento: 'typeFornecimento',
+      locacao: 'typeLocacao',
+      licenciamento: 'typeLicenciamento',
+      manutencao: 'typeManutencao',
+      consultoria: 'typeConsultoria',
+      outros: 'typeOutros',
+    }[value]}`)
+  }));
 
   useEffect(() => {
     if (open) {
@@ -96,8 +111,8 @@ export default function TemplatesContratos({ onTemplateSelect }: TemplatesContra
     } catch (error) {
       console.error('Erro ao carregar templates:', error);
       toast({
-        title: "Erro",
-        description: "Erro ao carregar templates",
+        title: t('contratosAtivos.common.error'),
+        description: t('contratosAtivos.templatesContratos.toastLoadError'),
         variant: "destructive"
       });
     } finally {
@@ -176,8 +191,8 @@ A manutenção preventiva e corretiva dos equipamentos será de responsabilidade
     try {
       // Aqui implementaríamos a lógica de salvar no banco
       toast({
-        title: "Sucesso",
-        description: editingTemplate ? "Template atualizado" : "Template criado",
+        title: t('contratosAtivos.common.success'),
+        description: editingTemplate ? t('contratosAtivos.templatesContratos.toastSaveSuccessUpdate') : t('contratosAtivos.templatesContratos.toastSaveSuccessCreate'),
       });
       
       setFormOpen(false);
@@ -196,8 +211,8 @@ A manutenção preventiva e corretiva dos equipamentos será de responsabilidade
       carregarTemplates();
     } catch (error) {
       toast({
-        title: "Erro",
-        description: "Erro ao salvar template",
+        title: t('contratosAtivos.common.error'),
+        description: t('contratosAtivos.templatesContratos.toastSaveError'),
         variant: "destructive"
       });
     }
@@ -207,14 +222,14 @@ A manutenção preventiva e corretiva dos equipamentos será de responsabilidade
     try {
       // Aqui implementaríamos a lógica de excluir do banco
       toast({
-        title: "Sucesso",
-        description: "Template excluído",
+        title: t('contratosAtivos.common.success'),
+        description: t('contratosAtivos.templatesContratos.toastDeleteSuccess'),
       });
       carregarTemplates();
     } catch (error) {
       toast({
-        title: "Erro",
-        description: "Erro ao excluir template",
+        title: t('contratosAtivos.common.error'),
+        description: t('contratosAtivos.templatesContratos.toastDeleteError'),
         variant: "destructive"
       });
     }
@@ -223,7 +238,7 @@ A manutenção preventiva e corretiva dos equipamentos será de responsabilidade
   const duplicarTemplate = (template: TemplateContrato) => {
     setFormData({
       ...template,
-      nome: `${template.nome} (Cópia)`,
+      nome: `${template.nome}${t('contratosAtivos.templatesContratos.copySuffix')}`,
       id: undefined
     });
     setFormOpen(true);
@@ -234,8 +249,8 @@ A manutenção preventiva e corretiva dos equipamentos será de responsabilidade
       onTemplateSelect(template);
       setOpen(false);
       toast({
-        title: "Template aplicado",
-        description: "Os dados do template foram aplicados ao formulário",
+        title: t('contratosAtivos.templatesContratos.toastTemplateApplied'),
+        description: t('contratosAtivos.templatesContratos.toastTemplateAppliedDescription'),
       });
     }
   };
