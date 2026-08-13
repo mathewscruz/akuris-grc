@@ -979,7 +979,7 @@ export function MatrizForm({ onSuccess }: Props) {
           </p>
           <div className="flex gap-2 ml-auto">
             {editingMatriz && (
-              <Button type="button" variant="outline" onClick={limparFormularioMatriz}>{t('fin.comum.cancelar')}</Button>
+              <Button type="button" variant="outline" onClick={cancelarEdicao}>{t('fin.comum.cancelar')}</Button>
             )}
             <Button
               type="submit"
