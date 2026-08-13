@@ -252,7 +252,7 @@ export default function Contratos() {
     const diffDays = Math.ceil((dataVenc.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
     
     if (diffDays < 0) {
-      return <StatusBadge size="sm" {...resolveRevisaoTone(diffDays)} className="ml-2">Vencido</StatusBadge>;
+      return <StatusBadge size="sm" {...resolveRevisaoTone(diffDays)} className="ml-2">{formatStatus('vencido')}</StatusBadge>;
     } else if (diffDays <= 30) {
       return <StatusBadge size="sm" {...resolveRevisaoTone(diffDays)} className="ml-2">{diffDays}d</StatusBadge>;
     }
@@ -367,7 +367,7 @@ export default function Contratos() {
           />
 
           <StatCard
-            title="Vencimentos"
+            title={t('cardsKpi.sweep.contratos.vencimentos')}
             value={statsContratos?.vencendo30Dias || 0}
             description={t('fin.comum.proximos30')}
             icon={<AlertCircle />}
@@ -391,11 +391,11 @@ export default function Contratos() {
           <TabsList>
             <TabsTrigger value="contratos" className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
-              <span className="hidden sm:inline">Contratos</span>
+              <span className="hidden sm:inline">{t('cardsKpi.sweep.contratos.contratos')}</span>
             </TabsTrigger>
             <TabsTrigger value="fornecedores" className="flex items-center gap-2">
               <Building2 className="h-4 w-4" />
-              <span className="hidden sm:inline">Fornecedores</span>
+              <span className="hidden sm:inline">{t('cardsKpi.sweep.contratos.fornecedores')}</span>
             </TabsTrigger>
           </TabsList>
 
@@ -420,7 +420,7 @@ export default function Contratos() {
                             <Download className="h-4 w-4" />
                           </Button>
                         </TooltipTrigger>
-                        <TooltipContent>Exportar CSV</TooltipContent>
+                        <TooltipContent>{t('cardsKpi.sweep.contratos.exportarCsv')}</TooltipContent>
                       </Tooltip>
                       <RelatoriosContratos />
                       <TemplatesContratos />
@@ -478,7 +478,7 @@ export default function Contratos() {
                       <TableHead>{t('fin.comum.status')}</TableHead>
                       <TableHead>{t('fin.comum.tipo')}</TableHead>
                       <TableHead>{t('fin.comum.valor')}</TableHead>
-                      <TableHead>Vencimento</TableHead>
+                      <TableHead>{t('cardsKpi.sweep.contratos.vencimento')}</TableHead>
                       <TableHead className="text-right">{t('fin.comum.acoes')}</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -685,9 +685,9 @@ export default function Contratos() {
                     <TableRow>
                       <TableHead>{t('fin.comum.nome')}</TableHead>
                       <TableHead>{t('fin.comum.tipo')}</TableHead>
-                      <TableHead>Categoria</TableHead>
-                      <TableHead>Contratos</TableHead>
-                      <TableHead>Risco</TableHead>
+                      <TableHead>{t('cardsKpi.sweep.contratos.categoria')}</TableHead>
+                      <TableHead>{t('cardsKpi.sweep.contratos.contratos')}</TableHead>
+                      <TableHead>{t('cardsKpi.sweep.contratos.risco')}</TableHead>
                       <TableHead>{t('fin.comum.status')}</TableHead>
                       <TableHead className="text-right">{t('fin.comum.acoes')}</TableHead>
                     </TableRow>
