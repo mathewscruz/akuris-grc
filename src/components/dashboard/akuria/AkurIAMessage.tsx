@@ -6,8 +6,8 @@ import { Copy, Check, ArrowRight, Plus, Eye } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { tGlobal } from "@/lib/i18n-global";
 import {
-import { tGlobal } from '@/lib/i18n-global';
   parseAkurIAActions,
   getNavigateRoute,
   dispatchAkurIAAction,
