@@ -4,6 +4,7 @@ import { useAuth } from '@/components/AuthProvider';
 import type { Projeto, ProjetoStatus } from '@/types/projetos';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
+import { tGlobal } from '@/lib/i18n-global';
 
 export function useProjetos(filtroStatus?: ProjetoStatus | 'todos') {
   const { profile } = useAuth();
@@ -90,11 +91,11 @@ export function useUpsertProjeto() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['projetos'] });
       qc.invalidateQueries({ queryKey: ['projeto'] });
-      toast.success('Projeto salvo com sucesso');
+      toast.success(tGlobal('cardsKpi.sweep.projetos.projetoSalvo'));
     },
     onError: (err: any) => {
-      logger.error('Erro ao salvar projeto', err);
-      toast.error(err.message || 'Erro ao salvar projeto');
+      logger.error(tGlobal('cardsKpi.sweep.projetos.erroSalvarProjeto'), err);
+      toast.error(err.message || tGlobal('cardsKpi.sweep.projetos.erroSalvarProjeto'));
     },
   });
 }
@@ -116,8 +117,8 @@ export function useDeleteProjeto() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['projetos'] });
-      toast.success('Projeto removido');
+      toast.success(tGlobal('cardsKpi.sweep.projetos.projetoRemovido'));
     },
-    onError: (err: any) => toast.error(err.message || 'Erro ao remover'),
+    onError: (err: any) => toast.error(err.message || tGlobal('cardsKpi.sweep.projetos.erroRemover')),
   });
 }

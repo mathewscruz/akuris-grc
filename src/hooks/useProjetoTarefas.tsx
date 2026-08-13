@@ -13,6 +13,7 @@ import type {
 } from '@/types/projetos';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
+import { tGlobal } from '@/lib/i18n-global';
 
 export function useProjetoColunas(projetoId: string | undefined) {
   return useQuery({
@@ -91,11 +92,11 @@ export function useUpsertTarefa() {
     },
     onSuccess: (_, vars) => {
       qc.invalidateQueries({ queryKey: ['projeto-tarefas', vars.projeto_id] });
-      toast.success('Tarefa salva');
+      toast.success(tGlobal('cardsKpi.sweep.projetos.tarefaSalva'));
     },
     onError: (err: any) => {
-      logger.error('Erro ao salvar tarefa', err);
-      toast.error(err.message || 'Erro ao salvar tarefa');
+      logger.error(tGlobal('cardsKpi.sweep.projetos.erroSalvarTarefa'), err);
+      toast.error(err.message || tGlobal('cardsKpi.sweep.projetos.erroSalvarTarefa'));
     },
   });
 }
@@ -111,7 +112,7 @@ export function useDeleteTarefa(projetoId: string) {
       qc.invalidateQueries({ queryKey: ['projeto-tarefas', projetoId] });
       toast.success('Tarefa removida');
     },
-    onError: (err: any) => toast.error(err.message || 'Erro ao remover'),
+    onError: (err: any) => toast.error(err.message || tGlobal('cardsKpi.sweep.projetos.erroRemover')),
   });
 }
 
@@ -135,7 +136,7 @@ export function useMoveTarefa(projetoId: string) {
     },
     onError: (_err, _vars, ctx) => {
       if (ctx?.prev) qc.setQueryData(['projeto-tarefas', projetoId], ctx.prev);
-      toast.error('Falha ao mover tarefa');
+      toast.error(tGlobal('cardsKpi.sweep.projetos.erroMoverTarefa'));
     },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ['projeto-tarefas', projetoId] });
@@ -171,7 +172,7 @@ export function useAddComentario(tarefaId: string) {
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['tarefa-comentarios', tarefaId] }),
-    onError: (err: any) => toast.error(err.message || 'Erro ao comentar'),
+    onError: (err: any) => toast.error(err.message || tGlobal('cardsKpi.sweep.projetos.erroComentar')),
   });
 }
 
@@ -257,7 +258,7 @@ export function useVinculoMutations(tarefaId: string) {
       if (error) throw error;
     },
     onSuccess: invalidate,
-    onError: (err: any) => toast.error(err.message || 'Erro ao vincular'),
+    onError: (err: any) => toast.error(err.message || tGlobal('cardsKpi.sweep.projetos.erroVincular')),
   });
 
   const remove = useMutation({

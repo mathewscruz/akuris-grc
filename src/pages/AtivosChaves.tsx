@@ -426,7 +426,7 @@ export default function AtivosChaves() {
         <StatCard
           title={t('fin.comum.criticasF')}
           value={stats?.criticas ?? 0}
-          description="Alta prioridade"
+          description={t('cardsKpi.sweep.ativos.altaPrioridade')}
           icon={<AlertTriangle />}
           loading={statsLoading}
           variant="destructive"

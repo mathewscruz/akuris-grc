@@ -138,12 +138,12 @@ export function AzureConfigDialog({
 
   const handleSave = async () => {
     if (!tenantId || !clientId) {
-      toast.error('Campos obrigatórios', { description: 'Preencha Tenant ID e Client ID.' });
+      toast.error(t('cardsKpi.sweep.sistema.camposObrigatorios'), { description: t('cardsKpi.sweep.sistema.preenchaTenantClient') });
       return;
     }
 
     if (!existingConfig && !clientSecret) {
-      toast.error('Client Secret obrigatório', { description: 'Informe o Client Secret.' });
+      toast.error(t('cardsKpi.sweep.sistema.clientSecretObrigatorio'), { description: t('cardsKpi.sweep.sistema.informeClientSecret') });
       return;
     }
 

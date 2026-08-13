@@ -532,25 +532,25 @@ const Ativos = () => {
           emptyHint={t('fin.ativos.emptyHint')}
         />
         <StatCard
-          title="Ativos"
+          title={t('cardsKpi.sweep.ativos.ativos')}
           value={stats?.ativos || 0}
-          description={`${stats?.inativos || 0} inativos · ${stats?.descontinuados || 0} descontinuados`}
+          description={t('cardsKpi.sweep.ativos.inativosDescontinuados', { inativos: stats?.inativos || 0, descontinuados: stats?.descontinuados || 0 })}
           icon={<Activity />}
           variant="success"
           loading={statsLoading}
           drillDown="ativos"
         />
         <StatCard
-          title="Alto Valor"
+          title={t('cardsKpi.sweep.ativos.altoValor')}
           value={stats?.altoValorNegocio || 0}
-          description={`${stats?.percentualAltoValor || 0}% do total`}
+          description={t('cardsKpi.sweep.ativos.doTotal', { pct: stats?.percentualAltoValor || 0 })}
           icon={<TrendingUp />}
           variant="warning"
           loading={statsLoading}
           drillDown="ativos"
         />
         <StatCard
-          title="Criticidade Alta"
+          title={t('cardsKpi.sweep.ativos.criticidadeAlta')}
           value={(stats?.criticos || 0) + (stats?.altos || 0)}
           description={t('fin.comum.requeremAtencao')}
           icon={<Shield />}

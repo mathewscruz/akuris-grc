@@ -185,7 +185,7 @@ export function AkurIAChatbot() {
           // cancelamento intencional
         } else {
           console.error("AkurIA error:", e);
-          toast.error("Erro ao comunicar com AkurIA.");
+          toast.error(t('cardsKpi.sweep.sistema.erroAkuria'));
         }
       } finally {
         abortRef.current = null;

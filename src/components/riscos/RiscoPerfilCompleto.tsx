@@ -168,12 +168,12 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
 
             <section className="grid grid-cols-3 gap-2">
               <StatTile icon={<Wallet />} label={t('fin.riscos.exposicao')} value={exposicao !== null ? formatBRL(exposicao, true) : '—'} />
-              <StatTile icon={<Shield />} label="Tratam." value={`${concluidos}/${trat.length}`} />
-              <StatTile icon={<Layers />} label="Controles" value={String(detail?.controles.length ?? 0)} />
+              <StatTile icon={<Shield />} label={t('cardsKpi.sweep.riscos.tratamAbbr')} value={`${concluidos}/${trat.length}`} />
+              <StatTile icon={<Layers />} label={t('cardsKpi.sweep.riscos.controles')} value={String(detail?.controles.length ?? 0)} />
             </section>
 
             <section className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4">
-              <HeaderMeta icon={<Tag />} label="Categoria" value={risco.categoria?.nome || '—'} />
+              <HeaderMeta icon={<Tag />} label={t('cardsKpi.sweep.riscos.categoria')} value={risco.categoria?.nome || '—'} />
               <HeaderMeta icon={<User />} label={t('residuos.risco.responsavel')} value={
                 risco.responsavel_nome ? (
                   <span className="inline-flex items-center gap-1.5">
@@ -217,10 +217,10 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
           <Tabs defaultValue="tratamentos" className="min-h-0 flex flex-col">
             <div className="px-4 pt-4">
               <TabsList className="w-full">
-                <TabsTrigger value="tratamentos" className="flex-1 min-w-0 gap-1 px-1.5 text-[11px]"><Shield className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} /><span className="truncate">Tratam.</span></TabsTrigger>
+                <TabsTrigger value="tratamentos" className="flex-1 min-w-0 gap-1 px-1.5 text-[11px]"><Shield className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} /><span className="truncate">{t('cardsKpi.sweep.riscos.tratamAbbr')}</span></TabsTrigger>
                 <TabsTrigger value="historico" className="flex-1 min-w-0 gap-1 px-1.5 text-[11px]"><History className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} /><span className="truncate">{t('fin.comum.historico')}</span></TabsTrigger>
-                <TabsTrigger value="controles" className="flex-1 min-w-0 gap-1 px-1.5 text-[11px]"><ShieldCheck className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} /><span className="truncate">Controles</span></TabsTrigger>
-                <TabsTrigger value="comentarios" className="flex-1 min-w-0 gap-1 px-1.5 text-[11px]"><MessageSquare className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} /><span className="truncate">Coment.</span></TabsTrigger>
+                <TabsTrigger value="controles" className="flex-1 min-w-0 gap-1 px-1.5 text-[11px]"><ShieldCheck className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} /><span className="truncate">{t('cardsKpi.sweep.riscos.controles')}</span></TabsTrigger>
+                <TabsTrigger value="comentarios" className="flex-1 min-w-0 gap-1 px-1.5 text-[11px]"><MessageSquare className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} /><span className="truncate">{t('cardsKpi.sweep.riscos.comentAbbr')}</span></TabsTrigger>
               </TabsList>
             </div>
             <div className="flex-1 overflow-y-auto px-4 py-5">

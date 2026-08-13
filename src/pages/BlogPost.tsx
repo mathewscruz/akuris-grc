@@ -7,6 +7,7 @@ import remarkGfm from 'remark-gfm';
 import { SEO } from '@/components/SEO';
 import { PublicShell } from '@/components/public/PublicShell';
 import { supabase } from '@/integrations/supabase/client';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface PostFull {
   id: string;
@@ -25,6 +26,7 @@ interface PostFull {
 }
 
 export default function BlogPost() {
+  const { t } = useLanguage();
   const { slug } = useParams<{ slug: string }>();
   const [post, setPost] = useState<PostFull | null>(null);
   const [loading, setLoading] = useState(true);
@@ -50,7 +52,7 @@ export default function BlogPost() {
   if (loading || !post) {
     return (
       <PublicShell>
-        <div className="max-w-3xl mx-auto px-6 py-20 text-white/50">Carregando…</div>
+        <div className="max-w-3xl mx-auto px-6 py-20 text-white/50">{t('cardsKpi.sweep.sistema.carregandoReticencias')}</div>
       </PublicShell>
     );
   }

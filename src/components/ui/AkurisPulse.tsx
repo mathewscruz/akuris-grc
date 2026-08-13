@@ -1,3 +1,5 @@
+import { tGlobal } from '@/lib/i18n-global';
+
 /**
  * AkurisPulse — loader único e oficial do sistema Akuris.
  *
@@ -25,7 +27,7 @@ export function AkurisPulse({ size = 80, className }: AkurisPulseProps) {
       className={className}
       style={{ width: size, height: size, display: "inline-flex" }}
       role="status"
-      aria-label="Carregando"
+      aria-label={tGlobal('cardsKpi.sweep.sistema.carregando')}
     >
       <svg
         viewBox="0 0 80 80"

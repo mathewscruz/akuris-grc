@@ -129,7 +129,7 @@ export default function Relatorios() {
         doc.text(`Status: ${formatStatus(relatorio.status)}`, 20, 70);
         doc.save(`${relatorio.nome.replace(/\s+/g, '_')}.pdf`);
       }
-      toast.success('PDF exportado com sucesso');
+      toast.success(t('cardsKpi.sweep.sistema.pdfExportado'));
     } catch (error) {
       logger.error(t('fin.comum.erroExportarPdf'), error);
       toast.error(t('fin.comum.erroExportarPdf'));

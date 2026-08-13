@@ -75,10 +75,10 @@ export function EvidenceLibraryHub() {
               </div>
             </div>
             <div className="flex items-center gap-3 text-xs text-muted-foreground">
-              <span><strong className="text-foreground">{lib.stats.total}</strong> evidências</span>
-              <span><strong className="text-foreground">{lib.stats.com_links}</strong> em uso</span>
+              <span><strong className="text-foreground">{lib.stats.total}</strong> {t('cardsKpi.sweep.gap.evidencias')}</span>
+              <span><strong className="text-foreground">{lib.stats.com_links}</strong> {t('cardsKpi.sweep.gap.emUso')}</span>
               {lib.stats.com_sugestoes > 0 && (
-                <span className="text-warning"><strong>{lib.stats.com_sugestoes}</strong> com cruzamentos pendentes</span>
+                <span className="text-warning"><strong>{lib.stats.com_sugestoes}</strong> {t('cardsKpi.sweep.gap.comCruzamentosPendentes')}</span>
               )}
             </div>
           </div>

@@ -393,7 +393,7 @@ export function InboundWebhooksManager() {
               size="sm"
               onClick={() => {
                 navigator.clipboard.writeText(payloadDialogOpen ? getPayloadForModule(payloadDialogOpen) : '');
-                toast.info('Payload copiado!');
+                toast.info(t('cardsKpi.sweep.sistema.payloadCopiado'));
               }}
             >
               <Copy className="h-4 w-4 mr-2" /> {t('configGeral.inboundWebhooks.copyButton')}

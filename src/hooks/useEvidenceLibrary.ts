@@ -4,6 +4,7 @@ import { logger } from '@/lib/logger';
 import { invokeEdgeFunction } from '@/lib/edge-function-utils';
 import { akurisToast } from '@/lib/akuris-toast';
 import { toast } from 'sonner';
+import { tGlobal } from '@/lib/i18n-global';
 
 export interface EvidenceLibraryItem {
   id: string;
@@ -106,7 +107,7 @@ export function useEvidenceLibrary(empresaId: string | null) {
       );
     } catch (err) {
       logger.error('useEvidenceLibrary.fetchAll', err);
-      toast.error('Não foi possível carregar a biblioteca de evidências.');
+      toast.error(tGlobal('cardsKpi.sweep.gap.erroCarregarBiblioteca'));
     } finally {
       setLoading(false);
     }
@@ -186,7 +187,7 @@ export function useEvidenceLibrary(empresaId: string | null) {
       return data as EvidenceLibraryItem;
     } catch (err) {
       logger.error('useEvidenceLibrary.uploadAndCreate', err);
-      toast.error('Erro ao adicionar evidência à biblioteca.');
+      toast.error(tGlobal('cardsKpi.sweep.gap.erroAdicionarEvidencia'));
       return null;
     }
   }, [empresaId, fetchAll]);
@@ -216,7 +217,7 @@ export function useEvidenceLibrary(empresaId: string | null) {
       return true;
     } catch (err) {
       logger.error('useEvidenceLibrary.linkToEvaluation', err);
-      toast.error('Erro ao vincular evidência.');
+      toast.error(tGlobal('cardsKpi.sweep.gap.erroVincularEvidencia'));
       return false;
     }
   }, [empresaId, fetchAll]);
@@ -236,7 +237,7 @@ export function useEvidenceLibrary(empresaId: string | null) {
       return true;
     } catch (err) {
       logger.error('useEvidenceLibrary.acceptSuggestion', err);
-      toast.error('Erro ao aceitar sugestão.');
+      toast.error(tGlobal('cardsKpi.sweep.gap.erroAceitarSugestao'));
       return false;
     }
   }, [empresaId, fetchAll]);
@@ -255,7 +256,7 @@ export function useEvidenceLibrary(empresaId: string | null) {
       return true;
     } catch (err) {
       logger.error('useEvidenceLibrary.unlink', err);
-      toast.error('Erro ao desvincular.');
+      toast.error(tGlobal('cardsKpi.sweep.gap.erroDesvincular'));
       return false;
     }
   }, [empresaId, fetchAll]);

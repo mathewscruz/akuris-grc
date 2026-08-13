@@ -214,7 +214,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
             <div className="flex items-center gap-1">
               {nav && (
                 <div className="flex items-center gap-0.5 mr-1 text-[11px] text-muted-foreground">
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={nav.onPrev} disabled={!nav.onPrev || nav.current <= 1} aria-label="Risco anterior">
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={nav.onPrev} disabled={!nav.onPrev || nav.current <= 1} aria-label={t('cardsKpi.sweep.riscos.riscoAnterior')}>
                     <ChevronLeft className="h-4 w-4" strokeWidth={1.5} />
                   </Button>
                   <span className="tabular-nums whitespace-nowrap">{nav.current}<span className="opacity-60"> de </span>{nav.total}</span>
@@ -317,10 +317,10 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
           <div className="px-6 pt-4">
             <TabsList className="w-full">
               <TabsTrigger value="visao" className="flex-1 text-[11px] px-2 gap-1.5 min-w-0 whitespace-nowrap"><Eye className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>{t('residuos.risco.visao')}</span></TabsTrigger>
-              <TabsTrigger value="tratamentos" className="flex-1 text-[11px] px-2 gap-1.5 min-w-0 whitespace-nowrap"><Shield className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>Tratamento</span></TabsTrigger>
+              <TabsTrigger value="tratamentos" className="flex-1 text-[11px] px-2 gap-1.5 min-w-0 whitespace-nowrap"><Shield className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>{t('cardsKpi.sweep.riscos.tratamento')}</span></TabsTrigger>
               <TabsTrigger value="historico" className="flex-1 text-[11px] px-2 gap-1.5 min-w-0 whitespace-nowrap"><History className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>{t('fin.comum.historico')}</span></TabsTrigger>
-              <TabsTrigger value="controles" className="flex-1 text-[11px] px-2 gap-1.5 min-w-0 whitespace-nowrap"><ShieldCheck className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>Controles</span></TabsTrigger>
-              <TabsTrigger value="comentarios" className="flex-1 text-[11px] px-2 gap-1.5 min-w-0 whitespace-nowrap"><MessageSquare className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>Coment.</span></TabsTrigger>
+              <TabsTrigger value="controles" className="flex-1 text-[11px] px-2 gap-1.5 min-w-0 whitespace-nowrap"><ShieldCheck className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>{t('cardsKpi.sweep.riscos.controles')}</span></TabsTrigger>
+              <TabsTrigger value="comentarios" className="flex-1 text-[11px] px-2 gap-1.5 min-w-0 whitespace-nowrap"><MessageSquare className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>{t('cardsKpi.sweep.riscos.comentAbbr')}</span></TabsTrigger>
             </TabsList>
           </div>
 
@@ -350,8 +350,8 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
               {/* Tiles de contexto */}
               <section className="grid grid-cols-3 gap-2">
                 <StatTile icon={<Wallet />} label={t('fin.riscos.exposicao')} value={exposicao !== null ? formatBRL(exposicao, true) : '—'} />
-                <StatTile icon={<Shield />} label="Tratamentos" value={`${tratStats.concluidos}/${tratStats.total}`} />
-                <StatTile icon={<Layers />} label="Controles" value={String(detail?.controles.length ?? 0)} />
+                <StatTile icon={<Shield />} label={t('cardsKpi.sweep.riscos.tratamentos')} value={`${tratStats.concluidos}/${tratStats.total}`} />
+                <StatTile icon={<Layers />} label={t('cardsKpi.sweep.riscos.controles')} value={String(detail?.controles.length ?? 0)} />
               </section>
 
               {/* Exposição financeira + evolução do risco */}
