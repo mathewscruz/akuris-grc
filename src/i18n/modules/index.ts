@@ -25,6 +25,12 @@ import { contratosAtivos } from './contratos-ativos';
 import { dueDiligence } from './due-diligence';
 import { controlesAuditorias } from './controles-auditorias';
 import { projetos } from './projetos';
+import { incidentesComp } from './incidentes-comp';
+import { continuidadeComp } from './continuidade-comp';
+import { contasPrivilegiadasComp } from './contas-privilegiadas-comp';
+import { revisaoAcessosComp } from './revisao-acessos-comp';
+import { relatoriosComp } from './relatorios-comp';
+import { governancaComp } from './governanca-comp';
 import { dadosDashboard } from './dados-dashboard';
 
 type ModuleDict = { pt: Record<string, unknown>; en: Record<string, unknown> };
