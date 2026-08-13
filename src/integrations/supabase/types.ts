@@ -8439,6 +8439,18 @@ export type Database = {
           protocolo: string
         }[]
       }
+      criar_matriz_com_configuracao: {
+        Args: {
+          p_descricao: string
+          p_escala_impacto: Json
+          p_escala_probabilidade: Json
+          p_matriz_id?: string
+          p_metodo_calculo?: string
+          p_niveis_risco: Json
+          p_nome: string
+        }
+        Returns: string
+      }
       dados_pessoais_pertence_empresa: {
         Args: { dados_id: string }
         Returns: boolean
