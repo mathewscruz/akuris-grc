@@ -28,6 +28,7 @@ import { useEmpresaId } from "@/hooks/useEmpresaId";
 import { useToast } from "@/hooks/use-toast";
 import { useOptimizedQuery } from "@/hooks/useOptimizedQuery";
 import { parseDateForDB, formatDateForInput } from "@/lib/date-utils";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const usuarioSchema = z.object({
   sistema_id: z.string().min(1, "Sistema é obrigatório"),

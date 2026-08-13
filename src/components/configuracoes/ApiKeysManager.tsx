@@ -33,16 +33,16 @@ interface ApiKey {
 }
 
 const PERMISSOES_DISPONIVEIS = [
-  { value: 'riscos:read', label: 'Riscos (Leitura)' },
-  { value: 'riscos:write', label: 'Riscos (Escrita)' },
-  { value: 'controles:read', label: 'Controles (Leitura)' },
-  { value: 'controles:write', label: 'Controles (Escrita)' },
-  { value: 'incidentes:read', label: 'Incidentes (Leitura)' },
-  { value: 'incidentes:write', label: 'Incidentes (Escrita)' },
-  { value: 'auditorias:read', label: 'Auditorias (Leitura)' },
-  { value: 'documentos:read', label: 'Documentos (Leitura)' },
-  { value: 'ativos:read', label: 'Ativos (Leitura)' },
-  { value: 'ativos:write', label: 'Ativos (Escrita)' },
+  { value: 'riscos:read', labelKey: 'riscosRead' },
+  { value: 'riscos:write', labelKey: 'riscosWrite' },
+  { value: 'controles:read', labelKey: 'controlesRead' },
+  { value: 'controles:write', labelKey: 'controlesWrite' },
+  { value: 'incidentes:read', labelKey: 'incidentesRead' },
+  { value: 'incidentes:write', labelKey: 'incidentesWrite' },
+  { value: 'auditorias:read', labelKey: 'auditoriasRead' },
+  { value: 'documentos:read', labelKey: 'documentosRead' },
+  { value: 'ativos:read', labelKey: 'ativosRead' },
+  { value: 'ativos:write', labelKey: 'ativosWrite' },
 ];
 
 function generateApiKey(): { key: string; prefix: string } {
@@ -111,14 +111,14 @@ export function ApiKeysManager() {
       if (error) throw error;
 
       setNewKeyRevealed(key);
-      toast.success('API Key criada', { description: 'Copie a chave agora — ela não será exibida novamente.' });
+      toast.success(t('configPlanos.apiKeys.toastCreatedTitle'), { description: t('configPlanos.apiKeys.toastCreatedDesc') });
       setDialogOpen(false);
       setNome('');
       setPermissoes([]);
       setRateLimit('60');
       fetchKeys();
     } catch (err: any) {
-      toast.error('Erro ao criar API Key', { description: err.message });
+      toast.error(t('configPlanos.apiKeys.toastCreateError'), { description: err.message });
     } finally {
       setSaving(false);
     }
@@ -128,9 +128,9 @@ export function ApiKeysManager() {
     try {
       await supabase.from('api_keys').update({ ativo }).eq('id', id);
       fetchKeys();
-      toast.success(ativo ? 'API Key ativada' : 'API Key desativada');
+      toast.success(ativo ? t('configPlanos.apiKeys.toastToggleOn') : t('configPlanos.apiKeys.toastToggleOff'));
     } catch (err: any) {
-      toast.error('Erro ao alterar status', { description: err.message });
+      toast.error(t('configPlanos.apiKeys.toastToggleError'), { description: err.message });
     }
   };
 
@@ -138,12 +138,12 @@ export function ApiKeysManager() {
     await supabase.from('api_keys').delete().eq('id', id);
     setDeleteConfirm(null);
     fetchKeys();
-    toast.success('API Key removida');
+    toast.success(t('configPlanos.apiKeys.toastRemoved'));
   };
 
   const copyKey = (key: string) => {
     navigator.clipboard.writeText(key);
-    toast.info('Chave copiada!');
+    toast.info(t('configPlanos.apiKeys.keyCopied'));
   };
 
   const togglePermissao = (perm: string) => {
@@ -160,15 +160,15 @@ export function ApiKeysManager() {
           <CardContent className="py-4">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-sm font-medium">🔑 Nova API Key gerada — copie agora!</p>
+                <p className="text-sm font-medium">{t('configPlanos.apiKeys.newKeyBanner')}</p>
                 <code className="text-xs bg-muted p-1 rounded mt-1 block break-all">{newKeyRevealed}</code>
               </div>
               <div className="flex gap-2 shrink-0">
                 <Button size="sm" variant="outline" onClick={() => copyKey(newKeyRevealed)}>
-                  <Copy className="h-4 w-4 mr-1" /> Copiar
+                  <Copy className="h-4 w-4 mr-1" /> {t('configPlanos.apiKeys.copy')}
                 </Button>
                 <Button size="sm" variant="ghost" onClick={() => setNewKeyRevealed(null)}>
-                  Fechar
+                  {t('configPlanos.apiKeys.close')}
                 </Button>
               </div>
             </div>
@@ -179,9 +179,9 @@ export function ApiKeysManager() {
       {/* API Documentation */}
       <Card className="border-dashed">
         <CardContent className="py-4 space-y-3">
-          <h4 className="font-medium text-sm">📖 Como usar a API</h4>
+          <h4 className="font-medium text-sm">{t('configPlanos.apiKeys.docTitle')}</h4>
           <div className="text-xs text-muted-foreground space-y-2">
-            <p>Envie requisições para a Edge Function <code className="bg-muted px-1 rounded">api-public</code> com o header <code className="bg-muted px-1 rounded">X-API-Key</code>.</p>
+            <p>{t('configPlanos.apiKeys.docIntro').split('{func}')[0]}<code className="bg-muted px-1 rounded">api-public</code>{t('configPlanos.apiKeys.docIntro').split('{func}')[1].split('{header}')[0]}<code className="bg-muted px-1 rounded">X-API-Key</code>{t('configPlanos.apiKeys.docIntro').split('{header}')[1]}</p>
             <div className="bg-muted rounded p-3 font-mono text-[11px] overflow-x-auto whitespace-pre">{`# Listar riscos
 curl -H "X-API-Key: gai_sua_chave_aqui" \\
   "${window.location.origin.replace('://','://lnlkahtugwmkznasapfd.supabase.co/functions/v1/')?.split('.lovable')[0] || 'https://lnlkahtugwmkznasapfd.supabase.co/functions/v1'}/api-public/riscos"
@@ -191,19 +191,19 @@ curl -X POST -H "X-API-Key: gai_sua_chave_aqui" \\
   -H "Content-Type: application/json" \\
   -d '{"titulo":"Teste","tipo":"seguranca","gravidade":"media"}' \\
   "https://lnlkahtugwmkznasapfd.supabase.co/functions/v1/api-public/incidentes"`}</div>
-            <p>Módulos disponíveis: <code className="bg-muted px-1 rounded">riscos</code>, <code className="bg-muted px-1 rounded">controles</code>, <code className="bg-muted px-1 rounded">incidentes</code>, <code className="bg-muted px-1 rounded">auditorias</code>, <code className="bg-muted px-1 rounded">documentos</code>, <code className="bg-muted px-1 rounded">ativos</code></p>
-            <p>Paginação: <code className="bg-muted px-1 rounded">?page=1&limit=50</code> (máx 100 por página)</p>
+            <p>{t('configPlanos.apiKeys.docModulos').split('{modulos}')[0]}<code className="bg-muted px-1 rounded">riscos</code>, <code className="bg-muted px-1 rounded">controles</code>, <code className="bg-muted px-1 rounded">incidentes</code>, <code className="bg-muted px-1 rounded">auditorias</code>, <code className="bg-muted px-1 rounded">documentos</code>, <code className="bg-muted px-1 rounded">ativos</code></p>
+            <p>{t('configPlanos.apiKeys.docPaginacao').split('{exemplo}')[0]}<code className="bg-muted px-1 rounded">?page=1&limit=50</code>{t('configPlanos.apiKeys.docPaginacao').split('{exemplo}')[1]}</p>
           </div>
         </CardContent>
       </Card>
 
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold">API Keys</h3>
-          <p className="text-sm text-muted-foreground">Gerencie as chaves de acesso à API pública do Akuris.</p>
+          <h3 className="text-lg font-semibold">{t('configPlanos.apiKeys.title')}</h3>
+          <p className="text-sm text-muted-foreground">{t('configPlanos.apiKeys.subtitle')}</p>
         </div>
         <Button onClick={() => setDialogOpen(true)} className="gap-2">
-          <Plus className="h-4 w-4" /> Nova API Key
+          <Plus className="h-4 w-4" /> {t('configPlanos.apiKeys.newButton')}
         </Button>
       </div>
 
@@ -213,7 +213,7 @@ curl -X POST -H "X-API-Key: gai_sua_chave_aqui" \\
         <Card className="border-dashed">
           <CardContent className="py-10 text-center">
             <Key className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-            <p className="text-sm text-muted-foreground">Nenhuma API Key criada.</p>
+            <p className="text-sm text-muted-foreground">{t('configPlanos.apiKeys.emptyState')}</p>
           </CardContent>
         </Card>
       ) : (
@@ -221,13 +221,13 @@ curl -X POST -H "X-API-Key: gai_sua_chave_aqui" \\
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Chave</TableHead>
-                <TableHead>Permissões</TableHead>
-                <TableHead>Rate Limit</TableHead>
-                <TableHead>Requisições</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="w-[100px]">Ações</TableHead>
+                <TableHead>{t('configPlanos.apiKeys.colNome')}</TableHead>
+                <TableHead>{t('configPlanos.apiKeys.colChave')}</TableHead>
+                <TableHead>{t('configPlanos.apiKeys.colPermissoes')}</TableHead>
+                <TableHead>{t('configPlanos.apiKeys.colRateLimit')}</TableHead>
+                <TableHead>{t('configPlanos.apiKeys.colRequisicoes')}</TableHead>
+                <TableHead>{t('configPlanos.apiKeys.colStatus')}</TableHead>
+                <TableHead className="w-[100px]">{t('configPlanos.apiKeys.colAcoes')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -250,7 +250,7 @@ curl -X POST -H "X-API-Key: gai_sua_chave_aqui" \\
                         }
                         const { data, error } = await supabase.rpc('get_api_key_full', { _id: key.id });
                         if (error || !data) {
-                          toast.error('Não foi possível revelar a chave');
+                          toast.error(t('configPlanos.apiKeys.revealError'));
                           return;
                         }
                         setRevealedKeys(prev => new Map(prev).set(key.id, data as string));
@@ -261,7 +261,7 @@ curl -X POST -H "X-API-Key: gai_sua_chave_aqui" \\
                         const cached = revealedKeys.get(key.id);
                         if (cached) { copyKey(cached); return; }
                         const { data, error } = await supabase.rpc('get_api_key_full', { _id: key.id });
-                        if (error || !data) { toast.error('Não foi possível copiar a chave'); return; }
+                        if (error || !data) { toast.error(t('configPlanos.apiKeys.copyError')); return; }
                         copyKey(data as string);
                       }}>
                         <Copy className="h-3 w-3" />
@@ -299,22 +299,22 @@ curl -X POST -H "X-API-Key: gai_sua_chave_aqui" \\
       <DialogShell
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        title="Nova API Key"
+        title={t('configPlanos.apiKeys.dialogTitle')}
         icon={Key}
         size="md"
         onSubmit={handleCreate}
-        submitLabel="Gerar API Key"
+        submitLabel={t('configPlanos.apiKeys.submitLabel')}
         submitDisabled={!nome.trim() || saving}
         isSubmitting={saving}
         isDirty={!!nome || permissoes.length > 0}
       >
         <div className="space-y-4">
           <div>
-            <Label>Nome</Label>
-            <Input value={nome} onChange={e => setNome(e.target.value)} placeholder="Ex: Integração SIEM" />
+            <Label>{t('configPlanos.apiKeys.fieldNome')}</Label>
+            <Input value={nome} onChange={e => setNome(e.target.value)} placeholder={t('configPlanos.apiKeys.fieldNomePlaceholder')} />
           </div>
           <div>
-            <Label>Rate Limit (req/min)</Label>
+            <Label>{t('configPlanos.apiKeys.fieldRateLimit')}</Label>
             <Select value={rateLimit} onValueChange={setRateLimit}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -327,7 +327,7 @@ curl -X POST -H "X-API-Key: gai_sua_chave_aqui" \\
             </Select>
           </div>
           <div>
-            <Label>Permissões</Label>
+            <Label>{t('configPlanos.apiKeys.fieldPermissoes')}</Label>
             <div className="grid grid-cols-2 gap-2 mt-2">
               {PERMISSOES_DISPONIVEIS.map(p => (
                 <label key={p.value} className="flex items-center gap-2 text-sm cursor-pointer p-2 rounded border hover:bg-muted/50">
@@ -337,7 +337,7 @@ curl -X POST -H "X-API-Key: gai_sua_chave_aqui" \\
                     onChange={() => togglePermissao(p.value)}
                     className="rounded"
                   />
-                  {p.label}
+                  {t(`configPlanos.apiKeys.permissoes.${p.labelKey}`)}
                 </label>
               ))}
             </div>
@@ -348,8 +348,8 @@ curl -X POST -H "X-API-Key: gai_sua_chave_aqui" \\
       <ConfirmDialog
         open={!!deleteConfirm}
         onOpenChange={() => setDeleteConfirm(null)}
-        title="Excluir API Key"
-        description="Esta ação é irreversível. Qualquer sistema que use esta chave perderá acesso."
+        title={t('configPlanos.apiKeys.deleteTitle')}
+        description={t('configPlanos.apiKeys.deleteDescription')}
         onConfirm={() => deleteConfirm && handleDelete(deleteConfirm)}
       />
     </div>

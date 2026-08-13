@@ -69,6 +69,7 @@ export function ItemAuditoriaFormDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { data: usuarios } = useUsuariosEmpresa();
   const { notify } = useIntegrationNotify();
+  const formSchema = useMemo(() => makeFormSchema(t), [t]);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
