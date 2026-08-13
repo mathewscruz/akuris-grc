@@ -16,6 +16,20 @@ interface HealthScoreGaugeProps {
  */
 export function HealthScoreGauge({ maturity }: HealthScoreGaugeProps) {
   const { t } = useLanguage();
+  const statusLabel = useMemo(() => {
+    switch (maturity.status) {
+      case 'excellent':
+        return t('dashWidgets.radar.statusExcellent');
+      case 'good':
+        return t('dashWidgets.radar.statusGood');
+      case 'warning':
+        return t('dashWidgets.radar.statusWarning');
+      case 'critical':
+        return t('dashWidgets.radar.statusCritical');
+      default:
+        return t('dashWidgets.radar.statusNoData');
+    }
+  }, [maturity.status, t]);
   const { data: trend } = useMaturityTrend(maturity.score);
 
   // Map status -> stroke color (HSL via CSS variable, theme-safe)
@@ -76,7 +90,7 @@ export function HealthScoreGauge({ maturity }: HealthScoreGaugeProps) {
           <span className={`text-4xl font-bold leading-none ${maturity.colorClass}`}>
             {maturity.status === 'no_data' ? '—' : maturity.score}
           </span>
-          <span className="text-[11px] text-muted-foreground mt-1">{maturity.label}</span>
+          <span className="text-[11px] text-muted-foreground mt-1">{statusLabel}</span>
         </div>
       </div>
 
@@ -88,7 +102,7 @@ export function HealthScoreGauge({ maturity }: HealthScoreGaugeProps) {
       <div className="flex items-center gap-2 mt-2 flex-wrap justify-center">
         {maturity.totalModules > 0 && maturity.status !== 'no_data' && (
           <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4">
-            {maturity.modulesWithData}/{maturity.totalModules} módulos
+            {t('dashWidgets.radar.modulesShort', { withData: String(maturity.modulesWithData), total: String(maturity.totalModules) })}
           </Badge>
         )}
         {trend?.delta !== null && trend?.delta !== undefined && trend.delta !== 0 && (

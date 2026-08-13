@@ -68,7 +68,8 @@ const ptDict = {
   radar: {
     title: 'Saúde do GRC',
     maturitySuffix: '/ 100 · maturidade',
-    modulesWithData: '{withData}/{total} módulos com dados',
+    modulesWithData: '{withData} de {total} módulos com dados',
+    modulesShort: '{withData}/{total} módulos',
     empty: 'Sem dados — cadastre itens nos módulos para ver a saúde do GRC.',
     statusExcellent: 'Excelente',
     statusGood: 'Bom',
@@ -270,7 +271,8 @@ const enDict = {
   radar: {
     title: 'GRC health',
     maturitySuffix: '/ 100 · maturity',
-    modulesWithData: '{withData}/{total} modules with data',
+    modulesWithData: '{withData} of {total} modules with data',
+    modulesShort: '{withData}/{total} modules',
     empty: 'No data — add items in the modules to see GRC health.',
     statusExcellent: 'Excellent',
     statusGood: 'Good',

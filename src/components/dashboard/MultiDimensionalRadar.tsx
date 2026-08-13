@@ -148,7 +148,7 @@ export const MultiDimensionalRadar = () => {
           </Badge>
           {maturity.totalModules > 0 && (
             <span className="text-[11px] text-muted-foreground">
-              {maturity.modulesWithData} de {maturity.totalModules} módulos com dados
+              {t('dashWidgets.radar.modulesWithData', { withData: String(maturity.modulesWithData), total: String(maturity.totalModules) })}
             </span>
           )}
         </div>
