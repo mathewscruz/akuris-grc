@@ -10,8 +10,9 @@ import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { EmptyState } from '@/components/ui/empty-state';
 import { StatCard } from '@/components/ui/stat-card';
 import { ListTodo, AlertTriangle, Clock, CheckCircle2 } from 'lucide-react';
-import { PRIORIDADE_LABEL } from '@/types/projetos';
 import { formatStatus } from '@/lib/text-utils';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { formatDate } from '@/lib/i18n-format';
 
 type Prioridade = 'critica' | 'alta' | 'media' | 'baixa';
 
@@ -30,16 +31,20 @@ type Row = {
   id: string;
   titulo: string;
   origem: Origem;
-  origemLabel: string;
+  /** Nome do projeto (origem projeto) ou módulo de origem (origem plano) — dado do banco. */
+  origemRef: string | null;
   prioridade: Prioridade;
   prazo: string | null;
   concluida: boolean;
   href: string;
 };
 
+
 export default function MinhasTarefas() {
   const navigate = useNavigate();
+  const { t, locale } = useLanguage();
   const { user, profile } = useAuth();
+
   const empresaId = profile?.empresa_id;
   const userId = user?.id;
 
@@ -58,7 +63,7 @@ export default function MinhasTarefas() {
         id: `projeto-${t.id}`,
         titulo: t.titulo,
         origem: 'projeto',
-        origemLabel: t.projetos?.nome ?? 'Projeto',
+        origemRef: t.projetos?.nome ?? null,
         prioridade: normPrioridade(t.prioridade),
         prazo: t.prazo ?? null,
         concluida: !!t.concluida_em,
@@ -83,7 +88,7 @@ export default function MinhasTarefas() {
         id: `plano-${p.id}`,
         titulo: p.titulo,
         origem: 'plano',
-        origemLabel: p.modulo_origem ? `Plano · ${formatStatus(p.modulo_origem)}` : 'Plano de Ação',
+        origemRef: p.modulo_origem ? formatStatus(p.modulo_origem) : null,
         prioridade: normPrioridade(p.prioridade),
         prazo: p.prazo ?? null,
         concluida: !!p.data_conclusao || doneStatus.test((p.status ?? '').toLowerCase()),
@@ -118,36 +123,48 @@ export default function MinhasTarefas() {
       <div className="space-y-2">
         <div className="flex items-center gap-2">
           <StatusBadge tone={tone} size="sm">{label}</StatusBadge>
-          <span className="text-xs text-muted-foreground">{rows.length} item{rows.length === 1 ? '' : 's'}</span>
+          <span className="text-xs text-muted-foreground">
+            {t(rows.length === 1 ? 'minhasTarefas.itemCount' : 'minhasTarefas.itemCountPlural', { count: rows.length })}
+          </span>
         </div>
         <div className="rounded-lg border border-border bg-card">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Item</TableHead>
-                <TableHead>Origem</TableHead>
-                <TableHead>Prioridade</TableHead>
-                <TableHead>Prazo</TableHead>
+                <TableHead>{t('minhasTarefas.columns.item')}</TableHead>
+                <TableHead>{t('minhasTarefas.columns.source')}</TableHead>
+                <TableHead>{t('minhasTarefas.columns.priority')}</TableHead>
+                <TableHead>{t('minhasTarefas.columns.dueDate')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.map((t) => (
-                <TableRow key={t.id} className="cursor-pointer" onClick={() => navigate(t.href)}>
-                  <TableCell className="font-medium">
-                    <div className="flex items-center gap-2">
-                      <Badge variant={t.origem === 'plano' ? 'outline' : 'secondary'} className="shrink-0">
-                        {t.origem === 'plano' ? 'Plano de Ação' : 'Projeto'}
-                      </Badge>
-                      <span>{t.titulo}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{t.origemLabel}</TableCell>
-                  <TableCell>
-                    <StatusBadge tone={prioridadeTone[t.prioridade]} size="sm">{PRIORIDADE_LABEL[t.prioridade]}</StatusBadge>
-                  </TableCell>
-                  <TableCell>{t.prazo ? new Date(t.prazo).toLocaleDateString('pt-BR') : '—'}</TableCell>
-                </TableRow>
-              ))}
+              {rows.map((row) => {
+                const originBadge = row.origem === 'plano'
+                  ? t('minhasTarefas.source.actionPlan')
+                  : t('minhasTarefas.source.project');
+                const originRef = row.origemRef
+                  ? (row.origem === 'plano' ? `${t('minhasTarefas.source.planPrefix')} · ${row.origemRef}` : row.origemRef)
+                  : originBadge;
+                return (
+                  <TableRow key={row.id} className="cursor-pointer" onClick={() => navigate(row.href)}>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        <Badge variant={row.origem === 'plano' ? 'outline' : 'secondary'} className="shrink-0">
+                          {originBadge}
+                        </Badge>
+                        <span>{row.titulo}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{originRef}</TableCell>
+                    <TableCell>
+                      <StatusBadge tone={prioridadeTone[row.prioridade]} size="sm">
+                        {t(`minhasTarefas.priority.${row.prioridade}`)}
+                      </StatusBadge>
+                    </TableCell>
+                    <TableCell>{row.prazo ? formatDate(row.prazo, locale) : '—'}</TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </div>
@@ -158,15 +175,15 @@ export default function MinhasTarefas() {
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div>
-        <h1 className="text-3xl font-semibold tracking-tight">Minhas pendências</h1>
-        <p className="text-sm text-muted-foreground mt-1">Tudo atribuído a você — tarefas de projetos e planos de ação — organizado por urgência.</p>
+        <h1 className="text-3xl font-semibold tracking-tight">{t('minhasTarefas.title')}</h1>
+        <p className="text-sm text-muted-foreground mt-1">{t('minhasTarefas.subtitle')}</p>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard title="Atrasadas" value={buckets.atrasadas.length} icon={<AlertTriangle />} variant="destructive" />
-        <StatCard title="Hoje" value={buckets.hoje.length} icon={<Clock />} variant="warning" />
-        <StatCard title="Esta semana" value={buckets.semana.length} icon={<ListTodo />} variant="info" />
-        <StatCard title="Concluídas" value={buckets.concluidas.length} icon={<CheckCircle2 />} variant="success" />
+        <StatCard title={t('minhasTarefas.stats.overdue')} value={buckets.atrasadas.length} icon={<AlertTriangle />} variant="destructive" />
+        <StatCard title={t('minhasTarefas.stats.today')} value={buckets.hoje.length} icon={<Clock />} variant="warning" />
+        <StatCard title={t('minhasTarefas.stats.thisWeek')} value={buckets.semana.length} icon={<ListTodo />} variant="info" />
+        <StatCard title={t('minhasTarefas.stats.done')} value={buckets.concluidas.length} icon={<CheckCircle2 />} variant="success" />
       </div>
 
       {isLoading ? (
@@ -175,19 +192,20 @@ export default function MinhasTarefas() {
         <EmptyState
           variant="illustrated"
           icon={<ListTodo className="h-8 w-8" />}
-          title="Nenhuma pendência atribuída"
-          description="Quando um projeto te atribuir uma tarefa ou um plano de ação for direcionado a você, aparece aqui."
+          title={t('minhasTarefas.empty.title')}
+          description={t('minhasTarefas.empty.description')}
         />
       ) : (
         <div className="space-y-6">
-          {renderGrupo('Atrasadas', buckets.atrasadas, 'destructive')}
-          {renderGrupo('Hoje', buckets.hoje, 'warning')}
-          {renderGrupo('Esta semana', buckets.semana, 'info')}
-          {renderGrupo('Depois', buckets.depois, 'neutral')}
-          {renderGrupo('Sem prazo', buckets.sem, 'neutral')}
-          {renderGrupo('Concluídas', buckets.concluidas, 'success')}
+          {renderGrupo(t('minhasTarefas.groups.overdue'), buckets.atrasadas, 'destructive')}
+          {renderGrupo(t('minhasTarefas.groups.today'), buckets.hoje, 'warning')}
+          {renderGrupo(t('minhasTarefas.groups.thisWeek'), buckets.semana, 'info')}
+          {renderGrupo(t('minhasTarefas.groups.later'), buckets.depois, 'neutral')}
+          {renderGrupo(t('minhasTarefas.groups.noDueDate'), buckets.sem, 'neutral')}
+          {renderGrupo(t('minhasTarefas.groups.done'), buckets.concluidas, 'success')}
         </div>
       )}
     </div>
   );
 }
+

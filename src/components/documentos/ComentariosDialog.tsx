@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 interface Documento {
@@ -33,6 +34,7 @@ interface ComentariosDialogProps {
 }
 
 export function ComentariosDialog({ open, onOpenChange, documento }: ComentariosDialogProps) {
+  const { t } = useLanguage();
   const [comentarios, setComentarios] = useState<Comentario[]>([]);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
@@ -99,8 +101,8 @@ export function ComentariosDialog({ open, onOpenChange, documento }: Comentarios
     } catch (error) {
       console.error('Erro ao buscar comentários:', error);
       toast({
-        title: "Erro ao carregar comentários",
-        description: "Tente novamente em alguns instantes.",
+        title: t('documentos.dialogs.erroCarregarComentarios'),
+        description: t('documentos.dialogs.tenteNovamente'),
         variant: "destructive",
       });
     } finally {
@@ -113,8 +115,8 @@ export function ComentariosDialog({ open, onOpenChange, documento }: Comentarios
     
     if (!novoComentario.trim()) {
       toast({
-        title: "Comentário vazio",
-        description: "Por favor, digite um comentário.",
+        title: t('documentos.dialogs.comentarioVazioTitulo'),
+        description: t('documentos.dialogs.comentarioVazioDescricao'),
         variant: "destructive",
       });
       return;
@@ -137,8 +139,8 @@ export function ComentariosDialog({ open, onOpenChange, documento }: Comentarios
       if (error) throw error;
 
       toast({
-        title: "Comentário adicionado",
-        description: "Seu comentário foi adicionado com sucesso.",
+        title: t('documentos.dialogs.comentarioAdicionadoTitulo'),
+        description: t('documentos.dialogs.comentarioAdicionadoDescricao'),
       });
 
       setNovoComentario('');
@@ -146,8 +148,8 @@ export function ComentariosDialog({ open, onOpenChange, documento }: Comentarios
     } catch (error) {
       console.error('Erro ao adicionar comentário:', error);
       toast({
-        title: "Erro ao adicionar comentário",
-        description: error instanceof Error ? error.message : "Tente novamente em alguns instantes.",
+        title: t('documentos.dialogs.erroAdicionarComentario'),
+        description: error instanceof Error ? error.message : t('documentos.dialogs.tenteNovamente'),
         variant: "destructive",
       });
     } finally {
@@ -165,16 +167,16 @@ export function ComentariosDialog({ open, onOpenChange, documento }: Comentarios
       if (error) throw error;
 
       toast({
-        title: "Comentário removido",
-        description: "O comentário foi removido com sucesso.",
+        title: t('documentos.dialogs.comentarioRemovidoTitulo'),
+        description: t('documentos.dialogs.comentarioRemovidoDescricao'),
       });
 
       fetchComentarios();
     } catch (error) {
       console.error('Erro ao remover comentário:', error);
       toast({
-        title: "Erro ao remover comentário",
-        description: "Tente novamente em alguns instantes.",
+        title: t('documentos.dialogs.erroRemoverComentario'),
+        description: t('documentos.dialogs.tenteNovamente'),
         variant: "destructive",
       });
     } finally {
@@ -197,8 +199,8 @@ export function ComentariosDialog({ open, onOpenChange, documento }: Comentarios
       open={open}
       onOpenChange={onOpenChange}
       icon={MessageSquare}
-      title="Comentários do Documento"
-      description={`Comentários sobre o documento "${documento.nome}".`}
+      title={t('documentos.dialogs.comentariosDocumentoTitulo')}
+      description={t('documentos.dialogs.comentariosDocumentoDescricao', { nome: documento.nome })}
       size="md"
       hideFooter
     >
@@ -213,8 +215,8 @@ export function ComentariosDialog({ open, onOpenChange, documento }: Comentarios
               <Card>
                 <CardContent className="flex flex-col items-center justify-center h-32">
                   <MessageSquare className="h-12 w-12 text-muted-foreground mb-2" />
-                  <p className="text-muted-foreground">Nenhum comentário ainda</p>
-                  <p className="text-sm text-muted-foreground">Seja o primeiro a comentar</p>
+                  <p className="text-muted-foreground">{t('documentos.dialogs.nenhumComentario')}</p>
+                  <p className="text-sm text-muted-foreground">{t('documentos.dialogs.sejaOPrimeiro')}</p>
                 </CardContent>
               </Card>
             ) : (
@@ -261,7 +263,7 @@ export function ComentariosDialog({ open, onOpenChange, documento }: Comentarios
               <Textarea
                 value={novoComentario}
                 onChange={(e) => setNovoComentario(e.target.value)}
-                placeholder="Digite seu comentário..."
+                placeholder={t('documentos.dialogs.placeholderComentario')}
                 rows={3}
                 className="resize-none"
               />
@@ -271,12 +273,12 @@ export function ComentariosDialog({ open, onOpenChange, documento }: Comentarios
                 {sending ? (
                   <>
                     <AkurisPulse size={16} className="mr-2" />
-                    Enviando...
+                    {t('documentos.dialogs.enviando')}
                   </>
                 ) : (
                   <>
                     <Send className="h-4 w-4 mr-2" />
-                    Comentar
+                    {t('documentos.dialogs.comentar')}
                   </>
                 )}
               </Button>
@@ -288,10 +290,10 @@ export function ComentariosDialog({ open, onOpenChange, documento }: Comentarios
     <ConfirmDialog
       open={deleteConfirm.open}
       onOpenChange={(open) => setDeleteConfirm(prev => ({ ...prev, open }))}
-      title="Excluir Comentário"
-      description="Tem certeza que deseja excluir este comentário? Esta ação não pode ser desfeita."
-      confirmText="Excluir"
-      cancelText="Cancelar"
+      title={t('documentos.dialogs.excluirComentarioTitulo')}
+      description={t('documentos.dialogs.excluirComentarioDescricao')}
+      confirmText={t('documentos.lista.excluir')}
+      cancelText={t('documentos.dialogs.cancelar')}
       variant="destructive"
       onConfirm={handleDelete}
     />

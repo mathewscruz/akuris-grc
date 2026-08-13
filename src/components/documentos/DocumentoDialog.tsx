@@ -22,6 +22,7 @@ import { WizardSummaryCard, WizardSummaryRow } from '@/components/ui/wizard-summ
 import { FieldHelpTooltip } from '@/components/ui/field-help-tooltip';
 import { logger } from '@/lib/logger';
 import { formatStatus } from '@/lib/text-utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Documento {
   id: string; nome: string; descricao?: string; tipo: string; classificacao?: string;
@@ -46,6 +47,7 @@ interface DocumentoDialogProps {
 }
 
 export function DocumentoDialog({ open, onOpenChange, documento, onSuccess, initialFile, initialData, originSource }: DocumentoDialogProps) {
+  const { t } = useLanguage();
   const isDocGenFlow = originSource === 'docgen';
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -125,7 +127,7 @@ export function DocumentoDialog({ open, onOpenChange, documento, onSuccess, init
   const handleSubmit = async () => {
     if (!formData.nome.trim()) {
       setActiveTab('identificacao');
-      toast({ title: "Nome obrigatório", description: "Informe o nome do documento.", variant: "destructive" });
+      toast({ title: t('documentos.dialogs.nomeObrigatorio'), description: t('documentos.dialogs.nomeObrigatorioDescricao'), variant: "destructive" });
       return;
     }
 
@@ -180,15 +182,15 @@ export function DocumentoDialog({ open, onOpenChange, documento, onSuccess, init
       if (error) throw error;
 
       if (!isDocGenFlow) {
-        toast({ title: documento ? "Documento atualizado" : "Documento criado" });
+        toast({ title: documento ? t('documentos.dialogs.documentoAtualizado') : t('documentos.dialogs.documentoCriado') });
       }
       onSuccess();
       onOpenChange(false);
     } catch (error) {
       logger.error('Erro ao salvar documento:', error);
       toast({
-        title: "Erro ao salvar",
-        description: error instanceof Error ? error.message : "Tente novamente.",
+        title: t('documentos.dialogs.erroAoSalvar'),
+        description: error instanceof Error ? error.message : t('documentos.dialogs.tenteNovamenteGeral'),
         variant: "destructive",
       });
     } finally { setLoading(false); setUploading(false); }
@@ -209,80 +211,80 @@ export function DocumentoDialog({ open, onOpenChange, documento, onSuccess, init
 
   const tabs: WizardTab[] = useMemo(() => [
     {
-      id: 'identificacao', label: 'Identificação', icon: FileText, state: identState, hint: 'Nome, tipo, descrição',
+      id: 'identificacao', label: t('documentos.dialogs.identificacao'), icon: FileText, state: identState, hint: t('documentos.dialogs.identificacaoHint'),
       content: (
         <div className="space-y-5 max-w-3xl">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="flex items-center gap-1">
-                Nome <span className="text-destructive">*</span>
+                {t('documentos.dialogs.nomeCampo')} <span className="text-destructive">*</span>
                 <FieldHelpTooltip content="Nome descritivo do documento." />
               </Label>
-              <Input value={formData.nome} onChange={(e) => update({ nome: e.target.value })} placeholder="Nome do documento" />
+              <Input value={formData.nome} onChange={(e) => update({ nome: e.target.value })} placeholder={t('documentos.dialogs.placeholderNome')} />
             </div>
             <div className="space-y-2">
-              <Label>Tipo <span className="text-destructive">*</span></Label>
+              <Label>{t('documentos.dialogs.tipoObrigatorio')}</Label>
               <Select value={formData.tipo} onValueChange={(v) => update({ tipo: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="documento">Documento</SelectItem>
-                  <SelectItem value="politica">Política</SelectItem>
-                  <SelectItem value="procedimento">Procedimento</SelectItem>
-                  <SelectItem value="instrucao">Instrução</SelectItem>
-                  <SelectItem value="formulario">Formulário</SelectItem>
-                  <SelectItem value="certificado">Certificado</SelectItem>
-                  <SelectItem value="contrato">Contrato</SelectItem>
-                  <SelectItem value="relatorio">Relatório</SelectItem>
+                  <SelectItem value="documento">{t('documentos.lista.documento')}</SelectItem>
+                  <SelectItem value="politica">{t('documentos.lista.politica')}</SelectItem>
+                  <SelectItem value="procedimento">{t('documentos.lista.procedimento')}</SelectItem>
+                  <SelectItem value="instrucao">{t('documentos.lista.instrucao')}</SelectItem>
+                  <SelectItem value="formulario">{t('documentos.lista.formulario')}</SelectItem>
+                  <SelectItem value="certificado">{t('documentos.lista.certificado')}</SelectItem>
+                  <SelectItem value="contrato">{t('documentos.lista.contrato')}</SelectItem>
+                  <SelectItem value="relatorio">{t('documentos.lista.relatorio')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Descrição</Label>
+            <Label>{t('documentos.dialogs.descricao')}</Label>
             <Textarea value={formData.descricao} onChange={(e) => update({ descricao: e.target.value })} rows={4} />
           </div>
         </div>
       ),
     },
     {
-      id: 'classificacao', label: 'Classificação & Status', icon: Settings2, state: classifState, hint: 'Confidencialidade e status',
+      id: 'classificacao', label: t('documentos.dialogs.classificacaoEStatus'), icon: Settings2, state: classifState, hint: t('documentos.dialogs.classificacaoEStatusHint'),
       content: (
         <div className="space-y-5 max-w-3xl">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="flex items-center gap-1">
-                Classificação <span className="text-destructive">*</span>
+                {t('documentos.dialogs.classificacaoObrigatorio')} <span className="text-destructive">*</span>
                 <FieldHelpTooltip content="Define quem pode visualizar o documento." />
               </Label>
               <Select value={formData.classificacao} onValueChange={(v) => update({ classificacao: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="publica">Pública</SelectItem>
-                  <SelectItem value="interna">Interna</SelectItem>
-                  <SelectItem value="restrita">Restrita</SelectItem>
-                  <SelectItem value="confidencial">Confidencial</SelectItem>
+                  <SelectItem value="publica">{t('documentos.lista.publica')}</SelectItem>
+                  <SelectItem value="interna">{t('documentos.lista.interna')}</SelectItem>
+                  <SelectItem value="restrita">{t('documentos.lista.restrita')}</SelectItem>
+                  <SelectItem value="confidencial">{t('documentos.lista.confidencial')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Status</Label>
+              <Label>{t('documentos.lista.status')}</Label>
               <Select value={formData.status} onValueChange={(v) => update({ status: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ativo">Ativo</SelectItem>
-                  <SelectItem value="inativo">Inativo</SelectItem>
-                  <SelectItem value="arquivado">Arquivado</SelectItem>
+                  <SelectItem value="ativo">{t('documentos.lista.ativo')}</SelectItem>
+                  <SelectItem value="inativo">{t('documentos.lista.inativo')}</SelectItem>
+                  <SelectItem value="arquivado">{t('documentos.lista.arquivado')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Data de Vencimento</Label>
+            <Label>{t('documentos.dialogs.dataVencimento')}</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !formData.data_vencimento && "text-muted-foreground")}>
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {formData.data_vencimento ? format(formData.data_vencimento, "dd/MM/yyyy", { locale: ptBR }) : <span>Selecione uma data</span>}
+                  {formData.data_vencimento ? format(formData.data_vencimento, "dd/MM/yyyy", { locale: ptBR }) : <span>{t('documentos.dialogs.selecioneData')}</span>}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0">
@@ -293,10 +295,10 @@ export function DocumentoDialog({ open, onOpenChange, documento, onSuccess, init
           <div className="flex items-start justify-between gap-4 rounded-lg border p-4">
             <div className="space-y-1">
               <Label className="flex items-center gap-1">
-                Requer Aprovação
+                {t('documentos.dialogs.requerAprovacao')}
                 <FieldHelpTooltip content="Documento entrará em status pendente até ser aprovado." />
               </Label>
-              <p className="text-xs text-muted-foreground">Se habilitado, o documento ficará pendente até aprovação.</p>
+              <p className="text-xs text-muted-foreground">{t('documentos.dialogs.requerAprovacaoDica')}</p>
             </div>
             <Switch
               checked={formData.requer_aprovacao}
@@ -307,11 +309,11 @@ export function DocumentoDialog({ open, onOpenChange, documento, onSuccess, init
       ),
     },
     {
-      id: 'tags', label: 'Tags', icon: Tag, state: tagsState, hint: 'Palavras-chave',
+      id: 'tags', label: t('documentos.dialogs.tags'), icon: Tag, state: tagsState, hint: t('documentos.dialogs.tagsHint'),
       content: (
         <div className="space-y-4 max-w-2xl">
           <Label className="flex items-center gap-1">
-            Tags
+            {t('documentos.dialogs.tags')}
             <FieldHelpTooltip content="Use tags para organizar e buscar documentos." />
           </Label>
           <div className="flex flex-wrap gap-2">
@@ -322,29 +324,29 @@ export function DocumentoDialog({ open, onOpenChange, documento, onSuccess, init
               </Badge>
             ))}
             {formData.tags.length === 0 && (
-              <span className="text-xs text-muted-foreground italic">Nenhuma tag adicionada</span>
+              <span className="text-xs text-muted-foreground italic">{t('documentos.dialogs.nenhumaTag')}</span>
             )}
           </div>
           <div className="flex gap-2">
             <Input
               value={newTag}
               onChange={(e) => setNewTag(e.target.value)}
-              placeholder="Adicionar tag e pressionar Enter"
+              placeholder={t('documentos.dialogs.placeholderAdicionarTag')}
               onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
             />
-            <Button type="button" variant="outline" onClick={handleAddTag}>Adicionar</Button>
+            <Button type="button" variant="outline" onClick={handleAddTag}>{t('documentos.dialogs.adicionar')}</Button>
           </div>
         </div>
       ),
     },
     {
-      id: 'anexo', label: 'Anexo', icon: Paperclip, state: anexoState, hint: 'Arquivo ou URL',
+      id: 'anexo', label: t('documentos.dialogs.anexo'), icon: Paperclip, state: anexoState, hint: t('documentos.dialogs.anexoHint'),
       content: (
         <div className="space-y-4 max-w-3xl">
           <Tabs value={arquivoModo} onValueChange={(v) => setArquivoModo(v as 'upload' | 'url')}>
             <TabsList>
               <TabsTrigger value="upload"><Upload className="h-4 w-4 mr-2" />Upload</TabsTrigger>
-              <TabsTrigger value="url"><Link2 className="h-4 w-4 mr-2" />URL Externa</TabsTrigger>
+              <TabsTrigger value="url"><Link2 className="h-4 w-4 mr-2" />{t('documentos.dialogs.urlExterna')}</TabsTrigger>
             </TabsList>
             <TabsContent value="upload" className="space-y-2 mt-3">
               {documento?.arquivo_nome && !selectedFile && (
@@ -358,7 +360,7 @@ export function DocumentoDialog({ open, onOpenChange, documento, onSuccess, init
                 accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.jpg,.jpeg,.png" />
               <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} className="w-full">
                 <Upload className="h-4 w-4 mr-2" />
-                {selectedFile ? 'Trocar Arquivo' : documento ? 'Atualizar Arquivo' : 'Selecionar Arquivo'}
+                {selectedFile ? t('documentos.dialogs.trocarArquivo') : documento ? t('documentos.dialogs.atualizarArquivo') : t('documentos.dialogs.selecionarArquivo')}
               </Button>
               {selectedFile && (
                 <div className="flex items-center gap-2 p-2 border rounded bg-muted">
@@ -373,9 +375,9 @@ export function DocumentoDialog({ open, onOpenChange, documento, onSuccess, init
             </TabsContent>
             <TabsContent value="url" className="space-y-2 mt-3">
               <Input type="url" value={arquivoUrlExterna} onChange={(e) => setArquivoUrlExterna(e.target.value)}
-                placeholder="https://drive.google.com/... ou https://sharepoint.com/..." />
+                placeholder={t('documentos.dialogs.placeholderUrlExterna')} />
               <p className="text-xs text-muted-foreground">
-                Cole o link público ou compartilhado (Google Drive, SharePoint, OneDrive, Dropbox, etc.)
+                {t('documentos.dialogs.colePublico')}
               </p>
             </TabsContent>
           </Tabs>
@@ -385,17 +387,17 @@ export function DocumentoDialog({ open, onOpenChange, documento, onSuccess, init
   ], [formData, arquivoModo, arquivoUrlExterna, selectedFile, documento, newTag, identState, classifState, tagsState, anexoState]);
 
   const summary = (
-    <WizardSummaryCard title="Resumo do Documento">
-      <WizardSummaryRow label="Nome" value={formData.nome || <span className="text-muted-foreground italic">Sem nome</span>} highlight />
-      <WizardSummaryRow label="Tipo" value={<span>{formatStatus(formData.tipo)}</span>} />
+    <WizardSummaryCard title={t('documentos.dialogs.resumoDocumento')}>
+      <WizardSummaryRow label={t('documentos.dialogs.nomeCampo')} value={formData.nome || <span className="text-muted-foreground italic">{t('documentos.dialogs.semNome')}</span>} highlight />
+      <WizardSummaryRow label={t('documentos.dialogs.tipoObrigatorio')} value={<span>{formatStatus(formData.tipo)}</span>} />
       <WizardSummaryRow
-        label="Classificação"
+        label={t('documentos.dialogs.classificacaoObrigatorio')}
         value={<StatusBadge size="sm" {...resolveClassificacaoTone(formData.classificacao)}>{formatStatus(formData.classificacao)}</StatusBadge>}
       />
-      <WizardSummaryRow label="Tags" value={formData.tags.length} />
+      <WizardSummaryRow label={t('documentos.dialogs.tags')} value={formData.tags.length} />
       <WizardSummaryRow
-        label="Anexo"
-        value={selectedFile?.name || arquivoUrlExterna || documento?.arquivo_nome || <span className="text-muted-foreground italic">Sem anexo</span>}
+        label={t('documentos.dialogs.anexo')}
+        value={selectedFile?.name || arquivoUrlExterna || documento?.arquivo_nome || <span className="text-muted-foreground italic">{t('documentos.dialogs.semAnexo')}</span>}
       />
     </WizardSummaryCard>
   );
@@ -406,13 +408,13 @@ export function DocumentoDialog({ open, onOpenChange, documento, onSuccess, init
       onOpenChange={onOpenChange}
       title={
         isDocGenFlow
-          ? 'Confirmar dados antes de incorporar'
-          : documento ? 'Editar Documento' : 'Novo Documento'
+          ? t('documentos.dialogs.confirmarDadosIncorporar')
+          : documento ? t('documentos.dialogs.editarDocumento') : t('documentos.dialogs.novoDocumentoTitulo')
       }
       description={
         isDocGenFlow
-          ? 'Passo 2 de 2 · O conteúdo gerado pela IA já está anexado. Revise os metadados e confirme a incorporação ao módulo Documentos.'
-          : documento ? 'Atualize informações e anexo do documento.' : 'Adicione um novo documento ao sistema.'
+          ? t('documentos.dialogs.passoDocGen')
+          : documento ? t('documentos.dialogs.atualizeInformacoes') : t('documentos.dialogs.adicioneNovoDocumento')
       }
       icon={FileText}
       tabs={tabs}
@@ -422,8 +424,8 @@ export function DocumentoDialog({ open, onOpenChange, documento, onSuccess, init
       onSubmit={handleSubmit}
       submitLabel={
         isDocGenFlow
-          ? 'Incorporar documento'
-          : documento ? 'Atualizar' : 'Criar'
+          ? t('documentos.dialogs.incorporarDocumento')
+          : documento ? t('documentos.dialogs.atualizar') : t('documentos.dialogs.criar')
       }
       isSubmitting={loading || uploading}
       submitDisabled={!formData.nome.trim() || loading}

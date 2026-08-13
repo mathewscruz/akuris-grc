@@ -312,8 +312,8 @@ export default function Documentos() {
       if (error) throw error;
 
       toast({
-        title: "Documento excluído",
-        description: "O documento foi excluído com sucesso.",
+        title: t('documentos.lista.documentoExcluidoTitulo'),
+        description: t('documentos.lista.documentoExcluidoDescricao'),
       });
 
       invalidateDocumentos();
@@ -321,8 +321,8 @@ export default function Documentos() {
     } catch (error) {
       logger.error('Erro ao excluir documento', { error: error instanceof Error ? error.message : String(error) });
       toast({
-        title: "Erro ao excluir documento",
-        description: "Tente novamente em alguns instantes.",
+        title: t('documentos.lista.erroExcluirTitulo'),
+        description: t('documentos.lista.erroExcluirDescricao'),
         variant: "destructive",
       });
     }
@@ -331,8 +331,8 @@ export default function Documentos() {
   const handleBuscaAvancada = (filtros: any) => {
     setFiltrosAvancados(filtros);
     toast({
-      title: "Filtros aplicados",
-      description: "Os filtros avançados foram aplicados com sucesso.",
+      title: t('documentos.lista.filtrosAplicadosToastTitulo'),
+      description: t('documentos.lista.filtrosAplicadosToastDescricao'),
     });
   };
 
@@ -343,13 +343,13 @@ export default function Documentos() {
     setSelectedTipo('all');
     setFiltrosAvancados(null);
     toast({
-      title: "Filtros limpos",
-      description: "Todos os filtros foram removidos.",
+      title: t('documentos.lista.filtrosLimposToastTitulo'),
+      description: t('documentos.lista.filtrosLimposToastDescricao'),
     });
   };
 
   const handleExportCSV = () => {
-    const headers = ["Nome", "Tipo", "Classificação", "Status", "Versão", "Validade", "Data Criação"];
+    const headers = [t('documentos.lista.nome'), t('documentos.lista.tipo'), t('documentos.lista.classificacao'), t('documentos.lista.status'), t('documentos.lista.versao'), t('documentos.lista.validade'), "Data Criação"];
     const rows = documentosFiltrados.map(doc => [
       doc.nome,
       doc.tipo,
@@ -371,8 +371,8 @@ export default function Documentos() {
     link.download = `documentos_${new Date().toISOString().split("T")[0]}.csv`;
     link.click();
     toast({
-      title: "Exportação concluída",
-      description: "O arquivo CSV foi baixado com sucesso.",
+      title: t('documentos.lista.exportacaoConcluidaTitulo'),
+      description: t('documentos.lista.exportacaoConcluidaDescricao'),
     });
   };
 
@@ -415,20 +415,20 @@ export default function Documentos() {
         {/* KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
-            title="Total de Documentos"
+            title={t('documentos.lista.totalDocumentos')}
             value={statsDocumentos?.total || 0}
-            description={`${statsDocumentos?.ativos || 0} ativos`}
+            description={t('documentos.lista.ativos', { count: statsDocumentos?.ativos || 0 })}
             icon={<FileText />}
             loading={!statsDocumentos}
             drillDown="documentos"
             showAccent
-            emptyHint="Cadastre políticas e procedimentos para começar."
+            emptyHint={t('documentos.lista.comeceCriando')}
           />
 
           <StatCard
-            title="Aprovados"
+            title={t('documentos.lista.aprovados')}
             value={statsDocumentos?.aprovados || 0}
-            description={`${statsDocumentos?.pendentesAprovacao || 0} pendentes`}
+            description={t('documentos.lista.pendentes', { count: statsDocumentos?.pendentesAprovacao || 0 })}
             icon={<CheckCircle />}
             variant="success"
             loading={!statsDocumentos}
@@ -436,9 +436,9 @@ export default function Documentos() {
           />
 
           <StatCard
-            title="Vencendo em 30 dias"
+            title={t('documentos.lista.vencendo30')}
             value={statsDocumentos?.vencendo30Dias || 0}
-            description={`${statsDocumentos?.vencidos || 0} já vencidos`}
+            description={t('documentos.lista.jaVencidos', { count: statsDocumentos?.vencidos || 0 })}
             icon={<Clock />}
             variant={statsDocumentos?.vencendo30Dias ? "warning" : "default"}
             loading={!statsDocumentos}
@@ -446,9 +446,9 @@ export default function Documentos() {
           />
 
           <StatCard
-            title="Confidenciais"
+            title={t('documentos.lista.confidenciais')}
             value={statsDocumentos?.confidenciais || 0}
-            description="Acesso restrito"
+            description={t('documentos.lista.acessoRestrito')}
             icon={<Shield />}
             variant="info"
             loading={!statsDocumentos}
@@ -464,7 +464,7 @@ export default function Documentos() {
                 <div className="relative flex-1 min-w-[200px] max-w-sm">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
-                    placeholder="Buscar documentos..."
+                    placeholder={t('documentos.lista.buscarDocumentos')}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-9"
@@ -477,7 +477,7 @@ export default function Documentos() {
                         <Download className="h-4 w-4" />
                       </Button>
                     </TooltipTrigger>
-                    <TooltipContent>Exportar CSV</TooltipContent>
+                    <TooltipContent>{t('documentos.lista.exportarCSV')}</TooltipContent>
                   </Tooltip>
                   <Button 
                     variant="outline" 
@@ -485,7 +485,7 @@ export default function Documentos() {
                     onClick={() => setUploadMultiplos(true)}
                   >
                     <Upload className="h-4 w-4 mr-2" />
-                    Upload
+                    {t('documentos.lista.upload')}
                   </Button>
                   <Button 
                     variant="outline" 
@@ -493,7 +493,7 @@ export default function Documentos() {
                     onClick={() => setCategoriasDialog(true)}
                   >
                     <FolderOpen className="h-4 w-4 mr-2" />
-                    Categorias
+                    {t('documentos.lista.categorias')}
                   </Button>
                   <Button 
                     variant="outline" 
@@ -501,7 +501,7 @@ export default function Documentos() {
                     onClick={() => setShowFilters(!showFilters)}
                   >
                     <Filter className="h-4 w-4 mr-2" />
-                    Filtros
+                    {t('documentos.lista.filtros')}
                     {showFilters && (
                       <span className="ml-1 text-xs text-muted-foreground">▲</span>
                     )}
@@ -512,7 +512,7 @@ export default function Documentos() {
                     onClick={() => setRelatoriosDialog(true)}
                   >
                     <TrendingUp className="h-4 w-4 mr-2" />
-                    Relatórios
+                    {t('documentos.lista.relatorios')}
                   </Button>
                   <Button 
                     size="sm"
@@ -520,14 +520,14 @@ export default function Documentos() {
                     className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
                   >
                     <AkurisAIIcon className="h-4 w-4 mr-2" />
-                    Gerador de Documentos (IA)
+                    {t('documentos.lista.geradorIA')}
                   </Button>
                   <Button 
                     size="sm"
                     onClick={() => setDocumentoDialog({ open: true })}
                   >
                     <Plus className="h-4 w-4 mr-2" />
-                    Novo
+                    {t('documentos.lista.novo')}
                   </Button>
                 </div>
               </div>
@@ -537,45 +537,45 @@ export default function Documentos() {
                 <div className="flex gap-4 items-center flex-wrap p-4 bg-muted/50 rounded-lg mb-4">
                   <Select value={selectedCategoria} onValueChange={setSelectedCategoria}>
                     <SelectTrigger className="w-48">
-                      <SelectValue placeholder="Classificação" />
+                      <SelectValue placeholder={t('documentos.lista.classificacao')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Todas as classificações</SelectItem>
-                      <SelectItem value="publica">Pública</SelectItem>
-                      <SelectItem value="interna">Interna</SelectItem>
-                      <SelectItem value="restrita">Restrita</SelectItem>
-                      <SelectItem value="confidencial">Confidencial</SelectItem>
+                      <SelectItem value="all">{t('documentos.lista.todasClassificacoes')}</SelectItem>
+                      <SelectItem value="publica">{t('documentos.lista.publica')}</SelectItem>
+                      <SelectItem value="interna">{t('documentos.lista.interna')}</SelectItem>
+                      <SelectItem value="restrita">{t('documentos.lista.restrita')}</SelectItem>
+                      <SelectItem value="confidencial">{t('documentos.lista.confidencial')}</SelectItem>
                     </SelectContent>
                   </Select>
                   
                   <Select value={selectedStatus} onValueChange={setSelectedStatus}>
                     <SelectTrigger className="w-32">
-                      <SelectValue placeholder="Status" />
+                      <SelectValue placeholder={t('documentos.lista.status')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
-                      <SelectItem value="ativo">Ativo</SelectItem>
-                      <SelectItem value="inativo">Inativo</SelectItem>
-                      <SelectItem value="arquivado">Arquivado</SelectItem>
-                      <SelectItem value="vencido">Vencido</SelectItem>
+                      <SelectItem value="all">{t('documentos.lista.todos')}</SelectItem>
+                      <SelectItem value="ativo">{t('documentos.lista.ativo')}</SelectItem>
+                      <SelectItem value="inativo">{t('documentos.lista.inativo')}</SelectItem>
+                      <SelectItem value="arquivado">{t('documentos.lista.arquivado')}</SelectItem>
+                      <SelectItem value="vencido">{t('documentos.lista.vencido')}</SelectItem>
                     </SelectContent>
                   </Select>
                   
                   <Select value={selectedTipo} onValueChange={setSelectedTipo}>
                     <SelectTrigger className="w-40">
-                      <SelectValue placeholder="Tipo" />
+                      <SelectValue placeholder={t('documentos.lista.tipo')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Todos os tipos</SelectItem>
-                      <SelectItem value="politica">Política</SelectItem>
-                      <SelectItem value="procedimento">Procedimento</SelectItem>
-                      <SelectItem value="instrucao">Instrução</SelectItem>
-                      <SelectItem value="formulario">Formulário</SelectItem>
-                      <SelectItem value="certificado">Certificado</SelectItem>
-                      <SelectItem value="contrato">Contrato</SelectItem>
-                      <SelectItem value="relatorio">Relatório</SelectItem>
-                      <SelectItem value="documento">Documento</SelectItem>
-                      <SelectItem value="manual">Manual</SelectItem>
+                      <SelectItem value="all">{t('documentos.lista.todosOsTipos')}</SelectItem>
+                      <SelectItem value="politica">{t('documentos.lista.politica')}</SelectItem>
+                      <SelectItem value="procedimento">{t('documentos.lista.procedimento')}</SelectItem>
+                      <SelectItem value="instrucao">{t('documentos.lista.instrucao')}</SelectItem>
+                      <SelectItem value="formulario">{t('documentos.lista.formulario')}</SelectItem>
+                      <SelectItem value="certificado">{t('documentos.lista.certificado')}</SelectItem>
+                      <SelectItem value="contrato">{t('documentos.lista.contrato')}</SelectItem>
+                      <SelectItem value="relatorio">{t('documentos.lista.relatorio')}</SelectItem>
+                      <SelectItem value="documento">{t('documentos.lista.documento')}</SelectItem>
+                      <SelectItem value="manual">{t('documentos.lista.manual')}</SelectItem>
                     </SelectContent>
                   </Select>
 
@@ -592,12 +592,12 @@ export default function Documentos() {
 
                   {(searchTerm || selectedCategoria !== 'all' || selectedStatus !== 'all' || selectedTipo !== 'all' || filtrosAvancados) && (
                     <Button variant="ghost" size="sm" onClick={limparFiltros}>
-                      Limpar
+                      {t('documentos.lista.limpar')}
                     </Button>
                   )}
                   <Button variant="ghost" size="sm" onClick={() => setBuscaAvancada(true)}>
                     <Search className="h-3 w-3 mr-1" />
-                    Busca Avançada
+                    {t('documentos.lista.buscaAvancada')}
                   </Button>
                 </div>
               )}
@@ -606,9 +606,9 @@ export default function Documentos() {
               {filtrosAvancados && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
                   <Filter className="h-4 w-4" />
-                  Filtros avançados aplicados
+                  {t('documentos.lista.filtrosAplicados')}
                   <Badge variant="secondary">
-                    {Object.keys(filtrosAvancados).length} filtro(s)
+                    {t('documentos.lista.filtrosCount', { count: Object.keys(filtrosAvancados).length })}
                   </Badge>
                 </div>
               )}
@@ -621,13 +621,13 @@ export default function Documentos() {
                 <EmptyState
                   icon={<FileText className="h-8 w-8" />}
                   title={temFiltrosAtivos
-                    ? 'Nenhum documento encontrado'
-                    : 'Nenhum documento cadastrado'}
+                    ? t('documentos.lista.nenhumEncontrado')
+                    : t('documentos.lista.nenhumCadastrado')}
                   description={temFiltrosAtivos
-                    ? 'Tente ajustar os filtros para encontrar o que procura.'
-                    : 'Comece criando documentos para gerenciar suas políticas e procedimentos.'}
+                    ? t('documentos.lista.ajusteFiltros')
+                    : t('documentos.lista.comeceCriando')}
                   action={!temFiltrosAtivos ? {
-                    label: 'Novo Documento',
+                    label: t('documentos.lista.novoDocumento'),
                     onClick: () => setDocumentoDialog({ open: true })
                   } : undefined}
                 />
@@ -647,7 +647,7 @@ export default function Documentos() {
             {totalPages > 1 && (
               <div className="flex items-center justify-between p-4 border-t">
                 <span className="text-sm text-muted-foreground">
-                  Mostrando {((currentPage - 1) * itemsPerPage) + 1} a {Math.min(currentPage * itemsPerPage, documentosFiltrados.length)} de {documentosFiltrados.length}
+                  {t('documentos.lista.mostrando', { inicio: ((currentPage - 1) * itemsPerPage) + 1, fim: Math.min(currentPage * itemsPerPage, documentosFiltrados.length), total: documentosFiltrados.length })}
                 </span>
                 <Pagination>
                   <PaginationContent>
@@ -778,9 +778,9 @@ export default function Documentos() {
         <ConfirmDialog
           open={deleteConfirm.open}
           onOpenChange={(open) => setDeleteConfirm(prev => ({ ...prev, open }))}
-          title="Excluir Documento"
-          description="Tem certeza que deseja excluir este documento? Esta ação não pode ser desfeita."
-          confirmText="Excluir"
+          title={t('documentos.lista.excluirDocumentoTitulo')}
+          description={t('documentos.lista.excluirDocumentoDescricao')}
+          confirmText={t('documentos.lista.excluir')}
           variant="destructive"
           onConfirm={confirmDeleteDocumento}
         />

@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface DocSection {
   nome: string;
@@ -33,6 +34,7 @@ const move = <T,>(arr: T[], from: number, to: number) => {
 };
 
 export const DocLayoutBuilder: React.FC<DocLayoutBuilderProps> = ({ value, onChange }) => {
+  const { t } = useLanguage();
   const setMeta = (k: string, v: any) => onChange({ ...value, metadados: { ...(value.metadados || {}), [k]: v } });
   const setSection = (idx: number, patch: Partial<DocSection>) => {
     const next = value.secoes.map((s, i) => (i === idx ? { ...s, ...patch } : s));
@@ -64,62 +66,62 @@ export const DocLayoutBuilder: React.FC<DocLayoutBuilderProps> = ({ value, onCha
       <Card>
         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium">Título</label>
+            <label className="text-sm font-medium">{t('documentosExtras.layoutBuilder.titulo')}</label>
             <Input value={value.titulo || ''} onChange={(e) => onChange({ ...value, titulo: e.target.value })} />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">Versão</label>
+            <label className="text-sm font-medium">{t('documentosExtras.layoutBuilder.versao')}</label>
             <Input value={value.versao || ''} onChange={(e) => onChange({ ...value, versao: e.target.value })} />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">Classificação</label>
+            <label className="text-sm font-medium">{t('documentosExtras.layoutBuilder.classificacao')}</label>
             <Select value={value.metadados?.classificacao || 'Interno'} onValueChange={(v) => setMeta('classificacao', v)}>
               <SelectTrigger>
-                <SelectValue placeholder="Selecione" />
+                <SelectValue placeholder={t('documentosExtras.layoutBuilder.selecione')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Público">Público</SelectItem>
-                <SelectItem value="Interno">Interno</SelectItem>
-                <SelectItem value="Confidencial">Confidencial</SelectItem>
+                <SelectItem value="Público">{t('documentosExtras.layoutBuilder.classificacaoPublico')}</SelectItem>
+                <SelectItem value="Interno">{t('documentosExtras.layoutBuilder.classificacaoInterno')}</SelectItem>
+                <SelectItem value="Confidencial">{t('documentosExtras.layoutBuilder.classificacaoConfidencial')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">Layout</label>
+            <label className="text-sm font-medium">{t('documentosExtras.layoutBuilder.layout')}</label>
             <Select value={value.metadados?.layout || 'classico'} onValueChange={(v) => setMeta('layout', v)}>
               <SelectTrigger>
-                <SelectValue placeholder="Layout" />
+                <SelectValue placeholder={t('documentosExtras.layoutBuilder.layout')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="classico">Clássico</SelectItem>
-                <SelectItem value="moderno">Moderno</SelectItem>
+                <SelectItem value="classico">{t('documentosExtras.layoutBuilder.layoutClassico')}</SelectItem>
+                <SelectItem value="moderno">{t('documentosExtras.layoutBuilder.layoutModerno')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">Posição do Logo</label>
+            <label className="text-sm font-medium">{t('documentosExtras.layoutBuilder.posicaoLogo')}</label>
             <Select value={value.metadados?.logo_posicao || 'esquerda'} onValueChange={(v) => setMeta('logo_posicao', v)}>
               <SelectTrigger>
-                <SelectValue placeholder="Posição" />
+                <SelectValue placeholder={t('documentosExtras.layoutBuilder.posicao')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="esquerda">Esquerda</SelectItem>
-                <SelectItem value="centro">Centro</SelectItem>
-                <SelectItem value="direita">Direita</SelectItem>
+                <SelectItem value="esquerda">{t('documentosExtras.layoutBuilder.posicaoEsquerda')}</SelectItem>
+                <SelectItem value="centro">{t('documentosExtras.layoutBuilder.posicaoCentro')}</SelectItem>
+                <SelectItem value="direita">{t('documentosExtras.layoutBuilder.posicaoDireita')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">Altura do Logo (px)</label>
+            <label className="text-sm font-medium">{t('documentosExtras.layoutBuilder.alturaLogo')}</label>
             <Input type="number" min={24} max={160} value={value.metadados?.logo_altura || 48} onChange={(e) => setMeta('logo_altura', e.target.value)} />
           </div>
         </CardContent>
       </Card>
 
       <div className="flex items-center justify-between">
-        <h4 className="font-semibold">Seções</h4>
+        <h4 className="font-semibold">{t('documentosExtras.layoutBuilder.secoes')}</h4>
         <Button size="sm" className="gap-1" onClick={addSection}>
-          <Plus className="h-4 w-4" /> Nova Seção
+          <Plus className="h-4 w-4" /> {t('documentosExtras.layoutBuilder.novaSecao')}
         </Button>
       </div>
 
@@ -134,13 +136,13 @@ export const DocLayoutBuilder: React.FC<DocLayoutBuilderProps> = ({ value, onCha
                     onChange={(e) => setSection(idx, { nome: e.target.value })}
                   />
                   <div className="ml-auto flex gap-1">
-                    <Button variant="outline" size="icon" onClick={() => moveUp(idx)} aria-label="Mover para cima">
+                    <Button variant="outline" size="icon" onClick={() => moveUp(idx)} aria-label={t('documentosExtras.layoutBuilder.moverParaCima')}>
                       <ArrowUp className="h-4 w-4" />
                     </Button>
-                    <Button variant="outline" size="icon" onClick={() => moveDown(idx)} aria-label="Mover para baixo">
+                    <Button variant="outline" size="icon" onClick={() => moveDown(idx)} aria-label={t('documentosExtras.layoutBuilder.moverParaBaixo')}>
                       <ArrowDown className="h-4 w-4" />
                     </Button>
-                    <Button variant="destructive" size="icon" onClick={() => removeSection(idx)} aria-label="Remover seção">
+                    <Button variant="destructive" size="icon" onClick={() => removeSection(idx)} aria-label={t('documentosExtras.layoutBuilder.removerSecao')}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
@@ -154,7 +156,7 @@ export const DocLayoutBuilder: React.FC<DocLayoutBuilderProps> = ({ value, onCha
             </Card>
           ))}
           {(!value.secoes || value.secoes.length === 0) && (
-            <p className="text-sm text-muted-foreground">Nenhuma seção adicionada ainda.</p>
+            <p className="text-sm text-muted-foreground">{t('documentosExtras.layoutBuilder.nenhumaSecao')}</p>
           )}
         </div>
       </ScrollArea>

@@ -18,6 +18,7 @@ import { WizardSummaryCard, WizardSummaryRow } from '@/components/ui/wizard-summ
 import { FieldHelpTooltip } from '@/components/ui/field-help-tooltip';
 import { useWizardDraft } from '@/hooks/useWizardDraft';
 import { formatStatus } from '@/lib/text-utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface PlanoAcaoDialogProps {
   open: boolean;
@@ -27,23 +28,27 @@ interface PlanoAcaoDialogProps {
   loading?: boolean;
 }
 
-const modulosOrigem = [
-  { value: 'manual', label: 'Manual' },
-  { value: 'riscos', label: 'Riscos' },
-  { value: 'controles', label: 'Controles' },
-  { value: 'frameworks', label: 'Frameworks' },
-  { value: 'incidentes', label: 'Incidentes' },
-  { value: 'auditorias', label: 'Auditorias' },
-  { value: 'contratos', label: 'Contratos' },
-  { value: 'documentos', label: 'Documentos' },
-  { value: 'dados', label: 'Privacidade' },
-  { value: 'due-diligence', label: 'Due Diligence' },
-  { value: 'denuncia', label: 'Denúncia' },
-  { value: 'ativos', label: 'Ativos' },
-  { value: 'contas-privilegiadas', label: 'Contas Privilegiadas' },
-];
+function buildModulosOrigem(t: (key: string) => string) {
+  return [
+    { value: 'manual', label: t('planosAcao.moduleManual') },
+    { value: 'riscos', label: t('planosAcao.moduleRiscos') },
+    { value: 'controles', label: t('planosAcao.moduleControles') },
+    { value: 'frameworks', label: t('planosAcao.moduleFrameworks') },
+    { value: 'incidentes', label: t('planosAcao.moduleIncidentes') },
+    { value: 'auditorias', label: t('planosAcao.moduleAuditorias') },
+    { value: 'contratos', label: t('planosAcao.moduleContratos') },
+    { value: 'documentos', label: t('planosAcao.moduleDocumentos') },
+    { value: 'dados', label: t('planosAcao.moduleDados') },
+    { value: 'due-diligence', label: t('planosAcao.moduleDueDiligence') },
+    { value: 'denuncia', label: t('planosAcao.moduleDenuncia') },
+    { value: 'ativos', label: t('planosAcao.moduleAtivos') },
+    { value: 'contas-privilegiadas', label: t('planosAcao.moduleContasPrivilegiadasOption') },
+  ];
+}
 
 export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading }: PlanoAcaoDialogProps) {
+  const { t } = useLanguage();
+  const modulosOrigem = useMemo(() => buildModulosOrigem(t), [t]);
   const [titulo, setTitulo] = useState('');
   const [descricao, setDescricao] = useState('');
   const [status, setStatus] = useState('pendente');
@@ -150,68 +155,68 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading }: 
     () => [
       {
         id: 'identificacao',
-        label: 'Identificação',
+        label: t('planosAcao.tabIdentification'),
         icon: ClipboardList,
         state: identState,
-        hint: 'Título e descrição',
+        hint: t('planosAcao.tabIdentificationHint'),
         content: (
           <div className="space-y-5 max-w-2xl">
             <div className="space-y-2">
               <Label className="flex items-center gap-1">
-                Título <span className="text-destructive">*</span>
-                <FieldHelpTooltip content="Descreva a ação de forma curta e acionável. Ex: 'Implementar MFA no Office 365'." />
+                {t('planosAcao.fieldTitle')} <span className="text-destructive">*</span>
+                <FieldHelpTooltip content={t('planosAcao.fieldTitleHelp')} />
               </Label>
-              <Input value={titulo} onChange={(e) => setTitulo(e.target.value)} placeholder="Descreva a ação necessária" />
+              <Input value={titulo} onChange={(e) => setTitulo(e.target.value)} placeholder={t('planosAcao.fieldTitlePlaceholder')} />
             </div>
             <div className="space-y-2">
-              <Label>Descrição</Label>
-              <Textarea value={descricao} onChange={(e) => setDescricao(e.target.value)} placeholder="Detalhes da ação, contexto e critérios de sucesso" rows={5} />
+              <Label>{t('planosAcao.fieldDescription')}</Label>
+              <Textarea value={descricao} onChange={(e) => setDescricao(e.target.value)} placeholder={t('planosAcao.fieldDescriptionPlaceholder')} rows={5} />
             </div>
             <div className="space-y-2">
-              <Label>Observações</Label>
-              <Textarea value={observacoes} onChange={(e) => setObservacoes(e.target.value)} placeholder="Notas adicionais" rows={3} />
+              <Label>{t('planosAcao.fieldObservations')}</Label>
+              <Textarea value={observacoes} onChange={(e) => setObservacoes(e.target.value)} placeholder={t('planosAcao.fieldObservationsPlaceholder')} rows={3} />
             </div>
           </div>
         ),
       },
       {
         id: 'planejamento',
-        label: 'Planejamento',
+        label: t('planosAcao.tabPlanning'),
         icon: Settings2,
         state: planejamentoState,
-        hint: 'Responsável, prazo e prioridade',
+        hint: t('planosAcao.tabPlanningHint'),
         content: (
           <div className="space-y-5 max-w-2xl">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="flex items-center gap-1">
-                  Prioridade
-                  <FieldHelpTooltip content="Classifique conforme a urgência e impacto." />
+                  {t('planosAcao.fieldPriority')}
+                  <FieldHelpTooltip content={t('planosAcao.fieldPriorityHelp')} />
                 </Label>
                 <Select value={prioridade} onValueChange={setPrioridade}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="baixa">Baixa</SelectItem>
-                    <SelectItem value="media">Média</SelectItem>
-                    <SelectItem value="alta">Alta</SelectItem>
-                    <SelectItem value="critica">Crítica</SelectItem>
+                    <SelectItem value="baixa">{t('planosAcao.priorityBaixa')}</SelectItem>
+                    <SelectItem value="media">{t('planosAcao.priorityMedia')}</SelectItem>
+                    <SelectItem value="alta">{t('planosAcao.priorityAlta')}</SelectItem>
+                    <SelectItem value="critica">{t('planosAcao.priorityCritica')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Status</Label>
+                <Label>{t('planosAcao.fieldStatus')}</Label>
                 <Select value={status} onValueChange={setStatus}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="pendente">Pendente</SelectItem>
-                    <SelectItem value="em_andamento">Em Andamento</SelectItem>
-                    <SelectItem value="concluido">Concluído</SelectItem>
-                    <SelectItem value="cancelado">Cancelado</SelectItem>
-                    <SelectItem value="atrasado">Atrasado</SelectItem>
+                    <SelectItem value="pendente">{t('planosAcao.statusPendente')}</SelectItem>
+                    <SelectItem value="em_andamento">{t('planosAcao.statusEmAndamento')}</SelectItem>
+                    <SelectItem value="concluido">{t('planosAcao.statusConcluido')}</SelectItem>
+                    <SelectItem value="cancelado">{t('planosAcao.statusCancelado')}</SelectItem>
+                    <SelectItem value="atrasado">{t('planosAcao.statusAtrasado')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -220,21 +225,21 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading }: 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="flex items-center gap-1">
-                  Responsável
-                  <FieldHelpTooltip content="Pessoa responsável pela execução desta ação." />
+                  {t('planosAcao.fieldResponsible')}
+                  <FieldHelpTooltip content={t('planosAcao.fieldResponsibleHelp')} />
                 </Label>
                 <UserSelect value={responsavelId} onValueChange={setResponsavelId} />
               </div>
               <div className="space-y-2">
                 <Label className="flex items-center gap-1">
-                  Prazo
-                  <FieldHelpTooltip content="Data limite para conclusão." />
+                  {t('planosAcao.fieldDeadline')}
+                  <FieldHelpTooltip content={t('planosAcao.fieldDeadlineHelp')} />
                 </Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button variant="outline" className={cn('w-full justify-start text-left font-normal', !prazo && 'text-muted-foreground')}>
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {prazo ? format(prazo, 'dd/MM/yyyy', { locale: ptBR }) : 'Selecionar data'}
+                      {prazo ? format(prazo, 'dd/MM/yyyy', { locale: ptBR }) : t('planosAcao.fieldDeadlinePlaceholder')}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
@@ -248,17 +253,17 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading }: 
       },
       {
         id: 'origem',
-        label: 'Origem',
+        label: t('planosAcao.tabOrigin'),
         icon: Link2,
         state: origemState,
-        hint: 'Módulo e referência',
+        hint: t('planosAcao.tabOriginHint'),
         content: (
           <div className="space-y-5 max-w-2xl">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="flex items-center gap-1">
-                  Módulo de Origem
-                  <FieldHelpTooltip content="De onde esta ação foi originada (risco, controle, auditoria, etc.). Use 'Manual' para ações criadas diretamente." />
+                  {t('planosAcao.fieldOriginModule')}
+                  <FieldHelpTooltip content={t('planosAcao.fieldOriginModuleHelp')} />
                 </Label>
                 <Select value={moduloOrigem} onValueChange={setModuloOrigem}>
                   <SelectTrigger>
@@ -275,11 +280,11 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading }: 
               </div>
               {moduloOrigem !== 'manual' && (
                 <div className="space-y-2">
-                  <Label>Referência (título do item)</Label>
+                  <Label>{t('planosAcao.fieldOriginReference')}</Label>
                   <Input
                     value={registroOrigemTitulo}
                     onChange={(e) => setRegistroOrigemTitulo(e.target.value)}
-                    placeholder="Ex: Risco de vazamento de dados"
+                    placeholder={t('planosAcao.fieldOriginReferencePlaceholder')}
                   />
                 </div>
               )}
@@ -288,45 +293,45 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading }: 
         ),
       },
     ],
-    [titulo, descricao, prioridade, status, responsavelId, prazo, moduloOrigem, registroOrigemTitulo, observacoes, identState, planejamentoState, origemState]
+    [titulo, descricao, prioridade, status, responsavelId, prazo, moduloOrigem, registroOrigemTitulo, observacoes, identState, planejamentoState, origemState, t, modulosOrigem]
   );
 
   const summary = (
-    <WizardSummaryCard title="Resumo do Plano">
-      <WizardSummaryRow label="Título" value={titulo || <span className="text-muted-foreground italic">Sem título</span>} highlight />
+    <WizardSummaryCard title={t('planosAcao.summaryTitle')}>
+      <WizardSummaryRow label={t('planosAcao.summaryLabelTitle')} value={titulo || <span className="text-muted-foreground italic">{t('planosAcao.summaryNoTitle')}</span>} highlight />
       <WizardSummaryRow
-        label="Prioridade"
+        label={t('planosAcao.summaryLabelPriority')}
         value={<StatusBadge size="sm" {...resolvePrioridadeTone(prioridade)}>{formatStatus(prioridade)}</StatusBadge>}
       />
-      <WizardSummaryRow label="Status" value={<span>{formatStatus(status)}</span>} />
+      <WizardSummaryRow label={t('planosAcao.summaryLabelStatus')} value={<span>{formatStatus(status)}</span>} />
       <WizardSummaryRow
-        label="Prazo"
-        value={prazo ? format(prazo, 'dd/MM/yyyy') : <span className="text-muted-foreground italic">—</span>}
+        label={t('planosAcao.summaryLabelDeadline')}
+        value={prazo ? format(prazo, 'dd/MM/yyyy') : <span className="text-muted-foreground italic">{t('planosAcao.summaryNoDeadline')}</span>}
       />
       <WizardSummaryRow
-        label="Origem"
+        label={t('planosAcao.summaryLabelOrigin')}
         value={modulosOrigem.find((m) => m.value === moduloOrigem)?.label}
       />
     </WizardSummaryCard>
   );
 
   const draftLabel = !plano && hasDraft && savedAt
-    ? `Rascunho salvo às ${new Date(savedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`
+    ? t('planosAcao.draftSavedAt', { time: new Date(savedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) })
     : undefined;
 
   return (
     <WizardDialog
       open={open}
       onOpenChange={onOpenChange}
-      title={plano ? 'Editar Plano de Ação' : 'Novo Plano de Ação'}
-      description="Defina identificação, planejamento e origem do plano."
+      title={plano ? t('planosAcao.dialogTitleEdit') : t('planosAcao.dialogTitleNew')}
+      description={t('planosAcao.dialogDescription')}
       icon={Target}
       tabs={tabs}
       summary={summary}
       activeTab={activeTab}
       onActiveTabChange={setActiveTab}
       onSubmit={handleSave}
-      submitLabel={plano ? 'Salvar' : 'Criar'}
+      submitLabel={plano ? t('planosAcao.submitLabelSave') : t('planosAcao.submitLabelCreate')}
       isSubmitting={loading}
       submitDisabled={!titulo.trim() || loading}
       isDirty={isDirty}

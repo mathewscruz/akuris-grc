@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { useLanguage } from '@/contexts/LanguageContext';
 interface Categoria {
   id: string;
   nome: string;
@@ -20,6 +21,7 @@ interface UploadMultiplosDialogProps {
 }
 
 export function UploadMultiplosDialog({ open, onOpenChange, onSuccess, categorias }: UploadMultiplosDialogProps) {
+  const { t } = useLanguage();
   const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const { toast } = useToast();
@@ -32,8 +34,8 @@ export function UploadMultiplosDialog({ open, onOpenChange, onSuccess, categoria
   const handleUpload = async () => {
     if (files.length === 0) {
       toast({
-        title: "Nenhum arquivo selecionado",
-        description: "Por favor, selecione pelo menos um arquivo.",
+        title: t('documentosExtras.uploadMultiplo.nenhumArquivoTitulo'),
+        description: t('documentosExtras.uploadMultiplo.nenhumArquivoDesc'),
         variant: "destructive",
       });
       return;
@@ -45,7 +47,7 @@ export function UploadMultiplosDialog({ open, onOpenChange, onSuccess, categoria
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Usuário não autenticado');
+      if (!user) throw new Error(t('documentosExtras.uploadMultiplo.usuarioNaoAutenticado'));
 
       const { data: profile } = await supabase
         .from('profiles')
@@ -53,7 +55,7 @@ export function UploadMultiplosDialog({ open, onOpenChange, onSuccess, categoria
         .eq('user_id', user.id)
         .single();
 
-      if (!profile?.empresa_id) throw new Error('Empresa não encontrada');
+      if (!profile?.empresa_id) throw new Error(t('documentosExtras.uploadMultiplo.empresaNaoEncontrada'));
 
       for (const file of files) {
         try {
@@ -99,24 +101,26 @@ export function UploadMultiplosDialog({ open, onOpenChange, onSuccess, categoria
 
       if (successCount > 0) {
         toast({
-          title: "Upload concluído",
-          description: `${successCount} arquivo(s) enviado(s) com sucesso.${errorCount > 0 ? ` ${errorCount} erro(s).` : ''}`,
+          title: t('documentosExtras.uploadMultiplo.uploadConcluidoTitulo'),
+          description: t('documentosExtras.uploadMultiplo.uploadConcluidoDesc')
+            .replace('{sucesso}', String(successCount))
+            .replace('{erros}', errorCount > 0 ? t('documentosExtras.uploadMultiplo.errosDesc').replace('{erros}', String(errorCount)) : ''),
         });
         onSuccess();
         onOpenChange(false);
         setFiles([]);
       } else {
         toast({
-          title: "Erro no upload",
-          description: "Nenhum arquivo foi enviado com sucesso.",
+          title: t('documentosExtras.uploadMultiplo.erroUploadTitulo'),
+          description: t('documentosExtras.uploadMultiplo.erroUploadDesc'),
           variant: "destructive",
         });
       }
     } catch (error) {
       logger.error('Erro geral no upload', { error: (error as Error)?.message, module: 'documentos' });
       toast({
-        title: "Erro no upload",
-        description: "Tente novamente em alguns instantes.",
+        title: t('documentosExtras.uploadMultiplo.erroUploadTitulo'),
+        description: t('documentosExtras.uploadMultiplo.erroUploadTenteNovamente'),
         variant: "destructive",
       });
     } finally {
@@ -140,22 +144,22 @@ export function UploadMultiplosDialog({ open, onOpenChange, onSuccess, categoria
       open={open}
       onOpenChange={onOpenChange}
       icon={Upload}
-      title="Upload Múltiplo de Documentos"
-      description='Selecione múltiplos arquivos para upload simultâneo. Os documentos serão criados com status "Rascunho".'
+      title={t('documentosExtras.uploadMultiplo.titulo')}
+      description={t('documentosExtras.uploadMultiplo.descricao')}
       size="md"
       footer={
         <div className="flex justify-end gap-2">
           <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
-            Cancelar
+            {t('documentosExtras.uploadMultiplo.cancelar')}
           </Button>
           <Button size="sm" onClick={handleUpload} disabled={uploading || files.length === 0}>
             {uploading ? (
               <>
                 <AkurisPulse size={16} className="mr-2" />
-                Enviando...
+                {t('documentosExtras.uploadMultiplo.enviando')}
               </>
             ) : (
-              `Enviar ${files.length} arquivo(s)`
+              t('documentosExtras.uploadMultiplo.enviarArquivos').replace('{qtd}', String(files.length))
             )}
           </Button>
         </div>
@@ -175,10 +179,10 @@ export function UploadMultiplosDialog({ open, onOpenChange, onSuccess, categoria
               <div className="border-2 border-dashed border-muted-foreground/30 rounded-lg p-8 text-center cursor-pointer hover:border-muted-foreground/50 transition-colors">
                 <Upload className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-lg font-medium text-foreground">
-                  Clique para selecionar arquivos
+                  {t('documentosExtras.uploadMultiplo.clickeSelecionar')}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  ou arraste e solte os arquivos aqui
+                  {t('documentosExtras.uploadMultiplo.arrasteSolte')}
                 </p>
               </div>
             </label>
@@ -186,7 +190,7 @@ export function UploadMultiplosDialog({ open, onOpenChange, onSuccess, categoria
 
           {files.length > 0 && (
             <div className="space-y-2">
-              <h3 className="font-medium">Arquivos selecionados ({files.length})</h3>
+              <h3 className="font-medium">{t('documentosExtras.uploadMultiplo.arquivosSelecionados').replace('{qtd}', String(files.length))}</h3>
               <div className="max-h-48 overflow-y-auto space-y-2">
                 {files.map((file, index) => (
                   <div key={index} className="flex items-center justify-between p-2 border rounded">

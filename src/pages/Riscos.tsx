@@ -386,16 +386,16 @@ export function Riscos() {
       if (error) throw error;
 
       toast({
-        title: "Sucesso",
-        description: "Risco excluído com sucesso!",
+        title: t('riscos.page.toast.successTitle'),
+        description: t('riscos.page.toast.deleteSuccess'),
       });
       setDeleteDialogOpen(false);
       setRiscoToDelete(null);
       invalidateRiscos();
     } catch (error: any) {
       toast({
-        title: "Erro",
-        description: "Erro ao excluir risco: " + error.message,
+        title: t('riscos.page.toast.errorTitle'),
+        description: t('riscos.page.toast.deleteError') + error.message,
         variant: "destructive",
       });
     }
@@ -463,7 +463,7 @@ export function Riscos() {
     if (!dataRevisao) return null;
     const dias = differenceInDays(new Date(dataRevisao), new Date());
     if (dias < 0) {
-      return <StatusBadge size="sm" {...resolveRevisaoTone(dias)}>Vencida</StatusBadge>;
+      return <StatusBadge size="sm" {...resolveRevisaoTone(dias)}>{t('riscos.page.overdue')}</StatusBadge>;
     }
     if (dias <= 7) {
       return <StatusBadge size="sm" {...resolveRevisaoTone(dias)}>{dias}d</StatusBadge>;
@@ -473,7 +473,7 @@ export function Riscos() {
 
   const getAprovacaoBadge = (status?: string) => {
     if (!status || status === 'nao_requerido') return null;
-    const labels: Record<string, string> = { aprovado: 'Aprovado', rejeitado: 'Rejeitado', pendente: 'Pendente' };
+    const labels: Record<string, string> = { aprovado: t('riscos.page.approval.approved'), rejeitado: t('riscos.page.approval.rejected'), pendente: t('riscos.page.approval.pending') };
     if (!labels[status]) return null;
     return <StatusBadge size="sm" {...resolveAprovacaoTone(status)}>{labels[status]}</StatusBadge>;
   };
@@ -484,7 +484,7 @@ export function Riscos() {
     return (
       <div className="flex flex-col items-center justify-center gap-3 py-24">
         <AkurisPulse size={48} />
-        <p className="text-sm text-muted-foreground">Carregando…</p>
+        <p className="text-sm text-muted-foreground">{t('riscos.page.loading')}</p>
       </div>
     );
   }
@@ -493,10 +493,10 @@ export function Riscos() {
     return (
       <Alert variant="destructive" role="alert" className="my-6">
         <AlertTriangle className="h-4 w-4" />
-        <AlertTitle>Não foi possível carregar os riscos</AlertTitle>
+        <AlertTitle>{t('riscos.page.loadError.title')}</AlertTitle>
         <AlertDescription className="space-y-3">
-          <p>{(riscosQueryError as Error)?.message || 'Falha ao consultar riscos e tratamentos.'}</p>
-          <Button variant="outline" size="sm" onClick={() => refetchRiscos()}>Tentar novamente</Button>
+          <p>{(riscosQueryError as Error)?.message || t('riscos.page.loadError.fallback')}</p>
+          <Button variant="outline" size="sm" onClick={() => refetchRiscos()}>{t('riscos.page.retry')}</Button>
         </AlertDescription>
       </Alert>
     );
@@ -511,7 +511,7 @@ export function Riscos() {
   }> = [
     {
       key: 'id',
-      label: 'ID',
+      label: t('riscos.page.columns.id'),
       className: 'w-[72px]',
       render: (_value: any, risco: Risco) => (
         <span className="font-mono text-[11px] text-muted-foreground">{shortRiskId(risco.id)}</span>
@@ -519,7 +519,7 @@ export function Riscos() {
     },
     {
       key: 'nome',
-      label: 'Risco',
+      label: t('riscos.page.columns.name'),
       sortable: true,
       render: (value: any, risco: Risco) => {
         const sev = severityFromNivel(risco.nivel_risco_residual || risco.nivel_risco_inicial);
@@ -543,19 +543,19 @@ export function Riscos() {
     },
     {
       key: 'categoria',
-      label: 'Categoria',
+      label: t('riscos.page.columns.category'),
       render: (value: any) => value ? <span className="text-xs text-foreground/85">{value.nome}</span> : <span className="text-xs text-muted-foreground">—</span>,
     },
     {
       key: 'nivel_risco_inicial',
-      label: 'Severidade',
+      label: t('riscos.page.columns.severity'),
       render: (value: string) => (
         <StatusBadge size="sm" {...resolveNivelRiscoTone(value)}>{formatStatus(value)}</StatusBadge>
       ),
     },
     {
       key: 'pi',
-      label: 'P × I',
+      label: t('riscos.page.columns.pi'),
       className: 'w-[70px]',
       render: (_v: any, r: Risco) => (
         <span className="font-mono tabular-nums text-xs text-muted-foreground">
@@ -565,7 +565,7 @@ export function Riscos() {
     },
     {
       key: 'exposicao',
-      label: 'Exposição',
+      label: t('riscos.page.columns.exposure'),
       sortable: true,
       className: 'w-[100px]',
       render: (_v: any, r: Risco) => {
@@ -581,7 +581,7 @@ export function Riscos() {
     },
     {
       key: 'trend',
-      label: 'Tend.',
+      label: t('riscos.page.columns.trend'),
       className: 'w-[60px]',
       render: (_v: any, r: Risco) => (
         <SparklineCell
@@ -594,7 +594,7 @@ export function Riscos() {
     },
     {
       key: 'status',
-      label: 'Status',
+      label: t('riscos.page.columns.status'),
       render: (value: string, risco: Risco) => {
         // AKURIS QA-065: "Tratado" sem tratamento concluído é exibido no status
         // coerente com a evidência; o dado gravado não é alterado.
@@ -608,7 +608,7 @@ export function Riscos() {
     },
     {
       key: 'responsavel',
-      label: 'Resp.',
+      label: t('riscos.page.columns.responsible'),
       render: (_value: string, risco: Risco) => {
         if (!risco.responsavel_nome) return <span className="text-xs text-muted-foreground">—</span>;
         const last = risco.responsavel_nome.split(' ').slice(-1)[0];
@@ -627,7 +627,7 @@ export function Riscos() {
     },
     {
       key: 'updated',
-      label: 'Atualizado',
+      label: t('riscos.page.columns.updated'),
       className: 'w-[96px]',
       render: (_v: any, r: Risco) => (
         <span className="text-[11px] text-muted-foreground">{relativeShort((r as any).updated_at || r.created_at)}</span>
@@ -635,13 +635,13 @@ export function Riscos() {
     },
     {
       key: 'sla',
-      label: 'SLA',
+      label: t('riscos.page.columns.sla'),
       className: 'w-[90px]',
       render: (_v: any, r: Risco) => <SlaCell dataProximaRevisao={r.data_proxima_revisao} />,
     },
     {
       key: 'actions',
-      label: 'Ações',
+      label: t('riscos.page.columns.actions'),
       className: 'w-[60px]',
       render: (value: any, risco: Risco) => (
         <DropdownMenu>
@@ -652,27 +652,27 @@ export function Riscos() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => handleEdit(risco)}>
-              <Edit className="mr-2 h-4 w-4" strokeWidth={1.5} /> Editar
+              <Edit className="mr-2 h-4 w-4" strokeWidth={1.5} /> {t('riscos.page.actions.edit')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => openTratamentosDialog(risco)}>
-              <Shield className="mr-2 h-4 w-4" strokeWidth={1.5} /> Tratamentos ({risco.tratamentos_count || 0})
+              <Shield className="mr-2 h-4 w-4" strokeWidth={1.5} /> {t('riscos.page.actions.treatments')} ({risco.tratamentos_count || 0})
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setAprovacaoRisco(risco)}>
-              <ShieldCheck className="mr-2 h-4 w-4" strokeWidth={1.5} /> Aprovação
+              <ShieldCheck className="mr-2 h-4 w-4" strokeWidth={1.5} /> {t('riscos.page.actions.approval')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setHistoricoRisco(risco)}>
-              <Clock className="mr-2 h-4 w-4" strokeWidth={1.5} /> Histórico Avaliações
+              <Clock className="mr-2 h-4 w-4" strokeWidth={1.5} /> {t('riscos.page.actions.evaluationHistory')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setAuditRisco(risco)}>
-              <History className="mr-2 h-4 w-4" strokeWidth={1.5} /> Trilha de Auditoria
+              <History className="mr-2 h-4 w-4" strokeWidth={1.5} /> {t('riscos.page.actions.auditTrail')}
             </DropdownMenuItem>
             <CriarTarefaMenuItem
               entidadeTipo="risco"
               entidadeId={risco.id}
-              tituloSugerido={`Tratar risco: ${risco.nome ?? ''}`}
+              tituloSugerido={`${t('riscos.page.actions.treatRiskPrefix')} ${risco.nome ?? ''}`}
             />
             <DropdownMenuItem onClick={() => openDeleteDialog(risco)} className="text-destructive focus:text-destructive">
-              <Trash2 className="mr-2 h-4 w-4" strokeWidth={1.5} /> Excluir
+              <Trash2 className="mr-2 h-4 w-4" strokeWidth={1.5} /> {t('riscos.page.actions.delete')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -683,44 +683,44 @@ export function Riscos() {
   const filters = [
     {
       key: 'status',
-      label: 'Status',
+      label: t('riscos.page.filters.status'),
       type: 'select' as const,
       options: [
-        { value: 'all', label: 'Todos' },
-        { value: 'identificado', label: 'Identificado' },
-        { value: 'analisado', label: 'Analisado' },
-        { value: 'em_tratamento', label: 'Em Tratamento' },
-        { value: 'tratado', label: 'Tratado' },
-        { value: 'monitorado', label: 'Monitorado' },
-        { value: 'aceito', label: 'Aceito' }
+        { value: 'all', label: t('riscos.page.filters.all') },
+        { value: 'identificado', label: t('riscos.page.status.identificado') },
+        { value: 'analisado', label: t('riscos.page.status.analisado') },
+        { value: 'em_tratamento', label: t('riscos.page.status.em_tratamento') },
+        { value: 'tratado', label: t('riscos.page.status.tratado') },
+        { value: 'monitorado', label: t('riscos.page.status.monitorado') },
+        { value: 'aceito', label: t('riscos.page.status.aceito') }
       ],
       value: statusFilter,
       onChange: (value: string) => setStatusFilter(value === 'all' ? '' : value)
     },
     {
       key: 'nivel',
-      label: 'Nível',
+      label: t('riscos.page.filters.level'),
       type: 'select' as const,
       options: [
-        { value: 'all', label: 'Todos' },
-        { value: 'Crítico', label: 'Crítico' },
-        { value: 'Muito Alto', label: 'Muito Alto' },
-        { value: 'Alto', label: 'Alto' },
-        { value: 'Médio', label: 'Médio' },
-        { value: 'Baixo', label: 'Baixo' },
-        { value: 'Muito Baixo', label: 'Muito Baixo' }
+        { value: 'all', label: t('riscos.page.filters.all') },
+        { value: 'Crítico', label: t('riscos.page.level.critico') },
+        { value: 'Muito Alto', label: t('riscos.page.level.muitoAlto') },
+        { value: 'Alto', label: t('riscos.page.level.alto') },
+        { value: 'Médio', label: t('riscos.page.level.medio') },
+        { value: 'Baixo', label: t('riscos.page.level.baixo') },
+        { value: 'Muito Baixo', label: t('riscos.page.level.muitoBaixo') }
       ],
       value: nivelFilter,
       onChange: (value: string) => setNivelFilter(value === 'all' ? '' : value)
     },
     {
       key: 'aceito',
-      label: 'Aceito',
+      label: t('riscos.page.filters.accepted'),
       type: 'select' as const,
       options: [
-        { value: 'all', label: 'Todos' },
-        { value: 'aceito', label: 'Aceitos' },
-        { value: 'nao_aceito', label: 'Não Aceitos' }
+        { value: 'all', label: t('riscos.page.filters.all') },
+        { value: 'aceito', label: t('riscos.page.filters.acceptedYes') },
+        { value: 'nao_aceito', label: t('riscos.page.filters.acceptedNo') }
       ],
       value: aceitoFilter,
       onChange: (value: string) => setAceitoFilter(value === 'all' ? '' : value)
@@ -748,11 +748,11 @@ export function Riscos() {
               <div className="flex flex-wrap gap-2">
                 <Button size="sm" variant="outline" onClick={() => setMatrizDialogOpen(true)}>
                   <Settings className="h-4 w-4 mr-2" strokeWidth={1.5} />
-                  Configurar Matriz
+                  {t('riscos.page.configMatrix')}
                 </Button>
                 {matrizConfigError && (
                   <Button size="sm" variant="ghost" onClick={() => refetchMatrizConfig()}>
-                    Tentar novamente
+                    {t('riscos.page.retry')}
                   </Button>
                 )}
               </div>
@@ -765,7 +765,7 @@ export function Riscos() {
           <div className="flex items-center gap-2 flex-wrap">
             {idsFilter.length > 0 && (
               <Badge variant="secondary" className="flex items-center gap-1 whitespace-nowrap">
-                Filtro da Matriz ({idsFilter.length})
+                {t('riscos.page.matrixFilter')} ({idsFilter.length})
                 <Button variant="ghost" size="sm" className="h-4 w-4 p-0 hover:bg-transparent" onClick={clearIdsFilter}>
                   <X className="h-3 w-3" />
                 </Button>
@@ -775,33 +775,33 @@ export function Riscos() {
           <div className="flex gap-2 flex-wrap">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" aria-label="Exportar riscos">
+                <Button variant="outline" size="sm" aria-label={t('riscos.page.export.aria')}>
                   <Download className="h-4 w-4 sm:mr-2" strokeWidth={1.5} />
-                  <span className="hidden sm:inline">Exportar</span>
+                  <span className="hidden sm:inline">{t('riscos.page.export.label')}</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
                 <DropdownMenuItem onClick={() => exportRiscosCSV(sortedRiscos)}>
                   <FileText className="mr-2 h-4 w-4" strokeWidth={1.5} />
-                  Exportar CSV
+                  {t('riscos.page.export.csv')}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => exportRiscosPDF(sortedRiscos, stats)}>
                   <FileText className="mr-2 h-4 w-4" strokeWidth={1.5} />
-                  Exportar PDF
+                  {t('riscos.page.export.pdf')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button variant="outline" size="sm" onClick={() => setCategoriasDialogOpen(true)} className="whitespace-nowrap" aria-label="Categorias de riscos">
+            <Button variant="outline" size="sm" onClick={() => setCategoriasDialogOpen(true)} className="whitespace-nowrap" aria-label={t('riscos.page.categoriesAria')}>
               <Tag className="h-4 w-4 sm:mr-2" strokeWidth={1.5} />
-              <span className="hidden sm:inline">Categorias</span>
+              <span className="hidden sm:inline">{t('riscos.page.categories')}</span>
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setMatrizDialogOpen(true)} className="whitespace-nowrap" title="Configurar matriz de risco">
+            <Button variant="outline" size="sm" onClick={() => setMatrizDialogOpen(true)} className="whitespace-nowrap" title={t('riscos.page.configMatrixTitle')}>
               <Settings className="h-4 w-4 sm:mr-2" strokeWidth={1.5} />
-              <span className="hidden sm:inline">Configurar Matriz</span>
+              <span className="hidden sm:inline">{t('riscos.page.configMatrix')}</span>
             </Button>
-            <Button size="sm" onClick={openCreateDialog} aria-label="Novo risco">
+            <Button size="sm" onClick={openCreateDialog} aria-label={t('riscos.page.newRiskAria')}>
               <Plus className="h-4 w-4 sm:mr-2" strokeWidth={1.5} />
-              <span className="hidden sm:inline">Novo Risco</span>
+              <span className="hidden sm:inline">{t('riscos.page.newRisk')}</span>
             </Button>
           </div>
         </div>
@@ -853,16 +853,16 @@ export function Riscos() {
               />
               <RiskKpiQuad
                 items={[
-                  { label: 'Acima do apetite', value: acimaApetite, sub: 'Alto ou Crítico', cta: 'Ver na matriz', tone: 'destructive', onClick: () => {
+                  { label: t('riscos.page.kpi.aboveAppetite'), value: acimaApetite, sub: t('riscos.page.kpi.highOrCritical'), cta: t('riscos.page.kpi.seeInMatrix'), tone: 'destructive', onClick: () => {
                     const sp = new URLSearchParams(searchParams); sp.set('view', 'matrix'); setSearchParams(sp);
                   }},
-                  { label: 'Sem responsável', value: semResponsavel, sub: 'Aguardando atribuição', cta: 'Atribuir agora', tone: 'amber', onClick: () => {
+                  { label: t('riscos.page.kpi.noResponsible'), value: semResponsavel, sub: t('riscos.page.kpi.awaitingAssignment'), cta: t('riscos.page.kpi.assignNow'), tone: 'amber', onClick: () => {
                     const sp = new URLSearchParams(searchParams); sp.set('view', 'table'); setSearchParams(sp);
                   }},
-                  { label: 'Revisão vencida', value: revisaoVencida, sub: 'SLA estourado', cta: 'Reavaliar', tone: 'warning', onClick: () => {
+                  { label: t('riscos.page.kpi.overdueReview'), value: revisaoVencida, sub: t('riscos.page.kpi.slaExpired'), cta: t('riscos.page.kpi.reassess'), tone: 'warning', onClick: () => {
                     const sp = new URLSearchParams(searchParams); sp.set('view', 'table'); setSearchParams(sp);
                   }},
-                  { label: 'Em tratamento', value: emTratamento, sub: 'Plano em execução', cta: 'Ver tratamentos', tone: 'success', onClick: () => {
+                  { label: t('riscos.page.kpi.inTreatment'), value: emTratamento, sub: t('riscos.page.kpi.planInProgress'), cta: t('riscos.page.kpi.seeTreatments'), tone: 'success', onClick: () => {
                     const sp = new URLSearchParams(searchParams); sp.set('view', 'table'); setSearchParams(sp);
                   }},
                 ]}
@@ -921,11 +921,11 @@ export function Riscos() {
           };
           const viewedRiscos = sortedRiscos.filter(viewFilters[savedView]);
           const viewItems = [
-            { id: 'todos' as SavedView, label: 'Todos', count: sortedRiscos.length },
-            { id: 'acima_apetite' as SavedView, label: 'Acima do apetite', count: sortedRiscos.filter(viewFilters.acima_apetite).length },
-            { id: 'sem_responsavel' as SavedView, label: 'Sem responsável', count: sortedRiscos.filter(viewFilters.sem_responsavel).length },
-            { id: 'revisao_vencida' as SavedView, label: 'Revisão vencida', count: sortedRiscos.filter(viewFilters.revisao_vencida).length },
-            { id: 'meus_riscos' as SavedView, label: 'Meus riscos', count: sortedRiscos.filter(viewFilters.meus_riscos).length },
+            { id: 'todos' as SavedView, label: t('riscos.page.filters.all'), count: sortedRiscos.length },
+            { id: 'acima_apetite' as SavedView, label: t('riscos.page.kpi.aboveAppetite'), count: sortedRiscos.filter(viewFilters.acima_apetite).length },
+            { id: 'sem_responsavel' as SavedView, label: t('riscos.page.kpi.noResponsible'), count: sortedRiscos.filter(viewFilters.sem_responsavel).length },
+            { id: 'revisao_vencida' as SavedView, label: t('riscos.page.kpi.overdueReview'), count: sortedRiscos.filter(viewFilters.revisao_vencida).length },
+            { id: 'meus_riscos' as SavedView, label: t('riscos.page.myRisks'), count: sortedRiscos.filter(viewFilters.meus_riscos).length },
           ];
 
           const tableNode = (
@@ -938,7 +938,7 @@ export function Riscos() {
                     columns={riscoColumns as Column<Risco>[]}
                     loading={loading}
                     searchable
-                    searchPlaceholder="Buscar por nome ou ID…"
+                    searchPlaceholder={t('riscos.page.searchPlaceholder')}
                     searchValue={searchTerm}
                     onSearchChange={setSearchTerm}
                     filters={filters}
@@ -948,13 +948,13 @@ export function Riscos() {
                     emptyState={{
                       icon: <AlertTriangle className="h-8 w-8" />,
                       title: searchTerm || statusFilter || nivelFilter || aceitoFilter || savedView !== 'todos'
-                        ? 'Nenhum risco encontrado'
-                        : 'Nenhum risco cadastrado',
+                        ? t('riscos.page.empty.foundTitle')
+                        : t('riscos.page.empty.noneTitle'),
                       description: searchTerm || statusFilter || nivelFilter || aceitoFilter || savedView !== 'todos'
-                        ? 'Tente ajustar os filtros ou a visão ativa.'
-                        : 'Comece identificando e cadastrando os riscos da sua organização.',
+                        ? t('riscos.page.empty.foundDesc')
+                        : t('riscos.page.empty.noneDesc'),
                       action: !searchTerm && !statusFilter && !nivelFilter && !aceitoFilter && savedView === 'todos' ? {
-                        label: 'Cadastrar Primeiro Risco',
+                        label: t('riscos.page.empty.cta'),
                         onClick: openCreateDialog,
                       } : undefined,
                     }}
@@ -997,10 +997,10 @@ export function Riscos() {
         <ConfirmDialog
           open={deleteDialogOpen}
           onOpenChange={setDeleteDialogOpen}
-          title="Excluir Risco"
-          description={`Tem certeza que deseja excluir o risco "${riscoToDelete?.nome}"? Esta ação não pode ser desfeita.`}
+          title={t('riscos.page.deleteDialog.title')}
+          description={t('riscos.page.deleteDialog.description', { nome: riscoToDelete?.nome ?? '' })}
           variant="destructive"
-          confirmText="Excluir"
+          confirmText={t('riscos.page.deleteDialog.confirm')}
           onConfirm={handleDelete}
         />
 

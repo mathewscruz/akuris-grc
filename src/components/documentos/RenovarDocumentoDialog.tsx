@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { useLanguage } from '@/contexts/LanguageContext';
 interface Documento {
   id: string;
   nome: string;
@@ -33,6 +34,7 @@ export const RenovarDocumentoDialog = ({
   documento,
   onSuccess,
 }: RenovarDocumentoDialogProps) => {
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [novoArquivo, setNovoArquivo] = useState<File | null>(null);
   const [observacoes, setObservacoes] = useState("");
@@ -52,7 +54,7 @@ export const RenovarDocumentoDialog = ({
 
   const handleSubmit = async () => {
     if (!documento || !novoArquivo) {
-      toast.error("Selecione um arquivo para continuar");
+      toast.error(t('documentosExtras.renovar.selecioneArquivo'));
       return;
     }
 
@@ -69,7 +71,7 @@ export const RenovarDocumentoDialog = ({
 
       if (uploadError) {
         console.error('Erro no upload:', uploadError);
-        throw new Error('Erro ao fazer upload do arquivo');
+        throw new Error(t('documentosExtras.renovar.erroUpload'));
       }
 
       // 2. Armazenar PATH (bucket é privado; HistoricoVersoesDialog/DocumentoPreview
@@ -87,7 +89,7 @@ export const RenovarDocumentoDialog = ({
 
       if (updateArquivoError) {
         console.error('Erro ao atualizar arquivo:', updateArquivoError);
-        throw new Error('Erro ao atualizar arquivo do documento');
+        throw new Error(t('documentosExtras.renovar.erroAtualizarArquivo'));
       }
 
       // 4. Chamar a Edge Function para renovar o documento
@@ -112,12 +114,12 @@ export const RenovarDocumentoDialog = ({
       const result = await response.json();
 
       if (!response.ok || result.error) {
-        throw new Error(result.error || 'Erro ao renovar documento');
+        throw new Error(result.error || t('documentosExtras.renovar.erroRenovar'));
       }
 
       toast.success(
-        `Documento renovado com sucesso para v${result.nova_versao}!` +
-        (documento.requer_aprovacao ? ' Aprovação necessária.' : '')
+        t('documentosExtras.renovar.sucesso').replace('{versao}', String(result.nova_versao)) +
+        (documento.requer_aprovacao ? t('documentosExtras.renovar.aprovacaoNecessaria') : '')
       );
 
       resetForm();
@@ -126,7 +128,7 @@ export const RenovarDocumentoDialog = ({
 
     } catch (error: any) {
       console.error('Erro ao renovar documento:', error);
-      toast.error(error.message || 'Erro ao renovar documento');
+      toast.error(error.message || t('documentosExtras.renovar.erroRenovar'));
     } finally {
       setLoading(false);
     }
@@ -147,7 +149,7 @@ export const RenovarDocumentoDialog = ({
       open={open}
       onOpenChange={onOpenChange}
       icon={FileText}
-      title="Renovar Documento"
+      title={t('documentosExtras.renovar.titulo')}
       size="md"
       footer={
         <div className="flex items-center justify-end gap-2">
@@ -160,18 +162,18 @@ export const RenovarDocumentoDialog = ({
             }}
             disabled={loading}
           >
-            Cancelar
+            {t('documentosExtras.renovar.cancelar')}
           </Button>
           <Button size="sm" onClick={handleSubmit} disabled={loading || !novoArquivo}>
             {loading ? (
               <>
                 <AkurisPulse size={16} className="mr-2" />
-                Renovando...
+                {t('documentosExtras.renovar.renovando')}
               </>
             ) : (
               <>
                 <Upload className="mr-2 h-4 w-4" />
-                Renovar para v{documento.versao + 1}
+                {t('documentosExtras.renovar.renovarPara').replace('{versao}', String(documento.versao + 1))}
               </>
             )}
           </Button>
@@ -186,12 +188,12 @@ export const RenovarDocumentoDialog = ({
               <div className="space-y-1">
                 <p className="font-medium">{documento.nome}</p>
                 <p className="text-sm text-muted-foreground">
-                  Versão atual: v{documento.versao}
+                  {t('documentosExtras.renovar.versaoAtual').replace('{versao}', String(documento.versao))}
                   {documento.arquivo_nome && ` • ${documento.arquivo_nome}`}
                 </p>
                 {documento.data_vencimento && (
                   <p className="text-sm text-muted-foreground">
-                    Vencimento: {new Date(documento.data_vencimento).toLocaleDateString('pt-BR')}
+                    {t('documentosExtras.renovar.vencimento').replace('{data}', new Date(documento.data_vencimento).toLocaleDateString('pt-BR'))}
                     {diasAteVencimento !== null && (
                       <span
                         className={
@@ -216,7 +218,7 @@ export const RenovarDocumentoDialog = ({
           {/* Upload do novo arquivo */}
           <div className="space-y-2">
             <Label htmlFor="arquivo" className="text-sm font-medium">
-              Novo Arquivo <span className="text-destructive">*</span>
+              {t('documentosExtras.renovar.novoArquivoLabel')} <span className="text-destructive">*</span>
             </Label>
             <div className="flex items-center gap-2">
               <Input
@@ -234,14 +236,14 @@ export const RenovarDocumentoDialog = ({
               )}
             </div>
             <p className="text-xs text-muted-foreground">
-              Selecione o arquivo atualizado para a nova versão do documento
+              {t('documentosExtras.renovar.novoArquivoAjuda')}
             </p>
           </div>
 
           {/* Nova data de vencimento */}
           <div className="space-y-2">
             <Label htmlFor="data_vencimento" className="text-sm font-medium">
-              Nova Data de Vencimento
+              {t('documentosExtras.renovar.novaDataVencimentoLabel')}
             </Label>
             <Input
               id="data_vencimento"
@@ -252,26 +254,26 @@ export const RenovarDocumentoDialog = ({
             />
             <p className="text-xs text-muted-foreground">
               {documento.data_vencimento
-                ? "Deixe em branco para manter a data atual"
-                : "Opcional - defina uma data de vencimento para esta versão"}
+                ? t('documentosExtras.renovar.manterDataAtual')
+                : t('documentosExtras.renovar.dataVencimentoOpcional')}
             </p>
           </div>
 
           {/* Observações */}
           <div className="space-y-2">
             <Label htmlFor="observacoes" className="text-sm font-medium">
-              Observações sobre a Renovação
+              {t('documentosExtras.renovar.observacoesLabel')}
             </Label>
             <Textarea
               id="observacoes"
               value={observacoes}
               onChange={(e) => setObservacoes(e.target.value)}
-              placeholder="Ex: Atualização anual conforme revisão do comitê..."
+              placeholder={t('documentosExtras.renovar.observacoesPlaceholder')}
               disabled={loading}
               rows={3}
             />
             <p className="text-xs text-muted-foreground">
-              Opcional - descreva as mudanças ou motivo da renovação
+              {t('documentosExtras.renovar.observacoesAjuda')}
             </p>
           </div>
 
@@ -280,9 +282,8 @@ export const RenovarDocumentoDialog = ({
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription className="text-sm">
-                Este documento requer aprovação. Após a renovação, o status será alterado para{" "}
-                <span className="font-medium">Pendente de Aprovação</span> e os aprovadores serão
-                notificados automaticamente.
+                {t('documentosExtras.renovar.avisoAprovacao')}{" "}
+                <span className="font-medium">{t('documentosExtras.renovar.pendenteAprovacao')}</span> {t('documentosExtras.renovar.avisoAprovacaoFim')}
               </AlertDescription>
             </Alert>
           )}

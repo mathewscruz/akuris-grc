@@ -1,6 +1,8 @@
 import { jsPDF } from 'jspdf';
 import { RiscosStats } from '@/hooks/useRiscosStats';
 import { loadAkurisLogo, addAkurisHeader, addAkurisFooter, addSectionTitle, drawProgressBar, drawTableHeader, formatLabel, AKURIS_COLORS } from '@/lib/pdf-utils';
+import { riscosDialogs } from '@/i18n/modules/riscos-dialogs';
+import type { Locale } from '@/contexts/LanguageContext';
 
 interface RiscoExport {
   nome: string;
@@ -12,7 +14,8 @@ interface RiscoExport {
   data_proxima_revisao?: string;
 }
 
-export async function exportRiscosPDF(riscos: RiscoExport[], stats: RiscosStats | undefined) {
+export async function exportRiscosPDF(riscos: RiscoExport[], stats: RiscosStats | undefined, locale: Locale = 'pt') {
+  const t = riscosDialogs[locale].riscosDialogs.exportPdf;
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -26,27 +29,27 @@ export async function exportRiscosPDF(riscos: RiscoExport[], stats: RiscosStats 
   doc.setFontSize(18);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(AKURIS_COLORS.text);
-  doc.text('Relatório de Gestão de Riscos', pageWidth / 2, y, { align: 'center' });
+  doc.text(t.relatorioTitulo, pageWidth / 2, y, { align: 'center' });
   y += 6;
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(AKURIS_COLORS.textLight);
-  doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}`, pageWidth / 2, y, { align: 'center' });
+  doc.text(t.geradoEm.replace('{data}', new Date().toLocaleDateString('pt-BR')).replace('{hora}', new Date().toLocaleTimeString('pt-BR')), pageWidth / 2, y, { align: 'center' });
   y += 12;
 
   // KPIs
   if (stats) {
-    y = addSectionTitle(doc, 'Resumo Executivo', y, margin);
+    y = addSectionTitle(doc, t.resumoExecutivo, y, margin);
 
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(AKURIS_COLORS.text);
     const kpis = [
-      `Total de Riscos: ${stats.total}`,
-      `Críticos: ${stats.criticos} | Altos: ${stats.altos} | Médios: ${stats.medios} | Baixos: ${stats.baixos}`,
-      `Riscos Aceitos: ${stats.aceitos} | Tratados: ${stats.tratados}`,
-      `Tratamentos: ${stats.tratamentos_concluidos} concluídos, ${stats.tratamentos_andamento} em andamento, ${stats.tratamentos_pendentes} pendentes`,
-      `Score de Risco: ${stats.scoreAtual}/100`,
+      t.totalRiscos.replace('{total}', String(stats.total)),
+      t.kpiNiveis.replace('{criticos}', String(stats.criticos)).replace('{altos}', String(stats.altos)).replace('{medios}', String(stats.medios)).replace('{baixos}', String(stats.baixos)),
+      t.kpiAceitosTratados.replace('{aceitos}', String(stats.aceitos)).replace('{tratados}', String(stats.tratados)),
+      t.kpiTratamentos.replace('{concluidos}', String(stats.tratamentos_concluidos)).replace('{andamento}', String(stats.tratamentos_andamento)).replace('{pendentes}', String(stats.tratamentos_pendentes)),
+      t.kpiScore.replace('{score}', String(stats.scoreAtual)),
     ];
     kpis.forEach(kpi => {
       doc.text(kpi, margin + 8, y);
@@ -60,14 +63,14 @@ export async function exportRiscosPDF(riscos: RiscoExport[], stats: RiscosStats 
   }
 
   // Table
-  y = addSectionTitle(doc, 'Lista de Riscos', y, margin);
+  y = addSectionTitle(doc, t.listaRiscos, y, margin);
 
   drawTableHeader(doc, [
-    { text: 'Nome', x: margin + 2 },
-    { text: 'Categoria', x: margin + 62 },
-    { text: 'Nível', x: margin + 102 },
-    { text: 'Residual', x: margin + 125 },
-    { text: 'Status', x: margin + 150 },
+    { text: t.colNome, x: margin + 2 },
+    { text: t.colCategoria, x: margin + 62 },
+    { text: t.colNivel, x: margin + 102 },
+    { text: t.colResidual, x: margin + 125 },
+    { text: t.colStatus, x: margin + 150 },
   ], y, margin, contentWidth);
   y += 5;
 
@@ -97,8 +100,9 @@ export async function exportRiscosPDF(riscos: RiscoExport[], stats: RiscosStats 
   doc.save('relatorio-riscos.pdf');
 }
 
-export function exportRiscosCSV(riscos: RiscoExport[]) {
-  const headers = ['Nome', 'Categoria', 'Nível Inicial', 'Nível Residual', 'Status', 'Responsável', 'Próxima Revisão'];
+export function exportRiscosCSV(riscos: RiscoExport[], locale: Locale = 'pt') {
+  const t = riscosDialogs[locale].riscosDialogs.exportPdf;
+  const headers = [t.csvColNome, t.csvColCategoria, t.csvColNivelInicial, t.csvColNivelResidual, t.csvColStatus, t.csvColResponsavel, t.csvColProximaRevisao];
   const rows = riscos.map(r => [
     r.nome,
     r.categoria?.nome || '',

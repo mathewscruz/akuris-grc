@@ -5,10 +5,11 @@
  */
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { FwMono } from './FwMono';
 import { StackBar, type StackSegment } from './StackBar';
 import { getMaturityLevel } from './MaturityScale';
-import { deriveFwMono, getFwCategory, FW_CATEGORY_LABEL } from './fw-utils';
+import { deriveFwMono, getFwCategory } from './fw-utils';
 
 interface ActiveFrameworkRowProps {
   nome: string;
@@ -31,8 +32,22 @@ export function ActiveFrameworkRow({
   segments,
   onClick,
 }: ActiveFrameworkRowProps) {
+  const { t } = useLanguage();
   const mono = deriveFwMono(nome);
   const cat = getFwCategory(tipo_framework);
+  const FW_CATEGORY_LABEL: Record<string, string> = {
+    seguranca: t('gapV2.fwCategory.seguranca'),
+    privacidade: t('gapV2.fwCategory.privacidade'),
+    governanca: t('gapV2.fwCategory.governanca'),
+    qualidade: t('gapV2.fwCategory.qualidade'),
+  };
+  const SEG_LABEL_SHORT: Record<string, string> = {
+    conforme: t('gapAnalysis.v2.activeFrameworkRow.conforme'),
+    parcial: t('gapAnalysis.v2.activeFrameworkRow.parcial'),
+    nao_conforme: t('gapAnalysis.v2.activeFrameworkRow.naoConforme'),
+    nao_aplicavel: t('gapAnalysis.v2.activeFrameworkRow.na'),
+    nao_avaliado: t('gapAnalysis.v2.activeFrameworkRow.pending'),
+  };
   const coverage = totalRequirements > 0
     ? Math.round((evaluatedRequirements / totalRequirements) * 100)
     : 0;
@@ -61,7 +76,7 @@ export function ActiveFrameworkRow({
               {nome}
             </div>
             <div className="text-xs text-muted-foreground tabular-nums">
-              {versao} · {totalRequirements} requisitos
+              {versao} · {t('gapAnalysis.v2.activeFrameworkRow.requirementsCount', { count: totalRequirements })}
             </div>
           </div>
         </div>
@@ -74,7 +89,7 @@ export function ActiveFrameworkRow({
           <div className="flex flex-col">
             <span className="text-xs text-muted-foreground tabular-nums">/ 100</span>
             <span className="text-[10px] font-sans uppercase tracking-wider text-muted-foreground mt-1">
-              Nível {maturity.id} · {maturity.label}
+              {t('gapAnalysis.v2.activeFrameworkRow.level', { id: maturity.id, label: maturity.label })}
             </span>
           </div>
         </div>
@@ -82,7 +97,7 @@ export function ActiveFrameworkRow({
         {/* Distribuição */}
         <div className="space-y-2 min-w-0">
           <div className="flex items-center justify-between text-[11px] font-sans uppercase tracking-wider text-muted-foreground">
-            <span>Distribuição</span>
+            <span>{t('gapAnalysis.v2.activeFrameworkRow.distribution')}</span>
             <span className="tabular-nums">
               {evaluatedRequirements}/{totalRequirements} · {coverage}%
             </span>
@@ -109,7 +124,7 @@ export function ActiveFrameworkRow({
             className="text-xs group-hover:text-primary group-hover:bg-primary/5"
             onClick={(e) => { e.stopPropagation(); onClick(); }}
           >
-            Abrir
+            {t('gapAnalysis.v2.activeFrameworkRow.open')}
             <ArrowRight className="h-3.5 w-3.5 ml-1" strokeWidth={1.5} />
           </Button>
         </div>
@@ -126,10 +141,4 @@ const SEG_DOT: Record<string, string> = {
   nao_avaliado: 'bg-muted-foreground/40',
 };
 
-const SEG_LABEL_SHORT: Record<string, string> = {
-  conforme: 'Conforme',
-  parcial: 'Parcial',
-  nao_conforme: 'Não Conforme',
-  nao_aplicavel: 'N/A',
-  nao_avaliado: 'Pendente',
-};
+

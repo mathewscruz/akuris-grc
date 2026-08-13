@@ -11,6 +11,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { useLanguage } from '@/contexts/LanguageContext';
 interface DocumentoHistorico {
   id: string;
   versao: number;
@@ -52,6 +53,7 @@ export const HistoricoVersoesDialog = ({
   onOpenChange,
   documento,
 }: HistoricoVersoesDialogProps) => {
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [historico, setHistorico] = useState<DocumentoHistorico[]>([]);
 
@@ -81,14 +83,14 @@ export const HistoricoVersoesDialog = ({
 
       const historicoFormatado = data.map((item: any) => ({
         ...item,
-        created_by_nome: item.created_by_profile?.nome || 'Sistema',
+        created_by_nome: item.created_by_profile?.nome || t('documentosExtras.historico.sistema'),
         aprovador_nome: item.aprovador_profile?.nome || null,
       }));
 
       setHistorico(historicoFormatado);
     } catch (error: any) {
       console.error('Erro ao buscar histórico:', error);
-      toast.error('Erro ao carregar histórico de versões');
+      toast.error(t('documentosExtras.historico.erroBuscar'));
     } finally {
       setLoading(false);
     }
@@ -105,7 +107,7 @@ export const HistoricoVersoesDialog = ({
       window.open(data.signedUrl, '_blank');
     } catch (error) {
       console.error('Erro ao gerar URL do arquivo:', error);
-      toast.error('Erro ao abrir documento. Tente novamente.');
+      toast.error(t('documentosExtras.historico.erroAbrirDocumento'));
     }
   };
 
@@ -127,19 +129,19 @@ export const HistoricoVersoesDialog = ({
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      toast.success('Download iniciado');
+      toast.success(t('documentosExtras.historico.downloadIniciado'));
     } catch (error) {
       console.error('Erro ao fazer download:', error);
-      toast.error('Erro ao fazer download do arquivo');
+      toast.error(t('documentosExtras.historico.erroDownload'));
     }
   };
 
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { label: string; tone: StatusTone }> = {
-      ativo: { label: 'Ativo', tone: 'success' },
-      inativo: { label: 'Inativo', tone: 'neutral' },
-      pendente_aprovacao: { label: 'Pendente', tone: 'warning' },
-      rejeitado: { label: 'Rejeitado', tone: 'destructive' },
+      ativo: { label: t('documentosExtras.historico.statusAtivo'), tone: 'success' },
+      inativo: { label: t('documentosExtras.historico.statusInativo'), tone: 'neutral' },
+      pendente_aprovacao: { label: t('documentosExtras.historico.statusPendente'), tone: 'warning' },
+      rejeitado: { label: t('documentosExtras.historico.statusRejeitado'), tone: 'destructive' },
     };
 
     const config = statusConfig[status] || { label: status, tone: 'neutral' as StatusTone };
@@ -153,7 +155,7 @@ export const HistoricoVersoesDialog = ({
       open={open}
       onOpenChange={onOpenChange}
       icon={FileText}
-      title={`Histórico de Versões — ${documento.nome}`}
+      title={t('documentosExtras.historico.titulo').replace('{nome}', documento.nome)}
       size="lg"
       hideFooter
     >
@@ -171,7 +173,7 @@ export const HistoricoVersoesDialog = ({
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <h3 className="font-semibold">
-                          Versão {documento.versao} (Atual)
+                          {t('documentosExtras.historico.versaoAtual').replace('{versao}', String(documento.versao))}
                         </h3>
                         {getStatusBadge(documento.status)}
                       </div>
@@ -195,10 +197,7 @@ export const HistoricoVersoesDialog = ({
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <CheckCircle className="h-4 w-4 text-success" />
                       <span>
-                        Aprovado em{" "}
-                        {format(new Date(documento.data_aprovacao), "dd/MM/yyyy", {
-                          locale: ptBR,
-                        })}
+                        {t('documentosExtras.historico.aprovadoEm').replace('{data}', format(new Date(documento.data_aprovacao), "dd/MM/yyyy", { locale: ptBR }))}
                       </span>
                     </div>
                   )}
@@ -207,10 +206,7 @@ export const HistoricoVersoesDialog = ({
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Clock className="h-4 w-4" />
                       <span>
-                        Vencimento:{" "}
-                        {format(new Date(documento.data_vencimento), "dd/MM/yyyy", {
-                          locale: ptBR,
-                        })}
+                        {t('documentosExtras.historico.vencimento').replace('{data}', format(new Date(documento.data_vencimento), "dd/MM/yyyy", { locale: ptBR }))}
                       </span>
                     </div>
                   )}
@@ -223,7 +219,7 @@ export const HistoricoVersoesDialog = ({
                         onClick={() => handleVisualizarExterno(documento.arquivo_url!)}
                       >
                         <Eye className="mr-2 h-4 w-4" />
-                        Visualizar
+                        {t('documentosExtras.historico.visualizar')}
                       </Button>
                       <Button
                         variant="outline"
@@ -233,7 +229,7 @@ export const HistoricoVersoesDialog = ({
                         }
                       >
                         <Download className="mr-2 h-4 w-4" />
-                        Download
+                        {t('documentosExtras.historico.download')}
                       </Button>
                     </div>
                   )}
@@ -245,7 +241,7 @@ export const HistoricoVersoesDialog = ({
                 <>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Separator className="flex-1" />
-                    <span>Versões Anteriores</span>
+                    <span>{t('documentosExtras.historico.versoesAnteriores')}</span>
                     <Separator className="flex-1" />
                   </div>
 
@@ -255,9 +251,9 @@ export const HistoricoVersoesDialog = ({
                         <div className="flex items-start justify-between">
                           <div className="space-y-1">
                             <div className="flex items-center gap-2">
-                              <h3 className="font-semibold">Versão {versao.versao}</h3>
+                              <h3 className="font-semibold">{t('documentosExtras.historico.versao').replace('{versao}', String(versao.versao))}</h3>
                               {getStatusBadge(versao.status)}
-                              <StatusBadge size="sm" tone="neutral">Arquivada</StatusBadge>
+                              <StatusBadge size="sm" tone="neutral">{t('documentosExtras.historico.arquivada')}</StatusBadge>
                             </div>
                             <p className="text-sm text-muted-foreground flex items-center gap-1">
                               <Calendar className="h-3 w-3" />
@@ -278,7 +274,7 @@ export const HistoricoVersoesDialog = ({
                         {versao.created_by_nome && (
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <User className="h-4 w-4" />
-                            <span>Criado por {versao.created_by_nome}</span>
+                            <span>{t('documentosExtras.historico.criadoPor').replace('{nome}', versao.created_by_nome)}</span>
                           </div>
                         )}
 
@@ -286,10 +282,9 @@ export const HistoricoVersoesDialog = ({
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <CheckCircle className="h-4 w-4 text-success" />
                             <span>
-                              Aprovado por {versao.aprovador_nome} em{" "}
-                              {format(new Date(versao.data_aprovacao), "dd/MM/yyyy", {
-                                locale: ptBR,
-                              })}
+                              {t('documentosExtras.historico.aprovadoPorEm')
+                                .replace('{nome}', versao.aprovador_nome)
+                                .replace('{data}', format(new Date(versao.data_aprovacao), "dd/MM/yyyy", { locale: ptBR }))}
                             </span>
                           </div>
                         )}
@@ -298,10 +293,7 @@ export const HistoricoVersoesDialog = ({
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <Clock className="h-4 w-4" />
                             <span>
-                              Vencimento:{" "}
-                              {format(new Date(versao.data_vencimento), "dd/MM/yyyy", {
-                                locale: ptBR,
-                              })}
+                              {t('documentosExtras.historico.vencimento').replace('{data}', format(new Date(versao.data_vencimento), "dd/MM/yyyy", { locale: ptBR }))}
                             </span>
                           </div>
                         )}
@@ -321,7 +313,7 @@ export const HistoricoVersoesDialog = ({
                               onClick={() => handleVisualizarExterno(versao.arquivo_url!)}
                             >
                               <Eye className="mr-2 h-4 w-4" />
-                              Visualizar
+                              {t('documentosExtras.historico.visualizar')}
                             </Button>
                             <Button
                               variant="outline"
@@ -331,7 +323,7 @@ export const HistoricoVersoesDialog = ({
                               }
                             >
                               <Download className="mr-2 h-4 w-4" />
-                              Download
+                              {t('documentosExtras.historico.download')}
                             </Button>
                           </div>
                         )}
@@ -342,8 +334,8 @@ export const HistoricoVersoesDialog = ({
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
                   <FileText className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                  <p>Nenhuma versão anterior encontrada</p>
-                  <p className="text-sm mt-1">Este é o primeiro registro deste documento</p>
+                  <p>{t('documentosExtras.historico.nenhumaVersaoAnterior')}</p>
+                  <p className="text-sm mt-1">{t('documentosExtras.historico.primeiroRegistro')}</p>
                 </div>
               )}
             </div>

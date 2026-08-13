@@ -9,6 +9,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveNivelRiscoTone } from '@/lib/status-tone';
 import { CheckCircle, User, Calendar, FileText, Clock, AlertTriangle } from 'lucide-react';
 import { differenceInDays } from 'date-fns';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Props {
   open: boolean;
@@ -30,6 +31,7 @@ interface Props {
 
 export function AceiteDetalheDialog({ open, onOpenChange, risco }: Props) {
   const { profile } = useAuth();
+  const { t } = useLanguage();
 
   // Buscar histórico de auditoria do aceite
   const { data: auditLogs = [] } = useQuery({
@@ -78,9 +80,9 @@ export function AceiteDetalheDialog({ open, onOpenChange, risco }: Props) {
   const getRevisaoStatus = () => {
     if (!risco.data_proxima_revisao) return null;
     const dias = differenceInDays(new Date(risco.data_proxima_revisao), new Date());
-    if (dias < 0) return { label: 'Vencida', tone: 'destructive' as const, dias: Math.abs(dias) };
-    if (dias <= 7) return { label: `${dias} dias restantes`, tone: 'warning' as const, dias };
-    return { label: `${dias} dias restantes`, tone: 'success' as const, dias };
+    if (dias < 0) return { label: t('riscosDialogs.aceiteDetalhe.vencida'), tone: 'destructive' as const, dias: Math.abs(dias) };
+    if (dias <= 7) return { label: t('riscosDialogs.aceiteDetalhe.diasRestantes', { dias }), tone: 'warning' as const, dias };
+    return { label: t('riscosDialogs.aceiteDetalhe.diasRestantes', { dias }), tone: 'success' as const, dias };
   };
 
   const revisaoStatus = getRevisaoStatus();
@@ -90,8 +92,8 @@ export function AceiteDetalheDialog({ open, onOpenChange, risco }: Props) {
       open={open}
       onOpenChange={onOpenChange}
       icon={CheckCircle}
-      title="Detalhes do Aceite de Risco"
-      description="Informações completas do aceite formal, anexos e histórico de auditoria."
+      title={t('riscosDialogs.aceiteDetalhe.title')}
+      description={t('riscosDialogs.aceiteDetalhe.description')}
       size="md"
       hideFooter
     >
@@ -100,11 +102,11 @@ export function AceiteDetalheDialog({ open, onOpenChange, risco }: Props) {
           <div className="space-y-3">
             <h3 className="font-semibold text-lg">{risco.nome}</h3>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Nível Inicial:</span>
+              <span className="text-sm text-muted-foreground">{t('riscosDialogs.aceiteDetalhe.nivelInicial')}</span>
               <StatusBadge {...resolveNivelRiscoTone(risco.nivel_risco_inicial)}>{formatStatus(risco.nivel_risco_inicial)}</StatusBadge>
               {risco.nivel_risco_residual && (
                 <>
-                  <span className="text-sm text-muted-foreground ml-2">Residual:</span>
+                  <span className="text-sm text-muted-foreground ml-2">{t('riscosDialogs.aceiteDetalhe.residual')}</span>
                   <StatusBadge {...resolveNivelRiscoTone(risco.nivel_risco_residual)}>{formatStatus(risco.nivel_risco_residual)}</StatusBadge>
                 </>
               )}
@@ -118,38 +120,38 @@ export function AceiteDetalheDialog({ open, onOpenChange, risco }: Props) {
             <div className="space-y-1">
               <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                 <Calendar className="h-3.5 w-3.5" />
-                Data do Aceite
+                {t('riscosDialogs.aceiteDetalhe.dataAceite')}
               </div>
               <p className="text-sm font-medium">
-                {risco.data_aceite ? formatDateOnly(risco.data_aceite) : 'Não registrada'}
+                {risco.data_aceite ? formatDateOnly(risco.data_aceite) : t('riscosDialogs.aceiteDetalhe.naoRegistrada')}
               </p>
             </div>
             <div className="space-y-1">
               <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                 <User className="h-3.5 w-3.5" />
-                Aprovador
+                {t('riscosDialogs.aceiteDetalhe.aprovador')}
               </div>
               <p className="text-sm font-medium">
-                {risco.aprovador_nome || 'Não registrado'}
+                {risco.aprovador_nome || t('riscosDialogs.aceiteDetalhe.naoRegistrado')}
               </p>
             </div>
             <div className="space-y-1">
               <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                 <User className="h-3.5 w-3.5" />
-                Responsável
+                {t('riscosDialogs.aceiteDetalhe.responsavel')}
               </div>
               <p className="text-sm font-medium">
-                {risco.responsavel_nome || 'Não designado'}
+                {risco.responsavel_nome || t('riscosDialogs.aceiteDetalhe.naoDesignado')}
               </p>
             </div>
             <div className="space-y-1">
               <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                 <Clock className="h-3.5 w-3.5" />
-                Próxima Revisão
+                {t('riscosDialogs.aceiteDetalhe.proximaRevisao')}
               </div>
               <div className="flex items-center gap-2">
                 <p className="text-sm font-medium">
-                  {risco.data_proxima_revisao ? formatDateOnly(risco.data_proxima_revisao) : 'Não agendada'}
+                  {risco.data_proxima_revisao ? formatDateOnly(risco.data_proxima_revisao) : t('riscosDialogs.aceiteDetalhe.naoAgendada')}
                 </p>
                 {revisaoStatus && (
                   <StatusBadge size="sm" tone={revisaoStatus.tone}>{revisaoStatus.label}</StatusBadge>
@@ -164,10 +166,10 @@ export function AceiteDetalheDialog({ open, onOpenChange, risco }: Props) {
           <div className="space-y-2">
             <h4 className="text-sm font-semibold flex items-center gap-1.5">
               <FileText className="h-4 w-4" />
-              Justificativa do Aceite
+              {t('riscosDialogs.aceiteDetalhe.justificativaAceite')}
             </h4>
             <p className="text-sm text-muted-foreground bg-muted/50 rounded-md p-3">
-              {risco.justificativa_aceite || 'Nenhuma justificativa registrada.'}
+              {risco.justificativa_aceite || t('riscosDialogs.aceiteDetalhe.nenhumaJustificativa')}
             </p>
           </div>
 
@@ -176,7 +178,7 @@ export function AceiteDetalheDialog({ open, onOpenChange, risco }: Props) {
             <>
               <Separator />
               <div className="space-y-2">
-                <h4 className="text-sm font-semibold">Anexos do Aceite ({anexos.length})</h4>
+                <h4 className="text-sm font-semibold">{t('riscosDialogs.aceiteDetalhe.anexosAceite', { count: anexos.length })}</h4>
                 <div className="space-y-1">
                   {anexos.map(anexo => (
                     <button
@@ -204,7 +206,7 @@ export function AceiteDetalheDialog({ open, onOpenChange, risco }: Props) {
               <div className="space-y-3">
                 <h4 className="text-sm font-semibold flex items-center gap-1.5">
                   <AlertTriangle className="h-4 w-4" />
-                  Histórico de Alterações
+                  {t('riscosDialogs.aceiteDetalhe.historicoAlteracoes')}
                 </h4>
                 <div className="space-y-3">
                   {auditLogs.map(log => (
@@ -215,7 +217,7 @@ export function AceiteDetalheDialog({ open, onOpenChange, risco }: Props) {
                           {formatDateOnly(log.created_at || '')} — {log.action}
                         </p>
                         <p className="text-xs text-muted-foreground/70">
-                          Campos: {(log.changed_fields as string[] || []).join(', ')}
+                          {t('riscosDialogs.aceiteDetalhe.campos', { campos: (log.changed_fields as string[] || []).join(', ') })}
                         </p>
                       </div>
                     </div>

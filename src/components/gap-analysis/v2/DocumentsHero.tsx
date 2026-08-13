@@ -9,6 +9,7 @@ import { CornerAccent } from '@/components/identity/CornerAccent';
 import { KpiTiny } from './KpiTiny';
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Props {
   frameworkId: string;
@@ -21,10 +22,11 @@ interface Props {
 interface SuggestedType {
   label: string;
   covers: string;
-  status: 'FALTA' | 'OK';
+  status: string;
 }
 
 export function DocumentsHero({ frameworkId, empresaId, onUploadClick, onLinkClick, onAIGenerate }: Props) {
+  const { t } = useLanguage();
   const [stats, setStats] = useState({
     analyzed: 0,
     avgConformity: 0,
@@ -87,11 +89,11 @@ export function DocumentsHero({ frameworkId, empresaId, onUploadClick, onLinkCli
           .sort((a, b) => b[1].length - a[1].length)
           .slice(0, 4)
           .map<SuggestedType>(([cat, codes]) => ({
-            label: `Documento de ${cat}`,
+            label: t('gapAnalysis.v2.documentsHero.documentOf', { category: cat }),
             covers: codes.length > 3
               ? `~${codes.length} requisitos`
               : codes.slice(0, 3).join(', '),
-            status: 'FALTA',
+            status: t('gapAnalysis.v2.documentsHero.missing'),
           }));
 
         if (alive) {
@@ -122,15 +124,14 @@ export function DocumentsHero({ frameworkId, empresaId, onUploadClick, onLinkCli
           <div className="p-6">
             <div className="inline-flex items-center gap-1.5 text-[10px] font-sans uppercase tracking-wider text-primary">
               <Sparkles className="h-3 w-3" strokeWidth={1.5} />
-              Análise automatizada
+              {t('gapAnalysis.v2.documentsHero.badge')}
             </div>
             <h3 className="mt-2 text-xl font-semibold tracking-tight leading-snug text-foreground">
-              Suba um documento. A IA mapeia em qualquer requisito que ele atenda.
+              {t('gapAnalysis.v2.documentsHero.heroTitle')}
             </h3>
             <p className="mt-2 text-sm text-muted-foreground max-w-xl leading-relaxed">
-              Você não precisa decidir a que cláusula o documento se aplica.<br />
-              Anexe — PDF, Word, Excel — e a IA cruza com os <strong className="text-foreground">{stats.totalReqs} requisitos</strong>{' '}
-              do framework, propondo status, justificativa e evidências.
+              {t('gapAnalysis.v2.documentsHero.heroDescriptionLine1')}<br />
+              {t('gapAnalysis.v2.documentsHero.heroDescriptionLine2', { count: stats.totalReqs })}
             </p>
             <div className="mt-4 flex items-center gap-2 flex-wrap">
               <button
@@ -139,7 +140,7 @@ export function DocumentsHero({ frameworkId, empresaId, onUploadClick, onLinkCli
                 className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
               >
                 <Upload className="h-4 w-4" strokeWidth={1.5} />
-                Anexar arquivos
+                {t('gapAnalysis.v2.documentsHero.attachFiles')}
               </button>
               <button
                 type="button"
@@ -147,7 +148,7 @@ export function DocumentsHero({ frameworkId, empresaId, onUploadClick, onLinkCli
                 className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3.5 py-2 text-sm text-foreground hover:border-primary/40 transition-colors"
               >
                 <LinkIcon className="h-4 w-4" strokeWidth={1.5} />
-                Adicionar link / URL
+                {t('gapAnalysis.v2.documentsHero.addLink')}
               </button>
               <button
                 type="button"
@@ -155,7 +156,7 @@ export function DocumentsHero({ frameworkId, empresaId, onUploadClick, onLinkCli
                 className="inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm text-primary hover:bg-primary/5 transition-colors"
               >
                 <Sparkles className="h-4 w-4" strokeWidth={1.5} />
-                Gerar com IA
+                {t('gapAnalysis.v2.documentsHero.generateWithAi')}
               </button>
             </div>
           </div>
@@ -163,12 +164,12 @@ export function DocumentsHero({ frameworkId, empresaId, onUploadClick, onLinkCli
           {/* Lacunas documentais detectadas */}
           <aside className="p-6 border-t lg:border-t-0 lg:border-l border-border/60 bg-muted/20">
             <div className="text-[10px] font-sans uppercase tracking-wider text-muted-foreground">
-              Lacunas documentais detectadas
+              {t('gapAnalysis.v2.documentsHero.gapsDetectedTitle')}
             </div>
             <ul className="mt-3 space-y-2.5">
               {suggested.length === 0 ? (
                 <li className="text-xs text-muted-foreground italic">
-                  Sem lacunas documentais — todos os requisitos têm cobertura inicial.
+                  {t('gapAnalysis.v2.documentsHero.noGaps')}
                 </li>
               ) : (
                 suggested.map((s, i) => (
@@ -184,7 +185,7 @@ export function DocumentsHero({ frameworkId, empresaId, onUploadClick, onLinkCli
                         </span>
                       </div>
                       <div className="text-[11px] text-muted-foreground truncate">
-                        cobre {s.covers}
+                        {t('gapAnalysis.v2.documentsHero.covers', { items: s.covers })}
                       </div>
                     </div>
                   </li>
@@ -197,30 +198,30 @@ export function DocumentsHero({ frameworkId, empresaId, onUploadClick, onLinkCli
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <KpiTiny
-          eyebrow="DOCUMENTOS ANALISADOS"
+          eyebrow={t('gapAnalysis.v2.documentsHero.kpiAnalyzed')}
           value={stats.analyzed}
-          foot="últimos 30 dias"
+          foot={t('gapAnalysis.v2.documentsHero.kpiAnalyzedFoot')}
           tone="info"
         />
         <KpiTiny
-          eyebrow="CONFORMIDADE MÉDIA"
+          eyebrow={t('gapAnalysis.v2.documentsHero.kpiAvgCompliance')}
           value={stats.avgConformity ? `${stats.avgConformity}%` : '—'}
-          foot="média das análises"
+          foot={t('gapAnalysis.v2.documentsHero.kpiAvgComplianceFoot')}
           tone={
             stats.avgConformity >= 70 ? 'success' :
             stats.avgConformity >= 40 ? 'warning' : 'neutral'
           }
         />
         <KpiTiny
-          eyebrow="CLÁUSULAS COBERTAS"
+          eyebrow={t('gapAnalysis.v2.documentsHero.kpiCoveredClauses')}
           value={`${stats.coveredClauses}/${stats.totalReqs}`}
-          foot={stats.totalReqs > 0 ? `${Math.round((stats.coveredClauses / stats.totalReqs) * 100)}% do framework` : '—'}
+          foot={stats.totalReqs > 0 ? t('gapAnalysis.v2.documentsHero.kpiCoveredClausesFoot', { pct: Math.round((stats.coveredClauses / stats.totalReqs) * 100) }) : '—'}
           tone="warning"
         />
         <KpiTiny
-          eyebrow="SEM COBERTURA DOCUMENTAL"
+          eyebrow={t('gapAnalysis.v2.documentsHero.kpiUncovered')}
           value={stats.uncoveredClauses}
-          foot={stats.uncoveredClauses > 0 ? 'requer upload' : 'completo'}
+          foot={stats.uncoveredClauses > 0 ? t('gapAnalysis.v2.documentsHero.kpiUncoveredFootPending') : t('gapAnalysis.v2.documentsHero.kpiUncoveredFootDone')}
           tone={stats.uncoveredClauses > 0 ? 'destructive' : 'success'}
         />
       </div>

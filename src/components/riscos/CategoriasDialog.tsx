@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { toast } from 'sonner';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Categoria {
   id: string;
@@ -27,6 +28,7 @@ interface CategoriasDialogProps {
 
 export function CategoriasDialog({ open, onOpenChange, onSuccess }: CategoriasDialogProps) {
   const { profile } = useAuth();
+  const { t } = useLanguage();
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(false);
   const [editingCategoria, setEditingCategoria] = useState<Categoria | null>(null);
@@ -50,7 +52,7 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess }: CategoriasDi
       if (error) throw error;
       setCategorias(data || []);
     } catch (error: any) {
-      toast.error('Erro ao carregar categorias: ' + error.message);
+      toast.error(t('riscosDialogs.categorias.erroCarregar', { mensagem: error.message }));
     } finally {
       setLoading(false);
     }
@@ -80,7 +82,7 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess }: CategoriasDi
           .eq('id', editingCategoria.id);
 
         if (error) throw error;
-        toast.success('Categoria atualizada com sucesso!');
+        toast.success(t('riscosDialogs.categorias.categoriaAtualizada'));
       } else {
         const { error } = await supabase
           .from('riscos_categorias')
@@ -92,7 +94,7 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess }: CategoriasDi
           });
 
         if (error) throw error;
-        toast.success('Categoria criada com sucesso!');
+        toast.success(t('riscosDialogs.categorias.categoriaCriada'));
       }
 
       setFormData({ nome: '', descricao: '', cor: '#3B82F6' });
@@ -101,7 +103,7 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess }: CategoriasDi
       fetchCategorias();
       onSuccess();
     } catch (error: any) {
-      toast.error('Erro ao salvar categoria: ' + error.message);
+      toast.error(t('riscosDialogs.categorias.erroSalvar', { mensagem: error.message }));
     } finally {
       setLoading(false);
     }
@@ -128,13 +130,13 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess }: CategoriasDi
         .eq('id', categoriaToDelete.id);
 
       if (error) throw error;
-      toast.success('Categoria excluída com sucesso!');
+      toast.success(t('riscosDialogs.categorias.categoriaExcluida'));
       setDeleteDialogOpen(false);
       setCategoriaToDelete(null);
       fetchCategorias();
       onSuccess();
     } catch (error: any) {
-      toast.error('Erro ao excluir categoria: ' + error.message);
+      toast.error(t('riscosDialogs.categorias.erroExcluir', { mensagem: error.message }));
     } finally {
       setLoading(false);
     }
@@ -160,12 +162,12 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess }: CategoriasDi
   // Categorias padrão para criar automaticamente
   const createDefaultCategories = async () => {
     const defaultCategories = [
-      { nome: 'Operacional', descricao: 'Riscos relacionados às operações do dia a dia', cor: '#EF4444' },
-      { nome: 'Financeiro', descricao: 'Riscos relacionados a aspectos financeiros', cor: '#10B981' },
-      { nome: 'Estratégico', descricao: 'Riscos relacionados ao planejamento estratégico', cor: '#3B82F6' },
-      { nome: 'Regulatório', descricao: 'Riscos relacionados ao cumprimento de regulamentações', cor: '#F59E0B' },
-      { nome: 'Tecnológico', descricao: 'Riscos relacionados à tecnologia e sistemas', cor: '#8B5CF6' },
-      { nome: 'Reputacional', descricao: 'Riscos relacionados à imagem e reputação', cor: '#EC4899' }
+      { nome: t('riscosDialogs.categorias.catOperacional'), descricao: t('riscosDialogs.categorias.catOperacionalDesc'), cor: '#EF4444' },
+      { nome: t('riscosDialogs.categorias.catFinanceiro'), descricao: t('riscosDialogs.categorias.catFinanceiroDesc'), cor: '#10B981' },
+      { nome: t('riscosDialogs.categorias.catEstrategico'), descricao: t('riscosDialogs.categorias.catEstrategicoDesc'), cor: '#3B82F6' },
+      { nome: t('riscosDialogs.categorias.catRegulatorio'), descricao: t('riscosDialogs.categorias.catRegulatorioDesc'), cor: '#F59E0B' },
+      { nome: t('riscosDialogs.categorias.catTecnologico'), descricao: t('riscosDialogs.categorias.catTecnologicoDesc'), cor: '#8B5CF6' },
+      { nome: t('riscosDialogs.categorias.catReputacional'), descricao: t('riscosDialogs.categorias.catReputacionalDesc'), cor: '#EC4899' }
     ];
 
     try {
@@ -178,11 +180,11 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess }: CategoriasDi
             ...categoria
           });
       }
-      toast.success('Categorias padrão criadas com sucesso!');
+      toast.success(t('riscosDialogs.categorias.categoriasPadraoCriadas'));
       fetchCategorias();
       onSuccess();
     } catch (error: any) {
-      toast.error('Erro ao criar categorias padrão: ' + error.message);
+      toast.error(t('riscosDialogs.categorias.erroCriarPadrao', { mensagem: error.message }));
     } finally {
       setLoading(false);
     }
@@ -194,8 +196,8 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess }: CategoriasDi
         open={open}
         onOpenChange={onOpenChange}
         icon={Tag}
-        title="Gerenciar Categorias de Risco"
-        description="Crie e gerencie as categorias utilizadas para classificar os riscos"
+        title={t('riscosDialogs.categorias.title')}
+        description={t('riscosDialogs.categorias.description')}
         size="lg"
         hideFooter
       >
@@ -205,11 +207,11 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess }: CategoriasDi
                 <div className="flex gap-2">
                   <Button onClick={handleNewCategoria} size="sm">
                     <Plus className="mr-2 h-4 w-4" />
-                    Nova Categoria
+                    {t('riscosDialogs.categorias.novaCategoria')}
                   </Button>
                   {categorias.length === 0 && (
                     <Button variant="outline" onClick={createDefaultCategories} size="sm" disabled={loading}>
-                      Criar Categorias Padrão
+                      {t('riscosDialogs.categorias.criarCategoriasPadrao')}
                     </Button>
                   )}
                 </div>
@@ -220,7 +222,7 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess }: CategoriasDi
               <form onSubmit={handleSubmit} className="space-y-4 p-4 border rounded-lg">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="nome">Nome da Categoria</Label>
+                    <Label htmlFor="nome">{t('riscosDialogs.categorias.nomeCategoria')}</Label>
                     <Input
                       id="nome"
                       value={formData.nome}
@@ -229,7 +231,7 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess }: CategoriasDi
                     />
                   </div>
                   <div>
-                    <Label htmlFor="cor">Cor</Label>
+                    <Label htmlFor="cor">{t('riscosDialogs.categorias.cor')}</Label>
                     <div className="flex gap-2 items-center">
                       <Input
                         id="cor"
@@ -246,7 +248,7 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess }: CategoriasDi
                   </div>
                 </div>
                 <div>
-                  <Label htmlFor="descricao">Descrição (opcional)</Label>
+                  <Label htmlFor="descricao">{t('riscosDialogs.categorias.descricaoOpcional')}</Label>
                   <Textarea
                     id="descricao"
                     value={formData.descricao}
@@ -256,10 +258,10 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess }: CategoriasDi
                 </div>
                 <div className="flex gap-2">
                   <Button type="submit" disabled={loading}>
-                    {editingCategoria ? 'Atualizar' : 'Criar'}
+                    {editingCategoria ? t('riscosDialogs.categorias.atualizar') : t('riscosDialogs.categorias.criar')}
                   </Button>
                   <Button type="button" variant="outline" onClick={handleCancelForm}>
-                    Cancelar
+                    {t('riscosDialogs.categorias.cancelar')}
                   </Button>
                 </div>
               </form>
@@ -269,23 +271,23 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess }: CategoriasDi
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Cor</TableHead>
-                    <TableHead>Descrição</TableHead>
-                    <TableHead>Ações</TableHead>
+                    <TableHead>{t('riscosDialogs.categorias.nome')}</TableHead>
+                    <TableHead>{t('riscosDialogs.categorias.cor')}</TableHead>
+                    <TableHead>{t('riscosDialogs.categorias.descricao')}</TableHead>
+                    <TableHead>{t('riscosDialogs.categorias.acoes')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {loading ? (
                     <TableRow>
                       <TableCell colSpan={4} className="text-center py-8">
-                        Carregando categorias...
+                        {t('riscosDialogs.categorias.carregandoCategorias')}
                       </TableCell>
                     </TableRow>
                   ) : categorias.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={4} className="text-center py-8">
-                        Nenhuma categoria encontrada. Clique em "Nova Categoria" ou "Criar Categorias Padrão" para começar.
+                        {t('riscosDialogs.categorias.nenhumaCategoria')}
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -334,10 +336,10 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess }: CategoriasDi
       <ConfirmDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        title="Excluir Categoria"
-        description={`Tem certeza que deseja excluir a categoria "${categoriaToDelete?.nome}"? Esta ação não pode ser desfeita.`}
+        title={t('riscosDialogs.categorias.excluirCategoriaTitle')}
+        description={t('riscosDialogs.categorias.excluirCategoriaDescricao', { nome: categoriaToDelete?.nome || '' })}
         variant="destructive"
-        confirmText="Excluir"
+        confirmText={t('riscosDialogs.categorias.excluir')}
         onConfirm={handleDelete}
       />
     </>

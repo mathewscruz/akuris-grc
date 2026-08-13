@@ -17,6 +17,7 @@ import { logger } from '@/lib/logger';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { useLanguage } from '@/contexts/LanguageContext';
 interface AdherenceAssessmentViewProps {
   onViewResult: (assessment: AdherenceAssessment) => void;
   frameworkId?: string;
@@ -29,6 +30,7 @@ interface AdherenceAssessmentViewProps {
 }
 
 export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNome, embedded, openSignal }: AdherenceAssessmentViewProps) {
+  const { t } = useLanguage();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [assessmentToDelete, setAssessmentToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -78,9 +80,9 @@ export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNo
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'concluido': return 'Concluído';
-      case 'processando': return <><AkurisPulse size={12} className="mr-1 inline" />Processando</>;
-      case 'erro': return 'Erro';
+      case 'concluido': return t('gapAnalysis.adherenceUi.view.statusConcluido');
+      case 'processando': return <><AkurisPulse size={12} className="mr-1 inline" />{t('gapAnalysis.adherenceUi.view.statusProcessando')}</>;
+      case 'erro': return t('gapAnalysis.adherenceUi.view.statusErro');
       default: return status;
     }
   };
@@ -97,9 +99,9 @@ export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNo
   const getResultLabel = (resultado?: string): string | null => {
     if (!resultado) return null;
     switch (resultado) {
-      case 'conforme': return 'Conforme';
-      case 'nao_conforme': return 'Não Conforme';
-      case 'parcial': return 'Parcial';
+      case 'conforme': return t('gapAnalysis.adherenceUi.view.resultConforme');
+      case 'nao_conforme': return t('gapAnalysis.adherenceUi.view.resultNaoConforme');
+      case 'parcial': return t('gapAnalysis.adherenceUi.view.resultParcial');
       default: return resultado;
     }
   };
@@ -138,11 +140,11 @@ export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNo
       
       if (assessmentError) throw assessmentError;
 
-      toast.success('Avaliação excluída com sucesso');
+      toast.success(t('gapAnalysis.adherenceUi.view.deleteSuccess'));
       refetch();
     } catch (error: any) {
       logger.error('Erro ao excluir avaliação:', { error: error instanceof Error ? error.message : String(error) });
-      toast.error('Erro ao excluir avaliação: ' + error.message);
+      toast.error(t('gapAnalysis.adherenceUi.view.deleteError', { error: error.message }));
     } finally {
       setIsDeleting(false);
       setAssessmentToDelete(null);
@@ -151,44 +153,45 @@ export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNo
 
   const statsCards = [
     {
-      title: 'Total de Avaliações',
+      title: t('gapAnalysis.adherenceUi.view.totalAssessments'),
       value: stats?.totalAvaliacoes || 0,
       icon: <Target className="h-4 w-4" strokeWidth={1.5}/>,
-      description: 'Avaliações realizadas'
+      description: t('gapAnalysis.adherenceUi.view.totalAssessmentsDescription')
     },
     {
-      title: 'Avaliações Conformes',
+      title: t('gapAnalysis.adherenceUi.view.compliantAssessments'),
       value: stats?.avaliacoesConformes || 0,
       icon: <FileCheck className="h-4 w-4" strokeWidth={1.5}/>,
-      description: 'Documentos em conformidade'
+      description: t('gapAnalysis.adherenceUi.view.compliantAssessmentsDescription')
     },
     {
-      title: 'Não Conformes',
+      title: t('gapAnalysis.adherenceUi.view.nonCompliantAssessments'),
       value: stats?.avaliacoesNaoConformes || 0,
       icon: <AlertTriangle className="h-4 w-4" strokeWidth={1.5}/>,
-      description: 'Requerem atenção'
+      description: t('gapAnalysis.adherenceUi.view.nonCompliantAssessmentsDescription')
     },
     {
-      title: 'Conformidade Média',
+      title: t('gapAnalysis.adherenceUi.view.averageCompliance'),
       value: `${stats?.mediaConformidade || 0}%`,
       icon: <TrendingUp className="h-4 w-4" strokeWidth={1.5}/>,
-      description: 'Média geral de conformidade'
+      description: t('gapAnalysis.adherenceUi.view.averageComplianceDescription')
     }
   ];
 
   const DOCUMENT_EXAMPLES: Record<string, string[]> = {
-    'ISO': ['Política de Segurança da Informação', 'Matriz RACI', 'Relatório de Análise de Riscos', 'Plano de Continuidade de Negócios', 'Registro de Ativos'],
-    'LGPD': ['Política de Privacidade', 'ROPA (Registro de Operações)', 'Termo de Consentimento', 'RIPD (Relatório de Impacto)', 'Procedimento de Atendimento ao Titular'],
-    'NIST': ['Inventário de Ativos', 'Plano de Resposta a Incidentes', 'Política de Controle de Acesso', 'Relatório de Vulnerabilidades', 'Plano de Recuperação'],
-    'PCI': ['Diagrama de Rede', 'Política de Senhas', 'Logs de Auditoria', 'Procedimento de Criptografia'],
+    'ISO': t('gapAdherence.docExamples.iso') as unknown as string[],
+    'LGPD': t('gapAdherence.docExamples.lgpd') as unknown as string[],
+    'NIST': t('gapAdherence.docExamples.nist') as unknown as string[],
+    'PCI': t('gapAdherence.docExamples.pci') as unknown as string[],
   };
 
   const getDocExamples = (): string[] => {
-    if (!frameworkNome) return ['Políticas', 'Procedimentos', 'Registros', 'Relatórios'];
+    const defaultExamples = t('gapAdherence.docExamples.default') as unknown as string[];
+    if (!frameworkNome) return defaultExamples;
     for (const [key, examples] of Object.entries(DOCUMENT_EXAMPLES)) {
       if (frameworkNome.toUpperCase().includes(key)) return examples;
     }
-    return ['Políticas', 'Procedimentos', 'Registros', 'Relatórios'];
+    return defaultExamples;
   };
 
   return (
@@ -199,13 +202,12 @@ export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNo
         <div className="flex items-start gap-3">
           <FileCheck className="h-5 w-5 text-primary shrink-0 mt-0.5" strokeWidth={1.5}/>
           <div>
-            <p className="text-sm font-medium mb-1">Como funciona a Análise de Documentos?</p>
+            <p className="text-sm font-medium mb-1">{t('gapAnalysis.adherenceUi.view.howItWorksTitle')}</p>
             <p className="text-xs text-muted-foreground mb-2">
-              Envie documentos como políticas, procedimentos, registros ou relatórios. A IA analisa automaticamente
-              a aderência ao framework e sugere o status de conformidade para cada requisito relacionado.
+              {t('gapAnalysis.adherenceUi.view.howItWorksDescription')}
             </p>
             <div className="flex flex-wrap gap-1.5">
-              <span className="text-xs text-muted-foreground">Exemplos:</span>
+              <span className="text-xs text-muted-foreground">{t('gapAnalysis.adherenceUi.view.examplesLabel')}</span>
               {getDocExamples().map((doc, i) => (
                 <Badge key={i} variant="outline" className="text-[10px]">{doc}</Badge>
               ))}
@@ -220,7 +222,7 @@ export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNo
       <div className="flex justify-end">
         <Button onClick={() => setIsDialogOpen(true)}>
           <Plus className="mr-2 h-4 w-4" strokeWidth={1.5}/>
-          Nova Avaliação
+          {t('gapAnalysis.adherenceUi.view.newAssessment')}
         </Button>
       </div>
       )}
@@ -236,12 +238,12 @@ export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNo
 
       {/* Lista de Avaliações */}
       <Card className="p-6">
-        <h3 className="text-lg font-semibold mb-4">Avaliações Recentes</h3>
+        <h3 className="text-lg font-semibold mb-4">{t('gapAnalysis.adherenceUi.view.recentAssessments')}</h3>
         
         {isLoading ? (
           <div className="min-h-[180px] flex flex-col items-center justify-center gap-2">
             <AkurisPulse size={48} />
-            <p className="text-xs text-muted-foreground">Carregando avaliações...</p>
+            <p className="text-xs text-muted-foreground">{t('gapAnalysis.adherenceUi.view.loadingAssessments')}</p>
           </div>
         ) : assessments && assessments.length > 0 ? (
           <div className="space-y-4">
@@ -257,17 +259,17 @@ export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNo
                     
                     <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground mb-3">
                       <div>
-                        <span className="font-medium">Framework:</span> {assessment.framework_nome} {assessment.framework_versao}
+                        <span className="font-medium">{t('gapAnalysis.adherenceUi.view.frameworkLabel')}</span> {assessment.framework_nome} {assessment.framework_versao}
                       </div>
                       <div>
-                        <span className="font-medium">Documento:</span> {assessment.documento_nome}
+                        <span className="font-medium">{t('gapAnalysis.adherenceUi.view.documentLabel')}</span> {assessment.documento_nome}
                       </div>
                     </div>
 
                     {assessment.status === 'processando' && (
                       <div className="flex items-center gap-2 text-info text-sm">
                         <AkurisPulse size={16} />
-                        <span>Identificando requisitos relevantes e analisando... (1-2 minutos)</span>
+                        <span>{t('gapAnalysis.adherenceUi.view.processingHint')}</span>
                       </div>
                     )}
 
@@ -275,7 +277,7 @@ export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNo
                       <div className="flex items-center gap-4">
                         <div className="flex-1">
                           <div className="flex items-center justify-between text-sm mb-1">
-                            <span>Conformidade</span>
+                            <span>{t('gapAnalysis.adherenceUi.view.compliance')}</span>
                             <span className="font-semibold">{assessment.percentual_conformidade}%</span>
                           </div>
                           <Progress value={assessment.percentual_conformidade} className="h-2" />
@@ -284,7 +286,7 @@ export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNo
                     )}
 
                     <p className="text-xs text-muted-foreground mt-2">
-                      Analisado em {formatDateOnly(assessment.created_at)}
+                      {t('gapAnalysis.adherenceUi.view.analyzedOn', { date: formatDateOnly(assessment.created_at) })}
                     </p>
                   </div>
 
@@ -296,7 +298,7 @@ export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNo
                       disabled={assessment.status !== 'concluido'}
                     >
                       <Eye className="mr-2 h-4 w-4" strokeWidth={1.5}/>
-                      Ver Detalhes
+                      {t('gapAnalysis.adherenceUi.view.viewDetails')}
                     </Button>
                     <Button
                       variant="ghost"
@@ -314,10 +316,10 @@ export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNo
         ) : (
           <div className="text-center py-12">
             <FileCheck className="h-12 w-12 mx-auto text-muted-foreground mb-4" strokeWidth={1.5}/>
-            <p className="text-muted-foreground mb-4">Nenhuma avaliação realizada ainda</p>
+            <p className="text-muted-foreground mb-4">{t('gapAnalysis.adherenceUi.view.noAssessmentsYet')}</p>
             <Button onClick={() => setIsDialogOpen(true)}>
               <Plus className="mr-2 h-4 w-4" strokeWidth={1.5}/>
-              Criar Primeira Avaliação
+              {t('gapAnalysis.adherenceUi.view.createFirstAssessment')}
             </Button>
           </div>
         )}
@@ -335,10 +337,10 @@ export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNo
       <ConfirmDialog
         open={!!assessmentToDelete}
         onOpenChange={(open) => !open && setAssessmentToDelete(null)}
-        title="Excluir avaliação?"
-        description="Esta ação não pode ser desfeita. A avaliação e todos os seus dados serão permanentemente removidos."
-        confirmText="Excluir"
-        cancelText="Cancelar"
+        title={t('gapAnalysis.adherenceUi.view.deleteConfirmTitle')}
+        description={t('gapAnalysis.adherenceUi.view.deleteConfirmDescription')}
+        confirmText={t('gapAnalysis.adherenceUi.view.confirmDelete')}
+        cancelText={t('gapAnalysis.adherenceUi.view.cancel')}
         variant="destructive"
         onConfirm={handleDelete}
         loading={isDeleting}

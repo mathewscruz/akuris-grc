@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { Sparkles } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Props {
   open: boolean;
@@ -15,18 +16,20 @@ interface Props {
   onSubmit: (instruction: string) => void;
 }
 
-const QUICK_PROMPTS = [
-  'Tornar mais objetivo e direto',
-  'Adicionar exemplos práticos',
-  'Incluir responsabilidades específicas',
-  'Reforçar conformidade com o framework',
-  'Aumentar o nível de detalhe técnico',
-];
+
 
 export const DocGenSectionRefiner: React.FC<Props> = ({
   open, onOpenChange, sectionName, currentContent, loading, onSubmit,
 }) => {
+  const { t } = useLanguage();
   const [instruction, setInstruction] = useState('');
+  const QUICK_PROMPTS = [
+    t('docgen.sectionRefiner.quickPrompts.objective'),
+    t('docgen.sectionRefiner.quickPrompts.examples'),
+    t('docgen.sectionRefiner.quickPrompts.responsibilities'),
+    t('docgen.sectionRefiner.quickPrompts.compliance'),
+    t('docgen.sectionRefiner.quickPrompts.detail'),
+  ];
 
   const handleSubmit = () => {
     if (!instruction.trim() || loading) return;
@@ -39,10 +42,10 @@ export const DocGenSectionRefiner: React.FC<Props> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-primary" strokeWidth={1.5} />
-            Refinar seção: {sectionName}
+            {t('docgen.sectionRefiner.title', { sectionName })}
           </DialogTitle>
           <DialogDescription>
-            Descreva o ajuste desejado. A IA reescreverá apenas esta seção, mantendo a coerência com o restante do documento. (1 crédito)
+            {t('docgen.sectionRefiner.description')}
           </DialogDescription>
         </DialogHeader>
 
@@ -67,16 +70,16 @@ export const DocGenSectionRefiner: React.FC<Props> = ({
           <Textarea
             value={instruction}
             onChange={(e) => setInstruction(e.target.value)}
-            placeholder="Ex.: Adicione um parágrafo sobre responsabilidades do DPO e cite explicitamente o art. 41 da LGPD."
+            placeholder={t('docgen.sectionRefiner.instructionPlaceholder')}
             rows={4}
             disabled={loading}
           />
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>Cancelar</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>{t('docgen.sectionRefiner.cancel')}</Button>
           <Button onClick={handleSubmit} disabled={!instruction.trim() || loading} className="gap-2">
-            {loading ? <><AkurisPulse size={16} /> Refinando…</> : <><Sparkles className="h-3.5 w-3.5" strokeWidth={1.5} /> Refinar com IA</>}
+            {loading ? <><AkurisPulse size={16} /> {t('docgen.sectionRefiner.refining')}</> : <><Sparkles className="h-3.5 w-3.5" strokeWidth={1.5} /> {t('docgen.sectionRefiner.refineWithAI')}</>}
           </Button>
         </DialogFooter>
       </DialogContent>

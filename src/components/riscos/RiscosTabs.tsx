@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { LayoutGrid, Grid3x3, Table as TableIcon, ShieldCheck } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export type RiscosView = 'overview' | 'matrix' | 'table' | 'aceite';
 const STORAGE_KEY = 'akuris.riscos.view';
@@ -19,6 +20,7 @@ interface Props {
 }
 
 export function RiscosTabs({ overview, matrix, table, aceite }: Props) {
+  const { t } = useLanguage();
   const [searchParams, setSearchParams] = useSearchParams();
   const urlView = searchParams.get('view') as RiscosView | null;
   const stored = (typeof window !== 'undefined' ? (localStorage.getItem(STORAGE_KEY) as RiscosView | null) : null);
@@ -50,28 +52,28 @@ export function RiscosTabs({ overview, matrix, table, aceite }: Props) {
           className="text-xs gap-1.5"
         >
           <LayoutGrid className="h-3.5 w-3.5" strokeWidth={1.5} />
-          Visão geral
+          {t('riscosDetalhe.tabs.overview')}
         </TabsTrigger>
         <TabsTrigger
           value="matrix"
           className="text-xs gap-1.5"
         >
           <Grid3x3 className="h-3.5 w-3.5" strokeWidth={1.5} />
-          Matriz
+          {t('riscosDetalhe.tabs.matrix')}
         </TabsTrigger>
         <TabsTrigger
           value="table"
           className="text-xs gap-1.5"
         >
           <TableIcon className="h-3.5 w-3.5" strokeWidth={1.5} />
-          Tabela
+          {t('riscosDetalhe.tabs.table')}
         </TabsTrigger>
         <TabsTrigger
           value="aceite"
           className="text-xs gap-1.5"
         >
           <ShieldCheck className="h-3.5 w-3.5" strokeWidth={1.5} />
-          Aceite
+          {t('riscosDetalhe.tabs.aceite')}
         </TabsTrigger>
       </TabsList>
       <TabsContent value="overview" className="mt-5 data-[state=active]:animate-fade-in">{overview}</TabsContent>

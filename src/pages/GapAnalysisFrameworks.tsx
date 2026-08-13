@@ -21,6 +21,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { useDebounce } from '@/hooks/useDebounce';
 import { Shield, Search, ChevronDown } from 'lucide-react';
 import { logger } from '@/lib/logger';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Framework {
   id: string;
@@ -47,12 +48,12 @@ interface StatusCounts {
 
 const SUGGESTED_NAMES = ['ISO 27001', 'ISO/IEC 27001', 'LGPD', 'NIST CSF 2.0', 'NIST CSF'];
 
-const CATEGORY_OPTIONS: { id: string; label: string }[] = [
-  { id: 'all', label: 'Todas' },
-  { id: 'seguranca', label: 'Segurança' },
-  { id: 'privacidade', label: 'Privacidade' },
-  { id: 'governanca', label: 'Governança' },
-  { id: 'qualidade', label: 'Qualidade' },
+const CATEGORY_OPTIONS: { id: string; labelKey: string }[] = [
+  { id: 'all', labelKey: 'gapAnalysis.frameworks.category.all' },
+  { id: 'seguranca', labelKey: 'gapAnalysis.frameworks.category.seguranca' },
+  { id: 'privacidade', labelKey: 'gapAnalysis.frameworks.category.privacidade' },
+  { id: 'governanca', labelKey: 'gapAnalysis.frameworks.category.governanca' },
+  { id: 'qualidade', labelKey: 'gapAnalysis.frameworks.category.qualidade' },
 ];
 
 function getCategory(tipo: string): string {
@@ -74,6 +75,7 @@ function buildSegments(sc: StatusCounts): StackSegment[] {
 }
 
 export default function GapAnalysisFrameworks() {
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const { profile } = useAuth();
   const empresaId = profile?.empresa_id;
@@ -341,8 +343,8 @@ export default function GapAnalysisFrameworks() {
       <ErrorBoundary>
         <div className="space-y-6">
           <PageHeader
-            title="Gap Analysis"
-            description="Avalie a conformidade da sua organização com frameworks regulatórios"
+            title={t('gapAnalysis.frameworks.title')}
+            description={t('gapAnalysis.frameworks.description')}
           />
           <div className="flex items-center justify-center py-24">
             <AkurisPulse size={48} />
@@ -357,7 +359,7 @@ export default function GapAnalysisFrameworks() {
       <div className="relative flex-1 min-w-[220px] max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Buscar framework por nome, tipo ou descrição..."
+          placeholder={t('gapAnalysis.frameworks.searchPlaceholder')}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="pl-9 h-9"
@@ -373,7 +375,7 @@ export default function GapAnalysisFrameworks() {
               className="cursor-pointer text-xs"
               onClick={() => setCategoryFilter(opt.id)}
             >
-              {opt.label}
+              {t(opt.labelKey)}
             </Badge>
           );
         })}
@@ -385,8 +387,8 @@ export default function GapAnalysisFrameworks() {
     <ErrorBoundary>
       <div className="space-y-8">
         <PageHeader
-          title="Gap Analysis"
-          description="Avalie a conformidade da sua organização com frameworks regulatórios"
+          title={t('gapAnalysis.frameworks.title')}
+          description={t('gapAnalysis.frameworks.description')}
         />
 
         {!hasActiveFrameworks ? (
@@ -413,11 +415,11 @@ export default function GapAnalysisFrameworks() {
             {aiRecommended.length > 0 && (
               <section>
                 <SectionHead
-                  title="RECOMENDADOS PARA SUA EMPRESA"
+                  title={t('gapAnalysis.frameworks.recommended.title')}
                   count={aiRecommended.length}
                   right={
                     <span className="text-[10px] font-sans uppercase tracking-wider text-muted-foreground">
-                      Baseado em sobreposição de evidências
+                      {t('gapAnalysis.frameworks.recommended.basedOn')}
                     </span>
                   }
                 />
@@ -444,7 +446,7 @@ export default function GapAnalysisFrameworks() {
             {/* Frameworks ativos — linhas editoriais */}
             <section>
               <SectionHead
-                title="FRAMEWORKS ATIVOS"
+                title={t('gapAnalysis.frameworks.active.title')}
                 count={hasFilters ? `${filteredActiveFrameworks.length}/${activeFrameworks.length}` : activeFrameworks.length}
               />
               {filteredActiveFrameworks.length > 0 ? (
@@ -469,7 +471,7 @@ export default function GapAnalysisFrameworks() {
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground italic">
-                  Nenhum framework ativo corresponde aos filtros.
+                  {t('gapAnalysis.frameworks.active.noneMatchFilters')}
                 </p>
               )}
             </section>
@@ -486,7 +488,7 @@ export default function GapAnalysisFrameworks() {
                     className={`h-4 w-4 text-muted-foreground transition-transform ${catalogOpen ? 'rotate-0' : '-rotate-90'}`}
                   />
                   <span className="text-xs font-semibold uppercase tracking-wider text-foreground/80 group-hover:text-primary transition-colors">
-                    OUTROS DISPONÍVEIS
+                    {t('gapAnalysis.frameworks.otherAvailable')}
                   </span>
                   <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
                     {hasFilters && catalogOpen
@@ -506,7 +508,7 @@ export default function GapAnalysisFrameworks() {
             </Collapsible>
           ) : (
             <section>
-              <SectionHead title="FRAMEWORKS DISPONÍVEIS" count={availableFrameworks.length} />
+              <SectionHead title={t('gapAnalysis.frameworks.available.title')} count={availableFrameworks.length} />
               {FilterBar}
               <div className="mt-4">
                 <FrameworkCatalog
@@ -522,8 +524,8 @@ export default function GapAnalysisFrameworks() {
         {frameworks.length === 0 && (
           <EmptyState
             icon={<Shield className="h-8 w-8" />}
-            title="Nenhum framework disponível"
-            description="Entre em contato com o administrador para habilitar frameworks de conformidade."
+            title={t('gapAnalysis.frameworks.empty.title')}
+            description={t('gapAnalysis.frameworks.empty.description')}
           />
         )}
       </div>

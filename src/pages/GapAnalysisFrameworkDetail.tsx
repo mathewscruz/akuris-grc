@@ -41,6 +41,7 @@ import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
 import { FRAMEWORK_DESCRIPTIONS } from '@/lib/framework-descriptions';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Framework {
   id: string;
@@ -59,6 +60,7 @@ export default function GapAnalysisFrameworkDetail() {
 }
 
 function GapAnalysisFrameworkDetailInner() {
+  const { t } = useLanguage();
   const { frameworkId } = useParams<{ frameworkId: string }>();
   const navigate = useNavigate();
   const [, setSearchParams] = useSearchParams();
@@ -91,7 +93,7 @@ function GapAnalysisFrameworkDetailInner() {
         setFramework(data);
       } catch (error: any) {
         logger.error('Erro ao carregar framework', { error: error instanceof Error ? error.message : String(error) });
-        toast.error('Framework não encontrado');
+        toast.error(t('gapAnalysis.detail.notFound'));
         navigate('/gap-analysis/frameworks');
       } finally {
         setLoading(false);
@@ -202,10 +204,10 @@ function GapAnalysisFrameworkDetailInner() {
     try {
       const data = await getExportData();
       await exportFrameworkPDF(data);
-      toast.success('PDF exportado com sucesso');
+      toast.success(t('gapAnalysis.detail.toast.pdfExported'));
     } catch (error: any) {
       logger.error('Erro ao exportar PDF', { error: error instanceof Error ? error.message : String(error) });
-      toast.error('Erro ao exportar PDF');
+      toast.error(t('gapAnalysis.detail.toast.pdfExportError'));
     } finally {
       setExporting(false);
     }
@@ -217,10 +219,10 @@ function GapAnalysisFrameworkDetailInner() {
     try {
       const data = await getExportData();
       await exportBoardPDF(data);
-      toast.success('Relatório executivo exportado com sucesso');
+      toast.success(t('gapAnalysis.detail.toast.boardExported'));
     } catch (error: any) {
       logger.error('Erro ao exportar PDF Board', { error: error instanceof Error ? error.message : String(error) });
-      toast.error('Erro ao exportar relatório executivo');
+      toast.error(t('gapAnalysis.detail.toast.boardExportError'));
     } finally {
       setExporting(false);
     }
@@ -236,7 +238,7 @@ function GapAnalysisFrameworkDetailInner() {
       <ErrorBoundary>
         <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3">
           <AkurisPulse size={64} />
-          <p className="text-sm text-muted-foreground">Carregando framework...</p>
+          <p className="text-sm text-muted-foreground">{t('gapAnalysis.detail.loading')}</p>
         </div>
       </ErrorBoundary>
     );
@@ -247,13 +249,13 @@ function GapAnalysisFrameworkDetailInner() {
       <div className="space-y-6">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={() => navigate('/gap-analysis/frameworks')}>
-            <ChevronLeft className="h-4 w-4 mr-2" strokeWidth={1.5} />Voltar
+            <ChevronLeft className="h-4 w-4 mr-2" strokeWidth={1.5} />{t('gapAnalysis.detail.back')}
           </Button>
         </div>
 
         <PageHeader
           title={`${framework.nome} ${framework.versao}`}
-          description={framework.descricao || FRAMEWORK_DESCRIPTIONS[framework.nome] || `Avaliação de conformidade ${framework.tipo_framework}`}
+          description={framework.descricao || FRAMEWORK_DESCRIPTIONS[framework.nome] || t('gapAnalysis.detail.defaultDescription', { tipo: framework.tipo_framework })}
           actions={
             <div className="flex items-center gap-2 flex-wrap">
               {/* Ação primária — Consultor IA (ícone proprietário Akuris) */}
@@ -275,17 +277,17 @@ function GapAnalysisFrameworkDetailInner() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" disabled={exporting}>
                     <FileDown className="h-4 w-4 mr-2" strokeWidth={1.5} />
-                    {exporting ? 'Exportando...' : 'Exportar'}
+                    {exporting ? t('gapAnalysis.detail.exporting') : t('gapAnalysis.detail.export')}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={handleExportPDF} disabled={exporting}>
                     <Download className="h-4 w-4 mr-2" strokeWidth={1.5} />
-                    PDF Técnico (detalhado)
+                    {t('gapAnalysis.detail.exportTechnical')}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleExportBoard} disabled={exporting}>
                     <FileBarChart className="h-4 w-4 mr-2" strokeWidth={1.5} />
-                    Relatório Executivo (Board)
+                    {t('gapAnalysis.detail.exportBoard')}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -293,26 +295,26 @@ function GapAnalysisFrameworkDetailInner() {
               {/* Mais ações — agrupa Gerador de Documentos e Tour */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" aria-label="Mais ações">
+                  <Button variant="ghost" size="sm" aria-label={t('gapAnalysis.detail.moreActions')}>
                     <MoreHorizontal className="h-4 w-4" strokeWidth={1.5} />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuItem onClick={() => openDocGen({ frameworkId, frameworkName: framework.nome })}>
                     <AkurisAIIcon className="h-4 w-4 mr-2" />
-                    Gerador de Documentos
+                    {t('gapAnalysis.detail.documentGenerator')}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <CriarTarefaMenuItem
                     entidadeTipo="gap_assessment"
                     entidadeId={frameworkId}
-                    tituloSugerido={`Remediação · ${framework.nome}`}
-                    descricaoSugerida={`Plano de remediação para o framework ${framework.nome}.`}
+                    tituloSugerido={t('gapAnalysis.detail.taskTitle', { nome: framework.nome })}
+                    descricaoSugerida={t('gapAnalysis.detail.taskDescription', { nome: framework.nome })}
                   />
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => { setActiveTab('avaliacao'); setShowOnboarding(true); }}>
                     <HelpCircle className="h-4 w-4 mr-2" strokeWidth={1.5} />
-                    Revisitar tour
+                    {t('gapAnalysis.detail.revisitTour')}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -322,12 +324,12 @@ function GapAnalysisFrameworkDetailInner() {
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
-            <TabsTrigger value="avaliacao">Avaliação</TabsTrigger>
-            <TabsTrigger value="documentos">Análise de Documentos</TabsTrigger>
-            <TabsTrigger value="remediacao">Remediação</TabsTrigger>
-            {supportsSoA && <TabsTrigger value="soa">SoA</TabsTrigger>}
-            <TabsTrigger value="biblioteca">Biblioteca de Evidências</TabsTrigger>
-            <TabsTrigger value="historico">Histórico</TabsTrigger>
+            <TabsTrigger value="avaliacao">{t('gapAnalysis.detail.tabs.evaluation')}</TabsTrigger>
+            <TabsTrigger value="documentos">{t('gapAnalysis.detail.tabs.documents')}</TabsTrigger>
+            <TabsTrigger value="remediacao">{t('gapAnalysis.detail.tabs.remediation')}</TabsTrigger>
+            {supportsSoA && <TabsTrigger value="soa">{t('gapAnalysis.detail.tabs.soa')}</TabsTrigger>}
+            <TabsTrigger value="biblioteca">{t('gapAnalysis.detail.tabs.evidenceLibrary')}</TabsTrigger>
+            <TabsTrigger value="historico">{t('gapAnalysis.detail.tabs.history')}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="avaliacao" className="space-y-5">
@@ -404,7 +406,7 @@ function GapAnalysisFrameworkDetailInner() {
                     />
                   ) : (
                     <div className="rounded-2xl border border-dashed border-border bg-card p-6 flex items-center justify-center text-sm text-muted-foreground">
-                      A fila de prioridade aparece após as primeiras avaliações.
+                      {t('gapAnalysis.detail.priorityQueueEmpty')}
                     </div>
                   )}
                 </div>

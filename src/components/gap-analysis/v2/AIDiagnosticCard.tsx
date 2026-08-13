@@ -9,6 +9,7 @@ import { Check, X, AlertTriangle, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { AIBadge } from './AIBadge';
 
 export interface AIDiagnosticResult {
@@ -27,13 +28,6 @@ interface AIDiagnosticCardProps {
   onApplyJustification?: (text: string) => void;
   className?: string;
 }
-
-const STATUS_LABEL: Record<string, string> = {
-  conforme: 'Conforme',
-  parcial: 'Parcial',
-  nao_conforme: 'Não Conforme',
-  nao_aplicavel: 'N/A',
-};
 
 const STATUS_TONE: Record<string, string> = {
   conforme: 'text-success border-success/30 bg-success/10',
@@ -54,15 +48,22 @@ export function AIDiagnosticCard({
   onApplyJustification,
   className,
 }: AIDiagnosticCardProps) {
+  const { t } = useLanguage();
+  const STATUS_LABEL: Record<string, string> = {
+    conforme: t('gapAnalysis.v2.aiDiagnostic.statusLabel.conforme'),
+    parcial: t('gapAnalysis.v2.aiDiagnostic.statusLabel.parcial'),
+    nao_conforme: t('gapAnalysis.v2.aiDiagnostic.statusLabel.nao_conforme'),
+    nao_aplicavel: t('gapAnalysis.v2.aiDiagnostic.statusLabel.nao_aplicavel'),
+  };
   const statusLabel = STATUS_LABEL[result.suggested_status] || result.suggested_status;
   const statusTone = STATUS_TONE[result.suggested_status] || 'text-muted-foreground border-border bg-muted/40';
 
   const copyJustification = async () => {
     try {
       await navigator.clipboard.writeText(result.justification);
-      toast.success('Justificativa copiada');
+      toast.success(t('gapAnalysis.v2.aiDiagnostic.copied'));
     } catch {
-      toast.error('Não foi possível copiar');
+      toast.error(t('gapAnalysis.v2.aiDiagnostic.copyError'));
     }
   };
 
@@ -78,14 +79,14 @@ export function AIDiagnosticCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-[10px] font-sans uppercase tracking-wider text-primary">
-              Diagnóstico
+              {t('gapAnalysis.v2.aiDiagnostic.diagnosisLabel')}
             </span>
             <span className="text-[10px] font-sans uppercase tracking-wider text-muted-foreground">
-              Confiança {result.confidence}%
+              {t('gapAnalysis.v2.aiDiagnostic.confidenceLabel', { pct: result.confidence })}
             </span>
           </div>
           <h4 className="mt-1 text-sm font-semibold text-foreground">
-            Status recomendado: {statusLabel}
+            {t('gapAnalysis.v2.aiDiagnostic.recommendedStatus', { status: statusLabel })}
           </h4>
           <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{result.summary}</p>
         </div>
@@ -96,7 +97,7 @@ export function AIDiagnosticCard({
             className={cn('text-xs h-7 shrink-0', statusTone)}
             onClick={() => onApplyStatus(result.suggested_status)}
           >
-            Aplicar
+            {t('gapAnalysis.v2.aiDiagnostic.apply')}
           </Button>
         )}
       </div>
@@ -105,7 +106,7 @@ export function AIDiagnosticCard({
       {result.evaluated_points.length > 0 && (
         <div className="mb-4">
           <div className="text-[10px] font-sans uppercase tracking-wider text-muted-foreground mb-2">
-            Pontos avaliados
+            {t('gapAnalysis.v2.aiDiagnostic.evaluatedPoints')}
           </div>
           <ul className="space-y-1.5">
             {result.evaluated_points.map((p, i) => {
@@ -126,7 +127,7 @@ export function AIDiagnosticCard({
       {result.gaps.length > 0 && (
         <div className="mb-4">
           <div className="text-[10px] font-sans uppercase tracking-wider text-muted-foreground mb-2">
-            Gaps identificados
+            {t('gapAnalysis.v2.aiDiagnostic.gapsIdentified')}
           </div>
           <ul className="space-y-1 list-disc list-inside text-xs text-foreground/80">
             {result.gaps.map((g, i) => (<li key={i}>{g}</li>))}
@@ -139,7 +140,7 @@ export function AIDiagnosticCard({
         <div className="border-t border-primary/20 pt-3 mt-3">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[10px] font-sans uppercase tracking-wider text-muted-foreground">
-              Justificativa sugerida
+              {t('gapAnalysis.v2.aiDiagnostic.suggestedJustification')}
             </span>
             <div className="flex items-center gap-1">
               <Button
@@ -149,7 +150,7 @@ export function AIDiagnosticCard({
                 onClick={copyJustification}
               >
                 <Copy className="h-3 w-3 mr-1" strokeWidth={1.5} />
-                Copiar
+                {t('gapAnalysis.v2.aiDiagnostic.copy')}
               </Button>
               {onApplyJustification && (
                 <Button
@@ -158,7 +159,7 @@ export function AIDiagnosticCard({
                   className="h-6 px-2 text-[11px] text-primary"
                   onClick={() => onApplyJustification(result.justification)}
                 >
-                  Usar
+                  {t('gapAnalysis.v2.aiDiagnostic.use')}
                 </Button>
               )}
             </div>

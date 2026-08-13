@@ -15,6 +15,7 @@ import { useIntegrationNotify } from '@/hooks/useIntegrationNotify';
 import { logger } from '@/lib/logger';
 import { MasterDetailDialog, type MasterDetailItem } from '@/components/ui/master-detail-dialog';
 import { Separator } from '@/components/ui/separator';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 interface Documento {
@@ -55,13 +56,14 @@ interface AprovacaoDialogProps {
   empresaId?: string | null;
 }
 
-const STATUS_INFO: Record<string, { label: string; icon: typeof Clock; tone: StatusTone }> = {
-  pendente: { label: 'Pendente', icon: Clock, tone: 'warning' },
-  aprovado: { label: 'Aprovado', icon: CheckCircle, tone: 'success' },
-  rejeitado: { label: 'Rejeitado', icon: XCircle, tone: 'destructive' },
+const STATUS_INFO: Record<string, { labelKey: string; icon: typeof Clock; tone: StatusTone }> = {
+  pendente: { labelKey: 'documentos.dialogs.statusPendente', icon: Clock, tone: 'warning' },
+  aprovado: { labelKey: 'documentos.dialogs.statusAprovado', icon: CheckCircle, tone: 'success' },
+  rejeitado: { labelKey: 'documentos.dialogs.statusRejeitado', icon: XCircle, tone: 'destructive' },
 };
 
 export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empresaId }: AprovacaoDialogProps) {
+  const { t } = useLanguage();
   const [aprovacoes, setAprovacoes] = useState<Aprovacao[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(false);
@@ -187,7 +189,7 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
       }
     } catch (error) {
       logger.error('Erro ao buscar aprovações:', error);
-      toast({ title: 'Erro ao carregar aprovações', description: 'Tente novamente em alguns instantes.', variant: 'destructive' });
+      toast({ title: t('documentos.dialogs.erroCarregarAprovacoes'), description: t('documentos.dialogs.tenteNovamente'), variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -214,7 +216,7 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
   const handleSubmitRequest = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.aprovador_id) {
-      toast({ title: 'Aprovador obrigatório', description: 'Por favor, selecione um aprovador.', variant: 'destructive' });
+      toast({ title: t('documentos.dialogs.aprovadorObrigatorioTitulo'), description: t('documentos.dialogs.aprovadorObrigatorioDescricao'), variant: 'destructive' });
       return;
     }
 
@@ -233,11 +235,11 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
 
       if (existente) {
         toast({
-          title: 'Solicitação já existe',
+          title: t('documentos.dialogs.solicitacaoJaExisteTitulo'),
           description:
             existente.status === 'pendente'
-              ? 'Já existe uma solicitação pendente para este aprovador. Cancele a anterior antes de enviar uma nova.'
-              : 'Este aprovador já avaliou este documento. Cancele a aprovação anterior se desejar reenviar.',
+              ? t('documentos.dialogs.solicitacaoJaExistePendente')
+              : t('documentos.dialogs.solicitacaoJaExisteAvaliada'),
           variant: 'destructive',
         });
         setLoading(false);
@@ -267,8 +269,8 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
       }
 
       toast({
-        title: 'Solicitação enviada',
-        description: 'A solicitação de aprovação foi enviada com sucesso. O aprovador receberá uma notificação.',
+        title: t('documentos.dialogs.solicitacaoEnviadaTitulo'),
+        description: t('documentos.dialogs.solicitacaoEnviadaDescricao'),
       });
 
       setFormData({ aprovador_id: '', comentarios: '' });
@@ -278,8 +280,8 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
     } catch (error) {
       logger.error('Erro ao processar:', error);
       toast({
-        title: 'Erro ao solicitar aprovação',
-        description: error instanceof Error ? error.message : 'Tente novamente em alguns instantes.',
+        title: t('documentos.dialogs.erroSolicitarAprovacaoTitulo'),
+        description: error instanceof Error ? error.message : t('documentos.dialogs.tenteNovamente'),
         variant: 'destructive',
       });
     } finally {
@@ -291,12 +293,12 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
     try {
       const { error } = await supabase.from('documentos_aprovacoes').delete().eq('id', aprovacaoId);
       if (error) throw error;
-      toast({ title: 'Solicitação cancelada', description: 'A solicitação de aprovação foi cancelada com sucesso.' });
+      toast({ title: t('documentos.dialogs.solicitacaoCanceladaTitulo'), description: t('documentos.dialogs.solicitacaoCanceladaDescricao') });
       if (selectedId === aprovacaoId) setSelectedId(null);
       fetchAprovacoes();
     } catch (error) {
       logger.error('Erro ao cancelar solicitação:', error);
-      toast({ title: 'Erro ao cancelar solicitação', description: 'Tente novamente em alguns instantes.', variant: 'destructive' });
+      toast({ title: t('documentos.dialogs.erroCancelarSolicitacaoTitulo'), description: t('documentos.dialogs.tenteNovamente'), variant: 'destructive' });
     }
   };
 
@@ -329,12 +331,12 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
         });
       }
 
-      toast({ title: 'Status atualizado', description: 'O status da aprovação foi atualizado com sucesso.' });
+      toast({ title: t('documentos.dialogs.statusAtualizadoTitulo'), description: t('documentos.dialogs.statusAtualizadoDescricao') });
       fetchAprovacoes();
       onSuccess();
     } catch (error) {
       logger.error('Erro ao atualizar status:', error);
-      toast({ title: 'Erro ao atualizar status', description: 'Tente novamente em alguns instantes.', variant: 'destructive' });
+      toast({ title: t('documentos.dialogs.erroAtualizarStatusTitulo'), description: t('documentos.dialogs.tenteNovamente'), variant: 'destructive' });
     }
   };
 
@@ -351,9 +353,9 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
     if (!actionModal.aprovacaoId || !actionModal.type) return;
     if ((actionModal.type === 'rejeitar' || actionModal.type === 'alteracoes') && !actionComment.trim()) {
       toast({
-        title: 'Comentário obrigatório',
+        title: t('documentos.dialogs.comentarioObrigatorioTitulo'),
         description:
-          actionModal.type === 'rejeitar' ? 'Por favor, informe o motivo da rejeição.' : 'Por favor, descreva as alterações necessárias.',
+          actionModal.type === 'rejeitar' ? t('documentos.dialogs.comentarioObrigatorioRejeicao') : t('documentos.dialogs.comentarioObrigatorioAlteracoes'),
         variant: 'destructive',
       });
       return;
@@ -374,7 +376,7 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
           description: format(new Date(a.data_aprovacao || a.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }),
           badge: (
             <StatusBadge tone={info.tone} size="sm">
-              {info.label}
+              {t(info.labelKey)}
             </StatusBadge>
           ),
           icon: User,
@@ -391,12 +393,12 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
         open={open}
         onOpenChange={onOpenChange}
         icon={ShieldCheck}
-        title="Sistema de Aprovação Desabilitado"
-        description='Este documento não requer aprovação. Para habilitar o sistema de aprovação, edite o documento e marque a opção "Requer Aprovação".'
+        title={t('documentos.dialogs.aprovacaoDesabilitadaTitulo')}
+        description={t('documentos.dialogs.aprovacaoDesabilitadaDescricao')}
         size="md"
         footer={
           <div className="flex justify-end">
-            <Button size="sm" onClick={() => onOpenChange(false)}>Fechar</Button>
+            <Button size="sm" onClick={() => onOpenChange(false)}>{t('documentos.dialogs.fechar')}</Button>
           </div>
         }
       >
@@ -428,22 +430,22 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
           <div className="space-y-1">
             <h2 className="text-xl font-semibold tracking-tight">{a.aprovador_nome}</h2>
             <p className="text-sm text-muted-foreground">
-              {a.tipo_acao === 'solicitacao' ? 'Solicitação de aprovação' : 'Registro de aprovação'}
+              {a.tipo_acao === 'solicitacao' ? t('documentos.dialogs.solicitacaoAprovacao') : t('documentos.dialogs.registroAprovacao')}
             </p>
           </div>
           <StatusBadge tone={info.tone} icon={<StatusIcon className="h-3 w-3" />}>
-            {info.label}
+            {t(info.labelKey)}
           </StatusBadge>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Solicitada em</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('documentos.dialogs.solicitadaEm')}</p>
             <p className="text-sm">{format(new Date(a.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</p>
           </div>
           {a.data_aprovacao && (
             <div className="space-y-1">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Decidida em</p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('documentos.dialogs.decididaEm')}</p>
               <p className="text-sm">{format(new Date(a.data_aprovacao), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</p>
             </div>
           )}
@@ -453,7 +455,7 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
           <>
             <Separator />
             <div className="space-y-1">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Comentários</p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('documentos.dialogs.comentariosLabel')}</p>
               <p className="text-sm whitespace-pre-wrap leading-relaxed bg-muted/40 rounded-md p-3 border">{a.comentarios}</p>
             </div>
           </>
@@ -467,26 +469,26 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
                 <>
                   <Button size="sm" onClick={() => openActionModal('aprovar', a.id)}>
                     <CheckCircle className="h-4 w-4 mr-2" />
-                    Aprovar
+                    {t('documentos.dialogs.aprovar')}
                   </Button>
                   <Button variant="outline" size="sm" onClick={() => openActionModal('alteracoes', a.id)}>
                     <MessageSquare className="h-4 w-4 mr-2" />
-                    Solicitar Alterações
+                    {t('documentos.dialogs.solicitarAlteracoes')}
                   </Button>
                   <Button variant="destructive" size="sm" onClick={() => openActionModal('rejeitar', a.id)}>
                     <XCircle className="h-4 w-4 mr-2" />
-                    Rejeitar
+                    {t('documentos.dialogs.rejeitar')}
                   </Button>
                 </>
               )}
               {isSolicitante && (
                 <Button variant="outline" size="sm" onClick={() => handleCancelarSolicitacao(a.id)}>
-                  Cancelar Solicitação
+                  {t('documentos.dialogs.cancelarSolicitacao')}
                 </Button>
               )}
               {!isAprovador && !isSolicitante && (
                 <p className="text-xs text-muted-foreground italic">
-                  Apenas o aprovador designado ou quem solicitou pode agir nesta aprovação.
+                  {t('documentos.dialogs.apenasAprovadorSolicitante')}
                 </p>
               )}
             </div>
@@ -501,7 +503,7 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
       <MasterDetailDialog
         open={open}
         onOpenChange={onOpenChange}
-        title="Aprovação do Documento"
+        title={t('documentos.dialogs.aprovacaoDocumentoTitulo')}
         description={documento.nome}
         icon={ShieldCheck}
         items={items}
@@ -509,16 +511,16 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
         onSelect={(it) => setSelectedId(it.id)}
         renderDetail={(it) => renderDetail(it as (MasterDetailItem & { raw: Aprovacao }) | null)}
         onCreate={() => setRequestOpen(true)}
-        createLabel="Nova Solicitação"
-        searchPlaceholder="Buscar aprovador..."
+        createLabel={t('documentos.dialogs.novaSolicitacao')}
+        searchPlaceholder={t('documentos.dialogs.buscarAprovador')}
         emptyState={
           <div className="space-y-2">
             <CheckCircle className="h-8 w-8 mx-auto text-muted-foreground/60" />
-            <p>Nenhuma aprovação registrada</p>
-            <p className="text-xs">Use "Nova Solicitação" para começar</p>
+            <p>{t('documentos.dialogs.nenhumaAprovacao')}</p>
+            <p className="text-xs">{t('documentos.dialogs.useNovaSolicitacao')}</p>
           </div>
         }
-        emptySelection="Selecione uma aprovação à esquerda para ver os detalhes."
+        emptySelection={t('documentos.dialogs.selecioneAprovacao')}
         size="xl"
         footer={
           <>
@@ -528,17 +530,17 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
                 icon={React.createElement(STATUS_INFO[statusGeral].icon, { className: 'h-3 w-3' })}
                 className="mr-auto"
               >
-                Status geral: {STATUS_INFO[statusGeral].label}
+                {t('documentos.dialogs.statusGeral', { status: t(STATUS_INFO[statusGeral].labelKey) })}
               </StatusBadge>
             )}
             {documento.arquivo_url && (
               <Button variant="outline" size="sm" onClick={() => setPreviewOpen(true)}>
                 <Eye className="h-4 w-4 mr-2" />
-                Visualizar Documento
+                {t('documentos.dialogs.visualizarDocumento')}
               </Button>
             )}
             <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
-              Fechar
+              {t('documentos.dialogs.fechar')}
             </Button>
           </>
         }
@@ -549,22 +551,22 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
         open={requestOpen}
         onOpenChange={setRequestOpen}
         icon={Plus}
-        title="Nova Solicitação de Aprovação"
-        description="Selecione um aprovador e adicione observações se necessário."
+        title={t('documentos.dialogs.novaSolicitacaoAprovacaoTitulo')}
+        description={t('documentos.dialogs.novaSolicitacaoAprovacaoDescricao')}
         size="sm"
         onSubmit={() => handleSubmitRequest(new Event('submit') as unknown as React.FormEvent)}
-        submitLabel="Enviar Solicitação"
+        submitLabel={t('documentos.dialogs.enviarSolicitacao')}
         isSubmitting={loading}
       >
           <form onSubmit={handleSubmitRequest} className="space-y-4 pt-2">
             <div className="space-y-2">
-              <Label htmlFor="aprovador_id">Aprovador *</Label>
+              <Label htmlFor="aprovador_id">{t('documentos.dialogs.aprovadorObrigatorio')}</Label>
               <Select
                 value={formData.aprovador_id}
                 onValueChange={(value) => setFormData((prev) => ({ ...prev, aprovador_id: value }))}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione o aprovador" />
+                  <SelectValue placeholder={t('documentos.dialogs.selecioneAprovador')} />
                 </SelectTrigger>
                 <SelectContent>
                   {profiles.map((profile) => (
@@ -583,12 +585,12 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="comentarios">Observações da Solicitação</Label>
+              <Label htmlFor="comentarios">{t('documentos.dialogs.observacoesSolicitacao')}</Label>
               <Textarea
                 id="comentarios"
                 value={formData.comentarios}
                 onChange={(e) => setFormData((prev) => ({ ...prev, comentarios: e.target.value }))}
-                placeholder="Descreva o motivo da solicitação ou observações importantes"
+                placeholder={t('documentos.dialogs.descrevaMotivoSolicitacao')}
                 rows={3}
               />
             </div>
@@ -602,14 +604,14 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
         onOpenChange={setPreviewOpen}
         icon={Eye}
         title={documento.nome}
-        description={documento.arquivo_nome || 'Visualização do documento'}
+        description={documento.arquivo_nome || t('documentos.dialogs.visualizacaoDocumento')}
         size="xl"
         noScroll
         className="h-[85vh]"
         footer={
           <div className="flex justify-end">
             <Button variant="ghost" size="sm" onClick={() => setPreviewOpen(false)}>
-              Fechar
+              {t('documentos.dialogs.fechar')}
             </Button>
           </div>
         }
@@ -622,20 +624,20 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
             ) : !documento?.arquivo_url ? (
               <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
                 <FileText className="h-16 w-16 mb-4" />
-                <p className="text-lg font-medium">Documento sem arquivo anexado</p>
+                <p className="text-lg font-medium">{t('documentos.dialogs.documentoSemArquivo')}</p>
               </div>
             ) : !canPreview() ? (
               <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
                 <FileText className="h-16 w-16 mb-4" />
-                <p className="text-lg font-medium">Visualização não disponível</p>
-                <p className="text-sm mb-4">Este tipo de arquivo não pode ser visualizado no navegador.</p>
+                <p className="text-lg font-medium">{t('documentos.dialogs.visualizacaoIndisponivel')}</p>
+                <p className="text-sm mb-4">{t('documentos.dialogs.arquivoNaoVisualizavel')}</p>
                 <Button variant="outline" onClick={() => previewUrl && window.open(previewUrl, '_blank')}>
                   <ExternalLink className="h-4 w-4 mr-2" />
-                  Baixar Documento
+                  {t('documentos.dialogs.baixarDocumento')}
                 </Button>
               </div>
             ) : isPdf() ? (
-              <iframe src={previewUrl || ''} className="w-full h-full" title="Preview do documento" />
+              <iframe src={previewUrl || ''} className="w-full h-full" title={t('documentos.dialogs.visualizacaoDocumento')} />
             ) : isImage() ? (
               <div className="flex items-center justify-center h-full p-4">
                 <img src={previewUrl || ''} alt={documento.nome} className="max-w-full max-h-full object-contain" />
@@ -645,7 +647,7 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
                 <FileText className="h-16 w-16 mb-4" />
                 <Button variant="outline" onClick={() => previewUrl && window.open(previewUrl, '_blank')}>
                   <ExternalLink className="h-4 w-4 mr-2" />
-                  Abrir em Nova Aba
+                  {t('documentos.dialogs.abrirNovaAba')}
                 </Button>
               </div>
             )}
@@ -658,25 +660,25 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
         onOpenChange={(o) => !o && closeActionModal()}
         icon={actionModal.type === 'rejeitar' ? XCircle : actionModal.type === 'alteracoes' ? MessageSquare : CheckCircle}
         title={
-          actionModal.type === 'aprovar' ? 'Aprovar Documento'
-            : actionModal.type === 'rejeitar' ? 'Rejeitar Documento'
-            : 'Solicitar Alterações'
+          actionModal.type === 'aprovar' ? t('documentos.dialogs.aprovarDocumentoTitulo')
+            : actionModal.type === 'rejeitar' ? t('documentos.dialogs.rejeitarDocumentoTitulo')
+            : t('documentos.dialogs.solicitarAlteracoesTitulo')
         }
         description={
-          actionModal.type === 'aprovar' ? 'Confirme a aprovação do documento. Você pode adicionar um comentário opcional.'
-            : actionModal.type === 'rejeitar' ? 'Informe o motivo da rejeição. Este campo é obrigatório.'
-            : 'Descreva as alterações necessárias. O documento permanecerá pendente até as correções serem realizadas.'
+          actionModal.type === 'aprovar' ? t('documentos.dialogs.confirmarAprovacaoDescricao')
+            : actionModal.type === 'rejeitar' ? t('documentos.dialogs.motivoRejeicaoObrigatorio')
+            : t('documentos.dialogs.descrevaAlteracoesNecessarias')
         }
         size="sm"
         footer={
           <div className="flex justify-end gap-2">
             <Button variant="ghost" size="sm" onClick={closeActionModal}>
-              Cancelar
+              {t('documentos.dialogs.cancelar')}
             </Button>
             <Button size="sm" onClick={executeAction} variant={actionModal.type === 'rejeitar' ? 'destructive' : 'default'}>
-              {actionModal.type === 'aprovar' && 'Confirmar Aprovação'}
-              {actionModal.type === 'rejeitar' && 'Confirmar Rejeição'}
-              {actionModal.type === 'alteracoes' && 'Enviar Solicitação'}
+              {actionModal.type === 'aprovar' && t('documentos.dialogs.confirmarAprovacao')}
+              {actionModal.type === 'rejeitar' && t('documentos.dialogs.confirmarRejeicao')}
+              {actionModal.type === 'alteracoes' && t('documentos.dialogs.enviarSolicitacao')}
             </Button>
           </div>
         }
@@ -684,9 +686,9 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="action-comment">
-                {actionModal.type === 'rejeitar' && 'Motivo da Rejeição *'}
-                {actionModal.type === 'alteracoes' && 'Alterações Necessárias *'}
-                {actionModal.type === 'aprovar' && 'Comentários (opcional)'}
+                {actionModal.type === 'rejeitar' && t('documentos.dialogs.motivoRejeicaoLabel')}
+                {actionModal.type === 'alteracoes' && t('documentos.dialogs.alteracoesNecessariasLabel')}
+                {actionModal.type === 'aprovar' && t('documentos.dialogs.comentariosOpcional')}
               </Label>
               <Textarea
                 id="action-comment"
@@ -694,10 +696,10 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
                 onChange={(e) => setActionComment(e.target.value)}
                 placeholder={
                   actionModal.type === 'alteracoes'
-                    ? 'Descreva detalhadamente as alterações necessárias...'
+                    ? t('documentos.dialogs.placeholderAlteracoes')
                     : actionModal.type === 'rejeitar'
-                    ? 'Informe o motivo da rejeição...'
-                    : 'Adicione um comentário sobre a aprovação...'
+                    ? t('documentos.dialogs.placeholderRejeicao')
+                    : t('documentos.dialogs.placeholderAprovacao')
                 }
                 rows={4}
               />

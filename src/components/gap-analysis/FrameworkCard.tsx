@@ -5,10 +5,10 @@ import { ArrowRight, Shield, Lock, Scale, Building2 } from "lucide-react";
 import { FrameworkLogo } from "./FrameworkLogos";
 import {
   CATEGORY_BADGE_CLASS,
-  CATEGORY_LABEL,
   getEffortLevel,
   type FrameworkCategory,
 } from "@/lib/gap-analysis-tokens";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface FrameworkProgress {
   totalRequirements: number;
@@ -45,19 +45,19 @@ const CATEGORY_ICON: Record<FrameworkCategory, React.ElementType> = {
   qualidade: Scale,
 };
 
-const FRAMEWORK_AUDIENCES: Record<string, string> = {
-  'ISO 27001': 'Gestão de segurança da informação',
-  'LGPD': 'Proteção de dados pessoais no Brasil',
-  'NIST CSF 2.0': 'Maturidade em cibersegurança',
-  'ISO 27701': 'Gestão de privacidade (extensão ISO 27001)',
-  'PCI DSS': 'Segurança de dados de cartões',
-  'SOC 2': 'Controles de segurança para empresas de TI',
-  'GDPR': 'Proteção de dados pessoais na Europa',
-  'ISO 22301': 'Continuidade de negócios',
-  'COBIT': 'Governança de TI corporativa',
-  'CIS Controls': 'Controles críticos de segurança',
-  'ISO 9001': 'Gestão de qualidade',
-  'HIPAA': 'Proteção de dados de saúde (EUA)',
+const FRAMEWORK_AUDIENCE_KEYS: Record<string, string> = {
+  'ISO 27001': 'iso27001Short',
+  'LGPD': 'lgpdShort',
+  'NIST CSF 2.0': 'nistCsfShort',
+  'ISO 27701': 'iso27701Short',
+  'PCI DSS': 'pciDssShort',
+  'SOC 2': 'soc2Short',
+  'GDPR': 'gdprShort',
+  'ISO 22301': 'iso22301Short',
+  'COBIT': 'cobitShort',
+  'CIS Controls': 'cisControlsShort',
+  'ISO 9001': 'iso9001Short',
+  'HIPAA': 'hipaaShort',
 };
 
 function getCategory(tipo: string): FrameworkCategory {
@@ -68,7 +68,9 @@ function getCategory(tipo: string): FrameworkCategory {
   return 'seguranca';
 }
 
-export const FrameworkCard: React.FC<FrameworkCardProps> = ({
+export const FrameworkCard: React.FC<FrameworkCardProps> = (props) => {
+  const { t } = useLanguage();
+  const {
   nome,
   versao,
   tipo_framework,
@@ -78,7 +80,7 @@ export const FrameworkCard: React.FC<FrameworkCardProps> = ({
   statusCounts,
   variant = 'available',
   onClick,
-}) => {
+  } = props;
   const progressPercent = progress && progress.totalRequirements > 0
     ? Math.round((progress.evaluatedRequirements / progress.totalRequirements) * 100)
     : 0;
@@ -115,7 +117,7 @@ export const FrameworkCard: React.FC<FrameworkCardProps> = ({
               {nome} <span className="text-xs font-normal text-muted-foreground">{versao}</span>
             </h3>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {progress ? `${progress.evaluatedRequirements} de ${progress.totalRequirements} requisitos avaliados` : `${requirementCount} requisitos`}
+              {progress ? t('gapAnalysis.card.evaluatedOf', { evaluated: progress.evaluatedRequirements, total: progress.totalRequirements }) : t('gapAnalysis.card.requirementsCount', { count: requirementCount })}
             </p>
           </div>
           {progress && (
@@ -157,7 +159,7 @@ export const FrameworkCard: React.FC<FrameworkCardProps> = ({
                   )}
                 </div>
                 <span className="text-[11px] text-muted-foreground whitespace-nowrap">
-                  {progressPercent}% avaliado
+                  {t('gapAnalysis.card.percentEvaluated', { percent: progressPercent })}
                 </span>
               </div>
             </div>
@@ -168,30 +170,30 @@ export const FrameworkCard: React.FC<FrameworkCardProps> = ({
             {statusCounts.conforme > 0 && (
               <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
                 <span className="w-1.5 h-1.5 rounded-full bg-success" />
-                <span className="text-foreground font-medium">{statusCounts.conforme}</span> Conforme
+                <span className="text-foreground font-medium">{statusCounts.conforme}</span> {t('gapAnalysis.card.status.conforme')}
               </span>
             )}
             {statusCounts.parcial > 0 && (
               <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
                 <span className="w-1.5 h-1.5 rounded-full bg-warning" />
-                <span className="text-foreground font-medium">{statusCounts.parcial}</span> Parcial
+                <span className="text-foreground font-medium">{statusCounts.parcial}</span> {t('gapAnalysis.card.status.parcial')}
               </span>
             )}
             {statusCounts.nao_conforme > 0 && (
               <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
                 <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
-                <span className="text-foreground font-medium">{statusCounts.nao_conforme}</span> Não Conforme
+                <span className="text-foreground font-medium">{statusCounts.nao_conforme}</span> {t('gapAnalysis.card.status.naoConforme')}
               </span>
             )}
             {pendenteCount > 0 && (
               <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
                 <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/40" />
-                <span className="text-foreground font-medium">{pendenteCount}</span> Pendente{pendenteCount > 1 ? 's' : ''}
+                <span className="text-foreground font-medium">{pendenteCount}</span> {pendenteCount > 1 ? t('gapAnalysis.card.status.pendentes') : t('gapAnalysis.card.status.pendente')}
               </span>
             )}
             {statusCounts.nao_aplicavel > 0 && (
               <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                <span className="text-foreground font-medium">{statusCounts.nao_aplicavel}</span> N/A
+                <span className="text-foreground font-medium">{statusCounts.nao_aplicavel}</span> {t('gapAnalysis.card.status.na')}
               </span>
             )}
           </div>
@@ -204,7 +206,7 @@ export const FrameworkCard: React.FC<FrameworkCardProps> = ({
             className="text-xs group-hover:text-primary"
             onClick={(e) => { e.stopPropagation(); onClick(); }}
           >
-            Abrir framework
+            {t('gapAnalysis.card.openFramework')}
             <ArrowRight className="h-3.5 w-3.5 ml-1" strokeWidth={1.5} />
           </Button>
         </div>
@@ -216,7 +218,7 @@ export const FrameworkCard: React.FC<FrameworkCardProps> = ({
   const cat = getCategory(tipo_framework);
   const CategoryIcon = CATEGORY_ICON[cat];
   const effort = getEffortLevel(requirementCount);
-  const audience = FRAMEWORK_AUDIENCES[nome];
+  const audience = FRAMEWORK_AUDIENCE_KEYS[nome];
 
   return (
     <Card
@@ -226,7 +228,7 @@ export const FrameworkCard: React.FC<FrameworkCardProps> = ({
       <div className="p-3 pb-0">
         <Badge variant="outline" className={`text-[10px] px-1.5 py-0 inline-flex items-center gap-1 ${CATEGORY_BADGE_CLASS[cat]}`}>
           <CategoryIcon className="h-2.5 w-2.5" strokeWidth={1.5} />
-          {CATEGORY_LABEL[cat]}
+          {t(`gapAnalysis.frameworks.category.${cat}`)}
         </Badge>
       </div>
 
@@ -243,15 +245,15 @@ export const FrameworkCard: React.FC<FrameworkCardProps> = ({
 
       <div className="flex-1 px-3 py-1">
         <p className="text-xs text-muted-foreground text-center line-clamp-2">
-          {audience || descricao || 'Framework de conformidade organizacional'}
+          {(audience && t(`gapAnalysis.frameworkAudienceShort.${audience}`)) || descricao || t('gapAnalysis.genericComplianceFramework')}
         </p>
       </div>
 
       <div className="px-3 py-2 flex items-center justify-center gap-2">
-        <span className="text-xs text-muted-foreground">{requirementCount} requisitos</span>
+        <span className="text-xs text-muted-foreground">{t('gapAnalysis.card.requirementsCount', { count: requirementCount })}</span>
         <span className="text-muted-foreground">·</span>
         <Badge variant={effort.variant} className="text-[10px] px-1.5 py-0">
-          Esforço {effort.label}
+          {t('gapAnalysis.card.effort', { label: effort.label })}
         </Badge>
       </div>
 
@@ -262,7 +264,7 @@ export const FrameworkCard: React.FC<FrameworkCardProps> = ({
           className="group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
           onClick={(e) => { e.stopPropagation(); onClick(); }}
         >
-          Iniciar Avaliação
+          {t('gapAnalysis.card.startAssessment')}
           <ArrowRight className="h-4 w-4 ml-1" strokeWidth={1.5} />
         </Button>
       </div>

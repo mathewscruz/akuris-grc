@@ -7,6 +7,7 @@ import { ArrowUpRight, ArrowRight } from 'lucide-react';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Button } from '@/components/ui/button';
 import { getMaturityLevel } from './MaturityScale';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface ConformityCardProps {
   overallScore: number;
@@ -44,6 +45,7 @@ export function ConformityCard({
   onContinue,
   onGoToRemediation,
 }: ConformityCardProps) {
+  const { t } = useLanguage();
   const score = Math.round(Number(overallScore) || 0);
   const maturity = getMaturityLevel(score);
   const total = conforme + parcial + naoConforme + naoAplicavel || 1;
@@ -66,9 +68,9 @@ export function ConformityCard({
   return (
     <article className="relative overflow-hidden rounded-2xl border border-border bg-card p-5">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-foreground">Score de aderência</h3>
+        <h3 className="text-sm font-semibold text-foreground">{t('gapAnalysis.v2.conformityCard.title')}</h3>
         <StatusBadge tone="info" size="sm">
-          Nível {maturity.id} — {maturity.label}
+          {t('gapAnalysis.v2.conformityCard.level', { id: maturity.id, label: maturity.label })}
         </StatusBadge>
       </div>
 
@@ -105,33 +107,33 @@ export function ConformityCard({
               {score}<span className="text-base text-muted-foreground">%</span>
             </span>
             <span className="text-[9px] font-sans uppercase tracking-wider text-muted-foreground mt-1">
-              Aderência
+              {t('gapAnalysis.v2.conformityCard.adherence')}
             </span>
           </div>
         </div>
 
         {/* Legenda */}
         <div className="flex-1 grid grid-cols-2 gap-y-2 gap-x-3 text-xs">
-          <LegendItem dot="bg-success" label="Conforme" value={conforme} />
-          <LegendItem dot="bg-warning" label="Parcial" value={parcial} />
-          <LegendItem dot="bg-destructive" label="Não Conf." value={naoConforme} />
-          <LegendItem dot="bg-info" label="N/A" value={naoAplicavel} />
+          <LegendItem dot="bg-success" label={t('gapAnalysis.v2.conformityCard.compliant')} value={conforme} />
+          <LegendItem dot="bg-warning" label={t('gapAnalysis.v2.conformityCard.partial')} value={parcial} />
+          <LegendItem dot="bg-destructive" label={t('gapAnalysis.v2.conformityCard.nonCompliant')} value={naoConforme} />
+          <LegendItem dot="bg-info" label={t('gapAnalysis.v2.conformityCard.na')} value={naoAplicavel} />
         </div>
       </div>
 
       {/* Tríade */}
       <div className="mt-5 pt-4 border-t border-border/60 grid grid-cols-3 gap-3">
         <Triple
-          eyebrow="Progresso"
+          eyebrow={t('gapAnalysis.v2.conformityCard.progress')}
           value={`${evaluatedRequirements}/${totalRequirements}`}
         />
         <Triple
-          eyebrow="Meta Q1"
+          eyebrow={t('gapAnalysis.v2.conformityCard.goalQ1')}
           value={`${targetScore}%`}
           tone={score >= targetScore ? 'success' : 'warning'}
         />
         <Triple
-          eyebrow="Δ 30d"
+          eyebrow={t('gapAnalysis.v2.conformityCard.delta30d')}
           value={
             <span className={`inline-flex items-center gap-0.5 ${deltaPositive ? 'text-success' : 'text-destructive'}`}>
               <ArrowUpRight className={`h-3.5 w-3.5 ${deltaPositive ? '' : 'rotate-90'}`} strokeWidth={2} />
@@ -146,13 +148,13 @@ export function ConformityCard({
         <div className="mt-4 pt-3 border-t border-border/60 flex flex-wrap gap-2">
           {onContinue && (
             <Button variant="outline" size="sm" onClick={onContinue} className="gap-1.5">
-              Continuar avaliação
+              {t('gapAnalysis.v2.conformityCard.continueEvaluation')}
               <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.5} />
             </Button>
           )}
           {onGoToRemediation && (
             <Button variant="ghost" size="sm" onClick={onGoToRemediation} className="gap-1.5">
-              Ver remediação
+              {t('gapAnalysis.v2.conformityCard.viewRemediation')}
               <ArrowUpRight className="h-3.5 w-3.5" strokeWidth={1.5} />
             </Button>
           )}

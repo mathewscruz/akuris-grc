@@ -11,6 +11,7 @@ import { logger } from '@/lib/logger';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { AiCostHint } from '@/components/ui/ai-cost-hint';
+import { useLanguage } from '@/contexts/LanguageContext';
 interface AIRecommendationsDialogProps {
   frameworkId: string;
   frameworkNome: string;
@@ -32,6 +33,7 @@ interface Recommendations {
 }
 
 export function AIRecommendationsButton(props: AIRecommendationsDialogProps) {
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [recommendations, setRecommendations] = useState<Recommendations | null>(null);
@@ -80,14 +82,14 @@ export function AIRecommendationsButton(props: AIRecommendationsDialogProps) {
       if (error) {
         // Check for 402 credits exhausted
         if (error.message?.includes('402') || error.status === 402) {
-          toast.error('Créditos de IA esgotados. Entre em contato com a Akuris para adquirir mais créditos.');
+          toast.error(t('gapAnalysis.ai.creditsExhausted'));
           return;
         }
         throw error;
       }
       if (data?.error) {
         if (data.error === 'Créditos de IA esgotados.') {
-          toast.error('Créditos de IA esgotados. Entre em contato com a Akuris para adquirir mais créditos.');
+          toast.error(t('gapAnalysis.ai.creditsExhausted'));
           return;
         }
         toast.error(data.error); return;
@@ -95,7 +97,7 @@ export function AIRecommendationsButton(props: AIRecommendationsDialogProps) {
       setRecommendations(data?.data || null);
     } catch (err: any) {
       logger.error('AI recommendations error:', { error: err instanceof Error ? err.message : String(err) });
-      toast.error('Erro ao gerar recomendações');
+      toast.error(t('gapAnalysis.ai.generateError'));
     } finally {
       setLoading(false);
     }
@@ -110,16 +112,16 @@ export function AIRecommendationsButton(props: AIRecommendationsDialogProps) {
 
   const getEffortBadge = (esforco: string) => {
     switch (esforco) {
-      case 'baixo': return <StatusBadge size="sm" tone="success">Baixo esforço</StatusBadge>;
-      case 'medio': return <StatusBadge size="sm" tone="warning">Médio esforço</StatusBadge>;
-      case 'alto': return <StatusBadge size="sm" tone="destructive">Alto esforço</StatusBadge>;
+      case 'baixo': return <StatusBadge size="sm" tone="success">{t('gapAnalysis.ai.effort.low')}</StatusBadge>;
+      case 'medio': return <StatusBadge size="sm" tone="warning">{t('gapAnalysis.ai.effort.medium')}</StatusBadge>;
+      case 'alto': return <StatusBadge size="sm" tone="destructive">{t('gapAnalysis.ai.effort.high')}</StatusBadge>;
       default: return null;
     }
   };
 
   const tooltipText = canAnalyze
-    ? 'Consultor de Conformidade — análise priorizada e quick wins'
-    : `Avalie pelo menos ${minEvaluated} requisito${minEvaluated > 1 ? 's' : ''} (${props.evaluatedRequirements}/${minEvaluated}) para liberar o Consultor`;
+    ? t('gapAnalysis.ai.tooltip.enabled')
+    : t('gapAnalysis.ai.tooltip.disabled', { min: minEvaluated, evaluated: props.evaluatedRequirements });
 
   return (
     <>
@@ -149,15 +151,15 @@ export function AIRecommendationsButton(props: AIRecommendationsDialogProps) {
         open={open}
         onOpenChange={setOpen}
         icon={AkurisAIIcon as any}
-        title="Consultor de Conformidade"
+        title={t('gapAnalysis.ai.dialogTitle')}
         size="lg"
         hideFooter
       >
-          <div className="flex justify-end mb-2"><AiCostHint action="cada análise" /></div>
+          <div className="flex justify-end mb-2"><AiCostHint action={t('gapAnalysis.ai.costHintAction')} /></div>
           {loading && !recommendations ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
               <AkurisPulse size={32} className="text-primary" />
-              <p className="text-sm text-muted-foreground">Analisando sua conformidade...</p>
+              <p className="text-sm text-muted-foreground">{t('gapAnalysis.ai.analyzing')}</p>
             </div>
           ) : recommendations ? (
             <div className="space-y-5">
@@ -169,10 +171,10 @@ export function AIRecommendationsButton(props: AIRecommendationsDialogProps) {
                 <TrendingUp className="h-5 w-5 text-primary shrink-0" strokeWidth={1.5}/>
                 <div>
                   <p className="text-sm font-medium">
-                    Score projetado: <span className="text-primary font-bold">
+                    {t('gapAnalysis.ai.projectedScore')}: <span className="text-primary font-bold">
                       {Number(recommendations.score_estimado_apos_acoes).toFixed(1)}{props.scoreType === 'percentage' ? '%' : '/5'}
                     </span>
-                    <span className="text-muted-foreground ml-1">(atual: {Number(props.overallScore).toFixed(1)}{props.scoreType === 'percentage' ? '%' : '/5'})</span>
+                    <span className="text-muted-foreground ml-1">({t('gapAnalysis.ai.currentScore')}: {Number(props.overallScore).toFixed(1)}{props.scoreType === 'percentage' ? '%' : '/5'})</span>
                   </p>
                   <p className="text-xs text-muted-foreground">{recommendations.proximo_marco}</p>
                 </div>
@@ -182,7 +184,7 @@ export function AIRecommendationsButton(props: AIRecommendationsDialogProps) {
                 <div>
                   <h4 className="text-sm font-semibold flex items-center gap-1.5 mb-2">
                     <Target className="h-4 w-4 text-destructive" strokeWidth={1.5}/>
-                    Requisitos Prioritários
+                    {t('gapAnalysis.ai.priorityRequirements')}
                   </h4>
                   <div className="space-y-2">
                     {recommendations.top_5_prioridades.map((p, i) => (
@@ -203,7 +205,7 @@ export function AIRecommendationsButton(props: AIRecommendationsDialogProps) {
                 <div>
                   <h4 className="text-sm font-semibold flex items-center gap-1.5 mb-2">
                     <Zap className="h-4 w-4 text-warning" strokeWidth={1.5}/>
-                    Quick Wins (Vitórias Rápidas)
+                    {t('gapAnalysis.ai.quickWins')}
                   </h4>
                   <div className="space-y-2">
                     {recommendations.quick_wins.map((q, i) => (
@@ -223,7 +225,7 @@ export function AIRecommendationsButton(props: AIRecommendationsDialogProps) {
               <div className="flex flex-col sm:flex-row gap-2">
                 <Button variant="outline" size="sm" onClick={handleAnalyze} disabled={loading} className="flex-1">
                   {loading ? <AkurisPulse size={16} className="mr-2" /> : <AkurisAIIcon className="h-4 w-4 mr-2"/>}
-                  Atualizar Análise
+                  {t('gapAnalysis.ai.updateAnalysis')}
                 </Button>
                 {props.onGoToRemediation && (
                   <Button
@@ -231,7 +233,7 @@ export function AIRecommendationsButton(props: AIRecommendationsDialogProps) {
                     onClick={() => { setOpen(false); props.onGoToRemediation?.(); }}
                     className="flex-1"
                   >
-                    Ir para Remediação
+                    {t('gapAnalysis.ai.goToRemediation')}
                     <ArrowRight className="h-4 w-4 ml-2" strokeWidth={1.5}/>
                   </Button>
                 )}
@@ -239,9 +241,9 @@ export function AIRecommendationsButton(props: AIRecommendationsDialogProps) {
             </div>
           ) : (
             <div className="text-center py-8">
-              <p className="text-sm text-muted-foreground">Erro ao carregar recomendações. Tente novamente.</p>
+              <p className="text-sm text-muted-foreground">{t('gapAnalysis.ai.loadError')}</p>
               <Button onClick={handleAnalyze} className="mt-3">
-                <AkurisAIIcon className="h-4 w-4 mr-2"/>Tentar Novamente
+                <AkurisAIIcon className="h-4 w-4 mr-2"/>{t('gapAnalysis.ai.retry')}
               </Button>
             </div>
           )}

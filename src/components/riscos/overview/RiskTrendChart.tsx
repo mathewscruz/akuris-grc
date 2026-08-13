@@ -18,6 +18,7 @@ import {
 } from 'recharts';
 import { cn } from '@/lib/utils';
 import type { TrendPoint } from '@/hooks/useRiskScoreTrend';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Props {
   /** 12 pontos mensais (mais antigo → atual) vindos de useRiskScoreTrend. */
@@ -30,6 +31,7 @@ type Range = '3M' | '6M' | '12M';
 const RANGE_MONTHS: Record<Range, number> = { '3M': 3, '6M': 6, '12M': 12 };
 
 export function RiskTrendChart({ points, apetite }: Props) {
+  const { t } = useLanguage();
   const [range, setRange] = useState<Range>('6M');
 
   const data = useMemo(() => {
@@ -44,12 +46,12 @@ export function RiskTrendChart({ points, apetite }: Props) {
       <div className="flex items-start justify-between gap-3 mb-3">
         <div>
           <div className="text-[10.5px] font-semibold tracking-[1.2px] uppercase text-muted-foreground">
-            Evolução do score consolidado
+            {t('riscosVisoes.overview.riskTrendChart.titulo')}
           </div>
           <div className="text-xl font-semibold tabular-nums tracking-tight mt-1">
             {currentScore}
             {apetite ? (
-              <span className="text-sm text-muted-foreground font-normal"> / apetite {apetite}</span>
+              <span className="text-sm text-muted-foreground font-normal"> / {t('riscosVisoes.overview.riskTrendChart.apetite')} {apetite}</span>
             ) : null}
           </div>
         </div>
@@ -94,7 +96,7 @@ export function RiskTrendChart({ points, apetite }: Props) {
                 strokeDasharray="4 4"
                 strokeWidth={1.2}
                 label={{
-                  value: 'apetite',
+                  value: t('riscosVisoes.overview.riskTrendChart.apetite'),
                   fontSize: 10,
                   fill: 'hsl(var(--primary))',
                   position: 'right',
@@ -109,7 +111,7 @@ export function RiskTrendChart({ points, apetite }: Props) {
                 fontSize: 12,
               }}
               labelStyle={{ color: 'hsl(var(--foreground))' }}
-              formatter={(v: number) => [v, 'Score']}
+              formatter={(v: number) => [v, t('riscosVisoes.overview.riskTrendChart.scoreTooltip')]}
             />
             <Area
               type="monotone"

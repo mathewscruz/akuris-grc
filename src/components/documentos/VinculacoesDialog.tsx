@@ -16,6 +16,7 @@ import { formatStatus } from '@/lib/text-utils';
 import { logger } from '@/lib/logger';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { useLanguage } from '@/contexts/LanguageContext';
 interface Documento {
   id: string;
   nome: string;
@@ -41,12 +42,12 @@ interface VinculacoesDialogProps {
   empresaId?: string | null;
 }
 
-const modulosDisponiveis = [
-  { value: 'contrato', label: 'Contratos', icon: FileText },
-  { value: 'auditoria', label: 'Auditorias', icon: CheckCircle },
-  { value: 'risco', label: 'Riscos', icon: AlertTriangle },
-  { value: 'controle', label: 'Controles', icon: Shield },
-  { value: 'ativo', label: 'Ativos', icon: Building },
+const getModulosDisponiveis = (t: (k: string) => string) => [
+  { value: 'contrato', label: t('documentosExtras.vinculacoes.moduloContratos'), icon: FileText },
+  { value: 'auditoria', label: t('documentosExtras.vinculacoes.moduloAuditorias'), icon: CheckCircle },
+  { value: 'risco', label: t('documentosExtras.vinculacoes.moduloRiscos'), icon: AlertTriangle },
+  { value: 'controle', label: t('documentosExtras.vinculacoes.moduloControles'), icon: Shield },
+  { value: 'ativo', label: t('documentosExtras.vinculacoes.moduloAtivos'), icon: Building },
 ];
 
 const tiposVinculacao = [
@@ -59,6 +60,8 @@ const tiposVinculacao = [
 ];
 
 export function VinculacoesDialog({ open, onOpenChange, documento, empresaId }: VinculacoesDialogProps) {
+  const { t } = useLanguage();
+  const modulosDisponiveis = getModulosDisponiveis(t);
   const [vinculacoes, setVinculacoes] = useState<Vinculacao[]>([]);
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -171,8 +174,8 @@ export function VinculacoesDialog({ open, onOpenChange, documento, empresaId }: 
     } catch (error) {
       logger.error('Erro ao buscar vinculações', { error: (error as Error)?.message, module: 'documentos' });
       toast({
-        title: "Erro ao carregar vinculações",
-        description: "Tente novamente em alguns instantes.",
+        title: t('documentosExtras.vinculacoes.erroCarregarTitulo'),
+        description: t('documentosExtras.vinculacoes.erroCarregarDesc'),
         variant: "destructive",
       });
     } finally {
@@ -230,8 +233,8 @@ export function VinculacoesDialog({ open, onOpenChange, documento, empresaId }: 
     
     if (!formData.modulo || !formData.vinculo_id) {
       toast({
-        title: "Campos obrigatórios",
-        description: "Por favor, selecione o módulo e o item para vincular.",
+        title: t('documentosExtras.vinculacoes.camposObrigatoriosTitulo'),
+        description: t('documentosExtras.vinculacoes.camposObrigatoriosDesc'),
         variant: "destructive",
       });
       return;
@@ -255,8 +258,8 @@ export function VinculacoesDialog({ open, onOpenChange, documento, empresaId }: 
       if (error) throw error;
 
       toast({
-        title: "Vinculação criada",
-        description: "A vinculação foi criada com sucesso.",
+        title: t('documentosExtras.vinculacoes.criadaTitulo'),
+        description: t('documentosExtras.vinculacoes.criadaDesc'),
       });
 
       resetForm();
@@ -264,8 +267,8 @@ export function VinculacoesDialog({ open, onOpenChange, documento, empresaId }: 
     } catch (error) {
       logger.error('Erro ao criar vinculação', { error: (error as Error)?.message, module: 'documentos' });
       toast({
-        title: "Erro ao criar vinculação",
-        description: error instanceof Error ? error.message : "Tente novamente em alguns instantes.",
+        title: t('documentosExtras.vinculacoes.erroCriarTitulo'),
+        description: error instanceof Error ? error.message : t('documentosExtras.vinculacoes.erroCriarDesc'),
         variant: "destructive",
       });
     } finally {
@@ -283,16 +286,16 @@ export function VinculacoesDialog({ open, onOpenChange, documento, empresaId }: 
       if (error) throw error;
 
       toast({
-        title: "Vinculação removida",
-        description: "A vinculação foi removida com sucesso.",
+        title: t('documentosExtras.vinculacoes.removidaTitulo'),
+        description: t('documentosExtras.vinculacoes.removidaDesc'),
       });
 
       fetchVinculacoes();
     } catch (error) {
       logger.error('Erro ao remover vinculação', { error: (error as Error)?.message, module: 'documentos' });
       toast({
-        title: "Erro ao remover vinculação",
-        description: "Tente novamente em alguns instantes.",
+        title: t('documentosExtras.vinculacoes.erroRemoverTitulo'),
+        description: t('documentosExtras.vinculacoes.erroRemoverDesc'),
         variant: "destructive",
       });
     } finally {
@@ -334,8 +337,8 @@ export function VinculacoesDialog({ open, onOpenChange, documento, empresaId }: 
       open={open}
       onOpenChange={onOpenChange}
       icon={Link}
-      title="Vinculações do Documento"
-      description={`Gerencie as vinculações do documento "${documento.nome}" com outros módulos do sistema.`}
+      title={t('documentosExtras.vinculacoes.titulo')}
+      description={t('documentosExtras.vinculacoes.descricao').replace('{nome}', documento.nome)}
       size="lg"
       hideFooter
     >
@@ -343,10 +346,10 @@ export function VinculacoesDialog({ open, onOpenChange, documento, empresaId }: 
           {!showForm ? (
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <h3 className="text-lg font-medium">Vinculações Existentes</h3>
+                <h3 className="text-lg font-medium">{t('documentosExtras.vinculacoes.vinculacoesExistentes')}</h3>
                 <Button onClick={() => setShowForm(true)}>
                   <Plus className="h-4 w-4 mr-2" />
-                  Nova Vinculação
+                  {t('documentosExtras.vinculacoes.novaVinculacao')}
                 </Button>
               </div>
 
@@ -358,19 +361,19 @@ export function VinculacoesDialog({ open, onOpenChange, documento, empresaId }: 
                 <Card>
                   <CardContent className="flex flex-col items-center justify-center h-32">
                     <Link className="h-12 w-12 text-muted-foreground mb-2" />
-                    <p className="text-muted-foreground">Nenhuma vinculação criada ainda</p>
-                    <p className="text-sm text-muted-foreground">Clique em "Nova Vinculação" para começar</p>
+                    <p className="text-muted-foreground">{t('documentosExtras.vinculacoes.nenhumaVinculacao')}</p>
+                    <p className="text-sm text-muted-foreground">{t('documentosExtras.vinculacoes.clickeParaComecar')}</p>
                   </CardContent>
                 </Card>
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Módulo</TableHead>
-                      <TableHead>Item Vinculado</TableHead>
-                      <TableHead>Tipo</TableHead>
-                      <TableHead>Observações</TableHead>
-                      <TableHead>Ações</TableHead>
+                      <TableHead>{t('documentosExtras.vinculacoes.colunaModulo')}</TableHead>
+                      <TableHead>{t('documentosExtras.vinculacoes.colunaItemVinculado')}</TableHead>
+                      <TableHead>{t('documentosExtras.vinculacoes.colunaTipo')}</TableHead>
+                      <TableHead>{t('documentosExtras.vinculacoes.colunaObservacoes')}</TableHead>
+                      <TableHead>{t('documentosExtras.vinculacoes.colunaAcoes')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -384,7 +387,7 @@ export function VinculacoesDialog({ open, onOpenChange, documento, empresaId }: 
                         </TableCell>
                         <TableCell>
                           <div className="space-y-1">
-                            <div className="font-medium">{vinculacao.vinculo_nome || 'Item não encontrado'}</div>
+                            <div className="font-medium">{vinculacao.vinculo_nome || t('documentosExtras.vinculacoes.itemNaoEncontrado')}</div>
                             {vinculacao.vinculo_numero && (
                               <div className="text-sm text-muted-foreground">
                                 {vinculacao.vinculo_numero}
@@ -428,16 +431,16 @@ export function VinculacoesDialog({ open, onOpenChange, documento, empresaId }: 
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-medium">Nova Vinculação</h3>
                 <Button type="button" variant="outline" onClick={resetForm}>
-                  Voltar
+                  {t('documentosExtras.vinculacoes.voltar')}
                 </Button>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="modulo">Módulo *</Label>
+                  <Label htmlFor="modulo">{t('documentosExtras.vinculacoes.campoModulo')}</Label>
                   <Select value={formData.modulo} onValueChange={(value) => setFormData(prev => ({ ...prev, modulo: value, vinculo_id: '' }))}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione o módulo" />
+                      <SelectValue placeholder={t('documentosExtras.vinculacoes.selecioneModulo')} />
                     </SelectTrigger>
                     <SelectContent>
                       {modulosDisponiveis.map((modulo) => {
@@ -456,10 +459,10 @@ export function VinculacoesDialog({ open, onOpenChange, documento, empresaId }: 
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="tipo_vinculacao">Tipo de Vinculação</Label>
+                  <Label htmlFor="tipo_vinculacao">{t('documentosExtras.vinculacoes.campoTipoVinculacao')}</Label>
                   <Select value={formData.tipo_vinculacao} onValueChange={(value) => setFormData(prev => ({ ...prev, tipo_vinculacao: value }))}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione o tipo" />
+                      <SelectValue placeholder={t('documentosExtras.vinculacoes.selecioneTipo')} />
                     </SelectTrigger>
                     <SelectContent>
                       {tiposVinculacao.map((tipo) => (
@@ -474,10 +477,10 @@ export function VinculacoesDialog({ open, onOpenChange, documento, empresaId }: 
 
               {formData.modulo && (
                 <div className="space-y-2">
-                  <Label htmlFor="vinculo_id">Item para Vincular *</Label>
+                  <Label htmlFor="vinculo_id">{t('documentosExtras.vinculacoes.campoItemVincular')}</Label>
                   <Select value={formData.vinculo_id} onValueChange={(value) => setFormData(prev => ({ ...prev, vinculo_id: value }))}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione o item" />
+                      <SelectValue placeholder={t('documentosExtras.vinculacoes.selecioneItem')} />
                     </SelectTrigger>
                     <SelectContent>
                       {itemsDisponiveis.map((item) => (
@@ -498,28 +501,28 @@ export function VinculacoesDialog({ open, onOpenChange, documento, empresaId }: 
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="observacoes">Observações</Label>
+                <Label htmlFor="observacoes">{t('documentosExtras.vinculacoes.campoObservacoes')}</Label>
                 <Textarea
                   id="observacoes"
                   value={formData.observacoes}
                   onChange={(e) => setFormData(prev => ({ ...prev, observacoes: e.target.value }))}
-                  placeholder="Observações sobre a vinculação"
+                  placeholder={t('documentosExtras.vinculacoes.observacoesPlaceholder')}
                   rows={3}
                 />
               </div>
 
               <div className="flex gap-2 pt-4">
                 <Button type="button" variant="outline" onClick={resetForm}>
-                  Cancelar
+                  {t('documentosExtras.vinculacoes.cancelar')}
                 </Button>
                 <Button type="submit" disabled={loading}>
                   {loading ? (
                     <>
                       <AkurisPulse size={16} className="mr-2" />
-                      Criando...
+                      {t('documentosExtras.vinculacoes.criando')}
                     </>
                   ) : (
-                    'Criar Vinculação'
+                    t('documentosExtras.vinculacoes.criarVinculacao')
                   )}
                 </Button>
               </div>
@@ -531,10 +534,10 @@ export function VinculacoesDialog({ open, onOpenChange, documento, empresaId }: 
     <ConfirmDialog
       open={deleteConfirm.open}
       onOpenChange={(open) => setDeleteConfirm(prev => ({ ...prev, open }))}
-      title="Remover Vinculação"
-      description="Tem certeza que deseja remover esta vinculação? Esta ação não pode ser desfeita."
-      confirmText="Remover"
-      cancelText="Cancelar"
+      title={t('documentosExtras.vinculacoes.removerTitulo')}
+      description={t('documentosExtras.vinculacoes.removerDescricao')}
+      confirmText={t('documentosExtras.vinculacoes.removerConfirmar')}
+      cancelText={t('documentosExtras.vinculacoes.removerCancelar')}
       variant="destructive"
       onConfirm={handleDelete}
     />

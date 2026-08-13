@@ -10,6 +10,7 @@ import {
   type DocGenTemplate,
 } from '@/lib/docgen-templates';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface DocGenTemplateGalleryProps {
   onPickTemplate: (template: DocGenTemplate) => void;
@@ -22,6 +23,7 @@ export const DocGenTemplateGallery: React.FC<DocGenTemplateGalleryProps> = ({
   onPickTemplate,
   onStartBlank,
 }) => {
+  const { t } = useLanguage();
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>(ALL_CATEGORY);
 
@@ -49,19 +51,18 @@ export const DocGenTemplateGallery: React.FC<DocGenTemplateGalleryProps> = ({
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div>
             <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">
-              Começar a partir de
+              {t('docgen.templateGallery.startFrom')}
             </p>
             <h3 className="text-lg font-semibold mt-1">
-              Escolha um modelo ou comece do zero
+              {t('docgen.templateGallery.title')}
             </h3>
             <p className="text-sm text-muted-foreground mt-0.5">
-              Cada modelo já vem com tipo, escopo e frameworks pré-preenchidos —
-              você ainda revisa antes de gerar.
+              {t('docgen.templateGallery.description')}
             </p>
           </div>
           <Button variant="outline" onClick={onStartBlank} className="gap-2 shrink-0">
             <FilePlus2 className="h-4 w-4" strokeWidth={1.5} />
-            Começar do zero
+            {t('docgen.templateGallery.startBlank')}
           </Button>
         </div>
 
@@ -74,7 +75,7 @@ export const DocGenTemplateGallery: React.FC<DocGenTemplateGalleryProps> = ({
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por nome, descrição ou framework (ex.: ISO 27001, LGPD)"
+            placeholder={t('docgen.templateGallery.searchPlaceholder')}
             className="pl-9"
           />
         </div>
@@ -91,7 +92,7 @@ export const DocGenTemplateGallery: React.FC<DocGenTemplateGalleryProps> = ({
                 : 'bg-transparent text-muted-foreground border-border hover:text-foreground hover:border-primary/30',
             )}
           >
-            Todos
+            {t('docgen.templateGallery.all')}
           </button>
           {TEMPLATE_CATEGORIES.map((cat) => (
             <button
@@ -115,7 +116,7 @@ export const DocGenTemplateGallery: React.FC<DocGenTemplateGalleryProps> = ({
       <div className="flex-1 min-h-0 overflow-y-auto pr-1 -mr-1">
         {filtered.length === 0 ? (
           <div className="text-center py-12 text-sm text-muted-foreground">
-            Nenhum modelo encontrado para sua busca.
+            {t('docgen.templateGallery.noResults')}
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -151,7 +152,7 @@ export const DocGenTemplateGallery: React.FC<DocGenTemplateGalleryProps> = ({
                       </div>
                     )}
                     <div className="flex items-center justify-end text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-                      Usar este modelo
+                      {t('docgen.templateGallery.useTemplate')}
                       <ArrowRight className="h-3.5 w-3.5 ml-1" strokeWidth={1.5} />
                     </div>
                   </CardContent>

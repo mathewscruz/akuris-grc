@@ -4,6 +4,7 @@ import { CheckCircle2, Circle, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { useLanguage } from '@/contexts/LanguageContext';
 interface ProgressStep {
   id: string;
   label: string;
@@ -25,6 +26,7 @@ export function AdherenceAnalysisProgress({
   isError = false,
   errorMessage
 }: AdherenceAnalysisProgressProps) {
+  const { t } = useLanguage();
   const [elapsedTime, setElapsedTime] = useState(0);
 
   // Timer para mostrar tempo decorrido
@@ -40,43 +42,43 @@ export function AdherenceAnalysisProgress({
   const steps: ProgressStep[] = [
     {
       id: 'extracting',
-      label: 'Texto extraído',
-      description: 'Extração de texto do documento',
+      label: t('gapAnalysis.adherenceUi.progress.steps.extracting.label'),
+      description: t('gapAnalysis.adherenceUi.progress.steps.extracting.description'),
       percentage: 15,
       status: currentProgress >= 15 ? 'completed' : currentProgress > 0 ? 'active' : 'pending'
     },
     {
       id: 'uploading',
-      label: 'Documento enviado',
-      description: 'Upload para análise',
+      label: t('gapAnalysis.adherenceUi.progress.steps.uploading.label'),
+      description: t('gapAnalysis.adherenceUi.progress.steps.uploading.description'),
       percentage: 25,
       status: currentProgress >= 25 ? 'completed' : currentProgress > 15 ? 'active' : 'pending'
     },
     {
       id: 'preparing',
-      label: 'Análise preparada',
-      description: 'Configuração inicial',
+      label: t('gapAnalysis.adherenceUi.progress.steps.preparing.label'),
+      description: t('gapAnalysis.adherenceUi.progress.steps.preparing.description'),
       percentage: 35,
       status: currentProgress >= 35 ? 'completed' : currentProgress > 25 ? 'active' : 'pending'
     },
     {
       id: 'identifying',
-      label: 'Identificando requisitos',
-      description: 'Analisando requisitos aplicáveis do framework',
+      label: t('gapAnalysis.adherenceUi.progress.steps.identifying.label'),
+      description: t('gapAnalysis.adherenceUi.progress.steps.identifying.description'),
       percentage: 60,
       status: currentProgress >= 60 ? 'completed' : currentProgress > 35 ? 'active' : 'pending'
     },
     {
       id: 'analyzing',
-      label: 'Analisando conformidade',
-      description: 'Avaliando aderência aos requisitos',
+      label: t('gapAnalysis.adherenceUi.progress.steps.analyzing.label'),
+      description: t('gapAnalysis.adherenceUi.progress.steps.analyzing.description'),
       percentage: 90,
       status: currentProgress >= 90 ? 'completed' : currentProgress > 60 ? 'active' : 'pending'
     },
     {
       id: 'finalizing',
-      label: 'Gerando relatório',
-      description: 'Consolidando resultados',
+      label: t('gapAnalysis.adherenceUi.progress.steps.finalizing.label'),
+      description: t('gapAnalysis.adherenceUi.progress.steps.finalizing.description'),
       percentage: 100,
       status: currentProgress >= 100 ? 'completed' : currentProgress > 90 ? 'active' : 'pending'
     }
@@ -115,14 +117,14 @@ export function AdherenceAnalysisProgress({
       {/* Título e status */}
       <div className="text-center space-y-2">
         <h3 className="text-lg font-semibold">
-          {isError ? 'Erro na Análise' : currentProgress >= 100 ? 'Análise Concluída!' : 'Analisando Documento'}
+          {isError ? t('gapAnalysis.adherenceUi.progress.errorTitle') : currentProgress >= 100 ? t('gapAnalysis.adherenceUi.progress.completedTitle') : t('gapAnalysis.adherenceUi.progress.analyzingTitle')}
         </h3>
         <p className="text-sm text-muted-foreground">
           {isError 
-            ? errorMessage || 'Ocorreu um erro durante a análise' 
+            ? errorMessage || t('gapAnalysis.adherenceUi.progress.errorDefault') 
             : currentProgress >= 100 
-              ? 'Documento analisado com sucesso' 
-              : 'Aguarde enquanto processamos sua solicitação'}
+              ? t('gapAnalysis.adherenceUi.progress.completedDescription') 
+              : t('gapAnalysis.adherenceUi.progress.waitDescription')}
         </p>
       </div>
 
@@ -135,7 +137,7 @@ export function AdherenceAnalysisProgress({
           </span>
           {!isError && currentProgress < 100 && (
             <span className="text-muted-foreground">
-              Tempo decorrido: {formatTime(elapsedTime)} • Restante: {estimateRemainingTime()}
+              {t('gapAnalysis.adherenceUi.progress.elapsedRemaining', { elapsed: formatTime(elapsedTime), remaining: estimateRemainingTime() })}
             </span>
           )}
         </div>
@@ -196,10 +198,10 @@ export function AdherenceAnalysisProgress({
         <div className="text-center p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
           <CheckCircle2 className="h-8 w-8 text-green-600 mx-auto mb-2" strokeWidth={1.5}/>
           <p className="text-sm font-medium text-green-900 dark:text-green-100">
-            Análise concluída com sucesso!
+            {t('gapAnalysis.adherenceUi.progress.successTitle')}
           </p>
           <p className="text-xs text-green-700 dark:text-green-300 mt-1">
-            O relatório está disponível para visualização
+            {t('gapAnalysis.adherenceUi.progress.successDescription')}
           </p>
         </div>
       )}

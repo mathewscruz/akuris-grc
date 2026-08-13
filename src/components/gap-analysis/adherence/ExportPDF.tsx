@@ -1,13 +1,15 @@
 import jsPDF from 'jspdf';
 import type { AdherenceAssessment, PontoForte, PontoMelhoria } from './types';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { ptBR, type Locale } from 'date-fns/locale';
 import { logger } from '@/lib/logger';
 
 export async function exportAssessmentToPDF(
   assessment: AdherenceAssessment, 
   details?: any[],
-  empresaLogoUrl?: string
+  empresaLogoUrl?: string,
+  t: (key: string, params?: Record<string, string | number>) => string = (key: string) => key,
+  dateLocale: Locale = ptBR
 ) {
   const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
   const pageWidth = pdf.internal.pageSize.getWidth();
@@ -98,8 +100,8 @@ export async function exportAssessmentToPDF(
   pdf.setFontSize(24);
   pdf.setFont('helvetica', 'bold');
   const titleY = y + 50;
-  pdf.text('RELATÓRIO DE AVALIAÇÃO', pageWidth / 2, titleY, { align: 'center' });
-  pdf.text('DE ADERÊNCIA', pageWidth / 2, titleY + 30, { align: 'center' });
+  pdf.text(t('gapAnalysis.adherenceUi.exportPdf.reportTitle'), pageWidth / 2, titleY, { align: 'center' });
+  pdf.text(t('gapAnalysis.adherenceUi.exportPdf.reportTitleLine2'), pageWidth / 2, titleY + 30, { align: 'center' });
   
   y = 230;
 
@@ -122,14 +124,14 @@ export async function exportAssessmentToPDF(
   pdf.setFontSize(11);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
-  pdf.text(`Framework: ${assessment.framework_nome} ${assessment.framework_versao || ''}`, marginX + 20, y);
+  pdf.text(t('gapAnalysis.adherenceUi.exportPdf.frameworkLabel', { name: assessment.framework_nome, version: assessment.framework_versao || '' }), marginX + 20, y);
   
   y += 20;
-  pdf.text(`Documento Analisado: ${assessment.documento_nome}`, marginX + 20, y);
+  pdf.text(t('gapAnalysis.adherenceUi.exportPdf.documentLabel', { doc: assessment.documento_nome }), marginX + 20, y);
   
   y += 20;
   pdf.text(
-    `Data da Análise: ${format(new Date(assessment.created_at), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}`,
+    t('gapAnalysis.adherenceUi.exportPdf.dateLabel', { date: format(new Date(assessment.created_at), "dd 'de' MMMM 'de' yyyy", { locale: dateLocale }) }),
     marginX + 20,
     y
   );
@@ -137,13 +139,13 @@ export async function exportAssessmentToPDF(
   y += boxHeight - 65 + 20;
 
   // ========== RESULTADO GERAL ==========
-  addSection('SUMÁRIO EXECUTIVO', 20);
+  addSection(t('gapAnalysis.adherenceUi.exportPdf.execSummary'), 20);
   
   const resultLabel = assessment.resultado_geral === 'conforme' 
-    ? 'CONFORME' 
+    ? t('gapAnalysis.adherenceUi.exportPdf.resultConforme') 
     : assessment.resultado_geral === 'nao_conforme' 
-    ? 'NÃO CONFORME' 
-    : 'PARCIALMENTE CONFORME';
+    ? t('gapAnalysis.adherenceUi.exportPdf.resultNaoConforme') 
+    : t('gapAnalysis.adherenceUi.exportPdf.resultParcial');
 
   const resultBoxHeight = 90;
   checkAddPage(resultBoxHeight + 20);
@@ -157,7 +159,7 @@ export async function exportAssessmentToPDF(
   pdf.setFontSize(12);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
-  pdf.text('Resultado da Avaliação:', marginX + 20, y);
+  pdf.text(t('gapAnalysis.adherenceUi.exportPdf.resultLabel'), marginX + 20, y);
   
   y += 25;
   pdf.setFontSize(20);
@@ -183,17 +185,17 @@ export async function exportAssessmentToPDF(
     pdf.setFontSize(12);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
-    pdf.text('Distribuição dos Requisitos Analisados:', marginX, y);
+    pdf.text(t('gapAnalysis.adherenceUi.exportPdf.distributionTitle'), marginX, y);
     y += 25;
 
     // Grid de estatísticas
     const statBoxWidth = (contentWidth - 30) / 4;
     const statBoxHeight = 70;
     const stats = [
-      { label: 'Conforme', value: distribuicao.conforme, color: colors.success },
-      { label: 'Parcial', value: distribuicao.parcial, color: colors.warning },
-      { label: 'Não Conforme', value: distribuicao.nao_conforme, color: colors.error },
-      { label: 'Não Aplicável', value: distribuicao.nao_aplicavel, color: colors.light },
+      { label: t('gapAnalysis.adherenceUi.exportPdf.statConforme'), value: distribuicao.conforme, color: colors.success },
+      { label: t('gapAnalysis.adherenceUi.exportPdf.statParcial'), value: distribuicao.parcial, color: colors.warning },
+      { label: t('gapAnalysis.adherenceUi.exportPdf.statNaoConforme'), value: distribuicao.nao_conforme, color: colors.error },
+      { label: t('gapAnalysis.adherenceUi.exportPdf.statNaoAplicavel'), value: distribuicao.nao_aplicavel, color: colors.light },
     ];
 
     stats.forEach((stat, index) => {
@@ -221,7 +223,7 @@ export async function exportAssessmentToPDF(
 
   // ========== PONTOS FORTES ==========
   if (assessment.pontos_fortes && assessment.pontos_fortes.length > 0) {
-    addSection(`PONTOS FORTES (${assessment.pontos_fortes.length})`);
+    addSection(t('gapAnalysis.adherenceUi.exportPdf.strongPointsTitle', { count: assessment.pontos_fortes.length }));
     
     assessment.pontos_fortes.forEach((ponto: PontoForte, index: number) => {
       checkAddPage(70);
@@ -257,7 +259,7 @@ export async function exportAssessmentToPDF(
 
   // ========== PONTOS DE MELHORIA ==========
   if (assessment.pontos_melhoria && assessment.pontos_melhoria.length > 0) {
-    addSection(`PONTOS DE MELHORIA (${assessment.pontos_melhoria.length})`);
+    addSection(t('gapAnalysis.adherenceUi.exportPdf.improvementPointsTitle', { count: assessment.pontos_melhoria.length }));
     
     assessment.pontos_melhoria.forEach((ponto: PontoMelhoria, index: number) => {
       checkAddPage(75);
@@ -306,7 +308,7 @@ export async function exportAssessmentToPDF(
 
   // ========== RECOMENDAÇÕES ==========
   if (assessment.recomendacoes && assessment.recomendacoes.length > 0) {
-    addSection('RECOMENDAÇÕES');
+    addSection(t('gapAnalysis.adherenceUi.exportPdf.recommendationsTitle'));
     
     assessment.recomendacoes.forEach((rec: string) => {
       checkAddPage(35);
@@ -333,7 +335,7 @@ export async function exportAssessmentToPDF(
   if (assessment.analise_detalhada) {
     pdf.addPage();
     y = marginY;
-    addSection('ANÁLISE DETALHADA COMPLETA', 0);
+    addSection(t('gapAnalysis.adherenceUi.exportPdf.fullAnalysisTitle'), 0);
     y += 10;
     
     pdf.setFontSize(9);
@@ -352,7 +354,7 @@ export async function exportAssessmentToPDF(
   if (details && details.length > 0) {
     pdf.addPage();
     y = marginY;
-    addSection('ANÁLISE DETALHADA POR REQUISITO', 0);
+    addSection(t('gapAnalysis.adherenceUi.exportPdf.byRequirementTitle'), 0);
     y += 15;
 
     details.forEach((detail: any) => {
@@ -398,7 +400,7 @@ export async function exportAssessmentToPDF(
         pdf.setFontSize(9);
         pdf.setFont('helvetica', 'normal');
         pdf.setTextColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
-        pdf.text(`Score: ${detail.score_conformidade}/10`, marginX + 12, y);
+        pdf.text(t('gapAnalysis.adherenceUi.exportPdf.scoreLabel', { score: detail.score_conformidade }), marginX + 12, y);
         y += 15;
       }
       
@@ -406,7 +408,7 @@ export async function exportAssessmentToPDF(
         pdf.setFontSize(8);
         pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
-        pdf.text('Evidências:', marginX + 12, y);
+        pdf.text(t('gapAnalysis.adherenceUi.exportPdf.evidenceLabel'), marginX + 12, y);
         y += 12;
         pdf.setFont('helvetica', 'normal');
         pdf.setTextColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
@@ -419,7 +421,7 @@ export async function exportAssessmentToPDF(
         pdf.setFontSize(8);
         pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
-        pdf.text('Gaps:', marginX + 12, y);
+        pdf.text(t('gapAnalysis.adherenceUi.exportPdf.gapsLabel'), marginX + 12, y);
         y += 12;
         pdf.setFont('helvetica', 'normal');
         pdf.setTextColor(colors.secondary[0], colors.secondary[1], colors.secondary[2]);
@@ -443,15 +445,15 @@ export async function exportAssessmentToPDF(
     pdf.setFontSize(7);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(colors.light[0], colors.light[1], colors.light[2]);
-    pdf.text(`Página ${i} de ${totalPages}`, marginX, pageHeight - 20);
+    pdf.text(t('gapAnalysis.adherenceUi.exportPdf.pageFooter', { current: i, total: totalPages }), marginX, pageHeight - 20);
     pdf.text(
-      `Gerado em ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ptBR })}`,
+      t('gapAnalysis.adherenceUi.exportPdf.generatedOn', { date: format(new Date(), 'dd/MM/yyyy HH:mm', { locale: dateLocale }) }),
       pageWidth - marginX,
       pageHeight - 20,
       { align: 'right' }
     );
     pdf.text(
-      'Relatório de Avaliação de Aderência',
+      t('gapAnalysis.adherenceUi.exportPdf.footerTitle'),
       pageWidth / 2,
       pageHeight - 20,
       { align: 'center' }

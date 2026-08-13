@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { FrameworkLogo } from './FrameworkLogos';
 import { ArrowRight } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface SuggestedFramework {
   id: string;
@@ -18,30 +19,31 @@ interface WelcomeHeroProps {
   suggestedFrameworks: SuggestedFramework[];
 }
 
-const FRAMEWORK_AUDIENCES: Record<string, string> = {
-  'ISO 27001': 'Para empresas que precisam certificar seu sistema de gestão de segurança da informação',
-  'LGPD': 'Para empresas que processam dados pessoais no Brasil',
-  'NIST CSF 2.0': 'Para organizações que buscam maturidade em cibersegurança',
-  'ISO 27701': 'Para empresas que precisam de gestão de privacidade integrada à ISO 27001',
-  'PCI DSS': 'Para empresas que processam dados de cartões de pagamento',
-  'SOC 2': 'Para empresas de tecnologia que precisam demonstrar controles de segurança',
-  'NIST SP 800-82': 'Para indústrias e utilities com sistemas de controle industrial (OT/ICS)',
-  'DORA': 'Para entidades financeiras europeias com requisitos de resiliência operacional digital',
-  'ISO/IEC 62443': 'Para operadores e fornecedores de sistemas de automação industrial (IACS)',
+const FRAMEWORK_AUDIENCE_KEYS: Record<string, string> = {
+  'ISO 27001': 'iso27001',
+  'LGPD': 'lgpd',
+  'NIST CSF 2.0': 'nistCsf',
+  'ISO 27701': 'iso27701',
+  'PCI DSS': 'pciDss',
+  'SOC 2': 'soc2',
+  'NIST SP 800-82': 'nistSp80082',
+  'DORA': 'dora',
+  'ISO/IEC 62443': 'iso62443',
 };
 
 export function WelcomeHero({ onFrameworkClick, onShowCatalog, suggestedFrameworks }: WelcomeHeroProps) {
+  const { t } = useLanguage();
   return (
     <Card className="relative overflow-hidden border-primary/20 bg-gradient-to-br from-primary/5 via-background to-accent/5">
       <div className="p-6 md:p-8">
         <div className="flex items-center gap-2 mb-3">
-          <Badge variant="secondary" className="text-[10px] uppercase tracking-wide">Comece aqui</Badge>
+          <Badge variant="secondary" className="text-[10px] uppercase tracking-wide">{t('gapAnalysis.welcome.badge')}</Badge>
         </div>
         <h2 className="text-xl md:text-2xl font-bold mb-2">
-          Comece sua jornada de compliance
+          {t('gapAnalysis.welcome.title')}
         </h2>
         <p className="text-sm text-muted-foreground mb-6 max-w-xl">
-          Escolha um framework abaixo para iniciar a avaliação. Recomendamos começar pelo padrão mais relevante para o seu negócio.
+          {t('gapAnalysis.welcome.description')}
         </p>
 
         {/* Frameworks recomendados — destaque principal */}
@@ -60,7 +62,7 @@ export function WelcomeHero({ onFrameworkClick, onShowCatalog, suggestedFramewor
                   </h3>
                   <span className="text-xs text-muted-foreground">{fw.versao}</span>
                   <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                    {FRAMEWORK_AUDIENCES[fw.nome] || fw.descricao || 'Framework de conformidade organizacional'}
+                    {(FRAMEWORK_AUDIENCE_KEYS[fw.nome] && t(`gapAnalysis.frameworkAudience.${FRAMEWORK_AUDIENCE_KEYS[fw.nome]}`)) || fw.descricao || t('gapAnalysis.genericComplianceFramework')}
                   </p>
                 </div>
                 <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0 mt-1" strokeWidth={1.5}/>
@@ -70,7 +72,7 @@ export function WelcomeHero({ onFrameworkClick, onShowCatalog, suggestedFramewor
         </div>
 
         <Button variant="outline" size="sm" onClick={onShowCatalog}>
-          Ver todos os frameworks disponíveis
+          {t('gapAnalysis.welcome.viewAll')}
           <ArrowRight className="h-4 w-4 ml-1" strokeWidth={1.5}/>
         </Button>
       </div>

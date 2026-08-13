@@ -1,12 +1,17 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
 import { pt } from '@/i18n/pt';
 import { en } from '@/i18n/en';
+import { modulesPt, modulesEn } from '@/i18n/modules';
 import { supabase } from '@/integrations/supabase/client';
 
 export type Locale = 'pt' | 'en';
 type Dictionary = Record<string, any>;
 
-const dictionaries: Record<Locale, Dictionary> = { pt, en };
+const dictionaries: Record<Locale, Dictionary> = {
+  pt: { ...pt, ...modulesPt },
+  en: { ...en, ...modulesEn },
+};
+
 
 interface LanguageContextType {
   locale: Locale;

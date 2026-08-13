@@ -23,36 +23,42 @@ import { Plus, ListTodo, Clock, CheckCircle2, AlertTriangle, XCircle, Pencil, Tr
 import { differenceInDays } from 'date-fns';
 import { useLanguage } from '@/contexts/LanguageContext';
 
-const statusConfig: Record<string, { label: string; variant: any; icon: any }> = {
-  pendente: { label: 'Pendente', variant: 'warning', icon: Clock },
-  em_andamento: { label: 'Em Andamento', variant: 'info', icon: Target },
-  concluido: { label: 'Concluído', variant: 'success', icon: CheckCircle2 },
-  cancelado: { label: 'Cancelado', variant: 'secondary', icon: XCircle },
-  atrasado: { label: 'Atrasado', variant: 'destructive', icon: AlertTriangle },
-};
+function buildStatusConfig(t: (key: string) => string): Record<string, { label: string; variant: any; icon: any }> {
+  return {
+    pendente: { label: t('planosAcao.statusPendente'), variant: 'warning', icon: Clock },
+    em_andamento: { label: t('planosAcao.statusEmAndamento'), variant: 'info', icon: Target },
+    concluido: { label: t('planosAcao.statusConcluido'), variant: 'success', icon: CheckCircle2 },
+    cancelado: { label: t('planosAcao.statusCancelado'), variant: 'secondary', icon: XCircle },
+    atrasado: { label: t('planosAcao.statusAtrasado'), variant: 'destructive', icon: AlertTriangle },
+  };
+}
 
-const prioridadeConfig: Record<string, { label: string; variant: any }> = {
-  baixa: { label: 'Baixa', variant: 'secondary' },
-  media: { label: 'Média', variant: 'default' },
-  alta: { label: 'Alta', variant: 'warning' },
-  critica: { label: 'Crítica', variant: 'destructive' },
-};
+function buildPrioridadeConfig(t: (key: string) => string): Record<string, { label: string; variant: any }> {
+  return {
+    baixa: { label: t('planosAcao.priorityBaixa'), variant: 'secondary' },
+    media: { label: t('planosAcao.priorityMedia'), variant: 'default' },
+    alta: { label: t('planosAcao.priorityAlta'), variant: 'warning' },
+    critica: { label: t('planosAcao.priorityCritica'), variant: 'destructive' },
+  };
+}
 
-const moduloLabels: Record<string, string> = {
-  manual: 'Manual',
-  riscos: 'Riscos',
-  controles: 'Controles',
-  frameworks: 'Frameworks',
-  incidentes: 'Incidentes',
-  auditorias: 'Auditorias',
-  contratos: 'Contratos',
-  documentos: 'Documentos',
-  dados: 'Privacidade',
-  'due-diligence': 'Due Diligence',
-  denuncia: 'Denúncia',
-  ativos: 'Ativos',
-  'contas-privilegiadas': 'Contas Priv.',
-};
+function buildModuloLabels(t: (key: string) => string): Record<string, string> {
+  return {
+    manual: t('planosAcao.moduleManual'),
+    riscos: t('planosAcao.moduleRiscos'),
+    controles: t('planosAcao.moduleControles'),
+    frameworks: t('planosAcao.moduleFrameworks'),
+    incidentes: t('planosAcao.moduleIncidentes'),
+    auditorias: t('planosAcao.moduleAuditorias'),
+    contratos: t('planosAcao.moduleContratos'),
+    documentos: t('planosAcao.moduleDocumentos'),
+    dados: t('planosAcao.moduleDados'),
+    'due-diligence': t('planosAcao.moduleDueDiligence'),
+    denuncia: t('planosAcao.moduleDenuncia'),
+    ativos: t('planosAcao.moduleAtivos'),
+    'contas-privilegiadas': t('planosAcao.moduleContasPrivilegiadas'),
+  };
+}
 
 // Map external module statuses to plano de acao statuses
 function mapExternalStatus(modulo: string, status: string, prazo?: string | null): string {
@@ -87,6 +93,9 @@ function getRouteForModule(modulo: string): string {
 
 export default function PlanosAcao() {
   const { t } = useLanguage();
+  const statusConfig = useMemo(() => buildStatusConfig(t), [t]);
+  const prioridadeConfig = useMemo(() => buildPrioridadeConfig(t), [t]);
+  const moduloLabels = useMemo(() => buildModuloLabels(t), [t]);
   useFocusRow();
   const { user, profile } = useAuth();
   const empresaId = profile?.empresa_id;
@@ -305,7 +314,7 @@ export default function PlanosAcao() {
       if (editingPlano) {
         const { error } = await supabase.from('planos_acao').update(data).eq('id', editingPlano.id);
         if (error) throw error;
-        toast.success('Plano de ação atualizado');
+        toast.success(t('planosAcao.toastUpdated'));
       } else {
         const { error } = await supabase.from('planos_acao').insert({
           ...data,
@@ -313,7 +322,7 @@ export default function PlanosAcao() {
           created_by: user.id,
         });
         if (error) throw error;
-        toast.success('Plano de ação criado');
+        toast.success(t('planosAcao.toastCreated'));
         notify('plano_acao_criado', {
           titulo: `Novo plano de ação: ${data.titulo}`,
           descricao: data.descricao,
@@ -327,7 +336,7 @@ export default function PlanosAcao() {
       setEditingPlano(null);
     } catch (error) {
       logger.error('Erro ao salvar plano de ação', error);
-      toast.error('Erro ao salvar plano de ação');
+      toast.error(t('planosAcao.toastSaveError'));
     } finally {
       setSaving(false);
     }
@@ -338,11 +347,11 @@ export default function PlanosAcao() {
     try {
       const { error } = await supabase.from('planos_acao').delete().eq('id', deleteId).eq('empresa_id', empresaId);
       if (error) throw error;
-      toast.success('Plano de ação excluído');
+      toast.success(t('planosAcao.toastDeleted'));
       queryClient.invalidateQueries({ queryKey: ['planos-acao'] });
     } catch (error) {
       logger.error('Erro ao excluir plano', error);
-      toast.error('Erro ao excluir plano de ação');
+      toast.error(t('planosAcao.toastDeleteError'));
     } finally {
       setDeleteId(null);
     }
@@ -360,7 +369,7 @@ export default function PlanosAcao() {
   const columns: Column<any>[] = [
     {
       key: 'titulo',
-      label: 'Título',
+      label: t('planosAcao.columnTitle'),
       sortable: true,
       render: (_: any, item: any) => (
         <div className="max-w-xs">
@@ -375,7 +384,7 @@ export default function PlanosAcao() {
     },
     {
       key: 'status',
-      label: 'Status',
+      label: t('planosAcao.columnStatus'),
       sortable: true,
       render: (_: any, item: any) => {
         const cfg = statusConfig[item._displayStatus] || statusConfig.pendente;
@@ -384,7 +393,7 @@ export default function PlanosAcao() {
     },
     {
       key: 'prioridade',
-      label: 'Prioridade',
+      label: t('planosAcao.columnPriority'),
       sortable: true,
       render: (val: string) => {
         const cfg = prioridadeConfig[val] || prioridadeConfig.media;
@@ -393,14 +402,14 @@ export default function PlanosAcao() {
     },
     {
       key: 'responsavel_id',
-      label: 'Responsável',
+      label: t('planosAcao.columnResponsible'),
       render: (_: any, item: any) => (
         <span className="text-sm">{item.profiles?.nome || '-'}</span>
       ),
     },
     {
       key: 'prazo',
-      label: 'Prazo',
+      label: t('planosAcao.columnDeadline'),
       sortable: true,
       render: (val: string, item: any) => {
         if (!val) return <span className="text-muted-foreground">-</span>;
@@ -414,7 +423,7 @@ export default function PlanosAcao() {
     },
     {
       key: 'modulo_origem',
-      label: 'Origem',
+      label: t('planosAcao.columnOrigin'),
       render: (val: string, item: any) => (
         <Badge variant={item._isExternal ? 'default' : 'outline'} className="text-xs">
           {moduloLabels[val] || val || 'Manual'}
@@ -423,7 +432,7 @@ export default function PlanosAcao() {
     },
     {
       key: 'actions',
-      label: 'Ações',
+      label: t('planosAcao.columnActions'),
       className: 'w-16',
       render: (_: any, item: any) => (
         <DropdownMenu>
@@ -435,15 +444,15 @@ export default function PlanosAcao() {
           <DropdownMenuContent align="end">
             {item._isExternal ? (
               <DropdownMenuItem onClick={() => navigate(item._route)}>
-                <ExternalLink className="h-4 w-4 mr-2" />Abrir no módulo
+                <ExternalLink className="h-4 w-4 mr-2" />{t('planosAcao.actionOpenInModule')}
               </DropdownMenuItem>
             ) : (
               <>
                 <DropdownMenuItem onClick={() => { setEditingPlano(item); setDialogOpen(true); }}>
-                  <Pencil className="h-4 w-4 mr-2" />Editar
+                  <Pencil className="h-4 w-4 mr-2" />{t('planosAcao.actionEdit')}
                 </DropdownMenuItem>
                 <DropdownMenuItem className="text-destructive" onClick={() => setDeleteId(item.id)}>
-                  <Trash2 className="h-4 w-4 mr-2" />Excluir
+                  <Trash2 className="h-4 w-4 mr-2" />{t('planosAcao.actionDelete')}
                 </DropdownMenuItem>
               </>
             )}
@@ -460,13 +469,13 @@ export default function PlanosAcao() {
       <PageHeader
         title={t('modules.planosAcao.title')}
         description={t('modules.planosAcao.description')}
-        breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Planos de Ação' }]}
+        breadcrumbs={[{ label: t('planosAcao.breadcrumbDashboard'), href: '/dashboard' }, { label: t('planosAcao.breadcrumbTitle') }]}
         actions={
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => {
               if (planos.length === 0) return;
               exportCSV(
-                ['Titulo', 'Status', 'Prioridade', 'Modulo', 'Prazo', 'Criado em'],
+                [t('planosAcao.csvHeaderTitle'), t('planosAcao.csvHeaderStatus'), t('planosAcao.csvHeaderPriority'), t('planosAcao.csvHeaderModule'), t('planosAcao.csvHeaderDeadline'), t('planosAcao.csvHeaderCreatedAt')],
                 planos.map((p: any) => [
                   p.titulo || p.nome || '', p.status || '', p.prioridade || '',
                   p.modulo_origem || 'manual', p.prazo || '', p.created_at ? new Date(p.created_at).toLocaleDateString('pt-BR') : ''
@@ -474,7 +483,7 @@ export default function PlanosAcao() {
                 'planos_acao'
               );
             }}>
-              <Download className="h-4 w-4 mr-2" />CSV
+              <Download className="h-4 w-4 mr-2" />{t('planosAcao.csv')}
             </Button>
             <div className="flex border rounded-md overflow-hidden">
               <Button variant={viewMode === 'lista' ? 'default' : 'ghost'} size="sm" onClick={() => setViewMode('lista')} className="rounded-none">
@@ -486,7 +495,7 @@ export default function PlanosAcao() {
             </div>
             <Button onClick={() => { setEditingPlano(null); setDialogOpen(true); }}>
               <Plus className="h-4 w-4 mr-2" />
-              Nova Ação
+              {t('planosAcao.newAction')}
             </Button>
           </div>
         }
@@ -495,30 +504,30 @@ export default function PlanosAcao() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <StatCard
-          title="Total"
+          title={t('planosAcao.statTotal')}
           value={stats.total}
           icon={<ListTodo />}
           variant="primary"
           drillDown="planos"
           showAccent
           segments={[
-            { label: 'pendentes', value: stats.pendentes, tone: 'warning' },
-            { label: 'em andamento', value: stats.emAndamento, tone: 'info' },
-            { label: 'concluídos', value: stats.concluidos, tone: 'success' },
+            { label: t('planosAcao.segmentPending'), value: stats.pendentes, tone: 'warning' },
+            { label: t('planosAcao.segmentInProgress'), value: stats.emAndamento, tone: 'info' },
+            { label: t('planosAcao.segmentCompleted'), value: stats.concluidos, tone: 'success' },
           ]}
-          emptyHint="Crie planos de ação a partir de riscos ou auditorias."
+          emptyHint={t('planosAcao.emptyHintTotal')}
         />
-        <StatCard title="Pendentes" value={stats.pendentes} icon={<Clock />} variant="warning" drillDown="planos" />
-        <StatCard title="Em Andamento" value={stats.emAndamento} icon={<Target />} variant="info" drillDown="planos" />
-        <StatCard title="Concluídos" value={stats.concluidos} icon={<CheckCircle2 />} variant="success" />
-        <StatCard title="Atrasados" value={stats.atrasados} icon={<AlertTriangle />} variant="destructive" drillDown="planos" />
+        <StatCard title={t('planosAcao.statPending')} value={stats.pendentes} icon={<Clock />} variant="warning" drillDown="planos" />
+        <StatCard title={t('planosAcao.statInProgress')} value={stats.emAndamento} icon={<Target />} variant="info" drillDown="planos" />
+        <StatCard title={t('planosAcao.statCompleted')} value={stats.concluidos} icon={<CheckCircle2 />} variant="success" />
+        <StatCard title={t('planosAcao.statOverdue')} value={stats.atrasados} icon={<AlertTriangle />} variant="destructive" drillDown="planos" />
       </div>
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          <TabsTrigger value="meus">Meus Itens</TabsTrigger>
-          {isAdmin && <TabsTrigger value="todos">Todos</TabsTrigger>}
+          <TabsTrigger value="meus">{t('planosAcao.tabMyItems')}</TabsTrigger>
+          {isAdmin && <TabsTrigger value="todos">{t('planosAcao.tabAll')}</TabsTrigger>}
         </TabsList>
 
         <TabsContent value={activeTab} className="mt-4">
@@ -529,7 +538,7 @@ export default function PlanosAcao() {
                 columns={columns}
                 loading={isLoading}
                 searchable
-                searchPlaceholder="Buscar pendências..."
+                searchPlaceholder={t('planosAcao.searchPlaceholder')}
                 searchValue={search}
                 onSearchChange={setSearch}
                 sortField={sortField}
@@ -540,27 +549,27 @@ export default function PlanosAcao() {
                 filters={[
                   {
                     key: 'status',
-                    label: 'Status',
+                    label: t('planosAcao.filterStatusLabel'),
                     options: [
-                      { value: 'todos', label: 'Todos os Status' },
-                      { value: 'pendente', label: 'Pendente' },
-                      { value: 'em_andamento', label: 'Em Andamento' },
-                      { value: 'concluido', label: 'Concluído' },
-                      { value: 'atrasado', label: 'Atrasado' },
-                      { value: 'cancelado', label: 'Cancelado' },
+                      { value: 'todos', label: t('planosAcao.filterStatusAll') },
+                      { value: 'pendente', label: t('planosAcao.statusPendente') },
+                      { value: 'em_andamento', label: t('planosAcao.statusEmAndamento') },
+                      { value: 'concluido', label: t('planosAcao.statusConcluido') },
+                      { value: 'atrasado', label: t('planosAcao.statusAtrasado') },
+                      { value: 'cancelado', label: t('planosAcao.statusCancelado') },
                     ],
                     value: statusFilter,
                     onChange: setStatusFilter,
                   },
                   {
                     key: 'prioridade',
-                    label: 'Prioridade',
+                    label: t('planosAcao.filterPriorityLabel'),
                     options: [
-                      { value: 'todos', label: 'Todas' },
-                      { value: 'baixa', label: 'Baixa' },
-                      { value: 'media', label: 'Média' },
-                      { value: 'alta', label: 'Alta' },
-                      { value: 'critica', label: 'Crítica' },
+                      { value: 'todos', label: t('planosAcao.filterPriorityAll') },
+                      { value: 'baixa', label: t('planosAcao.priorityBaixa') },
+                      { value: 'media', label: t('planosAcao.priorityMedia') },
+                      { value: 'alta', label: t('planosAcao.priorityAlta') },
+                      { value: 'critica', label: t('planosAcao.priorityCritica') },
                     ],
                     value: prioridadeFilter,
                     onChange: setPrioridadeFilter,
@@ -568,9 +577,9 @@ export default function PlanosAcao() {
                 ]}
                 emptyState={{
                   icon: <ListTodo className="h-12 w-12" />,
-                  title: 'Nenhuma pendência encontrada',
-                  description: activeTab === 'meus' ? 'Você não possui itens pendentes no momento' : 'Crie um novo plano de ação para começar',
-                  action: { label: 'Nova Ação', onClick: () => { setEditingPlano(null); setDialogOpen(true); } },
+                  title: t('planosAcao.emptyTitle'),
+                  description: activeTab === 'meus' ? t('planosAcao.emptyDescriptionMyItems') : t('planosAcao.emptyDescriptionAll'),
+                  action: { label: t('planosAcao.newAction'), onClick: () => { setEditingPlano(null); setDialogOpen(true); } },
                 }}
               />
             </Card>
@@ -612,7 +621,7 @@ export default function PlanosAcao() {
                           </div>
                           {item.prazo && (
                             <p className={`text-xs mt-2 ${item._displayStatus === 'atrasado' ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
-                              Prazo: {formatDateOnly(item.prazo)}
+                              {t('planosAcao.deadlinePrefix')}: {formatDateOnly(item.prazo)}
                             </p>
                           )}
                           {item.profiles?.nome && (
@@ -624,7 +633,7 @@ export default function PlanosAcao() {
                       ))}
                       {items.length === 0 && (
                         <div className="text-center text-muted-foreground text-xs py-8 border-2 border-dashed rounded-lg">
-                          Nenhuma ação
+                          {t('planosAcao.noItems')}
                         </div>
                       )}
                     </div>
@@ -647,10 +656,10 @@ export default function PlanosAcao() {
       <ConfirmDialog
         open={!!deleteId}
         onOpenChange={(open) => !open && setDeleteId(null)}
-        title="Excluir Plano de Ação"
-        description="Tem certeza que deseja excluir este plano de ação? Esta ação não pode ser desfeita."
-        confirmText="Excluir"
-        cancelText="Cancelar"
+        title={t('planosAcao.deleteDialogTitle')}
+        description={t('planosAcao.deleteDialogDescription')}
+        confirmText={t('planosAcao.deleteDialogConfirm')}
+        cancelText={t('planosAcao.deleteDialogCancel')}
         variant="destructive"
         onConfirm={handleDelete}
       />

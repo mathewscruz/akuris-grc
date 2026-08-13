@@ -17,6 +17,7 @@ import { logger } from '@/lib/logger';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { AiCostHint } from '@/components/ui/ai-cost-hint';
+import { useLanguage } from '@/contexts/LanguageContext';
 interface AdherenceAssessmentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -26,6 +27,7 @@ interface AdherenceAssessmentDialogProps {
 }
 
 export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSelectedFrameworkId, preSelectedFrameworkNome }: AdherenceAssessmentDialogProps) {
+  const { t } = useLanguage();
   const { toast } = useToast();
   const { empresaId, loading: loadingEmpresa } = useEmpresaId();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -92,8 +94,8 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
       
       if (!allowedTypes.includes(file.type)) {
         toast({
-          title: "Tipo de arquivo inválido",
-          description: "Por favor, envie apenas arquivos PDF, DOCX, DOC ou TXT.",
+          title: t('gapAnalysis.adherenceUi.dialog.invalidFileTitle'),
+          description: t('gapAnalysis.adherenceUi.dialog.invalidFileDescription'),
           variant: "destructive"
         });
         return;
@@ -102,8 +104,8 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
       // Validar tamanho (máximo 10MB)
       if (file.size > 10 * 1024 * 1024) {
         toast({
-          title: "Arquivo muito grande",
-          description: "O arquivo deve ter no máximo 10MB.",
+          title: t('gapAnalysis.adherenceUi.dialog.fileTooBigTitle'),
+          description: t('gapAnalysis.adherenceUi.dialog.fileTooBigDescription'),
           variant: "destructive"
         });
         return;
@@ -163,8 +165,8 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
           }));
           
           toast({
-            title: "Análise concluída!",
-            description: `Conformidade: ${data.percentual_conformidade?.toFixed(1)}%`,
+            title: t('gapAnalysis.adherenceUi.dialog.analysisCompleteTitle'),
+            description: t('gapAnalysis.adherenceUi.dialog.analysisCompleteDescription', { pct: data.percentual_conformidade?.toFixed(1) }),
           });
 
           // Aguardar 2 segundos e fechar dialog
@@ -188,7 +190,7 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
           clearInterval(pollInterval);
         } else if (data.status === 'erro') {
           const metadados = data.metadados_analise as any;
-          const errorMsg = metadados?.erro || 'Erro desconhecido durante a análise';
+          const errorMsg = metadados?.erro || t('gapAnalysis.adherenceUi.dialog.unknownError');
           
           setAnalysisState(prev => ({
             ...prev,
@@ -198,7 +200,7 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
           }));
 
           toast({
-            title: "Erro na análise",
+            title: t('gapAnalysis.adherenceUi.dialog.analysisErrorTitle'),
             description: errorMsg,
             variant: "destructive"
           });
@@ -231,8 +233,8 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
     
     if (!formData.nome_analise || !formData.framework_id || !uploadedFile) {
       toast({
-        title: "Campos obrigatórios",
-        description: "Por favor, preencha todos os campos e faça upload do documento.",
+        title: t('gapAnalysis.adherenceUi.dialog.requiredFieldsTitle'),
+        description: t('gapAnalysis.adherenceUi.dialog.requiredFieldsDescription'),
         variant: "destructive"
       });
       return;
@@ -273,12 +275,12 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
         } else if (originalFileType === 'text/plain') {
           textContent = await uploadedFile.text();
         } else {
-          throw new Error('Tipo de arquivo não suportado');
+          throw new Error(t('gapAnalysis.adherenceUi.dialog.unsupportedFileType'));
         }
 
         // Validar se o texto extraído tem conteúdo
         if (!textContent || textContent.trim().length < 100) {
-          throw new Error('O documento não contém texto suficiente para análise. Verifique se o arquivo não está protegido ou corrompido.');
+          throw new Error(t('gapAnalysis.adherenceUi.dialog.insufficientText'));
         }
 
         logger.debug(`Texto extraído: ${textContent.length} caracteres`);
@@ -292,12 +294,12 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
           ...prev,
           isAnalyzing: false,
           isError: true,
-          errorMessage: extractError.message || "Erro ao extrair texto do documento"
+          errorMessage: extractError.message || t('gapAnalysis.adherenceUi.dialog.extractErrorGeneric')
         }));
 
         toast({
-          title: "Erro ao extrair texto",
-          description: extractError.message || "Não foi possível extrair o texto do documento.",
+          title: t('gapAnalysis.adherenceUi.dialog.extractErrorTitle'),
+          description: extractError.message || t('gapAnalysis.adherenceUi.dialog.extractErrorGeneric'),
           variant: "destructive"
         });
         return;
@@ -394,12 +396,12 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
         ...prev,
         isAnalyzing: false,
         isError: true,
-        errorMessage: error.message || "Erro ao iniciar análise"
+        errorMessage: error.message || t('gapAnalysis.adherenceUi.dialog.startErrorTitle')
       }));
 
       toast({
-        title: "Erro ao iniciar análise",
-        description: error.message || "Ocorreu um erro ao iniciar a avaliação.",
+        title: t('gapAnalysis.adherenceUi.dialog.startErrorTitle'),
+        description: error.message || t('gapAnalysis.adherenceUi.dialog.startErrorGeneric'),
         variant: "destructive"
       });
     } finally {
@@ -414,18 +416,18 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
         // Prevenir fechamento durante análise
         if (analysisState.isAnalyzing && !analysisState.isError) {
           toast({
-            title: "Análise em andamento",
-            description: "Aguarde a conclusão da análise. O processo continuará mesmo se você fechar o dialog.",
+            title: t('gapAnalysis.adherenceUi.dialog.analysisInProgressTitle'),
+            description: t('gapAnalysis.adherenceUi.dialog.analysisInProgressDescription'),
           });
           return;
         }
         onOpenChange(newOpen);
       }}
       icon={FileSearch}
-      title={analysisState.isAnalyzing ? 'Analisando Documento' : 'Nova Avaliação de Aderência'}
+      title={analysisState.isAnalyzing ? t('gapAnalysis.adherenceUi.dialog.analyzingTitle') : t('gapAnalysis.adherenceUi.dialog.newAssessmentTitle')}
       description={analysisState.isAnalyzing
-        ? 'Aguarde enquanto processamos a análise de aderência'
-        : 'Compare um documento interno com os requisitos de um framework regulatório usando IA'}
+        ? t('gapAnalysis.adherenceUi.dialog.analyzingDescription')
+        : t('gapAnalysis.adherenceUi.dialog.newAssessmentDescription')}
       size="md"
       hideFooter
     >
@@ -456,7 +458,7 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
                     onOpenChange(false);
                   }}
                 >
-                  Fechar
+                  {t('gapAnalysis.adherenceUi.dialog.close')}
                 </Button>
               </div>
             )}
@@ -464,39 +466,39 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label htmlFor="nome_analise">Nome da Avaliação *</Label>
+            <Label htmlFor="nome_analise">{t('gapAnalysis.adherenceUi.dialog.nameLabel')}</Label>
             <Input
               id="nome_analise"
               value={formData.nome_analise}
               onChange={(e) => setFormData({ ...formData, nome_analise: e.target.value })}
-              placeholder="Ex: Análise Política de Segurança vs ISO 27001"
+              placeholder={t('gapAnalysis.adherenceUi.dialog.namePlaceholder')}
               required
             />
           </div>
 
           <div>
-            <Label htmlFor="descricao">Descrição</Label>
+            <Label htmlFor="descricao">{t('gapAnalysis.adherenceUi.dialog.descriptionLabel')}</Label>
             <Textarea
               id="descricao"
               value={formData.descricao}
               onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
-              placeholder="Descreva o objetivo desta avaliação..."
+              placeholder={t('gapAnalysis.adherenceUi.dialog.descriptionPlaceholder')}
               rows={3}
             />
           </div>
 
           <div>
-            <Label htmlFor="framework_id">Framework *</Label>
+            <Label htmlFor="framework_id">{t('gapAnalysis.adherenceUi.dialog.frameworkLabel')}</Label>
             <Select
               value={formData.framework_id}
               onValueChange={(value) => setFormData({ ...formData, framework_id: value })}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Selecione o framework" />
+                <SelectValue placeholder={t('gapAnalysis.adherenceUi.dialog.frameworkPlaceholder')} />
               </SelectTrigger>
               <SelectContent>
                 {loadingFrameworks ? (
-                  <SelectItem value="loading" disabled>Carregando...</SelectItem>
+                  <SelectItem value="loading" disabled>{t('gapAnalysis.adherenceUi.dialog.loadingOption')}</SelectItem>
                 ) : frameworks && frameworks.length > 0 ? (
                   frameworks.map((framework: any) => (
                     <SelectItem key={framework.id} value={framework.id}>
@@ -507,14 +509,14 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
                     </SelectItem>
                   ))
                 ) : (
-                  <SelectItem value="none" disabled>Nenhum framework cadastrado</SelectItem>
+                  <SelectItem value="none" disabled>{t('gapAnalysis.adherenceUi.dialog.noFrameworksOption')}</SelectItem>
                 )}
               </SelectContent>
             </Select>
           </div>
 
           <div>
-            <Label htmlFor="documento">Documento *</Label>
+            <Label htmlFor="documento">{t('gapAnalysis.adherenceUi.dialog.documentLabel')}</Label>
             <div className="mt-2">
               {!uploadedFile ? (
                 <div className="border-2 border-dashed rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
@@ -527,9 +529,9 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
                   />
                   <label htmlFor="documento" className="cursor-pointer">
                     <Upload className="h-10 w-10 mx-auto text-muted-foreground mb-2" strokeWidth={1.5}/>
-                    <p className="text-sm font-medium">Clique para fazer upload</p>
+                    <p className="text-sm font-medium">{t('gapAnalysis.adherenceUi.dialog.clickToUpload')}</p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      PDF, DOCX, DOC ou TXT (máx. 10MB)
+                      {t('gapAnalysis.adherenceUi.dialog.allowedTypesHint')}
                     </p>
                   </label>
                 </div>
@@ -556,18 +558,18 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
               )}
             </div>
             <p className="text-xs text-muted-foreground mt-2">
-              Faça upload da política, procedimento ou documento que deseja avaliar
+              {t('gapAnalysis.adherenceUi.dialog.uploadHint')}
             </p>
           </div>
 
             <div className="flex flex-wrap items-center justify-end gap-2 pt-4">
-              <AiCostHint variant="block" className="w-full mb-1" action="cada análise de aderência" />
+              <AiCostHint variant="block" className="w-full mb-1" action={t('gapAnalysis.adherenceUi.dialog.costHintAction')} />
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Cancelar
+                {t('gapAnalysis.adherenceUi.dialog.cancel')}
               </Button>
               <Button type="submit" disabled={isSubmitting || isExtracting || loadingFrameworks || !uploadedFile}>
                 {(isSubmitting || isExtracting) && <AkurisPulse size={16} className="mr-2" />}
-                {isExtracting ? 'Extraindo texto...' : 'Iniciar Análise'}
+                {isExtracting ? t('gapAnalysis.adherenceUi.dialog.extractingText') : t('gapAnalysis.adherenceUi.dialog.startAnalysis')}
               </Button>
             </div>
           </form>

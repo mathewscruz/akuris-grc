@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { formatStatus } from '@/lib/text-utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 interface Documento {
   id: string;
   nome: string;
@@ -32,6 +33,7 @@ export function DocumentoPreview({ open, onOpenChange, documento }: DocumentoPre
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   React.useEffect(() => {
     if (open && documento.arquivo_url) {
@@ -55,8 +57,8 @@ export function DocumentoPreview({ open, onOpenChange, documento }: DocumentoPre
     } catch (error) {
       console.error('Erro ao carregar preview:', error);
       toast({
-        title: "Erro ao carregar preview",
-        description: "Não foi possível carregar a visualização do documento.",
+        title: t('documentosExtras.preview.erroCarregarTitulo'),
+        description: t('documentosExtras.preview.erroCarregarDesc'),
         variant: "destructive",
       });
     } finally {
@@ -84,14 +86,14 @@ export function DocumentoPreview({ open, onOpenChange, documento }: DocumentoPre
       URL.revokeObjectURL(url);
 
       toast({
-        title: "Download iniciado",
-        description: "O arquivo está sendo baixado.",
+        title: t('documentosExtras.preview.downloadIniciadoTitulo'),
+        description: t('documentosExtras.preview.downloadIniciadoDesc'),
       });
     } catch (error) {
       console.error('Erro ao baixar documento:', error);
       toast({
-        title: "Erro ao baixar documento",
-        description: "Tente novamente em alguns instantes.",
+        title: t('documentosExtras.preview.erroBaixarTitulo'),
+        description: t('documentosExtras.preview.erroBaixarDesc'),
         variant: "destructive",
       });
     }
@@ -109,7 +111,7 @@ export function DocumentoPreview({ open, onOpenChange, documento }: DocumentoPre
   };
 
   const formatFileSize = (bytes?: number) => {
-    if (!bytes) return 'N/A';
+    if (!bytes) return t('documentosExtras.preview.naoDisponivel');
     const sizes = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
     return `${Math.round(bytes / Math.pow(1024, i) * 100) / 100} ${sizes[i]}`;
@@ -137,19 +139,19 @@ export function DocumentoPreview({ open, onOpenChange, documento }: DocumentoPre
           {/* Informações do arquivo */}
           <div className="grid grid-cols-2 gap-4 p-4 bg-muted rounded-md">
             <div>
-              <strong>Nome do arquivo:</strong>
+              <strong>{t('documentosExtras.preview.nomeArquivo')}</strong>
               <p className="text-sm text-muted-foreground">{documento.arquivo_nome}</p>
             </div>
             <div>
-              <strong>Tamanho:</strong>
+              <strong>{t('documentosExtras.preview.tamanho')}</strong>
               <p className="text-sm text-muted-foreground">{formatFileSize(documento.arquivo_tamanho)}</p>
             </div>
             <div>
-              <strong>Tipo:</strong>
+              <strong>{t('documentosExtras.preview.tipo')}</strong>
               <p className="text-sm text-muted-foreground">{documento.arquivo_tipo}</p>
             </div>
             <div>
-              <strong>Data de criação:</strong>
+              <strong>{t('documentosExtras.preview.dataCriacao')}</strong>
               <p className="text-sm text-muted-foreground">
                 {new Date(documento.created_at).toLocaleDateString('pt-BR')}
               </p>
@@ -173,8 +175,8 @@ export function DocumentoPreview({ open, onOpenChange, documento }: DocumentoPre
             ) : (
               <div className="flex flex-col items-center justify-center h-96 text-muted-foreground">
                 {getFileIcon()}
-                <p className="mt-4">Preview não disponível para este tipo de arquivo</p>
-                <p className="text-sm">Use o botão de download para visualizar</p>
+                <p className="mt-4">{t('documentosExtras.preview.previewIndisponivel')}</p>
+                <p className="text-sm">{t('documentosExtras.preview.usarDownload')}</p>
               </div>
             )}
           </div>
@@ -183,7 +185,7 @@ export function DocumentoPreview({ open, onOpenChange, documento }: DocumentoPre
           <div className="flex justify-between">
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               <X className="h-4 w-4 mr-2" />
-              Fechar
+              {t('documentosExtras.preview.fechar')}
             </Button>
             <div className="flex gap-2">
               {previewUrl && canPreview && (
@@ -192,12 +194,12 @@ export function DocumentoPreview({ open, onOpenChange, documento }: DocumentoPre
                   onClick={() => window.open(previewUrl, '_blank')}
                 >
                   <ExternalLink className="h-4 w-4 mr-2" />
-                  Abrir em nova aba
+                  {t('documentosExtras.preview.abrirNovaAba')}
                 </Button>
               )}
               <Button onClick={handleDownload}>
                 <Download className="h-4 w-4 mr-2" />
-                Download
+                {t('documentosExtras.preview.download')}
               </Button>
             </div>
           </div>

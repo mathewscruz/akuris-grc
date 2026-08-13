@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronDown, Shield, Lock, Scale, Building2 } from 'lucide-react';
 import { FrameworkCard } from './FrameworkCard';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Framework {
   id: string;
@@ -19,11 +20,11 @@ interface FrameworkCatalogProps {
   onFrameworkClick: (fw: Framework) => void;
 }
 
-const CATEGORY_CONFIG: Record<string, { label: string; icon: React.ElementType; color: string }> = {
-  seguranca: { label: 'Segurança da Informação', icon: Shield, color: 'text-blue-600 bg-blue-100 border-blue-200' },
-  privacidade: { label: 'Privacidade e Proteção de Dados', icon: Lock, color: 'text-emerald-600 bg-emerald-100 border-emerald-200' },
-  qualidade: { label: 'Qualidade e Processos', icon: Scale, color: 'text-amber-600 bg-amber-100 border-amber-200' },
-  governanca: { label: 'Governança Corporativa', icon: Building2, color: 'text-purple-600 bg-purple-100 border-purple-200' },
+const CATEGORY_CONFIG: Record<string, { labelKey: string; icon: React.ElementType; color: string }> = {
+  seguranca: { labelKey: 'gapAnalysis.catalog.category.seguranca', icon: Shield, color: 'text-blue-600 bg-blue-100 border-blue-200' },
+  privacidade: { labelKey: 'gapAnalysis.catalog.category.privacidade', icon: Lock, color: 'text-emerald-600 bg-emerald-100 border-emerald-200' },
+  qualidade: { labelKey: 'gapAnalysis.catalog.category.qualidade', icon: Scale, color: 'text-amber-600 bg-amber-100 border-amber-200' },
+  governanca: { labelKey: 'gapAnalysis.catalog.category.governanca', icon: Building2, color: 'text-purple-600 bg-purple-100 border-purple-200' },
 };
 
 function getCategory(tipo: string): string {
@@ -35,6 +36,7 @@ function getCategory(tipo: string): string {
 }
 
 export function FrameworkCatalog({ frameworks, requirementCounts, onFrameworkClick }: FrameworkCatalogProps) {
+  const { t } = useLanguage();
   const [openCategories, setOpenCategories] = useState<string[]>(['seguranca', 'privacidade', 'governanca', 'qualidade']);
 
   const grouped = useMemo(() => {
@@ -76,7 +78,7 @@ export function FrameworkCatalog({ frameworks, requirementCounts, onFrameworkCli
                     <div className={`p-1.5 rounded-md border ${cfg.color}`}>
                       <Icon className="h-4 w-4" strokeWidth={1.5}/>
                     </div>
-                    <span className="font-semibold text-sm">{cfg.label}</span>
+                    <span className="font-semibold text-sm">{t(cfg.labelKey)}</span>
                     <Badge variant="secondary" className="text-xs">{fws.length}</Badge>
                   </div>
                   <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
