@@ -374,6 +374,7 @@ export const sweepRiscos = {
           residual: 'Residual',
           aceito: 'Accepted',
           falhaCarregarDetalhes: 'Failed to load details',
+          emTratamento: 'Under treatment',
         },
         tratForm2: {
           statusLabel: 'Status',
