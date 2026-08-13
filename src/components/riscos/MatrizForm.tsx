@@ -569,7 +569,7 @@ export function MatrizForm({ onSuccess }: Props) {
                         Nome da matriz <span className="text-destructive">*</span>
                       </FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="Ex.: Matriz Corporativa 5x5" />
+                        <Input {...field} placeholder={t('campos.matriz.nomePlaceholder')} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -639,7 +639,7 @@ export function MatrizForm({ onSuccess }: Props) {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Escala de Probabilidade */}
                   <div>
-                    <SectionHeader eyebrow="Escala" title="Probabilidade" />
+                    <SectionHeader eyebrow={t('campos.matriz.escala')} title={t('campos.matriz.probabilidade')} />
                     <div className="space-y-2">
                       {escalaProbabilidade.map((item, index) => (
                         <div
@@ -649,7 +649,7 @@ export function MatrizForm({ onSuccess }: Props) {
                           <Input
                             value={item.valor}
                             onChange={(e) => atualizarEscalaProbabilidade(index, 'valor', e.target.value)}
-                            placeholder="N°"
+                            placeholder={t('campos.matriz.numeroPlaceholder')}
                             className="w-14 text-center font-medium"
                             aria-label="Valor da probabilidade"
                           />
@@ -693,7 +693,7 @@ export function MatrizForm({ onSuccess }: Props) {
 
                   {/* Escala de Impacto */}
                   <div>
-                    <SectionHeader eyebrow="Escala" title="Impacto" />
+                    <SectionHeader eyebrow={t('campos.matriz.escala')} title={t('campos.matriz.impacto')} />
                     <div className="space-y-2">
                       {escalaImpacto.map((item, index) => (
                         <div
@@ -703,7 +703,7 @@ export function MatrizForm({ onSuccess }: Props) {
                           <Input
                             value={item.valor}
                             onChange={(e) => atualizarEscalaImpacto(index, 'valor', e.target.value)}
-                            placeholder="N°"
+                            placeholder={t('campos.matriz.numeroPlaceholder')}
                             className="w-14 text-center font-medium"
                             aria-label="Valor do impacto"
                           />
@@ -769,7 +769,7 @@ export function MatrizForm({ onSuccess }: Props) {
                           type="number"
                           value={nivel.min}
                           onChange={(e) => atualizarNivelRisco(index, 'min', parseInt(e.target.value) || 0)}
-                          placeholder="Min"
+                          placeholder={t('campos.matriz.minPlaceholder')}
                           className="w-16 text-center"
                           aria-label={t('fin.comum.valorMinimo')}
                         />
@@ -778,7 +778,7 @@ export function MatrizForm({ onSuccess }: Props) {
                           type="number"
                           value={nivel.max}
                           onChange={(e) => atualizarNivelRisco(index, 'max', parseInt(e.target.value) || 0)}
-                          placeholder="Max"
+                          placeholder={t('campos.matriz.maxPlaceholder')}
                           className="w-16 text-center"
                           aria-label={t('fin.comum.valorMaximo')}
                         />

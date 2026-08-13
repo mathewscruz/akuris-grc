@@ -255,7 +255,7 @@ export function ItemAuditoriaFormDialog({
                   <FormItem>
                     <FormLabel>{t("govDialogs.itemAuditoriaFormDialog.fieldCodigo")}</FormLabel>
                     <FormControl>
-                      <Input placeholder="Ex: CT-001" {...field} />
+                      <Input placeholder={t('campos.comum.exCodigoControle')} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

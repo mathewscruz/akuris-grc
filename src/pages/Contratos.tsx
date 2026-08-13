@@ -647,7 +647,7 @@ export default function Contratos() {
                     </Select>
                     <Select value={categoriaFornecedorFilter} onValueChange={setCategoriaFornecedorFilter}>
                       <SelectTrigger className="w-[150px]">
-                        <SelectValue placeholder="Categoria" />
+                        <SelectValue placeholder={t('campos.comum.categoria')} />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="todos">Todas Categorias</SelectItem>
@@ -658,7 +658,7 @@ export default function Contratos() {
                     </Select>
                     <Select value={riscoFornecedorFilter} onValueChange={setRiscoFornecedorFilter}>
                       <SelectTrigger className="w-[120px]">
-                        <SelectValue placeholder="Risco" />
+                        <SelectValue placeholder={t('campos.comum.risco')} />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="todos">Todos Riscos</SelectItem>
