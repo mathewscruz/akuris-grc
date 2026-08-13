@@ -299,10 +299,10 @@ export function SistemaUsuarioDialog({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="leitura">Leitura</SelectItem>
-                        <SelectItem value="escrita">Escrita</SelectItem>
-                        <SelectItem value="admin">Administrador</SelectItem>
-                        <SelectItem value="completo">Acesso Completo</SelectItem>
+                        <SelectItem value="leitura">{t('campos.enums.acesso.leitura')}</SelectItem>
+                        <SelectItem value="escrita">{t('campos.enums.acesso.escrita')}</SelectItem>
+                        <SelectItem value="admin">{t('campos.enums.acesso.admin')}</SelectItem>
+                        <SelectItem value="completo">{t('campos.enums.acesso.completo')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -324,9 +324,9 @@ export function SistemaUsuarioDialog({
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="usuario">{t('fin.comum.usuario')}</SelectItem>
-                        <SelectItem value="operador">Operador</SelectItem>
-                        <SelectItem value="administrador">Administrador</SelectItem>
-                        <SelectItem value="root">Root/Super Admin</SelectItem>
+                        <SelectItem value="operador">{t('campos.enums.privilegio.operador')}</SelectItem>
+                        <SelectItem value="administrador">{t('campos.enums.privilegio.administrador')}</SelectItem>
+                        <SelectItem value="root">{t('campos.enums.privilegio.root')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />

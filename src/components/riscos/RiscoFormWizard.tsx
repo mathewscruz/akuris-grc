@@ -1017,11 +1017,11 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="identificado">Identificado</SelectItem>
-                        <SelectItem value="analisado">Analisado</SelectItem>
-                        <SelectItem value="tratado">Tratado</SelectItem>
-                        <SelectItem value="monitorado">Monitorado</SelectItem>
-                        <SelectItem value="aceito">Aceito</SelectItem>
+                        <SelectItem value="identificado">{t('campos.enums.riscoStatus.identificado')}</SelectItem>
+                        <SelectItem value="analisado">{t('campos.enums.riscoStatus.analisado')}</SelectItem>
+                        <SelectItem value="tratado">{t('campos.enums.riscoStatus.tratado')}</SelectItem>
+                        <SelectItem value="monitorado">{t('campos.enums.riscoStatus.monitorado')}</SelectItem>
+                        <SelectItem value="aceito">{t('campos.enums.riscoStatus.aceito')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
