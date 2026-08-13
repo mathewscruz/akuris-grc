@@ -1136,11 +1136,103 @@ ${weak.map(w => `- índice ${w.index} ("${w.nome}") — motivo: ${w.motivo}\n  C
         coverage_map: finalCoverage,
         residual_gaps: residualGaps,
         catalog_size: catalogCodes.length,
+        should_auto_refine,
+        max_refine_attempts: MAX_REFINE_ATTEMPTS,
+        audit_threshold: AUDIT_THRESHOLD,
+        framework_ids: docFwIds,
         warnings,
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    // ============ ACTION: auto_refine (1 tentativa gap-driven por chamada) ============
+    // Separada de generate_document para não estourar o timeout da plataforma.
+    if (action === 'auto_refine') {
+      const attempt = Math.max(1, Math.min(Number(refine_attempt) || 1, MAX_REFINE_ATTEMPTS));
+      const fwIds: string[] = (framework_context?.framework_ids?.length
+        ? framework_context.framework_ids
+        : framework_context?.framework_id ? [framework_context.framework_id] : []).filter(Boolean);
+
+      let catalogCodes: string[] = [];
+      if (fwIds.length) {
+        const { data: catalogRows } = await supabase
+          .from('gap_analysis_requirements')
+          .select('codigo')
+          .in('framework_id', fwIds)
+          .order('ordem', { ascending: true })
+          .limit(600);
+        catalogCodes = (catalogRows || []).map((r: any) => String(r?.codigo || '').trim()).filter(Boolean);
+      }
+
+      const currentCoverage: any[] = Array.isArray(document?.coverage_map) ? document.coverage_map : [];
+      const currentNaoCob: any[] = Array.isArray(document?.requisitos_nao_cobertos_justificativa)
+        ? document.requisitos_nao_cobertos_justificativa : [];
+      const gaps = catalogCodes.length
+        ? computeResidualGaps(catalogCodes, currentCoverage, currentNaoCob, 15)
+        : (Array.isArray(document?._residual_gaps) ? document._residual_gaps : []);
+
+      const result = await autoRefineOnce({
+        documentContent: document,
+        catalogCodes,
+        residualGaps: gaps,
+        empresaNome: context.empresa_nome || '',
+        frameworkName: framework_context?.framework_name,
+        apiKey: LOVABLE_API_KEY,
+        attempt,
+      });
+
+      if (result.changed) await chargeAiCredit();
+
+      const history = Array.isArray(document._auto_refine_history) ? document._auto_refine_history : [];
+      if (result.changed) {
+        history.push({ attempt, before: result.before, after: result.after, gaps_targeted: result.gaps_targeted });
+      }
+      document._auto_refine_history = history;
+      document._auto_refine_attempts = attempt;
+
+      // Persiste o snapshot mais recente do documento gerado.
+      try {
+        const { data: latestDoc } = await supabase
+          .from('docgen_generated_docs')
+          .select('id')
+          .eq('conversation_id', conversation.id)
+          .eq('empresa_id', empresa_id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (latestDoc?.id) {
+          await supabase
+            .from('docgen_generated_docs')
+            .update({ conteudo: document, updated_at: new Date().toISOString() })
+            .eq('id', latestDoc.id);
+        }
+      } catch (_e) { /* não bloqueia resposta */ }
+
+      const converged = result.after >= AUDIT_THRESHOLD;
+      const should_continue =
+        result.changed &&
+        !converged &&
+        result.after > result.before &&
+        result.residualGaps.length > 0 &&
+        attempt < MAX_REFINE_ATTEMPTS;
+
+      console.log('DocGen auto_refine', { attempt, before: result.before, after: result.after, should_continue });
+
+      return new Response(JSON.stringify({
+        document,
+        attempt,
+        before: result.before,
+        after: result.after,
+        final_score: result.after,
+        changed: result.changed,
+        residual_gaps: result.residualGaps,
+        should_continue,
+        audit_threshold: AUDIT_THRESHOLD,
+        max_refine_attempts: MAX_REFINE_ATTEMPTS,
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
 
     // ============ ACTION: refine_section (Onda 3 - 1 crédito já consumido acima) ============
     if (action === 'refine_section') {
