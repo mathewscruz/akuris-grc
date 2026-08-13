@@ -37,6 +37,7 @@ import {
   formatBRL,
   type Severity,
 } from '@/components/riscos/risk-utils';
+import { tGlobal } from '@/lib/i18n-global';
 import { useRiscoDetail } from '@/hooks/useRiscoDetail';
 import {
   deriveRiscoStatus,
@@ -88,13 +89,13 @@ interface Props {
   nav?: { current: number; total: number; onPrev?: () => void; onNext?: () => void };
 }
 
-const STATUS_OPTIONS = [
-  { value: 'identificado', label: 'Identificado' },
-  { value: 'analisado', label: 'Analisado' },
-  { value: 'em_tratamento', label: 'Em Tratamento' },
-  { value: 'tratado', label: 'Tratado' },
-  { value: 'monitorado', label: 'Monitorado' },
-  { value: 'aceito', label: 'Aceito' },
+const getStatusOptions = () => [
+  { value: 'identificado', label: tGlobal('campos.opcoes.identificado') },
+  { value: 'analisado', label: tGlobal('campos.opcoes.analisado') },
+  { value: 'em_tratamento', label: tGlobal('campos.opcoes.emTratamento') },
+  { value: 'tratado', label: tGlobal('campos.opcoes.tratado') },
+  { value: 'monitorado', label: tGlobal('campos.opcoes.monitorado') },
+  { value: 'aceito', label: tGlobal('sweepRiscos.riscos.detail.aceito') },
 ];
 
 export function TratadoBlockedOption({ motivo, onActivate }: { motivo: string; onActivate: () => void }) {
@@ -257,7 +258,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start" className="w-44">
-                    {STATUS_OPTIONS.filter((opt) => !(opt.value === STATUS_TRATADO && tratadoBloqueado)).map((opt) => (
+                    {getStatusOptions().filter((opt) => !(opt.value === STATUS_TRATADO && tratadoBloqueado)).map((opt) => (
                       <DropdownMenuItem
                         key={opt.value}
                         onClick={() => handleStatusChange(opt.value)}
