@@ -375,9 +375,9 @@ export default function AtivosLicencas() {
       {/* StatCards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          title="Total de Licenças"
+          title={t('cardsKpi.licencas.totalLicencas')}
           value={stats?.total ?? 0}
-          description="Licenças registradas"
+          description={t('cardsKpi.licencas.licencasRegistradas')}
           icon={<FileCheck />}
           loading={statsLoading}
           drillDown="ativos_licencas"
@@ -386,7 +386,7 @@ export default function AtivosLicencas() {
         />
 
         <StatCard
-          title="Licenças Ativas"
+          title={t('cardsKpi.licencas.licencasAtivas')}
           value={stats?.ativas ?? 0}
           description="Em vigor"
           icon={<CheckCircle />}

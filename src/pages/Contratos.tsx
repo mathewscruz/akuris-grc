@@ -343,7 +343,7 @@ export default function Contratos() {
         {/* Cards de KPI */}
         <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
           <StatCard
-            title="Total de Contratos"
+            title={t('cardsKpi.contratos.totalContratos')}
             value={statsContratos?.total || 0}
             description={`${statsContratos?.ativos || 0} ativos`}
             icon={<FileText />}
@@ -354,13 +354,13 @@ export default function Contratos() {
           />
 
           <StatCard
-            title="Valor Total"
+            title={t('cardsKpi.contratos.valorTotal')}
             value={new Intl.NumberFormat('pt-BR', {
               style: 'currency',
               currency: 'BRL',
               notation: 'compact'
             }).format(statsContratos?.valorTotal || 0)}
-            description="Valor em contratos ativos"
+            description={t('cardsKpi.contratos.valorEmAtivos')}
             icon={<DollarSign />}
             variant="success"
             loading={!statsContratos}

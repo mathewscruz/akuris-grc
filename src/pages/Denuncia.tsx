@@ -45,7 +45,7 @@ export default function Denuncia() {
           title="Total"
           value={stats?.total ?? 0}
           icon={<Shield />}
-          description="Denúncias registradas"
+          description={t('cardsKpi.denuncias.denunciasRegistradas')}
           loading={statsLoading}
           drillDown="denuncias"
           showAccent
@@ -56,7 +56,7 @@ export default function Denuncia() {
           title="Novas"
           value={stats?.novas ?? 0}
           icon={<AlertTriangle />}
-          description="Aguardando análise"
+          description={t('cardsKpi.denuncias.aguardandoAnalise')}
           loading={statsLoading}
           variant="warning"
           drillDown="denuncias"
@@ -76,7 +76,7 @@ export default function Denuncia() {
           title="Resolvidas"
           value={stats?.resolvidas ?? 0}
           icon={<CheckCircle />}
-          description="Concluídas"
+          description={t('cardsKpi.denuncias.concluidas')}
           loading={statsLoading}
           variant="success"
         />

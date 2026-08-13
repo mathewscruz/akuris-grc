@@ -524,7 +524,7 @@ export default function Privacidade() {
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
         <StatCard
-          title="Total de Dados"
+          title={t('cardsKpi.privacidade.totalDados')}
           value={stats.totalDados}
           description="Tipos catalogados"
           icon={<Database />}
@@ -532,9 +532,9 @@ export default function Privacidade() {
           emptyHint="Cadastre o catálogo de dados pessoais."
         />
         <StatCard
-          title="Dados Sensíveis"
+          title={t('cardsKpi.privacidade.dadosSensiveis')}
           value={stats.dadosSensiveis}
-          description="Requerem proteção especial"
+          description={t('cardsKpi.privacidade.requeremProtecao')}
           icon={<AlertTriangle />}
           variant="warning"
         />
@@ -545,14 +545,14 @@ export default function Privacidade() {
           icon={<Database />}
         />
         <StatCard
-          title="Solicitações Pendentes"
+          title={t('cardsKpi.privacidade.solicitacoesPendentes')}
           value={stats.solicitacoesPendentes}
           description="De titulares"
           icon={<Users />}
           drillDown="privacidade"
         />
         <StatCard
-          title="Fora do Prazo LGPD"
+          title={t('cardsKpi.privacidade.foraPrazoLgpd')}
           value={solicitacoesForaPrazo}
           description="Excederam 15 dias"
           icon={<Clock />}
