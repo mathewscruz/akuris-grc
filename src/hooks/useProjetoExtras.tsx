@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { toast } from 'sonner';
+import { tGlobal } from '@/lib/i18n-global';
 
 /* =========================================================
    SPRINTS
@@ -53,7 +54,7 @@ export function useUpsertSprint(projetoId: string) {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['projeto-sprints', projetoId] });
-      toast.success('Sprint salva');
+      toast.success(tGlobal('cardsKpi.sweep.projetos.sprintSalva'));
     },
     onError: (e: any) => toast.error(e.message || 'Erro'),
   });
@@ -248,7 +249,7 @@ export function useUpsertAutomacao(projetoId: string) {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['projeto-automacoes', projetoId] });
-      toast.success('Automação salva');
+      toast.success(tGlobal('cardsKpi.sweep.projetos.automacaoSalva'));
     },
     onError: (e: any) => toast.error(e.message || 'Erro'),
   });
@@ -315,7 +316,7 @@ export function useUpsertTemplate() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['projeto-templates'] });
-      toast.success('Template salvo');
+      toast.success(tGlobal('cardsKpi.sweep.projetos.templateSalvo'));
     },
     onError: (e: any) => toast.error(e.message || 'Erro'),
   });
@@ -330,7 +331,7 @@ export function useDeleteTemplate() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['projeto-templates'] });
-      toast.success('Template removido');
+      toast.success(tGlobal('cardsKpi.sweep.projetos.templateRemovido'));
     },
   });
 }
@@ -389,8 +390,8 @@ export function useAplicarTemplate() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['projetos'] });
-      toast.success('Projeto criado a partir do template');
+      toast.success(tGlobal('cardsKpi.sweep.projetos.projetoDoTemplate'));
     },
-    onError: (e: any) => toast.error(e.message || 'Erro ao aplicar template'),
+    onError: (e: any) => toast.error(e.message || tGlobal('cardsKpi.sweep.projetos.erroAplicarTemplate')),
   });
 }
