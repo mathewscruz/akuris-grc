@@ -96,8 +96,10 @@ interface Matriz {
     escala_probabilidade: EscalaItem[];
     escala_impacto: EscalaItem[];
     niveis_risco: NivelRisco[];
+    metodo_calculo?: string;
   };
 }
+
 
 interface Categoria {
   id: string;
