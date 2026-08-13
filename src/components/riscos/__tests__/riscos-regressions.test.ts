@@ -3,6 +3,15 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { filterUuids, splitResponsavel } from '@/lib/uuid';
 import { mensagemErroComentarios } from '../RiscoComentarios';
+import { pt } from '@/i18n/pt';
+import { modulesPt } from '@/i18n/modules';
+
+const dictPt: Record<string, any> = { ...pt, ...modulesPt };
+const tPt = (key: string) => {
+  let r: any = dictPt;
+  for (const k of key.split('.')) { r = r?.[k]; if (r === undefined) return key; }
+  return typeof r === 'string' ? r : key;
+};
 
 const source = (path: string) => readFileSync(resolve(process.cwd(), path), 'utf8');
 const normalize = (value: string) => value.replace(/\s+/g, ' ').trim();
@@ -35,8 +44,8 @@ describe('regressões do módulo de riscos', () => {
   });
 
   it('traduz falhas conhecidas de comentários em ações úteis', () => {
-    expect(mensagemErroComentarios({ code: 'PGRST205' })).toMatch(/aplique a migração/i);
-    expect(mensagemErroComentarios({ message: 'permission denied' })).toMatch(/verifique sua sessão/i);
+    expect(mensagemErroComentarios({ code: 'PGRST205' }, tPt)).toMatch(/aplique a migração/i);
+    expect(mensagemErroComentarios({ message: 'permission denied' }, tPt)).toMatch(/verifique sua sessão/i);
   });
 });
 

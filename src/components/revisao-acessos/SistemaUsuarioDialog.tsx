@@ -30,7 +30,7 @@ import { useOptimizedQuery } from "@/hooks/useOptimizedQuery";
 import { parseDateForDB, formatDateForInput } from "@/lib/date-utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 
-const usuarioSchema = z.object({
+const makeUsuarioSchema = (t: (k: string) => string) => z.object({
   sistema_id: z.string().min(1, t('fin.validacao.sistemaObrigatorio')),
   nome_usuario: z.string().min(1, t('fin.validacao.nomeUsuarioObrigatorio')),
   email_usuario: z.string().email(t('fin.validacao.emailInvalido')).optional().or(z.literal("")),
@@ -45,7 +45,7 @@ const usuarioSchema = z.object({
   ativo: z.boolean().default(true),
 });
 
-type UsuarioFormData = z.infer<typeof usuarioSchema>;
+type UsuarioFormData = z.infer<ReturnType<typeof makeUsuarioSchema>>;
 
 interface Sistema {
   id: string;
@@ -87,7 +87,7 @@ export function SistemaUsuarioDialog({
   );
 
   const form = useForm<UsuarioFormData>({
-    resolver: zodResolver(usuarioSchema),
+    resolver: zodResolver(makeUsuarioSchema(t)),
     defaultValues: {
       sistema_id: "",
       nome_usuario: "",
