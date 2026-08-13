@@ -50,7 +50,7 @@ export default function BlogPost() {
   if (loading || !post) {
     return (
       <PublicShell>
-        <div className="max-w-3xl mx-auto px-6 py-20 text-white/50">Carregando…</div>
+        <div className="max-w-3xl mx-auto px-6 py-20 text-white/50">{t('cardsKpi.sweep.sistema.carregandoReticencias')}</div>
       </PublicShell>
     );
   }

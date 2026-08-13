@@ -66,7 +66,7 @@ export function TraducaoFrameworksTab() {
       setRows(result);
     } catch (e) {
       logger.error('Erro ao carregar frameworks para tradução', e);
-      toast.error('Não foi possível carregar os frameworks.');
+      toast.error(t('cardsKpi.sweep.gap.erroCarregarFrameworks'));
     } finally {
       setLoading(false);
     }

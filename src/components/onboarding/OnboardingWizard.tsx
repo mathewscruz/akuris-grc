@@ -153,9 +153,9 @@ export function OnboardingWizard() {
                 <AkurisAIIcon className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <DialogTitle className="text-xl">Configure sua plataforma</DialogTitle>
+                <DialogTitle className="text-xl">{t('cardsKpi.sweep.sistema.configureSuaPlataforma')}</DialogTitle>
                 <DialogDescription>
-                  Complete os passos abaixo para aproveitar ao máximo o Akuris
+                  {t('cardsKpi.sweep.sistema.configurePlataformaDesc')}
                 </DialogDescription>
               </div>
             </div>

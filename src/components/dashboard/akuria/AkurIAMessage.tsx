@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
+import { tGlobal } from '@/lib/i18n-global';
   parseAkurIAActions,
   getNavigateRoute,
   dispatchAkurIAAction,
@@ -74,7 +75,7 @@ function MessageInner({ role, content, timestamp, isStreaming, userInitials }: P
   const copy = () => {
     navigator.clipboard.writeText(cleanContent);
     setCopied(true);
-    toast.success("Copiado");
+    toast.success(tGlobal('cardsKpi.sweep.sistema.copiado'));
     setTimeout(() => setCopied(false), 2000);
   };
 
