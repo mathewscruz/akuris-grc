@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Plus, X } from 'lucide-react';
 import { MODULOS_DISPONIVEIS, type Plano } from '@/lib/planos-utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 interface Props {
@@ -40,6 +41,7 @@ const initialForm = {
 };
 
 export const PlanoFormDialog: React.FC<Props> = ({ open, onOpenChange, plano, onSaved }) => {
+  const { t } = useLanguage();
   const [form, setForm] = useState(initialForm);
   const [novoRecurso, setNovoRecurso] = useState('');
   const [saving, setSaving] = useState(false);
@@ -91,7 +93,7 @@ export const PlanoFormDialog: React.FC<Props> = ({ open, onOpenChange, plano, on
 
   const handleSave = async () => {
     if (!form.nome.trim() || !form.codigo.trim()) {
-      toast.error('Nome e código são obrigatórios');
+      toast.error(t('configPlanos.planoForm.requiredFields'));
       return;
     }
 
@@ -120,11 +122,11 @@ export const PlanoFormDialog: React.FC<Props> = ({ open, onOpenChange, plano, on
         : await supabase.from('planos').insert(payload);
 
       if (error) throw error;
-      toast.success(plano ? 'Plano atualizado' : 'Plano criado');
+      toast.success(plano ? t('configPlanos.planoForm.savedUpdate') : t('configPlanos.planoForm.savedCreate'));
       onSaved();
       onOpenChange(false);
     } catch (err: any) {
-      toast.error(err.message || 'Erro ao salvar plano');
+      toast.error(err.message || t('configPlanos.planoForm.saveError'));
     } finally {
       setSaving(false);
     }
@@ -135,10 +137,10 @@ export const PlanoFormDialog: React.FC<Props> = ({ open, onOpenChange, plano, on
       open={open}
       onOpenChange={onOpenChange}
       icon={CreditCard}
-      title={plano ? 'Editar plano' : 'Novo plano'}
+      title={plano ? t('configPlanos.planoForm.titleEdit') : t('configPlanos.planoForm.titleNew')}
       size="lg"
       onSubmit={handleSave}
-      submitLabel="Salvar"
+      submitLabel={t('configPlanos.planoForm.submitLabel')}
       isSubmitting={saving}
     >
         <ScrollArea className="flex-1 pr-4">
@@ -146,44 +148,44 @@ export const PlanoFormDialog: React.FC<Props> = ({ open, onOpenChange, plano, on
             {/* Identificação */}
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label>Nome *</Label>
-                <Input value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} placeholder="Ex: GRC Manager" />
+                <Label>{t('configPlanos.planoForm.fieldNome')}</Label>
+                <Input value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} placeholder={t('configPlanos.planoForm.fieldNomePlaceholder')} />
               </div>
               <div className="space-y-1.5">
-                <Label>Código *</Label>
+                <Label>{t('configPlanos.planoForm.fieldCodigo')}</Label>
                 <Input
                   value={form.codigo}
                   onChange={e => setForm(f => ({ ...f, codigo: e.target.value }))}
-                  placeholder="ex: grc_manager"
+                  placeholder={t('configPlanos.planoForm.fieldCodigoPlaceholder')}
                   disabled={!!plano}
                   className="font-mono text-sm"
                 />
-                <p className="text-[11px] text-muted-foreground">Identificador único, não pode ser alterado depois</p>
+                <p className="text-[11px] text-muted-foreground">{t('configPlanos.planoForm.fieldCodigoHelp')}</p>
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label>Descrição</Label>
-              <Textarea value={form.descricao} onChange={e => setForm(f => ({ ...f, descricao: e.target.value }))} rows={2} placeholder="Para empresas em crescimento" />
+              <Label>{t('configPlanos.planoForm.fieldDescricao')}</Label>
+              <Textarea value={form.descricao} onChange={e => setForm(f => ({ ...f, descricao: e.target.value }))} rows={2} placeholder={t('configPlanos.planoForm.fieldDescricaoPlaceholder')} />
             </div>
 
             <div className="space-y-1.5">
-              <Label>Público-alvo</Label>
+              <Label>{t('configPlanos.planoForm.fieldPublicoAlvo')}</Label>
               <Input
                 value={form.publico_alvo}
                 onChange={e => setForm(f => ({ ...f, publico_alvo: e.target.value }))}
-                placeholder="Ex: Médias Empresas (101 - 499)"
+                placeholder={t('configPlanos.planoForm.fieldPublicoAlvoPlaceholder')}
               />
             </div>
 
             {/* Preços */}
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label>Preço mensal (R$)</Label>
+                <Label>{t('configPlanos.planoForm.fieldPrecoMensal')}</Label>
                 <Input type="number" min={0} step={0.01} value={form.preco_mensal} onChange={e => setForm(f => ({ ...f, preco_mensal: Number(e.target.value) }))} />
               </div>
               <div className="space-y-1.5">
-                <Label>Preço anual total (R$)</Label>
+                <Label>{t('configPlanos.planoForm.fieldPrecoAnual')}</Label>
                 <Input type="number" min={0} step={0.01} value={form.preco_anual} onChange={e => setForm(f => ({ ...f, preco_anual: Number(e.target.value) }))} />
               </div>
             </div>
@@ -191,15 +193,15 @@ export const PlanoFormDialog: React.FC<Props> = ({ open, onOpenChange, plano, on
             {/* Setup */}
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label>Setup / Implantação (R$)</Label>
+                <Label>{t('configPlanos.planoForm.fieldPrecoSetup')}</Label>
                 <Input type="number" min={0} step={0.01} value={form.preco_setup} onChange={e => setForm(f => ({ ...f, preco_setup: Number(e.target.value) }))} />
               </div>
               <div className="space-y-1.5">
-                <Label>Observação do setup</Label>
+                <Label>{t('configPlanos.planoForm.fieldSetupObs')}</Label>
                 <Input
                   value={form.setup_observacao}
                   onChange={e => setForm(f => ({ ...f, setup_observacao: e.target.value }))}
-                  placeholder='Ex: "A partir de R$ 6.000,00"'
+                  placeholder={t('configPlanos.planoForm.fieldSetupObsPlaceholder')}
                 />
               </div>
             </div>
@@ -207,28 +209,28 @@ export const PlanoFormDialog: React.FC<Props> = ({ open, onOpenChange, plano, on
             {/* Limites */}
             <div className="grid sm:grid-cols-3 gap-4">
               <div className="space-y-1.5">
-                <Label>Créditos IA/mês</Label>
+                <Label>{t('configPlanos.planoForm.fieldCreditosIA')}</Label>
                 <Input type="number" min={0} value={form.creditos_franquia} onChange={e => setForm(f => ({ ...f, creditos_franquia: Number(e.target.value) }))} />
               </div>
               <div className="space-y-1.5">
-                <Label>Limite usuários</Label>
+                <Label>{t('configPlanos.planoForm.fieldLimiteUsuarios')}</Label>
                 <Input
                   type="number"
                   min={0}
                   value={form.limite_usuarios}
                   onChange={e => setForm(f => ({ ...f, limite_usuarios: e.target.value }))}
-                  placeholder="Vazio = ilimitado"
+                  placeholder={t('configPlanos.planoForm.fieldLimiteUsuariosPlaceholder')}
                 />
               </div>
               <div className="space-y-1.5">
-                <Label>Ordem de exibição</Label>
+                <Label>{t('configPlanos.planoForm.fieldOrdem')}</Label>
                 <Input type="number" value={form.ordem} onChange={e => setForm(f => ({ ...f, ordem: Number(e.target.value) }))} />
               </div>
             </div>
 
             {/* Módulos */}
             <div className="space-y-2">
-              <Label>Módulos liberados</Label>
+              <Label>{t('configPlanos.planoForm.fieldModulos')}</Label>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-3 border rounded-md max-h-60 overflow-y-auto">
                 {MODULOS_DISPONIVEIS.map(mod => (
                   <label key={mod.key} className="flex items-center gap-2 text-sm cursor-pointer">
@@ -240,18 +242,18 @@ export const PlanoFormDialog: React.FC<Props> = ({ open, onOpenChange, plano, on
                   </label>
                 ))}
               </div>
-              <p className="text-[11px] text-muted-foreground">{form.modulos_habilitados.length} módulo(s) selecionado(s)</p>
+              <p className="text-[11px] text-muted-foreground">{t('configPlanos.planoForm.modulosSelecionados', { count: form.modulos_habilitados.length })}</p>
             </div>
 
             {/* Recursos */}
             <div className="space-y-2">
-              <Label>Recursos destacados (bullets exibidos no card)</Label>
+              <Label>{t('configPlanos.planoForm.fieldRecursos')}</Label>
               <div className="flex gap-2">
                 <Input
                   value={novoRecurso}
                   onChange={e => setNovoRecurso(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addRecurso(); } }}
-                  placeholder="Ex: Suporte prioritário 24h"
+                  placeholder={t('configPlanos.planoForm.recursoPlaceholder')}
                 />
                 <Button type="button" variant="outline" onClick={addRecurso}><Plus className="h-4 w-4" /></Button>
               </div>
@@ -273,11 +275,11 @@ export const PlanoFormDialog: React.FC<Props> = ({ open, onOpenChange, plano, on
             <div className="flex flex-col sm:flex-row gap-4">
               <label className="flex items-center gap-2 text-sm cursor-pointer">
                 <Switch checked={form.is_destaque} onCheckedChange={(v) => setForm(f => ({ ...f, is_destaque: v }))} />
-                Marcar como "Mais popular"
+                {t('configPlanos.planoForm.marcarPopular')}
               </label>
               <label className="flex items-center gap-2 text-sm cursor-pointer">
                 <Switch checked={form.ativo} onCheckedChange={(v) => setForm(f => ({ ...f, ativo: v }))} />
-                Plano ativo
+                {t('configPlanos.planoForm.planoAtivo')}
               </label>
             </div>
           </div>

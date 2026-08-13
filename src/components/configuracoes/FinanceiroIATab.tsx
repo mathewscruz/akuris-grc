@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { DollarSign, TrendingUp, TrendingDown, BarChart3, Building2, AlertTriangle, Cpu } from 'lucide-react';
 import { AkurisAIIcon } from '@/components/icons';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 // --- Constants: AI models, pricing, and function mapping ---
@@ -78,6 +79,7 @@ interface ModelStats {
 }
 
 export function FinanceiroIATab() {
+  const { t } = useLanguage();
   const [empresas, setEmpresas] = useState<EmpresaFinanceiro[]>([]);
   const [modelStats, setModelStats] = useState<ModelStats[]>([]);
   const [loading, setLoading] = useState(true);
@@ -102,7 +104,7 @@ export function FinanceiroIATab() {
       if (empErr) throw empErr;
 
       // Build plan prices dynamically from DB
-      const pricesMap: Record<string, number> = { 'Free': 0 };
+      const pricesMap: Record<string, number> = { Free: 0 };
       (empresasData || []).forEach((e: any) => {
         if (e.plano?.nome) pricesMap[e.plano.nome] = Number(e.plano.preco_mensal) || 0;
       });
@@ -184,7 +186,7 @@ export function FinanceiroIATab() {
       setEmpresas(mapped);
     } catch (err) {
       console.error(err);
-      toast.error('Erro ao carregar dados financeiros');
+      toast.error(t('configPlanos.financeiroIA.errorLoad'));
     } finally {
       setLoading(false);
     }
@@ -251,9 +253,9 @@ export function FinanceiroIATab() {
       }
     } catch (err: any) {
       if (err?.message?.includes('402')) {
-        toast.error('Créditos de IA esgotados');
+        toast.error(t('configPlanos.financeiroIA.creditosEsgotados'));
       } else {
-        toast.error('Erro ao gerar análise IA');
+        toast.error(t('configPlanos.financeiroIA.analiseError'));
       }
     } finally {
       setAiLoading(false);
@@ -262,28 +264,28 @@ export function FinanceiroIATab() {
 
   const statusBadge = (status: string) => {
     const map: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' }> = {
-      rentavel: { label: 'Rentável', variant: 'default' },
-      limite: { label: 'No Limite', variant: 'secondary' },
-      deficitario: { label: 'Déficit', variant: 'destructive' },
+      rentavel: { label: t('configPlanos.financeiroIA.statusRentavel'), variant: 'default' },
+      limite: { label: t('configPlanos.financeiroIA.statusLimite'), variant: 'secondary' },
+      deficitario: { label: t('configPlanos.financeiroIA.statusDeficitario'), variant: 'destructive' },
     };
     const s = map[status] || map.rentavel;
     return <Badge variant={s.variant}>{s.label}</Badge>;
   };
 
   const columns = [
-    { key: 'nome', label: 'Empresa', sortable: true, render: (v: string) => <span className="font-medium">{v}</span> },
-    { key: 'plano_nome', label: 'Plano', render: (v: string) => <Badge variant="outline">{v}</Badge> },
-    { key: 'receita_mensal', label: 'Receita/mês', sortable: true, render: (v: number) => `R$ ${v.toFixed(2)}` },
-    { key: 'requisicoes', label: 'Requisições', sortable: true },
-    { key: 'custo_estimado', label: 'Custo Est.', sortable: true, render: (v: number) => `R$ ${v.toFixed(2)}` },
+    { key: 'nome', label: t('configPlanos.financeiroIA.colEmpresa'), sortable: true, render: (v: string) => <span className="font-medium">{v}</span> },
+    { key: 'plano_nome', label: t('configPlanos.financeiroIA.colPlano'), render: (v: string) => <Badge variant="outline">{v}</Badge> },
+    { key: 'receita_mensal', label: t('configPlanos.financeiroIA.colReceitaMes'), sortable: true, render: (v: number) => `R$ ${v.toFixed(2)}` },
+    { key: 'requisicoes', label: t('configPlanos.financeiroIA.colRequisicoes'), sortable: true },
+    { key: 'custo_estimado', label: t('configPlanos.financeiroIA.colCustoEst'), sortable: true, render: (v: number) => `R$ ${v.toFixed(2)}` },
     {
-      key: 'margem', label: 'Margem', sortable: true, render: (v: number, row: EmpresaFinanceiro) => (
+      key: 'margem', label: t('configPlanos.financeiroIA.colMargem'), sortable: true, render: (v: number, row: EmpresaFinanceiro) => (
         <span className={v < 0 ? 'text-destructive font-semibold' : 'text-emerald-600 dark:text-emerald-400 font-semibold'}>
           R$ {v.toFixed(2)} ({row.margem_percent.toFixed(0)}%)
         </span>
       )
     },
-    { key: 'status', label: 'Status', render: (v: string) => statusBadge(v) },
+    { key: 'status', label: t('configPlanos.financeiroIA.colStatus'), render: (v: string) => statusBadge(v) },
   ];
 
   const CHART_COLORS = [
@@ -300,7 +302,7 @@ export function FinanceiroIATab() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Cpu className="h-5 w-5" />
-            Modelos de IA em Uso
+            {t('configPlanos.financeiroIA.modelosTitle')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -308,14 +310,14 @@ export function FinanceiroIATab() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border text-left">
-                  <th className="pb-2 font-medium text-muted-foreground">Modelo</th>
-                  <th className="pb-2 font-medium text-muted-foreground">Provider</th>
-                  <th className="pb-2 font-medium text-muted-foreground">Input/1K tokens</th>
-                  <th className="pb-2 font-medium text-muted-foreground">Output/1K tokens</th>
-                  <th className="pb-2 font-medium text-muted-foreground">Custo médio/req (R$)</th>
-                  <th className="pb-2 font-medium text-muted-foreground">Funções</th>
-                  <th className="pb-2 font-medium text-muted-foreground text-right">Reqs no mês</th>
-                  <th className="pb-2 font-medium text-muted-foreground text-right">Custo total (R$)</th>
+                  <th className="pb-2 font-medium text-muted-foreground">{t('configPlanos.financeiroIA.colModelo')}</th>
+                  <th className="pb-2 font-medium text-muted-foreground">{t('configPlanos.financeiroIA.colProvider')}</th>
+                  <th className="pb-2 font-medium text-muted-foreground">{t('configPlanos.financeiroIA.colInputTokens')}</th>
+                  <th className="pb-2 font-medium text-muted-foreground">{t('configPlanos.financeiroIA.colOutputTokens')}</th>
+                  <th className="pb-2 font-medium text-muted-foreground">{t('configPlanos.financeiroIA.colCustoMedioReq')}</th>
+                  <th className="pb-2 font-medium text-muted-foreground">{t('configPlanos.financeiroIA.colFuncoes')}</th>
+                  <th className="pb-2 font-medium text-muted-foreground text-right">{t('configPlanos.financeiroIA.colReqsMes')}</th>
+                  <th className="pb-2 font-medium text-muted-foreground text-right">{t('configPlanos.financeiroIA.colCustoTotal')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -345,7 +347,7 @@ export function FinanceiroIATab() {
               </tbody>
               <tfoot>
                 <tr className="font-semibold">
-                  <td colSpan={4} className="pt-2">Custo médio ponderado por requisição:</td>
+                  <td colSpan={4} className="pt-2">{t('configPlanos.financeiroIA.custoMedioPonderado')}</td>
                   <td className="pt-2 font-mono">R$ {avgCostPerReq.toFixed(3)}</td>
                   <td></td>
                   <td className="pt-2 text-right">{totals.totalReqs}</td>
@@ -359,7 +361,7 @@ export function FinanceiroIATab() {
           <div className="flex items-center gap-4 pt-2 border-t border-border">
             <div className="flex items-center gap-2">
               <Switch checked={overrideEnabled} onCheckedChange={setOverrideEnabled} id="override" />
-              <Label htmlFor="override" className="text-xs text-muted-foreground">Simular custo fixo por requisição</Label>
+              <Label htmlFor="override" className="text-xs text-muted-foreground">{t('configPlanos.financeiroIA.simularCustoFixo')}</Label>
             </div>
             {overrideEnabled && (
               <div className="flex items-center gap-2">
@@ -381,27 +383,27 @@ export function FinanceiroIATab() {
       {/* KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          title="Receita Total Mensal"
+          title={t('configPlanos.financeiroIA.statReceitaTotal')}
           value={`R$ ${totals.receita.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
-          description={`${empresas.filter(e => e.receita_mensal > 0).length} empresas ativas`}
+          description={t('configPlanos.financeiroIA.statReceitaTotalDesc', { count: empresas.filter(e => e.receita_mensal > 0).length })}
           icon={<DollarSign className="h-4 w-4" />}
         />
         <StatCard
-          title="Custo Estimado IA"
+          title={t('configPlanos.financeiroIA.statCustoEstimado')}
           value={`R$ ${totals.custo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
-          description={`${totals.totalReqs} req · média R$ ${avgCostPerReq.toFixed(3)}/req`}
+          description={t('configPlanos.financeiroIA.statCustoEstimadoDesc', { reqs: totals.totalReqs, media: avgCostPerReq.toFixed(3) })}
           icon={<AkurisAIIcon className="h-4 w-4" />}
         />
         <StatCard
-          title="Margem Bruta"
+          title={t('configPlanos.financeiroIA.statMargemBruta')}
           value={`R$ ${totals.margem.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
-          description={`${totals.margemPct.toFixed(1)}% de margem`}
+          description={t('configPlanos.financeiroIA.statMargemBrutaDesc', { percent: totals.margemPct.toFixed(1) })}
           icon={totals.margem >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
         />
         <StatCard
-          title="Empresas em Déficit"
+          title={t('configPlanos.financeiroIA.statEmpresasDeficit')}
           value={totals.deficitarios}
-          description={totals.deficitarios > 0 ? 'Atenção necessária' : 'Tudo saudável'}
+          description={totals.deficitarios > 0 ? t('configPlanos.financeiroIA.statEmpresasDeficitAtencao') : t('configPlanos.financeiroIA.statEmpresasDeficitOk')}
           icon={<AlertTriangle className="h-4 w-4" />}
         />
       </div>
@@ -411,7 +413,7 @@ export function FinanceiroIATab() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Building2 className="h-5 w-5" />
-            Rentabilidade por Empresa
+            {t('configPlanos.financeiroIA.rentabilidadeTitle')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -419,12 +421,12 @@ export function FinanceiroIATab() {
             data={empresas}
             columns={columns}
             loading={loading}
-            searchPlaceholder="Buscar empresa..."
+            searchPlaceholder={t('configPlanos.financeiroIA.searchPlaceholder')}
             paginated
             emptyState={{
               icon: <Building2 className="h-8 w-8" />,
-              title: 'Nenhuma empresa',
-              description: 'Sem dados disponíveis.',
+              title: t('configPlanos.financeiroIA.emptyTitle'),
+              description: t('configPlanos.financeiroIA.emptyDescription'),
             }}
           />
         </CardContent>
@@ -436,7 +438,7 @@ export function FinanceiroIATab() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <BarChart3 className="h-5 w-5" />
-              Consumo por Modelo IA (mês atual)
+              {t('configPlanos.financeiroIA.chartTitle')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -455,8 +457,8 @@ export function FinanceiroIATab() {
                   <Tooltip
                     contentStyle={{ borderRadius: '8px', border: '1px solid hsl(var(--border))' }}
                     formatter={(value: number, name: string) => {
-                      if (name === 'reqs') return [`${value} requisições`, 'Requisições'];
-                      return [`R$ ${value.toFixed(2)}`, 'Custo'];
+                      if (name === 'reqs') return [`${value} ${t('configPlanos.financeiroIA.tooltipRequisicoes')}`, t('configPlanos.financeiroIA.tooltipRequisicoesLabel')];
+                      return [`R$ ${value.toFixed(2)}`, t('configPlanos.financeiroIA.tooltipCustoLabel')];
                     }}
                   />
                   <Bar dataKey="reqs" radius={[0, 4, 4, 0]}>
@@ -476,13 +478,13 @@ export function FinanceiroIATab() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <AkurisAIIcon className="h-5 w-5" />
-            Análise de Precificação com IA
+            {t('configPlanos.financeiroIA.analiseTitle')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <Button onClick={handleAIAnalysis} disabled={aiLoading || loading}>
             {aiLoading ? <AkurisPulse size={16} className="mr-2" /> : <AkurisAIIcon className="h-4 w-4 mr-2" />}
-            {aiLoading ? 'Analisando...' : 'Gerar Análise de Rentabilidade'}
+            {aiLoading ? t('configPlanos.financeiroIA.analisando') : t('configPlanos.financeiroIA.gerarAnalise')}
           </Button>
 
           {aiAnalysis && (

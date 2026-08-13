@@ -18,6 +18,7 @@ import { Mail, Pencil, Plus, Send, Trash2, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
 import { EmailCampanhaEditor, type CampanhaRow } from './EmailCampanhaEditor';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Campanha {
   id: string;
@@ -32,14 +33,14 @@ interface Campanha {
   created_at: string;
 }
 
-const STATUS_BADGE: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }> = {
-  rascunho: { label: 'Rascunho', variant: 'outline' },
-  enviando: { label: 'Enviando…', variant: 'secondary' },
-  enviado: { label: 'Enviado', variant: 'default' },
-  falhou: { label: 'Falhou', variant: 'destructive' },
-};
-
 export default function NoticiasTab() {
+  const { t } = useLanguage();
+  const STATUS_BADGE: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' | 'destructive' }> = {
+    rascunho: { label: t('configPlanos.noticiasTab.statusRascunho'), variant: 'outline' },
+    enviando: { label: t('configPlanos.noticiasTab.statusEnviando'), variant: 'secondary' },
+    enviado: { label: t('configPlanos.noticiasTab.statusEnviado'), variant: 'default' },
+    falhou: { label: t('configPlanos.noticiasTab.statusFalhou'), variant: 'destructive' },
+  };
   const [campanhas, setCampanhas] = useState<Campanha[]>([]);
   const [loading, setLoading] = useState(true);
   const [editorOpen, setEditorOpen] = useState(false);
@@ -57,7 +58,7 @@ export default function NoticiasTab() {
       setCampanhas((data || []) as Campanha[]);
     } catch (err) {
       logger.error('Erro ao carregar campanhas', err as Error);
-      toast.error('Não foi possível carregar as campanhas');
+      toast.error(t('configPlanos.noticiasTab.loadError'));
     } finally {
       setLoading(false);
     }
@@ -80,12 +81,12 @@ export default function NoticiasTab() {
     try {
       const { error } = await supabase.from('email_campanhas').delete().eq('id', deletingId);
       if (error) throw error;
-      toast.success('Campanha removida');
+      toast.success(t('configPlanos.noticiasTab.deletedSuccess'));
       setDeletingId(null);
       load();
     } catch (err) {
       logger.error('Erro ao deletar', err as Error);
-      toast.error('Não foi possível remover');
+      toast.error(t('configPlanos.noticiasTab.deleteError'));
     }
   };
 
@@ -94,14 +95,14 @@ export default function NoticiasTab() {
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="space-y-1">
           <h3 className="text-base font-semibold flex items-center gap-2">
-            <Mail className="h-4 w-4 text-primary" /> Campanhas de e-mail
+            <Mail className="h-4 w-4 text-primary" /> {t('configPlanos.noticiasTab.headerTitle')}
           </h3>
           <p className="text-sm text-muted-foreground">
-            Crie e dispare comunicados para todos os usuários ativos da plataforma. A IA pode redigir o conteúdo e gerar uma imagem ilustrativa para você.
+            {t('configPlanos.noticiasTab.headerSubtitle')}
           </p>
         </div>
         <Button onClick={handleNew}>
-          <Plus className="h-4 w-4" /> Nova campanha
+          <Plus className="h-4 w-4" /> {t('configPlanos.noticiasTab.newCampanha')}
         </Button>
       </div>
 
@@ -113,9 +114,9 @@ export default function NoticiasTab() {
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground space-y-3">
             <Mail className="h-10 w-10 mx-auto text-muted-foreground/40" />
-            <p>Nenhuma campanha criada ainda.</p>
+            <p>{t('configPlanos.noticiasTab.emptyState')}</p>
             <Button onClick={handleNew} variant="outline">
-              <Plus className="h-4 w-4" /> Criar primeira campanha
+              <Plus className="h-4 w-4" /> {t('configPlanos.noticiasTab.firstCampanha')}
             </Button>
           </CardContent>
         </Card>
@@ -129,25 +130,25 @@ export default function NoticiasTab() {
                 <CardContent className="p-4 flex items-start gap-4 flex-wrap">
                   <div className="flex-1 min-w-[240px] space-y-1.5">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h4 className="font-semibold text-sm">{c.assunto || '(sem assunto)'}</h4>
+                      <h4 className="font-semibold text-sm">{c.assunto || t('configPlanos.noticiasTab.semAssunto')}</h4>
                       <Badge variant={badge.variant}>{badge.label}</Badge>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Criada em {new Date(c.created_at).toLocaleString('pt-BR')}
-                      {c.enviado_em && ` · Enviada em ${new Date(c.enviado_em).toLocaleString('pt-BR')}`}
+                      {t('configPlanos.noticiasTab.criadaEm', { data: new Date(c.created_at).toLocaleString('pt-BR') })}
+                      {c.enviado_em && t('configPlanos.noticiasTab.enviadaEm', { data: new Date(c.enviado_em).toLocaleString('pt-BR') })}
                     </p>
                     {c.status === 'enviado' && (
                       <p className="text-xs text-muted-foreground flex items-center gap-1">
                         <Users className="h-3 w-3" />
-                        {c.total_enviados}/{c.total_destinatarios} entregues
-                        {c.total_falhados > 0 && ` · ${c.total_falhados} falhas`}
+                        {t('configPlanos.noticiasTab.entregues', { enviados: c.total_enviados, total: c.total_destinatarios })}
+                        {c.total_falhados > 0 && t('configPlanos.noticiasTab.falhas', { count: c.total_falhados })}
                       </p>
                     )}
                   </div>
                   <div className="flex items-center gap-2">
                     <Button variant="outline" size="sm" onClick={() => handleEdit(c)}>
                       {isDraft ? <Pencil className="h-3.5 w-3.5" /> : <Send className="h-3.5 w-3.5" />}
-                      {isDraft ? 'Editar' : 'Ver'}
+                      {isDraft ? t('configPlanos.noticiasTab.editar') : t('configPlanos.noticiasTab.ver')}
                     </Button>
                     <Button variant="ghost" size="icon" onClick={() => setDeletingId(c.id)}>
                       <Trash2 className="h-4 w-4 text-destructive" />
@@ -170,12 +171,12 @@ export default function NoticiasTab() {
       <AlertDialog open={!!deletingId} onOpenChange={(o) => !o && setDeletingId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remover campanha?</AlertDialogTitle>
-            <AlertDialogDescription>Esta ação não pode ser desfeita.</AlertDialogDescription>
+            <AlertDialogTitle>{t('configPlanos.noticiasTab.deleteDialogTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>{t('configPlanos.noticiasTab.deleteDialogDescription')}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Remover</AlertDialogAction>
+            <AlertDialogCancel>{t('configPlanos.noticiasTab.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>{t('configPlanos.noticiasTab.confirmRemove')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

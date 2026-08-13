@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { CheckCircle2, XCircle, Send, Webhook, Plus, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface WebhooksConfigDialogProps {
   open: boolean;
@@ -46,6 +47,7 @@ export function WebhooksConfigDialog({
   existingConfig,
   onSaved
 }: WebhooksConfigDialogProps) {
+  const { t } = useLanguage();
   const [webhookUrl, setWebhookUrl] = useState('');
   const [selectedEvents, setSelectedEvents] = useState<string[]>([]);
   const [customHeaders, setCustomHeaders] = useState<{ key: string; value: string }[]>([]);
@@ -71,7 +73,7 @@ export function WebhooksConfigDialog({
 
   const handleTestConnection = async () => {
     if (!webhookUrl) {
-      toast.error('URL obrigatória', { description: 'Informe a URL do webhook.' });
+      toast.error(t('configIntegrations.webhooks.toastUrlObrig'), { description: t('configIntegrations.webhooks.toastUrlObrigDesc') });
       return;
     }
 
@@ -91,16 +93,16 @@ export function WebhooksConfigDialog({
 
       if (data?.success) {
         setTestResult('success');
-        toast.success('Webhook testado!', {
-          description: 'Payload de teste enviado com sucesso.'
+        toast.success(t('configIntegrations.webhooks.toastTestOk'), {
+          description: t('configIntegrations.webhooks.toastTestOkDesc')
         });
       } else {
         throw new Error(data?.error || 'Falha no teste');
       }
     } catch (error: any) {
       setTestResult('error');
-      toast.error('Falha no teste', {
-        description: error.message || 'Verifique a URL e headers.'
+      toast.error(t('configIntegrations.webhooks.toastTestFalha'), {
+        description: error.message || t('configIntegrations.webhooks.toastTestFalhaDesc')
       });
     } finally {
       setTesting(false);
@@ -109,12 +111,12 @@ export function WebhooksConfigDialog({
 
   const handleSave = async () => {
     if (!webhookUrl) {
-      toast.error('URL obrigatória', { description: 'Informe a URL do webhook.' });
+      toast.error(t('configIntegrations.webhooks.toastUrlObrig'), { description: t('configIntegrations.webhooks.toastUrlObrigDesc') });
       return;
     }
 
     if (selectedEvents.length === 0) {
-      toast.error('Eventos obrigatórios', { description: 'Selecione ao menos um evento.' });
+      toast.error(t('configIntegrations.webhooks.toastEventosObrig'), { description: t('configIntegrations.webhooks.toastEventosObrigDesc') });
       return;
     }
 
@@ -148,13 +150,13 @@ export function WebhooksConfigDialog({
         if (error) throw error;
       }
 
-      toast.success('Webhook configurado!', {
-        description: 'Eventos serão enviados para a URL configurada.'
+      toast.success(t('configIntegrations.webhooks.toastConfigurado'), {
+        description: t('configIntegrations.webhooks.toastConfiguradoDesc')
       });
       onSaved();
       onOpenChange(false);
     } catch (error: any) {
-      toast.error('Erro ao salvar', { description: error.message });
+      toast.error(t('configIntegrations.webhooks.toastErroSalvar'), { description: error.message });
     } finally {
       setSaving(false);
     }
@@ -171,11 +173,11 @@ export function WebhooksConfigDialog({
         .eq('id', existingConfig.id);
       if (error) throw error;
 
-      toast.success('Webhook removido');
+      toast.success(t('configIntegrations.webhooks.toastRemovido'));
       onSaved();
       onOpenChange(false);
     } catch (error: any) {
-      toast.error('Erro ao remover', { description: error.message });
+      toast.error(t('configIntegrations.webhooks.toastErroRemover'), { description: error.message });
     } finally {
       setSaving(false);
     }
@@ -215,16 +217,16 @@ export function WebhooksConfigDialog({
           disabled={saving}
           className="sm:mr-auto"
         >
-          Remover
+          {t('configIntegrations.webhooks.btnRemover')}
         </Button>
       )}
       <div className="flex gap-2 sm:ml-auto">
         <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)} disabled={saving}>
-          Cancelar
+          {t('configIntegrations.webhooks.btnCancelar')}
         </Button>
         <Button size="sm" onClick={handleSave} disabled={saving || !webhookUrl || selectedEvents.length === 0}>
           {saving && <AkurisPulse size={16} className="mr-2" />}
-          Salvar
+          {t('configIntegrations.webhooks.btnSalvar')}
         </Button>
       </div>
     </div>
@@ -234,8 +236,8 @@ export function WebhooksConfigDialog({
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      title="Configurar Webhooks"
-      description="Receba eventos do Akuris via HTTP POST em qualquer sistema."
+      title={t('configIntegrations.webhooks.title')}
+      description={t('configIntegrations.webhooks.description')}
       icon={Webhook}
       size="lg"
       footer={footer}
@@ -245,7 +247,7 @@ export function WebhooksConfigDialog({
       <div className="space-y-6">
           {/* Webhook URL */}
           <div className="space-y-2">
-            <Label htmlFor="webhook-url">URL do Webhook *</Label>
+            <Label htmlFor="webhook-url">{t('configIntegrations.webhooks.fieldUrl')}</Label>
             <div className="flex gap-2">
               <Input
                 id="webhook-url"
@@ -275,20 +277,20 @@ export function WebhooksConfigDialog({
               </Button>
             </div>
             {testResult === 'success' && (
-              <p className="text-xs text-green-600">✓ Webhook testado com sucesso</p>
+              <p className="text-xs text-green-600">{t('configIntegrations.webhooks.testSuccess')}</p>
             )}
             {testResult === 'error' && (
-              <p className="text-xs text-destructive">✗ Falha no teste - verifique a URL</p>
+              <p className="text-xs text-destructive">{t('configIntegrations.webhooks.testError')}</p>
             )}
           </div>
 
           {/* Headers personalizados */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label>Headers Personalizados</Label>
+              <Label>{t('configIntegrations.webhooks.headersLabel')}</Label>
               <Button variant="outline" size="sm" onClick={addHeader}>
                 <Plus className="h-3 w-3 mr-1" />
-                Adicionar
+                {t('configIntegrations.webhooks.btnAdicionar')}
               </Button>
             </div>
             {customHeaders.length > 0 && (
@@ -296,13 +298,13 @@ export function WebhooksConfigDialog({
                 {customHeaders.map((header, index) => (
                   <div key={index} className="flex gap-2">
                     <Input
-                      placeholder="Header (ex: Authorization)"
+                      placeholder={t('configIntegrations.webhooks.headerKeyPlaceholder')}
                       value={header.key}
                       onChange={(e) => updateHeader(index, 'key', e.target.value)}
                       className="flex-1"
                     />
                     <Input
-                      placeholder="Valor (ex: Bearer token...)"
+                      placeholder={t('configIntegrations.webhooks.headerValuePlaceholder')}
                       value={header.value}
                       onChange={(e) => updateHeader(index, 'value', e.target.value)}
                       className="flex-1"
@@ -322,7 +324,7 @@ export function WebhooksConfigDialog({
 
           {/* Eventos */}
           <div className="space-y-3">
-            <Label>Eventos para enviar *</Label>
+            <Label>{t('configIntegrations.webhooks.eventosLabel')}</Label>
             <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto border rounded-md p-3">
               {EVENTOS_DISPONIVEIS.map(evento => (
                 <div
@@ -338,19 +340,19 @@ export function WebhooksConfigDialog({
                     htmlFor={`wh-${evento.id}`}
                     className="text-xs cursor-pointer flex-1"
                   >
-                    {evento.label}
+                    {t(`configIntegrations.events.${evento.id}.label`)}
                   </label>
                 </div>
               ))}
             </div>
             <p className="text-xs text-muted-foreground">
-              {selectedEvents.length} evento(s) selecionado(s)
+              {t('configIntegrations.webhooks.eventosSelecionados', { count: selectedEvents.length })}
             </p>
           </div>
 
           {/* Exemplo de payload */}
           <div className="space-y-2">
-            <Label>Exemplo de Payload</Label>
+            <Label>{t('configIntegrations.webhooks.payloadLabel')}</Label>
             <Textarea
               value={PAYLOAD_EXEMPLO}
               readOnly
