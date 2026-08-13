@@ -23,19 +23,19 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { formatStatus } from '@/lib/text-utils';
 const templateConfigs: Record<string, { nome: string; descricao: string; icon: any; cor: string }> = {
-  executivo_trimestral: { nome: 'Resumo Executivo Trimestral', descricao: 'Panorama trimestral de riscos, compliance e incidentes para a diretoria', icon: BarChart3, cor: 'text-primary' },
-  compliance_geral: { nome: 'Status Geral de Compliance', descricao: 'Aderência a frameworks, controles, políticas e auditorias ativas', icon: BookOpen, cor: 'text-violet-600' },
-  riscos_geral: { nome: 'Panorama de Riscos', descricao: 'Visão consolidada de riscos, tratamentos e níveis de criticidade', icon: AlertTriangle, cor: 'text-amber-600' },
-  incidentes_periodo: { nome: 'Incidentes por Período', descricao: 'Análise de incidentes de segurança com métricas e severidade', icon: AlertTriangle, cor: 'text-destructive' },
-  lgpd_anpd: { nome: 'Relatório LGPD para ANPD', descricao: 'Conformidade LGPD: dados pessoais mapeados, solicitações e políticas', icon: Shield, cor: 'text-emerald-600' },
-  iso27001_auditoria: { nome: 'Status ISO 27001', descricao: 'Status de conformidade e controles ISO 27001 para auditoria externa', icon: FileBarChart, cor: 'text-blue-600' },
-  continuidade_bcp: { nome: 'Continuidade de Negócios (BCP/DRP)', descricao: 'Planos de continuidade, RTO/RPO, tarefas e testes realizados', icon: Shield, cor: 'text-cyan-600' },
-  contratos_geral: { nome: 'Gestão de Contratos', descricao: 'Status de contratos, vencimentos próximos e valor consolidado', icon: Briefcase, cor: 'text-indigo-600' },
-  ativos_inventario: { nome: 'Inventário de Ativos', descricao: 'Ativos, licenças e chaves criptográficas com criticidade', icon: Package, cor: 'text-orange-600' },
-  auditoria_interna: { nome: 'Auditoria Interna', descricao: 'Auditorias realizadas, itens identificados e status de tratamento', icon: Search, cor: 'text-rose-600' },
-  due_diligence_fornecedores: { nome: 'Due Diligence de Fornecedores', descricao: 'Assessments de fornecedores com scores e nível de aprovação', icon: Users, cor: 'text-teal-600' },
-  documentos_governanca: { nome: 'Governança Documental', descricao: 'Documentos por status, vencimento e tipo de classificação', icon: FileCheck, cor: 'text-sky-600' },
-  denuncias_canal_etica: { nome: 'Canal de Ética', descricao: 'Denúncias recebidas, gravidade e status de investigação', icon: MessageSquare, cor: 'text-fuchsia-600' },
+  executivo_trimestral: { nome: 'fin.relatorios.tpl.executivo_trimestral.nome', descricao: 'fin.relatorios.tpl.executivo_trimestral.desc', icon: BarChart3, cor: 'text-primary' },
+  compliance_geral: { nome: 'fin.relatorios.tpl.compliance_geral.nome', descricao: 'fin.relatorios.tpl.compliance_geral.desc', icon: BookOpen, cor: 'text-violet-600' },
+  riscos_geral: { nome: 'fin.relatorios.tpl.riscos_geral.nome', descricao: 'fin.relatorios.tpl.riscos_geral.desc', icon: AlertTriangle, cor: 'text-amber-600' },
+  incidentes_periodo: { nome: 'fin.relatorios.tpl.incidentes_periodo.nome', descricao: 'fin.relatorios.tpl.incidentes_periodo.desc', icon: AlertTriangle, cor: 'text-destructive' },
+  lgpd_anpd: { nome: 'fin.relatorios.tpl.lgpd_anpd.nome', descricao: 'fin.relatorios.tpl.lgpd_anpd.desc', icon: Shield, cor: 'text-emerald-600' },
+  iso27001_auditoria: { nome: 'fin.relatorios.tpl.iso27001_auditoria.nome', descricao: 'fin.relatorios.tpl.iso27001_auditoria.desc', icon: FileBarChart, cor: 'text-blue-600' },
+  continuidade_bcp: { nome: 'fin.relatorios.tpl.continuidade_bcp.nome', descricao: 'fin.relatorios.tpl.continuidade_bcp.desc', icon: Shield, cor: 'text-cyan-600' },
+  contratos_geral: { nome: 'fin.relatorios.tpl.contratos_geral.nome', descricao: 'fin.relatorios.tpl.contratos_geral.desc', icon: Briefcase, cor: 'text-indigo-600' },
+  ativos_inventario: { nome: 'fin.relatorios.tpl.ativos_inventario.nome', descricao: 'fin.relatorios.tpl.ativos_inventario.desc', icon: Package, cor: 'text-orange-600' },
+  auditoria_interna: { nome: 'fin.relatorios.tpl.auditoria_interna.nome', descricao: 'fin.relatorios.tpl.auditoria_interna.desc', icon: Search, cor: 'text-rose-600' },
+  due_diligence_fornecedores: { nome: 'fin.relatorios.tpl.due_diligence_fornecedores.nome', descricao: 'fin.relatorios.tpl.due_diligence_fornecedores.desc', icon: Users, cor: 'text-teal-600' },
+  documentos_governanca: { nome: 'fin.relatorios.tpl.documentos_governanca.nome', descricao: 'fin.relatorios.tpl.documentos_governanca.desc', icon: FileCheck, cor: 'text-sky-600' },
+  denuncias_canal_etica: { nome: 'fin.relatorios.tpl.denuncias_canal_etica.nome', descricao: 'fin.relatorios.tpl.denuncias_canal_etica.desc', icon: MessageSquare, cor: 'text-fuchsia-600' },
 };
 
 export default function Relatorios() {
@@ -83,12 +83,12 @@ export default function Relatorios() {
         created_by: user.id,
       });
       if (error) throw error;
-      toast.success('Relatório criado com sucesso');
+      toast.success(t('fin.relatorios.criado'));
       queryClient.invalidateQueries({ queryKey: ['relatorios-customizados'] });
       setDialogOpen(false);
     } catch (error) {
-      logger.error('Erro ao criar relatório', error);
-      toast.error('Erro ao criar relatório');
+      logger.error(t('fin.relatorios.erroCriar'), error);
+      toast.error(t('fin.relatorios.erroCriar'));
     } finally {
       setSaving(false);
     }
@@ -99,11 +99,11 @@ export default function Relatorios() {
     try {
       const { error } = await supabase.from('relatorios_customizados').delete().eq('id', deleteId).eq('empresa_id', empresaId);
       if (error) throw error;
-      toast.success('Relatório excluído');
+      toast.success(t('fin.relatorios.excluido'));
       queryClient.invalidateQueries({ queryKey: ['relatorios-customizados'] });
     } catch (error) {
-      logger.error('Erro ao excluir relatório', error);
-      toast.error('Erro ao excluir relatório');
+      logger.error(t('fin.relatorios.erroExcluir'), error);
+      toast.error(t('fin.relatorios.erroExcluir'));
     } finally {
       setDeleteId(null);
     }
@@ -123,7 +123,7 @@ export default function Relatorios() {
         doc.text(relatorio.nome, 20, 30);
         doc.setFontSize(12);
         doc.setTextColor(100);
-        doc.text(relatorio.descricao || 'Sem descrição', 20, 45);
+        doc.text(relatorio.descricao || t('fin.comum.semDescricao'), 20, 45);
         doc.setFontSize(10);
         doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, 20, 60);
         doc.text(`Status: ${formatStatus(relatorio.status)}`, 20, 70);
@@ -131,8 +131,8 @@ export default function Relatorios() {
       }
       toast.success('PDF exportado com sucesso');
     } catch (error) {
-      logger.error('Erro ao exportar PDF', error);
-      toast.error('Erro ao exportar PDF');
+      logger.error(t('fin.comum.erroExportarPdf'), error);
+      toast.error(t('fin.comum.erroExportarPdf'));
     } finally {
       setExporting(null);
     }
@@ -147,12 +147,12 @@ export default function Relatorios() {
         template_base: data.template_base,
       }).eq('id', editRelatorio.id);
       if (error) throw error;
-      toast.success('Relatório atualizado');
+      toast.success(t('fin.relatorios.atualizado'));
       queryClient.invalidateQueries({ queryKey: ['relatorios-customizados'] });
       setEditRelatorio(null);
     } catch (error) {
-      logger.error('Erro ao editar relatório', error);
-      toast.error('Erro ao editar relatório');
+      logger.error(t('fin.relatorios.erroEditar'), error);
+      toast.error(t('fin.relatorios.erroEditar'));
     }
   };
 
@@ -165,8 +165,8 @@ export default function Relatorios() {
     try {
       const { error } = await supabase.from('relatorios_customizados').insert({
         empresa_id: empresaId,
-        nome: config.nome,
-        descricao: config.descricao,
+        nome: t(config.nome),
+        descricao: t(config.descricao),
         tipo: 'template',
         template_base: templateKey,
         configuracao: { widgets: [], template: templateKey },
@@ -174,12 +174,12 @@ export default function Relatorios() {
         created_by: user.id,
       });
       if (error) throw error;
-      toast.success(`Relatório "${config.nome}" criado a partir do template`);
+      toast.success(t('fin.relatorios.criadoTemplate', { nome: t(config.nome) }));
       queryClient.invalidateQueries({ queryKey: ['relatorios-customizados'] });
       setActiveTab('meus');
     } catch (error) {
       logger.error('Erro ao criar relatório de template', error);
-      toast.error('Erro ao criar relatório');
+      toast.error(t('fin.relatorios.erroCriar'));
     } finally {
       setSaving(false);
     }
@@ -190,7 +190,7 @@ export default function Relatorios() {
       <PageHeader
         title={t('modules.relatorios.title')}
         description={t('modules.relatorios.description')}
-        breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: 'Relatórios' }]}
+        breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: t('fin.relatorios.title') }]}
         actions={
           <Button onClick={() => setDialogOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
@@ -200,14 +200,14 @@ export default function Relatorios() {
       />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <StatCard title="Total de Relatórios" value={stats.total} icon={<FileText />} variant="primary" showAccent emptyHint="Crie um relatório para começar." />
+        <StatCard title={t('fin.relatorios.total')} value={stats.total} icon={<FileText />} variant="primary" showAccent emptyHint={t('fin.relatorios.emptyHint')} />
         <StatCard title="Publicados" value={stats.publicados} icon={<Eye />} variant="success" />
         <StatCard title="Rascunhos" value={stats.rascunhos} icon={<Clock />} variant="warning" />
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          <TabsTrigger value="meus">Meus Relatórios</TabsTrigger>
+          <TabsTrigger value="meus">{t('fin.relatorios.meus')}</TabsTrigger>
           <TabsTrigger value="templates">Templates Pré-definidos</TabsTrigger>
         </TabsList>
 
@@ -224,8 +224,8 @@ export default function Relatorios() {
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold">Nenhum relatório criado</h3>
-                <p className="text-muted-foreground text-sm mt-1 mb-4">Comece criando um novo relatório ou use um template</p>
+                <h3 className="text-lg font-semibold">{t('fin.relatorios.nenhum')}</h3>
+                <p className="text-muted-foreground text-sm mt-1 mb-4">{t('fin.relatorios.vazioDesc')}</p>
                 <Button onClick={() => setDialogOpen(true)}>
                   <Plus className="h-4 w-4 mr-2" />Novo Relatório
                 </Button>
@@ -239,7 +239,7 @@ export default function Relatorios() {
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
                         <CardTitle className="text-base truncate">{rel.nome}</CardTitle>
-                        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{rel.descricao || 'Sem descrição'}</p>
+                        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{rel.descricao || t('fin.comum.semDescricao')}</p>
                       </div>
                       <Badge variant={rel.status === 'publicado' ? 'success' : rel.status === 'arquivado' ? 'secondary' : 'warning'}>
                         {rel.status === 'publicado' ? 'Publicado' : rel.status === 'arquivado' ? 'Arquivado' : 'Rascunho'}
@@ -249,7 +249,7 @@ export default function Relatorios() {
                   <CardContent className="pt-0">
                     {rel.template_base && templateConfigs[rel.template_base] && (
                       <Badge variant="outline" className="mb-3 text-xs">
-                        {templateConfigs[rel.template_base].nome}
+                        {t(templateConfigs[rel.template_base].nome)}
                       </Badge>
                     )}
                     <p className="text-xs text-muted-foreground mb-3">
@@ -275,8 +275,7 @@ export default function Relatorios() {
                           <Pencil className="h-4 w-4 mr-2" />Editar
                         </DropdownMenuItem>
                         <DropdownMenuItem className="text-destructive" onClick={() => setDeleteId(rel.id)}>
-                          <Trash2 className="h-4 w-4 mr-2" />Excluir
-                        </DropdownMenuItem>
+                          <Trash2 className="h-4 w-4 mr-2" />{t('fin.comum.excluir')}</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </CardContent>
@@ -298,8 +297,8 @@ export default function Relatorios() {
                         <Icon className="h-6 w-6" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-sm">{config.nome}</h3>
-                        <p className="text-xs text-muted-foreground mt-1">{config.descricao}</p>
+                        <h3 className="font-semibold text-sm">{t(config.nome)}</h3>
+                        <p className="text-xs text-muted-foreground mt-1">{t(config.descricao)}</p>
                         <Button variant="link" size="sm" className="p-0 h-auto mt-2 text-xs group-hover:underline">
                           Usar este template →
                         </Button>
@@ -340,10 +339,10 @@ export default function Relatorios() {
       <ConfirmDialog
         open={!!deleteId}
         onOpenChange={(open) => !open && setDeleteId(null)}
-        title="Excluir Relatório"
-        description="Tem certeza que deseja excluir este relatório?"
-        confirmText="Excluir"
-        cancelText="Cancelar"
+        title={t('fin.relatorios.excluirTitle')}
+        description={t('fin.relatorios.excluirDesc')}
+        confirmText={t('fin.comum.excluir')}
+        cancelText={t('fin.comum.cancelar')}
         variant="destructive"
         onConfirm={handleDelete}
       />

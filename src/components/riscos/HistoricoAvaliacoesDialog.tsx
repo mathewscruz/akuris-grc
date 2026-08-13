@@ -11,6 +11,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveNivelRiscoTone } from '@/lib/status-tone';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { useLanguage } from '@/contexts/LanguageContext';
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -31,6 +32,7 @@ interface HistoricoAvaliacao {
 }
 
 export function HistoricoAvaliacoesDialog({ open, onOpenChange, riscoId, riscoNome }: Props) {
+  const { t } = useLanguage();
   const { data: historico, isLoading } = useQuery({
     queryKey: ['risco-historico-avaliacoes', riscoId],
     queryFn: async () => {
@@ -65,7 +67,7 @@ export function HistoricoAvaliacoesDialog({ open, onOpenChange, riscoId, riscoNo
       open={open}
       onOpenChange={onOpenChange}
       icon={Clock}
-      title="Histórico de avaliações"
+      title={t('fin.riscos.historicoAval.title')}
       description={riscoNome}
       size="md"
       hideFooter
@@ -76,9 +78,7 @@ export function HistoricoAvaliacoesDialog({ open, onOpenChange, riscoId, riscoNo
           </div>
         ) : !historico || historico.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
-            <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" strokeWidth={1.5} />
-            Nenhum histórico de reavaliação encontrado.
-          </div>
+            <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" strokeWidth={1.5} />{t('fin.riscos.historicoAval.vazio')}</div>
         ) : (
             <div className="relative pl-6">
               {/* Timeline line */}

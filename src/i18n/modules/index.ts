@@ -46,6 +46,7 @@ import { configIntegrations } from './config-integrations';
 import { configPerms } from './config-permissoes';
 import { configPlanos } from './config-planos';
 import { configGeral } from './config-geral';
+import { finalI18n } from './final-i18n';
 
 type ModuleDict = { pt: Record<string, unknown>; en: Record<string, unknown> };
 
@@ -88,6 +89,7 @@ const modules: Record<string, ModuleDict> = {
   configPerms,
   configPlanos,
   configGeral,
+  finalI18n,
 };
 
 

@@ -31,9 +31,9 @@ import { parseDateForDB, formatDateForInput } from "@/lib/date-utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 const usuarioSchema = z.object({
-  sistema_id: z.string().min(1, "Sistema é obrigatório"),
-  nome_usuario: z.string().min(1, "Nome do usuário é obrigatório"),
-  email_usuario: z.string().email("Email inválido").optional().or(z.literal("")),
+  sistema_id: z.string().min(1, t('fin.validacao.sistemaObrigatorio')),
+  nome_usuario: z.string().min(1, t('fin.validacao.nomeUsuarioObrigatorio')),
+  email_usuario: z.string().email(t('fin.validacao.emailInvalido')).optional().or(z.literal("")),
   departamento: z.string().optional(),
   cargo: z.string().optional(),
   tipo_acesso: z.string().optional(),
@@ -168,7 +168,7 @@ export function SistemaUsuarioDialog({
           .update(payload)
           .eq("id", usuario.id);
         if (error) throw error;
-        toast({ title: "Sucesso", description: "Usuário atualizado com sucesso" });
+        toast({ title: t('fin.comum.sucesso'), description: t('fin.sistemaUsuario.atualizado') });
       } else {
         const { error } = await supabase
           .from("sistemas_usuarios")
@@ -177,14 +177,14 @@ export function SistemaUsuarioDialog({
             created_by: userData?.user?.id,
           });
         if (error) throw error;
-        toast({ title: "Sucesso", description: "Usuário cadastrado com sucesso" });
+        toast({ title: t('fin.comum.sucesso'), description: t('fin.sistemaUsuario.criado') });
       }
 
       onSuccess();
       onClose();
     } catch (error: any) {
       toast({
-        title: "Erro",
+        title: t('fin.comum.erro'),
         description: error.message,
         variant: "destructive",
       });
@@ -197,7 +197,7 @@ export function SistemaUsuarioDialog({
     <DialogShell
         open={open}
         onOpenChange={onClose}
-        title={`${usuario?.id ? "Editar" : "Novo"} Usuário do Sistema`}
+        title={usuario?.id ? t('fin.sistemaUsuario.editarTitle') : t('fin.sistemaUsuario.novoTitle')}
         icon={UserCog}
         size="lg"
         onSubmit={form.handleSubmit(onSubmit)}
@@ -214,7 +214,7 @@ export function SistemaUsuarioDialog({
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecione o sistema" />
+                          <SelectValue placeholder={t('fin.sistemaUsuario.selecioneSistema')} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -235,7 +235,7 @@ export function SistemaUsuarioDialog({
                 name="nome_usuario"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Nome do Usuário *</FormLabel>
+                    <FormLabel>{t('fin.sistemaUsuario.nomeUsuario')}</FormLabel>
                     <FormControl>
                       <Input placeholder="Nome completo" {...field} />
                     </FormControl>
@@ -291,11 +291,11 @@ export function SistemaUsuarioDialog({
                 name="tipo_acesso"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Tipo de Acesso</FormLabel>
+                    <FormLabel>{t('fin.contas.tipoAcesso')}</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecione" />
+                          <SelectValue placeholder={t('fin.comum.selecione')} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -315,15 +315,15 @@ export function SistemaUsuarioDialog({
                 name="nivel_privilegio"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Nível de Privilégio</FormLabel>
+                    <FormLabel>{t('fin.sistemaUsuario.nivelPrivilegio')}</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecione" />
+                          <SelectValue placeholder={t('fin.comum.selecione')} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="usuario">Usuário</SelectItem>
+                        <SelectItem value="usuario">{t('fin.comum.usuario')}</SelectItem>
                         <SelectItem value="operador">Operador</SelectItem>
                         <SelectItem value="administrador">Administrador</SelectItem>
                         <SelectItem value="root">Root/Super Admin</SelectItem>
@@ -353,7 +353,7 @@ export function SistemaUsuarioDialog({
                 name="data_expiracao"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Data de Expiração</FormLabel>
+                    <FormLabel>{t('fin.comum.dataExpiracao')}</FormLabel>
                     <FormControl>
                       <Input type="date" {...field} />
                     </FormControl>
@@ -373,7 +373,7 @@ export function SistemaUsuarioDialog({
                         onCheckedChange={field.onChange}
                       />
                     </FormControl>
-                    <FormLabel className="!mt-0">Usuário Ativo</FormLabel>
+                    <FormLabel className="!mt-0">{t('fin.sistemaUsuario.usuarioAtivo')}</FormLabel>
                     <FormMessage />
                   </FormItem>
                 )}

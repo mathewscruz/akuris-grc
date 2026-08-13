@@ -5,6 +5,7 @@ import { Settings, Grid3X3 } from 'lucide-react';
 import { CornerAccent } from '@/components/identity/CornerAccent';
 import { MatrizForm } from './MatrizForm';
 import { MatrizVisualizacao } from './MatrizVisualizacao';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface MatrizDialogProps {
   open: boolean;
@@ -13,6 +14,7 @@ interface MatrizDialogProps {
 }
 
 export function MatrizDialog({ open, onOpenChange, onSuccess }: MatrizDialogProps) {
+  const { t } = useLanguage();
   const [tab, setTab] = useState<'visual' | 'configuracao'>('visual');
 
   const handleSuccess = () => {
@@ -31,18 +33,14 @@ export function MatrizDialog({ open, onOpenChange, onSuccess }: MatrizDialogProp
                 <Grid3X3 className="h-[18px] w-[18px]" strokeWidth={1.5} />
               </div>
               <div className="flex flex-col gap-0.5 min-w-0">
-                <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
-                  Configuração de Riscos
-                </span>
+                <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{t('fin.riscos.matrizDialog.title')}</span>
                 <span className="text-base font-semibold text-foreground">
                   Matriz de Riscos
                 </span>
               </div>
             </div>
           </DialogTitle>
-          <DialogDescription className="text-sm text-muted-foreground pl-12 -mt-1">
-            Visualize e configure a matriz de risco da sua organização.
-          </DialogDescription>
+          <DialogDescription className="text-sm text-muted-foreground pl-12 -mt-1">{t('fin.riscos.matrizDialog.desc')}</DialogDescription>
         </DialogHeader>
 
         <Tabs
@@ -57,9 +55,7 @@ export function MatrizDialog({ open, onOpenChange, onSuccess }: MatrizDialogProp
                 Matriz Visual
               </TabsTrigger>
               <TabsTrigger value="configuracao" className="flex-1 gap-2">
-                <Settings className="h-4 w-4" strokeWidth={1.5} />
-                Configuração
-              </TabsTrigger>
+                <Settings className="h-4 w-4" strokeWidth={1.5} />{t('fin.comum.configuracao')}</TabsTrigger>
             </TabsList>
           </div>
 

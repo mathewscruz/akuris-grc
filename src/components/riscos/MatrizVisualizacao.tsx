@@ -8,6 +8,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Grid3X3 } from 'lucide-react';
 import { toScaleNumber } from '@/components/riscos/risk-utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Matriz {
   id: string;
@@ -34,6 +35,7 @@ interface Props {
 }
 
 export function MatrizVisualizacao({ onNavigate, onConfigure }: Props) {
+  const { t } = useLanguage();
   const { profile } = useAuth();
   const navigate = useNavigate();
   const [matriz, setMatriz] = useState<Matriz | null>(null);
@@ -134,8 +136,8 @@ export function MatrizVisualizacao({ onNavigate, onConfigure }: Props) {
     return (
       <EmptyState
         icon={<Grid3X3 className="h-10 w-10" strokeWidth={1.5} />}
-        title="Nenhuma matriz configurada"
-        description="Configure uma matriz de risco para visualizar a distribuição dos seus riscos por probabilidade e impacto."
+        title={t('fin.riscos.matrizVis.vazioTitle')}
+        description={t('fin.riscos.matrizVis.vazioDesc')}
         action={onConfigure ? { label: 'Configurar agora', onClick: onConfigure } : undefined}
       />
     );
@@ -266,7 +268,7 @@ export function MatrizVisualizacao({ onNavigate, onConfigure }: Props) {
                                 />
                               )}
                               <span className="font-semibold">
-                                {nivelRisco?.nivel || 'Sem nível'}
+                                {nivelRisco?.nivel || t('fin.riscos.matrizVis.semNivel')}
                               </span>
                             </div>
                             <div className="text-xs text-muted-foreground">

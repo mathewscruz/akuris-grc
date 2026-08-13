@@ -134,7 +134,7 @@ export default function AtivosChaves() {
 
     if (error) {
       toast({
-        title: "Erro ao excluir chave",
+        title: t('fin.chaves.erroExcluir'),
         description: error.message,
         variant: "destructive",
       });
@@ -142,8 +142,8 @@ export default function AtivosChaves() {
     }
 
     toast({
-      title: "Chave excluída",
-      description: "A chave foi excluída com sucesso.",
+      title: t('fin.chaves.excluida'),
+      description: t('fin.chaves.excluidaDesc'),
     });
     
     refetch();
@@ -155,7 +155,7 @@ export default function AtivosChaves() {
       'ativa': { icon: CheckCircle, label: 'Ativa' },
       'expirada': { icon: AlertTriangle, label: 'Expirada' },
       'revogada': { icon: AlertTriangle, label: 'Revogada' },
-      'em_rotacao': { icon: Clock, label: 'Em Rotação' },
+      'em_rotacao': { icon: Clock, label: t('fin.chaves.emRotacao') },
     };
 
     const config = statusConfig[status] || statusConfig.ativa;
@@ -230,7 +230,7 @@ export default function AtivosChaves() {
     },
     {
       key: 'tipo_chave',
-      label: 'Tipo',
+      label: t('fin.comum.tipo'),
       sortable: true,
       render: (_: any, chave: ChaveCriptografica) => (
         <Badge variant="outline">{formatStatus(chave.tipo_chave)}</Badge>
@@ -238,7 +238,7 @@ export default function AtivosChaves() {
     },
     {
       key: 'ambiente',
-      label: 'Ambiente',
+      label: t('fin.comum.ambiente'),
       sortable: true,
       render: (_: any, chave: ChaveCriptografica) => (
         <Badge variant="secondary">{chave.ambiente}</Badge>
@@ -246,12 +246,12 @@ export default function AtivosChaves() {
     },
     {
       key: 'localizacao',
-      label: 'Localização',
+      label: t('fin.comum.localizacao'),
       sortable: true,
     },
     {
       key: 'data_proxima_rotacao',
-      label: 'Próxima Rotação',
+      label: t('fin.chaves.proximaRotacao'),
       sortable: true,
       render: (_: any, chave: ChaveCriptografica) => formatDateOnly(chave.data_proxima_rotacao)
     },
@@ -269,7 +269,7 @@ export default function AtivosChaves() {
     },
     {
       key: 'responsavel',
-      label: 'Responsável',
+      label: t('fin.comum.responsavel'),
       render: (_: any, chave: ChaveCriptografica) => {
         if (!chave.responsavel_nome) return '-';
         
@@ -301,7 +301,7 @@ export default function AtivosChaves() {
     },
     {
       key: 'acoes',
-      label: 'Ações',
+      label: t('fin.comum.acoes'),
       render: (_: any, chave: ChaveCriptografica) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -319,9 +319,7 @@ export default function AtivosChaves() {
               onClick={() => handleDelete(chave.id, chave.nome)}
               className="text-destructive focus:text-destructive"
             >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Excluir
-            </DropdownMenuItem>
+              <Trash2 className="h-4 w-4 mr-2" />{t('fin.comum.excluir')}</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       )
@@ -340,7 +338,7 @@ export default function AtivosChaves() {
         { value: 'ativa', label: 'Ativa' },
         { value: 'expirada', label: 'Expirada' },
         { value: 'revogada', label: 'Revogada' },
-        { value: 'em_rotacao', label: 'Em Rotação' },
+        { value: 'em_rotacao', label: t('fin.chaves.emRotacao') },
       ]
     },
     {
@@ -350,7 +348,7 @@ export default function AtivosChaves() {
       onChange: setCriticidadeFilter,
       options: [
         { value: 'todos', label: 'Todas' },
-        { value: 'critica', label: 'Crítica' },
+        { value: 'critica', label: t('fin.comum.criticaF') },
         { value: 'alta', label: 'Alta' },
         { value: 'media', label: 'Média' },
         { value: 'baixa', label: 'Baixa' },
@@ -358,20 +356,20 @@ export default function AtivosChaves() {
     },
     {
       key: 'ambiente',
-      label: 'Ambiente',
+      label: t('fin.comum.ambiente'),
       value: ambienteFilter,
       onChange: setAmbienteFilter,
       options: [
         { value: 'todos', label: 'Todos os ambientes' },
-        { value: 'producao', label: 'Produção' },
-        { value: 'homologacao', label: 'Homologação' },
+        { value: 'producao', label: t('fin.comum.producao') },
+        { value: 'homologacao', label: t('fin.comum.homologacao') },
         { value: 'desenvolvimento', label: 'Desenvolvimento' },
         { value: 'qa', label: 'QA' },
       ]
     },
     {
       key: 'tipo',
-      label: 'Tipo',
+      label: t('fin.comum.tipo'),
       value: tipoFilter,
       onChange: setTipoFilter,
       options: [
@@ -403,7 +401,7 @@ export default function AtivosChaves() {
           loading={statsLoading}
           drillDown="ativos_chaves"
           showAccent
-          emptyHint="Cadastre chaves para gerenciar rotações."
+          emptyHint={t('fin.chaves.emptyHint')}
         />
 
         <StatCard
@@ -416,9 +414,9 @@ export default function AtivosChaves() {
         />
 
         <StatCard
-          title="Rotações Pendentes"
+          title={t('fin.chaves.rotacoesPendentes')}
           value={stats?.rotacao30dias ?? 0}
-          description="Próximos 30 dias"
+          description={t('fin.comum.proximos30')}
           icon={<Clock />}
           loading={statsLoading}
           variant="warning"
@@ -426,7 +424,7 @@ export default function AtivosChaves() {
         />
 
         <StatCard
-          title="Críticas"
+          title={t('fin.comum.criticasF')}
           value={stats?.criticas ?? 0}
           description="Alta prioridade"
           icon={<AlertTriangle />}
@@ -450,7 +448,7 @@ export default function AtivosChaves() {
             columns={columns}
             loading={isLoading}
             searchable
-            searchPlaceholder="Buscar chaves..."
+            searchPlaceholder={t('fin.chaves.buscar')}
             searchValue={searchTerm}
             onSearchChange={setSearchTerm}
             filters={filters}
@@ -466,7 +464,7 @@ export default function AtivosChaves() {
             }}
             onExport={() => {
               const csvContent = [
-                ['Nome', 'Tipo', 'Ambiente', 'Localização', 'Próxima Rotação', 'Criticidade', 'Status', 'Responsável'].join(','),
+                [t('fin.comum.nome'), t('fin.comum.tipo'), t('fin.comum.ambiente'), t('fin.comum.localizacao'), t('fin.chaves.proximaRotacao'), 'Criticidade', 'Status', t('fin.comum.responsavel')].join(','),
                 ...filteredAndSortedChaves.map(c => [
                   c.nome,
                   c.tipo_chave,
@@ -487,10 +485,10 @@ export default function AtivosChaves() {
             }}
             emptyState={{
               icon: <Key className="h-8 w-8" />,
-              title: searchTerm ? "Nenhuma chave encontrada" : "Nenhuma chave cadastrada",
+              title: searchTerm ? t('fin.chaves.nenhumaEncontrada') : t('fin.chaves.nenhumaCadastrada'),
               description: searchTerm 
                 ? "Tente ajustar os termos de busca ou limpe os filtros."
-                : "Comece cadastrando as chaves criptográficas da sua organização para monitorar rotações e manter a segurança.",
+                : t('fin.chaves.vazioDesc'),
               action: !searchTerm ? {
                 label: "Cadastrar Primeira Chave",
                 onClick: handleNew
@@ -517,10 +515,10 @@ export default function AtivosChaves() {
       <ConfirmDialog
         open={deleteConfirm.open}
         onOpenChange={(open) => setDeleteConfirm(prev => ({ ...prev, open }))}
-        title="Excluir Chave Criptográfica"
-        description={`Tem certeza que deseja excluir a chave "${deleteConfirm.nome}"? Esta ação não pode ser desfeita.`}
-        confirmText="Excluir"
-        cancelText="Cancelar"
+        title={t('fin.chaves.excluirTitle')}
+        description={t('fin.chaves.excluirDesc', { nome: deleteConfirm.nome })}
+        confirmText={t('fin.comum.excluir')}
+        cancelText={t('fin.comum.cancelar')}
         variant="destructive"
         onConfirm={confirmDelete}
       />
