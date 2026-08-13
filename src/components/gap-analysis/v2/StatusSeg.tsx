@@ -6,6 +6,7 @@
 import { useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import type { ConformityStatus } from '@/lib/gap-analysis-tokens';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Option {
   id: ConformityStatus;
@@ -38,6 +39,7 @@ export function StatusSeg({
   enableShortcuts = false,
   className,
 }: StatusSegProps) {
+  const { t } = useLanguage();
   useEffect(() => {
     if (!enableShortcuts) return;
     const handler = (e: KeyboardEvent) => {

@@ -11,7 +11,9 @@ import { fetchPlanos, formatBRL, type Plano } from '@/lib/planos-utils';
 import { PlanBadge } from '@/components/PlanBadge';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { useLanguage } from '@/contexts/LanguageContext';
 export default function PlanosAssinatura() {
+  const { t } = useLanguage();
   const [isAnnual, setIsAnnual] = useState(false);
   const [planos, setPlanos] = useState<Plano[]>([]);
   const [loading, setLoading] = useState(true);

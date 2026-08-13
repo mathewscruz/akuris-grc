@@ -14,6 +14,7 @@ import { useScoreHistory, ScoreHistoryPeriod } from '@/hooks/useScoreHistory';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { ScoreType } from '@/lib/framework-configs';
 import { TrendingUp, TrendingDown, Minus, LineChart as LineChartIcon } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface ScoreEvolutionChartProps {
   frameworkId: string;
@@ -21,6 +22,7 @@ interface ScoreEvolutionChartProps {
 }
 
 export const ScoreEvolutionChart = ({ frameworkId, scoreType = 'scale_0_5' }: ScoreEvolutionChartProps) => {
+  const { t } = useLanguage();
   const [period, setPeriod] = useState<ScoreHistoryPeriod>('monthly');
   const { history, loading } = useScoreHistory(frameworkId, period);
 

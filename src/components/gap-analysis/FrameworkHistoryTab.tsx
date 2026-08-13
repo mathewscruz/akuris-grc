@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { toast } from 'sonner';
 import type { ScoreType } from '@/lib/framework-configs';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface FrameworkHistoryTabProps {
   frameworkId: string;
@@ -32,6 +33,7 @@ export function FrameworkHistoryTab({
   totalRequirements,
   evaluatedRequirements,
 }: FrameworkHistoryTabProps) {
+  const { t } = useLanguage();
   const { history } = useScoreHistory(frameworkId, 'monthly');
   const { empresaId } = useEmpresaId();
 
