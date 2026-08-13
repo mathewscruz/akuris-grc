@@ -10,9 +10,14 @@
  */
 import { riscos } from './riscos';
 import { riscosVisoes } from './riscos-visoes';
+import { riscosDialogs } from './riscos-dialogs';
+import { riscosDetalhe } from './riscos-detalhe';
 import { documentos } from './documentos';
+import { documentosExtras } from './documentos-extras';
 import { docgen } from './docgen';
 import { gapAnalysis } from './gap-analysis';
+import { gapAdherence } from './gap-adherence';
+import { gapV2 } from './gap-v2';
 import { planosAcao } from './planos-acao';
 import { minhasTarefas } from './minhas-tarefas';
 
@@ -21,12 +26,18 @@ type ModuleDict = { pt: Record<string, unknown>; en: Record<string, unknown> };
 const modules: Record<string, ModuleDict> = {
   riscos,
   riscosVisoes,
+  riscosDialogs,
+  riscosDetalhe,
   documentos,
+  documentosExtras,
   docgen,
   gapAnalysis,
+  gapAdherence,
+  gapV2,
   planosAcao,
   minhasTarefas,
 };
+
 
 
 function collect(locale: 'pt' | 'en'): Record<string, unknown> {
