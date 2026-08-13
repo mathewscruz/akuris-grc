@@ -838,11 +838,28 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {matrizes.map((matriz) => (
-                          <SelectItem key={matriz.id} value={matriz.id}>
-                            {matriz.nome}
-                          </SelectItem>
-                        ))}
+                        {matrizes.map((matriz) => {
+                          const cfg = matriz.configuracao?.[0];
+                          const apetite = (cfg?.niveis_risco as any[] | undefined)?.find((n: any) => n?.apetite);
+                          const resumo = cfg
+                            ? [
+                                `${(cfg.escala_probabilidade as any[])?.length || 0}x${(cfg.escala_impacto as any[])?.length || 0}`,
+                                cfg.metodo_calculo === 'soma' ? 'P + I' : 'P × I',
+                                apetite ? `apetite ≤${apetite.max}` : null,
+                              ].filter(Boolean).join(' · ')
+                            : null;
+                          return (
+                            <SelectItem key={matriz.id} value={matriz.id}>
+                              <span className="flex items-center gap-2">
+                                <span>{matriz.nome}</span>
+                                {resumo && (
+                                  <span className="text-xs text-muted-foreground">{resumo}</span>
+                                )}
+                              </span>
+                            </SelectItem>
+                          );
+                        })}
+
                       </SelectContent>
                     </Select>
                     <FormDescription>{t('fin.riscos.wizard.matrizHint')}</FormDescription>
