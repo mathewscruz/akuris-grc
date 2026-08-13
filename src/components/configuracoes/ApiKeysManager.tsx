@@ -15,6 +15,7 @@ import { Key, Plus, Copy, Trash2, Eye, EyeOff, RotateCcw } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 interface ApiKey {
@@ -54,6 +55,7 @@ function generateApiKey(): { key: string; prefix: string } {
 }
 
 export function ApiKeysManager() {
+  const { t } = useLanguage();
   const { empresaId } = useEmpresaId();
   const [keys, setKeys] = useState<ApiKey[]>([]);
   const [loading, setLoading] = useState(true);

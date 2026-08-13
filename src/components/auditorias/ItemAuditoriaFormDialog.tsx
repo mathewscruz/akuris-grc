@@ -33,7 +33,7 @@ import { AreaSistemaSelect } from "./AreaSistemaSelect";
 import { useIntegrationNotify } from "@/hooks/useIntegrationNotify";
 import { logger } from "@/lib/logger";
 
-const formSchema = z.object({
+const makeFormSchema = (t: (key: string) => string) => z.object({
   codigo: z.string().min(1, t("govDialogs.itemAuditoriaFormDialog.zodCodigoRequired")),
   titulo: z.string().min(1, t("govDialogs.itemAuditoriaFormDialog.zodTituloRequired")),
   descricao: z.string().optional(),
