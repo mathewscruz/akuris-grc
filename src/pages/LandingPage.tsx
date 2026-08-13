@@ -1,91 +1,62 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import akurisLogo from "@/assets/akuris-logo.png";
 import { useLandingReveal, useCountUp, useScrolled } from "@/hooks/useLandingAnimations";
 import { DemoRequestDialog } from "@/components/landing/DemoRequestDialog";
 import { SEO } from "@/components/SEO";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { LanguageSelector } from "@/components/LanguageSelector";
 
-const modules = [
-  {
-    idx: "M.01",
-    title: "Gestão de Riscos",
-    desc: "Identifique, avalie e trate riscos corporativos em um repositório central. Matriz 5×5 configurável, sugestões de tratamento por IA e indicadores de exposição prontos para o conselho.",
-    tags: ["ISO 31000", "COSO ERM"],
-  },
-  {
-    idx: "M.02",
-    title: "Gap Analysis Multi-Framework",
-    desc: "Avaliação de aderência cruzada a +21 frameworks com scoring automático, planos de ação e histórico de evolução do score por requisito.",
-    tags: ["LGPD", "ISO 27001", "SOC 2"],
-  },
-  {
-    idx: "M.03",
-    title: "Controles & Evidências",
-    desc: "Catálogo unificado com mapeamento cruzado entre frameworks. Um controle implementado uma vez atende a vários padrões — sem retrabalho e sem dúvida sobre o que vale.",
-    tags: ["Cross-mapping", "Auditoria"],
-  },
-  {
-    idx: "M.04",
-    title: "Privacidade & LGPD",
-    desc: "RoPA, DPIA, gestão de titulares, base legal e ciclo de incidentes em um só fluxo. Construído com DPOs, para DPOs, incluindo trilhas exigidas pela ANPD.",
-    tags: ["LGPD", "GDPR"],
-  },
-  {
-    idx: "M.05",
-    title: "Auditoria Interna",
-    desc: "Planeje, execute e acompanhe auditorias com papéis de trabalho, achados e planos de ação. Resultados retroalimentam a matriz de risco automaticamente.",
-    tags: ["IIA", "Workpapers"],
-  },
-  {
-    idx: "M.06",
-    title: "Due Diligence de Terceiros",
-    desc: "Onboarding, questionários, evidências e monitoramento contínuo de fornecedores críticos. Riscos de cadeia integrados ao painel principal.",
-    tags: ["TPRM", "Fornecedores"],
-  },
-  {
-    idx: "M.07",
-    title: "Contas Privilegiadas",
-    desc: "Gestão de acessos críticos com revisão periódica, aprovação multinível e trilha de auditoria completa por sistema e por usuário.",
-    tags: ["PAM", "Revisão"],
-  },
-  {
-    idx: "M.08",
-    title: "Continuidade & Indicadores",
-    desc: "Planos de continuidade, testes documentados e painéis executivos prontos para o C-level: exposição agregada, posturas por unidade e tendências históricas.",
-    tags: ["BCM", "Board pack"],
-  },
+type Translate = (key: string) => string;
+
+const buildModules = (t: Translate) => [
+  { idx: "M.01", title: t("publico.landing.modulos.m1Title"), desc: t("publico.landing.modulos.m1Desc"), tags: ["ISO 31000", "COSO ERM"] },
+  { idx: "M.02", title: t("publico.landing.modulos.m2Title"), desc: t("publico.landing.modulos.m2Desc"), tags: ["LGPD", "ISO 27001", "SOC 2"] },
+  { idx: "M.03", title: t("publico.landing.modulos.m3Title"), desc: t("publico.landing.modulos.m3Desc"), tags: [t("publico.landing.modulos.tagCrossMapping"), t("publico.landing.modulos.tagAuditoria")] },
+  { idx: "M.04", title: t("publico.landing.modulos.m4Title"), desc: t("publico.landing.modulos.m4Desc"), tags: ["LGPD", "GDPR"] },
+  { idx: "M.05", title: t("publico.landing.modulos.m5Title"), desc: t("publico.landing.modulos.m5Desc"), tags: ["IIA", "Workpapers"] },
+  { idx: "M.06", title: t("publico.landing.modulos.m6Title"), desc: t("publico.landing.modulos.m6Desc"), tags: ["TPRM", t("publico.landing.modulos.tagFornecedores")] },
+  { idx: "M.07", title: t("publico.landing.modulos.m7Title"), desc: t("publico.landing.modulos.m7Desc"), tags: ["PAM", t("publico.landing.modulos.tagRevisao")] },
+  { idx: "M.08", title: t("publico.landing.modulos.m8Title"), desc: t("publico.landing.modulos.m8Desc"), tags: ["BCM", "Board pack"] },
 ];
 
-const frameworks = [
-  ["Privacidade", "LGPD"],
-  ["Privacidade", "GDPR"],
-  ["Privacidade", "CCPA"],
-  ["Privacidade", "HIPAA"],
-  ["Segurança", "ISO 27001"],
-  ["Segurança", "ISO 27701"],
-  ["Segurança", "SOC 2 Type II"],
-  ["Segurança", "PCI DSS 4.0"],
-  ["Segurança", "NIST CSF 2.0"],
-  ["Segurança", "CIS Controls v8"],
-  ["Qualidade", "ISO 9001"],
-  ["Ambiental", "ISO 14001"],
-  ["Risco", "ISO 31000"],
-  ["Antissuborno", "ISO 37001"],
-  ["TI", "ISO/IEC 20000"],
-  ["TI", "ITIL v4"],
-  ["Governança", "COBIT 2019"],
-  ["Risco", "COSO ERM"],
-  ["Controles", "COSO IC"],
-  ["Financeiro", "SOX"],
-  ["Saúde", "RDC ANVISA"],
-  ["Setorial", "Bacen 4.893"],
-  ["Setorial", "Susep 638"],
-  ["+", "e mais"],
-];
+const buildFrameworks = (t: Translate): [string, string][] => {
+  const f = (k: string) => t(`publico.landing.frameworks.${k}`);
+  return [
+    [f("famPrivacidade"), "LGPD"],
+    [f("famPrivacidade"), "GDPR"],
+    [f("famPrivacidade"), "CCPA"],
+    [f("famPrivacidade"), "HIPAA"],
+    [f("famSeguranca"), "ISO 27001"],
+    [f("famSeguranca"), "ISO 27701"],
+    [f("famSeguranca"), "SOC 2 Type II"],
+    [f("famSeguranca"), "PCI DSS 4.0"],
+    [f("famSeguranca"), "NIST CSF 2.0"],
+    [f("famSeguranca"), "CIS Controls v8"],
+    [f("famQualidade"), "ISO 9001"],
+    [f("famAmbiental"), "ISO 14001"],
+    [f("famRisco"), "ISO 31000"],
+    [f("famAntissuborno"), "ISO 37001"],
+    [f("famTi"), "ISO/IEC 20000"],
+    [f("famTi"), "ITIL v4"],
+    [f("famGovernanca"), "COBIT 2019"],
+    [f("famRisco"), "COSO ERM"],
+    [f("famControles"), "COSO IC"],
+    [f("famFinanceiro"), "SOX"],
+    [f("famSaude"), "RDC ANVISA"],
+    [f("famSetorial"), "Bacen 4.893"],
+    [f("famSetorial"), "Susep 638"],
+    ["+", f("eMais")],
+  ];
+};
 
 const LandingPage = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [demoOpen, setDemoOpen] = useState(false);
+
+  const modules = useMemo(() => buildModules(t), [t]);
+  const frameworks = useMemo(() => buildFrameworks(t), [t]);
 
   useEffect(() => {
     document.documentElement.classList.add("lp-html");
@@ -103,8 +74,8 @@ const LandingPage = () => {
   return (
     <div className="lp-root">
       <SEO
-        title="Akuris — Plataforma GRC para Governança, Riscos e Conformidade"
-        description="Akuris reúne controles, frameworks, evidências e indicadores em um só lugar. Suporte a +20 frameworks: ISO 27001, LGPD, GDPR, NIST, SOC 2, PCI DSS."
+        title={t("publico.landing.seoTitle")}
+        description={t("publico.landing.seoDesc")}
         canonical="/"
       />
       {/* NAV */}
@@ -113,19 +84,20 @@ const LandingPage = () => {
           <a href="#topo" className="flex items-center gap-3" aria-label="Akuris">
             <img src={akurisLogo} alt="Akuris" className="h-8 w-auto" />
           </a>
-          <nav className="lp-nav-links" aria-label="Principal">
-            <button onClick={() => scrollTo("produto")}>Produto</button>
-            <button onClick={() => scrollTo("modulos")}>Módulos</button>
-            <button onClick={() => scrollTo("frameworks")}>Frameworks</button>
-            <button onClick={() => scrollTo("seguranca")}>Segurança</button>
-            <button onClick={() => scrollTo("contato")}>Contato</button>
+          <nav className="lp-nav-links" aria-label={t("publico.landing.nav.principal")}>
+            <button onClick={() => scrollTo("produto")}>{t("publico.landing.nav.produto")}</button>
+            <button onClick={() => scrollTo("modulos")}>{t("publico.landing.nav.modulos")}</button>
+            <button onClick={() => scrollTo("frameworks")}>{t("publico.landing.nav.frameworks")}</button>
+            <button onClick={() => scrollTo("seguranca")}>{t("publico.landing.nav.seguranca")}</button>
+            <button onClick={() => scrollTo("contato")}>{t("publico.landing.nav.contato")}</button>
           </nav>
           <div className="lp-nav-cta">
+            <LanguageSelector variant="dark" />
             <button className="lp-btn lp-btn-ghost" onClick={() => navigate("/auth")}>
-              Acessar plataforma
+              {t("publico.landing.nav.acessar")}
             </button>
             <button className="lp-btn lp-btn-primary" onClick={() => setDemoOpen(true)}>
-              Solicitar demo <span className="arr">→</span>
+              {t("publico.landing.nav.demo")} <span className="arr">→</span>
             </button>
           </div>
         </div>
@@ -136,36 +108,31 @@ const LandingPage = () => {
       <section className="lp-hero" id="produto">
         <div className="lp-container lp-hero-grid">
           <div>
-            
             <h1>
-              Governança, riscos e&nbsp;compliance em um <em>único lugar.</em>
+              {t("publico.landing.hero.titulo")} <em>{t("publico.landing.hero.tituloEm")}</em>
             </h1>
-            <p className="lede">
-              O Akuris reúne controles, frameworks, evidências e indicadores em
-              uma plataforma só, para que times de compliance e DPOs decidam com
-              clareza, não com planilhas.
-            </p>
+            <p className="lede">{t("publico.landing.hero.lede")}</p>
             <div className="lp-hero-cta">
               <button className="lp-btn lp-btn-primary" onClick={() => setDemoOpen(true)}>
-                Solicitar demonstração <span className="arr">→</span>
+                {t("publico.landing.hero.ctaDemo")} <span className="arr">→</span>
               </button>
               <button className="lp-btn lp-btn-ghost" onClick={() => scrollTo("modulos")}>
-                Conhecer a plataforma
+                {t("publico.landing.hero.ctaConhecer")}
               </button>
             </div>
 
-            <div className="lp-hero-meta" role="group" aria-label="Indicadores">
+            <div className="lp-hero-meta" role="group" aria-label={t("publico.landing.hero.indicadores")}>
               <div>
                 <span className="k">+20</span>
-                <span className="l">Frameworks suportados</span>
+                <span className="l">{t("publico.landing.hero.kpiFrameworks")}</span>
               </div>
               <div>
                 <span className="k">87%</span>
-                <span className="l">Aderência média pós-implantação</span>
+                <span className="l">{t("publico.landing.hero.kpiAderencia")}</span>
               </div>
               <div>
                 <span className="k">−64%</span>
-                <span className="l">Tempo gasto em auditorias</span>
+                <span className="l">{t("publico.landing.hero.kpiTempo")}</span>
               </div>
             </div>
           </div>
@@ -178,20 +145,20 @@ const LandingPage = () => {
               data-reveal
             >
               <div className="lp-card-title">
-                <span className="t">Postura · ISO 27001</span>
+                <span className="t">{t("publico.landing.hero.posturaIso")}</span>
                 <span className="dot" />
               </div>
               <div className="score">
                 {score.value}<sup>/100</sup>
               </div>
               <div className="bars">
-                {[
-                  ["Controles", 92, false],
-                  ["Evidências", 78, false],
-                  ["Riscos", 84, false],
-                  ["Treinamento", 71, true],
-                ].map(([lab, v, warn], i) => (
-                  <div className="bar" key={lab as string}>
+                {([
+                  [t("publico.landing.hero.barControles"), 92, false],
+                  [t("publico.landing.hero.barEvidencias"), 78, false],
+                  [t("publico.landing.hero.barRiscos"), 84, false],
+                  [t("publico.landing.hero.barTreinamento"), 71, true],
+                ] as [string, number, boolean][]).map(([lab, v, warn], i) => (
+                  <div className="bar" key={lab}>
                     <span className="lab">{lab}</span>
                     <span className="track">
                       <span
@@ -212,7 +179,7 @@ const LandingPage = () => {
             {/* Matrix */}
             <div className="lp-card lp-vis-b" data-reveal style={{ ["--lp-reveal-delay" as string]: "120ms" }}>
               <div className="lp-card-title">
-                <span className="t">Matriz de risco · 5 × 5</span>
+                <span className="t">{t("publico.landing.hero.matriz")}</span>
                 <span className="dot" />
               </div>
               <div className="lp-matrix">
@@ -226,27 +193,27 @@ const LandingPage = () => {
                 ))}
               </div>
               <div className="lp-matrix-foot">
-                <span>24 riscos ativos</span>
-                <span>3 críticos</span>
+                <span>{t("publico.landing.hero.matrizAtivos")}</span>
+                <span>{t("publico.landing.hero.matrizCriticos")}</span>
               </div>
             </div>
 
             {/* Timeline */}
             <div className="lp-card lp-vis-c" data-reveal style={{ ["--lp-reveal-delay" as string]: "240ms" }}>
               <div className="lp-card-title">
-                <span className="t">Atividade recente</span>
+                <span className="t">{t("publico.landing.hero.atividade")}</span>
                 <span className="t lp-mono" style={{ color: "var(--lp-text-3)" }}>14:32</span>
               </div>
               <div className="lp-timeline">
-                {[
-                  ["14:31", "Controle ISO 27001 A.9 atualizado", "ok", "OK"],
-                  ["13:48", "Risco identificado: Phishing", "pen", "Pend."],
-                  ["13:02", "Documento LGPD aprovado", "ok", "OK"],
-                  ["12:14", "Revisão de fornecedores Q2", "rev", "Rev."],
-                ].map(([d, t, s, lab]) => (
+                {([
+                  ["14:31", t("publico.landing.hero.ev1"), "ok", t("publico.landing.hero.evOk")],
+                  ["13:48", t("publico.landing.hero.ev2"), "pen", t("publico.landing.hero.evPend")],
+                  ["13:02", t("publico.landing.hero.ev3"), "ok", t("publico.landing.hero.evOk")],
+                  ["12:14", t("publico.landing.hero.ev4"), "rev", t("publico.landing.hero.evRev")],
+                ] as [string, string, string, string][]).map(([d, txt, s, lab]) => (
                   <div className="row" key={d}>
                     <span className="d">{d}</span>
-                    <span className="tx">{t}</span>
+                    <span className="tx">{txt}</span>
                     <span className={`s ${s}`}>{lab}</span>
                   </div>
                 ))}
@@ -260,9 +227,9 @@ const LandingPage = () => {
       <section className="lp-section" id="modulos">
         <div className="lp-container">
           <div className="lp-section-head" data-reveal>
-            <span className="lp-eyebrow">Módulos</span>
+            <span className="lp-eyebrow">{t("publico.landing.modulos.eyebrow")}</span>
             <h2>
-              Uma plataforma única, <em>oito disciplinas conectadas.</em>
+              {t("publico.landing.modulos.titulo")} <em>{t("publico.landing.modulos.tituloEm")}</em>
             </h2>
           </div>
           <div className="lp-modules">
@@ -272,8 +239,8 @@ const LandingPage = () => {
                 <h3>{m.title}</h3>
                 <p className="desc">{m.desc}</p>
                 <div className="tags">
-                  {m.tags.map((t) => (
-                    <span className="lp-tag" key={t}>{t}</span>
+                  {m.tags.map((tag) => (
+                    <span className="lp-tag" key={tag}>{tag}</span>
                   ))}
                 </div>
               </div>
@@ -286,19 +253,19 @@ const LandingPage = () => {
       <section className="lp-section">
         <div className="lp-container">
           <div className="lp-section-head" data-reveal>
-            <span className="lp-eyebrow">Como funciona</span>
+            <span className="lp-eyebrow">{t("publico.landing.comoFunciona.eyebrow")}</span>
             <h2>
-              Da implantação ao painel do conselho, <em>em quatro movimentos.</em>
+              {t("publico.landing.comoFunciona.titulo")} <em>{t("publico.landing.comoFunciona.tituloEm")}</em>
             </h2>
           </div>
           <div className="lp-flow">
-            {[
-              ["PASSO 01 · DIAGNÓSTICO", "Mapeamos o que já existe", "Workshops com seu time extraem controles, riscos e evidências dos sistemas legados — sem refazer do zero.", true],
-              ["PASSO 02 · IMPLANTAÇÃO", "Configuramos os frameworks", "Importamos os padrões aplicáveis e ligamos os controles cruzados. Sem consultoria infinita.", true],
-              ["PASSO 03 · OPERAÇÃO", "Time roda a plataforma", "Tarefas, evidências e revisões fluem na ferramenta. Lembretes, SLAs e aprovações garantem que nada cai entre cadeiras.", true],
-              ["PASSO 04 · GOVERNANÇA", "Conselho enxerga em tempo real", "Indicadores agregados, posturas por unidade e exposição de risco em um painel pronto para a próxima reunião.", false],
-            ].map(([num, h, p, active]) => (
-              <div className={`lp-step ${active ? "active" : ""}`} key={num as string}>
+            {([
+              [t("publico.landing.comoFunciona.p1Num"), t("publico.landing.comoFunciona.p1Title"), t("publico.landing.comoFunciona.p1Desc"), true],
+              [t("publico.landing.comoFunciona.p2Num"), t("publico.landing.comoFunciona.p2Title"), t("publico.landing.comoFunciona.p2Desc"), true],
+              [t("publico.landing.comoFunciona.p3Num"), t("publico.landing.comoFunciona.p3Title"), t("publico.landing.comoFunciona.p3Desc"), true],
+              [t("publico.landing.comoFunciona.p4Num"), t("publico.landing.comoFunciona.p4Title"), t("publico.landing.comoFunciona.p4Desc"), false],
+            ] as [string, string, string, boolean][]).map(([num, h, p, active]) => (
+              <div className={`lp-step ${active ? "active" : ""}`} key={num}>
                 <span className="num">{num}</span>
                 <h4>{h}</h4>
                 <p>{p}</p>
@@ -312,21 +279,18 @@ const LandingPage = () => {
       <section className="lp-section lp-autonomia">
         <div className="lp-container">
           <div className="lp-section-head" data-reveal>
-            <span className="lp-eyebrow">Autonomia em conformidade</span>
+            <span className="lp-eyebrow">{t("publico.landing.autonomia.eyebrow")}</span>
           </div>
 
           <div className="lp-hero-grid lp-autonomia-grid">
             <div data-reveal>
               <h2 className="lp-autonomia-title">
-                Pare de <s>esperar a auditoria externa</s> para descobrir{" "}
-                <em>onde sua empresa está vulnerável.</em>
+                {t("publico.landing.autonomia.tituloPre")}{" "}
+                <s>{t("publico.landing.autonomia.tituloRisco")}</s>{" "}
+                {t("publico.landing.autonomia.tituloMid")}{" "}
+                <em>{t("publico.landing.autonomia.tituloEm")}</em>
               </h2>
-              <p className="lede">
-                Auditoria externa é fotografia: cara, anual e sempre desatualizada.
-                O Akuris é o espelho que sua organização olha todos os dias. Saiba
-                seu nível real de conformidade agora, não daqui a oito meses,
-                quando a não conformidade já virou multa.
-              </p>
+              <p className="lede">{t("publico.landing.autonomia.lede")}</p>
             </div>
 
             <div
@@ -335,22 +299,20 @@ const LandingPage = () => {
               style={{ ["--lp-reveal-delay" as string]: "120ms" }}
             >
               <div className="lp-card-title">
-                <span className="t">Postura consolidada</span>
-                <span className="t lp-live">● Atualizado agora</span>
+                <span className="t">{t("publico.landing.autonomia.posturaTitulo")}</span>
+                <span className="t lp-live">{t("publico.landing.autonomia.atualizado")}</span>
               </div>
               <div className="score">
                 87<sup>/100</sup>
               </div>
-              <p className="lp-posture-sub">
-                +12 pontos vs. último trimestre, sem auditor externo na sala.
-              </p>
+              <p className="lp-posture-sub">{t("publico.landing.autonomia.sub")}</p>
               <div className="bars lp-posture-rows">
-                {[
-                  ["ISO 27001 · Anexo A", 92],
-                  ["LGPD · Art. 50 (boas práticas)", 88],
-                  ["SOC 2 Type II · Segurança", 81],
-                ].map(([lab, v]) => (
-                  <div className="lp-bar-row" key={lab as string}>
+                {([
+                  [t("publico.landing.autonomia.rowIso"), 92],
+                  [t("publico.landing.autonomia.rowLgpd"), 88],
+                  [t("publico.landing.autonomia.rowSoc"), 81],
+                ] as [string, number][]).map(([lab, v]) => (
+                  <div className="lp-bar-row" key={lab}>
                     <span className="lab">{lab}</span>
                     <span className="v">
                       {v}% <span className="chk" aria-hidden="true">✓</span>
@@ -359,9 +321,9 @@ const LandingPage = () => {
                 ))}
               </div>
               <div className="lp-posture-foot">
-                <span>Sem consultor externo</span>
-                <span>Sem planilha</span>
-                <span>Sem espera</span>
+                <span>{t("publico.landing.autonomia.footConsultor")}</span>
+                <span>{t("publico.landing.autonomia.footPlanilha")}</span>
+                <span>{t("publico.landing.autonomia.footEspera")}</span>
               </div>
             </div>
           </div>
@@ -372,9 +334,9 @@ const LandingPage = () => {
       <section className="lp-section" id="frameworks">
         <div className="lp-container">
           <div className="lp-section-head" data-reveal>
-            <span className="lp-eyebrow">Frameworks &amp; regulações</span>
+            <span className="lp-eyebrow">{t("publico.landing.frameworks.eyebrow")}</span>
             <h2>
-              Seu mapa, atendido. <em>De LGPD a SOC 2.</em>
+              {t("publico.landing.frameworks.titulo")} <em>{t("publico.landing.frameworks.tituloEm")}</em>
             </h2>
           </div>
           <div className="lp-fw-grid">
@@ -392,18 +354,18 @@ const LandingPage = () => {
       <section className="lp-section">
         <div className="lp-container">
           <div className="lp-section-head" data-reveal>
-            <span className="lp-eyebrow">Resultado</span>
+            <span className="lp-eyebrow">{t("publico.landing.metricas.eyebrow")}</span>
             <h2>
-              Não é dashboard. <em>É decisão informada, em horas — não em semanas.</em>
+              {t("publico.landing.metricas.titulo")} <em>{t("publico.landing.metricas.tituloEm")}</em>
             </h2>
           </div>
           <div className="lp-metrics">
-            {[
-              ["−64", "%", "Tempo em auditoria", "Evidências centralizadas e versionadas reduzem o ciclo de auditoria de meses para semanas."],
-              ["3,8", "×", "Velocidade de resposta", "Perguntas do board, do regulador ou do cliente respondidas em minutos com dados confiáveis."],
-              ["+42", "%", "Aderência média", "Controles cruzados eliminam lacunas que passavam despercebidas entre frameworks."],
-              ["12", "sem.", "Implantação típica", "Times médios entram em operação plena em até doze semanas, com acompanhamento dedicado."],
-            ].map(([v, sup, l, p]) => (
+            {([
+              ["−64", "%", t("publico.landing.metricas.m1Label"), t("publico.landing.metricas.m1Desc")],
+              ["3,8", "×", t("publico.landing.metricas.m2Label"), t("publico.landing.metricas.m2Desc")],
+              ["+42", "%", t("publico.landing.metricas.m3Label"), t("publico.landing.metricas.m3Desc")],
+              ["12", t("publico.landing.metricas.m4Sup"), t("publico.landing.metricas.m4Label"), t("publico.landing.metricas.m4Desc")],
+            ] as [string, string, string, string][]).map(([v, sup, l, p]) => (
               <div className="lp-metric" key={l}>
                 <div className="v">
                   {v}<sup>{sup}</sup>
@@ -420,9 +382,9 @@ const LandingPage = () => {
       <section className="lp-section" id="seguranca">
         <div className="lp-container">
           <div className="lp-section-head" data-reveal>
-            <span className="lp-eyebrow">O Akuris por dentro</span>
+            <span className="lp-eyebrow">{t("publico.landing.seguranca.eyebrow")}</span>
             <h2>
-              Construímos a plataforma que <em>nós mesmos auditaríamos.</em>
+              {t("publico.landing.seguranca.titulo")} <em>{t("publico.landing.seguranca.tituloEm")}</em>
             </h2>
           </div>
           <div className="lp-sec-grid">
@@ -433,8 +395,8 @@ const LandingPage = () => {
                   <path d="M5.5 8.2 L7.2 9.8 L10.7 6.3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </div>
-              <h4>ISO 27001 + SOC 2 alinhados</h4>
-              <p>Operamos sob os mesmos padrões que ajudamos nossos clientes a sustentar — políticas, controles e evidências auditáveis.</p>
+              <h4>{t("publico.landing.seguranca.c1Title")}</h4>
+              <p>{t("publico.landing.seguranca.c1Desc")}</p>
             </div>
             <div className="lp-sec-card">
               <div className="badge">
@@ -443,8 +405,8 @@ const LandingPage = () => {
                   <path d="M5 6.5 V4.5 C5 3 6.3 2 8 2 C9.7 2 11 3 11 4.5 V6.5" stroke="currentColor" strokeWidth="1.2" />
                 </svg>
               </div>
-              <h4>Dados em território nacional</h4>
-              <p>Hospedagem em datacenters certificados no Brasil, com criptografia em trânsito e em repouso, e segregação multi-tenant.</p>
+              <h4>{t("publico.landing.seguranca.c2Title")}</h4>
+              <p>{t("publico.landing.seguranca.c2Desc")}</p>
             </div>
             <div className="lp-sec-card">
               <div className="badge">
@@ -453,8 +415,8 @@ const LandingPage = () => {
                   <circle cx="8" cy="8" r="2" stroke="currentColor" strokeWidth="1.2" />
                 </svg>
               </div>
-              <h4>LGPD by design</h4>
-              <p>RoPA interno, DPO designado, programa de privacidade ativo. A plataforma que vende compliance, vive compliance.</p>
+              <h4>{t("publico.landing.seguranca.c3Title")}</h4>
+              <p>{t("publico.landing.seguranca.c3Desc")}</p>
             </div>
           </div>
         </div>
@@ -464,18 +426,18 @@ const LandingPage = () => {
       <section className="lp-section">
         <div className="lp-container">
           <div className="lp-section-head" data-reveal>
-            <span className="lp-eyebrow">Perguntas frequentes</span>
-            <h2>O que perguntam <em>antes da demo.</em></h2>
+            <span className="lp-eyebrow">{t("publico.landing.faq.eyebrow")}</span>
+            <h2>{t("publico.landing.faq.titulo")} <em>{t("publico.landing.faq.tituloEm")}</em></h2>
           </div>
           <div className="lp-faq-list">
-            {[
-              ["Quanto tempo leva para implantar o Akuris?", "A média entre nossos clientes é de 12 semanas até a operação plena, divididas em diagnóstico, configuração de frameworks e adoção orientada. Times menores operam em até 6 semanas."],
-              ["O Akuris substitui meu time de compliance?", "Não. O Akuris substitui as planilhas, e-mails e reuniões que tomam 70% do tempo do time. O que sobra é o que importa: análise crítica e decisão."],
-              ["Conseguimos importar nossos controles e riscos atuais?", "Sim. Importamos planilhas, exportações de outros GRCs e bases legadas no kickoff. O modelo de dados reflete sua taxonomia atual, não a nossa."],
-              ["E se eu adotar um novo framework no futuro?", "Cada novo padrão entra como camada sobre os controles que você já tem. Os controles cruzados são detectados automaticamente."],
-              ["Como funciona o modelo comercial?", "Assinatura anual baseada em usuários ativos e módulos contratados. Sem cobrança por framework, sem cobrança por evidência. Detalhes na conversa."],
-              ["Vocês integram com nossas ferramentas?", "Integrações com SSO (Azure AD, Google Workspace), webhooks e exportação via API REST. Conectores adicionais sob demanda."],
-            ].map(([q, a], i) => (
+            {([
+              [t("publico.landing.faq.q1"), t("publico.landing.faq.a1")],
+              [t("publico.landing.faq.q2"), t("publico.landing.faq.a2")],
+              [t("publico.landing.faq.q3"), t("publico.landing.faq.a3")],
+              [t("publico.landing.faq.q4"), t("publico.landing.faq.a4")],
+              [t("publico.landing.faq.q5"), t("publico.landing.faq.a5")],
+              [t("publico.landing.faq.q6"), t("publico.landing.faq.a6")],
+            ] as [string, string][]).map(([q, a], i) => (
               <details className="lp-faq" key={q} open={i === 0}>
                 <summary>
                   {q}
@@ -493,15 +455,15 @@ const LandingPage = () => {
         <div className="lp-container">
           <div className="lp-cta-band-grid" data-reveal>
             <div>
-              <span className="lp-eyebrow">Vamos conversar</span>
+              <span className="lp-eyebrow">{t("publico.landing.cta.eyebrow")}</span>
               <h2>
-                Mostre a sua matriz de risco. <em>Nós mostramos onde o Akuris encaixa.</em>
+                {t("publico.landing.cta.titulo")} <em>{t("publico.landing.cta.tituloEm")}</em>
               </h2>
             </div>
             <div className="lp-cta-meta">
-              <span className="lp-cta-meta-eyebrow">Demonstração · 30 minutos</span>
+              <span className="lp-cta-meta-eyebrow">{t("publico.landing.cta.meta")}</span>
               <button type="button" className="lp-btn-pill" onClick={() => setDemoOpen(true)}>
-                Solicitar demonstração <span className="arr">→</span>
+                {t("publico.landing.cta.botao")} <span className="arr">→</span>
               </button>
             </div>
           </div>
@@ -511,33 +473,32 @@ const LandingPage = () => {
 
       <DemoRequestDialog open={demoOpen} onOpenChange={setDemoOpen} />
 
-
       {/* FOOTER */}
       <footer style={{ background: "var(--lp-ink-0)" }}>
         <div className="lp-container">
           <div className="lp-foot">
             <div className="lp-foot-mark">
               <img src={akurisLogo} alt="Akuris" className="h-8 w-auto" />
-              <p>Plataforma brasileira de Governança, Riscos e Compliance para times que precisam responder com clareza, em qualquer framework.</p>
+              <p>{t("publico.landing.footer.tagline")}</p>
             </div>
             <div>
-              <h5>Produto</h5>
+              <h5>{t("publico.landing.footer.produto")}</h5>
               <ul>
-                <li><button onClick={() => scrollTo("modulos")}>Módulos</button></li>
-                <li><button onClick={() => scrollTo("frameworks")}>Frameworks</button></li>
-                <li><button onClick={() => scrollTo("seguranca")}>Segurança</button></li>
+                <li><button onClick={() => scrollTo("modulos")}>{t("publico.landing.nav.modulos")}</button></li>
+                <li><button onClick={() => scrollTo("frameworks")}>{t("publico.landing.nav.frameworks")}</button></li>
+                <li><button onClick={() => scrollTo("seguranca")}>{t("publico.landing.nav.seguranca")}</button></li>
               </ul>
             </div>
             <div>
-              <h5>Empresa</h5>
+              <h5>{t("publico.landing.footer.empresa")}</h5>
               <ul>
-                <li><button onClick={() => scrollTo("contato")}>Contato</button></li>
-                <li><button onClick={() => navigate("/auth")}>Acessar plataforma</button></li>
-                <li><a href="/politica-privacidade">Política de privacidade</a></li>
+                <li><button onClick={() => scrollTo("contato")}>{t("publico.landing.nav.contato")}</button></li>
+                <li><button onClick={() => navigate("/auth")}>{t("publico.landing.nav.acessar")}</button></li>
+                <li><a href="/politica-privacidade">{t("publico.landing.footer.politica")}</a></li>
               </ul>
             </div>
             <div>
-              <h5>Contato</h5>
+              <h5>{t("publico.landing.footer.contato")}</h5>
               <ul>
                 <li><a href="mailto:contato@akuris.com.br">contato@akuris.com.br</a></li>
                 <li><a href="https://akuris.com.br">akuris.com.br</a></li>
@@ -545,7 +506,7 @@ const LandingPage = () => {
             </div>
           </div>
           <div className="lp-foot-bottom">
-            <span>© {new Date().getFullYear()} Akuris · Todos os direitos reservados</span>
+            <span>© {new Date().getFullYear()} Akuris · {t("publico.landing.footer.direitos")}</span>
           </div>
         </div>
       </footer>
