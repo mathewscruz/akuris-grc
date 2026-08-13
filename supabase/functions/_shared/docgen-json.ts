@@ -25,11 +25,56 @@ export function parseDocumentJson(raw: string): any | null {
     return JSON.parse(candidate);
   } catch (_e) { /* segue para o reparo */ }
 
-  // Reparo de truncamento: fecha string aberta e os brackets pendentes.
+  const repaired = tryRepair(candidate);
+  if (repaired !== null) return repaired;
+
+  // O corte pode ter caído no meio de uma CHAVE (ex.: `{"nome":"B","conte`),
+  // onde fechar aspas/brackets ainda produz JSON inválido. Nesse caso
+  // recuamos até o último elemento completo e tentamos de novo.
+  const boundaries = closingBoundaries(candidate);
+  for (let k = boundaries.length - 1; k >= 0 && k >= boundaries.length - 200; k--) {
+    const prefix = candidate.slice(0, boundaries[k] + 1);
+    const parsed = tryRepair(prefix);
+    if (parsed !== null) return parsed;
+  }
+  return null;
+}
+
+/** Fecha string/brackets pendentes e tenta parsear. Devolve null se não der. */
+function tryRepair(candidate: string): any | null {
+  const { inString, stack } = scan(candidate);
+  let repaired = candidate;
+  if (inString) repaired += '"';
+  // remove separador ou par chave/valor pela metade no fim
+  repaired = repaired.replace(/,\s*$/, '').replace(/,\s*"[^"]*"\s*:?\s*$/, '').replace(/,\s*$/, '');
+  for (let i = stack.length - 1; i >= 0; i--) repaired += stack[i];
+  try {
+    return JSON.parse(repaired);
+  } catch (_e) {
+    return null;
+  }
+}
+
+/** Posições dos `}` e `]` fora de string — candidatos a corte seguro. */
+function closingBoundaries(candidate: string): number[] {
+  const out: number[] = [];
+  let inString = false;
+  let escaped = false;
+  for (let i = 0; i < candidate.length; i++) {
+    const ch = candidate[i];
+    if (escaped) { escaped = false; continue; }
+    if (ch === '\\') { escaped = true; continue; }
+    if (ch === '"') { inString = !inString; continue; }
+    if (inString) continue;
+    if (ch === '}' || ch === ']') out.push(i);
+  }
+  return out;
+}
+
+function scan(candidate: string): { inString: boolean; stack: string[] } {
   let inString = false;
   let escaped = false;
   const stack: string[] = [];
-  let lastSafe = -1;
   for (let i = 0; i < candidate.length; i++) {
     const ch = candidate[i];
     if (escaped) { escaped = false; continue; }
@@ -37,25 +82,9 @@ export function parseDocumentJson(raw: string): any | null {
     if (ch === '"') { inString = !inString; continue; }
     if (inString) continue;
     if (ch === '{' || ch === '[') stack.push(ch === '{' ? '}' : ']');
-    else if (ch === '}' || ch === ']') { stack.pop(); if (!stack.length) lastSafe = i; }
+    else if (ch === '}' || ch === ']') stack.pop();
   }
-
-  let repaired = candidate;
-  if (inString) repaired += '"';
-  // remove vírgula/valor pela metade no fim
-  repaired = repaired.replace(/,\s*$/, '');
-  for (let i = stack.length - 1; i >= 0; i--) repaired += stack[i];
-
-  try {
-    return JSON.parse(repaired);
-  } catch (_e) { /* tenta o último objeto completo */ }
-
-  if (lastSafe > 0) {
-    try {
-      return JSON.parse(candidate.slice(0, lastSafe + 1));
-    } catch (_e) { /* desiste */ }
-  }
-  return null;
+  return { inString, stack };
 }
 
 /** Esquema mínimo aceitável para não publicar um documento capenga. */
