@@ -61,7 +61,7 @@ export default function GapAnalysisFrameworkDetail() {
 }
 
 function GapAnalysisFrameworkDetailInner() {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const { frameworkId } = useParams<{ frameworkId: string }>();
   const navigate = useNavigate();
   const [, setSearchParams] = useSearchParams();
@@ -219,7 +219,7 @@ function GapAnalysisFrameworkDetailInner() {
     setExporting(true);
     try {
       const data = await getExportData();
-      await exportBoardPDF(data);
+      await exportBoardPDF({ ...data, t, locale });
       toast.success(t('gapAnalysis.detail.toast.boardExported'));
     } catch (error: any) {
       logger.error('Erro ao exportar PDF Board', { error: error instanceof Error ? error.message : String(error) });

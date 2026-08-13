@@ -51,6 +51,7 @@ import { RiscoComentarios } from '@/components/riscos/RiscoComentarios';
 import { ScoreRing, ScoreBlock, StatTile, HeaderMeta, SEV_VAR } from '@/components/riscos/RiscoVisuals';
 import { RiscoPerfilCompleto } from '@/components/riscos/RiscoPerfilCompleto';
 import { MessageSquare, Maximize2 } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Risco {
   id: string;
@@ -97,6 +98,7 @@ const STATUS_OPTIONS = [
 ];
 
 export function TratadoBlockedOption({ motivo, onActivate }: { motivo: string; onActivate: () => void }) {
+  const { t } = useLanguage();
   return (
     <DropdownMenuItem
       onSelect={(event) => {
@@ -106,13 +108,14 @@ export function TratadoBlockedOption({ motivo, onActivate }: { motivo: string; o
       aria-label={`Tratado indisponível: ${motivo}`}
       className="flex-col items-start gap-0.5 text-muted-foreground"
     >
-      <span>Tratado — indisponível</span>
+      <span>{t('fin.riscos.tratadoIndisponivel')}</span>
       <span className="text-[10px] leading-tight">{motivo}</span>
     </DropdownMenuItem>
   );
 }
 
 export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept, onOpenTratamentos, nav }: Props) {
+  const { t } = useLanguage();
   const { data: detail, isLoading, isError, error: detailError } = useRiscoDetail(risco?.id ?? null);
   const [vincularOpen, setVincularOpen] = useState(false);
   const [perfilOpen, setPerfilOpen] = useState(false);
@@ -129,7 +132,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
       const resumo = resumirTratamentos(detail?.tratamentos);
       if (!podeMarcarTratado(resumo)) {
         toast({
-          title: 'Status não permitido',
+          title: t('fin.riscos.statusNaoPermitido'),
           description: motivoBloqueioTratado(resumo),
           variant: 'destructive',
         });
@@ -145,7 +148,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
       queryClient.invalidateQueries({ queryKey: ['riscos-stats'] });
       toast({ title: 'Status atualizado', description: `Agora: ${formatStatus(novoStatus)}` });
     } catch (e: any) {
-      toast({ title: 'Erro', description: e.message, variant: 'destructive' });
+      toast({ title: t('fin.comum.erro'), description: e.message, variant: 'destructive' });
     } finally {
       setStatusSaving(false);
     }
@@ -215,7 +218,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
                     <ChevronLeft className="h-4 w-4" strokeWidth={1.5} />
                   </Button>
                   <span className="tabular-nums whitespace-nowrap">{nav.current}<span className="opacity-60"> de </span>{nav.total}</span>
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={nav.onNext} disabled={!nav.onNext || nav.current >= nav.total} aria-label="Próximo risco">
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={nav.onNext} disabled={!nav.onNext || nav.current >= nav.total} aria-label={t('fin.riscos.proximoRisco')}>
                     <ChevronRight className="h-4 w-4" strokeWidth={1.5} />
                   </Button>
                 </div>
@@ -229,7 +232,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
                 Editar
               </Button>
               <SheetClose asChild>
-                <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" aria-label="Fechar">
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" aria-label={t('fin.comum.fechar')}>
                   <X className="h-4 w-4" strokeWidth={1.5} />
                 </Button>
               </SheetClose>
@@ -248,7 +251,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
                   <DropdownMenuTrigger asChild>
                     <button type="button" className="inline-flex items-center gap-0.5 rounded-full transition-opacity hover:opacity-80 disabled:opacity-50" disabled={statusSaving || isError}>
                       <StatusBadge size="sm" {...(isError ? { tone: 'neutral' as const } : resolveRiscoStatusTone(statusCoerente.status))}>
-                        {statusSaving ? '…' : isError ? 'Status indisponível' : formatStatus(statusCoerente.status)}
+                        {statusSaving ? '…' : isError ? t('fin.riscos.statusIndisponivel') : formatStatus(statusCoerente.status)}
                         <ChevronDown className="h-3 w-3 ml-0.5 -mr-0.5 opacity-70" strokeWidth={2} />
                       </StatusBadge>
                     </button>
@@ -300,7 +303,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
                 ) : '—'
               }
             />
-            <HeaderMeta icon={<CalendarClock />} label="Próx. revisão" value={risco.data_proxima_revisao ? formatDateOnly(risco.data_proxima_revisao) : '—'} />
+            <HeaderMeta icon={<CalendarClock />} label={t('fin.riscos.proxRevisao')} value={risco.data_proxima_revisao ? formatDateOnly(risco.data_proxima_revisao) : '—'} />
             <HeaderMeta
               icon={<Timer />}
               label="SLA"
@@ -315,7 +318,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
             <TabsList className="w-full">
               <TabsTrigger value="visao" className="flex-1 text-[11px] px-2 gap-1.5 min-w-0 whitespace-nowrap"><Eye className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>Visão</span></TabsTrigger>
               <TabsTrigger value="tratamentos" className="flex-1 text-[11px] px-2 gap-1.5 min-w-0 whitespace-nowrap"><Shield className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>Tratamento</span></TabsTrigger>
-              <TabsTrigger value="historico" className="flex-1 text-[11px] px-2 gap-1.5 min-w-0 whitespace-nowrap"><History className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>Histórico</span></TabsTrigger>
+              <TabsTrigger value="historico" className="flex-1 text-[11px] px-2 gap-1.5 min-w-0 whitespace-nowrap"><History className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>{t('fin.comum.historico')}</span></TabsTrigger>
               <TabsTrigger value="controles" className="flex-1 text-[11px] px-2 gap-1.5 min-w-0 whitespace-nowrap"><ShieldCheck className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>Controles</span></TabsTrigger>
               <TabsTrigger value="comentarios" className="flex-1 text-[11px] px-2 gap-1.5 min-w-0 whitespace-nowrap"><MessageSquare className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>Coment.</span></TabsTrigger>
             </TabsList>
@@ -340,13 +343,13 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
                     <ArrowRight className={reduziu ? 'h-5 w-5 text-success' : 'h-5 w-5 text-muted-foreground/50'} strokeWidth={2} />
                     {reduziu && <span className="text-[9px] text-success font-semibold tabular-nums mt-0.5">−{inicialScore - residualScore}</span>}
                   </div>
-                  <ScoreBlock label="Residual" nivel={risco.nivel_risco_residual} score={residualScore} p={risco.probabilidade_residual} i={risco.impacto_residual} emptyLabel="Não avaliado" />
+                  <ScoreBlock label="Residual" nivel={risco.nivel_risco_residual} score={residualScore} p={risco.probabilidade_residual} i={risco.impacto_residual} emptyLabel={t('fin.riscos.naoAvaliado')} />
                 </div>
               </section>
 
               {/* Tiles de contexto */}
               <section className="grid grid-cols-3 gap-2">
-                <StatTile icon={<Wallet />} label="Exposição" value={exposicao !== null ? formatBRL(exposicao, true) : '—'} />
+                <StatTile icon={<Wallet />} label={t('fin.riscos.exposicao')} value={exposicao !== null ? formatBRL(exposicao, true) : '—'} />
                 <StatTile icon={<Shield />} label="Tratamentos" value={`${tratStats.concluidos}/${tratStats.total}`} />
                 <StatTile icon={<Layers />} label="Controles" value={String(detail?.controles.length ?? 0)} />
               </section>
@@ -366,7 +369,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
                   <section className="grid grid-cols-2 gap-3">
                     {exp !== null && (
                       <div className="bg-card border border-border rounded-lg p-3">
-                        <SectionLabel>Exposição financeira</SectionLabel>
+                        <SectionLabel>{t('fin.riscos.exposicaoFinanceira')}</SectionLabel>
                         <div className="mt-1.5 text-lg font-semibold tabular-nums" title={formatBRL(exp)}>
                           {formatBRL(exp)}
                         </div>
@@ -377,7 +380,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
                     )}
                     {evo.length >= 2 && (
                       <div className="bg-card border border-border rounded-lg p-3">
-                        <SectionLabel>Evolução do risco</SectionLabel>
+                        <SectionLabel>{t('fin.riscos.evolucao')}</SectionLabel>
                         <div className="mt-2">
                           <RiskSparkline scores={evo} />
                         </div>
@@ -392,7 +395,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
 
               {(risco.causas || risco.consequencias) && (
                 <section>
-                  <SectionLabel>Causas e consequências</SectionLabel>
+                  <SectionLabel>{t('fin.riscos.causasConsequencias')}</SectionLabel>
                   <div className="flex flex-col gap-1.5">
                     {splitLines(risco.causas).map((line, i) => (
                       <CauseChip key={`c-${i}`} kind="CAUSA" text={line} />
@@ -426,9 +429,9 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
               {isLoading ? (
                 <div className="flex justify-center py-10"><AkurisPulse size={32} /></div>
               ) : isError ? (
-                <EmptyHint text={detailError instanceof Error ? detailError.message : 'Não foi possível carregar os tratamentos do risco.'} />
+                <EmptyHint text={detailError instanceof Error ? detailError.message : t('fin.riscos.erroTratamentos')} />
               ) : detail?.tratamentos.length === 0 ? (
-                <EmptyHint text="Nenhum tratamento cadastrado." />
+                <EmptyHint text={t('fin.riscos.semTratamentos')} />
               ) : (
                 <>
                   {/* Progresso */}
@@ -478,10 +481,10 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
                 <div className="flex justify-center py-10"><AkurisPulse size={32} /></div>
               ) : isError ? (
                 <div className="py-10 text-center text-sm text-destructive">
-                  {detailError instanceof Error ? detailError.message : 'Não foi possível carregar o histórico do risco.'}
+                  {detailError instanceof Error ? detailError.message : t('fin.riscos.erroHistorico')}
                 </div>
               ) : detail?.historico.length === 0 ? (
-                <EmptyHint text="Sem histórico de avaliações." />
+                <EmptyHint text={t('fin.riscos.semHistorico')} />
               ) : (
                 <ol className="relative border-l border-border ml-2 space-y-4 py-1">
                   {detail!.historico.map((h) => (
@@ -521,11 +524,11 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
                 <div className="flex justify-center py-10"><AkurisPulse size={32} /></div>
               ) : isError ? (
                 <div className="py-10 text-center text-sm text-destructive">
-                  {detailError instanceof Error ? detailError.message : 'Não foi possível carregar os controles do risco.'}
+                  {detailError instanceof Error ? detailError.message : t('fin.riscos.erroControles')}
                 </div>
               ) : detail?.controles.length === 0 ? (
                 <div className="py-8 text-center space-y-3">
-                  <p className="text-sm text-muted-foreground">Nenhum controle vinculado.</p>
+                  <p className="text-sm text-muted-foreground">{t('fin.riscos.semControles')}</p>
                   <Button variant="outline" size="sm" onClick={() => setVincularOpen(true)}>
                     <Plus className="h-3.5 w-3.5 mr-1.5" strokeWidth={1.5} />
                     Vincular um controle
@@ -571,7 +574,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
               ? <>Última revisão · <span className="text-foreground/85">{formatStatus(detail.historico[0].tipo)}</span> · {formatDateOnly(detail.historico[0].created_at)}</>
               : risco.responsavel_nome
               ? <>Responsável · <span className="text-foreground/85">{risco.responsavel_nome}</span></>
-              : 'Sem revisões registradas'}
+              : t('fin.riscos.semRevisoes')}
           </div>
           <div className="flex items-center gap-3 sm:ml-auto">
             <Button variant="outline" size="sm" onClick={() => onAccept(risco)}>

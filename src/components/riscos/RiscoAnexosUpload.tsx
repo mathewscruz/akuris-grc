@@ -7,6 +7,7 @@ import { Upload, File, Download, Trash2, Eye } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { openStorageFile } from '@/lib/storage';
 import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface AnexoFile {
   id?: string;
@@ -32,6 +33,7 @@ export function RiscoAnexosUpload({
   tipoAnexo = 'aceite',
   disabled = false 
 }: RiscoAnexosUploadProps) {
+  const { t } = useLanguage();
   const [uploading, setUploading] = useState(false);
   const { toast } = useToast();
 
@@ -57,7 +59,7 @@ export function RiscoAnexosUpload({
 
     if (!allowedTypes.includes(file.type)) {
       toast({
-        title: "Tipo de arquivo não permitido",
+        title: t('fin.anexos.tipoNaoPermitido'),
         description: "Apenas PDF, DOC, DOCX e imagens são permitidos.",
         variant: "destructive"
       });
@@ -68,7 +70,7 @@ export function RiscoAnexosUpload({
     if (file.size > 10 * 1024 * 1024) {
       toast({
         title: "Arquivo muito grande",
-        description: "O arquivo deve ter no máximo 10MB.",
+        description: t('fin.anexos.tamanhoMax'),
         variant: "destructive"
       });
       return;
@@ -141,7 +143,7 @@ export function RiscoAnexosUpload({
     } catch (error: any) {
       logger.error('Erro no upload:', { data: error });
       toast({
-        title: "Erro no upload",
+        title: t('fin.anexos.erroUpload'),
         description: error.message || "Ocorreu um erro ao enviar o arquivo.",
         variant: "destructive"
       });
@@ -180,7 +182,7 @@ export function RiscoAnexosUpload({
     } catch (error: any) {
       logger.error('Erro ao deletar anexo:', { data: error });
       toast({
-        title: "Erro ao remover arquivo",
+        title: t('fin.anexos.erroRemover'),
         description: error.message || "Ocorreu um erro ao remover o arquivo.",
         variant: "destructive"
       });
@@ -189,7 +191,7 @@ export function RiscoAnexosUpload({
 
   const handleFileDownload = async (anexo: AnexoFile) => {
     const ok = await openStorageFile('riscos-anexos', anexo.url_arquivo);
-    if (!ok) toast({ title: 'Não foi possível abrir o arquivo', variant: 'destructive' });
+    if (!ok) toast({ title: t('fin.anexos.erroAbrir'), variant: 'destructive' });
   };
 
   return (
@@ -212,11 +214,9 @@ export function RiscoAnexosUpload({
           className="flex items-center gap-2"
         >
           <Upload className="h-4 w-4" />
-          {uploading ? 'Enviando...' : 'Adicionar Anexo'}
+          {uploading ? t('fin.anexos.enviando') : t('fin.anexos.adicionar')}
         </Button>
-        <div className="text-sm text-muted-foreground">
-          PDF, DOC, DOCX ou imagens (máx. 10MB)
-        </div>
+        <div className="text-sm text-muted-foreground">{t('fin.anexos.formatos')}</div>
       </div>
 
       {/* Lista de Anexos */}

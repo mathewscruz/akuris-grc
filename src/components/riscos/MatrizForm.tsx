@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -16,6 +16,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const COLOR_PALETTE = ['#22c55e', '#84cc16', '#eab308', '#f97316', '#dc2626', '#6b7280', '#3b82f6', '#7552ff'];
 
@@ -25,7 +26,7 @@ function ColorSwatch({ value, onChange }: { value: string; onChange: (v: string)
       <PopoverTrigger asChild>
         <button
           type="button"
-          aria-label="Selecionar cor do nível"
+          aria-label={t('fin.riscos.matrizForm.selecionarCor')}
           className="h-9 w-9 rounded-md border border-border shadow-sm transition-transform hover:scale-105"
           style={{ backgroundColor: value }}
         />
@@ -58,19 +59,19 @@ function ColorSwatch({ value, onChange }: { value: string; onChange: (v: string)
   );
 }
 
-const matrizSchema = z.object({
-  nome: z.string().min(1, 'Nome é obrigatório'),
+const makeMatrizSchema = (t: (k: string) => string) => z.object({
+  nome: z.string().min(1, t('fin.validacao.nomeObrigatorio')),
   descricao: z.string().optional(),
 });
 
-const categoriaSchema = z.object({
-  nome: z.string().min(1, 'Nome é obrigatório'),
+const makeCategoriaSchema = (t: (k: string) => string) => z.object({
+  nome: z.string().min(1, t('fin.validacao.nomeObrigatorio')),
   descricao: z.string().optional(),
   cor: z.string().optional(),
 });
 
-type MatrizForm = z.infer<typeof matrizSchema>;
-type CategoriaForm = z.infer<typeof categoriaSchema>;
+type MatrizForm = z.infer<ReturnType<typeof makeMatrizSchema>>;
+type CategoriaForm = z.infer<ReturnType<typeof makeCategoriaSchema>>;
 
 interface EscalaItem {
   valor: string;
@@ -109,6 +110,7 @@ interface Props {
 }
 
 export function MatrizForm({ onSuccess }: Props) {
+  const { t } = useLanguage();
   const { profile } = useAuth();
   const [loading, setLoading] = useState(false);
   const [matrizes, setMatrizes] = useState<Matriz[]>([]);
@@ -148,6 +150,9 @@ export function MatrizForm({ onSuccess }: Props) {
   ]);
 
   const [metodoCalculo, setMetodoCalculo] = useState<'multiplicacao' | 'soma'>('multiplicacao');
+
+  const matrizSchema = useMemo(() => makeMatrizSchema(t), [t]);
+  const categoriaSchema = useMemo(() => makeCategoriaSchema(t), [t]);
 
   const matrizForm = useForm<MatrizForm>({
     resolver: zodResolver(matrizSchema),
@@ -212,7 +217,7 @@ export function MatrizForm({ onSuccess }: Props) {
 
       setCategorias(categoriasData || []);
     } catch (error: any) {
-      toast.error('Erro ao carregar dados: ' + error.message);
+      toast.error(t('fin.comum.erroCarregarDados', { mensagem: error.message }));
     }
   };
 
@@ -292,7 +297,7 @@ export function MatrizForm({ onSuccess }: Props) {
 
   const onSubmitMatriz = async (data: MatrizForm) => {
     if (!profile?.empresa_id) {
-      toast.error('Erro: Empresa não identificada');
+      toast.error(t('fin.riscos.wizard.erroEmpresa'));
       return;
     }
 
@@ -334,7 +339,7 @@ export function MatrizForm({ onSuccess }: Props) {
 
         if (configError) throw configError;
         if (!configSalva || configSalva.matriz_id !== editingMatriz.id) {
-          throw new Error('A configuração da matriz não foi confirmada após a gravação.');
+          throw new Error(t('fin.riscos.matrizForm.configNaoConfirmada'));
         }
 
         toast.success('Matriz de risco atualizada com sucesso!');
@@ -367,7 +372,7 @@ export function MatrizForm({ onSuccess }: Props) {
 
         if (configError) throw configError;
         if (!configSalva || configSalva.matriz_id !== novaMatriz.id) {
-          throw new Error('A configuração da matriz não foi confirmada após a gravação.');
+          throw new Error(t('fin.riscos.matrizForm.configNaoConfirmada'));
         }
 
         toast.success('Matriz de risco criada com sucesso!');
@@ -378,7 +383,7 @@ export function MatrizForm({ onSuccess }: Props) {
       // Fecha o diálogo e propaga o refresh (matriz usada em todo o módulo).
       onSuccess();
     } catch (error: any) {
-      toast.error('Erro ao salvar matriz: ' + error.message);
+      toast.error(t('fin.riscos.matrizForm.erroSalvar', { mensagem: error.message }));
     } finally {
       setLoading(false);
     }
@@ -388,7 +393,7 @@ export function MatrizForm({ onSuccess }: Props) {
   // o botão fica num rodapé fixo longe do campo, então sem isto "nada acontece".
   const onInvalidMatriz = (errors: Record<string, { message?: string }>) => {
     const primeiro = Object.values(errors)[0];
-    toast.error(primeiro?.message || 'Preencha os campos obrigatórios antes de salvar.');
+    toast.error(primeiro?.message || t('fin.comum.preenchaObrigatorios'));
   };
 
   const adicionarEscalaProbabilidade = () => {
@@ -458,10 +463,10 @@ export function MatrizForm({ onSuccess }: Props) {
 
       if (error) throw error;
 
-      toast.success('Matriz excluída com sucesso!');
+      toast.success(t('fin.riscos.matrizForm.matrizExcluida'));
       fetchData();
     } catch (error: any) {
-      toast.error('Erro ao excluir matriz: ' + error.message);
+      toast.error(t('fin.riscos.matrizForm.erroExcluir', { mensagem: error.message }));
     } finally {
       setDeleting(false);
       setDeleteDialogOpen(false);
@@ -471,7 +476,7 @@ export function MatrizForm({ onSuccess }: Props) {
 
   const onSubmitCategoria = async (data: CategoriaForm) => {
     if (!profile?.empresa_id) {
-      toast.error('Erro: Empresa não identificada');
+      toast.error(t('fin.riscos.wizard.erroEmpresa'));
       return;
     }
 
@@ -493,7 +498,7 @@ export function MatrizForm({ onSuccess }: Props) {
       categoriaForm.reset();
       fetchData();
     } catch (error: any) {
-      toast.error('Erro ao criar categoria: ' + error.message);
+      toast.error(t('fin.riscos.matrizForm.erroCriarCat', { mensagem: error.message }));
     } finally {
       setLoading(false);
     }
@@ -508,10 +513,10 @@ export function MatrizForm({ onSuccess }: Props) {
 
       if (error) throw error;
 
-      toast.success('Categoria excluída com sucesso!');
+      toast.success(t('fin.riscos.matrizForm.categoriaExcluida'));
       fetchData();
     } catch (error: any) {
-      toast.error('Erro ao excluir categoria: ' + error.message);
+      toast.error(t('fin.riscos.matrizForm.erroExcluirCat', { mensagem: error.message }));
     }
   };
 
@@ -533,10 +538,10 @@ export function MatrizForm({ onSuccess }: Props) {
           <div className="flex items-center justify-between mb-4">
             <div className="flex flex-col gap-0.5">
               <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
-                {editingMatriz ? 'Editando' : 'Nova matriz'}
+                {editingMatriz ? t('fin.comum.editando') : t('fin.riscos.matrizForm.novaMatriz')}
               </span>
               <h4 className="text-sm font-semibold text-foreground">
-                {editingMatriz ? editingMatriz.nome : 'Identificação'}
+                {editingMatriz ? editingMatriz.nome : t('fin.riscos.wizard.stepIdentificacao')}
               </h4>
             </div>
             {editingMatriz && (
@@ -575,11 +580,11 @@ export function MatrizForm({ onSuccess }: Props) {
                   name="descricao"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Descrição</FormLabel>
+                      <FormLabel>{t('fin.comum.descricao')}</FormLabel>
                       <FormControl>
                         <Textarea
                           {...field}
-                          placeholder="Descreva o propósito desta matriz de risco"
+                          placeholder={t('fin.riscos.matrizForm.descPlaceholder')}
                           rows={3}
                         />
                       </FormControl>
@@ -590,10 +595,10 @@ export function MatrizForm({ onSuccess }: Props) {
               </div>
 
               <div className="border-t border-border/60 pt-6">
-                <SectionHeader eyebrow="Cálculo" title="Método de cálculo do nível de risco" />
+                <SectionHeader eyebrow={t('fin.riscos.matrizForm.calculoEyebrow')} title={t('fin.riscos.matrizForm.metodoCalculo')} />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {[
-                    { value: 'multiplicacao', label: 'Multiplicação', formula: 'P × I', desc: 'Resultado pode variar de 1 a Pmax × Imax' },
+                    { value: 'multiplicacao', label: t('fin.riscos.matrizForm.multiplicacao'), formula: 'P × I', desc: t('fin.riscos.matrizForm.multiplicacaoDesc') },
                     { value: 'soma', label: 'Soma', formula: 'P + I', desc: 'Resultado pode variar de 2 a Pmax + Imax' },
                   ].map(opt => {
                     const active = metodoCalculo === opt.value;
@@ -650,9 +655,9 @@ export function MatrizForm({ onSuccess }: Props) {
                           <Input
                             value={item.descricao}
                             onChange={(e) => atualizarEscalaProbabilidade(index, 'descricao', e.target.value)}
-                            placeholder="Ex.: Muito Provável"
+                            placeholder={t('fin.riscos.matrizForm.exProbabilidade')}
                             className="flex-1 min-w-0"
-                            aria-label="Descrição da probabilidade"
+                            aria-label={t('fin.riscos.matrizForm.descProbabilidade')}
                           />
                           {escalaProbabilidade.length > 1 && (
                             <Tooltip>
@@ -704,9 +709,9 @@ export function MatrizForm({ onSuccess }: Props) {
                           <Input
                             value={item.descricao}
                             onChange={(e) => atualizarEscalaImpacto(index, 'descricao', e.target.value)}
-                            placeholder="Ex.: Catastrófico"
+                            placeholder={t('fin.riscos.matrizForm.exImpacto')}
                             className="flex-1 min-w-0"
-                            aria-label="Descrição do impacto"
+                            aria-label={t('fin.riscos.matrizForm.descImpacto')}
                           />
                           {escalaImpacto.length > 1 && (
                             <Tooltip>
@@ -744,7 +749,7 @@ export function MatrizForm({ onSuccess }: Props) {
               <div className="border-t border-border/60 pt-6">
                 <SectionHeader
                   eyebrow="Faixas"
-                  title="Níveis de risco"
+                  title={t('fin.riscos.matrizForm.niveisRisco')}
                 />
                 {faixasError && (
                   <Alert variant="destructive" className="mb-3">
@@ -765,7 +770,7 @@ export function MatrizForm({ onSuccess }: Props) {
                           onChange={(e) => atualizarNivelRisco(index, 'min', parseInt(e.target.value) || 0)}
                           placeholder="Min"
                           className="w-16 text-center"
-                          aria-label="Valor mínimo"
+                          aria-label={t('fin.comum.valorMinimo')}
                         />
                         <span className="text-muted-foreground text-sm">–</span>
                         <Input
@@ -774,15 +779,15 @@ export function MatrizForm({ onSuccess }: Props) {
                           onChange={(e) => atualizarNivelRisco(index, 'max', parseInt(e.target.value) || 0)}
                           placeholder="Max"
                           className="w-16 text-center"
-                          aria-label="Valor máximo"
+                          aria-label={t('fin.comum.valorMaximo')}
                         />
                       </div>
                       <Input
                         value={nivel.nivel}
                         onChange={(e) => atualizarNivelRisco(index, 'nivel', e.target.value)}
-                        placeholder="Nome do nível (ex.: Crítico)"
+                        placeholder={t('fin.riscos.matrizForm.nomeNivelPlaceholder')}
                         className="flex-1 min-w-0"
-                        aria-label="Nome do nível"
+                        aria-label={t('fin.riscos.matrizForm.nomeNivel')}
                       />
                       <ColorSwatch
                         value={nivel.cor}
@@ -858,12 +863,12 @@ export function MatrizForm({ onSuccess }: Props) {
 
         {/* Seção: Matrizes salvas */}
         <section className="rounded-lg border border-border bg-card p-5">
-          <SectionHeader eyebrow="Persistência" title="Matrizes salvas" />
+          <SectionHeader eyebrow={t('fin.riscos.matrizForm.persistencia')} title={t('fin.riscos.matrizForm.matrizesSalvas')} />
           {matrizes.length === 0 ? (
             <EmptyState
               icon={<Grid3X3 className="h-10 w-10" strokeWidth={1.5} />}
-              title="Nenhuma matriz cadastrada"
-              description="Crie sua primeira matriz de risco preenchendo o formulário acima."
+              title={t('fin.riscos.matrizForm.vazioTitle')}
+              description={t('fin.riscos.matrizForm.vazioDesc')}
             />
           ) : (
             <div className="space-y-2">
@@ -897,7 +902,7 @@ export function MatrizForm({ onSuccess }: Props) {
                             <Edit className="h-4 w-4" strokeWidth={1.5} />
                           </Button>
                         </TooltipTrigger>
-                        <TooltipContent>Editar</TooltipContent>
+                        <TooltipContent>{t('fin.comum.editar')}</TooltipContent>
                       </Tooltip>
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -910,7 +915,7 @@ export function MatrizForm({ onSuccess }: Props) {
                             <Trash2 className="h-4 w-4" strokeWidth={1.5} />
                           </Button>
                         </TooltipTrigger>
-                        <TooltipContent>Excluir</TooltipContent>
+                        <TooltipContent>{t('fin.comum.excluir')}</TooltipContent>
                       </Tooltip>
                     </div>
                   </div>
@@ -927,16 +932,14 @@ export function MatrizForm({ onSuccess }: Props) {
           </p>
           <div className="flex gap-2 ml-auto">
             {editingMatriz && (
-              <Button type="button" variant="outline" onClick={limparFormularioMatriz}>
-                Cancelar
-              </Button>
+              <Button type="button" variant="outline" onClick={limparFormularioMatriz}>{t('fin.comum.cancelar')}</Button>
             )}
             <Button
               type="submit"
               form="matriz-form"
               disabled={loading || !!faixasError}
             >
-              {loading ? 'Salvando...' : editingMatriz ? 'Atualizar matriz' : 'Salvar matriz'}
+              {loading ? t('fin.comum.salvando') : editingMatriz ? t('fin.riscos.matrizForm.atualizarMatriz') : t('fin.riscos.matrizForm.salvarMatriz')}
             </Button>
           </div>
         </div>
@@ -944,10 +947,10 @@ export function MatrizForm({ onSuccess }: Props) {
         <ConfirmDialog
           open={deleteDialogOpen}
           onOpenChange={setDeleteDialogOpen}
-          title="Excluir Matriz de Risco"
-          description="Tem certeza que deseja excluir esta matriz? Esta ação não pode ser desfeita e pode afetar riscos que utilizam esta matriz."
-          confirmText="Excluir"
-          cancelText="Cancelar"
+          title={t('fin.riscos.matrizForm.excluirTitle')}
+          description={t('fin.riscos.matrizForm.excluirDesc')}
+          confirmText={t('fin.comum.excluir')}
+          cancelText={t('fin.comum.cancelar')}
           onConfirm={excluirMatriz}
           loading={deleting}
           variant="destructive"

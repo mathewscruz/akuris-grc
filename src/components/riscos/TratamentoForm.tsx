@@ -27,6 +27,7 @@ import { severityFromNivel } from './risk-utils';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { AiCostHint } from '@/components/ui/ai-cost-hint';
+import { useLanguage } from '@/contexts/LanguageContext';
 const tratamentoSchema = z.object({
   tipo_tratamento: z.string().min(1, 'Tipo de tratamento é obrigatório'),
   descricao: z.string().min(1, 'Descrição é obrigatória'),
@@ -62,6 +63,7 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
   { riscoId, tratamento, onSuccess, riscoData, onSubmittingChange, onDirtyChange },
   ref
 ) {
+  const { t } = useLanguage();
   const { profile, company } = useAuth();
   const [loading, setLoading] = useState(false);
   const [iaSuggestionLoading, setIaSuggestionLoading] = useState(false);
@@ -150,17 +152,17 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
               created_by: profile.user_id,
             });
             if (planoError) throw planoError;
-            toast.success('Plano de ação criado e vinculado ao risco.');
+            toast.success(t('fin.riscos.tratForm.planoCriado'));
           } catch (planoErr: any) {
             // Não bloqueia o tratamento se o plano falhar
-            toast.error('Tratamento salvo, mas houve erro ao criar o plano de ação: ' + planoErr.message);
+            toast.error(t('fin.riscos.tratForm.erroPlano', { mensagem: planoErr.message }));
           }
         }
       }
 
       onSuccess();
     } catch (error: any) {
-      toast.error('Erro ao salvar tratamento: ' + error.message);
+      toast.error(t('fin.riscos.tratForm.erroSalvar', { mensagem: error.message }));
     } finally {
       setLoading(false);
     }
@@ -168,7 +170,7 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
 
   const handleIaSuggestion = async () => {
     if (!riscoData) {
-      toast.error('Dados do risco não disponíveis para sugestão');
+      toast.error(t('fin.riscos.tratForm.semDados'));
       return;
     }
 
@@ -197,14 +199,14 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
         setIaSuggestions(data.data);
         setSuggestionDialogOpen(true);
       } else {
-        throw new Error(data.error || 'Erro ao gerar sugestões');
+        throw new Error(data.error || t('fin.riscos.tratForm.erroSugestoes'));
       }
     } catch (error: any) {
       // Verificar se o erro é de créditos esgotados
       if (error?.message?.includes('CREDITS_EXHAUSTED')) {
         setShowCreditsDialog(true);
       } else {
-        toast.error('Erro ao gerar sugestões: ' + error.message);
+        toast.error(t('fin.riscos.tratForm.erroSugestoesMsg', { mensagem: error.message }));
       }
     } finally {
       setIaSuggestionLoading(false);
@@ -215,25 +217,25 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
     form.setValue('tipo_tratamento', type);
     form.setValue('descricao', suggestion);
     setSuggestionDialogOpen(false);
-    toast.success('Sugestão aplicada! Revise e ajuste conforme necessário.');
+    toast.success(t('fin.riscos.tratForm.sugestaoAplicada'));
   };
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    toast.success('Texto copiado para a área de transferência');
+    toast.success(t('fin.comum.textoCopiado'));
   };
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-7">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div className="space-y-2">
-          <Label htmlFor="tipo_tratamento">Tipo de Tratamento *</Label>
+          <Label htmlFor="tipo_tratamento">{t('fin.riscos.tratForm.tipoLabel')}</Label>
           <Select 
             value={form.watch('tipo_tratamento')} 
             onValueChange={(value) => form.setValue('tipo_tratamento', value)}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Selecione o tipo" />
+              <SelectValue placeholder={t('fin.comum.selecioneTipo')} />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="mitigar">Mitigar</SelectItem>
@@ -254,12 +256,12 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
             onValueChange={(value) => form.setValue('status', value)}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Selecione o status" />
+              <SelectValue placeholder={t('fin.comum.selecioneStatus')} />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="pendente">Pendente</SelectItem>
               <SelectItem value="em andamento">Em Andamento</SelectItem>
-              <SelectItem value="concluído">Concluído</SelectItem>
+              <SelectItem value="concluído">{t('fin.comum.concluido')}</SelectItem>
               <SelectItem value="cancelado">Cancelado</SelectItem>
             </SelectContent>
           </Select>
@@ -298,7 +300,7 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
         </div>
         <Textarea
           {...form.register('descricao')}
-          placeholder="Descreva detalhadamente a ação proposta — escopo, etapas, responsáveis envolvidos e indicadores de sucesso."
+          placeholder={t('fin.riscos.tratForm.descPlaceholder')}
           className="min-h-[140px] resize-y bg-background"
         />
         {form.formState.errors.descricao && (
@@ -312,7 +314,7 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
           <UserSelect
             value={form.watch('responsavel') || ''}
             onValueChange={(value) => form.setValue('responsavel', value, { shouldDirty: true })}
-            placeholder="Selecione o responsável"
+            placeholder={t('fin.comum.selecioneResponsavel')}
           />
         </div>
 
@@ -329,7 +331,7 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div className="space-y-2">
-          <Label>Data de Início</Label>
+          <Label>{t('fin.comum.dataInicio')}</Label>
           <Popover>
             <PopoverTrigger asChild>
               <Button
@@ -384,13 +386,13 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="eficacia">Avaliação de Eficácia</Label>
+        <Label htmlFor="eficacia">{t('fin.riscos.tratForm.eficaciaLabel')}</Label>
         <Select 
           value={form.watch('eficacia') || ''} 
           onValueChange={(value) => form.setValue('eficacia', value)}
         >
           <SelectTrigger>
-            <SelectValue placeholder="Avaliar eficácia" />
+            <SelectValue placeholder={t('fin.riscos.tratForm.eficaciaPlaceholder')} />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="baixa">Baixa</SelectItem>
@@ -422,7 +424,7 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
         </label>
       )}
 
-      <p className="text-xs text-muted-foreground">* Campos obrigatórios</p>
+      <p className="text-xs text-muted-foreground">{t('fin.comum.camposObrigatorios')}</p>
 
 
       {/* Modal de Sugestões da IA */}

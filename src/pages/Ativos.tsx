@@ -51,56 +51,56 @@ interface Ativo {
 }
 
 const tiposAtivo = [
-  { value: 'servidor', label: 'Servidor' },
-  { value: 'aplicacao', label: 'Aplicação' },
-  { value: 'banco_dados', label: 'Banco de Dados' },
-  { value: 'rede', label: 'Equipamento de Rede' },
-  { value: 'endpoint', label: 'Endpoint' },
-  { value: 'dispositivo_movel', label: 'Dispositivo Móvel' },
-  { value: 'armazenamento', label: 'Armazenamento' },
-  { value: 'software', label: 'Software' },
-  { value: 'hardware', label: 'Hardware' },
-  { value: 'almoxarifado_equipamento', label: 'Equipamento de Almoxarifado' },
-  { value: 'almoxarifado_ferramenta', label: 'Ferramenta' },
-  { value: 'almoxarifado_material', label: 'Material de Consumo' },
-  { value: 'almoxarifado_epi', label: 'Equipamento de Proteção Individual' },
-  { value: 'mobiliario', label: 'Mobiliário' },
-  { value: 'equipamento_escritorio', label: 'Equipamento de Escritório' },
-  { value: 'equipamento_comunicacao', label: 'Equipamento de Comunicação' },
-  { value: 'material_escritorio', label: 'Material de Escritório' },
-  { value: 'veiculo_terrestre', label: 'Veículo Terrestre' },
-  { value: 'veiculo_aereo', label: 'Veículo Aéreo' },
-  { value: 'maquina_pesada', label: 'Máquina Pesada' },
-  { value: 'equipamento_transporte', label: 'Equipamento de Transporte' },
-  { value: 'imovel', label: 'Imóvel' },
-  { value: 'estrutura_fisica', label: 'Estrutura Física' },
-  { value: 'instalacao_eletrica', label: 'Instalação Elétrica' },
-  { value: 'instalacao_hidraulica', label: 'Instalação Hidráulica' },
-  { value: 'equipamento_seguranca', label: 'Equipamento de Segurança' },
-  { value: 'sistema_monitoramento', label: 'Sistema de Monitoramento' },
-  { value: 'controle_acesso', label: 'Controle de Acesso' },
-  { value: 'equipamento_bombeiro', label: 'Equipamento de Combate a Incêndio' },
-  { value: 'maquina_producao', label: 'Máquina de Produção' },
-  { value: 'ferramenta_producao', label: 'Ferramenta de Produção' },
-  { value: 'equipamento_medicao', label: 'Equipamento de Medição' },
-  { value: 'equipamento_teste', label: 'Equipamento de Teste' },
-  { value: 'equipamento_medico', label: 'Equipamento Médico' },
-  { value: 'equipamento_laboratorio', label: 'Equipamento de Laboratório' },
-  { value: 'outros', label: 'Outros' }
+  { value: 'servidor', label: 'fin.ativos.tipos.servidor' },
+  { value: 'aplicacao', label: 'fin.ativos.tipos.aplicacao' },
+  { value: 'banco_dados', label: 'fin.ativos.tipos.banco_dados' },
+  { value: 'rede', label: 'fin.ativos.tipos.rede' },
+  { value: 'endpoint', label: 'fin.ativos.tipos.endpoint' },
+  { value: 'dispositivo_movel', label: 'fin.ativos.tipos.dispositivo_movel' },
+  { value: 'armazenamento', label: 'fin.ativos.tipos.armazenamento' },
+  { value: 'software', label: 'fin.ativos.tipos.software' },
+  { value: 'hardware', label: 'fin.ativos.tipos.hardware' },
+  { value: 'almoxarifado_equipamento', label: 'fin.ativos.tipos.almoxarifado_equipamento' },
+  { value: 'almoxarifado_ferramenta', label: 'fin.ativos.tipos.almoxarifado_ferramenta' },
+  { value: 'almoxarifado_material', label: 'fin.ativos.tipos.almoxarifado_material' },
+  { value: 'almoxarifado_epi', label: 'fin.ativos.tipos.almoxarifado_epi' },
+  { value: 'mobiliario', label: 'fin.ativos.tipos.mobiliario' },
+  { value: 'equipamento_escritorio', label: 'fin.ativos.tipos.equipamento_escritorio' },
+  { value: 'equipamento_comunicacao', label: 'fin.ativos.tipos.equipamento_comunicacao' },
+  { value: 'material_escritorio', label: 'fin.ativos.tipos.material_escritorio' },
+  { value: 'veiculo_terrestre', label: 'fin.ativos.tipos.veiculo_terrestre' },
+  { value: 'veiculo_aereo', label: 'fin.ativos.tipos.veiculo_aereo' },
+  { value: 'maquina_pesada', label: 'fin.ativos.tipos.maquina_pesada' },
+  { value: 'equipamento_transporte', label: 'fin.ativos.tipos.equipamento_transporte' },
+  { value: 'imovel', label: 'fin.ativos.tipos.imovel' },
+  { value: 'estrutura_fisica', label: 'fin.ativos.tipos.estrutura_fisica' },
+  { value: 'instalacao_eletrica', label: 'fin.ativos.tipos.instalacao_eletrica' },
+  { value: 'instalacao_hidraulica', label: 'fin.ativos.tipos.instalacao_hidraulica' },
+  { value: 'equipamento_seguranca', label: 'fin.ativos.tipos.equipamento_seguranca' },
+  { value: 'sistema_monitoramento', label: 'fin.ativos.tipos.sistema_monitoramento' },
+  { value: 'controle_acesso', label: 'fin.ativos.tipos.controle_acesso' },
+  { value: 'equipamento_bombeiro', label: 'fin.ativos.tipos.equipamento_bombeiro' },
+  { value: 'maquina_producao', label: 'fin.ativos.tipos.maquina_producao' },
+  { value: 'ferramenta_producao', label: 'fin.ativos.tipos.ferramenta_producao' },
+  { value: 'equipamento_medicao', label: 'fin.ativos.tipos.equipamento_medicao' },
+  { value: 'equipamento_teste', label: 'fin.ativos.tipos.equipamento_teste' },
+  { value: 'equipamento_medico', label: 'fin.ativos.tipos.equipamento_medico' },
+  { value: 'equipamento_laboratorio', label: 'fin.ativos.tipos.equipamento_laboratorio' },
+  { value: 'outros', label: 'fin.ativos.tipos.outros' }
 ];
 
 const criticidades = [
-  { value: 'critico', label: 'Crítico', color: 'destructive' },
-  { value: 'alto', label: 'Alto', color: 'warning' },
-  { value: 'medio', label: 'Médio', color: 'default' },
-  { value: 'baixo', label: 'Baixo', color: 'secondary' },
+  { value: 'critico', label: 'fin.ativos.criticidade.critico', color: 'destructive' },
+  { value: 'alto', label: 'fin.ativos.criticidade.alto', color: 'warning' },
+  { value: 'medio', label: 'fin.ativos.criticidade.medio', color: 'default' },
+  { value: 'baixo', label: 'fin.ativos.criticidade.baixo', color: 'secondary' },
 ];
 
 const statusOptions = [
-  { value: 'ativo', label: 'Ativo', color: 'success' },
-  { value: 'inativo', label: 'Inativo', color: 'secondary' },
-  { value: 'em_manutencao', label: 'Em Manutenção', color: 'warning' },
-  { value: 'descontinuado', label: 'Descontinuado', color: 'destructive' },
+  { value: 'ativo', label: 'fin.ativos.status.ativo', color: 'success' },
+  { value: 'inativo', label: 'fin.ativos.status.inativo', color: 'secondary' },
+  { value: 'em_manutencao', label: 'fin.ativos.status.em_manutencao', color: 'warning' },
+  { value: 'descontinuado', label: 'fin.ativos.status.descontinuado', color: 'destructive' },
 ];
 
 const valoresNegocio = ['alto', 'medio', 'baixo'];
@@ -213,11 +213,11 @@ const Ativos = () => {
         body: { action: 'sync', empresa_id: profile.empresa_id, config: azureIntegration.configuracoes }
       });
       if (error) throw error;
-      toast({ title: "Sincronização concluída", description: `${data.synced_count || 0} dispositivos sincronizados do Azure/Intune` });
+      toast({ title: t('fin.ativos.syncOk'), description: `${data.synced_count || 0} dispositivos sincronizados do Azure/Intune` });
       invalidateAtivos();
     } catch (error: any) {
       logger.error('Azure sync error', { error: error?.message });
-      toast({ title: "Erro na sincronização", description: error.message || "Falha ao sincronizar com Azure", variant: "destructive" });
+      toast({ title: t('fin.ativos.syncErro'), description: error.message || t('fin.ativos.syncFalha'), variant: "destructive" });
     } finally {
       setAzureSyncing(false);
     }
@@ -228,7 +228,7 @@ const Ativos = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!profile?.empresa_id) {
-      toast({ title: "Erro", description: "Usuário deve estar vinculado a uma empresa", variant: "destructive" });
+      toast({ title: t('fin.comum.erro'), description: t('fin.comum.usuarioSemEmpresa'), variant: "destructive" });
       return;
     }
     try {
@@ -243,7 +243,7 @@ const Ativos = () => {
       if (editingAtivo) {
         const { error } = await supabase.from('ativos').update(ativoData).eq('id', editingAtivo.id);
         if (error) throw error;
-        toast({ title: "Sucesso", description: "Ativo atualizado com sucesso!" });
+        toast({ title: t('fin.comum.sucesso'), description: t('fin.ativos.atualizado') });
         notify('ativo_atualizado', {
           titulo: `Ativo atualizado: ${formData.nome}`,
           descricao: formData.descricao,
@@ -253,7 +253,7 @@ const Ativos = () => {
       } else {
         const { error } = await supabase.from('ativos').insert(ativoData);
         if (error) throw error;
-        toast({ title: "Sucesso", description: "Ativo criado com sucesso!" });
+        toast({ title: t('fin.comum.sucesso'), description: t('fin.ativos.criado') });
         notify('ativo_criado', {
           titulo: `Novo ativo: ${formData.nome}`,
           descricao: formData.descricao,
@@ -268,7 +268,7 @@ const Ativos = () => {
       invalidateAtivos();
     } catch (error: any) {
       logger.error('Error saving ativo', { error: error?.message });
-      toast({ title: "Erro", description: error.message || "Erro ao salvar ativo", variant: "destructive" });
+      toast({ title: t('fin.comum.erro'), description: error.message || t('fin.ativos.erroSalvar'), variant: "destructive" });
     }
   };
 
@@ -298,15 +298,15 @@ const Ativos = () => {
     try {
       const { error } = await supabase.from('ativos').delete().eq('id', deleteConfirm.ativoId);
       if (error) throw error;
-      toast({ title: "Sucesso", description: "Ativo excluído com sucesso!" });
+      toast({ title: t('fin.comum.sucesso'), description: t('fin.ativos.excluido') });
       invalidateAtivos();
     } catch (error: any) {
       logger.error('Error deleting ativo', { error: error?.message });
-      toast({ title: "Erro", description: error.message || "Erro ao excluir ativo", variant: "destructive" });
+      toast({ title: t('fin.comum.erro'), description: error.message || t('fin.ativos.erroExcluir'), variant: "destructive" });
     }
   };
 
-  const getTipoLabel = (value: string) => tiposAtivo.find(t => t.value === value)?.label || value;
+  const getTipoLabel = (value: string) => { const o = tiposAtivo.find(x => x.value === value); return o ? t(o.label) : value; };
 
   const filteredAndSortedAtivos = useMemo(() => {
     let filtered = ativos.filter(ativo => {
@@ -339,12 +339,12 @@ const Ativos = () => {
 
   const exportData = () => {
     const csvContent = [
-      ['Nome', 'Tipo', 'Status', 'Criticidade', 'Proprietário', 'Localização', 'Data Aquisição'].join(','),
+      [t('fin.comum.nome'), t('fin.comum.tipo'), t('fin.comum.status'), t('fin.comum.criticidade'), t('fin.comum.proprietario'), t('fin.comum.localizacao'), t('fin.ativos.dataAquisicao')].join(','),
       ...filteredAndSortedAtivos.map(ativo => [
         ativo.nome,
         getTipoLabel(ativo.tipo),
-        statusOptions.find(s => s.value === ativo.status)?.label || ativo.status,
-        criticidades.find(c => c.value === ativo.criticidade)?.label || ativo.criticidade,
+        (() => { const o = statusOptions.find(s => s.value === ativo.status); return o ? t(o.label) : ativo.status; })(),
+        (() => { const o = criticidades.find(c => c.value === ativo.criticidade); return o ? t(o.label) : ativo.criticidade; })(),
         ativo.proprietario_nome || '',
         ativo.localizacao || '',
         ativo.data_aquisicao ? formatDateOnly(ativo.data_aquisicao) : ''
@@ -363,29 +363,29 @@ const Ativos = () => {
   const columns: Column<Ativo>[] = [
     {
       key: 'nome',
-      label: 'Nome',
+      label: t('fin.comum.nome'),
       sortable: true,
       render: (_: any, ativo: Ativo) => <span className="font-medium">{ativo.nome}</span>
     },
     {
       key: 'tipo',
-      label: 'Tipo',
+      label: t('fin.comum.tipo'),
       sortable: true,
       render: (_: any, ativo: Ativo) => getTipoLabel(ativo.tipo)
     },
     {
       key: 'criticidade',
-      label: 'Criticidade',
+      label: t('fin.comum.criticidade'),
       sortable: true,
       render: (_: any, ativo: Ativo) => (
         <StatusBadge size="sm" {...resolveCriticidadeTone(ativo.criticidade)}>
-          {criticidades.find(c => c.value === ativo.criticidade)?.label || ativo.criticidade}
+          {(() => { const o = criticidades.find(c => c.value === ativo.criticidade); return o ? t(o.label) : ativo.criticidade; })()}
         </StatusBadge>
       )
     },
     {
       key: 'status',
-      label: 'Status',
+      label: t('fin.comum.status'),
       sortable: true,
       render: (_: any, ativo: Ativo) => (
         <StatusBadge size="sm" {...resolveItemStatusTone(ativo.status)}>
@@ -395,7 +395,7 @@ const Ativos = () => {
     },
     {
       key: 'proprietario',
-      label: 'Proprietário',
+      label: t('fin.comum.proprietario'),
       render: (_: any, ativo: Ativo) => {
         if (!ativo.proprietario_nome) return '-';
         return (
@@ -417,13 +417,13 @@ const Ativos = () => {
     },
     {
       key: 'localizacao',
-      label: 'Localização',
+      label: t('fin.comum.localizacao'),
       sortable: true,
       render: (_: any, ativo: Ativo) => ativo.localizacao || '-'
     },
     {
       key: 'acoes',
-      label: 'Ações',
+      label: t('fin.comum.acoes'),
       render: (_: any, ativo: Ativo) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -460,19 +460,19 @@ const Ativos = () => {
 
   const filters = [
     {
-      key: 'status', label: 'Status', value: statusFilter, onChange: setStatusFilter,
-      options: [{ value: 'todos', label: 'Todos os status' }, ...statusOptions.map(s => ({ value: s.value, label: s.label }))]
+      key: 'status', label: t('fin.comum.status'), value: statusFilter, onChange: setStatusFilter,
+      options: [{ value: 'todos', label: t('fin.comum.todosStatus') }, ...statusOptions.map(s => ({ value: s.value, label: t(s.label) }))]
     },
     {
-      key: 'criticidade', label: 'Criticidade', value: criticidadeFilter, onChange: setCriticidadeFilter,
-      options: [{ value: 'todos', label: 'Todas' }, ...criticidades.map(c => ({ value: c.value, label: c.label }))]
+      key: 'criticidade', label: t('fin.comum.criticidade'), value: criticidadeFilter, onChange: setCriticidadeFilter,
+      options: [{ value: 'todos', label: t('fin.comum.todasF') }, ...criticidades.map(c => ({ value: c.value, label: t(c.label) }))]
     },
     {
-      key: 'tipo', label: 'Tipo', value: tipoFilter, onChange: setTipoFilter,
-      options: [{ value: 'todos', label: 'Todos os tipos' }, ...tiposAtivo.map(t => ({ value: t.value, label: t.label }))]
+      key: 'tipo', label: t('fin.comum.tipo'), value: tipoFilter, onChange: setTipoFilter,
+      options: [{ value: 'todos', label: t('fin.comum.todosTipos') }, ...tiposAtivo.map(x => ({ value: x.value, label: t(x.label) }))]
     },
     {
-      key: 'valor_negocio', label: 'Valor de Negócio', value: valorNegocioFilter, onChange: setValorNegocioFilter,
+      key: 'valor_negocio', label: t('fin.ativos.valorNegocio'), value: valorNegocioFilter, onChange: setValorNegocioFilter,
       options: [{ value: 'todos', label: 'Todos' }, ...valoresNegocio.map(v => ({ value: v, label: v.charAt(0).toUpperCase() + v.slice(1) }))]
     }
   ];
@@ -525,11 +525,11 @@ const Ativos = () => {
           drillDown="ativos"
           showAccent
           segments={[
-            { label: 'críticos', value: stats?.criticos || 0, tone: 'destructive' },
+            { label: t('fin.comum.criticosLower'), value: stats?.criticos || 0, tone: 'destructive' },
             { label: 'altos', value: stats?.altos || 0, tone: 'warning' },
             { label: 'demais', value: Math.max(0, (stats?.total || 0) - (stats?.criticos || 0) - (stats?.altos || 0)), tone: 'neutral' },
           ]}
-          emptyHint="Cadastre ativos para mapear o inventário."
+          emptyHint={t('fin.ativos.emptyHint')}
         />
         <StatCard
           title="Ativos"
@@ -552,7 +552,7 @@ const Ativos = () => {
         <StatCard
           title="Criticidade Alta"
           value={(stats?.criticos || 0) + (stats?.altos || 0)}
-          description="Requerem atenção especial"
+          description={t('fin.comum.requeremAtencao')}
           icon={<Shield />}
           variant="info"
           loading={statsLoading}
@@ -584,7 +584,7 @@ const Ativos = () => {
             columns={columns}
             loading={loading}
             searchable
-            searchPlaceholder="Buscar ativos..."
+            searchPlaceholder={t('fin.ativos.buscar')}
             searchValue={searchTerm}
             onSearchChange={setSearchTerm}
             filters={filters}
@@ -601,10 +601,10 @@ const Ativos = () => {
             onExport={exportData}
             emptyState={{
               icon: <Server className="h-8 w-8" />,
-              title: searchTerm ? "Nenhum ativo encontrado" : "Nenhum ativo cadastrado",
+              title: searchTerm ? t('fin.ativos.nenhumEncontrado') : t('fin.ativos.nenhumCadastrado'),
               description: searchTerm 
                 ? "Tente ajustar os termos de busca ou limpe os filtros."
-                : "Comece cadastrando os ativos da sua organização.",
+                : t('fin.ativos.vazioDesc'),
               action: !searchTerm ? {
                 label: "Cadastrar Primeiro Ativo",
                 onClick: () => setIsDialogOpen(true)
@@ -618,8 +618,8 @@ const Ativos = () => {
         open={deleteConfirm.open}
         onOpenChange={(open) => setDeleteConfirm({ ...deleteConfirm, open })}
         onConfirm={confirmDelete}
-        title="Excluir Ativo"
-        description="Tem certeza que deseja excluir este ativo? Esta ação não pode ser desfeita."
+        title={t('fin.ativos.excluirTitle')}
+        description={t('fin.ativos.excluirDesc')}
       />
 
       <ImportacaoAtivos

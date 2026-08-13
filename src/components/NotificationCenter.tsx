@@ -138,24 +138,24 @@ const NotificationCenter: React.FC = () => {
         if (diasParaVencimento < 0) {
           notificacoes.push({
             id: `doc-vencido-${doc.id}`,
-            title: 'Documento Vencido',
-            message: `O documento \\\"${doc.nome}\\\" está vencido há ${Math.abs(diasParaVencimento)} dias`,
+            title: t('fin.notif.docVencido'),
+            message: t('fin.notif.docVencidoMsg', { nome: doc.nome, dias: Math.abs(diasParaVencimento) }),
             type: 'error', read: false, link_to: '/documentos',
             created_at: new Date().toISOString(), isAutomatic: true
           });
         } else if (diasParaVencimento === 0) {
           notificacoes.push({
             id: `doc-hoje-${doc.id}`,
-            title: 'Documento Vence Hoje',
-            message: `O documento \\\"${doc.nome}\\\" vence hoje`,
+            title: t('fin.notif.docHoje'),
+            message: t('fin.notif.docHojeMsg', { nome: doc.nome }),
             type: 'warning', read: false, link_to: '/documentos',
             created_at: new Date().toISOString(), isAutomatic: true
           });
         } else if (diasParaVencimento <= 7) {
           notificacoes.push({
             id: `doc-7dias-${doc.id}`,
-            title: 'Documento Vence em Breve',
-            message: `O documento \\\"${doc.nome}\\\" vence em ${diasParaVencimento} dias`,
+            title: t('fin.notif.docBreve'),
+            message: t('fin.notif.docBreveMsg', { nome: doc.nome, dias: diasParaVencimento }),
             type: 'warning', read: false, link_to: '/documentos',
             created_at: new Date().toISOString(), isAutomatic: true
           });
@@ -169,17 +169,17 @@ const NotificationCenter: React.FC = () => {
         if (diasParaVencimento < 0) {
           notificacoes.push({
             id: `contrato-vencido-${contrato.id}`,
-            title: 'Contrato Vencido',
-            message: `O contrato \\\"${contrato.nome}\\\" venceu há ${Math.abs(diasParaVencimento)} dias`,
+            title: t('fin.notif.contratoVencido'),
+            message: t('fin.notif.contratoVencidoMsg', { nome: contrato.nome, dias: Math.abs(diasParaVencimento) }),
             type: 'error', read: false, link_to: '/contratos',
             created_at: new Date().toISOString(), isAutomatic: true
           });
         } else if (diasParaVencimento <= 30) {
-          const renovacaoMsg = contrato.renovacao_automatica ? ' (renovação automática ativada)' : '';
+          const renovacaoMsg = contrato.renovacao_automatica ? t('fin.notif.renovacaoAtiva') : '';
           notificacoes.push({
             id: `contrato-30dias-${contrato.id}`,
-            title: 'Contrato Próximo ao Vencimento',
-            message: `O contrato \\\"${contrato.nome}\\\" vence em ${diasParaVencimento} dias${renovacaoMsg}`,
+            title: t('fin.notif.contratoProximo'),
+            message: t('fin.notif.contratoProximoMsg', { nome: contrato.nome, dias: diasParaVencimento, extra: renovacaoMsg }),
             type: 'warning', read: false, link_to: '/contratos',
             created_at: new Date().toISOString(), isAutomatic: true
           });
@@ -193,8 +193,8 @@ const NotificationCenter: React.FC = () => {
         if (diasParaAvaliacao <= 15 && diasParaAvaliacao >= 0) {
           notificacoes.push({
             id: `controle-avaliacao-${controle.id}`,
-            title: 'Avaliação de Controle Pendente',
-            message: `O controle \\\"${controle.nome}\\\" precisa ser avaliado em ${diasParaAvaliacao} dias`,
+            title: t('fin.notif.controlePendente'),
+            message: t('fin.notif.controlePendenteMsg', { nome: controle.nome, dias: diasParaAvaliacao }),
             type: 'warning', read: false, link_to: `/controles?detalhe=${controle.id}`,
             created_at: new Date().toISOString(), isAutomatic: true
           });
@@ -205,8 +205,8 @@ const NotificationCenter: React.FC = () => {
       (incidentes || []).forEach(incidente => {
         notificacoes.push({
           id: `incidente-critico-${incidente.id}`,
-          title: 'Incidente Crítico Aberto',
-          message: `O incidente "${incidente.titulo}" está com status ${formatStatus(incidente.status)} e requer atenção imediata`,
+          title: t('fin.notif.incidenteCritico'),
+          message: t('fin.notif.incidenteCriticoMsg', { nome: incidente.titulo, status: formatStatus(incidente.status) }),
           type: 'error', read: false, link_to: `/incidentes?detalhe=${incidente.id}`,
           created_at: new Date().toISOString(), isAutomatic: true
         });
@@ -216,8 +216,8 @@ const NotificationCenter: React.FC = () => {
       (ativos || []).forEach(ativo => {
         notificacoes.push({
           id: `ativo-critico-${ativo.id}`,
-          title: 'Ativo Crítico Ativo',
-          message: `O ativo \\\"${ativo.nome}\\\" está marcado como crítico e requer atenção especial`,
+          title: t('fin.notif.ativoCritico'),
+          message: t('fin.notif.ativoCriticoMsg', { nome: ativo.nome }),
           type: 'warning', read: false, link_to: '/ativos',
           created_at: new Date().toISOString(), isAutomatic: true
         });
@@ -243,16 +243,16 @@ const NotificationCenter: React.FC = () => {
         if (diasParaVencimento < 0) {
           notificacoes.push({
             id: `licenca-vencida-${licenca.id}`,
-            title: 'Licença Vencida',
-            message: `A licença \\\"${licenca.nome}\\\" venceu há ${Math.abs(diasParaVencimento)} dias`,
+            title: t('fin.notif.licencaVencida'),
+            message: t('fin.notif.licencaVencidaMsg', { nome: licenca.nome, dias: Math.abs(diasParaVencimento) }),
             type: 'error', read: false, link_to: '/ativos/licencas',
             created_at: new Date().toISOString(), isAutomatic: true
           });
         } else if (diasParaVencimento <= 30) {
           notificacoes.push({
             id: `licenca-vencendo-${licenca.id}`,
-            title: 'Licença Vencendo',
-            message: `A licença \\\"${licenca.nome}\\\" vence em ${diasParaVencimento} dias`,
+            title: t('fin.notif.licencaVencendo'),
+            message: t('fin.notif.licencaVencendoMsg', { nome: licenca.nome, dias: diasParaVencimento }),
             type: 'warning', read: false, link_to: '/ativos/licencas',
             created_at: new Date().toISOString(), isAutomatic: true
           });
@@ -272,16 +272,16 @@ const NotificationCenter: React.FC = () => {
         if (diasParaRotacao < 0) {
           notificacoes.push({
             id: `chave-expirada-${chave.id}`,
-            title: 'Chave Expirada',
-            message: `A chave \\\"${chave.nome}\\\" (${chave.ambiente}) expirou há ${Math.abs(diasParaRotacao)} dias`,
+            title: t('fin.notif.chaveExpirada'),
+            message: t('fin.notif.chaveExpiradaMsg', { nome: chave.nome, ambiente: chave.ambiente, dias: Math.abs(diasParaRotacao) }),
             type: 'error', read: false, link_to: '/ativos/chaves',
             created_at: new Date().toISOString(), isAutomatic: true
           });
         } else if (diasParaRotacao <= 30) {
           notificacoes.push({
             id: `chave-rotacao-${chave.id}`,
-            title: 'Rotação de Chave Necessária',
-            message: `A chave \\\"${chave.nome}\\\" precisa ser rotacionada em ${diasParaRotacao} dias`,
+            title: t('fin.notif.chaveRotacao'),
+            message: t('fin.notif.chaveRotacaoMsg', { nome: chave.nome, dias: diasParaRotacao }),
             type: 'warning', read: false, link_to: '/ativos/chaves',
             created_at: new Date().toISOString(), isAutomatic: true
           });
@@ -294,8 +294,8 @@ const NotificationCenter: React.FC = () => {
         if (diasParaManutencao <= 7 && diasParaManutencao >= 0) {
           notificacoes.push({
             id: `manutencao-${manutencao.id}`,
-            title: 'Manutenção Agendada',
-            message: `Manutenção ${manutencao.tipo_manutencao} do ativo \\\"${(manutencao as any).ativos?.nome}\\\" agendada para ${diasParaManutencao === 0 ? 'hoje' : `${diasParaManutencao} dias`}`,
+            title: t('fin.notif.manutencao'),
+            message: t('fin.notif.manutencaoMsg', { tipo: manutencao.tipo_manutencao, nome: (manutencao as any).ativos?.nome, quando: diasParaManutencao === 0 ? t('fin.comum.hoje') : t('fin.comum.emDias', { dias: diasParaManutencao }) }),
             type: 'warning', read: false, link_to: '/ativos',
             created_at: new Date().toISOString(), isAutomatic: true
           });
@@ -314,16 +314,16 @@ const NotificationCenter: React.FC = () => {
         if (diasParaRevisao < 0) {
           notificacoes.push({
             id: `risco-revisao-vencida-${risco.id}`,
-            title: 'Revisão de Risco Vencida',
-            message: `O risco \\\"${risco.nome}\\\" (${risco.nivel_risco_inicial || 'N/A'}) está com revisão atrasada há ${Math.abs(diasParaRevisao)} dias`,
+            title: t('fin.notif.riscoRevisaoVencida'),
+            message: t('fin.notif.riscoRevisaoVencidaMsg', { nome: risco.nome, nivel: risco.nivel_risco_inicial || 'N/A', dias: Math.abs(diasParaRevisao) }),
             type: 'error', read: false, link_to: '/riscos',
             created_at: new Date().toISOString(), isAutomatic: true
           });
         } else if (diasParaRevisao <= 7) {
           notificacoes.push({
             id: `risco-revisao-proxima-${risco.id}`,
-            title: 'Revisão de Risco Próxima',
-            message: `O risco \\\"${risco.nome}\\\" precisa ser revisado em ${diasParaRevisao} dias`,
+            title: t('fin.notif.riscoRevisaoProxima'),
+            message: t('fin.notif.riscoRevisaoProximaMsg', { nome: risco.nome, dias: diasParaRevisao }),
             type: 'warning', read: false, link_to: '/riscos',
             created_at: new Date().toISOString(), isAutomatic: true
           });
@@ -331,13 +331,13 @@ const NotificationCenter: React.FC = () => {
       });
 
       (aprovacoesDocumentos || []).forEach(aprovacao => {
-        const solicitanteNome = (aprovacao as any).profiles?.nome || 'Usuário';
-        const documentoNome = (aprovacao as any).documentos?.nome || 'Documento';
+        const solicitanteNome = (aprovacao as any).profiles?.nome || t('fin.comum.usuario');
+        const documentoNome = (aprovacao as any).documentos?.nome || t('fin.comum.documento');
         
         notificacoes.push({
           id: `aprovacao-doc-${aprovacao.id}`,
-          title: 'Solicitação de Aprovação',
-          message: `${solicitanteNome} solicitou sua aprovação para o documento \\\"${documentoNome}\\\"`,
+          title: t('fin.notif.solicitacaoAprovacao'),
+          message: t('fin.notif.solicitacaoAprovacaoMsg', { solicitante: solicitanteNome, documento: documentoNome }),
           type: 'info', read: false, link_to: `/documentos?aprovar=${aprovacao.documento_id}`,
           created_at: aprovacao.created_at, isAutomatic: true
         });

@@ -184,17 +184,17 @@ export default function Incidentes() {
       if (error) throw error;
 
       toast({
-        title: "Sucesso",
-        description: "Incidente excluído com sucesso!",
+        title: t('fin.comum.sucesso'),
+        description: t('fin.incidentes.excluido'),
       });
 
       invalidateIncidentes();
       setDeleteConfirm({ open: false, incidenteId: '' });
     } catch (error: any) {
-      logger.error('Erro ao excluir incidente', { error: error instanceof Error ? error.message : String(error) });
+      logger.error(t('fin.incidentes.erroExcluir'), { error: error instanceof Error ? error.message : String(error) });
       toast({
-        title: "Erro",
-        description: error.message || "Erro ao excluir incidente",
+        title: t('fin.comum.erro'),
+        description: error.message || t('fin.incidentes.erroExcluir'),
         variant: "destructive",
       });
     }
@@ -224,7 +224,7 @@ export default function Incidentes() {
   const incidentesColumns = [
     {
       key: "titulo" as keyof Incidente,
-      label: "Título",
+      label: t('fin.comum.titulo'),
       sortable: true,
       render: (_v: any, item: Incidente) => (
         <div className="font-medium">{item.titulo}</div>
@@ -232,7 +232,7 @@ export default function Incidentes() {
     },
     {
       key: "tipo_incidente" as keyof Incidente,
-      label: "Tipo",
+      label: t('fin.comum.tipo'),
       sortable: true,
       render: (_v: any, item: Incidente) => (
         <Badge variant="outline" className="whitespace-nowrap">{formatStatus(item.tipo_incidente)}</Badge>
@@ -265,13 +265,13 @@ export default function Incidentes() {
     },
     {
       key: "data_deteccao" as keyof Incidente,
-      label: "Data Detecção",
+      label: t('fin.incidentes.dataDeteccao'),
       sortable: true,
       render: (_v: any, item: Incidente) => formatDateOnly(item.data_deteccao)
     },
     {
       key: "actions" as keyof Incidente,
-      label: "Ações",
+      label: t('fin.comum.acoes'),
       render: (_v: any, item: Incidente) => (
         <TooltipProvider>
           <DropdownMenu>
@@ -303,9 +303,7 @@ export default function Incidentes() {
                 tituloSugerido={`Responder incidente: ${item.titulo ?? ''}`}
               />
               <DropdownMenuItem onClick={() => handleDelete(item.id)} className="text-destructive">
-                <Trash2 className="mr-2 h-4 w-4" />
-                Excluir
-              </DropdownMenuItem>
+                <Trash2 className="mr-2 h-4 w-4" />{t('fin.comum.excluir')}</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </TooltipProvider>
@@ -322,22 +320,22 @@ export default function Incidentes() {
       drillDown: 'incidentes' as const,
       showAccent: true,
       segments: [
-        { label: 'críticos', value: statsIncidentes?.criticos || 0, tone: 'destructive' as const },
+        { label: t('fin.comum.criticosLower'), value: statsIncidentes?.criticos || 0, tone: 'destructive' as const },
         { label: 'altos', value: statsIncidentes?.altos || 0, tone: 'warning' as const },
         { label: 'demais', value: Math.max(0, (statsIncidentes?.total || 0) - (statsIncidentes?.criticos || 0) - (statsIncidentes?.altos || 0)), tone: 'neutral' as const },
       ],
       emptyHint: "Registre o primeiro incidente para começar.",
     },
     {
-      title: "Críticos/Altos",
+      title: t('fin.incidentes.criticosAltos'),
       value: (statsIncidentes?.criticos || 0) + (statsIncidentes?.altos || 0),
-      description: "Necessitam atenção imediata",
+      description: t('fin.incidentes.atencaoImediata'),
       icon: <Shield />,
       variant: 'destructive' as const,
       drillDown: 'incidentes' as const,
     },
     {
-      title: "Em Investigação",
+      title: t('fin.incidentes.emInvestigacao'),
       value: statsIncidentes?.investigacao || 0,
       description: "Sendo investigados",
       icon: <Clock />,
@@ -345,9 +343,9 @@ export default function Incidentes() {
       drillDown: 'incidentes' as const,
     },
     {
-      title: "Este Mês",
+      title: t('fin.comum.esteMes'),
       value: statsIncidentes?.mes || 0,
-      description: "Novos incidentes",
+      description: t('fin.incidentes.novos'),
       icon: <Calendar />,
     }
   ];
@@ -361,7 +359,7 @@ export default function Incidentes() {
       options: [
         { value: 'todos', label: 'Todos os Status' },
         { value: 'aberto', label: 'Aberto' },
-        { value: 'investigacao', label: 'Investigação' },
+        { value: 'investigacao', label: t('fin.incidentes.investigacao') },
         { value: 'contido', label: 'Contido' },
         { value: 'resolvido', label: 'Resolvido' },
         { value: 'fechado', label: 'Fechado' },
@@ -369,11 +367,11 @@ export default function Incidentes() {
     },
     {
       key: 'tipo',
-      label: 'Tipo',
+      label: t('fin.comum.tipo'),
       value: tipoFilter,
       onChange: setTipoFilter,
       options: [
-        { value: 'todos', label: 'Todos os Tipos' },
+        { value: 'todos', label: t('fin.comum.todosTipos') },
         { value: 'seguranca', label: 'Segurança' },
         { value: 'privacidade', label: 'Privacidade' },
         { value: 'disponibilidade', label: 'Disponibilidade' },
@@ -389,7 +387,7 @@ export default function Incidentes() {
         { value: 'baixa', label: 'Baixa' },
         { value: 'media', label: 'Média' },
         { value: 'alta', label: 'Alta' },
-        { value: 'critica', label: 'Crítica' },
+        { value: 'critica', label: t('fin.comum.criticaF') },
       ]
     }
   ];
@@ -403,7 +401,7 @@ export default function Incidentes() {
           <Button variant="outline" size="sm" onClick={() => {
             if (incidentes.length === 0) return;
             exportCSV(
-              ['Titulo', 'Tipo', 'Categoria', 'Criticidade', 'Status', 'Data Deteccao', 'Data Resolucao'],
+              ['Titulo', t('fin.comum.tipo'), 'Categoria', 'Criticidade', 'Status', 'Data Deteccao', 'Data Resolucao'],
               incidentes.map((inc: any) => [
                 inc.titulo, inc.tipo || '', inc.categoria || '', inc.criticidade || '',
                 inc.status || '', inc.data_deteccao || '', inc.data_resolucao || ''
@@ -462,14 +460,14 @@ export default function Incidentes() {
             loading={loading}
             searchValue={searchTerm}
             onSearchChange={setSearchTerm}
-            searchPlaceholder="Buscar incidentes..."
+            searchPlaceholder={t('fin.incidentes.buscar')}
             filters={filters}
             sortField={sortField}
             sortDirection={sortDirection}
             onSort={handleSort}
             emptyState={{
               icon: <AlertTriangle className="h-8 w-8" />,
-              title: 'Nenhum incidente encontrado',
+              title: t('fin.incidentes.nenhum'),
               description: 'Registre o primeiro incidente para começar o monitoramento.'
             }}
           />
@@ -520,9 +518,9 @@ export default function Incidentes() {
       <ConfirmDialog
         open={deleteConfirm.open}
         onOpenChange={(open) => setDeleteConfirm(prev => ({ ...prev, open }))}
-        title="Excluir Incidente"
-        description="Tem certeza que deseja excluir este incidente? Esta ação não pode ser desfeita."
-        confirmText="Excluir"
+        title={t('fin.incidentes.excluirTitle')}
+        description={t('fin.incidentes.excluirDesc')}
+        confirmText={t('fin.comum.excluir')}
         variant="destructive"
         onConfirm={confirmDelete}
       />

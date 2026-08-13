@@ -17,6 +17,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveTratamentoTipoTone, resolveTratamentoStatusTone } from '@/lib/status-tone';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { useLanguage } from '@/contexts/LanguageContext';
 interface ResponsavelProfile {
   user_id: string;
   nome: string;
@@ -50,6 +51,7 @@ interface TratamentosListProps {
 }
 
 export function TratamentosList({ riscoId, riscoNome, embedded = false, riscoData }: TratamentosListProps) {
+  const { t } = useLanguage();
   const [tratamentos, setTratamentos] = useState<Tratamento[]>([]);
   const [loading, setLoading] = useState(true);
   const [tratamentoDialogOpen, setTratamentoDialogOpen] = useState(false);
@@ -88,7 +90,7 @@ export function TratamentosList({ riscoId, riscoNome, embedded = false, riscoDat
       
       setTratamentos(tratamentosComPerfis);
     } catch (error: any) {
-      toast.error('Erro ao carregar tratamentos: ' + error.message);
+      toast.error(t('fin.riscos.tratamentos.erroCarregar', { mensagem: error.message }));
     } finally {
       setLoading(false);
     }
@@ -119,12 +121,12 @@ export function TratamentosList({ riscoId, riscoNome, embedded = false, riscoDat
 
       if (error) throw error;
 
-      toast.success('Tratamento excluído com sucesso!');
+      toast.success(t('fin.riscos.tratamentos.excluidoOk'));
       setDeleteDialogOpen(false);
       setTratamentoToDelete(null);
       fetchTratamentos();
     } catch (error: any) {
-      toast.error('Erro ao excluir tratamento: ' + error.message);
+      toast.error(t('fin.riscos.tratamentos.erroExcluir', { mensagem: error.message }));
     }
   };
 
@@ -174,7 +176,7 @@ export function TratamentosList({ riscoId, riscoNome, embedded = false, riscoDat
       <div className="flex items-center justify-center py-8">
         <div className="text-center">
           <AkurisPulse size={32} className="mb-2" />
-          <p className="text-sm text-muted-foreground">Carregando tratamentos...</p>
+          <p className="text-sm text-muted-foreground">{t('fin.riscos.tratamentos.carregando')}</p>
         </div>
       </div>
     );
@@ -193,9 +195,7 @@ export function TratamentosList({ riscoId, riscoNome, embedded = false, riscoDat
         </span>
       </div>
       <Button onClick={openCreateDialog} size="sm">
-        <Plus className="mr-2 h-4 w-4" strokeWidth={1.5} />
-        Novo Tratamento
-      </Button>
+        <Plus className="mr-2 h-4 w-4" strokeWidth={1.5} />{t('fin.riscos.tratamentos.novo')}</Button>
     </div>
   );
 
@@ -206,8 +206,8 @@ export function TratamentosList({ riscoId, riscoNome, embedded = false, riscoDat
         <EmptyState
           variant="illustrated"
           icon={<RiscosIcon className="h-7 w-7" />}
-          title="Nenhum tratamento cadastrado"
-          description="Comece definindo a primeira ação para mitigar, transferir, aceitar ou evitar este risco."
+          title={t('fin.riscos.tratamentos.vazioTitle')}
+          description={t('fin.riscos.tratamentos.vazioDesc')}
           action={{
             label: 'Cadastrar Primeiro Tratamento',
             onClick: openCreateDialog,
@@ -218,13 +218,13 @@ export function TratamentosList({ riscoId, riscoNome, embedded = false, riscoDat
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Descrição</TableHead>
+                <TableHead>{t('fin.comum.tipo')}</TableHead>
+                <TableHead>{t('fin.comum.descricao')}</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Responsável</TableHead>
+                <TableHead>{t('fin.comum.responsavel')}</TableHead>
                 <TableHead>Prazo</TableHead>
                 <TableHead>Custo</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
+                <TableHead className="text-right">{t('fin.comum.acoes')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -319,10 +319,10 @@ export function TratamentosList({ riscoId, riscoNome, embedded = false, riscoDat
       <ConfirmDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        title="Excluir Tratamento"
-        description="Tem certeza que deseja excluir este tratamento? Esta ação não pode ser desfeita."
+        title={t('fin.riscos.tratamentos.excluirTitle')}
+        description={t('fin.riscos.tratamentos.excluirDesc')}
         variant="destructive"
-        confirmText="Excluir"
+        confirmText={t('fin.comum.excluir')}
         onConfirm={handleDelete}
       />
     </>

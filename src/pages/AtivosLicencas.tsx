@@ -130,7 +130,7 @@ export default function AtivosLicencas() {
 
     if (error) {
       toast({
-        title: "Erro ao excluir licença",
+        title: t('fin.licencas.erroExcluir'),
         description: error.message,
         variant: "destructive",
       });
@@ -138,8 +138,8 @@ export default function AtivosLicencas() {
     }
 
     toast({
-      title: "Licença excluída",
-      description: "A licença foi excluída com sucesso.",
+      title: t('fin.licencas.excluida'),
+      description: t('fin.licencas.excluidaDesc'),
     });
     
     refetch();
@@ -151,7 +151,7 @@ export default function AtivosLicencas() {
       'ativa': { icon: CheckCircle, label: 'Ativa' },
       'vencida': { icon: AlertTriangle, label: 'Vencida' },
       'a_vencer': { icon: Clock, label: 'A Vencer' },
-      'em_renovacao': { icon: Clock, label: 'Em Renovação' },
+      'em_renovacao': { icon: Clock, label: t('fin.licencas.emRenovacao') },
       'cancelada': { icon: Clock, label: 'Cancelada' },
     };
 
@@ -223,7 +223,7 @@ export default function AtivosLicencas() {
     },
     {
       key: 'tipo_licenca',
-      label: 'Tipo',
+      label: t('fin.comum.tipo'),
       sortable: true,
       render: (_: any, licenca: Licenca) => (
         <Badge variant="outline">{formatStatus(licenca.tipo_licenca)}</Badge>
@@ -242,7 +242,7 @@ export default function AtivosLicencas() {
     },
     {
       key: 'valor_renovacao',
-      label: 'Valor Renovação',
+      label: t('fin.licencas.valorRenovacao'),
       sortable: true,
       render: (_: any, licenca: Licenca) => (
         licenca.valor_renovacao 
@@ -264,7 +264,7 @@ export default function AtivosLicencas() {
     },
     {
       key: 'responsavel',
-      label: 'Responsável',
+      label: t('fin.comum.responsavel'),
       render: (_: any, licenca: Licenca) => {
         if (!licenca.responsavel_nome) return '-';
         
@@ -296,7 +296,7 @@ export default function AtivosLicencas() {
     },
     {
       key: 'acoes',
-      label: 'Ações',
+      label: t('fin.comum.acoes'),
       render: (_: any, licenca: Licenca) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -314,9 +314,7 @@ export default function AtivosLicencas() {
               onClick={() => handleDelete(licenca.id, licenca.nome)}
               className="text-destructive focus:text-destructive"
             >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Excluir
-            </DropdownMenuItem>
+              <Trash2 className="h-4 w-4 mr-2" />{t('fin.comum.excluir')}</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       )
@@ -335,7 +333,7 @@ export default function AtivosLicencas() {
           { value: 'ativa', label: 'Ativa' },
           { value: 'vencida', label: 'Vencida' },
           { value: 'a_vencer', label: 'A Vencer' },
-          { value: 'em_renovacao', label: 'Em Renovação' },
+          { value: 'em_renovacao', label: t('fin.licencas.emRenovacao') },
           { value: 'cancelada', label: 'Cancelada' },
       ]
     },
@@ -346,7 +344,7 @@ export default function AtivosLicencas() {
       onChange: setCriticidadeFilter,
       options: [
         { value: 'todos', label: 'Todas' },
-        { value: 'critica', label: 'Crítica' },
+        { value: 'critica', label: t('fin.comum.criticaF') },
         { value: 'alta', label: 'Alta' },
         { value: 'media', label: 'Média' },
         { value: 'baixa', label: 'Baixa' },
@@ -354,14 +352,14 @@ export default function AtivosLicencas() {
     },
     {
       key: 'tipo',
-      label: 'Tipo',
+      label: t('fin.comum.tipo'),
       value: tipoFilter,
       onChange: setTipoFilter,
       options: [
         { value: 'todos', label: 'Todos os tipos' },
           { value: 'software', label: 'Software' },
           { value: 'servico', label: 'Serviço' },
-          { value: 'certificacao', label: 'Certificação' },
+          { value: 'certificacao', label: t('fin.licencas.certificacao') },
           { value: 'outro', label: 'Outro' },
       ]
     }
@@ -399,7 +397,7 @@ export default function AtivosLicencas() {
         <StatCard
           title="A Vencer"
           value={stats?.vencendo30dias ?? 0}
-          description="Próximos 30 dias"
+          description={t('fin.comum.proximos30')}
           icon={<Clock />}
           loading={statsLoading}
           variant="warning"
@@ -431,7 +429,7 @@ export default function AtivosLicencas() {
             columns={columns}
             loading={isLoading}
             searchable
-            searchPlaceholder="Buscar licenças..."
+            searchPlaceholder={t('fin.licencas.buscar')}
             searchValue={searchTerm}
             onSearchChange={setSearchTerm}
             filters={filters}
@@ -447,7 +445,7 @@ export default function AtivosLicencas() {
             }}
             onExport={() => {
               const csvContent = [
-                ['Nome', 'Tipo', 'Fornecedor', 'Vencimento', 'Valor Renovação', 'Criticidade', 'Status', 'Responsável'].join(','),
+                [t('fin.comum.nome'), t('fin.comum.tipo'), t('fin.comum.fornecedor'), t('fin.comum.vencimento'), t('fin.licencas.valorRenovacao'), 'Criticidade', 'Status', t('fin.comum.responsavel')].join(','),
                 ...filteredAndSortedLicencas.map(l => [
                   l.nome,
                   l.tipo_licenca,
@@ -468,10 +466,10 @@ export default function AtivosLicencas() {
             }}
             emptyState={{
               icon: <FileCheck className="h-8 w-8" />,
-              title: searchTerm ? "Nenhuma licença encontrada" : "Nenhuma licença cadastrada",
+              title: searchTerm ? t('fin.licencas.nenhumaEncontrada') : t('fin.licencas.nenhumaCadastrada'),
               description: searchTerm 
                 ? "Tente ajustar os termos de busca ou limpe os filtros."
-                : "Comece cadastrando as licenças de software da sua organização para monitorar renovações e custos.",
+                : t('fin.licencas.vazioDesc'),
               action: !searchTerm ? {
                 label: "Cadastrar Primeira Licença",
                 onClick: handleNew
@@ -498,10 +496,10 @@ export default function AtivosLicencas() {
       <ConfirmDialog
         open={deleteConfirm.open}
         onOpenChange={(open) => setDeleteConfirm(prev => ({ ...prev, open }))}
-        title="Excluir Licença"
-        description={`Tem certeza que deseja excluir a licença "${deleteConfirm.nome}"? Esta ação não pode ser desfeita.`}
-        confirmText="Excluir"
-        cancelText="Cancelar"
+        title={t('fin.licencas.excluirTitle')}
+        description={t('fin.licencas.excluirDesc', { nome: deleteConfirm.nome })}
+        confirmText={t('fin.comum.excluir')}
+        cancelText={t('fin.comum.cancelar')}
         variant="destructive"
         onConfirm={confirmDelete}
       />

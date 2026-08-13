@@ -148,7 +148,7 @@ export default function ContasPrivilegiadas() {
 
     if (error) {
       toast({
-        title: "Erro ao excluir conta",
+        title: t('fin.contas.erroExcluir'),
         description: error.message,
         variant: "destructive",
       });
@@ -156,8 +156,8 @@ export default function ContasPrivilegiadas() {
     }
 
     toast({
-      title: "Conta excluída",
-      description: "A conta foi excluída com sucesso.",
+      title: t('fin.contas.excluida'),
+      description: t('fin.contas.excluidaDesc'),
     });
     
     queryClient.invalidateQueries({ queryKey: ['contas-privilegiadas'] });
@@ -168,7 +168,7 @@ export default function ContasPrivilegiadas() {
     const statusConfig: Record<string, { icon: React.ComponentType<any>, label: string }> = {
       'ativo': { icon: CheckCircle, label: 'Ativo' },
       'expirado': { icon: AlertTriangle, label: 'Expirado' },
-      'pendente_aprovacao': { icon: Clock, label: 'Pendente Aprovação' },
+      'pendente_aprovacao': { icon: Clock, label: t('fin.contas.pendenteAprovacao') },
       'revogado': { icon: Shield, label: 'Revogado' },
     };
 
@@ -224,7 +224,7 @@ export default function ContasPrivilegiadas() {
   const contasColumns = [
     {
       key: 'usuario_beneficiario',
-      label: 'Usuário',
+      label: t('fin.comum.usuario'),
       sortable: true,
       render: (_: any, conta: ContaPrivilegiada) => (
         <div>
@@ -250,7 +250,7 @@ export default function ContasPrivilegiadas() {
     },
     {
       key: 'tipo_acesso',
-      label: 'Tipo de Acesso',
+      label: t('fin.contas.tipoAcesso'),
       sortable: true,
       render: (_: any, conta: ContaPrivilegiada) => (
         <Badge variant="secondary">{capitalizeText(conta.tipo_acesso)}</Badge>
@@ -258,7 +258,7 @@ export default function ContasPrivilegiadas() {
     },
     {
       key: 'nivel_privilegio',
-      label: 'Nível',
+      label: t('fin.comum.nivel'),
       sortable: true,
       render: (_: any, conta: ContaPrivilegiada) => (
         <Badge variant={conta.nivel_privilegio === 'critico' ? 'destructive' : 'secondary'}>
@@ -268,7 +268,7 @@ export default function ContasPrivilegiadas() {
     },
     {
       key: 'data_expiracao',
-      label: 'Data Expiração',
+      label: t('fin.contas.dataExpiracao'),
       sortable: true,
       render: (_: any, conta: ContaPrivilegiada) => {
         const hoje = new Date();
@@ -303,7 +303,7 @@ export default function ContasPrivilegiadas() {
     },
     {
       key: 'acoes',
-      label: 'Ações',
+      label: t('fin.comum.acoes'),
       render: (_: any, conta: ContaPrivilegiada) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -337,7 +337,7 @@ export default function ContasPrivilegiadas() {
         { value: 'todos', label: 'Todos os Status' },
         { value: 'ativo', label: 'Ativo' },
         { value: 'expirado', label: 'Expirado' },
-        { value: 'pendente_aprovacao', label: 'Pendente Aprovação' },
+        { value: 'pendente_aprovacao', label: t('fin.contas.pendenteAprovacao') },
         { value: 'revogado', label: 'Revogado' },
       ],
       value: statusFilter,
@@ -345,10 +345,10 @@ export default function ContasPrivilegiadas() {
     },
     {
       key: 'nivel',
-      label: 'Nível',
+      label: t('fin.comum.nivel'),
       options: [
-        { value: 'todos', label: 'Todos os Níveis' },
-        { value: 'critico', label: 'Crítico' },
+        { value: 'todos', label: t('fin.comum.todosNiveis') },
+        { value: 'critico', label: t('fin.comum.critico') },
         { value: 'alto', label: 'Alto' },
         { value: 'medio', label: 'Médio' },
         { value: 'baixo', label: 'Baixo' },
@@ -439,13 +439,13 @@ export default function ContasPrivilegiadas() {
             loading={isLoading}
             searchValue={searchTerm}
             onSearchChange={setSearchTerm}
-            searchPlaceholder="Buscar contas..."
+            searchPlaceholder={t('fin.contas.buscar')}
             filters={contasFilters}
             sortField={sortField}
             sortDirection={sortDirection}
             onSort={handleSort}
             emptyState={{
-              title: "Nenhuma conta encontrada",
+              title: t('fin.contas.nenhuma'),
               description: searchTerm || statusFilter !== 'todos' || nivelFilter !== 'todos'
                 ? "Tente ajustar os filtros de busca"
                 : "Adicione a primeira conta privilegiada"
@@ -465,8 +465,8 @@ export default function ContasPrivilegiadas() {
         open={deleteConfirm.open}
         onOpenChange={(open) => !open && setDeleteConfirm({ open: false, id: '', nome: '' })}
         onConfirm={confirmDelete}
-        title="Excluir Conta"
-        description={`Tem certeza que deseja excluir a conta de "${deleteConfirm.nome}"? Esta ação não pode ser desfeita.`}
+        title={t('fin.contas.excluirTitle')}
+        description={t('fin.contas.excluirDesc', { nome: deleteConfirm.nome })}
         variant="destructive"
       />
     </div>

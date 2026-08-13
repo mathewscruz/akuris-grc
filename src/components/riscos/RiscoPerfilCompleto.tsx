@@ -30,6 +30,7 @@ import { ScoreRing, ScoreBlock, StatTile, HeaderMeta } from '@/components/riscos
 import { useRiscoDetail } from '@/hooks/useRiscoDetail';
 import { deriveRiscoStatus, isTratamentoConcluido, resumirTratamentos } from '@/components/riscos/risk-status';
 import { RiscoComentarios } from '@/components/riscos/RiscoComentarios';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Risco {
   id: string; nome: string; descricao?: string; status: string;
@@ -67,6 +68,7 @@ function treatmentPct(status: string): number {
 }
 
 export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccept, onOpenTratamentos }: Props) {
+  const { t } = useLanguage();
   const { data: detail, isLoading, isError, error: detailError } = useRiscoDetail(risco?.id ?? null);
   const inicialScore = useMemo(() => scoreFromPI(risco?.probabilidade_inicial, risco?.impacto_inicial), [risco]);
   const residualScore = useMemo(() => scoreFromPI(risco?.probabilidade_residual, risco?.impacto_residual), [risco]);
@@ -120,7 +122,7 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
             <Button size="sm" onClick={() => onOpenTratamentos(risco)}>
               <Shield className="h-3.5 w-3.5 mr-1.5" strokeWidth={1.5} />Novo tratamento
             </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => onOpenChange(false)} aria-label="Fechar">
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => onOpenChange(false)} aria-label={t('fin.comum.fechar')}>
               <X className="h-4 w-4" strokeWidth={1.5} />
             </Button>
           </div>
@@ -139,7 +141,7 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
                 </StatusBadge>
                 <span title={isError ? (detailError instanceof Error ? detailError.message : 'Falha ao carregar detalhes') : statusCoerente.motivo ?? undefined}>
                   <StatusBadge size="sm" {...(isError ? { tone: 'neutral' as const } : resolveRiscoStatusTone(statusCoerente.status))}>
-                    {isError ? 'Status indisponível' : formatStatus(statusCoerente.status)}
+                    {isError ? t('fin.riscos.statusIndisponivel') : formatStatus(statusCoerente.status)}
                   </StatusBadge>
                 </span>
               </div>
@@ -160,12 +162,12 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
                   <ArrowRight className={reduziu ? 'h-5 w-5 text-success' : 'h-5 w-5 text-muted-foreground/50'} strokeWidth={2} />
                   {reduziu && <span className="text-[9px] text-success font-semibold tabular-nums mt-0.5">−{inicialScore - residualScore}</span>}
                 </div>
-                <ScoreBlock label="Residual" nivel={risco.nivel_risco_residual} score={residualScore} p={risco.probabilidade_residual} i={risco.impacto_residual} emptyLabel="Não avaliado" />
+                <ScoreBlock label="Residual" nivel={risco.nivel_risco_residual} score={residualScore} p={risco.probabilidade_residual} i={risco.impacto_residual} emptyLabel={t('fin.riscos.naoAvaliado')} />
               </div>
             </section>
 
             <section className="grid grid-cols-3 gap-2">
-              <StatTile icon={<Wallet />} label="Exposição" value={exposicao !== null ? formatBRL(exposicao, true) : '—'} />
+              <StatTile icon={<Wallet />} label={t('fin.riscos.exposicao')} value={exposicao !== null ? formatBRL(exposicao, true) : '—'} />
               <StatTile icon={<Shield />} label="Tratam." value={`${concluidos}/${trat.length}`} />
               <StatTile icon={<Layers />} label="Controles" value={String(detail?.controles.length ?? 0)} />
             </section>
@@ -184,14 +186,14 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
                 ) : '—'
               } />
               <HeaderMeta icon={<Timer />} label="SLA" value={<StatusBadge size="sm" {...(sla === 'vencido' ? { tone: 'destructive' as const } : sla === 'atencao' ? { tone: 'warning' as const } : sla === 'no_prazo' ? { tone: 'success' as const } : { tone: 'neutral' as const })}>{SLA_LABELS[sla]}</StatusBadge>} />
-              <HeaderMeta icon={<CalendarClock />} label="Próx. revisão" value={risco.data_proxima_revisao ? formatDateOnly(risco.data_proxima_revisao) : '—'} />
+              <HeaderMeta icon={<CalendarClock />} label={t('fin.riscos.proxRevisao')} value={risco.data_proxima_revisao ? formatDateOnly(risco.data_proxima_revisao) : '—'} />
               <HeaderMeta icon={<CalendarClock />} label="Criado em" value={risco.created_at ? formatDateOnly(risco.created_at) : '—'} />
-              <HeaderMeta icon={<History />} label="Avaliações" value={String(detail?.historico.length ?? 0)} />
+              <HeaderMeta icon={<History />} label={t('fin.riscos.avaliacoes')} value={String(detail?.historico.length ?? 0)} />
             </section>
 
             {(risco.causas || risco.consequencias) && (
               <section>
-                <SectionLabel>Causas e consequências</SectionLabel>
+                <SectionLabel>{t('fin.riscos.causasConsequencias')}</SectionLabel>
                 <div className="flex flex-col gap-1.5">
                   {splitLines(risco.causas).map((l, i) => (
                     <div key={`c-${i}`} className="flex gap-2.5 px-3 py-2 bg-muted/40 rounded-md text-xs">
@@ -216,7 +218,7 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
             <div className="px-4 pt-4">
               <TabsList className="w-full">
                 <TabsTrigger value="tratamentos" className="flex-1 min-w-0 gap-1 px-1.5 text-[11px]"><Shield className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} /><span className="truncate">Tratam.</span></TabsTrigger>
-                <TabsTrigger value="historico" className="flex-1 min-w-0 gap-1 px-1.5 text-[11px]"><History className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} /><span className="truncate">Histórico</span></TabsTrigger>
+                <TabsTrigger value="historico" className="flex-1 min-w-0 gap-1 px-1.5 text-[11px]"><History className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} /><span className="truncate">{t('fin.comum.historico')}</span></TabsTrigger>
                 <TabsTrigger value="controles" className="flex-1 min-w-0 gap-1 px-1.5 text-[11px]"><ShieldCheck className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} /><span className="truncate">Controles</span></TabsTrigger>
                 <TabsTrigger value="comentarios" className="flex-1 min-w-0 gap-1 px-1.5 text-[11px]"><MessageSquare className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} /><span className="truncate">Coment.</span></TabsTrigger>
               </TabsList>
@@ -224,8 +226,8 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
             <div className="flex-1 overflow-y-auto px-4 py-5">
               <TabsContent value="tratamentos" className="m-0 space-y-2.5">
                 {isLoading ? <div className="flex justify-center py-10"><AkurisPulse size={32} /></div>
-                  : isError ? <div className="py-10 text-center text-sm text-destructive">{detailError instanceof Error ? detailError.message : 'Não foi possível carregar os tratamentos do risco.'}</div>
-                  : trat.length === 0 ? <div className="py-10 text-center text-sm text-muted-foreground">Nenhum tratamento cadastrado.</div>
+                  : isError ? <div className="py-10 text-center text-sm text-destructive">{detailError instanceof Error ? detailError.message : t('fin.riscos.erroTratamentos')}</div>
+                  : trat.length === 0 ? <div className="py-10 text-center text-sm text-muted-foreground">{t('fin.riscos.semTratamentos')}</div>
                   : trat.map((t) => {
                     const pct = treatmentPct(t.status);
                     return (
@@ -247,8 +249,8 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
 
               <TabsContent value="historico" className="m-0">
                 {isLoading ? <div className="flex justify-center py-10"><AkurisPulse size={32} /></div>
-                  : isError ? <div className="py-10 text-center text-sm text-destructive">{detailError instanceof Error ? detailError.message : 'Não foi possível carregar o histórico do risco.'}</div>
-                  : detail?.historico.length === 0 ? <div className="py-10 text-center text-sm text-muted-foreground">Sem histórico de avaliações.</div>
+                  : isError ? <div className="py-10 text-center text-sm text-destructive">{detailError instanceof Error ? detailError.message : t('fin.riscos.erroHistorico')}</div>
+                  : detail?.historico.length === 0 ? <div className="py-10 text-center text-sm text-muted-foreground">{t('fin.riscos.semHistorico')}</div>
                   : (
                     <ol className="relative border-l border-border ml-2 space-y-4 py-1">
                       {detail!.historico.map((h) => (
@@ -271,8 +273,8 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
 
               <TabsContent value="controles" className="m-0 space-y-2">
                 {isLoading ? <div className="flex justify-center py-10"><AkurisPulse size={32} /></div>
-                  : isError ? <div className="py-10 text-center text-sm text-destructive">{detailError instanceof Error ? detailError.message : 'Não foi possível carregar os controles do risco.'}</div>
-                  : detail?.controles.length === 0 ? <div className="py-10 text-center text-sm text-muted-foreground">Nenhum controle vinculado.</div>
+                  : isError ? <div className="py-10 text-center text-sm text-destructive">{detailError instanceof Error ? detailError.message : t('fin.riscos.erroControles')}</div>
+                  : detail?.controles.length === 0 ? <div className="py-10 text-center text-sm text-muted-foreground">{t('fin.riscos.semControles')}</div>
                   : detail!.controles.map((c) => (
                     <div key={c.id} className="bg-card border border-border rounded-lg p-3">
                       <div className="text-sm font-medium leading-snug truncate">{c.controle?.nome || 'Controle'}</div>

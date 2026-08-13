@@ -211,8 +211,8 @@ export default function Contratos() {
       if (error) throw error;
 
       toast({
-        title: "Sucesso",
-        description: `${deleteConfirm.type === 'contrato' ? 'Contrato' : 'Fornecedor'} excluído com sucesso`,
+        title: t('fin.comum.sucesso'),
+        description: `${deleteConfirm.type === 'contrato' ? 'Contrato' : t('fin.comum.fornecedor')} excluído com sucesso`,
       });
 
       invalidateData();
@@ -220,7 +220,7 @@ export default function Contratos() {
     } catch (error) {
       logger.error('Erro ao excluir', { error: error instanceof Error ? error.message : String(error) });
       toast({
-        title: "Erro",
+        title: t('fin.comum.erro'),
         description: `Erro ao excluir ${deleteConfirm.type === 'contrato' ? 'contrato' : 'fornecedor'}`,
         variant: "destructive",
       });
@@ -260,7 +260,7 @@ export default function Contratos() {
   };
 
   const handleExportCSV = () => {
-    const headers = ["Número", "Nome", "Fornecedor", "Tipo", "Status", "Valor", "Início", "Fim"];
+    const headers = [t('fin.comum.numero'), t('fin.comum.nome'), t('fin.comum.fornecedor'), t('fin.comum.tipo'), t('fin.comum.status'), t('fin.comum.valor'), t('fin.comum.inicio'), t('fin.comum.fim')];
     const rows = filteredContratos.map(c => [
       c.numero_contrato,
       c.nome,
@@ -282,7 +282,7 @@ export default function Contratos() {
     link.href = URL.createObjectURL(blob);
     link.download = `contratos_${new Date().toISOString().split("T")[0]}.csv`;
     link.click();
-    toast({ title: "Exportação concluída", description: "O arquivo CSV foi baixado com sucesso." });
+    toast({ title: t('fin.comum.exportacaoConcluida'), description: t('fin.comum.csvBaixado') });
   };
 
   // Categorias únicas de fornecedores
@@ -369,7 +369,7 @@ export default function Contratos() {
           <StatCard
             title="Vencimentos"
             value={statsContratos?.vencendo30Dias || 0}
-            description="Próximos 30 dias"
+            description={t('fin.comum.proximos30')}
             icon={<AlertCircle />}
             variant={statsContratos?.vencendo30Dias ? "warning" : "default"}
             loading={!statsContratos}
@@ -377,7 +377,7 @@ export default function Contratos() {
           />
 
           <StatCard
-            title="Renovação Automática"
+            title={t('fin.contratos.renovacaoAutomatica')}
             value={`${statsContratos?.total ? Math.round((statsContratos?.renovacaoAutomatica / statsContratos?.total) * 100) : 0}%`}
             description={`${statsContratos?.renovacaoAutomatica || 0} de ${statsContratos?.total || 0}`}
             icon={<TrendingUp />}
@@ -407,7 +407,7 @@ export default function Contratos() {
                     <div className="relative flex-1 min-w-[200px] max-w-sm">
                       <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                       <Input
-                        placeholder="Buscar contratos..."
+                        placeholder={t('fin.contratos.buscar')}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="pl-9"
@@ -426,34 +426,34 @@ export default function Contratos() {
                       <TemplatesContratos />
                       <Button size="sm" onClick={() => { setSelectedContrato(null); setDialogOpen(true); }}>
                         <Plus className="h-4 w-4 sm:mr-2" />
-                        <span className="hidden sm:inline">Novo Contrato</span>
+                        <span className="hidden sm:inline">{t('fin.contratos.novo')}</span>
                       </Button>
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-4">
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
                       <SelectTrigger className="w-[150px]">
-                        <SelectValue placeholder="Status" />
+                        <SelectValue placeholder={t('fin.comum.status')} />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="todos">Todos</SelectItem>
                         <SelectItem value="ativo">Ativo</SelectItem>
                         <SelectItem value="rascunho">Rascunho</SelectItem>
-                        <SelectItem value="negociacao">Negociação</SelectItem>
-                        <SelectItem value="aprovacao">Aprovação</SelectItem>
+                        <SelectItem value="negociacao">{t('fin.contratos.negociacao')}</SelectItem>
+                        <SelectItem value="aprovacao">{t('fin.comum.aprovacao')}</SelectItem>
                         <SelectItem value="suspenso">Suspenso</SelectItem>
                         <SelectItem value="encerrado">Encerrado</SelectItem>
                       </SelectContent>
                     </Select>
                     <Select value={tipoFilter} onValueChange={setTipoFilter}>
                       <SelectTrigger className="w-[150px]">
-                        <SelectValue placeholder="Tipo" />
+                        <SelectValue placeholder={t('fin.comum.tipo')} />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="todos">Todos</SelectItem>
                         <SelectItem value="servicos">Serviços</SelectItem>
                         <SelectItem value="licenciamento">Licenciamento</SelectItem>
-                        <SelectItem value="manutencao">Manutenção</SelectItem>
+                        <SelectItem value="manutencao">{t('fin.comum.manutencao')}</SelectItem>
                         <SelectItem value="consultoria">Consultoria</SelectItem>
                         <SelectItem value="produto">Produto</SelectItem>
                       </SelectContent>
@@ -473,13 +473,13 @@ export default function Contratos() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Nome</TableHead>
-                      <TableHead>Fornecedor</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Tipo</TableHead>
-                      <TableHead>Valor</TableHead>
+                      <TableHead>{t('fin.comum.nome')}</TableHead>
+                      <TableHead>{t('fin.comum.fornecedor')}</TableHead>
+                      <TableHead>{t('fin.comum.status')}</TableHead>
+                      <TableHead>{t('fin.comum.tipo')}</TableHead>
+                      <TableHead>{t('fin.comum.valor')}</TableHead>
                       <TableHead>Vencimento</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
+                      <TableHead className="text-right">{t('fin.comum.acoes')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -488,10 +488,10 @@ export default function Contratos() {
                         <TableCell colSpan={7} className="p-0">
                           <EmptyState
                             icon={<FileText className="h-8 w-8" />}
-                            title='Nenhum contrato encontrado'
+                            title={t('fin.contratos.nenhum')}
                             description='Comece criando contratos para gerenciar suas parcerias.'
                             action={{
-                              label: 'Novo Contrato',
+                              label: t('fin.contratos.novo'),
                               onClick: () => { setSelectedContrato(null); setDialogOpen(true); }
                             }}
                           />
@@ -552,9 +552,7 @@ export default function Contratos() {
                                     onClick={() => handleDelete(contrato.id, 'contrato')}
                                     className="text-red-600"
                                   >
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    Excluir
-                                  </DropdownMenuItem>
+                                    <Trash2 className="mr-2 h-4 w-4" />{t('fin.comum.excluir')}</DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </div>
@@ -624,7 +622,7 @@ export default function Contratos() {
                     <div className="relative flex-1 min-w-[200px] max-w-sm">
                       <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                       <Input
-                        placeholder="Buscar fornecedores..."
+                        placeholder={t('fin.fornecedores.buscar')}
                         value={searchTermFornecedor}
                         onChange={(e) => setSearchTermFornecedor(e.target.value)}
                         className="pl-9"
@@ -632,15 +630,13 @@ export default function Contratos() {
                     </div>
                     <div className="flex gap-2">
                       <Button size="sm" onClick={() => { setSelectedFornecedor(null); setFornecedorDialogOpen(true); }}>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Novo Fornecedor
-                      </Button>
+                        <Plus className="h-4 w-4 mr-2" />{t('fin.fornecedores.novo')}</Button>
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-4">
                     <Select value={statusFornecedorFilter} onValueChange={setStatusFornecedorFilter}>
                       <SelectTrigger className="w-[150px]">
-                        <SelectValue placeholder="Status" />
+                        <SelectValue placeholder={t('fin.comum.status')} />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="todos">Todos Status</SelectItem>
@@ -669,7 +665,7 @@ export default function Contratos() {
                         <SelectItem value="baixo">Baixo</SelectItem>
                         <SelectItem value="medio">Médio</SelectItem>
                         <SelectItem value="alto">Alto</SelectItem>
-                        <SelectItem value="critico">Crítico</SelectItem>
+                        <SelectItem value="critico">{t('fin.comum.critico')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <Select value={String(itemsPerPage)} onValueChange={(v) => setItemsPerPage(Number(v))}>
@@ -687,13 +683,13 @@ export default function Contratos() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Nome</TableHead>
-                      <TableHead>Tipo</TableHead>
+                      <TableHead>{t('fin.comum.nome')}</TableHead>
+                      <TableHead>{t('fin.comum.tipo')}</TableHead>
                       <TableHead>Categoria</TableHead>
                       <TableHead>Contratos</TableHead>
                       <TableHead>Risco</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
+                      <TableHead>{t('fin.comum.status')}</TableHead>
+                      <TableHead className="text-right">{t('fin.comum.acoes')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -702,10 +698,10 @@ export default function Contratos() {
                         <TableCell colSpan={7} className="p-0">
                           <EmptyState
                             icon={<Users className="h-8 w-8" />}
-                            title='Nenhum fornecedor encontrado'
+                            title={t('fin.fornecedores.nenhum')}
                             description='Cadastre fornecedores para associar aos contratos.'
                             action={{
-                              label: 'Novo Fornecedor',
+                              label: t('fin.fornecedores.novo'),
                               onClick: () => { setSelectedFornecedor(null); setFornecedorDialogOpen(true); }
                             }}
                           />
@@ -744,9 +740,7 @@ export default function Contratos() {
                                   className="text-destructive"
                                   onClick={() => handleDelete(fornecedor.id, 'fornecedor')}
                                 >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Excluir
-                                </DropdownMenuItem>
+                                  <Trash2 className="h-4 w-4 mr-2" />{t('fin.comum.excluir')}</DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </TableCell>
@@ -845,9 +839,9 @@ export default function Contratos() {
         <ConfirmDialog
           open={deleteConfirm.open}
           onOpenChange={(open) => setDeleteConfirm(prev => ({ ...prev, open }))}
-          title={`Excluir ${deleteConfirm.type === 'contrato' ? 'Contrato' : 'Fornecedor'}`}
+          title={`Excluir ${deleteConfirm.type === 'contrato' ? 'Contrato' : t('fin.comum.fornecedor')}`}
           description={`Tem certeza que deseja excluir este ${deleteConfirm.type === 'contrato' ? 'contrato' : 'fornecedor'}? Esta ação não pode ser desfeita.`}
-          confirmText="Excluir"
+          confirmText={t('fin.comum.excluir')}
           variant="destructive"
           onConfirm={confirmDelete}
         />

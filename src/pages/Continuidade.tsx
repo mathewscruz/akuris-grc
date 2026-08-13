@@ -82,10 +82,10 @@ export default function Continuidade() {
     try {
       const { error } = await supabase.from('continuidade_planos').delete().eq('id', deleteConfirm.id);
       if (error) throw error;
-      toast({ title: 'Plano excluído com sucesso' });
+      toast({ title: t('fin.continuidade.excluido') });
       refreshAll();
     } catch (error: any) {
-      toast({ title: 'Erro ao excluir', description: error.message, variant: 'destructive' });
+      toast({ title: t('fin.comum.erroExcluir'), description: error.message, variant: 'destructive' });
     }
     setDeleteConfirm({ open: false, id: '' });
   };
@@ -93,7 +93,7 @@ export default function Continuidade() {
   const columns: Column<any>[] = [
     {
       key: 'nome',
-      label: 'Nome',
+      label: t('fin.comum.nome'),
       sortable: true,
       render: (_val, row) => (
         <button onClick={() => setDetalheDialog({ open: true, plano: row })} className="text-left hover:text-primary transition-colors font-medium">
@@ -103,12 +103,12 @@ export default function Continuidade() {
     },
     {
       key: 'tipo',
-      label: 'Tipo',
+      label: t('fin.comum.tipo'),
       render: (_val, row) => <Badge variant="outline">{tipoMap[row.tipo] || row.tipo}</Badge>,
     },
     {
       key: 'status',
-      label: 'Status',
+      label: t('fin.comum.status'),
       render: (_val, row) => {
         const st = statusMap[row.status] || statusMap.rascunho;
         return <Badge variant={st.variant}>{st.label}</Badge>;
@@ -126,12 +126,12 @@ export default function Continuidade() {
     },
     {
       key: 'proxima_revisao',
-      label: 'Próx. Revisão',
+      label: t('fin.comum.proxRevisao'),
       render: (_val, row) => row.proxima_revisao ? formatDateOnly(row.proxima_revisao) : '—',
     },
     {
       key: 'actions',
-      label: 'Ações',
+      label: t('fin.comum.acoes'),
       render: (_val, row) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -147,8 +147,7 @@ export default function Continuidade() {
               <Edit className="h-4 w-4 mr-2" /> Editar
             </DropdownMenuItem>
             <DropdownMenuItem className="text-destructive" onClick={() => setDeleteConfirm({ open: true, id: row.id })}>
-              <Trash2 className="h-4 w-4 mr-2" /> Excluir
-            </DropdownMenuItem>
+              <Trash2 className="h-4 w-4 mr-2" />{t('fin.comum.excluir')}</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       ),
@@ -158,14 +157,14 @@ export default function Continuidade() {
   return (
     <div className="space-y-6 p-4 md:p-6">
       <PageHeader
-        title="Continuidade de Negócios"
-        description="Gerencie planos de continuidade (BCP) e recuperação de desastres (DRP)"
+        title={t('fin.continuidade.title')}
+        description={t('fin.continuidade.desc')}
         actions={
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => {
               if (planos.length === 0) return;
               exportCSV(
-                ['Nome', 'Tipo', 'Status', 'RTO (h)', 'RPO (h)', 'Próx. Revisão', 'Versão', 'Criado em'],
+                [t('fin.comum.nome'), t('fin.comum.tipo'), t('fin.comum.status'), 'RTO (h)', 'RPO (h)', t('fin.comum.proxRevisao'), t('fin.comum.versao'), t('fin.comum.criadoEm')],
                 planos.map((p: any) => [
                   p.nome || '', tipoMap[p.tipo] || p.tipo || '',
                   statusMap[p.status]?.label || p.status || '',
@@ -208,7 +207,7 @@ export default function Continuidade() {
             </CardHeader>
             <CardContent>
               {insights.proximasRevisoes.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Nenhuma revisão agendada nos próximos 30 dias.</p>
+                <p className="text-sm text-muted-foreground">{t('fin.continuidade.semRevisoes')}</p>
               ) : (
                 <ul className="space-y-2">
                   {insights.proximasRevisoes.map((p: any) => (
@@ -233,7 +232,7 @@ export default function Continuidade() {
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Planos sem responsável atribuído</span>
+                <span className="text-muted-foreground">{t('fin.continuidade.semResponsavel')}</span>
                 <Badge variant={insights.semResponsavel > 0 ? 'destructive' : 'success'}>{insights.semResponsavel}</Badge>
               </div>
               <div className="flex justify-between">
@@ -258,12 +257,12 @@ export default function Continuidade() {
             data={planos}
             columns={columns}
             searchable
-            searchPlaceholder="Buscar planos..."
+            searchPlaceholder={t('fin.continuidade.buscar')}
             loading={isLoading}
             emptyState={{
               icon: <Shield className="h-8 w-8" />,
-              title: 'Nenhum plano cadastrado',
-              description: 'Crie seu primeiro plano de continuidade de negócios ou recuperação de desastres.',
+              title: t('fin.continuidade.nenhum'),
+              description: t('fin.continuidade.vazioDesc'),
               action: { label: 'Criar Plano', onClick: () => setPlanoDialog({ open: true }) },
             }}
           />
@@ -287,10 +286,10 @@ export default function Continuidade() {
       <ConfirmDialog
         open={deleteConfirm.open}
         onOpenChange={o => setDeleteConfirm(p => ({ ...p, open: o }))}
-        title="Excluir Plano"
-        description="Todas as tarefas e testes vinculados serão excluídos. Deseja continuar?"
-        confirmText="Excluir"
-        cancelText="Cancelar"
+        title={t('fin.continuidade.excluirTitle')}
+        description={t('fin.continuidade.excluirDesc')}
+        confirmText={t('fin.comum.excluir')}
+        cancelText={t('fin.comum.cancelar')}
         variant="destructive"
         onConfirm={handleDelete}
       />

@@ -195,13 +195,13 @@ export default function RevisaoAcessos() {
     },
     {
       key: "tipo_revisao",
-      label: "Tipo",
+      label: t('fin.comum.tipo'),
       sortable: true,
       render: (_value: any, review: any) => formatStatus(review.tipo_revisao),
     },
     {
       key: "responsavel.nome",
-      label: "Responsável",
+      label: t('fin.comum.responsavel'),
       sortable: true,
       render: (_value: any, review: any) => review.responsavel?.nome || "-",
     },
@@ -224,7 +224,7 @@ export default function RevisaoAcessos() {
     },
     {
       key: "actions",
-      label: "Ações",
+      label: t('fin.comum.acoes'),
       render: (_value: any, review: any) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -268,7 +268,7 @@ export default function RevisaoAcessos() {
     },
     {
       key: "responsavel.nome",
-      label: "Responsável",
+      label: t('fin.comum.responsavel'),
       render: (_value: any, review: any) => review.responsavel?.nome || "-",
     },
     {
@@ -316,7 +316,7 @@ export default function RevisaoAcessos() {
           emptyHint="Crie a primeira revisão de acessos."
         />
         <StatCard
-          title="Concluídas"
+          title={t('fin.comum.concluidas')}
           value={stats?.concluidas || 0}
           loading={statsLoading}
           variant="success"
@@ -338,9 +338,9 @@ export default function RevisaoAcessos() {
 
       <Tabs defaultValue="ativas">
         <TabsList>
-          <TabsTrigger value="ativas">Revisões Ativas</TabsTrigger>
-          <TabsTrigger value="historico">Histórico</TabsTrigger>
-          <TabsTrigger value="usuarios">Usuários dos Sistemas</TabsTrigger>
+          <TabsTrigger value="ativas">{t('fin.revisao.ativas')}</TabsTrigger>
+          <TabsTrigger value="historico">{t('fin.comum.historico')}</TabsTrigger>
+          <TabsTrigger value="usuarios">{t('fin.revisao.usuariosSistemas')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="ativas" className="space-y-4 mt-4">
@@ -366,7 +366,7 @@ export default function RevisaoAcessos() {
                 loading={reviewsLoading}
                 searchValue={searchTerm}
                 onSearchChange={setSearchTerm}
-                searchPlaceholder="Buscar revisões..."
+                searchPlaceholder={t('fin.revisao.buscar')}
                 filters={[
                   {
                     key: "status",
@@ -375,7 +375,7 @@ export default function RevisaoAcessos() {
                       { value: "all", label: "Todos" },
                       { value: "rascunho", label: "Rascunho" },
                       { value: "em_andamento", label: "Em Andamento" },
-                      { value: "concluida", label: "Concluída" },
+                      { value: "concluida", label: t('fin.comum.concluidaF') },
                       { value: "cancelada", label: "Cancelada" },
                     ],
                     value: statusFilter,
@@ -397,10 +397,10 @@ export default function RevisaoAcessos() {
                 data={historico || []}
                 columns={historicoColumns}
                 loading={historicoLoading}
-                searchPlaceholder="Buscar no histórico..."
+                searchPlaceholder={t('fin.revisao.buscarHistorico')}
                 emptyState={{
-                  title: "Nenhuma revisão concluída",
-                  description: "As revisões finalizadas aparecerão aqui."
+                  title: t('fin.revisao.nenhumaConcluida'),
+                  description: t('fin.revisao.historicoVazio')
                 }}
               />
             </CardContent>
@@ -446,8 +446,8 @@ export default function RevisaoAcessos() {
         open={!!deleteConfirm}
         onOpenChange={(open) => !open && setDeleteConfirm(null)}
         onConfirm={handleDelete}
-        title="Excluir Revisão"
-        description="Tem certeza que deseja excluir esta revisão? Esta ação não pode ser desfeita."
+        title={t('fin.revisao.excluirTitle')}
+        description={t('fin.revisao.excluirDesc')}
         variant="destructive"
       />
     </div>

@@ -16,6 +16,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { Link as LinkIcon, Search, ShieldCheck } from 'lucide-react';
 import { formatStatus } from '@/lib/text-utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Props {
   open: boolean;
@@ -40,6 +41,7 @@ interface Vinculo {
 }
 
 export function VincularControleDialog({ open, onOpenChange, riscoId, riscoNome, onSuccess }: Props) {
+  const { t } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [vinculos, setVinculos] = useState<Vinculo[]>([]);
@@ -110,7 +112,7 @@ export function VincularControleDialog({ open, onOpenChange, riscoId, riscoNome,
       }
     },
     onSuccess: () => {
-      toast({ title: 'Controles vinculados', description: 'Vínculos do risco atualizados.' });
+      toast({ title: t('fin.riscos.vincular.sucessoTitle'), description: t('fin.riscos.vincular.sucessoDesc') });
       queryClient.invalidateQueries({ queryKey: ['risco-detail', riscoId] });
       queryClient.invalidateQueries({ queryKey: ['controles'] });
       onSuccess?.();
@@ -131,7 +133,7 @@ export function VincularControleDialog({ open, onOpenChange, riscoId, riscoNome,
       title="Vincular controles ao risco"
       description={riscoNome}
       size="md"
-      submitLabel="Salvar vínculos"
+      submitLabel={t('fin.riscos.vincular.salvar')}
       isSubmitting={save.isPending}
       onSubmit={() => save.mutate()}
     >
@@ -145,14 +147,14 @@ export function VincularControleDialog({ open, onOpenChange, riscoId, riscoNome,
         <Input
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
-          placeholder="Buscar controle por código ou nome…"
+          placeholder={t('fin.riscos.vincular.buscar')}
           className="pl-9"
         />
       </div>
 
       <div className="space-y-2">
         {filtrados.length === 0 ? (
-          <div className="py-10 text-center text-sm text-muted-foreground">Nenhum controle ativo encontrado.</div>
+          <div className="py-10 text-center text-sm text-muted-foreground">{t('fin.riscos.vincular.vazio')}</div>
         ) : (
           filtrados.map((c) => {
             const v = getVinculo(c.id);
@@ -172,7 +174,7 @@ export function VincularControleDialog({ open, onOpenChange, riscoId, riscoNome,
                 {isVinculado(c.id) && (
                   <div className="mt-3 grid grid-cols-2 gap-3 pl-7">
                     <div>
-                      <Label className="text-[11px]">Tipo de vínculo</Label>
+                      <Label className="text-[11px]">{t('fin.riscos.vincular.tipo')}</Label>
                       <Select value={v?.tipo_vinculacao || 'mitiga'} onValueChange={(val) => update(c.id, 'tipo_vinculacao', val)}>
                         <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                         <SelectContent>
@@ -184,7 +186,7 @@ export function VincularControleDialog({ open, onOpenChange, riscoId, riscoNome,
                       </Select>
                     </div>
                     <div>
-                      <Label className="text-[11px]">Eficácia estimada</Label>
+                      <Label className="text-[11px]">{t('fin.riscos.vincular.eficacia')}</Label>
                       <Select value={v?.eficacia_estimada || 'media'} onValueChange={(val) => update(c.id, 'eficacia_estimada', val)}>
                         <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                         <SelectContent>

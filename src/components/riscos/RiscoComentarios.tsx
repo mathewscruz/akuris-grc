@@ -21,6 +21,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { initials } from '@/components/riscos/risk-utils';
 import { filterUuids } from '@/lib/uuid';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Comentario {
   id: string;
@@ -31,7 +32,7 @@ interface Comentario {
 }
 
 /** Mensagem acionável para o erro de backend, sem jargão de PostgREST solto. */
-export function mensagemErroComentarios(error: unknown): string {
+export function mensagemErroComentarios(error: unknown, t: (k: string) => string): string {
   const raw = [
     (error as any)?.message,
     (error as any)?.details,
@@ -42,12 +43,12 @@ export function mensagemErroComentarios(error: unknown): string {
     .join(' ');
 
   if (/PGRST205|schema cache|does not exist|relation .* does not exist/i.test(raw)) {
-    return 'A tabela de comentários ainda não está publicada no banco. Aplique a migração riscos_comentarios no Supabase e recarregue o schema.';
+    return t('fin.riscos.comentarios.tabelaAusente');
   }
   if (/PGRST301|JWT|permission denied|row-level security/i.test(raw)) {
-    return 'Sem permissão para ler os comentários deste risco. Verifique sua sessão e o acesso ao módulo de Riscos.';
+    return t('fin.riscos.comentarios.semPermissao');
   }
-  return (error as any)?.message || 'Não foi possível carregar os comentários.';
+  return (error as any)?.message || t('fin.riscos.comentarios.erroCarregarDesc');
 }
 
 function useRiscoComentarios(riscoId: string) {
@@ -98,7 +99,7 @@ export function RiscoComentarios({ riscoId }: { riscoId: string }) {
     mutationFn: async (comentario: string) => {
       const { data: userData } = await supabase.auth.getUser();
       const uid = userData?.user?.id;
-      if (!uid) throw new Error('Sessão inválida');
+      if (!uid) throw new Error(t('fin.comum.sessaoInvalida'));
       const { error } = await (supabase as any)
         .from('riscos_comentarios')
         .insert({ risco_id: riscoId, user_id: uid, comentario });
@@ -109,7 +110,7 @@ export function RiscoComentarios({ riscoId }: { riscoId: string }) {
       queryClient.invalidateQueries({ queryKey: ['risco-comentarios', riscoId] });
     },
     onError: (e: any) => {
-      toast({ title: 'Erro', description: mensagemErroComentarios(e), variant: 'destructive' });
+      toast({ title: t('fin.comum.erro'), description: mensagemErroComentarios(e, t), variant: 'destructive' });
     },
   });
 
@@ -120,8 +121,8 @@ export function RiscoComentarios({ riscoId }: { riscoId: string }) {
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['risco-comentarios', riscoId] }),
     onError: (e: any) => toast({
-      title: 'Não foi possível excluir o comentário',
-      description: mensagemErroComentarios(e),
+      title: t('fin.riscos.comentarios.erroExcluir'),
+      description: mensagemErroComentarios(e, t),
       variant: 'destructive',
     }),
   });
@@ -138,7 +139,7 @@ export function RiscoComentarios({ riscoId }: { riscoId: string }) {
         <Textarea
           value={texto}
           onChange={(e) => setTexto(e.target.value)}
-          placeholder="Escreva um comentário…"
+          placeholder={t('fin.riscos.comentarios.placeholder')}
           className="min-h-[64px] resize-none border-0 bg-transparent p-1.5 focus-visible:ring-0"
           onKeyDown={(e) => {
             if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') submit();
@@ -155,7 +156,7 @@ export function RiscoComentarios({ riscoId }: { riscoId: string }) {
 
       {/* Lista — três estados distintos (AKURIS QA-061) */}
       {isLoading ? (
-        <div className="flex justify-center py-8" role="status" aria-label="Carregando comentários">
+        <div className="flex justify-center py-8" role="status" aria-label={t('fin.riscos.comentarios.carregando')}>
           <AkurisPulse size={28} />
         </div>
       ) : isError ? (
@@ -167,8 +168,8 @@ export function RiscoComentarios({ riscoId }: { riscoId: string }) {
           <div className="flex items-start gap-2.5">
             <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-destructive" strokeWidth={1.5} />
             <div className="min-w-0 space-y-2">
-              <p className="font-medium text-destructive">Não foi possível carregar os comentários</p>
-              <p className="text-muted-foreground">{mensagemErroComentarios(error)}</p>
+              <p className="font-medium text-destructive">{t('fin.riscos.comentarios.erroCarregar')}</p>
+              <p className="text-muted-foreground">{mensagemErroComentarios(error, t)}</p>
               <Button size="sm" variant="outline" className="h-7 px-3 text-xs" onClick={() => refetch()} disabled={isFetching}>
                 <RotateCcw className="h-3.5 w-3.5 mr-1" strokeWidth={1.5} />
                 {isFetching ? 'Tentando…' : 'Tentar novamente'}
@@ -191,7 +192,7 @@ export function RiscoComentarios({ riscoId }: { riscoId: string }) {
               </Avatar>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium truncate">{c.autor?.nome || 'Usuário'}</span>
+                  <span className="text-sm font-medium truncate">{c.autor?.nome || t('fin.comum.usuario')}</span>
                   <span className="text-[11px] text-muted-foreground shrink-0">
                     {format(new Date(c.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
                   </span>
@@ -201,7 +202,7 @@ export function RiscoComentarios({ riscoId }: { riscoId: string }) {
                       onClick={() => remove.mutate(c.id)}
                       disabled={remove.isPending && remove.variables === c.id}
                       className="ml-auto text-muted-foreground/60 hover:text-destructive transition-colors disabled:cursor-wait disabled:opacity-40"
-                      aria-label={remove.isPending && remove.variables === c.id ? 'Excluindo comentário' : 'Excluir comentário'}
+                      aria-label={remove.isPending && remove.variables === c.id ? t('fin.riscos.comentarios.excluindo') : t('fin.riscos.comentarios.excluir')}
                     >
                       <Trash2 className="h-3.5 w-3.5" strokeWidth={1.5} />
                     </button>

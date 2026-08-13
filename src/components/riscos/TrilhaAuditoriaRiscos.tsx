@@ -11,6 +11,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { useLanguage } from '@/contexts/LanguageContext';
 interface TrilhaAuditoriaRiscosProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -29,31 +30,10 @@ interface AuditLog {
   profiles?: { nome: string; email: string } | null;
 }
 
-const fieldTranslations: Record<string, string> = {
-  'nome': 'Nome',
-  'descricao': 'Descrição',
-  'status': 'Status',
-  'categoria_id': 'Categoria',
-  'matriz_id': 'Matriz',
-  'probabilidade_inicial': 'Probabilidade Inicial',
-  'impacto_inicial': 'Impacto Inicial',
-  'nivel_risco_inicial': 'Nível Risco Inicial',
-  'probabilidade_residual': 'Probabilidade Residual',
-  'impacto_residual': 'Impacto Residual',
-  'nivel_risco_residual': 'Nível Risco Residual',
-  'responsavel': 'Responsável',
-  'causas': 'Causas',
-  'consequencias': 'Consequências',
-  'controles_existentes': 'Controles Existentes',
-  'aceito': 'Aceito',
-  'justificativa_aceite': 'Justificativa Aceite',
-  'data_proxima_revisao': 'Próxima Revisão',
-  'status_aprovacao': 'Status Aprovação',
-  'aprovador_id': 'Aprovador',
-  'data_aprovacao': 'Data Aprovação',
-};
+const AUDIT_FIELDS = ["nome", "descricao", "status", "categoria_id", "matriz_id", "probabilidade_inicial", "impacto_inicial", "nivel_risco_inicial", "probabilidade_residual", "impacto_residual", "nivel_risco_residual", "responsavel", "causas", "consequencias", "controles_existentes", "aceito", "justificativa_aceite", "data_proxima_revisao", "status_aprovacao", "aprovador_id", "data_aprovacao"] as const;
 
 export function TrilhaAuditoriaRiscos({ open, onOpenChange, riscoId, riscoNome }: TrilhaAuditoriaRiscosProps) {
+  const { t } = useLanguage();
   const { data: auditLogs, isLoading } = useQuery({
     queryKey: ['risco-audit-logs', riscoId],
     queryFn: async () => {
@@ -87,12 +67,12 @@ export function TrilhaAuditoriaRiscos({ open, onOpenChange, riscoId, riscoNome }
     switch (action) {
       case 'INSERT': return <StatusBadge size="sm" tone="success">Criado</StatusBadge>;
       case 'UPDATE': return <StatusBadge size="sm" tone="info">Atualizado</StatusBadge>;
-      case 'DELETE': return <StatusBadge size="sm" tone="destructive">Excluído</StatusBadge>;
+      case 'DELETE': return <StatusBadge size="sm" tone="destructive">{t('fin.comum.excluido')}</StatusBadge>;
       default: return <StatusBadge size="sm" tone="neutral" variant="outline">{action}</StatusBadge>;
     }
   };
 
-  const translateField = (field: string) => fieldTranslations[field] || field;
+  const translateField = (field: string) => (AUDIT_FIELDS as readonly string[]).includes(field) ? t(`fin.riscos.campos.${field}`) : field;
 
   const renderValueComparison = (log: AuditLog) => {
     if (!log.old_values || !log.new_values || !log.changed_fields) return null;
@@ -111,7 +91,7 @@ export function TrilhaAuditoriaRiscos({ open, onOpenChange, riscoId, riscoNome }
               <p className="text-sm text-destructive">{String(oldVal ?? 'N/A')}</p>
             </div>
             <div className="rounded-md border border-success/30 bg-success/10 p-2">
-              <p className="text-xs font-medium text-success">Novo</p>
+              <p className="text-xs font-medium text-success">{t('fin.comum.novo')}</p>
               <p className="text-sm text-success">{String(newVal ?? 'N/A')}</p>
             </div>
           </div>
@@ -136,9 +116,7 @@ export function TrilhaAuditoriaRiscos({ open, onOpenChange, riscoId, riscoNome }
             </div>
           ) : !auditLogs || auditLogs.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
-              <History className="h-12 w-12 mx-auto mb-4 opacity-50" strokeWidth={1.5} />
-              Nenhum histórico de alterações encontrado.
-            </div>
+              <History className="h-12 w-12 mx-auto mb-4 opacity-50" strokeWidth={1.5} />{t('fin.riscos.trilha.vazio')}</div>
           ) : (
               <div className="space-y-4">
                 {auditLogs.map((log) => (
@@ -149,7 +127,7 @@ export function TrilhaAuditoriaRiscos({ open, onOpenChange, riscoId, riscoNome }
                           <div className="flex items-center gap-2">
                             {getActionIcon(log.action)}
                             <CardTitle className="text-lg">
-                              Risco {log.action === 'INSERT' ? 'Criado' : log.action === 'UPDATE' ? 'Atualizado' : 'Excluído'}
+                              Risco {log.action === 'INSERT' ? 'Criado' : log.action === 'UPDATE' ? 'Atualizado' : t('fin.comum.excluido')}
                             </CardTitle>
                             {getActionBadge(log.action)}
                           </div>
@@ -170,7 +148,7 @@ export function TrilhaAuditoriaRiscos({ open, onOpenChange, riscoId, riscoNome }
                       <Tabs defaultValue="resumo">
                         <TabsList>
                           <TabsTrigger value="resumo">Resumo</TabsTrigger>
-                          {log.action === 'UPDATE' && <TabsTrigger value="comparacao">Comparação</TabsTrigger>}
+                          {log.action === 'UPDATE' && <TabsTrigger value="comparacao">{t('fin.comum.comparacao')}</TabsTrigger>}
                         </TabsList>
                         <TabsContent value="resumo" className="space-y-3">
                           <div className="text-sm">
