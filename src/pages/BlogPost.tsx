@@ -7,6 +7,7 @@ import remarkGfm from 'remark-gfm';
 import { SEO } from '@/components/SEO';
 import { PublicShell } from '@/components/public/PublicShell';
 import { supabase } from '@/integrations/supabase/client';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface PostFull {
   id: string;
@@ -25,6 +26,7 @@ interface PostFull {
 }
 
 export default function BlogPost() {
+  const { t } = useLanguage();
   const { slug } = useParams<{ slug: string }>();
   const [post, setPost] = useState<PostFull | null>(null);
   const [loading, setLoading] = useState(true);

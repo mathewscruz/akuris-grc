@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { Rocket, CheckCircle2, Circle, AlertTriangle, Database, Shield, FileCheck, Lock, BarChart3, ArrowRight, ArrowLeft, X } from 'lucide-react';
 import { AkurisAIIcon } from '@/components/icons';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface OnboardingStep {
   id: string;
@@ -20,6 +21,7 @@ interface OnboardingStep {
 }
 
 export function OnboardingWizard() {
+  const { t } = useLanguage();
   const { user, profile } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);

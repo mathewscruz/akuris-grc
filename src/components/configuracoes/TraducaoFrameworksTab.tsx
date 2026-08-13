@@ -8,6 +8,7 @@ import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface FrameworkRow {
   id: string;
@@ -23,6 +24,7 @@ interface FrameworkRow {
  * frameworks globais do Gap Analysis (colunas *_en), em lotes.
  */
 export function TraducaoFrameworksTab() {
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<FrameworkRow[]>([]);
   const [runningId, setRunningId] = useState<string | null>(null);
