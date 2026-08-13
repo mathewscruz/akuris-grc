@@ -77,6 +77,17 @@ const modules: Record<string, ModuleDict> = {
   relatoriosComp,
   governancaComp,
   publicPortal,
+  denunciasAdmin,
+  admin,
+  acessosDd,
+  modDialogs,
+  contratosDialogs,
+  dadosDialogs,
+  govDialogs,
+  configIntegrations,
+  configPerms,
+  configPlanos,
+  configGeral,
 };
 
 
