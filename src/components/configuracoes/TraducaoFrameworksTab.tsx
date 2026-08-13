@@ -103,10 +103,40 @@ export function TraducaoFrameworksTab() {
     }
   };
 
+  /**
+   * Gera em lote as orientações (guidance) em inglês. O conteúdo fica salvo nas
+   * colunas globais *_en e é reaproveitado por todas as empresas.
+   */
+  const traduzirOrientacoes = async (fw: FrameworkRow) => {
+    setRunningId(`guidance-${fw.id}`);
+    let guard = 0;
+    try {
+      while (guard < 80) {
+        guard++;
+        const res = await invokeEdgeFunction<{ processed: number; remaining: number }>(
+          'populate-requirement-guidance',
+          { body: { framework_id: fw.id, locale: 'en', batch_size: 5 }, isAiCall: true },
+        );
+        if (res.error || !res.data) break;
+        setRows((prev) =>
+          prev.map((r) =>
+            r.id === fw.id ? { ...r, guidanceEn: Math.max(r.total - (res.data!.remaining ?? 0), 0) } : r,
+          ),
+        );
+        if ((res.data.remaining ?? 0) === 0 || res.data.processed === 0) break;
+      }
+      toast.success(`Orientações em inglês atualizadas: ${fw.nome}`);
+    } finally {
+      setRunningId(null);
+      load();
+    }
+  };
+
   const pendentesTotais = useMemo(
     () => rows.reduce((acc, r) => acc + (r.total - r.traduzidos), 0),
     [rows],
   );
+
 
   if (loading) return <AkurisPulse />;
 
