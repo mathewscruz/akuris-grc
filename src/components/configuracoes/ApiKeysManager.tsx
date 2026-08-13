@@ -32,7 +32,7 @@ interface ApiKey {
   expires_at: string | null;
 }
 
-const PERMISSOES_DISPONIVEIS = [
+const PERMISSOES_DISPONIVEIS: { value: string; labelKey: string }[] = [
   { value: 'riscos:read', labelKey: 'riscosRead' },
   { value: 'riscos:write', labelKey: 'riscosWrite' },
   { value: 'controles:read', labelKey: 'controlesRead' },
