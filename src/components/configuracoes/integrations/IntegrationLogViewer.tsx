@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { RefreshCw, CheckCircle, XCircle, Clock, Filter } from 'lucide-react';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { formatDateOnly } from '@/lib/date-utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface WebhookLog {
   id: string;
@@ -26,6 +27,7 @@ interface IntegrationLogViewerProps {
 }
 
 export function IntegrationLogViewer({ open, onOpenChange }: IntegrationLogViewerProps) {
+  const { t } = useLanguage();
   const [logs, setLogs] = useState<WebhookLog[]>([]);
   const [loading, setLoading] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -111,26 +113,9 @@ export function IntegrationLogViewer({ open, onOpenChange }: IntegrationLogViewe
   };
 
   const getEventLabel = (evento: string) => {
-    const labels: Record<string, string> = {
-      incidente_criado: 'Incidente Criado',
-      incidente_atualizado: 'Incidente Atualizado',
-      incidente_resolvido: 'Incidente Resolvido',
-      incidente_critico: 'Incidente Crítico',
-      risco_identificado: 'Risco Identificado',
-      risco_atualizado: 'Risco Atualizado',
-      risco_nivel_alterado: 'Nível de Risco Alterado',
-      documento_criado: 'Documento Criado',
-      documento_aprovado: 'Documento Aprovado',
-      documento_rejeitado: 'Documento Rejeitado',
-      controle_criado: 'Controle Criado',
-      controle_atualizado: 'Controle Atualizado',
-      controle_vencendo: 'Controle Vencendo',
-      auditoria_criada: 'Auditoria Criada',
-      auditoria_item_atribuido: 'Item de Auditoria Atribuído',
-      denuncia_recebida: 'Denúncia Recebida',
-      sync_devices: 'Sincronização Dispositivos'
-    };
-    return labels[evento] || evento;
+    const key = `configIntegrations.logViewer.eventLabels.${evento}`;
+    const translated = t(key);
+    return translated === key ? evento : translated;
   };
 
   const successCount = logs.filter(l => l.sucesso).length;
@@ -141,8 +126,8 @@ export function IntegrationLogViewer({ open, onOpenChange }: IntegrationLogViewe
       open={open}
       onOpenChange={onOpenChange}
       icon={Clock}
-      title="Logs de Integrações"
-      description="Histórico de notificações enviadas para integrações externas"
+      title={t('configIntegrations.logViewer.title')}
+      description={t('configIntegrations.logViewer.description')}
       size="lg"
       hideFooter
     >
@@ -150,10 +135,10 @@ export function IntegrationLogViewer({ open, onOpenChange }: IntegrationLogViewe
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-2">
           <div className="flex items-center gap-3 text-sm">
             <StatusBadge tone="success" size="sm">
-              ✓ {successCount} sucesso
+              ✓ {successCount} {t('configIntegrations.logViewer.sucesso')}
             </StatusBadge>
             <StatusBadge tone="destructive" size="sm">
-              ✗ {errorCount} falha{errorCount !== 1 ? 's' : ''}
+              ✗ {errorCount} {errorCount !== 1 ? t('configIntegrations.logViewer.falhas') : t('configIntegrations.logViewer.falha')}
             </StatusBadge>
           </div>
           <div className="flex items-center gap-2">
@@ -163,9 +148,9 @@ export function IntegrationLogViewer({ open, onOpenChange }: IntegrationLogViewe
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="success">Sucesso</SelectItem>
-                <SelectItem value="error">Falhas</SelectItem>
+                <SelectItem value="all">{t('configIntegrations.logViewer.statusAll')}</SelectItem>
+                <SelectItem value="success">{t('configIntegrations.logViewer.statusSuccess')}</SelectItem>
+                <SelectItem value="error">{t('configIntegrations.logViewer.statusError')}</SelectItem>
               </SelectContent>
             </Select>
             <Select value={filterPeriod} onValueChange={setFilterPeriod}>
@@ -173,15 +158,15 @@ export function IntegrationLogViewer({ open, onOpenChange }: IntegrationLogViewe
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="1d">Hoje</SelectItem>
-                <SelectItem value="7d">7 dias</SelectItem>
-                <SelectItem value="30d">30 dias</SelectItem>
-                <SelectItem value="all">Tudo</SelectItem>
+                <SelectItem value="1d">{t('configIntegrations.logViewer.periodToday')}</SelectItem>
+                <SelectItem value="7d">{t('configIntegrations.logViewer.period7d')}</SelectItem>
+                <SelectItem value="30d">{t('configIntegrations.logViewer.period30d')}</SelectItem>
+                <SelectItem value="all">{t('configIntegrations.logViewer.periodAll')}</SelectItem>
               </SelectContent>
             </Select>
             <Button variant="outline" size="sm" onClick={fetchLogs} disabled={loading} className="h-8">
               {loading ? <AkurisPulse size={12} className="mr-1" /> : <RefreshCw className="h-3 w-3 mr-1" />}
-              Atualizar
+              {t('configIntegrations.logViewer.btnAtualizar')}
             </Button>
           </div>
         </div>
@@ -190,8 +175,8 @@ export function IntegrationLogViewer({ open, onOpenChange }: IntegrationLogViewe
           {logs.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
               <Clock className="h-12 w-12 mb-4 opacity-50" />
-              <p>Nenhum log encontrado</p>
-              <p className="text-sm">Os logs aparecerão aqui quando eventos forem disparados</p>
+              <p>{t('configIntegrations.logViewer.emptyTitle')}</p>
+              <p className="text-sm">{t('configIntegrations.logViewer.emptyDesc')}</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -221,13 +206,13 @@ export function IntegrationLogViewer({ open, onOpenChange }: IntegrationLogViewe
 
                   {log.payload && (
                     <div className="mt-3 p-2 bg-muted rounded text-xs font-mono overflow-x-auto">
-                      <strong>Payload:</strong> {typeof log.payload === 'object' ? (log.payload.titulo || JSON.stringify(log.payload).substring(0, 100)) : String(log.payload).substring(0, 100)}...
+                      <strong>{t('configIntegrations.logViewer.payloadLabel')}</strong> {typeof log.payload === 'object' ? (log.payload.titulo || JSON.stringify(log.payload).substring(0, 100)) : String(log.payload).substring(0, 100)}...
                     </div>
                   )}
 
                   {!log.sucesso && log.resposta && (
                     <div className="mt-2 p-2 bg-red-50 dark:bg-red-950 rounded text-xs text-red-600 dark:text-red-400">
-                      <strong>Erro:</strong> {typeof log.resposta === 'string' ? log.resposta.substring(0, 200) : JSON.stringify(log.resposta).substring(0, 200)}
+                      <strong>{t('configIntegrations.logViewer.erroLabel')}</strong> {typeof log.resposta === 'string' ? log.resposta.substring(0, 200) : JSON.stringify(log.resposta).substring(0, 200)}
                     </div>
                   )}
                 </div>
