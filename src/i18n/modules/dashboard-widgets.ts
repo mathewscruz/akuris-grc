@@ -193,6 +193,7 @@ const ptDict = {
     modules: {
       riscos: 'Riscos',
       incidentes: 'Incidentes',
+      controles: 'Controles',
       planos_acao: 'Planos de Ação',
       documentos: 'Documentos',
       contratos: 'Contratos',
@@ -394,6 +395,7 @@ const enDict = {
     modules: {
       riscos: 'Risks',
       incidentes: 'Incidents',
+      controles: 'Controls',
       planos_acao: 'Action Plans',
       documentos: 'Documents',
       contratos: 'Contracts',

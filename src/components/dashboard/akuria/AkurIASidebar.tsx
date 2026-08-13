@@ -31,6 +31,7 @@ export function AkurIASidebar({
   onNew,
   onDelete,
 }: Props) {
+  const { t } = useLanguage();
   return (
     <div className="flex flex-col h-full bg-muted/30 border-r border-border/50">
       <div className="p-2 border-b border-border/50">
