@@ -47,6 +47,7 @@ const modules: Record<string, ModuleDict> = {
   gapAdherence,
   gapV2,
   gapExports,
+  contratosAtivos,
   planosAcao,
   minhasTarefas,
   projetos,
