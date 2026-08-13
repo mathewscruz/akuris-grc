@@ -159,7 +159,7 @@ export function MatrizVisualizacao({ onNavigate, onConfigure }: Props) {
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="flex flex-col gap-1">
             <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
-              Matriz Visual
+              {t('sweepRiscos.riscos.matrizVis.matrizVisual')}
             </span>
             <h3 className="text-base font-semibold text-foreground">
               {matriz.nome}
@@ -167,10 +167,10 @@ export function MatrizVisualizacao({ onNavigate, onConfigure }: Props) {
           </div>
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-3 py-1 text-xs font-medium text-muted-foreground">
-              Cálculo: <span className="text-foreground">{metodoLabel}</span>
+              {t('sweepRiscos.riscos.matrizVis.calculo')} <span className="text-foreground">{metodoLabel}</span>
             </span>
             <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-3 py-1 text-xs font-medium text-muted-foreground">
-              {totalPlotados} risco{totalPlotados === 1 ? '' : 's'} plotado{totalPlotados === 1 ? '' : 's'}
+              {t(totalPlotados === 1 ? 'sweepRiscos.riscos.matrizVis.plotadosUm' : 'sweepRiscos.riscos.matrizVis.plotadosVarios', { n: totalPlotados })}
             </span>
           </div>
         </div>
@@ -181,7 +181,7 @@ export function MatrizVisualizacao({ onNavigate, onConfigure }: Props) {
             {/* Eixo Y label */}
             <div className="flex items-center justify-center">
               <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium [writing-mode:vertical-rl] rotate-180">
-                Probabilidade ↑
+                {t('sweepRiscos.riscos.matrizVis.probabilidadeEixo')}
               </span>
             </div>
 
@@ -281,7 +281,7 @@ export function MatrizVisualizacao({ onNavigate, onConfigure }: Props) {
                                 ))}
                                 {riscosNaCelula.length > 3 && (
                                   <div className="text-xs text-primary font-medium pt-0.5">
-                                    + {riscosNaCelula.length - 3} outros — clique para ver todos
+                                    {t('sweepRiscos.riscos.matrizVis.outrosClique', { n: riscosNaCelula.length - 3 })}
                                   </div>
                                 )}
                               </div>
@@ -299,7 +299,7 @@ export function MatrizVisualizacao({ onNavigate, onConfigure }: Props) {
               {/* Eixo X label */}
               <div className="text-center mt-3">
                 <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
-                  Impacto →
+                  {t('sweepRiscos.riscos.matrizVis.impactoEixo')}
                 </span>
               </div>
             </div>
@@ -310,7 +310,7 @@ export function MatrizVisualizacao({ onNavigate, onConfigure }: Props) {
         {niveis.length > 0 && (
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium mr-1">
-              Níveis
+              {t('sweepRiscos.riscos.matrizVis.niveis')}
             </span>
             {niveis.map((n, i) => (
               <span
@@ -321,7 +321,7 @@ export function MatrizVisualizacao({ onNavigate, onConfigure }: Props) {
                   className="inline-block w-2.5 h-2.5 rounded-full"
                   style={{ backgroundColor: n.cor || '#6b7280' }}
                 />
-                <span className="text-foreground">{n.nivel || `Nível ${i + 1}`}</span>
+                <span className="text-foreground">{n.nivel || t('sweepRiscos.riscos.matrizVis.nivelFallback', { n: i + 1 })}</span>
                 <span className="text-muted-foreground">({n.min}–{n.max})</span>
               </span>
             ))}

@@ -200,6 +200,9 @@ export const sweepRiscos = {
           niveis: 'Níveis',
           nivelFallback: 'Nível {n}',
           outrosClique: '+ {n} outros — clique para ver todos',
+          matrizVisual: 'Matriz Visual',
+          plotadosUm: '{n} risco plotado',
+          plotadosVarios: '{n} riscos plotados',
         },
         anexos: {
           tipoNaoPermitidoDesc: 'Apenas PDF, DOC, DOCX e imagens são permitidos.',
@@ -448,6 +451,9 @@ export const sweepRiscos = {
           niveis: 'Levels',
           nivelFallback: 'Level {n}',
           outrosClique: '+ {n} others — click to see all',
+          matrizVisual: 'Visual matrix',
+          plotadosUm: '{n} risk plotted',
+          plotadosVarios: '{n} risks plotted',
         },
         anexos: {
           tipoNaoPermitidoDesc: 'Only PDF, DOC, DOCX and images are allowed.',
