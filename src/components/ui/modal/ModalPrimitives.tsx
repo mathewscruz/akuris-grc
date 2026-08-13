@@ -95,7 +95,7 @@ export function ModalHeader({
                 className="h-7 w-7"
                 onClick={nav.onNext}
                 disabled={!nav.onNext || nav.current >= nav.total}
-                aria-label="Próximo registro"
+                aria-label={t('residuos.geral.proximoRegistro')}
               >
                 <ChevronRight className="h-4 w-4" strokeWidth={1.5} />
               </Button>
