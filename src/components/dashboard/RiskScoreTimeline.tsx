@@ -171,7 +171,7 @@ export function RiskScoreTimeline() {
         </CardHeader>
         <CardContent className="min-h-[260px] flex flex-col items-center justify-center gap-2">
           <AkurisPulse size={56} />
-          <p className="text-xs text-muted-foreground">Carregando histórico...</p>
+          <p className="text-xs text-muted-foreground">{t('dashWidgets.timeline.loading')}</p>
         </CardContent>
       </Card>
     );
@@ -184,7 +184,7 @@ export function RiskScoreTimeline() {
         <div className="space-y-1 min-w-0">
           <CardTitle className="text-base">{t('dashboard.riskEvolution')}</CardTitle>
           <p className="text-[11px] text-muted-foreground">
-            Índice de exposição · quanto menor, melhor
+            {t('dashWidgets.timeline.subtitle')}
           </p>
           {latestScore !== null && (
             <div className="flex items-center gap-2 text-sm flex-wrap">
@@ -205,11 +205,11 @@ export function RiskScoreTimeline() {
                   {delta.dir === 'flat' && <Minus className="h-3 w-3" strokeWidth={1.5} />}
                   {delta.value > 0 ? '+' : ''}
                   {delta.value.toFixed(0)}
-                  <span className="text-muted-foreground font-normal">vs. anterior</span>
+                  <span className="text-muted-foreground font-normal">{t('dashWidgets.timeline.vsPrevious')}</span>
                 </span>
               )}
               {totalAtual > 0 && (
-                <span className="text-[11px] text-muted-foreground">· {totalAtual} riscos</span>
+                <span className="text-[11px] text-muted-foreground">{t('dashWidgets.timeline.risksCount', { count: totalAtual })}</span>
               )}
             </div>
           )}
@@ -238,9 +238,9 @@ export function RiskScoreTimeline() {
               <LineChartIcon className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
             </div>
             <div className="text-center space-y-1 max-w-[280px]">
-              <p className="text-sm font-medium text-foreground">Sem histórico ainda</p>
+              <p className="text-sm font-medium text-foreground">{t('dashWidgets.timeline.emptyTitle')}</p>
               <p className="text-xs text-muted-foreground">
-                Cadastre alguns riscos para começar a registrar a evolução da exposição neste período.
+                {t('dashWidgets.timeline.emptyDescription')}
               </p>
             </div>
           </div>
@@ -281,7 +281,7 @@ export function RiskScoreTimeline() {
                   strokeDasharray="4 4"
                   strokeOpacity={0.6}
                   label={{
-                    value: `Meta ≤ ${GOAL_VALUE}`,
+                    value: t('dashWidgets.timeline.goal', { value: GOAL_VALUE }),
                     position: 'right',
                     fill: 'hsl(var(--success))',
                     fontSize: 10,
@@ -303,10 +303,13 @@ export function RiskScoreTimeline() {
                   }}
                   itemStyle={{ color: 'hsl(var(--popover-foreground))', fontSize: 13 }}
                   formatter={(value: number | null, _name, item: any) => {
-                    if (value === null || value === undefined) return ['Sem dados', 'Exposição'];
+                    if (value === null || value === undefined)
+                      return [t('dashWidgets.timeline.noData'), t('dashWidgets.timeline.exposure')];
                     const p = item?.payload as PointData | undefined;
-                    const extra = p ? ` · ${p.criticos} crít · ${p.altos} altos` : '';
-                    return [`${value}${extra}`, 'Índice de exposição'];
+                    const extra = p
+                      ? t('dashWidgets.timeline.tooltipExtra', { crit: p.criticos, high: p.altos })
+                      : '';
+                    return [`${value}${extra}`, t('dashWidgets.timeline.exposureIndex')];
                   }}
                 />
                 <Area
