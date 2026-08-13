@@ -30,6 +30,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/components/AuthProvider';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const tratamentoSchema = z.object({
   titulo: z.string().min(1, 'Título é obrigatório'),
@@ -66,6 +67,7 @@ export function TratamentoDialog({ incidenteId, tratamento, onSuccess, trigger, 
   const [users, setUsers] = useState<any[]>([]);
   const { toast } = useToast();
   const { profile } = useAuth();
+  const { t } = useLanguage();
 
   const form = useForm<TratamentoFormData>({
     resolver: zodResolver(tratamentoSchema),
@@ -131,14 +133,14 @@ export function TratamentoDialog({ incidenteId, tratamento, onSuccess, trigger, 
           .eq('id', tratamento.id);
 
         if (error) throw error;
-        toast({ title: 'Tratamento atualizado com sucesso!' });
+        toast({ title: t('incidentesComp.tratamento.toastUpdated') });
       } else {
         const { error } = await supabase
           .from('incidentes_tratamentos')
           .insert([tratamentoData]);
 
         if (error) throw error;
-        toast({ title: 'Tratamento registrado com sucesso!' });
+        toast({ title: t('incidentesComp.tratamento.toastCreated') });
       }
 
       setOpen(false);
@@ -146,7 +148,7 @@ export function TratamentoDialog({ incidenteId, tratamento, onSuccess, trigger, 
       onSuccess?.();
     } catch (error: any) {
       toast({
-        title: 'Erro',
+        title: t('incidentesComp.tratamento.toastErrorTitle'),
         description: error.message,
         variant: 'destructive',
       });
@@ -162,7 +164,7 @@ export function TratamentoDialog({ incidenteId, tratamento, onSuccess, trigger, 
           {trigger || (
             <Button size="sm">
               <Plus className="mr-2 h-4 w-4" />
-              Nova Ação
+              {t('incidentesComp.tratamento.newButton')}
             </Button>
           )}
         </span>
@@ -171,11 +173,11 @@ export function TratamentoDialog({ incidenteId, tratamento, onSuccess, trigger, 
         open={open}
         onOpenChange={setOpen}
         icon={Plus}
-        title={tratamento ? 'Editar Ação de Tratamento' : 'Nova Ação de Tratamento'}
-        description={tratamento ? 'Atualize a ação de tratamento.' : 'Registre uma nova ação para tratar o incidente.'}
+        title={tratamento ? t('incidentesComp.tratamento.titleEdit') : t('incidentesComp.tratamento.titleNew')}
+        description={tratamento ? t('incidentesComp.tratamento.descEdit') : t('incidentesComp.tratamento.descNew')}
         size="md"
         onSubmit={form.handleSubmit(onSubmit)}
-        submitLabel={tratamento ? 'Atualizar' : 'Registrar'}
+        submitLabel={tratamento ? t('incidentesComp.tratamento.submitUpdate') : t('incidentesComp.tratamento.submitCreate')}
         isSubmitting={loading}
         isDirty={form.formState.isDirty}
       >
@@ -186,9 +188,9 @@ export function TratamentoDialog({ incidenteId, tratamento, onSuccess, trigger, 
               name="titulo"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Título da Ação *</FormLabel>
+                  <FormLabel>{t('incidentesComp.tratamento.fieldTitulo')}</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ex: Trocar senhas comprometidas" {...field} />
+                    <Input placeholder={t('incidentesComp.tratamento.fieldTituloPlaceholder')} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -201,19 +203,19 @@ export function TratamentoDialog({ incidenteId, tratamento, onSuccess, trigger, 
                 name="tipo_acao"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Tipo de Ação *</FormLabel>
+                    <FormLabel>{t('incidentesComp.tratamento.fieldTipoAcao')}</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecione o tipo" />
+                          <SelectValue placeholder={t('incidentesComp.tratamento.fieldTipoAcaoPlaceholder')} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="corretiva">Corretiva</SelectItem>
-                        <SelectItem value="preventiva">Preventiva</SelectItem>
-                        <SelectItem value="investigativa">Investigativa</SelectItem>
-                        <SelectItem value="contenção">Contenção</SelectItem>
-                        <SelectItem value="comunicacao">Comunicação</SelectItem>
+                        <SelectItem value="corretiva">{t('incidentesComp.tratamento.tipoCorretiva')}</SelectItem>
+                        <SelectItem value="preventiva">{t('incidentesComp.tratamento.tipoPreventiva')}</SelectItem>
+                        <SelectItem value="investigativa">{t('incidentesComp.tratamento.tipoInvestigativa')}</SelectItem>
+                        <SelectItem value="contenção">{t('incidentesComp.tratamento.tipoContencao')}</SelectItem>
+                        <SelectItem value="comunicacao">{t('incidentesComp.tratamento.tipoComunicacao')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -226,11 +228,11 @@ export function TratamentoDialog({ incidenteId, tratamento, onSuccess, trigger, 
                 name="responsavel_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Responsável</FormLabel>
+                    <FormLabel>{t('incidentesComp.tratamento.fieldResponsavel')}</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecione o responsável" />
+                          <SelectValue placeholder={t('incidentesComp.tratamento.fieldResponsavelPlaceholder')} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -252,7 +254,7 @@ export function TratamentoDialog({ incidenteId, tratamento, onSuccess, trigger, 
               name="data_prazo"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Data Prazo</FormLabel>
+                  <FormLabel>{t('incidentesComp.tratamento.fieldDataPrazo')}</FormLabel>
                   <Popover>
                     <PopoverTrigger asChild>
                       <FormControl>
@@ -266,7 +268,7 @@ export function TratamentoDialog({ incidenteId, tratamento, onSuccess, trigger, 
                           {field.value ? (
                             format(field.value, 'PPP', { locale: ptBR })
                           ) : (
-                            <span>Selecione uma data</span>
+                            <span>{t('incidentesComp.tratamento.fieldDataPrazoPlaceholder')}</span>
                           )}
                           <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                         </Button>
@@ -293,10 +295,10 @@ export function TratamentoDialog({ incidenteId, tratamento, onSuccess, trigger, 
               name="descricao"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Descrição da Ação *</FormLabel>
+                  <FormLabel>{t('incidentesComp.tratamento.fieldDescricao')}</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Descreva detalhadamente a ação a ser executada..."
+                      placeholder={t('incidentesComp.tratamento.fieldDescricaoPlaceholder')}
                       rows={3}
                       {...field}
                     />
@@ -311,10 +313,10 @@ export function TratamentoDialog({ incidenteId, tratamento, onSuccess, trigger, 
               name="observacoes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Observações</FormLabel>
+                  <FormLabel>{t('incidentesComp.tratamento.fieldObservacoes')}</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Observações adicionais..."
+                      placeholder={t('incidentesComp.tratamento.fieldObservacoesPlaceholder')}
                       rows={2}
                       {...field}
                     />
