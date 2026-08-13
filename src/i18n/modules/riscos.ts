@@ -1,4 +1,4 @@
-export const riscos = {
+const riscosRaw = {
   pt: {
   page: {
     loading: 'Carregando…',
@@ -342,3 +342,6 @@ export const riscos = {
   },
 },
 };
+
+// As chaves deste módulo vivem sob a raiz `riscos.*` (ex.: t('riscos.page.title')).
+export const riscos = { pt: { riscos: riscosRaw.pt }, en: { riscos: riscosRaw.en } };
