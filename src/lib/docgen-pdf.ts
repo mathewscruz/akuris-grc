@@ -196,9 +196,9 @@ export async function buildDocGenPdfBlob(doc: DocGenDocument, options: PdfOption
   pdf.setTextColor(71, 84, 103);
   pdf.text(empresaNome, pageWidth / 2, capaY + 34, { align: 'center' });
   pdf.setFontSize(10.5);
-  pdf.text(labels.versao.replace('{versao}', versao), pageWidth / 2, pageHeight - 160, { align: 'center' });
-  pdf.text(labels.emissionDate.replace('{date}', dataCriacao), pageWidth / 2, pageHeight - 144, { align: 'center' });
-  pdf.text(labels.classification.replace('{classification}', classificacao), pageWidth / 2, pageHeight - 128, { align: 'center' });
+  pdf.text(labels.versaoText, pageWidth / 2, pageHeight - 160, { align: 'center' });
+  pdf.text(labels.emissionDateText, pageWidth / 2, pageHeight - 144, { align: 'center' });
+  pdf.text(labels.classificationText, pageWidth / 2, pageHeight - 128, { align: 'center' });
 
   // ===== SUMÁRIO (páginas preenchidas no fim) =====
   pdf.addPage();

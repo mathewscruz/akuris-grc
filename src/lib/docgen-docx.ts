@@ -42,9 +42,9 @@ export interface DocGenDocument {
 export interface DocxLabels {
   summary: string;
   section: string;
-  versao: string;
-  emissionDate: string;
-  classification: string;
+  versaoText: string;
+  emissionDateText: string;
+  classificationText: string;
   footerPage: string;
   of: string;
   glossary: string;
@@ -254,16 +254,16 @@ export async function buildDocGenDocxBlob(doc: DocGenDocument, options: DocxOpti
   children.push(new Paragraph({
     alignment: AlignmentType.CENTER,
     spacing: { before: 2400, after: 60 },
-    children: [new TextRun({ text: labels.versao.replace('{versao}', versao), size: 22, color: '475467' })],
+    children: [new TextRun({ text: labels.versaoText, size: 22, color: '475467' })],
   }));
   children.push(new Paragraph({
     alignment: AlignmentType.CENTER,
     spacing: { after: 60 },
-    children: [new TextRun({ text: labels.emissionDate.replace('{date}', dataCriacao), size: 22, color: '475467' })],
+    children: [new TextRun({ text: labels.emissionDateText, size: 22, color: '475467' })],
   }));
   children.push(new Paragraph({
     alignment: AlignmentType.CENTER,
-    children: [new TextRun({ text: labels.classification.replace('{classification}', classificacao), size: 22, color: '475467' })],
+    children: [new TextRun({ text: labels.classificationText, size: 22, color: '475467' })],
   }));
   children.push(new Paragraph({ children: [new PageBreak()] }));
 
