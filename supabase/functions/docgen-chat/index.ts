@@ -109,14 +109,137 @@ async function callClaude(
   if (!response.ok) {
     const errorText = await response.text();
     console.error('AI gateway error:', response.status, errorText, 'model:', model);
-    if (response.status === 429) throw new Error('Limite de requisições excedido. Tente novamente em alguns minutos.');
-    if (response.status === 402) throw new Error('Créditos de IA insuficientes.');
-    throw new Error(`Erro na IA (${response.status})`);
+    if (response.status === 429) throw new AiGatewayError('Limite de requisições excedido. Tente novamente em alguns minutos.', 'RATE_LIMITED', 429);
+    if (response.status === 402 || response.status === 403) {
+      throw new AiGatewayError('Créditos de IA insuficientes para concluir esta operação.', 'CREDITS_EXHAUSTED', 402);
+    }
+    throw new AiGatewayError(`Erro na IA (${response.status})`, 'AI_ERROR', 502);
   }
 
   const data = await response.json();
   return data.choices?.[0]?.message?.content || '';
 }
+
+// Erro tipado para o gateway de IA — permite mapear 402/403/429 em respostas
+// estruturadas que o frontend entende (CreditsExhaustedDialog etc).
+class AiGatewayError extends Error {
+  code: string;
+  httpStatus: number;
+  constructor(message: string, code: string, httpStatus: number) {
+    super(message);
+    this.name = 'AiGatewayError';
+    this.code = code;
+    this.httpStatus = httpStatus;
+  }
+}
+
+// Executa UMA rodada de refino gap-driven sobre o documento (mutação in-place).
+// Extraído do generate_document para evitar estourar o timeout da plataforma:
+// o frontend chama a action `auto_refine` uma vez por tentativa.
+async function autoRefineOnce(params: {
+  documentContent: any;
+  catalogCodes: string[];
+  residualGaps: string[];
+  empresaNome: string;
+  frameworkName?: string;
+  apiKey: string;
+  attempt: number;
+}): Promise<{
+  changed: boolean;
+  before: number;
+  after: number;
+  gaps_targeted: string[];
+  residualGaps: string[];
+  naoCobertos: any[];
+}> {
+  const { documentContent, catalogCodes, apiKey, attempt, empresaNome, frameworkName } = params;
+  const currentCov: any[] = Array.isArray(documentContent?.coverage_map) ? documentContent.coverage_map : [];
+  const naoCobertosAtuais: any[] = Array.isArray(documentContent?.requisitos_nao_cobertos_justificativa)
+    ? documentContent.requisitos_nao_cobertos_justificativa : [];
+  const before = computeCoverageScore(currentCov, naoCobertosAtuais, 0);
+  const gapsBatch = params.residualGaps.slice(0, 10);
+  const fail = {
+    changed: false, before, after: before, gaps_targeted: gapsBatch,
+    residualGaps: params.residualGaps, naoCobertos: naoCobertosAtuais,
+  };
+  if (!gapsBatch.length || !catalogCodes.length || !documentContent?.secoes?.length) return fail;
+
+  const instructionAuto = `Cubra explicitamente os seguintes requisitos ainda não endereçados no documento: ${gapsBatch.join(', ')}. Adicione cláusulas concretas nas seções mais apropriadas, sem perder cobertura já existente, e devolva o coverage_map atualizado incluindo esses códigos.`;
+  const secoesForRefine = (documentContent.secoes || []).map((s: any) => ({ nome: s.nome, conteudo: s.conteudo }));
+  const docJsonR = JSON.stringify({
+    titulo: documentContent.titulo,
+    versao: documentContent.versao,
+    secoes: secoesForRefine,
+  });
+  const covBlock = currentCov.length
+    ? `\n\n=== COVERAGE MAP ATUAL (NÃO PERDER COBERTURA) ===\n${currentCov
+        .map((c: any) => `- [${c.requirement_codigo || 'S/C'}] ${c.requirement_titulo || ''} → seções ${JSON.stringify(c.section_indexes || [])} — evidência: "${(c.evidencia || '').slice(0, 160)}"`)
+        .join('\n')}`
+    : '';
+
+  const sysR = `Você é um editor sênior de documentos corporativos com foco em compliance. Aplique a instrução cobrindo TODOS os requisitos indicados sem perder cobertura existente. Mantenha a lista de seções (mesmos nomes e ordem). Responda SOMENTE com JSON válido, sem markdown, no formato:
+{
+  "sections_changed": ["Nome da seção 1", ...],
+  "summary": "1 frase descrevendo a mudança",
+  "document": {
+    "titulo": "...",
+    "versao": "...",
+    "secoes": [ { "nome": "...", "conteudo": "..." } ],
+    "coverage_map": [ { "requirement_codigo": "A.8.13", "requirement_titulo": "...", "section_indexes": [2], "evidencia": "trecho literal (max 220 chars)" } ]
+  },
+  "removed_coverage": []
+}`;
+  const userR = `EMPRESA: ${empresaNome}
+${frameworkName ? `FRAMEWORK: ${frameworkName}\n` : ''}
+DOCUMENTO ATUAL (JSON):
+${docJsonR}${covBlock}
+
+INSTRUÇÃO (auto-refino gap-driven, tentativa ${attempt}/${MAX_REFINE_ATTEMPTS}):
+${instructionAuto}
+
+Devolva o JSON completo com coverage_map atualizado.`;
+
+  const rawR = await callClaude(
+    [{ role: 'user', content: userR }],
+    sysR,
+    apiKey,
+    18000,
+    0.35,
+    MODEL_QUALITY,
+  );
+
+  let parsedR: any = null;
+  try {
+    parsedR = JSON.parse(rawR.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim());
+  } catch (e) {
+    console.log('DocGen auto-refino parse falhou na tentativa', attempt, e);
+    return fail;
+  }
+  if (!parsedR?.document?.secoes?.length) return fail;
+
+  const removed = new Set((parsedR?.removed_coverage || []).map((r: any) => String(r?.requirement_codigo || '')));
+  const nextCoverage: any[] = Array.isArray(parsedR?.document?.coverage_map) && parsedR.document.coverage_map.length
+    ? parsedR.document.coverage_map
+    : currentCov.filter((c: any) => !removed.has(String(c?.requirement_codigo || '')));
+
+  documentContent.titulo = parsedR.document.titulo || documentContent.titulo;
+  documentContent.versao = parsedR.document.versao || documentContent.versao;
+  documentContent.secoes = parsedR.document.secoes;
+  documentContent.coverage_map = nextCoverage;
+
+  const coveredNow = new Set(nextCoverage.map((c: any) => String(c?.requirement_codigo || '').trim()).filter(Boolean));
+  const ncBase = naoCobertosAtuais.filter((n: any) => !coveredNow.has(String(n?.codigo || '').trim()));
+  const expandedNaoCob = expandNaoCobertosFromCatalog(catalogCodes, nextCoverage, ncBase);
+  documentContent.requisitos_nao_cobertos_justificativa = expandedNaoCob;
+
+  const after = computeCoverageScore(nextCoverage, expandedNaoCob, 0);
+  const nextResidual = computeResidualGaps(catalogCodes, nextCoverage, expandedNaoCob, 15);
+  documentContent._initial_score = after;
+  documentContent._residual_gaps = nextResidual;
+
+  return { changed: true, before, after, gaps_targeted: gapsBatch, residualGaps: nextResidual, naoCobertos: expandedNaoCob };
+}
+
 
 // ============ Quality gate helpers (Onda 3) ============
 const PLACEHOLDER_RX = /\b(preencher|inserir|exemplo|TBD|lorem ipsum|xxx|xxxx|\.\.\.)\b/i;
