@@ -151,7 +151,9 @@ export function TraducaoFrameworksTab() {
       <div className="space-y-3">
         {rows.map((fw) => {
           const pct = fw.total ? Math.round((fw.traduzidos / fw.total) * 100) : 0;
+          const pctGuidance = fw.total ? Math.round((fw.guidanceEn / fw.total) * 100) : 0;
           const running = runningId === fw.id;
+          const runningGuidance = runningId === `guidance-${fw.id}`;
           return (
             <Card key={fw.id}>
               <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -164,17 +166,31 @@ export function TraducaoFrameworksTab() {
                   </div>
                   <Progress value={pct} className="h-1.5" />
                   <span className="text-xs text-muted-foreground">
-                    {fw.traduzidos} de {fw.total} requisitos
+                    {fw.traduzidos} de {fw.total} requisitos · orientações EN: {fw.guidanceEn} de {fw.total}
                   </span>
                 </div>
-                <Button
-                  size="sm"
-                  variant={pct === 100 ? 'outline' : 'default'}
-                  disabled={!!runningId || fw.total === 0 || pct === 100}
-                  onClick={() => traduzir(fw)}
-                >
-                  {running ? 'Traduzindo…' : pct === 100 ? 'Traduzido' : 'Traduzir para EN'}
-                </Button>
+                <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+                  <Button
+                    size="sm"
+                    variant={pct === 100 ? 'outline' : 'default'}
+                    disabled={!!runningId || fw.total === 0 || pct === 100}
+                    onClick={() => traduzir(fw)}
+                  >
+                    {running ? 'Traduzindo…' : pct === 100 ? 'Traduzido' : 'Traduzir para EN'}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={!!runningId || fw.total === 0 || pctGuidance === 100}
+                    onClick={() => traduzirOrientacoes(fw)}
+                  >
+                    {runningGuidance
+                      ? 'Gerando…'
+                      : pctGuidance === 100
+                        ? 'Orientações OK'
+                        : 'Traduzir orientações'}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           );
