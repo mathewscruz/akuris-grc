@@ -110,7 +110,7 @@ export const gapAnalysis = {
       },
       audit: {
         user: 'Usuário', system: 'Sistema', noChanges: 'Nenhuma alteração registrada',
-
+      },
       pdfExport: {
         board: {
           reportTitle: 'Relatório Executivo',
@@ -1021,7 +1021,7 @@ export const gapAnalysis = {
       },
       audit: {
         user: 'User', system: 'System', noChanges: 'No changes recorded',
-
+      },
       pdfExport: {
         board: {
           reportTitle: 'Executive Report',
