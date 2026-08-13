@@ -7,6 +7,7 @@ import { useGapAnalysisStats } from "./useGapAnalysisStats";
 import { useDueDiligenceStats } from "./useDueDiligenceStats";
 import { useDocumentosStats } from "./useDocumentosStats";
 import { useDenunciasStats } from "./useDenunciasStats";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export interface RadarDataPoint {
   subject: string;
@@ -30,6 +31,8 @@ const getStatus = (score: number): 'excellent' | 'good' | 'warning' | 'critical'
 };
 
 export const useRadarChartData = () => {
+  const { t } = useLanguage();
+  const m = (key: string, n: number | string) => t(`dashWidgets.radar.metrics.${key}`, { n });
   const ativos = useAtivosStats();
   const controles = useControlesStats();
   const riscos = useRiscosStats();
@@ -119,48 +122,48 @@ export const useRadarChartData = () => {
     return [
       {
         subject: 'Riscos', score: Math.round(scoreRiscos), fullMark: 100, hasData: riscosData.total > 0, icon: 'AlertTriangle',
-        details: { total: riscosData.total, status: getStatus(scoreRiscos), metrics: [`${riscosData.criticos} críticos`, `${riscosData.altos} altos`, `${riscosData.tratados} tratados`] },
+        details: { total: riscosData.total, status: getStatus(scoreRiscos), metrics: [m('critical', riscosData.criticos), m('high', riscosData.altos), m('treated', riscosData.tratados)] },
         link: '/riscos'
       },
       {
         subject: 'Controles', score: Math.round(scoreControles), fullMark: 100, hasData: controlesData.total > 0, icon: 'Shield',
-        details: { total: controlesData.total, status: getStatus(scoreControles), metrics: [`${controlesData.ativos} ativos`, `${controlesData.vencendoAvaliacao} vencendo avaliação`, `${controlesData.criticos} críticos`] },
+        details: { total: controlesData.total, status: getStatus(scoreControles), metrics: [m('active', controlesData.ativos), m('dueAssessment', controlesData.vencendoAvaliacao), m('critical', controlesData.criticos)] },
         link: '/controles'
       },
       {
         subject: 'Ativos', score: Math.round(scoreAtivos), fullMark: 100, hasData: ativosData.total > 0, icon: 'Monitor',
-        details: { total: ativosData.total, status: getStatus(scoreAtivos), metrics: [`${ativosData.ativos} ativos`, `${ativosData.criticos} críticos`, `${ativosData.percentualAltoValor}% alto valor`] },
+        details: { total: ativosData.total, status: getStatus(scoreAtivos), metrics: [m('active', ativosData.ativos), m('critical', ativosData.criticos), m('highValue', ativosData.percentualAltoValor)] },
         link: '/ativos'
       },
       {
         subject: 'Incidentes', score: Math.round(scoreIncidentes), fullMark: 100, hasData: incidentesData.total > 0, icon: 'Zap',
-        details: { total: incidentesData.total, status: getStatus(scoreIncidentes), metrics: [`${incidentesData.abertos} abertos`, `${incidentesData.criticos} críticos`, `${incidentesData.mes} no mês`] },
+        details: { total: incidentesData.total, status: getStatus(scoreIncidentes), metrics: [m('open', incidentesData.abertos), m('critical', incidentesData.criticos), m('inMonth', incidentesData.mes)] },
         link: '/incidentes'
       },
       {
         subject: 'Gap Analysis', score: Math.round(scoreGapAnalysis), fullMark: 100, hasData: (gapData.totalFrameworks || 0) > 0, icon: 'Target',
-        details: { total: gapData.totalFrameworks || 0, status: getStatus(scoreGapAnalysis), metrics: [`${gapData.totalFrameworks} frameworks`, `${gapData.assessmentsInProgress} em progresso`, `${gapData.pendingItems} itens pendentes`] },
+        details: { total: gapData.totalFrameworks || 0, status: getStatus(scoreGapAnalysis), metrics: [m('frameworks', gapData.totalFrameworks), m('inProgress', gapData.assessmentsInProgress), m('pendingItems', gapData.pendingItems)] },
         link: '/gap-analysis'
       },
       {
         subject: 'Due Diligence', score: Math.round(scoreDueDiligence), fullMark: 100, hasData: dueDiligenceData.totalAssessments > 0, icon: 'ClipboardCheck',
-        details: { total: dueDiligenceData.totalAssessments, status: getStatus(scoreDueDiligence), metrics: [`${dueDiligenceData.completedAssessments} completos`, `Score médio: ${Math.round(dueDiligenceData.averageScore)}`, `${dueDiligenceData.expiredAssessments} expirados`] },
+        details: { total: dueDiligenceData.totalAssessments, status: getStatus(scoreDueDiligence), metrics: [m('completed', dueDiligenceData.completedAssessments), m('avgScore', Math.round(dueDiligenceData.averageScore)), m('expired', dueDiligenceData.expiredAssessments)] },
         link: '/due-diligence'
       },
       {
         subject: 'Documentos', score: Math.round(scoreDocumentos), fullMark: 100, hasData: documentosData.total > 0, icon: 'FileText',
-        details: { total: documentosData.total, status: getStatus(scoreDocumentos), metrics: [`${documentosData.ativos} ativos`, `${documentosData.vencidos} vencidos`, `${documentosData.aprovados} aprovados`] },
+        details: { total: documentosData.total, status: getStatus(scoreDocumentos), metrics: [m('active', documentosData.ativos), m('expiredDocs', documentosData.vencidos), m('approved', documentosData.aprovados)] },
         link: '/documentos'
       },
       {
         subject: 'Denúncias', score: Math.round(scoreDenuncias), fullMark: 100, hasData: denunciasData.total > 0, icon: 'MessageSquareWarning',
-        details: { total: denunciasData.total, status: getStatus(scoreDenuncias), metrics: [`${denunciasData.resolvidas} resolvidas`, `${denunciasData.novas} novas`, `${denunciasData.em_andamento} em andamento`] },
+        details: { total: denunciasData.total, status: getStatus(scoreDenuncias), metrics: [m('resolved', denunciasData.resolvidas), m('newOnes', denunciasData.novas), m('ongoing', denunciasData.em_andamento)] },
         link: '/denuncia'
       }
     ];
   }, [
     ativos.data, controles.data, riscos.data, incidentes.data,
-    gapAnalysis.data, dueDiligence.data, documentos.data, denuncias.data
+    gapAnalysis.data, dueDiligence.data, documentos.data, denuncias.data, t
   ]);
 
   return { data, isLoading };
