@@ -166,10 +166,10 @@ export default function ContasPrivilegiadas() {
 
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { icon: React.ComponentType<any>, label: string }> = {
-      'ativo': { icon: CheckCircle, label: 'Ativo' },
-      'expirado': { icon: AlertTriangle, label: 'Expirado' },
+      'ativo': { icon: CheckCircle, label: t('sweepDenuncias.contas.statusAtivo') },
+      'expirado': { icon: AlertTriangle, label: t('sweepDenuncias.contas.statusExpirado') },
       'pendente_aprovacao': { icon: Clock, label: t('fin.contas.pendenteAprovacao') },
-      'revogado': { icon: Shield, label: 'Revogado' },
+      'revogado': { icon: Shield, label: t('sweepDenuncias.contas.statusRevogado') },
     };
 
     const config = statusConfig[status] || statusConfig.pendente_aprovacao;
@@ -237,7 +237,7 @@ export default function ContasPrivilegiadas() {
     },
     {
       key: 'sistema',
-      label: 'Sistema',
+      label: t('sweepDenuncias.contas.colSistema'),
       sortable: true,
       render: (_: any, conta: ContaPrivilegiada) => (
         <div>
@@ -280,14 +280,14 @@ export default function ContasPrivilegiadas() {
           return (
             <div className="flex items-center gap-2">
               <span>{formatDateOnly(conta.data_expiracao)}</span>
-              <StatusBadge size="sm" {...resolveRevisaoTone(-1)}>Expirada</StatusBadge>
+              <StatusBadge size="sm" {...resolveRevisaoTone(-1)}>{t('sweepDenuncias.contas.badgeExpirada')}</StatusBadge>
             </div>
           );
         } else if (diffDays <= 30 && diffDays >= 0 && conta.status === 'ativo') {
           return (
             <div className="flex items-center gap-2">
               <span>{formatDateOnly(conta.data_expiracao)}</span>
-              <StatusBadge size="sm" {...resolveRevisaoTone(diffDays)}>Vence em {diffDays}d</StatusBadge>
+              <StatusBadge size="sm" {...resolveRevisaoTone(diffDays)}>{t('sweepDenuncias.contas.badgeVenceEm', { dias: diffDays })}</StatusBadge>
             </div>
           );
         }
@@ -297,7 +297,7 @@ export default function ContasPrivilegiadas() {
     },
     {
       key: 'status',
-      label: 'Status',
+      label: t('sweepDenuncias.contas.colStatus'),
       sortable: true,
       render: (_: any, conta: ContaPrivilegiada) => getStatusBadge(isExpirada(conta) ? 'expirado' : conta.status)
     },
@@ -314,14 +314,14 @@ export default function ContasPrivilegiadas() {
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => handleEditConta(conta)}>
               <Edit className="h-4 w-4 mr-2" />
-              Editar
+              {t('sweepDenuncias.contas.actionEditar')}
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => handleDeleteConta(conta.id, conta.usuario_beneficiario)}
               className="text-destructive focus:text-destructive"
             >
               <Trash2 className="h-4 w-4 mr-2" />
-              Excluir
+              {t('sweepDenuncias.contas.actionExcluir')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -332,13 +332,13 @@ export default function ContasPrivilegiadas() {
   const contasFilters = [
     {
       key: 'status',
-      label: 'Status',
+      label: t('sweepDenuncias.contas.colStatus'),
       options: [
-        { value: 'todos', label: 'Todos os Status' },
-        { value: 'ativo', label: 'Ativo' },
-        { value: 'expirado', label: 'Expirado' },
+        { value: 'todos', label: t('sweepDenuncias.contas.filterTodosStatus') },
+        { value: 'ativo', label: t('sweepDenuncias.contas.statusAtivo') },
+        { value: 'expirado', label: t('sweepDenuncias.contas.statusExpirado') },
         { value: 'pendente_aprovacao', label: t('fin.contas.pendenteAprovacao') },
-        { value: 'revogado', label: 'Revogado' },
+        { value: 'revogado', label: t('sweepDenuncias.contas.statusRevogado') },
       ],
       value: statusFilter,
       onChange: setStatusFilter,
@@ -349,9 +349,9 @@ export default function ContasPrivilegiadas() {
       options: [
         { value: 'todos', label: t('fin.comum.todosNiveis') },
         { value: 'critico', label: t('fin.comum.critico') },
-        { value: 'alto', label: 'Alto' },
-        { value: 'medio', label: 'Médio' },
-        { value: 'baixo', label: 'Baixo' },
+        { value: 'alto', label: t('sweepDenuncias.contas.filterAlto') },
+        { value: 'medio', label: t('sweepDenuncias.contas.filterMedio') },
+        { value: 'baixo', label: t('sweepDenuncias.contas.filterBaixo') },
       ],
       value: nivelFilter,
       onChange: setNivelFilter,
@@ -376,7 +376,7 @@ export default function ContasPrivilegiadas() {
           <Button variant="outline" size="sm" onClick={() => {
             if (contas.length === 0) return;
             exportCSV(
-              ['Usuario', 'Email', 'Tipo Acesso', 'Nivel', 'Status', 'Data Concessao', 'Data Expiracao', 'Sistema'],
+              [t('sweepDenuncias.contas.csvUsuario'), t('sweepDenuncias.contas.csvEmail'), t('sweepDenuncias.contas.csvTipoAcesso'), t('sweepDenuncias.contas.csvNivel'), t('sweepDenuncias.contas.csvStatus'), t('sweepDenuncias.contas.csvDataConcessao'), t('sweepDenuncias.contas.csvDataExpiracao'), t('sweepDenuncias.contas.csvSistema')],
               contas.map((c: any) => [
                 c.usuario_beneficiario || '', c.email_beneficiario || '',
                 c.tipo_acesso || '', c.nivel_privilegio || '', c.status || '',
@@ -386,14 +386,14 @@ export default function ContasPrivilegiadas() {
               'contas_privilegiadas'
             );
           }}>
-            <Download className="h-4 w-4 mr-2" />Exportar CSV
+            <Download className="h-4 w-4 mr-2" />{t('sweepDenuncias.contas.exportCsv')}
           </Button>
         }
       />
 
       <div className="grid gap-4 md:grid-cols-4">
         <StatCard
-          title="Contas Ativas"
+          title={t('sweepDenuncias.contas.cardContasAtivas')}
           value={contasAtivas}
           loading={isLoading}
           variant="primary"
@@ -416,7 +416,7 @@ export default function ContasPrivilegiadas() {
           drillDown="contas_privilegiadas"
         />
         <StatCard
-          title="Expiradas"
+          title={t('sweepDenuncias.contas.cardExpiradas')}
           value={contasExpiradas}
           loading={isLoading}
           variant={contasExpiradas > 0 ? 'destructive' : 'default'}
@@ -430,7 +430,7 @@ export default function ContasPrivilegiadas() {
             <div className="flex-1" />
             <Button onClick={() => setShowContaDialog(true)}>
               <Plus className="mr-2 h-4 w-4" />
-              Nova Conta
+              {t('sweepDenuncias.contas.novaConta')}
             </Button>
           </div>
           <DataTable
@@ -447,8 +447,8 @@ export default function ContasPrivilegiadas() {
             emptyState={{
               title: t('fin.contas.nenhuma'),
               description: searchTerm || statusFilter !== 'todos' || nivelFilter !== 'todos'
-                ? "Tente ajustar os filtros de busca"
-                : "Adicione a primeira conta privilegiada"
+                ? t('sweepDenuncias.contas.emptyFilteredDescription')
+                : t('sweepDenuncias.contas.emptyDefaultDescription')
             }}
           />
         </CardContent>

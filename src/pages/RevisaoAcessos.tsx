@@ -151,14 +151,14 @@ export default function RevisaoAcessos() {
       return (
         <div className="flex items-center gap-2">
           <span>{formatDateOnly(dataLimite)}</span>
-          <StatusBadge size="sm" {...resolveRevisaoTone(-1)}>Vencida</StatusBadge>
+          <StatusBadge size="sm" {...resolveRevisaoTone(-1)}>{t('sweepDenuncias.revisao.badgeVencida')}</StatusBadge>
         </div>
       );
     } else if (diffDays <= 7) {
       return (
         <div className="flex items-center gap-2">
           <span>{formatDateOnly(dataLimite)}</span>
-          <StatusBadge size="sm" {...resolveRevisaoTone(diffDays)}>Vence em {diffDays}d</StatusBadge>
+          <StatusBadge size="sm" {...resolveRevisaoTone(diffDays)}>{t('sweepDenuncias.revisao.badgeVenceEm', { dias: diffDays })}</StatusBadge>
         </div>
       );
     }
@@ -184,12 +184,12 @@ export default function RevisaoAcessos() {
   const columns: Column<any>[] = [
     {
       key: "nome_revisao",
-      label: "Nome da Revisão",
+      label: t('sweepDenuncias.revisao.colNomeRevisao'),
       sortable: true,
     },
     {
       key: "sistema.nome_sistema",
-      label: "Sistema",
+      label: t('sweepDenuncias.revisao.colSistema'),
       sortable: true,
       render: (_value: any, review: any) => review.sistema?.nome_sistema || "-",
     },
@@ -207,18 +207,18 @@ export default function RevisaoAcessos() {
     },
     {
       key: "data_limite",
-      label: "Prazo",
+      label: t('sweepDenuncias.revisao.colPrazo'),
       sortable: true,
       render: (_value: any, review: any) => getVencimentoBadge(review.data_limite, review.status),
     },
     {
       key: "progress",
-      label: "Progresso",
+      label: t('sweepDenuncias.revisao.colProgresso'),
       render: (_value: any, review: any) => `${review.contas_revisadas}/${review.total_contas}`,
     },
     {
       key: "status",
-      label: "Status",
+      label: t('sweepDenuncias.revisao.colStatus'),
       sortable: true,
       render: (_value: any, review: any) => getStatusBadge(review.status),
     },
@@ -235,11 +235,11 @@ export default function RevisaoAcessos() {
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => handleViewItems(review)}>
               <Eye className="h-4 w-4 mr-2" />
-              Ver Itens
+              {t('sweepDenuncias.revisao.actionVerItens')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => handleEdit(review)}>
               <Edit className="h-4 w-4 mr-2" />
-              Editar
+              {t('sweepDenuncias.revisao.actionEditar')}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
@@ -247,7 +247,7 @@ export default function RevisaoAcessos() {
               className="text-destructive focus:text-destructive"
             >
               <Trash2 className="h-4 w-4 mr-2" />
-              Excluir
+              {t('sweepDenuncias.revisao.actionExcluir')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -258,12 +258,12 @@ export default function RevisaoAcessos() {
   const historicoColumns: Column<any>[] = [
     {
       key: "nome_revisao",
-      label: "Nome da Revisão",
+      label: t('sweepDenuncias.revisao.colNomeRevisao'),
       sortable: true,
     },
     {
       key: "sistema.nome_sistema",
-      label: "Sistema",
+      label: t('sweepDenuncias.revisao.colSistema'),
       render: (_value: any, review: any) => review.sistema?.nome_sistema || "-",
     },
     {
@@ -273,28 +273,28 @@ export default function RevisaoAcessos() {
     },
     {
       key: "data_conclusao",
-      label: "Data Conclusão",
+      label: t('sweepDenuncias.revisao.colDataConclusao'),
       sortable: true,
       render: (_value: any, review: any) => review.data_conclusao ? formatDateOnly(review.data_conclusao) : "-",
     },
     {
       key: "contas_revisadas",
-      label: "Contas Revisadas",
+      label: t('sweepDenuncias.revisao.colContasRevisadas'),
       render: (_value: any, review: any) => `${review.contas_revisadas}/${review.total_contas}`,
     },
     {
       key: "contas_aprovadas",
-      label: "Aprovadas",
+      label: t('sweepDenuncias.revisao.colAprovadas'),
       render: (_value: any, review: any) => review.contas_aprovadas || 0,
     },
     {
       key: "contas_revogadas",
-      label: "Revogadas",
+      label: t('sweepDenuncias.revisao.colRevogadas'),
       render: (_value: any, review: any) => review.contas_revogadas || 0,
     },
     {
       key: "status",
-      label: "Status",
+      label: t('sweepDenuncias.revisao.colStatus'),
       render: (_value: any, review: any) => getStatusBadge(review.status),
     },
   ];
@@ -322,14 +322,14 @@ export default function RevisaoAcessos() {
           variant="success"
         />
         <StatCard
-          title="Vencidas"
+          title={t('sweepDenuncias.revisao.cardVencidas')}
           value={stats?.vencidas || 0}
           loading={statsLoading}
           variant="destructive"
           drillDown="revisao_acessos"
         />
         <StatCard
-          title="Contas Revisadas"
+          title={t('sweepDenuncias.revisao.cardContasRevisadas')}
           value={stats?.contasRevisadas || 0}
           loading={statsLoading}
           variant="info"
@@ -350,11 +350,11 @@ export default function RevisaoAcessos() {
               setReviewDialogOpen(true);
             }}>
               <Plus className="mr-2 h-4 w-4" />
-              Nova Revisão
+              {t('sweepDenuncias.revisao.novaRevisao')}
             </Button>
             <Button variant="outline">
               <Download className="mr-2 h-4 w-4" />
-              Exportar
+              {t('sweepDenuncias.revisao.exportar')}
             </Button>
           </div>
 
@@ -370,13 +370,13 @@ export default function RevisaoAcessos() {
                 filters={[
                   {
                     key: "status",
-                    label: "Status",
+                    label: t('sweepDenuncias.revisao.colStatus'),
                     options: [
-                      { value: "all", label: "Todos" },
-                      { value: "rascunho", label: "Rascunho" },
-                      { value: "em_andamento", label: "Em Andamento" },
+                      { value: "all", label: t('sweepDenuncias.revisao.filterTodos') },
+                      { value: "rascunho", label: t('sweepDenuncias.revisao.filterRascunho') },
+                      { value: "em_andamento", label: t('sweepDenuncias.revisao.filterEmAndamento') },
                       { value: "concluida", label: t('fin.comum.concluidaF') },
-                      { value: "cancelada", label: "Cancelada" },
+                      { value: "cancelada", label: t('sweepDenuncias.revisao.filterCancelada') },
                     ],
                     value: statusFilter,
                     onChange: setStatusFilter,

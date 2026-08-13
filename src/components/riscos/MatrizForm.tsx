@@ -44,7 +44,7 @@ function ColorSwatch({ value, onChange }: { value: string; onChange: (v: string)
                 value === c ? 'border-foreground ring-2 ring-foreground/20' : 'border-border'
               )}
               style={{ backgroundColor: c }}
-              aria-label={`Cor ${c}`}
+              aria-label={t('sweepRiscos.riscos.matrizForm.corAria', { cor: c })}
             />
           ))}
         </div>
@@ -274,7 +274,7 @@ export function MatrizForm({ onSuccess }: Props) {
       
       // Validar que min <= max
       if (nivel.min > nivel.max) {
-        return `O nível "${nivel.nivel || `#${i + 1}`}" tem valor mínimo maior que o máximo`;
+        return t('sweepRiscos.riscos.matrizForm.erroMinMaior', { nivel: nivel.nivel || `#${i + 1}` });
       }
       
       // Validar sobreposição com próximo nível
@@ -283,12 +283,12 @@ export function MatrizForm({ onSuccess }: Props) {
         
         // Sobreposição
         if (nivel.max >= proximoNivel.min) {
-          return `Sobreposição detectada entre "${nivel.nivel || `#${i + 1}`}" (max: ${nivel.max}) e "${proximoNivel.nivel || `#${i + 2}`}" (min: ${proximoNivel.min})`;
+          return t('sweepRiscos.riscos.matrizForm.erroSobreposicao', { nivelA: nivel.nivel || `#${i + 1}`, max: nivel.max, nivelB: proximoNivel.nivel || `#${i + 2}`, min: proximoNivel.min });
         }
         
         // Gap (valores não cobertos)
         if (nivel.max + 1 < proximoNivel.min) {
-          return `Gap detectado: valores ${nivel.max + 1} a ${proximoNivel.min - 1} não estão cobertos por nenhum nível`;
+          return t('sweepRiscos.riscos.matrizForm.erroGap', { de: nivel.max + 1, ate: proximoNivel.min - 1 });
         }
       }
     }
@@ -548,7 +548,7 @@ export function MatrizForm({ onSuccess }: Props) {
             {editingMatriz && (
               <Button variant="ghost" size="sm" onClick={limparFormularioMatriz} className="gap-1.5">
                 <XIcon className="h-3.5 w-3.5" strokeWidth={1.5} />
-                Cancelar edição
+                {t('sweepRiscos.riscos.matrizForm.cancelarEdicao')}
               </Button>
             )}
           </div>
@@ -566,7 +566,7 @@ export function MatrizForm({ onSuccess }: Props) {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
-                        Nome da matriz <span className="text-destructive">*</span>
+                        {t('sweepRiscos.riscos.matrizForm.nomeMatrizLabel')} <span className="text-destructive">*</span>
                       </FormLabel>
                       <FormControl>
                         <Input {...field} placeholder={t('campos.matriz.nomePlaceholder')} />
@@ -600,7 +600,7 @@ export function MatrizForm({ onSuccess }: Props) {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {[
                     { value: 'multiplicacao', label: t('fin.riscos.matrizForm.multiplicacao'), formula: 'P × I', desc: t('fin.riscos.matrizForm.multiplicacaoDesc') },
-                    { value: 'soma', label: 'Soma', formula: 'P + I', desc: 'Resultado pode variar de 2 a Pmax + Imax' },
+                    { value: 'soma', label: t('sweepRiscos.riscos.matrizForm.soma'), formula: 'P + I', desc: t('sweepRiscos.riscos.matrizForm.somaDesc') },
                   ].map(opt => {
                     const active = metodoCalculo === opt.value;
                     return (
@@ -673,7 +673,7 @@ export function MatrizForm({ onSuccess }: Props) {
                                   <Trash2 className="h-4 w-4" strokeWidth={1.5} />
                                 </Button>
                               </TooltipTrigger>
-                              <TooltipContent>Remover</TooltipContent>
+                              <TooltipContent>{t('sweepRiscos.comum.remover')}</TooltipContent>
                             </Tooltip>
                           )}
                         </div>
@@ -686,7 +686,7 @@ export function MatrizForm({ onSuccess }: Props) {
                         className="w-full gap-1.5 border-dashed"
                       >
                         <Plus className="h-4 w-4" strokeWidth={1.5} />
-                        Adicionar nível
+                        {t('sweepRiscos.riscos.matrizForm.adicionarNivel')}
                       </Button>
                     </div>
                   </div>
@@ -727,7 +727,7 @@ export function MatrizForm({ onSuccess }: Props) {
                                   <Trash2 className="h-4 w-4" strokeWidth={1.5} />
                                 </Button>
                               </TooltipTrigger>
-                              <TooltipContent>Remover</TooltipContent>
+                              <TooltipContent>{t('sweepRiscos.comum.remover')}</TooltipContent>
                             </Tooltip>
                           )}
                         </div>
@@ -740,7 +740,7 @@ export function MatrizForm({ onSuccess }: Props) {
                         className="w-full gap-1.5 border-dashed"
                       >
                         <Plus className="h-4 w-4" strokeWidth={1.5} />
-                        Adicionar nível
+                        {t('sweepRiscos.riscos.matrizForm.adicionarNivel')}
                       </Button>
                     </div>
                   </div>
@@ -749,7 +749,7 @@ export function MatrizForm({ onSuccess }: Props) {
 
               <div className="border-t border-border/60 pt-6">
                 <SectionHeader
-                  eyebrow="Faixas"
+                  eyebrow={t('sweepRiscos.riscos.matrizForm.faixasEyebrow')}
                   title={t('fin.riscos.matrizForm.niveisRisco')}
                 />
                 {faixasError && (
@@ -807,7 +807,7 @@ export function MatrizForm({ onSuccess }: Props) {
                               <Trash2 className="h-4 w-4" strokeWidth={1.5} />
                             </Button>
                           </TooltipTrigger>
-                          <TooltipContent>Remover</TooltipContent>
+                          <TooltipContent>{t('sweepRiscos.comum.remover')}</TooltipContent>
                         </Tooltip>
                       )}
                     </div>
@@ -820,7 +820,7 @@ export function MatrizForm({ onSuccess }: Props) {
                     className="w-full gap-1.5 border-dashed"
                   >
                     <Plus className="h-4 w-4" strokeWidth={1.5} />
-                    Adicionar nível de risco
+                    {t('sweepRiscos.riscos.matrizForm.adicionarNivelRisco')}
                   </Button>
                 </div>
 
@@ -828,8 +828,7 @@ export function MatrizForm({ onSuccess }: Props) {
                 <div className="mt-4 pt-4 border-t border-border/40">
                   <span className="text-sm font-medium text-foreground">{t('residuos.risco.limiteApetite')}</span>
                   <p className="text-xs text-muted-foreground mt-0.5 mb-2">
-                    Riscos com score acima do nível escolhido são considerados <strong>acima do apetite</strong> e
-                    exigem tratamento ou aceite formal. Define a linha de apetite no gráfico e o filtro "Acima do apetite".
+                    {t('sweepRiscos.riscos.matrizForm.apetiteDescPre')} <strong>{t('sweepRiscos.riscos.matrizForm.apetiteDescStrong')}</strong> {t('sweepRiscos.riscos.matrizForm.apetiteDescPost')}
                   </p>
                   <div className="flex flex-wrap gap-1.5">
                     {(() => {
@@ -849,7 +848,7 @@ export function MatrizForm({ onSuccess }: Props) {
                           onClick={() => setNiveisRisco((prev) => prev.map((n, j) => ({ ...n, apetite: j === realIndex })))}
                           className="gap-1.5"
                         >
-                          Até {nivel.nivel || `Nível ${realIndex + 1}`}
+                          {t('sweepRiscos.riscos.matrizForm.ateNivel', { nivel: nivel.nivel || t('sweepRiscos.riscos.matrizForm.nivelN', { n: realIndex + 1 }) })}
                           <span className="text-[10px] opacity-70 tabular-nums">(≤{nivel.max})</span>
                         </Button>
                       );
@@ -929,7 +928,7 @@ export function MatrizForm({ onSuccess }: Props) {
         {/* Footer sticky */}
         <div className="sticky bottom-0 -mx-6 px-6 py-4 border-t bg-background/95 backdrop-blur-sm flex items-center justify-between gap-3">
           <p className="text-xs text-muted-foreground hidden sm:block">
-            Alterações afetam novos cálculos de risco.
+            {t('sweepRiscos.riscos.matrizForm.alteracoesAfetam')}
           </p>
           <div className="flex gap-2 ml-auto">
             {editingMatriz && (

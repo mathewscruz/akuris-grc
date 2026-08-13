@@ -434,8 +434,8 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
         };
         
         await notify('risco_identificado', {
-          titulo: `Novo Risco: ${data.nome}`,
-          descricao: data.descricao || `Risco identificado com nível ${nivelInicial}`,
+          titulo: t('sweepRiscos.riscos.wizard.novoRiscoTitulo', { nome: data.nome }),
+          descricao: data.descricao || t('sweepRiscos.riscos.wizard.descricaoDefault', { nivel: nivelInicial }),
           link: `${window.location.origin}/riscos`,
           gravidade: nivelGravidadeMap[nivelInicial?.toLowerCase()] || 'media',
           dados: { nivel: nivelInicial, status: data.status }
@@ -520,7 +520,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
           await supabase.from('notifications').insert({
             user_id: data.aprovador_aceite,
             title: t('fin.riscos.wizard.notifTitle'),
-            message: `O risco "${data.nome}" foi enviado para sua aprovação de aceite.`,
+            message: t('sweepRiscos.riscos.wizard.notifMessage', { nome: data.nome }),
             type: 'info',
             link_to: '/riscos'
           });
@@ -955,9 +955,9 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                       </FormControl>
                       {exp !== null && (
                         <p className="text-xs text-muted-foreground">
-                          Exposição estimada:{' '}
+                          {t('sweepRiscos.riscos.wizard.exposicaoEstimada')}{' '}
                           <span className="font-semibold text-foreground">{formatBRL(exp)}</span>{' '}
-                          (impacto × probabilidade). Usada para priorizar riscos por valor, não só por cor.
+                          {t('sweepRiscos.riscos.wizard.exposicaoDesc')}
                         </p>
                       )}
                       <FormMessage />
@@ -1193,9 +1193,9 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                   risco.status_aceite === 'aprovado' && "bg-success/10 text-success border-success/30",
                   risco.status_aceite === 'rejeitado' && "bg-destructive/10 text-destructive border-destructive/30"
                 )}>
-                  {risco.status_aceite === 'pendente' && '⏳ Aceite pendente de aprovação'}
-                  {risco.status_aceite === 'aprovado' && '✅ Aceite aprovado'}
-                  {risco.status_aceite === 'rejeitado' && '❌ Aceite rejeitado — você pode reenviar'}
+                  {risco.status_aceite === 'pendente' && `⏳ ${t('sweepRiscos.riscos.wizard.aceitePendente')}`}
+                  {risco.status_aceite === 'aprovado' && `✅ ${t('sweepRiscos.riscos.wizard.aceiteAprovado')}`}
+                  {risco.status_aceite === 'rejeitado' && `❌ ${t('sweepRiscos.riscos.wizard.aceiteRejeitado')}`}
                 </div>
               )}
 
@@ -1303,13 +1303,13 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
           </Button>
 
           <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground">
-            Etapa <span className="font-semibold text-foreground">{currentIdx + 1}</span> de {TABS.length}
+            {t('sweepRiscos.riscos.wizard.etapa')} <span className="font-semibold text-foreground">{currentIdx + 1}</span> {t('sweepRiscos.riscos.wizard.de')} {TABS.length}
           </div>
 
           <div className="flex items-center gap-2">
             {!isLastTab && (
               <Button type="button" variant="outline" onClick={() => goToTab('next')} size="sm">
-                Próxima <ChevronRight className="h-4 w-4 ml-1" />
+                {t('sweepRiscos.riscos.wizard.proxima')} <ChevronRight className="h-4 w-4 ml-1" />
               </Button>
             )}
             <Button type="submit" disabled={loading} size="sm">

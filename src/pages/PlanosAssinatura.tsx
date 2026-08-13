@@ -42,23 +42,23 @@ export default function PlanosAssinatura() {
       </div>
       <div className="text-center space-y-4">
         <h1 className="text-3xl md:text-4xl font-bold text-foreground">
-          Planos da plataforma Akuris
+          {t('sweepCore.planosAssinatura.titulo')}
         </h1>
         <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-          Compare os planos disponíveis. Para contratar ou tirar dúvidas, fale com nosso time comercial.
+          {t('sweepCore.planosAssinatura.subtitulo')}
         </p>
 
         {planos.some(p => p.preco_anual > 0) && (
           <div className="flex items-center justify-center gap-3 pt-2">
             <Label htmlFor="billing-toggle" className={cn('text-sm', !isAnnual && 'text-foreground font-medium')}>
-              Mensal
+              {t('sweepCore.planosAssinatura.mensal')}
             </Label>
             <Switch id="billing-toggle" checked={isAnnual} onCheckedChange={setIsAnnual} />
             <Label htmlFor="billing-toggle" className={cn('text-sm', isAnnual && 'text-foreground font-medium')}>
-              Anual
+              {t('sweepCore.planosAssinatura.anual')}
             </Label>
             {isAnnual && (
-              <Badge variant="secondary">Economize ~10%</Badge>
+              <Badge variant="secondary">{t('sweepCore.planosAssinatura.economize')}</Badge>
             )}
           </div>
         )}
@@ -82,7 +82,7 @@ export default function PlanosAssinatura() {
               {isPopular && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                   <Badge className="bg-primary text-primary-foreground px-4 py-1">
-                    <Sparkles className="h-3 w-3 mr-1" /> Mais popular
+                    <Sparkles className="h-3 w-3 mr-1" /> {t('sweepCore.planosAssinatura.maisPopular')}
                   </Badge>
                 </div>
               )}
@@ -101,16 +101,20 @@ export default function PlanosAssinatura() {
                 <div className="text-center">
                   <div className="flex items-baseline justify-center gap-1">
                     <span className="text-4xl font-bold text-foreground">{formatBRL(monthlyPrice)}</span>
-                    <span className="text-muted-foreground">/mês</span>
+                    <span className="text-muted-foreground">{t('sweepCore.planosAssinatura.porMes')}</span>
                   </div>
                   {isAnnual && plano.preco_anual > 0 && (
                     <p className="text-xs text-muted-foreground mt-1">
-                      {formatBRL(plano.preco_anual)} cobrado anualmente
+                      {t('sweepCore.planosAssinatura.cobradoAnualmente', { valor: formatBRL(plano.preco_anual) })}
                     </p>
                   )}
                   <p className="text-xs text-muted-foreground mt-2">
-                    {plano.creditos_franquia} créditos IA/mês ·{' '}
-                    {plano.limite_usuarios ? `até ${plano.limite_usuarios} usuários` : 'usuários ilimitados'}
+                    {t('sweepCore.planosAssinatura.creditosLimite', {
+                      creditos: plano.creditos_franquia,
+                      limite: plano.limite_usuarios
+                        ? t('sweepCore.planosAssinatura.ateUsuarios', { n: plano.limite_usuarios })
+                        : t('sweepCore.planosAssinatura.usuariosIlimitados'),
+                    })}
                   </p>
                 </div>
 
@@ -127,7 +131,7 @@ export default function PlanosAssinatura() {
               <CardFooter className="pt-4">
                 <Button asChild className="w-full" variant={isPopular ? 'default' : 'outline'} size="lg">
                   <a href="mailto:contato@akuris.com.br?subject=Interesse%20em%20um%20plano%20Akuris">
-                    Falar com o time comercial
+                    {t('sweepCore.planosAssinatura.falarComTime')}
                   </a>
                 </Button>
               </CardFooter>

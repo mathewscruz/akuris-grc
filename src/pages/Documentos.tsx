@@ -349,7 +349,7 @@ export default function Documentos() {
   };
 
   const handleExportCSV = () => {
-    const headers = [t('documentos.lista.nome'), t('documentos.lista.tipo'), t('documentos.lista.classificacao'), t('documentos.lista.status'), t('documentos.lista.versao'), t('documentos.lista.validade'), "Data Criação"];
+    const headers = [t('documentos.lista.nome'), t('documentos.lista.tipo'), t('documentos.lista.classificacao'), t('documentos.lista.status'), t('documentos.lista.versao'), t('documentos.lista.validade'), t('sweepDocumentos.lista.dataCriacao')];
     const rows = documentosFiltrados.map(doc => [
       doc.nome,
       doc.tipo,

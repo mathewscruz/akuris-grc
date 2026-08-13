@@ -152,9 +152,9 @@ export default function AtivosChaves() {
 
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { icon: React.ComponentType<any>, label: string }> = {
-      'ativa': { icon: CheckCircle, label: 'Ativa' },
-      'expirada': { icon: AlertTriangle, label: 'Expirada' },
-      'revogada': { icon: AlertTriangle, label: 'Revogada' },
+      'ativa': { icon: CheckCircle, label: t('sweepDados.ativos.statusAtiva') },
+      'expirada': { icon: AlertTriangle, label: t('sweepDados.ativos.statusExpirada') },
+      'revogada': { icon: AlertTriangle, label: t('sweepDados.ativos.statusRevogada') },
       'em_rotacao': { icon: Clock, label: t('fin.chaves.emRotacao') },
     };
 
@@ -217,7 +217,7 @@ export default function AtivosChaves() {
   const columns = [
     {
       key: 'nome',
-      label: 'Nome da Chave',
+      label: t('sweepDados.ativos.colNomeChave'),
       sortable: true,
       render: (_: any, chave: ChaveCriptografica) => (
         <div>
@@ -257,13 +257,13 @@ export default function AtivosChaves() {
     },
     {
       key: 'criticidade',
-      label: 'Criticidade',
+      label: t('sweepDados.ativos.colCriticidade'),
       sortable: true,
       render: (_: any, chave: ChaveCriptografica) => getCriticidadeBadge(chave.criticidade)
     },
     {
       key: 'status',
-      label: 'Status',
+      label: t('sweepDados.ativos.colStatus'),
       sortable: true,
       render: (_: any, chave: ChaveCriptografica) => getStatusBadge(chave.status)
     },
@@ -312,7 +312,7 @@ export default function AtivosChaves() {
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => handleEdit(chave)}>
               <Edit className="h-4 w-4 mr-2" />
-              Editar
+              {t('sweepDados.ativos.editar')}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
@@ -330,28 +330,28 @@ export default function AtivosChaves() {
   const filters = [
     {
       key: 'status',
-      label: 'Status',
+      label: t('sweepDados.ativos.colStatus'),
       value: statusFilter,
       onChange: setStatusFilter,
       options: [
-        { value: 'todos', label: 'Todos os status' },
-        { value: 'ativa', label: 'Ativa' },
-        { value: 'expirada', label: 'Expirada' },
-        { value: 'revogada', label: 'Revogada' },
+        { value: 'todos', label: t('sweepDados.ativos.filtroTodosStatus') },
+        { value: 'ativa', label: t('sweepDados.ativos.statusAtiva') },
+        { value: 'expirada', label: t('sweepDados.ativos.statusExpirada') },
+        { value: 'revogada', label: t('sweepDados.ativos.statusRevogada') },
         { value: 'em_rotacao', label: t('fin.chaves.emRotacao') },
       ]
     },
     {
       key: 'criticidade',
-      label: 'Criticidade',
+      label: t('sweepDados.ativos.colCriticidade'),
       value: criticidadeFilter,
       onChange: setCriticidadeFilter,
       options: [
-        { value: 'todos', label: 'Todas' },
+        { value: 'todos', label: t('sweepDados.ativos.filtroTodasCriticidades') },
         { value: 'critica', label: t('fin.comum.criticaF') },
-        { value: 'alta', label: 'Alta' },
-        { value: 'media', label: 'Média' },
-        { value: 'baixa', label: 'Baixa' },
+        { value: 'alta', label: t('sweepDados.ativos.criticidadeAlta') },
+        { value: 'media', label: t('sweepDados.ativos.criticidadeMedia') },
+        { value: 'baixa', label: t('sweepDados.ativos.criticidadeBaixa') },
       ]
     },
     {
@@ -360,11 +360,11 @@ export default function AtivosChaves() {
       value: ambienteFilter,
       onChange: setAmbienteFilter,
       options: [
-        { value: 'todos', label: 'Todos os ambientes' },
+        { value: 'todos', label: t('sweepDados.ativos.filtroTodosAmbientes') },
         { value: 'producao', label: t('fin.comum.producao') },
         { value: 'homologacao', label: t('fin.comum.homologacao') },
-        { value: 'desenvolvimento', label: 'Desenvolvimento' },
-        { value: 'qa', label: 'QA' },
+        { value: 'desenvolvimento', label: t('sweepDados.ativos.ambienteDesenvolvimento') },
+        { value: 'qa', label: t('sweepDados.ativos.ambienteQa') },
       ]
     },
     {
@@ -373,13 +373,13 @@ export default function AtivosChaves() {
       value: tipoFilter,
       onChange: setTipoFilter,
       options: [
-        { value: 'todos', label: 'Todos os tipos' },
-        { value: 'api_key', label: 'API Key' },
-        { value: 'certificado_ssl', label: 'Certificado SSL' },
-        { value: 'ssh_key', label: 'SSH Key' },
-        { value: 'token_acesso', label: 'Token de Acesso' },
-        { value: 'secret_key', label: 'Secret Key' },
-        { value: 'outro', label: 'Outro' },
+        { value: 'todos', label: t('sweepDados.ativos.filtroTodosTipos') },
+        { value: 'api_key', label: t('sweepDados.ativos.tipoApiKey') },
+        { value: 'certificado_ssl', label: t('sweepDados.ativos.tipoCertificadoSsl') },
+        { value: 'ssh_key', label: t('sweepDados.ativos.tipoSshKey') },
+        { value: 'token_acesso', label: t('sweepDados.ativos.tipoTokenAcesso') },
+        { value: 'secret_key', label: t('sweepDados.ativos.tipoSecretKey') },
+        { value: 'outro', label: t('sweepDados.ativos.tipoOutro') },
       ]
     }
   ];
@@ -396,7 +396,7 @@ export default function AtivosChaves() {
         <StatCard
           title={t('cardsKpi.chaves.totalChaves')}
           value={stats?.total ?? 0}
-          description="Chaves registradas"
+          description={t('sweepDados.ativos.kpiChavesRegistradasDesc')}
           icon={<Key />}
           loading={statsLoading}
           drillDown="ativos_chaves"
@@ -405,7 +405,7 @@ export default function AtivosChaves() {
         />
 
         <StatCard
-          title="Chaves Ativas"
+          title={t('sweepDados.ativos.kpiChavesAtivasTitle')}
           value={stats?.ativas ?? 0}
           description={t('residuos.geral.emUso')}
           icon={<CheckCircle />}
@@ -437,7 +437,7 @@ export default function AtivosChaves() {
       <div className="flex justify-end">
         <Button size="sm" onClick={handleNew}>
           <Plus className="h-4 w-4 mr-2" />
-          Nova Chave
+          {t('sweepDados.ativos.novaChave')}
         </Button>
       </div>
 
@@ -464,7 +464,7 @@ export default function AtivosChaves() {
             }}
             onExport={() => {
               const csvContent = [
-                [t('fin.comum.nome'), t('fin.comum.tipo'), t('fin.comum.ambiente'), t('fin.comum.localizacao'), t('fin.chaves.proximaRotacao'), 'Criticidade', 'Status', t('fin.comum.responsavel')].join(','),
+                [t('fin.comum.nome'), t('fin.comum.tipo'), t('fin.comum.ambiente'), t('fin.comum.localizacao'), t('fin.chaves.proximaRotacao'), t('sweepDados.ativos.colCriticidade'), t('sweepDados.ativos.colStatus'), t('fin.comum.responsavel')].join(','),
                 ...filteredAndSortedChaves.map(c => [
                   c.nome,
                   c.tipo_chave,
@@ -487,10 +487,10 @@ export default function AtivosChaves() {
               icon: <Key className="h-8 w-8" />,
               title: searchTerm ? t('fin.chaves.nenhumaEncontrada') : t('fin.chaves.nenhumaCadastrada'),
               description: searchTerm 
-                ? "Tente ajustar os termos de busca ou limpe os filtros."
+                ? t('sweepDados.ativos.buscaSemResultadosDesc')
                 : t('fin.chaves.vazioDesc'),
               action: !searchTerm ? {
-                label: "Cadastrar Primeira Chave",
+                label: t('sweepDados.ativos.cadastrarPrimeiraChave'),
                 onClick: handleNew
               } : undefined
             }}

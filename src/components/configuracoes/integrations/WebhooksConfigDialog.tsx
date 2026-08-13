@@ -28,17 +28,19 @@ import { INTEGRATION_EVENTS } from '@/lib/integration-events';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 const EVENTOS_DISPONIVEIS = INTEGRATION_EVENTS;
 
-const PAYLOAD_EXEMPLO = `{
+function getPayloadExemplo(exampleTitle: string): string {
+  return `{
   "evento": "incidente_criado",
   "timestamp": "2025-01-01T12:00:00Z",
   "dados": {
     "id": "uuid",
-    "titulo": "Título do incidente",
+    "titulo": "${exampleTitle}",
     "gravidade": "alta",
     "status": "aberto"
   },
   "empresa_id": "uuid"
 }`;
+}
 
 export function WebhooksConfigDialog({
   open,
@@ -354,7 +356,7 @@ export function WebhooksConfigDialog({
           <div className="space-y-2">
             <Label>{t('configIntegrations.webhooks.payloadLabel')}</Label>
             <Textarea
-              value={PAYLOAD_EXEMPLO}
+              value={getPayloadExemplo(t('sweepConfig.integracoes.webhooks.payloadExampleTitle'))}
               readOnly
               className="font-mono text-xs h-36"
             />

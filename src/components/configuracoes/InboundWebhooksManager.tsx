@@ -47,43 +47,45 @@ const TIPOS_EVENTO_KEYS = [
   { value: 'custom', key: 'custom' },
 ];
 
-const PAYLOAD_EXAMPLES: Record<string, object> = {
-  incidentes: {
-    title: "Alerta de Intrusão Detectado",
-    description: "Tentativa de acesso não autorizado ao servidor de produção",
-    severity: "critical",
-    type: "seguranca",
-    source: "SIEM-Splunk"
-  },
-  riscos: {
-    title: "Vulnerabilidade CVE-2024-1234",
-    description: "Vulnerabilidade crítica detectada no componente X",
-    severity: "high",
-    category: "Tecnologia",
-    probability: "Possível",
-    impact: "Alto"
-  },
-  ativos: {
-    name: "DESKTOP-NEW001",
-    type: "Servidor",
-    description: "Novo servidor detectado na rede",
-    hostname: "srv-prod-05"
-  },
-  controles: {
-    title: "Verificação de Firewall",
-    description: "Controle de monitoramento de regras de firewall",
-    type: "detectivo",
-    severity: "medium",
-    frequency: "diario"
-  },
-  denuncias: {
-    title: "Relato de Irregularidade",
-    description: "Relato recebido pelo canal externo de denúncias",
-    severity: "high",
-    anonymous: true,
-    source: "canal-externo"
-  }
-};
+function getPayloadExamples(t: (key: string) => string): Record<string, object> {
+  return {
+    incidentes: {
+      title: t('sweepConfig.integracoes.inboundWebhooks.payloadExamples.incidentes.title'),
+      description: t('sweepConfig.integracoes.inboundWebhooks.payloadExamples.incidentes.description'),
+      severity: "critical",
+      type: "seguranca",
+      source: "SIEM-Splunk"
+    },
+    riscos: {
+      title: t('sweepConfig.integracoes.inboundWebhooks.payloadExamples.riscos.title'),
+      description: t('sweepConfig.integracoes.inboundWebhooks.payloadExamples.riscos.description'),
+      severity: "high",
+      category: "Tecnologia",
+      probability: t('sweepConfig.integracoes.inboundWebhooks.payloadExamples.riscos.probability'),
+      impact: t('sweepConfig.integracoes.inboundWebhooks.payloadExamples.riscos.impact')
+    },
+    ativos: {
+      name: "DESKTOP-NEW001",
+      type: t('sweepConfig.integracoes.inboundWebhooks.payloadExamples.ativos.type'),
+      description: t('sweepConfig.integracoes.inboundWebhooks.payloadExamples.ativos.description'),
+      hostname: "srv-prod-05"
+    },
+    controles: {
+      title: t('sweepConfig.integracoes.inboundWebhooks.payloadExamples.controles.title'),
+      description: t('sweepConfig.integracoes.inboundWebhooks.payloadExamples.controles.description'),
+      type: "detectivo",
+      severity: "medium",
+      frequency: "diario"
+    },
+    denuncias: {
+      title: t('sweepConfig.integracoes.inboundWebhooks.payloadExamples.denuncias.title'),
+      description: t('sweepConfig.integracoes.inboundWebhooks.payloadExamples.denuncias.description'),
+      severity: "high",
+      anonymous: true,
+      source: "canal-externo"
+    }
+  };
+}
 
 function generateToken(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -97,6 +99,7 @@ function generateToken(): string {
 export function InboundWebhooksManager() {
   const { t } = useLanguage();
   const { empresaId } = useEmpresaId();
+  const PAYLOAD_EXAMPLES = getPayloadExamples(t);
   const MODULOS_DESTINO = MODULOS_DESTINO_KEYS.map(m => ({ value: m.value, label: t(`configGeral.inboundWebhooks.modulos.${m.key}`) }));
   const TIPOS_EVENTO = TIPOS_EVENTO_KEYS.map(m => ({ value: m.value, label: t(`configGeral.inboundWebhooks.tiposEvento.${m.key}`) }));
   const [webhooks, setWebhooks] = useState<InboundWebhook[]>([]);
@@ -192,7 +195,7 @@ export function InboundWebhooksManager() {
   const handleTestWebhook = async (wh: InboundWebhook) => {
     setTestingWebhook(wh.id);
     try {
-      const payload = PAYLOAD_EXAMPLES[wh.modulo_destino] || { title: 'Evento de teste', description: 'Teste via Akuris' };
+      const payload = PAYLOAD_EXAMPLES[wh.modulo_destino] || { title: t('sweepConfig.integracoes.inboundWebhooks.payloadExamples.default.title'), description: t('sweepConfig.integracoes.inboundWebhooks.payloadExamples.default.description') };
       
       const response = await fetch(`${baseUrl}?token=${wh.webhook_token}`, {
         method: 'POST',
