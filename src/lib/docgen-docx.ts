@@ -236,7 +236,7 @@ export async function buildDocGenDocxBlob(doc: DocGenDocument, options: DocxOpti
             : logoPosicao === 'esquerda' ? AlignmentType.LEFT
               : AlignmentType.CENTER,
         spacing: { after: 400 },
-        children: [new ImageRun({ type: 'png', data: buf, transformation: { width: Math.round(logoAltura * 2), height: logoAltura } })],
+        children: [new ImageRun({ data: buf, transformation: { width: Math.round(logoAltura * 2), height: logoAltura } })],
       }));
     }
   }
