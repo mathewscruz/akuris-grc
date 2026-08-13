@@ -6,10 +6,13 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, CheckCircle } from 'lucide-react';
 import { ReviewExternalForm } from "@/components/revisao-acessos/ReviewExternalForm";
 import { logger } from '@/lib/logger';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { formatDateOnly } from '@/lib/date-utils';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 export default function ReviewExterna() {
   const { token } = useParams<{ token: string }>();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [review, setReview] = useState<any>(null);
@@ -19,7 +22,7 @@ export default function ReviewExterna() {
   useEffect(() => {
     const loadReview = async () => {
       if (!token) {
-        setError("Token inválido");
+        setError(t('publicPortal.reviewExterna.invalidToken'));
         setLoading(false);
         return;
       }
@@ -38,7 +41,7 @@ export default function ReviewExterna() {
         if (reviewError) throw reviewError;
 
         if (!data) {
-          setError("Revisão não encontrada");
+          setError(t('publicPortal.reviewExterna.notFound'));
           setLoading(false);
           return;
         }
@@ -53,7 +56,7 @@ export default function ReviewExterna() {
         // Verificar se está vencida
         const dataLimite = new Date(data.data_limite);
         if (dataLimite < new Date()) {
-          setError("Esta revisão está vencida");
+          setError(t('publicPortal.reviewExterna.expired'));
           setLoading(false);
           return;
         }
@@ -62,7 +65,7 @@ export default function ReviewExterna() {
         setLoading(false);
       } catch (err: any) {
         logger.error('Erro ao carregar revisão', { module: 'ReviewExterna', error: err.message });
-        setError(err.message || "Erro ao carregar revisão");
+        setError(err.message || t('publicPortal.reviewExterna.loadError'));
         setLoading(false);
       }
     };
@@ -75,7 +78,7 @@ export default function ReviewExterna() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <AkurisPulse size={32} className="mx-auto mb-4" />
-          <p className="text-muted-foreground">Carregando revisão...</p>
+          <p className="text-muted-foreground">{t('publicPortal.reviewExterna.loading')}</p>
         </div>
       </div>
     );
@@ -100,9 +103,9 @@ export default function ReviewExterna() {
         <Card className="max-w-md w-full p-6">
           <div className="text-center space-y-4">
             <CheckCircle className="h-12 w-12 text-green-600 mx-auto" />
-            <h2 className="text-2xl font-bold">Revisão Concluída</h2>
+            <h2 className="text-2xl font-bold">{t('publicPortal.reviewExterna.completedTitle')}</h2>
             <p className="text-muted-foreground">
-              Esta revisão já foi finalizada. Obrigado pela sua participação!
+              {t('publicPortal.reviewExterna.completedDescription')}
             </p>
           </div>
         </Card>
@@ -121,13 +124,13 @@ export default function ReviewExterna() {
                 alt="Akuris"
                 className="h-8"
               />
-              <h1 className="text-2xl font-bold">Revisão de Acessos</h1>
+              <h1 className="text-2xl font-bold">{t('publicPortal.reviewExterna.title')}</h1>
             </div>
             <p className="text-muted-foreground">
-              Sistema: <strong>{review?.sistema?.nome_sistema}</strong>
+              {t('publicPortal.reviewExterna.system')} <strong>{review?.sistema?.nome_sistema}</strong>
             </p>
             <p className="text-muted-foreground">
-              Prazo: <strong>{new Date(review?.data_limite).toLocaleDateString("pt-BR")}</strong>
+              {t('publicPortal.reviewExterna.deadline')} <strong>{formatDateOnly(review?.data_limite)}</strong>
             </p>
           </div>
 

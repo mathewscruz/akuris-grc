@@ -15,6 +15,8 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
 import { getCompanyLogo, AKURIS_DEFAULT_LOGO } from '@/lib/brand-logo';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { useMemo } from 'react';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 interface Empresa {
@@ -44,23 +46,24 @@ interface Categoria {
   ativo: boolean;
 }
 
-const denunciaSchema = z.object({
-  categoria_id: z.string().min(1, 'Categoria é obrigatória'),
-  titulo: z.string().min(5, 'Título deve ter pelo menos 5 caracteres'),
-  descricao: z.string().min(20, 'Descrição deve ter pelo menos 20 caracteres'),
+const buildDenunciaSchema = (t: (key: string) => string) => z.object({
+  categoria_id: z.string().min(1, t('publicPortal.denunciaForm.validation.category')),
+  titulo: z.string().min(5, t('publicPortal.denunciaForm.validation.title')),
+  descricao: z.string().min(20, t('publicPortal.denunciaForm.validation.description')),
   local_ocorrencia: z.string().optional(),
   data_ocorrencia: z.string().optional(),
   denunciante_nome: z.string().optional(),
-  denunciante_email: z.string().email('Email inválido').optional().or(z.literal('')),
+  denunciante_email: z.string().email(t('publicPortal.denunciaForm.validation.email')).optional().or(z.literal('')),
   denunciante_telefone: z.string().optional(),
   testemunhas: z.string().optional(),
   evidencias_descricao: z.string().optional(),
 });
 
-type DenunciaFormData = z.infer<typeof denunciaSchema>;
+type DenunciaFormData = z.infer<ReturnType<typeof buildDenunciaSchema>>;
 
 export default function DenunciaFormulario() {
   const { empresa: empresaSlug } = useParams();
+  const { t } = useLanguage();
   const [empresa, setEmpresa] = useState<Empresa | null>(null);
   const [config, setConfig] = useState<EmpresaConfig | null>(null);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
@@ -70,6 +73,8 @@ export default function DenunciaFormulario() {
   const [protocolo, setProtocolo] = useState<string>('');
   const [anexos, setAnexos] = useState<File[]>([]);
   const [showSuccess, setShowSuccess] = useState(false);
+
+  const denunciaSchema = useMemo(() => buildDenunciaSchema(t), [t]);
 
   const form = useForm<DenunciaFormData>({
     resolver: zodResolver(denunciaSchema),
@@ -176,14 +181,14 @@ export default function DenunciaFormulario() {
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
     if (anexos.length + files.length > 5) {
-      toast.error('Máximo de 5 arquivos permitidos');
+      toast.error(t('publicPortal.denunciaForm.maxFiles'));
       return;
     }
     
     const validFiles = files.filter(file => {
       const maxSize = 10 * 1024 * 1024; // 10MB
       if (file.size > maxSize) {
-        toast.error(`Arquivo ${file.name} é muito grande (máximo 10MB)`);
+        toast.error(t('publicPortal.denunciaForm.fileTooLarge', { name: file.name }));
         return false;
       }
       return true;
@@ -217,7 +222,7 @@ export default function DenunciaFormulario() {
 
       if (denunciaError) {
         logger.error('Erro ao criar denúncia', { module: 'DenunciaFormulario', error: String(denunciaError) });
-        toast.error('Erro ao registrar denúncia');
+        toast.error(t('publicPortal.denunciaForm.createError'));
         return;
       }
 
@@ -245,7 +250,7 @@ export default function DenunciaFormulario() {
       
     } catch (error) {
       logger.error('Erro geral ao registrar denúncia', { module: 'DenunciaFormulario', error: String(error) });
-      toast.error('Erro inesperado ao registrar denúncia');
+      toast.error(t('publicPortal.denunciaForm.unexpectedError'));
     } finally {
       setSubmitting(false);
     }
@@ -256,7 +261,7 @@ export default function DenunciaFormulario() {
       <div className="min-h-screen bg-[hsl(215,35%,12%)] flex items-center justify-center">
         <div className="text-center">
           <AkurisPulse size={32} />
-          <p className="mt-2 text-sidebar-foreground">Carregando...</p>
+          <p className="mt-2 text-sidebar-foreground">{t('publicPortal.common.loading')}</p>
         </div>
       </div>
     );
@@ -268,9 +273,9 @@ export default function DenunciaFormulario() {
         <Card className="max-w-md mx-auto bg-white">
           <CardContent className="text-center py-8">
             <Shield className="w-12 h-12 text-destructive mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Canal Indisponível</h2>
+            <h2 className="text-xl font-semibold mb-2">{t('publicPortal.denunciaForm.unavailableTitle')}</h2>
             <p className="text-muted-foreground">
-              O canal de denúncias não está disponível ou foi desativado.
+              {t('publicPortal.denunciaForm.unavailableDescription')}
             </p>
           </CardContent>
         </Card>
@@ -289,31 +294,30 @@ export default function DenunciaFormulario() {
               </div>
               
               <h2 className="text-2xl font-bold text-green-800 mb-4">
-                Denúncia Registrada com Sucesso!
+                {t('publicPortal.denunciaForm.successTitle')}
               </h2>
               
               <div className="bg-green-50 p-4 rounded-lg border border-green-200 mb-6">
-                <p className="text-sm text-gray-600 mb-2">Seu protocolo de acompanhamento:</p>
+                <p className="text-sm text-gray-600 mb-2">{t('publicPortal.denunciaForm.yourProtocol')}</p>
                 <p className="text-2xl font-mono font-bold text-green-700">{protocolo}</p>
               </div>
               
               <p className="text-green-700 mb-6">
-                Guarde este número para acompanhar o status da sua denúncia.
-                Você receberá atualizações sobre o andamento do caso.
+                {t('publicPortal.denunciaForm.successDescription')}
               </p>
               
               <div className="space-y-3">
                 <Link to={`/${empresaSlug}/denuncia/consulta`}>
                   <Button className="w-full">
                     <ExternalLink className="w-4 h-4 mr-2" />
-                    Consultar Status da Denúncia
+                    {t('publicPortal.denunciaForm.checkStatus')}
                   </Button>
                 </Link>
                 
                 <Link to={`/${empresaSlug}/denuncia`}>
                   <Button variant="outline" className="w-full">
                     <ArrowLeft className="w-4 h-4 mr-2" />
-                    Voltar ao Início
+                    {t('publicPortal.denunciaForm.backHome')}
                   </Button>
                 </Link>
               </div>
@@ -340,7 +344,7 @@ export default function DenunciaFormulario() {
             className="inline-flex items-center text-sm text-sidebar-foreground hover:text-primary transition-colors"
           >
             <ArrowLeft className="w-4 h-4 mr-1" />
-            Voltar ao menu inicial
+            {t('publicPortal.denunciaForm.backToMenu')}
           </Link>
         </div>
 
@@ -358,7 +362,7 @@ export default function DenunciaFormulario() {
           
           <div className="flex items-center justify-center gap-2 mb-4">
             <Shield className="w-6 h-6 text-primary" />
-            <h2 className="text-xl text-sidebar-foreground">Canal de Denúncias - Registrar Nova Denúncia</h2>
+            <h2 className="text-xl text-sidebar-foreground">{t('publicPortal.denunciaForm.headerTitle')}</h2>
           </div>
         </div>
 
@@ -373,7 +377,7 @@ export default function DenunciaFormulario() {
         {/* Formulário */}
         <Card className="bg-white">
           <CardHeader>
-            <CardTitle>Registrar Denúncia</CardTitle>
+            <CardTitle>{t('publicPortal.denunciaForm.cardTitle')}</CardTitle>
           </CardHeader>
           <CardContent>
             <Form {...form}>
@@ -384,11 +388,11 @@ export default function DenunciaFormulario() {
                   name="categoria_id"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Categoria da Denúncia *</FormLabel>
+                      <FormLabel>{t('publicPortal.denunciaForm.category')}</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Selecione uma categoria" />
+                            <SelectValue placeholder={t('publicPortal.denunciaForm.categoryPlaceholder')} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -410,9 +414,9 @@ export default function DenunciaFormulario() {
                   name="titulo"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Título da Denúncia *</FormLabel>
+                      <FormLabel>{t('publicPortal.denunciaForm.title')}</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="Descreva brevemente o problema" />
+                        <Input {...field} placeholder={t('publicPortal.denunciaForm.titlePlaceholder')} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -425,11 +429,11 @@ export default function DenunciaFormulario() {
                   name="descricao"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Descrição Detalhada *</FormLabel>
+                      <FormLabel>{t('publicPortal.denunciaForm.description')}</FormLabel>
                       <FormControl>
                         <Textarea 
                           {...field} 
-                          placeholder="Descreva detalhadamente o que aconteceu, quando, onde e quem estava envolvido"
+                          placeholder={t('publicPortal.denunciaForm.descriptionPlaceholder')}
                           className="min-h-[120px]"
                         />
                       </FormControl>
@@ -444,9 +448,9 @@ export default function DenunciaFormulario() {
                   name="local_ocorrencia"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Local da Ocorrência</FormLabel>
+                      <FormLabel>{t('publicPortal.denunciaForm.place')}</FormLabel>
                       <FormControl>
-                        <Input {...field} placeholder="Onde aconteceu o fato relatado" />
+                        <Input {...field} placeholder={t('publicPortal.denunciaForm.placePlaceholder')} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -459,7 +463,7 @@ export default function DenunciaFormulario() {
                   name="data_ocorrencia"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Data da Ocorrência</FormLabel>
+                      <FormLabel>{t('publicPortal.denunciaForm.date')}</FormLabel>
                       <FormControl>
                         <Input {...field} type="date" />
                       </FormControl>
@@ -471,16 +475,16 @@ export default function DenunciaFormulario() {
                 {/* Dados do Denunciante (se não for obrigatório email) */}
                 {config.permitir_anonimas && (
                   <div className="space-y-4">
-                    <h3 className="text-lg font-semibold">Identificação (Opcional)</h3>
+                    <h3 className="text-lg font-semibold">{t('publicPortal.denunciaForm.identification')}</h3>
                     
                     <FormField
                       control={form.control}
                       name="denunciante_nome"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Nome</FormLabel>
+                          <FormLabel>{t('publicPortal.denunciaForm.name')}</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="Seu nome completo" />
+                            <Input {...field} placeholder={t('publicPortal.denunciaForm.namePlaceholder')} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -492,7 +496,7 @@ export default function DenunciaFormulario() {
                       name="denunciante_email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Email</FormLabel>
+                          <FormLabel>{t('publicPortal.denunciaForm.email')}</FormLabel>
                           <FormControl>
                             <Input {...field} type="email" placeholder="seu@email.com" />
                           </FormControl>
@@ -506,7 +510,7 @@ export default function DenunciaFormulario() {
                       name="denunciante_telefone"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Telefone</FormLabel>
+                          <FormLabel>{t('publicPortal.denunciaForm.phone')}</FormLabel>
                           <FormControl>
                             <Input {...field} placeholder="(11) 99999-9999" />
                           </FormControl>
@@ -523,11 +527,11 @@ export default function DenunciaFormulario() {
                   name="testemunhas"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Testemunhas</FormLabel>
+                      <FormLabel>{t('publicPortal.denunciaForm.witnesses')}</FormLabel>
                       <FormControl>
                         <Textarea 
                           {...field} 
-                          placeholder="Relate se há testemunhas e como contatá-las"
+                          placeholder={t('publicPortal.denunciaForm.witnessesPlaceholder')}
                           className="min-h-[80px]"
                         />
                       </FormControl>
@@ -542,11 +546,11 @@ export default function DenunciaFormulario() {
                   name="evidencias_descricao"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Evidências</FormLabel>
+                      <FormLabel>{t('publicPortal.denunciaForm.evidence')}</FormLabel>
                       <FormControl>
                         <Textarea 
                           {...field} 
-                          placeholder="Descreva as evidências que você possui (documentos, fotos, etc.)"
+                          placeholder={t('publicPortal.denunciaForm.evidencePlaceholder')}
                           className="min-h-[80px]"
                         />
                       </FormControl>
@@ -559,8 +563,8 @@ export default function DenunciaFormulario() {
                 {true && (
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <label className="text-sm font-medium">Anexar Arquivos</label>
-                      <span className="text-xs text-muted-foreground">Máximo 5 arquivos de 10MB cada</span>
+                      <label className="text-sm font-medium">{t('publicPortal.denunciaForm.attach')}</label>
+                      <span className="text-xs text-muted-foreground">{t('publicPortal.denunciaForm.attachHint')}</span>
                     </div>
                     
                     <div className="flex items-center justify-center w-full">
@@ -568,7 +572,7 @@ export default function DenunciaFormulario() {
                         <div className="flex flex-col items-center justify-center pt-5 pb-6">
                           <Upload className="w-8 h-8 mb-2 text-muted-foreground" />
                           <p className="text-sm text-muted-foreground">
-                            Clique para selecionar arquivos
+                            {t('publicPortal.denunciaForm.attachCta')}
                           </p>
                         </div>
                         <input
@@ -606,11 +610,11 @@ export default function DenunciaFormulario() {
                 <div className="flex gap-4 pt-4">
                   <Link to={`/${empresaSlug}/denuncia`} className="flex-1">
                     <Button type="button" variant="outline" className="w-full">
-                      Cancelar
+                      {t('publicPortal.denunciaForm.cancel')}
                     </Button>
                   </Link>
                   <Button type="submit" disabled={submitting} className="flex-1">
-                    {submitting ? 'Enviando...' : 'Registrar Denúncia'}
+                    {submitting ? t('publicPortal.denunciaForm.submitting') : t('publicPortal.denunciaForm.submit')}
                   </Button>
                 </div>
               </form>

@@ -33,6 +33,7 @@ import { relatoriosComp } from './relatorios-comp';
 import { governancaComp } from './governanca-comp';
 import { dadosDashboard } from './dados-dashboard';
 import { dashboardWidgets } from './dashboard-widgets';
+import { publicPortal } from './public-portal';
 
 type ModuleDict = { pt: Record<string, unknown>; en: Record<string, unknown> };
 
@@ -62,6 +63,7 @@ const modules: Record<string, ModuleDict> = {
   revisaoAcessosComp,
   relatoriosComp,
   governancaComp,
+  publicPortal,
 };
 
 

@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { logger } from '@/lib/logger';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { formatDateTime } from '@/lib/date-utils';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -53,6 +55,7 @@ export default function DenunciaConsulta() {
   const { empresa: empresaSlug } = useParams<{ empresa: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { t } = useLanguage();
   
   const [empresa, setEmpresa] = useState<Empresa | null>(null);
   const [loading, setLoading] = useState(true);
@@ -79,8 +82,8 @@ export default function DenunciaConsulta() {
 
       if (empresaError || !empresaData) {
         toast({
-          title: "Erro",
-          description: "Empresa não encontrada",
+          title: t('publicPortal.denunciaConsulta.error'),
+          description: t('publicPortal.denunciaConsulta.companyNotFound'),
           variant: "destructive"
         });
         navigate('/');
@@ -91,8 +94,8 @@ export default function DenunciaConsulta() {
     } catch (error) {
       logger.error('Erro ao carregar empresa', { module: 'DenunciaConsulta', error: String(error) });
       toast({
-        title: "Erro",
-        description: "Erro interno do sistema",
+        title: t('publicPortal.denunciaConsulta.error'),
+        description: t('publicPortal.denunciaConsulta.internalError'),
         variant: "destructive"
       });
       navigate('/');
@@ -106,8 +109,8 @@ export default function DenunciaConsulta() {
     
     if (!empresa || !protocolo.trim()) {
       toast({
-        title: "Erro",
-        description: "Digite o número do protocolo",
+        title: t('publicPortal.denunciaConsulta.error'),
+        description: t('publicPortal.denunciaConsulta.typeProtocol'),
         variant: "destructive"
       });
       return;
@@ -143,8 +146,8 @@ export default function DenunciaConsulta() {
 
       if (denunciaError || !denunciaData) {
         toast({
-          title: "Protocolo não encontrado",
-          description: "Verifique se o número do protocolo está correto",
+          title: t('publicPortal.denunciaConsulta.notFoundTitle'),
+          description: t('publicPortal.denunciaConsulta.notFoundDescription'),
           variant: "destructive"
         });
         return;
@@ -183,8 +186,8 @@ export default function DenunciaConsulta() {
     } catch (error) {
       logger.error('Erro ao buscar denúncia', { module: 'DenunciaConsulta', error: String(error) });
       toast({
-        title: "Erro",
-        description: "Erro ao buscar denúncia. Tente novamente.",
+        title: t('publicPortal.denunciaConsulta.error'),
+        description: t('publicPortal.denunciaConsulta.searchError'),
         variant: "destructive"
       });
     } finally {
@@ -208,35 +211,21 @@ export default function DenunciaConsulta() {
   };
 
   const getStatusText = (status: string) => {
-    const statusMap: { [key: string]: string } = {
-      nova: 'Nova',
-      em_analise: 'Em Análise',
-      em_investigacao: 'Em Investigação',
-      concluida: 'Concluída',
-      arquivada: 'Arquivada'
-    };
-    return statusMap[status] || status;
+    const label = t(`publicPortal.denunciaConsulta.status.${status}`);
+    return label.startsWith('publicPortal.') ? status : label;
   };
 
   const getGravidadeLabel = (gravidade: string) =>
     gravidade ? gravidade.charAt(0).toUpperCase() + gravidade.slice(1) : '-';
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
+  const formatDate = (dateString: string) => formatDateTime(dateString);
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center space-y-4">
           <AkurisPulse size={32} />
-          <p className="text-muted-foreground">Carregando...</p>
+          <p className="text-muted-foreground">{t('publicPortal.common.loading')}</p>
         </div>
       </div>
     );
@@ -252,7 +241,7 @@ export default function DenunciaConsulta() {
             className="inline-flex items-center text-sm text-sidebar-foreground hover:text-primary transition-colors"
           >
             <ArrowLeft className="w-4 h-4 mr-1" />
-            Voltar ao menu inicial
+            {t('publicPortal.denunciaConsulta.backToMenu')}
           </Link>
         </div>
 
@@ -268,7 +257,7 @@ export default function DenunciaConsulta() {
           
           <div className="flex items-center justify-center gap-2 mb-4">
             <Shield className="w-6 h-6 text-primary" />
-            <h2 className="text-xl text-sidebar-foreground">Consulte o andamento da sua denúncia</h2>
+            <h2 className="text-xl text-sidebar-foreground">{t('publicPortal.denunciaConsulta.headerTitle')}</h2>
           </div>
         </div>
 
@@ -277,30 +266,30 @@ export default function DenunciaConsulta() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Search className="w-5 h-5" />
-              Consultar Protocolo
+              {t('publicPortal.denunciaConsulta.searchTitle')}
             </CardTitle>
             <CardDescription>
-              Digite o número do protocolo recebido ao fazer sua denúncia
+              {t('publicPortal.denunciaConsulta.searchDescription')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={buscarDenuncia} className="flex gap-4">
               <div className="flex-1">
                 <Label htmlFor="protocolo" className="sr-only">
-                  Número do protocolo
+                  {t('publicPortal.denunciaConsulta.protocolLabel')}
                 </Label>
                 <Input
                   id="protocolo"
                   value={protocolo}
                   onChange={(e) => setProtocolo(e.target.value.toUpperCase())}
-                  placeholder="Ex: DEN20250123001"
+                  placeholder={t('publicPortal.denunciaConsulta.protocolPlaceholder')}
                   className="font-mono"
                   required
                 />
               </div>
               <Button type="submit" disabled={searching}>
                 <Search className="w-4 h-4 mr-2" />
-                {searching ? 'Buscando...' : 'Consultar'}
+                {searching ? t('publicPortal.denunciaConsulta.searching') : t('publicPortal.denunciaConsulta.search')}
               </Button>
             </form>
           </CardContent>
@@ -316,7 +305,7 @@ export default function DenunciaConsulta() {
                   <div>
                     <CardTitle className="flex items-center gap-2 mb-2">
                       <FileText className="w-5 h-5" />
-                      Protocolo: {denuncia.protocolo}
+                      {t('publicPortal.denunciaConsulta.protocol')} {denuncia.protocolo}
                     </CardTitle>
                     <CardDescription className="text-base">
                       {denuncia.titulo}
@@ -336,14 +325,14 @@ export default function DenunciaConsulta() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-sm font-medium text-muted-foreground">
-                      Data da Denúncia
+                      {t('publicPortal.denunciaConsulta.reportDate')}
                     </Label>
                     <p className="text-sm">{formatDate(denuncia.created_at)}</p>
                   </div>
                   {denuncia.categoria && (
                     <div>
                       <Label className="text-sm font-medium text-muted-foreground">
-                        Categoria
+                        {t('publicPortal.denunciaConsulta.category')}
                       </Label>
                       <p className="text-sm">{denuncia.categoria.nome}</p>
                     </div>
@@ -351,7 +340,7 @@ export default function DenunciaConsulta() {
                   {denuncia.data_atribuicao && (
                     <div>
                       <Label className="text-sm font-medium text-muted-foreground">
-                        Data de Atribuição
+                        {t('publicPortal.denunciaConsulta.assignmentDate')}
                       </Label>
                       <p className="text-sm">{formatDate(denuncia.data_atribuicao)}</p>
                     </div>
@@ -359,7 +348,7 @@ export default function DenunciaConsulta() {
                   {denuncia.data_inicio_investigacao && (
                     <div>
                       <Label className="text-sm font-medium text-muted-foreground">
-                        Início da Investigação
+                        {t('publicPortal.denunciaConsulta.investigationStart')}
                       </Label>
                       <p className="text-sm">{formatDate(denuncia.data_inicio_investigacao)}</p>
                     </div>
@@ -370,7 +359,7 @@ export default function DenunciaConsulta() {
                   <Alert>
                     <CheckCircle className="h-4 w-4" />
                     <AlertDescription>
-                      <strong>Denúncia concluída em:</strong> {formatDate(denuncia.data_conclusao)}
+                      <strong>{t('publicPortal.denunciaConsulta.concludedAt')}</strong> {formatDate(denuncia.data_conclusao)}
                     </AlertDescription>
                   </Alert>
                 )}
@@ -382,10 +371,10 @@ export default function DenunciaConsulta() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Clock className="w-5 h-5" />
-                  Histórico de Movimentações
+                  {t('publicPortal.denunciaConsulta.historyTitle')}
                 </CardTitle>
                 <CardDescription>
-                  Acompanhe todas as etapas do tratamento da sua denúncia
+                  {t('publicPortal.denunciaConsulta.historyDescription')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -408,8 +397,7 @@ export default function DenunciaConsulta() {
                           </div>
                           {movimentacao.status_anterior && movimentacao.status_novo && (
                             <p className="text-xs text-muted-foreground">
-                              Status alterado de "{getStatusText(movimentacao.status_anterior)}" 
-                              para "{getStatusText(movimentacao.status_novo)}"
+                              {t('publicPortal.denunciaConsulta.statusChanged', { from: getStatusText(movimentacao.status_anterior), to: getStatusText(movimentacao.status_novo) })}
                             </p>
                           )}
                           {movimentacao.observacoes && (
@@ -419,7 +407,7 @@ export default function DenunciaConsulta() {
                           )}
                           {movimentacao.usuario && (
                             <p className="text-xs text-muted-foreground">
-                              Por: {movimentacao.usuario.nome}
+                              {t('publicPortal.denunciaConsulta.by')} {movimentacao.usuario.nome}
                             </p>
                           )}
                         </div>
@@ -428,7 +416,7 @@ export default function DenunciaConsulta() {
                   </div>
                 ) : (
                   <p className="text-muted-foreground text-center py-4">
-                    Nenhuma movimentação registrada ainda.
+                    {t('publicPortal.denunciaConsulta.noHistory')}
                   </p>
                 )}
               </CardContent>
@@ -438,10 +426,8 @@ export default function DenunciaConsulta() {
             <Alert>
               <Eye className="h-4 w-4" />
               <AlertDescription>
-                <strong>Importante:</strong> Esta consulta mostra apenas informações básicas sobre 
-                o andamento da sua denúncia. Dados sensíveis são mantidos em sigilo conforme 
-                nossa política de privacidade. Para mais informações, entre em contato através 
-                dos canais oficiais da empresa.
+                <strong>{t('publicPortal.denunciaConsulta.importantLabel')}</strong>{' '}
+                {t('publicPortal.denunciaConsulta.importantText')}
               </AlertDescription>
             </Alert>
           </div>
