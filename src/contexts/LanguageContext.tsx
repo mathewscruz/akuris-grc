@@ -17,6 +17,17 @@ interface LanguageContextType {
   locale: Locale;
   setLocale: (locale: Locale) => void;
   t: (key: string, params?: Record<string, string | number>) => string;
+  /** Resolve chaves cujo valor é uma lista de strings (ex.: exemplos de documentos). */
+  tList: (key: string) => string[];
+}
+
+function resolveList(dict: Dictionary, key: string): string[] {
+  let result: any = dict;
+  for (const k of key.split('.')) {
+    result = result?.[k];
+    if (result === undefined) return [];
+  }
+  return Array.isArray(result) ? result.filter((v) => typeof v === 'string') : [];
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
