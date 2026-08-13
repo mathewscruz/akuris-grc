@@ -188,7 +188,8 @@ export function MatrizForm({ onSuccess }: Props) {
     setFaixasError(error);
   }, [niveisRisco]);
 
-  const fetchData = async () => {
+  const fetchData = async (autoCarregar = false) => {
+    if (!profile?.empresa_id) return;
     try {
       // Buscar matrizes existentes com suas configurações
       const { data: matrizesData } = await supabase
@@ -202,6 +203,7 @@ export function MatrizForm({ onSuccess }: Props) {
             metodo_calculo
           )
         `)
+        .eq('empresa_id', profile.empresa_id)
         .order('created_at', { ascending: false });
 
       const matrizesComConfig = matrizesData?.map(matriz => ({
@@ -216,10 +218,18 @@ export function MatrizForm({ onSuccess }: Props) {
 
       setMatrizes(matrizesComConfig);
 
+      // UX: ao abrir com matriz já existente, editar a ativa em vez de um form vazio.
+      if (autoCarregar) {
+        const ativa = matrizesComConfig.find(m => m.configuracao) || matrizesComConfig[0];
+        if (ativa) carregarMatrizParaEdicao(ativa);
+        else setModoNovo(true);
+      }
+
       // Buscar categorias existentes
       const { data: categoriasData } = await supabase
         .from('riscos_categorias')
         .select('id, nome, descricao, cor')
+        .eq('empresa_id', profile.empresa_id)
         .order('created_at', { ascending: false });
 
       setCategorias(categoriasData || []);
@@ -230,6 +240,7 @@ export function MatrizForm({ onSuccess }: Props) {
 
   const carregarMatrizParaEdicao = (matriz: Matriz) => {
     setEditingMatriz(matriz);
+    setModoNovo(false);
     matrizForm.setValue('nome', matriz.nome);
     matrizForm.setValue('descricao', matriz.descricao || '');
     
@@ -237,9 +248,26 @@ export function MatrizForm({ onSuccess }: Props) {
       setEscalaProbabilidade(matriz.configuracao.escala_probabilidade);
       setEscalaImpacto(matriz.configuracao.escala_impacto);
       setNiveisRisco(matriz.configuracao.niveis_risco);
-      setMetodoCalculo((matriz.configuracao as any).metodo_calculo || 'multiplicacao');
+      setMetodoCalculo((matriz.configuracao.metodo_calculo as 'multiplicacao' | 'soma') || 'multiplicacao');
     }
   };
+
+  /** Resumo curto para distinguir matrizes na lista e no seletor. */
+  const resumoMatriz = (matriz: Matriz): string | null => {
+    const cfg = matriz.configuracao;
+    if (!cfg) return null;
+    const metodo = cfg.metodo_calculo === 'soma' ? 'P + I' : 'P × I';
+    const apetite = [...(cfg.niveis_risco || [])].find(n => n.apetite);
+    const params = {
+      p: cfg.escala_probabilidade?.length || 0,
+      i: cfg.escala_impacto?.length || 0,
+      metodo,
+    };
+    return apetite
+      ? t('sweepRiscos.riscos.matrizForm.resumo', { ...params, apetite: apetite.max })
+      : t('sweepRiscos.riscos.matrizForm.resumoSemApetite', params);
+  };
+
 
   const limparFormularioMatriz = () => {
     setEditingMatriz(null);
