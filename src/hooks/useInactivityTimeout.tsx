@@ -2,6 +2,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { tGlobal } from '@/lib/i18n-global';
 
 const INACTIVITY_TIMEOUT = 15 * 60 * 1000; // 15 minutos
 const WARNING_TIMEOUT = 14 * 60 * 1000; // 14 minutos (1 min antes)
@@ -16,15 +17,15 @@ export const useInactivityTimeout = () => {
 
   const logout = useCallback(async () => {
     await signOut();
-    toast.error('Sessão encerrada por inatividade', {
-      description: 'Sua sessão foi encerrada após 15 minutos de inatividade.',
+    toast.error(tGlobal('cardsKpi.sweep.sistema.sessaoEncerrada'), {
+      description: tGlobal('cardsKpi.sweep.sistema.sessaoEncerradaDesc'),
     });
     navigate('/auth');
   }, [signOut, navigate]);
 
   const showWarning = useCallback(() => {
-    toast.warning('Sessão prestes a expirar', {
-      description: 'Sua sessão será encerrada em 1 minuto por inatividade.',
+    toast.warning(tGlobal('cardsKpi.sweep.sistema.sessaoExpirando'), {
+      description: tGlobal('cardsKpi.sweep.sistema.sessaoExpirandoDesc'),
       duration: 60000,
     });
   }, []);
