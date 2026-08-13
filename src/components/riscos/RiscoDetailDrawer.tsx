@@ -90,11 +90,11 @@ interface Props {
 }
 
 const getStatusOptions = () => [
-  { value: 'identificado', label: tGlobal('campos.opcoes.identificado') },
-  { value: 'analisado', label: tGlobal('campos.opcoes.analisado') },
-  { value: 'em_tratamento', label: tGlobal('campos.opcoes.emTratamento') },
-  { value: 'tratado', label: tGlobal('campos.opcoes.tratado') },
-  { value: 'monitorado', label: tGlobal('campos.opcoes.monitorado') },
+  { value: 'identificado', label: tGlobal('campos.enums.riscoStatus.identificado') },
+  { value: 'analisado', label: tGlobal('campos.enums.riscoStatus.analisado') },
+  { value: 'em_tratamento', label: tGlobal('sweepRiscos.riscos.detail.emTratamento') },
+  { value: 'tratado', label: tGlobal('campos.enums.riscoStatus.tratado') },
+  { value: 'monitorado', label: tGlobal('campos.enums.riscoStatus.monitorado') },
   { value: 'aceito', label: tGlobal('sweepRiscos.riscos.detail.aceito') },
 ];
 
