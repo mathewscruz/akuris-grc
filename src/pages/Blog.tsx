@@ -7,6 +7,7 @@ import { SEO } from '@/components/SEO';
 import { PublicShell } from '@/components/public/PublicShell';
 import { supabase } from '@/integrations/supabase/client';
 import { frameworksSeo } from '@/data/frameworks-seo';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Post {
   id: string;
@@ -20,6 +21,7 @@ interface Post {
 }
 
 export default function Blog() {
+  const { t, locale } = useLanguage();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -47,8 +49,8 @@ export default function Blog() {
   return (
     <PublicShell>
       <SEO
-        title="Blog Akuris — GRC, LGPD, ISO 27001 e Compliance"
-        description="Guias práticos de Governança, Riscos e Conformidade: LGPD, ISO 27001, SOC 2, NIST CSF, auditoria interna e gestão de riscos para empresas brasileiras."
+        title={t('publico.blog.seoTitle')}
+        description={t('publico.blog.seoDesc')}
         canonical="/blog"
         jsonLd={jsonLd}
       />
@@ -56,19 +58,18 @@ export default function Blog() {
       <section className="max-w-5xl mx-auto px-6 py-16">
         <header className="mb-12 text-center">
           <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight mb-4">
-            Blog Akuris
+            {t('publico.blog.titulo')}
           </h1>
           <p className="text-lg text-white/65 max-w-2xl mx-auto">
-            Guias e análises sobre Governança, Riscos e Conformidade — escritos por quem
-            opera o dia a dia de compliance, segurança e privacidade.
+            {t('publico.blog.sub')}
           </p>
         </header>
 
         {loading ? (
-          <p className="text-center text-white/50 py-20">Carregando…</p>
+          <p className="text-center text-white/50 py-20">{t('publico.blog.carregando')}</p>
         ) : posts.length === 0 ? (
           <div className="text-center py-20">
-            <p className="text-white/60 mb-8">Em breve novos conteúdos. Enquanto isso, conheça nossas páginas de framework:</p>
+            <p className="text-white/60 mb-8">{t('publico.blog.vazio')}</p>
             <div className="flex flex-wrap justify-center gap-2 max-w-2xl mx-auto">
               {frameworksSeo.map((f) => (
                 <Link
@@ -103,7 +104,7 @@ export default function Blog() {
                   <div className="flex items-center justify-between text-xs text-white/45">
                     <span>{post.autor}</span>
                     {post.published_at && (
-                      <time dateTime={post.published_at}>{format(new Date(post.published_at), "d 'de' MMM yyyy", { locale: ptBR })}</time>
+                      <time dateTime={post.published_at}>{format(new Date(post.published_at), locale === 'en' ? 'MMM d, yyyy' : "d 'de' MMM yyyy", locale === 'en' ? undefined : { locale: ptBR })}</time>
                     )}
                   </div>
                 </div>
@@ -115,15 +116,15 @@ export default function Blog() {
 
       <section className="max-w-5xl mx-auto px-6 pb-20">
         <div className="rounded-2xl border border-[hsl(252,100%,66%)]/30 bg-gradient-to-br from-[hsl(252,100%,66%)]/10 to-transparent p-8 text-center">
-          <h2 className="text-2xl font-semibold mb-2">Pronto para automatizar seu programa de GRC?</h2>
+          <h2 className="text-2xl font-semibold mb-2">{t('publico.blog.ctaTitulo')}</h2>
           <p className="text-white/70 mb-6 max-w-xl mx-auto">
-            Veja como o Akuris reúne controles, frameworks, evidências e indicadores em um único lugar.
+            {t('publico.blog.ctaSub')}
           </p>
           <Link
             to="/"
             className="inline-flex items-center gap-2 px-5 py-3 rounded-lg bg-[hsl(252,100%,66%)] hover:bg-[hsl(252,100%,60%)] text-white font-medium transition"
           >
-            Solicitar demonstração <ArrowRight className="w-4 h-4" />
+            {t('publico.blog.ctaBotao')} <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
       </section>
