@@ -18,7 +18,7 @@ export function LanguageSelector({ variant = 'default' }: LanguageSelectorProps)
         variant === 'dark' && "hover:bg-white/10"
       )}
       onClick={() => setLocale(locale === 'pt' ? 'en' : 'pt')}
-      title={locale === 'pt' ? 'Switch to English' : 'Mudar para Português'}
+      title={locale === 'pt' ? 'Mudar para inglês' : 'Switch to Portuguese'}
     >
       {locale === 'pt' ? 'PT' : 'EN'}
     </Button>

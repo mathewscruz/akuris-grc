@@ -34,26 +34,26 @@ import {
 import { useLanguage } from '@/contexts/LanguageContext';
 
 const MODULES = [
-  { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, keywords: ['inicio', 'home', 'painel'] },
-  { name: 'Gestão de Riscos', path: '/riscos', icon: AlertTriangle, keywords: ['risco', 'ameaca', 'vulnerabilidade'] },
-  { name: 'Governança', path: '/governanca', icon: Shield, keywords: ['controle', 'auditoria', 'compliance'] },
-  { name: 'Gap Analysis', path: '/gap-analysis', icon: Target, keywords: ['framework', 'conformidade', 'iso', 'nist', 'lgpd'] },
-  { name: 'Frameworks', path: '/gap-analysis/frameworks', icon: Target, keywords: ['iso 27001', 'nist', 'lgpd', 'sox'] },
-  { name: 'Ativos', path: '/ativos', icon: HardDrive, keywords: ['ativo', 'dispositivo', 'hardware', 'software'] },
-  { name: 'Licenças', path: '/ativos/licencas', icon: Key, keywords: ['licenca', 'software', 'renovacao'] },
-  { name: 'Chaves Criptográficas', path: '/ativos/chaves', icon: Key, keywords: ['chave', 'criptografia', 'certificado'] },
-  { name: 'Documentos', path: '/documentos', icon: FileText, keywords: ['documento', 'politica', 'procedimento'] },
-  { name: 'Contratos', path: '/contratos', icon: Scale, keywords: ['contrato', 'fornecedor', 'sla'] },
-  { name: 'Incidentes', path: '/incidentes', icon: Bug, keywords: ['incidente', 'seguranca', 'breach'] },
-  { name: 'Privacidade (LGPD)', path: '/privacidade', icon: Eye, keywords: ['lgpd', 'dados', 'ropa', 'titular'] },
-  { name: 'Contas Privilegiadas', path: '/contas-privilegiadas', icon: Users, keywords: ['conta', 'privilegio', 'admin', 'acesso'] },
-  { name: 'Revisão de Acessos', path: '/revisao-acessos', icon: FileCheck, keywords: ['revisao', 'acesso', 'review'] },
-  { name: 'Due Diligence', path: '/due-diligence', icon: ClipboardList, keywords: ['due diligence', 'fornecedor', 'terceiro'] },
-  { name: 'Canal de Denúncias', path: '/denuncia', icon: Megaphone, keywords: ['denuncia', 'canal', 'ouvidoria'] },
+  { key: 'moduleDashboard', path: '/dashboard', icon: LayoutDashboard, keywords: ['inicio', 'home', 'painel'] },
+  { key: 'moduleRisks', path: '/riscos', icon: AlertTriangle, keywords: ['risco', 'ameaca', 'vulnerabilidade'] },
+  { key: 'moduleGovernance', path: '/governanca', icon: Shield, keywords: ['controle', 'auditoria', 'compliance'] },
+  { key: 'moduleGapAnalysis', path: '/gap-analysis', icon: Target, keywords: ['framework', 'conformidade', 'iso', 'nist', 'lgpd'] },
+  { key: 'moduleFrameworks', path: '/gap-analysis/frameworks', icon: Target, keywords: ['iso 27001', 'nist', 'lgpd', 'sox'] },
+  { key: 'moduleAssets', path: '/ativos', icon: HardDrive, keywords: ['ativo', 'dispositivo', 'hardware', 'software'] },
+  { key: 'moduleLicenses', path: '/ativos/licencas', icon: Key, keywords: ['licenca', 'software', 'renovacao'] },
+  { key: 'moduleCryptoKeys', path: '/ativos/chaves', icon: Key, keywords: ['chave', 'criptografia', 'certificado'] },
+  { key: 'moduleDocuments', path: '/documentos', icon: FileText, keywords: ['documento', 'politica', 'procedimento'] },
+  { key: 'moduleContracts', path: '/contratos', icon: Scale, keywords: ['contrato', 'fornecedor', 'sla'] },
+  { key: 'moduleIncidents', path: '/incidentes', icon: Bug, keywords: ['incidente', 'seguranca', 'breach'] },
+  { key: 'modulePrivacy', path: '/privacidade', icon: Eye, keywords: ['lgpd', 'dados', 'ropa', 'titular'] },
+  { key: 'modulePrivilegedAccounts', path: '/contas-privilegiadas', icon: Users, keywords: ['conta', 'privilegio', 'admin', 'acesso'] },
+  { key: 'moduleAccessReviews', path: '/revisao-acessos', icon: FileCheck, keywords: ['revisao', 'acesso', 'review'] },
+  { key: 'moduleDueDiligence', path: '/due-diligence', icon: ClipboardList, keywords: ['due diligence', 'fornecedor', 'terceiro'] },
+  { key: 'moduleWhistleblowing', path: '/denuncia', icon: Megaphone, keywords: ['denuncia', 'canal', 'ouvidoria'] },
   
-  { name: 'Planos de Ação', path: '/planos-acao', icon: ClipboardList, keywords: ['plano', 'acao', 'tarefa'] },
-  { name: 'Relatórios', path: '/relatorios', icon: BarChart3, keywords: ['relatorio', 'report', 'exportar'] },
-  { name: 'Configurações', path: '/configuracoes', icon: Settings, keywords: ['config', 'empresa', 'usuario', 'integracao'] },
+  { key: 'moduleActionPlans', path: '/planos-acao', icon: ClipboardList, keywords: ['plano', 'acao', 'tarefa'] },
+  { key: 'moduleReports', path: '/relatorios', icon: BarChart3, keywords: ['relatorio', 'report', 'exportar'] },
+  { key: 'moduleSettings', path: '/configuracoes', icon: Settings, keywords: ['config', 'empresa', 'usuario', 'integracao'] },
 ];
 
 export function CommandPaletteButton() {
@@ -102,12 +102,12 @@ function CommandPaletteDialog({ open, onOpenChange }: { open: boolean; onOpenCha
           {MODULES.map((module) => (
             <CommandItem
               key={module.path}
-              value={`${module.name} ${module.keywords.join(' ')}`}
+              value={`${t(`commandPalette.${module.key}`)} ${module.keywords.join(' ')}`}
               onSelect={() => handleSelect(module.path)}
               className="flex items-center gap-3 cursor-pointer"
             >
               <module.icon className="h-4 w-4 text-muted-foreground" />
-              <span>{module.name}</span>
+              <span>{t(`commandPalette.${module.key}`)}</span>
             </CommandItem>
           ))}
         </CommandGroup>
