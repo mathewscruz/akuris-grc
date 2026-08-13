@@ -53,6 +53,12 @@ const modules: Record<string, ModuleDict> = {
   controlesAuditorias,
   dueDiligence,
   dadosDashboard,
+  incidentesComp,
+  continuidadeComp,
+  contasPrivilegiadasComp,
+  revisaoAcessosComp,
+  relatoriosComp,
+  governancaComp,
 };
 
 
