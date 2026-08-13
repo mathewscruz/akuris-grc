@@ -8,6 +8,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveNivelRiscoTone } from '@/lib/status-tone';
 import { formatStatus } from '@/lib/text-utils';
 import type { Severity } from '@/components/riscos/risk-utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export const SEV_VAR: Record<Severity, string> = {
   critico: 'hsl(var(--destructive))',
@@ -18,6 +19,7 @@ export const SEV_VAR: Record<Severity, string> = {
 
 /** Anel de score circular colorido por severidade (score/25 → %). */
 export function ScoreRing({ score, sev, size = 68 }: { score: number; sev: Severity; size?: number }) {
+  const { t } = useLanguage();
   const color = SEV_VAR[sev];
   const pct = Math.max(4, Math.min(100, (score / 25) * 100));
   return (
@@ -28,7 +30,7 @@ export function ScoreRing({ score, sev, size = 68 }: { score: number; sev: Sever
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span className="font-bold tabular-nums leading-none" style={{ color, fontSize: size * 0.29 }}>{score || '—'}</span>
-        <span className="text-[8px] uppercase tracking-[1px] text-muted-foreground mt-0.5">score</span>
+        <span className="text-[8px] uppercase tracking-[1px] text-muted-foreground mt-0.5">{t('riscosDetalhe.visuals.score')}</span>
       </div>
     </div>
   );

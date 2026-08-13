@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Plus, Edit, Trash2, FolderOpen } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 interface Categoria {
@@ -34,6 +35,7 @@ const cores = [
 ];
 
 export function CategoriasDialog({ open, onOpenChange, onSuccess, empresaId }: CategoriasDialogProps) {
+  const { t } = useLanguage();
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -70,8 +72,8 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess, empresaId }: C
     } catch (error) {
       console.error('Erro ao buscar categorias:', error);
       toast({
-        title: "Erro ao carregar categorias",
-        description: "Tente novamente em alguns instantes.",
+        title: t('documentos.dialogs.erroCarregarCategorias'),
+        description: t('documentos.dialogs.tenteNovamente'),
         variant: "destructive",
       });
     } finally {
@@ -84,8 +86,8 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess, empresaId }: C
     
     if (!formData.nome.trim()) {
       toast({
-        title: "Nome obrigatório",
-        description: "Por favor, informe o nome da categoria.",
+        title: t('documentos.dialogs.nomeObrigatorio'),
+        description: t('documentos.dialogs.informeNomeCategoria'),
         variant: "destructive",
       });
       return;
@@ -121,8 +123,8 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess, empresaId }: C
         if (error) throw error;
 
         toast({
-          title: "Categoria atualizada",
-          description: "A categoria foi atualizada com sucesso.",
+          title: t('documentos.dialogs.categoriaAtualizadaTitulo'),
+          description: t('documentos.dialogs.categoriaAtualizadaDescricao'),
         });
       } else {
         const { error } = await supabase
@@ -132,8 +134,8 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess, empresaId }: C
         if (error) throw error;
 
         toast({
-          title: "Categoria criada",
-          description: "A categoria foi criada com sucesso.",
+          title: t('documentos.dialogs.categoriaCriadaTitulo'),
+          description: t('documentos.dialogs.categoriaCriadaDescricao'),
         });
       }
 
@@ -143,8 +145,8 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess, empresaId }: C
     } catch (error) {
       console.error('Erro ao salvar categoria:', error);
       toast({
-        title: "Erro ao salvar categoria",
-        description: error instanceof Error ? error.message : "Tente novamente em alguns instantes.",
+        title: t('documentos.dialogs.erroSalvarCategoria'),
+        description: error instanceof Error ? error.message : t('documentos.dialogs.tenteNovamente'),
         variant: "destructive",
       });
     } finally {
@@ -172,8 +174,8 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess, empresaId }: C
       if (error) throw error;
 
       toast({
-        title: "Categoria excluída",
-        description: "A categoria foi excluída com sucesso.",
+        title: t('documentos.dialogs.categoriaExcluidaTitulo'),
+        description: t('documentos.dialogs.categoriaExcluidaDescricao'),
       });
 
       fetchCategorias();
@@ -181,8 +183,8 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess, empresaId }: C
     } catch (error) {
       console.error('Erro ao excluir categoria:', error);
       toast({
-        title: "Erro ao excluir categoria",
-        description: "Tente novamente em alguns instantes.",
+        title: t('documentos.dialogs.erroExcluirCategoria'),
+        description: t('documentos.dialogs.tenteNovamente'),
         variant: "destructive",
       });
     } finally {
@@ -206,8 +208,8 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess, empresaId }: C
       open={open}
       onOpenChange={onOpenChange}
       icon={FolderOpen}
-      title="Gerenciar Categorias de Documentos"
-      description="Organize seus documentos criando e gerenciando categorias."
+      title={t('documentos.dialogs.gerenciarCategoriasTitulo')}
+      description={t('documentos.dialogs.gerenciarCategoriasDescricao')}
       size="lg"
       hideFooter
     >
@@ -215,10 +217,10 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess, empresaId }: C
           {!showForm ? (
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <h3 className="text-lg font-medium">Categorias Existentes</h3>
+                <h3 className="text-lg font-medium">{t('documentos.dialogs.categoriasExistentes')}</h3>
                 <Button onClick={() => setShowForm(true)}>
                   <Plus className="h-4 w-4 mr-2" />
-                  Nova Categoria
+                  {t('documentos.dialogs.novaCategoria')}
                 </Button>
               </div>
 
@@ -230,18 +232,18 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess, empresaId }: C
                 <Card>
                   <CardContent className="flex flex-col items-center justify-center h-32">
                     <FolderOpen className="h-12 w-12 text-muted-foreground mb-2" />
-                    <p className="text-muted-foreground">Nenhuma categoria criada ainda</p>
-                    <p className="text-sm text-muted-foreground">Clique em "Nova Categoria" para começar</p>
+                    <p className="text-muted-foreground">{t('documentos.dialogs.nenhumaCategoriaCriada')}</p>
+                    <p className="text-sm text-muted-foreground">{t('documentos.dialogs.cliqueNovaCategoria')}</p>
                   </CardContent>
                 </Card>
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Nome</TableHead>
-                      <TableHead>Descrição</TableHead>
-                      <TableHead>Cor</TableHead>
-                      <TableHead>Ações</TableHead>
+                      <TableHead>{t('documentos.dialogs.colunaNome')}</TableHead>
+                      <TableHead>{t('documentos.dialogs.colunaDescricao')}</TableHead>
+                      <TableHead>{t('documentos.dialogs.colunaCor')}</TableHead>
+                      <TableHead>{t('documentos.dialogs.colunaAcoes')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -294,37 +296,37 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess, empresaId }: C
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-medium">
-                  {editingCategoria ? 'Editar Categoria' : 'Nova Categoria'}
+                  {editingCategoria ? t('documentos.dialogs.editarCategoria') : t('documentos.dialogs.novaCategoria')}
                 </h3>
                 <Button type="button" variant="outline" onClick={resetForm}>
-                  Voltar
+                  {t('documentos.dialogs.voltar')}
                 </Button>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="nome">Nome *</Label>
+                <Label htmlFor="nome">{t('documentos.dialogs.nomeLabel')}</Label>
                 <Input
                   id="nome"
                   value={formData.nome}
                   onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
-                  placeholder="Nome da categoria"
+                  placeholder={t('documentos.dialogs.placeholderNomeCategoria')}
                   required
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="descricao">Descrição</Label>
+                <Label htmlFor="descricao">{t('documentos.dialogs.descricaoLabel')}</Label>
                 <Textarea
                   id="descricao"
                   value={formData.descricao}
                   onChange={(e) => setFormData(prev => ({ ...prev, descricao: e.target.value }))}
-                  placeholder="Descrição da categoria"
+                  placeholder={t('documentos.dialogs.placeholderDescricaoCategoria')}
                   rows={3}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label>Cor</Label>
+                <Label>{t('documentos.dialogs.corLabel')}</Label>
                 <div className="grid grid-cols-5 gap-2">
                   {cores.map((cor) => (
                     <Button
@@ -357,23 +359,23 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess, empresaId }: C
                       color: '#fff'
                     }}
                   >
-                    {formData.nome || 'Preview'}
+                    {formData.nome || t('documentos.dialogs.preview2')}
                   </Badge>
                 </div>
               </div>
 
               <div className="flex gap-2 pt-4">
                 <Button type="button" variant="outline" onClick={resetForm}>
-                  Cancelar
+                  {t('documentos.dialogs.cancelar')}
                 </Button>
                 <Button type="submit" disabled={loading}>
                   {loading ? (
                     <>
                       <AkurisPulse size={16} className="mr-2" />
-                      Salvando...
+                      {t('documentos.dialogs.salvando')}
                     </>
                   ) : (
-                    editingCategoria ? 'Atualizar' : 'Criar'
+                    editingCategoria ? t('documentos.dialogs.atualizar') : t('documentos.dialogs.criar')
                   )}
                 </Button>
               </div>
@@ -385,10 +387,10 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess, empresaId }: C
     <ConfirmDialog
       open={deleteConfirm.open}
       onOpenChange={(open) => setDeleteConfirm(prev => ({ ...prev, open }))}
-      title="Excluir Categoria"
-      description={`Tem certeza que deseja excluir a categoria "${deleteConfirm.nome}"? Esta ação não pode ser desfeita.`}
-      confirmText="Excluir"
-      cancelText="Cancelar"
+      title={t('documentos.dialogs.excluirCategoriaTitulo')}
+      description={t('documentos.dialogs.excluirCategoriaDescricao', { nome: deleteConfirm.nome || '' })}
+      confirmText={t('documentos.lista.excluir')}
+      cancelText={t('documentos.dialogs.cancelar')}
       variant="destructive"
       onConfirm={handleDelete}
     />

@@ -20,6 +20,7 @@ import { resolveNivelRiscoTone, resolveRevisaoTone } from '@/lib/status-tone';
 import { differenceInDays } from 'date-fns';
 import { AceiteDetalheDialog } from '@/components/riscos/AceiteDetalheDialog';
 import { AprovacaoRiscoDialog } from '@/components/riscos/AprovacaoRiscoDialog';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface RiscoAceito {
   id: string;
@@ -40,6 +41,7 @@ interface RiscoAceito {
 
 export default function RiscosAceite({ embedded = false }: { embedded?: boolean } = {}) {
   const { profile } = useAuth();
+  const { t } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
@@ -156,10 +158,10 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
         .eq('empresa_id', profile!.empresa_id);
 
       if (error) throw error;
-      toast({ title: "Sucesso", description: "Aceite de risco revogado com sucesso." });
+      toast({ title: t('riscos.aceite.toast.successTitle'), description: t('riscos.aceite.toast.revokeSuccess') });
       invalidateAll();
     } catch (error: any) {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
+      toast({ title: t('riscos.aceite.toast.errorTitle'), description: error.message, variant: "destructive" });
     }
   };
 
@@ -174,7 +176,7 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
         .eq('empresa_id', profile!.empresa_id);
 
       if (error) throw error;
-      toast({ title: "Sucesso", description: `Revisão agendada para ${formatDateOnly(novaData.toISOString())}` });
+      toast({ title: t('riscos.aceite.toast.successTitle'), description: `${t('riscos.aceite.toast.reviewScheduled')} ${formatDateOnly(novaData.toISOString())}` });
       invalidateAll();
     } catch (error: any) {
       toast({ title: "Erro", description: error.message, variant: "destructive" });
@@ -183,24 +185,24 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
 
   const getRevisaoBadge = (dataRevisao?: string) => {
     const status = getRevisaoStatus(dataRevisao);
-    if (status === 'sem_data') return <StatusBadge size="sm" tone="neutral">Sem data</StatusBadge>;
+    if (status === 'sem_data') return <StatusBadge size="sm" tone="neutral">{t('riscos.aceite.review.noDate')}</StatusBadge>;
     if (!dataRevisao) return null;
     const dias = differenceInDays(new Date(dataRevisao), new Date());
     switch (status) {
-      case 'vencida': return <StatusBadge size="sm" {...resolveRevisaoTone(dias)}>Vencida</StatusBadge>;
-      case 'proxima': return <StatusBadge size="sm" {...resolveRevisaoTone(dias)}>{dias}d restantes</StatusBadge>;
-      case 'ok': return <StatusBadge size="sm" {...resolveRevisaoTone(dias)}>Em dia</StatusBadge>;
+      case 'vencida': return <StatusBadge size="sm" {...resolveRevisaoTone(dias)}>{t('riscos.aceite.review.overdue')}</StatusBadge>;
+      case 'proxima': return <StatusBadge size="sm" {...resolveRevisaoTone(dias)}>{dias}{t('riscos.aceite.review.daysLeftSuffix')}</StatusBadge>;
+      case 'ok': return <StatusBadge size="sm" {...resolveRevisaoTone(dias)}>{t('riscos.aceite.review.onTrack')}</StatusBadge>;
     }
   };
 
   const columns: Array<Column<RiscoAceito>> = [
-    { key: 'nome', label: 'Risco', sortable: true, render: (value: any) => <span className="font-medium">{value}</span> },
-    { key: 'nivel_risco_inicial', label: 'Nível', render: (value: string) => <StatusBadge size="sm" {...resolveNivelRiscoTone(value)}>{formatStatus(value)}</StatusBadge> },
-    { key: 'justificativa_aceite', label: 'Justificativa', render: (value: string) => value ? <span className="text-sm text-muted-foreground line-clamp-2 max-w-[200px]">{value}</span> : '-' },
-    { key: 'data_aceite', label: 'Data Aceite', sortable: true, render: (value: string) => value ? formatDateOnly(value) : '-' },
-    { key: 'aprovador_nome', label: 'Aprovador', render: (value: string) => value || '-' },
+    { key: 'nome', label: t('riscos.aceite.columns.risk'), sortable: true, render: (value: any) => <span className="font-medium">{value}</span> },
+    { key: 'nivel_risco_inicial', label: t('riscos.aceite.columns.level'), render: (value: string) => <StatusBadge size="sm" {...resolveNivelRiscoTone(value)}>{formatStatus(value)}</StatusBadge> },
+    { key: 'justificativa_aceite', label: t('riscos.aceite.columns.justification'), render: (value: string) => value ? <span className="text-sm text-muted-foreground line-clamp-2 max-w-[200px]">{value}</span> : '-' },
+    { key: 'data_aceite', label: t('riscos.aceite.columns.acceptDate'), sortable: true, render: (value: string) => value ? formatDateOnly(value) : '-' },
+    { key: 'aprovador_nome', label: t('riscos.aceite.columns.approver'), render: (value: string) => value || '-' },
     {
-      key: 'data_proxima_revisao', label: 'Revisão', sortable: true,
+      key: 'data_proxima_revisao', label: t('riscos.aceite.columns.review'), sortable: true,
       render: (value: string) => (
         <div className="flex flex-col gap-1">
           <span className="text-sm">{value ? formatDateOnly(value) : '-'}</span>
@@ -209,7 +211,7 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
       ),
     },
     {
-      key: 'actions', label: 'Ações', className: 'w-[60px]',
+      key: 'actions', label: t('riscos.aceite.columns.actions'), className: 'w-[60px]',
       render: (_: any, risco: RiscoAceito) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -217,16 +219,16 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => { setSelectedRisco(risco); setDetalheOpen(true); }}>
-              <Eye className="mr-2 h-4 w-4" strokeWidth={1.5} /> Ver Detalhes
+              <Eye className="mr-2 h-4 w-4" strokeWidth={1.5} /> {t('riscos.aceite.actions.viewDetails')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => handleAgendarRevisao(risco, 30)}>
-              <CalendarClock className="mr-2 h-4 w-4" strokeWidth={1.5} /> Agendar Revisão (30d)
+              <CalendarClock className="mr-2 h-4 w-4" strokeWidth={1.5} /> {t('riscos.aceite.actions.scheduleReview30')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => handleAgendarRevisao(risco, 90)}>
-              <CalendarClock className="mr-2 h-4 w-4" strokeWidth={1.5} /> Agendar Revisão (90d)
+              <CalendarClock className="mr-2 h-4 w-4" strokeWidth={1.5} /> {t('riscos.aceite.actions.scheduleReview90')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => handleRevogarAceite(risco)} className="text-destructive focus:text-destructive">
-              <XCircle className="mr-2 h-4 w-4" strokeWidth={1.5} /> Revogar Aceite
+              <XCircle className="mr-2 h-4 w-4" strokeWidth={1.5} /> {t('riscos.aceite.actions.revoke')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -235,16 +237,16 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
   ];
 
   const pendentesColumns: Array<Column<RiscoAceito>> = [
-    { key: 'nome', label: 'Risco', sortable: true, render: (value: any) => <span className="font-medium">{value}</span> },
-    { key: 'nivel_risco_inicial', label: 'Nível', render: (value: string) => <StatusBadge size="sm" {...resolveNivelRiscoTone(value)}>{formatStatus(value)}</StatusBadge> },
-    { key: 'justificativa_aceite', label: 'Justificativa', render: (value: string) => value ? <span className="text-sm text-muted-foreground line-clamp-2 max-w-[200px]">{value}</span> : '-' },
-    { key: 'aprovador_nome', label: 'Aprovador', render: (value: string) => value || '-' },
-    { key: 'data_proxima_revisao', label: 'Data Revisão', render: (value: string) => value ? formatDateOnly(value) : '-' },
+    { key: 'nome', label: t('riscos.aceite.columns.risk'), sortable: true, render: (value: any) => <span className="font-medium">{value}</span> },
+    { key: 'nivel_risco_inicial', label: t('riscos.aceite.columns.level'), render: (value: string) => <StatusBadge size="sm" {...resolveNivelRiscoTone(value)}>{formatStatus(value)}</StatusBadge> },
+    { key: 'justificativa_aceite', label: t('riscos.aceite.columns.justification'), render: (value: string) => value ? <span className="text-sm text-muted-foreground line-clamp-2 max-w-[200px]">{value}</span> : '-' },
+    { key: 'aprovador_nome', label: t('riscos.aceite.columns.approver'), render: (value: string) => value || '-' },
+    { key: 'data_proxima_revisao', label: t('riscos.aceite.columns.reviewDate'), render: (value: string) => value ? formatDateOnly(value) : '-' },
     {
-      key: 'actions', label: 'Ações', className: 'w-[60px]',
+      key: 'actions', label: t('riscos.aceite.columns.actions'), className: 'w-[60px]',
       render: (_: any, risco: RiscoAceito) => (
         <Button variant="outline" size="sm" onClick={() => { setAprovacaoRisco(risco); setAprovacaoOpen(true); }}>
-          <Eye className="mr-2 h-4 w-4" strokeWidth={1.5} /> Revisar
+          <Eye className="mr-2 h-4 w-4" strokeWidth={1.5} /> {t('riscos.aceite.actions.review')}
         </Button>
       ),
     },
@@ -252,20 +254,20 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
 
   const filters = [
     {
-      key: 'revisao', label: 'Status Revisão', type: 'select' as const,
+      key: 'revisao', label: t('riscos.aceite.filters.reviewStatus'), type: 'select' as const,
       options: [
-        { value: 'all', label: 'Todos' }, { value: 'vencida', label: 'Vencida' },
-        { value: 'proxima', label: 'Próxima (7d)' }, { value: 'ok', label: 'Em dia' },
-        { value: 'sem_data', label: 'Sem data' },
+        { value: 'all', label: t('riscos.aceite.filters.all') }, { value: 'vencida', label: t('riscos.aceite.review.overdue') },
+        { value: 'proxima', label: t('riscos.aceite.filters.upcoming7d') }, { value: 'ok', label: t('riscos.aceite.review.onTrack') },
+        { value: 'sem_data', label: t('riscos.aceite.review.noDate') },
       ],
       value: revisaoFilter, onChange: (value: string) => setRevisaoFilter(value === 'all' ? '' : value),
     },
     {
-      key: 'nivel', label: 'Nível', type: 'select' as const,
+      key: 'nivel', label: t('riscos.aceite.columns.level'), type: 'select' as const,
       options: [
-        { value: 'all', label: 'Todos' }, { value: 'Crítico', label: 'Crítico' },
-        { value: 'Muito Alto', label: 'Muito Alto' }, { value: 'Alto', label: 'Alto' },
-        { value: 'Médio', label: 'Médio' }, { value: 'Baixo', label: 'Baixo' },
+        { value: 'all', label: t('riscos.aceite.filters.all') }, { value: 'Crítico', label: t('riscos.page.level.critico') },
+        { value: 'Muito Alto', label: t('riscos.page.level.muitoAlto') }, { value: 'Alto', label: t('riscos.page.level.alto') },
+        { value: 'Médio', label: t('riscos.page.level.medio') }, { value: 'Baixo', label: t('riscos.page.level.baixo') },
       ],
       value: nivelFilter, onChange: (value: string) => setNivelFilter(value === 'all' ? '' : value),
     },
@@ -275,7 +277,7 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
     return (
       <div className="flex flex-col items-center justify-center gap-3 py-24">
         <AkurisPulse size={40} />
-        <p className="text-sm text-muted-foreground">Carregando…</p>
+        <p className="text-sm text-muted-foreground">{t('riscos.page.loading')}</p>
       </div>
     );
   }
@@ -284,16 +286,16 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
     <div className="space-y-6">
       {!embedded && (
         <PageHeader
-          title="Aceite de Risco"
-          description="Gerencie riscos aceitos formalmente, suas revisões e fluxo de aprovação"
+          title={t('riscos.aceite.title')}
+          description={t('riscos.aceite.description')}
         />
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Riscos Aceitos" value={totalAceitos} description="Total aprovados" icon={<CheckCircle />} variant="success" drillDown="riscos_aceite" showAccent emptyHint="Riscos aceitos formalmente aparecerão aqui." />
-        <StatCard title="Pendentes de Aprovação" value={totalPendentes} description="Aguardando decisão" icon={<Clock />} variant={totalPendentes > 0 ? "warning" : "default"} drillDown="riscos_aceite" />
-        <StatCard title="Revisões Vencidas" value={revisoesVencidas} description="Precisam de atenção" icon={<CalendarX />} variant={revisoesVencidas > 0 ? "destructive" : "default"} drillDown="riscos_aceite" />
-        <StatCard title="Revisões Próximas" value={revisoesProximas} description="Nos próximos 7 dias" icon={<AlertTriangle />} variant={revisoesProximas > 0 ? "warning" : "default"} />
+        <StatCard title={t('riscos.aceite.stats.acceptedTitle')} value={totalAceitos} description={t('riscos.aceite.stats.acceptedDesc')} icon={<CheckCircle />} variant="success" drillDown="riscos_aceite" showAccent emptyHint={t('riscos.aceite.stats.acceptedEmptyHint')} />
+        <StatCard title={t('riscos.aceite.stats.pendingTitle')} value={totalPendentes} description={t('riscos.aceite.stats.pendingDesc')} icon={<Clock />} variant={totalPendentes > 0 ? "warning" : "default"} drillDown="riscos_aceite" />
+        <StatCard title={t('riscos.aceite.stats.overdueTitle')} value={revisoesVencidas} description={t('riscos.aceite.stats.overdueDesc')} icon={<CalendarX />} variant={revisoesVencidas > 0 ? "destructive" : "default"} drillDown="riscos_aceite" />
+        <StatCard title={t('riscos.aceite.stats.upcomingTitle')} value={revisoesProximas} description={t('riscos.aceite.stats.upcomingDesc')} icon={<AlertTriangle />} variant={revisoesProximas > 0 ? "warning" : "default"} />
       </div>
 
       <Tabs defaultValue={totalPendentes > 0 ? "pendentes" : "aceitos"} className="space-y-4">
@@ -302,7 +304,7 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
             value="pendentes"
             className="relative text-xs gap-1.5 px-3 py-2.5 -mb-px rounded-none border-b-2 border-transparent bg-transparent shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:font-semibold text-muted-foreground hover:text-foreground/85 transition-colors"
           >
-            Pendentes de Aprovação
+            {t('riscos.aceite.tabs.pending')}
             {totalPendentes > 0 && (
               <StatusBadge size="sm" tone="warning" className="ml-2">{totalPendentes}</StatusBadge>
             )}
@@ -311,7 +313,7 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
             value="aceitos"
             className="text-xs gap-1.5 px-3 py-2.5 -mb-px rounded-none border-b-2 border-transparent bg-transparent shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:font-semibold text-muted-foreground hover:text-foreground/85 transition-colors"
           >
-            Riscos Aceitos ({totalAceitos})
+            {t('riscos.aceite.tabs.accepted')} ({totalAceitos})
           </TabsTrigger>
         </TabsList>
 
@@ -323,13 +325,13 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
                 columns={pendentesColumns}
                 loading={isLoadingPendentes}
                 searchable
-                searchPlaceholder="Buscar pendentes..."
+                searchPlaceholder={t('riscos.aceite.searchPending')}
                 searchValue={searchTermPendente}
                 onSearchChange={setSearchTermPendente}
                 emptyState={{
                   icon: <Clock className="h-8 w-8" />,
-                  title: 'Nenhum aceite pendente',
-                  description: 'Não há riscos aguardando aprovação de aceite.',
+                  title: t('riscos.aceite.empty.pendingTitle'),
+                  description: t('riscos.aceite.empty.pendingDesc'),
                 }}
               />
             </CardContent>
@@ -344,14 +346,14 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
                 columns={columns}
                 loading={isLoading}
                 searchable
-                searchPlaceholder="Buscar riscos aceitos..."
+                searchPlaceholder={t('riscos.aceite.searchAccepted')}
                 searchValue={searchTerm}
                 onSearchChange={setSearchTerm}
                 filters={filters}
                 emptyState={{
                   icon: <CheckCircle className="h-8 w-8" />,
-                  title: 'Nenhum risco aceito',
-                  description: 'Riscos aceitos formalmente aparecerão aqui.',
+                  title: t('riscos.aceite.empty.acceptedTitle'),
+                  description: t('riscos.aceite.empty.acceptedDesc'),
                 }}
               />
             </CardContent>

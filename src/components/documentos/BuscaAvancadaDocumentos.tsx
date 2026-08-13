@@ -10,6 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Categoria {
   id: string;
@@ -45,6 +46,7 @@ export function BuscaAvancadaDocumentos({
   onSearch, 
   categorias 
 }: BuscaAvancadaDocumentosProps) {
+  const { t } = useLanguage();
   const [filters, setFilters] = useState<FiltrosAvancados>({
     nome: '',
     tipo: '',
@@ -114,42 +116,42 @@ export function BuscaAvancadaDocumentos({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Busca Avançada de Documentos</DialogTitle>
+          <DialogTitle>{t('documentos.dialogs.buscaAvancadaTitulo')}</DialogTitle>
           <DialogDescription>
-            Use os filtros abaixo para encontrar documentos específicos.
+            {t('documentos.dialogs.buscaAvancadaDescricao')}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
           {/* Informações Básicas */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Informações Básicas</h3>
+            <h3 className="text-lg font-semibold">{t('documentos.dialogs.informacoesBasicas')}</h3>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="nome">Nome do Documento</Label>
+                <Label htmlFor="nome">{t('documentos.dialogs.nomeDocumento')}</Label>
                 <Input
                   id="nome"
                   value={filters.nome}
                   onChange={(e) => updateFilter('nome', e.target.value)}
-                  placeholder="Nome do documento"
+                  placeholder={t('documentos.dialogs.placeholderNomeDocumento')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="tipo">Tipo</Label>
+                <Label htmlFor="tipo">{t('documentos.lista.tipo')}</Label>
                 <Select value={filters.tipo} onValueChange={(value) => updateFilter('tipo', value)}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione o tipo" />
+                    <SelectValue placeholder={t('documentos.dialogs.selecioneTipo')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Todos os tipos</SelectItem>
-                    <SelectItem value="politica">Política</SelectItem>
-                    <SelectItem value="procedimento">Procedimento</SelectItem>
-                    <SelectItem value="instrucao">Instrução</SelectItem>
-                    <SelectItem value="formulario">Formulário</SelectItem>
-                    <SelectItem value="certificado">Certificado</SelectItem>
-                    <SelectItem value="contrato">Contrato</SelectItem>
-                    <SelectItem value="relatorio">Relatório</SelectItem>
+                    <SelectItem value="all">{t('documentos.lista.todosOsTipos')}</SelectItem>
+                    <SelectItem value="politica">{t('documentos.lista.politica')}</SelectItem>
+                    <SelectItem value="procedimento">{t('documentos.lista.procedimento')}</SelectItem>
+                    <SelectItem value="instrucao">{t('documentos.lista.instrucao')}</SelectItem>
+                    <SelectItem value="formulario">{t('documentos.lista.formulario')}</SelectItem>
+                    <SelectItem value="certificado">{t('documentos.lista.certificado')}</SelectItem>
+                    <SelectItem value="contrato">{t('documentos.lista.contrato')}</SelectItem>
+                    <SelectItem value="relatorio">{t('documentos.lista.relatorio')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -157,13 +159,13 @@ export function BuscaAvancadaDocumentos({
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="categoria">Categoria</Label>
+                <Label htmlFor="categoria">{t('documentos.dialogs.categoria')}</Label>
                 <Select value={filters.categoria} onValueChange={(value) => updateFilter('categoria', value)}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione a categoria" />
+                    <SelectValue placeholder={t('documentos.dialogs.selecioneCategoria')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Todas as categorias</SelectItem>
+                    <SelectItem value="all">{t('documentos.dialogs.todasCategorias')}</SelectItem>
                     {categorias.map((categoria) => (
                       <SelectItem key={categoria.id} value={categoria.nome}>
                         {categoria.nome}
@@ -174,70 +176,70 @@ export function BuscaAvancadaDocumentos({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
+                <Label htmlFor="status">{t('documentos.lista.status')}</Label>
                 <Select value={filters.status} onValueChange={(value) => updateFilter('status', value)}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione o status" />
+                    <SelectValue placeholder={t('documentos.dialogs.selecioneStatus')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Todos os status</SelectItem>
-                    <SelectItem value="ativo">Ativo</SelectItem>
-                    <SelectItem value="inativo">Inativo</SelectItem>
-                    <SelectItem value="arquivado">Arquivado</SelectItem>
-                    <SelectItem value="vencido">Vencido</SelectItem>
+                    <SelectItem value="all">{t('documentos.dialogs.todosStatus')}</SelectItem>
+                    <SelectItem value="ativo">{t('documentos.lista.ativo')}</SelectItem>
+                    <SelectItem value="inativo">{t('documentos.lista.inativo')}</SelectItem>
+                    <SelectItem value="arquivado">{t('documentos.lista.arquivado')}</SelectItem>
+                    <SelectItem value="vencido">{t('documentos.lista.vencido')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="tags">Tags (separadas por vírgula)</Label>
+              <Label htmlFor="tags">{t('documentos.dialogs.tagsSeparadas')}</Label>
               <Input
                 id="tags"
                 value={filters.tags}
                 onChange={(e) => updateFilter('tags', e.target.value)}
-                placeholder="tag1, tag2, tag3"
+                placeholder={t('documentos.dialogs.placeholderTags')}
               />
             </div>
           </div>
 
           {/* Filtros de Data */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Filtros de Data</h3>
+            <h3 className="text-lg font-semibold">{t('documentos.dialogs.filtrosData')}</h3>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label>Data de Criação - Início</Label>
+                <Label>{t('documentos.dialogs.dataCriacaoInicio')}</Label>
                 <DatePicker
                   date={filters.dataInicio}
                   onDateChange={(date) => updateFilter('dataInicio', date)}
-                  placeholder="Selecione a data"
+                  placeholder={t('documentos.dialogs.selecioneData')}
                 />
               </div>
               <div className="space-y-2">
-                <Label>Data de Criação - Fim</Label>
+                <Label>{t('documentos.dialogs.dataCriacaoFim')}</Label>
                 <DatePicker
                   date={filters.dataFim}
                   onDateChange={(date) => updateFilter('dataFim', date)}
-                  placeholder="Selecione a data"
+                  placeholder={t('documentos.dialogs.selecioneData')}
                 />
               </div>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label>Data de Vencimento - Início</Label>
+                <Label>{t('documentos.dialogs.dataVencimentoInicio')}</Label>
                 <DatePicker
                   date={filters.dataVencimentoInicio}
                   onDateChange={(date) => updateFilter('dataVencimentoInicio', date)}
-                  placeholder="Selecione a data"
+                  placeholder={t('documentos.dialogs.selecioneData')}
                 />
               </div>
               <div className="space-y-2">
-                <Label>Data de Vencimento - Fim</Label>
+                <Label>{t('documentos.dialogs.dataVencimentoFim')}</Label>
                 <DatePicker
                   date={filters.dataVencimentoFim}
                   onDateChange={(date) => updateFilter('dataVencimentoFim', date)}
-                  placeholder="Selecione a data"
+                  placeholder={t('documentos.dialogs.selecioneData')}
                 />
               </div>
             </div>
@@ -245,10 +247,10 @@ export function BuscaAvancadaDocumentos({
 
           {/* Filtros de Arquivo */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Filtros de Arquivo</h3>
+            <h3 className="text-lg font-semibold">{t('documentos.dialogs.filtrosArquivo')}</h3>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="tamanhoMin">Tamanho Mínimo (MB)</Label>
+                <Label htmlFor="tamanhoMin">{t('documentos.dialogs.tamanhoMinimo')}</Label>
                 <Input
                   id="tamanhoMin"
                   type="number"
@@ -258,7 +260,7 @@ export function BuscaAvancadaDocumentos({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="tamanhoMax">Tamanho Máximo (MB)</Label>
+                <Label htmlFor="tamanhoMax">{t('documentos.dialogs.tamanhoMaximo')}</Label>
                 <Input
                   id="tamanhoMax"
                   type="number"
@@ -276,7 +278,7 @@ export function BuscaAvancadaDocumentos({
                   checked={filters.confidencial || false}
                   onCheckedChange={(checked) => updateFilter('confidencial', checked as boolean)}
                 />
-                <Label htmlFor="confidencial">Apenas documentos confidenciais</Label>
+                <Label htmlFor="confidencial">{t('documentos.dialogs.apenasConfidenciais')}</Label>
               </div>
 
               <div className="flex items-center space-x-2">
@@ -285,7 +287,7 @@ export function BuscaAvancadaDocumentos({
                   checked={filters.comArquivo || false}
                   onCheckedChange={(checked) => updateFilter('comArquivo', checked as boolean)}
                 />
-                <Label htmlFor="comArquivo">Apenas com arquivo anexado</Label>
+                <Label htmlFor="comArquivo">{t('documentos.dialogs.apenasComArquivo')}</Label>
               </div>
             </div>
           </div>
@@ -293,13 +295,13 @@ export function BuscaAvancadaDocumentos({
 
         <DialogFooter>
           <Button variant="outline" onClick={handleReset}>
-            Limpar Filtros
+            {t('documentos.dialogs.limparFiltros')}
           </Button>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancelar
+            {t('documentos.dialogs.cancelar')}
           </Button>
           <Button onClick={handleSearch}>
-            Aplicar Filtros
+            {t('documentos.dialogs.aplicarFiltros')}
           </Button>
         </DialogFooter>
       </DialogContent>

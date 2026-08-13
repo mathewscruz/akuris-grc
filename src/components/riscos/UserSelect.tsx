@@ -9,6 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { toast } from 'sonner';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Usuario {
   user_id: string;
@@ -22,7 +23,9 @@ interface UserSelectProps {
   placeholder?: string;
 }
 
-export function UserSelect({ value, onValueChange, placeholder = "Selecionar responsável..." }: UserSelectProps) {
+export function UserSelect({ value, onValueChange, placeholder }: UserSelectProps) {
+  const { t } = useLanguage();
+  const resolvedPlaceholder = placeholder ?? t('riscosDetalhe.userSelect.placeholder');
   const { profile } = useAuth();
   const [open, setOpen] = useState(false);
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
@@ -48,7 +51,7 @@ export function UserSelect({ value, onValueChange, placeholder = "Selecionar res
       setUsuarios(data || []);
     } catch (error: any) {
       logger.error('Erro ao buscar usuários:', { data: error });
-      toast.error('Erro ao carregar lista de usuários');
+      toast.error(t('riscosDetalhe.userSelect.errorFetch'));
     } finally {
       setLoading(false);
     }
@@ -71,19 +74,19 @@ export function UserSelect({ value, onValueChange, placeholder = "Selecionar res
               <span className="truncate">{selectedUser.nome}</span>
             </div>
           ) : (
-            <span className="text-muted-foreground">{placeholder}</span>
+            <span className="text-muted-foreground">{resolvedPlaceholder}</span>
           )}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-full p-0" align="start">
         <Command>
-          <CommandInput placeholder="Buscar usuário..." />
+          <CommandInput placeholder={t('riscosDetalhe.userSelect.searchPlaceholder')} />
           <CommandList>
             {loading ? (
-              <CommandEmpty>Carregando usuários...</CommandEmpty>
+              <CommandEmpty>{t('riscosDetalhe.userSelect.loading')}</CommandEmpty>
             ) : usuarios.length === 0 ? (
-              <CommandEmpty>Nenhum usuário encontrado.</CommandEmpty>
+              <CommandEmpty>{t('riscosDetalhe.userSelect.empty')}</CommandEmpty>
             ) : (
               <CommandGroup>
                 {usuarios.map((usuario) => (

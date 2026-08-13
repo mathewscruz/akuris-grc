@@ -61,6 +61,7 @@ import { CreditsExhaustedDialog } from '@/components/CreditsExhaustedDialog';
 import { useAuth } from '@/components/AuthProvider';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { useLanguage } from '@/contexts/LanguageContext';
 interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
@@ -88,16 +89,7 @@ interface TooltipTerm {
   definition: string;
 }
 
-const TOOLTIPS: Record<string, string> = {
-  'BIA': 'Business Impact Analysis - Análise de Impacto no Negócio. Processo que identifica e avalia os efeitos potenciais de interrupções nas operações críticas da organização.',
-  'ROPA': 'Record of Processing Activities - Registro das Atividades de Tratamento. Documento que lista todos os tratamentos de dados pessoais realizados pela organização.',
-  'RTO': 'Recovery Time Objective - Tempo máximo aceitável para restaurar um sistema após uma interrupção.',
-  'ISO': 'International Organization for Standardization - Organização internacional que desenvolve padrões técnicos.',
-  'LGPD': 'Lei Geral de Proteção de Dados - Lei brasileira que regula o tratamento de dados pessoais.',
-  'SLA': 'Service Level Agreement - Acordo de Nível de Serviço que define padrões de qualidade esperados.',
-  'KPI': 'Key Performance Indicator - Indicador-chave de performance usado para medir eficiência.',
-  'PDCA': 'Plan-Do-Check-Act - Metodologia de melhoria contínua em quatro etapas.'
-};
+
 
 export const DocGenDialog: React.FC<DocGenDialogProps> = ({
   open,
@@ -109,6 +101,17 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
   requirementContext,
 }) => {
   const { toast } = useToast();
+  const { t } = useLanguage();
+  const TOOLTIPS: Record<string, string> = {
+    'BIA': t('docgen.tooltips.bia'),
+    'ROPA': t('docgen.tooltips.ropa'),
+    'RTO': t('docgen.tooltips.rto'),
+    'ISO': t('docgen.tooltips.iso'),
+    'LGPD': t('docgen.tooltips.lgpd'),
+    'SLA': t('docgen.tooltips.sla'),
+    'KPI': t('docgen.tooltips.kpi'),
+    'PDCA': t('docgen.tooltips.pdca'),
+  };
   const navigate = useNavigate();
   const { company } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -180,7 +183,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     scope: requirementContext
       ? `Atender ao requisito ${requirementContext.requirementCode} — ${requirementContext.requirementTitle}`
       : '',
-    audience: 'Todos os colaboradores e prestadores de serviço',
+    audience: t('docgen.dialog.defaultAudience'),
     tone: 'formal',
     language: 'pt-BR',
     length: 'padrao',
@@ -343,8 +346,8 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     } catch (error) {
       console.error('Erro ao enviar mensagem:', error);
       toast({
-        title: "Erro",
-        description: "Não foi possível enviar a mensagem. Tente novamente.",
+        title: t('docgen.dialog.errorTitle'),
+        description: t('docgen.dialog.sendMessageError'),
         variant: "destructive",
       });
     } finally {
@@ -380,16 +383,16 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
           data_criacao: generatedDocument.data_criacao || new Date().toISOString().slice(0, 10),
         });
         setAdherenceResult(null);
-        const summary: string = data.summary || 'Documento atualizado com base na sua observação.';
+        const summary: string = data.summary || t('docgen.dialog.documentUpdatedDefault');
         setMessages(prev => [...prev, { role: 'assistant', content: summary, timestamp: new Date() }]);
         const impact = data?.compliance_impact;
         const tone = impact === 'reduced' ? 'warning' as const : 'success' as const;
-        const title = impact === 'reduced' ? 'Compliance impactado' : 'Documento atualizado';
+        const title = impact === 'reduced' ? t('docgen.dialog.complianceImpacted') : t('docgen.dialog.documentUpdated');
         akurisToast({ module: 'documentos', tone, title, description: summary });
       }
     } catch (err) {
       console.error('Erro ao refinar documento:', err);
-      toast({ title: 'Erro', description: 'Não foi possível aplicar o refinamento no documento.', variant: 'destructive' });
+      toast({ title: t('docgen.dialog.errorTitle'), description: t('docgen.dialog.refineDocumentError'), variant: 'destructive' });
     } finally {
       setIsLoading(false);
     }
@@ -417,18 +420,18 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     const empNome = companyContext?.empresa?.nome;
     const greeting = autoGen
       ? (empNome
-          ? `Contexto de **${empNome}** carregado. Vou montar o documento completo já alinhado ao briefing — você poderá refinar seção por seção depois.`
-          : `Briefing recebido. Vou montar o documento completo — você poderá refinar seção por seção depois.`)
+          ? t('docgen.dialog.greetingDirectWithCompany', { company: empNome })
+          : t('docgen.dialog.greetingDirectNoCompany'))
       : (empNome
-          ? `Contexto de **${empNome}** carregado. Vou propor a estrutura inicial alinhada à empresa e ao briefing — depois refinamos juntos.`
-          : `Briefing recebido. Vou propor a estrutura inicial e podemos refinar antes de gerar o documento completo.`);
+          ? t('docgen.dialog.greetingChatWithCompany', { company: empNome })
+          : t('docgen.dialog.greetingChatNoCompany'));
     setMessages([{ role: 'assistant', content: greeting, timestamp: new Date() }]);
     setTimeout(() => inputRef.current?.focus(), 100);
     const seed = buildSeedPrompt(briefing, templateHint);
-    const fwSuffix = briefing.frameworks?.length ? ` alinhado a ${briefing.frameworks.join(', ')}` : '';
+    const fwSuffix = briefing.frameworks?.length ? t('docgen.dialog.alignedTo', { frameworks: briefing.frameworks.join(', ') }) : '';
     const briefingSummary = autoGen
-      ? `Briefing enviado ✓ — gerando o documento completo${fwSuffix}.`
-      : `Briefing enviado ✓ — vamos definir a estrutura${fwSuffix} e refinar antes de gerar.`;
+      ? t('docgen.dialog.briefingSummaryDirect', { fwSuffix })
+      : t('docgen.dialog.briefingSummaryChat', { fwSuffix });
     const waitForContext = async () => {
       const deadline = Date.now() + 3000;
       while (companyContextLoading && Date.now() < deadline) {
@@ -481,12 +484,12 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
       if (data?.document) {
         setGeneratedDocument(data.document);
         setAdherenceResult(null); // invalida análise prévia
-        akurisToast({ module: 'documentos', tone: 'success', title: 'Seção refinada', description: 'O conteúdo foi atualizado.' });
+        akurisToast({ module: 'documentos', tone: 'success', title: t('docgen.dialog.sectionRefinedTitle'), description: t('docgen.dialog.sectionRefinedDescription') });
         setRefiningSectionIndex(null);
       }
     } catch (e) {
       console.error('Erro ao refinar seção:', e);
-      toast({ title: 'Erro', description: 'Não foi possível refinar a seção.', variant: 'destructive' });
+      toast({ title: t('docgen.dialog.errorTitle'), description: t('docgen.dialog.refineSectionError'), variant: 'destructive' });
     } finally {
       setSectionRefineLoading(false);
     }
@@ -512,7 +515,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
       if (data?.adherence) setAdherenceResult(data.adherence);
     } catch (e) {
       console.error('Erro na aderência:', e);
-      toast({ title: 'Erro', description: 'Não foi possível avaliar a aderência.', variant: 'destructive' });
+      toast({ title: t('docgen.dialog.errorTitle'), description: t('docgen.dialog.adherenceError'), variant: 'destructive' });
     } finally {
       setAdherenceLoading(false);
     }
@@ -551,15 +554,15 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
         data_criacao: new Date().toISOString().slice(0, 10),
       });
       toast({
-        title: "Documento Gerado!",
-        description: "Seu documento foi criado com sucesso. Agora você pode salvá-lo no sistema ou exportar.",
+        title: t('docgen.dialog.documentGeneratedTitle'),
+        description: t('docgen.dialog.documentGeneratedDescription'),
       });
 
     } catch (error) {
       console.error('Erro ao gerar documento:', error);
       toast({
-        title: "Erro",
-        description: "Não foi possível gerar o documento. Tente novamente.",
+        title: t('docgen.dialog.errorTitle'),
+        description: t('docgen.dialog.generateDocumentError'),
         variant: "destructive",
       });
     } finally {
@@ -608,16 +611,16 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
       children: [new TextRun({ text: empresaNome, size: 28 })],
     }));
     for (let i = 0; i < 8; i++) children.push(new Paragraph({ text: '' }));
-    children.push(new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: `Versão ${versao}`, size: 22 })] }));
-    children.push(new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: `Data de emissão: ${dataCriacao}`, size: 22 })] }));
-    children.push(new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: `Classificação: ${classificacao}`, size: 22 })] }));
+    children.push(new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: t('docgen.dialog.versao', { versao }), size: 22 })] }));
+    children.push(new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: t('docgen.dialog.emissionDate', { date: dataCriacao }), size: 22 })] }));
+    children.push(new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: t('docgen.dialog.classification', { classification: classificacao }), size: 22 })] }));
     // quebra de página após a capa
     children.push(new Paragraph({ children: [new PageBreak()] }));
 
     // ===== SUMÁRIO (lista simples de seções, com numeração) =====
-    children.push(new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun({ text: 'Sumário', bold: true })] }));
+    children.push(new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun({ text: t('docgen.dialog.summary'), bold: true })] }));
     (generatedDocument.secoes || []).forEach((s: any, i: number) => {
-      children.push(new Paragraph({ children: [new TextRun(`${i + 1}. ${s.nome || 'Seção'}`)] }));
+      children.push(new Paragraph({ children: [new TextRun(`${i + 1}. ${s.nome || t('docgen.dialog.section')}`)] }));
     });
     children.push(new Paragraph({ children: [new PageBreak()] }));
 
@@ -625,7 +628,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     (generatedDocument.secoes || []).forEach((secao: any, idx: number) => {
       children.push(new Paragraph({
         heading: HeadingLevel.HEADING_1,
-        children: [new TextRun({ text: `${idx + 1}. ${secao.nome || 'Seção'}`, bold: true })],
+        children: [new TextRun({ text: `${idx + 1}. ${secao.nome || t('docgen.dialog.section')}`, bold: true })],
       }));
       const conteudo = String(secao.conteudo || '');
       // preservar parágrafos vazios; cada linha vira um Paragraph
@@ -641,9 +644,9 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
         new Paragraph({
           alignment: AlignmentType.CENTER,
           children: [
-            new TextRun({ text: `${empresaNome} · ${titulo} · v${versao} · Página `, size: 18 }),
+            new TextRun({ text: `${empresaNome} · ${titulo} · v${versao} · ${t('docgen.dialog.footerPage')} `, size: 18 }),
             new TextRun({ children: [PageNumber.CURRENT], size: 18 }),
-            new TextRun({ text: ' de ', size: 18 }),
+            new TextRun({ text: ` ${t('docgen.dialog.of')} `, size: 18 }),
             new TextRun({ children: [PageNumber.TOTAL_PAGES], size: 18 }),
           ],
         }),
@@ -704,19 +707,19 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     pdf.setFontSize(14);
     pdf.text(empresaNome, pageWidth / 2, capaY + 10, { align: 'center' });
     pdf.setFontSize(11);
-    pdf.text(`Versão ${versao}`, pageWidth / 2, pageHeight - 160, { align: 'center' });
-    pdf.text(`Data de emissão: ${dataCriacao}`, pageWidth / 2, pageHeight - 144, { align: 'center' });
-    pdf.text(`Classificação: ${classificacao}`, pageWidth / 2, pageHeight - 128, { align: 'center' });
+    pdf.text(t('docgen.dialog.versao', { versao }), pageWidth / 2, pageHeight - 160, { align: 'center' });
+    pdf.text(t('docgen.dialog.emissionDate', { date: dataCriacao }), pageWidth / 2, pageHeight - 144, { align: 'center' });
+    pdf.text(t('docgen.dialog.classification', { classification: classificacao }), pageWidth / 2, pageHeight - 128, { align: 'center' });
 
     // ===== SUMÁRIO =====
     pdf.addPage();
     let y = 60;
     pdf.setFont('helvetica', 'bold'); pdf.setFontSize(16);
-    pdf.text('Sumário', marginX, y); y += 24;
+    pdf.text(t('docgen.dialog.summary'), marginX, y); y += 24;
     pdf.setFont('helvetica', 'normal'); pdf.setFontSize(11);
     (generatedDocument.secoes || []).forEach((s: any, i: number) => {
       if (y > pageHeight - 60) { pdf.addPage(); y = 60; }
-      pdf.text(`${i + 1}. ${s.nome || 'Seção'}`, marginX, y);
+      pdf.text(`${i + 1}. ${s.nome || t('docgen.dialog.section')}`, marginX, y);
       y += 16;
     });
 
@@ -727,7 +730,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
       if (y > pageHeight - 80) { pdf.addPage(); y = 60; }
       if (idx > 0) y += 12;
       pdf.setFont('helvetica', 'bold'); pdf.setFontSize(13);
-      const titleLines = pdf.splitTextToSize(`${idx + 1}. ${secao.nome || 'Seção'}`, maxWidth);
+      const titleLines = pdf.splitTextToSize(`${idx + 1}. ${secao.nome || t('docgen.dialog.section')}`, maxWidth);
       titleLines.forEach((line: string) => {
         if (y > pageHeight - 70) { pdf.addPage(); y = 60; }
         pdf.text(line, marginX, y); y += 18;
@@ -750,7 +753,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
       pdf.setPage(p);
       pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8);
       pdf.setTextColor(120);
-      const footerText = `${empresaNome} · ${titulo} · v${versao} · Página ${p} de ${totalPages}`;
+      const footerText = `${empresaNome} · ${titulo} · v${versao} · ${t('docgen.dialog.footerPage')} ${p} ${t('docgen.dialog.of')} ${totalPages}`;
       pdf.text(footerText, pageWidth / 2, pageHeight - 20, { align: 'center' });
       pdf.setTextColor(0);
     }
@@ -784,10 +787,10 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
       URL.revokeObjectURL(url);
       setIsDocumentExported(true);
       setHasUnsavedChanges(false);
-      toast({ title: 'Documento Exportado', description: `Exportado como ${format.toUpperCase()}.` });
+      toast({ title: t('docgen.dialog.exportedTitle'), description: t('docgen.dialog.exportedDescription', { format: format.toUpperCase() }) });
     } catch (e) {
       console.error('Erro ao exportar documento:', e);
-      toast({ title: 'Erro ao exportar', description: 'Tente novamente.', variant: 'destructive' });
+      toast({ title: t('docgen.dialog.exportError'), description: t('docgen.dialog.exportErrorDescription'), variant: 'destructive' });
     }
   };
 
@@ -805,7 +808,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
       setShowCreateDialog(true);
     } catch (e) {
       console.error('Erro ao preparar arquivo:', e);
-      toast({ title: 'Erro', description: 'Falha ao preparar arquivo para salvar.', variant: 'destructive' });
+      toast({ title: t('docgen.dialog.errorTitle'), description: t('docgen.dialog.prepareFileError'), variant: 'destructive' });
     }
   };
 
@@ -1033,7 +1036,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
       setHistoryItems(data || []);
     } catch (e) {
       console.error('Erro ao carregar histórico:', e);
-      toast({ title: 'Erro', description: 'Não foi possível carregar o histórico.', variant: 'destructive' });
+      toast({ title: t('docgen.dialog.errorTitle'), description: t('docgen.dialog.historyLoadError'), variant: 'destructive' });
     } finally {
       setHistoryLoading(false);
     }
@@ -1059,7 +1062,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
       }));
       setMessages(restoredMessages.length > 0 ? restoredMessages : [{
         role: 'assistant',
-        content: 'Conversa restaurada. Como posso continuar te ajudando?',
+        content: t('docgen.dialog.conversationRestoredMessage'),
         timestamp: new Date(),
       }]);
       setConversationId(data.id);
@@ -1091,10 +1094,10 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
       setHasUnsavedChanges(false);
       setHistoryOpen(false);
       setTimeout(() => inputRef.current?.focus(), 100);
-      toast({ title: 'Conversa restaurada', description: data.titulo });
+      toast({ title: t('docgen.dialog.conversationRestored'), description: data.titulo });
     } catch (e) {
       console.error('Erro ao restaurar conversa:', e);
-      toast({ title: 'Erro', description: 'Não foi possível restaurar a conversa.', variant: 'destructive' });
+      toast({ title: t('docgen.dialog.errorTitle'), description: t('docgen.dialog.conversationRestoreError'), variant: 'destructive' });
     }
   };
 
@@ -1115,7 +1118,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     <DialogShell
       open={open}
       onOpenChange={handleDialogClose}
-      title={`Gerador de Documentos (IA)${currentDocType ? ` · ${currentDocType}` : ''}${requirementContext ? ` — ${requirementContext.requirementCode}` : ''}`}
+      title={`${t('docgen.dialog.title')}${currentDocType ? ` · ${currentDocType}` : ''}${requirementContext ? ` — ${requirementContext.requirementCode}` : ''}`}
       description={DOCGEN_DIALOG_DESCRIPTION}
       descriptionSrOnly
       icon={AkurisAIIcon}
@@ -1136,16 +1139,16 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                 className="gap-1 -ml-2 h-7"
                 onClick={() => setPhase('briefing')}
                 disabled={isLoading || isGeneratingDoc}
-                title="Voltar para o briefing"
+                title={t('docgen.briefing.back')}
               >
                 <ArrowLeft className="h-3.5 w-3.5" strokeWidth={1.5} />
-                Briefing
+                {t('docgen.dialog.briefingButton')}
               </Button>
               <span className="hidden sm:inline">·</span>
               <span className="truncate">
-                {currentDocName ? <strong className="text-foreground">{currentDocName}</strong> : 'Conversa em andamento'}
+                {currentDocName ? <strong className="text-foreground">{currentDocName}</strong> : t('docgen.dialog.conversationInProgress')}
                 {' · '}
-                {messages.length} mensagem{messages.length === 1 ? '' : 's'}
+                {t('docgen.dialog.messageCount', { count: messages.length, plural: messages.length === 1 ? '' : 's' })}
               </span>
               {/* Chip de score ao vivo: aparece assim que o documento é gerado. */}
               {currentScore !== null && (
@@ -1161,7 +1164,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                               : 'border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-300'
                         }`}
                       >
-                        Compliance {currentScore}%
+                        {t('docgen.dialog.complianceScore', { score: currentScore })}
                         {scoreDelta !== null && (
                           <span
                             className={`font-mono text-[10px] ${
@@ -1174,8 +1177,8 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                       </span>
                     </TooltipTrigger>
                     <TooltipContent>
-                      Score estimado com base na cobertura dos requisitos do framework.
-                      {scoreDelta !== null && ` Delta em relação ao último refino: ${scoreDelta > 0 ? '+' : ''}${scoreDelta} pontos.`}
+                      {t('docgen.dialog.complianceTooltip')}
+                      {scoreDelta !== null && t('docgen.dialog.complianceDeltaTooltip', { delta: `${scoreDelta > 0 ? '+' : ''}${scoreDelta}` })}
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -1191,7 +1194,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                 disabled={isLoading || isGeneratingDoc}
               >
                 <Plus className="h-4 w-4" />
-                Nova conversa
+                {t('docgen.dialog.newConversation')}
               </Button>
               <Popover
                 open={historyOpen}
@@ -1203,22 +1206,22 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                 <PopoverTrigger asChild>
                   <Button variant="ghost" size="sm" className="gap-1" disabled={isLoading || isGeneratingDoc}>
                     <History className="h-4 w-4" />
-                    Histórico
+                    {t('docgen.dialog.history')}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent align="end" className="w-80 p-0">
                   <div className="p-3 border-b">
-                    <h4 className="text-sm font-semibold">Conversas anteriores</h4>
-                    <p className="text-xs text-muted-foreground">Suas últimas 20 conversas no DocGen.</p>
+                    <h4 className="text-sm font-semibold">{t('docgen.dialog.previousConversations')}</h4>
+                    <p className="text-xs text-muted-foreground">{t('docgen.dialog.previousConversationsDescription')}</p>
                   </div>
                   <div className="max-h-72 overflow-y-auto">
                     {historyLoading && (
                       <div className="p-4 text-sm text-muted-foreground flex items-center gap-2">
-                        <AkurisPulse size={16} /> Carregando…
+                        <AkurisPulse size={16} /> {t('docgen.dialog.loadingConversations')}
                       </div>
                     )}
                     {!historyLoading && historyItems.length === 0 && (
-                      <div className="p-4 text-sm text-muted-foreground">Nenhuma conversa anterior.</div>
+                      <div className="p-4 text-sm text-muted-foreground">{t('docgen.dialog.noPreviousConversations')}</div>
                     )}
                     {!historyLoading && historyItems.map((it) => (
                       <button
@@ -1226,7 +1229,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                         onClick={() => loadConversation(it.id)}
                         className="w-full text-left p-3 hover:bg-accent border-b last:border-b-0 transition-colors"
                       >
-                        <div className="text-sm font-medium truncate">{it.titulo || 'Conversa sem título'}</div>
+                        <div className="text-sm font-medium truncate">{it.titulo || t('docgen.dialog.untitledConversation')}</div>
                         <div className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
                           {it.tipo_documento_identificado && (
                             <Badge variant="secondary" className="text-[10px] py-0 h-4">{formatStatus(it.tipo_documento_identificado)}</Badge>
@@ -1255,22 +1258,22 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
               <PopoverTrigger asChild>
                 <Button variant="ghost" size="sm" className="gap-1">
                   <History className="h-4 w-4" />
-                  Restaurar conversa
+                  {t('docgen.dialog.restoreConversation')}
                 </Button>
               </PopoverTrigger>
               <PopoverContent align="end" className="w-80 p-0">
                 <div className="p-3 border-b">
-                  <h4 className="text-sm font-semibold">Conversas anteriores</h4>
-                  <p className="text-xs text-muted-foreground">Suas últimas 20 conversas no DocGen.</p>
+                  <h4 className="text-sm font-semibold">{t('docgen.dialog.previousConversations')}</h4>
+                  <p className="text-xs text-muted-foreground">{t('docgen.dialog.previousConversationsDescription')}</p>
                 </div>
                 <div className="max-h-72 overflow-y-auto">
                   {historyLoading && (
                     <div className="p-4 text-sm text-muted-foreground flex items-center gap-2">
-                      <AkurisPulse size={16} /> Carregando…
+                      <AkurisPulse size={16} /> {t('docgen.dialog.loadingConversations')}
                     </div>
                   )}
                   {!historyLoading && historyItems.length === 0 && (
-                    <div className="p-4 text-sm text-muted-foreground">Nenhuma conversa anterior.</div>
+                    <div className="p-4 text-sm text-muted-foreground">{t('docgen.dialog.noPreviousConversations')}</div>
                   )}
                   {!historyLoading && historyItems.map((it) => (
                     <button
@@ -1278,7 +1281,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                       onClick={() => loadConversation(it.id)}
                       className="w-full text-left p-3 hover:bg-accent border-b last:border-b-0 transition-colors"
                     >
-                      <div className="text-sm font-medium truncate">{it.titulo || 'Conversa sem título'}</div>
+                      <div className="text-sm font-medium truncate">{it.titulo || t('docgen.dialog.untitledConversation')}</div>
                       <div className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
                         {it.tipo_documento_identificado && (
                           <Badge variant="secondary" className="text-[10px] py-0 h-4">{formatStatus(it.tipo_documento_identificado)}</Badge>
@@ -1366,7 +1369,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                       <CardContent className="p-3">
                         <div className="flex items-center gap-2">
                           <AkurisPulse size={16} />
-                          <span className="text-sm">DocGen está pensando...</span>
+                          <span className="text-sm">{t('docgen.dialog.thinking')}</span>
                         </div>
                       </CardContent>
                     </Card>
@@ -1384,8 +1387,8 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                 onKeyDown={handleKeyDown}
                 placeholder={
                   generatedDocument
-                    ? 'Peça um ajuste específico: adicionar cláusula, reforçar responsabilidades, incluir sistema/prazo, remover trecho…'
-                    : 'Digite sua mensagem aqui… (Enter envia, Shift+Enter quebra linha)'
+                    ? t('docgen.dialog.inputPlaceholderRefine')
+                    : t('docgen.dialog.inputPlaceholderDefault')
                 }
 
                 className="flex-1 min-h-[60px] resize-none"
@@ -1396,7 +1399,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                 disabled={!inputMessage.trim() || isLoading}
                 size="icon"
                 className="h-[60px]"
-                aria-label="Enviar mensagem"
+                aria-label={t('docgen.dialog.sendMessage')}
               >
                 <Send className="h-4 w-4" />
               </Button>
@@ -1409,14 +1412,14 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                   onClick={generateDocument}
                   disabled={isGeneratingDoc}
                   className="gap-2"
-                  title="Gera o documento completo (usa 1 crédito de IA)"
+                  title={t('docgen.dialog.generateDocumentTooltip')}
                 >
                   {isGeneratingDoc ? (
                     <AkurisPulse size={16} />
                   ) : (
                     <FileText className="h-4 w-4" />
                   )}
-                  {isGeneratingDoc ? 'Gerando Documento...' : 'Gerar Documento (1 crédito)'}
+                  {isGeneratingDoc ? t('docgen.dialog.generatingDocument') : t('docgen.dialog.generateDocumentCredit')}
                 </Button>
               </div>
             )}
@@ -1428,8 +1431,8 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
               <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                 <h3 className="font-semibold">
                   {!generatedDocument && isGeneratingDoc
-                    ? 'Gerando documento…'
-                    : isEditingLayout ? 'Editor de Layout' : 'Preview do Documento'}
+                    ? t('docgen.dialog.generatingDocumentTitle')
+                    : isEditingLayout ? t('docgen.dialog.editLayoutTitle') : t('docgen.dialog.previewTitle')}
                 </h3>
                 {generatedDocument && (
                   <div className="flex flex-wrap gap-2">
@@ -1437,19 +1440,19 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button onClick={() => setIsEditingLayout(!isEditingLayout)} size="sm" variant="outline" className="gap-1">
-                            {isEditingLayout ? 'Concluir Layout' : 'Editar Layout'}
+                            {isEditingLayout ? t('docgen.dialog.finishLayout') : t('docgen.dialog.editLayout')}
                           </Button>
                         </TooltipTrigger>
-                        <TooltipContent>Reorganizar seções, capa e formatação do documento</TooltipContent>
+                        <TooltipContent>{t('docgen.dialog.editLayoutTooltip')}</TooltipContent>
                       </Tooltip>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button onClick={handleSaveClick} size="sm" className="gap-1">
                             <Save className="h-3 w-3" strokeWidth={1.5} />
-                            Salvar em Documentos
+                            {t('docgen.dialog.saveToDocuments')}
                           </Button>
                         </TooltipTrigger>
-                        <TooltipContent>Salva como rascunho versionado no módulo Documentos (passo 2 confirma os metadados)</TooltipContent>
+                        <TooltipContent>{t('docgen.dialog.saveToDocumentsTooltip')}</TooltipContent>
                       </Tooltip>
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -1457,32 +1460,33 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                             <DropdownMenuTrigger asChild>
                               <Button size="sm" variant="outline" className="gap-1">
                                 <Download className="h-3 w-3" strokeWidth={1.5} />
-                                Exportar
+                                {t('docgen.dialog.export')}
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleExport('pdf')}>Exportar como PDF</DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleExport('docx')}>Exportar como DOCX</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleExport('pdf')}>{t('docgen.dialog.exportAsPdf')}</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleExport('docx')}>{t('docgen.dialog.exportAsDocx')}</DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TooltipTrigger>
-                        <TooltipContent>Baixa um arquivo PDF ou DOCX (não salva no sistema)</TooltipContent>
+                        <TooltipContent>{t('docgen.dialog.exportTooltip')}</TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
                   </div>
                 )}
               </div>
               {generatedDocument && !isEditingLayout && (
-                <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
-                  Revise o conteúdo abaixo. Ao <strong className="text-foreground font-semibold">salvar</strong>, o documento será criado em <strong className="text-foreground font-semibold">Documentos</strong> como rascunho e poderá passar por aprovação.
-                </p>
+                <p
+                  className="text-xs text-muted-foreground mb-3 leading-relaxed"
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(t('docgen.dialog.reviewInstructions')) }}
+                />
               )}
 
               {!generatedDocument && isGeneratingDoc ? (
                 <div className="flex-1 min-h-0 overflow-y-auto pr-2">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
                     <AkurisAIIcon className="h-4 w-4 animate-pulse text-primary" />
-                    <span>Compondo seu documento. Isso pode levar até 40 segundos…</span>
+                    <span>{t('docgen.dialog.composingDocument')}</span>
                   </div>
                   <div className="space-y-5 animate-pulse">
                     <div>
@@ -1524,7 +1528,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                       />
                       <h4 className="font-bold text-lg">{generatedDocument.titulo}</h4>
                       <p className="text-muted-foreground">
-                        Versão: {generatedDocument.versao} | {generatedDocument.data_criacao}
+                        {t('docgen.dialog.versao', { versao: generatedDocument.versao })} | {generatedDocument.data_criacao}
                       </p>
                     </div>
                     {generatedDocument.secoes?.map((secao: any, index: number) => {
@@ -1545,10 +1549,10 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                               variant="ghost"
                               className="opacity-60 hover:opacity-100 gap-1 h-7 px-2 text-xs shrink-0"
                               onClick={() => setRefiningSectionIndex(index)}
-                              title="Refinar esta seção com IA (1 crédito)"
+                              title={t('docgen.dialog.refineSectionTooltip')}
                             >
                               <AkurisAIIcon className="h-3.5 w-3.5" />
-                              Refinar
+                              {t('docgen.dialog.refineSection')}
                             </Button>
                           </div>
                           <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">
@@ -1584,7 +1588,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
           onOpenChange={setShowCreateDialog}
           originSource="docgen"
           onSuccess={() => {
-            const nomeIncorporado = generatedDocument?.titulo || 'Documento';
+            const nomeIncorporado = generatedDocument?.titulo || t('docgen.dialog.title');
             onDocumentSaved?.();
             setShowCreateDialog(false);
             onOpenChange(false);
@@ -1592,11 +1596,11 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
             akurisToast({
               module: 'documentos',
               tone: 'success',
-              eyebrow: 'Incorporação concluída',
-              title: 'Documento incorporado',
-              description: `“${nomeIncorporado}” foi criado em Documentos como rascunho.`,
+              eyebrow: t('docgen.dialog.incorporationDone'),
+              title: t('docgen.dialog.documentIncorporated'),
+              description: t('docgen.dialog.documentIncorporatedDescription', { name: nomeIncorporado }),
               action: {
-                label: 'Abrir em Documentos',
+                label: t('docgen.dialog.openInDocuments'),
                 onClick: () => navigate('/documentos'),
               },
               duration: 8000,
@@ -1618,19 +1622,18 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
       <AlertDialog open={discardDialogOpen} onOpenChange={setDiscardDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Descartar documento gerado?</AlertDialogTitle>
+            <AlertDialogTitle>{t('docgen.dialog.discardTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Você tem um documento gerado que não foi salvo no sistema nem exportado.
-              Se fechar agora, ele será perdido.
+              {t('docgen.dialog.discardDescription')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Continuar editando</AlertDialogCancel>
+            <AlertDialogCancel>{t('docgen.dialog.continueEditing')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDiscardAndClose}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Descartar
+              {t('docgen.dialog.discard')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1640,24 +1643,29 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
       <AlertDialog open={publishConfirmOpen} onOpenChange={setPublishConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Publicar mesmo com compliance baixo?</AlertDialogTitle>
-            <AlertDialogDescription>
-              O score estimado deste documento é{' '}
-              <strong className="text-foreground">{currentScore ?? 0}%</strong>
-              {effFrameworkName ? <> em relação a <strong className="text-foreground">{effFrameworkName}</strong></> : null}.
-              Recomendamos refinar as seções fracas ou pedir ajustes no chat antes de salvar em Documentos —
-              você pode aumentar a cobertura sem gastar novo crédito de geração completa.
-            </AlertDialogDescription>
+            <AlertDialogTitle>{t('docgen.dialog.publishLowComplianceTitle')}</AlertDialogTitle>
+            <AlertDialogDescription
+              dangerouslySetInnerHTML={{
+                __html: DOMPurify.sanitize(
+                  t('docgen.dialog.publishLowComplianceDescription', {
+                    score: String(currentScore ?? 0),
+                    frameworkPart: effFrameworkName
+                      ? t('docgen.dialog.publishLowComplianceFramework', { framework: effFrameworkName })
+                      : '',
+                  })
+                ),
+              }}
+            />
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Continuar refinando</AlertDialogCancel>
+            <AlertDialogCancel>{t('docgen.dialog.continueRefining')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={async () => {
                 setPublishConfirmOpen(false);
                 await handleOpenCreateDialog();
               }}
             >
-              Publicar mesmo assim
+              {t('docgen.dialog.publishAnyway')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

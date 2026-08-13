@@ -3,6 +3,7 @@
  */
 import { useMemo } from 'react';
 import { severityFromNivel, type Severity } from '@/components/riscos/risk-utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Risco {
   nivel_risco_inicial: string;
@@ -22,10 +23,12 @@ const SEV_BG: Record<Severity, string> = {
 };
 
 export function RiskCategoryBars({ riscos }: Props) {
+  const { t } = useLanguage();
+  const semCategoriaLabel = t('riscosVisoes.overview.riskCategoryBars.semCategoria');
   const rows = useMemo(() => {
     const map = new Map<string, { nome: string; critico: number; alto: number; medio: number; baixo: number; total: number }>();
     riscos.forEach((r) => {
-      const nome = r.categoria?.nome || 'Sem categoria';
+      const nome = r.categoria?.nome || semCategoriaLabel;
       const sev = severityFromNivel(r.nivel_risco_residual || r.nivel_risco_inicial);
       const cur = map.get(nome) || { nome, critico: 0, alto: 0, medio: 0, baixo: 0, total: 0 };
       cur[sev] += 1;
@@ -33,15 +36,15 @@ export function RiskCategoryBars({ riscos }: Props) {
       map.set(nome, cur);
     });
     return Array.from(map.values()).sort((a, b) => b.total - a.total).slice(0, 6);
-  }, [riscos]);
+  }, [riscos, semCategoriaLabel]);
 
   return (
     <div className="bg-card border border-border rounded-xl p-5">
       <div className="text-[10.5px] font-semibold tracking-[1.2px] uppercase text-muted-foreground">
-        Distribuição por categoria
+        {t('riscosVisoes.overview.riskCategoryBars.titulo')}
       </div>
       {rows.length === 0 ? (
-        <div className="py-8 text-center text-sm text-muted-foreground">Sem dados de categoria.</div>
+        <div className="py-8 text-center text-sm text-muted-foreground">{t('riscosVisoes.overview.riskCategoryBars.semDados')}</div>
       ) : (
         <div className="flex flex-col gap-3.5 mt-4">
           {rows.map((row) => (

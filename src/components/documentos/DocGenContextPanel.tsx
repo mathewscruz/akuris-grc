@@ -3,6 +3,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Badge } from '@/components/ui/badge';
 import { Building2, ChevronDown, Layers, ShieldAlert, Boxes, Sparkles } from 'lucide-react';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export interface CompanyContext {
   empresa?: {
@@ -24,11 +25,12 @@ interface Props {
 }
 
 export const DocGenContextPanel: React.FC<Props> = ({ context, loading, defaultOpen = true }) => {
+  const { t } = useLanguage();
   if (loading) {
     return (
       <div className="rounded-lg border border-border bg-card/50 p-4 flex items-center gap-3">
         <AkurisPulse size={24} />
-        <span className="text-sm text-muted-foreground">Carregando contexto da empresa…</span>
+        <span className="text-sm text-muted-foreground">{t('docgen.contextPanel.loading')}</span>
       </div>
     );
   }
@@ -37,7 +39,7 @@ export const DocGenContextPanel: React.FC<Props> = ({ context, loading, defaultO
     return (
       <div className="rounded-lg border border-dashed border-border bg-card/30 p-3 text-xs text-muted-foreground flex items-center gap-2">
         <Sparkles className="h-3.5 w-3.5" strokeWidth={1.5} />
-        Sem contexto disponível — a IA usará apenas o briefing.
+        {t('docgen.contextPanel.noContext')}
       </div>
     );
   }
@@ -52,26 +54,26 @@ export const DocGenContextPanel: React.FC<Props> = ({ context, loading, defaultO
       <CollapsibleTrigger className="w-full flex items-center justify-between p-3 group">
         <div className="flex items-center gap-2 text-sm">
           <Sparkles className="h-4 w-4 text-primary" strokeWidth={1.5} />
-          <span className="font-medium">Contexto enviado à IA</span>
+          <span className="font-medium">{t('docgen.contextPanel.title')}</span>
           <Badge variant="secondary" className="ml-1 text-[10px]">
-            {[emp.nome && 'Empresa', fw.length && `${fw.length} frameworks`, ativos.length && `${ativos.length} ativos`, riscos.length && `${riscos.length} riscos`].filter(Boolean).join(' · ')}
+            {[emp.nome && t('docgen.contextPanel.companyChip'), fw.length && t('docgen.contextPanel.frameworksChip', { count: fw.length }), ativos.length && t('docgen.contextPanel.assetsChip', { count: ativos.length }), riscos.length && t('docgen.contextPanel.risksChip', { count: riscos.length })].filter(Boolean).join(' · ')}
           </Badge>
         </div>
         <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" strokeWidth={1.5} />
       </CollapsibleTrigger>
       <CollapsibleContent className="px-3 pb-3 space-y-3 text-sm">
-        <Section icon={<Building2 className="h-3.5 w-3.5" strokeWidth={1.5} />} label="Empresa">
+        <Section icon={<Building2 className="h-3.5 w-3.5" strokeWidth={1.5} />} label={t('docgen.contextPanel.company')}>
           <div className="text-foreground">{emp.nome}</div>
           <div className="text-xs text-muted-foreground">
             {[emp.setor_atuacao, emp.porte_empresa, emp.cnpj].filter(Boolean).join(' · ') || '—'}
           </div>
           {emp.objetivo_compliance && (
-            <div className="text-xs text-muted-foreground mt-1">Objetivo: {emp.objetivo_compliance}</div>
+            <div className="text-xs text-muted-foreground mt-1">{t('docgen.contextPanel.objective')}: {emp.objetivo_compliance}</div>
           )}
         </Section>
 
         {fw.length > 0 && (
-          <Section icon={<Layers className="h-3.5 w-3.5" strokeWidth={1.5} />} label="Frameworks">
+          <Section icon={<Layers className="h-3.5 w-3.5" strokeWidth={1.5} />} label={t('docgen.contextPanel.frameworks')}>
             <div className="flex flex-wrap gap-1.5">
               {fw.slice(0, 6).map((f, i) => (
                 <Badge key={i} variant="outline" className="text-[11px]">
@@ -83,7 +85,7 @@ export const DocGenContextPanel: React.FC<Props> = ({ context, loading, defaultO
         )}
 
         {ativos.length > 0 && (
-          <Section icon={<Boxes className="h-3.5 w-3.5" strokeWidth={1.5} />} label={`Ativos críticos (${ativos.length})`}>
+          <Section icon={<Boxes className="h-3.5 w-3.5" strokeWidth={1.5} />} label={t('docgen.contextPanel.criticalAssets', { count: ativos.length })}>
             <ul className="text-xs text-muted-foreground space-y-0.5">
               {ativos.slice(0, 5).map((a, i) => (
                 <li key={i}>• {a.nome} <span className="opacity-70">— {a.tipo} · {a.criticidade}</span></li>
@@ -93,7 +95,7 @@ export const DocGenContextPanel: React.FC<Props> = ({ context, loading, defaultO
         )}
 
         {riscos.length > 0 && (
-          <Section icon={<ShieldAlert className="h-3.5 w-3.5" strokeWidth={1.5} />} label={`Riscos altos (${riscos.length})`}>
+          <Section icon={<ShieldAlert className="h-3.5 w-3.5" strokeWidth={1.5} />} label={t('docgen.contextPanel.highRisks', { count: riscos.length })}>
             <ul className="text-xs text-muted-foreground space-y-0.5">
               {riscos.slice(0, 5).map((r, i) => (
                 <li key={i}>• {r.nome} <span className="opacity-70">— {r.nivel}</span></li>
@@ -103,7 +105,7 @@ export const DocGenContextPanel: React.FC<Props> = ({ context, loading, defaultO
         )}
 
         <p className="text-[11px] text-muted-foreground/80 pt-1 border-t border-border/50">
-          Estes dados são enviados ao DocGen automaticamente para personalizar o documento. Você não precisa repeti-los no chat.
+          {t('docgen.contextPanel.footerNote')}
         </p>
       </CollapsibleContent>
     </Collapsible>

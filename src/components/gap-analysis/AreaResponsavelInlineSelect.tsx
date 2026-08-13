@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { useDebounce } from "@/hooks/useDebounce";
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from '@/lib/logger';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface AreaResponsavelInlineSelectProps {
   requirementId: string;
@@ -17,17 +18,9 @@ interface AreaResponsavelInlineSelectProps {
   onAreaChange?: (area: string) => void;
 }
 
-const AREAS_PADRAO = [
-  "Tecnologia da Informação",
-  "Financeiro",
-  "Recursos Humanos",
-  "Jurídico",
-  "Compliance",
-  "Auditoria Interna",
-  "Operações",
-  "Comercial",
-  "Marketing",
-  "Governança"
+const AREA_KEYS = [
+  "ti", "financeiro", "rh", "juridico", "compliance",
+  "auditoriaInterna", "operacoes", "comercial", "marketing", "governanca",
 ];
 
 export const AreaResponsavelInlineSelect: React.FC<AreaResponsavelInlineSelectProps> = ({
@@ -35,6 +28,8 @@ export const AreaResponsavelInlineSelect: React.FC<AreaResponsavelInlineSelectPr
   currentArea,
   onAreaChange
 }) => {
+  const { t } = useLanguage();
+  const AREAS_PADRAO = AREA_KEYS.map(k => t(`gapAnalysis.areas.${k}`));
   const [customAreas, setCustomAreas] = useState<string[]>([]);
   const [newArea, setNewArea] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -82,7 +77,7 @@ export const AreaResponsavelInlineSelect: React.FC<AreaResponsavelInlineSelectPr
       onAreaChange?.(area === "sem_area" ? "" : area);
     } catch (error) {
       logger.error('Erro ao salvar área responsável:', { error: error instanceof Error ? error.message : String(error) });
-      toast.error("Erro ao salvar área responsável");
+      toast.error(t('gapAnalysis.areas.saveError'));
       // Reverter para valor anterior em caso de erro
       setSelectedArea(currentArea || "sem_area");
     }
@@ -98,13 +93,13 @@ export const AreaResponsavelInlineSelect: React.FC<AreaResponsavelInlineSelectPr
 
   const handleAddArea = () => {
     if (!newArea.trim()) {
-      toast.error("Digite o nome da área responsável");
+      toast.error(t('gapAnalysis.areas.enterName'));
       return;
     }
 
     const allAreas = [...AREAS_PADRAO, ...customAreas];
     if (allAreas.some(area => area.toLowerCase() === newArea.trim().toLowerCase())) {
-      toast.error("Esta área já existe");
+      toast.error(t('gapAnalysis.areas.alreadyExists'));
       return;
     }
 
@@ -113,7 +108,7 @@ export const AreaResponsavelInlineSelect: React.FC<AreaResponsavelInlineSelectPr
     setSelectedArea(newArea.trim());
     setNewArea("");
     setIsDialogOpen(false);
-    toast.success("Área adicionada com sucesso");
+    toast.success(t('gapAnalysis.areas.addSuccess'));
   };
 
   const allAreas = [...AREAS_PADRAO, ...customAreas];
@@ -122,7 +117,7 @@ export const AreaResponsavelInlineSelect: React.FC<AreaResponsavelInlineSelectPr
     <div className="flex items-center gap-1">
       <Select value={selectedArea} onValueChange={setSelectedArea}>
         <SelectTrigger className="min-w-[180px] h-8">
-          <SelectValue placeholder="Selecionar área" />
+          <SelectValue placeholder={t('gapAnalysis.areas.selectPlaceholder')} />
         </SelectTrigger>
         <SelectContent 
           className="bg-background border-border shadow-lg"
@@ -132,7 +127,7 @@ export const AreaResponsavelInlineSelect: React.FC<AreaResponsavelInlineSelectPr
           sideOffset={4}
           style={{ zIndex: 9999 }}
         >
-          <SelectItem value="sem_area">Nenhuma área</SelectItem>
+          <SelectItem value="sem_area">{t('gapAnalysis.areas.none')}</SelectItem>
           {allAreas.map((area) => (
             <SelectItem key={area} value={area}>
               {area}
@@ -154,19 +149,19 @@ export const AreaResponsavelInlineSelect: React.FC<AreaResponsavelInlineSelectPr
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         icon={Plus}
-        title="Adicionar Nova Área"
+        title={t('gapAnalysis.areas.addNewTitle')}
         size="sm"
         hideFooter
       >
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="newArea">Nome da Área</Label>
+              <Label htmlFor="newArea">{t('gapAnalysis.areas.nameLabel')}</Label>
               <div className="flex gap-2">
                 <Input
                   id="newArea"
                   value={newArea}
                   onChange={(e) => setNewArea(e.target.value)}
-                  placeholder="Digite o nome da área"
+                  placeholder={t('gapAnalysis.areas.namePlaceholder')}
                   onKeyPress={(e) => e.key === 'Enter' && handleAddArea()}
                 />
                 <Button onClick={handleAddArea} size="sm">

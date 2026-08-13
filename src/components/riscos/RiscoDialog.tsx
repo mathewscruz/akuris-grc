@@ -1,6 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { AlertTriangle } from 'lucide-react';
 import { RiscoFormWizard } from './RiscoFormWizard';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface RiscoDialogProps {
   open: boolean;
@@ -10,6 +11,7 @@ interface RiscoDialogProps {
 }
 
 export function RiscoDialog({ open, onOpenChange, risco, onSuccess }: RiscoDialogProps) {
+  const { t } = useLanguage();
   const handleSuccess = () => {
     onSuccess();
     onOpenChange(false);
@@ -25,15 +27,15 @@ export function RiscoDialog({ open, onOpenChange, risco, onSuccess }: RiscoDialo
             </span>
             <span className="flex flex-col">
               <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                Gestão de Riscos
+                {t('riscosDetalhe.dialog.headerEyebrow')}
               </span>
-              <span className="text-base font-semibold leading-tight">{risco ? 'Editar Risco' : 'Novo Risco'}</span>
+              <span className="text-base font-semibold leading-tight">{risco ? t('riscosDetalhe.dialog.titleEdit') : t('riscosDetalhe.dialog.titleNew')}</span>
             </span>
           </DialogTitle>
           <DialogDescription className="pl-12">
             {risco
-              ? 'Atualize as informações do risco navegando entre as abas.'
-              : 'Navegue entre as abas para preencher cada seção. Você pode preencher na ordem que preferir.'}
+              ? t('riscosDetalhe.dialog.descEdit')
+              : t('riscosDetalhe.dialog.descNew')}
           </DialogDescription>
         </DialogHeader>
 

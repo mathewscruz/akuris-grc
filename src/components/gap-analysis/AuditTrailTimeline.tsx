@@ -6,6 +6,7 @@ import { useEmpresaId } from "@/hooks/useEmpresaId";
 import { logger } from '@/lib/logger';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { useLanguage } from '@/contexts/LanguageContext';
 interface AuditEntry {
   id: string;
   campo_alterado: string;
@@ -21,16 +22,17 @@ interface AuditTrailTimelineProps {
   frameworkId: string;
 }
 
-const statusLabels: Record<string, string> = {
-  conforme: 'Conforme',
-  parcial: 'Parcial',
-  nao_conforme: 'Não Conforme',
-  nao_aplicavel: 'N/A',
-  nao_avaliado: 'Não Avaliado',
-  pendente: 'Pendente',
+const statusLabelKeys: Record<string, string> = {
+  conforme: 'conforme',
+  parcial: 'parcial',
+  nao_conforme: 'naoConforme',
+  nao_aplicavel: 'na',
+  nao_avaliado: 'naoAvaliado',
+  pendente: 'pendente',
 };
 
 export const AuditTrailTimeline: React.FC<AuditTrailTimelineProps> = ({ requirementId, frameworkId }) => {
+  const { t } = useLanguage();
   const { empresaId } = useEmpresaId();
   const [entries, setEntries] = useState<AuditEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -67,7 +69,7 @@ export const AuditTrailTimeline: React.FC<AuditTrailTimelineProps> = ({ requirem
 
       setEntries((data || []).map(e => ({
         ...e,
-        user_nome: e.user_id ? userMap.get(e.user_id) || 'Usuário' : 'Sistema',
+        user_nome: e.user_id ? userMap.get(e.user_id) || t('gapAnalysis.audit.user') : t('gapAnalysis.audit.system'),
       })));
     } catch (error) {
       logger.error('Erro ao carregar histórico:', { error: error instanceof Error ? error.message : String(error) });
@@ -81,7 +83,7 @@ export const AuditTrailTimeline: React.FC<AuditTrailTimelineProps> = ({ requirem
     const variants: Record<string, 'success' | 'warning' | 'destructive' | 'outline' | 'secondary'> = {
       conforme: 'success', parcial: 'warning', nao_conforme: 'destructive', nao_aplicavel: 'outline', nao_avaliado: 'secondary',
     };
-    return <Badge variant={variants[status] || 'outline'} className="text-[10px]">{statusLabels[status] || status}</Badge>;
+    return <Badge variant={variants[status] || 'outline'} className="text-[10px]">{statusLabelKeys[status] ? t(`gapAnalysis.audit.status.${statusLabelKeys[status]}`) : status}</Badge>;
   };
 
   if (loading) {
@@ -96,7 +98,7 @@ export const AuditTrailTimeline: React.FC<AuditTrailTimelineProps> = ({ requirem
     return (
       <div className="text-center py-4">
         <History className="h-5 w-5 mx-auto text-muted-foreground/40 mb-1" strokeWidth={1.5}/>
-        <p className="text-xs text-muted-foreground">Nenhuma alteração registrada</p>
+        <p className="text-xs text-muted-foreground">{t('gapAnalysis.audit.noChanges')}</p>
       </div>
     );
   }
@@ -116,7 +118,7 @@ export const AuditTrailTimeline: React.FC<AuditTrailTimelineProps> = ({ requirem
               {getStatusBadge(entry.valor_novo)}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              {entry.user_nome} • {new Date(entry.created_at).toLocaleString('pt-BR')}
+              {entry.user_nome} • {new Date(entry.created_at).toLocaleString()}
             </p>
           </div>
         </div>

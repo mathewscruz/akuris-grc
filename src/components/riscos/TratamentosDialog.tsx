@@ -2,6 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { RiscosIcon } from '@/components/icons';
 import { CornerAccent } from '@/components/identity/CornerAccent';
 import { TratamentosList } from './TratamentosList';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface TratamentosDialogProps {
   open: boolean;
@@ -11,6 +12,7 @@ interface TratamentosDialogProps {
 }
 
 export function TratamentosDialog({ open, onOpenChange, risco, onSuccess }: TratamentosDialogProps) {
+  const { t } = useLanguage();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-full sm:max-w-5xl max-h-[100dvh] sm:max-h-[92vh] overflow-hidden flex flex-col p-0 gap-0">
@@ -22,13 +24,13 @@ export function TratamentosDialog({ open, onOpenChange, risco, onSuccess }: Trat
             </span>
             <span className="flex flex-col">
               <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                Tratamentos do risco
+                {t('riscosDetalhe.tratamentosDialog.eyebrow')}
               </span>
               <span className="text-lg font-semibold leading-tight">{risco?.nome}</span>
             </span>
           </DialogTitle>
           <DialogDescription className="pl-[52px]">
-            Gerencie as ações de mitigação, transferência, aceite ou eliminação associadas a este risco.
+            {t('riscosDetalhe.tratamentosDialog.description')}
           </DialogDescription>
         </DialogHeader>
 

@@ -4,6 +4,7 @@ import { AkurisPulse } from "@/components/ui/AkurisPulse";
 import { RiscosStats } from "@/hooks/useRiscosStats";
 import { TrendingUp, TrendingDown, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface RiskScoreCardProps {
   stats: RiscosStats | undefined;
@@ -17,20 +18,22 @@ const getColor = (score: number): string => {
   return "hsl(var(--destructive))";
 };
 
-const getLabel = (score: number): string => {
-  if (score === 0) return "Sem dados";
-  if (score >= 80) return "Excelente";
-  if (score >= 60) return "Bom";
-  if (score >= 40) return "Atenção";
-  return "Crítico";
+const getLabel = (score: number, t: (k: string) => string): string => {
+  if (score === 0) return t('riscosDetalhe.scoreCard.noData');
+  if (score >= 80) return t('riscosDetalhe.scoreCard.excellent');
+  if (score >= 60) return t('riscosDetalhe.scoreCard.good');
+  if (score >= 40) return t('riscosDetalhe.scoreCard.attention');
+  return t('riscosDetalhe.scoreCard.critical');
 };
 
-const legendItems = [
-  { label: "Crítico", color: "bg-destructive" },
-  { label: "Atenção", color: "bg-warning" },
-  { label: "Bom", color: "bg-primary" },
-  { label: "Excelente", color: "bg-success" },
-];
+function useLegendItems(t: (k: string) => string) {
+  return [
+    { label: t('riscosDetalhe.scoreCard.critical'), color: "bg-destructive" },
+    { label: t('riscosDetalhe.scoreCard.attention'), color: "bg-warning" },
+    { label: t('riscosDetalhe.scoreCard.good'), color: "bg-primary" },
+    { label: t('riscosDetalhe.scoreCard.excellent'), color: "bg-success" },
+  ];
+}
 
 const calcDisplayScore = (stats: RiscosStats): number => {
   if (stats.total === 0) return 0;
@@ -44,6 +47,7 @@ const calcDisplayScore = (stats: RiscosStats): number => {
  * O gauge SVG ocupa o slot do "valor herói + segments".
  */
 export function RiskScoreCard({ stats, loading }: RiskScoreCardProps) {
+  const { t } = useLanguage();
   if (loading || !stats) {
     return (
       <Card variant="elevated" className="h-full min-h-[148px] flex items-center justify-center">
@@ -54,7 +58,8 @@ export function RiskScoreCard({ stats, loading }: RiskScoreCardProps) {
 
   const displayScore = calcDisplayScore(stats);
   const scoreColor = getColor(displayScore);
-  const label = getLabel(displayScore);
+  const label = getLabel(displayScore, t);
+  const legendItems = useLegendItems(t);
 
   const hasVariation = stats.variacao7dias !== null && stats.variacao7dias !== 0;
   const isPositiveTrend = stats.variacao7dias && stats.variacao7dias < 0;
@@ -78,7 +83,7 @@ export function RiskScoreCard({ stats, loading }: RiskScoreCardProps) {
               <ShieldCheck strokeWidth={1.5} />
             </span>
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide truncate">
-              Score de Risco
+              {t('riscosDetalhe.scoreCard.title')}
             </span>
           </div>
 

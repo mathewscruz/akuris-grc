@@ -6,7 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { CheckCircle2, AlertTriangle, Lightbulb, ArrowLeft, Download, TrendingUp, FileText, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { ptBR, enUS } from 'date-fns/locale';
 import type { AdherenceAssessment, PontoForte, PontoMelhoria } from './types';
 import { useOptimizedQuery } from '@/hooks/useOptimizedQuery';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,6 +16,7 @@ import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { logger } from '@/lib/logger';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { useLanguage } from '@/contexts/LanguageContext';
 interface AdherenceResultViewProps {
   assessment: AdherenceAssessment;
   onBack: () => void;
@@ -24,9 +25,11 @@ interface AdherenceResultViewProps {
 }
 
 export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied }: AdherenceResultViewProps) {
+  const { t, locale } = useLanguage();
   const { toast } = useToast();
   const { empresaId } = useEmpresaId();
   const [applying, setApplying] = useState(false);
+  const dateLocale = locale === 'en' ? enUS : ptBR;
   
   const { data: details } = useOptimizedQuery(
     async () => {
@@ -72,10 +75,10 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
 
   const getResultLabel = (resultado?: string) => {
     switch (resultado) {
-      case 'conforme': return 'CONFORME';
-      case 'nao_conforme': return 'NÃO CONFORME';
-      case 'parcial': return 'PARCIALMENTE CONFORME';
-      default: return 'DESCONHECIDO';
+      case 'conforme': return t('gapAnalysis.adherenceUi.result.resultConforme');
+      case 'nao_conforme': return t('gapAnalysis.adherenceUi.result.resultNaoConforme');
+      case 'parcial': return t('gapAnalysis.adherenceUi.result.resultParcial');
+      default: return t('gapAnalysis.adherenceUi.result.resultUnknown');
     }
   };
 
@@ -100,9 +103,9 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
   
   const getPrioridadeLabel = (prioridade: string): string => {
     switch (prioridade) {
-      case 'alta': return 'Alta';
-      case 'media': return 'Média';
-      case 'baixa': return 'Baixa';
+      case 'alta': return t('gapAnalysis.adherenceUi.result.priorityAlta');
+      case 'media': return t('gapAnalysis.adherenceUi.result.priorityMedia');
+      case 'baixa': return t('gapAnalysis.adherenceUi.result.priorityBaixa');
       default: return prioridade;
     }
   };
@@ -110,11 +113,11 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
   const handleExportPDF = async () => {
     try {
       const { getCompanyLogoUrl } = await import('@/lib/brand-logo');
-      await exportAssessmentToPDF(assessment, details, getCompanyLogoUrl(empresa?.logo_url));
-      toast({ title: "PDF exportado", description: "O relatório foi exportado com sucesso." });
+      await exportAssessmentToPDF(assessment, details, getCompanyLogoUrl(empresa?.logo_url), t, dateLocale);
+      toast({ title: t('gapAnalysis.adherenceUi.result.pdfExportedTitle'), description: t('gapAnalysis.adherenceUi.result.pdfExportedDescription') });
     } catch (error) {
       logger.error('Error exporting PDF:', { error: error instanceof Error ? error.message : String(error) });
-      toast({ title: "Erro ao exportar", description: "Ocorreu um erro ao exportar o PDF.", variant: "destructive" });
+      toast({ title: t('gapAnalysis.adherenceUi.result.pdfExportErrorTitle'), description: t('gapAnalysis.adherenceUi.result.pdfExportErrorDescription'), variant: "destructive" });
     }
   };
 
@@ -127,7 +130,7 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
       );
 
       if (applicableDetails.length === 0) {
-        toast({ title: "Nenhum resultado aplicável", description: "Não há requisitos com resultado para aplicar." });
+        toast({ title: t('gapAnalysis.adherenceUi.result.noApplicableResultsTitle'), description: t('gapAnalysis.adherenceUi.result.noApplicableResultsDescription') });
         return;
       }
 
@@ -172,20 +175,20 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
               conformity_status: conformityStatus,
               evidence_status: 'pendente',
               status: 'em_andamento',
-              observacoes: `Avaliado automaticamente pela análise de documento: ${assessment.documento_nome}`,
+              observacoes: t('gapAnalysis.adherenceUi.result.autoEvaluatedNote', { doc: assessment.documento_nome }),
             });
           applied++;
         }
       }
 
       toast({
-        title: "Resultados aplicados",
-        description: `${applied} requisito(s) atualizado(s) na avaliação manual.`,
+        title: t('gapAnalysis.adherenceUi.result.appliedResultsTitle'),
+        description: t('gapAnalysis.adherenceUi.result.appliedResultsDescription', { count: applied }),
       });
       onApplied?.();
     } catch (err: any) {
       logger.error('Error applying results:', { error: err instanceof Error ? err.message : String(err) });
-      toast({ title: "Erro ao aplicar", description: "Ocorreu um erro ao sincronizar os resultados.", variant: "destructive" });
+      toast({ title: t('gapAnalysis.adherenceUi.result.applyErrorTitle'), description: t('gapAnalysis.adherenceUi.result.applyErrorDescription'), variant: "destructive" });
     } finally {
       setApplying(false);
     }
@@ -197,21 +200,21 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
       <div className="flex items-center justify-between">
         <Button variant="outline" onClick={onBack}>
           <ArrowLeft className="mr-2 h-4 w-4" strokeWidth={1.5}/>
-          Voltar
+          {t('gapAnalysis.adherenceUi.result.back')}
         </Button>
         <div className="flex gap-2">
           {frameworkId && details && details.length > 0 && (
             <Button variant="default" onClick={handleApplyToEvaluation} disabled={applying}>
               {applying ? (
-                <><AkurisPulse size={16} className="mr-2" />Aplicando...</>
+                <><AkurisPulse size={16} className="mr-2" />{t('gapAnalysis.adherenceUi.result.applying')}</>
               ) : (
-                <><RefreshCw className="mr-2 h-4 w-4" strokeWidth={1.5}/>Aplicar na Avaliação Manual</>
+                <><RefreshCw className="mr-2 h-4 w-4" strokeWidth={1.5}/>{t('gapAnalysis.adherenceUi.result.applyToManualEvaluation')}</>
               )}
             </Button>
           )}
           <Button variant="outline" onClick={handleExportPDF}>
             <Download className="mr-2 h-4 w-4" strokeWidth={1.5}/>
-            Exportar PDF
+            {t('gapAnalysis.adherenceUi.result.exportPdf')}
           </Button>
         </div>
       </div>
@@ -230,15 +233,15 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
           <p className="text-4xl font-bold mb-4 text-foreground">{assessment.percentual_conformidade}%</p>
           <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground">
             <div>
-              <span className="font-medium">Framework:</span> {assessment.framework_nome} {assessment.framework_versao}
+              <span className="font-medium">{t('gapAnalysis.adherenceUi.result.frameworkLabel')}</span> {assessment.framework_nome} {assessment.framework_versao}
             </div>
             <div>|</div>
             <div>
-              <span className="font-medium">Documento:</span> {assessment.documento_nome}
+              <span className="font-medium">{t('gapAnalysis.adherenceUi.result.documentLabel')}</span> {assessment.documento_nome}
             </div>
           </div>
           <p className="text-xs mt-2 text-muted-foreground">
-            Análise realizada em {format(new Date(assessment.created_at), "dd 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: ptBR })}
+            {t('gapAnalysis.adherenceUi.result.analyzedOn', { date: format(new Date(assessment.created_at), "dd 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: dateLocale }) })}
           </p>
         </div>
       </Card>
@@ -248,7 +251,7 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
         <Card className="p-6">
           <h3 className="text-xl font-semibold mb-4 flex items-center gap-2 text-foreground">
             <CheckCircle2 className="h-5 w-5 text-muted-foreground" strokeWidth={1.5}/>
-            Pontos Fortes ({assessment.pontos_fortes.length})
+            {t('gapAnalysis.adherenceUi.result.strongPointsTitle', { count: assessment.pontos_fortes.length })}
           </h3>
           <div className="space-y-3">
             {assessment.pontos_fortes.map((ponto: PontoForte, index: number) => (
@@ -266,7 +269,7 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
         <Card className="p-6">
           <h3 className="text-xl font-semibold mb-4 flex items-center gap-2 text-foreground">
             <AlertTriangle className="h-5 w-5 text-muted-foreground" strokeWidth={1.5}/>
-            Pontos de Melhoria ({assessment.pontos_melhoria.length})
+            {t('gapAnalysis.adherenceUi.result.improvementPointsTitle', { count: assessment.pontos_melhoria.length })}
           </h3>
           <div className="space-y-3">
             {assessment.pontos_melhoria.map((ponto: PontoMelhoria, index: number) => (
@@ -287,7 +290,7 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
         <Card className="p-6">
           <h3 className="text-xl font-semibold mb-4 flex items-center gap-2 text-foreground">
             <Lightbulb className="h-5 w-5 text-muted-foreground" strokeWidth={1.5}/>
-            Recomendações
+            {t('gapAnalysis.adherenceUi.result.recommendationsTitle')}
           </h3>
           <ol className="list-decimal list-inside space-y-2 text-foreground">
             {assessment.recomendacoes.map((rec: string, index: number) => (
@@ -302,7 +305,7 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
         <Card className="p-6">
           <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
             <FileText className="h-5 w-5" strokeWidth={1.5}/>
-            Análise Detalhada por Requisito
+            {t('gapAnalysis.adherenceUi.result.detailedAnalysisTitle')}
           </h3>
           <Accordion type="single" collapsible className="w-full">
             {details.map((detail: any, index: number) => (
@@ -323,19 +326,19 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
                   <div className="space-y-3 pt-2">
                     {detail.evidencias_encontradas && (
                       <div>
-                        <h5 className="font-semibold text-sm text-foreground mb-1">Evidências Encontradas:</h5>
+                        <h5 className="font-semibold text-sm text-foreground mb-1">{t('gapAnalysis.adherenceUi.result.evidenceFound')}</h5>
                         <p className="text-sm text-muted-foreground">{detail.evidencias_encontradas}</p>
                       </div>
                     )}
                     {detail.gaps_especificos && (
                       <div>
-                        <h5 className="font-semibold text-sm text-foreground mb-1">Gaps Identificados:</h5>
+                        <h5 className="font-semibold text-sm text-foreground mb-1">{t('gapAnalysis.adherenceUi.result.gapsIdentified')}</h5>
                         <p className="text-sm text-muted-foreground">{detail.gaps_especificos}</p>
                       </div>
                     )}
                     {detail.observacoes_ia && (
                       <div>
-                        <h5 className="font-semibold text-sm text-foreground mb-1">Observações da IA:</h5>
+                        <h5 className="font-semibold text-sm text-foreground mb-1">{t('gapAnalysis.adherenceUi.result.aiObservations')}</h5>
                         <p className="text-sm text-muted-foreground">{detail.observacoes_ia}</p>
                       </div>
                     )}
@@ -350,7 +353,7 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
       {/* Análise Completa */}
       {assessment.analise_detalhada && (
         <Card className="p-6">
-          <h3 className="text-xl font-semibold mb-4">Análise Completa</h3>
+          <h3 className="text-xl font-semibold mb-4">{t('gapAnalysis.adherenceUi.result.fullAnalysisTitle')}</h3>
           <div className="prose prose-sm max-w-none whitespace-pre-wrap dark:prose-invert">
             {assessment.analise_detalhada}
           </div>

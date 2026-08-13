@@ -13,6 +13,7 @@ import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { Sparkles, Link2, FileText, ExternalLink, Search, CheckCircle2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { akurisToast } from '@/lib/akuris-toast';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Props {
   /** Requisito atual sendo avaliado */
@@ -31,14 +32,15 @@ interface SuggestionRow {
   evidence: EvidenceLibraryItem | null;
 }
 
-function scoreBadge(score: number | null | undefined) {
+function scoreBadge(score: number | null | undefined, t: (key: string) => string) {
   if (score == null) return null;
-  if (score >= 0.8) return <StatusBadge tone="success" size="sm">Alta aderência · {Math.round(score * 100)}%</StatusBadge>;
-  if (score >= 0.6) return <StatusBadge tone="warning" size="sm">Possível · {Math.round(score * 100)}%</StatusBadge>;
+  if (score >= 0.8) return <StatusBadge tone="success" size="sm">{t('gapAnalysis.evidenceReuse.highAdherence')} · {Math.round(score * 100)}%</StatusBadge>;
+  if (score >= 0.6) return <StatusBadge tone="warning" size="sm">{t('gapAnalysis.evidenceReuse.possible')} · {Math.round(score * 100)}%</StatusBadge>;
   return <StatusBadge tone="neutral" size="sm">{Math.round(score * 100)}%</StatusBadge>;
 }
 
 export function EvidenceReusePanel({ requirementId, frameworkId, evaluationId, onLinked }: Props) {
+  const { t } = useLanguage();
   const { empresaId } = useEmpresaId();
   const lib = useEvidenceLibrary(empresaId);
   const [suggestions, setSuggestions] = useState<SuggestionRow[]>([]);
@@ -61,7 +63,7 @@ export function EvidenceReusePanel({ requirementId, frameworkId, evaluationId, o
   const handleAcceptSuggestion = async (linkId: string) => {
     const ok = await lib.acceptSuggestion(linkId);
     if (ok) {
-      akurisToast({ module: 'gap', tone: 'success', title: 'Evidência vinculada', description: 'Recomendação aplicada.' });
+      akurisToast({ module: 'gap', tone: 'success', title: t('gapAnalysis.evidenceReuse.evidenceLinked'), description: t('gapAnalysis.evidenceReuse.recommendationApplied') });
       await reload();
       onLinked?.();
     }
@@ -76,7 +78,7 @@ export function EvidenceReusePanel({ requirementId, frameworkId, evaluationId, o
 
   const handleManualLink = async (evidence: EvidenceLibraryItem) => {
     if (!evaluationId) {
-      toast.error('Salve a avaliação antes de vincular evidências da biblioteca.');
+      toast.error(t('gapAnalysis.evidenceReuse.saveEvaluationFirst'));
       return;
     }
     const ok = await lib.linkToEvaluation({
@@ -86,7 +88,7 @@ export function EvidenceReusePanel({ requirementId, frameworkId, evaluationId, o
       framework_id: frameworkId,
     });
     if (ok) {
-      akurisToast({ module: 'gap', tone: 'success', title: 'Evidência vinculada', description: evidence.nome });
+      akurisToast({ module: 'gap', tone: 'success', title: t('gapAnalysis.evidenceReuse.evidenceLinked'), description: evidence.nome });
       onLinked?.();
     }
   };
@@ -104,19 +106,19 @@ export function EvidenceReusePanel({ requirementId, frameworkId, evaluationId, o
       <CardContent className="p-4 space-y-3">
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-primary" strokeWidth={1.5} />
-          <h4 className="text-sm font-semibold">Reaproveitar evidência existente</h4>
+          <h4 className="text-sm font-semibold">{t('gapAnalysis.evidenceReuse.title')}</h4>
         </div>
         <p className="text-xs text-muted-foreground">
-          Use uma evidência da biblioteca da empresa em vez de fazer um novo upload. Recomendações automáticas indicam onde uma evidência já existente pode atender este requisito.
+          {t('gapAnalysis.evidenceReuse.description')}
         </p>
 
         <Tabs defaultValue="sugestoes">
           <TabsList className="grid grid-cols-2 w-full">
             <TabsTrigger value="sugestoes">
-              Recomendados{suggestions.length > 0 ? ` · ${suggestions.length}` : ''}
+              {t('gapAnalysis.evidenceReuse.recommendedTab')}{suggestions.length > 0 ? ` · ${suggestions.length}` : ''}
             </TabsTrigger>
             <TabsTrigger value="biblioteca">
-              Biblioteca · {lib.items.length}
+              {t('gapAnalysis.evidenceReuse.libraryTab')} · {lib.items.length}
             </TabsTrigger>
           </TabsList>
 
@@ -125,7 +127,7 @@ export function EvidenceReusePanel({ requirementId, frameworkId, evaluationId, o
               <div className="py-6 flex justify-center"><AkurisPulse size={32} /></div>
             ) : suggestions.length === 0 ? (
               <div className="rounded-md border border-dashed border-border/60 bg-background/40 px-4 py-6 text-center text-xs text-muted-foreground">
-                Nenhuma recomendação da IA para este requisito ainda. Faça upload de uma evidência ou rode "Cruzar com IA" na Biblioteca.
+                {t('gapAnalysis.evidenceReuse.noSuggestions')}
               </div>
             ) : (
               <ScrollArea className="max-h-64">
@@ -142,14 +144,14 @@ export function EvidenceReusePanel({ requirementId, frameworkId, evaluationId, o
                             <p className="mt-1 text-[11px] text-muted-foreground line-clamp-2">{s.ia_justificativa}</p>
                           )}
                         </div>
-                        {scoreBadge(s.ia_score)}
+                        {scoreBadge(s.ia_score, t)}
                       </div>
                       <div className="flex items-center gap-2">
                         <Button size="sm" variant="default" onClick={() => handleAcceptSuggestion(s.id)} className="gap-1">
-                          <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={1.5} /> Vincular
+                          <CheckCircle2 className="h-3.5 w-3.5" strokeWidth={1.5} /> {t('gapAnalysis.evidenceReuse.link')}
                         </Button>
                         <Button size="sm" variant="ghost" onClick={() => handleDismiss(s.id)} className="gap-1 text-muted-foreground">
-                          <X className="h-3.5 w-3.5" strokeWidth={1.5} /> Ignorar
+                          <X className="h-3.5 w-3.5" strokeWidth={1.5} /> {t('gapAnalysis.evidenceReuse.ignore')}
                         </Button>
                       </div>
                     </div>
@@ -165,7 +167,7 @@ export function EvidenceReusePanel({ requirementId, frameworkId, evaluationId, o
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar por nome, descrição ou tag..."
+                placeholder={t('gapAnalysis.evidenceReuse.searchPlaceholder')}
                 className="pl-8 h-9"
               />
             </div>
@@ -174,8 +176,8 @@ export function EvidenceReusePanel({ requirementId, frameworkId, evaluationId, o
             ) : filteredLibrary.length === 0 ? (
               <div className="rounded-md border border-dashed border-border/60 bg-background/40 px-4 py-6 text-center text-xs text-muted-foreground">
                 {lib.items.length === 0
-                  ? 'A biblioteca está vazia. Faça upload de uma evidência neste requisito para popular automaticamente.'
-                  : 'Nenhuma evidência encontrada para o termo buscado.'}
+                  ? t('gapAnalysis.evidenceReuse.emptyLibrary')
+                  : t('gapAnalysis.evidenceReuse.noResults')}
               </div>
             ) : (
               <ScrollArea className="max-h-64">
@@ -193,7 +195,7 @@ export function EvidenceReusePanel({ requirementId, frameworkId, evaluationId, o
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-medium truncate">{ev.nome}</span>
                           {(ev.total_links || 0) > 0 && (
-                            <Badge variant="secondary" className="text-[10px]">{ev.total_links} usos</Badge>
+                            <Badge variant="secondary" className="text-[10px]">{ev.total_links} {t('gapAnalysis.evidenceReuse.uses')}</Badge>
                           )}
                         </div>
                         {ev.descricao && (
@@ -204,10 +206,10 @@ export function EvidenceReusePanel({ requirementId, frameworkId, evaluationId, o
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button size="sm" variant="outline" className="gap-1" onClick={() => handleManualLink(ev)}>
-                              <Link2 className="h-3.5 w-3.5" strokeWidth={1.5} /> Vincular
+                              <Link2 className="h-3.5 w-3.5" strokeWidth={1.5} /> {t('gapAnalysis.evidenceReuse.link')}
                             </Button>
                           </TooltipTrigger>
-                          <TooltipContent>Vincular esta evidência ao requisito atual</TooltipContent>
+                          <TooltipContent>{t('gapAnalysis.evidenceReuse.linkTooltip')}</TooltipContent>
                         </Tooltip>
                       </TooltipProvider>
                     </div>

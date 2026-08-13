@@ -10,6 +10,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveNivelRiscoTone, resolveRiscoStatusTone } from '@/lib/status-tone';
 import { formatStatus } from '@/lib/text-utils';
 import { severityFromNivel } from '@/components/riscos/risk-utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 import {
   initials,
   isAcimaApetite,
@@ -43,6 +44,7 @@ interface Props {
 }
 
 export function RiskWatchlist({ riscos, totalCount, onOpenRisk, onSeeAll }: Props) {
+  const { t } = useLanguage();
   const watchlist = [...riscos]
     .filter(isAcimaApetite)
     .sort((a, b) => {
@@ -57,15 +59,15 @@ export function RiskWatchlist({ riscos, totalCount, onOpenRisk, onSeeAll }: Prop
       <div className="px-5 py-4 border-b border-border flex items-center justify-between gap-3">
         <div>
           <div className="text-[10.5px] font-semibold tracking-[1.2px] uppercase text-muted-foreground">
-            Watchlist
+            {t('riscosVisoes.overview.riskWatchlist.eyebrow')}
           </div>
           <div className="text-base font-semibold mt-0.5">
-            Riscos que precisam de decisão esta semana
+            {t('riscosVisoes.overview.riskWatchlist.titulo')}
           </div>
         </div>
         {onSeeAll && (
           <Button variant="ghost" size="sm" onClick={onSeeAll}>
-            Ver todos os {totalCount}
+            {t('riscosVisoes.overview.riskWatchlist.verTodos', { count: totalCount })}
             <ArrowRight className="h-3.5 w-3.5 ml-1" strokeWidth={1.5} />
           </Button>
         )}
@@ -73,7 +75,7 @@ export function RiskWatchlist({ riscos, totalCount, onOpenRisk, onSeeAll }: Prop
 
       {watchlist.length === 0 ? (
         <div className="py-10 text-center text-sm text-muted-foreground">
-          Nenhum risco acima do apetite no momento.
+          {t('riscosVisoes.overview.riskWatchlist.nenhumRisco')}
         </div>
       ) : (
         <ul>
@@ -104,7 +106,7 @@ export function RiskWatchlist({ riscos, totalCount, onOpenRisk, onSeeAll }: Prop
                   <div className="text-[11px] text-muted-foreground flex items-center gap-2 mt-0.5">
                     <span className="font-mono">{shortRiskId(r.id)}</span>
                     <span>·</span>
-                    <span className="truncate">{r.categoria?.nome || 'Sem categoria'}</span>
+                    <span className="truncate">{r.categoria?.nome || t('riscosVisoes.overview.riskWatchlist.semCategoria')}</span>
                     <span>·</span>
                     <span className="inline-flex items-center gap-1">
                       <Clock className="h-3 w-3" strokeWidth={1.5} />

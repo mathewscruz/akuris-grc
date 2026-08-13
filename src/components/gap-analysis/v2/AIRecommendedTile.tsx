@@ -3,8 +3,9 @@
  * Mostra selo FwMono, nome, overlap % (reuso com base atual) e CTA.
  */
 import { ArrowRight } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { FwMono } from './FwMono';
-import { deriveFwMono, getFwCategory, FW_CATEGORY_LABEL } from './fw-utils';
+import { deriveFwMono, getFwCategory } from './fw-utils';
 
 interface AIRecommendedTileProps {
   nome: string;
@@ -27,8 +28,15 @@ export function AIRecommendedTile({
   requirementCount,
   onClick,
 }: AIRecommendedTileProps) {
+  const { t } = useLanguage();
   const mono = deriveFwMono(nome);
   const cat = getFwCategory(tipo_framework);
+  const FW_CATEGORY_LABEL: Record<string, string> = {
+    seguranca: t('gapV2.fwCategory.seguranca'),
+    privacidade: t('gapV2.fwCategory.privacidade'),
+    governanca: t('gapV2.fwCategory.governanca'),
+    qualidade: t('gapV2.fwCategory.qualidade'),
+  };
 
   return (
     <button
@@ -49,13 +57,13 @@ export function AIRecommendedTile({
       </div>
 
       <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2 flex-1">
-        {descricao || 'Framework de conformidade organizacional.'}
+        {descricao || t('gapAnalysis.v2.aiRecommendedTile.defaultDescription')}
       </p>
 
       {/* Overlap row */}
       <div className="space-y-1.5 pt-2 border-t border-border/60">
         <div className="flex items-center justify-between text-[10px] font-sans uppercase tracking-wider text-muted-foreground">
-          <span>Reuso estimado</span>
+          <span>{t('gapAnalysis.v2.aiRecommendedTile.estimatedReuse')}</span>
           <span className="tabular-nums text-foreground font-semibold">{overlapPercent}%</span>
         </div>
         <div className="h-1 rounded-full bg-muted overflow-hidden">
@@ -68,10 +76,10 @@ export function AIRecommendedTile({
 
       <div className="flex items-center justify-between pt-1">
         <span className="text-[11px] text-muted-foreground tabular-nums">
-          {requirementCount} requisitos
+          {t('gapAnalysis.v2.aiRecommendedTile.requirementsCount', { count: requirementCount })}
         </span>
         <span className="inline-flex items-center gap-1 text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-          Iniciar
+          {t('gapAnalysis.v2.aiRecommendedTile.start')}
           <ArrowRight className="h-3 w-3" strokeWidth={1.5} />
         </span>
       </div>

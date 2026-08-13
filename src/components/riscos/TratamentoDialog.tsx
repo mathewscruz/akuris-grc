@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { Shield } from 'lucide-react';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import { TratamentoForm, type TratamentoFormHandle } from './TratamentoForm';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface TratamentoDialogProps {
   open: boolean;
@@ -25,6 +26,7 @@ export function TratamentoDialog({
   onSuccess,
   riscoData,
 }: TratamentoDialogProps) {
+  const { t } = useLanguage();
   const formRef = useRef<TratamentoFormHandle>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
@@ -38,17 +40,17 @@ export function TratamentoDialog({
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      title={tratamento ? 'Editar Tratamento' : 'Novo Tratamento'}
+      title={tratamento ? t('riscosDetalhe.tratamentoDialog.titleEdit') : t('riscosDetalhe.tratamentoDialog.titleNew')}
       description={
         tratamento
-          ? 'Atualize as informações do tratamento do risco.'
-          : 'Cadastre uma nova ação para mitigar, transferir, aceitar ou evitar o risco identificado.'
+          ? t('riscosDetalhe.tratamentoDialog.descEdit')
+          : t('riscosDetalhe.tratamentoDialog.descNew')
       }
       icon={Shield}
       size="lg"
       isSubmitting={isSubmitting}
       isDirty={isDirty}
-      submitLabel={tratamento ? 'Atualizar Tratamento' : 'Criar Tratamento'}
+      submitLabel={tratamento ? t('riscosDetalhe.tratamentoDialog.submitEdit') : t('riscosDetalhe.tratamentoDialog.submitNew')}
       onSubmit={() => formRef.current?.submit()}
     >
       <TratamentoForm

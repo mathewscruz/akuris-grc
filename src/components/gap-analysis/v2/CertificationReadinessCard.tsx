@@ -11,6 +11,7 @@
 import { ShieldCheck, ShieldAlert, ShieldQuestion, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Props {
   /** ISO-like (com SoA) usa "certificação"; demais usam "conformidade". */
@@ -70,7 +71,8 @@ export function CertificationReadinessCard({
   onViewBlockers,
   onGoToRemediation,
 }: Props) {
-  const alvo = certifiable ? 'certificação' : 'conformidade';
+  const { t } = useLanguage();
+  const alvo = certifiable ? t('gapAnalysis.v2.certificationReadiness.certification') : t('gapAnalysis.v2.certificationReadiness.compliance');
   const aplicaveis = Math.max(0, conforme + parcial + naoConforme);
 
   // Cobertura: quanto dos aplicáveis já foi avaliado. Veredito só é confiável
@@ -87,25 +89,40 @@ export function CertificationReadinessCard({
 
   const style = VERDICT_STYLE[verdict];
 
+  const partialLabel = parcial === 1
+    ? t('gapAnalysis.v2.certificationReadiness.partialPointSingular')
+    : t('gapAnalysis.v2.certificationReadiness.partialPointPlural');
+
   const headline: Record<Verdict, string> = {
-    incompleto: 'Avaliação incompleta',
-    nao_pronto: `Ainda não pronto para ${alvo}`,
-    quase: `Quase pronto para ${alvo}`,
-    pronto: `Pronto para a auditoria de ${alvo}`,
+    incompleto: t('gapAnalysis.v2.certificationReadiness.incompleteAssessment'),
+    nao_pronto: t('gapAnalysis.v2.certificationReadiness.notReadyFor', { target: alvo }),
+    quase: t('gapAnalysis.v2.certificationReadiness.almostReadyFor', { target: alvo }),
+    pronto: t('gapAnalysis.v2.certificationReadiness.readyForAuditOf', { target: alvo }),
   };
 
   const verdictTag: Record<Verdict, string> = {
-    incompleto: 'Cobertura incompleta',
-    nao_pronto: 'Com bloqueadores',
-    quase: 'Quase lá',
-    pronto: 'Sem bloqueadores',
+    incompleto: t('gapAnalysis.v2.certificationReadiness.incompleteCoverage'),
+    nao_pronto: t('gapAnalysis.v2.certificationReadiness.withBlockers'),
+    quase: t('gapAnalysis.v2.certificationReadiness.almostThere'),
+    pronto: t('gapAnalysis.v2.certificationReadiness.noBlockers'),
   };
 
+  const extra = parcial > 0
+    ? t('gapAnalysis.v2.certificationReadiness.detailNotReadyExtra', { count: parcial, label: partialLabel })
+    : '';
+
   const detail: Record<Verdict, string> = {
-    incompleto: `Apenas ${cobertura}% dos requisitos aplicáveis foram avaliados. Complete a avaliação para medir a prontidão com confiança.`,
-    nao_pronto: `${naoConforme} não conformidade${naoConforme === 1 ? '' : 's'} maior${naoConforme === 1 ? '' : 'es'} bloqueia${naoConforme === 1 ? '' : 'm'} a ${alvo}${parcial > 0 ? ` — e ${parcial} ${parcial === 1 ? 'ponto parcial' : 'pontos parciais'} a fechar` : ''}.`,
-    quase: `Nenhuma não conformidade maior. Feche ${parcial} ${parcial === 1 ? 'ponto parcial' : 'pontos parciais'} para atingir 100%.`,
-    pronto: `Todos os ${aplicaveis} requisitos aplicáveis estão conformes. Nenhum bloqueador para a ${alvo}.`,
+    incompleto: t('gapAnalysis.v2.certificationReadiness.detailIncomplete', { pct: cobertura }),
+    nao_pronto: t('gapAnalysis.v2.certificationReadiness.detailNotReady', {
+      count: naoConforme,
+      plural: naoConforme === 1 ? '' : 's',
+      pluralEs: naoConforme === 1 ? '' : 'es',
+      pluralM: naoConforme === 1 ? '' : 'm',
+      target: alvo,
+      extra,
+    }),
+    quase: t('gapAnalysis.v2.certificationReadiness.detailAlmost', { count: parcial, label: partialLabel }),
+    pronto: t('gapAnalysis.v2.certificationReadiness.detailReady', { count: aplicaveis, target: alvo }),
   };
 
   return (
@@ -125,7 +142,7 @@ export function CertificationReadinessCard({
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-[10px] font-sans uppercase tracking-wider text-muted-foreground">
-              Prontidão para {alvo}
+              {t('gapAnalysis.v2.certificationReadiness.readinessFor', { target: alvo })}
             </span>
             <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide', style.badge)}>
               {verdictTag[verdict]}
@@ -138,17 +155,17 @@ export function CertificationReadinessCard({
           <div className="mt-3 flex items-center gap-4 text-xs flex-wrap">
             <span className="inline-flex items-center gap-1.5">
               <span className="h-2 w-2 rounded-full bg-success" />
-              <span className="text-muted-foreground">Totalmente conformes</span>
+              <span className="text-muted-foreground">{t('gapAnalysis.v2.certificationReadiness.fullyCompliant')}</span>
               <span className="font-semibold tabular-nums text-foreground">{conforme} de {aplicaveis}</span>
             </span>
             <span className="inline-flex items-center gap-1.5">
               <span className="h-2 w-2 rounded-full bg-destructive" />
-              <span className="text-muted-foreground">Não conformidades</span>
+              <span className="text-muted-foreground">{t('gapAnalysis.v2.certificationReadiness.nonConformities')}</span>
               <span className="font-semibold tabular-nums text-foreground">{naoConforme}</span>
             </span>
             <span className="inline-flex items-center gap-1.5">
               <span className="h-2 w-2 rounded-full bg-warning" />
-              <span className="text-muted-foreground">Parciais</span>
+              <span className="text-muted-foreground">{t('gapAnalysis.v2.certificationReadiness.partials')}</span>
               <span className="font-semibold tabular-nums text-foreground">{parcial}</span>
             </span>
           </div>
@@ -158,13 +175,13 @@ export function CertificationReadinessCard({
             <div className="mt-4 flex flex-wrap gap-2">
               {naoConforme > 0 && onViewBlockers && (
                 <Button variant="outline" size="sm" onClick={onViewBlockers} className="gap-1.5">
-                  Ver não conformidades
+                  {t('gapAnalysis.v2.certificationReadiness.viewNonCompliant')}
                   <ArrowRight className="h-3.5 w-3.5" strokeWidth={1.5} />
                 </Button>
               )}
               {onGoToRemediation && (
                 <Button variant="ghost" size="sm" onClick={onGoToRemediation}>
-                  Plano de remediação
+                  {t('gapAnalysis.v2.certificationReadiness.remediationPlan')}
                 </Button>
               )}
             </div>

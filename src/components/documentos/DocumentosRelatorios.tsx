@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { FileBarChart, Download, Filter } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { formatDateOnly } from '@/lib/date-utils';
 import jsPDF from 'jspdf';
 import { loadAkurisLogo, addAkurisHeader, addAkurisFooter, addSectionTitle, drawTableHeader, formatLabel, AKURIS_COLORS } from '@/lib/pdf-utils';
@@ -35,9 +36,18 @@ interface DocumentosRelatoriosProps {
 export function DocumentosRelatorios({ documentos, categorias, open, onOpenChange }: DocumentosRelatoriosProps) {
   const [gerando, setGerando] = useState<string | null>(null);
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const exportCSV = (dados: Documento[], nomeArquivo: string) => {
-    const headers = ["Nome", "Tipo", "Classificação", "Status", "Versão", "Validade", "Data Criação"];
+    const headers = [
+      t('documentosExtras.relatorios.csvNome'),
+      t('documentosExtras.relatorios.csvTipo'),
+      t('documentosExtras.relatorios.csvClassificacao'),
+      t('documentosExtras.relatorios.csvStatus'),
+      t('documentosExtras.relatorios.csvVersao'),
+      t('documentosExtras.relatorios.csvValidade'),
+      t('documentosExtras.relatorios.csvDataCriacao'),
+    ];
     const rows = dados.map(doc => [
       doc.nome,
       formatLabel(doc.tipo),
@@ -75,12 +85,17 @@ export function DocumentosRelatorios({ documentos, categorias, open, onOpenChang
       doc.setFontSize(16);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(AKURIS_COLORS.text);
-      doc.text('Relatório Geral de Documentos', pageWidth / 2, y, { align: 'center' });
+      doc.text(t('documentosExtras.relatorios.pdfTituloRelatorioGeral'), pageWidth / 2, y, { align: 'center' });
       y += 6;
       doc.setFontSize(9);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(AKURIS_COLORS.textLight);
-      doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} | Total: ${documentos.length} documentos`, pageWidth / 2, y, { align: 'center' });
+      doc.text(
+        t('documentosExtras.relatorios.pdfGeradoEm', { data: new Date().toLocaleDateString('pt-BR'), total: String(documentos.length) }),
+        pageWidth / 2,
+        y,
+        { align: 'center' }
+      );
       y += 12;
 
       const ativos = documentos.filter(d => d.status === 'ativo').length;
@@ -90,20 +105,20 @@ export function DocumentosRelatorios({ documentos, categorias, open, onOpenChang
         return new Date(d.data_vencimento) < new Date();
       }).length;
 
-      y = addSectionTitle(doc, 'Resumo por Status', y, margin);
+      y = addSectionTitle(doc, t('documentosExtras.relatorios.pdfResumoStatus'), y, margin);
       doc.setFontSize(10);
       doc.setTextColor(AKURIS_COLORS.text);
-      doc.text(`• Ativos: ${ativos}`, margin + 8, y); y += 6;
-      doc.text(`• Inativos: ${inativos}`, margin + 8, y); y += 6;
-      doc.text(`• Vencidos: ${vencidos}`, margin + 8, y); y += 10;
+      doc.text(t('documentosExtras.relatorios.pdfAtivos', { qtd: String(ativos) }), margin + 8, y); y += 6;
+      doc.text(t('documentosExtras.relatorios.pdfInativos', { qtd: String(inativos) }), margin + 8, y); y += 6;
+      doc.text(t('documentosExtras.relatorios.pdfVencidos', { qtd: String(vencidos) }), margin + 8, y); y += 10;
 
-      y = addSectionTitle(doc, 'Lista de Documentos', y, margin);
+      y = addSectionTitle(doc, t('documentosExtras.relatorios.pdfListaDocumentos'), y, margin);
 
       drawTableHeader(doc, [
-        { text: 'Nome', x: margin + 2 },
-        { text: 'Tipo', x: margin + 82 },
-        { text: 'Status', x: margin + 118 },
-        { text: 'Validade', x: margin + 148 },
+        { text: t('documentosExtras.relatorios.colunaNome'), x: margin + 2 },
+        { text: t('documentosExtras.relatorios.colunaTipo'), x: margin + 82 },
+        { text: t('documentosExtras.relatorios.colunaStatus'), x: margin + 118 },
+        { text: t('documentosExtras.relatorios.colunaValidade'), x: margin + 148 },
       ], y, margin, contentWidth);
       y += 5;
 
@@ -130,9 +145,9 @@ export function DocumentosRelatorios({ documentos, categorias, open, onOpenChang
 
       addAkurisFooter(doc);
       doc.save(`relatorio_geral_documentos_${new Date().toISOString().split("T")[0]}.pdf`);
-      toast({ title: "Relatório gerado", description: "O PDF foi baixado com sucesso." });
+      toast({ title: t('documentosExtras.relatorios.relatorioGerado'), description: t('documentosExtras.relatorios.pdfBaixado') });
     } catch {
-      toast({ title: "Erro", description: "Erro ao gerar relatório.", variant: "destructive" });
+      toast({ title: t('documentosExtras.relatorios.erroTitulo'), description: t('documentosExtras.relatorios.erroGerar'), variant: "destructive" });
     } finally {
       setGerando(null);
     }
@@ -145,11 +160,11 @@ export function DocumentosRelatorios({ documentos, categorias, open, onOpenChang
       const vencidos = documentos.filter(d => d.data_vencimento && new Date(d.data_vencimento) < hoje);
       exportCSV(vencidos, 'documentos_vencidos');
       toast({
-        title: "Relatório gerado",
-        description: `${vencidos.length} documento(s) vencido(s) exportado(s) em CSV.`,
+        title: t('documentosExtras.relatorios.relatorioGerado'),
+        description: t('documentosExtras.relatorios.vencidosExportados', { qtd: String(vencidos.length) }),
       });
     } catch {
-      toast({ title: "Erro", description: "Erro ao gerar relatório.", variant: "destructive" });
+      toast({ title: t('documentosExtras.relatorios.erroTitulo'), description: t('documentosExtras.relatorios.erroGerar'), variant: "destructive" });
     } finally {
       setGerando(null);
     }
@@ -160,11 +175,11 @@ export function DocumentosRelatorios({ documentos, categorias, open, onOpenChang
     try {
       exportCSV(documentos, 'documentos_por_categoria');
       toast({
-        title: "Relatório gerado",
-        description: `${documentos.length} documento(s) exportado(s) em CSV.`,
+        title: t('documentosExtras.relatorios.relatorioGerado'),
+        description: t('documentosExtras.relatorios.exportados', { qtd: String(documentos.length) }),
       });
     } catch {
-      toast({ title: "Erro", description: "Erro ao gerar relatório.", variant: "destructive" });
+      toast({ title: t('documentosExtras.relatorios.erroTitulo'), description: t('documentosExtras.relatorios.erroGerar'), variant: "destructive" });
     } finally {
       setGerando(null);
     }
@@ -174,9 +189,9 @@ export function DocumentosRelatorios({ documentos, categorias, open, onOpenChang
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl">
         <DialogHeader>
-          <DialogTitle>Relatórios de Documentos</DialogTitle>
+          <DialogTitle>{t('documentosExtras.relatorios.titulo')}</DialogTitle>
           <DialogDescription>
-            Gere relatórios específicos dos documentos do sistema
+            {t('documentosExtras.relatorios.descricao')}
           </DialogDescription>
         </DialogHeader>
         
@@ -186,16 +201,16 @@ export function DocumentosRelatorios({ documentos, categorias, open, onOpenChang
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileBarChart className="h-5 w-5" />
-                  Relatório Geral
+                  {t('documentosExtras.relatorios.relatorioGeralTitulo')}
                 </CardTitle>
                 <CardDescription>
-                  Visão geral de todos os documentos (PDF)
+                  {t('documentosExtras.relatorios.relatorioGeralDesc')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <Button className="w-full" onClick={gerarRelatorioGeral} disabled={gerando === 'geral'}>
                   <Download className="h-4 w-4 mr-2" />
-                  {gerando === 'geral' ? 'Gerando...' : 'Gerar PDF'}
+                  {gerando === 'geral' ? t('documentosExtras.relatorios.gerando') : t('documentosExtras.relatorios.gerarPdf')}
                 </Button>
               </CardContent>
             </Card>
@@ -204,16 +219,16 @@ export function DocumentosRelatorios({ documentos, categorias, open, onOpenChang
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Filter className="h-5 w-5" />
-                  Documentos Vencidos
+                  {t('documentosExtras.relatorios.docsVencidosTitulo')}
                 </CardTitle>
                 <CardDescription>
-                  Relatório de documentos vencidos (CSV)
+                  {t('documentosExtras.relatorios.docsVencidosDesc')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <Button className="w-full" onClick={gerarRelatorioVencidos} disabled={gerando === 'vencidos'}>
                   <Download className="h-4 w-4 mr-2" />
-                  {gerando === 'vencidos' ? 'Gerando...' : 'Exportar CSV'}
+                  {gerando === 'vencidos' ? t('documentosExtras.relatorios.gerando') : t('documentosExtras.relatorios.exportarCsv')}
                 </Button>
               </CardContent>
             </Card>
@@ -222,16 +237,16 @@ export function DocumentosRelatorios({ documentos, categorias, open, onOpenChang
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileBarChart className="h-5 w-5" />
-                  Por Categoria
+                  {t('documentosExtras.relatorios.porCategoriaTitulo')}
                 </CardTitle>
                 <CardDescription>
-                  Relatório agrupado por categoria (CSV)
+                  {t('documentosExtras.relatorios.porCategoriaDesc')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <Button className="w-full" onClick={gerarRelatorioPorCategoria} disabled={gerando === 'categoria'}>
                   <Download className="h-4 w-4 mr-2" />
-                  {gerando === 'categoria' ? 'Gerando...' : 'Exportar CSV'}
+                  {gerando === 'categoria' ? t('documentosExtras.relatorios.gerando') : t('documentosExtras.relatorios.exportarCsv')}
                 </Button>
               </CardContent>
             </Card>

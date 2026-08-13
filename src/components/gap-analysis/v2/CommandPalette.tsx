@@ -9,6 +9,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
 import { useRequirementDrawer } from './RequirementDrawerProvider';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface RequirementRow {
   id: string;
@@ -25,6 +26,7 @@ interface CommandPaletteProps {
 }
 
 export function CommandPalette({ frameworkId, empresaId, onSaved }: CommandPaletteProps) {
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [requirements, setRequirements] = useState<RequirementRow[]>([]);
   const [evalMap, setEvalMap] = useState<Record<string, string>>({});
@@ -80,7 +82,7 @@ export function CommandPalette({ frameworkId, empresaId, onSaved }: CommandPalet
   const grouped = useMemo(() => {
     const g: Record<string, RequirementRow[]> = {};
     requirements.forEach((r) => {
-      const cat = r.categoria || 'Outros';
+      const cat = r.categoria || t('gapAnalysis.v2.commandPalette.otherCategory');
       if (!g[cat]) g[cat] = [];
       g[cat].push(r);
     });
@@ -99,9 +101,9 @@ export function CommandPalette({ frameworkId, empresaId, onSaved }: CommandPalet
 
   return (
     <CommandDialog open={open} onOpenChange={setOpen}>
-      <CommandInput placeholder="Buscar requisito por código, título ou categoria..." />
+      <CommandInput placeholder={t('gapAnalysis.v2.commandPalette.searchPlaceholder')} />
       <CommandList>
-        <CommandEmpty>Nenhum requisito encontrado.</CommandEmpty>
+        <CommandEmpty>{t('gapAnalysis.v2.commandPalette.noResults')}</CommandEmpty>
         {Object.entries(grouped).map(([cat, items]) => (
           <CommandGroup key={cat} heading={cat}>
             {items.map((r) => (

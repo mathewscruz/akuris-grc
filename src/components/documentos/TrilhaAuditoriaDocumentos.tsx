@@ -13,6 +13,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { useLanguage } from '@/contexts/LanguageContext';
 interface TrilhaAuditoriaProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -40,6 +41,7 @@ export function TrilhaAuditoriaDocumentos({
   documentoId, 
   documentoNome 
 }: TrilhaAuditoriaProps) {
+  const { t } = useLanguage();
   const { data: auditLogs, isLoading } = useQuery({
     queryKey: ['documento-audit-logs', documentoId],
     queryFn: async () => {
@@ -96,31 +98,31 @@ export function TrilhaAuditoriaDocumentos({
   const getActionBadge = (action: string) => {
     switch (action) {
       case 'INSERT':
-        return <StatusBadge size="sm" tone="success">Criado</StatusBadge>;
+        return <StatusBadge size="sm" tone="success">{t('documentosExtras.auditoria.criado')}</StatusBadge>;
       case 'UPDATE':
-        return <StatusBadge size="sm" tone="info">Atualizado</StatusBadge>;
+        return <StatusBadge size="sm" tone="info">{t('documentosExtras.auditoria.atualizado')}</StatusBadge>;
       case 'DELETE':
-        return <StatusBadge size="sm" tone="destructive">Excluído</StatusBadge>;
+        return <StatusBadge size="sm" tone="destructive">{t('documentosExtras.auditoria.excluido')}</StatusBadge>;
       default:
         return <StatusBadge size="sm" tone="neutral" variant="outline">{action}</StatusBadge>;
     }
   };
 
   const formatChangedFields = (fields?: string[]) => {
-    if (!fields || fields.length === 0) return 'N/A';
+    if (!fields || fields.length === 0) return t('documentosExtras.auditoria.naoDisponivel');
     
     const fieldTranslations: Record<string, string> = {
-      'nome': 'Nome',
-      'descricao': 'Descrição',
-      'tipo': 'Tipo',
-      'categoria': 'Categoria',
-      'status': 'Status',
-      'confidencial': 'Confidencial',
-      'data_vencimento': 'Data de Vencimento',
-      'tags': 'Tags',
-      'arquivo_url': 'Arquivo',
-      'aprovado_por': 'Aprovado Por',
-      'data_aprovacao': 'Data de Aprovação'
+      'nome': t('documentosExtras.auditoria.campoNome'),
+      'descricao': t('documentosExtras.auditoria.campoDescricao'),
+      'tipo': t('documentosExtras.auditoria.campoTipo'),
+      'categoria': t('documentosExtras.auditoria.campoCategoria'),
+      'status': t('documentosExtras.auditoria.campoStatus'),
+      'confidencial': t('documentosExtras.auditoria.campoConfidencial'),
+      'data_vencimento': t('documentosExtras.auditoria.campoDataVencimento'),
+      'tags': t('documentosExtras.auditoria.campoTags'),
+      'arquivo_url': t('documentosExtras.auditoria.campoArquivoUrl'),
+      'aprovado_por': t('documentosExtras.auditoria.campoAprovadoPor'),
+      'data_aprovacao': t('documentosExtras.auditoria.campoDataAprovacao')
     };
 
     return fields
@@ -129,7 +131,7 @@ export function TrilhaAuditoriaDocumentos({
   };
 
   const formatJsonData = (data: any) => {
-    if (!data) return 'N/A';
+    if (!data) return t('documentosExtras.auditoria.naoDisponivel');
     
     try {
       return JSON.stringify(data, null, 2);
@@ -142,8 +144,8 @@ export function TrilhaAuditoriaDocumentos({
     if (oldVal === newVal) return null;
     
     return {
-      old: oldVal || 'N/A',
-      new: newVal || 'N/A'
+      old: oldVal || t('documentosExtras.auditoria.naoDisponivel'),
+      new: newVal || t('documentosExtras.auditoria.naoDisponivel')
     };
   };
 
@@ -159,11 +161,11 @@ export function TrilhaAuditoriaDocumentos({
           <h5 className="font-medium mb-2 capitalize">{field.replace('_', ' ')}</h5>
           <div className="grid grid-cols-2 gap-2">
             <div className="bg-red-50 p-2 rounded">
-              <p className="text-xs font-medium text-red-800">Anterior</p>
+              <p className="text-xs font-medium text-red-800">{t('documentosExtras.auditoria.anterior')}</p>
               <p className="text-sm text-red-700">{String(diff.old)}</p>
             </div>
             <div className="bg-green-50 p-2 rounded">
-              <p className="text-xs font-medium text-green-800">Novo</p>
+              <p className="text-xs font-medium text-green-800">{t('documentosExtras.auditoria.novo')}</p>
               <p className="text-sm text-green-700">{String(diff.new)}</p>
             </div>
           </div>
@@ -192,7 +194,7 @@ export function TrilhaAuditoriaDocumentos({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <History className="h-5 w-5" />
-            Trilha de Auditoria - {documentoNome}
+            {t('documentosExtras.auditoria.titulo').replace('{nome}', documentoNome)}
           </DialogTitle>
         </DialogHeader>
 
@@ -200,7 +202,7 @@ export function TrilhaAuditoriaDocumentos({
           {!auditLogs || auditLogs.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <History className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              Nenhum histórico de alterações encontrado.
+              {t('documentosExtras.auditoria.nenhumHistorico')}
             </div>
           ) : (
             <ScrollArea className="h-[600px]">
@@ -213,9 +215,9 @@ export function TrilhaAuditoriaDocumentos({
                           <div className="flex items-center gap-2">
                             {getActionIcon(log.action)}
                             <CardTitle className="text-lg">
-                              Documento {log.action === 'INSERT' ? 'Criado' : 
-                                       log.action === 'UPDATE' ? 'Atualizado' : 
-                                       'Excluído'}
+                              {log.action === 'INSERT' ? t('documentosExtras.auditoria.documentoCriado') : 
+                                       log.action === 'UPDATE' ? t('documentosExtras.auditoria.documentoAtualizado') : 
+                                       t('documentosExtras.auditoria.documentoExcluido')}
                             </CardTitle>
                             {getActionBadge(log.action)}
                           </div>
@@ -236,29 +238,29 @@ export function TrilhaAuditoriaDocumentos({
                     <CardContent>
                       <Tabs defaultValue="resumo">
                         <TabsList>
-                          <TabsTrigger value="resumo">Resumo</TabsTrigger>
+                          <TabsTrigger value="resumo">{t('documentosExtras.auditoria.resumo')}</TabsTrigger>
                           {log.action === 'UPDATE' && (
-                            <TabsTrigger value="comparacao">Comparação</TabsTrigger>
+                            <TabsTrigger value="comparacao">{t('documentosExtras.auditoria.comparacao')}</TabsTrigger>
                           )}
                           {log.old_values && (
-                            <TabsTrigger value="antes">Dados Anteriores</TabsTrigger>
+                            <TabsTrigger value="antes">{t('documentosExtras.auditoria.dadosAnteriores')}</TabsTrigger>
                           )}
                           {log.new_values && (
-                            <TabsTrigger value="depois">Dados Novos</TabsTrigger>
+                            <TabsTrigger value="depois">{t('documentosExtras.auditoria.dadosNovos')}</TabsTrigger>
                           )}
                         </TabsList>
 
                         <TabsContent value="resumo" className="space-y-3">
                           <div className="grid grid-cols-1 gap-4 text-sm">
                             <div>
-                              <strong>Campos Alterados:</strong>
+                              <strong>{t('documentosExtras.auditoria.camposAlterados')}</strong>
                               <p className="text-muted-foreground">
                                 {formatChangedFields(log.changed_fields)}
                               </p>
                             </div>
                             {log.profiles && (
                               <div>
-                                <strong>Usuário:</strong>
+                                <strong>{t('documentosExtras.auditoria.usuario')}</strong>
                                 <p className="text-muted-foreground">
                                   {log.profiles.nome} ({log.profiles.email})
                                 </p>
@@ -278,7 +280,7 @@ export function TrilhaAuditoriaDocumentos({
                         {log.old_values && (
                           <TabsContent value="antes">
                             <div className="bg-red-50 p-4 rounded-md">
-                              <h4 className="font-medium text-red-800 mb-2">Dados Anteriores</h4>
+                              <h4 className="font-medium text-red-800 mb-2">{t('documentosExtras.auditoria.dadosAnteriores')}</h4>
                               <pre className="text-xs text-red-700 overflow-x-auto whitespace-pre-wrap">
                                 {formatJsonData(log.old_values)}
                               </pre>
@@ -289,7 +291,7 @@ export function TrilhaAuditoriaDocumentos({
                         {log.new_values && (
                           <TabsContent value="depois">
                             <div className="bg-green-50 p-4 rounded-md">
-                              <h4 className="font-medium text-green-800 mb-2">Dados Novos</h4>
+                              <h4 className="font-medium text-green-800 mb-2">{t('documentosExtras.auditoria.dadosNovos')}</h4>
                               <pre className="text-xs text-green-700 overflow-x-auto whitespace-pre-wrap">
                                 {formatJsonData(log.new_values)}
                               </pre>

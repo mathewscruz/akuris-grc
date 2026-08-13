@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ChevronDown, ShieldCheck, RefreshCw } from 'lucide-react';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export interface AdherenceResult {
   score: number;
@@ -33,6 +34,7 @@ const STATUS_TONES: Record<string, string> = {
 };
 
 export const DocGenAdherencePanel: React.FC<Props> = ({ result, loading, frameworkName, onRun }) => {
+  const { t } = useLanguage();
   if (!frameworkName) return null;
 
   const scoreColor =
@@ -46,7 +48,7 @@ export const DocGenAdherencePanel: React.FC<Props> = ({ result, loading, framewo
       <div className="flex items-center justify-between p-3 gap-2">
         <CollapsibleTrigger className="flex items-center gap-2 group flex-1 text-left">
           <ShieldCheck className="h-4 w-4 text-primary" strokeWidth={1.5} />
-          <span className="font-medium text-sm">Aderência ao framework</span>
+          <span className="font-medium text-sm">{t('docgen.adherence.title')}</span>
           <Badge variant="outline" className="text-[10px]">{frameworkName}</Badge>
           {result && (
             <span className={`ml-2 text-sm font-semibold ${scoreColor}`}>{Math.round(result.score)}%</span>
@@ -55,13 +57,13 @@ export const DocGenAdherencePanel: React.FC<Props> = ({ result, loading, framewo
         </CollapsibleTrigger>
         <Button size="sm" variant="ghost" onClick={onRun} disabled={loading} className="gap-1 shrink-0">
           {loading ? <AkurisPulse size={14} /> : <RefreshCw className="h-3.5 w-3.5" strokeWidth={1.5} />}
-          {result ? 'Reavaliar' : 'Avaliar'}
+          {result ? t('docgen.adherence.reevaluate') : t('docgen.adherence.evaluate')}
         </Button>
       </div>
 
       <CollapsibleContent className="px-3 pb-3 space-y-3 text-sm">
         {loading && !result && (
-          <div className="text-xs text-muted-foreground">Analisando documento contra os requisitos…</div>
+          <div className="text-xs text-muted-foreground">{t('docgen.adherence.analyzing')}</div>
         )}
 
         {result && (
@@ -70,7 +72,7 @@ export const DocGenAdherencePanel: React.FC<Props> = ({ result, loading, framewo
 
             {result.secoes?.length > 0 && (
               <div className="space-y-1.5">
-                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Por seção</div>
+                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{t('docgen.adherence.bySection')}</div>
                 {result.secoes.map((s, i) => (
                   <div key={i} className="flex items-start gap-2 text-xs">
                     <Badge variant="outline" className={`shrink-0 capitalize ${STATUS_TONES[s.status] || ''}`}>
@@ -80,11 +82,11 @@ export const DocGenAdherencePanel: React.FC<Props> = ({ result, loading, framewo
                       <div className="font-medium text-foreground">{s.section_name}</div>
                       {s.requisitos_cobertos?.length > 0 && (
                         <div className="text-muted-foreground">
-                          Cobre: {s.requisitos_cobertos.slice(0, 6).join(', ')}{s.requisitos_cobertos.length > 6 ? '…' : ''}
+                          {t('docgen.adherence.coverPrefix')}: {s.requisitos_cobertos.slice(0, 6).join(', ')}{s.requisitos_cobertos.length > 6 ? '…' : ''}
                         </div>
                       )}
                       {s.gaps?.length > 0 && (
-                        <div className="text-rose-500/90">Gap: {s.gaps[0]}</div>
+                        <div className="text-rose-500/90">{t('docgen.adherence.gapPrefix')}: {s.gaps[0]}</div>
                       )}
                     </div>
                   </div>
@@ -95,7 +97,7 @@ export const DocGenAdherencePanel: React.FC<Props> = ({ result, loading, framewo
             {result.requisitos_nao_cobertos?.length > 0 && (
               <div className="pt-2 border-t border-border/50">
                 <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1">
-                  Requisitos não cobertos ({result.requisitos_nao_cobertos.length})
+                  {t('docgen.adherence.uncoveredRequirements', { count: result.requisitos_nao_cobertos.length })}
                 </div>
                 <div className="flex flex-wrap gap-1">
                   {result.requisitos_nao_cobertos.slice(0, 20).map((c, i) => (

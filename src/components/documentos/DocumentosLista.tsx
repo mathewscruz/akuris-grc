@@ -31,6 +31,7 @@ import {
   resolveTipoDocumentoTone,
 } from '@/lib/status-tone';
 import { formatDateOnly } from '@/lib/date-utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 /** Campos anuláveis espelham o schema do Supabase (colunas sem NOT NULL). */
 export interface DocumentoListaItem {
@@ -79,7 +80,7 @@ function getTipoBadge(tipo: string) {
   );
 }
 
-function getVencimentoBadge(dataVencimento?: string | null) {
+function getVencimentoBadge(dataVencimento: string | null | undefined, vencidoLabel: string) {
   if (!dataVencimento) return null;
 
   const hoje = new Date();
@@ -90,7 +91,7 @@ function getVencimentoBadge(dataVencimento?: string | null) {
   if (diffDays < 0) {
     return (
       <StatusBadge size="sm" {...resolveRevisaoTone(diffDays)} className="ml-2">
-        Vencido
+        {vencidoLabel}
       </StatusBadge>
     );
   }
@@ -130,10 +131,11 @@ export function DocumentoAcoesMenu<T extends DocumentoListaItem>({
   onAuditoria,
   onExcluir,
 }: DocumentoAcoesMenuProps<T>) {
+  const { t } = useLanguage();
   const trigger = (
     <DropdownMenuTrigger asChild>
       <Button variant="ghost" className="h-8 w-8 p-0">
-        <span className="sr-only">{`Ações do documento ${documento.nome}`}</span>
+        <span className="sr-only">{t('documentos.lista.acoesDocumento', { nome: documento.nome })}</span>
         <MoreHorizontal className="h-4 w-4" />
       </Button>
     </DropdownMenuTrigger>
@@ -147,7 +149,7 @@ export function DocumentoAcoesMenu<T extends DocumentoListaItem>({
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>{trigger}</TooltipTrigger>
-            <TooltipContent>Ações</TooltipContent>
+            <TooltipContent>{t('documentos.lista.acoes')}</TooltipContent>
           </Tooltip>
         </TooltipProvider>
       ) : (
@@ -156,46 +158,46 @@ export function DocumentoAcoesMenu<T extends DocumentoListaItem>({
       <DropdownMenuContent align="end">
         <DropdownMenuItem onClick={() => onPreview(documento)}>
           <Eye className="mr-2 h-4 w-4" />
-          Preview
+          {t('documentos.lista.preview')}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => onEditar(documento)}>
           <Edit className="mr-2 h-4 w-4" />
-          Editar
+          {t('documentos.lista.editar')}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => onVinculacoes(documento)}>
           <Eye className="mr-2 h-4 w-4" />
-          Vinculações
+          {t('documentos.lista.vinculacoes')}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => onComentarios(documento)}>
           <MessageSquare className="mr-2 h-4 w-4" />
-          Comentários
+          {t('documentos.lista.comentarios')}
         </DropdownMenuItem>
         {documento.requer_aprovacao && (
           <DropdownMenuItem onClick={() => onAprovacao(documento)}>
             <CheckCircle className="mr-2 h-4 w-4" />
-            Aprovação
+            {t('documentos.lista.aprovacao')}
           </DropdownMenuItem>
         )}
         {podeRenovar && (
           <DropdownMenuItem onClick={() => onRenovar(documento)}>
             <RefreshCw className="mr-2 h-4 w-4" />
-            Renovar Documento
+            {t('documentos.lista.renovarDocumento')}
           </DropdownMenuItem>
         )}
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => onHistorico(documento)}>
           <History className="mr-2 h-4 w-4" />
-          Histórico de Versões
+          {t('documentos.lista.historicoVersoes')}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => onAuditoria(documento)}>
           <Activity className="mr-2 h-4 w-4" />
-          Trilha de Auditoria
+          {t('documentos.lista.trilhaAuditoria')}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => onExcluir(documento)} className="text-red-600">
           <Trash2 className="mr-2 h-4 w-4" />
-          Excluir
+          {t('documentos.lista.excluir')}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -225,6 +227,7 @@ export function DocumentosLista<T extends DocumentoListaItem>({
   podeRenovar,
   ...acoes
 }: DocumentosListaProps<T>) {
+  const { t } = useLanguage();
   const vazio = documentos.length === 0;
 
   return (
@@ -257,18 +260,18 @@ export function DocumentosLista<T extends DocumentoListaItem>({
                 </div>
 
                 <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3">
-                  <CampoCard label="Status">
+                  <CampoCard label={t('documentos.lista.status')}>
                     <StatusBadge size="sm" {...resolveItemStatusTone(documento.status)}>
                       {formatStatus(documento.status)}
                     </StatusBadge>
                   </CampoCard>
-                  <CampoCard label="Validade">
+                  <CampoCard label={t('documentos.lista.validade')}>
                     <span className="whitespace-nowrap">
                       {formatDateOnly(documento.data_vencimento)}
                     </span>
-                    {getVencimentoBadge(documento.data_vencimento)}
+                    {getVencimentoBadge(documento.data_vencimento, t('documentos.lista.vencido'))}
                   </CampoCard>
-                  <CampoCard label="Classificação">
+                  <CampoCard label={t('documentos.lista.classificacao')}>
                     {/* Confidencial mantém a saliência do ícone usada na tabela */}
                     <StatusBadge
                       size="sm"
@@ -282,7 +285,7 @@ export function DocumentosLista<T extends DocumentoListaItem>({
                       {capitalizeText(documento.classificacao || 'interna')}
                     </StatusBadge>
                   </CampoCard>
-                  <CampoCard label="Versão">
+                  <CampoCard label={t('documentos.lista.versao')}>
                     <span>{formatVersao(documento.versao)}</span>
                   </CampoCard>
                 </dl>
@@ -297,13 +300,13 @@ export function DocumentosLista<T extends DocumentoListaItem>({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Nome</TableHead>
-              <TableHead>Tipo</TableHead>
-              <TableHead>Classificação</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Versão</TableHead>
-              <TableHead>Validade</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
+              <TableHead>{t('documentos.lista.nome')}</TableHead>
+              <TableHead>{t('documentos.lista.tipo')}</TableHead>
+              <TableHead>{t('documentos.lista.classificacao')}</TableHead>
+              <TableHead>{t('documentos.lista.status')}</TableHead>
+              <TableHead>{t('documentos.lista.versao')}</TableHead>
+              <TableHead>{t('documentos.lista.validade')}</TableHead>
+              <TableHead className="text-right">{t('documentos.lista.acoes')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -327,7 +330,7 @@ export function DocumentosLista<T extends DocumentoListaItem>({
                       {documento.classificacao === 'confidencial' && (
                         <Badge variant="destructive" className="text-xs">
                           <Shield className="h-3 w-3 mr-1" />
-                          Confidencial
+                          {t('documentos.lista.confidencial')}
                         </Badge>
                       )}
                     </div>
@@ -350,7 +353,7 @@ export function DocumentosLista<T extends DocumentoListaItem>({
                   <TableCell>
                     <div className="flex items-center whitespace-nowrap">
                       {formatDateOnly(documento.data_vencimento)}
-                      {getVencimentoBadge(documento.data_vencimento)}
+                      {getVencimentoBadge(documento.data_vencimento, t('documentos.lista.vencido'))}
                     </div>
                   </TableCell>
                   <TableCell className="text-right">

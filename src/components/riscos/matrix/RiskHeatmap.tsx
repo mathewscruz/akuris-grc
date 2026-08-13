@@ -8,9 +8,7 @@ import { useMemo } from 'react';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { severityFromScore, shortRiskId, toScaleNumber, type Severity } from '@/components/riscos/risk-utils';
-
-const PROB_LABELS = ['Raro', 'Improvável', 'Possível', 'Provável', 'Quase certo'];
-const IMP_LABELS = ['Insignif.', 'Menor', 'Moderado', 'Maior', 'Catastróf.'];
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export type HeatmapMode = 'inerente' | 'residual';
 
@@ -59,6 +57,11 @@ const SEV_BADGE: Record<Severity, string> = {
 };
 
 export function RiskHeatmap({ riscos, selected, onSelectCell, onClearSelection, onOpenRisk, mode = 'inerente', onModeChange }: Props) {
+  const { t } = useLanguage();
+
+  const PROB_LABELS = [1, 2, 3, 4, 5].map((n) => t(`riscosVisoes.matrix.riskHeatmap.probLabels.p${n}`));
+  const IMP_LABELS = [1, 2, 3, 4, 5].map((n) => t(`riscosVisoes.matrix.riskHeatmap.impLabels.i${n}`));
+
   // Quantos riscos não têm avaliação residual (não aparecem no mapa residual).
   const semResidual = useMemo(
     () =>
@@ -89,10 +92,10 @@ export function RiskHeatmap({ riscos, selected, onSelectCell, onClearSelection, 
   const imps = [1, 2, 3, 4, 5];
 
   const legend: { sev: Severity; label: string; cls: string }[] = [
-    { sev: 'critico', label: 'Crítico', cls: 'bg-destructive' },
-    { sev: 'alto', label: 'Alto', cls: 'bg-warning' },
-    { sev: 'medio', label: 'Médio', cls: 'bg-warning/60' },
-    { sev: 'baixo', label: 'Baixo', cls: 'bg-success' },
+    { sev: 'critico', label: t('riscosVisoes.matrix.riskHeatmap.legenda.critico'), cls: 'bg-destructive' },
+    { sev: 'alto', label: t('riscosVisoes.matrix.riskHeatmap.legenda.alto'), cls: 'bg-warning' },
+    { sev: 'medio', label: t('riscosVisoes.matrix.riskHeatmap.legenda.medio'), cls: 'bg-warning/60' },
+    { sev: 'baixo', label: t('riscosVisoes.matrix.riskHeatmap.legenda.baixo'), cls: 'bg-success' },
   ];
 
   return (
@@ -100,13 +103,13 @@ export function RiskHeatmap({ riscos, selected, onSelectCell, onClearSelection, 
       <div className="flex items-start justify-between gap-4 mb-5">
         <div>
           <div className="text-[10.5px] font-semibold tracking-[1.2px] uppercase text-muted-foreground">
-            Probabilidade × Impacto
+            {t('riscosVisoes.matrix.riskHeatmap.eyebrow')}
           </div>
           <div className="text-base font-semibold mt-1">
-            Mapa de calor
+            {t('riscosVisoes.matrix.riskHeatmap.titulo')}
             <span className="text-muted-foreground font-normal">
               {' · '}
-              {mode === 'residual' ? 'risco residual (após tratamento)' : 'risco inerente (antes dos controles)'}
+              {mode === 'residual' ? t('riscosVisoes.matrix.riskHeatmap.residual') : t('riscosVisoes.matrix.riskHeatmap.inerente')}
             </span>
           </div>
         </div>
@@ -119,8 +122,8 @@ export function RiskHeatmap({ riscos, selected, onSelectCell, onClearSelection, 
                 type="button"
                 onClick={onClearSelection}
                 disabled={!selected}
-                aria-label="Limpar seleção da célula"
-                title={selected ? 'Limpar seleção da célula' : 'Nenhuma célula selecionada'}
+                aria-label={t('riscosVisoes.matrix.riskHeatmap.limparSelecao')}
+                title={selected ? t('riscosVisoes.matrix.riskHeatmap.limparSelecao') : t('riscosVisoes.matrix.riskHeatmap.nenhumaCelulaSelecionada')}
                 className={cn(
                   'inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors',
                   'text-muted-foreground hover:text-foreground hover:bg-muted/60',
@@ -128,7 +131,7 @@ export function RiskHeatmap({ riscos, selected, onSelectCell, onClearSelection, 
                 )}
               >
                 <X className="h-3 w-3" strokeWidth={2} />
-                Limpar seleção
+                {t('riscosVisoes.matrix.riskHeatmap.limparSelecao')}
               </button>
             )}
             {/* Toggle Inerente / Residual */}
@@ -163,7 +166,7 @@ export function RiskHeatmap({ riscos, selected, onSelectCell, onClearSelection, 
 
       {mode === 'residual' && semResidual > 0 && (
         <div className="-mt-2 mb-4 text-[11px] text-muted-foreground">
-          {semResidual} {semResidual === 1 ? 'risco sem avaliação residual' : 'riscos sem avaliação residual'} — não aparecem neste mapa.
+          {semResidual} {semResidual === 1 ? t('riscosVisoes.matrix.riskHeatmap.semAvaliacaoResidual') : t('riscosVisoes.matrix.riskHeatmap.semAvaliacaoResidualPlural')} — {t('riscosVisoes.matrix.riskHeatmap.naoAparecemNoMapa')}
         </div>
       )}
 
@@ -173,7 +176,7 @@ export function RiskHeatmap({ riscos, selected, onSelectCell, onClearSelection, 
             className="self-center justify-self-center text-[10px] font-semibold uppercase tracking-[1.5px] text-muted-foreground"
             style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
           >
-            Probabilidade
+            {t('riscosVisoes.matrix.riskHeatmap.probabilidadeVertical')}
           </div>
           <div
             className="grid"
@@ -194,13 +197,14 @@ export function RiskHeatmap({ riscos, selected, onSelectCell, onClearSelection, 
                   const sev = severityFromScore(score);
                   const cellRisks = byCell.get(`${p}-${i}`) || [];
                   const isSel = selected?.p === p && selected?.i === i;
+                  const riskWord = cellRisks.length === 1 ? t('riscosVisoes.matrix.riskHeatmap.risco') : t('riscosVisoes.matrix.riskHeatmap.riscos');
                   return (
                     <button
                       key={`${p}-${i}`}
                       type="button"
                       onClick={() => onSelectCell({ p, i })}
                       aria-pressed={isSel}
-                      aria-label={`Probabilidade ${p} por impacto ${i}, score ${score}, ${cellRisks.length} ${cellRisks.length === 1 ? 'risco' : 'riscos'}`}
+                      aria-label={t('riscosVisoes.matrix.riskHeatmap.ariaLabelCelula', { p, i, score, count: cellRisks.length, label: riskWord })}
                       className={cn(
                         'rounded-lg border p-2 flex flex-col justify-between transition-transform text-left',
                         SEV_BG[sev],
