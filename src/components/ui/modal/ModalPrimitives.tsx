@@ -10,6 +10,7 @@
 import * as React from 'react';
 import { ChevronLeft, ChevronRight, Maximize2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -52,6 +53,7 @@ export function ModalHeader({
   actions,
   className,
 }: ModalHeaderProps) {
+  const { t } = useLanguage();
   return (
     <div className={cn('flex-shrink-0 px-6 py-5 border-b border-border', className)}>
       <div className="flex items-start justify-between gap-3">
@@ -82,12 +84,12 @@ export function ModalHeader({
                 className="h-7 w-7"
                 onClick={nav.onPrev}
                 disabled={!nav.onPrev || nav.current <= 1}
-                aria-label="Registro anterior"
+                aria-label={t('residuos.geral.registroAnterior')}
               >
                 <ChevronLeft className="h-4 w-4" strokeWidth={1.5} />
               </Button>
               <span className="tabular-nums whitespace-nowrap">
-                {nav.current} <span className="opacity-60">de</span> {nav.total}
+                {nav.current} <span className="opacity-60">{t('residuos.geral.de')}</span> {nav.total}
               </span>
               <Button
                 variant="ghost"
@@ -102,12 +104,12 @@ export function ModalHeader({
             </div>
           )}
           {onExpand && (
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" onClick={onExpand} aria-label="Expandir">
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" onClick={onExpand} aria-label={t('residuos.geral.expandir')}>
               <Maximize2 className="h-4 w-4" strokeWidth={1.5} />
             </Button>
           )}
           {onClose && (
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={onClose} aria-label="Fechar">
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={onClose} aria-label={t('residuos.geral.fechar')}>
               <X className="h-4 w-4" strokeWidth={1.5} />
             </Button>
           )}
