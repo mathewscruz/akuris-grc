@@ -179,8 +179,9 @@ export function MatrizForm({ onSuccess }: Props) {
   });
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    fetchData(true);
+  }, [profile?.empresa_id]);
+
 
   // Validar faixas sempre que niveisRisco mudar
   useEffect(() => {
