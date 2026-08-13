@@ -1652,11 +1652,16 @@ Aplique a instrução conforme as regras do sistema e devolva o JSON completo CO
 
   } catch (error) {
     console.error('Error in docgen-chat function:', error);
-    return new Response(JSON.stringify({ 
-      error: error instanceof Error ? (error instanceof Error ? error.message : String(error)) : 'Internal server error' 
+    const isGateway = error instanceof AiGatewayError;
+    const code = isGateway ? (error as AiGatewayError).code : 'INTERNAL_ERROR';
+    const status = isGateway ? (error as AiGatewayError).httpStatus : 500;
+    return new Response(JSON.stringify({
+      error: error instanceof Error ? error.message : 'Internal server error',
+      code,
     }), {
-      status: 500,
+      status,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
+
   }
 });
