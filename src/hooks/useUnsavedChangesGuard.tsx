@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { tGlobal } from '@/lib/i18n-global';
 
 interface UseUnsavedChangesGuardOptions {
   isDirty: boolean;
@@ -14,7 +15,7 @@ interface UseUnsavedChangesGuardOptions {
 export function useUnsavedChangesGuard({
   isDirty,
   enabled = true,
-  message = 'Você tem alterações não salvas. Deseja realmente sair?',
+  message = tGlobal('sweepCore.unsavedChanges'),
 }: UseUnsavedChangesGuardOptions) {
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);

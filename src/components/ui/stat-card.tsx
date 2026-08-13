@@ -9,6 +9,7 @@ import { AkurisPulse } from "@/components/ui/AkurisPulse"
 import { CornerAccent } from "@/components/identity/CornerAccent"
 import { useKpiDrillDown } from "@/components/dashboard/KpiDrillDownProvider"
 import type { DrillDownKey } from "@/components/dashboard/KpiDrillDownDrawer"
+import { useLanguage } from "@/contexts/LanguageContext"
 
 /**
  * StatCard editorial (Onda 5).
@@ -128,6 +129,7 @@ export function StatCard({
   onClick,
   ...props
 }: StatCardProps) {
+  const { t } = useLanguage()
   const drill = useKpiDrillDown()
   const isInteractive = interactive || !!onClick || !!drillDown
 
@@ -254,7 +256,7 @@ export function StatCard({
                   </span>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="text-xs">
-                  {trend.label || "Variação"}{trend.period ? ` vs ${trend.period}` : ""}
+                  {trend.label || t('sweepCore.statCard.variation')}{trend.period ? ` vs ${trend.period}` : ""}
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>

@@ -245,7 +245,7 @@ const Ativos = () => {
         if (error) throw error;
         toast({ title: t('fin.comum.sucesso'), description: t('fin.ativos.atualizado') });
         notify('ativo_atualizado', {
-          titulo: `Ativo atualizado: ${formData.nome}`,
+          titulo: t('sweepCore.assets.updatedNotification', { name: formData.nome }),
           descricao: formData.descricao,
           link: `${window.location.origin}/ativos`,
           dados: { tipo: formData.tipo, criticidade: formData.criticidade },
@@ -255,7 +255,7 @@ const Ativos = () => {
         if (error) throw error;
         toast({ title: t('fin.comum.sucesso'), description: t('fin.ativos.criado') });
         notify('ativo_criado', {
-          titulo: `Novo ativo: ${formData.nome}`,
+          titulo: t('sweepCore.assets.createdNotification', { name: formData.nome }),
           descricao: formData.descricao,
           link: `${window.location.origin}/ativos`,
           dados: { tipo: formData.tipo, criticidade: formData.criticidade },
@@ -434,15 +434,15 @@ const Ativos = () => {
           <DropdownMenuContent align="end" className="bg-popover">
             <DropdownMenuItem onClick={() => handleEdit(ativo)}>
               <Edit className="h-4 w-4 mr-2" />
-              Editar
+               {t('sweepCore.assets.edit')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setManutencaoDialog({ open: true, ativoId: ativo.id, ativoNome: ativo.nome })}>
               <Wrench className="h-4 w-4 mr-2" />
-              Manutenções
+               {t('sweepCore.assets.maintenance')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setTrilhaDialog({ open: true, ativoId: ativo.id })}>
               <History className="h-4 w-4 mr-2" />
-              Trilha de Auditoria
+               {t('sweepCore.assets.auditTrail')}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
@@ -450,7 +450,7 @@ const Ativos = () => {
               onClick={() => setDeleteConfirm({ open: true, ativoId: ativo.id })}
             >
               <Trash2 className="h-4 w-4 mr-2" />
-              Excluir
+               {t('sweepCore.assets.delete')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -473,7 +473,7 @@ const Ativos = () => {
     },
     {
       key: 'valor_negocio', label: t('fin.ativos.valorNegocio'), value: valorNegocioFilter, onChange: setValorNegocioFilter,
-      options: [{ value: 'todos', label: 'Todos' }, ...valoresNegocio.map(v => ({ value: v, label: v.charAt(0).toUpperCase() + v.slice(1) }))]
+       options: [{ value: 'todos', label: t('sweepCore.assets.all') }, ...valoresNegocio.map(v => ({ value: v, label: v.charAt(0).toUpperCase() + v.slice(1) }))]
     }
   ];
 
@@ -526,8 +526,8 @@ const Ativos = () => {
           showAccent
           segments={[
             { label: t('fin.comum.criticosLower'), value: stats?.criticos || 0, tone: 'destructive' },
-            { label: 'altos', value: stats?.altos || 0, tone: 'warning' },
-            { label: 'demais', value: Math.max(0, (stats?.total || 0) - (stats?.criticos || 0) - (stats?.altos || 0)), tone: 'neutral' },
+             { label: t('sweepCore.assets.high'), value: stats?.altos || 0, tone: 'warning' },
+             { label: t('sweepCore.assets.others'), value: Math.max(0, (stats?.total || 0) - (stats?.criticos || 0) - (stats?.altos || 0)), tone: 'neutral' },
           ]}
           emptyHint={t('fin.ativos.emptyHint')}
         />
@@ -564,7 +564,7 @@ const Ativos = () => {
       <div className="flex justify-end gap-2">
         <Button onClick={() => setImportDialog(true)} variant="outline" size="sm">
           <Upload className="h-4 w-4 mr-2" />
-          Importar
+           {t('sweepCore.assets.import')}
         </Button>
         <Button size="sm" onClick={() => {
           setEditingAtivo(null);
@@ -572,7 +572,7 @@ const Ativos = () => {
           setIsDialogOpen(true);
         }}>
           <Plus className="h-4 w-4 mr-2" />
-          Novo Ativo
+           {t('sweepCore.assets.newAsset')}
         </Button>
       </div>
 

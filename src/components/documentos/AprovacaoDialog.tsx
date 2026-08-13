@@ -10,7 +10,7 @@ import { CheckCircle, XCircle, Clock, User, Plus, MessageSquare, FileText, Eye, 
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { enUS, ptBR } from 'date-fns/locale';
 import { useIntegrationNotify } from '@/hooks/useIntegrationNotify';
 import { logger } from '@/lib/logger';
 import { MasterDetailDialog, type MasterDetailItem } from '@/components/ui/master-detail-dialog';
@@ -63,7 +63,7 @@ const STATUS_INFO: Record<string, { labelKey: string; icon: typeof Clock; tone: 
 };
 
 export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empresaId }: AprovacaoDialogProps) {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const [aprovacoes, setAprovacoes] = useState<Aprovacao[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(false);
@@ -441,12 +441,12 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('documentos.dialogs.solicitadaEm')}</p>
-            <p className="text-sm">{format(new Date(a.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</p>
+            <p className="text-sm">{format(new Date(a.created_at), locale === 'pt' ? "dd/MM/yyyy 'às' HH:mm" : "MM/dd/yyyy 'at' h:mm a", { locale: locale === 'pt' ? ptBR : enUS })}</p>
           </div>
           {a.data_aprovacao && (
             <div className="space-y-1">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('documentos.dialogs.decididaEm')}</p>
-              <p className="text-sm">{format(new Date(a.data_aprovacao), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}</p>
+              <p className="text-sm">{format(new Date(a.data_aprovacao), locale === 'pt' ? "dd/MM/yyyy 'às' HH:mm" : "MM/dd/yyyy 'at' h:mm a", { locale: locale === 'pt' ? ptBR : enUS })}</p>
             </div>
           )}
         </div>

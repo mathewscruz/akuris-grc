@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useRadarChartData } from './useRadarChartData';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export type MaturityStatus = 'excellent' | 'good' | 'warning' | 'critical' | 'no_data';
 
@@ -15,13 +16,6 @@ export interface GrcMaturity {
   totalModules: number;
   isLoading: boolean;
 }
-
-const STATUS_LABEL: Record<Exclude<MaturityStatus, 'no_data'>, string> = {
-  excellent: 'Excelente',
-  good: 'Bom',
-  warning: 'Atenção',
-  critical: 'Crítico',
-};
 
 const STATUS_COLOR: Record<MaturityStatus, string> = {
   excellent: 'text-green-500',
@@ -46,6 +40,7 @@ function classify(score: number): Exclude<MaturityStatus, 'no_data'> {
  */
 export function useGrcMaturityScore(): GrcMaturity {
   const { data, isLoading } = useRadarChartData();
+  const { t } = useLanguage();
 
   return useMemo<GrcMaturity>(() => {
     const totalModules = data?.length ?? 0;
@@ -56,7 +51,7 @@ export function useGrcMaturityScore(): GrcMaturity {
       return {
         score: 0,
         status: 'no_data',
-        label: 'Sem dados',
+        label: t('sweepCore.maturity.noData'),
         colorClass: STATUS_COLOR.no_data,
         modulesWithData: 0,
         totalModules,
@@ -72,11 +67,11 @@ export function useGrcMaturityScore(): GrcMaturity {
     return {
       score,
       status,
-      label: STATUS_LABEL[status],
+      label: t(`sweepCore.maturity.${status}`),
       colorClass: STATUS_COLOR[status],
       modulesWithData,
       totalModules,
       isLoading,
     };
-  }, [data, isLoading]);
+  }, [data, isLoading, t]);
 }
