@@ -528,14 +528,14 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
         });
       } else {
         toast({
-          title: "Score não encontrado",
-          description: "Não foi possível carregar os detalhes do score",
+          title: t('acessosDd.dueDiligence.scoreNotFoundTitle'),
+          description: t('acessosDd.dueDiligence.scoreNotFoundDescription'),
           variant: "destructive"
         });
       }
     } catch (error: any) {
       toast({
-        title: "Erro",
+        title: t('acessosDd.dueDiligence.errorTitle'),
         description: error.message,
         variant: "destructive"
       });

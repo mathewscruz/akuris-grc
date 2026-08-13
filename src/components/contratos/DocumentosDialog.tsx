@@ -99,7 +99,7 @@ export function DocumentosDialog({ contrato, open, onOpenChange }: DocumentosDia
     
     if (!formData.nome || !selectedFile || !contrato) {
       toast({
-        title: "Erro",
+        title: t('contratosAtivos.common.error'),
         description: t('contratosAtivos.documentosDialog.toastFillAllFields'),
         variant: "destructive",
       });
@@ -139,7 +139,7 @@ export function DocumentosDialog({ contrato, open, onOpenChange }: DocumentosDia
       if (insertError) throw insertError;
 
       toast({
-        title: "Sucesso",
+        title: t('contratosAtivos.common.success'),
         description: t('contratosAtivos.documentosDialog.toastUploadSuccess'),
       });
 
@@ -148,7 +148,7 @@ export function DocumentosDialog({ contrato, open, onOpenChange }: DocumentosDia
     } catch (error) {
       console.error('Erro ao enviar documento:', error);
       toast({
-        title: "Erro",
+        title: t('contratosAtivos.common.error'),
         description: t('contratosAtivos.documentosDialog.toastUploadError'),
         variant: "destructive",
       });
@@ -178,7 +178,7 @@ export function DocumentosDialog({ contrato, open, onOpenChange }: DocumentosDia
     } catch (error) {
       console.error('Erro ao baixar documento:', error);
       toast({
-        title: "Erro",
+        title: t('contratosAtivos.common.error'),
         description: t('contratosAtivos.documentosDialog.toastDownloadError'),
         variant: "destructive",
       });
@@ -211,7 +211,7 @@ export function DocumentosDialog({ contrato, open, onOpenChange }: DocumentosDia
       if (error) throw error;
 
       toast({
-        title: "Sucesso",
+        title: t('contratosAtivos.common.success'),
         description: t('contratosAtivos.documentosDialog.toastDeleteSuccess'),
       });
 
@@ -219,7 +219,7 @@ export function DocumentosDialog({ contrato, open, onOpenChange }: DocumentosDia
     } catch (error) {
       console.error('Erro ao excluir documento:', error);
       toast({
-        title: "Erro",
+        title: t('contratosAtivos.common.error'),
         description: t('contratosAtivos.documentosDialog.toastDeleteError'),
         variant: "destructive",
       });

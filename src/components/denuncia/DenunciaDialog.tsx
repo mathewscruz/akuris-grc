@@ -28,6 +28,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { formatDateOnly } from '@/lib/date-utils';
 import { useIntegrationNotify } from '@/hooks/useIntegrationNotify';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface DenunciaDialogProps {
   denuncia: any;
@@ -58,13 +59,15 @@ interface Anexo {
   created_at: string;
 }
 
-const statusOptions = [
-  { value: 'nova', label: 'Nova' },
-  { value: 'em_analise', label: 'Em Análise' },
-  { value: 'em_investigacao', label: 'Em Investigação' },
-  { value: 'resolvida', label: 'Resolvida' },
-  { value: 'arquivada', label: 'Arquivada' }
-];
+function getStatusOptions(t: (k: string) => string) {
+  return [
+    { value: 'nova', label: t('denunciasAdmin.dialog.statusNova') },
+    { value: 'em_analise', label: t('denunciasAdmin.dialog.statusEmAnalise') },
+    { value: 'em_investigacao', label: t('denunciasAdmin.dialog.statusEmInvestigacao') },
+    { value: 'resolvida', label: t('denunciasAdmin.dialog.statusResolvida') },
+    { value: 'arquivada', label: t('denunciasAdmin.dialog.statusArquivada') }
+  ];
+}
 
 export function DenunciaDialog({ 
   denuncia, 
@@ -72,6 +75,8 @@ export function DenunciaDialog({
   onOpenChange, 
   onDenunciaAtualizada 
 }: DenunciaDialogProps) {
+  const { t } = useLanguage();
+  const statusOptions = getStatusOptions(t);
   const [movimentacoes, setMovimentacoes] = useState<Movimentacao[]>([]);
   const [anexos, setAnexos] = useState<Anexo[]>([]);
   const [usuarios, setUsuarios] = useState<any[]>([]);
@@ -192,8 +197,8 @@ export function DenunciaDialog({
       }
 
       toast({
-        title: "Sucesso",
-        description: "Denúncia atualizada com sucesso"
+        title: t('denunciasAdmin.dialog.updated'),
+        description: t('denunciasAdmin.dialog.updated')
       });
 
       onDenunciaAtualizada();
@@ -201,8 +206,8 @@ export function DenunciaDialog({
     } catch (error) {
       console.error('Erro ao salvar:', error);
       toast({
-        title: "Erro",
-        description: "Erro ao atualizar denúncia",
+        title: t('denunciasAdmin.dialog.errorUpdate'),
+        description: t('denunciasAdmin.dialog.errorUpdate'),
         variant: "destructive"
       });
     } finally {
@@ -229,8 +234,8 @@ export function DenunciaDialog({
     } catch (error) {
       console.error('Erro ao baixar anexo:', error);
       toast({
-        title: "Erro",
-        description: "Erro ao baixar anexo",
+        title: t('denunciasAdmin.dialog.errorDownload'),
+        description: t('denunciasAdmin.dialog.errorDownload'),
         variant: "destructive"
       });
     }
@@ -253,18 +258,18 @@ export function DenunciaDialog({
   };
 
   const gravidadeLabel: Record<string, string> = {
-    baixa: 'Baixa',
-    media: 'Média',
-    alta: 'Alta',
-    critica: 'Crítica',
+    baixa: t('denunciasAdmin.dialog.gravidadeBaixa'),
+    media: t('denunciasAdmin.dialog.gravidadeMedia'),
+    alta: t('denunciasAdmin.dialog.gravidadeAlta'),
+    critica: t('denunciasAdmin.dialog.gravidadeCritica'),
   };
 
   return (
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      title={`Denúncia ${denuncia.protocolo}`}
-      description="Gerencie e acompanhe esta denúncia"
+      title={t('denunciasAdmin.dialog.title', { protocolo: denuncia.protocolo })}
+      description={t('denunciasAdmin.dialog.description')}
       icon={Shield}
       size="lg"
       hideFooter
@@ -272,10 +277,10 @@ export function DenunciaDialog({
     >
         <Tabs defaultValue="detalhes" className="space-y-4">
           <TabsList>
-            <TabsTrigger value="detalhes">Detalhes</TabsTrigger>
-            <TabsTrigger value="tratamento">Tratamento</TabsTrigger>
-            <TabsTrigger value="anexos">Anexos</TabsTrigger>
-            <TabsTrigger value="historico">Histórico</TabsTrigger>
+            <TabsTrigger value="detalhes">{t('denunciasAdmin.dialog.tabDetalhes')}</TabsTrigger>
+            <TabsTrigger value="tratamento">{t('denunciasAdmin.dialog.tabTratamento')}</TabsTrigger>
+            <TabsTrigger value="anexos">{t('denunciasAdmin.dialog.tabAnexos')}</TabsTrigger>
+            <TabsTrigger value="historico">{t('denunciasAdmin.dialog.tabHistorico')}</TabsTrigger>
           </TabsList>
 
           {/* Tab Detalhes */}
@@ -283,21 +288,21 @@ export function DenunciaDialog({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-sm">Informações da Denúncia</CardTitle>
+                  <CardTitle className="text-sm">{t('denunciasAdmin.dialog.infoTitle')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div>
-                    <Label className="text-xs text-muted-foreground">Protocolo</Label>
+                    <Label className="text-xs text-muted-foreground">{t('denunciasAdmin.dialog.labelProtocolo')}</Label>
                     <div className="font-mono text-sm">{denuncia.protocolo}</div>
                   </div>
                   
                   <div>
-                    <Label className="text-xs text-muted-foreground">Título</Label>
+                    <Label className="text-xs text-muted-foreground">{t('denunciasAdmin.dialog.labelTitulo')}</Label>
                     <div className="text-sm">{denuncia.titulo}</div>
                   </div>
 
                   <div>
-                    <Label className="text-xs text-muted-foreground">Gravidade</Label>
+                    <Label className="text-xs text-muted-foreground">{t('denunciasAdmin.dialog.labelGravidade')}</Label>
                     <div>
                       <StatusBadge {...resolveGravidadeTone(denuncia.gravidade)}>
                         {gravidadeLabel[denuncia.gravidade] || denuncia.gravidade}
@@ -306,7 +311,7 @@ export function DenunciaDialog({
                   </div>
 
                   <div>
-                    <Label className="text-xs text-muted-foreground">Data da Denúncia</Label>
+                    <Label className="text-xs text-muted-foreground">{t('denunciasAdmin.dialog.labelDataDenuncia')}</Label>
                     <div className="flex items-center gap-1 text-sm">
                       <Calendar className="h-4 w-4" />
                       {formatDateTime(denuncia.created_at)}
@@ -315,7 +320,7 @@ export function DenunciaDialog({
 
                   {denuncia.categoria && (
                     <div>
-                      <Label className="text-xs text-muted-foreground">Categoria</Label>
+                      <Label className="text-xs text-muted-foreground">{t('denunciasAdmin.dialog.labelCategoria')}</Label>
                       <div>
                         <Badge variant="outline" style={{ borderColor: denuncia.categoria.cor }}>
                           {denuncia.categoria.nome}
@@ -328,19 +333,19 @@ export function DenunciaDialog({
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-sm">Denunciante</CardTitle>
+                  <CardTitle className="text-sm">{t('denunciasAdmin.dialog.denuncianteTitle')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {denuncia.anonima ? (
                     <div className="flex items-center gap-2">
                       <Shield className="h-4 w-4 text-muted-foreground" />
-                      <Badge variant="secondary">Denúncia Anônima</Badge>
+                      <Badge variant="secondary">{t('denunciasAdmin.dialog.anonymousBadge')}</Badge>
                     </div>
                   ) : (
                     <>
                       {denuncia.nome_denunciante && (
                         <div>
-                          <Label className="text-xs text-muted-foreground">Nome</Label>
+                          <Label className="text-xs text-muted-foreground">{t('denunciasAdmin.dialog.labelNome')}</Label>
                           <div className="flex items-center gap-2 text-sm">
                             <User className="h-4 w-4" />
                             {denuncia.nome_denunciante}
@@ -350,7 +355,7 @@ export function DenunciaDialog({
                       
                       {denuncia.email_denunciante && (
                         <div>
-                          <Label className="text-xs text-muted-foreground">E-mail</Label>
+                          <Label className="text-xs text-muted-foreground">{t('denunciasAdmin.dialog.labelEmail')}</Label>
                           <div className="flex items-center gap-2 text-sm">
                             <Mail className="h-4 w-4" />
                             {denuncia.email_denunciante}
@@ -362,7 +367,7 @@ export function DenunciaDialog({
 
                   {denuncia.ip_origem && (
                     <div>
-                      <Label className="text-xs text-muted-foreground">IP de Origem</Label>
+                      <Label className="text-xs text-muted-foreground">{t('denunciasAdmin.dialog.labelIp')}</Label>
                       <div className="font-mono text-sm">{denuncia.ip_origem}</div>
                     </div>
                   )}
@@ -372,7 +377,7 @@ export function DenunciaDialog({
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm">Descrição</CardTitle>
+                <CardTitle className="text-sm">{t('denunciasAdmin.dialog.descriptionTitle')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-sm whitespace-pre-wrap bg-muted p-4 rounded-lg">
@@ -387,7 +392,7 @@ export function DenunciaDialog({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="status">Status</Label>
+                  <Label htmlFor="status">{t('denunciasAdmin.dialog.labelStatus')}</Label>
                   <Select 
                     value={formData.status} 
                     onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
@@ -406,13 +411,13 @@ export function DenunciaDialog({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="responsavel">Responsável</Label>
+                  <Label htmlFor="responsavel">{t('denunciasAdmin.dialog.labelResponsavel')}</Label>
                   <Select 
                     value={formData.responsavel_id} 
                     onValueChange={(value) => setFormData(prev => ({ ...prev, responsavel_id: value }))}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione um responsável" />
+                      <SelectValue placeholder={t('denunciasAdmin.dialog.placeholderResponsavel')} />
                     </SelectTrigger>
                     <SelectContent>
                       {usuarios.map((usuario) => (
@@ -427,12 +432,12 @@ export function DenunciaDialog({
 
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="observacoes">Observações da Movimentação</Label>
+                  <Label htmlFor="observacoes">{t('denunciasAdmin.dialog.labelObservacoesMovimentacao')}</Label>
                   <Textarea
                     id="observacoes"
                     value={formData.observacoes}
                     onChange={(e) => setFormData(prev => ({ ...prev, observacoes: e.target.value }))}
-                    placeholder="Adicione observações sobre esta movimentação..."
+                    placeholder={t('denunciasAdmin.dialog.placeholderObservacoes')}
                     rows={3}
                   />
                 </div>
@@ -440,12 +445,12 @@ export function DenunciaDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="parecer">Parecer Final</Label>
+              <Label htmlFor="parecer">{t('denunciasAdmin.dialog.labelParecerFinal')}</Label>
               <Textarea
                 id="parecer"
                 value={formData.parecer_final}
                 onChange={(e) => setFormData(prev => ({ ...prev, parecer_final: e.target.value }))}
-                placeholder="Parecer final da investigação..."
+                placeholder={t('denunciasAdmin.dialog.placeholderParecerFinal')}
                 rows={4}
               />
             </div>
@@ -453,7 +458,7 @@ export function DenunciaDialog({
             <div className="flex justify-end">
               <Button onClick={handleSalvar} disabled={saving}>
                 <Save className="w-4 h-4 mr-2" />
-                {saving ? 'Salvando...' : 'Salvar Alterações'}
+                {saving ? t('denunciasAdmin.dialog.saving') : t('denunciasAdmin.dialog.saveChanges')}
               </Button>
             </div>
           </TabsContent>
@@ -483,14 +488,14 @@ export function DenunciaDialog({
                         onClick={() => downloadAnexo(anexo)}
                       >
                         <Download className="h-4 w-4 mr-2" />
-                        Baixar
+                        {t('denunciasAdmin.dialog.download')}
                       </Button>
                     </CardContent>
                   </Card>
                 ))
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
-                  Nenhum anexo encontrado
+                  {t('denunciasAdmin.dialog.noAttachments')}
                 </div>
               )}
             </div>
@@ -509,9 +514,9 @@ export function DenunciaDialog({
                           <div>
                             <div className="font-medium">
                               {mov.acao === 'status_alterado' 
-                                ? `Status alterado de "${mov.status_anterior}" para "${mov.status_novo}"`
+                                ? t('denunciasAdmin.dialog.statusChanged', { de: mov.status_anterior, para: mov.status_novo })
                                 : mov.acao === 'observacao_adicionada'
-                                ? 'Observação adicionada'
+                                ? t('denunciasAdmin.dialog.observationAdded')
                                 : mov.acao
                               }
                             </div>
@@ -532,7 +537,7 @@ export function DenunciaDialog({
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
                   <History className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Nenhuma movimentação registrada</p>
+                  <p>{t('denunciasAdmin.dialog.noMovements')}</p>
                 </div>
               )}
             </div>

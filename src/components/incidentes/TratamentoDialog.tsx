@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import {
@@ -32,16 +32,16 @@ import { useAuth } from '@/components/AuthProvider';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 
-const tratamentoSchema = z.object({
-  titulo: z.string().min(1, 'Título é obrigatório'),
-  descricao: z.string().min(1, 'Descrição é obrigatória'),
-  tipo_acao: z.string().min(1, 'Tipo de ação é obrigatório'),
+const makeTratamentoSchema = (t: (key: string) => string) => z.object({
+  titulo: z.string().min(1, t('modDialogs.incidentes.tratamento.validation.tituloRequired')),
+  descricao: z.string().min(1, t('modDialogs.incidentes.tratamento.validation.descricaoRequired')),
+  tipo_acao: z.string().min(1, t('modDialogs.incidentes.tratamento.validation.tipoRequired')),
   responsavel_id: z.string().optional(),
   data_prazo: z.date().optional(),
   observacoes: z.string().optional(),
 });
 
-type TratamentoFormData = z.infer<typeof tratamentoSchema>;
+type TratamentoFormData = z.infer<ReturnType<typeof makeTratamentoSchema>>;
 
 interface TratamentoDialogProps {
   incidenteId: string;
@@ -68,6 +68,7 @@ export function TratamentoDialog({ incidenteId, tratamento, onSuccess, trigger, 
   const { toast } = useToast();
   const { profile } = useAuth();
   const { t } = useLanguage();
+  const tratamentoSchema = useMemo(() => makeTratamentoSchema(t), [t]);
 
   const form = useForm<TratamentoFormData>({
     resolver: zodResolver(tratamentoSchema),

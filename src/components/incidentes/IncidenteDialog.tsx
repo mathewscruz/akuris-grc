@@ -27,12 +27,12 @@ import { useWizardDraft } from '@/hooks/useWizardDraft';
 import { formatStatus } from '@/lib/text-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 
-const incidenteSchema = z.object({
-  titulo: z.string().min(1, 'Título é obrigatório'),
+const makeIncidenteSchema = (t: (key: string) => string) => z.object({
+  titulo: z.string().min(1, t('modDialogs.incidentes.incidente.validation.tituloRequired')),
   descricao: z.string().optional(),
-  tipo_incidente: z.string().min(1, 'Tipo de incidente é obrigatório'),
+  tipo_incidente: z.string().min(1, t('modDialogs.incidentes.incidente.validation.tipoRequired')),
   categoria: z.string().optional(),
-  criticidade: z.string().min(1, 'Criticidade é obrigatória'),
+  criticidade: z.string().min(1, t('modDialogs.incidentes.incidente.validation.criticidadeRequired')),
   data_ocorrencia: z.date().optional(),
   origem_deteccao: z.string().optional(),
   responsavel_deteccao: z.string().optional(),
@@ -44,7 +44,7 @@ const incidenteSchema = z.object({
   riscos_relacionados: z.array(z.string()).optional(),
 });
 
-type IncidenteFormData = z.infer<typeof incidenteSchema>;
+type IncidenteFormData = z.infer<ReturnType<typeof makeIncidenteSchema>>;
 
 interface IncidenteDialogProps {
   incidente?: any;
@@ -68,6 +68,7 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
   const { toast } = useToast();
   const { notify } = useIntegrationNotify();
   const { t } = useLanguage();
+  const incidenteSchema = useMemo(() => makeIncidenteSchema(t), [t]);
 
   const form = useForm<IncidenteFormData>({
     resolver: zodResolver(incidenteSchema),

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -19,25 +19,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { useQueryClient } from '@tanstack/react-query';
-
-const contaSchema = z.object({
-  usuario_beneficiario: z.string().min(1, 'Nome do usuário é obrigatório'),
-  email_beneficiario: z.string().email('Email inválido').optional().or(z.literal('')),
-  sistema_id: z.string().min(1, 'Sistema é obrigatório'),
-  tipo_acesso: z.string().min(1, 'Tipo de acesso é obrigatório'),
-  nivel_privilegio: z.string().min(1, 'Nível de privilégio é obrigatório'),
-  data_concessao: z.date({
-    required_error: 'Data de concessão é obrigatória',
-  }),
-  data_expiracao: z.date({
-    required_error: 'Data de expiração é obrigatória',
-  }),
-  justificativa_negocio: z.string().min(10, 'Justificativa deve ter pelo menos 10 caracteres'),
-  renovavel: z.boolean().default(true),
-  observacoes: z.string().optional(),
-});
-
-type ContaFormData = z.infer<typeof contaSchema>;
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface ContaDialogProps {
   open: boolean;
@@ -47,11 +29,31 @@ interface ContaDialogProps {
 }
 
 export default function ContaDialog({ open, onClose, conta, sistemas }: ContaDialogProps) {
+  const { t } = useLanguage();
   const { toast } = useToast();
   const { user } = useAuth();
   const { empresaId, loading: loadingEmpresa } = useEmpresaId();
   const queryClient = useQueryClient();
-  
+
+  const contaSchema = useMemo(() => z.object({
+    usuario_beneficiario: z.string().min(1, t('acessosDd.contas.contaDialog.zodNomeObrigatorio')),
+    email_beneficiario: z.string().email(t('acessosDd.contas.contaDialog.zodEmailInvalido')).optional().or(z.literal('')),
+    sistema_id: z.string().min(1, t('acessosDd.contas.contaDialog.zodSistemaObrigatorio')),
+    tipo_acesso: z.string().min(1, t('acessosDd.contas.contaDialog.zodTipoObrigatorio')),
+    nivel_privilegio: z.string().min(1, t('acessosDd.contas.contaDialog.zodNivelObrigatorio')),
+    data_concessao: z.date({
+      required_error: t('acessosDd.contas.contaDialog.zodDataConcessaoObrigatoria'),
+    }),
+    data_expiracao: z.date({
+      required_error: t('acessosDd.contas.contaDialog.zodDataExpiracaoObrigatoria'),
+    }),
+    justificativa_negocio: z.string().min(10, t('acessosDd.contas.contaDialog.zodJustificativaMinima')),
+    renovavel: z.boolean().default(true),
+    observacoes: z.string().optional(),
+  }), [t]);
+
+  type ContaFormData = z.infer<typeof contaSchema>;
+
   const form = useForm<ContaFormData>({
     resolver: zodResolver(contaSchema),
     defaultValues: {
@@ -89,7 +91,7 @@ export default function ContaDialog({ open, onClose, conta, sistemas }: ContaDia
   const onSubmit = async (data: ContaFormData) => {
     try {
       if (!empresaId) {
-        throw new Error('Empresa não encontrada');
+        throw new Error(t('contasPrivilegiadasComp.contaDialog.toastEmpresaNaoEncontrada'));
       }
 
       // Validar se o sistema pertence à empresa
@@ -100,11 +102,11 @@ export default function ContaDialog({ open, onClose, conta, sistemas }: ContaDia
         .single();
 
       if (sistemaError || !sistema) {
-        throw new Error('Sistema não encontrado');
+        throw new Error(t('contasPrivilegiadasComp.contaDialog.toastSistemaNaoEncontrado'));
       }
 
       if (sistema.empresa_id !== empresaId) {
-        throw new Error('Sistema não pertence à sua empresa');
+        throw new Error(t('contasPrivilegiadasComp.contaDialog.toastSistemaNaoPertence'));
       }
 
       const payload = {
@@ -124,8 +126,8 @@ export default function ContaDialog({ open, onClose, conta, sistemas }: ContaDia
         if (error) throw error;
 
         toast({
-          title: 'Sucesso',
-          description: 'Conta privilegiada atualizada com sucesso',
+          title: t('contasPrivilegiadasComp.contaDialog.toastSuccessTitle'),
+          description: t('contasPrivilegiadasComp.contaDialog.toastUpdated'),
         });
       } else {
         const { error } = await supabase
@@ -135,19 +137,19 @@ export default function ContaDialog({ open, onClose, conta, sistemas }: ContaDia
         if (error) throw error;
 
         toast({
-          title: 'Sucesso',
-          description: 'Conta privilegiada criada com sucesso',
+          title: t('contasPrivilegiadasComp.contaDialog.toastSuccessTitle'),
+          description: t('contasPrivilegiadasComp.contaDialog.toastCreated'),
         });
       }
 
       // Invalidar cache para forçar atualização
       await queryClient.invalidateQueries({ queryKey: ['contas-privilegiadas'] });
-      
+
       onClose();
     } catch (error: any) {
       toast({
-        title: 'Erro',
-        description: error.message || 'Erro ao salvar conta privilegiada',
+        title: t('contasPrivilegiadasComp.contaDialog.toastErrorTitle'),
+        description: error.message || t('contasPrivilegiadasComp.contaDialog.toastErrorSave'),
         variant: 'destructive',
       });
     }
@@ -157,11 +159,11 @@ export default function ContaDialog({ open, onClose, conta, sistemas }: ContaDia
     <DialogShell
         open={open}
         onOpenChange={onClose}
-        title={`${conta?.id ? "Editar" : "Nova"} Conta Privilegiada`}
+        title={conta?.id ? t('contasPrivilegiadasComp.contaDialog.titleEdit') : t('contasPrivilegiadasComp.contaDialog.titleNew')}
         icon={KeyRound}
         size="lg"
         onSubmit={form.handleSubmit(onSubmit)}
-        submitLabel={conta ? 'Atualizar' : 'Criar Conta'}
+        submitLabel={conta ? t('contasPrivilegiadasComp.contaDialog.submitUpdate') : t('contasPrivilegiadasComp.contaDialog.submitCreate')}
         isDirty={form.formState.isDirty}
       >
 <Form {...form}>
@@ -172,9 +174,9 @@ export default function ContaDialog({ open, onClose, conta, sistemas }: ContaDia
                 name="usuario_beneficiario"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Nome do Usuário *</FormLabel>
+                    <FormLabel>{t('contasPrivilegiadasComp.contaDialog.fieldNomeUsuario')}</FormLabel>
                     <FormControl>
-                      <Input placeholder="Nome completo do usuário" {...field} />
+                      <Input placeholder={t('contasPrivilegiadasComp.contaDialog.fieldNomeUsuarioPlaceholder')} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -186,9 +188,9 @@ export default function ContaDialog({ open, onClose, conta, sistemas }: ContaDia
                 name="email_beneficiario"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email do Usuário</FormLabel>
+                    <FormLabel>{t('contasPrivilegiadasComp.contaDialog.fieldEmailUsuario')}</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="email@exemplo.com" {...field} />
+                      <Input type="email" placeholder={t('contasPrivilegiadasComp.contaDialog.fieldEmailUsuarioPlaceholder')} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -201,11 +203,11 @@ export default function ContaDialog({ open, onClose, conta, sistemas }: ContaDia
               name="sistema_id"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Sistema *</FormLabel>
+                  <FormLabel>{t('contasPrivilegiadasComp.contaDialog.fieldSistema')}</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Selecione o sistema" />
+                        <SelectValue placeholder={t('contasPrivilegiadasComp.contaDialog.fieldSistemaPlaceholder')} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -227,20 +229,20 @@ export default function ContaDialog({ open, onClose, conta, sistemas }: ContaDia
                 name="tipo_acesso"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Tipo de Acesso *</FormLabel>
+                    <FormLabel>{t('contasPrivilegiadasComp.contaDialog.fieldTipoAcesso')}</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecione o tipo" />
+                          <SelectValue placeholder={t('contasPrivilegiadasComp.contaDialog.fieldTipoAcessoPlaceholder')} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="administrativo">Administrativo</SelectItem>
-                        <SelectItem value="operacional">Operacional</SelectItem>
-                        <SelectItem value="consulta_privilegiada">Consulta Privilegiada</SelectItem>
-                        <SelectItem value="backup">Backup/Restore</SelectItem>
-                        <SelectItem value="desenvolvimento">Desenvolvimento</SelectItem>
-                        <SelectItem value="auditoria">Auditoria</SelectItem>
+                        <SelectItem value="administrativo">{t('contasPrivilegiadasComp.contaDialog.tipoAdministrativo')}</SelectItem>
+                        <SelectItem value="operacional">{t('contasPrivilegiadasComp.contaDialog.tipoOperacional')}</SelectItem>
+                        <SelectItem value="consulta_privilegiada">{t('contasPrivilegiadasComp.contaDialog.tipoConsultaPrivilegiada')}</SelectItem>
+                        <SelectItem value="backup">{t('contasPrivilegiadasComp.contaDialog.tipoBackup')}</SelectItem>
+                        <SelectItem value="desenvolvimento">{t('contasPrivilegiadasComp.contaDialog.tipoDesenvolvimento')}</SelectItem>
+                        <SelectItem value="auditoria">{t('contasPrivilegiadasComp.contaDialog.tipoAuditoria')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -253,18 +255,18 @@ export default function ContaDialog({ open, onClose, conta, sistemas }: ContaDia
                 name="nivel_privilegio"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Nível de Privilégio *</FormLabel>
+                    <FormLabel>{t('contasPrivilegiadasComp.contaDialog.fieldNivelPrivilegio')}</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecione o nível" />
+                          <SelectValue placeholder={t('contasPrivilegiadasComp.contaDialog.fieldNivelPrivilegioPlaceholder')} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="critico">Crítico</SelectItem>
-                        <SelectItem value="alto">Alto</SelectItem>
-                        <SelectItem value="medio">Médio</SelectItem>
-                        <SelectItem value="baixo">Baixo</SelectItem>
+                        <SelectItem value="critico">{t('contasPrivilegiadasComp.contaDialog.nivelCritico')}</SelectItem>
+                        <SelectItem value="alto">{t('contasPrivilegiadasComp.contaDialog.nivelAlto')}</SelectItem>
+                        <SelectItem value="medio">{t('contasPrivilegiadasComp.contaDialog.nivelMedio')}</SelectItem>
+                        <SelectItem value="baixo">{t('contasPrivilegiadasComp.contaDialog.nivelBaixo')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -279,7 +281,7 @@ export default function ContaDialog({ open, onClose, conta, sistemas }: ContaDia
                 name="data_concessao"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Data de Concessão *</FormLabel>
+                    <FormLabel>{t('contasPrivilegiadasComp.contaDialog.fieldDataConcessao')}</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
@@ -293,7 +295,7 @@ export default function ContaDialog({ open, onClose, conta, sistemas }: ContaDia
                             {field.value ? (
                               format(field.value, "dd/MM/yyyy")
                             ) : (
-                              <span>Selecione a data</span>
+                              <span>{t('contasPrivilegiadasComp.contaDialog.fieldDataPlaceholder')}</span>
                             )}
                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                           </Button>
@@ -322,7 +324,7 @@ export default function ContaDialog({ open, onClose, conta, sistemas }: ContaDia
                 name="data_expiracao"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Data de Expiração *</FormLabel>
+                    <FormLabel>{t('contasPrivilegiadasComp.contaDialog.fieldDataExpiracao')}</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
@@ -336,7 +338,7 @@ export default function ContaDialog({ open, onClose, conta, sistemas }: ContaDia
                             {field.value ? (
                               format(field.value, "dd/MM/yyyy")
                             ) : (
-                              <span>Selecione a data</span>
+                              <span>{t('contasPrivilegiadasComp.contaDialog.fieldDataPlaceholder')}</span>
                             )}
                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                           </Button>
@@ -366,10 +368,10 @@ export default function ContaDialog({ open, onClose, conta, sistemas }: ContaDia
               name="justificativa_negocio"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Justificativa de Negócio *</FormLabel>
+                  <FormLabel>{t('contasPrivilegiadasComp.contaDialog.fieldJustificativa')}</FormLabel>
                   <FormControl>
-                    <Textarea 
-                      placeholder="Descreva a justificativa para a concessão deste acesso privilegiado..."
+                    <Textarea
+                      placeholder={t('contasPrivilegiadasComp.contaDialog.fieldJustificativaPlaceholder')}
                       className="min-h-[100px]"
                       {...field}
                     />
@@ -384,10 +386,10 @@ export default function ContaDialog({ open, onClose, conta, sistemas }: ContaDia
               name="observacoes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Observações</FormLabel>
+                  <FormLabel>{t('contasPrivilegiadasComp.contaDialog.fieldObservacoes')}</FormLabel>
                   <FormControl>
-                    <Textarea 
-                      placeholder="Informações adicionais (opcional)..."
+                    <Textarea
+                      placeholder={t('contasPrivilegiadasComp.contaDialog.fieldObservacoesPlaceholder')}
                       {...field}
                     />
                   </FormControl>
@@ -402,9 +404,9 @@ export default function ContaDialog({ open, onClose, conta, sistemas }: ContaDia
               render={({ field }) => (
                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                   <div className="space-y-0.5">
-                    <FormLabel className="text-base">Acesso Renovável</FormLabel>
+                    <FormLabel className="text-base">{t('contasPrivilegiadasComp.contaDialog.fieldRenovavel')}</FormLabel>
                     <div className="text-sm text-muted-foreground">
-                      Este acesso pode ser renovado automaticamente
+                      {t('contasPrivilegiadasComp.contaDialog.fieldRenovavelHint')}
                     </div>
                   </div>
                   <FormControl>

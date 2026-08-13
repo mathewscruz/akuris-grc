@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -21,16 +21,17 @@ import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { DataTable, Column, Filter } from '@/components/ui/data-table';
 import { formatDateOnly } from '@/lib/date-utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
-const empresaSchema = z.object({
-  nome: z.string().min(1, 'Nome é obrigatório'),
+const makeEmpresaSchema = (t: (k: string) => string) => z.object({
+  nome: z.string().min(1, t('admin.empresas.zodNomeRequired')),
   cnpj: z.string().optional(),
   contato: z.string().optional(),
   status_licenca: z.enum(['trial', 'em_operacao']).default('em_operacao'),
   plano_id: z.string().optional(),
 });
 
-type EmpresaForm = z.infer<typeof empresaSchema>;
+type EmpresaForm = z.infer<ReturnType<typeof makeEmpresaSchema>>;
 
 interface Plano {
   id: string;
@@ -64,6 +65,8 @@ interface Empresa {
 }
 
 const GerenciamentoEmpresasInner = () => {
+  const { t } = useLanguage();
+  const empresaSchema = useMemo(() => makeEmpresaSchema(t), [t]);
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
   const [planos, setPlanos] = useState<Plano[]>([]);
   const [loading, setLoading] = useState(true);
@@ -134,7 +137,7 @@ const GerenciamentoEmpresasInner = () => {
       setEmpresas(empresasFormatadas);
     } catch (error) {
       console.error('Erro ao buscar empresas:', error);
-      toast.error('Erro ao carregar empresas');
+      toast.error(t('admin.empresas.toastErrorFetchEmpresas'));
     } finally {
       setLoading(false);
     }
@@ -176,7 +179,7 @@ const GerenciamentoEmpresasInner = () => {
           .eq('id', editingEmpresa.id);
 
         if (error) throw error;
-        toast.success('Empresa atualizada com sucesso');
+        toast.success(t('admin.empresas.toastEmpresaUpdated'));
       } else {
         const insertData: any = {
           nome: data.nome,
@@ -195,7 +198,7 @@ const GerenciamentoEmpresasInner = () => {
           .insert([insertData]);
 
         if (error) throw error;
-        toast.success('Empresa criada com sucesso');
+        toast.success(t('admin.empresas.toastEmpresaCreated'));
       }
 
       setDialogOpen(false);
@@ -204,7 +207,7 @@ const GerenciamentoEmpresasInner = () => {
       fetchEmpresas();
     } catch (error) {
       console.error('Erro ao salvar empresa:', error);
-      toast.error('Erro ao salvar empresa');
+      toast.error(t('admin.empresas.toastErrorSave'));
     }
   };
 
@@ -231,7 +234,7 @@ const GerenciamentoEmpresasInner = () => {
     
     try {
       const confirmName = window.prompt(
-        `Esta ação é IRREVERSÍVEL. Para confirmar, digite o nome exato da empresa:\n\n"${empresaToDelete.nome}"`
+        t('admin.empresas.deletePrompt', { nome: empresaToDelete.nome })
       );
       if (!confirmName) return;
 
@@ -242,13 +245,13 @@ const GerenciamentoEmpresasInner = () => {
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).message || (data as any).error);
 
-      toast.success(`Empresa excluída. ${(data as any)?.deleted_users || 0} usuário(s) removido(s).`);
+      toast.success(t('admin.empresas.toastEmpresaDeleted', { count: (data as any)?.deleted_users || 0 }));
       fetchEmpresas();
       setDeleteDialogOpen(false);
       setEmpresaToDelete(null);
     } catch (error: any) {
       console.error('Erro ao excluir empresa:', error);
-      toast.error(error?.message || 'Erro ao excluir empresa');
+      toast.error(error?.message || t('admin.empresas.toastErrorDelete'));
     }
   };
 
@@ -276,11 +279,11 @@ const GerenciamentoEmpresasInner = () => {
 
       if (updateError) throw updateError;
 
-      toast.success('Logo atualizado com sucesso');
+      toast.success(t('admin.empresas.toastLogoUpdated'));
       fetchEmpresas();
     } catch (error) {
       console.error('Erro ao fazer upload do logo:', error);
-      toast.error('Erro ao fazer upload do logo');
+      toast.error(t('admin.empresas.toastErrorLogoUpload'));
     } finally {
       setUploading(false);
     }
@@ -299,12 +302,12 @@ const GerenciamentoEmpresasInner = () => {
         })
         .eq('id', renewTrialEmpresa.id);
       if (error) throw error;
-      toast.success(`Trial de "${renewTrialEmpresa.nome}" renovado por 14 dias`);
+      toast.success(t('admin.empresas.toastTrialRenewed', { nome: renewTrialEmpresa.nome }));
       setRenewTrialEmpresa(null);
       fetchEmpresas();
     } catch (error: any) {
       console.error('Erro ao renovar trial:', error);
-      toast.error(error?.message || 'Erro ao renovar trial');
+      toast.error(error?.message || t('admin.empresas.toastErrorRenewTrial'));
     } finally {
       setActionLoading(false);
     }
@@ -320,12 +323,12 @@ const GerenciamentoEmpresasInner = () => {
         .update({ ativo: novoStatus })
         .eq('id', toggleAtivoEmpresa.id);
       if (error) throw error;
-      toast.success(`Empresa "${toggleAtivoEmpresa.nome}" ${novoStatus ? 'ativada' : 'inativada'} com sucesso`);
+      toast.success(t('admin.empresas.toastStatusChanged', { nome: toggleAtivoEmpresa.nome, status: novoStatus ? t('admin.empresas.statusAtivada') : t('admin.empresas.statusInativada') }));
       setToggleAtivoEmpresa(null);
       fetchEmpresas();
     } catch (error: any) {
       console.error('Erro ao alterar status:', error);
-      toast.error(error?.message || 'Erro ao alterar status');
+      toast.error(error?.message || t('admin.empresas.toastErrorToggleStatus'));
     } finally {
       setActionLoading(false);
     }
@@ -355,7 +358,7 @@ const GerenciamentoEmpresasInner = () => {
   const columns: Column<Empresa>[] = [
     {
       key: 'logo_url',
-      label: 'Logo',
+      label: t('admin.empresas.columnLogo'),
       sortable: false,
       render: (_, empresa) => (
         <div className="flex items-center">
@@ -375,24 +378,24 @@ const GerenciamentoEmpresasInner = () => {
     },
     {
       key: 'nome',
-      label: 'Nome',
+      label: t('admin.empresas.columnNome'),
       sortable: true,
     },
     {
       key: 'cnpj',
-      label: 'CNPJ',
+      label: t('admin.empresas.columnCnpj'),
       sortable: true,
       render: (value) => value || '-',
     },
     {
       key: 'contato',
-      label: 'Contato',
+      label: t('admin.empresas.columnContato'),
       sortable: false,
       render: (value) => value || '-',
     },
     {
       key: 'plano',
-      label: 'Plano',
+      label: t('admin.empresas.columnPlano'),
       sortable: false,
       render: (_, empresa) => empresa.plano ? (
         <PlanBadge 
@@ -402,44 +405,45 @@ const GerenciamentoEmpresasInner = () => {
           showName={false}
         />
       ) : (
-        <span className="text-xs text-muted-foreground">Sem plano</span>
+        <span className="text-xs text-muted-foreground">{t('admin.empresas.semPlano')}</span>
       ),
     },
     {
       key: 'status_licenca',
-      label: 'Licença',
+      label: t('admin.empresas.columnLicenca'),
       sortable: true,
       render: (value, empresa) => value === 'trial' ? (
         <Badge variant="outline" className="bg-warning/10 text-warning border-warning whitespace-nowrap">
-          🟡 Trial {empresa.data_inicio_trial && 
-            `(${Math.max(0, 14 - differenceInDays(new Date(), new Date(empresa.data_inicio_trial)))}d)`
+          🟡 {empresa.data_inicio_trial
+            ? t('admin.empresas.trialDays', { dias: Math.max(0, 14 - differenceInDays(new Date(), new Date(empresa.data_inicio_trial))) })
+            : t('admin.empresas.filterLicencaTrial')
           }
         </Badge>
       ) : (
         <Badge variant="outline" className="bg-primary/10 text-primary border-primary whitespace-nowrap">
-          🟢 Em Operação
+          🟢 {t('admin.empresas.emOperacao')}
         </Badge>
       ),
     },
     {
       key: 'ativo',
-      label: 'Status',
+      label: t('admin.empresas.columnStatus'),
       sortable: true,
       render: (value) => (
         <Badge variant={value ? 'default' : 'secondary'}>
-          {value ? 'Ativo' : 'Inativo'}
+          {value ? t('admin.empresas.ativo') : t('admin.empresas.inativo')}
         </Badge>
       ),
     },
     {
       key: 'created_at',
-      label: 'Criado em',
+      label: t('admin.empresas.columnCriadoEm'),
       sortable: true,
       render: (value) => formatDateOnly(value),
     },
     {
       key: 'actions',
-      label: 'Ações',
+      label: t('admin.empresas.columnAcoes'),
       className: 'w-16 text-right',
       render: (_, empresa) => (
         <DropdownMenu>
@@ -451,12 +455,12 @@ const GerenciamentoEmpresasInner = () => {
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => handleEdit(empresa)}>
               <Edit className="h-4 w-4 mr-2" />
-              Editar
+              {t('admin.empresas.actionEditar')}
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
               <label className="flex items-center gap-2 cursor-pointer">
                 <Upload className="h-4 w-4" />
-                Upload Logo
+                {t('admin.empresas.actionUploadLogo')}
                 <input
                   type="file"
                   accept="image/*"
@@ -473,25 +477,25 @@ const GerenciamentoEmpresasInner = () => {
               {empresa.ativo ? (
                 <>
                   <PowerOff className="h-4 w-4 mr-2" />
-                  Inativar empresa
+                  {t('admin.empresas.actionInativarEmpresa')}
                 </>
               ) : (
                 <>
                   <Power className="h-4 w-4 mr-2" />
-                  Ativar empresa
+                  {t('admin.empresas.actionAtivarEmpresa')}
                 </>
               )}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setRenewTrialEmpresa(empresa)}>
               <RefreshCw className="h-4 w-4 mr-2" />
-              Renovar trial (14d)
+              {t('admin.empresas.actionRenovarTrial')}
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => openDeleteDialog(empresa)}
               className="text-destructive focus:text-destructive"
             >
               <Trash2 className="h-4 w-4 mr-2" />
-              Excluir
+              {t('admin.empresas.actionExcluir')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -502,22 +506,22 @@ const GerenciamentoEmpresasInner = () => {
   const filters: Filter[] = [
     {
       key: 'status',
-      label: 'Status',
+      label: t('admin.empresas.filterStatusLabel'),
       options: [
-        { value: 'all', label: 'Todos' },
-        { value: 'ativo', label: 'Ativos' },
-        { value: 'inativo', label: 'Inativos' },
+        { value: 'all', label: t('admin.empresas.filterStatusAll') },
+        { value: 'ativo', label: t('admin.empresas.filterStatusAtivos') },
+        { value: 'inativo', label: t('admin.empresas.filterStatusInativos') },
       ],
       value: statusFilter,
       onChange: setStatusFilter,
     },
     {
       key: 'licenca',
-      label: 'Licença',
+      label: t('admin.empresas.filterLicencaLabel'),
       options: [
-        { value: 'all', label: 'Todas' },
-        { value: 'trial', label: 'Trial' },
-        { value: 'em_operacao', label: 'Em Operação' },
+        { value: 'all', label: t('admin.empresas.filterLicencaAll') },
+        { value: 'trial', label: t('admin.empresas.filterLicencaTrial') },
+        { value: 'em_operacao', label: t('admin.empresas.filterLicencaEmOperacao') },
       ],
       value: licencaFilter,
       onChange: setLicencaFilter,
@@ -531,13 +535,13 @@ const GerenciamentoEmpresasInner = () => {
           <DialogTrigger asChild>
             <Button onClick={openCreateDialog} className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
-              Nova Empresa
+              {t('admin.empresas.newEmpresaButton')}
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
-                {editingEmpresa ? 'Editar Empresa' : 'Nova Empresa'}
+                {editingEmpresa ? t('admin.empresas.dialogEditTitle') : t('admin.empresas.dialogNewTitle')}
               </DialogTitle>
             </DialogHeader>
             <Form {...form}>
@@ -547,9 +551,9 @@ const GerenciamentoEmpresasInner = () => {
                   name="nome"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Nome da Empresa</FormLabel>
+                      <FormLabel>{t('admin.empresas.fieldNome')}</FormLabel>
                       <FormControl>
-                        <Input placeholder="Nome da empresa" {...field} />
+                        <Input placeholder={t('admin.empresas.fieldNomePlaceholder')} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -560,9 +564,9 @@ const GerenciamentoEmpresasInner = () => {
                   name="cnpj"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>CNPJ</FormLabel>
+                      <FormLabel>{t('admin.empresas.fieldCnpj')}</FormLabel>
                       <FormControl>
-                        <Input placeholder="00.000.000/0000-00" {...field} />
+                        <Input placeholder={t('admin.empresas.fieldCnpjPlaceholder')} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -573,9 +577,9 @@ const GerenciamentoEmpresasInner = () => {
                   name="contato"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Contato</FormLabel>
+                      <FormLabel>{t('admin.empresas.fieldContato')}</FormLabel>
                       <FormControl>
-                        <Input placeholder="Email ou telefone" {...field} />
+                        <Input placeholder={t('admin.empresas.fieldContatoPlaceholder')} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -586,16 +590,16 @@ const GerenciamentoEmpresasInner = () => {
                   name="status_licenca"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Status de Licença</FormLabel>
+                      <FormLabel>{t('admin.empresas.fieldStatusLicenca')}</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Selecione o status" />
+                            <SelectValue placeholder={t('admin.empresas.fieldStatusLicencaPlaceholder')} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="em_operacao">Em Operação</SelectItem>
-                          <SelectItem value="trial">Trial (14 dias)</SelectItem>
+                          <SelectItem value="em_operacao">{t('admin.empresas.statusEmOperacao')}</SelectItem>
+                          <SelectItem value="trial">{t('admin.empresas.statusTrial')}</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -606,7 +610,7 @@ const GerenciamentoEmpresasInner = () => {
                 <Separator className="my-6" />
 
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Plano e Créditos</h3>
+                  <h3 className="text-lg font-semibold">{t('admin.empresas.planoSectionTitle')}</h3>
                   
                   <div className="p-4 border rounded-lg bg-muted/30 space-y-4">
                     {editingEmpresa?.plano && (
@@ -622,7 +626,7 @@ const GerenciamentoEmpresasInner = () => {
                     {editingEmpresa && creditoFranquia > 0 && (
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Consumo de Créditos:</span>
+                          <span className="text-muted-foreground">{t('admin.empresas.consumoCreditos')}</span>
                           <span className="font-medium">
                             {creditoConsumido} / {creditoFranquia} ({Math.round(percentualCredito)}%)
                           </span>
@@ -636,7 +640,7 @@ const GerenciamentoEmpresasInner = () => {
                       name="plano_id"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Plano</FormLabel>
+                          <FormLabel>{t('admin.empresas.fieldPlano')}</FormLabel>
                           <Select 
                             onValueChange={(value) => {
                               field.onChange(value);
@@ -646,13 +650,13 @@ const GerenciamentoEmpresasInner = () => {
                           >
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder="Selecione um plano" />
+                                <SelectValue placeholder={t('admin.empresas.fieldPlanoPlaceholder')} />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
                               {planos.map((plano) => (
                                 <SelectItem key={plano.id} value={plano.id}>
-                                  {plano.nome} ({plano.creditos_franquia} créditos)
+                                  {plano.nome} ({plano.creditos_franquia} {t('admin.empresas.creditosSuffix')})
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -664,7 +668,7 @@ const GerenciamentoEmpresasInner = () => {
 
                     {selectedPlano && (
                       <div className="text-sm text-muted-foreground bg-background p-3 rounded border">
-                        ℹ️ {selectedPlano.descricao || 'Sem descrição disponível'}
+                        ℹ️ {selectedPlano.descricao || t('admin.empresas.semDescricao')}
                       </div>
                     )}
                   </div>
@@ -676,10 +680,10 @@ const GerenciamentoEmpresasInner = () => {
                     variant="outline"
                     onClick={() => setDialogOpen(false)}
                   >
-                    Cancelar
+                    {t('admin.empresas.cancelar')}
                   </Button>
                   <Button type="submit">
-                    {editingEmpresa ? 'Atualizar' : 'Criar'}
+                    {editingEmpresa ? t('admin.empresas.atualizar') : t('admin.empresas.criar')}
                   </Button>
                 </div>
               </form>
@@ -694,7 +698,7 @@ const GerenciamentoEmpresasInner = () => {
         loading={loading}
         searchValue={searchTerm}
         onSearchChange={setSearchTerm}
-        searchPlaceholder="Buscar por nome ou CNPJ..."
+        searchPlaceholder={t('admin.empresas.searchPlaceholder')}
         filters={filters}
         sortField={sortField}
         sortDirection={sortDirection}
@@ -703,43 +707,43 @@ const GerenciamentoEmpresasInner = () => {
         paginated
         emptyState={{
           icon: <Building2 className="h-12 w-12" />,
-          title: 'Nenhuma empresa encontrada',
-          description: searchTerm ? 'Tente ajustar os filtros' : 'Crie uma nova empresa para começar',
+          title: t('admin.empresas.emptyTitle'),
+          description: searchTerm ? t('admin.empresas.emptyDescriptionFiltered') : t('admin.empresas.emptyDescriptionEmpty'),
         }}
       />
 
       <ConfirmDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        title="Excluir Empresa"
-        description={`Tem certeza que deseja excluir a empresa "${empresaToDelete?.nome}"? Esta ação não pode ser desfeita.`}
+        title={t('admin.empresas.deleteDialogTitle')}
+        description={t('admin.empresas.deleteDialogDescription', { nome: empresaToDelete?.nome || '' })}
         onConfirm={handleDelete}
         variant="destructive"
-        confirmText="Excluir"
+        confirmText={t('admin.empresas.excluir')}
       />
 
       <ConfirmDialog
         open={!!renewTrialEmpresa}
         onOpenChange={(open) => !open && setRenewTrialEmpresa(null)}
-        title="Renovar Trial"
-        description={`Deseja renovar o trial de "${renewTrialEmpresa?.nome}" por mais 14 dias? A empresa será reativada caso esteja inativa.`}
+        title={t('admin.empresas.renewTrialTitle')}
+        description={t('admin.empresas.renewTrialDescription', { nome: renewTrialEmpresa?.nome || '' })}
         onConfirm={confirmRenovarTrial}
-        confirmText="Renovar"
+        confirmText={t('admin.empresas.renovar')}
         loading={actionLoading}
       />
 
       <ConfirmDialog
         open={!!toggleAtivoEmpresa}
         onOpenChange={(open) => !open && setToggleAtivoEmpresa(null)}
-        title={toggleAtivoEmpresa?.ativo ? 'Inativar Empresa' : 'Ativar Empresa'}
+        title={toggleAtivoEmpresa?.ativo ? t('admin.empresas.toggleAtivoTitleInativar') : t('admin.empresas.toggleAtivoTitleAtivar')}
         description={
           toggleAtivoEmpresa?.ativo
-            ? `Deseja inativar a empresa "${toggleAtivoEmpresa?.nome}"? Os usuários perderão acesso até que seja reativada.`
-            : `Deseja reativar a empresa "${toggleAtivoEmpresa?.nome}"?`
+            ? t('admin.empresas.toggleAtivoDescInativar', { nome: toggleAtivoEmpresa?.nome || '' })
+            : t('admin.empresas.toggleAtivoDescAtivar', { nome: toggleAtivoEmpresa?.nome || '' })
         }
         onConfirm={confirmToggleAtivo}
         variant={toggleAtivoEmpresa?.ativo ? 'destructive' : 'default'}
-        confirmText={toggleAtivoEmpresa?.ativo ? 'Inativar' : 'Ativar'}
+        confirmText={toggleAtivoEmpresa?.ativo ? t('admin.empresas.inativar') : t('admin.empresas.ativar')}
         loading={actionLoading}
       />
     </div>
@@ -748,15 +752,16 @@ const GerenciamentoEmpresasInner = () => {
 
 const GerenciamentoEmpresas = () => {
   const { profile } = useAuth();
+  const { t } = useLanguage();
   const isSuperAdmin = profile?.role === 'super_admin';
 
   if (!isSuperAdmin) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
         <ShieldAlert className="h-12 w-12 text-muted-foreground mb-4" />
-        <h3 className="text-lg font-semibold">Acesso restrito</h3>
+        <h3 className="text-lg font-semibold">{t('admin.empresas.accessRestrictedTitle')}</h3>
         <p className="text-sm text-muted-foreground max-w-md mt-2">
-          Apenas super administradores podem gerenciar empresas.
+          {t('admin.empresas.accessRestrictedDescription')}
         </p>
       </div>
     );

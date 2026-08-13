@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface TarefaDialogProps {
   open: boolean;
@@ -20,6 +21,7 @@ interface TarefaDialogProps {
 export function TarefaDialog({ open, onOpenChange, planoId, tarefa, onSuccess }: TarefaDialogProps) {
   const { toast } = useToast();
   const { empresaId } = useEmpresaId();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
 
   const [form, setForm] = useState({
@@ -46,7 +48,7 @@ export function TarefaDialog({ open, onOpenChange, planoId, tarefa, onSuccess }:
 
   const handleSubmit = async () => {
     if (!form.titulo.trim()) {
-      toast({ title: 'Título é obrigatório', variant: 'destructive' });
+      toast({ title: t('modDialogs.continuidade.tarefa.tituloObrigatorio'), variant: 'destructive' });
       return;
     }
     if (!empresaId) return;
@@ -66,16 +68,16 @@ export function TarefaDialog({ open, onOpenChange, planoId, tarefa, onSuccess }:
       if (tarefa) {
         const { error } = await supabase.from('continuidade_tarefas').update(payload).eq('id', tarefa.id);
         if (error) throw error;
-        toast({ title: 'Tarefa atualizada' });
+        toast({ title: t('modDialogs.continuidade.tarefa.toastUpdated') });
       } else {
         const { error } = await supabase.from('continuidade_tarefas').insert(payload);
         if (error) throw error;
-        toast({ title: 'Tarefa criada' });
+        toast({ title: t('modDialogs.continuidade.tarefa.toastCreated') });
       }
       onSuccess();
       onOpenChange(false);
     } catch (error: any) {
-      toast({ title: 'Erro ao salvar tarefa', description: error.message, variant: 'destructive' });
+      toast({ title: t('modDialogs.continuidade.tarefa.toastError'), description: error.message, variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -86,47 +88,47 @@ export function TarefaDialog({ open, onOpenChange, planoId, tarefa, onSuccess }:
       open={open}
       onOpenChange={onOpenChange}
       icon={ListChecks}
-      title={tarefa ? 'Editar Tarefa' : 'Nova Tarefa'}
+      title={tarefa ? t('modDialogs.continuidade.tarefa.titleEdit') : t('modDialogs.continuidade.tarefa.titleNew')}
       size="sm"
       onSubmit={handleSubmit}
-      submitLabel={tarefa ? 'Atualizar' : 'Criar'}
+      submitLabel={tarefa ? t('modDialogs.continuidade.tarefa.submitUpdate') : t('modDialogs.continuidade.tarefa.submitCreate')}
       isSubmitting={loading}
     >
         <div className="grid gap-4 py-4">
           <div className="space-y-2">
-            <Label>Título *</Label>
-            <Input value={form.titulo} onChange={e => setForm(p => ({ ...p, titulo: e.target.value }))} placeholder="Título da tarefa" />
+            <Label>{t('modDialogs.continuidade.tarefa.fieldTitulo')}</Label>
+            <Input value={form.titulo} onChange={e => setForm(p => ({ ...p, titulo: e.target.value }))} placeholder={t('modDialogs.continuidade.tarefa.fieldTituloPlaceholder')} />
           </div>
           <div className="space-y-2">
-            <Label>Descrição</Label>
+            <Label>{t('modDialogs.continuidade.tarefa.fieldDescricao')}</Label>
             <Textarea value={form.descricao} onChange={e => setForm(p => ({ ...p, descricao: e.target.value }))} rows={3} />
           </div>
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label>Prioridade</Label>
+              <Label>{t('modDialogs.continuidade.tarefa.fieldPrioridade')}</Label>
               <Select value={form.prioridade} onValueChange={v => setForm(p => ({ ...p, prioridade: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="baixa">Baixa</SelectItem>
-                  <SelectItem value="media">Média</SelectItem>
-                  <SelectItem value="alta">Alta</SelectItem>
-                  <SelectItem value="critica">Crítica</SelectItem>
+                  <SelectItem value="baixa">{t('modDialogs.continuidade.tarefa.prioridadeBaixa')}</SelectItem>
+                  <SelectItem value="media">{t('modDialogs.continuidade.tarefa.prioridadeMedia')}</SelectItem>
+                  <SelectItem value="alta">{t('modDialogs.continuidade.tarefa.prioridadeAlta')}</SelectItem>
+                  <SelectItem value="critica">{t('modDialogs.continuidade.tarefa.prioridadeCritica')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Status</Label>
+              <Label>{t('modDialogs.continuidade.tarefa.fieldStatus')}</Label>
               <Select value={form.status} onValueChange={v => setForm(p => ({ ...p, status: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="pendente">Pendente</SelectItem>
-                  <SelectItem value="em_andamento">Em Andamento</SelectItem>
-                  <SelectItem value="concluida">Concluída</SelectItem>
+                  <SelectItem value="pendente">{t('modDialogs.continuidade.tarefa.statusPendente')}</SelectItem>
+                  <SelectItem value="em_andamento">{t('modDialogs.continuidade.tarefa.statusEmAndamento')}</SelectItem>
+                  <SelectItem value="concluida">{t('modDialogs.continuidade.tarefa.statusConcluida')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Prazo</Label>
+              <Label>{t('modDialogs.continuidade.tarefa.fieldPrazo')}</Label>
               <Input type="date" value={form.prazo} onChange={e => setForm(p => ({ ...p, prazo: e.target.value }))} />
             </div>
           </div>

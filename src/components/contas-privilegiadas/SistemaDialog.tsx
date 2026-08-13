@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -15,19 +15,18 @@ import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { UserSelect } from '@/components/riscos/UserSelect';
 import { Server, Upload, X, Image as ImageIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
-const sistemaSchema = z.object({
-  nome_sistema: z.string().min(1, 'Nome do sistema é obrigatório'),
-  tipo_sistema: z.string().min(1, 'Tipo do sistema é obrigatório'),
-  criticidade: z.string().min(1, 'Criticidade é obrigatória'),
-  responsavel_sistema: z.string().optional(),
-  url_sistema: z.string().url('URL inválida').optional().or(z.literal('')),
-  categoria: z.string().optional(),
-  observacoes: z.string().optional(),
-  ativo: z.boolean().default(true),
-});
-
-type SistemaFormData = z.infer<typeof sistemaSchema>;
+type SistemaFormData = {
+  nome_sistema: string;
+  tipo_sistema: string;
+  criticidade: string;
+  responsavel_sistema?: string;
+  url_sistema?: string;
+  categoria?: string;
+  observacoes?: string;
+  ativo: boolean;
+};
 
 interface SistemaDialogProps {
   open: boolean;
@@ -36,6 +35,7 @@ interface SistemaDialogProps {
 }
 
 export default function SistemaDialog({ open, onClose, sistema }: SistemaDialogProps) {
+  const { t } = useLanguage();
   const { toast } = useToast();
   const { empresaId, loading: loadingEmpresa } = useEmpresaId();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -43,6 +43,17 @@ export default function SistemaDialog({ open, onClose, sistema }: SistemaDialogP
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   
+  const sistemaSchema = useMemo(() => z.object({
+    nome_sistema: z.string().min(1, t('acessosDd.contas.sistemaDialog.zodNomeObrigatorio')),
+    tipo_sistema: z.string().min(1, t('acessosDd.contas.sistemaDialog.zodTipoObrigatorio')),
+    criticidade: z.string().min(1, t('acessosDd.contas.sistemaDialog.zodCriticidadeObrigatoria')),
+    responsavel_sistema: z.string().optional(),
+    url_sistema: z.string().url(t('acessosDd.contas.sistemaDialog.zodUrlInvalida')).optional().or(z.literal('')),
+    categoria: z.string().optional(),
+    observacoes: z.string().optional(),
+    ativo: z.boolean().default(true),
+  }), [t]);
+
   const form = useForm<SistemaFormData>({
     resolver: zodResolver(sistemaSchema),
     defaultValues: {
@@ -83,8 +94,8 @@ export default function SistemaDialog({ open, onClose, sistema }: SistemaDialogP
     // Validar tipo
     if (!file.type.startsWith('image/')) {
       toast({
-        title: 'Arquivo inválido',
-        description: 'Por favor, selecione uma imagem (PNG, JPG, etc.)',
+        title: t('contasPrivilegiadasComp.sistemaDialog.toastArquivoInvalidoTitle'),
+        description: t('contasPrivilegiadasComp.sistemaDialog.toastArquivoInvalidoDesc'),
         variant: 'destructive',
       });
       return;
@@ -93,8 +104,8 @@ export default function SistemaDialog({ open, onClose, sistema }: SistemaDialogP
     // Validar tamanho (max 2MB)
     if (file.size > 2 * 1024 * 1024) {
       toast({
-        title: 'Arquivo muito grande',
-        description: 'A imagem deve ter no máximo 2MB',
+        title: t('contasPrivilegiadasComp.sistemaDialog.toastArquivoGrandeTitle'),
+        description: t('contasPrivilegiadasComp.sistemaDialog.toastArquivoGrandeDesc'),
         variant: 'destructive',
       });
       return;
@@ -145,8 +156,8 @@ export default function SistemaDialog({ open, onClose, sistema }: SistemaDialogP
     } catch (error: any) {
       console.error('Erro no upload:', error);
       toast({
-        title: 'Erro no upload',
-        description: error.message || 'Não foi possível fazer upload da imagem',
+        title: t('contasPrivilegiadasComp.sistemaDialog.toastErrorUpload'),
+        description: error.message || t('contasPrivilegiadasComp.sistemaDialog.toastErrorUploadDesc'),
         variant: 'destructive',
       });
       return null;
@@ -158,7 +169,7 @@ export default function SistemaDialog({ open, onClose, sistema }: SistemaDialogP
   const onSubmit = async (data: SistemaFormData) => {
     try {
       if (!empresaId) {
-        throw new Error('Empresa não encontrada');
+        throw new Error(t('contasPrivilegiadasComp.sistemaDialog.toastEmpresaNaoEncontrada'));
       }
 
       let sistemaId = sistema?.id;
@@ -197,8 +208,8 @@ export default function SistemaDialog({ open, onClose, sistema }: SistemaDialogP
         }
 
         toast({
-          title: 'Sucesso',
-          description: 'Sistema criado com sucesso',
+          title: t('contasPrivilegiadasComp.sistemaDialog.toastSuccessTitle'),
+          description: t('contasPrivilegiadasComp.sistemaDialog.toastCreated'),
         });
       } else {
         // Upload da imagem se houver nova
@@ -223,16 +234,16 @@ export default function SistemaDialog({ open, onClose, sistema }: SistemaDialogP
         if (error) throw error;
 
         toast({
-          title: 'Sucesso',
-          description: 'Sistema atualizado com sucesso',
+          title: t('contasPrivilegiadasComp.sistemaDialog.toastSuccessTitle'),
+          description: t('contasPrivilegiadasComp.sistemaDialog.toastUpdated'),
         });
       }
 
       onClose();
     } catch (error: any) {
       toast({
-        title: 'Erro',
-        description: error.message || 'Erro ao salvar sistema',
+        title: t('contasPrivilegiadasComp.sistemaDialog.toastErrorTitle'),
+        description: error.message || t('contasPrivilegiadasComp.sistemaDialog.toastErrorSave'),
         variant: 'destructive',
       });
     }
@@ -242,11 +253,11 @@ export default function SistemaDialog({ open, onClose, sistema }: SistemaDialogP
     <DialogShell
         open={open}
         onOpenChange={onClose}
-        title={`${sistema?.id ? "Editar" : "Novo"} Sistema Privilegiado`}
+        title={sistema?.id ? t('contasPrivilegiadasComp.sistemaDialog.titleEdit') : t('contasPrivilegiadasComp.sistemaDialog.titleNew')}
         icon={Server}
         size="lg"
         onSubmit={form.handleSubmit(onSubmit)}
-        submitLabel={sistema ? 'Atualizar' : 'Criar Sistema'}
+        submitLabel={sistema ? t('contasPrivilegiadasComp.sistemaDialog.submitUpdate') : t('contasPrivilegiadasComp.sistemaDialog.submitCreate')}
         isSubmitting={uploadingImage}
         isDirty={form.formState.isDirty}
       >
@@ -254,7 +265,7 @@ export default function SistemaDialog({ open, onClose, sistema }: SistemaDialogP
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
             {/* Upload de Imagem */}
             <FormItem>
-              <FormLabel>Imagem do Sistema</FormLabel>
+              <FormLabel>{t('contasPrivilegiadasComp.sistemaDialog.fieldImagem')}</FormLabel>
               <div className="flex items-start gap-4">
                 {/* Preview */}
                 <div 
@@ -302,10 +313,10 @@ export default function SistemaDialog({ open, onClose, sistema }: SistemaDialogP
                     disabled={uploadingImage}
                   >
                     <Upload className="h-4 w-4 mr-2" />
-                    {imagePreview ? 'Alterar Imagem' : 'Upload de Imagem'}
+                    {imagePreview ? t('contasPrivilegiadasComp.sistemaDialog.buttonAlterarImagem') : t('contasPrivilegiadasComp.sistemaDialog.buttonUploadImagem')}
                   </Button>
                   <p className="text-xs text-muted-foreground">
-                    PNG, JPG até 2MB. Recomendado: 200x200px
+                    {t('contasPrivilegiadasComp.sistemaDialog.imagemHint')}
                   </p>
                 </div>
               </div>
@@ -317,9 +328,9 @@ export default function SistemaDialog({ open, onClose, sistema }: SistemaDialogP
                 name="nome_sistema"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Nome do Sistema *</FormLabel>
+                    <FormLabel>{t('contasPrivilegiadasComp.sistemaDialog.fieldNomeSistema')}</FormLabel>
                     <FormControl>
-                      <Input placeholder="Ex: Active Directory" {...field} />
+                      <Input placeholder={t('contasPrivilegiadasComp.sistemaDialog.fieldNomeSistemaPlaceholder')} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -331,26 +342,26 @@ export default function SistemaDialog({ open, onClose, sistema }: SistemaDialogP
                 name="tipo_sistema"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Tipo do Sistema *</FormLabel>
+                    <FormLabel>{t('contasPrivilegiadasComp.sistemaDialog.fieldTipoSistema')}</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecione o tipo" />
+                          <SelectValue placeholder={t('contasPrivilegiadasComp.sistemaDialog.fieldTipoSistemaPlaceholder')} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="aplicacao">Aplicação</SelectItem>
-                        <SelectItem value="banco_dados">Banco de Dados</SelectItem>
-                        <SelectItem value="sistema_operacional">Sistema Operacional</SelectItem>
-                        <SelectItem value="rede">Rede/Infraestrutura</SelectItem>
-                        <SelectItem value="nuvem">Nuvem</SelectItem>
-                        <SelectItem value="erp">ERP</SelectItem>
-                        <SelectItem value="crm">CRM</SelectItem>
-                        <SelectItem value="bi">Business Intelligence</SelectItem>
-                        <SelectItem value="seguranca">Segurança</SelectItem>
-                        <SelectItem value="backup">Backup</SelectItem>
-                        <SelectItem value="monitoramento">Monitoramento</SelectItem>
-                        <SelectItem value="outro">Outro</SelectItem>
+                        <SelectItem value="aplicacao">{t('contasPrivilegiadasComp.sistemaDialog.tipoAplicacao')}</SelectItem>
+                        <SelectItem value="banco_dados">{t('contasPrivilegiadasComp.sistemaDialog.tipoBancoDados')}</SelectItem>
+                        <SelectItem value="sistema_operacional">{t('contasPrivilegiadasComp.sistemaDialog.tipoSistemaOperacional')}</SelectItem>
+                        <SelectItem value="rede">{t('contasPrivilegiadasComp.sistemaDialog.tipoRede')}</SelectItem>
+                        <SelectItem value="nuvem">{t('contasPrivilegiadasComp.sistemaDialog.tipoNuvem')}</SelectItem>
+                        <SelectItem value="erp">{t('contasPrivilegiadasComp.sistemaDialog.tipoErp')}</SelectItem>
+                        <SelectItem value="crm">{t('contasPrivilegiadasComp.sistemaDialog.tipoCrm')}</SelectItem>
+                        <SelectItem value="bi">{t('contasPrivilegiadasComp.sistemaDialog.tipoBi')}</SelectItem>
+                        <SelectItem value="seguranca">{t('contasPrivilegiadasComp.sistemaDialog.tipoSeguranca')}</SelectItem>
+                        <SelectItem value="backup">{t('contasPrivilegiadasComp.sistemaDialog.tipoBackup')}</SelectItem>
+                        <SelectItem value="monitoramento">{t('contasPrivilegiadasComp.sistemaDialog.tipoMonitoramento')}</SelectItem>
+                        <SelectItem value="outro">{t('contasPrivilegiadasComp.sistemaDialog.tipoOutro')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -365,18 +376,18 @@ export default function SistemaDialog({ open, onClose, sistema }: SistemaDialogP
                 name="criticidade"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Criticidade *</FormLabel>
+                    <FormLabel>{t('contasPrivilegiadasComp.sistemaDialog.fieldCriticidade')}</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecione a criticidade" />
+                          <SelectValue placeholder={t('contasPrivilegiadasComp.sistemaDialog.fieldCriticidadePlaceholder')} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="critica">Crítica</SelectItem>
-                        <SelectItem value="alta">Alta</SelectItem>
-                        <SelectItem value="media">Média</SelectItem>
-                        <SelectItem value="baixa">Baixa</SelectItem>
+                        <SelectItem value="critica">{t('contasPrivilegiadasComp.sistemaDialog.criticidadeCritica')}</SelectItem>
+                        <SelectItem value="alta">{t('contasPrivilegiadasComp.sistemaDialog.criticidadeAlta')}</SelectItem>
+                        <SelectItem value="media">{t('contasPrivilegiadasComp.sistemaDialog.criticidadeMedia')}</SelectItem>
+                        <SelectItem value="baixa">{t('contasPrivilegiadasComp.sistemaDialog.criticidadeBaixa')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -389,22 +400,22 @@ export default function SistemaDialog({ open, onClose, sistema }: SistemaDialogP
                 name="categoria"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Categoria</FormLabel>
+                    <FormLabel>{t('contasPrivilegiadasComp.sistemaDialog.fieldCategoria')}</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecione a categoria" />
+                          <SelectValue placeholder={t('contasPrivilegiadasComp.sistemaDialog.fieldCategoriaPlaceholder')} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="core_business">Core Business</SelectItem>
-                        <SelectItem value="suporte">Suporte</SelectItem>
-                        <SelectItem value="infraestrutura">Infraestrutura</SelectItem>
-                        <SelectItem value="seguranca">Segurança</SelectItem>
-                        <SelectItem value="desenvolvimento">Desenvolvimento</SelectItem>
-                        <SelectItem value="financeiro">Financeiro</SelectItem>
-                        <SelectItem value="rh">Recursos Humanos</SelectItem>
-                        <SelectItem value="compliance">Compliance</SelectItem>
+                        <SelectItem value="core_business">{t('contasPrivilegiadasComp.sistemaDialog.categoriaCoreBusiness')}</SelectItem>
+                        <SelectItem value="suporte">{t('contasPrivilegiadasComp.sistemaDialog.categoriaSuporte')}</SelectItem>
+                        <SelectItem value="infraestrutura">{t('contasPrivilegiadasComp.sistemaDialog.categoriaInfraestrutura')}</SelectItem>
+                        <SelectItem value="seguranca">{t('contasPrivilegiadasComp.sistemaDialog.categoriaSeguranca')}</SelectItem>
+                        <SelectItem value="desenvolvimento">{t('contasPrivilegiadasComp.sistemaDialog.categoriaDesenvolvimento')}</SelectItem>
+                        <SelectItem value="financeiro">{t('contasPrivilegiadasComp.sistemaDialog.categoriaFinanceiro')}</SelectItem>
+                        <SelectItem value="rh">{t('contasPrivilegiadasComp.sistemaDialog.categoriaRh')}</SelectItem>
+                        <SelectItem value="compliance">{t('contasPrivilegiadasComp.sistemaDialog.categoriaCompliance')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -419,12 +430,12 @@ export default function SistemaDialog({ open, onClose, sistema }: SistemaDialogP
                 name="responsavel_sistema"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Responsável pelo Sistema</FormLabel>
+                    <FormLabel>{t('contasPrivilegiadasComp.sistemaDialog.fieldResponsavel')}</FormLabel>
                     <FormControl>
                       <UserSelect
                         value={field.value || ''}
                         onValueChange={field.onChange}
-                        placeholder="Selecionar responsável..."
+                        placeholder={t('contasPrivilegiadasComp.sistemaDialog.fieldResponsavelPlaceholder')}
                       />
                     </FormControl>
                     <FormMessage />
@@ -437,11 +448,11 @@ export default function SistemaDialog({ open, onClose, sistema }: SistemaDialogP
                 name="url_sistema"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>URL do Sistema</FormLabel>
+                    <FormLabel>{t('contasPrivilegiadasComp.sistemaDialog.fieldUrl')}</FormLabel>
                     <FormControl>
                       <Input 
                         type="url" 
-                        placeholder="https://sistema.exemplo.com" 
+                        placeholder={t('contasPrivilegiadasComp.sistemaDialog.fieldUrlPlaceholder')} 
                         {...field}
                       />
                     </FormControl>
@@ -456,10 +467,10 @@ export default function SistemaDialog({ open, onClose, sistema }: SistemaDialogP
               name="observacoes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Observações</FormLabel>
+                  <FormLabel>{t('contasPrivilegiadasComp.sistemaDialog.fieldObservacoes')}</FormLabel>
                   <FormControl>
                     <Textarea 
-                      placeholder="Informações adicionais sobre o sistema..."
+                      placeholder={t('contasPrivilegiadasComp.sistemaDialog.fieldObservacoesPlaceholder')}
                       {...field}
                     />
                   </FormControl>
@@ -474,9 +485,9 @@ export default function SistemaDialog({ open, onClose, sistema }: SistemaDialogP
               render={({ field }) => (
                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                   <div className="space-y-0.5">
-                    <FormLabel className="text-base">Sistema Ativo</FormLabel>
+                    <FormLabel className="text-base">{t('contasPrivilegiadasComp.sistemaDialog.fieldAtivo')}</FormLabel>
                     <div className="text-sm text-muted-foreground">
-                      O sistema está em uso e aceita novas contas privilegiadas
+                      {t('contasPrivilegiadasComp.sistemaDialog.fieldAtivoHint')}
                     </div>
                   </div>
                   <FormControl>

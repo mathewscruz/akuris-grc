@@ -19,6 +19,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { formatDateOnly } from '@/lib/date-utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Categoria {
   id: string;
@@ -43,6 +44,7 @@ const coresPredefinidas = [
 ];
 
 export function CategoriasDenuncia() {
+  const { t } = useLanguage();
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -78,8 +80,8 @@ export function CategoriasDenuncia() {
     } catch (error) {
       console.error('Erro ao carregar categorias:', error);
       toast({
-        title: "Erro",
-        description: "Erro ao carregar categorias",
+        title: t('denunciasAdmin.categorias.errorLoad'),
+        description: t('denunciasAdmin.categorias.errorLoad'),
         variant: "destructive"
       });
     } finally {
@@ -115,8 +117,8 @@ export function CategoriasDenuncia() {
   const handleSalvar = async () => {
     if (!formData.nome.trim()) {
       toast({
-        title: "Erro",
-        description: "Nome da categoria é obrigatório",
+        title: t('denunciasAdmin.categorias.nameRequired'),
+        description: t('denunciasAdmin.categorias.nameRequired'),
         variant: "destructive"
       });
       return;
@@ -137,8 +139,8 @@ export function CategoriasDenuncia() {
         if (error) throw error;
 
         toast({
-          title: "Sucesso",
-          description: "Categoria atualizada com sucesso"
+          title: t('denunciasAdmin.categorias.updated'),
+          description: t('denunciasAdmin.categorias.updated')
         });
       } else {
         const { error } = await supabase
@@ -153,8 +155,8 @@ export function CategoriasDenuncia() {
         if (error) throw error;
 
         toast({
-          title: "Sucesso",
-          description: "Categoria criada com sucesso"
+          title: t('denunciasAdmin.categorias.created'),
+          description: t('denunciasAdmin.categorias.created')
         });
       }
 
@@ -163,10 +165,10 @@ export function CategoriasDenuncia() {
     } catch (error: any) {
       console.error('Erro ao salvar categoria:', error);
       toast({
-        title: "Erro",
+        title: t('denunciasAdmin.categorias.errorSave'),
         description: error.message?.includes('duplicate') 
-          ? "Já existe uma categoria com este nome"
-          : "Erro ao salvar categoria",
+          ? t('denunciasAdmin.categorias.duplicate')
+          : t('denunciasAdmin.categorias.errorSave'),
         variant: "destructive"
       });
     } finally {
@@ -191,18 +193,18 @@ export function CategoriasDenuncia() {
       if (error) throw error;
 
       toast({
-        title: "Sucesso",
-        description: "Categoria excluída com sucesso"
+        title: t('denunciasAdmin.categorias.deleted'),
+        description: t('denunciasAdmin.categorias.deleted')
       });
 
       carregarCategorias();
     } catch (error: any) {
       console.error('Erro ao excluir categoria:', error);
       toast({
-        title: "Erro",
+        title: t('denunciasAdmin.categorias.errorDelete'),
         description: error.message?.includes('foreign key') 
-          ? "Não é possível excluir esta categoria pois existem denúncias vinculadas"
-          : "Erro ao excluir categoria",
+          ? t('denunciasAdmin.categorias.errorDeleteFk')
+          : t('denunciasAdmin.categorias.errorDelete'),
         variant: "destructive"
       });
     } finally {
@@ -221,16 +223,16 @@ export function CategoriasDenuncia() {
       if (error) throw error;
 
       toast({
-        title: "Sucesso",
-        description: `Categoria ${!categoria.ativo ? 'ativada' : 'desativada'} com sucesso`
+        title: t('denunciasAdmin.categorias.updated'),
+        description: !categoria.ativo ? t('denunciasAdmin.categorias.toggleActivated') : t('denunciasAdmin.categorias.toggleDeactivated')
       });
 
       carregarCategorias();
     } catch (error) {
       console.error('Erro ao atualizar status:', error);
       toast({
-        title: "Erro",
-        description: "Erro ao atualizar status da categoria",
+        title: t('denunciasAdmin.categorias.errorToggle'),
+        description: t('denunciasAdmin.categorias.errorToggle'),
         variant: "destructive"
       });
     }
@@ -278,7 +280,7 @@ export function CategoriasDenuncia() {
   const columns: Column<Categoria>[] = [
     {
       key: 'nome',
-      label: 'Categoria',
+      label: t('denunciasAdmin.categorias.colName'),
       sortable: true,
       render: (_value, cat) => (
         <div className="flex items-center gap-2">
@@ -292,7 +294,7 @@ export function CategoriasDenuncia() {
     },
     {
       key: 'descricao',
-      label: 'Descrição',
+      label: t('denunciasAdmin.categorias.colDescription'),
       sortable: true,
       render: (_value, cat) => (
         <span className="max-w-xs truncate block">{cat.descricao || '-'}</span>
@@ -300,7 +302,7 @@ export function CategoriasDenuncia() {
     },
     {
       key: 'ativo',
-      label: 'Status',
+      label: t('denunciasAdmin.categorias.colStatus'),
       sortable: true,
       render: (_value, cat) => (
         <Button
@@ -309,20 +311,20 @@ export function CategoriasDenuncia() {
           onClick={() => toggleAtivo(cat)}
         >
           <Badge variant={cat.ativo ? "default" : "secondary"} className="whitespace-nowrap">
-            {cat.ativo ? 'Ativo' : 'Inativo'}
+            {cat.ativo ? t('denunciasAdmin.categorias.statusActive') : t('denunciasAdmin.categorias.statusInactive')}
           </Badge>
         </Button>
       )
     },
     {
       key: 'created_at',
-      label: 'Criado em',
+      label: t('denunciasAdmin.categorias.colCreatedAt'),
       sortable: true,
       render: (_value, cat) => formatDateOnly(cat.created_at)
     },
     {
       key: 'acoes',
-      label: 'Ações',
+      label: t('denunciasAdmin.categorias.colActions'),
       render: (_value, cat) => (
         <div className="flex items-center gap-2">
           <Button
@@ -347,13 +349,13 @@ export function CategoriasDenuncia() {
   const filters = [
     {
       key: 'status',
-      label: 'Status',
+      label: t('denunciasAdmin.categorias.colStatus'),
       value: statusFilter,
       onChange: setStatusFilter,
       options: [
-        { value: 'all', label: 'Todos' },
-        { value: 'ativo', label: 'Ativo' },
-        { value: 'inativo', label: 'Inativo' }
+        { value: 'all', label: t('denunciasAdmin.categorias.filterAll') },
+        { value: 'ativo', label: t('denunciasAdmin.categorias.statusActive') },
+        { value: 'inativo', label: t('denunciasAdmin.categorias.statusInactive') }
       ]
     }
   ];
@@ -362,9 +364,9 @@ export function CategoriasDenuncia() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Categorias de Denúncia</h2>
+          <h2 className="text-2xl font-bold">{t('denunciasAdmin.categorias.pageTitle')}</h2>
           <p className="text-muted-foreground">
-            Gerencie as categorias para classificar as denúncias
+            {t('denunciasAdmin.categorias.pageDescription')}
           </p>
         </div>
         
@@ -372,46 +374,46 @@ export function CategoriasDenuncia() {
           <DialogTrigger asChild>
             <Button onClick={() => abrirDialog()}>
               <Plus className="w-4 h-4 mr-2" />
-              Nova Categoria
+              {t('denunciasAdmin.categorias.newCategory')}
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>
-                {editingCategoria ? 'Editar Categoria' : 'Nova Categoria'}
+                {editingCategoria ? t('denunciasAdmin.categorias.editCategory') : t('denunciasAdmin.categorias.newCategory')}
               </DialogTitle>
               <DialogDescription>
                 {editingCategoria 
-                  ? 'Edite as informações da categoria'
-                  : 'Crie uma nova categoria para classificar denúncias'
+                  ? t('denunciasAdmin.categorias.editDescription')
+                  : t('denunciasAdmin.categorias.newDescription')
                 }
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="nome">Nome *</Label>
+                <Label htmlFor="nome">{t('denunciasAdmin.categorias.fieldName')}</Label>
                 <Input
                   id="nome"
                   value={formData.nome}
                   onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
-                  placeholder="Ex: Assédio, Corrupção, Fraude..."
+                  placeholder={t('denunciasAdmin.categorias.fieldNamePlaceholder')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="descricao">Descrição</Label>
+                <Label htmlFor="descricao">{t('denunciasAdmin.categorias.fieldDescription')}</Label>
                 <Textarea
                   id="descricao"
                   value={formData.descricao}
                   onChange={(e) => setFormData(prev => ({ ...prev, descricao: e.target.value }))}
-                  placeholder="Descrição da categoria..."
+                  placeholder={t('denunciasAdmin.categorias.fieldDescriptionPlaceholder')}
                   rows={3}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label>Cor</Label>
+                <Label>{t('denunciasAdmin.categorias.fieldColor')}</Label>
                 <div className="flex flex-wrap gap-2">
                   {coresPredefinidas.map((cor) => (
                     <button
@@ -437,19 +439,19 @@ export function CategoriasDenuncia() {
                   variant="secondary" 
                   style={{ backgroundColor: formData.cor, color: 'white' }}
                 >
-                  {formData.nome || 'Preview'}
+                  {formData.nome || t('denunciasAdmin.categorias.preview')}
                 </Badge>
-                <span className="text-sm text-muted-foreground">Preview</span>
+                <span className="text-sm text-muted-foreground">{t('denunciasAdmin.categorias.preview')}</span>
               </div>
 
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={fecharDialog}>
                   <X className="w-4 h-4 mr-2" />
-                  Cancelar
+                  {t('denunciasAdmin.categorias.cancel')}
                 </Button>
                 <Button onClick={handleSalvar} disabled={saving}>
                   <Save className="w-4 h-4 mr-2" />
-                  {saving ? 'Salvando...' : 'Salvar'}
+                  {saving ? t('denunciasAdmin.categorias.saving') : t('denunciasAdmin.categorias.save')}
                 </Button>
               </div>
             </div>
@@ -461,10 +463,10 @@ export function CategoriasDenuncia() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Tag className="h-5 w-5" />
-            Categorias Cadastradas
+            {t('denunciasAdmin.categorias.cardTitle')}
           </CardTitle>
           <CardDescription>
-            {categorias.length} categoria(s) cadastrada(s)
+            {t('denunciasAdmin.categorias.cardDescription', { count: categorias.length })}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -472,7 +474,7 @@ export function CategoriasDenuncia() {
             data={filteredAndSortedCategorias}
             columns={columns}
             loading={loading}
-            searchPlaceholder="Buscar categorias..."
+            searchPlaceholder={t('denunciasAdmin.categorias.searchPlaceholder')}
             searchValue={searchTerm}
             onSearchChange={setSearchTerm}
             filters={filters}
@@ -488,8 +490,8 @@ export function CategoriasDenuncia() {
             }}
             emptyState={{
               icon: <Tag className="w-12 h-12" />,
-              title: "Nenhuma categoria encontrada",
-              description: "Clique em 'Nova Categoria' para começar"
+              title: t('denunciasAdmin.categorias.emptyTitle'),
+              description: t('denunciasAdmin.categorias.emptyDescription')
             }}
           />
         </CardContent>
@@ -498,10 +500,10 @@ export function CategoriasDenuncia() {
       <ConfirmDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        title="Excluir Categoria"
-        description={`Tem certeza que deseja excluir a categoria "${categoriaToDelete?.nome}"? Esta ação não pode ser desfeita.`}
-        confirmText="Excluir"
-        cancelText="Cancelar"
+        title={t('denunciasAdmin.categorias.confirmDeleteTitle')}
+        description={t('denunciasAdmin.categorias.confirmDeleteDescription', { nome: categoriaToDelete?.nome })}
+        confirmText={t('denunciasAdmin.categorias.confirmDeleteConfirm')}
+        cancelText={t('denunciasAdmin.categorias.cancel')}
         variant="destructive"
         onConfirm={handleDelete}
       />

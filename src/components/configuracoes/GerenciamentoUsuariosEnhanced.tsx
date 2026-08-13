@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -22,15 +22,17 @@ import { StatCard } from '@/components/ui/stat-card';
 import { formatDateOnly, formatDateTime } from '@/lib/date-utils';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
-const usuarioSchema = z.object({
-  nome: z.string().min(1, 'Nome é obrigatório'),
-  email: z.string().email('Email inválido'),
+import { useLanguage } from '@/contexts/LanguageContext';
+
+const makeUsuarioSchema = (t: (k: string) => string) => z.object({
+  nome: z.string().min(1, t('admin.usuarios.zodNomeRequired')),
+  email: z.string().email(t('admin.usuarios.zodEmailInvalid')),
   role: z.enum(['super_admin', 'admin', 'user', 'readonly']),
   empresa_id: z.string().optional(),
   permission_profile_id: z.string().optional(),
 });
 
-type UsuarioForm = z.infer<typeof usuarioSchema>;
+type UsuarioForm = z.infer<ReturnType<typeof makeUsuarioSchema>>;
 
 interface PermissionProfile {
   id: string;
@@ -78,6 +80,8 @@ interface Props {
 }
 
 const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
+  const { t } = useLanguage();
+  const usuarioSchema = useMemo(() => makeUsuarioSchema(t), [t]);
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
   const [permissionProfiles, setPermissionProfiles] = useState<PermissionProfile[]>([]);
@@ -158,7 +162,7 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
       setUsuarios(usuariosData);
     } catch (error) {
       console.error('Erro ao buscar usuários:', error);
-      toast.error('Erro ao carregar usuários');
+      toast.error(t('admin.usuarios.toastErrorFetch'));
     }
   };
 
@@ -291,7 +295,7 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
           } as any);
         }
 
-        toast.success('Usuário atualizado com sucesso');
+        toast.success(t('admin.usuarios.toastUserUpdated'));
       } else {
         const { error } = await supabase.functions.invoke('create-user', {
           body: {
@@ -305,12 +309,12 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
 
         if (error) {
           if (error.message?.includes('DUPLICATE_USER')) {
-            toast.error(`Usuário já existe: ${data.email}`);
+            toast.error(t('admin.usuarios.toastUserExists', { email: data.email }));
             return;
           }
           throw error;
         }
-        toast.success('Usuário criado com sucesso');
+        toast.success(t('admin.usuarios.toastUserCreated'));
       }
 
       await fetchUsuarios();
@@ -319,7 +323,7 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
       setEditingUsuario(null);
     } catch (error: any) {
       console.error('Erro ao salvar usuário:', error);
-      toast.error(error.message || 'Erro ao salvar usuário');
+      toast.error(error.message || t('admin.usuarios.toastErrorSave'));
     } finally {
       setCreating(false);
     }
@@ -348,11 +352,11 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
       
       if (error) throw error;
       
-      toast.success(`Permissões restauradas para ${data?.successful || 0} usuários`);
+      toast.success(t('admin.usuarios.toastPermissionsRestored', { count: data?.successful || 0 }));
       await fetchUsuarios();
     } catch (error: any) {
       console.error('Erro ao restaurar permissões:', error);
-      toast.error(error.message || "Erro ao restaurar permissões");
+      toast.error(error.message || t('admin.usuarios.toastErrorRestorePermissions'));
     } finally {
       setRestoringPermissions(false);
     }
@@ -381,9 +385,9 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
           .eq('id', usuarioToDelete.id);
 
         if (profileDeleteError) throw profileDeleteError;
-        toast.success('Usuário removido do sistema');
+        toast.success(t('admin.usuarios.toastUserRemoved'));
       } else {
-        toast.success('Usuário excluído completamente');
+        toast.success(t('admin.usuarios.toastUserDeletedFully'));
       }
       
       await fetchUsuarios();
@@ -391,7 +395,7 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
       setUsuarioToDelete(null);
     } catch (error: any) {
       console.error('Erro ao excluir usuário:', error);
-      toast.error(error.message || 'Erro ao excluir usuário');
+      toast.error(error.message || t('admin.usuarios.toastErrorDelete'));
     }
   };
 
@@ -413,9 +417,9 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
       const link = (data as any)?.setupPasswordUrl;
       if (link) {
         try { await navigator.clipboard.writeText(link); } catch {}
-        toast.success(`Convite reenviado para ${usuario.nome}. Link copiado para área de transferência.`);
+        toast.success(t('admin.usuarios.toastInviteResent', { nome: usuario.nome }));
       } else {
-        toast.success(`Convite reenviado para ${usuario.nome}`);
+        toast.success(t('admin.usuarios.toastInviteResentSimple', { nome: usuario.nome }));
       }
 
       const userIds = usuarios.map(u => u.user_id);
@@ -423,7 +427,7 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
       await fetchUsuarios();
     } catch (error: any) {
       console.error('Erro ao reenviar convite:', error);
-      toast.error(error.message || 'Erro ao reenviar convite');
+      toast.error(error.message || t('admin.usuarios.toastErrorResendInvite'));
     } finally {
       setActionLoading(prev => ({ ...prev, [`resend-${usuario.id}`]: false }));
     }
@@ -439,13 +443,13 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
 
       if (error) throw error;
 
-      toast.success(`Nova senha temporária enviada para ${usuario.email}`);
+      toast.success(t('admin.usuarios.toastPasswordReset', { email: usuario.email }));
       
       const userIds = usuarios.map(u => u.user_id);
       await fetchUsersAccessInfo(userIds);
     } catch (error: any) {
       console.error('Erro ao resetar senha:', error);
-      toast.error(error.message || 'Erro ao resetar senha');
+      toast.error(error.message || t('admin.usuarios.toastErrorResetPassword'));
     } finally {
       setActionLoading(prev => ({ ...prev, [`reset-${usuario.id}`]: false }));
     }
@@ -460,10 +464,10 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
     } as const;
 
     const labels = {
-      super_admin: 'Super Admin',
-      admin: 'Admin',
-      user: 'Usuário',
-      readonly: 'Somente Leitura'
+      super_admin: t('admin.usuarios.roleSuperAdmin'),
+      admin: t('admin.usuarios.roleAdmin'),
+      user: t('admin.usuarios.roleUser'),
+      readonly: t('admin.usuarios.roleReadonly')
     } as const;
 
     return (
@@ -487,16 +491,16 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-medium">Gerenciar Permissões</h3>
+            <h3 className="text-lg font-medium">{t('admin.usuarios.managePermissionsTitle')}</h3>
             <p className="text-sm text-muted-foreground">
-              Configure permissões específicas por usuário e módulo
+              {t('admin.usuarios.managePermissionsDesc')}
             </p>
           </div>
           <Button
             variant="outline"
             onClick={() => setShowPermissionMatrix(false)}
           >
-            Voltar
+            {t('admin.usuarios.back')}
           </Button>
         </div>
         <PermissionMatrix selectedUserId={selectedUserForPermissions} />
@@ -507,7 +511,7 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
   const columns: Column<Usuario>[] = [
     {
       key: 'nome',
-      label: 'Usuário',
+      label: t('admin.usuarios.columnUsuario'),
       sortable: true,
       render: (_, usuario) => (
         <div className="flex items-center space-x-3">
@@ -531,13 +535,13 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
     },
     {
       key: 'role',
-      label: 'Papel',
+      label: t('admin.usuarios.columnPapel'),
       sortable: true,
       render: (value) => getRoleBadge(value),
     },
     {
       key: 'permission_profile_id',
-      label: 'Perfil de Permissão',
+      label: t('admin.usuarios.columnPerfilPermissao'),
       sortable: false,
       render: (_, usuario) => {
         const profileName = usuario.permission_profiles?.name;
@@ -547,29 +551,29 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
             {profileName}
           </Badge>
         ) : (
-          <span className="text-sm text-muted-foreground">Sem perfil</span>
+          <span className="text-sm text-muted-foreground">{t('admin.usuarios.semPerfil')}</span>
         );
       },
     },
     ...(isSuperAdmin ? [{
       key: 'empresa',
-      label: 'Empresa',
+      label: t('admin.usuarios.columnEmpresa'),
       sortable: false,
       render: (_, usuario) => usuario.empresas?.nome || '-',
     } as Column<Usuario>] : []),
     {
       key: 'ativo',
-      label: 'Status',
+      label: t('admin.usuarios.columnStatus'),
       sortable: true,
       render: (value) => (
         <Badge variant={value ? 'default' : 'secondary'}>
-          {value ? 'Ativo' : 'Inativo'}
+          {value ? t('admin.usuarios.ativo') : t('admin.usuarios.inativo')}
         </Badge>
       ),
     },
     {
       key: 'acesso',
-      label: 'Acesso',
+      label: t('admin.usuarios.columnAcesso'),
       sortable: false,
       render: (_, usuario) => {
         const accessInfo = usersAccessInfo.get(usuario.user_id);
@@ -585,7 +589,7 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
-                  Último acesso: {format(new Date(accessInfo.last_sign_in_at), "dd 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: ptBR })}
+                  {t('admin.usuarios.ultimoAcesso', { data: format(new Date(accessInfo.last_sign_in_at), "dd 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: ptBR }) })}
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -596,25 +600,25 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
           return (
             <Badge variant="warning" className="whitespace-nowrap">
               <Clock className="h-3 w-3 mr-1" />
-              Primeiro acesso pendente
+              {t('admin.usuarios.primeiroAcessoPendente')}
             </Badge>
           );
         }
         
         return (
-          <Badge variant="secondary">Nunca acessou</Badge>
+          <Badge variant="secondary">{t('admin.usuarios.nuncaAcessou')}</Badge>
         );
       },
     },
     {
       key: 'created_at',
-      label: 'Criado em',
+      label: t('admin.usuarios.columnCriadoEm'),
       sortable: true,
       render: (value) => formatDateOnly(value),
     },
     {
       key: 'actions',
-      label: 'Ações',
+      label: t('admin.usuarios.columnAcoes'),
       className: 'w-24 text-right',
       render: (_, usuario) => (
         <DropdownMenu>
@@ -626,11 +630,11 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => handleEdit(usuario)}>
               <Edit className="h-4 w-4 mr-2" />
-              Editar
+              {t('admin.usuarios.actionEditar')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => handleManagePermissions(usuario.user_id)}>
               <Shield className="h-4 w-4 mr-2" />
-              Gerenciar Permissões
+              {t('admin.usuarios.actionGerenciarPermissoes')}
             </DropdownMenuItem>
             <DropdownMenuItem 
               onClick={() => resetPassword(usuario)}
@@ -641,7 +645,7 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
               ) : (
                 <Key className="h-4 w-4 mr-2" />
               )}
-              Resetar Senha
+              {t('admin.usuarios.actionResetarSenha')}
             </DropdownMenuItem>
             {shouldShowResendButton(usuario) && (
               <DropdownMenuItem 
@@ -653,7 +657,7 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
                 ) : (
                   <Mail className="h-4 w-4 mr-2" />
                 )}
-                Reenviar Convite
+                {t('admin.usuarios.actionReenviarConvite')}
               </DropdownMenuItem>
             )}
             {shouldShowResendButton(usuario) && (
@@ -663,18 +667,18 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
                     const { data: link, error } = await supabase
                       .rpc('get_user_invitation_link', { _user_id: usuario.user_id });
                     if (error || !link) {
-                      toast.error('Link de convite indisponível');
+                      toast.error(t('admin.usuarios.toastInviteLinkUnavailable'));
                       return;
                     }
                     await navigator.clipboard.writeText(link as string);
-                    toast.success('Link de convite copiado');
+                    toast.success(t('admin.usuarios.toastInviteLinkCopied'));
                   } catch {
-                    toast.error('Não foi possível copiar o link');
+                    toast.error(t('admin.usuarios.toastErrorCopyLink'));
                   }
                 }}
               >
                 <Copy className="h-4 w-4 mr-2" />
-                Copiar Link de Convite
+                {t('admin.usuarios.actionCopiarLinkConvite')}
               </DropdownMenuItem>
             )}
             <DropdownMenuSeparator />
@@ -683,7 +687,7 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
               onClick={() => openDeleteDialog(usuario)}
             >
               <Trash2 className="h-4 w-4 mr-2" />
-              Excluir
+              {t('admin.usuarios.actionExcluir')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -694,9 +698,9 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
   const filters: Filter[] = [
     ...(isSuperAdmin ? [{
       key: 'empresa',
-      label: 'Empresa',
+      label: t('admin.usuarios.filterEmpresaLabel'),
       options: [
-        { value: 'all', label: 'Todas as empresas' },
+        { value: 'all', label: t('admin.usuarios.filterEmpresaAll') },
         ...empresas.map(e => ({ value: e.id, label: e.nome }))
       ],
       value: filterEmpresa,
@@ -704,13 +708,13 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
     }] : []),
     {
       key: 'role',
-      label: 'Papel',
+      label: t('admin.usuarios.filterPapelLabel'),
       options: [
-        { value: 'all', label: 'Todos os papéis' },
-        { value: 'super_admin', label: 'Super Admin' },
-        { value: 'admin', label: 'Administrador' },
-        { value: 'user', label: 'Usuário' },
-        { value: 'readonly', label: 'Somente Leitura' },
+        { value: 'all', label: t('admin.usuarios.filterPapelAll') },
+        { value: 'super_admin', label: t('admin.usuarios.roleSuperAdmin') },
+        { value: 'admin', label: t('admin.usuarios.roleAdministrador') },
+        { value: 'user', label: t('admin.usuarios.roleUser') },
+        { value: 'readonly', label: t('admin.usuarios.roleReadonly') },
       ],
       value: filterRole,
       onChange: setFilterRole,
@@ -722,27 +726,27 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-4">
         <StatCard
-          title="Total de Usuários"
+          title={t('admin.usuarios.statTotalTitle')}
           value={stats.total}
           icon={<Users className="h-5 w-5" />}
           variant="default"
         />
         <StatCard
-          title="Usuários Ativos"
+          title={t('admin.usuarios.statActiveTitle')}
           value={stats.active}
           icon={<UserCheck className="h-5 w-5" />}
           variant="default"
-          description="Com pelo menos um acesso"
+          description={t('admin.usuarios.statActiveDesc')}
         />
         <StatCard
-          title="Pendentes"
+          title={t('admin.usuarios.statPendingTitle')}
           value={stats.pending}
           icon={<Clock className="h-5 w-5" />}
           variant={stats.pending > 0 ? 'warning' : 'default'}
-          description="Primeiro acesso pendente"
+          description={t('admin.usuarios.statPendingDesc')}
         />
         <StatCard
-          title="Administradores"
+          title={t('admin.usuarios.statAdminsTitle')}
           value={stats.admins}
           icon={<ShieldCheck className="h-5 w-5" />}
           variant="default"
@@ -764,31 +768,31 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
                 ) : (
                   <Shield className="h-4 w-4 mr-2" />
                 )}
-                Restaurar Permissões
+                {t('admin.usuarios.restorePermissionsButton')}
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              Aplica permissões padrão para todos os usuários
+              {t('admin.usuarios.restorePermissionsTooltip')}
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
         
         <Button variant="outline" onClick={() => handleManagePermissions()}>
           <Shield className="h-4 w-4 mr-2" />
-          Gerenciar Permissões
+          {t('admin.usuarios.managePermissionsButton')}
         </Button>
         
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="h-4 w-4 mr-2" />
-              Novo Usuário
+              {t('admin.usuarios.newUserButton')}
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>
-                {editingUsuario ? 'Editar Usuário' : 'Novo Usuário'}
+                {editingUsuario ? t('admin.usuarios.dialogEditTitle') : t('admin.usuarios.dialogNewTitle')}
               </DialogTitle>
             </DialogHeader>
             <Form {...form}>
@@ -798,7 +802,7 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
                   name="nome"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Nome</FormLabel>
+                      <FormLabel>{t('admin.usuarios.fieldNome')}</FormLabel>
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
@@ -812,7 +816,7 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel>{t('admin.usuarios.fieldEmail')}</FormLabel>
                       <FormControl>
                         <Input {...field} type="email" disabled={!!editingUsuario} />
                       </FormControl>
@@ -826,20 +830,20 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
                   name="role"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Papel</FormLabel>
+                      <FormLabel>{t('admin.usuarios.fieldPapel')}</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Selecione o papel" />
+                            <SelectValue placeholder={t('admin.usuarios.fieldPapelPlaceholder')} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
                           {isSuperAdmin && (
-                            <SelectItem value="super_admin">Super Admin</SelectItem>
+                            <SelectItem value="super_admin">{t('admin.usuarios.roleSuperAdmin')}</SelectItem>
                           )}
-                          <SelectItem value="admin">Administrador</SelectItem>
-                          <SelectItem value="user">Usuário</SelectItem>
-                          <SelectItem value="readonly">Somente Leitura</SelectItem>
+                          <SelectItem value="admin">{t('admin.usuarios.roleAdministrador')}</SelectItem>
+                          <SelectItem value="user">{t('admin.usuarios.roleUser')}</SelectItem>
+                          <SelectItem value="readonly">{t('admin.usuarios.roleReadonly')}</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -852,15 +856,15 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
                   name="permission_profile_id"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Perfil de Permissão</FormLabel>
+                      <FormLabel>{t('admin.usuarios.fieldPerfilPermissao')}</FormLabel>
                       <Select onValueChange={(value) => field.onChange(value === 'none' ? '' : value)} value={field.value || 'none'}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Selecione o perfil de permissão" />
+                            <SelectValue placeholder={t('admin.usuarios.fieldPerfilPermissaoPlaceholder')} />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="none">Sem perfil</SelectItem>
+                          <SelectItem value="none">{t('admin.usuarios.semPerfil')}</SelectItem>
                           {permissionProfiles.map((profile) => (
                             <SelectItem key={profile.id} value={profile.id}>
                               {profile.name}
@@ -879,15 +883,15 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
                     name="empresa_id"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Empresa</FormLabel>
+                        <FormLabel>{t('admin.usuarios.fieldEmpresa')}</FormLabel>
                         <Select onValueChange={(value) => field.onChange(value === 'none' ? '' : value)} value={field.value || 'none'}>
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Selecione a empresa" />
+                              <SelectValue placeholder={t('admin.usuarios.fieldEmpresaPlaceholder')} />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="none">Nenhuma empresa</SelectItem>
+                            <SelectItem value="none">{t('admin.usuarios.nenhumaEmpresa')}</SelectItem>
                             {empresas.map((empresa) => (
                               <SelectItem key={empresa.id} value={empresa.id}>
                                 {empresa.nome}
@@ -903,13 +907,13 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
                 
                 <div className="flex justify-end gap-2">
                   <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
-                    Cancelar
+                    {t('admin.usuarios.cancelar')}
                   </Button>
                   <Button type="submit" disabled={creating}>
                     {creating ? (
                       <AkurisPulse size={16} className="mr-2" />
                     ) : null}
-                    {editingUsuario ? 'Atualizar' : 'Criar'}
+                    {editingUsuario ? t('admin.usuarios.atualizar') : t('admin.usuarios.criar')}
                   </Button>
                 </div>
               </form>
@@ -924,7 +928,7 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
         loading={loading}
         searchValue={searchTerm}
         onSearchChange={setSearchTerm}
-        searchPlaceholder="Buscar por nome ou email..."
+        searchPlaceholder={t('admin.usuarios.searchPlaceholder')}
         filters={filters}
         sortField={sortField}
         sortDirection={sortDirection}
@@ -933,18 +937,18 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
         paginated
         emptyState={{
           icon: <Users className="h-12 w-12" />,
-          title: 'Nenhum usuário encontrado',
-          description: searchTerm ? 'Tente ajustar os filtros' : 'Crie um novo usuário para começar',
+          title: t('admin.usuarios.emptyTitle'),
+          description: searchTerm ? t('admin.usuarios.emptyDescriptionFiltered') : t('admin.usuarios.emptyDescriptionEmpty'),
         }}
       />
 
       <ConfirmDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        title="Excluir Usuário"
-        description={`Tem certeza que deseja excluir o usuário "${usuarioToDelete?.nome}"? Esta ação não pode ser desfeita.`}
-        confirmText="Excluir"
-        cancelText="Cancelar"
+        title={t('admin.usuarios.deleteDialogTitle')}
+        description={t('admin.usuarios.deleteDialogDescription', { nome: usuarioToDelete?.nome || '' })}
+        confirmText={t('admin.usuarios.excluir')}
+        cancelText={t('admin.usuarios.cancelar')}
         variant="destructive"
         onConfirm={handleDelete}
       />

@@ -173,7 +173,7 @@ export default function RelatoriosContratos() {
 
     if (formato === 'excel') {
       exportCSV(
-        ['Numero', 'Nome', 'Tipo', 'Status', 'Valor Total', 'Data Inicio', 'Data Fim'],
+        [t('contratosDialogs.relatoriosContratos.csvNumero'), t('contratosDialogs.relatoriosContratos.csvNome'), t('contratosDialogs.relatoriosContratos.csvTipo'), t('contratosDialogs.relatoriosContratos.csvStatus'), t('contratosDialogs.relatoriosContratos.csvValorTotal'), t('contratosDialogs.relatoriosContratos.csvDataInicio'), t('contratosDialogs.relatoriosContratos.csvDataFim')],
         dados.contratos.map((c: any) => [
           c.numero_contrato || '',
           c.nome || '',
@@ -218,11 +218,11 @@ export default function RelatoriosContratos() {
 
       y = addSectionTitle(doc, t('contratosAtivos.relatoriosContratos.pdfListSection'), y, margin);
       drawTableHeader(doc, [
-        { text: 'Numero', x: margin + 2 },
-        { text: 'Nome', x: margin + 32 },
-        { text: 'Tipo', x: margin + 95 },
-        { text: 'Status', x: margin + 125 },
-        { text: 'Valor', x: margin + 150 },
+        { text: t('contratosDialogs.relatoriosContratos.pdfNumero'), x: margin + 2 },
+        { text: t('contratosDialogs.relatoriosContratos.pdfNome'), x: margin + 32 },
+        { text: t('contratosDialogs.relatoriosContratos.pdfTipo'), x: margin + 95 },
+        { text: t('contratosDialogs.relatoriosContratos.pdfStatus'), x: margin + 125 },
+        { text: t('contratosDialogs.relatoriosContratos.pdfValor'), x: margin + 150 },
       ], y, margin, contentWidth);
       y += 5;
 
@@ -487,7 +487,7 @@ export default function RelatoriosContratos() {
 
                 <Card className="lg:col-span-2">
                   <CardHeader>
-                    <CardTitle>{t('contratosAtivos.relatoriosContratos.chartContractsByStatus') === '' ? '' : 'Marcos por Mês'}</CardTitle>
+                    <CardTitle>{t('contratosDialogs.relatoriosContratos.chartMilestonesByMonth')}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <ResponsiveContainer width="100%" height={300}>
