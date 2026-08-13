@@ -17,6 +17,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
 import { cn } from '@/lib/utils';
 import { getCompanyLogo } from '@/lib/brand-logo';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { getAppLocale } from '@/lib/i18n-locale';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 const assessmentLogger = {
@@ -70,12 +72,14 @@ interface AssessmentData {
 
 type PublicAssessmentErrorCode = 'NOT_FOUND' | 'EXPIRED' | 'COMPLETED' | 'UNAVAILABLE' | 'INTERNAL_ERROR';
 
+const localeTag = () => (getAppLocale() === 'en' ? 'en-US' : 'pt-BR');
+
 const invokePublicAssessment = async <T,>(body: Record<string, unknown> | FormData): Promise<T> => {
   const { data, error } = await supabase.functions.invoke('public-assessment', { body });
   if (error) {
     const context = error.context as Response | undefined;
     const payload = context ? await context.clone().json().catch(() => null) : null;
-    const apiError = new Error(payload?.error || 'Não foi possível acessar o questionário') as Error & { code?: PublicAssessmentErrorCode };
+    const apiError = new Error(payload?.error || 'Could not access the questionnaire') as Error & { code?: PublicAssessmentErrorCode };
     apiError.code = payload?.code;
     throw apiError;
   }
@@ -83,7 +87,9 @@ const invokePublicAssessment = async <T,>(body: Record<string, unknown> | FormDa
 };
 
 // Wrapper component: light background with bottom purple glow preserved
-const AssessmentShell = ({ children }: { children: React.ReactNode }) => (
+const AssessmentShell = ({ children }: { children: React.ReactNode }) => {
+  const { t } = useLanguage();
+  return (
   <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50 relative overflow-hidden">
     {/* Bottom purple glow */}
     <div className="pointer-events-none absolute inset-0">
@@ -97,12 +103,13 @@ const AssessmentShell = ({ children }: { children: React.ReactNode }) => (
     <div className="relative z-10 text-center pb-6 pt-8">
       <div className="flex items-center justify-center gap-2 text-xs text-slate-500">
         <ShieldCheck className="h-3 w-3" />
-        <span>Plataforma segura — Powered by</span>
+        <span>{t('publicPortal.assessment.poweredBy')}</span>
         <span className="font-semibold text-slate-700">Akuris</span>
       </div>
     </div>
   </div>
-);
+  );
+};
 
 // === Top Bar (A + H kept) ===
 const TopBar = ({
@@ -122,7 +129,8 @@ const TopBar = ({
   savedAt: Date | null;
   saving: boolean;
 }) => {
-  const formatTime = (d: Date) => d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  const { t } = useLanguage();
+  const formatTime = (d: Date) => d.toLocaleTimeString(localeTag(), { hour: '2-digit', minute: '2-digit' });
   return (
     <header className="relative z-20 border-b border-white/10 bg-[hsl(230,25%,7%)]">
       <div className="container mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
@@ -148,7 +156,7 @@ const TopBar = ({
             />
           </div>
           <div className="min-w-0 hidden sm:block">
-            <p className="text-xs text-white/40 leading-tight">Solicitado por</p>
+            <p className="text-xs text-white/40 leading-tight">{t('publicPortal.assessment.requestedBy')}</p>
             <p className="text-sm text-white font-medium leading-tight truncate">{assessment.empresa.nome}</p>
           </div>
         </div>
@@ -172,6 +180,7 @@ const WelcomeScreen = ({
   totalRequired: number;
   onStart: () => void;
 }) => {
+  const { t } = useLanguage();
   const estimatedMinutes = Math.max(5, Math.round(totalQuestions * 0.75));
   const deadlineRaw = assessment.data_limite ? new Date(assessment.data_limite) : null;
   const deadline = deadlineRaw && !isNaN(deadlineRaw.getTime()) ? deadlineRaw : null;
@@ -188,16 +197,15 @@ const WelcomeScreen = ({
             <div className="flex items-center gap-2 mb-4">
               <AkurisAIIcon className="h-4 w-4 text-[hsl(250,80%,55%)]" />
               <span className="text-xs font-medium uppercase tracking-wider text-[hsl(250,80%,55%)]">
-                Questionário de Due Diligence
+                {t('publicPortal.assessment.eyebrow')}
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-3 leading-tight">
-              Olá, {assessment.fornecedor_nome.split(' ')[0]} 👋
+              {t('publicPortal.assessment.greeting', { name: assessment.fornecedor_nome.split(' ')[0] })}
             </h1>
             <p className="text-base text-slate-600 leading-relaxed max-w-xl">
-              <span className="text-slate-900 font-medium">{assessment.empresa.nome}</span> precisa
-              de algumas informações sobre sua empresa para concluir o processo de avaliação.
-              Suas respostas são confidenciais e serão analisadas pela equipe responsável.
+              <span className="text-slate-900 font-medium">{assessment.empresa.nome}</span>{' '}
+              {t('publicPortal.assessment.introPrefix')}
             </p>
           </div>
 
@@ -209,10 +217,10 @@ const WelcomeScreen = ({
                   <ListChecks className="h-5 w-5 text-[hsl(250,80%,55%)]" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs text-slate-500">Perguntas</p>
-                  <p className="text-base font-semibold text-slate-900">{totalQuestions} no total</p>
+                  <p className="text-xs text-slate-500">{t('publicPortal.assessment.questions')}</p>
+                  <p className="text-base font-semibold text-slate-900">{t('publicPortal.assessment.totalQuestions', { count: totalQuestions })}</p>
                   {totalRequired > 0 && (
-                    <p className="text-[11px] text-slate-500">{totalRequired} obrigatórias</p>
+                    <p className="text-[11px] text-slate-500">{t('publicPortal.assessment.requiredCount', { count: totalRequired })}</p>
                   )}
                 </div>
               </div>
@@ -222,9 +230,9 @@ const WelcomeScreen = ({
                   <Clock className="h-5 w-5 text-[hsl(250,80%,55%)]" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs text-slate-500">Tempo estimado</p>
+                  <p className="text-xs text-slate-500">{t('publicPortal.assessment.estimatedTime')}</p>
                   <p className="text-base font-semibold text-slate-900">~{estimatedMinutes} min</p>
-                  <p className="text-[11px] text-slate-500">Pode pausar e voltar</p>
+                  <p className="text-[11px] text-slate-500">{t('publicPortal.assessment.canPause')}</p>
                 </div>
               </div>
 
@@ -239,15 +247,15 @@ const WelcomeScreen = ({
                   )} />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs text-slate-500">Prazo</p>
+                  <p className="text-xs text-slate-500">{t('publicPortal.assessment.deadline')}</p>
                   <p className="text-base font-semibold text-slate-900">
-                    {deadline ? deadline.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }) : 'Sem prazo'}
+                    {deadline ? deadline.toLocaleDateString(localeTag(), { day: '2-digit', month: 'short' }) : t('publicPortal.assessment.noDeadline')}
                   </p>
                   <p className={cn(
                     "text-[11px]",
                     overdue ? "text-[hsl(250,80%,45%)] font-medium" : "text-slate-500"
                   )}>
-                    {!deadline ? 'Sem prazo definido' : overdue ? 'Em atraso' : daysLeft === 0 ? 'Vence hoje' : `Faltam ${daysLeft} dias`}
+                    {!deadline ? t('publicPortal.assessment.noDeadlineSet') : overdue ? t('publicPortal.assessment.overdue') : daysLeft === 0 ? t('publicPortal.assessment.dueToday') : t('publicPortal.assessment.daysLeft', { days: daysLeft })}
                   </p>
                 </div>
               </div>
@@ -255,23 +263,23 @@ const WelcomeScreen = ({
 
             {/* Instructions */}
             <div className="space-y-2 mb-6">
-              <h3 className="text-sm font-semibold text-slate-800">Antes de começar:</h3>
+              <h3 className="text-sm font-semibold text-slate-800">{t('publicPortal.assessment.beforeStart')}</h3>
               <ul className="space-y-1.5 text-sm text-slate-600">
                 <li className="flex items-start gap-2">
                   <Check className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span>Suas respostas são <strong className="text-slate-900">salvas automaticamente</strong> a cada alteração.</span>
+                  <span>{t('publicPortal.assessment.tip1').split('{strong}')[0]}<strong className="text-slate-900">{t('publicPortal.assessment.tip1Strong')}</strong>{t('publicPortal.assessment.tip1').split('{strong}')[1]}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span>Você pode <strong className="text-slate-900">fechar e voltar</strong> a qualquer momento usando o mesmo link.</span>
+                  <span>{t('publicPortal.assessment.tip2').split('{strong}')[0]}<strong className="text-slate-900">{t('publicPortal.assessment.tip2Strong')}</strong>{t('publicPortal.assessment.tip2').split('{strong}')[1]}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span>Algumas perguntas podem solicitar <strong className="text-slate-900">evidências</strong> ou anexo de documentos.</span>
+                  <span>{t('publicPortal.assessment.tip3').split('{strong}')[0]}<strong className="text-slate-900">{t('publicPortal.assessment.tip3Strong')}</strong>{t('publicPortal.assessment.tip3').split('{strong}')[1]}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <Check className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span>Após finalizar, <strong className="text-slate-900">não será possível editar</strong> as respostas.</span>
+                  <span>{t('publicPortal.assessment.tip4').split('{strong}')[0]}<strong className="text-slate-900">{t('publicPortal.assessment.tip4Strong')}</strong>{t('publicPortal.assessment.tip4').split('{strong}')[1]}</span>
                 </li>
               </ul>
             </div>
@@ -281,7 +289,7 @@ const WelcomeScreen = ({
               size="lg"
               className="w-full bg-gradient-to-r from-[hsl(250,80%,60%)] to-[hsl(250,80%,50%)] hover:from-[hsl(250,80%,55%)] hover:to-[hsl(250,80%,45%)] text-white shadow-lg shadow-[hsl(250,80%,60%)]/30"
             >
-              Começar questionário
+              {t('publicPortal.assessment.start')}
               <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
           </CardContent>
@@ -293,6 +301,7 @@ const WelcomeScreen = ({
 
 export default function Assessment() {
   const { token } = useParams();
+  const { t } = useLanguage();
   
   const [assessment, setAssessment] = useState<AssessmentData | null>(null);
   const [questions, setQuestions] = useState<QuestionData[]>([]);
@@ -386,7 +395,7 @@ export default function Assessment() {
       const responsesData = payload.responses;
 
       if (!questionsData || questionsData.length === 0) {
-        throw new Error('Este questionário não possui perguntas configuradas. Por favor, entre em contato com o remetente.');
+        throw new Error(t('publicPortal.assessment.noQuestions'));
       }
 
       const responsesMap: Record<string, any> = {};
@@ -432,16 +441,16 @@ export default function Assessment() {
       assessmentLogger.error('Erro ao carregar assessment:', error);
       const code = (error as Error & { code?: PublicAssessmentErrorCode }).code;
       setLoadError(code === 'EXPIRED'
-        ? { title: 'Link expirado', message: 'O prazo para responder este questionário terminou. Solicite um novo link ao remetente.' }
+        ? { title: t('publicPortal.assessment.errorExpiredTitle'), message: t('publicPortal.assessment.errorExpiredMessage') }
         : code === 'NOT_FOUND'
-          ? { title: 'Link inválido', message: 'Este link não corresponde a um questionário disponível.' }
+          ? { title: t('publicPortal.assessment.errorInvalidTitle'), message: t('publicPortal.assessment.errorInvalidMessage') }
           : code === 'UNAVAILABLE'
-            ? { title: 'Questionário indisponível', message: 'Este questionário não está disponível para resposta.' }
-            : { title: 'Não foi possível carregar', message: 'Ocorreu uma falha temporária. Tente novamente em alguns instantes.' });
+            ? { title: t('publicPortal.assessment.errorUnavailableTitle'), message: t('publicPortal.assessment.errorUnavailableMessage') }
+            : { title: t('publicPortal.assessment.errorGenericTitle'), message: t('publicPortal.assessment.errorGenericMessage') });
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [token, t]);
 
   const saveResponse = useCallback(async (questionId: string, value: any) => {
     if (!assessment || !token) return;
@@ -467,13 +476,13 @@ export default function Assessment() {
   }, [assessment, questions, token]);
 
   const uploadEvidence = useCallback(async (questionId: string, file: File) => {
-    if (!token) throw new Error('Link inválido');
+    if (!token) throw new Error(t('publicPortal.assessment.invalidLink'));
     const form = new FormData();
     form.append('token', token);
     form.append('questionId', questionId);
     form.append('file', file);
     return invokePublicAssessment<{ path: string; fileName: string; signedUrl: string | null }>(form);
-  }, [token]);
+  }, [token, t]);
 
   const handleResponseChange = useCallback((questionId: string, value: any) => {
     setResponses(prev => ({ ...prev, [questionId]: value }));
@@ -498,11 +507,11 @@ export default function Assessment() {
       const missingRequired = requiredQuestions.filter(q => !isAnswered(q.id));
 
       if (missingRequired.length > 0) {
-        toast.error(`Existem ${missingRequired.length} pergunta(s) obrigatória(s) sem resposta.`);
+        toast.error(t('publicPortal.assessment.missingRequiredToast', { count: missingRequired.length }));
         return;
       }
 
-      if (!token) throw new Error('Link inválido');
+      if (!token) throw new Error(t('publicPortal.assessment.invalidLink'));
       const result = await invokePublicAssessment<{ completedAt: string }>({ action: 'complete', token, responses });
 
       setAssessment(prev => prev ? {
@@ -512,16 +521,16 @@ export default function Assessment() {
       } : null);
 
       setIsFinished(true);
-      toast.success('Questionário enviado com sucesso e está sendo avaliado!');
+      toast.success(t('publicPortal.assessment.submitSuccess'));
 
     } catch (error: any) {
       assessmentLogger.error('Erro ao finalizar assessment:', error);
-      toast.error(`Erro ao enviar questionário: ${error.message || 'Erro desconhecido'}`);
+      toast.error(t('publicPortal.assessment.submitError', { message: error.message || t('publicPortal.assessment.unknownError') }));
     } finally {
       setSubmitting(false);
       setShowConfirmDialog(false);
     }
-  }, [assessment, questions, responses, token, isAnswered]);
+  }, [assessment, questions, responses, token, isAnswered, t]);
 
   useEffect(() => {
     fetchAssessment();
@@ -534,7 +543,7 @@ export default function Assessment() {
         <div className="flex items-center justify-center min-h-[80vh]">
           <div className="text-center">
             <AkurisPulse size={48} className="mb-4" />
-            <p className="text-slate-600 text-sm">Carregando questionário...</p>
+            <p className="text-slate-600 text-sm">{t('publicPortal.assessment.loadingQuestionnaire')}</p>
           </div>
         </div>
       </AssessmentShell>
@@ -549,9 +558,9 @@ export default function Assessment() {
           <Card className="w-full max-w-md bg-white border-slate-200 shadow-xl">
             <CardContent className="pt-6 text-center">
               <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-              <h2 className="text-xl font-semibold mb-2 text-slate-900">{loadError?.title || 'Questionário não encontrado'}</h2>
+              <h2 className="text-xl font-semibold mb-2 text-slate-900">{loadError?.title || t('publicPortal.assessment.notFoundTitle')}</h2>
               <p className="text-slate-500">
-                {loadError?.message || 'O link pode ter expirado ou ser inválido.'}
+                {loadError?.message || t('publicPortal.assessment.notFoundMessage')}
               </p>
             </CardContent>
           </Card>
@@ -574,21 +583,20 @@ export default function Assessment() {
             </div>
             
             <div className="space-y-6 animate-fade-in">
-              <h2 className="text-3xl font-bold text-slate-900">Questionário Enviado!</h2>
+              <h2 className="text-3xl font-bold text-slate-900">{t('publicPortal.assessment.sentTitle')}</h2>
               <p className="text-lg text-slate-600 max-w-md mx-auto leading-relaxed">
-                Obrigado por responder ao questionário de due diligence. 
-                Suas respostas foram enviadas com sucesso e estão sendo analisadas pela equipe da {assessment.empresa.nome}.
+                {t('publicPortal.assessment.sentMessage', { company: assessment.empresa.nome })}
               </p>
               
               <div className="mt-8 p-6 bg-white border border-slate-200 rounded-xl shadow-sm">
                 <div className="flex items-center justify-center space-x-3 text-emerald-600 mb-3">
                   <CheckCircle className="w-5 h-5" />
-                  <span className="font-medium">Concluído com sucesso</span>
+                  <span className="font-medium">{t('publicPortal.assessment.completedSuccess')}</span>
                 </div>
                 {assessment.data_conclusao && (
                   <p className="text-sm text-slate-500">
-                    <strong className="text-slate-700">Concluído em:</strong>{' '}
-                    {new Date(assessment.data_conclusao).toLocaleString('pt-BR')}
+                    <strong className="text-slate-700">{t('publicPortal.assessment.completedAt')}</strong>{' '}
+                    {new Date(assessment.data_conclusao).toLocaleString(localeTag())}
                   </p>
                 )}
               </div>
@@ -648,7 +656,7 @@ export default function Assessment() {
               <Card className="bg-white border-slate-200 shadow-sm">
                 <CardContent className="p-5">
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">Progresso</span>
+                    <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t('publicPortal.assessment.progress')}</span>
                     <span className="text-xs font-semibold text-slate-900">{Math.round(progress)}%</span>
                   </div>
                   <Progress
@@ -656,11 +664,11 @@ export default function Assessment() {
                     className="h-2 bg-slate-100 [&>div]:bg-gradient-to-r [&>div]:from-[hsl(250,80%,60%)] [&>div]:to-[hsl(250,80%,50%)] mb-3"
                   />
                   <div className="flex items-center justify-between text-xs text-slate-500">
-                    <span>{answeredCount} de {questions.length}</span>
+                    <span>{t('publicPortal.assessment.ofTotal', { answered: answeredCount, total: questions.length })}</span>
                     {missingRequiredList.length > 0 && (
                       <span className="flex items-center gap-1 text-slate-700 font-medium">
                         <AlertTriangle className="h-3 w-3 text-[hsl(250,80%,55%)]" />
-                        {missingRequiredList.length} obrig.
+                        {t('publicPortal.assessment.requiredShort', { count: missingRequiredList.length })}
                       </span>
                     )}
                   </div>
@@ -671,7 +679,7 @@ export default function Assessment() {
               <Card className="bg-white border-slate-200 shadow-sm">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-xs font-medium text-slate-500 uppercase tracking-wider">
-                    Resumo
+                    {t('publicPortal.assessment.summary')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-4 pt-0 space-y-2.5">
@@ -692,36 +700,36 @@ export default function Assessment() {
                         <div className="flex items-center justify-between text-xs">
                           <span className="flex items-center gap-1.5 text-slate-500">
                             <Calendar className="h-3.5 w-3.5" />
-                            Prazo
+                            {t('publicPortal.assessment.deadline')}
                           </span>
                           <span className={cn(
                             'font-semibold',
                             overdue ? 'text-[hsl(250,80%,45%)]' : urgent ? 'text-slate-900' : 'text-slate-700'
                           )}>
                             {daysLeft === null
-                              ? 'Sem prazo'
+                              ? t('publicPortal.assessment.noDeadline')
                               : overdue
-                                ? 'Em atraso'
+                                ? t('publicPortal.assessment.overdue')
                                 : daysLeft === 0
-                                  ? 'Vence hoje'
-                                  : `${daysLeft}d restantes`}
+                                  ? t('publicPortal.assessment.dueToday')
+                                  : t('publicPortal.assessment.daysRemaining', { days: daysLeft })}
                           </span>
                         </div>
                         <div className="flex items-center justify-between text-xs">
                           <span className="flex items-center gap-1.5 text-slate-500">
                             <Clock className="h-3.5 w-3.5" />
-                            Tempo estimado
+                            {t('publicPortal.assessment.estimatedTime')}
                           </span>
                           <span className="font-semibold text-slate-700">~{estimatedMinutes} min</span>
                         </div>
                         <div className="flex items-center justify-between text-xs">
                           <span className="flex items-center gap-1.5 text-slate-500">
                             <Save className="h-3.5 w-3.5" />
-                            Último salvamento
+                            {t('publicPortal.assessment.lastSave')}
                           </span>
                           <span className="font-semibold text-slate-700 text-right">
                             {savedAt
-                              ? savedAt.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+                              ? savedAt.toLocaleString(localeTag(), { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
                               : '—'}
                           </span>
                         </div>
@@ -735,7 +743,7 @@ export default function Assessment() {
               <Card className="bg-white border-slate-200 shadow-sm">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-xs font-medium text-slate-500 uppercase tracking-wider">
-                    Seções
+                    {t('publicPortal.assessment.sections')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-2">
@@ -749,7 +757,7 @@ export default function Assessment() {
 
                         // Use first question title as section label
                         const firstQuestion = questions[idx * questionsPerPage];
-                        const sectionLabel = firstQuestion?.titulo || firstQuestion?.pergunta || `Seção ${idx + 1}`;
+                        const sectionLabel = firstQuestion?.titulo || firstQuestion?.pergunta || t('publicPortal.assessment.section', { number: idx + 1 });
 
                         return (
                           <button
@@ -785,9 +793,9 @@ export default function Assessment() {
                                 {sectionLabel}
                               </p>
                               <p className="text-[11px] text-slate-500">
-                                {status?.answered || 0}/{status?.total || 0} respondidas
+                                {t('publicPortal.assessment.answeredOf', { answered: status?.answered || 0, total: status?.total || 0 })}
                                 {status && status.missingRequired > 0 && (
-                                  <span className="text-slate-600"> · {status.missingRequired} obrig.</span>
+                                  <span className="text-slate-600"> · {t('publicPortal.assessment.requiredShort', { count: status.missingRequired })}</span>
                                 )}
                               </p>
                             </div>
@@ -807,7 +815,7 @@ export default function Assessment() {
                   <CardHeader className="pb-2">
                     <CardTitle className="text-xs font-medium text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
                       <AlertTriangle className="h-3.5 w-3.5 text-[hsl(250,80%,55%)]" />
-                      Pendências obrigatórias
+                      {t('publicPortal.assessment.pendingRequired')}
                       <span className="ml-auto text-[10px] font-semibold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded">
                         {missingRequiredList.length}
                       </span>
@@ -829,7 +837,7 @@ export default function Assessment() {
                                 <span className="flex-1 truncate" title={q.titulo || q.pergunta}>
                                   {q.titulo || q.pergunta}
                                 </span>
-                                <span className="text-[10px] text-slate-500 shrink-0">Pág. {pageOfQ + 1}</span>
+                                <span className="text-[10px] text-slate-500 shrink-0">{t('publicPortal.assessment.pageShort', { page: pageOfQ + 1 })}</span>
                               </button>
                             </li>
                           );
@@ -849,7 +857,7 @@ export default function Assessment() {
               <CardContent className="p-4">
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-xs font-medium text-slate-500">
-                    Página {currentPage + 1} de {totalPages}
+                    {t('publicPortal.assessment.pageOf', { page: currentPage + 1, total: totalPages })}
                   </span>
                   <span className="text-xs font-semibold text-slate-900">{Math.round(progress)}%</span>
                 </div>
@@ -867,8 +875,8 @@ export default function Assessment() {
                   {assessment.template.nome}
                 </p>
                 <h2 className="text-xl sm:text-2xl font-bold text-slate-900">
-                  Página {currentPage + 1}
-                  <span className="text-slate-400 font-normal text-base ml-2">de {totalPages}</span>
+                  {t('publicPortal.assessment.page', { page: currentPage + 1 })}
+                  <span className="text-slate-400 font-normal text-base ml-2">{t('publicPortal.assessment.ofPages', { total: totalPages })}</span>
                 </h2>
               </div>
             </div>
@@ -910,7 +918,7 @@ export default function Assessment() {
                             </h3>
                             {question.obrigatoria && (
                               <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200 mt-1">
-                                Obrigatória
+                                {t('publicPortal.assessment.requiredBadge')}
                               </span>
                             )}
                           </div>
@@ -928,7 +936,7 @@ export default function Assessment() {
                           <Textarea
                             value={responses[question.id] || ''}
                             onChange={(e) => handleResponseChange(question.id, e.target.value)}
-                            placeholder="Digite sua resposta..."
+                            placeholder={t('publicPortal.assessment.textPlaceholder')}
                             className="min-h-[120px] bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-[hsl(250,80%,60%)]/60 focus:ring-2 focus:ring-[hsl(250,80%,60%)]/20 transition-all duration-200"
                           />
                         )}
@@ -965,7 +973,7 @@ export default function Assessment() {
                             type="number"
                             value={responses[question.id] || ''}
                             onChange={(e) => handleResponseChange(question.id, e.target.value)}
-                            placeholder="Digite um número..."
+                            placeholder={t('publicPortal.assessment.numberPlaceholder')}
                             className="bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-[hsl(250,80%,60%)]/60 focus:ring-2 focus:ring-[hsl(250,80%,60%)]/20 transition-all duration-200"
                           />
                         )}
@@ -977,8 +985,8 @@ export default function Assessment() {
                             className="grid grid-cols-2 gap-3"
                           >
                             {[
-                              { value: 'sim', label: 'Sim' },
-                              { value: 'nao', label: 'Não' },
+                              { value: 'sim', label: t('publicPortal.assessment.yes') },
+                              { value: 'nao', label: t('publicPortal.assessment.no') },
                             ].map((opt) => {
                               const selected = responses[question.id] === opt.value;
                               return (
@@ -1006,7 +1014,7 @@ export default function Assessment() {
                             onValueChange={(value) => handleResponseChange(question.id, value)}
                           >
                             <SelectTrigger className="bg-white border-slate-200 text-slate-900 focus:border-[hsl(250,80%,60%)]/60 focus:ring-2 focus:ring-[hsl(250,80%,60%)]/20 transition-all duration-200">
-                              <SelectValue placeholder="Selecione uma opção..." />
+                              <SelectValue placeholder={t('publicPortal.assessment.selectPlaceholder')} />
                             </SelectTrigger>
                             <SelectContent>
                               {question.opcoes.map((opcao, idx) => (
@@ -1023,7 +1031,7 @@ export default function Assessment() {
                             <div className="border-2 border-dashed border-slate-200 hover:border-[hsl(250,80%,60%)]/40 rounded-xl p-6 text-center transition-colors duration-200 bg-slate-50/50">
                               <Upload className="h-8 w-8 text-slate-400 mx-auto mb-2" />
                               <p className="text-sm text-slate-500 mb-3">
-                                Arraste um arquivo ou clique para selecionar
+                                {t('publicPortal.assessment.dropFile')}
                               </p>
                               <Input
                                 type="file"
@@ -1033,11 +1041,11 @@ export default function Assessment() {
                                   const file = e.target.files?.[0];
                                   if (!file) return;
                                   if (file.size > 10 * 1024 * 1024) {
-                                    toast.error('Arquivo deve ter no máximo 10MB.');
+                                    toast.error(t('publicPortal.assessment.fileTooLarge'));
                                     return;
                                   }
                                   try {
-                                    toast.info('Enviando arquivo...');
+                                    toast.info(t('publicPortal.assessment.uploadingFile'));
                                     const upload = await uploadEvidence(question.id, file);
                                     handleResponseChange(question.id, file.name);
                                     setResponses(prev => ({
@@ -1045,10 +1053,10 @@ export default function Assessment() {
                                       [`${question.id}_arquivo`]: upload.path,
                                       [`${question.id}_arquivo_url`]: upload.signedUrl,
                                     }));
-                                    toast.success('Arquivo enviado com sucesso!');
+                                    toast.success(t('publicPortal.assessment.fileUploaded'));
                                   } catch (err: any) {
                                     assessmentLogger.error('Erro no upload:', err);
-                                    toast.error('Erro ao enviar arquivo. Tente novamente.');
+                                    toast.error(t('publicPortal.assessment.uploadError'));
                                   }
                                 }}
                               />
@@ -1059,7 +1067,7 @@ export default function Assessment() {
                                 <span className="font-medium">{responses[question.id]}</span>
                                 {responses[`${question.id}_arquivo_url`] && (
                                   <a href={responses[`${question.id}_arquivo_url`]} target="_blank" rel="noopener noreferrer" className="text-[hsl(250,80%,55%)] underline text-xs ml-auto">
-                                    Ver arquivo
+                                    {t('publicPortal.assessment.viewFile')}
                                   </a>
                                 )}
                               </div>
@@ -1074,22 +1082,22 @@ export default function Assessment() {
                              question.configuracoes.mostrar_evidencia_quando.split(',').includes(responses[question.id]) && (
                               <div className="mt-4 p-4 bg-slate-50 border border-slate-200 rounded-lg animate-fade-in">
                                 <Label className="text-sm font-medium text-slate-700 mb-3 block">
-                                  {question.configuracoes.label_evidencia || 'Evidência:'}
+                                  {question.configuracoes.label_evidencia || t('publicPortal.assessment.evidenceLabel')}
                                 </Label>
                                 <Textarea
                                   value={responses[`${question.id}_evidencia`] || ''}
                                   onChange={(e) => handleResponseChange(`${question.id}_evidencia`, e.target.value)}
-                                  placeholder="Descreva as evidências que comprovam sua resposta..."
+                                  placeholder={t('publicPortal.assessment.evidencePlaceholder')}
                                   className="min-h-[100px] bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-[hsl(250,80%,60%)]/60 focus:ring-2 focus:ring-[hsl(250,80%,60%)]/20 transition-all duration-200 mb-4"
                                 />
                                 <div className="space-y-3">
                                   <Label className="text-sm font-medium text-slate-700 block">
-                                    Anexar documento (opcional):
+                                    {t('publicPortal.assessment.attachDocument')}
                                   </Label>
                                   <div className="border-2 border-dashed border-slate-200 hover:border-[hsl(250,80%,60%)]/40 rounded-lg p-4 text-center transition-colors duration-200 bg-white">
                                     <Upload className="h-6 w-6 text-slate-400 mx-auto mb-2" />
                                     <p className="text-xs text-slate-600 mb-2">
-                                      Clique para selecionar um arquivo
+                                      {t('publicPortal.assessment.clickToSelect')}
                                     </p>
                                     <Input
                                       type="file"
@@ -1099,21 +1107,21 @@ export default function Assessment() {
                                         const file = e.target.files?.[0];
                                         if (!file) return;
                                         if (file.size > 10 * 1024 * 1024) {
-                                          toast.error('Arquivo deve ter no máximo 10MB.');
+                                          toast.error(t('publicPortal.assessment.fileTooLarge'));
                                           return;
                                         }
                                         try {
-                                          toast.info('Enviando evidência...');
+                                          toast.info(t('publicPortal.assessment.uploadingEvidence'));
                                           const upload = await uploadEvidence(question.id, file);
                                           setResponses(prev => ({
                                             ...prev,
                                             [`${question.id}_arquivo`]: upload.path,
                                             [`${question.id}_arquivo_url`]: upload.signedUrl,
                                           }));
-                                          toast.success('Evidência anexada com sucesso!');
+                                          toast.success(t('publicPortal.assessment.evidenceUploaded'));
                                         } catch (err: any) {
                                           assessmentLogger.error('Erro no upload de evidência:', err);
-                                          toast.error('Erro ao enviar arquivo. Tente novamente.');
+                                          toast.error(t('publicPortal.assessment.uploadError'));
                                         }
                                       }}
                                     />
@@ -1121,9 +1129,9 @@ export default function Assessment() {
                                   {responses[`${question.id}_arquivo`] && (
                                     <div className="flex items-center space-x-2 text-xs text-slate-700 bg-white p-2 rounded border border-slate-200">
                                       <FileText className="h-3 w-3 text-slate-500" />
-                                      <span>Evidência anexada</span>
+                                      <span>{t('publicPortal.assessment.evidenceAttached')}</span>
                                       <a href={responses[`${question.id}_arquivo_url`]} target="_blank" rel="noopener noreferrer" className="text-[hsl(250,80%,55%)] underline ml-auto">
-                                        Ver
+                                        {t('publicPortal.assessment.view')}
                                       </a>
                                     </div>
                                   )}
@@ -1135,12 +1143,12 @@ export default function Assessment() {
                              question.configuracoes.mostrar_justificativa_quando.split(',').includes(responses[question.id]) && (
                               <div className="mt-4 p-4 bg-slate-50 border border-slate-200 rounded-lg animate-fade-in">
                                 <Label className="text-sm font-medium text-slate-700 mb-2 block">
-                                  {question.configuracoes.label_justificativa || 'Justificativa:'}
+                                  {question.configuracoes.label_justificativa || t('publicPortal.assessment.justificationLabel')}
                                 </Label>
                                 <Textarea
                                   value={responses[`${question.id}_justificativa`] || ''}
                                   onChange={(e) => handleResponseChange(`${question.id}_justificativa`, e.target.value)}
-                                  placeholder="Explique o motivo e planos futuros..."
+                                  placeholder={t('publicPortal.assessment.justificationPlaceholder')}
                                   className="min-h-[100px] bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-[hsl(250,80%,60%)]/60 focus:ring-2 focus:ring-[hsl(250,80%,60%)]/20 transition-all duration-200"
                                 />
                               </div>
@@ -1164,7 +1172,7 @@ export default function Assessment() {
                 className="shadow-sm border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Anterior
+                {t('publicPortal.assessment.previous')}
               </Button>
 
               {currentPage === totalPages - 1 ? (
@@ -1177,12 +1185,12 @@ export default function Assessment() {
                   {submitting ? (
                     <>
                       <AkurisPulse size={16} className="mr-2" />
-                      Enviando...
+                      {t('publicPortal.assessment.sending')}
                     </>
                   ) : (
                     <>
                       <Check className="h-4 w-4 mr-2" />
-                      Finalizar Questionário
+                      {t('publicPortal.assessment.finish')}
                     </>
                   )}
                 </Button>
@@ -1192,7 +1200,7 @@ export default function Assessment() {
                   size="lg"
                   className="shadow-md shadow-[hsl(250,80%,60%)]/20 bg-gradient-to-r from-[hsl(250,80%,60%)] to-[hsl(250,80%,50%)] hover:from-[hsl(250,80%,55%)] hover:to-[hsl(250,80%,45%)] text-white"
                 >
-                  Próxima página
+                  {t('publicPortal.assessment.nextPage')}
                   <ArrowRight className="h-4 w-4 ml-2" />
                 </Button>
               )}
@@ -1219,8 +1227,8 @@ export default function Assessment() {
             </div>
             <AlertDialogTitle className="text-center text-xl text-slate-900">
               {missingRequiredList.length > 0
-                ? 'Existem perguntas obrigatórias pendentes'
-                : 'Finalizar Questionário'}
+                ? t('publicPortal.assessment.pendingRequiredTitle')
+                : t('publicPortal.assessment.finish')}
             </AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="text-center text-slate-600 leading-relaxed space-y-4">
@@ -1228,11 +1236,11 @@ export default function Assessment() {
                 <div className="grid grid-cols-3 gap-2 pt-2">
                   <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
                     <p className="text-2xl font-bold text-slate-900">{questions.length}</p>
-                    <p className="text-[11px] text-slate-500 uppercase tracking-wider mt-0.5">Total</p>
+                    <p className="text-[11px] text-slate-500 uppercase tracking-wider mt-0.5">{t('publicPortal.assessment.total')}</p>
                   </div>
                   <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
                     <p className="text-2xl font-bold text-emerald-700">{answeredCount}</p>
-                    <p className="text-[11px] text-emerald-700/80 uppercase tracking-wider mt-0.5">Respondidas</p>
+                    <p className="text-[11px] text-emerald-700/80 uppercase tracking-wider mt-0.5">{t('publicPortal.assessment.answered')}</p>
                   </div>
                   <div className={cn(
                     'p-3 border rounded-lg',
@@ -1250,7 +1258,7 @@ export default function Assessment() {
                       'text-[11px] uppercase tracking-wider mt-0.5',
                       missingRequiredList.length > 0 ? 'text-amber-700/80' : 'text-slate-500'
                     )}>
-                      Pendentes
+                      {t('publicPortal.assessment.pending')}
                     </p>
                   </div>
                 </div>
@@ -1260,7 +1268,7 @@ export default function Assessment() {
                   <div className="text-left space-y-2 mt-2">
                     <p className="text-sm text-amber-700 font-medium flex items-center gap-2">
                       <FileQuestion className="h-4 w-4" />
-                      Perguntas obrigatórias sem resposta:
+                      {t('publicPortal.assessment.unansweredRequired')}
                     </p>
                     <ScrollArea className="max-h-[180px]">
                       <ul className="space-y-1.5 pr-2">
@@ -1278,14 +1286,14 @@ export default function Assessment() {
                               >
                                 <ChevronRight className="h-3 w-3 text-amber-600 shrink-0" />
                                 <span className="flex-1 truncate">{q.titulo || q.pergunta}</span>
-                                <span className="text-[10px] text-slate-500 shrink-0">Pág. {pageOfQ + 1}</span>
+                                <span className="text-[10px] text-slate-500 shrink-0">{t('publicPortal.assessment.pageShort', { page: pageOfQ + 1 })}</span>
                               </button>
                             </li>
                           );
                         })}
                         {missingRequiredList.length > 10 && (
                           <li className="text-xs text-slate-500 px-2">
-                            ...e mais {missingRequiredList.length - 10} pergunta(s)
+                            {t('publicPortal.assessment.andMore', { count: missingRequiredList.length - 10 })}
                           </li>
                         )}
                       </ul>
@@ -1293,9 +1301,9 @@ export default function Assessment() {
                   </div>
                 ) : (
                   <p className="text-sm leading-relaxed">
-                    Tem certeza que deseja finalizar e enviar o questionário?
+                    {t('publicPortal.assessment.confirmText')}
                     <br />
-                    <span className="text-slate-500 text-xs">Após o envio, não será possível fazer alterações.</span>
+                    <span className="text-slate-500 text-xs">{t('publicPortal.assessment.confirmNote')}</span>
                   </p>
                 )}
               </div>
@@ -1308,7 +1316,7 @@ export default function Assessment() {
               disabled={submitting}
               className="flex-1 bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900"
             >
-              {missingRequiredList.length > 0 ? 'Voltar e responder' : 'Cancelar'}
+              {missingRequiredList.length > 0 ? t('publicPortal.assessment.backAndAnswer') : t('publicPortal.assessment.cancel')}
             </Button>
             {missingRequiredList.length === 0 && (
               <AlertDialogAction 
@@ -1319,12 +1327,12 @@ export default function Assessment() {
                 {submitting ? (
                   <>
                     <AkurisPulse size={16} className="mr-2" />
-                    Enviando...
+                    {t('publicPortal.assessment.sending')}
                   </>
                 ) : (
                   <>
                     <Check className="w-4 h-4 mr-2" />
-                    Confirmar envio
+                    {t('publicPortal.assessment.confirmSend')}
                   </>
                 )}
               </AlertDialogAction>
