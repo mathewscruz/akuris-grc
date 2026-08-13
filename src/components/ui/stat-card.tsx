@@ -299,7 +299,7 @@ export function StatCard({
             aria-hidden="true"
             className="pointer-events-none absolute bottom-2 right-3 inline-flex items-center gap-1 text-[11px] font-medium text-primary opacity-0 translate-x-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-x-0"
           >
-            <span>{drillDown ? "Ver detalhes" : "Abrir"}</span>
+            <span>{drillDown ? t('common.viewDetails') : t('common.open')}</span>
             <ArrowRight className="h-3 w-3" strokeWidth={1.5} />
           </div>
         )}
