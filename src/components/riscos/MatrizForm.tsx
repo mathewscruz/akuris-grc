@@ -933,6 +933,8 @@ export function MatrizForm({ onSuccess }: Props) {
                       </div>
                       {matriz.descricao && (
                         <p className="text-xs text-muted-foreground truncate">{matriz.descricao}</p>
+                      )}
+
 
                     </div>
                     <div className="flex gap-1 shrink-0">
