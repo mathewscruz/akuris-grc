@@ -14,6 +14,8 @@ interface FrameworkRow {
   nome: string;
   total: number;
   traduzidos: number;
+  /** Requisitos com orientação (guidance) já salva em inglês. */
+  guidanceEn: number;
 }
 
 /**
@@ -37,7 +39,7 @@ export function TraducaoFrameworksTab() {
 
       const result: FrameworkRow[] = [];
       for (const fw of frameworks || []) {
-        const [{ count: total }, { count: pendentes }] = await Promise.all([
+        const [{ count: total }, { count: pendentes }, { count: guidancePendente }] = await Promise.all([
           supabase
             .from('gap_analysis_requirements')
             .select('id', { count: 'exact', head: true })
@@ -47,12 +49,18 @@ export function TraducaoFrameworksTab() {
             .select('id', { count: 'exact', head: true })
             .eq('framework_id', fw.id)
             .or('titulo_en.is.null,descricao_en.is.null'),
+          supabase
+            .from('gap_analysis_requirements')
+            .select('id', { count: 'exact', head: true })
+            .eq('framework_id', fw.id)
+            .is('orientacao_implementacao_en', null),
         ]);
         result.push({
           id: fw.id,
           nome: fw.nome,
           total: total ?? 0,
           traduzidos: Math.max((total ?? 0) - (pendentes ?? 0), 0),
+          guidanceEn: Math.max((total ?? 0) - (guidancePendente ?? 0), 0),
         });
       }
       setRows(result);
@@ -95,10 +103,40 @@ export function TraducaoFrameworksTab() {
     }
   };
 
+  /**
+   * Gera em lote as orientações (guidance) em inglês. O conteúdo fica salvo nas
+   * colunas globais *_en e é reaproveitado por todas as empresas.
+   */
+  const traduzirOrientacoes = async (fw: FrameworkRow) => {
+    setRunningId(`guidance-${fw.id}`);
+    let guard = 0;
+    try {
+      while (guard < 80) {
+        guard++;
+        const res = await invokeEdgeFunction<{ processed: number; remaining: number }>(
+          'populate-requirement-guidance',
+          { body: { framework_id: fw.id, locale: 'en', batch_size: 5 }, isAiCall: true },
+        );
+        if (res.error || !res.data) break;
+        setRows((prev) =>
+          prev.map((r) =>
+            r.id === fw.id ? { ...r, guidanceEn: Math.max(r.total - (res.data!.remaining ?? 0), 0) } : r,
+          ),
+        );
+        if ((res.data.remaining ?? 0) === 0 || res.data.processed === 0) break;
+      }
+      toast.success(`Orientações em inglês atualizadas: ${fw.nome}`);
+    } finally {
+      setRunningId(null);
+      load();
+    }
+  };
+
   const pendentesTotais = useMemo(
     () => rows.reduce((acc, r) => acc + (r.total - r.traduzidos), 0),
     [rows],
   );
+
 
   if (loading) return <AkurisPulse />;
 
@@ -113,7 +151,9 @@ export function TraducaoFrameworksTab() {
       <div className="space-y-3">
         {rows.map((fw) => {
           const pct = fw.total ? Math.round((fw.traduzidos / fw.total) * 100) : 0;
+          const pctGuidance = fw.total ? Math.round((fw.guidanceEn / fw.total) * 100) : 0;
           const running = runningId === fw.id;
+          const runningGuidance = runningId === `guidance-${fw.id}`;
           return (
             <Card key={fw.id}>
               <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -126,17 +166,31 @@ export function TraducaoFrameworksTab() {
                   </div>
                   <Progress value={pct} className="h-1.5" />
                   <span className="text-xs text-muted-foreground">
-                    {fw.traduzidos} de {fw.total} requisitos
+                    {fw.traduzidos} de {fw.total} requisitos · orientações EN: {fw.guidanceEn} de {fw.total}
                   </span>
                 </div>
-                <Button
-                  size="sm"
-                  variant={pct === 100 ? 'outline' : 'default'}
-                  disabled={!!runningId || fw.total === 0 || pct === 100}
-                  onClick={() => traduzir(fw)}
-                >
-                  {running ? 'Traduzindo…' : pct === 100 ? 'Traduzido' : 'Traduzir para EN'}
-                </Button>
+                <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+                  <Button
+                    size="sm"
+                    variant={pct === 100 ? 'outline' : 'default'}
+                    disabled={!!runningId || fw.total === 0 || pct === 100}
+                    onClick={() => traduzir(fw)}
+                  >
+                    {running ? 'Traduzindo…' : pct === 100 ? 'Traduzido' : 'Traduzir para EN'}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={!!runningId || fw.total === 0 || pctGuidance === 100}
+                    onClick={() => traduzirOrientacoes(fw)}
+                  >
+                    {runningGuidance
+                      ? 'Gerando…'
+                      : pctGuidance === 100
+                        ? 'Orientações OK'
+                        : 'Traduzir orientações'}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           );

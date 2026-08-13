@@ -28,6 +28,8 @@ import type { ConformityStatus } from "@/lib/gap-analysis-tokens";
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { EvidenceReusePanel } from '@/components/gap-analysis/dialogs/EvidenceReusePanel';
 import { localizeRequirement } from "@/lib/gap-i18n";
+import { getAppLocale } from "@/lib/i18n-locale";
+import { useAuth } from "@/components/AuthProvider";
 import { useLanguage } from '@/contexts/LanguageContext';
 interface RequirementDetail {
   id: string;
@@ -350,6 +352,8 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
 }) => {
   const { empresaId } = useEmpresaId();
   const { t } = useLanguage();
+  const { profile } = useAuth();
+  const isSuperAdmin = profile?.role === 'super_admin';
   const STATUS_OPTIONS = getStatusOptions(t);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -397,8 +401,10 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
   const triggerGuidanceGeneration = useCallback(async (forceRegenerate = false) => {
     setGeneratingGuidance(true);
     try {
+      // O conteúdo é global (compartilhado por todas as empresas) e por idioma:
+      // a função devolve o texto salvo quando já existir, sem consumir crédito.
       const { data, error } = await supabase.functions.invoke('populate-requirement-guidance', {
-        body: { requirement_id: requirement.id }
+        body: { requirement_id: requirement.id, locale: getAppLocale(), force: forceRegenerate }
       });
       if (error) throw error;
       if (data?.orientacao_implementacao) {
@@ -421,7 +427,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
     } finally {
       setGeneratingGuidance(false);
     }
-  }, [requirement.id]);
+  }, [requirement.id, t]);
 
   const loadData = async () => {
     setLoading(true);
@@ -437,7 +443,8 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
       setRiscos(riscosRes.data || []);
 
       // Conteúdo bilíngue: exibe a versão em inglês quando existir, senão a portuguesa.
-      const details = localizeRequirement((reqDetailsRes.data || {}) as any) as {
+      const rawDetails = (reqDetailsRes.data || {}) as Record<string, string | null>;
+      const details = localizeRequirement(rawDetails as any) as {
         orientacao_implementacao?: string | null; exemplos_evidencias?: string | null; perguntas_diagnostico?: string | null;
       };
       setGuidanceText(details.orientacao_implementacao || null);
@@ -453,9 +460,13 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
       }
       setDiagnosticAnswers({});
 
-      if (!details.orientacao_implementacao) {
+      // Falta no idioma atual? Gera (e salva no banco) a versão desse idioma —
+      // mesmo que exista fallback em português sendo exibido.
+      const localeCol = getAppLocale() === 'en' ? 'orientacao_implementacao_en' : 'orientacao_implementacao';
+      if (!(rawDetails[localeCol] || '').trim()) {
         triggerGuidanceGeneration();
       }
+
 
       if (requirement.evaluation_id) {
         const { data: evalData, error: evalError } = await supabase
@@ -827,16 +838,18 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                       <h4 className="text-sm font-semibold text-foreground">{t('gapUi.detail.guidanceTitle')}</h4>
                       <ChevronDown className={cn('h-3.5 w-3.5 text-muted-foreground transition-transform', guidanceOpen ? '' : '-rotate-90')} strokeWidth={1.5} />
                     </button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
-                      onClick={() => triggerGuidanceGeneration(true)}
-                      disabled={generatingGuidance}
-                    >
-                      {generatingGuidance ? <AkurisPulse size={12} className="mr-1" /> : <RefreshCw className="h-3 w-3 mr-1" strokeWidth={1.5} />}
-                      {generatingGuidance ? t('gapUi.detail.generating') : t('gapUi.detail.regenerate')}
-                    </Button>
+                    {isSuperAdmin && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                        onClick={() => triggerGuidanceGeneration(true)}
+                        disabled={generatingGuidance}
+                      >
+                        {generatingGuidance ? <AkurisPulse size={12} className="mr-1" /> : <RefreshCw className="h-3 w-3 mr-1" strokeWidth={1.5} />}
+                        {generatingGuidance ? t('gapUi.detail.generating') : t('gapUi.detail.regenerate')}
+                      </Button>
+                    )}
                   </div>
 
                   {guidanceOpen && (generatingGuidance && !guidanceText ? (
