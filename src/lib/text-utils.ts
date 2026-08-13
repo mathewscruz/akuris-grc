@@ -301,7 +301,6 @@ const STATUS_LABELS_EN: Record<string, string> = {
   servicos: 'Services',
   produto: 'Product',
   produtos: 'Products',
-  software: 'Software',
   consultoria: 'Consulting',
   prestacao_servicos: 'Service Provision',
   fornecimento: 'Supply',
