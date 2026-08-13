@@ -130,7 +130,7 @@ export function VincularControleDialog({ open, onOpenChange, riscoId, riscoNome,
       open={open}
       onOpenChange={onOpenChange}
       icon={LinkIcon}
-      title="Vincular controles ao risco"
+      title={t('cardsKpi.sweep.riscos.vincularControles')}
       description={riscoNome}
       size="md"
       submitLabel={t('fin.riscos.vincular.salvar')}

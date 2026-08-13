@@ -123,14 +123,14 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
           .eq('id', tratamento.id);
 
         if (error) throw error;
-        toast.success('Tratamento atualizado com sucesso!');
+        toast.success(t('cardsKpi.sweep.riscos.tratamentoAtualizado'));
       } else {
         const { error } = await supabase
           .from('riscos_tratamentos')
           .insert(submitData);
 
         if (error) throw error;
-        toast.success('Tratamento criado com sucesso!');
+        toast.success(t('cardsKpi.sweep.riscos.tratamentoCriado'));
 
         // Gera plano de ação vinculado (rastreabilidade risco → tratamento → ação)
         if (gerarPlano && profile.empresa_id) {

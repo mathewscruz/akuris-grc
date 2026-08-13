@@ -222,8 +222,8 @@ export function TratamentosList({ riscoId, riscoNome, embedded = false, riscoDat
                 <TableHead>{t('fin.comum.descricao')}</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>{t('fin.comum.responsavel')}</TableHead>
-                <TableHead>Prazo</TableHead>
-                <TableHead>Custo</TableHead>
+                <TableHead>{t('cardsKpi.sweep.riscos.prazo')}</TableHead>
+                <TableHead>{t('cardsKpi.sweep.riscos.custo')}</TableHead>
                 <TableHead className="text-right">{t('fin.comum.acoes')}</TableHead>
               </TableRow>
             </TableHeader>

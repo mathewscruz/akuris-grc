@@ -343,7 +343,7 @@ export function MatrizForm({ onSuccess }: Props) {
           throw new Error(t('fin.riscos.matrizForm.configNaoConfirmada'));
         }
 
-        toast.success('Matriz de risco atualizada com sucesso!');
+        toast.success(t('cardsKpi.sweep.riscos.matrizAtualizada'));
       } else {
         // Criar nova matriz
         const { data: novaMatriz, error: matrizError } = await supabase
@@ -376,7 +376,7 @@ export function MatrizForm({ onSuccess }: Props) {
           throw new Error(t('fin.riscos.matrizForm.configNaoConfirmada'));
         }
 
-        toast.success('Matriz de risco criada com sucesso!');
+        toast.success(t('cardsKpi.sweep.riscos.matrizCriada'));
       }
 
       limparFormularioMatriz();
@@ -495,7 +495,7 @@ export function MatrizForm({ onSuccess }: Props) {
 
       if (error) throw error;
 
-      toast.success('Categoria criada com sucesso!');
+      toast.success(t('cardsKpi.sweep.riscos.categoriaCriada'));
       categoriaForm.reset();
       fetchData();
     } catch (error: any) {

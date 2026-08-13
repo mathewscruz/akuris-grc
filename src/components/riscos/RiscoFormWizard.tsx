@@ -651,11 +651,11 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
 
             {/* Resumo Vivo */}
             <div className="p-4 space-y-3 overflow-y-auto flex-1">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Resumo</h3>
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('cardsKpi.sweep.riscos.resumo')}</h3>
               <Card className="bg-background">
                 <CardContent className="p-3 space-y-3 text-sm">
                   <div>
-                    <div className="text-xs text-muted-foreground mb-0.5">Nome</div>
+                    <div className="text-xs text-muted-foreground mb-0.5">{t('cardsKpi.sweep.riscos.nome')}</div>
                     <div className="font-medium truncate" title={watchNome}>
                       {watchNome || <span className="text-muted-foreground italic">{t('fin.comum.naoInformado')}</span>}
                     </div>
@@ -1000,8 +1000,8 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
             {/* DETALHES */}
             <TabsContent value="detalhes" className="mt-0 space-y-4 max-w-3xl mx-auto">
               <div>
-                <h2 className="text-lg font-semibold flex items-center gap-2"><Settings2 className="h-5 w-5" /> Detalhes Adicionais</h2>
-                <p className="text-sm text-muted-foreground">Status, controles existentes e ativos vinculados.</p>
+                <h2 className="text-lg font-semibold flex items-center gap-2"><Settings2 className="h-5 w-5" /> {t('cardsKpi.sweep.riscos.detalhesAdicionais')}</h2>
+                <p className="text-sm text-muted-foreground">{t('cardsKpi.sweep.riscos.detalhesAdicionaisDesc')}</p>
               </div>
 
               <FormField

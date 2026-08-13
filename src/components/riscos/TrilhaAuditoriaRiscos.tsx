@@ -87,7 +87,7 @@ export function TrilhaAuditoriaRiscos({ open, onOpenChange, riscoId, riscoNome }
           <h5 className="font-medium mb-2">{translateField(field)}</h5>
           <div className="grid grid-cols-2 gap-2">
             <div className="rounded-md border border-destructive/30 bg-destructive/10 p-2">
-              <p className="text-xs font-medium text-destructive">Anterior</p>
+              <p className="text-xs font-medium text-destructive">{t('cardsKpi.sweep.riscos.anterior')}</p>
               <p className="text-sm text-destructive">{String(oldVal ?? 'N/A')}</p>
             </div>
             <div className="rounded-md border border-success/30 bg-success/10 p-2">
@@ -147,7 +147,7 @@ export function TrilhaAuditoriaRiscos({ open, onOpenChange, riscoId, riscoNome }
                     <CardContent>
                       <Tabs defaultValue="resumo">
                         <TabsList>
-                          <TabsTrigger value="resumo">Resumo</TabsTrigger>
+                          <TabsTrigger value="resumo">{t('cardsKpi.sweep.riscos.resumo')}</TabsTrigger>
                           {log.action === 'UPDATE' && <TabsTrigger value="comparacao">{t('fin.comum.comparacao')}</TabsTrigger>}
                         </TabsList>
                         <TabsContent value="resumo" className="space-y-3">
