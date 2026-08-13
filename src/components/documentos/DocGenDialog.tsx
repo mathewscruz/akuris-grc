@@ -62,6 +62,48 @@ import { useAuth } from '@/components/AuthProvider';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { useLanguage } from '@/contexts/LanguageContext';
+
+/** Tempo máximo (ms) que o frontend espera por uma chamada do docgen-chat. */
+const DOCGEN_TIMEOUT_MS = 120_000;
+
+type DocGenCallResult = {
+  data?: any;
+  /** Créditos de IA esgotados — abrir CreditsExhaustedDialog. */
+  credits?: boolean;
+  /** Estourou o tempo limite do cliente. */
+  timeout?: boolean;
+  error?: string;
+};
+
+/**
+ * Wrapper único das chamadas ao docgen-chat: aplica timeout no cliente
+ * (a plataforma corta em ~150s sem resposta útil) e normaliza os erros
+ * 402/403 do gateway de IA em `credits`.
+ */
+async function callDocGen(body: Record<string, unknown>, timeoutMs = DOCGEN_TIMEOUT_MS): Promise<DocGenCallResult> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    const invocation = supabase.functions.invoke('docgen-chat', { body });
+    const timeout = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error('__DOCGEN_TIMEOUT__')), timeoutMs);
+    });
+    const { data, error } = (await Promise.race([invocation, timeout])) as any;
+    if (error) {
+      let payload: any = null;
+      try { payload = await (error as any)?.context?.json?.(); } catch { /* corpo não-JSON */ }
+      if (payload?.code === 'CREDITS_EXHAUSTED' || payload?.error === 'CREDITS_EXHAUSTED') return { credits: true };
+      return { error: payload?.error || error.message };
+    }
+    if (data?.code === 'CREDITS_EXHAUSTED' || data?.error === 'CREDITS_EXHAUSTED') return { credits: true };
+    return { data };
+  } catch (e: any) {
+    if (e?.message === '__DOCGEN_TIMEOUT__') return { timeout: true };
+    return { error: e?.message || 'Erro inesperado' };
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
