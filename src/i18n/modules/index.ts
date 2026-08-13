@@ -18,6 +18,7 @@ import { docgen } from './docgen';
 import { gapAnalysis } from './gap-analysis';
 import { gapAdherence } from './gap-adherence';
 import { gapV2 } from './gap-v2';
+import { gapExports } from './gap-exports';
 import { planosAcao } from './planos-acao';
 import { minhasTarefas } from './minhas-tarefas';
 
@@ -34,6 +35,7 @@ const modules: Record<string, ModuleDict> = {
   gapAnalysis,
   gapAdherence,
   gapV2,
+  gapExports,
   planosAcao,
   minhasTarefas,
 };
