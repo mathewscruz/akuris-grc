@@ -402,23 +402,24 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     setMessages(prev => [...prev, { role: 'user', content: instruction, timestamp: new Date() }]);
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('docgen-chat', {
-        body: {
-          action: 'refine_document',
-          user_id: userInfo.user_id,
-          empresa_id: userInfo.empresa_id,
-          conversation_id: conversationId,
-          document: generatedDocument,
-          instruction,
-          ...(effFrameworkName && { framework_context: { framework_name: effFrameworkName, framework_id: effFrameworkId } }),
-          ...(companyContext && { company_context: companyContext }),
-        },
+      const res = await callDocGen({
+        action: 'refine_document',
+        user_id: userInfo.user_id,
+        empresa_id: userInfo.empresa_id,
+        conversation_id: conversationId,
+        document: generatedDocument,
+        instruction,
+        ...(effFrameworkName && { framework_context: { framework_name: effFrameworkName, framework_id: effFrameworkId } }),
+        ...(companyContext && { company_context: companyContext }),
       });
-      if (error) throw error;
-      if (data?.error === 'CREDITS_EXHAUSTED') {
-        setShowCreditsDialog(true);
+      if (res.credits) { setShowCreditsDialog(true); return; }
+      if (res.timeout) {
+        toast({ title: t('docgen.dialog.timeoutTitle'), description: t('docgen.dialog.timeoutDescription'), variant: 'destructive' });
         return;
       }
+      if (res.error) throw new Error(res.error);
+      const data = res.data;
+
       if (data?.document) {
         setGeneratedDocument({
           ...data.document,
