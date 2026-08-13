@@ -394,7 +394,7 @@ export default function AtivosChaves() {
       {/* StatCards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          title="Total de Chaves"
+          title={t('cardsKpi.chaves.totalChaves')}
           value={stats?.total ?? 0}
           description="Chaves registradas"
           icon={<Key />}
@@ -407,7 +407,7 @@ export default function AtivosChaves() {
         <StatCard
           title="Chaves Ativas"
           value={stats?.ativas ?? 0}
-          description="Em uso"
+          description={t('residuos.geral.emUso')}
           icon={<CheckCircle />}
           loading={statsLoading}
           variant="success"

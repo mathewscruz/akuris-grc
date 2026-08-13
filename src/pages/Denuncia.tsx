@@ -45,25 +45,25 @@ export default function Denuncia() {
           title="Total"
           value={stats?.total ?? 0}
           icon={<Shield />}
-          description="Denúncias registradas"
+          description={t('cardsKpi.denuncias.denunciasRegistradas')}
           loading={statsLoading}
           drillDown="denuncias"
           showAccent
-          emptyHint="As denúncias aparecerão conforme forem recebidas."
+          emptyHint={t('residuos.empty.denuncias')}
         />
         
         <StatCard
           title="Novas"
           value={stats?.novas ?? 0}
           icon={<AlertTriangle />}
-          description="Aguardando análise"
+          description={t('cardsKpi.denuncias.aguardandoAnalise')}
           loading={statsLoading}
           variant="warning"
           drillDown="denuncias"
         />
         
         <StatCard
-          title="Em Andamento"
+          title={t('residuos.geral.emAndamento')}
           value={stats?.em_andamento ?? 0}
           icon={<Clock />}
           description="Sendo investigadas"
@@ -76,7 +76,7 @@ export default function Denuncia() {
           title="Resolvidas"
           value={stats?.resolvidas ?? 0}
           icon={<CheckCircle />}
-          description="Concluídas"
+          description={t('cardsKpi.denuncias.concluidas')}
           loading={statsLoading}
           variant="success"
         />
@@ -88,7 +88,7 @@ export default function Denuncia() {
       <Dialog open={relatoriosOpen} onOpenChange={setRelatoriosOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Relatórios de Denúncias</DialogTitle>
+            <DialogTitle>{t('cardsKpi.denuncias.relatorios')}</DialogTitle>
           </DialogHeader>
           <RelatoriosDenuncia />
         </DialogContent>

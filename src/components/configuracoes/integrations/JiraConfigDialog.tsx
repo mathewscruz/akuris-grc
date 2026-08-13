@@ -236,7 +236,7 @@ export function JiraConfigDialog({
             <Input
               id="jira-email"
               type="email"
-              placeholder="seu-email@empresa.com"
+              placeholder={t('residuos.placeholders.emailCorporativo')}
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value);

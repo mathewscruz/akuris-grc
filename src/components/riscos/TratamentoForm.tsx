@@ -238,10 +238,10 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
               <SelectValue placeholder={t('fin.comum.selecioneTipo')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="mitigar">Mitigar</SelectItem>
-              <SelectItem value="transferir">Transferir</SelectItem>
-              <SelectItem value="aceitar">Aceitar</SelectItem>
-              <SelectItem value="evitar">Evitar</SelectItem>
+              <SelectItem value="mitigar">{t('campos.enums.tratamentoEstrategia.mitigar')}</SelectItem>
+              <SelectItem value="transferir">{t('campos.enums.tratamentoEstrategia.transferir')}</SelectItem>
+              <SelectItem value="aceitar">{t('campos.enums.tratamentoEstrategia.aceitar')}</SelectItem>
+              <SelectItem value="evitar">{t('campos.enums.tratamentoEstrategia.evitar')}</SelectItem>
             </SelectContent>
           </Select>
           {form.formState.errors.tipo_tratamento && (
@@ -259,10 +259,10 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
               <SelectValue placeholder={t('fin.comum.selecioneStatus')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="pendente">Pendente</SelectItem>
-              <SelectItem value="em andamento">Em Andamento</SelectItem>
+              <SelectItem value="pendente">{t('campos.opcoes.pendente')}</SelectItem>
+              <SelectItem value="em andamento">{t('campos.opcoes.emAndamento')}</SelectItem>
               <SelectItem value="concluído">{t('fin.comum.concluido')}</SelectItem>
-              <SelectItem value="cancelado">Cancelado</SelectItem>
+              <SelectItem value="cancelado">{t('campos.opcoes.cancelado')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -310,7 +310,7 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div className="space-y-2">
-          <Label htmlFor="responsavel">Responsável</Label>
+          <Label htmlFor="responsavel">{t('residuos.risco.responsavel')}</Label>
           <UserSelect
             value={form.watch('responsavel') || ''}
             onValueChange={(value) => form.setValue('responsavel', value, { shouldDirty: true })}
@@ -395,10 +395,10 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
             <SelectValue placeholder={t('fin.riscos.tratForm.eficaciaPlaceholder')} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="baixa">Baixa</SelectItem>
-            <SelectItem value="média">Média</SelectItem>
-            <SelectItem value="alta">Alta</SelectItem>
-            <SelectItem value="muito alta">Muito Alta</SelectItem>
+            <SelectItem value="baixa">{t('campos.enums.escala.baixa')}</SelectItem>
+            <SelectItem value="média">{t('campos.enums.escala.media')}</SelectItem>
+            <SelectItem value="alta">{t('campos.enums.escala.alta')}</SelectItem>
+            <SelectItem value="muito alta">{t('campos.enums.escala.muitoAlta')}</SelectItem>
           </SelectContent>
         </Select>
       </div>

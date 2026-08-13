@@ -11,7 +11,9 @@ import { fetchPlanos, formatBRL, type Plano } from '@/lib/planos-utils';
 import { PlanBadge } from '@/components/PlanBadge';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { useLanguage } from '@/contexts/LanguageContext';
 export default function PlanosAssinatura() {
+  const { t } = useLanguage();
   const [isAnnual, setIsAnnual] = useState(false);
   const [planos, setPlanos] = useState<Plano[]>([]);
   const [loading, setLoading] = useState(true);
@@ -135,7 +137,7 @@ export default function PlanosAssinatura() {
       </div>
 
       <div className="text-center text-sm text-muted-foreground">
-        <p>Precisa de algo customizado? <a href="mailto:contato@akuris.com.br" className="text-primary hover:underline">Fale com a gente</a>.</p>
+        <p>{t('residuos.geral.precisaCustomizado')}<a href="mailto:contato@akuris.com.br" className="text-primary hover:underline">{t('residuos.geral.faleConosco')}</a>.</p>
       </div>
     </div>
   );

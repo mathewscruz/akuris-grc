@@ -7,6 +7,7 @@ import { useSearchParams } from 'react-router-dom';
 import { LayoutGrid, Rows3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export interface RequirementsToolbarCounts {
   total: number;
@@ -44,6 +45,7 @@ function detectActive(sp: URLSearchParams): ChipKey {
 }
 
 export function RequirementsTableToolbar({ counts }: Props) {
+  const { t } = useLanguage();
   const [searchParams, setSearchParams] = useSearchParams();
   const active = detectActive(searchParams);
 
@@ -105,7 +107,7 @@ export function RequirementsTableToolbar({ counts }: Props) {
             </button>
           </TooltipTrigger>
           <TooltipContent>
-            <span className="text-xs">Visualização em quadro chega na próxima onda.</span>
+            <span className="text-xs">{t('residuos.score.quadroEmBreve')}</span>
           </TooltipContent>
         </Tooltip>
       </div>

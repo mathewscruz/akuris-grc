@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { AkurisPulse } from "@/components/ui/AkurisPulse";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,35 +6,45 @@ import { toast } from "sonner";
 import { Check } from "lucide-react";
 import { z } from "zod";
 import { logger } from "@/lib/logger";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
 }
 
-const schema = z.object({
-  name: z.string().trim().min(2, "Informe seu nome").max(120),
-  role: z.string().trim().max(120).optional().or(z.literal("")),
-  email: z.string().trim().email("E-mail inválido").max(200),
-  company: z.string().trim().min(2, "Informe a empresa").max(160),
-  companySize: z.string().min(1, "Selecione o tamanho"),
-  message: z.string().trim().max(1000).optional().or(z.literal("")),
-});
+type Translate = (key: string) => string;
 
-const sizes = [
-  { v: "", l: "Selecione" },
-  { v: "1-50", l: "Até 50 colaboradores" },
-  { v: "51-250", l: "51–250" },
-  { v: "251-1000", l: "251–1.000" },
-  { v: "1000+", l: "Mais de 1.000" },
-];
+const makeSchema = (d: Translate) =>
+  z.object({
+    name: z.string().trim().min(2, d("errNome")).max(120),
+    role: z.string().trim().max(120).optional().or(z.literal("")),
+    email: z.string().trim().email(d("errEmail")).max(200),
+    company: z.string().trim().min(2, d("errEmpresa")).max(160),
+    companySize: z.string().min(1, d("errTamanho")),
+    message: z.string().trim().max(1000).optional().or(z.literal("")),
+  });
 
 export function DemoRequestDialog({ open, onOpenChange }: Props) {
+  const { t } = useLanguage();
+  const d = useMemo<Translate>(() => (key: string) => t(`publico.demo.${key}`), [t]);
+
   const [phase, setPhase] = useState<"idle" | "submitting" | "success">("idle");
   const [data, setData] = useState({ name: "", role: "", email: "", company: "", companySize: "", message: "" });
   const [honeypot, setHoneypot] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [firstName, setFirstName] = useState("");
+
+  const sizes = useMemo(
+    () => [
+      { v: "", l: d("selecione") },
+      { v: "1-50", l: d("tam1") },
+      { v: "51-250", l: "51–250" },
+      { v: "251-1000", l: "251–1.000" },
+      { v: "1000+", l: d("tam4") },
+    ],
+    [d],
+  );
 
   const reset = () => {
     setPhase("idle");
@@ -49,14 +59,14 @@ export function DemoRequestDialog({ open, onOpenChange }: Props) {
   };
 
   const onChange = (k: string, v: string) => {
-    setData((d) => ({ ...d, [k]: v }));
+    setData((prev) => ({ ...prev, [k]: v }));
     if (errors[k]) setErrors((e) => ({ ...e, [k]: "" }));
   };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (honeypot) return;
-    const result = schema.safeParse(data);
+    const result = makeSchema(d).safeParse(data);
     if (!result.success) {
       const errs: Record<string, string> = {};
       result.error.errors.forEach((er) => { errs[er.path[0] as string] = er.message; });
@@ -81,7 +91,7 @@ export function DemoRequestDialog({ open, onOpenChange }: Props) {
       setPhase("success");
     } catch (err: any) {
       logger.error("Falha ao enviar solicitação de demo", { error: err?.message, module: "Landing" });
-      toast.error("Não foi possível enviar agora. Tente novamente em instantes.");
+      toast.error(d("errEnvio"));
       setPhase("idle");
     }
   };
@@ -89,17 +99,15 @@ export function DemoRequestDialog({ open, onOpenChange }: Props) {
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="lp-demo-dialog sm:max-w-[640px] sm:max-h-[92dvh]">
-        <DialogTitle className="sr-only">Solicitar demonstração</DialogTitle>
-        <DialogDescription className="sr-only">Formulário de solicitação de demo personalizada.</DialogDescription>
+        <DialogTitle className="sr-only">{d("titulo")}</DialogTitle>
+        <DialogDescription className="sr-only">{d("descricao")}</DialogDescription>
 
         <div className="lp-demo-head">
-          <span className="lp-eyebrow">Demonstração · 30 minutos</span>
+          <span className="lp-eyebrow">{d("eyebrow")}</span>
           <h2 className="lp-demo-title">
-            Conheça o Akuris <em>com seu próprio cenário.</em>
+            {d("tituloModal")} <em>{d("tituloModalEm")}</em>
           </h2>
-          <p className="lp-demo-sub">
-            Um especialista entra em contato em até 1 dia útil com uma agenda. Sem script genérico, sem ligar pra vender seguro de carro depois.
-          </p>
+          <p className="lp-demo-sub">{d("sub")}</p>
         </div>
 
         {phase !== "success" ? (
@@ -111,27 +119,27 @@ export function DemoRequestDialog({ open, onOpenChange }: Props) {
             />
 
             <div className="lp-demo-row">
-              <Field label="Nome" id="d-name" error={errors.name}>
-                <input id="d-name" className="lp-modal-input" placeholder="Seu nome"
+              <Field label={d("nome")} id="d-name" error={errors.name}>
+                <input id="d-name" className="lp-modal-input" placeholder={d("nomePlaceholder")}
                   value={data.name} onChange={(e) => onChange("name", e.target.value)} />
               </Field>
-              <Field label="Cargo" id="d-role" error={errors.role}>
-                <input id="d-role" className="lp-modal-input" placeholder="DPO, Compliance Officer…"
+              <Field label={d("cargo")} id="d-role" error={errors.role}>
+                <input id="d-role" className="lp-modal-input" placeholder={d("cargoPlaceholder")}
                   value={data.role} onChange={(e) => onChange("role", e.target.value)} />
               </Field>
             </div>
 
-            <Field label="E-mail corporativo" id="d-email" error={errors.email}>
-              <input id="d-email" type="email" className="lp-modal-input" placeholder="voce@empresa.com.br"
+            <Field label={d("emailCorporativo")} id="d-email" error={errors.email}>
+              <input id="d-email" type="email" className="lp-modal-input" placeholder={d("emailPlaceholder")}
                 value={data.email} onChange={(e) => onChange("email", e.target.value)} />
             </Field>
 
             <div className="lp-demo-row">
-              <Field label="Empresa" id="d-company" error={errors.company}>
-                <input id="d-company" className="lp-modal-input" placeholder="Razão social"
+              <Field label={d("empresa")} id="d-company" error={errors.company}>
+                <input id="d-company" className="lp-modal-input" placeholder={d("razaoSocial")}
                   value={data.company} onChange={(e) => onChange("company", e.target.value)} />
               </Field>
-              <Field label="Tamanho" id="d-size" error={errors.companySize}>
+              <Field label={d("tamanho")} id="d-size" error={errors.companySize}>
                 <select id="d-size" className="lp-modal-input lp-modal-select"
                   value={data.companySize} onChange={(e) => onChange("companySize", e.target.value)}>
                   {sizes.map((s) => <option key={s.v} value={s.v}>{s.l}</option>)}
@@ -139,40 +147,42 @@ export function DemoRequestDialog({ open, onOpenChange }: Props) {
               </Field>
             </div>
 
-            <Field label="O que você quer resolver? (opcional)" id="d-msg">
+            <Field label={d("desafio")} id="d-msg">
               <textarea id="d-msg" rows={3} className="lp-modal-input lp-modal-textarea"
-                placeholder="Ex: próxima auditoria SOC 2 em 4 meses…"
+                placeholder={d("desafioPlaceholder")}
                 value={data.message} onChange={(e) => onChange("message", e.target.value)} />
             </Field>
 
             <button type="submit" className="lp-btn-pill lp-btn-pill-block" disabled={phase === "submitting"}>
-              {phase === "submitting" ? (<><AkurisPulse size={18} /> Enviando</>) : (<>Solicitar demonstração <span className="arr">→</span></>)}
+              {phase === "submitting"
+                ? (<><AkurisPulse size={18} /> {d("enviando")}</>)
+                : (<>{d("enviar")} <span className="arr">→</span></>)}
             </button>
 
             <p className="lp-demo-fineprint">
-              Ao enviar, você concorda com nossa <a href="/politica-privacidade" target="_blank" rel="noreferrer">Política de Privacidade</a>. Tratamos seus dados sob a LGPD, claro.
+              {d("fineprintPre")}{" "}
+              <a href="/politica-privacidade" target="_blank" rel="noreferrer">{d("fineprintLink")}</a>
+              {d("fineprintPos")}
             </p>
           </form>
         ) : (
           <div className="lp-demo-success">
             <div className="lp-demo-check"><Check size={28} strokeWidth={2.2} /></div>
-            <span className="lp-eyebrow lp-demo-eyebrow-center">Recebido</span>
-            <h3 className="lp-demo-thanks">Obrigado, <em>{firstName}.</em></h3>
-            <p className="lp-demo-sub">
-              Sua solicitação chegou ao nosso time. Em até 1 dia útil você recebe um e-mail com agenda e contexto.
-            </p>
+            <span className="lp-eyebrow lp-demo-eyebrow-center">{d("recebido")}</span>
+            <h3 className="lp-demo-thanks">{d("obrigado")} <em>{firstName}.</em></h3>
+            <p className="lp-demo-sub">{d("successSub")}</p>
 
             <div className="lp-demo-steps">
-              {[
-                ["01", "Confirmação no seu e-mail", "Verifique a caixa de entrada (e o spam, na dúvida) nos próximos minutos."],
-                ["02", "Conversa de 15 minutos", "Entendemos seu cenário antes da demo, para mostrar só o que importa pra você."],
-                ["03", "Demo guiada de 30 minutos", "Com seus frameworks e taxonomia, não um tour genérico de plataforma."],
-              ].map(([n, t, d]) => (
+              {([
+                ["01", d("st1Title"), d("st1Desc")],
+                ["02", d("st2Title"), d("st2Desc")],
+                ["03", d("st3Title"), d("st3Desc")],
+              ] as [string, string, string][]).map(([n, title, desc]) => (
                 <div key={n} className="lp-step-card">
                   <span className="lp-step-card-num">{n}</span>
                   <div>
-                    <strong>{t}</strong>
-                    <p>{d}</p>
+                    <strong>{title}</strong>
+                    <p>{desc}</p>
                   </div>
                 </div>
               ))}

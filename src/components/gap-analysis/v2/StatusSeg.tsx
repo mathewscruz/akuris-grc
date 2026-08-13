@@ -6,6 +6,7 @@
 import { useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import type { ConformityStatus } from '@/lib/gap-analysis-tokens';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Option {
   id: ConformityStatus;
@@ -38,6 +39,7 @@ export function StatusSeg({
   enableShortcuts = false,
   className,
 }: StatusSegProps) {
+  const { t } = useLanguage();
   useEffect(() => {
     if (!enableShortcuts) return;
     const handler = (e: KeyboardEvent) => {
@@ -63,7 +65,7 @@ export function StatusSeg({
         className
       )}
       role="radiogroup"
-      aria-label="Status de conformidade"
+      aria-label={t('residuos.score.statusConformidade')}
     >
       {OPTIONS.map((opt) => {
         const isActive = value === opt.id;
@@ -96,7 +98,7 @@ export function StatusSeg({
             {showAiPip && (
               <span
                 className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-primary ring-2 ring-background"
-                aria-label="Sugestão"
+                aria-label={t('residuos.score.sugestao')}
               />
             )}
           </button>

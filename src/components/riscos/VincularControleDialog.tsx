@@ -178,10 +178,10 @@ export function VincularControleDialog({ open, onOpenChange, riscoId, riscoNome,
                       <Select value={v?.tipo_vinculacao || 'mitiga'} onValueChange={(val) => update(c.id, 'tipo_vinculacao', val)}>
                         <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="mitiga">Mitiga</SelectItem>
-                          <SelectItem value="previne">Previne</SelectItem>
-                          <SelectItem value="detecta">Detecta</SelectItem>
-                          <SelectItem value="corrige">Corrige</SelectItem>
+                          <SelectItem value="mitiga">{t('campos.enums.controleRelacao.mitiga')}</SelectItem>
+                          <SelectItem value="previne">{t('campos.enums.controleRelacao.previne')}</SelectItem>
+                          <SelectItem value="detecta">{t('campos.enums.controleRelacao.detecta')}</SelectItem>
+                          <SelectItem value="corrige">{t('campos.enums.controleRelacao.corrige')}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -190,9 +190,9 @@ export function VincularControleDialog({ open, onOpenChange, riscoId, riscoNome,
                       <Select value={v?.eficacia_estimada || 'media'} onValueChange={(val) => update(c.id, 'eficacia_estimada', val)}>
                         <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="alta">Alta</SelectItem>
-                          <SelectItem value="media">Média</SelectItem>
-                          <SelectItem value="baixa">Baixa</SelectItem>
+                          <SelectItem value="alta">{t('campos.enums.escala.alta')}</SelectItem>
+                          <SelectItem value="media">{t('campos.enums.escala.media')}</SelectItem>
+                          <SelectItem value="baixa">{t('campos.enums.escala.baixa')}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>

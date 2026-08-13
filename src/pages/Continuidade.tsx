@@ -188,9 +188,9 @@ export default function Continuidade() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <StatCard title="Total de Planos" value={stats?.total ?? 0} icon={<Shield />} variant="primary" loading={statsLoading} drillDown="continuidade" showAccent emptyHint="Cadastre o primeiro plano de continuidade." />
+        <StatCard title={t('cardsKpi.continuidade.totalPlanos')} value={stats?.total ?? 0} icon={<Shield />} variant="primary" loading={statsLoading} drillDown="continuidade" showAccent emptyHint={t('residuos.empty.continuidade')} />
         <StatCard title="Planos Ativos" value={stats?.ativos ?? 0} icon={<FileCheck />} variant="success" loading={statsLoading} drillDown="continuidade" />
-        <StatCard title="Em Revisão" value={stats?.emRevisao ?? 0} icon={<Clock />} variant="warning" loading={statsLoading} drillDown="continuidade" />
+        <StatCard title={t('cardsKpi.continuidade.emRevisao')} value={stats?.emRevisao ?? 0} icon={<Clock />} variant="warning" loading={statsLoading} drillDown="continuidade" />
         <StatCard title="Testes Realizados" value={stats?.testesRealizados ?? 0} icon={<TestTube />} variant="info" loading={statsLoading} />
         <StatCard title="Tarefas Pendentes" value={stats?.tarefasPendentes ?? 0} icon={<ListTodo />} variant="destructive" loading={statsLoading} drillDown="planos" />
       </div>
@@ -240,7 +240,7 @@ export default function Continuidade() {
                 <Badge variant={insights.semRTO > 0 ? 'warning' : 'success'}>{insights.semRTO}</Badge>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Cobertura de testes</span>
+                <span className="text-muted-foreground">{t('cardsKpi.continuidade.coberturaTestes')}</span>
                 <Badge variant="outline">
                   {stats?.testesRealizados ?? 0} testes / {planos.length} planos
                 </Badge>

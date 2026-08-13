@@ -106,7 +106,7 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
           <div className="flex items-center gap-3 min-w-0">
             <span className="font-mono text-[11px] text-muted-foreground">{shortRiskId(risco.id)}</span>
             <div className="min-w-0">
-              <div className="text-[10.5px] font-semibold uppercase tracking-[1.2px] text-muted-foreground">Perfil do risco</div>
+              <div className="text-[10.5px] font-semibold uppercase tracking-[1.2px] text-muted-foreground">{t('residuos.risco.perfilRisco')}</div>
               <DialogTitle asChild>
                 <div className="text-base font-semibold truncate">{risco.nome}</div>
               </DialogTitle>
@@ -174,7 +174,7 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
 
             <section className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4">
               <HeaderMeta icon={<Tag />} label="Categoria" value={risco.categoria?.nome || '—'} />
-              <HeaderMeta icon={<User />} label="Responsável" value={
+              <HeaderMeta icon={<User />} label={t('residuos.risco.responsavel')} value={
                 risco.responsavel_nome ? (
                   <span className="inline-flex items-center gap-1.5">
                     <Avatar className="h-4 w-4">
@@ -187,7 +187,7 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
               } />
               <HeaderMeta icon={<Timer />} label="SLA" value={<StatusBadge size="sm" {...(sla === 'vencido' ? { tone: 'destructive' as const } : sla === 'atencao' ? { tone: 'warning' as const } : sla === 'no_prazo' ? { tone: 'success' as const } : { tone: 'neutral' as const })}>{SLA_LABELS[sla]}</StatusBadge>} />
               <HeaderMeta icon={<CalendarClock />} label={t('fin.riscos.proxRevisao')} value={risco.data_proxima_revisao ? formatDateOnly(risco.data_proxima_revisao) : '—'} />
-              <HeaderMeta icon={<CalendarClock />} label="Criado em" value={risco.created_at ? formatDateOnly(risco.created_at) : '—'} />
+              <HeaderMeta icon={<CalendarClock />} label={t('residuos.risco.criadoEm')} value={risco.created_at ? formatDateOnly(risco.created_at) : '—'} />
               <HeaderMeta icon={<History />} label={t('fin.riscos.avaliacoes')} value={String(detail?.historico.length ?? 0)} />
             </section>
 

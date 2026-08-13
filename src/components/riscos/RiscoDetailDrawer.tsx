@@ -290,7 +290,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
             <HeaderMeta icon={<Tag />} label="Categoria" value={risco.categoria?.nome || '—'} />
             <HeaderMeta
               icon={<User />}
-              label="Responsável"
+              label={t('residuos.risco.responsavel')}
               value={
                 risco.responsavel_nome ? (
                   <span className="inline-flex items-center gap-1.5">
@@ -316,7 +316,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
         <Tabs defaultValue="visao" className="flex-1 flex flex-col min-h-0">
           <div className="px-6 pt-4">
             <TabsList className="w-full">
-              <TabsTrigger value="visao" className="flex-1 text-[11px] px-2 gap-1.5 min-w-0 whitespace-nowrap"><Eye className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>Visão</span></TabsTrigger>
+              <TabsTrigger value="visao" className="flex-1 text-[11px] px-2 gap-1.5 min-w-0 whitespace-nowrap"><Eye className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>{t('residuos.risco.visao')}</span></TabsTrigger>
               <TabsTrigger value="tratamentos" className="flex-1 text-[11px] px-2 gap-1.5 min-w-0 whitespace-nowrap"><Shield className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>Tratamento</span></TabsTrigger>
               <TabsTrigger value="historico" className="flex-1 text-[11px] px-2 gap-1.5 min-w-0 whitespace-nowrap"><History className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>{t('fin.comum.historico')}</span></TabsTrigger>
               <TabsTrigger value="controles" className="flex-1 text-[11px] px-2 gap-1.5 min-w-0 whitespace-nowrap"><ShieldCheck className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>Controles</span></TabsTrigger>
@@ -571,9 +571,9 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
         <div className="border-t border-border px-6 py-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-card">
           <div className="text-[11px] text-muted-foreground min-w-0 leading-snug">
             {detail?.historico?.[0]
-              ? <>Última revisão · <span className="text-foreground/85">{formatStatus(detail.historico[0].tipo)}</span> · {formatDateOnly(detail.historico[0].created_at)}</>
+              ? <>{t('residuos.risco.ultimaRevisao')}<span className="text-foreground/85">{formatStatus(detail.historico[0].tipo)}</span> · {formatDateOnly(detail.historico[0].created_at)}</>
               : risco.responsavel_nome
-              ? <>Responsável · <span className="text-foreground/85">{risco.responsavel_nome}</span></>
+              ? <>{t('residuos.risco.responsavelPrefixo')}<span className="text-foreground/85">{risco.responsavel_nome}</span></>
               : t('fin.riscos.semRevisoes')}
           </div>
           <div className="flex items-center gap-3 sm:ml-auto">

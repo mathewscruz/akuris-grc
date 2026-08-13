@@ -5,8 +5,10 @@ import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle } from 
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { UserProfilePopover } from './UserProfilePopover';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const UserProfile: React.FC = () => {
+  const { t } = useLanguage();
   const { user, profile, loading } = useAuth();
   const [userProfile, setUserProfile] = useState<any>(null);
   const [popoverOpen, setPopoverOpen] = useState(false);
@@ -113,7 +115,7 @@ const UserProfile: React.FC = () => {
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Editar Perfil</DialogTitle>
+          <DialogTitle>{t('residuos.geral.editarPerfil')}</DialogTitle>
         </DialogHeader>
         <UserProfilePopover onClose={() => setPopoverOpen(false)} />
       </DialogContent>

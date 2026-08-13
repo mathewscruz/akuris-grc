@@ -105,7 +105,7 @@ export function TrilhaAuditoriaRiscos({ open, onOpenChange, riscoId, riscoNome }
       open={open}
       onOpenChange={onOpenChange}
       icon={History}
-      title="Trilha de auditoria"
+      title={t('residuos.risco.trilhaAuditoria')}
       description={riscoNome}
       size="lg"
       hideFooter

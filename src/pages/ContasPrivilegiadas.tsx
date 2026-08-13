@@ -399,7 +399,7 @@ export default function ContasPrivilegiadas() {
           variant="primary"
           drillDown="contas_privilegiadas"
           showAccent
-          emptyHint="Cadastre contas privilegiadas para monitorar."
+          emptyHint={t('residuos.empty.contasPrivilegiadas')}
         />
         <StatCard
           title="Pendentes"
@@ -409,7 +409,7 @@ export default function ContasPrivilegiadas() {
           drillDown="contas_privilegiadas"
         />
         <StatCard
-          title="Vencendo em 30 dias"
+          title={t('residuos.geral.vencendo30')}
           value={contasVencendo}
           loading={isLoading}
           variant={contasVencendo > 0 ? 'warning' : 'default'}

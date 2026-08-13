@@ -375,20 +375,20 @@ export default function AtivosLicencas() {
       {/* StatCards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          title="Total de Licenças"
+          title={t('cardsKpi.licencas.totalLicencas')}
           value={stats?.total ?? 0}
-          description="Licenças registradas"
+          description={t('cardsKpi.licencas.licencasRegistradas')}
           icon={<FileCheck />}
           loading={statsLoading}
           drillDown="ativos_licencas"
           showAccent
-          emptyHint="Cadastre licenças para acompanhar vencimentos."
+          emptyHint={t('residuos.empty.licencas')}
         />
 
         <StatCard
-          title="Licenças Ativas"
+          title={t('cardsKpi.licencas.licencasAtivas')}
           value={stats?.ativas ?? 0}
-          description="Em vigor"
+          description={t('residuos.geral.emVigor')}
           icon={<CheckCircle />}
           loading={statsLoading}
           variant="success"

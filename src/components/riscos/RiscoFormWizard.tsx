@@ -1017,11 +1017,11 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="identificado">Identificado</SelectItem>
-                        <SelectItem value="analisado">Analisado</SelectItem>
-                        <SelectItem value="tratado">Tratado</SelectItem>
-                        <SelectItem value="monitorado">Monitorado</SelectItem>
-                        <SelectItem value="aceito">Aceito</SelectItem>
+                        <SelectItem value="identificado">{t('campos.enums.riscoStatus.identificado')}</SelectItem>
+                        <SelectItem value="analisado">{t('campos.enums.riscoStatus.analisado')}</SelectItem>
+                        <SelectItem value="tratado">{t('campos.enums.riscoStatus.tratado')}</SelectItem>
+                        <SelectItem value="monitorado">{t('campos.enums.riscoStatus.monitorado')}</SelectItem>
+                        <SelectItem value="aceito">{t('campos.enums.riscoStatus.aceito')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -1182,7 +1182,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
             {/* ACEITE */}
             <TabsContent value="aceite" className="mt-0 space-y-4 max-w-3xl mx-auto">
               <div>
-                <h2 className="text-lg font-semibold flex items-center gap-2"><ShieldCheck className="h-5 w-5" /> Aceite do Risco</h2>
+                <h2 className="text-lg font-semibold flex items-center gap-2"><ShieldCheck className="h-5 w-5" />{t('residuos.risco.aceiteRisco')}</h2>
                 <p className="text-sm text-muted-foreground">{t('fin.riscos.wizard.aceiteDesc')}</p>
               </div>
 

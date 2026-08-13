@@ -498,7 +498,7 @@ export default function DenunciaFormulario() {
                         <FormItem>
                           <FormLabel>{t('publicPortal.denunciaForm.email')}</FormLabel>
                           <FormControl>
-                            <Input {...field} type="email" placeholder="seu@email.com" />
+                            <Input {...field} type="email" placeholder={t('residuos.placeholders.seuEmail')} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

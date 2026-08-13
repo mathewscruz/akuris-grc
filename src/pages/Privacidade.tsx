@@ -524,17 +524,17 @@ export default function Privacidade() {
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
         <StatCard
-          title="Total de Dados"
+          title={t('cardsKpi.privacidade.totalDados')}
           value={stats.totalDados}
           description="Tipos catalogados"
           icon={<Database />}
           showAccent
-          emptyHint="Cadastre o catálogo de dados pessoais."
+          emptyHint={t('residuos.privacidade.cadastreCatalogo')}
         />
         <StatCard
-          title="Dados Sensíveis"
+          title={t('cardsKpi.privacidade.dadosSensiveis')}
           value={stats.dadosSensiveis}
-          description="Requerem proteção especial"
+          description={t('cardsKpi.privacidade.requeremProtecao')}
           icon={<AlertTriangle />}
           variant="warning"
         />
@@ -545,14 +545,14 @@ export default function Privacidade() {
           icon={<Database />}
         />
         <StatCard
-          title="Solicitações Pendentes"
+          title={t('cardsKpi.privacidade.solicitacoesPendentes')}
           value={stats.solicitacoesPendentes}
-          description="De titulares"
+          description={t('residuos.privacidade.deTitulares')}
           icon={<Users />}
           drillDown="privacidade"
         />
         <StatCard
-          title="Fora do Prazo LGPD"
+          title={t('cardsKpi.privacidade.foraPrazoLgpd')}
           value={solicitacoesForaPrazo}
           description="Excederam 15 dias"
           icon={<Clock />}
@@ -571,9 +571,9 @@ export default function Privacidade() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
-          <TabsTrigger value="catalogo">Catálogo & Mapeamento</TabsTrigger>
+          <TabsTrigger value="catalogo">{t('cardsKpi.privacidade.abaCatalogo')}</TabsTrigger>
           <TabsTrigger value="ropa">ROPA</TabsTrigger>
-          <TabsTrigger value="solicitacoes">Solicitações</TabsTrigger>
+          <TabsTrigger value="solicitacoes">{t('cardsKpi.privacidade.abaSolicitacoes')}</TabsTrigger>
           <TabsTrigger value="descobertas">Descobertas</TabsTrigger>
         </TabsList>
 
@@ -747,7 +747,7 @@ export default function Privacidade() {
       <Sheet open={showDadoSheet} onOpenChange={setShowDadoSheet}>
         <SheetContent className="w-[600px] overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>Detalhes do Dado Pessoal</SheetTitle>
+            <SheetTitle>{t('cardsKpi.privacidade.detalhesDado')}</SheetTitle>
           </SheetHeader>
           {selectedDado && (
             <div className="space-y-4 mt-6">
@@ -773,8 +773,8 @@ export default function Privacidade() {
       <ConfirmDialog
         open={deleteConfirm.open}
         onOpenChange={(open) => setDeleteConfirm(prev => ({ ...prev, open }))}
-        title="Excluir Item"
-        description="Tem certeza que deseja excluir este item? Esta ação não pode ser desfeita."
+        title={t('residuos.privacidade.excluirItem')}
+        description={t('residuos.privacidade.excluirItemConfirm')}
         confirmText="Excluir"
         variant="destructive"
         onConfirm={confirmDelete}

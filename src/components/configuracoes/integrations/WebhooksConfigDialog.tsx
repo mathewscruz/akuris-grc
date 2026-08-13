@@ -251,7 +251,7 @@ export function WebhooksConfigDialog({
             <div className="flex gap-2">
               <Input
                 id="webhook-url"
-                placeholder="https://seu-sistema.com/webhook"
+                placeholder="https://your-system.com/webhook"
                 value={webhookUrl}
                 onChange={(e) => {
                   setWebhookUrl(e.target.value);

@@ -201,7 +201,7 @@ export const GerenciamentoPlanos: React.FC = () => {
       <ConfirmDialog
         open={!!confirmDeactivate}
         onOpenChange={(open) => !open && setConfirmDeactivate(null)}
-        title="Desativar plano com empresas vinculadas?"
+        title={t('residuos.geral.desativarPlanoTitulo')}
         description={confirmDeactivate
           ? `O plano "${confirmDeactivate.plano.nome}" tem ${confirmDeactivate.plano.empresas_count} empresa(s) usando. Desativar não remove dessas empresas, mas impede novas atribuições. Continuar?`
           : ''}
