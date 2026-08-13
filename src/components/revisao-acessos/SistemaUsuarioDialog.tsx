@@ -383,10 +383,10 @@ export function SistemaUsuarioDialog({
               name="justificativa"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Justificativa de Acesso</FormLabel>
+                  <FormLabel>{t("revisaoAcessosComp.usuarioDialog.fieldJustificativa")}</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Motivo para concessão do acesso..."
+                      placeholder={t("revisaoAcessosComp.usuarioDialog.fieldJustificativaPlaceholder")}
                       rows={2}
                       {...field}
                     />
@@ -401,10 +401,10 @@ export function SistemaUsuarioDialog({
               name="observacoes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Observações</FormLabel>
+                  <FormLabel>{t("revisaoAcessosComp.usuarioDialog.fieldObservacoes")}</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Observações adicionais..."
+                      placeholder={t("revisaoAcessosComp.usuarioDialog.fieldObservacoesPlaceholder")}
                       rows={2}
                       {...field}
                     />

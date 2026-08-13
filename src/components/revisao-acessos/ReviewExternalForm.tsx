@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,6 +19,7 @@ interface ReviewExternalFormProps {
 
 export function ReviewExternalForm({ review, onComplete }: ReviewExternalFormProps) {
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [items, setItems] = useState<any[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [justificativa, setJustificativa] = useState("");
@@ -47,7 +49,7 @@ export function ReviewExternalForm({ review, onComplete }: ReviewExternalFormPro
     } catch (error: any) {
       console.error("Erro ao carregar itens:", error);
       toast({
-        title: "Erro",
+        title: t("revisaoAcessosComp.externalForm.toastErrorTitle"),
         description: error.message,
         variant: "destructive",
       });
@@ -57,8 +59,8 @@ export function ReviewExternalForm({ review, onComplete }: ReviewExternalFormPro
   const handleDecision = async (decisao: "aprovar" | "revogar") => {
     if (decisao === "revogar" && !justificativa.trim()) {
       toast({
-        title: "Atenção",
-        description: "Justificativa é obrigatória para revogação",
+        title: t("revisaoAcessosComp.externalForm.toastAtencaoTitle"),
+        description: t("revisaoAcessosComp.externalForm.toastJustificativaRevogacao"),
         variant: "destructive",
       });
       return;
@@ -102,8 +104,8 @@ export function ReviewExternalForm({ review, onComplete }: ReviewExternalFormPro
         const allReviewed = updatedItems.every((item) => item.decisao !== "pendente");
         if (allReviewed) {
           toast({
-            title: "Sucesso!",
-            description: "Todos os acessos foram revisados",
+            title: t("revisaoAcessosComp.externalForm.toastSucessoTitle"),
+            description: t("revisaoAcessosComp.externalForm.toastTodosRevisados"),
           });
           // Não finaliza automaticamente, permite que usuário revise
         } else {
@@ -115,7 +117,7 @@ export function ReviewExternalForm({ review, onComplete }: ReviewExternalFormPro
     } catch (error: any) {
       console.error("Erro ao salvar decisão:", error);
       toast({
-        title: "Erro",
+        title: t("revisaoAcessosComp.externalForm.toastErrorTitle"),
         description: error.message,
         variant: "destructive",
       });
@@ -129,8 +131,8 @@ export function ReviewExternalForm({ review, onComplete }: ReviewExternalFormPro
 
     if (pendentes > 0) {
       toast({
-        title: "Atenção",
-        description: `Ainda há ${pendentes} item(ns) pendente(s)`,
+        title: t("revisaoAcessosComp.externalForm.toastAtencaoTitle"),
+        description: t("revisaoAcessosComp.externalForm.toastPendentes").replace("{count}", String(pendentes)),
         variant: "destructive",
       });
       return;
@@ -149,7 +151,7 @@ export function ReviewExternalForm({ review, onComplete }: ReviewExternalFormPro
     } catch (error: any) {
       console.error("Erro ao finalizar:", error);
       toast({
-        title: "Erro",
+        title: t("revisaoAcessosComp.externalForm.toastErrorTitle"),
         description: error.message,
         variant: "destructive",
       });
@@ -159,7 +161,7 @@ export function ReviewExternalForm({ review, onComplete }: ReviewExternalFormPro
   };
 
   if (loading) {
-    return <p>Carregando itens...</p>;
+    return <p>{t("revisaoAcessosComp.externalForm.loading")}</p>;
   }
 
   const currentItem = items[currentIndex];
@@ -172,7 +174,7 @@ export function ReviewExternalForm({ review, onComplete }: ReviewExternalFormPro
       <div>
         <div className="flex items-center justify-between mb-2">
           <p className="text-sm font-medium">
-            Progresso: {revisados}/{items.length}
+            {t("revisaoAcessosComp.externalForm.progressoLabel").replace("{revisados}", String(revisados)).replace("{total}", String(items.length))}
           </p>
           <p className="text-sm text-muted-foreground">{progress.toFixed(0)}%</p>
         </div>
@@ -183,7 +185,7 @@ export function ReviewExternalForm({ review, onComplete }: ReviewExternalFormPro
         <Alert>
           <CheckCircle className="h-4 w-4" />
           <AlertDescription>
-            Todos os acessos foram revisados! Clique em "Finalizar Revisão" para concluir.
+            {t("revisaoAcessosComp.externalForm.allReviewedMsg")}
           </AlertDescription>
         </Alert>
       ) : (
@@ -207,13 +209,13 @@ export function ReviewExternalForm({ review, onComplete }: ReviewExternalFormPro
 
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <p className="text-muted-foreground">Data de Concessão</p>
+                <p className="text-muted-foreground">{t("revisaoAcessosComp.externalForm.dataConcessao")}</p>
                 <p className="font-medium">
                   {currentItem.data_concessao ? formatDateForInput(currentItem.data_concessao) : "-"}
                 </p>
               </div>
               <div>
-                <p className="text-muted-foreground">Data de Expiração</p>
+                <p className="text-muted-foreground">{t("revisaoAcessosComp.externalForm.dataExpiracao")}</p>
                 <p className="font-medium">
                   {currentItem.data_expiracao ? formatDateForInput(currentItem.data_expiracao) : "-"}
                 </p>
@@ -222,7 +224,7 @@ export function ReviewExternalForm({ review, onComplete }: ReviewExternalFormPro
 
             {currentItem.justificativa_original && (
               <div>
-                <p className="text-sm font-medium mb-1">Justificativa Original:</p>
+                <p className="text-sm font-medium mb-1">{t("revisaoAcessosComp.externalForm.justificativaOriginal")}</p>
                 <p className="text-sm text-muted-foreground bg-muted p-3 rounded">
                   {currentItem.justificativa_original}
                 </p>
@@ -231,13 +233,13 @@ export function ReviewExternalForm({ review, onComplete }: ReviewExternalFormPro
 
             <div>
               <label className="text-sm font-medium mb-2 block">
-                Justificativa da Decisão {currentItem.decisao === "revogar" && "*"}
+                {t("revisaoAcessosComp.externalForm.justificativaDecisao")} {currentItem.decisao === "revogar" && "*"}
               </label>
               <Textarea
                 value={justificativa}
                 onChange={(e) => setJustificativa(e.target.value)}
                 rows={3}
-                placeholder="Descreva a razão da sua decisão..."
+                placeholder={t("revisaoAcessosComp.externalForm.justificativaPlaceholder")}
               />
             </div>
 
@@ -248,7 +250,7 @@ export function ReviewExternalForm({ review, onComplete }: ReviewExternalFormPro
                 disabled={submitting}
               >
                 <CheckCircle className="mr-2 h-4 w-4" />
-                Aprovar
+                {t("revisaoAcessosComp.externalForm.buttonAprovar")}
               </Button>
               <Button
                 variant="destructive"
@@ -256,7 +258,7 @@ export function ReviewExternalForm({ review, onComplete }: ReviewExternalFormPro
                 disabled={submitting}
               >
                 <XCircle className="mr-2 h-4 w-4" />
-                Revogar
+                {t("revisaoAcessosComp.externalForm.buttonRevogar")}
               </Button>
             </div>
           </Card>
@@ -270,17 +272,17 @@ export function ReviewExternalForm({ review, onComplete }: ReviewExternalFormPro
           disabled={currentIndex === 0}
         >
           <ChevronLeft className="mr-2 h-4 w-4" />
-          Anterior
+          {t("revisaoAcessosComp.externalForm.buttonAnterior")}
         </Button>
 
         {allReviewed ? (
           <Button onClick={handleFinalize} disabled={submitting} size="lg">
             <CheckCircle className="mr-2 h-4 w-4" />
-            Finalizar Revisão
+            {t("revisaoAcessosComp.externalForm.buttonFinalizar")}
           </Button>
         ) : (
           <p className="text-sm text-muted-foreground">
-            Item {currentIndex + 1} de {items.length}
+            {t("revisaoAcessosComp.externalForm.itemXofY").replace("{atual}", String(currentIndex + 1)).replace("{total}", String(items.length))}
           </p>
         )}
 
@@ -289,7 +291,7 @@ export function ReviewExternalForm({ review, onComplete }: ReviewExternalFormPro
           onClick={() => setCurrentIndex(Math.min(items.length - 1, currentIndex + 1))}
           disabled={currentIndex === items.length - 1}
         >
-          Próximo
+          {t("revisaoAcessosComp.externalForm.buttonProximo")}
           <ChevronRight className="ml-2 h-4 w-4" />
         </Button>
       </div>

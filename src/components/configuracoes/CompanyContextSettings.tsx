@@ -8,34 +8,30 @@ import { Building2, Save } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { toast } from 'sonner';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
-const SETORES = [
-  'Financeiro / Bancário',
-  'Saúde',
-  'Tecnologia',
-  'Varejo / E-commerce',
-  'Indústria / Manufatura',
-  'Educação',
-  'Governo / Setor Público',
-  'Telecomunicações',
-  'Energia / Utilities',
-  'Logística / Transporte',
-  'Agronegócio',
-  'Jurídico / Advocacia',
-  'Seguros',
-  'Outro',
+const SETOR_OPTIONS: { value: string; key: string }[] = [
+  { value: 'Financeiro / Bancário', key: 'financeiro' },
+  { value: 'Saúde', key: 'saude' },
+  { value: 'Tecnologia', key: 'tecnologia' },
+  { value: 'Varejo / E-commerce', key: 'varejo' },
+  { value: 'Indústria / Manufatura', key: 'industria' },
+  { value: 'Educação', key: 'educacao' },
+  { value: 'Governo / Setor Público', key: 'governo' },
+  { value: 'Telecomunicações', key: 'telecom' },
+  { value: 'Energia / Utilities', key: 'energia' },
+  { value: 'Logística / Transporte', key: 'logistica' },
+  { value: 'Agronegócio', key: 'agronegocio' },
+  { value: 'Jurídico / Advocacia', key: 'juridico' },
+  { value: 'Seguros', key: 'seguros' },
+  { value: 'Outro', key: 'outro' },
 ];
 
-const PORTES = [
-  { value: 'micro', label: 'Micro (até 9 funcionários)' },
-  { value: 'pequena', label: 'Pequena (10-49 funcionários)' },
-  { value: 'media', label: 'Média (50-249 funcionários)' },
-  { value: 'grande', label: 'Grande (250-999 funcionários)' },
-  { value: 'enterprise', label: 'Enterprise (1000+ funcionários)' },
-];
+const PORTE_KEYS = ['micro', 'pequena', 'media', 'grande', 'enterprise'] as const;
 
 export function CompanyContextSettings() {
+  const { t } = useLanguage();
   const { empresaId } = useEmpresaId();
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
@@ -78,9 +74,9 @@ export function CompanyContextSettings() {
         } as any)
         .eq('id', empresaId);
       if (error) throw error;
-      toast.success('Contexto da organização salvo com sucesso');
+      toast.success(t('configGeral.companyContext.toastSaved'));
     } catch {
-      toast.error('Erro ao salvar contexto');
+      toast.error(t('configGeral.companyContext.toastError'));
     } finally {
       setLoading(false);
     }
@@ -99,46 +95,46 @@ export function CompanyContextSettings() {
       <div className="flex items-center gap-2 mb-2">
         <Building2 className="h-5 w-5 text-primary" />
         <div>
-          <h3 className="font-semibold text-base">Contexto da Organização</h3>
+          <h3 className="font-semibold text-base">{t('configGeral.companyContext.title')}</h3>
           <p className="text-sm text-muted-foreground">
-            Essas informações personalizam as orientações da IA para o setor e porte da sua empresa em todos os frameworks.
+            {t('configGeral.companyContext.description')}
           </p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label>Setor de Atuação</Label>
+          <Label>{t('configGeral.companyContext.labelSetor')}</Label>
           <Select value={setor} onValueChange={setSetor}>
             <SelectTrigger>
-              <SelectValue placeholder="Selecione o setor" />
+              <SelectValue placeholder={t('configGeral.companyContext.placeholderSetor')} />
             </SelectTrigger>
             <SelectContent>
-              {SETORES.map(s => (
-                <SelectItem key={s} value={s}>{s}</SelectItem>
+              {SETOR_OPTIONS.map(opt => (
+                <SelectItem key={opt.value} value={opt.value}>{t(`configGeral.companyContext.setores.${opt.key}`)}</SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
 
         <div className="space-y-2">
-          <Label>Porte da Empresa</Label>
+          <Label>{t('configGeral.companyContext.labelPorte')}</Label>
           <Select value={porte} onValueChange={setPorte}>
             <SelectTrigger>
-              <SelectValue placeholder="Selecione o porte" />
+              <SelectValue placeholder={t('configGeral.companyContext.placeholderPorte')} />
             </SelectTrigger>
             <SelectContent>
-              {PORTES.map(p => (
-                <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+              {PORTE_KEYS.map(key => (
+                <SelectItem key={key} value={key}>{t(`configGeral.companyContext.portes.${key}`)}</SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
 
         <div className="space-y-2 md:col-span-2">
-          <Label>Objetivo de Compliance</Label>
+          <Label>{t('configGeral.companyContext.labelObjetivo')}</Label>
           <Textarea
-            placeholder="Ex: Obter certificação ISO 27001, adequar-se à LGPD, atender requisitos de clientes..."
+            placeholder={t('configGeral.companyContext.placeholderObjetivo')}
             value={objetivo}
             onChange={e => setObjetivo(e.target.value)}
             rows={3}
@@ -146,7 +142,7 @@ export function CompanyContextSettings() {
         </div>
 
         <div className="space-y-2">
-          <Label>Data Alvo para Certificação</Label>
+          <Label>{t('configGeral.companyContext.labelDataAlvo')}</Label>
           <Input
             type="date"
             value={dataAlvo}
@@ -158,7 +154,7 @@ export function CompanyContextSettings() {
       <div className="flex justify-end">
         <Button onClick={handleSave} disabled={loading}>
           <Save className="h-4 w-4 mr-2" />
-          {loading ? 'Salvando...' : 'Salvar Contexto'}
+          {loading ? t('configGeral.companyContext.saving') : t('configGeral.companyContext.saveButton')}
         </Button>
       </div>
     </div>

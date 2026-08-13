@@ -8,6 +8,7 @@ import { StatCard } from "@/components/ui/stat-card"
 import { toast } from "sonner"
 import { supabase } from "@/integrations/supabase/client"
 import { Bell, Mail, Clock, Users, TrendingUp } from "lucide-react"
+import { useLanguage } from "@/contexts/LanguageContext"
 
 interface ReminderSettingsData {
   id?: string
@@ -25,6 +26,7 @@ interface ReminderStats {
 }
 
 export function ReminderSettings() {
+  const { t } = useLanguage()
   const [settings, setSettings] = useState<ReminderSettingsData>({
     empresa_id: '',
     reminders_enabled: true,
@@ -145,12 +147,12 @@ export function ReminderSettings() {
 
       if (error) throw error
 
-      toast.success("Configurações salvas", {
-        description: "As configurações de lembretes foram atualizadas com sucesso.",
+      toast.success(t('configPerms.reminderSettings.settingsSavedTitle'), {
+        description: t('configPerms.reminderSettings.settingsSavedDesc'),
       })
     } catch (error: any) {
       console.error('Erro ao salvar:', error)
-      toast.error("Erro ao salvar", {
+      toast.error(t('configPerms.reminderSettings.errorSavingTitle'), {
         description: error.message,
       })
     } finally {
@@ -167,14 +169,14 @@ export function ReminderSettings() {
 
       if (error) throw error
 
-      toast.success("Lembretes processados", {
-        description: `${data.sent} lembretes enviados com sucesso.`,
+      toast.success(t('configPerms.reminderSettings.remindersProcessedTitle'), {
+        description: t('configPerms.reminderSettings.remindersProcessedDesc').replace('{count}', String(data.sent)),
       })
 
       loadStats()
     } catch (error: any) {
       console.error('Erro ao processar lembretes:', error)
-      toast.error("Erro ao processar lembretes", {
+      toast.error(t('configPerms.reminderSettings.errorProcessingTitle'), {
         description: error.message,
       })
     } finally {
@@ -189,32 +191,32 @@ export function ReminderSettings() {
   }
 
   if (loading) {
-    return <div className="p-6">Carregando configurações...</div>
+    return <div className="p-6">{t('configPerms.reminderSettings.loading')}</div>
   }
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          title="Usuários Convidados"
+          title={t('configPerms.reminderSettings.statUsersInvited')}
           value={stats.total_invited}
           icon={<Users className="h-4 w-4" />}
           variant="info"
         />
         <StatCard
-          title="Lembretes Pendentes"
+          title={t('configPerms.reminderSettings.statPendingReminders')}
           value={stats.pending_reminders}
           icon={<Clock className="h-4 w-4" />}
           variant="warning"
         />
         <StatCard
-          title="Convites Aceitos"
+          title={t('configPerms.reminderSettings.statAcceptedInvites')}
           value={stats.completed_invitations}
           icon={<Mail className="h-4 w-4" />}
           variant="success"
         />
         <StatCard
-          title="Taxa de Conversão"
+          title={t('configPerms.reminderSettings.statConversionRate')}
           value={`${stats.reminder_effectiveness}%`}
           icon={<TrendingUp className="h-4 w-4" />}
           variant="primary"
@@ -225,18 +227,18 @@ export function ReminderSettings() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Bell className="h-5 w-5" />
-            Configurações de Lembretes
+            {t('configPerms.reminderSettings.cardTitle')}
           </CardTitle>
           <CardDescription>
-            Configure como e quando enviar lembretes para usuários convidados que ainda não acessaram a plataforma.
+            {t('configPerms.reminderSettings.cardDescription')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
-              <Label className="text-base">Lembretes Automáticos</Label>
+              <Label className="text-base">{t('configPerms.reminderSettings.autoRemindersLabel')}</Label>
               <p className="text-sm text-muted-foreground">
-                Enviar lembretes automáticos para usuários que não fizeram login
+                {t('configPerms.reminderSettings.autoRemindersDesc')}
               </p>
             </div>
             <Switch
@@ -248,17 +250,17 @@ export function ReminderSettings() {
           </div>
 
           <div className="space-y-3">
-            <Label className="text-base">Intervalos de Lembrete (em dias)</Label>
+            <Label className="text-base">{t('configPerms.reminderSettings.intervalsLabel')}</Label>
             <p className="text-sm text-muted-foreground">
-              Defina após quantos dias enviar cada lembrete
+              {t('configPerms.reminderSettings.intervalsDesc')}
             </p>
             <div className="grid grid-cols-3 gap-4">
               {settings.reminder_intervals.map((interval, index) => (
                 <div key={index} className="space-y-2">
                   <Label className="text-sm">
-                    {index === 0 ? '1º Lembrete' : 
-                     index === 1 ? '2º Lembrete' : 
-                     '3º Lembrete'}
+                    {index === 0 ? t('configPerms.reminderSettings.reminder1') : 
+                     index === 1 ? t('configPerms.reminderSettings.reminder2') : 
+                     t('configPerms.reminderSettings.reminder3')}
                   </Label>
                   <Input
                     type="number"
@@ -273,9 +275,9 @@ export function ReminderSettings() {
           </div>
 
           <div className="space-y-2">
-            <Label className="text-base">Número Máximo de Lembretes</Label>
+            <Label className="text-base">{t('configPerms.reminderSettings.maxRemindersLabel')}</Label>
             <p className="text-sm text-muted-foreground">
-              Quantos lembretes enviar antes de parar automaticamente
+              {t('configPerms.reminderSettings.maxRemindersDesc')}
             </p>
             <Input
               type="number"
@@ -295,7 +297,7 @@ export function ReminderSettings() {
               onClick={saveSettings} 
               disabled={saving}
             >
-              {saving ? "Salvando..." : "Salvar Configurações"}
+              {saving ? t('configPerms.reminderSettings.savingButton') : t('configPerms.reminderSettings.saveButton')}
             </Button>
             
             <Button 
@@ -303,17 +305,17 @@ export function ReminderSettings() {
               onClick={processReminders}
               disabled={processing || !settings.reminders_enabled}
             >
-              {processing ? "Processando..." : "Processar Lembretes Agora"}
+              {processing ? t('configPerms.reminderSettings.processingButton') : t('configPerms.reminderSettings.processButton')}
             </Button>
           </div>
 
           <div className="bg-muted p-4 rounded-lg border border-border">
-            <h4 className="font-medium text-foreground mb-2">Como funciona:</h4>
+            <h4 className="font-medium text-foreground mb-2">{t('configPerms.reminderSettings.howItWorksTitle')}</h4>
             <ul className="text-sm text-muted-foreground space-y-1">
-              <li>• Lembretes são enviados apenas para usuários com senhas temporárias ativas</li>
-              <li>• O sistema para automaticamente após o número máximo de lembretes</li>
-              <li>• Quando o usuário faz login, os lembretes param automaticamente</li>
-              <li>• Os intervalos são calculados a partir da data do último lembrete</li>
+              <li>• {t('configPerms.reminderSettings.howItWorks1')}</li>
+              <li>• {t('configPerms.reminderSettings.howItWorks2')}</li>
+              <li>• {t('configPerms.reminderSettings.howItWorks3')}</li>
+              <li>• {t('configPerms.reminderSettings.howItWorks4')}</li>
             </ul>
           </div>
         </CardContent>

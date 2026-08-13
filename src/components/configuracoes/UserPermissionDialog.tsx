@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { AlertCircle, UserCog } from 'lucide-react';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { useLanguage } from '@/contexts/LanguageContext';
 interface Module {
   id: string;
   name: string;
@@ -41,17 +42,19 @@ interface Props {
 }
 
 const PERM_KEYS = ['can_access', 'can_create', 'can_read', 'can_update', 'can_delete'] as const;
-const PERM_LABELS: Record<string, string> = {
-  can_access: 'Acessar',
-  can_create: 'Criar',
-  can_read: 'Ler',
-  can_update: 'Editar',
-  can_delete: 'Excluir',
-};
+const usePermLabels = (t: (k: string) => string): Record<string, string> => ({
+  can_access: t('configPerms.userDialog.perm.access'),
+  can_create: t('configPerms.userDialog.perm.create'),
+  can_read: t('configPerms.userDialog.perm.read'),
+  can_update: t('configPerms.userDialog.perm.update'),
+  can_delete: t('configPerms.userDialog.perm.delete'),
+});
 
 export const UserPermissionDialog: React.FC<Props> = ({
   open, onOpenChange, userId, userName, empresaId, onSaved
 }) => {
+  const { t } = useLanguage();
+  const PERM_LABELS = usePermLabels(t);
   const [profiles, setProfiles] = useState<PermProfile[]>([]);
   const [selectedProfileId, setSelectedProfileId] = useState<string>('none');
   const [modules, setModules] = useState<Module[]>([]);
@@ -205,12 +208,12 @@ export const UserPermissionDialog: React.FC<Props> = ({
         if (error) throw error;
       }
 
-      toast.success('Permissões salvas');
+      toast.success(t('configPerms.userDialog.permissionsSaved'));
       onSaved();
       onOpenChange(false);
     } catch (error: any) {
       console.error('Error saving:', error);
-      toast.error(error.message || 'Erro ao salvar permissões');
+      toast.error(error.message || t('configPerms.userDialog.errorSaving'));
     } finally {
       setSaving(false);
     }
@@ -222,10 +225,10 @@ export const UserPermissionDialog: React.FC<Props> = ({
 
   const footer = (
     <div className="flex justify-end gap-2 w-full">
-      <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>Cancelar</Button>
+      <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>{t('configPerms.userDialog.cancel')}</Button>
       <Button size="sm" onClick={handleSave} disabled={saving}>
         {saving && <AkurisPulse size={16} className="mr-2" />}
-        Salvar
+        {t('configPerms.userDialog.save')}
       </Button>
     </div>
   );
@@ -234,7 +237,7 @@ export const UserPermissionDialog: React.FC<Props> = ({
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      title={`Permissões de ${userName}`}
+      title={t('configPerms.userDialog.title').replace('{name}', userName)}
       icon={UserCog}
       size="lg"
       footer={footer}
@@ -247,27 +250,27 @@ export const UserPermissionDialog: React.FC<Props> = ({
       ) : (
         <div className="space-y-4">
           <div>
-            <Label>Perfil de Permissão</Label>
+            <Label>{t('configPerms.userDialog.fieldProfile')}</Label>
             <Select value={selectedProfileId} onValueChange={handleProfileChange}>
               <SelectTrigger>
-                <SelectValue placeholder="Selecione um perfil" />
+                <SelectValue placeholder={t('configPerms.userDialog.selectProfilePlaceholder')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">Sem perfil (personalizado)</SelectItem>
+                <SelectItem value="none">{t('configPerms.userDialog.noProfile')}</SelectItem>
                 {profiles.map(p => (
                   <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground mt-1">
-              Selecionar um perfil aplica as permissões automaticamente. Você pode ajustar individualmente abaixo.
+              {t('configPerms.userDialog.profileHint')}
             </p>
           </div>
 
           {hasCustomizations && (
             <div className="flex items-center gap-2 p-2 bg-muted rounded-lg text-sm text-muted-foreground">
               <AlertCircle className="h-4 w-4 shrink-0" />
-              Algumas permissões diferem do perfil base
+              {t('configPerms.userDialog.customizationsWarning')}
             </div>
           )}
 
@@ -277,7 +280,7 @@ export const UserPermissionDialog: React.FC<Props> = ({
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/50">
-                  <th className="text-left px-3 py-2 font-medium">Módulo</th>
+                  <th className="text-left px-3 py-2 font-medium">{t('configPerms.userDialog.colModule')}</th>
                   {PERM_KEYS.map(k => (
                     <th key={k} className="text-center px-2 py-2 font-medium">{PERM_LABELS[k]}</th>
                   ))}
