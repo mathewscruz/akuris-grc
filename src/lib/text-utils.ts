@@ -8,7 +8,6 @@ const STATUS_LABELS: Record<string, string> = {
   'servicos': 'Serviços',
   'produto': 'Produto',
   'produtos': 'Produtos',
-  'software': 'Software',
   'consultoria': 'Consultoria',
   'prestacao_servicos': 'Prestação de Serviços',
   'fornecimento': 'Fornecimento',
