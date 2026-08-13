@@ -104,6 +104,7 @@ export const cardsKpi = {
       },
       gap: {
         vsAnterior: 'vs. anterior',
+        emUso: 'em uso',
         evidencias: 'evidências',
         comCruzamentosPendentes: 'com cruzamentos pendentes',
         relatorioEvolucaoExportado: 'Relatório de evolução exportado',
@@ -249,6 +250,7 @@ export const cardsKpi = {
       },
       gap: {
         vsAnterior: 'vs. previous',
+        emUso: 'in use',
         evidencias: 'evidence items',
         comCruzamentosPendentes: 'with pending matches',
         relatorioEvolucaoExportado: 'Evolution report exported',

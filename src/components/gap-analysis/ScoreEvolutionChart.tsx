@@ -103,7 +103,7 @@ export const ScoreEvolutionChart = ({ frameworkId, scoreType = 'scale_0_5' }: Sc
                   {delta.dir === 'down' && <TrendingDown className="h-3 w-3" strokeWidth={1.5} />}
                   {delta.dir === 'flat' && <Minus className="h-3 w-3" strokeWidth={1.5} />}
                   {delta.value > 0 ? '+' : ''}{delta.value.toFixed(1)}{isPercentage ? '%' : ''}
-                  <span className="text-muted-foreground font-normal">vs. anterior</span>
+                  <span className="text-muted-foreground font-normal">{t('cardsKpi.sweep.gap.vsAnterior')}</span>
                 </span>
               )}
               {!delta && history.length === 1 && (

@@ -100,9 +100,9 @@ export function FrameworkHistoryTab({
         maxScore: scoreType === 'percentage' ? 100 : 5,
       });
 
-      toast.success('Relatório de evolução exportado');
+      toast.success(t('cardsKpi.sweep.gap.relatorioEvolucaoExportado'));
     } catch {
-      toast.error('Erro ao exportar relatório');
+      toast.error(t('cardsKpi.sweep.gap.erroExportarRelatorio'));
     }
   };
 
