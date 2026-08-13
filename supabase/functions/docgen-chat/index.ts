@@ -364,6 +364,8 @@ serve(async (req) => {
       document,            // documento gerado completo (para refine_section / quick_adherence)
       section_index,       // índice da seção a refinar
       instruction,         // instrução do usuário para refinar a seção
+      refine_attempt,      // número da tentativa (action auto_refine)
+
     } = await req.json();
 
     console.log('DocGen Chat request:', { message, conversation_id, action, user_id, empresa_id, framework_context });
