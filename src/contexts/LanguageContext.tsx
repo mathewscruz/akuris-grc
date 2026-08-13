@@ -3,6 +3,7 @@ import { pt } from '@/i18n/pt';
 import { en } from '@/i18n/en';
 import { modulesPt, modulesEn } from '@/i18n/modules';
 import { supabase } from '@/integrations/supabase/client';
+import { setAppLocale } from '@/lib/i18n-locale';
 
 export type Locale = 'pt' | 'en';
 type Dictionary = Record<string, any>;
@@ -64,6 +65,10 @@ function interpolate(str: string, params?: Record<string, string | number>): str
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(detectInitialLocale);
+
+  // Mantém helpers puros (formatStatus, formatDateTime...) alinhados ao idioma.
+  // Setado durante o render para valer já na primeira pintura após a troca.
+  setAppLocale(locale);
 
   // Sync with profile.preferred_locale on auth changes
   useEffect(() => {

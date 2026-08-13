@@ -18,21 +18,12 @@ import { useGrcMaturityScore } from '@/hooks/useGrcMaturityScore';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 // Rótulos curtos para os eixos não estourarem nas laterais do radar.
-const SHORT_LABEL: Record<string, string> = {
-  'Gap Analysis': 'Gap',
-  'Due Diligence': 'Due Dil.',
-  Documentos: 'Docs',
-  Incidentes: 'Incid.',
-  Denúncias: 'Denún.',
-  Controles: 'Controles',
-};
-
 const STATUS_META = {
-  excellent: { label: 'Excelente', variant: 'success' as const, icon: CheckCircle2 },
-  good: { label: 'Bom', variant: 'default' as const, icon: CheckCircle2 },
-  warning: { label: 'Atenção', variant: 'warning' as const, icon: AlertCircle },
-  critical: { label: 'Crítico', variant: 'destructive' as const, icon: XCircle },
-  no_data: { label: 'Sem dados', variant: 'outline' as const, icon: Minus },
+  excellent: { key: 'statusExcellent', variant: 'success' as const, icon: CheckCircle2 },
+  good: { key: 'statusGood', variant: 'default' as const, icon: CheckCircle2 },
+  warning: { key: 'statusWarning', variant: 'warning' as const, icon: AlertCircle },
+  critical: { key: 'statusCritical', variant: 'destructive' as const, icon: XCircle },
+  no_data: { key: 'statusNoData', variant: 'outline' as const, icon: Minus },
 };
 
 interface RadarPoint {
@@ -73,13 +64,13 @@ export function GrcHealthRadar() {
   const chartData = useMemo<RadarPoint[]>(
     () =>
       (data ?? []).map((d) => ({
-        subject: SHORT_LABEL[d.subject] ?? d.subject,
-        full: d.subject,
+        subject: t(`dashWidgets.radar.shortSubjects.${d.subject}`) || d.subject,
+        full: t(`dashWidgets.radar.subjects.${d.subject}`) || d.subject,
         score: d.score,
         hasData: d.hasData,
         metrics: d.details.metrics,
       })),
-    [data]
+    [data, t]
   );
 
   const hasAny = chartData.some((d) => d.hasData);
@@ -89,20 +80,20 @@ export function GrcHealthRadar() {
   const Header = (
     <CardHeader className="pb-2">
       <CardTitle className="text-base font-semibold flex items-center gap-2">
-        <Hexagon className="h-4 w-4 text-muted-foreground" /> Saúde do GRC
+        <Hexagon className="h-4 w-4 text-muted-foreground" /> {t('dashWidgets.radar.title')}
       </CardTitle>
       <div className="flex items-center gap-2 mt-1.5 flex-wrap">
         <span className="text-2xl font-bold tabular-nums text-foreground leading-none">
           {maturity.score}
         </span>
-        <span className="text-xs text-muted-foreground">/ 100 · maturidade</span>
+        <span className="text-xs text-muted-foreground">{t('dashWidgets.radar.maturitySuffix')}</span>
         <Badge variant={status.variant} className="text-[10px] gap-1">
           <StatusIcon className="h-3 w-3" />
-          {status.label}
+          {t(`dashWidgets.radar.${status.key}`)}
         </Badge>
         {maturity.totalModules > 0 && (
           <span className="text-[11px] text-muted-foreground">
-            {maturity.modulesWithData}/{maturity.totalModules} módulos com dados
+            {t('dashWidgets.radar.modulesWithData', { withData: maturity.modulesWithData, total: maturity.totalModules })}
           </span>
         )}
       </div>
@@ -132,7 +123,7 @@ export function GrcHealthRadar() {
               <Hexagon className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
             </div>
             <p className="text-xs text-muted-foreground text-center max-w-[240px]">
-              {t('dashboard.noData') || 'Sem dados'} — cadastre itens nos módulos para ver a saúde do GRC.
+              {t('dashWidgets.radar.empty')}
             </p>
           </div>
         ) : (

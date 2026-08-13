@@ -9,6 +9,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   type AkurIAAction,
   getNavigateRoute,
@@ -35,17 +36,16 @@ const CREATE_ROUTES: Record<string, string> = {
   fornecedores: "/due-diligence",
 };
 
-const MODULE_FRIENDLY: Record<string, string> = {
-  risco: "Riscos",
-  incidente: "Incidentes",
-  controle: "Controles",
-  plano_acao: "Planos de Ação",
-  documento: "Documentos",
-  contrato: "Contratos",
-  ativo: "Ativos",
-  denuncia: "Denúncias",
-  
-  fornecedor: "Fornecedores",
+const MODULE_FRIENDLY_KEY: Record<string, string> = {
+  risco: "riscos",
+  incidente: "incidentes",
+  controle: "controles",
+  plano_acao: "planos_acao",
+  documento: "documentos",
+  contrato: "contratos",
+  ativo: "ativos",
+  denuncia: "denuncias",
+  fornecedor: "fornecedores",
 };
 
 function appendParam(route: string, key: string, value: string): string {
@@ -55,6 +55,7 @@ function appendParam(route: string, key: string, value: string): string {
 
 export function AkurIAActionListener() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -65,11 +66,12 @@ export function AkurIAActionListener() {
         const key = action.target.toLowerCase();
         const route = CREATE_ROUTES[key];
         if (!route) {
-          toast.info("Módulo ainda não suportado para criação assistida.");
+          toast.info(t("dashWidgets.akuria.moduleNotSupported"));
           return;
         }
-        const friendly = MODULE_FRIENDLY[key] || key;
-        toast.success(`Abrindo ${friendly}…`);
+        const friendlyKey = MODULE_FRIENDLY_KEY[key];
+        const friendly = friendlyKey ? t(`dashWidgets.akuria.modules.${friendlyKey}`) : key;
+        toast.success(t("dashWidgets.akuria.openingModule", { module: friendly }));
         navigate(appendParam(route, "akuria_action", "create"));
         return;
       }
@@ -77,7 +79,7 @@ export function AkurIAActionListener() {
       if (action.type === "open" && action.payload) {
         const route = getNavigateRoute(action);
         if (!route) {
-          toast.info("Não foi possível localizar este item.");
+          toast.info(t("dashWidgets.akuria.itemNotFound"));
           return;
         }
         navigate(appendParam(route, "akuria_open", action.payload));

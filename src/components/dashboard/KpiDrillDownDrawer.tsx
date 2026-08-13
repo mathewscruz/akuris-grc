@@ -28,9 +28,11 @@ import { Scale, ListChecks, AlertCircle, KeyRound, FileKey, ShieldCheck, Activit
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { logger } from '@/lib/logger';
-import { format, parseISO } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { formatDateShort } from '@/lib/date-utils';
 import { formatStatus } from '@/lib/text-utils';
+import { useLanguage } from '@/contexts/LanguageContext';
+
+type TFunc = (key: string, params?: Record<string, string | number>) => string;
 
 export type DrillDownKey =
   | 'ativos'
@@ -73,7 +75,7 @@ interface DrillConfig {
 const fmtDate = (iso?: string | null) => {
   if (!iso) return undefined;
   try {
-    return format(parseISO(iso), "dd 'de' MMM", { locale: ptBR });
+    return formatDateShort(iso);
   } catch {
     return undefined;
   }
@@ -81,12 +83,13 @@ const fmtDate = (iso?: string | null) => {
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
-const buildConfig = (key: DrillDownKey): DrillConfig => {
+const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
+  const d = (k: string) => t(`dashWidgets.drill.${k}`);
   switch (key) {
     case 'riscos':
       return {
-        title: 'Riscos prioritários',
-        description: 'Top 5 riscos ativos por severidade.',
+        title: d('riscos.title'),
+        description: d('riscos.description'),
         icon: RiscosIcon,
         route: '/riscos',
         fetcher: async (empresaId) => {
@@ -116,7 +119,7 @@ const buildConfig = (key: DrillDownKey): DrillConfig => {
                 id: r.id,
                 title: r.nome,
                 subtitle: r.status,
-                status: r._nivel || 'sem nível',
+                status: r._nivel || d('noLevel'),
                 tone: (nivel.includes('crit') ? 'destructive' : nivel.includes('alt') ? 'warning' : nivel.includes('med') ? 'info' : 'neutral') as DrillItem['tone'],
                 date: fmtDate(r.updated_at),
               };
@@ -125,8 +128,8 @@ const buildConfig = (key: DrillDownKey): DrillConfig => {
       };
     case 'incidentes':
       return {
-        title: 'Incidentes ativos',
-        description: 'Incidentes em aberto ou em tratamento.',
+        title: d('incidentes.title'),
+        description: d('incidentes.description'),
         icon: IncidentesIcon,
         route: '/incidentes',
         fetcher: async (empresaId) => {
@@ -153,8 +156,8 @@ const buildConfig = (key: DrillDownKey): DrillConfig => {
       };
     case 'planos':
       return {
-        title: 'Planos de ação pendentes',
-        description: 'Itens em aberto, priorizando atrasados.',
+        title: d('planos.title'),
+        description: d('planos.description'),
         icon: ListChecks,
         route: '/planos-acao',
         fetcher: async (empresaId) => {
@@ -173,7 +176,7 @@ const buildConfig = (key: DrillDownKey): DrillConfig => {
               id: p.id,
               title: p.titulo,
               subtitle: p.status,
-              status: overdue ? 'atrasado' : p.status,
+              status: overdue ? d('overdue') : p.status,
               tone: (overdue ? 'destructive' : 'info') as DrillItem['tone'],
               date: fmtDate(p.prazo),
             };
@@ -182,8 +185,8 @@ const buildConfig = (key: DrillDownKey): DrillConfig => {
       };
     case 'ativos':
       return {
-        title: 'Ativos recentes',
-        description: 'Ativos atualizados recentemente.',
+        title: d('ativos.title'),
+        description: d('ativos.description'),
         icon: AtivosIcon,
         route: '/ativos',
         fetcher: async (empresaId) => {
@@ -206,8 +209,8 @@ const buildConfig = (key: DrillDownKey): DrillConfig => {
       };
     case 'contratos':
       return {
-        title: 'Contratos vencendo',
-        description: 'Contratos com vencimento próximo ou expirados.',
+        title: d('contratos.title'),
+        description: d('contratos.description'),
         icon: Scale,
         route: '/contratos',
         fetcher: async (empresaId) => {
@@ -223,9 +226,9 @@ const buildConfig = (key: DrillDownKey): DrillConfig => {
             const expired = c.data_fim && c.data_fim < today;
             return {
               id: c.id,
-              title: c.nome || c.numero_contrato || 'Contrato',
+              title: c.nome || c.numero_contrato || d('fallbackContract'),
               subtitle: c.numero_contrato || c.status,
-              status: expired ? 'vencido' : c.status,
+              status: expired ? d('expired') : c.status,
               tone: (expired ? 'destructive' : 'info') as DrillItem['tone'],
               date: fmtDate(c.data_fim),
             };
@@ -234,8 +237,8 @@ const buildConfig = (key: DrillDownKey): DrillConfig => {
       };
     case 'documentos':
       return {
-        title: 'Documentos relevantes',
-        description: 'Pendentes de aprovação ou vencendo.',
+        title: d('documentos.title'),
+        description: d('documentos.description'),
         icon: DocumentosIcon,
         route: '/documentos',
         fetcher: async (empresaId) => {
@@ -258,8 +261,8 @@ const buildConfig = (key: DrillDownKey): DrillConfig => {
       };
     case 'due_diligence':
       return {
-        title: 'Due Diligence',
-        description: 'Avaliações ativas e expiradas.',
+        title: d('due_diligence.title'),
+        description: d('due_diligence.description'),
         icon: DueDiligenceIcon,
         route: '/due-diligence',
         fetcher: async (empresaId) => {
@@ -276,7 +279,7 @@ const buildConfig = (key: DrillDownKey): DrillConfig => {
               id: d.id,
               title: d.fornecedor_nome,
               subtitle: d.status,
-              status: typeof score === 'number' ? `Score ${score}` : undefined,
+              status: typeof score === 'number' ? t('dashWidgets.drill.score', { value: score }) : undefined,
               tone: (typeof score !== 'number' ? 'neutral' : score < 50 ? 'destructive' : score < 70 ? 'warning' : 'success') as DrillItem['tone'],
               date: fmtDate(d.updated_at),
             };
@@ -285,8 +288,8 @@ const buildConfig = (key: DrillDownKey): DrillConfig => {
       };
     case 'denuncias':
       return {
-        title: 'Denúncias abertas',
-        description: 'Casos novos ou em andamento.',
+        title: d('denuncias.title'),
+        description: d('denuncias.description'),
         icon: DenunciasIcon,
         route: '/denuncia',
         fetcher: async (empresaId) => {
@@ -302,7 +305,7 @@ const buildConfig = (key: DrillDownKey): DrillConfig => {
             const g = (d.gravidade || '').toLowerCase();
             return {
               id: d.id,
-              title: d.titulo || d.protocolo || 'Denúncia',
+              title: d.titulo || d.protocolo || t('dashWidgets.drill.fallbackComplaint'),
               subtitle: d.protocolo,
               status: d.gravidade || d.status,
               tone: (g.includes('crit') || g.includes('alt') ? 'destructive' : 'warning') as DrillItem['tone'],
@@ -313,8 +316,8 @@ const buildConfig = (key: DrillDownKey): DrillConfig => {
       };
     case 'controles':
       return {
-        title: 'Controles internos',
-        description: 'Controles ativos por criticidade.',
+        title: d('controles.title'),
+        description: d('controles.description'),
         icon: ControlesIcon,
         route: '/controles',
         fetcher: async (empresaId) => {
@@ -342,8 +345,8 @@ const buildConfig = (key: DrillDownKey): DrillConfig => {
     // ── Novos módulos ──────────────────────────────────────────────────────
     case 'ativos_chaves':
       return {
-        title: 'Chaves criptográficas',
-        description: 'Chaves vencidas ou próximas da rotação.',
+        title: d('ativos_chaves.title'),
+        description: d('ativos_chaves.description'),
         icon: KeyRound,
         route: '/ativos/chaves',
         fetcher: async (empresaId) => {
@@ -361,7 +364,7 @@ const buildConfig = (key: DrillDownKey): DrillConfig => {
               id: c.id,
               title: c.nome,
               subtitle: c.tipo_chave,
-              status: overdue ? 'rotação atrasada' : c.criticidade,
+              status: overdue ? d('rotationOverdue') : c.criticidade,
               tone: (overdue ? 'destructive' : c.criticidade === 'alta' ? 'warning' : 'neutral') as DrillItem['tone'],
               date: fmtDate(c.data_proxima_rotacao),
             };
@@ -370,8 +373,8 @@ const buildConfig = (key: DrillDownKey): DrillConfig => {
       };
     case 'ativos_licencas':
       return {
-        title: 'Licenças de software',
-        description: 'Licenças vencidas ou próximas do vencimento.',
+        title: d('ativos_licencas.title'),
+        description: d('ativos_licencas.description'),
         icon: FileKey,
         route: '/ativos/licencas',
         fetcher: async (empresaId) => {
@@ -389,7 +392,7 @@ const buildConfig = (key: DrillDownKey): DrillConfig => {
               id: l.id,
               title: l.nome,
               subtitle: l.tipo_licenca,
-              status: expired ? 'vencida' : l.criticidade,
+              status: expired ? d('expiredFem') : l.criticidade,
               tone: (expired ? 'destructive' : l.criticidade === 'alta' ? 'warning' : 'info') as DrillItem['tone'],
               date: fmtDate(l.data_vencimento),
             };
@@ -398,8 +401,8 @@ const buildConfig = (key: DrillDownKey): DrillConfig => {
       };
     case 'auditorias':
       return {
-        title: 'Trabalhos de auditoria',
-        description: 'Auditorias em andamento ou planejadas.',
+        title: d('auditorias.title'),
+        description: d('auditorias.description'),
         icon: ClipboardCheck,
         route: '/governanca?tab=auditorias',
         fetcher: async (empresaId) => {
@@ -424,8 +427,8 @@ const buildConfig = (key: DrillDownKey): DrillConfig => {
       };
     case 'continuidade':
       return {
-        title: 'Planos de continuidade',
-        description: 'Planos com revisão pendente ou vencida.',
+        title: d('continuidade.title'),
+        description: d('continuidade.description'),
         icon: ShieldCheck,
         route: '/continuidade',
         fetcher: async (empresaId) => {
@@ -443,7 +446,7 @@ const buildConfig = (key: DrillDownKey): DrillConfig => {
               id: p.id,
               title: p.nome,
               subtitle: p.tipo,
-              status: overdue ? 'revisão atrasada' : p.status,
+              status: overdue ? d('reviewOverdue') : p.status,
               tone: (overdue ? 'destructive' : 'info') as DrillItem['tone'],
               date: fmtDate(p.proxima_revisao),
             };
@@ -452,8 +455,8 @@ const buildConfig = (key: DrillDownKey): DrillConfig => {
       };
     case 'gap_analysis':
       return {
-        title: 'Frameworks ativos',
-        description: 'Frameworks de Gap Analysis em uso.',
+        title: d('gap_analysis.title'),
+        description: d('gap_analysis.description'),
         icon: FileBarChart,
         route: '/gap-analysis/frameworks',
         fetcher: async (empresaId) => {
@@ -479,15 +482,15 @@ const buildConfig = (key: DrillDownKey): DrillConfig => {
               id: fw.id,
               title: `${fw.nome} ${fw.versao || ''}`.trim(),
               subtitle: fw.tipo_framework,
-              status: `${n} avaliações`,
+              status: t('dashWidgets.drill.evaluationsCount', { count: n }),
               tone: 'info' as DrillItem['tone'],
             }));
         },
       };
     case 'revisao_acessos':
       return {
-        title: 'Revisões de acesso',
-        description: 'Revisões pendentes ou atrasadas.',
+        title: d('revisao_acessos.title'),
+        description: d('revisao_acessos.description'),
         icon: UserCheck,
         route: '/revisao-acessos',
         fetcher: async (empresaId) => {
@@ -505,8 +508,8 @@ const buildConfig = (key: DrillDownKey): DrillConfig => {
             return {
               id: r.id,
               title: r.nome_revisao,
-              subtitle: `${r.total_contas || 0} contas`,
-              status: overdue ? 'atrasada' : r.status,
+              subtitle: t('dashWidgets.drill.accountsCount', { count: r.total_contas || 0 }),
+              status: overdue ? d('overdueFem') : r.status,
               tone: (overdue ? 'destructive' : 'warning') as DrillItem['tone'],
               date: fmtDate(r.data_limite),
             };
@@ -515,8 +518,8 @@ const buildConfig = (key: DrillDownKey): DrillConfig => {
       };
     case 'privacidade':
       return {
-        title: 'Solicitações de titular',
-        description: 'Solicitações LGPD pendentes.',
+        title: d('privacidade.title'),
+        description: d('privacidade.description'),
         icon: Eye,
         route: '/privacidade',
         fetcher: async (empresaId) => {
@@ -535,7 +538,7 @@ const buildConfig = (key: DrillDownKey): DrillConfig => {
               id: s.id,
               title: s.tipo_solicitacao,
               subtitle: s.status,
-              status: overdue ? 'prazo expirado' : s.status,
+              status: overdue ? d('deadlineExpired') : s.status,
               tone: (overdue ? 'destructive' : 'warning') as DrillItem['tone'],
               date: fmtDate(s.prazo_resposta),
             };
@@ -544,8 +547,8 @@ const buildConfig = (key: DrillDownKey): DrillConfig => {
       };
     case 'riscos_aceite':
       return {
-        title: 'Riscos aceitos',
-        description: 'Aceites com revisão próxima ou vencida.',
+        title: d('riscos_aceite.title'),
+        description: d('riscos_aceite.description'),
         icon: Activity,
         route: '/riscos/aceite',
         fetcher: async (empresaId) => {
@@ -564,7 +567,7 @@ const buildConfig = (key: DrillDownKey): DrillConfig => {
               id: r.id,
               title: r.nome,
               subtitle: r.nivel_risco_residual || r.nivel_risco_inicial,
-              status: overdue ? 'revisão vencida' : 'aceite ativo',
+              status: overdue ? d('reviewExpired') : d('activeAcceptance'),
               tone: (overdue ? 'destructive' : 'info') as DrillItem['tone'],
               date: fmtDate(r.data_proxima_revisao),
             };
@@ -573,8 +576,8 @@ const buildConfig = (key: DrillDownKey): DrillConfig => {
       };
     case 'sistemas':
       return {
-        title: 'Sistemas privilegiados',
-        description: 'Sistemas com criticidade alta.',
+        title: d('sistemas.title'),
+        description: d('sistemas.description'),
         icon: Server,
         route: '/sistemas',
         fetcher: async (empresaId) => {
@@ -597,8 +600,8 @@ const buildConfig = (key: DrillDownKey): DrillConfig => {
       };
     case 'contas_privilegiadas':
       return {
-        title: 'Contas privilegiadas',
-        description: 'Acessos próximos da expiração.',
+        title: d('contas_privilegiadas.title'),
+        description: d('contas_privilegiadas.description'),
         icon: Lock,
         route: '/contas-privilegiadas',
         fetcher: async (empresaId) => {
@@ -616,7 +619,7 @@ const buildConfig = (key: DrillDownKey): DrillConfig => {
               id: c.id,
               title: c.usuario_beneficiario,
               subtitle: c.nivel_privilegio,
-              status: expired ? 'expirado' : c.status,
+              status: expired ? d('expired') : c.status,
               tone: (expired ? 'destructive' : 'warning') as DrillItem['tone'],
               date: fmtDate(c.data_expiracao),
             };
@@ -625,8 +628,8 @@ const buildConfig = (key: DrillDownKey): DrillConfig => {
       };
     default:
       return {
-        title: 'Detalhes',
-        description: '',
+        title: d('fallback.title'),
+        description: d('fallback.description'),
         icon: AlertCircle,
         route: '/dashboard',
         fetcher: async () => [],
@@ -643,9 +646,10 @@ interface KpiDrillDownDrawerProps {
 export const KpiDrillDownDrawer: React.FC<KpiDrillDownDrawerProps> = ({ open, onOpenChange, kpiKey }) => {
   const navigate = useNavigate();
   const { profile } = useAuth();
+  const { t } = useLanguage();
   const empresaId = profile?.empresa_id;
 
-  const config = React.useMemo(() => (kpiKey ? buildConfig(kpiKey) : null), [kpiKey]);
+  const config = React.useMemo(() => (kpiKey ? buildConfig(kpiKey, t) : null), [kpiKey, t]);
 
   const { data: items, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ['drill-down', kpiKey, empresaId],
@@ -683,25 +687,25 @@ export const KpiDrillDownDrawer: React.FC<KpiDrillDownDrawerProps> = ({ open, on
           {isLoading && (
             <div className="min-h-[200px] flex flex-col items-center justify-center gap-2">
               <AkurisPulse size={48} />
-              <p className="text-xs text-muted-foreground">Carregando itens...</p>
+              <p className="text-xs text-muted-foreground">{t('dashWidgets.drill.loading')}</p>
             </div>
           )}
           {isError && (
             <div className="flex flex-col items-center gap-3 py-8">
               <EmptyState
-                title="Não foi possível carregar"
-                description="Verifique sua conexão e tente novamente."
+                title={t('dashWidgets.drill.errorTitle')}
+                description={t('dashWidgets.drill.errorDescription')}
                 icon={<Icon as={AlertCircle} size="lg" />}
               />
               <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
-                {isFetching ? 'Tentando...' : 'Tentar novamente'}
+                {isFetching ? t('dashWidgets.drill.retrying') : t('dashWidgets.drill.retry')}
               </Button>
             </div>
           )}
           {!isLoading && !isError && (items?.length ?? 0) === 0 && (
             <EmptyState
-              title="Nada por aqui"
-              description="Não há itens prioritários para exibir agora."
+              title={t('dashWidgets.drill.emptyTitle')}
+              description={t('dashWidgets.drill.emptyDescription')}
               icon={<Icon as={config.icon as any} size="lg" />}
               variant="illustrated"
             />
@@ -748,7 +752,7 @@ export const KpiDrillDownDrawer: React.FC<KpiDrillDownDrawerProps> = ({ open, on
               navigate(config.route);
             }}
           >
-            Ver todos
+            {t('dashWidgets.drill.viewAll')}
             <Icon as={ArrowRight} size="sm" className="ml-2" />
           </Button>
         </SheetFooter>

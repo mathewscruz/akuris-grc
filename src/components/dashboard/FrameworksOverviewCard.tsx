@@ -9,13 +9,14 @@ import { ChevronRight, CheckCircle2, Target } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useFrameworksOverview, type FrameworkOverview } from '@/hooks/useFrameworksOverview';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { formatDateOnly } from '@/lib/date-utils';
 
 const MAX_VISIBLE = 4;
 
 const statusToTone = (s: FrameworkOverview['status']) => {
-  if (s === 'concluido') return { tone: 'success' as const, label: 'Concluído' };
-  if (s === 'em_andamento') return { tone: 'info' as const, label: 'Em andamento' };
-  return { tone: 'neutral' as const, label: 'Não iniciado' };
+  if (s === 'concluido') return { tone: 'success' as const, key: 'statusDone' };
+  if (s === 'em_andamento') return { tone: 'info' as const, key: 'statusInProgress' };
+  return { tone: 'neutral' as const, key: 'statusNotStarted' };
 };
 
 const barColor = (pct: number) => {
@@ -32,6 +33,7 @@ const FrameworkRow = ({
   item: FrameworkOverview;
   onClick: () => void;
 }) => {
+  const { t } = useLanguage();
   const st = statusToTone(item.status);
   const pct = item.mediaConformidade;
   const progress =
@@ -73,16 +75,16 @@ const FrameworkRow = ({
                 {item.status === 'concluido' ? (
                   <span className="inline-flex items-center gap-1">
                     <CheckCircle2 className="h-2.5 w-2.5 text-success" />
-                    Concluído · {item.totalRequisitos} req.
+                    {t('dashWidgets.frameworks.doneWithReqs', { total: item.totalRequisitos })}
                   </span>
                 ) : (
                   <>
-                    {item.requisitosAvaliados}/{item.totalRequisitos} requisitos · {progress}% avaliado
+                    {t('dashWidgets.frameworks.progress', { done: item.requisitosAvaliados, total: item.totalRequisitos, pct: progress })}
                   </>
                 )}
               </span>
               <StatusBadge tone={st.tone} className="text-[9px] py-0 h-4">
-                {st.label}
+                {t(`dashWidgets.frameworks.${st.key}`)}
               </StatusBadge>
             </div>
           </div>
@@ -93,15 +95,14 @@ const FrameworkRow = ({
       <TooltipContent side="left" className="max-w-[240px]">
         <p className="font-semibold text-sm mb-1">{item.nome}</p>
         <p className="text-xs text-muted-foreground">
-          Conformidade média: <strong>{pct}%</strong>
+          {t('dashWidgets.frameworks.avgCompliance')} <strong>{pct}%</strong>
         </p>
         <p className="text-xs text-muted-foreground">
-          {item.requisitosAvaliados} de {item.totalRequisitos} requisitos avaliados
+          {t('dashWidgets.frameworks.evaluatedOf', { done: item.requisitosAvaliados, total: item.totalRequisitos })}
         </p>
         {item.ultimaAtividade && (
           <p className="text-[11px] text-muted-foreground mt-1">
-            Última atividade:{' '}
-            {new Date(item.ultimaAtividade).toLocaleDateString('pt-BR')}
+            {t('dashWidgets.frameworks.lastActivity')} {formatDateOnly(item.ultimaAtividade)}
           </p>
         )}
       </TooltipContent>
@@ -125,7 +126,7 @@ export const FrameworksOverviewCard = () => {
         <CornerAccent />
         <CardHeader className="pb-3">
           <CardTitle className="text-base font-semibold flex items-center gap-2">
-            <Target className="h-4 w-4 text-muted-foreground" /> Frameworks de Compliance
+            <Target className="h-4 w-4 text-muted-foreground" /> {t('dashWidgets.frameworks.title')}
           </CardTitle>
         </CardHeader>
         <CardContent className="flex-1 pt-0 flex items-center justify-center">
@@ -142,11 +143,11 @@ export const FrameworksOverviewCard = () => {
         <div className="flex items-start justify-between gap-2">
           <div>
             <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <Target className="h-4 w-4 text-muted-foreground" /> Frameworks de Compliance
+              <Target className="h-4 w-4 text-muted-foreground" /> {t('dashWidgets.frameworks.title')}
             </CardTitle>
             {(ativos > 0 || concluidos > 0) && (
               <p className="text-[11px] text-muted-foreground mt-1">
-                {ativos} em andamento · {concluidos} concluído{concluidos === 1 ? '' : 's'}
+                {t('dashWidgets.frameworks.summary', { active: ativos, done: concluidos })}
               </p>
             )}
           </div>
@@ -155,7 +156,7 @@ export const FrameworksOverviewCard = () => {
             onClick={() => navigate('/gap-analysis')}
             className="text-[11px] text-primary hover:underline shrink-0"
           >
-            Ver todos
+            {t('dashWidgets.frameworks.viewAll')}
           </button>
         </div>
       </CardHeader>
@@ -167,17 +168,17 @@ export const FrameworksOverviewCard = () => {
             </div>
             <div className="text-center space-y-1 max-w-[260px]">
               <p className="text-sm font-medium text-foreground">
-                Nenhum framework iniciado
+                {t('dashWidgets.frameworks.emptyTitle')}
               </p>
               <p className="text-xs text-muted-foreground">
-                Comece uma avaliação de Gap Analysis para acompanhar a conformidade aqui.
+                {t('dashWidgets.frameworks.emptyDescription')}
               </p>
               <button
                 type="button"
                 onClick={() => navigate('/gap-analysis')}
                 className="mt-2 text-xs text-primary hover:underline"
               >
-                Iniciar primeiro framework →
+                {t('dashWidgets.frameworks.startFirst')}
               </button>
             </div>
           </div>
@@ -196,7 +197,7 @@ export const FrameworksOverviewCard = () => {
                 onClick={() => navigate('/gap-analysis')}
                 className="w-full text-[11px] text-muted-foreground hover:text-foreground py-2 text-center"
               >
-                + {remaining} outro{remaining === 1 ? '' : 's'} framework{remaining === 1 ? '' : 's'} →
+                {t('dashWidgets.frameworks.more', { count: remaining })}
               </button>
             )}
           </div>

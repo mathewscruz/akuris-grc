@@ -1,4 +1,5 @@
 // Funções utilitárias para formatação de texto
+import { getAppLocale } from '@/lib/i18n-locale';
 
 // Mapa de traduções para português correto com acentos
 const STATUS_LABELS: Record<string, string> = {
@@ -356,6 +357,12 @@ const STATUS_LABELS_EN: Record<string, string> = {
   violacao_normas: 'Standards Violation',
 };
 
+// Mapa ativo conforme idioma selecionado (EN cai para o mapa PT quando não houver tradução)
+const activeLabel = (key: string): string | undefined => {
+  if (getAppLocale() === 'en') return STATUS_LABELS_EN[key] ?? undefined;
+  return STATUS_LABELS[key];
+};
+
 // Locale-aware status label getter (use this in new code)
 export const getStatusLabel = (status: string, locale: 'pt' | 'en' = 'pt'): string => {
   if (!status) return '';
@@ -377,9 +384,10 @@ export const capitalizeText = (text: string): string => {
     return text.toUpperCase();
   }
   
-  // Verificar se há tradução no mapa
-  if (STATUS_LABELS[lower]) {
-    return STATUS_LABELS[lower];
+  // Verificar se há tradução no mapa do idioma ativo
+  const label = activeLabel(lower);
+  if (label) {
+    return label;
   }
   
   return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
@@ -391,9 +399,10 @@ export const formatStatus = (status: string): string => {
   
   const lowerStatus = status.toLowerCase();
   
-  // Primeiro, verificar se há uma tradução direta no mapa
-  if (STATUS_LABELS[lowerStatus]) {
-    return STATUS_LABELS[lowerStatus];
+  // Primeiro, verificar se há uma tradução direta no mapa do idioma ativo
+  const direct = activeLabel(lowerStatus);
+  if (direct) {
+    return direct;
   }
   
   // Se não encontrar no mapa, aplicar formatação padrão
@@ -408,9 +417,10 @@ export const formatStatus = (status: string): string => {
         return word.toUpperCase();
       }
       
-      // Verificar cada palavra individualmente no mapa
-      if (STATUS_LABELS[lowerWord]) {
-        return STATUS_LABELS[lowerWord];
+      // Verificar cada palavra individualmente no mapa do idioma ativo
+      const wordLabel = activeLabel(lowerWord);
+      if (wordLabel) {
+        return wordLabel;
       }
       
       return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();

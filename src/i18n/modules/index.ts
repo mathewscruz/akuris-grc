@@ -32,6 +32,7 @@ import { revisaoAcessosComp } from './revisao-acessos-comp';
 import { relatoriosComp } from './relatorios-comp';
 import { governancaComp } from './governanca-comp';
 import { dadosDashboard } from './dados-dashboard';
+import { dashboardWidgets } from './dashboard-widgets';
 
 type ModuleDict = { pt: Record<string, unknown>; en: Record<string, unknown> };
 
@@ -54,6 +55,7 @@ const modules: Record<string, ModuleDict> = {
   controlesAuditorias,
   dueDiligence,
   dadosDashboard,
+  dashboardWidgets,
   incidentesComp,
   continuidadeComp,
   contasPrivilegiadasComp,

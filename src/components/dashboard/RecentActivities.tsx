@@ -36,43 +36,43 @@ const getIcon = (module: string) => {
   }
 };
 
-const statusMap: Record<string, { variant: "default" | "secondary" | "destructive" | "outline" | "success" | "warning" | "info" | "neutral"; label: string }> = {
-  'critico': { variant: 'destructive', label: 'Crítico' },
-  'alto': { variant: 'destructive', label: 'Alto' },
-  'medio': { variant: 'warning', label: 'Médio' },
-  'médio': { variant: 'warning', label: 'Médio' },
-  'baixo': { variant: 'success', label: 'Baixo' },
-  'ativo': { variant: 'success', label: 'Ativo' },
-  'inativo': { variant: 'neutral', label: 'Inativo' },
-  'vencido': { variant: 'destructive', label: 'Vencido' },
-  'em_avaliacao': { variant: 'warning', label: 'Em Avaliação' },
-  'pendente': { variant: 'warning', label: 'Pendente' },
-  'pendente_aprovacao': { variant: 'warning', label: 'Pendente Aprovação' },
-  'aprovado': { variant: 'success', label: 'Aprovado' },
-  'rejeitado': { variant: 'destructive', label: 'Rejeitado' },
-  'planejada': { variant: 'warning', label: 'Planejada' },
-  'em_andamento': { variant: 'info', label: 'Em Andamento' },
-  'em_analise': { variant: 'info', label: 'Em Análise' },
-  'em_investigacao': { variant: 'info', label: 'Em Investigação' },
-  'concluida': { variant: 'success', label: 'Concluída' },
-  'concluído': { variant: 'success', label: 'Concluído' },
-  'concluido': { variant: 'success', label: 'Concluído' },
-  'cancelada': { variant: 'neutral', label: 'Cancelada' },
-  'nova': { variant: 'info', label: 'Nova' },
-  'resolvida': { variant: 'success', label: 'Resolvida' },
-  'arquivada': { variant: 'neutral', label: 'Arquivada' },
+type BadgeVariant = "default" | "secondary" | "destructive" | "outline" | "success" | "warning" | "info" | "neutral";
+
+/** Apenas o tom visual; o rótulo vem de formatStatus (sensível ao idioma). */
+const statusVariantMap: Record<string, BadgeVariant> = {
+  'critico': 'destructive',
+  'alto': 'destructive',
+  'medio': 'warning',
+  'médio': 'warning',
+  'baixo': 'success',
+  'ativo': 'success',
+  'inativo': 'neutral',
+  'vencido': 'destructive',
+  'em_avaliacao': 'warning',
+  'pendente': 'warning',
+  'pendente_aprovacao': 'warning',
+  'aprovado': 'success',
+  'rejeitado': 'destructive',
+  'planejada': 'warning',
+  'em_andamento': 'info',
+  'em_analise': 'info',
+  'em_investigacao': 'info',
+  'concluida': 'success',
+  'concluído': 'success',
+  'concluido': 'success',
+  'cancelada': 'neutral',
+  'nova': 'info',
+  'resolvida': 'success',
+  'arquivada': 'neutral',
 };
 
 const getStatusBadge = (status?: string) => {
   if (!status) return null;
   const normalizedStatus = status.toLowerCase().trim();
-  const statusInfo = statusMap[normalizedStatus] || {
-    variant: 'outline' as const,
-    label: formatStatus(status)
-  };
+  const variant = statusVariantMap[normalizedStatus] || 'outline';
   return (
-    <Badge variant={statusInfo.variant} className="text-[10px] px-1.5 py-0 whitespace-nowrap">
-      {statusInfo.label}
+    <Badge variant={variant} className="text-[10px] px-1.5 py-0 whitespace-nowrap">
+      {formatStatus(status)}
     </Badge>
   );
 };
