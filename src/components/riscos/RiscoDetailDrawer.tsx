@@ -277,7 +277,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
                 </DropdownMenu>
                 {statusCoerente.ajustado && <span className="sr-only" role="status">{statusCoerente.motivo}</span>}
                 {risco.aceito && (
-                  <StatusBadge size="sm" tone="info" variant="outline">Aceito</StatusBadge>
+                  <StatusBadge size="sm" tone="info" variant="outline">{t('sweepRiscos.riscos.detail.aceito')}</StatusBadge>
                 )}
               </div>
               <SheetTitle className="text-xl leading-tight font-semibold">{risco.nome}</SheetTitle>
@@ -287,7 +287,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
 
           {/* Metadados em linhas com ícone */}
           <div className="grid grid-cols-2 gap-x-6 gap-y-2.5 pt-1 relative">
-            <HeaderMeta icon={<Tag />} label="Categoria" value={risco.categoria?.nome || '—'} />
+            <HeaderMeta icon={<Tag />} label={t('sweepRiscos.riscos.detail.categoria')} value={risco.categoria?.nome || '—'} />
             <HeaderMeta
               icon={<User />}
               label={t('residuos.risco.responsavel')}
@@ -338,12 +338,12 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
               <section>
                 <SectionLabel>{t('campos.risco.inerenteResidual')}</SectionLabel>
                 <div className="flex items-stretch gap-2 mt-0.5">
-                  <ScoreBlock label="Inerente" nivel={risco.nivel_risco_inicial} score={inicialScore} p={risco.probabilidade_inicial} i={risco.impacto_inicial} />
+                  <ScoreBlock label={t('sweepRiscos.riscos.detail.inerente')} nivel={risco.nivel_risco_inicial} score={inicialScore} p={risco.probabilidade_inicial} i={risco.impacto_inicial} />
                   <div className="flex flex-col items-center justify-center px-0.5 shrink-0">
                     <ArrowRight className={reduziu ? 'h-5 w-5 text-success' : 'h-5 w-5 text-muted-foreground/50'} strokeWidth={2} />
                     {reduziu && <span className="text-[9px] text-success font-semibold tabular-nums mt-0.5">−{inicialScore - residualScore}</span>}
                   </div>
-                  <ScoreBlock label="Residual" nivel={risco.nivel_risco_residual} score={residualScore} p={risco.probabilidade_residual} i={risco.impacto_residual} emptyLabel={t('fin.riscos.naoAvaliado')} />
+                  <ScoreBlock label={t('sweepRiscos.riscos.detail.residual')} nivel={risco.nivel_risco_residual} score={residualScore} p={risco.probabilidade_residual} i={risco.impacto_residual} emptyLabel={t('fin.riscos.naoAvaliado')} />
                 </div>
               </section>
 

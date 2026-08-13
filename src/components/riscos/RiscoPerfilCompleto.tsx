@@ -139,7 +139,7 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
                 <StatusBadge size="sm" {...resolveNivelRiscoTone(risco.nivel_risco_residual || risco.nivel_risco_inicial)}>
                   {formatStatus(risco.nivel_risco_residual || risco.nivel_risco_inicial)}
                 </StatusBadge>
-                <span title={isError ? (detailError instanceof Error ? detailError.message : 'Falha ao carregar detalhes') : statusCoerente.motivo ?? undefined}>
+                <span title={isError ? (detailError instanceof Error ? detailError.message : t('sweepRiscos.riscos.detail.falhaCarregarDetalhes')) : statusCoerente.motivo ?? undefined}>
                   <StatusBadge size="sm" {...(isError ? { tone: 'neutral' as const } : resolveRiscoStatusTone(statusCoerente.status))}>
                     {isError ? t('fin.riscos.statusIndisponivel') : formatStatus(statusCoerente.status)}
                   </StatusBadge>
@@ -157,12 +157,12 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
             <section>
               <SectionLabel>{t('campos.risco.inerenteResidual')}</SectionLabel>
               <div className="flex items-stretch gap-2">
-                <ScoreBlock label="Inerente" nivel={risco.nivel_risco_inicial} score={inicialScore} p={risco.probabilidade_inicial} i={risco.impacto_inicial} />
+                <ScoreBlock label={t('sweepRiscos.riscos.detail.inerente')} nivel={risco.nivel_risco_inicial} score={inicialScore} p={risco.probabilidade_inicial} i={risco.impacto_inicial} />
                 <div className="flex flex-col items-center justify-center px-0.5 shrink-0">
                   <ArrowRight className={reduziu ? 'h-5 w-5 text-success' : 'h-5 w-5 text-muted-foreground/50'} strokeWidth={2} />
                   {reduziu && <span className="text-[9px] text-success font-semibold tabular-nums mt-0.5">−{inicialScore - residualScore}</span>}
                 </div>
-                <ScoreBlock label="Residual" nivel={risco.nivel_risco_residual} score={residualScore} p={risco.probabilidade_residual} i={risco.impacto_residual} emptyLabel={t('fin.riscos.naoAvaliado')} />
+                <ScoreBlock label={t('sweepRiscos.riscos.detail.residual')} nivel={risco.nivel_risco_residual} score={residualScore} p={risco.probabilidade_residual} i={risco.impacto_residual} emptyLabel={t('fin.riscos.naoAvaliado')} />
               </div>
             </section>
 

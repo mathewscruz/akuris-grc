@@ -194,8 +194,8 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
         await notify(
           data.criticidade === 'critica' ? 'incidente_critico' : 'incidente_criado',
           {
-            titulo: `Novo Incidente: ${data.titulo}`,
-            descricao: data.descricao || `Incidente de ${data.tipo_incidente} registrado`,
+            titulo: t('sweepRiscos.incidentes.notifyNovoIncidente', { titulo: data.titulo }),
+            descricao: data.descricao || t('sweepRiscos.incidentes.notifyDescricaoDefault', { tipo: data.tipo_incidente }),
             link: `${window.location.origin}/incidentes`,
             gravidade: gravidadeMap[data.criticidade] || 'media',
             dados: { tipo: data.tipo_incidente, criticidade: data.criticidade },

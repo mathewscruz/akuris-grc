@@ -155,7 +155,7 @@ export default function ControleDialog({ open, onOpenChange, controle, categoria
       }
 
       await notify(controle ? 'controle_atualizado' : 'controle_criado', {
-        titulo: controle ? `Controle atualizado: ${data.nome}` : `Novo controle: ${data.nome}`,
+        titulo: controle ? t('sweepRiscos.controles.notifyControleAtualizado', { nome: data.nome }) : t('sweepRiscos.controles.notifyNovoControle', { nome: data.nome }),
         descricao: data.descricao?.substring(0, 200) || undefined,
         link: `/governanca?tab=controles&controle=${controleId}`,
         gravidade: data.criticidade === 'critico' ? 'alta' : data.criticidade === 'alto' ? 'media' : 'baixa',
