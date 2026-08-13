@@ -2,6 +2,7 @@ import jsPDF from 'jspdf';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { loadAkurisLogo, addAkurisCover, addAkurisHeader, addAkurisFooter, AKURIS_COLORS } from '@/lib/pdf-utils';
+import { tGlobal } from '@/lib/i18n-global';
 
 interface SoAItem {
   codigo: string;
@@ -32,13 +33,15 @@ interface ExportSoAPDFParams {
   stats: SoAStats;
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  conforme: 'Conforme',
-  parcial: 'Parcial',
-  nao_conforme: 'Não Conforme',
-  nao_aplicavel: 'N/A',
-  nao_avaliado: 'Não Avaliado',
-};
+function getStatusLabels(): Record<string, string> {
+  return {
+    conforme: tGlobal('sweepRiscos.gap.statusLabels.conforme'),
+    parcial: tGlobal('sweepRiscos.gap.statusLabels.parcial'),
+    nao_conforme: tGlobal('sweepRiscos.gap.statusLabels.naoConforme'),
+    nao_aplicavel: tGlobal('sweepRiscos.gap.statusLabels.na'),
+    nao_avaliado: tGlobal('sweepRiscos.gap.statusLabels.naoAvaliado'),
+  };
+}
 
 export async function exportSoAPDF(params: ExportSoAPDFParams) {
   const { frameworkName, frameworkVersion, empresaNome, items, stats } = params;
@@ -52,7 +55,7 @@ export async function exportSoAPDF(params: ExportSoAPDFParams) {
   addAkurisCover(
     doc,
     logo,
-    'Declaração de Aplicabilidade (SoA)',
+    tGlobal('sweepRiscos.gap.pdf.soaDeclaracao'),
     `${frameworkName} ${frameworkVersion}`,
     { empresa: empresaNome, data: format(new Date(), "dd 'de' MMMM 'de' yyyy", { locale: ptBR }) }
   );
@@ -64,16 +67,16 @@ export async function exportSoAPDF(params: ExportSoAPDFParams) {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(14);
   doc.setTextColor(AKURIS_COLORS.text);
-  doc.text('Resumo da Declaração de Aplicabilidade', margin, yPos + 8);
+  doc.text(tGlobal('sweepRiscos.gap.pdf.soaResumo'), margin, yPos + 8);
   yPos += 16;
 
   // Stats boxes
   const boxWidth = contentWidth / 4;
   const statItems = [
-    { label: 'Total de Requisitos', value: String(stats.total), color: AKURIS_COLORS.text },
-    { label: 'Aplicáveis', value: String(stats.aplicavel), color: AKURIS_COLORS.primary },
-    { label: 'Não Aplicáveis', value: String(stats.naoAplicavel), color: AKURIS_COLORS.textLight },
-    { label: 'Conformes', value: String(stats.conforme), color: AKURIS_COLORS.success },
+    { label: tGlobal('sweepRiscos.gap.pdf.soaTotal'), value: String(stats.total), color: AKURIS_COLORS.text },
+    { label: tGlobal('sweepRiscos.gap.pdf.soaAplicaveis'), value: String(stats.aplicavel), color: AKURIS_COLORS.primary },
+    { label: tGlobal('sweepRiscos.gap.pdf.soaNaoAplicaveis'), value: String(stats.naoAplicavel), color: AKURIS_COLORS.textLight },
+    { label: tGlobal('sweepRiscos.gap.pdf.soaConformes'), value: String(stats.conforme), color: AKURIS_COLORS.success },
   ];
 
   statItems.forEach((stat, i) => {
@@ -93,7 +96,15 @@ export async function exportSoAPDF(params: ExportSoAPDFParams) {
 
   // Table header
   const colWidths = [22, 80, 22, 30, 35, 15, contentWidth - 204];
-  const headers = ['Código', 'Requisito', 'Aplic.', 'Status', 'Responsável', 'Evid.', 'Justificativa'];
+  const headers = [
+    tGlobal('sweepRiscos.gap.pdf.colCodigo'),
+    tGlobal('sweepRiscos.gap.pdf.colRequisito'),
+    tGlobal('sweepRiscos.gap.pdf.soaColAplic'),
+    tGlobal('sweepRiscos.gap.pdf.colStatus'),
+    tGlobal('sweepRiscos.gap.pdf.soaColResponsavel'),
+    tGlobal('sweepRiscos.gap.pdf.soaColEvid'),
+    tGlobal('sweepRiscos.gap.pdf.soaColJustificativa'),
+  ];
 
   const drawHeader = (y: number) => {
     doc.setFillColor(AKURIS_COLORS.primary);
@@ -135,10 +146,10 @@ export async function exportSoAPDF(params: ExportSoAPDFParams) {
     doc.text(truncTitle, xPos, yPos + 1);
     xPos += colWidths[1];
 
-    doc.text(item.aplicavel ? 'Sim' : 'Não', xPos, yPos + 1);
+    doc.text(item.aplicavel ? tGlobal('sweepRiscos.gap.pdf.soaSim') : tGlobal('sweepRiscos.gap.pdf.soaNao'), xPos, yPos + 1);
     xPos += colWidths[2];
 
-    doc.text(STATUS_LABELS[item.conformity_status] || item.conformity_status, xPos, yPos + 1);
+    doc.text(getStatusLabels()[item.conformity_status] || item.conformity_status, xPos, yPos + 1);
     xPos += colWidths[3];
 
     doc.text((item.responsavel || '-').substring(0, 20), xPos, yPos + 1);

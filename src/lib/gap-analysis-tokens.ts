@@ -7,6 +7,7 @@
  */
 
 import type { BadgeProps } from '@/components/ui/badge';
+import { tGlobal } from '@/lib/i18n-global';
 
 export type ConformityStatus = 'conforme' | 'parcial' | 'nao_conforme' | 'nao_aplicavel' | 'nao_avaliado';
 
@@ -21,14 +22,17 @@ export const STATUS_BADGE_VARIANT: Record<ConformityStatus, Variant> = {
   nao_avaliado: 'outline',
 };
 
-/** Label PT-BR canônica para cada status */
-export const STATUS_LABEL: Record<ConformityStatus, string> = {
-  conforme: 'Conforme',
-  parcial: 'Parcial',
-  nao_conforme: 'Não Conforme',
-  nao_aplicavel: 'N/A',
-  nao_avaliado: 'Não Avaliado',
-};
+/** Label traduzida para cada status de conformidade */
+export function getStatusLabel(status: ConformityStatus): string {
+  const map: Record<ConformityStatus, string> = {
+    conforme: tGlobal('sweepRiscos.gap.statusLabels.conforme'),
+    parcial: tGlobal('sweepRiscos.gap.statusLabels.parcial'),
+    nao_conforme: tGlobal('sweepRiscos.gap.statusLabels.naoConforme'),
+    nao_aplicavel: tGlobal('sweepRiscos.gap.statusLabels.na'),
+    nao_avaliado: tGlobal('sweepRiscos.gap.statusLabels.naoAvaliado'),
+  };
+  return map[status];
+}
 
 /** Classe Tailwind de fundo sólido (para blocos/heatmaps) — usa tokens HSL */
 export const STATUS_BG_CLASS: Record<ConformityStatus, string> = {
@@ -127,18 +131,21 @@ export const CATEGORY_BADGE_CLASS: Record<FrameworkCategory, string> = {
   qualidade: 'bg-success/10 text-success border-success/20',
 };
 
-export const CATEGORY_LABEL: Record<FrameworkCategory, string> = {
-  seguranca: 'Segurança',
-  privacidade: 'Privacidade',
-  governanca: 'Governança',
-  qualidade: 'Qualidade',
-};
+export function getCategoryLabel(category: FrameworkCategory): string {
+  const map: Record<FrameworkCategory, string> = {
+    seguranca: tGlobal('sweepRiscos.gap.fwCategoryLong.seguranca'),
+    privacidade: tGlobal('sweepRiscos.gap.fwCategoryLong.privacidade'),
+    governanca: tGlobal('sweepRiscos.gap.fwCategoryLong.governanca'),
+    qualidade: tGlobal('sweepRiscos.gap.fwCategoryLong.qualidade'),
+  };
+  return map[category];
+}
 
 /** Esforço estimado a partir do nº de requisitos */
 export type EffortLevel = 'baixo' | 'medio' | 'alto';
 
 export function getEffortLevel(count: number): { level: EffortLevel; label: string; variant: Variant } {
-  if (count <= 30) return { level: 'baixo', label: 'Baixo', variant: 'success' };
-  if (count <= 100) return { level: 'medio', label: 'Médio', variant: 'warning' };
-  return { level: 'alto', label: 'Alto', variant: 'destructive' };
+  if (count <= 30) return { level: 'baixo', label: tGlobal('sweepRiscos.gap.effortLevel.baixo'), variant: 'success' };
+  if (count <= 100) return { level: 'medio', label: tGlobal('sweepRiscos.gap.effortLevel.medio'), variant: 'warning' };
+  return { level: 'alto', label: tGlobal('sweepRiscos.gap.effortLevel.alto'), variant: 'destructive' };
 }

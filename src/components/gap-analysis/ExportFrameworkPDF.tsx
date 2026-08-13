@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { loadAkurisLogo, addAkurisCover, addAkurisHeader, addAkurisFooter, addSectionTitle, drawProgressBar, drawTableHeader, formatLabel, AKURIS_COLORS } from '@/lib/pdf-utils';
 import { getFrameworkConfig, getMaturityLevel } from '@/lib/framework-configs';
+import { tGlobal } from '@/lib/i18n-global';
 
 interface PillarScore {
   pillar: string;
@@ -54,11 +55,11 @@ function getScoreColor(score: number, maxScore: number): string {
 
 function statusLabel(status: string): string {
   const map: Record<string, string> = {
-    conforme: 'Conforme',
-    parcial: 'Parcial',
-    nao_conforme: 'Não Conforme',
-    nao_aplicavel: 'N/A',
-    nao_avaliado: 'Não Avaliado',
+    conforme: tGlobal('sweepRiscos.gap.statusLabels.conforme'),
+    parcial: tGlobal('sweepRiscos.gap.statusLabels.parcial'),
+    nao_conforme: tGlobal('sweepRiscos.gap.statusLabels.naoConforme'),
+    nao_aplicavel: tGlobal('sweepRiscos.gap.statusLabels.na'),
+    nao_avaliado: tGlobal('sweepRiscos.gap.statusLabels.naoAvaliado'),
   };
   return map[status] || formatLabel(status);
 }
@@ -68,7 +69,7 @@ export async function exportFrameworkPDF(params: ExportFrameworkPDFParams) {
     frameworkName, frameworkVersion, frameworkType,
     overallScore, totalRequirements, evaluatedRequirements,
     pillarScores, categoryScores, requirements,
-    empresaNome = 'Empresa', scoreType, maxScore
+    empresaNome = tGlobal('sweepRiscos.gap.pdf.empresaPadrao'), scoreType, maxScore
   } = params;
 
   const doc = new jsPDF('p', 'mm', 'a4');
@@ -91,7 +92,7 @@ export async function exportFrameworkPDF(params: ExportFrameworkPDFParams) {
   const formattedType = formatLabel(frameworkType);
 
   // === COVER PAGE ===
-  addAkurisCover(doc, logo, `Relatório de Conformidade\n${frameworkName} ${frameworkVersion}`, `Tipo: ${formattedType}`, {
+  addAkurisCover(doc, logo, `${tGlobal('sweepRiscos.gap.pdf.relatorioConformidade')}\n${frameworkName} ${frameworkVersion}`, tGlobal('sweepRiscos.gap.pdf.tipoLabel', { tipo: formattedType }), {
     empresa: empresaNome,
     data: format(new Date(), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
   });
@@ -103,7 +104,7 @@ export async function exportFrameworkPDF(params: ExportFrameworkPDFParams) {
   // Info box removed — data already on cover page
 
   // === SCORE GERAL ===
-  yPos = addSectionTitle(doc, 'Resultado Geral', yPos, margin);
+  yPos = addSectionTitle(doc, tGlobal('sweepRiscos.gap.pdf.resultadoGeral'), yPos, margin);
   const scoreColor = getScoreColor(overallScore, maxScore);
 
   doc.setFillColor(AKURIS_COLORS.background);
@@ -123,7 +124,7 @@ export async function exportFrameworkPDF(params: ExportFrameworkPDFParams) {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
   doc.setTextColor(AKURIS_COLORS.text);
-  doc.text(`${evaluatedRequirements} de ${totalRequirements} requisitos avaliados (${progressPct}%)`, margin + 42, yPos + 11);
+  doc.text(tGlobal('sweepRiscos.gap.pdf.requisitosAvaliadosPct', { evaluated: evaluatedRequirements, total: totalRequirements, pct: progressPct }), margin + 42, yPos + 11);
 
   // Progress bar
   drawProgressBar(doc, margin + 42, yPos + 16, contentWidth - 52, 5, progressPct, scoreColor);
@@ -135,7 +136,7 @@ export async function exportFrameworkPDF(params: ExportFrameworkPDFParams) {
 
   doc.setFontSize(9);
   doc.setTextColor(AKURIS_COLORS.textLight);
-  doc.text(`Conformes: ${conforme}  |  Parciais: ${partial}  |  Não Conformes: ${nonCompliant}`, margin + 42, yPos + 30);
+  doc.text(tGlobal('sweepRiscos.gap.pdf.conformesParciaisNaoConformes', { conforme, parcial: partial, naoConforme: nonCompliant }), margin + 42, yPos + 30);
   yPos += 43;
 
   // === MATURITY LEVEL ===
@@ -148,7 +149,7 @@ export async function exportFrameworkPDF(params: ExportFrameworkPDFParams) {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(9);
     doc.setTextColor(AKURIS_COLORS.primary);
-    doc.text(`Nível de Maturidade: Nível ${maturity.level} - ${maturity.name}`, margin + 4, yPos + 6);
+    doc.text(tGlobal('sweepRiscos.gap.pdf.nivelMaturidade', { level: maturity.level, name: maturity.name }), margin + 4, yPos + 6);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
     doc.setTextColor(AKURIS_COLORS.textLight);
@@ -158,7 +159,7 @@ export async function exportFrameworkPDF(params: ExportFrameworkPDFParams) {
 
   // === SCORES POR CATEGORIA (with bar charts) ===
   if (pillarScores.length > 0) {
-    yPos = addSectionTitle(doc, 'Pontuação por Categoria', yPos, margin);
+    yPos = addSectionTitle(doc, tGlobal('sweepRiscos.gap.pdf.pontuacaoCategoria'), yPos, margin);
 
     pillarScores.forEach(p => {
       checkPage(14);
@@ -196,13 +197,13 @@ export async function exportFrameworkPDF(params: ExportFrameworkPDFParams) {
   const nonCompliantReqs = requirements.filter(r => r.conformity_status === 'nao_conforme' || r.conformity_status === 'parcial');
   if (nonCompliantReqs.length > 0) {
     checkPage(30);
-    yPos = addSectionTitle(doc, 'Itens que Requerem Atenção', yPos, margin);
+    yPos = addSectionTitle(doc, tGlobal('sweepRiscos.gap.pdf.itensAtencao'), yPos, margin);
 
     drawTableHeader(doc, [
-      { text: 'Código', x: margin + 2 },
-      { text: 'Requisito', x: margin + 25 },
-      { text: 'Categoria', x: margin + 110 },
-      { text: 'Status', x: margin + 145 },
+      { text: tGlobal('sweepRiscos.gap.pdf.colCodigo'), x: margin + 2 },
+      { text: tGlobal('sweepRiscos.gap.pdf.colRequisito'), x: margin + 25 },
+      { text: tGlobal('sweepRiscos.gap.pdf.colCategoria'), x: margin + 110 },
+      { text: tGlobal('sweepRiscos.gap.pdf.colStatus'), x: margin + 145 },
     ], yPos, margin, contentWidth);
     yPos += 5;
 
@@ -233,12 +234,12 @@ export async function exportFrameworkPDF(params: ExportFrameworkPDFParams) {
 
   // === TODOS OS REQUISITOS ===
   checkPage(30);
-  yPos = addSectionTitle(doc, 'Todos os Requisitos', yPos, margin);
+  yPos = addSectionTitle(doc, tGlobal('sweepRiscos.gap.pdf.todosRequisitos'), yPos, margin);
 
   drawTableHeader(doc, [
-    { text: 'Código', x: margin + 2 },
-    { text: 'Requisito', x: margin + 25 },
-    { text: 'Status', x: margin + 140 },
+    { text: tGlobal('sweepRiscos.gap.pdf.colCodigo'), x: margin + 2 },
+    { text: tGlobal('sweepRiscos.gap.pdf.colRequisito'), x: margin + 25 },
+    { text: tGlobal('sweepRiscos.gap.pdf.colStatus'), x: margin + 140 },
   ], yPos, margin, contentWidth);
   yPos += 5;
 

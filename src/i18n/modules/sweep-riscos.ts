@@ -70,6 +70,8 @@ export const sweepRiscos = {
           soaColResponsavel: 'Responsável',
           soaColEvid: 'Evid.',
           soaColJustificativa: 'Justificativa',
+          tipoLabel: 'Tipo: {tipo}',
+          requisitosAvaliadosPct: '{evaluated} de {total} requisitos avaliados ({pct}%)',
         },
         evidenceHub: {
           bibliotecaDesc: 'Documentos e links da empresa que podem ser reaproveitados em vários requisitos e frameworks.',
@@ -107,6 +109,7 @@ export const sweepRiscos = {
           avaliados: 'avaliados',
           exportarRelatorio: 'Exportar Relatório de Evolução',
           medicoesDesc: 'Medições registradas ao longo do tempo. O "Score Atual" acima reflete a avaliação em tempo real e pode diferir da última medição registrada.',
+          requisitosAvaliados: '{evaluated}/{total} requisitos avaliados',
         },
         fallbacks: {
           outros: 'Outros',
@@ -321,6 +324,8 @@ export const sweepRiscos = {
           soaColResponsavel: 'Owner',
           soaColEvid: 'Evid.',
           soaColJustificativa: 'Justification',
+          tipoLabel: 'Type: {tipo}',
+          requisitosAvaliadosPct: '{evaluated} of {total} requirements evaluated ({pct}%)',
         },
         evidenceHub: {
           bibliotecaDesc: 'Company documents and links that can be reused across multiple requirements and frameworks.',
@@ -358,6 +363,7 @@ export const sweepRiscos = {
           avaliados: 'evaluated',
           exportarRelatorio: 'Export Evolution Report',
           medicoesDesc: 'Measurements recorded over time. The "Current Score" above reflects the real-time evaluation and may differ from the last recorded measurement.',
+          requisitosAvaliados: '{evaluated}/{total} requirements evaluated',
         },
         fallbacks: {
           outros: 'Other',
