@@ -6,7 +6,9 @@
  * o teste quebra e aponta exatamente qual chave está faltando.
  */
 import { describe, it, expect } from 'vitest';
-import { modulesPt, modulesEn } from '../modules';
+import { pt as corePt } from '../pt';
+import { en as coreEn } from '../en';
+import { modulesPt, modulesEn, mergeDictionaries } from '../modules';
 
 type Dict = Record<string, unknown>;
 
@@ -53,5 +55,13 @@ describe('i18n — paridade PT/EN', () => {
       pt: filtrar(emptyValues(modulesPt as Dict)),
       en: filtrar(emptyValues(modulesEn as Dict)),
     }).toEqual({ pt: [], en: [] });
+  });
+
+  it('preserva chaves comuns ao agregar módulos', () => {
+    const aggregatedPt = mergeDictionaries(corePt, modulesPt) as Dict;
+    const aggregatedEn = mergeDictionaries(coreEn, modulesEn) as Dict;
+
+    expect((aggregatedPt.common as Dict).viewDetails).toBe('Ver detalhes');
+    expect((aggregatedEn.common as Dict).viewDetails).toBe('View details');
   });
 });
