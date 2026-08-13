@@ -34,7 +34,7 @@ export default function Denuncia() {
         actions={
           <Button variant="outline" onClick={() => setRelatoriosOpen(true)}>
             <BarChart3 className="h-4 w-4 mr-2" />
-            Relatórios
+            {t('cardsKpi.denuncias.abrirRelatorios')}
           </Button>
         }
       />
@@ -42,7 +42,7 @@ export default function Denuncia() {
       {/* StatCards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <StatCard
-          title="Total"
+          title={t('cardsKpi.denuncias.total')}
           value={stats?.total ?? 0}
           icon={<Shield />}
           description={t('cardsKpi.denuncias.denunciasRegistradas')}
@@ -53,7 +53,7 @@ export default function Denuncia() {
         />
         
         <StatCard
-          title="Novas"
+          title={t('cardsKpi.denuncias.novas')}
           value={stats?.novas ?? 0}
           icon={<AlertTriangle />}
           description={t('cardsKpi.denuncias.aguardandoAnalise')}
@@ -63,17 +63,17 @@ export default function Denuncia() {
         />
         
         <StatCard
-          title={t('residuos.geral.emAndamento')}
+          title={t('cardsKpi.denuncias.emAndamento')}
           value={stats?.em_andamento ?? 0}
           icon={<Clock />}
-          description="Sendo investigadas"
+          description={t('cardsKpi.denuncias.sendoInvestigadas')}
           loading={statsLoading}
           variant="info"
           drillDown="denuncias"
         />
         
         <StatCard
-          title="Resolvidas"
+          title={t('cardsKpi.denuncias.resolvidas')}
           value={stats?.resolvidas ?? 0}
           icon={<CheckCircle />}
           description={t('cardsKpi.denuncias.concluidas')}

@@ -25,10 +25,15 @@ export const cardsKpi = {
       },
       denuncias: {
         total: 'Total',
+        novas: 'Novas',
+        emAndamento: 'Em andamento',
+        resolvidas: 'Resolvidas',
         denunciasRegistradas: 'Denúncias registradas',
         aguardandoAnalise: 'Aguardando análise',
+        sendoInvestigadas: 'Sendo investigadas',
         concluidas: 'Concluídas',
         relatorios: 'Relatórios de Denúncias',
+        abrirRelatorios: 'Relatórios',
       },
       licencas: {
         totalLicencas: 'Total de Licenças',
@@ -179,10 +184,15 @@ export const cardsKpi = {
       },
       denuncias: {
         total: 'Total',
+        novas: 'New',
+        emAndamento: 'In progress',
+        resolvidas: 'Resolved',
         denunciasRegistradas: 'Reports filed',
         aguardandoAnalise: 'Awaiting review',
+        sendoInvestigadas: 'Under investigation',
         concluidas: 'Completed',
         relatorios: 'Whistleblowing reports',
+        abrirRelatorios: 'Reports',
       },
       licencas: {
         totalLicencas: 'Total licenses',

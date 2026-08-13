@@ -31,11 +31,11 @@ export function OnboardingWizard() {
   const [dismissed, setDismissed] = useState(false);
 
   const steps: OnboardingStep[] = [
-    { id: 'ativos', title: 'Cadastrar Ativos', description: 'Registre seus primeiros ativos de TI para ter visibilidade do inventário', icon: <Database className="h-5 w-5" />, route: '/ativos', completed: stepsCompleted.includes('ativos') },
-    { id: 'riscos', title: 'Identificar Riscos', description: 'Crie pelo menos um risco para iniciar a gestão de riscos', icon: <AlertTriangle className="h-5 w-5" />, route: '/riscos', completed: stepsCompleted.includes('riscos') },
-    { id: 'controles', title: 'Implementar Controles', description: 'Defina controles internos para mitigar os riscos identificados', icon: <Shield className="h-5 w-5" />, route: '/governanca?tab=controles', completed: stepsCompleted.includes('controles') },
-    { id: 'frameworks', title: 'Ativar Frameworks', description: 'Selecione os frameworks de compliance relevantes (ISO 27001, LGPD, etc.)', icon: <BarChart3 className="h-5 w-5" />, route: '/gap-analysis/frameworks', completed: stepsCompleted.includes('frameworks') },
-    { id: 'documentos', title: 'Adicionar Documentos', description: 'Faça upload das políticas e documentos de segurança existentes', icon: <FileCheck className="h-5 w-5" />, route: '/documentos', completed: stepsCompleted.includes('documentos') },
+    { id: 'ativos', title: t('sweepCore.onboarding.ativosTitle'), description: t('sweepCore.onboarding.ativosDescription'), icon: <Database className="h-5 w-5" />, route: '/ativos', completed: stepsCompleted.includes('ativos') },
+    { id: 'riscos', title: t('sweepCore.onboarding.riscosTitle'), description: t('sweepCore.onboarding.riscosDescription'), icon: <AlertTriangle className="h-5 w-5" />, route: '/riscos', completed: stepsCompleted.includes('riscos') },
+    { id: 'controles', title: t('sweepCore.onboarding.controlesTitle'), description: t('sweepCore.onboarding.controlesDescription'), icon: <Shield className="h-5 w-5" />, route: '/governanca?tab=controles', completed: stepsCompleted.includes('controles') },
+    { id: 'frameworks', title: t('sweepCore.onboarding.frameworksTitle'), description: t('sweepCore.onboarding.frameworksDescription'), icon: <BarChart3 className="h-5 w-5" />, route: '/gap-analysis/frameworks', completed: stepsCompleted.includes('frameworks') },
+    { id: 'documentos', title: t('sweepCore.onboarding.documentosTitle'), description: t('sweepCore.onboarding.documentosDescription'), icon: <FileCheck className="h-5 w-5" />, route: '/documentos', completed: stepsCompleted.includes('documentos') },
   ];
 
   const completedCount = stepsCompleted.length;
@@ -193,7 +193,7 @@ export function OnboardingWizard() {
                         <p className={`text-sm font-medium ${step.completed ? 'line-through text-muted-foreground' : ''}`}>
                           {step.title}
                         </p>
-                        {step.completed && <Badge variant="success" size="sm">Feito</Badge>}
+                        {step.completed && <Badge variant="success" size="sm">{t('sweepCore.onboarding.done')}</Badge>}
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">{step.description}</p>
                     </div>
@@ -209,11 +209,11 @@ export function OnboardingWizard() {
 
             <div className="flex justify-between pt-2">
               <Button variant="ghost" size="sm" onClick={handleDismiss} className="text-muted-foreground">
-                <X className="h-4 w-4 mr-1" /> Pular por agora
+                <X className="h-4 w-4 mr-1" /> {t('sweepCore.onboarding.skip')}
               </Button>
               {!steps[currentStep]?.completed && (
                 <Button size="sm" onClick={() => handleGoToStep(steps[currentStep])}>
-                  Ir para {steps[currentStep]?.title} <ArrowRight className="h-4 w-4 ml-1" />
+                  {t('sweepCore.onboarding.goTo', { title: steps[currentStep]?.title ?? '' })} <ArrowRight className="h-4 w-4 ml-1" />
                 </Button>
               )}
             </div>
