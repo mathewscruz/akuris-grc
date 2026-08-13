@@ -7,24 +7,32 @@
  */
 export type AppLocale = 'pt' | 'en';
 
-const STORAGE_KEY = 'governaii-locale';
+/** Escolha manual do usuário (toggle) ou preferência do perfil autenticado. */
+export const LOCALE_STORAGE_KEY = 'governaii-locale';
+/** Marca que a chave acima veio de uma escolha explícita, não de autodetecção. */
+export const LOCALE_EXPLICIT_KEY = 'governaii-locale-explicit';
 
 const BR_TIMEZONES = new Set([
   'America/Sao_Paulo', 'America/Bahia', 'America/Manaus', 'America/Fortaleza',
   'America/Recife', 'America/Belem', 'America/Cuiaba', 'America/Campo_Grande',
   'America/Porto_Velho', 'America/Boa_Vista', 'America/Rio_Branco', 'America/Maceio',
   'America/Araguaina', 'America/Santarem', 'America/Eirunepe', 'America/Noronha',
+  'Brazil/East', 'Brazil/West', 'Brazil/Acre', 'Brazil/DeNoronha',
+]);
+
+const PT_TIMEZONES = new Set([
+  'Europe/Lisbon', 'Atlantic/Madeira', 'Atlantic/Azores', 'Portugal',
 ]);
 
 /**
- * Idioma inicial pelo país de acesso: visitantes no Brasil recebem português,
- * qualquer outro país recebe inglês. Usa o fuso horário do dispositivo — sem
- * requisição externa. Fallback: idioma do navegador.
+ * Idioma inicial pelo país de acesso: visitantes no Brasil e em Portugal recebem
+ * português, qualquer outro país recebe inglês. Usa o fuso horário do dispositivo
+ * — sem requisição externa. Fallback: idioma do navegador.
  */
 export function detectLocaleByRegion(): AppLocale {
   try {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
-    if (BR_TIMEZONES.has(tz)) return 'pt';
+    if (BR_TIMEZONES.has(tz) || PT_TIMEZONES.has(tz)) return 'pt';
     if (tz) return 'en';
   } catch {
     // Intl indisponível: cai no idioma do navegador
@@ -36,10 +44,20 @@ export function detectLocaleByRegion(): AppLocale {
   }
 }
 
+/**
+ * Só respeita o valor gravado quando ele veio de escolha explícita (toggle ou
+ * perfil). Idiomas apenas autodetectados em visitas anteriores são descartados,
+ * evitando que um usuário fique "preso" no idioma errado.
+ */
 function readInitial(): AppLocale {
   try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved === 'en' || saved === 'pt') return saved;
+    const explicit = localStorage.getItem(LOCALE_EXPLICIT_KEY) === '1';
+    const saved = localStorage.getItem(LOCALE_STORAGE_KEY);
+    if (explicit && (saved === 'en' || saved === 'pt')) return saved;
+    if (!explicit && saved) {
+      // Migração única da chave legada gravada por autodetecção.
+      localStorage.removeItem(LOCALE_STORAGE_KEY);
+    }
   } catch {
     // localStorage indisponível
   }
@@ -52,4 +70,18 @@ export const getAppLocale = (): AppLocale => current;
 
 export const setAppLocale = (locale: AppLocale): void => {
   current = locale;
+};
+
+/** Idioma inicial da aplicação (autodetecção + escolha explícita persistida). */
+export const getInitialLocale = (): AppLocale =>
+  typeof window === 'undefined' ? 'pt' : readInitial();
+
+/** Persiste uma escolha explícita de idioma (toggle manual ou perfil). */
+export const persistExplicitLocale = (locale: AppLocale): void => {
+  try {
+    localStorage.setItem(LOCALE_STORAGE_KEY, locale);
+    localStorage.setItem(LOCALE_EXPLICIT_KEY, '1');
+  } catch {
+    // localStorage indisponível
+  }
 };

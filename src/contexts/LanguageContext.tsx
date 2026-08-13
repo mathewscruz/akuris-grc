@@ -3,7 +3,7 @@ import { pt } from '@/i18n/pt';
 import { en } from '@/i18n/en';
 import { modulesPt, modulesEn } from '@/i18n/modules';
 import { supabase } from '@/integrations/supabase/client';
-import { setAppLocale, detectLocaleByRegion } from '@/lib/i18n-locale';
+import { setAppLocale, getInitialLocale, persistExplicitLocale } from '@/lib/i18n-locale';
 
 export type Locale = 'pt' | 'en';
 type Dictionary = Record<string, any>;
@@ -39,17 +39,7 @@ const MANUAL_KEY = 'governaii-locale-manual-ts';
 const MANUAL_PRIORITY_MS = 10 * 60 * 1000;
 
 function detectInitialLocale(): Locale {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved === 'en' || saved === 'pt') return saved;
-  } catch {
-    // localStorage indisponível
-  }
-  try {
-    return detectLocaleByRegion();
-  } catch {
-    return 'pt';
-  }
+  return getInitialLocale();
 }
 
 function hasRecentManualChoice(): boolean {
@@ -101,7 +91,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
         }
 
         setLocaleState(pref);
-        try { localStorage.setItem(STORAGE_KEY, pref); } catch {}
+        persistExplicitLocale(pref);
       } catch {
         // silent: keep local locale
       }
@@ -123,8 +113,8 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   const setLocale = useCallback((newLocale: Locale) => {
     setLocaleState(newLocale);
+    persistExplicitLocale(newLocale);
     try {
-      localStorage.setItem(STORAGE_KEY, newLocale);
       localStorage.setItem(MANUAL_KEY, String(Date.now()));
     } catch {}
 

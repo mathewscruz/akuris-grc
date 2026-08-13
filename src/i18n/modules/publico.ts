@@ -7,7 +7,7 @@ export const publico = {
   pt: {
     publico: {
     landing: {
-      seoTitle: 'Akuris — Plataforma GRC para Governança, Riscos e Conformidade',
+      seoTitle: 'Akuris | Plataforma GRC: Riscos, Compliance e Auditoria',
       seoDesc:
         'O Akuris reúne controles, frameworks, evidências e indicadores em um só lugar. Suporte a +20 frameworks: ISO 27001, LGPD, GDPR, NIST, SOC 2, PCI DSS.',
       nav: {
@@ -339,7 +339,7 @@ export const publico = {
   en: {
     publico: {
     landing: {
-      seoTitle: 'Akuris — GRC Platform for Governance, Risk and Compliance',
+      seoTitle: 'Akuris | GRC Platform: Risk, Compliance and Audit',
       seoDesc:
         'Akuris brings controls, frameworks, evidence and indicators together in one place. Support for 20+ frameworks: ISO 27001, LGPD, GDPR, NIST, SOC 2, PCI DSS.',
       nav: {
