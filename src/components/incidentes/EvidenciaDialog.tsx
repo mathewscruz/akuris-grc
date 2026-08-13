@@ -24,6 +24,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const evidenciaSchema = z.object({
   nome: z.string().min(1, 'Nome é obrigatório'),
@@ -54,6 +55,7 @@ export function EvidenciaDialog({ incidenteId, evidencia, onSuccess, trigger, ex
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const form = useForm<EvidenciaFormData>({
     resolver: zodResolver(evidenciaSchema),
@@ -141,14 +143,14 @@ export function EvidenciaDialog({ incidenteId, evidencia, onSuccess, trigger, ex
           .eq('id', evidencia.id);
 
         if (error) throw error;
-        toast({ title: 'Evidência atualizada com sucesso!' });
+        toast({ title: t('incidentesComp.evidencia.toastUpdated') });
       } else {
         const { error } = await supabase
           .from('incidentes_evidencias')
           .insert([evidenciaData]);
 
         if (error) throw error;
-        toast({ title: 'Evidência registrada com sucesso!' });
+        toast({ title: t('incidentesComp.evidencia.toastCreated') });
       }
 
       setOpen(false);
@@ -157,7 +159,7 @@ export function EvidenciaDialog({ incidenteId, evidencia, onSuccess, trigger, ex
       onSuccess?.();
     } catch (error: any) {
       toast({
-        title: 'Erro',
+        title: t('incidentesComp.evidencia.toastErrorTitle'),
         description: error.message,
         variant: 'destructive',
       });
@@ -174,7 +176,7 @@ export function EvidenciaDialog({ incidenteId, evidencia, onSuccess, trigger, ex
           {trigger || (
             <Button size="sm" variant="outline">
               <FileText className="mr-2 h-4 w-4" />
-              Nova Evidência
+              {t('incidentesComp.evidencia.newButton')}
             </Button>
           )}
         </span>
@@ -183,11 +185,11 @@ export function EvidenciaDialog({ incidenteId, evidencia, onSuccess, trigger, ex
         open={open}
         onOpenChange={setOpen}
         icon={FileText}
-        title={evidencia ? 'Editar Evidência' : 'Nova Evidência'}
-        description={evidencia ? 'Atualize os dados da evidência.' : 'Registre uma evidência relacionada ao incidente.'}
+        title={evidencia ? t('incidentesComp.evidencia.titleEdit') : t('incidentesComp.evidencia.titleNew')}
+        description={evidencia ? t('incidentesComp.evidencia.descEdit') : t('incidentesComp.evidencia.descNew')}
         size="md"
         onSubmit={form.handleSubmit(onSubmit)}
-        submitLabel={evidencia ? 'Atualizar' : 'Registrar'}
+        submitLabel={evidencia ? t('incidentesComp.evidencia.submitUpdate') : t('incidentesComp.evidencia.submitCreate')}
         isSubmitting={loading || uploading}
         isDirty={form.formState.isDirty || !!selectedFile}
       >
@@ -198,9 +200,9 @@ export function EvidenciaDialog({ incidenteId, evidencia, onSuccess, trigger, ex
               name="nome"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nome da Evidência *</FormLabel>
+                  <FormLabel>{t('incidentesComp.evidencia.fieldNome')}</FormLabel>
                   <FormControl>
-                    <Input placeholder="Nome identificador da evidência" {...field} />
+                    <Input placeholder={t('incidentesComp.evidencia.fieldNomePlaceholder')} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -212,7 +214,7 @@ export function EvidenciaDialog({ incidenteId, evidencia, onSuccess, trigger, ex
               name="tipo_evidencia"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Tipo de Evidência *</FormLabel>
+                  <FormLabel>{t('incidentesComp.evidencia.fieldTipo')}</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
@@ -236,7 +238,7 @@ export function EvidenciaDialog({ incidenteId, evidencia, onSuccess, trigger, ex
             />
 
             <div className="space-y-2">
-              <FormLabel>Arquivo</FormLabel>
+              <FormLabel>{t('incidentesComp.evidencia.fieldArquivo')}</FormLabel>
               <div className="flex items-center gap-4">
                 <Button
                   type="button"
@@ -245,7 +247,7 @@ export function EvidenciaDialog({ incidenteId, evidencia, onSuccess, trigger, ex
                   className="flex items-center gap-2"
                 >
                   <Upload className="h-4 w-4" />
-                  {selectedFile ? 'Alterar Arquivo' : 'Selecionar Arquivo'}
+                  {selectedFile ? t('incidentesComp.evidencia.buttonAlterarArquivo') : t('incidentesComp.evidencia.buttonSelecionarArquivo')}
                 </Button>
                 {selectedFile && (
                   <span className="text-sm text-muted-foreground">
@@ -254,7 +256,7 @@ export function EvidenciaDialog({ incidenteId, evidencia, onSuccess, trigger, ex
                 )}
                 {evidencia?.arquivo_nome && !selectedFile && (
                   <span className="text-sm text-muted-foreground">
-                    Arquivo atual: {evidencia.arquivo_nome}
+                    {t('incidentesComp.evidencia.arquivoAtual', { nome: evidencia.arquivo_nome })}
                   </span>
                 )}
               </div>
@@ -272,10 +274,10 @@ export function EvidenciaDialog({ incidenteId, evidencia, onSuccess, trigger, ex
               name="descricao"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Descrição</FormLabel>
+                  <FormLabel>{t('incidentesComp.evidencia.fieldDescricao')}</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Descreva o conteúdo e relevância da evidência..."
+                      placeholder={t('incidentesComp.evidencia.fieldDescricaoPlaceholder')}
                       rows={3}
                       {...field}
                     />
