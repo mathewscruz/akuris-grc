@@ -299,6 +299,25 @@ export function MatrizForm({ onSuccess }: Props) {
     setFaixasError(null);
   };
 
+  /** Entrada explícita no modo de criação (evita duplicados acidentais). */
+  const iniciarNovaMatriz = () => {
+    limparFormularioMatriz();
+    setModoNovo(true);
+  };
+
+  /** Cancelar edição: descarta alterações e volta à matriz carregada. */
+  const cancelarEdicao = () => {
+    if (editingMatriz) {
+      carregarMatrizParaEdicao(editingMatriz);
+      return;
+    }
+    limparFormularioMatriz();
+    const ativa = matrizes.find(m => m.configuracao) || matrizes[0];
+    if (ativa) carregarMatrizParaEdicao(ativa);
+  };
+
+
+
   // Validação de sobreposição e gaps nas faixas de níveis de risco
   const validarFaixasNiveisRisco = (): string | null => {
     if (niveisRisco.length === 0) return null;
