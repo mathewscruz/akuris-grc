@@ -1,4 +1,5 @@
 import { Helmet } from 'react-helmet-async';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface SEOProps {
   title: string;
@@ -26,10 +27,15 @@ export function SEO({
     ? canonical.startsWith('http') ? canonical : `${BASE_URL}${canonical}`
     : BASE_URL;
 
+  const { locale } = useLanguage();
+  const htmlLang = locale === 'pt' ? 'pt-BR' : 'en';
+  const ogLocale = locale === 'pt' ? 'pt_BR' : 'en_US';
+
   const schemas = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
 
   return (
     <Helmet>
+      <html lang={htmlLang} />
       <title>{title}</title>
       <meta name="description" content={description} />
       <link rel="canonical" href={url} />
@@ -41,7 +47,7 @@ export function SEO({
       <meta property="og:type" content={ogType} />
       <meta property="og:image" content={ogImage} />
       <meta property="og:site_name" content="Akuris" />
-      <meta property="og:locale" content="pt_BR" />
+      <meta property="og:locale" content={ogLocale} />
 
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={title} />
