@@ -39,24 +39,9 @@ import {
 } from '@/lib/docgen-templates';
 import { formatStatus } from '@/lib/text-utils';
 import { DocumentoDialog } from '@/components/documentos/DocumentoDialog';
-import jsPDF from 'jspdf';
-import {
-  Document as DocxDocument,
-  Packer,
-  Paragraph,
-  HeadingLevel,
-  TextRun,
-  ImageRun,
-  Footer,
-  PageNumber,
-  PageBreak,
-  AlignmentType,
-  Table,
-  TableRow,
-  TableCell,
-  WidthType,
-  BorderStyle,
-} from 'docx';
+import { buildDocGenDocxBlob, type DocxLabels } from '@/lib/docgen-docx';
+import { buildDocGenPdfBlob } from '@/lib/docgen-pdf';
+import { DocGenMarkdown } from './DocGenMarkdown';
 import { CreditsExhaustedDialog } from '@/components/CreditsExhaustedDialog';
 import { useAuth } from '@/components/AuthProvider';
 
@@ -95,6 +80,7 @@ async function callDocGen(body: Record<string, unknown>, timeoutMs = DOCGEN_TIME
       return { error: payload?.error || error.message };
     }
     if (data?.code === 'CREDITS_EXHAUSTED' || data?.error === 'CREDITS_EXHAUSTED') return { credits: true };
+    if (data?.error === 'INVALID_DOCUMENT') return { error: 'INVALID_DOCUMENT' };
     return { data };
   } catch (e: any) {
     if (e?.message === '__DOCGEN_TIMEOUT__') return { timeout: true };
@@ -634,6 +620,14 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
         toast({ title: t('docgen.dialog.timeoutTitle'), description: t('docgen.dialog.timeoutDescription'), variant: 'destructive' });
         return;
       }
+      if (res.error === 'INVALID_DOCUMENT') {
+        toast({
+          title: t('docgen.dialog.invalidDocumentTitle'),
+          description: t('docgen.dialog.invalidDocumentDescription'),
+          variant: 'destructive',
+        });
+        return;
+      }
       if (res.error) throw new Error(res.error);
       const data = res.data;
 
@@ -674,194 +668,59 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
   };
 
 
-  // Geração e exportação de arquivos (padrão editorial Big4)
+  /**
+   * Rótulos usados pelos exportadores (DOCX/PDF). Ficam aqui porque dependem
+   * do idioma ativo e dos metadados do documento.
+   */
+  const buildExportLabels = (docLike: any): DocxLabels => ({
+    summary: t('docgen.dialog.summary'),
+    section: t('docgen.dialog.section'),
+    versaoText: t('docgen.dialog.versao', { versao: docLike?.versao || '1.0' }),
+    emissionDateText: t('docgen.dialog.emissionDate', {
+      date: docLike?.data_criacao || new Date().toISOString().slice(0, 10),
+    }),
+    classificationText: t('docgen.dialog.classification', {
+      classification: docLike?.metadados?.classificacao || 'Interno',
+    }),
+    footerPage: t('docgen.dialog.footerPage'),
+    of: t('docgen.dialog.of'),
+    glossary: t('docgen.dialog.glossary'),
+    glossaryTerm: t('docgen.dialog.glossaryTerm'),
+    glossaryDefinition: t('docgen.dialog.glossaryDefinition'),
+    versionHistory: t('docgen.dialog.versionHistory'),
+    versionCol: t('docgen.dialog.versionCol'),
+    dateCol: t('docgen.dialog.dateCol'),
+    authorCol: t('docgen.dialog.authorCol'),
+    descriptionCol: t('docgen.dialog.descriptionCol'),
+    coverage: t('docgen.dialog.coverage'),
+    requirementCol: t('docgen.dialog.requirementCol'),
+    sectionsCol: t('docgen.dialog.sectionsCol'),
+    evidenceCol: t('docgen.dialog.evidenceCol'),
+  });
+
+  /** Documento normalizado para exportação (logo da empresa como fallback). */
+  const buildExportPayload = () => {
+    const empresaNome = (userInfo as any)?.empresa_nome || (companyInfo as any)?.nome || '';
+    const docForExport = {
+      ...generatedDocument,
+      metadados: {
+        ...(generatedDocument?.metadados || {}),
+        logo_url: generatedDocument?.metadados?.logo_url || companyInfo?.logo_url,
+      },
+    };
+    return { docForExport, options: { empresaNome, labels: buildExportLabels(docForExport) } };
+  };
+
   const generateDocxBlob = async () => {
     if (!generatedDocument) return null;
-    const children: any[] = [];
-    const empresaNome = (userInfo as any)?.empresa_nome || (companyInfo as any)?.nome || '';
-    const titulo = generatedDocument.titulo || 'Documento';
-    const versao = generatedDocument.versao || '1.0';
-    const dataCriacao = generatedDocument.data_criacao || new Date().toISOString().slice(0, 10);
-    const classificacao = generatedDocument.metadados?.classificacao || 'Interno';
-
-    const logoUrl: string | undefined = generatedDocument.metadados?.logo_url || companyInfo?.logo_url;
-    const logoAltura: number = parseInt(generatedDocument.metadados?.logo_altura || '48', 10);
-    const logoPosicao: string = generatedDocument.metadados?.logo_posicao || 'centro';
-
-    // ===== CAPA =====
-    if (logoUrl) {
-      try {
-        const resp = await fetch(logoUrl);
-        const buf = await resp.arrayBuffer();
-        const alignment = logoPosicao === 'centro' ? AlignmentType.CENTER
-          : logoPosicao === 'direita' ? AlignmentType.RIGHT : AlignmentType.LEFT;
-        children.push(new Paragraph({
-          alignment,
-          children: [new ImageRun({ data: buf, transformation: { width: Math.round(logoAltura * 2), height: logoAltura } })],
-        }));
-      } catch (_) { /* ignora */ }
-    }
-    // espaço até o meio da página
-    for (let i = 0; i < 6; i++) children.push(new Paragraph({ text: '' }));
-    children.push(new Paragraph({
-      alignment: AlignmentType.CENTER,
-      heading: HeadingLevel.TITLE,
-      children: [new TextRun({ text: titulo, bold: true, size: 48 })],
-    }));
-    children.push(new Paragraph({ text: '' }));
-    children.push(new Paragraph({
-      alignment: AlignmentType.CENTER,
-      children: [new TextRun({ text: empresaNome, size: 28 })],
-    }));
-    for (let i = 0; i < 8; i++) children.push(new Paragraph({ text: '' }));
-    children.push(new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: t('docgen.dialog.versao', { versao }), size: 22 })] }));
-    children.push(new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: t('docgen.dialog.emissionDate', { date: dataCriacao }), size: 22 })] }));
-    children.push(new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: t('docgen.dialog.classification', { classification: classificacao }), size: 22 })] }));
-    // quebra de página após a capa
-    children.push(new Paragraph({ children: [new PageBreak()] }));
-
-    // ===== SUMÁRIO (lista simples de seções, com numeração) =====
-    children.push(new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun({ text: t('docgen.dialog.summary'), bold: true })] }));
-    (generatedDocument.secoes || []).forEach((s: any, i: number) => {
-      children.push(new Paragraph({ children: [new TextRun(`${i + 1}. ${s.nome || t('docgen.dialog.section')}`)] }));
-    });
-    children.push(new Paragraph({ children: [new PageBreak()] }));
-
-    // ===== SEÇÕES =====
-    (generatedDocument.secoes || []).forEach((secao: any, idx: number) => {
-      children.push(new Paragraph({
-        heading: HeadingLevel.HEADING_1,
-        children: [new TextRun({ text: `${idx + 1}. ${secao.nome || t('docgen.dialog.section')}`, bold: true })],
-      }));
-      const conteudo = String(secao.conteudo || '');
-      // preservar parágrafos vazios; cada linha vira um Paragraph
-      conteudo.split('\n').forEach((line: string) => {
-        children.push(new Paragraph({ children: [new TextRun(line)] }));
-      });
-      children.push(new Paragraph({ text: '' }));
-    });
-
-    // ===== Rodapé com paginação =====
-    const footer = new Footer({
-      children: [
-        new Paragraph({
-          alignment: AlignmentType.CENTER,
-          children: [
-            new TextRun({ text: `${empresaNome} · ${titulo} · v${versao} · ${t('docgen.dialog.footerPage')} `, size: 18 }),
-            new TextRun({ children: [PageNumber.CURRENT], size: 18 }),
-            new TextRun({ text: ` ${t('docgen.dialog.of')} `, size: 18 }),
-            new TextRun({ children: [PageNumber.TOTAL_PAGES], size: 18 }),
-          ],
-        }),
-      ],
-    });
-
-    const doc = new DocxDocument({
-      sections: [{
-        properties: { page: { margin: { top: 1080, right: 1080, bottom: 1080, left: 1080 } } },
-        footers: { default: footer },
-        children,
-      }],
-    });
-    return await Packer.toBlob(doc);
+    const { docForExport, options } = buildExportPayload();
+    return buildDocGenDocxBlob(docForExport, options);
   };
 
   const generatePdfBlob = async () => {
     if (!generatedDocument) return null;
-    const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
-    const marginX = 48;
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    const maxWidth = pageWidth - marginX * 2;
-    const empresaNome = (userInfo as any)?.empresa_nome || (companyInfo as any)?.nome || '';
-    const titulo = generatedDocument.titulo || 'Documento';
-    const versao = generatedDocument.versao || '1.0';
-    const dataCriacao = generatedDocument.data_criacao || new Date().toISOString().slice(0, 10);
-    const classificacao = generatedDocument.metadados?.classificacao || 'Interno';
-
-    const logoUrl: string | undefined = generatedDocument.metadados?.logo_url || companyInfo?.logo_url;
-    const logoAltura: number = parseInt(generatedDocument.metadados?.logo_altura || '48', 10);
-
-    // ===== CAPA (página 1 dedicada) =====
-    if (logoUrl) {
-      try {
-        const resp = await fetch(logoUrl);
-        const blob = await resp.blob();
-        const reader = new FileReader();
-        const dataUrl: string = await new Promise((resolve, reject) => {
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = () => reject(new Error('logo'));
-          reader.readAsDataURL(blob);
-        });
-        const logoW = Math.round(logoAltura * 2);
-        pdf.addImage(dataUrl, (blob.type.includes('png') ? 'PNG' : 'JPEG') as any,
-          (pageWidth - logoW) / 2, 100, logoW, logoAltura);
-      } catch (_) { /* ignora */ }
-    }
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(24);
-    const tituloLines = pdf.splitTextToSize(titulo, maxWidth);
-    let capaY = pageHeight / 2 - 40;
-    tituloLines.forEach((line: string) => {
-      pdf.text(line, pageWidth / 2, capaY, { align: 'center' });
-      capaY += 30;
-    });
-    pdf.setFont('helvetica', 'normal');
-    pdf.setFontSize(14);
-    pdf.text(empresaNome, pageWidth / 2, capaY + 10, { align: 'center' });
-    pdf.setFontSize(11);
-    pdf.text(t('docgen.dialog.versao', { versao }), pageWidth / 2, pageHeight - 160, { align: 'center' });
-    pdf.text(t('docgen.dialog.emissionDate', { date: dataCriacao }), pageWidth / 2, pageHeight - 144, { align: 'center' });
-    pdf.text(t('docgen.dialog.classification', { classification: classificacao }), pageWidth / 2, pageHeight - 128, { align: 'center' });
-
-    // ===== SUMÁRIO =====
-    pdf.addPage();
-    let y = 60;
-    pdf.setFont('helvetica', 'bold'); pdf.setFontSize(16);
-    pdf.text(t('docgen.dialog.summary'), marginX, y); y += 24;
-    pdf.setFont('helvetica', 'normal'); pdf.setFontSize(11);
-    (generatedDocument.secoes || []).forEach((s: any, i: number) => {
-      if (y > pageHeight - 60) { pdf.addPage(); y = 60; }
-      pdf.text(`${i + 1}. ${s.nome || t('docgen.dialog.section')}`, marginX, y);
-      y += 16;
-    });
-
-    // ===== SEÇÕES =====
-    pdf.addPage();
-    y = 60;
-    (generatedDocument.secoes || []).forEach((secao: any, idx: number) => {
-      if (y > pageHeight - 80) { pdf.addPage(); y = 60; }
-      if (idx > 0) y += 12;
-      pdf.setFont('helvetica', 'bold'); pdf.setFontSize(13);
-      const titleLines = pdf.splitTextToSize(`${idx + 1}. ${secao.nome || t('docgen.dialog.section')}`, maxWidth);
-      titleLines.forEach((line: string) => {
-        if (y > pageHeight - 70) { pdf.addPage(); y = 60; }
-        pdf.text(line, marginX, y); y += 18;
-      });
-      pdf.setFont('helvetica', 'normal'); pdf.setFontSize(11);
-      const conteudo = String(secao.conteudo || '');
-      conteudo.split('\n').forEach((paragraph: string) => {
-        const lines = pdf.splitTextToSize(paragraph, maxWidth);
-        lines.forEach((line: string) => {
-          if (y > pageHeight - 60) { pdf.addPage(); y = 60; }
-          pdf.text(line, marginX, y); y += 15;
-        });
-        y += 4;
-      });
-    });
-
-    // ===== Rodapé com paginação em todas as páginas =====
-    const totalPages = (pdf as any).internal.getNumberOfPages();
-    for (let p = 1; p <= totalPages; p++) {
-      pdf.setPage(p);
-      pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8);
-      pdf.setTextColor(120);
-      const footerText = `${empresaNome} · ${titulo} · v${versao} · ${t('docgen.dialog.footerPage')} ${p} ${t('docgen.dialog.of')} ${totalPages}`;
-      pdf.text(footerText, pageWidth / 2, pageHeight - 20, { align: 'center' });
-      pdf.setTextColor(0);
-    }
-
-    return pdf.output('blob');
+    const { docForExport, options } = buildExportPayload();
+    return buildDocGenPdfBlob(docForExport, options);
   };
 
   const handleExport = async (format: 'pdf' | 'docx') => {
@@ -1658,9 +1517,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                               {t('docgen.dialog.refineSection')}
                             </Button>
                           </div>
-                          <p className="text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                            {secao.conteudo}
-                          </p>
+                          <DocGenMarkdown content={secao.conteudo || ''} />
                         </div>
                       );
                     })}

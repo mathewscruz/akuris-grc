@@ -241,6 +241,71 @@ Devolva o JSON completo com coverage_map atualizado.`;
 }
 
 
+// ============ Parsing tolerante do JSON do documento ============
+/**
+ * Extrai o objeto JSON do documento mesmo quando o modelo devolve cercas de
+ * código, texto antes/depois ou a resposta é truncada no meio (limite de
+ * tokens). Sem isso, um único caractere sobrando derrubava o documento inteiro
+ * para um bloco de texto cru sem capa/seções.
+ */
+function parseDocumentJson(raw: string): any | null {
+  const text = String(raw || '')
+    .replace(/```json\s*/gi, '')
+    .replace(/```/g, '')
+    .trim();
+  if (!text) return null;
+
+  const start = text.indexOf('{');
+  if (start === -1) return null;
+  const candidate = text.slice(start);
+
+  try {
+    return JSON.parse(candidate);
+  } catch (_e) { /* segue para o reparo */ }
+
+  // Reparo de truncamento: fecha string aberta e os brackets pendentes.
+  let inString = false;
+  let escaped = false;
+  const stack: string[] = [];
+  let lastSafe = -1;
+  for (let i = 0; i < candidate.length; i++) {
+    const ch = candidate[i];
+    if (escaped) { escaped = false; continue; }
+    if (ch === '\\') { escaped = true; continue; }
+    if (ch === '"') { inString = !inString; continue; }
+    if (inString) continue;
+    if (ch === '{' || ch === '[') stack.push(ch === '{' ? '}' : ']');
+    else if (ch === '}' || ch === ']') { stack.pop(); if (!stack.length) lastSafe = i; }
+  }
+
+  let repaired = candidate;
+  if (inString) repaired += '"';
+  // remove vírgula/valor pela metade no fim
+  repaired = repaired.replace(/,\s*$/, '');
+  for (let i = stack.length - 1; i >= 0; i--) repaired += stack[i];
+
+  try {
+    return JSON.parse(repaired);
+  } catch (_e) { /* tenta o último objeto completo */ }
+
+  if (lastSafe > 0) {
+    try {
+      return JSON.parse(candidate.slice(0, lastSafe + 1));
+    } catch (_e) { /* desiste */ }
+  }
+  return null;
+}
+
+/** Esquema mínimo aceitável para não publicar um documento capenga. */
+function isValidDocument(doc: any): boolean {
+  if (!doc || typeof doc !== 'object') return false;
+  if (!Array.isArray(doc.secoes)) return false;
+  const validSections = doc.secoes.filter(
+    (s: any) => s && typeof s.nome === 'string' && s.nome.trim() && String(s.conteudo || '').trim().length >= 80,
+  );
+  return validSections.length >= 3;
+}
+
 // ============ Quality gate helpers (Onda 3) ============
 const PLACEHOLDER_RX = /\b(preencher|inserir|exemplo|TBD|lorem ipsum|xxx|xxxx|\.\.\.)\b/i;
 function findWeakSections(secoes: any[]): { index: number; nome: string; motivo: string }[] {
@@ -883,11 +948,21 @@ INFORMAÇÕES COLETADAS: ${JSON.stringify(context.informacoes_coletadas)}
 
 Regras editoriais (obrigatórias):
 - Cada seção com no mínimo 3 parágrafos SUBSTANTIVOS (300+ caracteres cada) ou uma lista numerada com pelo menos 5 itens acionáveis.
-- Seções "Papéis e Responsabilidades" DEVEM conter uma tabela RACI textual: linhas = atividades; colunas = R/A/C/I, com papéis reais (CISO, DPO, Gestor de TI, Colaborador, Comitê de Segurança).
+- Seções "Papéis e Responsabilidades" DEVEM conter uma tabela RACI em MARKDOWN (formato GFM): linhas = atividades; colunas = Atividade | CISO | DPO | Gestor de TI | Colaborador, preenchidas com R/A/C/I.
 - Seções "Vigência", "Aprovação" e "Controle de Versões" DEVEM citar data real (DATA_ATUAL), responsável e frequência de revisão.
 - Onde houver métrica (retenção, RTO/RPO, prazos), traga valores CONCRETOS coerentes com o briefing do usuário. Se o usuário não deu, escolha um valor de mercado defensável e cite "(valor sugerido — validar)".
 - CADA cláusula que satisfaz um requisito do framework deve conter o CÓDIGO do requisito entre colchetes (ex.: "[A.8.13]") na primeira frase da cláusula.
 - Personalização real: reflita as respostas do usuário na conversa acima — não use frases genéricas quando o usuário deu um dado concreto.
+
+FORMATAÇÃO DO CAMPO "conteudo" (markdown restrito — o exportador só entende este subconjunto):
+- Subtítulos com "## " (nível 2) e "### " (nível 3). NUNCA use "# " (o título da seção já é o H1).
+- Listas com marcador usando "- " e listas numeradas usando "1. ", "2. " (uma por linha; indente com 2 espaços para sub-item).
+- Tabelas SEMPRE em markdown GFM com linha separadora, ex.:
+  | Atividade | CISO | DPO |
+  | --- | --- | --- |
+  | Aprovar a política | A | C |
+- Ênfase apenas com **negrito** e *itálico*. NUNCA use HTML, NUNCA use asteriscos decorativos, "===", "---" como separador, emojis ou arte ASCII.
+- Parágrafos separados por uma linha em branco. Não use tabulação para alinhar texto.
 
 Estrutura obrigatória do documento:
 - Capa: título=DOCUMENTO_EXATO, versão=1.0, data=DATA_ATUAL, empresa=EMPRESA, classificação
@@ -934,25 +1009,33 @@ Responda APENAS com um JSON na seguinte estrutura (sem markdown, sem comentário
       );
       await chargeAiCredit();
 
-      let documentContent;
-      try {
-        const cleaned = docContent.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-        documentContent = JSON.parse(cleaned);
-      } catch (_e) {
-        documentContent = {
-          titulo: `Documento ${context.tipo_documento_identificado || ''}`.trim(),
-          versao: '1.0',
-          data_criacao: new Date().toISOString().slice(0, 10),
-          secoes: [
-            { nome: 'Conteúdo', conteudo: String(docContent || '') }
-          ],
-          metadados: {
-            classificacao: 'Interno',
-            responsavel_elaboracao: context.user_name,
-            responsavel_aprovacao: '',
-            frequencia_revisao: 'Anual'
-          }
-        };
+      let documentContent = parseDocumentJson(docContent);
+
+      // Uma única re-tentativa quando o JSON veio truncado/inválido: em vez de
+      // degradar o documento para um bloco de texto cru, pedimos o JSON de novo.
+      if (!isValidDocument(documentContent)) {
+        console.log('DocGen — JSON inválido na 1ª tentativa, refazendo geração');
+        const retryContent = await callClaude(
+          [{ role: 'user', content: 'A resposta anterior não era um JSON válido e completo. Gere o documento novamente devolvendo APENAS o JSON no formato exigido, sem cercas de código e sem texto fora do JSON. Se necessário, seja mais conciso para caber inteiro na resposta.' }],
+          documentPrompt,
+          LOVABLE_API_KEY,
+          20000,
+          0.3,
+          MODEL_QUALITY,
+        );
+        await chargeAiCredit();
+        const retryParsed = parseDocumentJson(retryContent);
+        if (isValidDocument(retryParsed)) {
+          documentContent = retryParsed;
+        }
+      }
+
+      if (!isValidDocument(documentContent)) {
+        console.error('DocGen — documento inválido após retry');
+        return new Response(
+          JSON.stringify({ error: 'INVALID_DOCUMENT', message: 'A IA não devolveu um documento estruturado válido.' }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        );
       }
 
       // A IA não conhece a data atual (chuta valores errados). Sempre sobrescrever
