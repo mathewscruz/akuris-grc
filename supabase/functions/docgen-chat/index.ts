@@ -109,14 +109,137 @@ async function callClaude(
   if (!response.ok) {
     const errorText = await response.text();
     console.error('AI gateway error:', response.status, errorText, 'model:', model);
-    if (response.status === 429) throw new Error('Limite de requisições excedido. Tente novamente em alguns minutos.');
-    if (response.status === 402) throw new Error('Créditos de IA insuficientes.');
-    throw new Error(`Erro na IA (${response.status})`);
+    if (response.status === 429) throw new AiGatewayError('Limite de requisições excedido. Tente novamente em alguns minutos.', 'RATE_LIMITED', 429);
+    if (response.status === 402 || response.status === 403) {
+      throw new AiGatewayError('Créditos de IA insuficientes para concluir esta operação.', 'CREDITS_EXHAUSTED', 402);
+    }
+    throw new AiGatewayError(`Erro na IA (${response.status})`, 'AI_ERROR', 502);
   }
 
   const data = await response.json();
   return data.choices?.[0]?.message?.content || '';
 }
+
+// Erro tipado para o gateway de IA — permite mapear 402/403/429 em respostas
+// estruturadas que o frontend entende (CreditsExhaustedDialog etc).
+class AiGatewayError extends Error {
+  code: string;
+  httpStatus: number;
+  constructor(message: string, code: string, httpStatus: number) {
+    super(message);
+    this.name = 'AiGatewayError';
+    this.code = code;
+    this.httpStatus = httpStatus;
+  }
+}
+
+// Executa UMA rodada de refino gap-driven sobre o documento (mutação in-place).
+// Extraído do generate_document para evitar estourar o timeout da plataforma:
+// o frontend chama a action `auto_refine` uma vez por tentativa.
+async function autoRefineOnce(params: {
+  documentContent: any;
+  catalogCodes: string[];
+  residualGaps: string[];
+  empresaNome: string;
+  frameworkName?: string;
+  apiKey: string;
+  attempt: number;
+}): Promise<{
+  changed: boolean;
+  before: number;
+  after: number;
+  gaps_targeted: string[];
+  residualGaps: string[];
+  naoCobertos: any[];
+}> {
+  const { documentContent, catalogCodes, apiKey, attempt, empresaNome, frameworkName } = params;
+  const currentCov: any[] = Array.isArray(documentContent?.coverage_map) ? documentContent.coverage_map : [];
+  const naoCobertosAtuais: any[] = Array.isArray(documentContent?.requisitos_nao_cobertos_justificativa)
+    ? documentContent.requisitos_nao_cobertos_justificativa : [];
+  const before = computeCoverageScore(currentCov, naoCobertosAtuais, 0);
+  const gapsBatch = params.residualGaps.slice(0, 10);
+  const fail = {
+    changed: false, before, after: before, gaps_targeted: gapsBatch,
+    residualGaps: params.residualGaps, naoCobertos: naoCobertosAtuais,
+  };
+  if (!gapsBatch.length || !catalogCodes.length || !documentContent?.secoes?.length) return fail;
+
+  const instructionAuto = `Cubra explicitamente os seguintes requisitos ainda não endereçados no documento: ${gapsBatch.join(', ')}. Adicione cláusulas concretas nas seções mais apropriadas, sem perder cobertura já existente, e devolva o coverage_map atualizado incluindo esses códigos.`;
+  const secoesForRefine = (documentContent.secoes || []).map((s: any) => ({ nome: s.nome, conteudo: s.conteudo }));
+  const docJsonR = JSON.stringify({
+    titulo: documentContent.titulo,
+    versao: documentContent.versao,
+    secoes: secoesForRefine,
+  });
+  const covBlock = currentCov.length
+    ? `\n\n=== COVERAGE MAP ATUAL (NÃO PERDER COBERTURA) ===\n${currentCov
+        .map((c: any) => `- [${c.requirement_codigo || 'S/C'}] ${c.requirement_titulo || ''} → seções ${JSON.stringify(c.section_indexes || [])} — evidência: "${(c.evidencia || '').slice(0, 160)}"`)
+        .join('\n')}`
+    : '';
+
+  const sysR = `Você é um editor sênior de documentos corporativos com foco em compliance. Aplique a instrução cobrindo TODOS os requisitos indicados sem perder cobertura existente. Mantenha a lista de seções (mesmos nomes e ordem). Responda SOMENTE com JSON válido, sem markdown, no formato:
+{
+  "sections_changed": ["Nome da seção 1", ...],
+  "summary": "1 frase descrevendo a mudança",
+  "document": {
+    "titulo": "...",
+    "versao": "...",
+    "secoes": [ { "nome": "...", "conteudo": "..." } ],
+    "coverage_map": [ { "requirement_codigo": "A.8.13", "requirement_titulo": "...", "section_indexes": [2], "evidencia": "trecho literal (max 220 chars)" } ]
+  },
+  "removed_coverage": []
+}`;
+  const userR = `EMPRESA: ${empresaNome}
+${frameworkName ? `FRAMEWORK: ${frameworkName}\n` : ''}
+DOCUMENTO ATUAL (JSON):
+${docJsonR}${covBlock}
+
+INSTRUÇÃO (auto-refino gap-driven, tentativa ${attempt}/${MAX_REFINE_ATTEMPTS}):
+${instructionAuto}
+
+Devolva o JSON completo com coverage_map atualizado.`;
+
+  const rawR = await callClaude(
+    [{ role: 'user', content: userR }],
+    sysR,
+    apiKey,
+    18000,
+    0.35,
+    MODEL_QUALITY,
+  );
+
+  let parsedR: any = null;
+  try {
+    parsedR = JSON.parse(rawR.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim());
+  } catch (e) {
+    console.log('DocGen auto-refino parse falhou na tentativa', attempt, e);
+    return fail;
+  }
+  if (!parsedR?.document?.secoes?.length) return fail;
+
+  const removed = new Set((parsedR?.removed_coverage || []).map((r: any) => String(r?.requirement_codigo || '')));
+  const nextCoverage: any[] = Array.isArray(parsedR?.document?.coverage_map) && parsedR.document.coverage_map.length
+    ? parsedR.document.coverage_map
+    : currentCov.filter((c: any) => !removed.has(String(c?.requirement_codigo || '')));
+
+  documentContent.titulo = parsedR.document.titulo || documentContent.titulo;
+  documentContent.versao = parsedR.document.versao || documentContent.versao;
+  documentContent.secoes = parsedR.document.secoes;
+  documentContent.coverage_map = nextCoverage;
+
+  const coveredNow = new Set(nextCoverage.map((c: any) => String(c?.requirement_codigo || '').trim()).filter(Boolean));
+  const ncBase = naoCobertosAtuais.filter((n: any) => !coveredNow.has(String(n?.codigo || '').trim()));
+  const expandedNaoCob = expandNaoCobertosFromCatalog(catalogCodes, nextCoverage, ncBase);
+  documentContent.requisitos_nao_cobertos_justificativa = expandedNaoCob;
+
+  const after = computeCoverageScore(nextCoverage, expandedNaoCob, 0);
+  const nextResidual = computeResidualGaps(catalogCodes, nextCoverage, expandedNaoCob, 15);
+  documentContent._initial_score = after;
+  documentContent._residual_gaps = nextResidual;
+
+  return { changed: true, before, after, gaps_targeted: gapsBatch, residualGaps: nextResidual, naoCobertos: expandedNaoCob };
+}
+
 
 // ============ Quality gate helpers (Onda 3) ============
 const PLACEHOLDER_RX = /\b(preencher|inserir|exemplo|TBD|lorem ipsum|xxx|xxxx|\.\.\.)\b/i;
@@ -241,6 +364,8 @@ serve(async (req) => {
       document,            // documento gerado completo (para refine_section / quick_adherence)
       section_index,       // índice da seção a refinar
       instruction,         // instrução do usuário para refinar a seção
+      refine_attempt,      // número da tentativa (action auto_refine)
+
     } = await req.json();
 
     console.log('DocGen Chat request:', { message, conversation_id, action, user_id, empresa_id, framework_context });
@@ -358,6 +483,11 @@ serve(async (req) => {
     // Validação de payload ANTES de consumir crédito (evita cobrança em chamadas malformadas).
     if (action === 'refine_section' && (!document || typeof section_index !== 'number' || !instruction)) {
       return new Response(JSON.stringify({ error: 'document, section_index e instruction são obrigatórios' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    if (action === 'auto_refine' && (!document || !Array.isArray(document?.secoes) || !document.secoes.length)) {
+      return new Response(JSON.stringify({ error: 'document com seções é obrigatório' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -924,115 +1054,20 @@ ${weak.map(w => `- índice ${w.index} ("${w.nome}") — motivo: ${w.motivo}\n  C
         initial_score,
       });
 
-      // === Onda auto-refino: se score < AUDIT_THRESHOLD e há gaps residuais, ===
-      // ===   executa até MAX_REFINE_ATTEMPTS refinos gap-driven internamente ===
-      // Isso garante que o servidor não devolve um documento abaixo do gate
-      // enquanto houver gaps endereçáveis do catálogo real do framework.
-      let auto_refine_attempts = 0;
+      // === Auto-refino movido para a action `auto_refine` ===
+      // O pipeline em série (geração + quality gate + 2 refinos "pro") estourava
+      // o timeout da plataforma (~150s). Agora a geração retorna assim que tem
+      // o documento + score, e o frontend dispara `auto_refine` por tentativa.
+      const auto_refine_attempts = 0;
       const auto_refine_history: Array<{ attempt: number; before: number; after: number; gaps_targeted: string[] }> = [];
-      let finalScore = initial_score;
-
-      if (
+      const finalScore = initial_score;
+      const should_auto_refine =
         initial_score < AUDIT_THRESHOLD &&
         residualGaps.length > 0 &&
         catalogCodes.length > 0 &&
         Array.isArray(documentContent?.secoes) &&
-        documentContent.secoes.length > 0
-      ) {
-        for (let attempt = 1; attempt <= MAX_REFINE_ATTEMPTS; attempt++) {
-          const before = finalScore;
-          const gapsBatch = residualGaps.slice(0, 10);
-          const instructionAuto = `Cubra explicitamente os seguintes requisitos ainda não endereçados no documento: ${gapsBatch.join(', ')}. Adicione cláusulas concretas nas seções mais apropriadas, sem perder cobertura já existente, e devolva o coverage_map atualizado incluindo esses códigos.`;
+        documentContent.secoes.length > 0;
 
-          const secoesForRefine = (documentContent.secoes || []).map((s: any) => ({ nome: s.nome, conteudo: s.conteudo }));
-          const docJsonR = JSON.stringify({
-            titulo: documentContent.titulo,
-            versao: documentContent.versao,
-            secoes: secoesForRefine,
-          });
-          const currentCov: any[] = Array.isArray(documentContent?.coverage_map) ? documentContent.coverage_map : [];
-          const covBlock = currentCov.length
-            ? `\n\n=== COVERAGE MAP ATUAL (NÃO PERDER COBERTURA) ===\n${currentCov
-                .map((c: any) => `- [${c.requirement_codigo || 'S/C'}] ${c.requirement_titulo || ''} → seções ${JSON.stringify(c.section_indexes || [])} — evidência: "${(c.evidencia || '').slice(0, 160)}"`)
-                .join('\n')}`
-            : '';
-
-          const sysR = `Você é um editor sênior de documentos corporativos com foco em compliance. Aplique a instrução cobrindo TODOS os requisitos indicados sem perder cobertura existente. Mantenha a lista de seções (mesmos nomes e ordem). Responda SOMENTE com JSON válido, sem markdown, no formato:
-{
-  "sections_changed": ["Nome da seção 1", ...],
-  "summary": "1 frase descrevendo a mudança",
-  "document": {
-    "titulo": "...",
-    "versao": "...",
-    "secoes": [ { "nome": "...", "conteudo": "..." } ],
-    "coverage_map": [ { "requirement_codigo": "A.8.13", "requirement_titulo": "...", "section_indexes": [2], "evidencia": "trecho literal (max 220 chars)" } ]
-  },
-  "removed_coverage": []
-}`;
-          const userR = `EMPRESA: ${context.empresa_nome}
-${framework_context?.framework_name ? `FRAMEWORK: ${framework_context.framework_name}\n` : ''}
-DOCUMENTO ATUAL (JSON):
-${docJsonR}${covBlock}
-
-INSTRUÇÃO (auto-refino gap-driven, tentativa ${attempt}/${MAX_REFINE_ATTEMPTS}):
-${instructionAuto}
-
-Devolva o JSON completo com coverage_map atualizado.`;
-
-          let parsedR: any = null;
-          try {
-            const rawR = await callClaude(
-              [{ role: 'user', content: userR }],
-              sysR,
-              LOVABLE_API_KEY,
-              18000,
-              0.35,
-              MODEL_QUALITY,
-            );
-            await chargeAiCredit();
-            parsedR = JSON.parse(rawR.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim());
-          } catch (autoErr) {
-            console.log('DocGen auto-refino falhou na tentativa', attempt, autoErr);
-            parsedR = null;
-          }
-
-          if (!parsedR?.document?.secoes?.length) break;
-
-          const removed = new Set((parsedR?.removed_coverage || []).map((r: any) => String(r?.requirement_codigo || '')));
-          const nextCoverage: any[] = Array.isArray(parsedR?.document?.coverage_map) && parsedR.document.coverage_map.length
-            ? parsedR.document.coverage_map
-            : currentCov.filter((c: any) => !removed.has(String(c?.requirement_codigo || '')));
-
-          documentContent.titulo = parsedR.document.titulo || documentContent.titulo;
-          documentContent.versao = parsedR.document.versao || documentContent.versao;
-          documentContent.secoes = parsedR.document.secoes;
-          documentContent.coverage_map = nextCoverage;
-
-          // Remove justificativas cujos códigos agora aparecem cobertos e re-expande do catálogo.
-          const coveredNow = new Set(nextCoverage.map((c: any) => String(c?.requirement_codigo || '').trim()).filter(Boolean));
-          let ncBase: any[] = Array.isArray(documentContent?.requisitos_nao_cobertos_justificativa)
-            ? documentContent.requisitos_nao_cobertos_justificativa
-            : [];
-          ncBase = ncBase.filter((n: any) => !coveredNow.has(String(n?.codigo || '').trim()));
-          const expandedNaoCob = expandNaoCobertosFromCatalog(catalogCodes, nextCoverage, ncBase);
-          documentContent.requisitos_nao_cobertos_justificativa = expandedNaoCob;
-
-          const after = computeCoverageScore(nextCoverage, expandedNaoCob, 0);
-          documentContent._initial_score = after;
-          finalScore = after;
-          naoCobertos = expandedNaoCob;
-          residualGaps = computeResidualGaps(catalogCodes, nextCoverage, expandedNaoCob, 15);
-          documentContent._residual_gaps = residualGaps;
-          auto_refine_attempts = attempt;
-          auto_refine_history.push({ attempt, before, after, gaps_targeted: gapsBatch });
-
-          console.log('DocGen auto-refino resultado', { attempt, before, after, residuais: residualGaps.length });
-
-          if (after >= AUDIT_THRESHOLD) break;
-          if (residualGaps.length === 0) break;
-          if (after <= before) break; // não converge — evita gastar créditos em looping estéril
-        }
-      }
 
       documentContent._auto_refine_attempts = auto_refine_attempts;
       documentContent._auto_refine_history = auto_refine_history;
@@ -1045,8 +1080,9 @@ Devolva o JSON completo com coverage_map atualizado.`;
         warnings.push('A IA não devolveu coverage_map — a análise de compliance pode ficar inconsistente.');
       }
       if (catalogCodes.length && residualGaps.length > 0 && finalScore < AUDIT_THRESHOLD) {
-        warnings.push(`${residualGaps.length} requisito(s) permanecem sem cobertura após ${auto_refine_attempts} refino(s) automático(s). Peça um refino no chat para incluí-los.`);
+        warnings.push(`${residualGaps.length} requisito(s) ainda sem cobertura. Execute o refino automático para incluí-los.`);
       }
+
       if (finalScore > 0 && finalScore < AUDIT_THRESHOLD) {
         warnings.push(`Score final ${finalScore}% — abaixo do gate de ${AUDIT_THRESHOLD}% (${finalInScopeNaoCobertos.length} requisito(s) sem cobertura explícita).`);
       }
@@ -1107,11 +1143,103 @@ Devolva o JSON completo com coverage_map atualizado.`;
         coverage_map: finalCoverage,
         residual_gaps: residualGaps,
         catalog_size: catalogCodes.length,
+        should_auto_refine,
+        max_refine_attempts: MAX_REFINE_ATTEMPTS,
+        audit_threshold: AUDIT_THRESHOLD,
+        framework_ids: docFwIds,
         warnings,
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    // ============ ACTION: auto_refine (1 tentativa gap-driven por chamada) ============
+    // Separada de generate_document para não estourar o timeout da plataforma.
+    if (action === 'auto_refine') {
+      const attempt = Math.max(1, Math.min(Number(refine_attempt) || 1, MAX_REFINE_ATTEMPTS));
+      const fwIds: string[] = (framework_context?.framework_ids?.length
+        ? framework_context.framework_ids
+        : framework_context?.framework_id ? [framework_context.framework_id] : []).filter(Boolean);
+
+      let catalogCodes: string[] = [];
+      if (fwIds.length) {
+        const { data: catalogRows } = await supabase
+          .from('gap_analysis_requirements')
+          .select('codigo')
+          .in('framework_id', fwIds)
+          .order('ordem', { ascending: true })
+          .limit(600);
+        catalogCodes = (catalogRows || []).map((r: any) => String(r?.codigo || '').trim()).filter(Boolean);
+      }
+
+      const currentCoverage: any[] = Array.isArray(document?.coverage_map) ? document.coverage_map : [];
+      const currentNaoCob: any[] = Array.isArray(document?.requisitos_nao_cobertos_justificativa)
+        ? document.requisitos_nao_cobertos_justificativa : [];
+      const gaps = catalogCodes.length
+        ? computeResidualGaps(catalogCodes, currentCoverage, currentNaoCob, 15)
+        : (Array.isArray(document?._residual_gaps) ? document._residual_gaps : []);
+
+      const result = await autoRefineOnce({
+        documentContent: document,
+        catalogCodes,
+        residualGaps: gaps,
+        empresaNome: context.empresa_nome || '',
+        frameworkName: framework_context?.framework_name,
+        apiKey: LOVABLE_API_KEY,
+        attempt,
+      });
+
+      if (result.changed) await chargeAiCredit();
+
+      const history = Array.isArray(document._auto_refine_history) ? document._auto_refine_history : [];
+      if (result.changed) {
+        history.push({ attempt, before: result.before, after: result.after, gaps_targeted: result.gaps_targeted });
+      }
+      document._auto_refine_history = history;
+      document._auto_refine_attempts = attempt;
+
+      // Persiste o snapshot mais recente do documento gerado.
+      try {
+        const { data: latestDoc } = await supabase
+          .from('docgen_generated_docs')
+          .select('id')
+          .eq('conversation_id', conversation.id)
+          .eq('empresa_id', empresa_id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (latestDoc?.id) {
+          await supabase
+            .from('docgen_generated_docs')
+            .update({ conteudo: document, updated_at: new Date().toISOString() })
+            .eq('id', latestDoc.id);
+        }
+      } catch (_e) { /* não bloqueia resposta */ }
+
+      const converged = result.after >= AUDIT_THRESHOLD;
+      const should_continue =
+        result.changed &&
+        !converged &&
+        result.after > result.before &&
+        result.residualGaps.length > 0 &&
+        attempt < MAX_REFINE_ATTEMPTS;
+
+      console.log('DocGen auto_refine', { attempt, before: result.before, after: result.after, should_continue });
+
+      return new Response(JSON.stringify({
+        document,
+        attempt,
+        before: result.before,
+        after: result.after,
+        final_score: result.after,
+        changed: result.changed,
+        residual_gaps: result.residualGaps,
+        should_continue,
+        audit_threshold: AUDIT_THRESHOLD,
+        max_refine_attempts: MAX_REFINE_ATTEMPTS,
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
 
     // ============ ACTION: refine_section (Onda 3 - 1 crédito já consumido acima) ============
     if (action === 'refine_section') {
@@ -1524,11 +1652,16 @@ Aplique a instrução conforme as regras do sistema e devolva o JSON completo CO
 
   } catch (error) {
     console.error('Error in docgen-chat function:', error);
-    return new Response(JSON.stringify({ 
-      error: error instanceof Error ? (error instanceof Error ? error.message : String(error)) : 'Internal server error' 
+    const isGateway = error instanceof AiGatewayError;
+    const code = isGateway ? (error as AiGatewayError).code : 'INTERNAL_ERROR';
+    const status = isGateway ? (error as AiGatewayError).httpStatus : 500;
+    return new Response(JSON.stringify({
+      error: error instanceof Error ? error.message : 'Internal server error',
+      code,
     }), {
-      status: 500,
+      status,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
+
   }
 });

@@ -62,6 +62,48 @@ import { useAuth } from '@/components/AuthProvider';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { useLanguage } from '@/contexts/LanguageContext';
+
+/** Tempo máximo (ms) que o frontend espera por uma chamada do docgen-chat. */
+const DOCGEN_TIMEOUT_MS = 120_000;
+
+type DocGenCallResult = {
+  data?: any;
+  /** Créditos de IA esgotados — abrir CreditsExhaustedDialog. */
+  credits?: boolean;
+  /** Estourou o tempo limite do cliente. */
+  timeout?: boolean;
+  error?: string;
+};
+
+/**
+ * Wrapper único das chamadas ao docgen-chat: aplica timeout no cliente
+ * (a plataforma corta em ~150s sem resposta útil) e normaliza os erros
+ * 402/403 do gateway de IA em `credits`.
+ */
+async function callDocGen(body: Record<string, unknown>, timeoutMs = DOCGEN_TIMEOUT_MS): Promise<DocGenCallResult> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    const invocation = supabase.functions.invoke('docgen-chat', { body });
+    const timeout = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => reject(new Error('__DOCGEN_TIMEOUT__')), timeoutMs);
+    });
+    const { data, error } = (await Promise.race([invocation, timeout])) as any;
+    if (error) {
+      let payload: any = null;
+      try { payload = await (error as any)?.context?.json?.(); } catch { /* corpo não-JSON */ }
+      if (payload?.code === 'CREDITS_EXHAUSTED' || payload?.error === 'CREDITS_EXHAUSTED') return { credits: true };
+      return { error: payload?.error || error.message };
+    }
+    if (data?.code === 'CREDITS_EXHAUSTED' || data?.error === 'CREDITS_EXHAUSTED') return { credits: true };
+    return { data };
+  } catch (e: any) {
+    if (e?.message === '__DOCGEN_TIMEOUT__') return { timeout: true };
+    return { error: e?.message || 'Erro inesperado' };
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
@@ -311,25 +353,25 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     setIsLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('docgen-chat', {
-        body: {
-          message: text,
-          conversation_id: conversationId,
-          user_id: userInfo.user_id,
-          empresa_id: userInfo.empresa_id,
-          action: 'chat',
-          ...(effFrameworkName && { framework_context: { framework_name: effFrameworkName, framework_id: effFrameworkId } }),
-          ...(requirementContext && { requirement_context: requirementContext }),
-          ...(companyContext && { company_context: companyContext }),
-        }
+      const res = await callDocGen({
+        message: text,
+        conversation_id: conversationId,
+        user_id: userInfo.user_id,
+        empresa_id: userInfo.empresa_id,
+        action: 'chat',
+        ...(effFrameworkName && { framework_context: { framework_name: effFrameworkName, framework_id: effFrameworkId } }),
+        ...(requirementContext && { requirement_context: requirementContext }),
+        ...(companyContext && { company_context: companyContext }),
       });
 
-      if (error) throw error;
-
-      if (data?.error === 'CREDITS_EXHAUSTED') {
-        setShowCreditsDialog(true);
+      if (res.credits) { setShowCreditsDialog(true); return; }
+      if (res.timeout) {
+        toast({ title: t('docgen.dialog.timeoutTitle'), description: t('docgen.dialog.timeoutDescription'), variant: 'destructive' });
         return;
       }
+      if (res.error) throw new Error(res.error);
+      const data = res.data;
+
 
       const assistantMessage: ChatMessage = {
         role: 'assistant',
@@ -360,23 +402,24 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     setMessages(prev => [...prev, { role: 'user', content: instruction, timestamp: new Date() }]);
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('docgen-chat', {
-        body: {
-          action: 'refine_document',
-          user_id: userInfo.user_id,
-          empresa_id: userInfo.empresa_id,
-          conversation_id: conversationId,
-          document: generatedDocument,
-          instruction,
-          ...(effFrameworkName && { framework_context: { framework_name: effFrameworkName, framework_id: effFrameworkId } }),
-          ...(companyContext && { company_context: companyContext }),
-        },
+      const res = await callDocGen({
+        action: 'refine_document',
+        user_id: userInfo.user_id,
+        empresa_id: userInfo.empresa_id,
+        conversation_id: conversationId,
+        document: generatedDocument,
+        instruction,
+        ...(effFrameworkName && { framework_context: { framework_name: effFrameworkName, framework_id: effFrameworkId } }),
+        ...(companyContext && { company_context: companyContext }),
       });
-      if (error) throw error;
-      if (data?.error === 'CREDITS_EXHAUSTED') {
-        setShowCreditsDialog(true);
+      if (res.credits) { setShowCreditsDialog(true); return; }
+      if (res.timeout) {
+        toast({ title: t('docgen.dialog.timeoutTitle'), description: t('docgen.dialog.timeoutDescription'), variant: 'destructive' });
         return;
       }
+      if (res.error) throw new Error(res.error);
+      const data = res.data;
+
       if (data?.document) {
         setGeneratedDocument({
           ...data.document,
@@ -467,20 +510,23 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     if (refiningSectionIndex === null || !generatedDocument || !userInfo) return;
     setSectionRefineLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('docgen-chat', {
-        body: {
-          action: 'refine_section',
-          user_id: userInfo.user_id,
-          empresa_id: userInfo.empresa_id,
-          conversation_id: conversationId,
-          document: generatedDocument,
-          section_index: refiningSectionIndex,
-          instruction,
-          ...(effFrameworkName && { framework_context: { framework_name: effFrameworkName, framework_id: effFrameworkId } }),
-        },
+      const res = await callDocGen({
+        action: 'refine_section',
+        user_id: userInfo.user_id,
+        empresa_id: userInfo.empresa_id,
+        conversation_id: conversationId,
+        document: generatedDocument,
+        section_index: refiningSectionIndex,
+        instruction,
+        ...(effFrameworkName && { framework_context: { framework_name: effFrameworkName, framework_id: effFrameworkId } }),
       });
-      if (error) throw error;
-      if (data?.error === 'CREDITS_EXHAUSTED') { setShowCreditsDialog(true); return; }
+      if (res.credits) { setShowCreditsDialog(true); return; }
+      if (res.timeout) {
+        toast({ title: t('docgen.dialog.timeoutTitle'), description: t('docgen.dialog.timeoutDescription'), variant: 'destructive' });
+        return;
+      }
+      if (res.error) throw new Error(res.error);
+      const data = res.data;
       if (data?.document) {
         setGeneratedDocument(data.document);
         setAdherenceResult(null); // invalida análise prévia
@@ -500,19 +546,21 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     if (!generatedDocument || !userInfo || !frameworkId) return;
     setAdherenceLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('docgen-chat', {
-        body: {
-          action: 'quick_adherence',
-          user_id: userInfo.user_id,
-          empresa_id: userInfo.empresa_id,
-          conversation_id: conversationId,
-          document: generatedDocument,
-          framework_context: { framework_name: frameworkName, framework_id: frameworkId },
-        },
+      const res = await callDocGen({
+        action: 'quick_adherence',
+        user_id: userInfo.user_id,
+        empresa_id: userInfo.empresa_id,
+        conversation_id: conversationId,
+        document: generatedDocument,
+        framework_context: { framework_name: frameworkName, framework_id: frameworkId },
       });
-      if (error) throw error;
-      if (data?.error === 'CREDITS_EXHAUSTED') { setShowCreditsDialog(true); return; }
-      if (data?.adherence) setAdherenceResult(data.adherence);
+      if (res.credits) { setShowCreditsDialog(true); return; }
+      if (res.timeout) {
+        toast({ title: t('docgen.dialog.timeoutTitle'), description: t('docgen.dialog.timeoutDescription'), variant: 'destructive' });
+        return;
+      }
+      if (res.error) throw new Error(res.error);
+      if (res.data?.adherence) setAdherenceResult(res.data.adherence);
     } catch (e) {
       console.error('Erro na aderência:', e);
       toast({ title: t('docgen.dialog.errorTitle'), description: t('docgen.dialog.adherenceError'), variant: 'destructive' });
@@ -521,42 +569,97 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     }
   };
 
+  /**
+   * Auto-refino gap-driven: o servidor faz UMA tentativa por chamada
+   * (evita estourar o timeout da plataforma). O frontend encadeia as
+   * tentativas até convergir ou atingir o máximo.
+   */
+  const runAutoRefine = async (
+    doc: any,
+    frameworkIds: string[] | undefined,
+    maxAttempts: number,
+  ): Promise<any> => {
+    let current = doc;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      const res = await callDocGen({
+        action: 'auto_refine',
+        user_id: userInfo!.user_id,
+        empresa_id: userInfo!.empresa_id,
+        conversation_id: conversationId,
+        document: current,
+        refine_attempt: attempt,
+        ...(effFrameworkName && {
+          framework_context: {
+            framework_name: effFrameworkName,
+            framework_id: effFrameworkId,
+            framework_ids: frameworkIds,
+          },
+        }),
+      });
+      if (res.credits) { setShowCreditsDialog(true); break; }
+      if (res.timeout || res.error || !res.data?.document) break;
+      current = { ...res.data.document, data_criacao: current.data_criacao };
+      setGeneratedDocument(current);
+      if (res.data.changed) {
+        akurisToast({
+          module: 'documentos',
+          tone: 'success',
+          title: t('docgen.dialog.autoRefineDoneTitle'),
+          description: t('docgen.dialog.autoRefineDoneDescription', { score: String(res.data.after ?? '') }),
+        });
+      }
+      if (!res.data.should_continue) break;
+    }
+    return current;
+  };
+
   const generateDocument = async () => {
     if (!userInfo || !conversationId || isGeneratingDoc) return;
 
     setIsGeneratingDoc(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('docgen-chat', {
-        body: {
-          conversation_id: conversationId,
-          user_id: userInfo.user_id,
-          empresa_id: userInfo.empresa_id,
-          action: 'generate_document',
-          doc_type_hint: currentDocName || currentDocType,
-          ...(effFrameworkName && { framework_context: { framework_name: effFrameworkName, framework_id: effFrameworkId, framework_ids: fwReqData?.matchedIds } }),
-          ...(requirementContext && { requirement_context: requirementContext }),
-        }
+      const res = await callDocGen({
+        conversation_id: conversationId,
+        user_id: userInfo.user_id,
+        empresa_id: userInfo.empresa_id,
+        action: 'generate_document',
+        doc_type_hint: currentDocName || currentDocType,
+        ...(effFrameworkName && { framework_context: { framework_name: effFrameworkName, framework_id: effFrameworkId, framework_ids: fwReqData?.matchedIds } }),
+        ...(requirementContext && { requirement_context: requirementContext }),
       });
 
-      if (error) throw error;
-
-      // Verificar se créditos foram esgotados
-      if (data?.error === 'CREDITS_EXHAUSTED') {
-        setShowCreditsDialog(true);
+      if (res.credits) { setShowCreditsDialog(true); return; }
+      if (res.timeout) {
+        toast({ title: t('docgen.dialog.timeoutTitle'), description: t('docgen.dialog.timeoutDescription'), variant: 'destructive' });
         return;
       }
+      if (res.error) throw new Error(res.error);
+      const data = res.data;
 
       // A IA não conhece a data atual (chuta valores errados). Fixamos a data
       // real do usuário na capa/preview/export, independentemente do que veio.
-      setGeneratedDocument({
+      const doc = {
         ...data.document,
         data_criacao: new Date().toISOString().slice(0, 10),
-      });
+      };
+      setGeneratedDocument(doc);
       toast({
         title: t('docgen.dialog.documentGeneratedTitle'),
         description: t('docgen.dialog.documentGeneratedDescription'),
       });
+
+      // Auto-refino em chamadas separadas, para não estourar o timeout.
+      if (data?.should_auto_refine) {
+        akurisToast({
+          module: 'documentos',
+          tone: 'info',
+          title: t('docgen.dialog.autoRefineTitle'),
+          description: t('docgen.dialog.autoRefineDescription'),
+        });
+        await runAutoRefine(doc, data.framework_ids, Number(data.max_refine_attempts) || 2);
+      }
+
 
     } catch (error) {
       console.error('Erro ao gerar documento:', error);
