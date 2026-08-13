@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
 import { getCompanyLogo, AKURIS_DEFAULT_LOGO } from '@/lib/brand-logo';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 interface Empresa {
@@ -17,6 +18,7 @@ interface Empresa {
 
 export default function DenunciaMenu() {
   const { empresa: empresaSlug } = useParams();
+  const { t } = useLanguage();
   const [empresa, setEmpresa] = useState<Empresa | null>(null);
   const [logoUrl, setLogoUrl] = useState<string>(AKURIS_DEFAULT_LOGO);
   const [loading, setLoading] = useState(true);
@@ -75,7 +77,7 @@ export default function DenunciaMenu() {
       <div className="min-h-screen bg-muted/20 flex items-center justify-center">
         <div className="text-center">
           <AkurisPulse size={32} />
-          <p className="mt-2 text-muted-foreground">Carregando...</p>
+          <p className="mt-2 text-muted-foreground">{t('publicPortal.common.loading')}</p>
         </div>
       </div>
     );
@@ -87,9 +89,9 @@ export default function DenunciaMenu() {
         <Card className="max-w-md mx-auto">
           <CardContent className="text-center py-8">
             <Shield className="w-12 h-12 text-destructive mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Empresa não encontrada</h2>
+            <h2 className="text-xl font-semibold mb-2">{t('publicPortal.denunciaMenu.companyNotFound')}</h2>
             <p className="text-muted-foreground">
-              O canal de denúncias solicitado não está disponível ou foi desativado.
+              {t('publicPortal.denunciaMenu.companyNotFoundDescription')}
             </p>
           </CardContent>
         </Card>
@@ -114,7 +116,7 @@ export default function DenunciaMenu() {
           
           <div className="flex items-center justify-center gap-2 mb-4">
             <Shield className="w-6 h-6 text-primary" />
-            <h2 className="text-xl text-sidebar-foreground">Canal de Denúncias</h2>
+            <h2 className="text-xl text-sidebar-foreground">{t('publicPortal.denunciaMenu.channel')}</h2>
           </div>
         </div>
 
@@ -122,9 +124,9 @@ export default function DenunciaMenu() {
         <Card className="mb-8 bg-white">
           <CardContent className="p-8">
             <div className="text-center mb-8">
-              <h3 className="text-2xl font-semibold mb-2">Como podemos ajudá-lo?</h3>
+              <h3 className="text-2xl font-semibold mb-2">{t('publicPortal.denunciaMenu.howCanWeHelp')}</h3>
               <p className="text-muted-foreground">
-                Escolha uma das opções abaixo para prosseguir
+                {t('publicPortal.denunciaMenu.chooseOption')}
               </p>
             </div>
 
@@ -137,9 +139,9 @@ export default function DenunciaMenu() {
                 >
                   <div className="text-center">
                     <FileText className="w-12 h-12 mx-auto mb-3 text-primary" />
-                    <h4 className="text-lg font-semibold mb-2">Registrar Denúncia</h4>
+                    <h4 className="text-lg font-semibold mb-2">{t('publicPortal.denunciaMenu.registerTitle')}</h4>
                     <p className="text-sm text-muted-foreground">
-                      Reportar uma irregularidade ou violação
+                      {t('publicPortal.denunciaMenu.registerDescription')}
                     </p>
                   </div>
                 </Button>
@@ -153,9 +155,9 @@ export default function DenunciaMenu() {
                 >
                   <div className="text-center">
                     <Search className="w-12 h-12 mx-auto mb-3 text-primary" />
-                    <h4 className="text-lg font-semibold mb-2">Consultar Denúncia</h4>
+                    <h4 className="text-lg font-semibold mb-2">{t('publicPortal.denunciaMenu.consultTitle')}</h4>
                     <p className="text-sm text-muted-foreground">
-                      Acompanhar o status de um protocolo
+                      {t('publicPortal.denunciaMenu.consultDescription')}
                     </p>
                   </div>
                 </Button>
@@ -169,10 +171,9 @@ export default function DenunciaMenu() {
           <CardContent className="p-6">
             <div className="text-center">
               <Shield className="w-8 h-8 text-primary mx-auto mb-3" />
-              <h4 className="font-semibold mb-2">Confidencialidade Garantida</h4>
+              <h4 className="font-semibold mb-2">{t('publicPortal.denunciaMenu.confidentialityTitle')}</h4>
               <p className="text-sm text-muted-foreground">
-                Todas as denúncias são tratadas com total confidencialidade e seriedade. 
-                Sua identidade será protegida conforme nossa política de privacidade.
+                {t('publicPortal.denunciaMenu.confidentialityDescription')}
               </p>
             </div>
           </CardContent>

@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 export default function DenunciaExternaRedirect() {
   const { token } = useParams();
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -75,7 +77,7 @@ export default function DenunciaExternaRedirect() {
       <div className="min-h-screen bg-muted/20 flex items-center justify-center">
         <div className="text-center">
           <AkurisPulse size={32} />
-          <p className="mt-2 text-muted-foreground">Redirecionando...</p>
+          <p className="mt-2 text-muted-foreground">{t('publicPortal.common.redirecting')}</p>
         </div>
       </div>
     );

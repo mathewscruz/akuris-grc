@@ -7,6 +7,7 @@ import { ArrowRight, ShieldCheck } from 'lucide-react';
 import { CornerAccent } from '@/components/identity/CornerAccent';
 import { AkurisMarkPattern } from '@/components/identity/AkurisMarkPattern';
 import logoImage from '@/assets/akuris-logo.png';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 /**
  * Landing pública para a rota `/denuncia` (sem slug).
@@ -15,6 +16,7 @@ import logoImage from '@/assets/akuris-logo.png';
  */
 const DenunciaPublicLanding: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [empresa, setEmpresa] = useState('');
   const [error, setError] = useState('');
 
@@ -22,7 +24,7 @@ const DenunciaPublicLanding: React.FC = () => {
     e.preventDefault();
     const slug = empresa.trim().toLowerCase().replace(/\s+/g, '-');
     if (!slug) {
-      setError('Informe o código da empresa.');
+      setError(t('publicPortal.denunciaLanding.companyCodeRequired'));
       return;
     }
     navigate(`/${encodeURIComponent(slug)}/denuncia`);
@@ -41,18 +43,17 @@ const DenunciaPublicLanding: React.FC = () => {
             <ShieldCheck className="w-6 h-6 text-primary" strokeWidth={1.5} />
           </div>
           <h1 className="text-2xl font-semibold text-white tracking-tight">
-            Canal de Denúncias
+            {t('publicPortal.denunciaLanding.title')}
           </h1>
           <p className="text-sm text-white/55 mt-2 leading-relaxed">
-            Para acessar o canal de denúncias, informe o código da empresa fornecido
-            pela sua organização ou pelo link recebido.
+            {t('publicPortal.denunciaLanding.description')}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-1.5">
             <Label htmlFor="empresa" className="text-xs text-white/65 font-medium tracking-wide">
-              Código da empresa
+              {t('publicPortal.denunciaLanding.companyCode')}
             </Label>
             <Input
               id="empresa"
@@ -61,7 +62,7 @@ const DenunciaPublicLanding: React.FC = () => {
                 setEmpresa(e.target.value);
                 setError('');
               }}
-              placeholder="ex.: minha-empresa"
+              placeholder={t('publicPortal.denunciaLanding.companyCodePlaceholder')}
               className="h-11 bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/30 rounded-lg focus:border-primary/50 focus:ring-1 focus:ring-primary/30"
               autoFocus
             />
@@ -72,17 +73,17 @@ const DenunciaPublicLanding: React.FC = () => {
             type="submit"
             className="w-full h-11 font-semibold text-sm bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg"
           >
-            Acessar canal <ArrowRight className="w-4 h-4 ml-1.5" />
+            {t('publicPortal.denunciaLanding.accessChannel')} <ArrowRight className="w-4 h-4 ml-1.5" />
           </Button>
         </form>
 
         <p className="text-center text-xs text-white/45">
-          Não tem o código?{' '}
+          {t('publicPortal.denunciaLanding.noCode')}{' '}
           <a
             href="/"
             className="text-primary hover:text-primary/80 transition-colors"
           >
-            Voltar ao site
+            {t('publicPortal.denunciaLanding.backToSite')}
           </a>
         </p>
       </div>
