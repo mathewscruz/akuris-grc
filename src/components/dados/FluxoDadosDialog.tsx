@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useEmpresaId } from "@/hooks/useEmpresaId";
 import { logger } from "@/lib/logger";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface FluxoDadosDialogProps {
   isOpen: boolean;
@@ -20,6 +21,7 @@ interface FluxoDadosDialogProps {
 }
 
 export function FluxoDadosDialog({ isOpen, onClose, onSave, fluxo }: FluxoDadosDialogProps) {
+  const { t } = useLanguage();
   const [formData, setFormData] = useState({
     nome_fluxo: fluxo?.nome_fluxo || "",
     dados_pessoais_id: fluxo?.dados_pessoais_id || "",
@@ -92,7 +94,7 @@ export function FluxoDadosDialog({ isOpen, onClose, onSave, fluxo }: FluxoDadosD
         .single();
 
       if (!profile?.empresa_id) {
-        throw new Error('Empresa não encontrada');
+        throw new Error(t('dadosDashboard.common.errorEmpresaNaoEncontrada'));
       }
 
       const payload = {
@@ -108,21 +110,21 @@ export function FluxoDadosDialog({ isOpen, onClose, onSave, fluxo }: FluxoDadosD
           .eq('id', fluxo.id);
         
         if (error) throw error;
-        toast({ title: "Fluxo de dados atualizado com sucesso!" });
+        toast({ title: t('dadosDashboard.fluxoDadosDialog.toastUpdated') });
       } else {
         const { error } = await supabase
           .from('dados_fluxos')
           .insert([payload]);
         
         if (error) throw error;
-        toast({ title: "Fluxo de dados criado com sucesso!" });
+        toast({ title: t('dadosDashboard.fluxoDadosDialog.toastCreated') });
       }
       
       onSave();
       onClose();
     } catch (error: any) {
       toast({
-        title: "Erro ao salvar fluxo de dados",
+        title: t('dadosDashboard.fluxoDadosDialog.toastErrorTitle'),
         description: error.message,
         variant: "destructive"
       });
@@ -135,7 +137,7 @@ export function FluxoDadosDialog({ isOpen, onClose, onSave, fluxo }: FluxoDadosD
     <DialogShell
         open={isOpen}
         onOpenChange={onClose}
-        title={`${fluxo?.id ? "Editar" : "Novo"} Fluxo de Dados`}
+        title={fluxo?.id ? t('dadosDashboard.fluxoDadosDialog.titleEdit') : t('dadosDashboard.fluxoDadosDialog.titleNew')}
         icon={GitBranch}
         size="lg"
         onSubmit={handleSave}
@@ -143,19 +145,19 @@ export function FluxoDadosDialog({ isOpen, onClose, onSave, fluxo }: FluxoDadosD
 <div className="grid gap-4 py-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="nome_fluxo">Nome do Fluxo *</Label>
+              <Label htmlFor="nome_fluxo">{t('dadosDashboard.fluxoDadosDialog.labelNomeFluxo')}</Label>
               <Input
                 id="nome_fluxo"
                 value={formData.nome_fluxo}
                 onChange={(e) => setFormData({ ...formData, nome_fluxo: e.target.value })}
-                placeholder="Ex: Transferência dados CRM para ERP"
+                placeholder={t('dadosDashboard.fluxoDadosDialog.placeholderNomeFluxo')}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="dados_pessoais_id">Dados Pessoais *</Label>
+              <Label htmlFor="dados_pessoais_id">{t('dadosDashboard.fluxoDadosDialog.labelDadosPessoais')}</Label>
               <Select value={formData.dados_pessoais_id} onValueChange={(value) => setFormData({ ...formData, dados_pessoais_id: value })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione os dados" />
+                  <SelectValue placeholder={t('dadosDashboard.fluxoDadosDialog.placeholderDadosPessoais')} />
                 </SelectTrigger>
                 <SelectContent>
                   {dadosPessoais.map((dado) => (
@@ -170,54 +172,54 @@ export function FluxoDadosDialog({ isOpen, onClose, onSave, fluxo }: FluxoDadosD
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="sistema_origem">Sistema Origem *</Label>
+              <Label htmlFor="sistema_origem">{t('dadosDashboard.fluxoDadosDialog.labelSistemaOrigem')}</Label>
               <Input
                 id="sistema_origem"
                 value={formData.sistema_origem}
                 onChange={(e) => setFormData({ ...formData, sistema_origem: e.target.value })}
-                placeholder="Ex: CRM Salesforce"
+                placeholder={t('dadosDashboard.fluxoDadosDialog.placeholderSistemaOrigem')}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="sistema_destino">Sistema Destino *</Label>
+              <Label htmlFor="sistema_destino">{t('dadosDashboard.fluxoDadosDialog.labelSistemaDestino')}</Label>
               <Input
                 id="sistema_destino"
                 value={formData.sistema_destino}
                 onChange={(e) => setFormData({ ...formData, sistema_destino: e.target.value })}
-                placeholder="Ex: ERP SAP"
+                placeholder={t('dadosDashboard.fluxoDadosDialog.placeholderSistemaDestino')}
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="tipo_transferencia">Tipo de Transferência *</Label>
+              <Label htmlFor="tipo_transferencia">{t('dadosDashboard.fluxoDadosDialog.labelTipoTransferencia')}</Label>
               <Select value={formData.tipo_transferencia} onValueChange={(value) => setFormData({ ...formData, tipo_transferencia: value })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione o tipo" />
+                  <SelectValue placeholder={t('dadosDashboard.fluxoDadosDialog.placeholderTipoTransferencia')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="api">API REST</SelectItem>
-                  <SelectItem value="arquivo">Arquivo (CSV/Excel)</SelectItem>
-                  <SelectItem value="manual">Manual</SelectItem>
-                  <SelectItem value="automatico">Automático</SelectItem>
-                  <SelectItem value="etl">ETL/Pipeline</SelectItem>
-                  <SelectItem value="sync">Sincronização</SelectItem>
+                  <SelectItem value="api">{t('dadosDashboard.fluxoDadosDialog.tipoApi')}</SelectItem>
+                  <SelectItem value="arquivo">{t('dadosDashboard.fluxoDadosDialog.tipoArquivo')}</SelectItem>
+                  <SelectItem value="manual">{t('dadosDashboard.fluxoDadosDialog.tipoManual')}</SelectItem>
+                  <SelectItem value="automatico">{t('dadosDashboard.fluxoDadosDialog.tipoAutomatico')}</SelectItem>
+                  <SelectItem value="etl">{t('dadosDashboard.fluxoDadosDialog.tipoEtl')}</SelectItem>
+                  <SelectItem value="sync">{t('dadosDashboard.fluxoDadosDialog.tipoSync')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="frequencia">Frequência</Label>
+              <Label htmlFor="frequencia">{t('dadosDashboard.fluxoDadosDialog.labelFrequencia')}</Label>
               <Select value={formData.frequencia} onValueChange={(value) => setFormData({ ...formData, frequencia: value })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione a frequência" />
+                  <SelectValue placeholder={t('dadosDashboard.fluxoDadosDialog.placeholderFrequencia')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="tempo_real">Tempo Real</SelectItem>
-                  <SelectItem value="diaria">Diária</SelectItem>
-                  <SelectItem value="semanal">Semanal</SelectItem>
-                  <SelectItem value="mensal">Mensal</SelectItem>
-                  <SelectItem value="eventual">Eventual</SelectItem>
+                  <SelectItem value="tempo_real">{t('dadosDashboard.fluxoDadosDialog.frequenciaTempoReal')}</SelectItem>
+                  <SelectItem value="diaria">{t('dadosDashboard.fluxoDadosDialog.frequenciaDiaria')}</SelectItem>
+                  <SelectItem value="semanal">{t('dadosDashboard.fluxoDadosDialog.frequenciaSemanal')}</SelectItem>
+                  <SelectItem value="mensal">{t('dadosDashboard.fluxoDadosDialog.frequenciaMensal')}</SelectItem>
+                  <SelectItem value="eventual">{t('dadosDashboard.fluxoDadosDialog.frequenciaEventual')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -225,19 +227,19 @@ export function FluxoDadosDialog({ isOpen, onClose, onSave, fluxo }: FluxoDadosD
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="volume_aproximado">Volume Aproximado</Label>
+              <Label htmlFor="volume_aproximado">{t('dadosDashboard.fluxoDadosDialog.labelVolumeAproximado')}</Label>
               <Input
                 id="volume_aproximado"
                 value={formData.volume_aproximado}
                 onChange={(e) => setFormData({ ...formData, volume_aproximado: e.target.value })}
-                placeholder="Ex: 1000 registros/dia"
+                placeholder={t('dadosDashboard.fluxoDadosDialog.placeholderVolumeAproximado')}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="responsavel_fluxo">Responsável pelo Fluxo</Label>
+              <Label htmlFor="responsavel_fluxo">{t('dadosDashboard.fluxoDadosDialog.labelResponsavelFluxo')}</Label>
               <Select value={formData.responsavel_fluxo} onValueChange={(value) => setFormData({ ...formData, responsavel_fluxo: value })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione o responsável" />
+                  <SelectValue placeholder={t('dadosDashboard.fluxoDadosDialog.placeholderResponsavelFluxo')} />
                 </SelectTrigger>
                 <SelectContent>
                   {usuarios.map((usuario) => (
@@ -257,7 +259,7 @@ export function FluxoDadosDialog({ isOpen, onClose, onSave, fluxo }: FluxoDadosD
                 checked={formData.criptografia_transit}
                 onCheckedChange={(checked) => setFormData({ ...formData, criptografia_transit: !!checked })}
               />
-              <Label htmlFor="criptografia_transit">Criptografia em Trânsito</Label>
+              <Label htmlFor="criptografia_transit">{t('dadosDashboard.fluxoDadosDialog.labelCriptografiaTransit')}</Label>
             </div>
             <div className="flex items-center space-x-2">
               <Checkbox
@@ -265,42 +267,42 @@ export function FluxoDadosDialog({ isOpen, onClose, onSave, fluxo }: FluxoDadosD
                 checked={formData.aprovacao_necessaria}
                 onCheckedChange={(checked) => setFormData({ ...formData, aprovacao_necessaria: !!checked })}
               />
-              <Label htmlFor="aprovacao_necessaria">Aprovação Necessária</Label>
+              <Label htmlFor="aprovacao_necessaria">{t('dadosDashboard.fluxoDadosDialog.labelAprovacaoNecessaria')}</Label>
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="status">Status</Label>
+            <Label htmlFor="status">{t('dadosDashboard.fluxoDadosDialog.labelStatus')}</Label>
             <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
               <SelectTrigger>
-                <SelectValue placeholder="Selecione o status" />
+                <SelectValue placeholder={t('dadosDashboard.fluxoDadosDialog.placeholderStatus')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ativo">Ativo</SelectItem>
-                <SelectItem value="inativo">Inativo</SelectItem>
-                <SelectItem value="suspenso">Suspenso</SelectItem>
+                <SelectItem value="ativo">{t('dadosDashboard.fluxoDadosDialog.statusAtivo')}</SelectItem>
+                <SelectItem value="inativo">{t('dadosDashboard.fluxoDadosDialog.statusInativo')}</SelectItem>
+                <SelectItem value="suspenso">{t('dadosDashboard.fluxoDadosDialog.statusSuspenso')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="mapeamento_campos">Mapeamento de Campos (JSON)</Label>
+            <Label htmlFor="mapeamento_campos">{t('dadosDashboard.fluxoDadosDialog.labelMapeamentoCampos')}</Label>
             <Textarea
               id="mapeamento_campos"
               value={formData.mapeamento_campos}
               onChange={(e) => setFormData({ ...formData, mapeamento_campos: e.target.value })}
-              placeholder='Ex: {"nome": "customer_name", "email": "customer_email"}'
+              placeholder={t('dadosDashboard.fluxoDadosDialog.placeholderMapeamentoCampos')}
               rows={3}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="observacoes">Observações</Label>
+            <Label htmlFor="observacoes">{t('dadosDashboard.fluxoDadosDialog.labelObservacoes')}</Label>
             <Textarea
               id="observacoes"
               value={formData.observacoes}
               onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
-              placeholder="Observações adicionais sobre o fluxo"
+              placeholder={t('dadosDashboard.fluxoDadosDialog.placeholderObservacoes')}
             />
           </div>
         </div>

@@ -5,6 +5,7 @@ import { AlertTriangle, FileText, Shield, CheckCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface IntegrationSuggestionsProps {
   assessment: {
@@ -16,6 +17,7 @@ interface IntegrationSuggestionsProps {
 
 export function IntegrationSuggestions({ assessment }: IntegrationSuggestionsProps) {
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [isCreating, setIsCreating] = useState(false);
   
   const createRisk = async () => {
@@ -39,7 +41,7 @@ export function IntegrationSuggestions({ assessment }: IntegrationSuggestionsPro
         .insert({
           empresa_id: profile.empresa_id,
           nome: `Risco de Fornecedor - ${assessment.fornecedor_nome}`,
-          descricao: `Fornecedor apresentou score de ${scorePorcentagem.toFixed(1)}% na avaliação de due diligence. Recomenda-se análise detalhada dos pontos críticos identificados.`,
+          descricao: t('dueDiligence.integrationSuggestions.riskDescription', { score: scorePorcentagem.toFixed(1) }),
           probabilidade_inicial: scorePorcentagem < 40 ? 'provavel' : scorePorcentagem < 60 ? 'possivel' : 'improvavel',
           impacto_inicial: scorePorcentagem < 40 ? 'maior' : scorePorcentagem < 60 ? 'moderado' : 'menor',
           nivel_risco_inicial: scorePorcentagem < 40 ? 'alto' : scorePorcentagem < 60 ? 'medio' : 'baixo',
@@ -50,14 +52,14 @@ export function IntegrationSuggestions({ assessment }: IntegrationSuggestionsPro
       if (error) throw error;
       
       toast({
-        title: "Risco criado com sucesso",
-        description: "O risco do fornecedor foi registrado no módulo de Riscos",
+        title: t('dueDiligence.integrationSuggestions.toastRiskCreatedTitle'),
+        description: t('dueDiligence.integrationSuggestions.toastRiskCreatedDescription'),
       });
     } catch (error: any) {
       console.error('Erro ao criar risco:', error);
       toast({
-        title: "Erro",
-        description: error.message || "Não foi possível criar o risco",
+        title: t('dueDiligence.integrationSuggestions.errorTitle'),
+        description: error.message || t('dueDiligence.integrationSuggestions.errorRiskDescriptionFallback'),
         variant: "destructive",
       });
     } finally {
@@ -67,8 +69,8 @@ export function IntegrationSuggestions({ assessment }: IntegrationSuggestionsPro
   
   const requestDocument = () => {
     toast({
-      title: "Funcionalidade em desenvolvimento",
-      description: "Em breve você poderá solicitar documentação adicional aos fornecedores",
+      title: t('dueDiligence.integrationSuggestions.toastDocRequestTitle'),
+      description: t('dueDiligence.integrationSuggestions.toastDocRequestDescription'),
     });
   };
 
@@ -79,10 +81,9 @@ export function IntegrationSuggestions({ assessment }: IntegrationSuggestionsPro
       {scorePorcentagem < 50 && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Score Crítico</AlertTitle>
+          <AlertTitle>{t('dueDiligence.integrationSuggestions.criticalTitle')}</AlertTitle>
           <AlertDescription>
-            Este fornecedor apresentou score de {scorePorcentagem.toFixed(1)}%. 
-            Recomenda-se criar um registro de risco e solicitar documentação adicional.
+            {t('dueDiligence.integrationSuggestions.criticalDescription', { score: scorePorcentagem.toFixed(1) })}
           </AlertDescription>
         </Alert>
       )}
@@ -90,10 +91,9 @@ export function IntegrationSuggestions({ assessment }: IntegrationSuggestionsPro
       {scorePorcentagem >= 50 && scorePorcentagem < 70 && (
         <Alert>
           <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Atenção Necessária</AlertTitle>
+          <AlertTitle>{t('dueDiligence.integrationSuggestions.attentionTitle')}</AlertTitle>
           <AlertDescription>
-            Score de {scorePorcentagem.toFixed(1)}%. Considere solicitar documentação complementar 
-            para mitigar possíveis riscos.
+            {t('dueDiligence.integrationSuggestions.attentionDescription', { score: scorePorcentagem.toFixed(1) })}
           </AlertDescription>
         </Alert>
       )}
@@ -101,17 +101,16 @@ export function IntegrationSuggestions({ assessment }: IntegrationSuggestionsPro
       {scorePorcentagem >= 80 && (
         <Alert className="border-green-200 bg-green-50">
           <CheckCircle className="h-4 w-4 text-green-600" />
-          <AlertTitle className="text-green-900">Excelente Performance</AlertTitle>
+          <AlertTitle className="text-green-900">{t('dueDiligence.integrationSuggestions.excellentTitle')}</AlertTitle>
           <AlertDescription className="text-green-800">
-            Score de {scorePorcentagem.toFixed(1)}%. Este fornecedor atende aos critérios 
-            de qualidade estabelecidos.
+            {t('dueDiligence.integrationSuggestions.excellentDescription', { score: scorePorcentagem.toFixed(1) })}
           </AlertDescription>
         </Alert>
       )}
       
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Ações Recomendadas</CardTitle>
+          <CardTitle className="text-lg">{t('dueDiligence.integrationSuggestions.recommendedActionsTitle')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <Button
@@ -121,7 +120,7 @@ export function IntegrationSuggestions({ assessment }: IntegrationSuggestionsPro
             className="w-full justify-start"
           >
             <Shield className="h-4 w-4 mr-2" />
-            {isCreating ? 'Criando...' : 'Criar Risco no Módulo de Riscos'}
+            {isCreating ? t('dueDiligence.integrationSuggestions.creatingRisk') : t('dueDiligence.integrationSuggestions.createRiskInModule')}
           </Button>
           
           <Button
@@ -130,7 +129,7 @@ export function IntegrationSuggestions({ assessment }: IntegrationSuggestionsPro
             className="w-full justify-start"
           >
             <FileText className="h-4 w-4 mr-2" />
-            Solicitar Documentação Adicional
+            {t('dueDiligence.integrationSuggestions.requestAdditionalDocs')}
           </Button>
           
           {scorePorcentagem >= 80 && (
@@ -139,7 +138,7 @@ export function IntegrationSuggestions({ assessment }: IntegrationSuggestionsPro
               className="w-full justify-start text-green-600 hover:text-green-700 hover:bg-green-50"
             >
               <CheckCircle className="h-4 w-4 mr-2" />
-              Aprovar Fornecedor
+              {t('dueDiligence.integrationSuggestions.approveSupplier')}
             </Button>
           )}
         </CardContent>

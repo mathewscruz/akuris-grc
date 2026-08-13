@@ -29,6 +29,7 @@ import * as z from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const comunicacaoSchema = z.object({
   tipo_comunicacao: z.string().min(1, 'Tipo de comunicação é obrigatório'),
@@ -60,6 +61,7 @@ export function ComunicacaoDialog({ incidenteId, comunicacao, onSuccess, trigger
   };
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const form = useForm<ComunicacaoFormData>({
     resolver: zodResolver(comunicacaoSchema),
@@ -117,14 +119,14 @@ export function ComunicacaoDialog({ incidenteId, comunicacao, onSuccess, trigger
           .eq('id', comunicacao.id);
 
         if (error) throw error;
-        toast({ title: 'Comunicação atualizada com sucesso!' });
+        toast({ title: t('incidentesComp.comunicacao.toastUpdated') });
       } else {
         const { error } = await supabase
           .from('incidentes_comunicacoes')
           .insert([comunicacaoData]);
 
         if (error) throw error;
-        toast({ title: 'Comunicação registrada com sucesso!' });
+        toast({ title: t('incidentesComp.comunicacao.toastCreated') });
       }
 
       setOpen(false);
@@ -132,7 +134,7 @@ export function ComunicacaoDialog({ incidenteId, comunicacao, onSuccess, trigger
       onSuccess?.();
     } catch (error: any) {
       toast({
-        title: 'Erro',
+        title: t('incidentesComp.comunicacao.toastErrorTitle'),
         description: error.message,
         variant: 'destructive',
       });
@@ -142,11 +144,11 @@ export function ComunicacaoDialog({ incidenteId, comunicacao, onSuccess, trigger
   };
 
   const templatesComunicacao = [
-    'Notificação ANPD - Vazamento de Dados',
-    'Comunicação Interna - Incidente de Segurança',
-    'Comunicação Cliente - Interrupção de Serviço',
-    'Relatório Autoridades - Incidente Crítico',
-    'Comunicação Fornecedor - Problema de Segurança',
+    t('incidentesComp.comunicacao.templateAnpd'),
+    t('incidentesComp.comunicacao.templateInterna'),
+    t('incidentesComp.comunicacao.templateCliente'),
+    t('incidentesComp.comunicacao.templateAutoridades'),
+    t('incidentesComp.comunicacao.templateFornecedor'),
   ];
 
   return (
@@ -156,7 +158,7 @@ export function ComunicacaoDialog({ incidenteId, comunicacao, onSuccess, trigger
           {trigger || (
             <Button size="sm" variant="outline">
               <MessageSquare className="mr-2 h-4 w-4" />
-              Nova Comunicação
+              {t('incidentesComp.comunicacao.newButton')}
             </Button>
           )}
         </span>
@@ -165,11 +167,11 @@ export function ComunicacaoDialog({ incidenteId, comunicacao, onSuccess, trigger
         open={open}
         onOpenChange={setOpen}
         icon={MessageSquare}
-        title={comunicacao ? 'Editar Comunicação' : 'Nova Comunicação'}
-        description={comunicacao ? 'Atualize os dados da comunicação.' : 'Registre uma comunicação relacionada ao incidente.'}
+        title={comunicacao ? t('incidentesComp.comunicacao.titleEdit') : t('incidentesComp.comunicacao.titleNew')}
+        description={comunicacao ? t('incidentesComp.comunicacao.descEdit') : t('incidentesComp.comunicacao.descNew')}
         size="md"
         onSubmit={form.handleSubmit(onSubmit)}
-        submitLabel={comunicacao ? 'Atualizar' : 'Registrar'}
+        submitLabel={comunicacao ? t('incidentesComp.comunicacao.submitUpdate') : t('incidentesComp.comunicacao.submitCreate')}
         isSubmitting={loading}
         isDirty={form.formState.isDirty}
       >
@@ -181,21 +183,21 @@ export function ComunicacaoDialog({ incidenteId, comunicacao, onSuccess, trigger
                 name="tipo_comunicacao"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Tipo de Comunicação *</FormLabel>
+                    <FormLabel>{t('incidentesComp.comunicacao.fieldTipo')}</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecione o tipo" />
+                          <SelectValue placeholder={t('incidentesComp.comunicacao.fieldTipoPlaceholder')} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="anpd">Notificação ANPD</SelectItem>
-                        <SelectItem value="interna">Comunicação Interna</SelectItem>
-                        <SelectItem value="cliente">Comunicação Cliente</SelectItem>
-                        <SelectItem value="fornecedor">Comunicação Fornecedor</SelectItem>
-                        <SelectItem value="autoridade">Autoridade Competente</SelectItem>
-                        <SelectItem value="imprensa">Imprensa</SelectItem>
-                        <SelectItem value="outras">Outras</SelectItem>
+                        <SelectItem value="anpd">{t('incidentesComp.comunicacao.tipoAnpd')}</SelectItem>
+                        <SelectItem value="interna">{t('incidentesComp.comunicacao.tipoInterna')}</SelectItem>
+                        <SelectItem value="cliente">{t('incidentesComp.comunicacao.tipoCliente')}</SelectItem>
+                        <SelectItem value="fornecedor">{t('incidentesComp.comunicacao.tipoFornecedor')}</SelectItem>
+                        <SelectItem value="autoridade">{t('incidentesComp.comunicacao.tipoAutoridade')}</SelectItem>
+                        <SelectItem value="imprensa">{t('incidentesComp.comunicacao.tipoImprensa')}</SelectItem>
+                        <SelectItem value="outras">{t('incidentesComp.comunicacao.tipoOutras')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -208,20 +210,20 @@ export function ComunicacaoDialog({ incidenteId, comunicacao, onSuccess, trigger
                 name="meio_comunicacao"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Meio de Comunicação *</FormLabel>
+                    <FormLabel>{t('incidentesComp.comunicacao.fieldMeio')}</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecione o meio" />
+                          <SelectValue placeholder={t('incidentesComp.comunicacao.fieldMeioPlaceholder')} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="email">E-mail</SelectItem>
-                        <SelectItem value="telefone">Telefone</SelectItem>
-                        <SelectItem value="oficio">Ofício</SelectItem>
-                        <SelectItem value="sistema">Sistema</SelectItem>
-                        <SelectItem value="presencial">Presencial</SelectItem>
-                        <SelectItem value="portal">Portal Web</SelectItem>
+                        <SelectItem value="email">{t('incidentesComp.comunicacao.meioEmail')}</SelectItem>
+                        <SelectItem value="telefone">{t('incidentesComp.comunicacao.meioTelefone')}</SelectItem>
+                        <SelectItem value="oficio">{t('incidentesComp.comunicacao.meioOficio')}</SelectItem>
+                        <SelectItem value="sistema">{t('incidentesComp.comunicacao.meioSistema')}</SelectItem>
+                        <SelectItem value="presencial">{t('incidentesComp.comunicacao.meioPresencial')}</SelectItem>
+                        <SelectItem value="portal">{t('incidentesComp.comunicacao.meioPortal')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -235,9 +237,9 @@ export function ComunicacaoDialog({ incidenteId, comunicacao, onSuccess, trigger
               name="destinatario"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Destinatário *</FormLabel>
+                  <FormLabel>{t('incidentesComp.comunicacao.fieldDestinatario')}</FormLabel>
                   <FormControl>
-                    <Input placeholder="Nome/organização do destinatário" {...field} />
+                    <Input placeholder={t('incidentesComp.comunicacao.fieldDestinatarioPlaceholder')} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -249,7 +251,7 @@ export function ComunicacaoDialog({ incidenteId, comunicacao, onSuccess, trigger
               name="data_comunicacao"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Data da Comunicação</FormLabel>
+                  <FormLabel>{t('incidentesComp.comunicacao.fieldData')}</FormLabel>
                   <Popover>
                     <PopoverTrigger asChild>
                       <FormControl>
@@ -263,7 +265,7 @@ export function ComunicacaoDialog({ incidenteId, comunicacao, onSuccess, trigger
                           {field.value ? (
                             format(field.value, 'PPP', { locale: ptBR })
                           ) : (
-                            <span>Selecione uma data</span>
+                            <span>{t('incidentesComp.comunicacao.fieldDataPlaceholder')}</span>
                           )}
                           <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                         </Button>
@@ -290,11 +292,11 @@ export function ComunicacaoDialog({ incidenteId, comunicacao, onSuccess, trigger
               name="template_usado"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Template Utilizado</FormLabel>
+                  <FormLabel>{t('incidentesComp.comunicacao.fieldTemplate')}</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Selecione um template (opcional)" />
+                        <SelectValue placeholder={t('incidentesComp.comunicacao.fieldTemplatePlaceholder')} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -315,10 +317,10 @@ export function ComunicacaoDialog({ incidenteId, comunicacao, onSuccess, trigger
               name="observacoes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Observações</FormLabel>
+                  <FormLabel>{t('incidentesComp.comunicacao.fieldObservacoes')}</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Detalhes da comunicação, resposta recebida, etc..."
+                      placeholder={t('incidentesComp.comunicacao.fieldObservacoesPlaceholder')}
                       rows={3}
                       {...field}
                     />

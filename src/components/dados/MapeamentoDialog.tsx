@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useEmpresaId } from "@/hooks/useEmpresaId";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface MapeamentoDialogProps {
   isOpen: boolean;
@@ -18,6 +19,7 @@ interface MapeamentoDialogProps {
 }
 
 export function MapeamentoDialog({ isOpen, onClose, onSave, mapeamento }: MapeamentoDialogProps) {
+  const { t } = useLanguage();
   const [formData, setFormData] = useState({
     dados_pessoais_id: mapeamento?.dados_pessoais_id || "",
     ativo_id: mapeamento?.ativo_id || "",
@@ -88,21 +90,21 @@ export function MapeamentoDialog({ isOpen, onClose, onSave, mapeamento }: Mapeam
           .eq('id', mapeamento.id);
         
         if (error) throw error;
-        toast({ title: "Mapeamento atualizado com sucesso!" });
+        toast({ title: t('dadosDashboard.mapeamentoDialog.toastUpdated') });
       } else {
         const { error } = await supabase
           .from('dados_mapeamento')
           .insert([payload]);
         
         if (error) throw error;
-        toast({ title: "Mapeamento criado com sucesso!" });
+        toast({ title: t('dadosDashboard.mapeamentoDialog.toastCreated') });
       }
       
       onSave();
       onClose();
     } catch (error: any) {
       toast({
-        title: "Erro ao salvar mapeamento",
+        title: t('dadosDashboard.mapeamentoDialog.toastErrorTitle'),
         description: error.message,
         variant: "destructive"
       });
@@ -115,7 +117,7 @@ export function MapeamentoDialog({ isOpen, onClose, onSave, mapeamento }: Mapeam
     <DialogShell
         open={isOpen}
         onOpenChange={onClose}
-        title={`${mapeamento?.id ? "Editar" : "Novo"} Mapeamento de Dados`}
+        title={mapeamento?.id ? t('dadosDashboard.mapeamentoDialog.titleEdit') : t('dadosDashboard.mapeamentoDialog.titleNew')}
         icon={Map}
         size="lg"
         onSubmit={handleSave}
@@ -123,10 +125,10 @@ export function MapeamentoDialog({ isOpen, onClose, onSave, mapeamento }: Mapeam
 <div className="grid gap-4 py-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="dados_pessoais_id">Dados Pessoais *</Label>
+              <Label htmlFor="dados_pessoais_id">{t('dadosDashboard.mapeamentoDialog.labelDadosPessoais')}</Label>
               <Select value={formData.dados_pessoais_id} onValueChange={(value) => setFormData({ ...formData, dados_pessoais_id: value })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione os dados pessoais" />
+                  <SelectValue placeholder={t('dadosDashboard.mapeamentoDialog.placeholderDadosPessoais')} />
                 </SelectTrigger>
                 <SelectContent>
                   {dadosPessoais.map((dado) => (
@@ -138,10 +140,10 @@ export function MapeamentoDialog({ isOpen, onClose, onSave, mapeamento }: Mapeam
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="ativo_id">Ativo *</Label>
+              <Label htmlFor="ativo_id">{t('dadosDashboard.mapeamentoDialog.labelAtivo')}</Label>
               <Select value={formData.ativo_id} onValueChange={(value) => setFormData({ ...formData, ativo_id: value })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione o ativo" />
+                  <SelectValue placeholder={t('dadosDashboard.mapeamentoDialog.placeholderAtivo')} />
                 </SelectTrigger>
                 <SelectContent>
                   {ativos.map((ativo) => (
@@ -156,32 +158,32 @@ export function MapeamentoDialog({ isOpen, onClose, onSave, mapeamento }: Mapeam
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="tipo_armazenamento">Tipo de Armazenamento *</Label>
+              <Label htmlFor="tipo_armazenamento">{t('dadosDashboard.mapeamentoDialog.labelTipoArmazenamento')}</Label>
               <Select value={formData.tipo_armazenamento} onValueChange={(value) => setFormData({ ...formData, tipo_armazenamento: value })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione o tipo" />
+                  <SelectValue placeholder={t('dadosDashboard.mapeamentoDialog.placeholderTipoArmazenamento')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="primario">Primário</SelectItem>
-                  <SelectItem value="backup">Backup</SelectItem>
-                  <SelectItem value="temporario">Temporário</SelectItem>
-                  <SelectItem value="cache">Cache</SelectItem>
-                  <SelectItem value="arquivo">Arquivo</SelectItem>
+                  <SelectItem value="primario">{t('dadosDashboard.mapeamentoDialog.tipoPrimario')}</SelectItem>
+                  <SelectItem value="backup">{t('dadosDashboard.mapeamentoDialog.tipoBackup')}</SelectItem>
+                  <SelectItem value="temporario">{t('dadosDashboard.mapeamentoDialog.tipoTemporario')}</SelectItem>
+                  <SelectItem value="cache">{t('dadosDashboard.mapeamentoDialog.tipoCache')}</SelectItem>
+                  <SelectItem value="arquivo">{t('dadosDashboard.mapeamentoDialog.tipoArquivo')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="localizacao_dados">Localização dos Dados</Label>
+              <Label htmlFor="localizacao_dados">{t('dadosDashboard.mapeamentoDialog.labelLocalizacaoDados')}</Label>
               <Select value={formData.localizacao_dados} onValueChange={(value) => setFormData({ ...formData, localizacao_dados: value })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione a localização" />
+                  <SelectValue placeholder={t('dadosDashboard.mapeamentoDialog.placeholderLocalizacaoDados')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="servidor_local">Servidor Local</SelectItem>
-                  <SelectItem value="cloud_publica">Cloud Pública</SelectItem>
-                  <SelectItem value="cloud_privada">Cloud Privada</SelectItem>
-                  <SelectItem value="hibrido">Híbrido</SelectItem>
-                  <SelectItem value="terceiros">Terceiros</SelectItem>
+                  <SelectItem value="servidor_local">{t('dadosDashboard.mapeamentoDialog.localizacaoServidorLocal')}</SelectItem>
+                  <SelectItem value="cloud_publica">{t('dadosDashboard.mapeamentoDialog.localizacaoCloudPublica')}</SelectItem>
+                  <SelectItem value="cloud_privada">{t('dadosDashboard.mapeamentoDialog.localizacaoCloudPrivada')}</SelectItem>
+                  <SelectItem value="hibrido">{t('dadosDashboard.mapeamentoDialog.localizacaoHibrido')}</SelectItem>
+                  <SelectItem value="terceiros">{t('dadosDashboard.mapeamentoDialog.localizacaoTerceiros')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -189,31 +191,31 @@ export function MapeamentoDialog({ isOpen, onClose, onSave, mapeamento }: Mapeam
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="volume_aproximado">Volume Aproximado</Label>
+              <Label htmlFor="volume_aproximado">{t('dadosDashboard.mapeamentoDialog.labelVolumeAproximado')}</Label>
               <Select value={formData.volume_aproximado} onValueChange={(value) => setFormData({ ...formData, volume_aproximado: value })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione o volume" />
+                  <SelectValue placeholder={t('dadosDashboard.mapeamentoDialog.placeholderVolumeAproximado')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="pequeno">Pequeno (&lt; 1k registros)</SelectItem>
-                  <SelectItem value="medio">Médio (1k - 100k registros)</SelectItem>
-                  <SelectItem value="grande">Grande (100k - 1M registros)</SelectItem>
-                  <SelectItem value="muito_grande">Muito Grande (&gt; 1M registros)</SelectItem>
+                  <SelectItem value="pequeno">{t('dadosDashboard.mapeamentoDialog.volumePequeno')}</SelectItem>
+                  <SelectItem value="medio">{t('dadosDashboard.mapeamentoDialog.volumeMedio')}</SelectItem>
+                  <SelectItem value="grande">{t('dadosDashboard.mapeamentoDialog.volumeGrande')}</SelectItem>
+                  <SelectItem value="muito_grande">{t('dadosDashboard.mapeamentoDialog.volumeMuitoGrande')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="frequencia_acesso">Frequência de Acesso</Label>
+              <Label htmlFor="frequencia_acesso">{t('dadosDashboard.mapeamentoDialog.labelFrequenciaAcesso')}</Label>
               <Select value={formData.frequencia_acesso} onValueChange={(value) => setFormData({ ...formData, frequencia_acesso: value })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione a frequência" />
+                  <SelectValue placeholder={t('dadosDashboard.mapeamentoDialog.placeholderFrequenciaAcesso')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="diaria">Diária</SelectItem>
-                  <SelectItem value="semanal">Semanal</SelectItem>
-                  <SelectItem value="mensal">Mensal</SelectItem>
-                  <SelectItem value="eventual">Eventual</SelectItem>
-                  <SelectItem value="rara">Rara</SelectItem>
+                  <SelectItem value="diaria">{t('dadosDashboard.mapeamentoDialog.frequenciaDiaria')}</SelectItem>
+                  <SelectItem value="semanal">{t('dadosDashboard.mapeamentoDialog.frequenciaSemanal')}</SelectItem>
+                  <SelectItem value="mensal">{t('dadosDashboard.mapeamentoDialog.frequenciaMensal')}</SelectItem>
+                  <SelectItem value="eventual">{t('dadosDashboard.mapeamentoDialog.frequenciaEventual')}</SelectItem>
+                  <SelectItem value="rara">{t('dadosDashboard.mapeamentoDialog.frequenciaRara')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -225,26 +227,26 @@ export function MapeamentoDialog({ isOpen, onClose, onSave, mapeamento }: Mapeam
               checked={formData.criptografia_aplicada}
               onCheckedChange={(checked) => setFormData({ ...formData, criptografia_aplicada: !!checked })}
             />
-            <Label htmlFor="criptografia_aplicada">Criptografia Aplicada</Label>
+            <Label htmlFor="criptografia_aplicada">{t('dadosDashboard.mapeamentoDialog.labelCriptografiaAplicada')}</Label>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="controles_acesso">Controles de Acesso</Label>
+            <Label htmlFor="controles_acesso">{t('dadosDashboard.mapeamentoDialog.labelControlesAcesso')}</Label>
             <Textarea
               id="controles_acesso"
               value={formData.controles_acesso}
               onChange={(e) => setFormData({ ...formData, controles_acesso: e.target.value })}
-              placeholder="Descreva os controles de acesso aplicados (autenticação, autorização, etc.)"
+              placeholder={t('dadosDashboard.mapeamentoDialog.placeholderControlesAcesso')}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="observacoes">Observações</Label>
+            <Label htmlFor="observacoes">{t('dadosDashboard.mapeamentoDialog.labelObservacoes')}</Label>
             <Textarea
               id="observacoes"
               value={formData.observacoes}
               onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
-              placeholder="Observações adicionais sobre o mapeamento"
+              placeholder={t('dadosDashboard.mapeamentoDialog.placeholderObservacoes')}
             />
           </div>
         </div>

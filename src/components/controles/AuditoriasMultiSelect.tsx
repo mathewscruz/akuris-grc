@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { formatStatus } from '@/lib/text-utils';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveAuditoriaTipoTone, resolveAuditoriaStatusTone } from '@/lib/status-tone';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Auditoria {
   id: string;
@@ -28,9 +29,11 @@ interface AuditoriasMultiSelectProps {
 export function AuditoriasMultiSelect({ 
   value = [], 
   onValueChange, 
-  placeholder = "Selecionar auditorias..." 
+  placeholder
 }: AuditoriasMultiSelectProps) {
   const { profile } = useAuth();
+  const { t } = useLanguage();
+  const resolvedPlaceholder = placeholder ?? t('controlesAuditorias.amsPlaceholder');
   const [open, setOpen] = useState(false);
   const [auditorias, setAuditorias] = useState<Auditoria[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,7 +58,7 @@ export function AuditoriasMultiSelect({
       setAuditorias(data || []);
     } catch (error: any) {
       console.error('Erro ao buscar auditorias:', error);
-      toast.error('Erro ao carregar lista de auditorias');
+      toast.error(t('controlesAuditorias.amsErrorLoad'));
     } finally {
       setLoading(false);
     }
@@ -88,11 +91,11 @@ export function AuditoriasMultiSelect({
           >
             <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">
               {selectedAuditorias.length === 0 ? (
-                <span className="text-muted-foreground">{placeholder}</span>
+                <span className="text-muted-foreground">{resolvedPlaceholder}</span>
               ) : (
                 <>
                   <ClipboardList className="h-4 w-4 flex-shrink-0" />
-                  <span className="text-sm">{selectedAuditorias.length} selecionada(s)</span>
+                  <span className="text-sm">{t('controlesAuditorias.amsSelectedCount', { count: selectedAuditorias.length })}</span>
                 </>
               )}
             </div>
@@ -101,12 +104,12 @@ export function AuditoriasMultiSelect({
         </PopoverTrigger>
         <PopoverContent className="w-full p-0 bg-popover" align="start">
           <Command>
-            <CommandInput placeholder="Buscar auditoria..." />
+            <CommandInput placeholder={t('controlesAuditorias.amsSearchPlaceholder')} />
             <CommandList>
               {loading ? (
-                <CommandEmpty>Carregando auditorias...</CommandEmpty>
+                <CommandEmpty>{t('controlesAuditorias.amsLoading')}</CommandEmpty>
               ) : auditorias.length === 0 ? (
-                <CommandEmpty>Nenhuma auditoria ativa encontrada.</CommandEmpty>
+                <CommandEmpty>{t('controlesAuditorias.amsEmpty')}</CommandEmpty>
               ) : (
                 <CommandGroup>
                   {auditorias.map((auditoria) => (

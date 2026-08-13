@@ -9,6 +9,7 @@ import { ClipboardCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface ControleTeste {
   id: string;
@@ -42,6 +43,7 @@ export default function ControlesTestesDialog({ open, onOpenChange, controle, te
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (teste) {
@@ -67,7 +69,7 @@ export default function ControlesTestesDialog({ open, onOpenChange, controle, te
 
   const saveTesteMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      if (!controle) throw new Error('Controle não selecionado');
+      if (!controle) throw new Error(t('controlesAuditorias.ctdErrorControleNotFound'));
 
       const testeData = {
         ...data,
@@ -92,16 +94,16 @@ export default function ControlesTestesDialog({ open, onOpenChange, controle, te
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['controles_testes'] });
       toast({
-        title: teste ? "Teste atualizado" : "Teste registrado",
-        description: teste ? "O teste foi atualizado com sucesso." : "O teste foi registrado com sucesso.",
+        title: teste ? t('controlesAuditorias.ctdToastUpdatedTitle') : t('controlesAuditorias.ctdToastCreatedTitle'),
+        description: teste ? t('controlesAuditorias.ctdToastUpdatedDesc') : t('controlesAuditorias.ctdToastCreatedDesc'),
       });
       setIsDirty(false);
       onOpenChange(false);
     },
     onError: (error) => {
       toast({
-        title: "Erro",
-        description: `Não foi possível ${teste ? 'atualizar' : 'registrar'} o teste: ${error.message}`,
+        title: t('controlesAuditorias.ctdErrorTitle'),
+        description: t('controlesAuditorias.ctdErrorSaveDesc', { action: teste ? t('controlesAuditorias.ctdActionUpdate') : t('controlesAuditorias.ctdActionCreate'), message: error.message }),
         variant: "destructive",
       });
     }
@@ -110,8 +112,8 @@ export default function ControlesTestesDialog({ open, onOpenChange, controle, te
   const handleSubmit = () => {
     if (!formData.data_teste || !formData.resultado) {
       toast({
-        title: "Erro",
-        description: "Data do teste e resultado são obrigatórios.",
+        title: t('controlesAuditorias.ctdErrorTitle'),
+        description: t('controlesAuditorias.ctdValidationRequired'),
         variant: "destructive",
       });
       return;
@@ -124,18 +126,18 @@ export default function ControlesTestesDialog({ open, onOpenChange, controle, te
       open={open}
       onOpenChange={onOpenChange}
       icon={ClipboardCheck}
-      title={teste ? "Editar Teste" : "Novo Teste"}
+      title={teste ? t('controlesAuditorias.ctdTitleEdit') : t('controlesAuditorias.ctdTitleNew')}
       description={controle?.nome}
       size="md"
       onSubmit={handleSubmit}
-      submitLabel={teste ? "Atualizar" : "Registrar"}
+      submitLabel={teste ? t('controlesAuditorias.ctdSubmitUpdate') : t('controlesAuditorias.ctdSubmitCreate')}
       isSubmitting={saveTesteMutation.isPending}
       isDirty={isDirty}
     >
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <Label htmlFor="data_teste">Data do Teste *</Label>
+            <Label htmlFor="data_teste">{t('controlesAuditorias.ctdFieldDataTeste')}</Label>
             <Input
               id="data_teste"
               type="date"
@@ -146,15 +148,15 @@ export default function ControlesTestesDialog({ open, onOpenChange, controle, te
           </div>
 
           <div>
-            <Label htmlFor="resultado">Resultado *</Label>
+            <Label htmlFor="resultado">{t('controlesAuditorias.ctdFieldResultado')}</Label>
             <Select value={formData.resultado} onValueChange={(value) => update({ resultado: value })}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="eficaz">Eficaz</SelectItem>
-                <SelectItem value="ineficaz">Ineficaz</SelectItem>
-                <SelectItem value="parcialmente_eficaz">Parcialmente Eficaz</SelectItem>
+                <SelectItem value="eficaz">{t('controlesAuditorias.ctdResultadoEficaz')}</SelectItem>
+                <SelectItem value="ineficaz">{t('controlesAuditorias.ctdResultadoIneficaz')}</SelectItem>
+                <SelectItem value="parcialmente_eficaz">{t('controlesAuditorias.ctdResultadoParcial')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -162,17 +164,17 @@ export default function ControlesTestesDialog({ open, onOpenChange, controle, te
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <Label htmlFor="testador">Testador</Label>
+            <Label htmlFor="testador">{t('controlesAuditorias.ctdFieldTestador')}</Label>
             <Input
               id="testador"
               value={formData.testador}
               onChange={(e) => update({ testador: e.target.value })}
-              placeholder="Nome do testador"
+              placeholder={t('controlesAuditorias.ctdFieldTestadorPlaceholder')}
             />
           </div>
 
           <div>
-            <Label htmlFor="proxima_avaliacao">Próxima Avaliação</Label>
+            <Label htmlFor="proxima_avaliacao">{t('controlesAuditorias.ctdFieldProximaAvaliacao')}</Label>
             <Input
               id="proxima_avaliacao"
               type="date"
@@ -183,23 +185,23 @@ export default function ControlesTestesDialog({ open, onOpenChange, controle, te
         </div>
 
         <div>
-          <Label htmlFor="observacoes">Observações</Label>
+          <Label htmlFor="observacoes">{t('controlesAuditorias.ctdFieldObservacoes')}</Label>
           <Textarea
             id="observacoes"
             value={formData.observacoes}
             onChange={(e) => update({ observacoes: e.target.value })}
-            placeholder="Detalhes sobre o teste realizado"
+            placeholder={t('controlesAuditorias.ctdFieldObservacoesPlaceholder')}
             rows={3}
           />
         </div>
 
         <div>
-          <Label htmlFor="evidencias">Evidências</Label>
+          <Label htmlFor="evidencias">{t('controlesAuditorias.ctdFieldEvidencias')}</Label>
           <Textarea
             id="evidencias"
             value={formData.evidencias}
             onChange={(e) => update({ evidencias: e.target.value })}
-            placeholder="Links ou referências das evidências coletadas"
+            placeholder={t('controlesAuditorias.ctdFieldEvidenciasPlaceholder')}
             rows={2}
           />
         </div>

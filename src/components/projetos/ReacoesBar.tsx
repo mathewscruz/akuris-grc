@@ -4,6 +4,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { SmilePlus } from 'lucide-react';
 import { useReacoes, useToggleReacao } from '@/hooks/useProjetoExtras';
 import { useAuth } from '@/components/AuthProvider';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const EMOJIS = ['👍', '✅', '🚀', '🎉', '🙏', '👀', '❓', '🛑'];
 
@@ -15,6 +16,7 @@ export function ReacoesBar({ comentarioIds }: { comentarioIds: string[] }) {
 
 export function ReacoesPorComentario({ comentarioId, reacoes }: { comentarioId: string; reacoes: ReturnType<typeof useReacoes>['data'] }) {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const toggle = useToggleReacao();
   const minhas = (reacoes ?? []).filter((r) => r.comentario_id === comentarioId);
 
@@ -39,7 +41,7 @@ export function ReacoesPorComentario({ comentarioId, reacoes }: { comentarioId: 
           className={`inline-flex items-center gap-1 rounded-full border px-2 h-6 text-xs leading-none transition-colors ${
             g.minha ? 'border-primary/40 bg-primary/10 text-primary' : 'border-border bg-card hover:bg-muted'
           }`}
-          title={g.minha ? 'Remover reação' : 'Reagir'}
+          title={g.minha ? t('projetos.reacoes.remove') : t('projetos.reacoes.react')}
         >
           <span>{emoji}</span>
           <span className="tabular-nums">{g.count}</span>

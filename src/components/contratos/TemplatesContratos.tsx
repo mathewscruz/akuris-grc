@@ -10,6 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { FileText, Plus, Edit, Trash2, Copy, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface TemplateContrato {
   id?: string;
@@ -30,14 +31,14 @@ interface TemplatesContratosProps {
   onTemplateSelect?: (template: TemplateContrato) => void;
 }
 
-const tiposContrato = [
-  { value: 'prestacao_servicos', label: 'Prestação de Serviços' },
-  { value: 'fornecimento', label: 'Fornecimento' },
-  { value: 'locacao', label: 'Locação' },
-  { value: 'licenciamento', label: 'Licenciamento' },
-  { value: 'manutencao', label: 'Manutenção' },
-  { value: 'consultoria', label: 'Consultoria' },
-  { value: 'outros', label: 'Outros' }
+const tiposContratoValues = [
+  'prestacao_servicos',
+  'fornecimento',
+  'locacao',
+  'licenciamento',
+  'manutencao',
+  'consultoria',
+  'outros'
 ];
 
 const camposDisponiveis = [
@@ -55,6 +56,7 @@ const camposDisponiveis = [
 ];
 
 export default function TemplatesContratos({ onTemplateSelect }: TemplatesContratosProps) {
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [templates, setTemplates] = useState<TemplateContrato[]>([]);
@@ -73,6 +75,19 @@ export default function TemplatesContratos({ onTemplateSelect }: TemplatesContra
     penalidades_padrao: '',
     prazo_pagamento_padrao: 30
   });
+
+  const tiposContrato = tiposContratoValues.map(value => ({
+    value,
+    label: t(`contratosAtivos.templatesContratos.${{
+      prestacao_servicos: 'typePrestacaoServicos',
+      fornecimento: 'typeFornecimento',
+      locacao: 'typeLocacao',
+      licenciamento: 'typeLicenciamento',
+      manutencao: 'typeManutencao',
+      consultoria: 'typeConsultoria',
+      outros: 'typeOutros',
+    }[value]}`)
+  }));
 
   useEffect(() => {
     if (open) {
@@ -96,8 +111,8 @@ export default function TemplatesContratos({ onTemplateSelect }: TemplatesContra
     } catch (error) {
       console.error('Erro ao carregar templates:', error);
       toast({
-        title: "Erro",
-        description: "Erro ao carregar templates",
+        title: t('contratosAtivos.common.error'),
+        description: t('contratosAtivos.templatesContratos.toastLoadError'),
         variant: "destructive"
       });
     } finally {
@@ -176,8 +191,8 @@ A manutenção preventiva e corretiva dos equipamentos será de responsabilidade
     try {
       // Aqui implementaríamos a lógica de salvar no banco
       toast({
-        title: "Sucesso",
-        description: editingTemplate ? "Template atualizado" : "Template criado",
+        title: t('contratosAtivos.common.success'),
+        description: editingTemplate ? t('contratosAtivos.templatesContratos.toastSaveSuccessUpdate') : t('contratosAtivos.templatesContratos.toastSaveSuccessCreate'),
       });
       
       setFormOpen(false);
@@ -196,8 +211,8 @@ A manutenção preventiva e corretiva dos equipamentos será de responsabilidade
       carregarTemplates();
     } catch (error) {
       toast({
-        title: "Erro",
-        description: "Erro ao salvar template",
+        title: t('contratosAtivos.common.error'),
+        description: t('contratosAtivos.templatesContratos.toastSaveError'),
         variant: "destructive"
       });
     }
@@ -207,14 +222,14 @@ A manutenção preventiva e corretiva dos equipamentos será de responsabilidade
     try {
       // Aqui implementaríamos a lógica de excluir do banco
       toast({
-        title: "Sucesso",
-        description: "Template excluído",
+        title: t('contratosAtivos.common.success'),
+        description: t('contratosAtivos.templatesContratos.toastDeleteSuccess'),
       });
       carregarTemplates();
     } catch (error) {
       toast({
-        title: "Erro",
-        description: "Erro ao excluir template",
+        title: t('contratosAtivos.common.error'),
+        description: t('contratosAtivos.templatesContratos.toastDeleteError'),
         variant: "destructive"
       });
     }
@@ -223,7 +238,7 @@ A manutenção preventiva e corretiva dos equipamentos será de responsabilidade
   const duplicarTemplate = (template: TemplateContrato) => {
     setFormData({
       ...template,
-      nome: `${template.nome} (Cópia)`,
+      nome: `${template.nome}${t('contratosAtivos.templatesContratos.copySuffix')}`,
       id: undefined
     });
     setFormOpen(true);
@@ -234,8 +249,8 @@ A manutenção preventiva e corretiva dos equipamentos será de responsabilidade
       onTemplateSelect(template);
       setOpen(false);
       toast({
-        title: "Template aplicado",
-        description: "Os dados do template foram aplicados ao formulário",
+        title: t('contratosAtivos.templatesContratos.toastTemplateApplied'),
+        description: t('contratosAtivos.templatesContratos.toastTemplateAppliedDescription'),
       });
     }
   };
@@ -266,32 +281,32 @@ A manutenção preventiva e corretiva dos equipamentos será de responsabilidade
         <DialogTrigger asChild>
           <Button variant="outline">
             <FileText className="h-4 w-4 mr-2" />
-            Templates
+            {t('contratosAtivos.templatesContratos.triggerButton')}
           </Button>
         </DialogTrigger>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <div className="flex items-center justify-between">
               <div>
-                <DialogTitle>Templates de Contratos</DialogTitle>
+                <DialogTitle>{t('contratosAtivos.templatesContratos.title')}</DialogTitle>
                 <DialogDescription>
-                  Gerencie e utilize templates para agilizar a criação de contratos
+                  {t('contratosAtivos.templatesContratos.description')}
                 </DialogDescription>
               </div>
               <Button onClick={() => setFormOpen(true)}>
                 <Plus className="h-4 w-4 mr-2" />
-                Novo Template
+                {t('contratosAtivos.templatesContratos.newButton')}
               </Button>
             </div>
           </DialogHeader>
 
           {loading ? (
-            <div className="text-center py-8">Carregando templates...</div>
+            <div className="text-center py-8">{t('contratosAtivos.templatesContratos.loading')}</div>
           ) : (
             <div className="space-y-4">
               {templates.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  Nenhum template encontrado
+                  {t('contratosAtivos.templatesContratos.emptyState')}
                 </div>
               ) : (
                 <div className="grid gap-4">
@@ -307,7 +322,7 @@ A manutenção preventiva e corretiva dos equipamentos será de responsabilidade
                                 {tiposContrato.find(t => t.value === template.tipo)?.label}
                               </Badge>
                               <Badge variant="secondary">
-                                {template.campos_obrigatorios.length} campos obrigatórios
+                                {t('contratosAtivos.templatesContratos.requiredFieldsBadge', { count: template.campos_obrigatorios.length })}
                               </Badge>
                             </div>
                           </div>
@@ -317,7 +332,7 @@ A manutenção preventiva e corretiva dos equipamentos será de responsabilidade
                                 size="sm" 
                                 onClick={() => aplicarTemplate(template)}
                               >
-                                Usar Template
+                                {t('contratosAtivos.templatesContratos.useTemplateButton')}
                               </Button>
                             )}
                             <Button 
@@ -354,19 +369,19 @@ A manutenção preventiva e corretiva dos equipamentos será de responsabilidade
                       <CardContent>
                         <div className="space-y-3">
                           <div>
-                            <h4 className="font-medium text-sm mb-1">Objeto Padrão:</h4>
+                            <h4 className="font-medium text-sm mb-1">{t('contratosAtivos.templatesContratos.defaultObjectTitle')}</h4>
                             <p className="text-sm text-muted-foreground">{template.objeto_padrao}</p>
                           </div>
                           
                           {template.sla_padrao && (
                             <div>
-                              <h4 className="font-medium text-sm mb-1">SLA Padrão:</h4>
+                              <h4 className="font-medium text-sm mb-1">{t('contratosAtivos.templatesContratos.defaultSlaTitle')}</h4>
                               <p className="text-sm text-muted-foreground">{template.sla_padrao}</p>
                             </div>
                           )}
                           
                           <div>
-                            <h4 className="font-medium text-sm mb-1">Campos Obrigatórios:</h4>
+                            <h4 className="font-medium text-sm mb-1">{t('contratosAtivos.templatesContratos.requiredFieldsTitle')}</h4>
                             <div className="flex flex-wrap gap-1">
                               {template.campos_obrigatorios.map(campo => (
                                 <Badge key={campo} variant="outline" className="text-xs">
@@ -391,29 +406,29 @@ A manutenção preventiva e corretiva dos equipamentos será de responsabilidade
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {editingTemplate ? 'Editar Template' : 'Novo Template'}
+              {editingTemplate ? t('contratosAtivos.templatesContratos.dialogTitleEdit') : t('contratosAtivos.templatesContratos.dialogTitleNew')}
             </DialogTitle>
             <DialogDescription>
-              Configure as informações padrão do template
+              {t('contratosAtivos.templatesContratos.dialogDescription')}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium mb-2 block">Nome do Template</label>
+                <label className="text-sm font-medium mb-2 block">{t('contratosAtivos.templatesContratos.labelTemplateName')}</label>
                 <Input
                   value={formData.nome}
                   onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
-                  placeholder="Ex: Prestação de Serviços - TI"
+                  placeholder={t('contratosAtivos.templatesContratos.templateNamePlaceholder')}
                 />
               </div>
               
               <div>
-                <label className="text-sm font-medium mb-2 block">Tipo</label>
+                <label className="text-sm font-medium mb-2 block">{t('contratosAtivos.templatesContratos.labelType')}</label>
                 <Select value={formData.tipo} onValueChange={(value) => setFormData(prev => ({ ...prev, tipo: value }))}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione o tipo" />
+                    <SelectValue placeholder={t('contratosAtivos.templatesContratos.typePlaceholder')} />
                   </SelectTrigger>
                   <SelectContent>
                     {tiposContrato.map(tipo => (
@@ -427,35 +442,35 @@ A manutenção preventiva e corretiva dos equipamentos será de responsabilidade
             </div>
 
             <div>
-              <label className="text-sm font-medium mb-2 block">Descrição</label>
+              <label className="text-sm font-medium mb-2 block">{t('contratosAtivos.templatesContratos.labelDescription')}</label>
               <Textarea
                 value={formData.descricao}
                 onChange={(e) => setFormData(prev => ({ ...prev, descricao: e.target.value }))}
-                placeholder="Descreva o propósito deste template"
+                placeholder={t('contratosAtivos.templatesContratos.descriptionPlaceholder')}
               />
             </div>
 
             <div>
-              <label className="text-sm font-medium mb-2 block">Objeto Padrão</label>
+              <label className="text-sm font-medium mb-2 block">{t('contratosAtivos.templatesContratos.labelDefaultObject')}</label>
               <Textarea
                 value={formData.objeto_padrao}
                 onChange={(e) => setFormData(prev => ({ ...prev, objeto_padrao: e.target.value }))}
-                placeholder="Objeto padrão do contrato"
+                placeholder={t('contratosAtivos.templatesContratos.defaultObjectPlaceholder')}
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium mb-2 block">SLA Padrão</label>
+                <label className="text-sm font-medium mb-2 block">{t('contratosAtivos.templatesContratos.labelDefaultSla')}</label>
                 <Input
                   value={formData.sla_padrao || ''}
                   onChange={(e) => setFormData(prev => ({ ...prev, sla_padrao: e.target.value }))}
-                  placeholder="Ex: Disponibilidade 99.5%"
+                  placeholder={t('contratosAtivos.templatesContratos.defaultSlaPlaceholder')}
                 />
               </div>
               
               <div>
-                <label className="text-sm font-medium mb-2 block">Prazo Pagamento (dias)</label>
+                <label className="text-sm font-medium mb-2 block">{t('contratosAtivos.templatesContratos.labelDefaultPaymentTerm')}</label>
                 <Input
                   type="number"
                   value={formData.prazo_pagamento_padrao || ''}
@@ -466,16 +481,16 @@ A manutenção preventiva e corretiva dos equipamentos será de responsabilidade
             </div>
 
             <div>
-              <label className="text-sm font-medium mb-2 block">Penalidades Padrão</label>
+              <label className="text-sm font-medium mb-2 block">{t('contratosAtivos.templatesContratos.labelDefaultPenalty')}</label>
               <Textarea
                 value={formData.penalidades_padrao || ''}
                 onChange={(e) => setFormData(prev => ({ ...prev, penalidades_padrao: e.target.value }))}
-                placeholder="Multas e penalidades padrão"
+                placeholder={t('contratosAtivos.templatesContratos.defaultPenaltyPlaceholder')}
               />
             </div>
 
             <div>
-              <label className="text-sm font-medium mb-2 block">Campos Obrigatórios</label>
+              <label className="text-sm font-medium mb-2 block">{t('contratosAtivos.templatesContratos.labelRequiredFieldsForm')}</label>
               <div className="grid grid-cols-2 gap-2">
                 {camposDisponiveis.map(campo => (
                   <label key={campo} className="flex items-center space-x-2 cursor-pointer">
@@ -492,21 +507,21 @@ A manutenção preventiva e corretiva dos equipamentos será de responsabilidade
             </div>
 
             <div>
-              <label className="text-sm font-medium mb-2 block">Cláusulas Padrão</label>
+              <label className="text-sm font-medium mb-2 block">{t('contratosAtivos.templatesContratos.labelDefaultClauses')}</label>
               <Textarea
                 value={formData.clausulas_padrao}
                 onChange={(e) => setFormData(prev => ({ ...prev, clausulas_padrao: e.target.value }))}
-                placeholder="Cláusulas padrão do contrato com variáveis como [VALOR], [DATA_INICIO], etc."
+                placeholder={t('contratosAtivos.templatesContratos.defaultClausesPlaceholder')}
                 rows={8}
               />
             </div>
 
             <div className="flex justify-end gap-2 pt-4">
               <Button variant="outline" onClick={() => setFormOpen(false)}>
-                Cancelar
+                {t('contratosAtivos.common.cancel')}
               </Button>
               <Button onClick={salvarTemplate}>
-                {editingTemplate ? 'Atualizar' : 'Criar'} Template
+                {editingTemplate ? t('contratosAtivos.templatesContratos.submitUpdateTemplate') : t('contratosAtivos.templatesContratos.submitCreateTemplate')}
               </Button>
             </div>
           </div>

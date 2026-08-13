@@ -14,6 +14,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { resolveCriticidadeTone, resolveControleStatusTone, resolveControleTipoTone } from "@/lib/status-tone";
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { useLanguage } from "@/contexts/LanguageContext";
 interface ImportarControlesDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -29,6 +30,7 @@ export function ImportarControlesDialog({
   auditoriaNome,
   onSuccess,
 }: ImportarControlesDialogProps) {
+  const { t } = useLanguage();
   const { empresaId } = useEmpresaId();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -110,13 +112,13 @@ export function ImportarControlesDialog({
 
       if (error) throw error;
 
-      toast.success(`${selectedIds.length} controle(s) importado(s) com sucesso`);
+      toast.success(t("controlesAuditorias.icdToastSuccess", { count: selectedIds.length }));
       setSelectedIds([]);
       onSuccess();
       onOpenChange(false);
     } catch (error: any) {
       console.error("Erro ao importar controles:", error);
-      toast.error(error.message || "Erro ao importar controles");
+      toast.error(error.message || t("controlesAuditorias.icdToastError"));
     } finally {
       setIsImporting(false);
     }
@@ -135,21 +137,21 @@ export function ImportarControlesDialog({
       open={open}
       onOpenChange={onOpenChange}
       icon={Shield}
-      title="Importar Controles Existentes"
+      title={t("controlesAuditorias.icdTitle")}
       size="md"
       noScroll
       footer={
         <div className="flex items-center justify-between w-full">
           <span className="text-sm text-muted-foreground">
-            {selectedIds.length} controle(s) selecionado(s)
+            {t("controlesAuditorias.icdSelectedCount", { count: selectedIds.length })}
           </span>
           <div className="flex gap-2">
             <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
-              Cancelar
+              {t("controlesAuditorias.icdBtnCancelar")}
             </Button>
             <Button size="sm" onClick={handleImport} disabled={selectedIds.length === 0 || isImporting}>
               {isImporting && <AkurisPulse size={16} className="mr-2" />}
-              Importar Selecionados
+              {t("controlesAuditorias.icdBtnImportar")}
             </Button>
           </div>
         </div>
@@ -159,7 +161,7 @@ export function ImportarControlesDialog({
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar controles..."
+            placeholder={t("controlesAuditorias.icdSearchPlaceholder")}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -168,10 +170,10 @@ export function ImportarControlesDialog({
 
         <ScrollArea className="flex-1 border rounded-lg max-h-[400px]">
           {isLoading ? (
-            <div className="p-8 text-center text-muted-foreground">Carregando controles...</div>
+            <div className="p-8 text-center text-muted-foreground">{t("controlesAuditorias.icdLoading")}</div>
           ) : filteredControles?.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground">
-              Nenhum controle encontrado
+              {t("controlesAuditorias.icdEmpty")}
             </div>
           ) : (
             <div className="divide-y">
@@ -201,7 +203,7 @@ export function ImportarControlesDialog({
                         {getCriticidadeBadge(controle.criticidade)}
                         {isJaVinculado && (
                           <StatusBadge size="sm" tone="neutral" variant="outline">
-                            Já vinculado
+                            {t("controlesAuditorias.icdJaVinculado")}
                           </StatusBadge>
                         )}
                       </div>

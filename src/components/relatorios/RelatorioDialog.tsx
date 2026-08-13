@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface RelatorioDialogProps {
   open: boolean;
@@ -15,6 +16,7 @@ interface RelatorioDialogProps {
 }
 
 export function RelatorioDialog({ open, onOpenChange, onSave, relatorio, loading }: RelatorioDialogProps) {
+  const { t } = useLanguage();
   const [nome, setNome] = useState(relatorio?.nome || '');
   const [descricao, setDescricao] = useState(relatorio?.descricao || '');
   const [templateBase, setTemplateBase] = useState(relatorio?.template_base || '');
@@ -43,34 +45,34 @@ export function RelatorioDialog({ open, onOpenChange, onSave, relatorio, loading
       open={open}
       onOpenChange={onOpenChange}
       icon={FileBarChart}
-      title={relatorio ? 'Editar Relatório' : 'Novo Relatório'}
+      title={relatorio ? t('relatoriosComp.dialog.titleEdit') : t('relatoriosComp.dialog.titleNew')}
       size="sm"
       onSubmit={handleSave}
-      submitLabel={relatorio ? 'Salvar' : 'Criar'}
+      submitLabel={relatorio ? t('relatoriosComp.dialog.submitUpdate') : t('relatoriosComp.dialog.submitCreate')}
       isSubmitting={loading}
       submitDisabled={!nome.trim()}
     >
         <div className="grid gap-4 py-4">
           <div className="space-y-2">
-            <Label>Nome *</Label>
-            <Input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Nome do relatório" />
+            <Label>{t('relatoriosComp.dialog.fieldNome')}</Label>
+            <Input value={nome} onChange={(e) => setNome(e.target.value)} placeholder={t('relatoriosComp.dialog.fieldNomePlaceholder')} />
           </div>
           <div className="space-y-2">
-            <Label>Descrição</Label>
-            <Textarea value={descricao} onChange={(e) => setDescricao(e.target.value)} placeholder="Descrição do relatório" rows={2} />
+            <Label>{t('relatoriosComp.dialog.fieldDescricao')}</Label>
+            <Textarea value={descricao} onChange={(e) => setDescricao(e.target.value)} placeholder={t('relatoriosComp.dialog.fieldDescricaoPlaceholder')} rows={2} />
           </div>
           <div className="space-y-2">
-            <Label>Template Base (opcional)</Label>
+            <Label>{t('relatoriosComp.dialog.fieldTemplate')}</Label>
             <Select value={templateBase} onValueChange={setTemplateBase}>
-              <SelectTrigger><SelectValue placeholder="Selecionar template..." /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder={t('relatoriosComp.dialog.fieldTemplatePlaceholder')} /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="nenhum">Nenhum (customizado)</SelectItem>
-                <SelectItem value="lgpd_anpd">Relatório LGPD para ANPD</SelectItem>
-                <SelectItem value="iso27001_auditoria">Status ISO 27001 para Auditoria</SelectItem>
-                <SelectItem value="executivo_trimestral">Resumo Executivo Trimestral</SelectItem>
-                <SelectItem value="riscos_geral">Panorama de Riscos</SelectItem>
-                <SelectItem value="incidentes_periodo">Incidentes por Período</SelectItem>
-                <SelectItem value="compliance_geral">Status Geral de Compliance</SelectItem>
+                <SelectItem value="nenhum">{t('relatoriosComp.dialog.templateNenhum')}</SelectItem>
+                <SelectItem value="lgpd_anpd">{t('relatoriosComp.dialog.templateLgpdAnpd')}</SelectItem>
+                <SelectItem value="iso27001_auditoria">{t('relatoriosComp.dialog.templateIso27001')}</SelectItem>
+                <SelectItem value="executivo_trimestral">{t('relatoriosComp.dialog.templateExecutivo')}</SelectItem>
+                <SelectItem value="riscos_geral">{t('relatoriosComp.dialog.templateRiscos')}</SelectItem>
+                <SelectItem value="incidentes_periodo">{t('relatoriosComp.dialog.templateIncidentes')}</SelectItem>
+                <SelectItem value="compliance_geral">{t('relatoriosComp.dialog.templateCompliance')}</SelectItem>
               </SelectContent>
             </Select>
           </div>

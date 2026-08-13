@@ -6,6 +6,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { useUsuariosEmpresa } from "@/hooks/useAuditoriaData";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface AuditorSelectProps {
   value?: string;
@@ -13,7 +14,8 @@ interface AuditorSelectProps {
   placeholder?: string;
 }
 
-const AuditorSelect = ({ value, onChange, placeholder = "Selecione um auditor" }: AuditorSelectProps) => {
+const AuditorSelect = ({ value, onChange, placeholder }: AuditorSelectProps) => {
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const { data: usuarios, isLoading } = useUsuariosEmpresa();
 
@@ -35,16 +37,16 @@ const AuditorSelect = ({ value, onChange, placeholder = "Selecione um auditor" }
               <span className="text-muted-foreground">({selectedUser.email})</span>
             </div>
           ) : (
-            placeholder
+            placeholder ?? t('controlesAuditorias.audSelPlaceholder')
           )}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-full p-0">
         <Command>
-          <CommandInput placeholder="Buscar auditor..." />
+          <CommandInput placeholder={t('controlesAuditorias.audSelSearchPlaceholder')} />
           <CommandEmpty>
-            {isLoading ? "Carregando..." : "Nenhum auditor encontrado."}
+            {isLoading ? t('controlesAuditorias.audSelLoading') : t('controlesAuditorias.audSelEmpty')}
           </CommandEmpty>
           <CommandGroup>
             {usuarios?.map((user) => (

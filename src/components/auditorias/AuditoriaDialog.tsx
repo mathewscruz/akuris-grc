@@ -13,6 +13,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 
 interface AuditoriaDialogProps {
@@ -23,6 +24,7 @@ interface AuditoriaDialogProps {
 }
 
 const AuditoriaDialog = ({ open, onOpenChange, auditoria, onSuccess }: AuditoriaDialogProps) => {
+  const { t } = useLanguage();
   const [formData, setFormData] = useState({
     nome: '',
     descricao: '',
@@ -82,16 +84,16 @@ const AuditoriaDialog = ({ open, onOpenChange, auditoria, onSuccess }: Auditoria
     const newErrors: Record<string, string> = {};
 
     if (!formData.nome.trim()) {
-      newErrors.nome = 'Nome é obrigatório';
+      newErrors.nome = t('controlesAuditorias.adValidationNomeRequired');
     }
 
     if (!formData.tipo) {
-      newErrors.tipo = 'Tipo é obrigatório';
+      newErrors.tipo = t('controlesAuditorias.adValidationTipoRequired');
     }
 
     if (formData.data_inicio && formData.data_fim_prevista) {
       if (formData.data_fim_prevista <= formData.data_inicio) {
-        newErrors.data_fim_prevista = 'Data de conclusão deve ser posterior à data de início';
+        newErrors.data_fim_prevista = t('controlesAuditorias.adValidationDataFim');
       }
     }
 
@@ -103,7 +105,7 @@ const AuditoriaDialog = ({ open, onOpenChange, auditoria, onSuccess }: Auditoria
     e.preventDefault();
     
     if (!validateForm()) {
-      toast.error('Por favor, corrija os erros no formulário');
+      toast.error(t('controlesAuditorias.adToastFormError'));
       return;
     }
 
@@ -112,7 +114,7 @@ const AuditoriaDialog = ({ open, onOpenChange, auditoria, onSuccess }: Auditoria
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        toast.error('Usuário não autenticado');
+        toast.error(t('controlesAuditorias.adToastNotAuthenticated'));
         setIsSubmitting(false);
         return;
       }
@@ -124,7 +126,7 @@ const AuditoriaDialog = ({ open, onOpenChange, auditoria, onSuccess }: Auditoria
         .single();
 
       if (!profile?.empresa_id) {
-        toast.error('Erro ao obter dados da empresa');
+        toast.error(t('controlesAuditorias.adToastCompanyError'));
         setIsSubmitting(false);
         return;
       }
@@ -144,20 +146,20 @@ const AuditoriaDialog = ({ open, onOpenChange, auditoria, onSuccess }: Auditoria
           .eq('id', auditoria.id);
 
         if (error) throw error;
-        toast.success('Auditoria atualizada com sucesso');
+        toast.success(t('controlesAuditorias.adToastUpdated'));
       } else {
         const { error } = await supabase
           .from('auditorias')
           .insert(auditoriaData);
 
         if (error) throw error;
-        toast.success('Auditoria criada com sucesso');
+        toast.success(t('controlesAuditorias.adToastCreated'));
       }
 
       onSuccess();
     } catch (error) {
       console.error('Erro ao salvar auditoria:', error);
-      toast.error('Erro ao salvar auditoria');
+      toast.error(t('controlesAuditorias.adToastSaveError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -167,17 +169,17 @@ const AuditoriaDialog = ({ open, onOpenChange, auditoria, onSuccess }: Auditoria
     <DialogShell
         open={open}
         onOpenChange={onOpenChange}
-        title={`${auditoria?.id ? "Editar" : "Nova"} Auditoria`}
+        title={auditoria?.id ? t("controlesAuditorias.adTitleEdit") : t("controlesAuditorias.adTitleNew")}
         icon={ClipboardCheck}
         size="lg"
         onSubmit={() => handleSubmit({ preventDefault: () => {} } as React.FormEvent)}
-        submitLabel={auditoria ? 'Atualizar' : 'Criar'}
+        submitLabel={auditoria ? t('controlesAuditorias.adSubmitUpdate') : t('controlesAuditorias.adSubmitCreate')}
         isSubmitting={isSubmitting}
       >
 <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="nome">Nome da Auditoria *</Label>
+              <Label htmlFor="nome">{t("controlesAuditorias.adFieldNome")}</Label>
               <Input
                 id="nome"
                 value={formData.nome}
@@ -188,27 +190,27 @@ const AuditoriaDialog = ({ open, onOpenChange, auditoria, onSuccess }: Auditoria
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="tipo">Tipo *</Label>
+              <Label htmlFor="tipo">{t("controlesAuditorias.adFieldTipo")}</Label>
               <Select
                 value={formData.tipo}
                 onValueChange={(value) => setFormData({ ...formData, tipo: value })}
               >
                 <SelectTrigger className={errors.tipo ? "border-red-500" : ""}>
-                  <SelectValue placeholder="Selecione o tipo" />
+                  <SelectValue placeholder={t("controlesAuditorias.adTipoPlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="interna">Auditoria Interna</SelectItem>
-                  <SelectItem value="externa">Auditoria Externa</SelectItem>
-                  <SelectItem value="compliance">Compliance</SelectItem>
-                  <SelectItem value="operacional">Operacional</SelectItem>
-                  <SelectItem value="ti">Auditoria de TI</SelectItem>
+                  <SelectItem value="interna">{t("controlesAuditorias.adTipoInterna")}</SelectItem>
+                  <SelectItem value="externa">{t("controlesAuditorias.adTipoExterna")}</SelectItem>
+                  <SelectItem value="compliance">{t("controlesAuditorias.adTipoCompliance")}</SelectItem>
+                  <SelectItem value="operacional">{t("controlesAuditorias.adTipoOperacional")}</SelectItem>
+                  <SelectItem value="ti">{t("controlesAuditorias.adTipoTi")}</SelectItem>
                 </SelectContent>
               </Select>
               {errors.tipo && <p className="text-sm text-red-500">{errors.tipo}</p>}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
+              <Label htmlFor="status">{t("controlesAuditorias.adFieldStatus")}</Label>
               <Select
                 value={formData.status}
                 onValueChange={(value) => setFormData({ ...formData, status: value })}
@@ -217,16 +219,16 @@ const AuditoriaDialog = ({ open, onOpenChange, auditoria, onSuccess }: Auditoria
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="planejamento">Planejamento</SelectItem>
-                  <SelectItem value="em_andamento">Em Andamento</SelectItem>
-                  <SelectItem value="concluida">Concluída</SelectItem>
-                  <SelectItem value="cancelada">Cancelada</SelectItem>
+                  <SelectItem value="planejamento">{t("controlesAuditorias.adStatusPlanejamento")}</SelectItem>
+                  <SelectItem value="em_andamento">{t("controlesAuditorias.adStatusEmAndamento")}</SelectItem>
+                  <SelectItem value="concluida">{t("controlesAuditorias.adStatusConcluida")}</SelectItem>
+                  <SelectItem value="cancelada">{t("controlesAuditorias.adStatusCancelada")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="prioridade">Prioridade</Label>
+              <Label htmlFor="prioridade">{t("controlesAuditorias.adFieldPrioridade")}</Label>
               <Select
                 value={formData.prioridade}
                 onValueChange={(value) => setFormData({ ...formData, prioridade: value })}
@@ -235,41 +237,41 @@ const AuditoriaDialog = ({ open, onOpenChange, auditoria, onSuccess }: Auditoria
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="baixa">Baixa</SelectItem>
-                  <SelectItem value="media">Média</SelectItem>
-                  <SelectItem value="alta">Alta</SelectItem>
-                  <SelectItem value="critica">Crítica</SelectItem>
+                  <SelectItem value="baixa">{t("controlesAuditorias.adPrioridadeBaixa")}</SelectItem>
+                  <SelectItem value="media">{t("controlesAuditorias.adPrioridadeMedia")}</SelectItem>
+                  <SelectItem value="alta">{t("controlesAuditorias.adPrioridadeAlta")}</SelectItem>
+                  <SelectItem value="critica">{t("controlesAuditorias.adPrioridadeCritica")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
 
             <div className="space-y-2">
-              <Label htmlFor="framework">Framework</Label>
+              <Label htmlFor="framework">{t("controlesAuditorias.adFieldFramework")}</Label>
               <Select
                 value={formData.framework}
                 onValueChange={(value) => setFormData({ ...formData, framework: value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione o framework" />
+                  <SelectValue placeholder={t("controlesAuditorias.adFrameworkPlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="COSO">COSO</SelectItem>
                   <SelectItem value="ISO27001">ISO 27001</SelectItem>
                   <SelectItem value="SOX">Sarbanes-Oxley</SelectItem>
                   <SelectItem value="COBIT">COBIT</SelectItem>
-                  <SelectItem value="Personalizado">Personalizado</SelectItem>
+                  <SelectItem value="Personalizado">{t("controlesAuditorias.adFrameworkPersonalizado")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label>Data de Início</Label>
+              <Label>{t("controlesAuditorias.adFieldDataInicio")}</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="w-full justify-start text-left font-normal">
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.data_inicio ? format(formData.data_inicio, "PPP", { locale: ptBR }) : "Selecione a data"}
+                    {formData.data_inicio ? format(formData.data_inicio, "PPP", { locale: ptBR }) : t("controlesAuditorias.adSelecioneData")}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
@@ -284,7 +286,7 @@ const AuditoriaDialog = ({ open, onOpenChange, auditoria, onSuccess }: Auditoria
             </div>
 
             <div className="space-y-2">
-              <Label>Data de Conclusão Prevista</Label>
+              <Label>{t("controlesAuditorias.adFieldDataFim")}</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button 
@@ -292,7 +294,7 @@ const AuditoriaDialog = ({ open, onOpenChange, auditoria, onSuccess }: Auditoria
                     className={`w-full justify-start text-left font-normal ${errors.data_fim_prevista ? "border-red-500" : ""}`}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.data_fim_prevista ? format(formData.data_fim_prevista, "PPP", { locale: ptBR }) : "Selecione a data"}
+                    {formData.data_fim_prevista ? format(formData.data_fim_prevista, "PPP", { locale: ptBR }) : t("controlesAuditorias.adSelecioneData")}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
@@ -309,7 +311,7 @@ const AuditoriaDialog = ({ open, onOpenChange, auditoria, onSuccess }: Auditoria
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="descricao">Descrição</Label>
+            <Label htmlFor="descricao">{t("controlesAuditorias.adFieldDescricao")}</Label>
             <Textarea
               id="descricao"
               value={formData.descricao}
@@ -319,7 +321,7 @@ const AuditoriaDialog = ({ open, onOpenChange, auditoria, onSuccess }: Auditoria
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="escopo">Escopo da Auditoria</Label>
+            <Label htmlFor="escopo">{t("controlesAuditorias.adFieldEscopo")}</Label>
             <Textarea
               id="escopo"
               value={formData.escopo}
@@ -329,7 +331,7 @@ const AuditoriaDialog = ({ open, onOpenChange, auditoria, onSuccess }: Auditoria
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="objetivos">Objetivos</Label>
+            <Label htmlFor="objetivos">{t("controlesAuditorias.adFieldObjetivos")}</Label>
             <Textarea
               id="objetivos"
               value={formData.objetivos}
@@ -339,7 +341,7 @@ const AuditoriaDialog = ({ open, onOpenChange, auditoria, onSuccess }: Auditoria
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="metodologia">Metodologia</Label>
+            <Label htmlFor="metodologia">{t("controlesAuditorias.adFieldMetodologia")}</Label>
             <Textarea
               id="metodologia"
               value={formData.metodologia}

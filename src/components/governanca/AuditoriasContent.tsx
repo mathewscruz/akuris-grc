@@ -27,8 +27,10 @@ import {
 } from "@/components/ui/pagination";
 import { formatDateOnly } from "@/lib/date-utils";
 import { formatStatus } from "@/lib/text-utils";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function AuditoriasContent() {
+  const { t } = useLanguage();
   const { toast } = useToast();
   const location = useLocation();
   const { empresaId } = useEmpresaId();
@@ -70,8 +72,8 @@ export default function AuditoriasContent() {
 
       if (error) {
         toast({
-          title: "Erro",
-          description: "Erro ao carregar auditorias",
+          title: t("governancaComp.auditorias.toastErrorTitle"),
+          description: t("governancaComp.auditorias.toastErrorLoad"),
           variant: "destructive",
         });
         throw error;
@@ -142,8 +144,8 @@ export default function AuditoriasContent() {
 
     if (error) {
       toast({
-        title: "Erro",
-        description: "Erro ao excluir auditoria",
+        title: t("governancaComp.auditorias.toastErrorTitle"),
+        description: t("governancaComp.auditorias.toastErrorDelete"),
         variant: "destructive",
       });
       setDeleteConfirm({ open: false, id: '' });
@@ -151,8 +153,8 @@ export default function AuditoriasContent() {
     }
 
     toast({
-      title: "Sucesso",
-      description: "Auditoria excluída com sucesso",
+      title: t("governancaComp.auditorias.toastSuccessTitle"),
+      description: t("governancaComp.auditorias.toastDeleted"),
     });
     setDeleteConfirm({ open: false, id: '' });
     refetch();
@@ -213,8 +215,8 @@ export default function AuditoriasContent() {
     link.click();
     
     toast({
-      title: "Exportação concluída",
-      description: `${auditorias.length} auditorias exportadas para CSV.`,
+      title: t("governancaComp.auditorias.toastExportTitle"),
+      description: t("governancaComp.auditorias.toastExportDesc", { count: auditorias.length }),
     });
   };
 
@@ -233,27 +235,27 @@ export default function AuditoriasContent() {
 
   const statsCards = [
     {
-      title: "Total de Auditorias",
+      title: t("governancaComp.auditorias.statTotal"),
       value: auditorias?.length || 0,
-      description: "Auditorias cadastradas",
+      description: t("governancaComp.auditorias.statTotalDesc"),
       icon: FileText,
     },
     {
-      title: "Em Andamento",
+      title: t("governancaComp.auditorias.statEmAndamento"),
       value: auditorias?.filter(a => a.status === 'em_andamento' || a.status === 'em_execucao').length || 0,
-      description: "Auditorias ativas",
+      description: t("governancaComp.auditorias.statEmAndamentoDesc"),
       icon: Clock,
     },
     {
-      title: "Controles Atendidos",
+      title: t("governancaComp.auditorias.statControles"),
       value: `${totalConcluidos}/${totalItens}`,
-      description: totalItens > 0 ? `${Math.round((totalConcluidos / totalItens) * 100)}% concluídos` : "Nenhum controle",
+      description: totalItens > 0 ? t("governancaComp.auditorias.statControlesDescConcluido", { pct: Math.round((totalConcluidos / totalItens) * 100) }) : t("governancaComp.auditorias.statControlesDescNenhum"),
       icon: CheckCircle,
     },
     {
-      title: "Pendentes",
+      title: t("governancaComp.auditorias.statPendentes"),
       value: auditorias?.filter(a => a.status === 'planejamento').length || 0,
-      description: "Aguardando início",
+      description: t("governancaComp.auditorias.statPendentesDesc"),
       icon: AlertTriangle,
     }
   ];
@@ -282,7 +284,7 @@ export default function AuditoriasContent() {
           <div className="p-6 pb-4">
             <div className="flex items-center justify-between gap-4 mb-4">
               <Input
-                placeholder="Buscar auditorias..."
+                placeholder={t("governancaComp.auditorias.searchPlaceholder")}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="max-w-sm"
@@ -295,7 +297,7 @@ export default function AuditoriasContent() {
                   disabled={!auditorias || auditorias.length === 0}
                 >
                   <Download className="h-4 w-4 mr-2" />
-                  Exportar CSV
+                  {t("governancaComp.auditorias.buttonExportar")}
                 </Button>
                 <Button 
                   variant="outline" 
@@ -303,11 +305,11 @@ export default function AuditoriasContent() {
                   onClick={() => setShowFilters(!showFilters)}
                 >
                   <Filter className="h-4 w-4 mr-2" />
-                  Filtros
+                  {t("governancaComp.auditorias.buttonFiltros")}
                 </Button>
                 <Button size="sm" onClick={() => setShowAuditoriaDialog(true)}>
                   <Plus className="h-4 w-4 mr-2" />
-                  Nova Auditoria
+                  {t("governancaComp.auditorias.buttonNova")}
                 </Button>
               </div>
             </div>
@@ -315,27 +317,27 @@ export default function AuditoriasContent() {
               <div className="flex gap-4 items-center flex-wrap p-4 bg-muted/50 rounded-lg mb-4">
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Status" />
+                    <SelectValue placeholder={t("governancaComp.auditorias.filterStatus")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="todos">Todos os Status</SelectItem>
-                    <SelectItem value="planejamento">Planejamento</SelectItem>
-                    <SelectItem value="em_andamento">Em Andamento</SelectItem>
-                    <SelectItem value="concluida">Concluída</SelectItem>
-                    <SelectItem value="cancelada">Cancelada</SelectItem>
+                    <SelectItem value="todos">{t("governancaComp.auditorias.filterStatusAll")}</SelectItem>
+                    <SelectItem value="planejamento">{t("governancaComp.auditorias.statusPlanejamento")}</SelectItem>
+                    <SelectItem value="em_andamento">{t("governancaComp.auditorias.statusEmAndamento")}</SelectItem>
+                    <SelectItem value="concluida">{t("governancaComp.auditorias.statusConcluida")}</SelectItem>
+                    <SelectItem value="cancelada">{t("governancaComp.auditorias.statusCancelada")}</SelectItem>
                   </SelectContent>
                 </Select>
                 <Select value={tipoFilter} onValueChange={setTipoFilter}>
                   <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Tipo" />
+                    <SelectValue placeholder={t("governancaComp.auditorias.filterTipo")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="todos">Todos os Tipos</SelectItem>
-                    <SelectItem value="interna">Interna</SelectItem>
-                    <SelectItem value="externa">Externa</SelectItem>
-                    <SelectItem value="compliance">Compliance</SelectItem>
-                    <SelectItem value="operacional">Operacional</SelectItem>
-                    <SelectItem value="ti">TI</SelectItem>
+                    <SelectItem value="todos">{t("governancaComp.auditorias.filterTipoAll")}</SelectItem>
+                    <SelectItem value="interna">{t("governancaComp.auditorias.tipoInterna")}</SelectItem>
+                    <SelectItem value="externa">{t("governancaComp.auditorias.tipoExterna")}</SelectItem>
+                    <SelectItem value="compliance">{t("governancaComp.auditorias.tipoCompliance")}</SelectItem>
+                    <SelectItem value="operacional">{t("governancaComp.auditorias.tipoOperacional")}</SelectItem>
+                    <SelectItem value="ti">{t("governancaComp.auditorias.tipoTi")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -351,10 +353,10 @@ export default function AuditoriasContent() {
           ) : !auditorias || auditorias.length === 0 ? (
             <EmptyState
               icon={<FileText className="h-8 w-8" />}
-              title="Nenhuma auditoria encontrada"
-              description="Ainda não há auditorias cadastradas. Comece criando a primeira auditoria."
+              title={t("governancaComp.auditorias.emptyTitle")}
+              description={t("governancaComp.auditorias.emptyDescription")}
               action={{
-                label: "Nova Auditoria",
+                label: t("governancaComp.auditorias.emptyAction"),
                 onClick: () => {
                   setSelectedAuditoria(null);
                   setShowAuditoriaDialog(true);
@@ -386,7 +388,7 @@ export default function AuditoriasContent() {
               {totalPages > 1 && (
                 <div className="flex items-center justify-between px-4 py-4 border-t">
                   <div className="text-sm text-muted-foreground">
-                    Mostrando {((currentPage - 1) * itemsPerPage) + 1} a {Math.min(currentPage * itemsPerPage, auditorias.length)} de {auditorias.length} auditorias
+                    {t("governancaComp.auditorias.showingRange", { from: ((currentPage - 1) * itemsPerPage) + 1, to: Math.min(currentPage * itemsPerPage, auditorias.length), total: auditorias.length })}
                   </div>
                   <Pagination>
                     <PaginationContent>
@@ -464,10 +466,10 @@ export default function AuditoriasContent() {
       <ConfirmDialog
         open={deleteConfirm.open}
         onOpenChange={(open) => setDeleteConfirm(prev => ({ ...prev, open }))}
-        title="Excluir Auditoria"
-        description={`Tem certeza que deseja excluir "${deleteConfirm.nome}"? Esta ação não pode ser desfeita.`}
-        confirmText="Excluir"
-        cancelText="Cancelar"
+        title={t("governancaComp.auditorias.deleteTitle")}
+        description={t("governancaComp.auditorias.deleteDescription", { nome: deleteConfirm.nome })}
+        confirmText={t("governancaComp.auditorias.deleteConfirm")}
+        cancelText={t("governancaComp.auditorias.deleteCancel")}
         variant="destructive"
         onConfirm={confirmDelete}
       />

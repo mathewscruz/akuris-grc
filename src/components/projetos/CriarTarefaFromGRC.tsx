@@ -13,6 +13,7 @@ import { useAuth } from '@/components/AuthProvider';
 import type { ProjetoTarefaPrioridade, ProjetoVinculoEntidade } from '@/types/projetos';
 import { PRIORIDADE_LABEL } from '@/types/projetos';
 import { toast } from 'sonner';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface CriarTarefaFromGRCProps {
   entidadeTipo: ProjetoVinculoEntidade;
@@ -35,6 +36,7 @@ export const CriarTarefaFromGRC: React.FC<CriarTarefaFromGRCProps> = ({
   const [prioridade, setPrioridade] = useState<ProjetoTarefaPrioridade>('media');
   const [prazo, setPrazo] = useState<string>('');
   const [salvando, setSalvando] = useState(false);
+  const { t } = useLanguage();
 
   const { data: projetos = [] } = useProjetos();
   const { data: colunas = [] } = useProjetoColunas(projetoId || undefined);
@@ -51,10 +53,10 @@ export const CriarTarefaFromGRC: React.FC<CriarTarefaFromGRCProps> = ({
   }, [open, tituloSugerido, descricaoSugerida]);
 
   const handleSalvar = async () => {
-    if (!projetoId) { toast.error('Selecione um projeto'); return; }
-    if (titulo.trim().length < 3) { toast.error('Informe um título'); return; }
+    if (!projetoId) { toast.error(t('projetos.criarTarefaGRC.selectProjectError')); return; }
+    if (titulo.trim().length < 3) { toast.error(t('projetos.criarTarefaGRC.titleError')); return; }
     const primeiraColuna = colunas[0]?.id;
-    if (!primeiraColuna) { toast.error('Projeto sem colunas configuradas'); return; }
+    if (!primeiraColuna) { toast.error(t('projetos.criarTarefaGRC.noColumnsError')); return; }
     setSalvando(true);
     try {
       const tarefa: any = await upsert.mutateAsync({
@@ -78,10 +80,10 @@ export const CriarTarefaFromGRC: React.FC<CriarTarefaFromGRCProps> = ({
         } as any);
       }
 
-      toast.success('Tarefa criada e vinculada');
+      toast.success(t('projetos.criarTarefaGRC.successMessage'));
       setOpen(false);
     } catch (e: any) {
-      toast.error(e?.message || 'Erro ao criar tarefa');
+      toast.error(e?.message || t('projetos.criarTarefaGRC.errorMessage'));
     } finally {
       setSalvando(false);
     }
@@ -93,7 +95,7 @@ export const CriarTarefaFromGRC: React.FC<CriarTarefaFromGRCProps> = ({
         <span onClick={() => setOpen(true)}>{trigger}</span>
       ) : (
         <Button variant={variant} size={size} onClick={() => setOpen(true)}>
-          <ListTodo className="h-4 w-4" /> Criar tarefa de projeto
+          <ListTodo className="h-4 w-4" /> {t('projetos.criarTarefaGRC.buttonLabel')}
         </Button>
       )}
 
@@ -101,38 +103,38 @@ export const CriarTarefaFromGRC: React.FC<CriarTarefaFromGRCProps> = ({
         open={open}
         onOpenChange={setOpen}
         icon={ListTodo}
-        title="Criar tarefa em um projeto"
-        description="A tarefa será criada e vinculada automaticamente a este item."
+        title={t('projetos.criarTarefaGRC.dialogTitle')}
+        description={t('projetos.criarTarefaGRC.dialogDescription')}
         size="sm"
         onSubmit={handleSalvar}
-        submitLabel="Criar tarefa"
+        submitLabel={t('projetos.criarTarefaGRC.submitLabel')}
         isSubmitting={salvando}
       >
           <div className="space-y-3">
             <div className="space-y-2">
-              <Label>Projeto</Label>
+              <Label>{t('projetos.criarTarefaGRC.fieldProjeto')}</Label>
               <Select value={projetoId} onValueChange={setProjetoId}>
-                <SelectTrigger><SelectValue placeholder="Selecione um projeto ativo" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t('projetos.criarTarefaGRC.selectActiveProject')} /></SelectTrigger>
                 <SelectContent>
-                  {ativos.length === 0 && <div className="px-3 py-2 text-sm text-muted-foreground">Nenhum projeto ativo</div>}
+                  {ativos.length === 0 && <div className="px-3 py-2 text-sm text-muted-foreground">{t('projetos.criarTarefaGRC.noActiveProjects')}</div>}
                   {ativos.map(p => <SelectItem key={p.id} value={p.id}>{p.nome}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label>Título</Label>
+              <Label>{t('projetos.criarTarefaGRC.fieldTitulo')}</Label>
               <Input value={titulo} onChange={(e) => setTitulo(e.target.value)} />
             </div>
 
             <div className="space-y-2">
-              <Label>Descrição</Label>
+              <Label>{t('projetos.criarTarefaGRC.fieldDescricao')}</Label>
               <Textarea value={descricao} onChange={(e) => setDescricao(e.target.value)} rows={3} />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label>Prioridade</Label>
+                <Label>{t('projetos.criarTarefaGRC.fieldPrioridade')}</Label>
                 <Select value={prioridade} onValueChange={(v) => setPrioridade(v as ProjetoTarefaPrioridade)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -143,7 +145,7 @@ export const CriarTarefaFromGRC: React.FC<CriarTarefaFromGRCProps> = ({
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Prazo</Label>
+                <Label>{t('projetos.criarTarefaGRC.fieldPrazo')}</Label>
                 <Input type="date" value={prazo} onChange={(e) => setPrazo(e.target.value)} />
               </div>
             </div>

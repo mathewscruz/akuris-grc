@@ -14,6 +14,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { Link, Shield, Package } from "lucide-react";
 import { formatStatus } from '@/lib/text-utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface ControlesVinculacaoDialogProps {
   open: boolean;
@@ -61,6 +62,7 @@ export default function ControlesVinculacaoDialog({
 }: ControlesVinculacaoDialogProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState("riscos");
   const [isDirty, setIsDirty] = useState(false);
 
@@ -141,7 +143,7 @@ export default function ControlesVinculacaoDialog({
   // Mutation para salvar vinculações
   const saveVinculacaoMutation = useMutation({
     mutationFn: async () => {
-      if (!controleId) throw new Error('Controle ID é obrigatório');
+      if (!controleId) throw new Error(t('controlesAuditorias.cvdErrorControleIdRequired'));
 
       // Deletar vinculações existentes
       await supabase.from('controles_riscos').delete().eq('controle_id', controleId);
@@ -182,8 +184,8 @@ export default function ControlesVinculacaoDialog({
     },
     onSuccess: () => {
       toast({
-        title: "Vinculações salvas",
-        description: "As vinculações do controle foram salvas com sucesso.",
+        title: t('controlesAuditorias.cvdToastSavedTitle'),
+        description: t('controlesAuditorias.cvdToastSavedDesc'),
       });
       queryClient.invalidateQueries({ queryKey: ['controles'] });
       setIsDirty(false);
@@ -191,8 +193,8 @@ export default function ControlesVinculacaoDialog({
     },
     onError: (error) => {
       toast({
-        title: "Erro",
-        description: "Não foi possível salvar as vinculações.",
+        title: t('controlesAuditorias.cvdToastErrorTitle'),
+        description: t('controlesAuditorias.cvdToastErrorDesc'),
         variant: "destructive",
       });
       console.error('Error saving vinculações:', error);
@@ -257,11 +259,11 @@ export default function ControlesVinculacaoDialog({
       open={open}
       onOpenChange={onOpenChange}
       icon={Link}
-      title="Vincular Controle"
-      description={controleNome ? `Riscos e ativos associados a "${controleNome}"` : undefined}
+      title={t('controlesAuditorias.cvdTitle')}
+      description={controleNome ? t('controlesAuditorias.cvdDescription', { nome: controleNome }) : undefined}
       size="lg"
       onSubmit={() => saveVinculacaoMutation.mutate()}
-      submitLabel="Salvar Vinculações"
+      submitLabel={t('controlesAuditorias.cvdSubmitLabel')}
       isSubmitting={saveVinculacaoMutation.isPending}
       isDirty={isDirty}
     >
@@ -269,17 +271,17 @@ export default function ControlesVinculacaoDialog({
         <TabsList>
           <TabsTrigger value="riscos" className="flex items-center gap-2">
             <Shield className="w-4 h-4" />
-            Riscos ({vinculacoesRiscos.length})
+            {t('controlesAuditorias.cvdTabRiscos', { count: vinculacoesRiscos.length })}
           </TabsTrigger>
           <TabsTrigger value="ativos" className="flex items-center gap-2">
             <Package className="w-4 h-4" />
-            Ativos ({vinculacoesAtivos.length})
+            {t('controlesAuditorias.cvdTabAtivos', { count: vinculacoesAtivos.length })}
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="riscos" className="space-y-4">
           <div className="grid gap-4">
-            <h3 className="text-lg font-semibold">Riscos Disponíveis</h3>
+            <h3 className="text-lg font-semibold">{t('controlesAuditorias.cvdRiscosDisponiveis')}</h3>
             {riscos.map((risco) => (
               <Card key={risco.id} className="p-4">
                 <div className="flex items-center justify-between">
@@ -320,7 +322,7 @@ export default function ControlesVinculacaoDialog({
                   <div className="mt-4 p-4 bg-muted/50 rounded-lg space-y-3">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label>Tipo de Vinculação</Label>
+                        <Label>{t('controlesAuditorias.cvdFieldTipoVinculacao')}</Label>
                         <Select
                           value={vinculacoesRiscos.find(v => v.risco_id === risco.id)?.tipo_vinculacao || 'mitiga'}
                           onValueChange={(value) => handleUpdateRiscoVinculacao(risco.id, 'tipo_vinculacao', value)}
@@ -329,15 +331,15 @@ export default function ControlesVinculacaoDialog({
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="mitiga">Mitiga</SelectItem>
-                            <SelectItem value="previne">Previne</SelectItem>
-                            <SelectItem value="detecta">Detecta</SelectItem>
-                            <SelectItem value="corrige">Corrige</SelectItem>
+                            <SelectItem value="mitiga">{t('controlesAuditorias.cvdTipoMitiga')}</SelectItem>
+                            <SelectItem value="previne">{t('controlesAuditorias.cvdTipoPrevine')}</SelectItem>
+                            <SelectItem value="detecta">{t('controlesAuditorias.cvdTipoDetecta')}</SelectItem>
+                            <SelectItem value="corrige">{t('controlesAuditorias.cvdTipoCorrige')}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                       <div>
-                        <Label>Eficácia Estimada</Label>
+                        <Label>{t('controlesAuditorias.cvdFieldEficaciaEstimada')}</Label>
                         <Select
                           value={vinculacoesRiscos.find(v => v.risco_id === risco.id)?.eficacia_estimada || 'media'}
                           onValueChange={(value) => handleUpdateRiscoVinculacao(risco.id, 'eficacia_estimada', value)}
@@ -346,19 +348,19 @@ export default function ControlesVinculacaoDialog({
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="alta">Alta</SelectItem>
-                            <SelectItem value="media">Média</SelectItem>
-                            <SelectItem value="baixa">Baixa</SelectItem>
+                            <SelectItem value="alta">{t('controlesAuditorias.cvdEficaciaAlta')}</SelectItem>
+                            <SelectItem value="media">{t('controlesAuditorias.cvdEficaciaMedia')}</SelectItem>
+                            <SelectItem value="baixa">{t('controlesAuditorias.cvdEficaciaBaixa')}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                     </div>
                     <div>
-                      <Label>Observações</Label>
+                      <Label>{t('controlesAuditorias.cvdFieldObservacoes')}</Label>
                       <Textarea
                         value={vinculacoesRiscos.find(v => v.risco_id === risco.id)?.observacoes || ''}
                         onChange={(e) => handleUpdateRiscoVinculacao(risco.id, 'observacoes', e.target.value)}
-                        placeholder="Observações sobre a vinculação..."
+                        placeholder={t('controlesAuditorias.cvdObservacoesPlaceholderVinc')}
                       />
                     </div>
                   </div>
@@ -370,7 +372,7 @@ export default function ControlesVinculacaoDialog({
 
         <TabsContent value="ativos" className="space-y-4">
           <div className="grid gap-4">
-            <h3 className="text-lg font-semibold">Ativos Disponíveis</h3>
+            <h3 className="text-lg font-semibold">{t('controlesAuditorias.cvdAtivosDisponiveis')}</h3>
             {ativos.map((ativo) => (
               <Card key={ativo.id} className="p-4">
                 <div className="flex items-center justify-between">
@@ -404,7 +406,7 @@ export default function ControlesVinculacaoDialog({
                   <div className="mt-4 p-4 bg-muted/50 rounded-lg space-y-3">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label>Tipo de Proteção</Label>
+                        <Label>{t('controlesAuditorias.cvdFieldTipoProtecao')}</Label>
                         <Select
                           value={vinculacoesAtivos.find(v => v.ativo_id === ativo.id)?.tipo_protecao || 'protege'}
                           onValueChange={(value) => handleUpdateAtivoVinculacao(ativo.id, 'tipo_protecao', value)}
@@ -413,21 +415,21 @@ export default function ControlesVinculacaoDialog({
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="protege">Protege</SelectItem>
-                            <SelectItem value="monitora">Monitora</SelectItem>
-                            <SelectItem value="backup">Backup</SelectItem>
-                            <SelectItem value="acesso">Controle de Acesso</SelectItem>
+                            <SelectItem value="protege">{t('controlesAuditorias.cvdProtecaoProtege')}</SelectItem>
+                            <SelectItem value="monitora">{t('controlesAuditorias.cvdProtecaoMonitora')}</SelectItem>
+                            <SelectItem value="backup">{t('controlesAuditorias.cvdProtecaoBackup')}</SelectItem>
+                            <SelectItem value="acesso">{t('controlesAuditorias.cvdProtecaoAcesso')}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                       <div></div>
                     </div>
                     <div>
-                      <Label>Observações</Label>
+                      <Label>{t('controlesAuditorias.cvdFieldObservacoes')}</Label>
                       <Textarea
                         value={vinculacoesAtivos.find(v => v.ativo_id === ativo.id)?.observacoes || ''}
                         onChange={(e) => handleUpdateAtivoVinculacao(ativo.id, 'observacoes', e.target.value)}
-                        placeholder="Observações sobre a proteção..."
+                        placeholder={t('controlesAuditorias.cvdObservacoesPlaceholderProt')}
                       />
                     </div>
                   </div>

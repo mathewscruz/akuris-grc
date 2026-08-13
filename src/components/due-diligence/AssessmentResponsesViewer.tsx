@@ -11,6 +11,7 @@ import { FileText, Download, User, Calendar, Mail } from 'lucide-react';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { formatStatus } from '@/lib/text-utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 interface Assessment {
   id: string;
   fornecedor_nome: string;
@@ -62,6 +63,7 @@ export function AssessmentResponsesViewer({
   const [responses, setResponses] = useState<Response[]>([]);
   const [scoreData, setScoreData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (open && assessment) {
@@ -120,24 +122,24 @@ export function AssessmentResponsesViewer({
 
   const getQuestionTypeLabel = (tipo: string) => {
     const types = {
-      'texto': 'Texto',
-      'textarea': 'Texto Longo',
-      'radio': 'Múltipla Escolha',
-      'checkbox': 'Múltiplas Seleções',
-      'booleano': 'Sim/Não',
-      'numerico': 'Numérico',
-      'data': 'Data',
-      'arquivo': 'Arquivo'
+      'texto': t('dueDiligence.assessmentResponsesViewer.typeText'),
+      'textarea': t('dueDiligence.assessmentResponsesViewer.typeTextarea'),
+      'radio': t('dueDiligence.assessmentResponsesViewer.typeRadio'),
+      'checkbox': t('dueDiligence.assessmentResponsesViewer.typeCheckbox'),
+      'booleano': t('dueDiligence.assessmentResponsesViewer.typeBoolean'),
+      'numerico': t('dueDiligence.assessmentResponsesViewer.typeNumeric'),
+      'data': t('dueDiligence.assessmentResponsesViewer.typeDate'),
+      'arquivo': t('dueDiligence.assessmentResponsesViewer.typeFile')
     };
     return types[tipo as keyof typeof types] || tipo;
   };
 
   const formatResponse = (response: Response, question: Question) => {
-    if (!response) return 'Não respondido';
+    if (!response) return t('dueDiligence.assessmentResponsesViewer.notAnswered');
     
     switch (question.tipo) {
       case 'booleano':
-        return response.resposta === 'sim' ? 'Sim' : 'Não';
+        return response.resposta === 'sim' ? t('dueDiligence.assessmentResponsesViewer.yes') : t('dueDiligence.assessmentResponsesViewer.no');
       case 'data':
         try {
           return new Date(response.resposta).toLocaleDateString('pt-BR');
@@ -182,7 +184,7 @@ export function AssessmentResponsesViewer({
       open={open}
       onOpenChange={onOpenChange}
       icon={FileText}
-      title={`Visualizar Respostas — ${assessment.fornecedor_nome}`}
+      title={t('dueDiligence.assessmentResponsesViewer.title', { fornecedor: assessment.fornecedor_nome })}
       size="xl"
       hideFooter
     >
@@ -193,32 +195,32 @@ export function AssessmentResponsesViewer({
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <User className="h-4 w-4" />
-                  Informações da Avaliação
+                  {t('dueDiligence.assessmentResponsesViewer.infoCardTitle')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                   <div>
-                    <span className="text-muted-foreground">Fornecedor:</span>
+                    <span className="text-muted-foreground">{t('dueDiligence.assessmentResponsesViewer.fieldSupplier')}</span>
                     <p className="font-medium">{assessment.fornecedor_nome}</p>
                   </div>
                   <div>
-                    <span className="text-muted-foreground">Email:</span>
+                    <span className="text-muted-foreground">{t('dueDiligence.assessmentResponsesViewer.fieldEmail')}</span>
                     <p className="font-medium">{assessment.fornecedor_email}</p>
                   </div>
                   <div>
-                    <span className="text-muted-foreground">Template:</span>
+                    <span className="text-muted-foreground">{t('dueDiligence.assessmentResponsesViewer.fieldTemplate')}</span>
                     <p className="font-medium">{assessment.template.nome}</p>
                   </div>
                   <div>
-                    <span className="text-muted-foreground">Status:</span>
+                    <span className="text-muted-foreground">{t('dueDiligence.assessmentResponsesViewer.fieldStatus')}</span>
                     <StatusBadge size="sm" {...resolveDueDiligenceStatusTone(assessment.status)}>{formatStatus(assessment.status)}</StatusBadge>
                   </div>
                   {assessment.data_conclusao && (
                     <div className="col-span-2">
                       <span className="text-muted-foreground flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
-                        Concluído em:
+                        {t('dueDiligence.assessmentResponsesViewer.completedAt')}
                       </span>
                       <p className="font-medium">
                         {new Date(assessment.data_conclusao).toLocaleDateString('pt-BR', {
@@ -250,7 +252,7 @@ export function AssessmentResponsesViewer({
             {loading ? (
               <div className="text-center py-8">
                 <AkurisPulse size={32} />
-                <p className="mt-2 text-muted-foreground">Carregando respostas...</p>
+                <p className="mt-2 text-muted-foreground">{t('dueDiligence.assessmentResponsesViewer.loadingResponses')}</p>
               </div>
             ) : (
               <div className="space-y-6">
@@ -272,7 +274,7 @@ export function AssessmentResponsesViewer({
                                   </span>
                                   <h4 className="font-medium">{question.titulo}</h4>
                                   {question.obrigatoria && (
-                                    <StatusBadge size="sm" tone="neutral" variant="outline">Obrigatória</StatusBadge>
+                                    <StatusBadge size="sm" tone="neutral" variant="outline">{t('dueDiligence.assessmentResponsesViewer.requiredBadge')}</StatusBadge>
                                   )}
                                 </div>
                                 <div className="flex items-center gap-2 mb-2">
@@ -281,7 +283,7 @@ export function AssessmentResponsesViewer({
                                   </StatusBadge>
                                   {question.peso && (
                                     <StatusBadge size="sm" tone="neutral" variant="outline">
-                                      Peso: {question.peso}
+                                      {t('dueDiligence.assessmentResponsesViewer.weightLabel', { peso: question.peso })}
                                     </StatusBadge>
                                   )}
                                 </div>
@@ -291,14 +293,14 @@ export function AssessmentResponsesViewer({
                             <div className="bg-muted/30 p-3 rounded-md">
                               <div className="flex items-center justify-between">
                                 <div className="flex-1">
-                                  <span className="text-sm text-muted-foreground">Resposta:</span>
+                                  <span className="text-sm text-muted-foreground">{t('dueDiligence.assessmentResponsesViewer.responseLabel')}</span>
                                   <p className="font-medium mt-1">
                                     {formatResponse(response!, question)}
                                   </p>
                                 </div>
                                 {response?.pontuacao && (
                                   <div className="text-right">
-                                    <span className="text-sm text-muted-foreground">Pontuação:</span>
+                                    <span className="text-sm text-muted-foreground">{t('dueDiligence.assessmentResponsesViewer.scoreLabel')}</span>
                                     <p className="font-semibold text-primary">
                                       {response.pontuacao.toFixed(1)}
                                     </p>
@@ -307,13 +309,13 @@ export function AssessmentResponsesViewer({
                               </div>
                               {response && (
                                 <p className="text-xs text-muted-foreground mt-2">
-                                  Respondido em {new Date(response.created_at).toLocaleDateString('pt-BR', {
+                                  {t('dueDiligence.assessmentResponsesViewer.answeredAt', { data: new Date(response.created_at).toLocaleDateString('pt-BR', {
                                     day: '2-digit',
                                     month: '2-digit',
                                     year: 'numeric',
                                     hour: '2-digit',
                                     minute: '2-digit'
-                                  })}
+                                  }) })}
                                 </p>
                               )}
                             </div>
@@ -331,7 +333,7 @@ export function AssessmentResponsesViewer({
             {/* Ações */}
             <div className="flex justify-between items-center pt-4 border-t">
               <div className="text-sm text-muted-foreground">
-                Total de {responses.length} respostas de {questions.length} perguntas
+                {t('dueDiligence.assessmentResponsesViewer.totalResponsesFooter', { responses: responses.length, questions: questions.length })}
               </div>
               <div className="flex gap-2">
                 <Button
@@ -341,10 +343,10 @@ export function AssessmentResponsesViewer({
                   disabled // Implementar posteriormente
                 >
                   <Download className="h-4 w-4" />
-                  Exportar PDF
+                  {t('dueDiligence.assessmentResponsesViewer.exportPdf')}
                 </Button>
                 <Button onClick={() => onOpenChange(false)}>
-                  Fechar
+                  {t('dueDiligence.assessmentResponsesViewer.close')}
                 </Button>
               </div>
             </div>

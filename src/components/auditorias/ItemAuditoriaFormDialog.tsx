@@ -1,3 +1,4 @@
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -64,6 +65,7 @@ export function ItemAuditoriaFormDialog({
   item,
   onSuccess,
 }: ItemAuditoriaFormDialogProps) {
+  const { t } = useLanguage();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { data: usuarios } = useUsuariosEmpresa();
   const { notify } = useIntegrationNotify();
@@ -268,13 +270,13 @@ export function ItemAuditoriaFormDialog({
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecione" />
+                          <SelectValue placeholder={t("controlesAuditorias.iafdPrioridadePlaceholder")} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="alta">Alta</SelectItem>
-                        <SelectItem value="media">Média</SelectItem>
-                        <SelectItem value="baixa">Baixa</SelectItem>
+                        <SelectItem value="alta">{t("controlesAuditorias.iafdPrioridadeAlta")}</SelectItem>
+                        <SelectItem value="media">{t("controlesAuditorias.iafdPrioridadeMedia")}</SelectItem>
+                        <SelectItem value="baixa">{t("controlesAuditorias.iafdPrioridadeBaixa")}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -288,9 +290,9 @@ export function ItemAuditoriaFormDialog({
               name="titulo"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Título *</FormLabel>
+                  <FormLabel>{t("controlesAuditorias.iafdFieldTitulo")}</FormLabel>
                   <FormControl>
-                    <Input placeholder="Título do item de verificação" {...field} />
+                    <Input placeholder={t("controlesAuditorias.iafdFieldTituloPlaceholder")} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -302,10 +304,10 @@ export function ItemAuditoriaFormDialog({
               name="descricao"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Descrição</FormLabel>
+                  <FormLabel>{t("controlesAuditorias.iafdFieldDescricao")}</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Descreva o que precisa ser evidenciado..."
+                      placeholder={t("controlesAuditorias.iafdFieldDescricaoPlaceholder")}
                       rows={3}
                       {...field}
                     />
@@ -321,15 +323,15 @@ export function ItemAuditoriaFormDialog({
                 name="responsavel_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Responsável</FormLabel>
+                    <FormLabel>{t("controlesAuditorias.iafdFieldResponsavel")}</FormLabel>
                     <Select onValueChange={(v) => field.onChange(v === "_none" ? "" : v)} value={field.value || "_none"}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecione o responsável" />
+                          <SelectValue placeholder={t("controlesAuditorias.iafdResponsavelPlaceholder")} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="_none">Nenhum</SelectItem>
+                        <SelectItem value="_none">{t("controlesAuditorias.iafdResponsavelNenhum")}</SelectItem>
                         {usuarios?.map((u) => (
                           <SelectItem key={u.user_id} value={u.user_id}>
                             {u.nome}
@@ -347,7 +349,7 @@ export function ItemAuditoriaFormDialog({
                 name="prazo"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Prazo</FormLabel>
+                    <FormLabel>{t("controlesAuditorias.iafdFieldPrazo")}</FormLabel>
                     <FormControl>
                       <Input type="date" {...field} />
                     </FormControl>
@@ -363,7 +365,7 @@ export function ItemAuditoriaFormDialog({
               name="area_sistema_id"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Área/Sistema Auditado (opcional)</FormLabel>
+                  <FormLabel>{t("controlesAuditorias.iafdFieldAreaSistema")}</FormLabel>
                   <FormControl>
                     <AreaSistemaSelect
                       auditoriaId={auditoriaId}
@@ -381,18 +383,18 @@ export function ItemAuditoriaFormDialog({
               name="status"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Status</FormLabel>
+                  <FormLabel>{t("controlesAuditorias.iafdFieldStatus")}</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Selecione" />
+                        <SelectValue placeholder={t("controlesAuditorias.iafdStatusPlaceholder")} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="pendente">Pendente</SelectItem>
-                      <SelectItem value="em_andamento">Em Andamento</SelectItem>
-                      <SelectItem value="concluido">Concluído</SelectItem>
-                      <SelectItem value="nao_aplicavel">Não Aplicável</SelectItem>
+                      <SelectItem value="pendente">{t("controlesAuditorias.iafdStatusPendente")}</SelectItem>
+                      <SelectItem value="em_andamento">{t("controlesAuditorias.iafdStatusEmAndamento")}</SelectItem>
+                      <SelectItem value="concluido">{t("controlesAuditorias.iafdStatusConcluido")}</SelectItem>
+                      <SelectItem value="nao_aplicavel">{t("controlesAuditorias.iafdStatusNaoAplicavel")}</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -405,9 +407,9 @@ export function ItemAuditoriaFormDialog({
               name="observacoes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Observações</FormLabel>
+                  <FormLabel>{t("controlesAuditorias.iafdFieldObservacoes")}</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Observações adicionais..." rows={2} {...field} />
+                    <Textarea placeholder={t("controlesAuditorias.iafdObservacoesPlaceholder")} rows={2} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

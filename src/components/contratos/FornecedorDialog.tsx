@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Fornecedor {
   id: string;
@@ -48,6 +49,7 @@ export function FornecedorDialog({ fornecedor, open, onOpenChange, onSuccess }: 
   });
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (open) {
@@ -91,7 +93,7 @@ export function FornecedorDialog({ fornecedor, open, onOpenChange, onSuccess }: 
     if (!formData.nome) {
       toast({
         title: "Erro",
-        description: "O nome do fornecedor é obrigatório",
+        description: t('contratosAtivos.fornecedorDialog.toastNameRequired'),
         variant: "destructive",
       });
       return;
@@ -142,7 +144,7 @@ export function FornecedorDialog({ fornecedor, open, onOpenChange, onSuccess }: 
 
       toast({
         title: "Sucesso",
-        description: `Fornecedor ${fornecedor ? 'atualizado' : 'cadastrado'} com sucesso`,
+        description: t('contratosAtivos.fornecedorDialog.toastSaveSuccess').replace('{action}', fornecedor ? t('contratosAtivos.fornecedorDialog.actionUpdated') : t('contratosAtivos.fornecedorDialog.actionCreated')),
       });
 
       onSuccess();
@@ -151,7 +153,7 @@ export function FornecedorDialog({ fornecedor, open, onOpenChange, onSuccess }: 
       console.error('Erro ao salvar fornecedor:', error);
       toast({
         title: "Erro",
-        description: "Erro ao salvar fornecedor",
+        description: t('contratosAtivos.fornecedorDialog.toastSaveError'),
         variant: "destructive",
       });
     } finally {
@@ -164,128 +166,128 @@ export function FornecedorDialog({ fornecedor, open, onOpenChange, onSuccess }: 
       open={open}
       onOpenChange={onOpenChange}
       icon={Building2}
-      title={fornecedor ? 'Editar Fornecedor' : 'Novo Fornecedor'}
+      title={fornecedor ? t('contratosAtivos.fornecedorDialog.titleEdit') : t('contratosAtivos.fornecedorDialog.titleNew')}
       size="md"
       onSubmit={() => handleSubmit(new Event('submit') as unknown as React.FormEvent)}
-      submitLabel={fornecedor ? 'Atualizar' : 'Cadastrar'}
+      submitLabel={fornecedor ? t('contratosAtivos.fornecedorDialog.submitUpdate') : t('contratosAtivos.fornecedorDialog.submitCreate')}
       isSubmitting={loading}
     >
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="nome">Nome do Fornecedor *</Label>
+              <Label htmlFor="nome">{t('contratosAtivos.fornecedorDialog.labelName')}</Label>
               <Input
                 id="nome"
                 value={formData.nome}
                 onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                placeholder="Nome ou razão social"
+                placeholder={t('contratosAtivos.fornecedorDialog.namePlaceholder')}
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="cnpj">CNPJ/CPF</Label>
+              <Label htmlFor="cnpj">{t('contratosAtivos.fornecedorDialog.labelDocument')}</Label>
               <Input
                 id="cnpj"
                 value={formData.cnpj}
                 onChange={(e) => setFormData({ ...formData, cnpj: e.target.value })}
-                placeholder="00.000.000/0000-00"
+                placeholder={t('contratosAtivos.fornecedorDialog.documentPlaceholder')}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="tipo">Tipo</Label>
+              <Label htmlFor="tipo">{t('contratosAtivos.fornecedorDialog.labelType')}</Label>
               <Select value={formData.tipo} onValueChange={(value) => setFormData({ ...formData, tipo: value })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="pessoa_juridica">Pessoa Jurídica</SelectItem>
-                  <SelectItem value="pessoa_fisica">Pessoa Física</SelectItem>
+                  <SelectItem value="pessoa_juridica">{t('contratosAtivos.fornecedorDialog.typePessoaJuridica')}</SelectItem>
+                  <SelectItem value="pessoa_fisica">{t('contratosAtivos.fornecedorDialog.typePessoaFisica')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t('contratosAtivos.fornecedorDialog.labelEmail')}</Label>
               <Input
                 id="email"
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="email@fornecedor.com"
+                placeholder={t('contratosAtivos.fornecedorDialog.emailPlaceholder')}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="telefone">Telefone</Label>
+              <Label htmlFor="telefone">{t('contratosAtivos.fornecedorDialog.labelPhone')}</Label>
               <Input
                 id="telefone"
                 value={formData.telefone}
                 onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
-                placeholder="(11) 99999-9999"
+                placeholder={t('contratosAtivos.fornecedorDialog.phonePlaceholder')}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="contato_responsavel">Contato Responsável</Label>
+              <Label htmlFor="contato_responsavel">{t('contratosAtivos.fornecedorDialog.labelContact')}</Label>
               <Input
                 id="contato_responsavel"
                 value={formData.contato_responsavel}
                 onChange={(e) => setFormData({ ...formData, contato_responsavel: e.target.value })}
-                placeholder="Nome do responsável"
+                placeholder={t('contratosAtivos.fornecedorDialog.contactPlaceholder')}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="categoria">Categoria</Label>
+              <Label htmlFor="categoria">{t('contratosAtivos.fornecedorDialog.labelCategory')}</Label>
               <Select value={formData.categoria} onValueChange={(value) => setFormData({ ...formData, categoria: value })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione a categoria" />
+                  <SelectValue placeholder={t('contratosAtivos.fornecedorDialog.categoryPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="tecnologia">Tecnologia</SelectItem>
-                  <SelectItem value="consultoria">Consultoria</SelectItem>
-                  <SelectItem value="servicos">Serviços</SelectItem>
-                  <SelectItem value="produtos">Produtos</SelectItem>
-                  <SelectItem value="manutencao">Manutenção</SelectItem>
-                  <SelectItem value="terceirizacao">Terceirização</SelectItem>
-                  <SelectItem value="outros">Outros</SelectItem>
+                  <SelectItem value="tecnologia">{t('contratosAtivos.fornecedorDialog.categoryTecnologia')}</SelectItem>
+                  <SelectItem value="consultoria">{t('contratosAtivos.fornecedorDialog.categoryConsultoria')}</SelectItem>
+                  <SelectItem value="servicos">{t('contratosAtivos.fornecedorDialog.categoryServicos')}</SelectItem>
+                  <SelectItem value="produtos">{t('contratosAtivos.fornecedorDialog.categoryProdutos')}</SelectItem>
+                  <SelectItem value="manutencao">{t('contratosAtivos.fornecedorDialog.categoryManutencao')}</SelectItem>
+                  <SelectItem value="terceirizacao">{t('contratosAtivos.fornecedorDialog.categoryTerceirizacao')}</SelectItem>
+                  <SelectItem value="outros">{t('contratosAtivos.fornecedorDialog.categoryOutros')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
+              <Label htmlFor="status">{t('contratosAtivos.fornecedorDialog.labelStatus')}</Label>
               <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ativo">Ativo</SelectItem>
-                  <SelectItem value="inativo">Inativo</SelectItem>
-                  <SelectItem value="suspenso">Suspenso</SelectItem>
+                  <SelectItem value="ativo">{t('contratosAtivos.fornecedorDialog.statusAtivo')}</SelectItem>
+                  <SelectItem value="inativo">{t('contratosAtivos.fornecedorDialog.statusInativo')}</SelectItem>
+                  <SelectItem value="suspenso">{t('contratosAtivos.fornecedorDialog.statusSuspenso')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="avaliacao_risco">Avaliação de Risco</Label>
+              <Label htmlFor="avaliacao_risco">{t('contratosAtivos.fornecedorDialog.labelRiskAssessment')}</Label>
               <Select value={formData.avaliacao_risco} onValueChange={(value) => setFormData({ ...formData, avaliacao_risco: value })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="baixo">Baixo</SelectItem>
-                  <SelectItem value="medio">Médio</SelectItem>
-                  <SelectItem value="alto">Alto</SelectItem>
-                  <SelectItem value="critico">Crítico</SelectItem>
+                  <SelectItem value="baixo">{t('contratosAtivos.fornecedorDialog.riskBaixo')}</SelectItem>
+                  <SelectItem value="medio">{t('contratosAtivos.fornecedorDialog.riskMedio')}</SelectItem>
+                  <SelectItem value="alto">{t('contratosAtivos.fornecedorDialog.riskAlto')}</SelectItem>
+                  <SelectItem value="critico">{t('contratosAtivos.fornecedorDialog.riskCritico')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="data_cadastro">Data de Cadastro</Label>
+              <Label htmlFor="data_cadastro">{t('contratosAtivos.fornecedorDialog.labelRegistrationDate')}</Label>
               <Input
                 id="data_cadastro"
                 type="date"
@@ -295,22 +297,22 @@ export function FornecedorDialog({ fornecedor, open, onOpenChange, onSuccess }: 
             </div>
 
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="endereco">Endereço</Label>
+              <Label htmlFor="endereco">{t('contratosAtivos.fornecedorDialog.labelAddress')}</Label>
               <Input
                 id="endereco"
                 value={formData.endereco}
                 onChange={(e) => setFormData({ ...formData, endereco: e.target.value })}
-                placeholder="Endereço completo"
+                placeholder={t('contratosAtivos.fornecedorDialog.addressPlaceholder')}
               />
             </div>
 
             <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="observacoes">Observações</Label>
+              <Label htmlFor="observacoes">{t('contratosAtivos.fornecedorDialog.labelObservations')}</Label>
               <Textarea
                 id="observacoes"
                 value={formData.observacoes}
                 onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
-                placeholder="Observações adicionais sobre o fornecedor..."
+                placeholder={t('contratosAtivos.fornecedorDialog.observationsPlaceholder')}
                 rows={3}
               />
             </div>

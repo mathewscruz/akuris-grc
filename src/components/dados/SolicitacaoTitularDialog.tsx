@@ -13,6 +13,7 @@ import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { parseDateForDB } from "@/lib/date-utils";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface SolicitacaoTitularDialogProps {
   isOpen: boolean;
@@ -22,6 +23,7 @@ interface SolicitacaoTitularDialogProps {
 }
 
 export function SolicitacaoTitularDialog({ isOpen, onClose, onSave, solicitacao }: SolicitacaoTitularDialogProps) {
+  const { t } = useLanguage();
   // Campos separados para dados do titular (mais amigáveis)
   const [titularNome, setTitularNome] = useState("");
   const [titularEmail, setTitularEmail] = useState("");
@@ -95,8 +97,8 @@ export function SolicitacaoTitularDialog({ isOpen, onClose, onSave, solicitacao 
       // Validar campos obrigatórios
       if (!formData.tipo_solicitacao) {
         toast({
-          title: "Campo obrigatório",
-          description: "Selecione o tipo de solicitação",
+          title: t('dadosDashboard.solicitacaoTitularDialog.toastCampoObrigatorioTitle'),
+          description: t('dadosDashboard.solicitacaoTitularDialog.toastCampoObrigatorioDescription'),
           variant: "destructive"
         });
         return;
@@ -104,8 +106,8 @@ export function SolicitacaoTitularDialog({ isOpen, onClose, onSave, solicitacao 
       
       if (!titularNome && !titularEmail) {
         toast({
-          title: "Dados do titular obrigatórios",
-          description: "Informe pelo menos o nome ou email do titular",
+          title: t('dadosDashboard.solicitacaoTitularDialog.toastDadosTitularTitle'),
+          description: t('dadosDashboard.solicitacaoTitularDialog.toastDadosTitularDescription'),
           variant: "destructive"
         });
         return;
@@ -118,7 +120,7 @@ export function SolicitacaoTitularDialog({ isOpen, onClose, onSave, solicitacao 
         .single();
 
       if (!profile?.empresa_id) {
-        throw new Error('Empresa não encontrada');
+        throw new Error(t('dadosDashboard.solicitacaoTitularDialog.errorEmpresaNaoEncontrada'));
       }
 
       // Montar objeto dados_titular a partir dos campos separados
@@ -152,21 +154,21 @@ export function SolicitacaoTitularDialog({ isOpen, onClose, onSave, solicitacao 
           .eq('id', solicitacao.id);
         
         if (error) throw error;
-        toast({ title: "Solicitação atualizada com sucesso!" });
+        toast({ title: t('dadosDashboard.solicitacaoTitularDialog.toastUpdated') });
       } else {
         const { error } = await supabase
           .from('dados_solicitacoes_titular')
           .insert([payload]);
         
         if (error) throw error;
-        toast({ title: "Solicitação registrada com sucesso!" });
+        toast({ title: t('dadosDashboard.solicitacaoTitularDialog.toastCreated') });
       }
       
       onSave();
       onClose();
     } catch (error: any) {
       toast({
-        title: "Erro ao salvar solicitação",
+        title: t('dadosDashboard.solicitacaoTitularDialog.toastErrorTitle'),
         description: error.message,
         variant: "destructive"
       });
@@ -179,7 +181,7 @@ export function SolicitacaoTitularDialog({ isOpen, onClose, onSave, solicitacao 
     <DialogShell
         open={isOpen}
         onOpenChange={onClose}
-        title={`${solicitacao?.id ? "Editar" : "Nova"} Solicitação de Titular`}
+        title={solicitacao?.id ? t('dadosDashboard.solicitacaoTitularDialog.titleEdit') : t('dadosDashboard.solicitacaoTitularDialog.titleNew')}
         icon={UserCheck}
         size="lg"
         onSubmit={handleSave}
@@ -187,45 +189,45 @@ export function SolicitacaoTitularDialog({ isOpen, onClose, onSave, solicitacao 
 <div className="grid gap-4 py-4">
           {/* Dados do Titular - Campos separados */}
           <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
-            <h3 className="font-medium text-sm text-muted-foreground">Dados do Titular</h3>
+            <h3 className="font-medium text-sm text-muted-foreground">{t('dadosDashboard.solicitacaoTitularDialog.sectionTitularTitle')}</h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="titular_nome">Nome do Titular *</Label>
+                <Label htmlFor="titular_nome">{t('dadosDashboard.solicitacaoTitularDialog.labelTitularNome')}</Label>
                 <Input
                   id="titular_nome"
                   value={titularNome}
                   onChange={(e) => setTitularNome(e.target.value)}
-                  placeholder="Nome completo"
+                  placeholder={t('dadosDashboard.solicitacaoTitularDialog.placeholderTitularNome')}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="titular_email">E-mail *</Label>
+                <Label htmlFor="titular_email">{t('dadosDashboard.solicitacaoTitularDialog.labelTitularEmail')}</Label>
                 <Input
                   id="titular_email"
                   type="email"
                   value={titularEmail}
                   onChange={(e) => setTitularEmail(e.target.value)}
-                  placeholder="email@exemplo.com"
+                  placeholder={t('dadosDashboard.solicitacaoTitularDialog.placeholderTitularEmail')}
                 />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="titular_documento">CPF/Documento</Label>
+                <Label htmlFor="titular_documento">{t('dadosDashboard.solicitacaoTitularDialog.labelTitularDocumento')}</Label>
                 <Input
                   id="titular_documento"
                   value={titularDocumento}
                   onChange={(e) => setTitularDocumento(e.target.value)}
-                  placeholder="000.000.000-00"
+                  placeholder={t('dadosDashboard.solicitacaoTitularDialog.placeholderTitularDocumento')}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="titular_telefone">Telefone</Label>
+                <Label htmlFor="titular_telefone">{t('dadosDashboard.solicitacaoTitularDialog.labelTitularTelefone')}</Label>
                 <Input
                   id="titular_telefone"
                   value={titularTelefone}
                   onChange={(e) => setTitularTelefone(e.target.value)}
-                  placeholder="(00) 00000-0000"
+                  placeholder={t('dadosDashboard.solicitacaoTitularDialog.placeholderTitularTelefone')}
                 />
               </div>
             </div>
@@ -233,76 +235,76 @@ export function SolicitacaoTitularDialog({ isOpen, onClose, onSave, solicitacao 
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="tipo_solicitacao">Tipo de Solicitação *</Label>
+              <Label htmlFor="tipo_solicitacao">{t('dadosDashboard.solicitacaoTitularDialog.labelTipoSolicitacao')}</Label>
               <Select value={formData.tipo_solicitacao} onValueChange={(value) => setFormData({ ...formData, tipo_solicitacao: value })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione o tipo" />
+                  <SelectValue placeholder={t('dadosDashboard.solicitacaoTitularDialog.placeholderTipoSolicitacao')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="acesso">Acesso aos Dados</SelectItem>
-                  <SelectItem value="correcao">Correção de Dados</SelectItem>
-                  <SelectItem value="exclusao">Exclusão de Dados</SelectItem>
-                  <SelectItem value="portabilidade">Portabilidade</SelectItem>
-                  <SelectItem value="oposicao">Oposição ao Tratamento</SelectItem>
-                  <SelectItem value="revogacao_consentimento">Revogação de Consentimento</SelectItem>
+                  <SelectItem value="acesso">{t('dadosDashboard.solicitacaoTitularDialog.tipoAcesso')}</SelectItem>
+                  <SelectItem value="correcao">{t('dadosDashboard.solicitacaoTitularDialog.tipoCorrecao')}</SelectItem>
+                  <SelectItem value="exclusao">{t('dadosDashboard.solicitacaoTitularDialog.tipoExclusao')}</SelectItem>
+                  <SelectItem value="portabilidade">{t('dadosDashboard.solicitacaoTitularDialog.tipoPortabilidade')}</SelectItem>
+                  <SelectItem value="oposicao">{t('dadosDashboard.solicitacaoTitularDialog.tipoOposicao')}</SelectItem>
+                  <SelectItem value="revogacao_consentimento">{t('dadosDashboard.solicitacaoTitularDialog.tipoRevogacaoConsentimento')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="canal_solicitacao">Canal da Solicitação</Label>
+              <Label htmlFor="canal_solicitacao">{t('dadosDashboard.solicitacaoTitularDialog.labelCanalSolicitacao')}</Label>
               <Select value={formData.canal_solicitacao} onValueChange={(value) => setFormData({ ...formData, canal_solicitacao: value })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione o canal" />
+                  <SelectValue placeholder={t('dadosDashboard.solicitacaoTitularDialog.placeholderCanalSolicitacao')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="email">E-mail</SelectItem>
-                  <SelectItem value="portal">Portal Web</SelectItem>
-                  <SelectItem value="presencial">Presencial</SelectItem>
-                  <SelectItem value="telefone">Telefone</SelectItem>
-                  <SelectItem value="chat">Chat</SelectItem>
-                  <SelectItem value="outros">Outros</SelectItem>
+                  <SelectItem value="email">{t('dadosDashboard.solicitacaoTitularDialog.canalEmail')}</SelectItem>
+                  <SelectItem value="portal">{t('dadosDashboard.solicitacaoTitularDialog.canalPortal')}</SelectItem>
+                  <SelectItem value="presencial">{t('dadosDashboard.solicitacaoTitularDialog.canalPresencial')}</SelectItem>
+                  <SelectItem value="telefone">{t('dadosDashboard.solicitacaoTitularDialog.canalTelefone')}</SelectItem>
+                  <SelectItem value="chat">{t('dadosDashboard.solicitacaoTitularDialog.canalChat')}</SelectItem>
+                  <SelectItem value="outros">{t('dadosDashboard.solicitacaoTitularDialog.canalOutros')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="dados_solicitados">Dados Solicitados</Label>
+            <Label htmlFor="dados_solicitados">{t('dadosDashboard.solicitacaoTitularDialog.labelDadosSolicitados')}</Label>
             <Textarea
               id="dados_solicitados"
               value={formData.dados_solicitados}
               onChange={(e) => setFormData({ ...formData, dados_solicitados: e.target.value })}
-              placeholder="Especifique quais dados pessoais são objeto da solicitação"
+              placeholder={t('dadosDashboard.solicitacaoTitularDialog.placeholderDadosSolicitados')}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="justificativa">Justificativa</Label>
+            <Label htmlFor="justificativa">{t('dadosDashboard.solicitacaoTitularDialog.labelJustificativa')}</Label>
             <Textarea
               id="justificativa"
               value={formData.justificativa}
               onChange={(e) => setFormData({ ...formData, justificativa: e.target.value })}
-              placeholder="Justificativa apresentada pelo titular"
+              placeholder={t('dadosDashboard.solicitacaoTitularDialog.placeholderJustificativa')}
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
+              <Label htmlFor="status">{t('dadosDashboard.solicitacaoTitularDialog.labelStatus')}</Label>
               <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione o status" />
+                  <SelectValue placeholder={t('dadosDashboard.solicitacaoTitularDialog.placeholderStatus')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="pendente">Pendente</SelectItem>
-                  <SelectItem value="em_analise">Em Análise</SelectItem>
-                  <SelectItem value="atendida">Atendida</SelectItem>
-                  <SelectItem value="rejeitada">Rejeitada</SelectItem>
+                  <SelectItem value="pendente">{t('dadosDashboard.solicitacaoTitularDialog.statusPendente')}</SelectItem>
+                  <SelectItem value="em_analise">{t('dadosDashboard.solicitacaoTitularDialog.statusEmAnalise')}</SelectItem>
+                  <SelectItem value="atendida">{t('dadosDashboard.solicitacaoTitularDialog.statusAtendida')}</SelectItem>
+                  <SelectItem value="rejeitada">{t('dadosDashboard.solicitacaoTitularDialog.statusRejeitada')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Prazo de Resposta</Label>
+              <Label>{t('dadosDashboard.solicitacaoTitularDialog.labelPrazoResposta')}</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="w-full justify-start">
@@ -325,24 +327,24 @@ export function SolicitacaoTitularDialog({ isOpen, onClose, onSave, solicitacao 
           {(formData.status === "em_analise" || formData.status === "atendida" || formData.status === "rejeitada") && (
             <>
               <div className="space-y-2">
-                <Label htmlFor="observacoes_internas">Observações Internas</Label>
+                <Label htmlFor="observacoes_internas">{t('dadosDashboard.solicitacaoTitularDialog.labelObservacoesInternas')}</Label>
                 <Textarea
                   id="observacoes_internas"
                   value={formData.observacoes_internas}
                   onChange={(e) => setFormData({ ...formData, observacoes_internas: e.target.value })}
-                  placeholder="Observações internas para análise"
+                  placeholder={t('dadosDashboard.solicitacaoTitularDialog.placeholderObservacoesInternas')}
                 />
               </div>
 
               {(formData.status === "atendida" || formData.status === "rejeitada") && (
                 <>
                   <div className="space-y-2">
-                    <Label>Data de Resposta</Label>
+                    <Label>{t('dadosDashboard.solicitacaoTitularDialog.labelDataResposta')}</Label>
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button variant="outline" className="w-full justify-start">
                           <CalendarIcon className="mr-2 h-4 w-4" />
-                          {formData.data_resposta ? format(formData.data_resposta, "dd/MM/yyyy", { locale: ptBR }) : "Selecionar data"}
+                          {formData.data_resposta ? format(formData.data_resposta, "dd/MM/yyyy", { locale: ptBR }) : t('dadosDashboard.solicitacaoTitularDialog.placeholderSelecionarData')}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0">
@@ -357,23 +359,23 @@ export function SolicitacaoTitularDialog({ isOpen, onClose, onSave, solicitacao 
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="resposta_titular">Resposta ao Titular</Label>
+                    <Label htmlFor="resposta_titular">{t('dadosDashboard.solicitacaoTitularDialog.labelRespostaTitular')}</Label>
                     <Textarea
                       id="resposta_titular"
                       value={formData.resposta_titular}
                       onChange={(e) => setFormData({ ...formData, resposta_titular: e.target.value })}
-                      placeholder="Resposta enviada ao titular"
+                      placeholder={t('dadosDashboard.solicitacaoTitularDialog.placeholderRespostaTitular')}
                     />
                   </div>
 
                   {formData.status === "atendida" && (
                     <div className="space-y-2">
-                      <Label htmlFor="evidencias_atendimento">Evidências de Atendimento</Label>
+                      <Label htmlFor="evidencias_atendimento">{t('dadosDashboard.solicitacaoTitularDialog.labelEvidenciasAtendimento')}</Label>
                       <Textarea
                         id="evidencias_atendimento"
                         value={formData.evidencias_atendimento}
                         onChange={(e) => setFormData({ ...formData, evidencias_atendimento: e.target.value })}
-                        placeholder="Evidências de que a solicitação foi atendida"
+                        placeholder={t('dadosDashboard.solicitacaoTitularDialog.placeholderEvidenciasAtendimento')}
                       />
                     </div>
                   )}

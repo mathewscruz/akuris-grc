@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { TrendingUp, TrendingDown, Minus, Award, AlertTriangle } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface ScoreData {
   score_total: number;
@@ -20,6 +21,15 @@ interface ScoreVisualizationProps {
 }
 
 export function ScoreVisualization({ scoreData, assessmentData }: ScoreVisualizationProps) {
+  const { t } = useLanguage();
+
+  const classificationLabels: Record<string, string> = {
+    excelente: t('dueDiligence.scoreVisualization.classificationExcellent'),
+    bom: t('dueDiligence.scoreVisualization.classificationGood'),
+    regular: t('dueDiligence.scoreVisualization.classificationRegular'),
+    ruim: t('dueDiligence.scoreVisualization.classificationBad'),
+  };
+
   const getClassificationColor = (classification: string) => {
     switch (classification) {
       case 'excelente': return 'text-green-600';
@@ -60,17 +70,17 @@ export function ScoreVisualization({ scoreData, assessmentData }: ScoreVisualiza
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-lg">
-                {assessmentData ? `Avaliação de ${assessmentData.fornecedor_nome}` : 'Resultado da Avaliação'}
+                {assessmentData ? t('dueDiligence.scoreVisualization.titleWithSupplier', { fornecedor: assessmentData.fornecedor_nome }) : t('dueDiligence.scoreVisualization.titleFallback')}
               </CardTitle>
               {assessmentData && (
                 <p className="text-sm text-muted-foreground">
-                  Template: {assessmentData.template.nome} • Categoria: {assessmentData.template.categoria}
+                  {t('dueDiligence.scoreVisualization.templateCategoryLine', { template: assessmentData.template.nome, categoria: assessmentData.template.categoria })}
                 </p>
               )}
             </div>
             <Badge variant={classificationBadge.variant} className="flex items-center gap-1">
               <ClassificationIcon className="h-3 w-3" />
-              {scoreData.classificacao.charAt(0).toUpperCase() + scoreData.classificacao.slice(1)}
+              {classificationLabels[scoreData.classificacao] ?? scoreData.classificacao}
             </Badge>
           </div>
         </CardHeader>
@@ -83,7 +93,7 @@ export function ScoreVisualization({ scoreData, assessmentData }: ScoreVisualiza
                 {scoreData.score_total.toFixed(1)}%
               </div>
               <div className="text-lg text-muted-foreground">
-                de atendimento
+                {t('dueDiligence.scoreVisualization.compliancePercentage')}
               </div>
             </div>
             
@@ -100,12 +110,14 @@ export function ScoreVisualization({ scoreData, assessmentData }: ScoreVisualiza
 
           {/* Data da avaliação */}
           <div className="text-center text-sm text-muted-foreground">
-            Avaliado em {new Date(scoreData.created_at).toLocaleDateString('pt-BR', {
-              day: '2-digit',
-              month: '2-digit',
-              year: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit'
+            {t('dueDiligence.scoreVisualization.evaluatedAt', {
+              data: new Date(scoreData.created_at).toLocaleDateString('pt-BR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })
             })}
           </div>
         </CardContent>
@@ -115,7 +127,7 @@ export function ScoreVisualization({ scoreData, assessmentData }: ScoreVisualiza
       {breakdownEntries.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Pontuação por Categoria</CardTitle>
+            <CardTitle className="text-lg">{t('dueDiligence.scoreVisualization.breakdownTitle')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -149,7 +161,7 @@ export function ScoreVisualization({ scoreData, assessmentData }: ScoreVisualiza
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <Award className="h-4 w-4" />
-              Análise Detalhada
+              {t('dueDiligence.scoreVisualization.aiAnalysisTitle')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -163,28 +175,28 @@ export function ScoreVisualization({ scoreData, assessmentData }: ScoreVisualiza
       {/* Recomendações baseadas na classificação */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Recomendações</CardTitle>
+          <CardTitle className="text-lg">{t('dueDiligence.scoreVisualization.recommendationsTitle')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
             {scoreData.classificacao === 'excelente' && (
               <p className="text-green-600">
-                ✅ Fornecedor demonstra excelente nível de compliance e governança. Recomendado para parcerias estratégicas.
+                {t('dueDiligence.scoreVisualization.recommendationExcellent')}
               </p>
             )}
             {scoreData.classificacao === 'bom' && (
               <p className="text-blue-600">
-                ✅ Fornecedor apresenta bom nível de compliance. Pode ser aprovado com monitoramento regular.
+                {t('dueDiligence.scoreVisualization.recommendationGood')}
               </p>
             )}
             {scoreData.classificacao === 'regular' && (
               <p className="text-yellow-600">
-                ⚠️ Fornecedor precisa de melhorias em alguns aspectos. Recomenda-se plano de ação para adequações.
+                {t('dueDiligence.scoreVisualization.recommendationRegular')}
               </p>
             )}
             {scoreData.classificacao === 'ruim' && (
               <p className="text-red-600">
-                ❌ Fornecedor apresenta riscos significativos. Não recomendado ou necessita ações corretivas imediatas.
+                {t('dueDiligence.scoreVisualization.recommendationBad')}
               </p>
             )}
           </div>

@@ -6,6 +6,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { FileText, Sparkles } from 'lucide-react';
 import { invokeEdgeFunction } from '@/lib/edge-function-utils';
 import { StatCard } from '@/components/ui/stat-card';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface StatusReportDialogProps {
   open: boolean;
@@ -32,6 +33,7 @@ const saudeTone: Record<string, 'success' | 'warning' | 'destructive'> = {
 };
 
 export const StatusReportDialog: React.FC<StatusReportDialogProps> = ({ open, onOpenChange, projetoId, projetoNome }) => {
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [report, setReport] = useState<Report | null>(null);
   const [metrics, setMetrics] = useState<Metrics | null>(null);
@@ -55,14 +57,14 @@ export const StatusReportDialog: React.FC<StatusReportDialogProps> = ({ open, on
       open={open}
       onOpenChange={onOpenChange}
       icon={FileText}
-      title={`Status Report — ${projetoNome}`}
-      description="Resumo executivo gerado por IA com base nas tarefas, prazos e SLAs. Consome 1 crédito."
+      title={t('projetos.statusReport.title', { nome: projetoNome })}
+      description={t('projetos.statusReport.description')}
       size="lg"
       hideFooter
     >
         {!report && !loading && (
           <Button onClick={handleGerar} className="w-full">
-            <Sparkles className="h-4 w-4 mr-2" />Gerar relatório
+            <Sparkles className="h-4 w-4 mr-2" />{t('projetos.statusReport.generate')}
           </Button>
         )}
 
@@ -71,15 +73,15 @@ export const StatusReportDialog: React.FC<StatusReportDialogProps> = ({ open, on
         {report && metrics && (
           <div className="space-y-5">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <StatCard title="Tarefas" value={metrics.total} />
-              <StatCard title="Concluídas" value={metrics.concluidas} />
-              <StatCard title="Atrasadas" value={metrics.atrasadas} />
-              <StatCard title="Progresso" value={`${metrics.progressoMedio}%`} />
+              <StatCard title={t('projetos.statusReport.statTasks')} value={metrics.total} />
+              <StatCard title={t('projetos.statusReport.statDone')} value={metrics.concluidas} />
+              <StatCard title={t('projetos.statusReport.statOverdue')} value={metrics.atrasadas} />
+              <StatCard title={t('projetos.statusReport.statProgress')} value={`${metrics.progressoMedio}%`} />
             </div>
 
             <div className="rounded-lg border border-border bg-card p-5 space-y-3">
               <div className="flex items-center gap-3 flex-wrap">
-                {report.saude && <StatusBadge tone={saudeTone[report.saude] ?? 'info'} size="md">Saúde: {report.saude}</StatusBadge>}
+                {report.saude && <StatusBadge tone={saudeTone[report.saude] ?? 'info'} size="md">{t('projetos.statusReport.health', { value: report.saude })}</StatusBadge>}
                 {report.headline && <span className="font-semibold text-lg">{report.headline}</span>}
               </div>
               {report.resumo_executivo && <p className="text-sm leading-relaxed">{report.resumo_executivo}</p>}
@@ -87,7 +89,7 @@ export const StatusReportDialog: React.FC<StatusReportDialogProps> = ({ open, on
 
             {report.riscos && report.riscos.length > 0 && (
               <div>
-                <h3 className="font-semibold mb-2">Riscos</h3>
+                <h3 className="font-semibold mb-2">{t('projetos.statusReport.risks')}</h3>
                 <ul className="space-y-1 text-sm list-disc pl-5">
                   {report.riscos.map((r, i) => <li key={i}>{r}</li>)}
                 </ul>
@@ -96,7 +98,7 @@ export const StatusReportDialog: React.FC<StatusReportDialogProps> = ({ open, on
 
             {report.proximas_acoes && report.proximas_acoes.length > 0 && (
               <div>
-                <h3 className="font-semibold mb-2">Próximas ações</h3>
+                <h3 className="font-semibold mb-2">{t('projetos.statusReport.nextActions')}</h3>
                 <ul className="space-y-1 text-sm list-disc pl-5">
                   {report.proximas_acoes.map((a, i) => <li key={i}>{a}</li>)}
                 </ul>
@@ -105,13 +107,13 @@ export const StatusReportDialog: React.FC<StatusReportDialogProps> = ({ open, on
 
             {report.recomendacao_gestor && (
               <div className="rounded-lg border-l-4 border-primary bg-primary/5 p-4">
-                <p className="text-xs uppercase tracking-wide text-primary font-semibold mb-1">Recomendação ao gestor</p>
+                <p className="text-xs uppercase tracking-wide text-primary font-semibold mb-1">{t('projetos.statusReport.managerRecommendation')}</p>
                 <p className="text-sm">{report.recomendacao_gestor}</p>
               </div>
             )}
 
             <Button variant="outline" onClick={handleGerar} className="w-full">
-              <Sparkles className="h-4 w-4 mr-2" />Regenerar
+              <Sparkles className="h-4 w-4 mr-2" />{t('projetos.statusReport.regenerate')}
             </Button>
           </div>
         )}

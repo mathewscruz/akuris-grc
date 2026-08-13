@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { MoreVertical, Pencil, Archive, ArchiveRestore, Trash2 } from 'lucide-react';
 import type { Projeto } from '@/types/projetos';
 import { useUpsertProjeto, useDeleteProjeto } from '@/hooks/useProjetos';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Props {
   projeto: Projeto;
@@ -21,6 +22,7 @@ interface Props {
 }
 
 export function ProjetoActionsMenu({ projeto, onEdit, variant = 'menu' }: Props) {
+  const { t } = useLanguage();
   const upsert = useUpsertProjeto();
   const del = useDeleteProjeto();
   const [confirmDel, setConfirmDel] = React.useState(false);
@@ -57,19 +59,19 @@ export function ProjetoActionsMenu({ projeto, onEdit, variant = 'menu' }: Props)
             </Button>
           ) : (
             <Button variant="outline" size="sm">
-              <MoreVertical className="h-4 w-4" /> Ações
+              <MoreVertical className="h-4 w-4" /> {t('projetos.actionsMenu.actions')}
             </Button>
           )}
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
           <DropdownMenuItem onClick={onEdit}>
-            <Pencil className="h-4 w-4 mr-2" /> Editar projeto
+            <Pencil className="h-4 w-4 mr-2" /> {t('projetos.actionsMenu.editProject')}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={toggleArquivo}>
             {arquivado ? (
-              <><ArchiveRestore className="h-4 w-4 mr-2" /> Reativar projeto</>
+              <><ArchiveRestore className="h-4 w-4 mr-2" /> {t('projetos.actionsMenu.reactivate')}</>
             ) : (
-              <><Archive className="h-4 w-4 mr-2" /> Arquivar projeto</>
+              <><Archive className="h-4 w-4 mr-2" /> {t('projetos.actionsMenu.archive')}</>
             )}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
@@ -77,7 +79,7 @@ export function ProjetoActionsMenu({ projeto, onEdit, variant = 'menu' }: Props)
             className="text-destructive focus:text-destructive"
             onClick={() => { setConfirmName(''); setConfirmDel(true); }}
           >
-            <Trash2 className="h-4 w-4 mr-2" /> Excluir projeto
+            <Trash2 className="h-4 w-4 mr-2" /> {t('projetos.actionsMenu.deleteProject')}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -85,14 +87,14 @@ export function ProjetoActionsMenu({ projeto, onEdit, variant = 'menu' }: Props)
       <AlertDialog open={confirmDel} onOpenChange={setConfirmDel}>
         <AlertDialogContent onClick={(e) => e.stopPropagation()}>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir projeto definitivamente</AlertDialogTitle>
+            <AlertDialogTitle>{t('projetos.actionsMenu.deleteTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação remove o projeto, todas as tarefas, comentários, anexos e vínculos com módulos GRC.
-              <br />Não pode ser desfeita. Se você só quer pausar o trabalho, prefira <strong>arquivar</strong>.
+              {t('projetos.actionsMenu.deleteDescription')}
+              <br />{t('projetos.actionsMenu.deleteDescriptionLine2')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-2">
-            <Label className="text-xs">Para confirmar, digite o nome do projeto: <strong>{projeto.nome}</strong></Label>
+            <Label className="text-xs">{t('projetos.actionsMenu.confirmNameLabel')} <strong>{projeto.nome}</strong></Label>
             <Input
               value={confirmName}
               onChange={(e) => setConfirmName(e.target.value)}
@@ -101,13 +103,13 @@ export function ProjetoActionsMenu({ projeto, onEdit, variant = 'menu' }: Props)
             />
           </div>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel>{t('projetos.actionsMenu.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               disabled={confirmName.trim() !== projeto.nome || del.isPending}
               onClick={confirmDelete}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {del.isPending ? 'Excluindo…' : 'Excluir definitivamente'}
+              {del.isPending ? t('projetos.actionsMenu.deleting') : t('projetos.actionsMenu.deletePermanently')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

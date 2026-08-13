@@ -11,6 +11,7 @@ import { ClipboardList, Users, CheckCircle, Clock, AlertTriangle, TrendingUp, Pl
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { formatDateOnly } from '@/lib/date-utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface DashboardStats {
   totalFornecedores: number;
@@ -36,6 +37,7 @@ export function DueDiligenceDashboard() {
   });
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   useEffect(() => {
     fetchDashboardStats();
@@ -108,38 +110,38 @@ export function DueDiligenceDashboard() {
       {/* Stat Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          title="Fornecedores Ativos"
+          title={t('dueDiligence.dashboard.statSuppliersTitle')}
           value={stats.totalFornecedores}
-          description={`${stats.totalTemplates} templates disponíveis`}
+          description={t('dueDiligence.dashboard.statSuppliersDescription', { count: stats.totalTemplates })}
           icon={<Users />}
           loading={loading}
           variant="primary"
           showAccent
           drillDown="due_diligence"
-          emptyHint="Cadastre fornecedores para iniciar avaliações."
+          emptyHint={t('dueDiligence.dashboard.statSuppliersEmptyHint')}
         />
         <StatCard
-          title="Avaliações Concluídas"
+          title={t('dueDiligence.dashboard.statCompletedTitle')}
           value={stats.completedAssessments}
-          description={`${stats.pendingAssessments} pendentes`}
+          description={t('dueDiligence.dashboard.statCompletedDescription', { count: stats.pendingAssessments })}
           icon={<CheckCircle />}
           loading={loading}
           variant="success"
           drillDown="due_diligence"
         />
         <StatCard
-          title="Expiradas / Atenção"
+          title={t('dueDiligence.dashboard.statExpiredTitle')}
           value={stats.expiredAssessments}
-          description="Requerem ação imediata"
+          description={t('dueDiligence.dashboard.statExpiredDescription')}
           icon={<AlertTriangle />}
           loading={loading}
           variant={stats.expiredAssessments > 0 ? "destructive" : "default"}
           drillDown="due_diligence"
         />
         <StatCard
-          title="Score Médio"
+          title={t('dueDiligence.dashboard.statAverageScoreTitle')}
           value={`${stats.averageScore.toFixed(0)}%`}
-          description="Média geral dos fornecedores"
+          description={t('dueDiligence.dashboard.statAverageScoreDescription')}
           icon={<TrendingUp />}
           loading={loading}
           variant={stats.averageScore >= 80 ? 'success' : stats.averageScore >= 60 ? 'warning' : stats.averageScore > 0 ? 'destructive' : 'default'}
@@ -152,7 +154,7 @@ export function DueDiligenceDashboard() {
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-amber-500" />
-              Avaliações que precisam de atenção
+              {t('dueDiligence.dashboard.attentionCardTitle')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -169,7 +171,7 @@ export function DueDiligenceDashboard() {
                   </div>
                   <div className="flex items-center gap-2">
                     {assessment.data_expiracao && isExpired(assessment.data_expiracao) && assessment.status !== 'concluido' && (
-                      <StatusBadge size="sm" tone="destructive">Expirado</StatusBadge>
+                      <StatusBadge size="sm" tone="destructive">{t('dueDiligence.dashboard.expiredBadge')}</StatusBadge>
                     )}
                     <StatusBadge size="sm" {...resolveDueDiligenceStatusTone(assessment.status)}>
                       {formatStatus(assessment.status)}

@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface DadosPessoaisDialogProps {
   isOpen: boolean;
@@ -17,6 +18,7 @@ interface DadosPessoaisDialogProps {
 }
 
 export function DadosPessoaisDialog({ isOpen, onClose, onSave, dados }: DadosPessoaisDialogProps) {
+  const { t } = useLanguage();
   const [formData, setFormData] = useState({
     nome: dados?.nome || "",
     descricao: dados?.descricao || "",
@@ -60,7 +62,7 @@ export function DadosPessoaisDialog({ isOpen, onClose, onSave, dados }: DadosPes
         .single();
 
       if (!profile?.empresa_id) {
-        throw new Error('Empresa não encontrada');
+        throw new Error(t('dadosDashboard.common.errorEmpresaNaoEncontrada'));
       }
 
       const payload = {
@@ -76,21 +78,21 @@ export function DadosPessoaisDialog({ isOpen, onClose, onSave, dados }: DadosPes
           .eq('id', dados.id);
         
         if (error) throw error;
-        toast({ title: "Dados pessoais atualizados com sucesso!" });
+        toast({ title: t('dadosDashboard.dadosPessoaisDialog.toastUpdated') });
       } else {
         const { error } = await supabase
           .from('dados_pessoais')
           .insert([payload]);
         
         if (error) throw error;
-        toast({ title: "Dados pessoais cadastrados com sucesso!" });
+        toast({ title: t('dadosDashboard.dadosPessoaisDialog.toastCreated') });
       }
       
       onSave();
       onClose();
     } catch (error: any) {
       toast({
-        title: "Erro ao salvar dados pessoais",
+        title: t('dadosDashboard.dadosPessoaisDialog.toastErrorTitle'),
         description: error.message,
         variant: "destructive"
       });
@@ -103,7 +105,7 @@ export function DadosPessoaisDialog({ isOpen, onClose, onSave, dados }: DadosPes
     <DialogShell
         open={isOpen}
         onOpenChange={onClose}
-        title={`${dados?.id ? "Editar" : "Novo"} Registro de Dados Pessoais`}
+        title={dados?.id ? t('dadosDashboard.dadosPessoaisDialog.titleEdit') : t('dadosDashboard.dadosPessoaisDialog.titleNew')}
         icon={Database}
         size="lg"
         onSubmit={handleSave}
@@ -111,30 +113,30 @@ export function DadosPessoaisDialog({ isOpen, onClose, onSave, dados }: DadosPes
 <div className="grid gap-4 py-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="nome">Nome do Dado *</Label>
+              <Label htmlFor="nome">{t('dadosDashboard.dadosPessoaisDialog.labelNome')}</Label>
               <Input
                 id="nome"
                 value={formData.nome}
                 onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                placeholder="Ex: E-mail do cliente"
+                placeholder={t('dadosDashboard.dadosPessoaisDialog.placeholderNome')}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="categoria_dados">Categoria *</Label>
+              <Label htmlFor="categoria_dados">{t('dadosDashboard.dadosPessoaisDialog.labelCategoria')}</Label>
               <Select value={formData.categoria_dados} onValueChange={(value) => setFormData({ ...formData, categoria_dados: value })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione a categoria" />
+                  <SelectValue placeholder={t('dadosDashboard.dadosPessoaisDialog.placeholderCategoria')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="identificacao">Identificação</SelectItem>
-                  <SelectItem value="contato">Contato</SelectItem>
-                  <SelectItem value="localizacao">Localização</SelectItem>
-                  <SelectItem value="financeiro">Financeiro</SelectItem>
-                  <SelectItem value="saude">Saúde</SelectItem>
-                  <SelectItem value="biometrico">Biométrico</SelectItem>
-                  <SelectItem value="profissional">Profissional</SelectItem>
-                  <SelectItem value="comportamental">Comportamental</SelectItem>
-                  <SelectItem value="outros">Outros</SelectItem>
+                  <SelectItem value="identificacao">{t('dadosDashboard.dadosPessoaisDialog.categoriaIdentificacao')}</SelectItem>
+                  <SelectItem value="contato">{t('dadosDashboard.dadosPessoaisDialog.categoriaContato')}</SelectItem>
+                  <SelectItem value="localizacao">{t('dadosDashboard.dadosPessoaisDialog.categoriaLocalizacao')}</SelectItem>
+                  <SelectItem value="financeiro">{t('dadosDashboard.dadosPessoaisDialog.categoriaFinanceiro')}</SelectItem>
+                  <SelectItem value="saude">{t('dadosDashboard.dadosPessoaisDialog.categoriaSaude')}</SelectItem>
+                  <SelectItem value="biometrico">{t('dadosDashboard.dadosPessoaisDialog.categoriaBiometrico')}</SelectItem>
+                  <SelectItem value="profissional">{t('dadosDashboard.dadosPessoaisDialog.categoriaProfissional')}</SelectItem>
+                  <SelectItem value="comportamental">{t('dadosDashboard.dadosPessoaisDialog.categoriaComportamental')}</SelectItem>
+                  <SelectItem value="outros">{t('dadosDashboard.dadosPessoaisDialog.categoriaOutros')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -142,121 +144,121 @@ export function DadosPessoaisDialog({ isOpen, onClose, onSave, dados }: DadosPes
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="tipo_dados">Tipo de Dados *</Label>
+              <Label htmlFor="tipo_dados">{t('dadosDashboard.dadosPessoaisDialog.labelTipoDados')}</Label>
               <Select value={formData.tipo_dados} onValueChange={(value) => setFormData({ ...formData, tipo_dados: value })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione o tipo" />
+                  <SelectValue placeholder={t('dadosDashboard.dadosPessoaisDialog.placeholderTipoDados')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="comum">Dados Pessoais Comuns</SelectItem>
-                  <SelectItem value="sensivel">Dados Pessoais Sensíveis</SelectItem>
-                  <SelectItem value="infantil">Dados de Crianças/Adolescentes</SelectItem>
+                  <SelectItem value="comum">{t('dadosDashboard.dadosPessoaisDialog.tipoComum')}</SelectItem>
+                  <SelectItem value="sensivel">{t('dadosDashboard.dadosPessoaisDialog.tipoSensivel')}</SelectItem>
+                  <SelectItem value="infantil">{t('dadosDashboard.dadosPessoaisDialog.tipoInfantil')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="sensibilidade">Sensibilidade *</Label>
+              <Label htmlFor="sensibilidade">{t('dadosDashboard.dadosPessoaisDialog.labelSensibilidade')}</Label>
               <Select value={formData.sensibilidade} onValueChange={(value) => setFormData({ ...formData, sensibilidade: value })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione a sensibilidade" />
+                  <SelectValue placeholder={t('dadosDashboard.dadosPessoaisDialog.placeholderSensibilidade')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="comum">Comum</SelectItem>
-                  <SelectItem value="sensivel">Sensível</SelectItem>
-                  <SelectItem value="muito_sensivel">Muito Sensível</SelectItem>
+                  <SelectItem value="comum">{t('dadosDashboard.dadosPessoaisDialog.sensibilidadeComum')}</SelectItem>
+                  <SelectItem value="sensivel">{t('dadosDashboard.dadosPessoaisDialog.sensibilidadeSensivel')}</SelectItem>
+                  <SelectItem value="muito_sensivel">{t('dadosDashboard.dadosPessoaisDialog.sensibilidadeMuitoSensivel')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="descricao">Descrição</Label>
+            <Label htmlFor="descricao">{t('dadosDashboard.dadosPessoaisDialog.labelDescricao')}</Label>
             <Textarea
               id="descricao"
               value={formData.descricao}
               onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
-              placeholder="Descreva o tipo de dado pessoal"
+              placeholder={t('dadosDashboard.dadosPessoaisDialog.placeholderDescricao')}
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="origem_coleta">Origem da Coleta</Label>
+              <Label htmlFor="origem_coleta">{t('dadosDashboard.dadosPessoaisDialog.labelOrigemColeta')}</Label>
               <Select value={formData.origem_coleta} onValueChange={(value) => setFormData({ ...formData, origem_coleta: value })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione a origem" />
+                  <SelectValue placeholder={t('dadosDashboard.dadosPessoaisDialog.placeholderOrigemColeta')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="formulario_web">Formulário Web</SelectItem>
-                  <SelectItem value="sistema_interno">Sistema Interno</SelectItem>
-                  <SelectItem value="terceiros">Terceiros</SelectItem>
-                  <SelectItem value="publico">Fonte Pública</SelectItem>
-                  <SelectItem value="diretamente_titular">Diretamente do Titular</SelectItem>
+                  <SelectItem value="formulario_web">{t('dadosDashboard.dadosPessoaisDialog.origemFormularioWeb')}</SelectItem>
+                  <SelectItem value="sistema_interno">{t('dadosDashboard.dadosPessoaisDialog.origemSistemaInterno')}</SelectItem>
+                  <SelectItem value="terceiros">{t('dadosDashboard.dadosPessoaisDialog.origemTerceiros')}</SelectItem>
+                  <SelectItem value="publico">{t('dadosDashboard.dadosPessoaisDialog.origemPublico')}</SelectItem>
+                  <SelectItem value="diretamente_titular">{t('dadosDashboard.dadosPessoaisDialog.origemDiretamenteTitular')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="forma_coleta">Forma de Coleta</Label>
+              <Label htmlFor="forma_coleta">{t('dadosDashboard.dadosPessoaisDialog.labelFormaColeta')}</Label>
               <Select value={formData.forma_coleta} onValueChange={(value) => setFormData({ ...formData, forma_coleta: value })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione a forma" />
+                  <SelectValue placeholder={t('dadosDashboard.dadosPessoaisDialog.placeholderFormaColeta')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="automatica">Automática</SelectItem>
-                  <SelectItem value="manual">Manual</SelectItem>
-                  <SelectItem value="importacao">Importação</SelectItem>
-                  <SelectItem value="integracao">Integração</SelectItem>
+                  <SelectItem value="automatica">{t('dadosDashboard.dadosPessoaisDialog.formaAutomatica')}</SelectItem>
+                  <SelectItem value="manual">{t('dadosDashboard.dadosPessoaisDialog.formaManual')}</SelectItem>
+                  <SelectItem value="importacao">{t('dadosDashboard.dadosPessoaisDialog.formaImportacao')}</SelectItem>
+                  <SelectItem value="integracao">{t('dadosDashboard.dadosPessoaisDialog.formaIntegracao')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="finalidade_tratamento">Finalidade do Tratamento *</Label>
+            <Label htmlFor="finalidade_tratamento">{t('dadosDashboard.dadosPessoaisDialog.labelFinalidadeTratamento')}</Label>
             <Textarea
               id="finalidade_tratamento"
               value={formData.finalidade_tratamento}
               onChange={(e) => setFormData({ ...formData, finalidade_tratamento: e.target.value })}
-              placeholder="Descreva a finalidade específica do tratamento"
+              placeholder={t('dadosDashboard.dadosPessoaisDialog.placeholderFinalidadeTratamento')}
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="base_legal">Base Legal *</Label>
+              <Label htmlFor="base_legal">{t('dadosDashboard.dadosPessoaisDialog.labelBaseLegal')}</Label>
               <Select value={formData.base_legal} onValueChange={(value) => setFormData({ ...formData, base_legal: value })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione a base legal" />
+                  <SelectValue placeholder={t('dadosDashboard.dadosPessoaisDialog.placeholderBaseLegal')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="consentimento">Consentimento</SelectItem>
-                  <SelectItem value="legitimo_interesse">Legítimo Interesse</SelectItem>
-                  <SelectItem value="execucao_contrato">Execução de Contrato</SelectItem>
-                  <SelectItem value="cumprimento_obrigacao">Cumprimento de Obrigação Legal</SelectItem>
-                  <SelectItem value="protecao_vida">Proteção da Vida</SelectItem>
-                  <SelectItem value="exercicio_direitos">Exercício de Direitos</SelectItem>
-                  <SelectItem value="politicas_publicas">Políticas Públicas</SelectItem>
+                  <SelectItem value="consentimento">{t('dadosDashboard.common.baseLegalConsentimento')}</SelectItem>
+                  <SelectItem value="legitimo_interesse">{t('dadosDashboard.common.baseLegalLegitimoInteresse')}</SelectItem>
+                  <SelectItem value="execucao_contrato">{t('dadosDashboard.common.baseLegalExecucaoContrato')}</SelectItem>
+                  <SelectItem value="cumprimento_obrigacao">{t('dadosDashboard.common.baseLegalCumprimentoObrigacao')}</SelectItem>
+                  <SelectItem value="protecao_vida">{t('dadosDashboard.common.baseLegalProtecaoVida')}</SelectItem>
+                  <SelectItem value="exercicio_direitos">{t('dadosDashboard.common.baseLegalExercicioDireitos')}</SelectItem>
+                  <SelectItem value="politicas_publicas">{t('dadosDashboard.common.baseLegalPoliticasPublicas')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="prazo_retencao">Prazo de Retenção</Label>
+              <Label htmlFor="prazo_retencao">{t('dadosDashboard.dadosPessoaisDialog.labelPrazoRetencao')}</Label>
               <Input
                 id="prazo_retencao"
                 value={formData.prazo_retencao}
                 onChange={(e) => setFormData({ ...formData, prazo_retencao: e.target.value })}
-                placeholder="Ex: 5 anos após fim do contrato"
+                placeholder={t('dadosDashboard.dadosPessoaisDialog.placeholderPrazoRetencao')}
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="observacoes">Observações</Label>
+            <Label htmlFor="observacoes">{t('dadosDashboard.dadosPessoaisDialog.labelObservacoes')}</Label>
             <Textarea
               id="observacoes"
               value={formData.observacoes}
               onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
-              placeholder="Observações adicionais"
+              placeholder={t('dadosDashboard.dadosPessoaisDialog.placeholderObservacoes')}
             />
           </div>
         </div>

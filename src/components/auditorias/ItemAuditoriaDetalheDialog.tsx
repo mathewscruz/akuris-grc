@@ -29,6 +29,7 @@ interface ItemAuditoriaDetalheDialogProps {
 import { StatusBadge } from "@/components/ui/status-badge";
 import { resolveItemAuditoriaStatusTone, resolvePrioridadeTone } from "@/lib/status-tone";
 import { formatStatus } from "@/lib/text-utils";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export function ItemAuditoriaDetalheDialog({
   open,
@@ -37,6 +38,7 @@ export function ItemAuditoriaDetalheDialog({
   onSuccess,
   onEdit,
 }: ItemAuditoriaDetalheDialogProps) {
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [novoComentario, setNovoComentario] = useState("");
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
@@ -192,8 +194,8 @@ export function ItemAuditoriaDetalheDialog({
         for (const userId of mencoes) {
           await supabase.from("notifications").insert({
             user_id: userId,
-            title: "Você foi mencionado",
-            message: `Você foi mencionado em um comentário no controle "${item.titulo}"`,
+            title: t("controlesAuditorias.iaddMentionNotifyTitle"),
+            message: t("controlesAuditorias.iaddMentionNotifyMessage", { titulo: item.titulo }),
             type: "info",
             link_to: "/auditorias",
           });
@@ -203,9 +205,9 @@ export function ItemAuditoriaDetalheDialog({
       setNovoComentario("");
       refetchComentarios();
       onSuccess();
-      toast.success("Comentário adicionado");
+      toast.success(t("controlesAuditorias.iaddCommentAdded"));
     } catch (error: any) {
-      toast.error(error.message || "Erro ao adicionar comentário");
+      toast.error(error.message || t("controlesAuditorias.iaddCommentAddError"));
     } finally {
       setIsSubmittingComment(false);
     }
@@ -244,9 +246,9 @@ export function ItemAuditoriaDetalheDialog({
 
       refetchEvidencias();
       onSuccess();
-      toast.success("Evidência anexada com sucesso");
+      toast.success(t("controlesAuditorias.iaddEvidenciaAdded"));
     } catch (error: any) {
-      toast.error(error.message || "Erro ao fazer upload");
+      toast.error(error.message || t("controlesAuditorias.iaddUploadError"));
     } finally {
       setIsUploading(false);
       event.target.value = "";
@@ -264,9 +266,9 @@ export function ItemAuditoriaDetalheDialog({
 
       refetchEvidencias();
       onSuccess();
-      toast.success("Evidência removida");
+      toast.success(t("controlesAuditorias.iaddEvidenciaRemoved"));
     } catch (error: any) {
-      toast.error(error.message || "Erro ao remover evidência");
+      toast.error(error.message || t("controlesAuditorias.iaddEvidenciaRemoveError"));
     }
     setDeleteTarget(null);
   };
@@ -282,9 +284,9 @@ export function ItemAuditoriaDetalheDialog({
 
       refetchComentarios();
       onSuccess();
-      toast.success("Comentário removido");
+      toast.success(t("controlesAuditorias.iaddCommentRemoved"));
     } catch (error: any) {
-      toast.error(error.message || "Erro ao remover comentário");
+      toast.error(error.message || t("controlesAuditorias.iaddCommentRemoveError"));
     }
     setDeleteTarget(null);
   };
@@ -292,7 +294,7 @@ export function ItemAuditoriaDetalheDialog({
   const handleDownload = async (evidencia: any) => {
     if (!evidencia?.arquivo_url) return;
     const ok = await openStorageFile("auditoria-evidencias", evidencia.arquivo_url);
-    if (!ok) toast.error("Não foi possível abrir o arquivo");
+    if (!ok) toast.error(t("controlesAuditorias.iaddDownloadError"));
   };
 
   // Renderizar comentário com menções destacadas
@@ -338,7 +340,7 @@ export function ItemAuditoriaDetalheDialog({
             </div>
             <Button variant="outline" size="sm" onClick={onEdit}>
               <Edit className="h-4 w-4 mr-2" />
-              Editar
+              {t("controlesAuditorias.iaddEditar")}
             </Button>
           </div>
 
@@ -357,7 +359,7 @@ export function ItemAuditoriaDetalheDialog({
               {item.prazo && (
                 <div className="flex items-center gap-1">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span>Prazo: {formatDateOnly(item.prazo)}</span>
+                  <span>{t("controlesAuditorias.iaddPrazo", { data: formatDateOnly(item.prazo) })}</span>
                 </div>
               )}
             </div>
@@ -368,11 +370,11 @@ export function ItemAuditoriaDetalheDialog({
             <TabsList className="flex-shrink-0">
               <TabsTrigger value="comentarios" className="flex items-center gap-2">
                 <MessageSquare className="h-4 w-4" />
-                Comentários ({comentarios?.length || 0})
+                {t("controlesAuditorias.iaddTabComentarios", { count: comentarios?.length || 0 })}
               </TabsTrigger>
               <TabsTrigger value="evidencias" className="flex items-center gap-2">
                 <Paperclip className="h-4 w-4" />
-                Evidências ({evidencias?.length || 0})
+                {t("controlesAuditorias.iaddTabEvidencias", { count: evidencias?.length || 0 })}
               </TabsTrigger>
             </TabsList>
 
@@ -382,7 +384,7 @@ export function ItemAuditoriaDetalheDialog({
                 <div className="flex-1 relative">
                   <Textarea
                     ref={textareaRef}
-                    placeholder="Adicione um comentário... Use @ para mencionar alguém"
+                    placeholder={t("controlesAuditorias.iaddCommentPlaceholder")}
                     value={novoComentario}
                     onChange={handleCommentChange}
                     rows={2}
@@ -397,7 +399,7 @@ export function ItemAuditoriaDetalheDialog({
                       setShowMentions(true);
                       textareaRef.current?.focus();
                     }}
-                    title="Mencionar usuário"
+                    title={t("controlesAuditorias.iaddMentionTitle")}
                   >
                     <AtSign className="h-4 w-4 text-muted-foreground" />
                   </Button>
@@ -436,7 +438,7 @@ export function ItemAuditoriaDetalheDialog({
                 <div className="space-y-3 pr-4">
                   {comentarios?.length === 0 ? (
                     <p className="text-center text-muted-foreground py-8">
-                      Nenhum comentário ainda
+                      {t("controlesAuditorias.iaddNoComments")}
                     </p>
                   ) : (
                     comentarios?.map((c) => (
@@ -481,12 +483,12 @@ export function ItemAuditoriaDetalheDialog({
                     {isUploading ? (
                       <div className="flex items-center justify-center gap-2">
                         <AkurisPulse size={20} />
-                        <span>Fazendo upload...</span>
+                        <span>{t("controlesAuditorias.iaddUploading")}</span>
                       </div>
                     ) : (
                       <div className="flex items-center justify-center gap-2 text-muted-foreground">
                         <Upload className="h-5 w-5" />
-                        <span>Clique para anexar evidência</span>
+                        <span>{t("controlesAuditorias.iaddClickToUpload")}</span>
                       </div>
                     )}
                   </div>
@@ -504,7 +506,7 @@ export function ItemAuditoriaDetalheDialog({
                 <div className="space-y-2 pr-4">
                   {evidencias?.length === 0 ? (
                     <p className="text-center text-muted-foreground py-8">
-                      Nenhuma evidência anexada
+                      {t("controlesAuditorias.iaddNoEvidencias")}
                     </p>
                   ) : (
                     evidencias?.map((e) => (
@@ -554,11 +556,9 @@ export function ItemAuditoriaDetalheDialog({
       <ConfirmDialog
         open={!!deleteTarget}
         onOpenChange={() => setDeleteTarget(null)}
-        title={deleteTarget?.type === "evidencia" ? "Remover Evidência" : "Remover Comentário"}
-        description={`Tem certeza que deseja remover ${
-          deleteTarget?.type === "evidencia" ? "esta evidência" : "este comentário"
-        }?`}
-        confirmText="Remover"
+        title={deleteTarget?.type === "evidencia" ? t("controlesAuditorias.iaddDeleteEvidenciaTitle") : t("controlesAuditorias.iaddDeleteComentarioTitle")}
+        description={deleteTarget?.type === "evidencia" ? t("controlesAuditorias.iaddDeleteEvidenciaDescription") : t("controlesAuditorias.iaddDeleteComentarioDescription")}
+        confirmText={t("controlesAuditorias.iaddDeleteConfirm")}
         onConfirm={() => {
           if (deleteTarget?.type === "evidencia") {
             handleDeleteEvidencia(deleteTarget.id);

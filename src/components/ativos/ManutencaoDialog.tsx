@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { UserSelect } from '@/components/riscos/UserSelect';
 import { formatDateOnly } from '@/lib/date-utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 interface Manutencao {
@@ -46,28 +47,29 @@ interface ManutencaoDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const tiposManutencao = [
-  { value: 'preventiva', label: 'Preventiva', color: 'default' },
-  { value: 'corretiva', label: 'Corretiva', color: 'warning' },
-  { value: 'emergencial', label: 'Emergencial', color: 'destructive' },
-  { value: 'melhorias', label: 'Melhorias', color: 'secondary' },
+const tiposManutencao = (t: (k: string) => string) => [
+  { value: 'preventiva', label: t('contratosAtivos.manutencaoDialog.typePreventiva'), color: 'default' },
+  { value: 'corretiva', label: t('contratosAtivos.manutencaoDialog.typeCorretiva'), color: 'warning' },
+  { value: 'emergencial', label: t('contratosAtivos.manutencaoDialog.typeEmergencial'), color: 'destructive' },
+  { value: 'melhorias', label: t('contratosAtivos.manutencaoDialog.typeMelhorias'), color: 'secondary' },
 ];
 
-const statusOptions = [
-  { value: 'agendada', label: 'Agendada', color: 'secondary' },
-  { value: 'em_andamento', label: 'Em Andamento', color: 'warning' },
-  { value: 'concluida', label: 'Concluída', color: 'success' },
-  { value: 'cancelada', label: 'Cancelada', color: 'destructive' },
+const statusOptions = (t: (k: string) => string) => [
+  { value: 'agendada', label: t('contratosAtivos.manutencaoDialog.statusAgendada'), color: 'secondary' },
+  { value: 'em_andamento', label: t('contratosAtivos.manutencaoDialog.statusEmAndamento'), color: 'warning' },
+  { value: 'concluida', label: t('contratosAtivos.manutencaoDialog.statusConcluida'), color: 'success' },
+  { value: 'cancelada', label: t('contratosAtivos.manutencaoDialog.statusCancelada'), color: 'destructive' },
 ];
 
-const criticidades = [
-  { value: 'baixa', label: 'Baixa', color: 'secondary' },
-  { value: 'media', label: 'Média', color: 'default' },
-  { value: 'alta', label: 'Alta', color: 'warning' },
-  { value: 'critica', label: 'Crítica', color: 'destructive' },
+const criticidades = (t: (k: string) => string) => [
+  { value: 'baixa', label: t('contratosAtivos.manutencaoDialog.critBaixa'), color: 'secondary' },
+  { value: 'media', label: t('contratosAtivos.manutencaoDialog.critMedia'), color: 'default' },
+  { value: 'alta', label: t('contratosAtivos.manutencaoDialog.critAlta'), color: 'warning' },
+  { value: 'critica', label: t('contratosAtivos.manutencaoDialog.critCritica'), color: 'destructive' },
 ];
 
 const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome, open, onOpenChange }) => {
+  const { t } = useLanguage();
   const { profile } = useAuth();
   const [manutencoes, setManutencoes] = useState<Manutencao[]>([]);
   const [loading, setLoading] = useState(true);
@@ -145,7 +147,7 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
       setManutencoes(data || []);
     } catch (error) {
       console.error('Error fetching manutencoes:', error);
-      toast.error('Erro ao carregar manutenções');
+      toast.error(t('contratosAtivos.manutencaoDialog.toastLoadError'));
     } finally {
       setLoading(false);
     }
@@ -155,7 +157,7 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
     e.preventDefault();
     
     if (!profile?.empresa_id) {
-      toast.error('Usuário deve estar vinculado a uma empresa');
+      toast.error(t('contratosAtivos.manutencaoDialog.toastNoEmpresa'));
       return;
     }
 
@@ -179,14 +181,14 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
           .eq('id', editingManutencao.id);
 
         if (error) throw error;
-        toast.success('Manutenção atualizada com sucesso!');
+        toast.success(t('contratosAtivos.manutencaoDialog.toastUpdateSuccess'));
       } else {
         const { error } = await supabase
           .from('ativos_manutencoes')
           .insert(manutencaoData);
 
         if (error) throw error;
-        toast.success('Manutenção criada com sucesso!');
+        toast.success(t('contratosAtivos.manutencaoDialog.toastCreateSuccess'));
       }
 
       setIsDialogOpen(false);
@@ -195,7 +197,7 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
       fetchManutencoes();
     } catch (error: any) {
       console.error('Error saving manutencao:', error);
-      toast.error(error.message || 'Erro ao salvar manutenção');
+      toast.error(error.message || t('contratosAtivos.manutencaoDialog.toastSaveError'));
     }
   };
 
@@ -230,11 +232,11 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
         .eq('id', deleteConfirm.manutencaoId);
 
       if (error) throw error;
-      toast.success('Manutenção excluída com sucesso!');
+      toast.success(t('contratosAtivos.manutencaoDialog.toastDeleteSuccess'));
       fetchManutencoes();
     } catch (error: any) {
       console.error('Error deleting manutencao:', error);
-      toast.error(error.message || 'Erro ao excluir manutenção');
+      toast.error(error.message || t('contratosAtivos.manutencaoDialog.toastDeleteError'));
     }
   };
 
@@ -264,9 +266,9 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
   };
 
   const getBadgeTone = (type: string, value: string): StatusTone => {
-    const option = type === 'tipo' ? tiposManutencao.find(t => t.value === value) :
-                  type === 'status' ? statusOptions.find(s => s.value === value) :
-                  criticidades.find(c => c.value === value);
+    const option = type === 'tipo' ? tiposManutencao(t).find(tp => tp.value === value) :
+                  type === 'status' ? statusOptions(t).find(s => s.value === value) :
+                  criticidades(t).find(c => c.value === value);
     return COLOR_TO_TONE[option?.color || 'default'] || 'neutral';
   };
 
@@ -315,8 +317,8 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
       open={open}
       onOpenChange={onOpenChange}
       icon={Wrench}
-      title={`Manutenções — ${ativoNome}`}
-      description="Gerencie o histórico de manutenções do ativo"
+      title={t('contratosAtivos.manutencaoDialog.title', { ativo: ativoNome })}
+      description={t('contratosAtivos.manutencaoDialog.description')}
       size="xl"
       hideFooter
     >
@@ -325,7 +327,7 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total</CardTitle>
+                <CardTitle className="text-sm font-medium">{t('contratosAtivos.manutencaoDialog.cardTotal')}</CardTitle>
                 <Wrench className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -335,7 +337,7 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
             
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Concluídas</CardTitle>
+                <CardTitle className="text-sm font-medium">{t('contratosAtivos.manutencaoDialog.cardCompleted')}</CardTitle>
                 <Calendar className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -347,7 +349,7 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
             
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Em Andamento</CardTitle>
+                <CardTitle className="text-sm font-medium">{t('contratosAtivos.manutencaoDialog.cardInProgress')}</CardTitle>
                 <User className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -359,7 +361,7 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
             
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Custo Total</CardTitle>
+                <CardTitle className="text-sm font-medium">{t('contratosAtivos.manutencaoDialog.cardTotalCost')}</CardTitle>
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -378,27 +380,27 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
               setIsDialogOpen(true);
             }}>
               <Plus className="h-4 w-4 mr-2" />
-              Nova Manutenção
+              {t('contratosAtivos.manutencaoDialog.newButton')}
             </Button>
             <DialogShell
               open={isDialogOpen}
               onOpenChange={setIsDialogOpen}
               icon={Wrench}
-              title={editingManutencao ? 'Editar Manutenção' : 'Nova Manutenção'}
+              title={editingManutencao ? t('contratosAtivos.manutencaoDialog.dialogTitleEdit') : t('contratosAtivos.manutencaoDialog.dialogTitleNew')}
               size="md"
               onSubmit={() => handleSubmit(new Event('submit') as unknown as React.FormEvent)}
-              submitLabel={editingManutencao ? 'Atualizar' : 'Criar'}
+              submitLabel={editingManutencao ? t('contratosAtivos.manutencaoDialog.submitUpdate') : t('contratosAtivos.manutencaoDialog.submitCreate')}
             >
                 <form onSubmit={handleSubmit} className="space-y-5">
                   <div className="grid grid-cols-2 gap-5">
                     <div className="space-y-2">
-                      <Label htmlFor="tipo_manutencao">Tipo *</Label>
+                      <Label htmlFor="tipo_manutencao">{t('contratosAtivos.manutencaoDialog.labelType')}</Label>
                       <Select value={formData.tipo_manutencao} onValueChange={(value) => setFormData(prev => ({...prev, tipo_manutencao: value}))}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {tiposManutencao.map((tipo) => (
+                          {tiposManutencao(t).map((tipo) => (
                             <SelectItem key={tipo.value} value={tipo.value}>
                               {tipo.label}
                             </SelectItem>
@@ -408,13 +410,13 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="criticidade">Criticidade</Label>
+                      <Label htmlFor="criticidade">{t('contratosAtivos.manutencaoDialog.labelCriticality')}</Label>
                       <Select value={formData.criticidade} onValueChange={(value) => setFormData(prev => ({...prev, criticidade: value}))}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {criticidades.map((crit) => (
+                          {criticidades(t).map((crit) => (
                             <SelectItem key={crit.value} value={crit.value}>
                               {crit.label}
                             </SelectItem>
@@ -425,7 +427,7 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="descricao">Descrição *</Label>
+                    <Label htmlFor="descricao">{t('contratosAtivos.manutencaoDialog.labelDescription')}</Label>
                     <Textarea
                       id="descricao"
                       value={formData.descricao}
@@ -437,7 +439,7 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
 
                   <div className="grid grid-cols-3 gap-5">
                     <div className="space-y-2">
-                      <Label htmlFor="data_manutencao">Data da Manutenção *</Label>
+                      <Label htmlFor="data_manutencao">{t('contratosAtivos.manutencaoDialog.labelMaintenanceDate')}</Label>
                       <Input
                         id="data_manutencao"
                         type="date"
@@ -448,7 +450,7 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="data_prevista_conclusao">Previsão de Conclusão</Label>
+                      <Label htmlFor="data_prevista_conclusao">{t('contratosAtivos.manutencaoDialog.labelExpectedCompletion')}</Label>
                       <Input
                         id="data_prevista_conclusao"
                         type="date"
@@ -458,7 +460,7 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="data_conclusao">Data de Conclusão</Label>
+                      <Label htmlFor="data_conclusao">{t('contratosAtivos.manutencaoDialog.labelCompletionDate')}</Label>
                       <Input
                         id="data_conclusao"
                         type="date"
@@ -470,16 +472,16 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
 
                   <div className="grid grid-cols-2 gap-5">
                     <div className="space-y-2">
-                      <Label htmlFor="responsavel">Responsável</Label>
+                      <Label htmlFor="responsavel">{t('contratosAtivos.manutencaoDialog.labelResponsible')}</Label>
                       <UserSelect
                         value={formData.responsavel}
                         onValueChange={(value) => setFormData(prev => ({ ...prev, responsavel: value }))}
-                        placeholder="Selecione o responsável"
+                        placeholder={t('contratosAtivos.manutencaoDialog.responsiblePlaceholder')}
                       />
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="fornecedor">Fornecedor</Label>
+                      <Label htmlFor="fornecedor">{t('contratosAtivos.manutencaoDialog.labelSupplier')}</Label>
                       <Input
                         id="fornecedor"
                         value={formData.fornecedor}
@@ -490,7 +492,7 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
 
                   <div className="grid grid-cols-3 gap-5">
                     <div className="space-y-2">
-                      <Label htmlFor="custo">Custo (R$)</Label>
+                      <Label htmlFor="custo">{t('contratosAtivos.manutencaoDialog.labelCost')}</Label>
                       <Input
                         id="custo"
                         type="number"
@@ -501,13 +503,13 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="status">Status</Label>
+                      <Label htmlFor="status">{t('contratosAtivos.manutencaoDialog.labelStatus')}</Label>
                       <Select value={formData.status} onValueChange={(value) => setFormData(prev => ({...prev, status: value}))}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {statusOptions.map((status) => (
+                          {statusOptions(t).map((status) => (
                             <SelectItem key={status.value} value={status.value}>
                               {status.label}
                             </SelectItem>
@@ -517,7 +519,7 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="proxima_manutencao">Próxima Manutenção</Label>
+                      <Label htmlFor="proxima_manutencao">{t('contratosAtivos.manutencaoDialog.labelNextMaintenance')}</Label>
                       <Input
                         id="proxima_manutencao"
                         type="date"
@@ -528,7 +530,7 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="observacoes">Observações</Label>
+                    <Label htmlFor="observacoes">{t('contratosAtivos.manutencaoDialog.labelObservations')}</Label>
                     <Textarea
                       id="observacoes"
                       value={formData.observacoes}
@@ -544,7 +546,7 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
           {/* Tabela de Manutenções */}
           <Card>
             <CardHeader>
-              <CardTitle>Histórico de Manutenções</CardTitle>
+              <CardTitle>{t('contratosAtivos.manutencaoDialog.historyTitle')}</CardTitle>
             </CardHeader>
             <CardContent>
               {loading ? (
@@ -553,20 +555,20 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
                 </div>
               ) : manutencoes.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  Nenhuma manutenção registrada
+                  {t('contratosAtivos.manutencaoDialog.emptyState')}
                 </div>
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Data</TableHead>
-                      <TableHead>Tipo</TableHead>
-                      <TableHead>Descrição</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Criticidade</TableHead>
-                      <TableHead>Responsável</TableHead>
-                      <TableHead>Custo</TableHead>
-                      <TableHead>Ações</TableHead>
+                      <TableHead>{t('contratosAtivos.manutencaoDialog.columnDate')}</TableHead>
+                      <TableHead>{t('contratosAtivos.manutencaoDialog.columnType')}</TableHead>
+                      <TableHead>{t('contratosAtivos.manutencaoDialog.columnDescription')}</TableHead>
+                      <TableHead>{t('contratosAtivos.manutencaoDialog.columnStatus')}</TableHead>
+                      <TableHead>{t('contratosAtivos.manutencaoDialog.columnCriticality')}</TableHead>
+                      <TableHead>{t('contratosAtivos.manutencaoDialog.columnResponsible')}</TableHead>
+                      <TableHead>{t('contratosAtivos.manutencaoDialog.columnCost')}</TableHead>
+                      <TableHead>{t('contratosAtivos.manutencaoDialog.columnActions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -577,7 +579,7 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
                         </TableCell>
                         <TableCell>
                           <StatusBadge size="sm" tone={getBadgeTone('tipo', manutencao.tipo_manutencao)}>
-                            {tiposManutencao.find(t => t.value === manutencao.tipo_manutencao)?.label}
+                            {tiposManutencao(t).find(tp => tp.value === manutencao.tipo_manutencao)?.label}
                           </StatusBadge>
                         </TableCell>
                         <TableCell className="max-w-xs truncate">
@@ -585,12 +587,12 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
                         </TableCell>
                         <TableCell>
                           <StatusBadge size="sm" tone={getBadgeTone('status', manutencao.status)}>
-                            {statusOptions.find(s => s.value === manutencao.status)?.label}
+                            {statusOptions(t).find(s => s.value === manutencao.status)?.label}
                           </StatusBadge>
                         </TableCell>
                         <TableCell>
                           <StatusBadge size="sm" tone={getBadgeTone('criticidade', manutencao.criticidade)}>
-                            {criticidades.find(c => c.value === manutencao.criticidade)?.label}
+                            {criticidades(t).find(c => c.value === manutencao.criticidade)?.label}
                           </StatusBadge>
                         </TableCell>
                         <TableCell>{renderResponsavel(manutencao)}</TableCell>
@@ -609,7 +611,7 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
                                   </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                  <p>Editar manutenção</p>
+                                  <p>{t('contratosAtivos.manutencaoDialog.tooltipEdit')}</p>
                                 </TooltipContent>
                               </Tooltip>
                             </TooltipProvider>
@@ -626,7 +628,7 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
                                   </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                  <p>Excluir manutenção</p>
+                                  <p>{t('contratosAtivos.manutencaoDialog.tooltipDelete')}</p>
                                 </TooltipContent>
                               </Tooltip>
                             </TooltipProvider>
@@ -645,10 +647,10 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
           open={deleteConfirm.open}
           onOpenChange={(open) => setDeleteConfirm({ ...deleteConfirm, open })}
           onConfirm={confirmDelete}
-          title="Excluir Manutenção"
-          description="Tem certeza que deseja excluir esta manutenção? Esta ação não pode ser desfeita."
-          confirmText="Excluir"
-          cancelText="Cancelar"
+          title={t('contratosAtivos.manutencaoDialog.deleteDialogTitle')}
+          description={t('contratosAtivos.manutencaoDialog.deleteDialogDescription')}
+          confirmText={t('contratosAtivos.manutencaoDialog.deleteDialogConfirm')}
+          cancelText={t('contratosAtivos.manutencaoDialog.deleteDialogCancel')}
           variant="destructive"
         />
     </DialogShell>

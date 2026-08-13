@@ -3,14 +3,14 @@ import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { StatusBadge } from '@/components/ui/status-badge';
 import type { ProjetoTarefa, ProjetoTarefaPrioridade } from '@/types/projetos';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const prioridadeTone: Record<ProjetoTarefaPrioridade, 'destructive' | 'warning' | 'info' | 'neutral'> = {
   critica: 'destructive', alta: 'warning', media: 'info', baixa: 'neutral',
 };
 
-const WEEK = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-
 export function CalendarView({ tarefas, onSelectTarefa }: { tarefas: ProjetoTarefa[]; onSelectTarefa: (t: ProjetoTarefa) => void }) {
+  const { t } = useLanguage();
   const [cursor, setCursor] = React.useState(() => {
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth(), 1);
@@ -36,6 +36,11 @@ export function CalendarView({ tarefas, onSelectTarefa }: { tarefas: ProjetoTare
     return m;
   }, [tarefas]);
 
+  const WEEK = [
+    t('projetos.calendar.weekdaySun'), t('projetos.calendar.weekdayMon'), t('projetos.calendar.weekdayTue'),
+    t('projetos.calendar.weekdayWed'), t('projetos.calendar.weekdayThu'), t('projetos.calendar.weekdayFri'), t('projetos.calendar.weekdaySat'),
+  ];
+
   const monthLabel = cursor.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
 
   return (
@@ -47,7 +52,7 @@ export function CalendarView({ tarefas, onSelectTarefa }: { tarefas: ProjetoTare
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <Button variant="outline" size="sm" className="h-7" onClick={() => { const d = new Date(); setCursor(new Date(d.getFullYear(), d.getMonth(), 1)); }}>
-            Hoje
+            {t('projetos.calendar.today')}
           </Button>
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCursor(new Date(ano, mes + 1, 1))}>
             <ChevronRight className="h-4 w-4" />
@@ -83,7 +88,7 @@ export function CalendarView({ tarefas, onSelectTarefa }: { tarefas: ProjetoTare
                     {t.titulo}
                   </button>
                 ))}
-                {items.length > 3 && <div className="text-[10px] text-muted-foreground px-1.5">+{items.length - 3} mais</div>}
+                {items.length > 3 && <div className="text-[10px] text-muted-foreground px-1.5">{t('projetos.calendar.more', { count: items.length - 3 })}</div>}
               </div>
             </div>
           );

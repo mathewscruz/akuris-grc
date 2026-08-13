@@ -18,6 +18,7 @@ import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { TemplateDialog } from './TemplateDialog';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { formatDateOnly } from '@/lib/date-utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 interface Template {
@@ -173,10 +174,11 @@ export function TemplatesManager() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { empresaId } = useEmpresaId();
+  const { t } = useLanguage();
 
   const cloneSuggestedTemplate = async (suggested: typeof SUGGESTED_TEMPLATES[0]) => {
     if (!empresaId) {
-      toast({ title: 'Erro', description: 'Empresa não identificada.', variant: 'destructive' });
+      toast({ title: t('dueDiligence.templatesManager.errorTitle'), description: t('dueDiligence.templatesManager.errorEmpresaDescription'), variant: 'destructive' });
       return;
     }
     setCloningTemplate(suggested.nome);
@@ -218,16 +220,16 @@ export function TemplatesManager() {
       if (questionsError) throw questionsError;
 
       toast({
-        title: 'Template criado!',
-        description: `"${suggested.nome}" foi adicionado com ${suggested.perguntas.length} perguntas.`,
+        title: t('dueDiligence.templatesManager.toastClonedTitle'),
+        description: t('dueDiligence.templatesManager.toastClonedDescription', { nome: suggested.nome, count: String(suggested.perguntas.length) }),
       });
 
       queryClient.invalidateQueries({ queryKey: ['due-diligence-templates'] });
     } catch (error: any) {
       console.error('Erro ao clonar template:', error);
       toast({
-        title: 'Erro',
-        description: 'Não foi possível criar o template.',
+        title: t('dueDiligence.templatesManager.errorTitle'),
+        description: t('dueDiligence.templatesManager.errorCloneDescription'),
         variant: 'destructive',
       });
     } finally {
@@ -250,8 +252,8 @@ export function TemplatesManager() {
   if (error) {
     console.error('❌ Erro na query de templates:', error);
     toast({
-      title: "Erro",
-      description: "Não foi possível carregar os templates.",
+      title: t('dueDiligence.templatesManager.errorTitle'),
+      description: t('dueDiligence.templatesManager.errorLoadDescription'),
       variant: "destructive",
     });
   }
@@ -296,8 +298,8 @@ export function TemplatesManager() {
     try {
       if (template._count?.assessments && template._count.assessments > 0) {
         toast({
-          title: "Não é possível excluir",
-          description: "Este template possui avaliações vinculadas e não pode ser excluído.",
+          title: t('dueDiligence.templatesManager.errorDeleteBlockedTitle'),
+          description: t('dueDiligence.templatesManager.errorDeleteBlockedDescription'),
           variant: "destructive",
         });
         return;
@@ -311,8 +313,8 @@ export function TemplatesManager() {
       if (error) throw error;
 
       toast({
-        title: "Template excluído",
-        description: "O template foi excluído com sucesso.",
+        title: t('dueDiligence.templatesManager.toastDeletedTitle'),
+        description: t('dueDiligence.templatesManager.toastDeletedDescription'),
       });
 
       queryClient.invalidateQueries({ queryKey: ['due-diligence-templates'] });
@@ -320,8 +322,8 @@ export function TemplatesManager() {
     } catch (error: any) {
       console.error('Erro ao excluir template:', error);
       toast({
-        title: "Erro",
-        description: "Não foi possível excluir o template.",
+        title: t('dueDiligence.templatesManager.errorTitle'),
+        description: t('dueDiligence.templatesManager.errorDeleteDescription'),
         variant: "destructive",
       });
     } finally {
@@ -339,8 +341,10 @@ export function TemplatesManager() {
       if (error) throw error;
 
       toast({
-        title: "Status atualizado",
-        description: `Template ${!template.ativo ? 'ativado' : 'desativado'} com sucesso.`,
+        title: t('dueDiligence.templatesManager.toastStatusUpdatedTitle'),
+        description: !template.ativo
+          ? t('dueDiligence.templatesManager.toastStatusUpdatedDescriptionActivated')
+          : t('dueDiligence.templatesManager.toastStatusUpdatedDescriptionDeactivated'),
       });
 
       queryClient.invalidateQueries({ queryKey: ['due-diligence-templates'] });
@@ -348,8 +352,8 @@ export function TemplatesManager() {
     } catch (error: any) {
       console.error('Erro ao atualizar status:', error);
       toast({
-        title: "Erro",
-        description: "Não foi possível atualizar o status do template.",
+        title: t('dueDiligence.templatesManager.errorTitle'),
+        description: t('dueDiligence.templatesManager.errorStatusDescription'),
         variant: "destructive",
       });
     }
@@ -370,9 +374,9 @@ export function TemplatesManager() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-2xl font-bold">Templates de Questionários</h2>
+            <h2 className="text-2xl font-bold">{t('dueDiligence.templatesManager.pageTitle')}</h2>
             <p className="text-muted-foreground">
-              Carregando templates...
+              {t('dueDiligence.templatesManager.loadingSubtitle')}
             </p>
           </div>
         </div>
@@ -417,10 +421,10 @@ export function TemplatesManager() {
             <CardHeader className="pb-3">
               <CardTitle className="text-lg flex items-center gap-2">
                 <AkurisAIIcon className="h-5 w-5 text-primary" />
-                Templates Sugeridos
+                {t('dueDiligence.templatesManager.suggestedTitle')}
               </CardTitle>
               <CardDescription>
-                Comece rapidamente com templates pré-configurados por especialistas
+                {t('dueDiligence.templatesManager.suggestedDescription')}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -444,7 +448,7 @@ export function TemplatesManager() {
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="text-xs text-muted-foreground">
-                            {suggested.perguntas.length} perguntas
+                            {t('dueDiligence.templatesManager.questionsCount', { count: String(suggested.perguntas.length) })}
                           </span>
                           <Button
                             size="sm"
@@ -455,11 +459,11 @@ export function TemplatesManager() {
                             {cloningTemplate === suggested.nome ? (
                               <AkurisPulse size={12} className="mr-1" />
                             ) : alreadyExists ? (
-                              'Já adicionado'
+                              t('dueDiligence.templatesManager.alreadyAdded')
                             ) : (
                               <>
                                 <Plus className="h-3 w-3 mr-1" />
-                                Usar
+                                {t('dueDiligence.templatesManager.use')}
                               </>
                             )}
                           </Button>
@@ -479,7 +483,7 @@ export function TemplatesManager() {
               <div className="flex items-center justify-between gap-4 mb-4">
                 <div className="relative flex-1 max-w-sm">
                   <Input
-                    placeholder="Buscar templates..."
+                    placeholder={t('dueDiligence.templatesManager.searchPlaceholder')}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
@@ -491,14 +495,14 @@ export function TemplatesManager() {
                     onClick={() => setShowFilters(!showFilters)}
                   >
                     <Filter className="h-4 w-4 mr-2" />
-                    Filtros
+                    {t('dueDiligence.templatesManager.filters')}
                   </Button>
                   <Button 
                     size="sm"
                     onClick={() => setTemplateDialog({ open: true, mode: 'create' })}
                   >
                     <Plus className="h-4 w-4 mr-2" />
-                    Novo Template
+                    {t('dueDiligence.templatesManager.newTemplate')}
                   </Button>
                 </div>
               </div>
@@ -506,13 +510,13 @@ export function TemplatesManager() {
               {showFilters && (
                 <div className="bg-muted/50 rounded-lg p-4 mb-4 flex items-center gap-4 flex-wrap">
                   <div className="flex items-center gap-2">
-                    <Label className="text-sm">Categoria:</Label>
+                    <Label className="text-sm">{t('dueDiligence.templatesManager.categoryLabel')}</Label>
                     <Select value={categoriaFilter} onValueChange={setCategoriaFilter}>
                       <SelectTrigger className="w-40">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">Todas</SelectItem>
+                        <SelectItem value="all">{t('dueDiligence.templatesManager.categoryAll')}</SelectItem>
                         {categorias.map((cat) => (
                           <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                         ))}
@@ -520,15 +524,15 @@ export function TemplatesManager() {
                     </Select>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Label className="text-sm">Status:</Label>
+                    <Label className="text-sm">{t('dueDiligence.templatesManager.statusLabel')}</Label>
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
                       <SelectTrigger className="w-32">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">Todos</SelectItem>
-                        <SelectItem value="ativo">Ativo</SelectItem>
-                        <SelectItem value="inativo">Inativo</SelectItem>
+                        <SelectItem value="all">{t('dueDiligence.templatesManager.statusAll')}</SelectItem>
+                        <SelectItem value="ativo">{t('dueDiligence.templatesManager.statusActive')}</SelectItem>
+                        <SelectItem value="inativo">{t('dueDiligence.templatesManager.statusInactive')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -539,7 +543,7 @@ export function TemplatesManager() {
                       onClick={clearFilters}
                     >
                       <X className="h-4 w-4 mr-1" />
-                      Limpar Filtros
+                      {t('dueDiligence.templatesManager.clearFilters')}
                     </Button>
                   )}
                 </div>
@@ -559,7 +563,7 @@ export function TemplatesManager() {
                                 <h3 className="text-lg font-semibold truncate">{template.nome}</h3>
                                 {template.padrao && (
                                   <StatusBadge size="sm" tone="warning" icon={<Star className="h-3 w-3" strokeWidth={1.5} />}>
-                                    Padrão
+                                    {t('dueDiligence.templatesManager.defaultBadge')}
                                   </StatusBadge>
                                 )}
                                 <StatusBadge size="sm" {...resolveCategoriaTone(template.categoria)}>
@@ -567,17 +571,17 @@ export function TemplatesManager() {
                                 </StatusBadge>
                               </div>
                               <p className="text-sm text-muted-foreground truncate">
-                                {template.descricao || 'Sem descrição'}
+                                {template.descricao || t('dueDiligence.templatesManager.noDescription')}
                               </p>
                             </div>
                             
                             <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                              <span>{template._count?.questions || 0} perguntas</span>
-                              <span>{template._count?.assessments || 0} avaliações</span>
+                              <span>{t('dueDiligence.templatesManager.questionsSuffix', { count: String(template._count?.questions || 0) })}</span>
+                              <span>{t('dueDiligence.templatesManager.assessmentsSuffix', { count: String(template._count?.assessments || 0) })}</span>
                               <StatusBadge size="sm" {...resolveAtivoTone(template.ativo)}>
-                                {template.ativo ? 'Ativo' : 'Inativo'}
+                                {template.ativo ? t('dueDiligence.templatesManager.statusActive') : t('dueDiligence.templatesManager.statusInactive')}
                               </StatusBadge>
-                              <span className="text-xs">v{template.versao}</span>
+                              <span className="text-xs">{t('dueDiligence.templatesManager.versionPrefix', { versao: String(template.versao) })}</span>
                             </div>
                           </div>
                         </div>
@@ -597,7 +601,7 @@ export function TemplatesManager() {
                                 <FileText className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>
-                            <TooltipContent>Gerenciar perguntas</TooltipContent>
+                            <TooltipContent>{t('dueDiligence.templatesManager.manageQuestionsTooltip')}</TooltipContent>
                           </Tooltip>
 
                           <Tooltip>
@@ -614,10 +618,10 @@ export function TemplatesManager() {
                                 className="bg-primary"
                               >
                                 <Plus className="h-4 w-4 mr-1" />
-                                Usar Template
+                                {t('dueDiligence.templatesManager.useTemplate')}
                               </Button>
                             </TooltipTrigger>
-                            <TooltipContent>Criar avaliação com este template</TooltipContent>
+                            <TooltipContent>{t('dueDiligence.templatesManager.useTemplateTooltip')}</TooltipContent>
                           </Tooltip>
                           
                           <Tooltip>
@@ -635,7 +639,7 @@ export function TemplatesManager() {
                                 <Edit className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>
-                            <TooltipContent>Editar template</TooltipContent>
+                            <TooltipContent>{t('dueDiligence.templatesManager.editTooltip')}</TooltipContent>
                           </Tooltip>
 
                           <Tooltip>
@@ -652,7 +656,7 @@ export function TemplatesManager() {
                                 <Copy className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>
-                            <TooltipContent>Duplicar template</TooltipContent>
+                            <TooltipContent>{t('dueDiligence.templatesManager.duplicateTooltip')}</TooltipContent>
                           </Tooltip>
 
                           <Tooltip>
@@ -666,7 +670,7 @@ export function TemplatesManager() {
                                 <SettingsIcon className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>
-                            <TooltipContent>Alterar status</TooltipContent>
+                            <TooltipContent>{t('dueDiligence.templatesManager.statusToggleTooltip')}</TooltipContent>
                           </Tooltip>
 
                           <Tooltip>
@@ -680,13 +684,13 @@ export function TemplatesManager() {
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>
-                            <TooltipContent>Excluir template</TooltipContent>
+                            <TooltipContent>{t('dueDiligence.templatesManager.deleteTooltip')}</TooltipContent>
                           </Tooltip>
                         </div>
                       </div>
                       
                       <div className="text-xs text-muted-foreground mt-2 border-t pt-2">
-                        Criado em {formatDateOnly(template.created_at)}
+                        {t('dueDiligence.templatesManager.createdOn', { data: formatDateOnly(template.created_at) })}
                       </div>
                     </CardContent>
                   </Card>
@@ -696,11 +700,11 @@ export function TemplatesManager() {
               <Card className="m-6 mt-0">
                 <CardContent className="flex flex-col items-center justify-center py-12">
                   <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">Nenhum template encontrado</h3>
+                  <h3 className="text-lg font-semibold mb-2">{t('dueDiligence.templatesManager.emptyTitle')}</h3>
                   <p className="text-muted-foreground text-center mb-4">
                     {hasActiveFilters 
-                      ? 'Tente ajustar os filtros para encontrar templates'
-                      : 'Crie seu primeiro template de questionário para começar a avaliar fornecedores'
+                      ? t('dueDiligence.templatesManager.emptyFilteredDescription')
+                      : t('dueDiligence.templatesManager.emptyDescription')
                     }
                   </p>
                   {!hasActiveFilters && (
@@ -709,7 +713,7 @@ export function TemplatesManager() {
                       className="flex items-center gap-2"
                     >
                       <Plus className="h-4 w-4" />
-                      Criar Primeiro Template
+                      {t('dueDiligence.templatesManager.createFirst')}
                     </Button>
                   )}
                 </CardContent>
@@ -734,8 +738,8 @@ export function TemplatesManager() {
           <ConfirmDialog
             open={deleteDialog.open}
             onOpenChange={(open) => setDeleteDialog({ open })}
-            title="Excluir Template"
-            description={`Tem certeza que deseja excluir o template "${deleteDialog.template?.nome}"? Esta ação não pode ser desfeita.`}
+            title={t('dueDiligence.templatesManager.deleteDialogTitle')}
+            description={t('dueDiligence.templatesManager.deleteDialogDescription', { nome: deleteDialog.template?.nome ?? '' })}
             onConfirm={() => deleteDialog.template && handleDeleteTemplate(deleteDialog.template)}
           />
         </div>
@@ -745,43 +749,43 @@ export function TemplatesManager() {
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <SettingsIcon className="h-4 w-4" />
-              Automações
+              {t('dueDiligence.templatesManager.automationsTitle')}
             </CardTitle>
             <CardDescription>
-              Configure ações automáticas baseadas nos resultados das avaliações
+              {t('dueDiligence.templatesManager.automationsDescription')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between border rounded-lg p-4">
               <div>
-                <p className="font-medium">Alerta de Score Baixo</p>
+                <p className="font-medium">{t('dueDiligence.templatesManager.automationLowScoreTitle')}</p>
                 <p className="text-sm text-muted-foreground">
-                  Notificar quando score for inferior a 50%
+                  {t('dueDiligence.templatesManager.automationLowScoreDescription')}
                 </p>
               </div>
               <Switch />
             </div>
             <div className="flex items-center justify-between border rounded-lg p-4">
               <div>
-                <p className="font-medium">Lembrete de Expiração</p>
+                <p className="font-medium">{t('dueDiligence.templatesManager.automationExpirationTitle')}</p>
                 <p className="text-sm text-muted-foreground">
-                  Enviar lembrete 7 dias antes da expiração
+                  {t('dueDiligence.templatesManager.automationExpirationDescription')}
                 </p>
               </div>
               <Switch defaultChecked />
             </div>
             <div className="flex items-center justify-between border rounded-lg p-4">
               <div>
-                <p className="font-medium">Relatório Automático</p>
+                <p className="font-medium">{t('dueDiligence.templatesManager.automationReportTitle')}</p>
                 <p className="text-sm text-muted-foreground">
-                  Gerar relatório ao concluir avaliação
+                  {t('dueDiligence.templatesManager.automationReportDescription')}
                 </p>
               </div>
               <Switch />
             </div>
             <Button variant="outline" className="w-full">
               <Plus className="h-4 w-4 mr-2" />
-              Adicionar Regra de Automação
+              {t('dueDiligence.templatesManager.addAutomationRule')}
             </Button>
           </CardContent>
         </Card>

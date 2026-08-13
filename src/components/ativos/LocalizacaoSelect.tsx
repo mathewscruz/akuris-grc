@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { toast } from 'sonner';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Localizacao {
   id: string;
@@ -22,6 +23,7 @@ interface LocalizacaoSelectProps {
 }
 
 const LocalizacaoSelect = ({ value, onValueChange }: LocalizacaoSelectProps) => {
+  const { t } = useLanguage();
   const { profile } = useAuth();
   const [localizacoes, setLocalizacoes] = useState<Localizacao[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,7 +49,7 @@ const LocalizacaoSelect = ({ value, onValueChange }: LocalizacaoSelectProps) => 
       setLocalizacoes(data || []);
     } catch (error) {
       console.error('Error fetching localizacoes:', error);
-      toast.error('Erro ao carregar localizações');
+      toast.error(t('contratosAtivos.localizacaoSelect.toastLoadError'));
     } finally {
       setLoading(false);
     }
@@ -57,7 +59,7 @@ const LocalizacaoSelect = ({ value, onValueChange }: LocalizacaoSelectProps) => 
     e.preventDefault();
     
     if (!profile?.empresa_id) {
-      toast.error('Usuário deve estar vinculado a uma empresa');
+      toast.error(t('contratosAtivos.localizacaoSelect.toastNoEmpresa'));
       return;
     }
 
@@ -74,14 +76,14 @@ const LocalizacaoSelect = ({ value, onValueChange }: LocalizacaoSelectProps) => 
 
       if (error) throw error;
 
-      toast.success('Localização criada com sucesso!');
+      toast.success(t('contratosAtivos.localizacaoSelect.toastCreateSuccess'));
       setLocalizacoes(prev => [...prev, data]);
       onValueChange(data.nome);
       setIsDialogOpen(false);
       setFormData({ nome: '', descricao: '' });
     } catch (error: any) {
       console.error('Error creating localizacao:', error);
-      toast.error(error.message || 'Erro ao criar localização');
+      toast.error(error.message || t('contratosAtivos.localizacaoSelect.toastCreateError'));
     }
   };
 
@@ -89,7 +91,7 @@ const LocalizacaoSelect = ({ value, onValueChange }: LocalizacaoSelectProps) => 
     return (
       <Select disabled>
         <SelectTrigger>
-          <SelectValue placeholder="Carregando..." />
+          <SelectValue placeholder={t('contratosAtivos.localizacaoSelect.placeholderLoading')} />
         </SelectTrigger>
       </Select>
     );
@@ -99,7 +101,7 @@ const LocalizacaoSelect = ({ value, onValueChange }: LocalizacaoSelectProps) => 
     <div className="flex gap-2">
       <Select value={value} onValueChange={onValueChange}>
         <SelectTrigger className="flex-1">
-          <SelectValue placeholder="Selecione uma localização" />
+          <SelectValue placeholder={t('contratosAtivos.localizacaoSelect.placeholderSelect')} />
         </SelectTrigger>
         <SelectContent>
           {localizacoes.map((localizacao) => (
@@ -118,39 +120,39 @@ const LocalizacaoSelect = ({ value, onValueChange }: LocalizacaoSelectProps) => 
         </DialogTrigger>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Nova Localização</DialogTitle>
+            <DialogTitle>{t('contratosAtivos.localizacaoSelect.newLocationTitle')}</DialogTitle>
             <DialogDescription>
-              Crie uma nova localização para classificar os ativos
+              {t('contratosAtivos.localizacaoSelect.newLocationDescription')}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="nome">Nome *</Label>
+              <Label htmlFor="nome">{t('contratosAtivos.localizacaoSelect.labelName')}</Label>
               <Input
                 id="nome"
                 value={formData.nome}
                 onChange={(e) => setFormData(prev => ({...prev, nome: e.target.value}))}
-                placeholder="Ex: Escritório São Paulo"
+                placeholder={t('contratosAtivos.localizacaoSelect.namePlaceholder')}
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="descricao">Descrição</Label>
+              <Label htmlFor="descricao">{t('contratosAtivos.localizacaoSelect.labelDescription')}</Label>
               <Textarea
                 id="descricao"
                 value={formData.descricao}
                 onChange={(e) => setFormData(prev => ({...prev, descricao: e.target.value}))}
-                placeholder="Descrição da localização (opcional)"
+                placeholder={t('contratosAtivos.localizacaoSelect.descriptionPlaceholder')}
                 rows={3}
               />
             </div>
             <div className="flex justify-end space-x-2">
               <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                Cancelar
+                {t('contratosAtivos.common.cancel')}
               </Button>
               <Button type="submit">
                 <Check className="h-4 w-4 mr-2" />
-                Criar Localização
+                {t('contratosAtivos.localizacaoSelect.createButton')}
               </Button>
             </div>
           </form>

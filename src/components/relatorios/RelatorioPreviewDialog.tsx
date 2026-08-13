@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { fetchTemplateData } from './generateTemplatePDF';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface RelatorioPreviewDialogProps {
   open: boolean;
@@ -14,6 +15,7 @@ interface RelatorioPreviewDialogProps {
 }
 
 export function RelatorioPreviewDialog({ open, onOpenChange, relatorio, empresaId }: RelatorioPreviewDialogProps) {
+  const { t } = useLanguage();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
@@ -32,7 +34,7 @@ export function RelatorioPreviewDialog({ open, onOpenChange, relatorio, empresaI
       open={open}
       onOpenChange={onOpenChange}
       icon={FileBarChart}
-      title={`Preview: ${relatorio?.nome ?? ''}`}
+      title={t('relatoriosComp.preview.title', { nome: relatorio?.nome ?? '' })}
       description={relatorio?.template_base || undefined}
       size="lg"
       hideFooter
@@ -44,8 +46,8 @@ export function RelatorioPreviewDialog({ open, onOpenChange, relatorio, empresaI
             </div>
           ) : !data || data.sections.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-              <p className="text-lg font-medium">Nenhum dado encontrado</p>
-              <p className="text-sm mt-1">Cadastre dados nos módulos correspondentes para gerar o relatório.</p>
+              <p className="text-lg font-medium">{t('relatoriosComp.preview.emptyTitle')}</p>
+              <p className="text-sm mt-1">{t('relatoriosComp.preview.emptyDescription')}</p>
             </div>
           ) : (
             <div className="space-y-6">
@@ -77,7 +79,7 @@ export function RelatorioPreviewDialog({ open, onOpenChange, relatorio, empresaI
                           </TableHeader>
                           <TableBody>
                             {section.tableRows.length === 0 ? (
-                              <TableRow><TableCell colSpan={section.tableHeaders.length} className="text-center text-muted-foreground text-sm py-4">Sem registros</TableCell></TableRow>
+                              <TableRow><TableCell colSpan={section.tableHeaders.length} className="text-center text-muted-foreground text-sm py-4">{t('relatoriosComp.preview.semRegistros')}</TableCell></TableRow>
                             ) : section.tableRows.slice(0, 20).map((row: string[], ri: number) => (
                               <TableRow key={ri}>
                                 {row.map((cell: string, ci: number) => (
@@ -86,7 +88,7 @@ export function RelatorioPreviewDialog({ open, onOpenChange, relatorio, empresaI
                               </TableRow>
                             ))}
                             {section.tableRows.length > 20 && (
-                              <TableRow><TableCell colSpan={section.tableHeaders.length} className="text-center text-muted-foreground text-xs py-2">... e mais {section.tableRows.length - 20} registros (visíveis no PDF)</TableCell></TableRow>
+                              <TableRow><TableCell colSpan={section.tableHeaders.length} className="text-center text-muted-foreground text-xs py-2">{t('relatoriosComp.preview.maisRegistros', { count: section.tableRows.length - 20 })}</TableCell></TableRow>
                             )}
                           </TableBody>
                         </Table>

@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import type { ProjetoTarefa, ProjetoTarefaPrioridade } from '@/types/projetos';
 import { EmptyState } from '@/components/ui/empty-state';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface GanttChartProps {
   tarefas: ProjetoTarefa[];
@@ -17,6 +18,7 @@ const prioridadeColor: Record<ProjetoTarefaPrioridade, string> = {
 const DAY_MS = 1000 * 60 * 60 * 24;
 
 export const GanttChart: React.FC<GanttChartProps> = ({ tarefas, onSelectTarefa }) => {
+  const { t } = useLanguage();
   const dataset = useMemo(() => {
     const items = (tarefas ?? [])
       .filter(t => t.data_inicio || t.prazo)
@@ -33,7 +35,7 @@ export const GanttChart: React.FC<GanttChartProps> = ({ tarefas, onSelectTarefa 
   }, [tarefas]);
 
   if (!dataset) {
-    return <EmptyState title="Sem tarefas com datas" description="Defina datas de início/fim nas tarefas para visualizar no Gantt." />;
+    return <EmptyState title={t('projetos.gantt.noDatesTitle')} description={t('projetos.gantt.noDatesDescription')} />;
   }
 
   const { items, min, totalDays } = dataset;

@@ -7,10 +7,12 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { Play, Pause, Plus, Trash2, Timer } from 'lucide-react';
 import { useTempoEntradas, useAddTempo, useDeleteTempo } from '@/hooks/useProjetoExtras';
 import { useAuth } from '@/components/AuthProvider';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const STORAGE_KEY = 'akuris.tarefa.timer';
 
 export function TempoPanel({ tarefaId, estimativa, gasto }: { tarefaId: string; estimativa?: number | null; gasto?: number | null }) {
+  const { t } = useLanguage();
   const { data: entradas = [] } = useTempoEntradas(tarefaId);
   const add = useAddTempo(tarefaId);
   const del = useDeleteTempo(tarefaId);
@@ -77,13 +79,13 @@ export function TempoPanel({ tarefaId, estimativa, gasto }: { tarefaId: string; 
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Timer className="h-4 w-4 text-primary" strokeWidth={1.5} />
-            <span className="text-sm font-semibold">Cronômetro</span>
+            <span className="text-sm font-semibold">{t('projetos.tempo.timer')}</span>
           </div>
           {startedAt && <StatusBadge tone="info" size="sm">{fmtTimer(elapsed)}</StatusBadge>}
         </div>
         <div className="flex gap-2 items-start">
           <Input
-            placeholder="O que você está fazendo? (opcional)"
+            placeholder={t('projetos.tempo.timerPlaceholder')}
             value={descTimer}
             onChange={(e) => setDescTimer(e.target.value)}
             className="h-9"
@@ -91,32 +93,32 @@ export function TempoPanel({ tarefaId, estimativa, gasto }: { tarefaId: string; 
           />
           {startedAt ? (
             <Button size="sm" variant="destructive" onClick={stopAndSave} disabled={add.isPending}>
-              <Pause className="h-4 w-4" /> Parar e salvar
+              <Pause className="h-4 w-4" /> {t('projetos.tempo.stopAndSave')}
             </Button>
           ) : (
             <Button size="sm" onClick={start}>
-              <Play className="h-4 w-4" /> Iniciar
+              <Play className="h-4 w-4" /> {t('projetos.tempo.start')}
             </Button>
           )}
         </div>
       </div>
 
       <div className="grid grid-cols-3 gap-3 text-center">
-        <Stat label="Estimativa" value={estimativa ? `${estimativa}h` : '—'} />
-        <Stat label="Gasto total" value={gasto ? `${Number(gasto).toFixed(1)}h` : '0h'} />
-        <Stat label="Você lançou" value={`${totalUser.toFixed(1)}h`} />
+        <Stat label={t('projetos.tempo.statEstimate')} value={estimativa ? `${estimativa}h` : '—'} />
+        <Stat label={t('projetos.tempo.statSpentTotal')} value={gasto ? `${Number(gasto).toFixed(1)}h` : '0h'} />
+        <Stat label={t('projetos.tempo.statYouLogged')} value={`${totalUser.toFixed(1)}h`} />
       </div>
 
       <div className="rounded-lg border border-border bg-card p-4 space-y-3">
-        <div className="text-sm font-semibold">Lançar tempo manual</div>
+        <div className="text-sm font-semibold">{t('projetos.tempo.manualLogTitle')}</div>
         <div className="flex gap-2">
           <div className="w-24">
-            <Label className="text-xs">Horas</Label>
+            <Label className="text-xs">{t('projetos.tempo.hours')}</Label>
             <Input type="number" step="0.25" min="0.01" value={novoH} onChange={(e) => setNovoH(e.target.value)} />
           </div>
           <div className="flex-1">
-            <Label className="text-xs">Descrição</Label>
-            <Input value={novoDesc} onChange={(e) => setNovoDesc(e.target.value)} placeholder="Atividade realizada" />
+            <Label className="text-xs">{t('projetos.tempo.description')}</Label>
+            <Input value={novoDesc} onChange={(e) => setNovoDesc(e.target.value)} placeholder={t('projetos.tempo.descriptionPlaceholder')} />
           </div>
           <div className="self-end">
             <Button size="sm" onClick={addManual} disabled={add.isPending}><Plus className="h-4 w-4" /></Button>
@@ -125,9 +127,9 @@ export function TempoPanel({ tarefaId, estimativa, gasto }: { tarefaId: string; 
       </div>
 
       <div className="space-y-1.5">
-        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Histórico</div>
+        <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{t('projetos.tempo.history')}</div>
         {entradas.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-3">Nenhum tempo registrado.</p>
+          <p className="text-sm text-muted-foreground py-3">{t('projetos.tempo.noEntries')}</p>
         ) : (
           <ul className="divide-y divide-border rounded-lg border border-border bg-card">
             {entradas.map((e) => (

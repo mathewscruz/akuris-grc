@@ -15,6 +15,7 @@ import { FieldHelpTooltip } from '@/components/ui/field-help-tooltip';
 import { useWizardDraft } from '@/hooks/useWizardDraft';
 import { logger } from '@/lib/logger';
 import { formatStatus } from '@/lib/text-utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Contrato {
   id: string;
@@ -53,6 +54,7 @@ export function ContratoDialog({ contrato, open, onOpenChange, onSuccess, fornec
   const [initialSnapshot, setInitialSnapshot] = useState('');
   const { toast } = useToast();
   const { notify } = useIntegrationNotify();
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (open) {
@@ -105,12 +107,12 @@ export function ContratoDialog({ contrato, open, onOpenChange, onSuccess, fornec
   const handleSubmit = async () => {
     if (!formData.nome || !formData.numero_contrato || !formData.fornecedor_id) {
       setActiveTab('identificacao');
-      toast({ title: "Erro", description: "Preencha número, nome e fornecedor.", variant: "destructive" });
+      toast({ title: t('contratosAtivos.common.error'), description: t('contratosAtivos.contratoDialog.toastErrorFillTitle'), variant: "destructive" });
       return;
     }
     if (formData.data_inicio && formData.data_fim && new Date(formData.data_inicio) > new Date(formData.data_fim)) {
       setActiveTab('financeiro');
-      toast({ title: "Erro", description: "Data início deve ser anterior à data fim.", variant: "destructive" });
+      toast({ title: t('contratosAtivos.common.error'), description: t('contratosAtivos.contratoDialog.toastErrorDateRange'), variant: "destructive" });
       return;
     }
 
@@ -140,19 +142,19 @@ export function ContratoDialog({ contrato, open, onOpenChange, onSuccess, fornec
 
       if (!contrato) {
         notify('contrato_criado', {
-          titulo: `Novo contrato: ${formData.nome}`, descricao: formData.objeto,
+          titulo: t('contratosAtivos.contratoDialog.notifyNewContract').replace('{nome}', formData.nome), descricao: formData.objeto,
           link: `${window.location.origin}/contratos`,
           dados: { tipo: formData.tipo, numero: formData.numero_contrato },
         });
       }
 
-      toast({ title: "Sucesso", description: `Contrato ${contrato ? 'atualizado' : 'criado'} com sucesso` });
+      toast({ title: t('contratosAtivos.common.success'), description: t('contratosAtivos.contratoDialog.toastSaveSuccess').replace('{action}', contrato ? t('contratosAtivos.contratoDialog.actionUpdated') : t('contratosAtivos.contratoDialog.actionCreated')) });
       clearDraft();
       onSuccess();
       onOpenChange(false);
     } catch (error) {
       logger.error('Erro ao salvar contrato:', error);
-      toast({ title: "Erro", description: "Erro ao salvar contrato", variant: "destructive" });
+      toast({ title: t('contratosAtivos.common.error'), description: t('contratosAtivos.contratoDialog.toastSaveError'), variant: "destructive" });
     } finally { setLoading(false); }
   };
 
@@ -166,55 +168,55 @@ export function ContratoDialog({ contrato, open, onOpenChange, onSuccess, fornec
 
   const tabs: WizardTab[] = useMemo(() => [
     {
-      id: 'identificacao', label: 'Identificação', icon: FileSignature, state: identState, hint: 'Número, fornecedor, tipo',
+      id: 'identificacao', label: t('contratosAtivos.contratoDialog.tabIdentification'), icon: FileSignature, state: identState, hint: t('contratosAtivos.contratoDialog.tabIdentificationHint'),
       content: (
         <div className="space-y-5 max-w-3xl">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="flex items-center gap-1">
-                Número do Contrato <span className="text-destructive">*</span>
-                <FieldHelpTooltip content="Identificador único, ex: CT-2024-001" />
+                {t('contratosAtivos.contratoDialog.labelContractNumber')} <span className="text-destructive">*</span>
+                <FieldHelpTooltip content={t('contratosAtivos.contratoDialog.contractNumberHelp')} />
               </Label>
-              <Input value={formData.numero_contrato} onChange={(e) => update({ numero_contrato: e.target.value })} placeholder="Ex: CT-2024-001" />
+              <Input value={formData.numero_contrato} onChange={(e) => update({ numero_contrato: e.target.value })} placeholder={t('contratosAtivos.contratoDialog.contractNumberPlaceholder')} />
             </div>
             <div className="space-y-2">
-              <Label>Nome do Contrato <span className="text-destructive">*</span></Label>
-              <Input value={formData.nome} onChange={(e) => update({ nome: e.target.value })} placeholder="Nome descritivo" />
+              <Label>{t('contratosAtivos.contratoDialog.labelContractName')} <span className="text-destructive">*</span></Label>
+              <Input value={formData.nome} onChange={(e) => update({ nome: e.target.value })} placeholder={t('contratosAtivos.contratoDialog.contractNamePlaceholder')} />
             </div>
             <div className="space-y-2">
-              <Label>Fornecedor <span className="text-destructive">*</span></Label>
+              <Label>{t('contratosAtivos.contratoDialog.labelSupplier')} <span className="text-destructive">*</span></Label>
               <Select value={formData.fornecedor_id} onValueChange={(v) => update({ fornecedor_id: v })}>
-                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t('contratosAtivos.contratoDialog.supplierPlaceholder')} /></SelectTrigger>
                 <SelectContent>
                   {fornecedores.map((f) => <SelectItem key={f.id} value={f.id}>{f.nome}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Tipo</Label>
+              <Label>{t('contratosAtivos.contratoDialog.labelType')}</Label>
               <Select value={formData.tipo} onValueChange={(v) => update({ tipo: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="servicos">Serviços</SelectItem>
-                  <SelectItem value="licenciamento">Licenciamento</SelectItem>
-                  <SelectItem value="manutencao">Manutenção</SelectItem>
-                  <SelectItem value="consultoria">Consultoria</SelectItem>
-                  <SelectItem value="produto">Produto</SelectItem>
+                  <SelectItem value="servicos">{t('contratosAtivos.contratoDialog.typeServicos')}</SelectItem>
+                  <SelectItem value="licenciamento">{t('contratosAtivos.contratoDialog.typeLicenciamento')}</SelectItem>
+                  <SelectItem value="manutencao">{t('contratosAtivos.contratoDialog.typeManutencao')}</SelectItem>
+                  <SelectItem value="consultoria">{t('contratosAtivos.contratoDialog.typeConsultoria')}</SelectItem>
+                  <SelectItem value="produto">{t('contratosAtivos.contratoDialog.typeProduto')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Status</Label>
+              <Label>{t('contratosAtivos.contratoDialog.labelStatus')}</Label>
               <Select value={formData.status} onValueChange={(v) => update({ status: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="rascunho">Rascunho</SelectItem>
-                  <SelectItem value="negociacao">Negociação</SelectItem>
-                  <SelectItem value="aprovacao">Aprovação</SelectItem>
-                  <SelectItem value="ativo">Ativo</SelectItem>
-                  <SelectItem value="suspenso">Suspenso</SelectItem>
-                  <SelectItem value="encerrado">Encerrado</SelectItem>
-                  <SelectItem value="cancelado">Cancelado</SelectItem>
+                  <SelectItem value="rascunho">{t('contratosAtivos.contratoDialog.statusRascunho')}</SelectItem>
+                  <SelectItem value="negociacao">{t('contratosAtivos.contratoDialog.statusNegociacao')}</SelectItem>
+                  <SelectItem value="aprovacao">{t('contratosAtivos.contratoDialog.statusAprovacao')}</SelectItem>
+                  <SelectItem value="ativo">{t('contratosAtivos.contratoDialog.statusAtivo')}</SelectItem>
+                  <SelectItem value="suspenso">{t('contratosAtivos.contratoDialog.statusSuspenso')}</SelectItem>
+                  <SelectItem value="encerrado">{t('contratosAtivos.contratoDialog.statusEncerrado')}</SelectItem>
+                  <SelectItem value="cancelado">{t('contratosAtivos.contratoDialog.statusCancelado')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -223,19 +225,19 @@ export function ContratoDialog({ contrato, open, onOpenChange, onSuccess, fornec
       ),
     },
     {
-      id: 'financeiro', label: 'Financeiro & Prazos', icon: DollarSign, state: finanState, hint: 'Valor e datas',
+      id: 'financeiro', label: t('contratosAtivos.contratoDialog.tabFinancial'), icon: DollarSign, state: finanState, hint: t('contratosAtivos.contratoDialog.tabFinancialHint'),
       content: (
         <div className="space-y-5 max-w-3xl">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label className="flex items-center gap-1">
-                Valor
-                <FieldHelpTooltip content="Valor total do contrato. Use ponto para decimais." />
+                {t('contratosAtivos.contratoDialog.labelValue')}
+                <FieldHelpTooltip content={t('contratosAtivos.contratoDialog.valueHelp')} />
               </Label>
               <Input type="number" step="0.01" value={formData.valor} onChange={(e) => update({ valor: e.target.value })} placeholder="0.00" />
             </div>
             <div className="space-y-2">
-              <Label>Moeda</Label>
+              <Label>{t('contratosAtivos.contratoDialog.labelCurrency')}</Label>
               <Select value={formData.moeda} onValueChange={(v) => update({ moeda: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -246,124 +248,124 @@ export function ContratoDialog({ contrato, open, onOpenChange, onSuccess, fornec
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Prazo Renovação (dias)</Label>
+              <Label>{t('contratosAtivos.contratoDialog.labelRenewalTerm')}</Label>
               <Input type="number" value={formData.prazo_renovacao} onChange={(e) => update({ prazo_renovacao: e.target.value })} />
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" /> Início</Label>
+              <Label className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" /> {t('contratosAtivos.contratoDialog.labelStart')}</Label>
               <Input type="date" value={formData.data_inicio} onChange={(e) => update({ data_inicio: e.target.value })} />
             </div>
             <div className="space-y-2">
-              <Label className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" /> Fim</Label>
+              <Label className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" /> {t('contratosAtivos.contratoDialog.labelEnd')}</Label>
               <Input type="date" value={formData.data_fim} onChange={(e) => update({ data_fim: e.target.value })} />
             </div>
             <div className="space-y-2">
-              <Label className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" /> Assinatura</Label>
+              <Label className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" /> {t('contratosAtivos.contratoDialog.labelSignature')}</Label>
               <Input type="date" value={formData.data_assinatura} onChange={(e) => update({ data_assinatura: e.target.value })} />
             </div>
           </div>
           <div className="flex items-center gap-2 rounded-lg border p-3">
             <Switch checked={formData.renovacao_automatica} onCheckedChange={(c) => update({ renovacao_automatica: c })} id="ren-auto" />
-            <Label htmlFor="ren-auto" className="cursor-pointer">Renovação Automática</Label>
-            <FieldHelpTooltip content="Se ativado, o contrato se renova automaticamente ao vencer." />
+            <Label htmlFor="ren-auto" className="cursor-pointer">{t('contratosAtivos.contratoDialog.labelAutoRenewal')}</Label>
+            <FieldHelpTooltip content={t('contratosAtivos.contratoDialog.autoRenewalHelp')} />
           </div>
         </div>
       ),
     },
     {
-      id: 'condicoes', label: 'Condições', icon: FileText, state: condState, hint: 'Objeto, SLA, cláusulas',
+      id: 'condicoes', label: t('contratosAtivos.contratoDialog.tabConditions'), icon: FileText, state: condState, hint: t('contratosAtivos.contratoDialog.tabConditionsHint'),
       content: (
         <div className="space-y-5 max-w-3xl">
           <div className="space-y-2">
-            <Label>Objeto do Contrato</Label>
-            <Textarea value={formData.objeto} onChange={(e) => update({ objeto: e.target.value })} rows={4} placeholder="Descrição detalhada do objeto..." />
+            <Label>{t('contratosAtivos.contratoDialog.labelObject')}</Label>
+            <Textarea value={formData.objeto} onChange={(e) => update({ objeto: e.target.value })} rows={4} placeholder={t('contratosAtivos.contratoDialog.objectPlaceholder')} />
           </div>
           <div className="space-y-2">
-            <Label>SLA Principal</Label>
-            <Textarea value={formData.sla_principal} onChange={(e) => update({ sla_principal: e.target.value })} rows={3} placeholder="Principais SLAs e indicadores..." />
+            <Label>{t('contratosAtivos.contratoDialog.labelMainSla')}</Label>
+            <Textarea value={formData.sla_principal} onChange={(e) => update({ sla_principal: e.target.value })} rows={3} placeholder={t('contratosAtivos.contratoDialog.mainSlaPlaceholder')} />
           </div>
           <div className="space-y-2">
-            <Label>Cláusulas Especiais</Label>
+            <Label>{t('contratosAtivos.contratoDialog.labelSpecialClauses')}</Label>
             <Textarea value={formData.clausulas_especiais} onChange={(e) => update({ clausulas_especiais: e.target.value })} rows={3} />
           </div>
           <div className="space-y-2">
-            <Label>Penalidades</Label>
+            <Label>{t('contratosAtivos.contratoDialog.labelPenalties')}</Label>
             <Textarea value={formData.penalidades} onChange={(e) => update({ penalidades: e.target.value })} rows={3} />
           </div>
         </div>
       ),
     },
     {
-      id: 'governanca', label: 'Governança', icon: Shield, state: govState, hint: 'Gestor, área, observações',
+      id: 'governanca', label: t('contratosAtivos.contratoDialog.tabGovernance'), icon: Shield, state: govState, hint: t('contratosAtivos.contratoDialog.tabGovernanceHint'),
       content: (
         <div className="space-y-5 max-w-3xl">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label className="flex items-center gap-1">
-                Gestor do Contrato
-                <FieldHelpTooltip content="Pessoa responsável por acompanhar a execução do contrato." />
+                {t('contratosAtivos.contratoDialog.labelManager')}
+                <FieldHelpTooltip content={t('contratosAtivos.contratoDialog.managerHelp')} />
               </Label>
               <Select value={formData.gestor_contrato} onValueChange={(v) => update({ gestor_contrato: v })}>
-                <SelectTrigger><SelectValue placeholder="Selecione o gestor" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t('contratosAtivos.contratoDialog.managerPlaceholder')} /></SelectTrigger>
                 <SelectContent>
                   {usuarios.map((u) => <SelectItem key={u.user_id} value={u.user_id}>{u.nome}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Área Solicitante</Label>
-              <Input value={formData.area_solicitante} onChange={(e) => update({ area_solicitante: e.target.value })} placeholder="Ex: TI, Financeiro" />
+              <Label>{t('contratosAtivos.contratoDialog.labelRequestingArea')}</Label>
+              <Input value={formData.area_solicitante} onChange={(e) => update({ area_solicitante: e.target.value })} placeholder={t('contratosAtivos.contratoDialog.requestingAreaPlaceholder')} />
             </div>
           </div>
           <div className="flex items-center gap-2 rounded-lg border p-3">
             <Switch checked={formData.confidencial} onCheckedChange={(c) => update({ confidencial: c })} id="conf" />
-            <Label htmlFor="conf" className="cursor-pointer">Confidencial</Label>
-            <FieldHelpTooltip content="Restringe acesso a usuários autorizados." />
+            <Label htmlFor="conf" className="cursor-pointer">{t('contratosAtivos.contratoDialog.labelConfidential')}</Label>
+            <FieldHelpTooltip content={t('contratosAtivos.contratoDialog.confidentialHelp')} />
           </div>
           <div className="space-y-2">
-            <Label>Observações</Label>
+            <Label>{t('contratosAtivos.contratoDialog.labelObservations')}</Label>
             <Textarea value={formData.observacoes} onChange={(e) => update({ observacoes: e.target.value })} rows={3} />
           </div>
         </div>
       ),
     },
-  ], [formData, fornecedores, usuarios, identState, finanState, condState, govState]);
+  ], [formData, fornecedores, usuarios, identState, finanState, condState, govState, t]);
 
   const summary = (
-    <WizardSummaryCard title="Resumo do Contrato">
-      <WizardSummaryRow label="Nome" value={formData.nome || <span className="text-muted-foreground italic">Sem nome</span>} highlight />
-      <WizardSummaryRow label="Número" value={formData.numero_contrato || '—'} />
-      <WizardSummaryRow label="Fornecedor" value={fornecedorNome || <span className="text-muted-foreground italic">—</span>} />
+    <WizardSummaryCard title={t('contratosAtivos.contratoDialog.summaryTitle')}>
+      <WizardSummaryRow label={t('contratosAtivos.contratoDialog.summaryName')} value={formData.nome || <span className="text-muted-foreground italic">{t('contratosAtivos.contratoDialog.summaryNoName')}</span>} highlight />
+      <WizardSummaryRow label={t('contratosAtivos.contratoDialog.summaryNumber')} value={formData.numero_contrato || '—'} />
+      <WizardSummaryRow label={t('contratosAtivos.contratoDialog.summarySupplier')} value={fornecedorNome || <span className="text-muted-foreground italic">—</span>} />
       <WizardSummaryRow
-        label="Status"
+        label={t('contratosAtivos.contratoDialog.summaryStatus')}
         value={<Badge variant={STATUS_VARIANT[formData.status] || 'outline'} className="text-[10px]">{formatStatus(formData.status)}</Badge>}
       />
       <WizardSummaryRow
-        label="Valor"
+        label={t('contratosAtivos.contratoDialog.summaryValue')}
         value={formData.valor ? `${formData.moeda} ${parseFloat(formData.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : <span className="text-muted-foreground italic">—</span>}
       />
     </WizardSummaryCard>
   );
 
   const draftLabel = !contrato && hasDraft && savedAt
-    ? `Rascunho às ${new Date(savedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`
+    ? t('contratosAtivos.contratoDialog.draftSavedAt').replace('{time}', new Date(savedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }))
     : undefined;
 
   return (
     <WizardDialog
       open={open}
       onOpenChange={onOpenChange}
-      title={contrato ? 'Editar Contrato' : 'Novo Contrato'}
-      description="Identifique o contrato, defina valores, prazos e governança."
+      title={contrato ? t('contratosAtivos.contratoDialog.dialogTitleEdit') : t('contratosAtivos.contratoDialog.dialogTitleNew')}
+      description={t('contratosAtivos.contratoDialog.dialogDescription')}
       icon={FileSignature}
       tabs={tabs}
       summary={summary}
       activeTab={activeTab}
       onActiveTabChange={setActiveTab}
       onSubmit={handleSubmit}
-      submitLabel={contrato ? 'Atualizar' : 'Criar'}
+      submitLabel={contrato ? t('contratosAtivos.common.update') : t('contratosAtivos.common.create')}
       isSubmitting={loading}
       submitDisabled={loading}
       isDirty={isDirty}

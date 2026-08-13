@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { useAuth } from '@/components/AuthProvider';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface PlanoDialogProps {
   open: boolean;
@@ -22,6 +23,7 @@ export function PlanoDialog({ open, onOpenChange, plano, onSuccess }: PlanoDialo
   const { empresaId } = useEmpresaId();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
+  const { t } = useLanguage();
 
   const [form, setForm] = useState({
     nome: '',
@@ -57,7 +59,7 @@ export function PlanoDialog({ open, onOpenChange, plano, onSuccess }: PlanoDialo
 
   const handleSubmit = async () => {
     if (!form.nome.trim()) {
-      toast({ title: 'Nome é obrigatório', variant: 'destructive' });
+      toast({ title: t('continuidadeComp.planoDialog.toastNomeRequired'), variant: 'destructive' });
       return;
     }
     if (!empresaId) return;
@@ -82,16 +84,16 @@ export function PlanoDialog({ open, onOpenChange, plano, onSuccess }: PlanoDialo
       if (plano) {
         const { error } = await supabase.from('continuidade_planos').update(payload).eq('id', plano.id);
         if (error) throw error;
-        toast({ title: 'Plano atualizado com sucesso' });
+        toast({ title: t('continuidadeComp.planoDialog.toastUpdated') });
       } else {
         const { error } = await supabase.from('continuidade_planos').insert(payload);
         if (error) throw error;
-        toast({ title: 'Plano criado com sucesso' });
+        toast({ title: t('continuidadeComp.planoDialog.toastCreated') });
       }
       onSuccess();
       onOpenChange(false);
     } catch (error: any) {
-      toast({ title: 'Erro ao salvar plano', description: error.message, variant: 'destructive' });
+      toast({ title: t('continuidadeComp.planoDialog.toastError'), description: error.message, variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -102,78 +104,78 @@ export function PlanoDialog({ open, onOpenChange, plano, onSuccess }: PlanoDialo
       open={open}
       onOpenChange={onOpenChange}
       icon={ShieldCheck}
-      title={plano ? 'Editar Plano' : 'Novo Plano de Continuidade'}
+      title={plano ? t('continuidadeComp.planoDialog.titleEdit') : t('continuidadeComp.planoDialog.titleNew')}
       size="md"
       onSubmit={handleSubmit}
-      submitLabel={plano ? 'Atualizar' : 'Criar Plano'}
+      submitLabel={plano ? t('continuidadeComp.planoDialog.submitUpdate') : t('continuidadeComp.planoDialog.submitCreate')}
       isSubmitting={loading}
     >
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Nome *</Label>
-              <Input value={form.nome} onChange={e => setForm(p => ({ ...p, nome: e.target.value }))} placeholder="Nome do plano" />
+              <Label>{t('continuidadeComp.planoDialog.fieldNome')}</Label>
+              <Input value={form.nome} onChange={e => setForm(p => ({ ...p, nome: e.target.value }))} placeholder={t('continuidadeComp.planoDialog.fieldNomePlaceholder')} />
             </div>
             <div className="space-y-2">
-              <Label>Tipo</Label>
+              <Label>{t('continuidadeComp.planoDialog.fieldTipo')}</Label>
               <Select value={form.tipo} onValueChange={v => setForm(p => ({ ...p, tipo: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="bcp">BCP - Continuidade</SelectItem>
-                  <SelectItem value="drp">DRP - Recuperação</SelectItem>
-                  <SelectItem value="ambos">BCP + DRP</SelectItem>
+                  <SelectItem value="bcp">{t('continuidadeComp.planoDialog.tipoBcp')}</SelectItem>
+                  <SelectItem value="drp">{t('continuidadeComp.planoDialog.tipoDrp')}</SelectItem>
+                  <SelectItem value="ambos">{t('continuidadeComp.planoDialog.tipoAmbos')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label>Descrição</Label>
-            <Textarea value={form.descricao} onChange={e => setForm(p => ({ ...p, descricao: e.target.value }))} placeholder="Descrição do plano" rows={3} />
+            <Label>{t('continuidadeComp.planoDialog.fieldDescricao')}</Label>
+            <Textarea value={form.descricao} onChange={e => setForm(p => ({ ...p, descricao: e.target.value }))} placeholder={t('continuidadeComp.planoDialog.fieldDescricaoPlaceholder')} rows={3} />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Escopo</Label>
-              <Textarea value={form.escopo} onChange={e => setForm(p => ({ ...p, escopo: e.target.value }))} placeholder="Escopo do plano" rows={2} />
+              <Label>{t('continuidadeComp.planoDialog.fieldEscopo')}</Label>
+              <Textarea value={form.escopo} onChange={e => setForm(p => ({ ...p, escopo: e.target.value }))} placeholder={t('continuidadeComp.planoDialog.fieldEscopoPlaceholder')} rows={2} />
             </div>
             <div className="space-y-2">
-              <Label>Objetivos</Label>
-              <Textarea value={form.objetivos} onChange={e => setForm(p => ({ ...p, objetivos: e.target.value }))} placeholder="Objetivos do plano" rows={2} />
+              <Label>{t('continuidadeComp.planoDialog.fieldObjetivos')}</Label>
+              <Textarea value={form.objetivos} onChange={e => setForm(p => ({ ...p, objetivos: e.target.value }))} placeholder={t('continuidadeComp.planoDialog.fieldObjetivosPlaceholder')} rows={2} />
             </div>
           </div>
 
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
-              <Label>Status</Label>
+              <Label>{t('continuidadeComp.planoDialog.fieldStatus')}</Label>
               <Select value={form.status} onValueChange={v => setForm(p => ({ ...p, status: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="rascunho">Rascunho</SelectItem>
-                  <SelectItem value="ativo">Ativo</SelectItem>
-                  <SelectItem value="em_revisao">Em Revisão</SelectItem>
-                  <SelectItem value="desativado">Desativado</SelectItem>
+                  <SelectItem value="rascunho">{t('continuidadeComp.status.rascunho')}</SelectItem>
+                  <SelectItem value="ativo">{t('continuidadeComp.status.ativo')}</SelectItem>
+                  <SelectItem value="em_revisao">{t('continuidadeComp.status.em_revisao')}</SelectItem>
+                  <SelectItem value="desativado">{t('continuidadeComp.status.desativado')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>RTO (horas)</Label>
-              <Input type="number" value={form.rto_horas} onChange={e => setForm(p => ({ ...p, rto_horas: e.target.value }))} placeholder="Ex: 4" />
+              <Label>{t('continuidadeComp.planoDialog.fieldRto')}</Label>
+              <Input type="number" value={form.rto_horas} onChange={e => setForm(p => ({ ...p, rto_horas: e.target.value }))} placeholder={t('continuidadeComp.planoDialog.fieldRtoPlaceholder')} />
             </div>
             <div className="space-y-2">
-              <Label>RPO (horas)</Label>
-              <Input type="number" value={form.rpo_horas} onChange={e => setForm(p => ({ ...p, rpo_horas: e.target.value }))} placeholder="Ex: 1" />
+              <Label>{t('continuidadeComp.planoDialog.fieldRpo')}</Label>
+              <Input type="number" value={form.rpo_horas} onChange={e => setForm(p => ({ ...p, rpo_horas: e.target.value }))} placeholder={t('continuidadeComp.planoDialog.fieldRpoPlaceholder')} />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Próxima Revisão</Label>
+              <Label>{t('continuidadeComp.planoDialog.fieldProximaRevisao')}</Label>
               <Input type="date" value={form.proxima_revisao} onChange={e => setForm(p => ({ ...p, proxima_revisao: e.target.value }))} />
             </div>
             <div className="space-y-2">
-              <Label>Versão</Label>
-              <Input value={form.versao} onChange={e => setForm(p => ({ ...p, versao: e.target.value }))} placeholder="1.0" />
+              <Label>{t('continuidadeComp.planoDialog.fieldVersao')}</Label>
+              <Input value={form.versao} onChange={e => setForm(p => ({ ...p, versao: e.target.value }))} placeholder={t('continuidadeComp.planoDialog.fieldVersao')} />
             </div>
           </div>
         </div>

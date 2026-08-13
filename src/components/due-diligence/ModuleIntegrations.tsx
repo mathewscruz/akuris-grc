@@ -12,6 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Settings, Target, FileText, Building, TrendingUp, AlertTriangle, CheckCircle, Workflow } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface IntegrationRule {
   id: string;
@@ -33,6 +34,7 @@ interface IntegrationDialogProps {
 }
 
 function IntegrationDialog({ rule, open, onOpenChange, onSave }: IntegrationDialogProps) {
+  const { t } = useLanguage();
   const [formData, setFormData] = useState({
     nome: rule?.nome || '',
     descricao: rule?.descricao || '',
@@ -49,8 +51,8 @@ function IntegrationDialog({ rule, open, onOpenChange, onSave }: IntegrationDial
     
     if (!formData.nome || !formData.valor_condicao) {
       toast({
-        title: "Erro",
-        description: "Nome e valor da condição são obrigatórios",
+        title: t('dueDiligence.moduleIntegrations.errorTitle'),
+        description: t('dueDiligence.moduleIntegrations.errorRequiredFieldsDescription'),
         variant: "destructive",
       });
       return;
@@ -71,8 +73,8 @@ function IntegrationDialog({ rule, open, onOpenChange, onSave }: IntegrationDial
     onOpenChange(false);
     
     toast({
-      title: "Sucesso",
-      description: rule ? "Integração atualizada com sucesso!" : "Integração criada com sucesso!",
+      title: t('dueDiligence.moduleIntegrations.toastSuccessTitle'),
+      description: rule ? t('dueDiligence.moduleIntegrations.toastUpdatedDescription') : t('dueDiligence.moduleIntegrations.toastCreatedDescription'),
     });
   };
 
@@ -81,58 +83,58 @@ function IntegrationDialog({ rule, open, onOpenChange, onSave }: IntegrationDial
       open={open}
       onOpenChange={onOpenChange}
       icon={Workflow}
-      title={rule ? 'Editar Integração' : 'Nova Integração'}
+      title={rule ? t('dueDiligence.moduleIntegrations.editTitle') : t('dueDiligence.moduleIntegrations.createTitle')}
       size="md"
       onSubmit={() => handleSubmit(new Event('submit') as unknown as React.FormEvent)}
-      submitLabel={rule ? 'Atualizar' : 'Criar'}
+      submitLabel={rule ? t('dueDiligence.moduleIntegrations.update') : t('dueDiligence.moduleIntegrations.create')}
     >
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label htmlFor="nome">Nome da Integração</Label>
+            <Label htmlFor="nome">{t('dueDiligence.moduleIntegrations.fieldName')}</Label>
             <Input
               id="nome"
               value={formData.nome}
               onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-              placeholder="Ex: Criar riscos para fornecedores com score baixo"
+              placeholder={t('dueDiligence.moduleIntegrations.namePlaceholder')}
             />
           </div>
 
           <div>
-            <Label htmlFor="descricao">Descrição</Label>
+            <Label htmlFor="descricao">{t('dueDiligence.moduleIntegrations.fieldDescription')}</Label>
             <Textarea
               id="descricao"
               value={formData.descricao}
               onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
-              placeholder="Descreva como esta integração funciona"
+              placeholder={t('dueDiligence.moduleIntegrations.descriptionPlaceholder')}
               rows={3}
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="tipo_integracao">Tipo de Integração</Label>
+              <Label htmlFor="tipo_integracao">{t('dueDiligence.moduleIntegrations.fieldType')}</Label>
               <Select value={formData.tipo_integracao} onValueChange={(value) => setFormData({ ...formData, tipo_integracao: value as any })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="riscos">Riscos</SelectItem>
-                  <SelectItem value="contratos">Contratos</SelectItem>
-                  <SelectItem value="documentos">Documentos</SelectItem>
+                  <SelectItem value="riscos">{t('dueDiligence.moduleIntegrations.typeRiscos')}</SelectItem>
+                  <SelectItem value="contratos">{t('dueDiligence.moduleIntegrations.typeContratos')}</SelectItem>
+                  <SelectItem value="documentos">{t('dueDiligence.moduleIntegrations.typeDocumentos')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div>
-              <Label htmlFor="acao">Ação</Label>
+              <Label htmlFor="acao">{t('dueDiligence.moduleIntegrations.fieldAction')}</Label>
               <Select value={formData.acao} onValueChange={(value) => setFormData({ ...formData, acao: value as any })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="create_risk">Criar Risco</SelectItem>
-                  <SelectItem value="flag_contract">Sinalizar Contrato</SelectItem>
-                  <SelectItem value="request_document">Solicitar Documento</SelectItem>
+                  <SelectItem value="create_risk">{t('dueDiligence.moduleIntegrations.actionCreateRisk')}</SelectItem>
+                  <SelectItem value="flag_contract">{t('dueDiligence.moduleIntegrations.actionFlagContract')}</SelectItem>
+                  <SelectItem value="request_document">{t('dueDiligence.moduleIntegrations.actionRequestDocument')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -140,26 +142,26 @@ function IntegrationDialog({ rule, open, onOpenChange, onSave }: IntegrationDial
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="condicao">Condição</Label>
+              <Label htmlFor="condicao">{t('dueDiligence.moduleIntegrations.fieldCondition')}</Label>
               <Select value={formData.condicao} onValueChange={(value) => setFormData({ ...formData, condicao: value as any })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="score_below">Score abaixo de</SelectItem>
-                  <SelectItem value="score_above">Score acima de</SelectItem>
-                  <SelectItem value="classification_equals">Classificação igual a</SelectItem>
+                  <SelectItem value="score_below">{t('dueDiligence.moduleIntegrations.conditionScoreBelow')}</SelectItem>
+                  <SelectItem value="score_above">{t('dueDiligence.moduleIntegrations.conditionScoreAbove')}</SelectItem>
+                  <SelectItem value="classification_equals">{t('dueDiligence.moduleIntegrations.conditionClassificationEquals')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div>
-              <Label htmlFor="valor_condicao">Valor</Label>
+              <Label htmlFor="valor_condicao">{t('dueDiligence.moduleIntegrations.fieldValue')}</Label>
               <Input
                 id="valor_condicao"
                 value={formData.valor_condicao}
                 onChange={(e) => setFormData({ ...formData, valor_condicao: e.target.value })}
-                placeholder="Ex: 5.0 ou 'ruim'"
+                placeholder={t('dueDiligence.moduleIntegrations.valuePlaceholder')}
               />
             </div>
           </div>
@@ -170,6 +172,7 @@ function IntegrationDialog({ rule, open, onOpenChange, onSave }: IntegrationDial
 }
 
 export function ModuleIntegrations() {
+  const { t } = useLanguage();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingRule, setEditingRule] = useState<IntegrationRule | null>(null);
 
@@ -220,14 +223,14 @@ export function ModuleIntegrations() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['due-diligence-integrations'] });
       toast({
-        title: "Sucesso",
-        description: "Integração criada com sucesso!",
+        title: t('dueDiligence.moduleIntegrations.toastSuccessTitle'),
+        description: t('dueDiligence.moduleIntegrations.toastCreatedDescription'),
       });
     },
     onError: (error) => {
       toast({
-        title: "Erro",
-        description: "Erro ao criar integração: " + error.message,
+        title: t('dueDiligence.moduleIntegrations.errorTitle'),
+        description: t('dueDiligence.moduleIntegrations.toastCreateErrorDescription', { error: error.message }),
         variant: "destructive",
       });
     }
@@ -245,14 +248,14 @@ export function ModuleIntegrations() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['due-diligence-integrations'] });
       toast({
-        title: "Sucesso",
-        description: "Integração atualizada com sucesso!",
+        title: t('dueDiligence.moduleIntegrations.toastSuccessTitle'),
+        description: t('dueDiligence.moduleIntegrations.toastUpdatedDescription'),
       });
     },
     onError: (error) => {
       toast({
-        title: "Erro",
-        description: "Erro ao atualizar integração: " + error.message,
+        title: t('dueDiligence.moduleIntegrations.errorTitle'),
+        description: t('dueDiligence.moduleIntegrations.toastUpdateErrorDescription', { error: error.message }),
         variant: "destructive",
       });
     }
@@ -297,28 +300,28 @@ export function ModuleIntegrations() {
 
   const getTypeLabel = (tipo: string) => {
     switch (tipo) {
-      case 'riscos': return 'Riscos';
-      case 'contratos': return 'Contratos';
-      case 'documentos': return 'Documentos';
-      default: return 'Desconhecido';
+      case 'riscos': return t('dueDiligence.moduleIntegrations.typeRiscos');
+      case 'contratos': return t('dueDiligence.moduleIntegrations.typeContratos');
+      case 'documentos': return t('dueDiligence.moduleIntegrations.typeDocumentos');
+      default: return t('dueDiligence.moduleIntegrations.typeUnknown');
     }
   };
 
   const getConditionLabel = (condicao: string, valor: string) => {
     switch (condicao) {
-      case 'score_below': return `Score < ${valor}`;
-      case 'score_above': return `Score > ${valor}`;
-      case 'classification_equals': return `Classificação = ${valor}`;
-      default: return 'Condição não definida';
+      case 'score_below': return `${t('dueDiligence.moduleIntegrations.conditionScoreBelow')} ${valor}`;
+      case 'score_above': return `${t('dueDiligence.moduleIntegrations.conditionScoreAbove')} ${valor}`;
+      case 'classification_equals': return `${t('dueDiligence.moduleIntegrations.conditionClassificationEquals')} ${valor}`;
+      default: return t('dueDiligence.moduleIntegrations.conditionUndefined');
     }
   };
 
   const getActionLabel = (acao: string) => {
     switch (acao) {
-      case 'create_risk': return 'Criar Risco';
-      case 'flag_contract': return 'Sinalizar Contrato';
-      case 'request_document': return 'Solicitar Documento';
-      default: return 'Ação não definida';
+      case 'create_risk': return t('dueDiligence.moduleIntegrations.actionCreateRisk');
+      case 'flag_contract': return t('dueDiligence.moduleIntegrations.actionFlagContract');
+      case 'request_document': return t('dueDiligence.moduleIntegrations.actionRequestDocument');
+      default: return t('dueDiligence.moduleIntegrations.actionUndefined');
     }
   };
 
@@ -326,15 +329,15 @@ export function ModuleIntegrations() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold">Integrações com Outros Módulos</h2>
+          <h2 className="text-2xl font-bold">{t('dueDiligence.moduleIntegrations.pageTitle')}</h2>
           <p className="text-muted-foreground">
-            Configure ações automáticas baseadas nos resultados de questionários
+            {t('dueDiligence.moduleIntegrations.pageDescription')}
           </p>
         </div>
         
         <Button onClick={handleCreate}>
           <Plus className="w-4 h-4 mr-2" />
-          Nova Integração
+          {t('dueDiligence.moduleIntegrations.newIntegration')}
         </Button>
       </div>
 
@@ -345,7 +348,7 @@ export function ModuleIntegrations() {
               <CheckCircle className="w-8 h-8 text-success" />
               <div>
                 <p className="text-2xl font-bold">{integrations.filter(i => i.ativo).length}</p>
-                <p className="text-sm text-muted-foreground">Integrações Ativas</p>
+                <p className="text-sm text-muted-foreground">{t('dueDiligence.moduleIntegrations.activeIntegrations')}</p>
               </div>
             </div>
           </CardContent>
@@ -357,7 +360,7 @@ export function ModuleIntegrations() {
               <AlertTriangle className="w-8 h-8 text-warning" />
               <div>
                 <p className="text-2xl font-bold">{integrations.filter(i => !i.ativo).length}</p>
-                <p className="text-sm text-muted-foreground">Integrações Inativas</p>
+                <p className="text-sm text-muted-foreground">{t('dueDiligence.moduleIntegrations.inactiveIntegrations')}</p>
               </div>
             </div>
           </CardContent>
@@ -369,7 +372,7 @@ export function ModuleIntegrations() {
               <Target className="w-8 h-8 text-info" />
               <div>
                 <p className="text-2xl font-bold">{integrations.length}</p>
-                <p className="text-sm text-muted-foreground">Total de Regras</p>
+                <p className="text-sm text-muted-foreground">{t('dueDiligence.moduleIntegrations.totalRules')}</p>
               </div>
             </div>
           </CardContent>
@@ -378,7 +381,7 @@ export function ModuleIntegrations() {
 
       {isLoading ? (
         <div className="text-center py-8">
-          <p>Carregando integrações...</p>
+          <p>{t('dueDiligence.moduleIntegrations.loading')}</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -424,13 +427,13 @@ export function ModuleIntegrations() {
             <Card>
               <CardContent className="text-center py-12">
                 <Settings className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Nenhuma integração configurada</h3>
+                <h3 className="text-lg font-semibold mb-2">{t('dueDiligence.moduleIntegrations.emptyTitle')}</h3>
                 <p className="text-muted-foreground mb-4">
-                  Configure integrações automáticas baseadas nos resultados de questionários.
+                  {t('dueDiligence.moduleIntegrations.emptyDescription')}
                 </p>
                 <Button onClick={handleCreate}>
                   <Plus className="w-4 h-4 mr-2" />
-                  Criar Primeira Integração
+                  {t('dueDiligence.moduleIntegrations.createFirst')}
                 </Button>
               </CardContent>
             </Card>

@@ -12,6 +12,7 @@ import { WizardDialog, WizardTab, WizardTabState } from '@/components/ui/wizard-
 import { WizardSummaryCard, WizardSummaryRow } from '@/components/ui/wizard-summary-card';
 import { FieldHelpTooltip } from '@/components/ui/field-help-tooltip';
 import { formatStatus } from '@/lib/text-utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface AtivoFormData {
   nome: string;
@@ -40,62 +41,63 @@ interface AtivoDialogProps {
   isEditing: boolean;
 }
 
-const tiposAtivo = [
-  { value: 'servidor', label: 'Servidor' },
-  { value: 'aplicacao', label: 'Aplicação' },
-  { value: 'banco_dados', label: 'Banco de Dados' },
-  { value: 'rede', label: 'Equipamento de Rede' },
-  { value: 'endpoint', label: 'Endpoint' },
-  { value: 'dispositivo_movel', label: 'Dispositivo Móvel' },
-  { value: 'armazenamento', label: 'Armazenamento' },
-  { value: 'software', label: 'Software' },
-  { value: 'hardware', label: 'Hardware' },
-  { value: 'almoxarifado_equipamento', label: 'Equipamento de Almoxarifado' },
-  { value: 'almoxarifado_ferramenta', label: 'Ferramenta' },
-  { value: 'almoxarifado_material', label: 'Material de Consumo' },
-  { value: 'almoxarifado_epi', label: 'Equipamento de Proteção Individual' },
-  { value: 'mobiliario', label: 'Mobiliário' },
-  { value: 'equipamento_escritorio', label: 'Equipamento de Escritório' },
-  { value: 'equipamento_comunicacao', label: 'Equipamento de Comunicação' },
-  { value: 'material_escritorio', label: 'Material de Escritório' },
-  { value: 'veiculo_terrestre', label: 'Veículo Terrestre' },
-  { value: 'veiculo_aereo', label: 'Veículo Aéreo' },
-  { value: 'maquina_pesada', label: 'Máquina Pesada' },
-  { value: 'equipamento_transporte', label: 'Equipamento de Transporte' },
-  { value: 'imovel', label: 'Imóvel' },
-  { value: 'estrutura_fisica', label: 'Estrutura Física' },
-  { value: 'instalacao_eletrica', label: 'Instalação Elétrica' },
-  { value: 'instalacao_hidraulica', label: 'Instalação Hidráulica' },
-  { value: 'equipamento_seguranca', label: 'Equipamento de Segurança' },
-  { value: 'sistema_monitoramento', label: 'Sistema de Monitoramento' },
-  { value: 'controle_acesso', label: 'Controle de Acesso' },
-  { value: 'equipamento_bombeiro', label: 'Equipamento de Combate a Incêndio' },
-  { value: 'maquina_producao', label: 'Máquina de Produção' },
-  { value: 'ferramenta_producao', label: 'Ferramenta de Produção' },
-  { value: 'equipamento_medicao', label: 'Equipamento de Medição' },
-  { value: 'equipamento_teste', label: 'Equipamento de Teste' },
-  { value: 'equipamento_medico', label: 'Equipamento Médico' },
-  { value: 'equipamento_laboratorio', label: 'Equipamento de Laboratório' },
-  { value: 'outros', label: 'Outros' },
+const tiposAtivo = (t: (k: string) => string) => [
+  { value: 'servidor', label: t('contratosAtivos.ativoDialog.typeServidor') },
+  { value: 'aplicacao', label: t('contratosAtivos.ativoDialog.typeAplicacao') },
+  { value: 'banco_dados', label: t('contratosAtivos.ativoDialog.typeBancoDados') },
+  { value: 'rede', label: t('contratosAtivos.ativoDialog.typeRede') },
+  { value: 'endpoint', label: t('contratosAtivos.ativoDialog.typeEndpoint') },
+  { value: 'dispositivo_movel', label: t('contratosAtivos.ativoDialog.typeDispositivoMovel') },
+  { value: 'armazenamento', label: t('contratosAtivos.ativoDialog.typeArmazenamento') },
+  { value: 'software', label: t('contratosAtivos.ativoDialog.typeSoftware') },
+  { value: 'hardware', label: t('contratosAtivos.ativoDialog.typeHardware') },
+  { value: 'almoxarifado_equipamento', label: t('contratosAtivos.ativoDialog.typeAlmoxarifadoEquipamento') },
+  { value: 'almoxarifado_ferramenta', label: t('contratosAtivos.ativoDialog.typeAlmoxarifadoFerramenta') },
+  { value: 'almoxarifado_material', label: t('contratosAtivos.ativoDialog.typeAlmoxarifadoMaterial') },
+  { value: 'almoxarifado_epi', label: t('contratosAtivos.ativoDialog.typeAlmoxarifadoEpi') },
+  { value: 'mobiliario', label: t('contratosAtivos.ativoDialog.typeMobiliario') },
+  { value: 'equipamento_escritorio', label: t('contratosAtivos.ativoDialog.typeEquipamentoEscritorio') },
+  { value: 'equipamento_comunicacao', label: t('contratosAtivos.ativoDialog.typeEquipamentoComunicacao') },
+  { value: 'material_escritorio', label: t('contratosAtivos.ativoDialog.typeMaterialEscritorio') },
+  { value: 'veiculo_terrestre', label: t('contratosAtivos.ativoDialog.typeVeiculoTerrestre') },
+  { value: 'veiculo_aereo', label: t('contratosAtivos.ativoDialog.typeVeiculoAereo') },
+  { value: 'maquina_pesada', label: t('contratosAtivos.ativoDialog.typeMaquinaPesada') },
+  { value: 'equipamento_transporte', label: t('contratosAtivos.ativoDialog.typeEquipamentoTransporte') },
+  { value: 'imovel', label: t('contratosAtivos.ativoDialog.typeImovel') },
+  { value: 'estrutura_fisica', label: t('contratosAtivos.ativoDialog.typeEstruturaFisica') },
+  { value: 'instalacao_eletrica', label: t('contratosAtivos.ativoDialog.typeInstalacaoEletrica') },
+  { value: 'instalacao_hidraulica', label: t('contratosAtivos.ativoDialog.typeInstalacaoHidraulica') },
+  { value: 'equipamento_seguranca', label: t('contratosAtivos.ativoDialog.typeEquipamentoSeguranca') },
+  { value: 'sistema_monitoramento', label: t('contratosAtivos.ativoDialog.typeSistemaMonitoramento') },
+  { value: 'controle_acesso', label: t('contratosAtivos.ativoDialog.typeControleAcesso') },
+  { value: 'equipamento_bombeiro', label: t('contratosAtivos.ativoDialog.typeEquipamentoBombeiro') },
+  { value: 'maquina_producao', label: t('contratosAtivos.ativoDialog.typeMaquinaProducao') },
+  { value: 'ferramenta_producao', label: t('contratosAtivos.ativoDialog.typeFerramentaProducao') },
+  { value: 'equipamento_medicao', label: t('contratosAtivos.ativoDialog.typeEquipamentoMedicao') },
+  { value: 'equipamento_teste', label: t('contratosAtivos.ativoDialog.typeEquipamentoTeste') },
+  { value: 'equipamento_medico', label: t('contratosAtivos.ativoDialog.typeEquipamentoMedico') },
+  { value: 'equipamento_laboratorio', label: t('contratosAtivos.ativoDialog.typeEquipamentoLaboratorio') },
+  { value: 'outros', label: t('contratosAtivos.ativoDialog.typeOutros') },
 ];
 
-const criticidades = [
-  { value: 'critico', label: 'Crítico' },
-  { value: 'alto', label: 'Alto' },
-  { value: 'medio', label: 'Médio' },
-  { value: 'baixo', label: 'Baixo' },
+const criticidades = (t: (k: string) => string) => [
+  { value: 'critico', label: t('contratosAtivos.ativoDialog.critCritico') },
+  { value: 'alto', label: t('contratosAtivos.ativoDialog.critAlto') },
+  { value: 'medio', label: t('contratosAtivos.ativoDialog.critMedio') },
+  { value: 'baixo', label: t('contratosAtivos.ativoDialog.critBaixo') },
 ];
 
-const statusOptions = [
-  { value: 'ativo', label: 'Ativo' },
-  { value: 'inativo', label: 'Inativo' },
-  { value: 'em_manutencao', label: 'Em Manutenção' },
-  { value: 'descontinuado', label: 'Descontinuado' },
+const statusOptions = (t: (k: string) => string) => [
+  { value: 'ativo', label: t('contratosAtivos.ativoDialog.statusAtivo') },
+  { value: 'inativo', label: t('contratosAtivos.ativoDialog.statusInativo') },
+  { value: 'em_manutencao', label: t('contratosAtivos.ativoDialog.statusEmManutencao') },
+  { value: 'descontinuado', label: t('contratosAtivos.ativoDialog.statusDescontinuado') },
 ];
 
 const valoresNegocio = ['alto', 'medio', 'baixo'];
 
 const AtivoDialog: React.FC<AtivoDialogProps> = ({ open, onOpenChange, formData, setFormData, onSubmit, isEditing }) => {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('identificacao');
   const [initialSnapshot, setInitialSnapshot] = useState('');
 
@@ -126,39 +128,39 @@ const AtivoDialog: React.FC<AtivoDialogProps> = ({ open, onOpenChange, formData,
   const classifState: WizardTabState = (typeof formData.tags === 'string' ? formData.tags.trim().length > 0 : false) ? 'complete' : 'pending';
   const aquisState: WizardTabState = formData.data_aquisicao || formData.fornecedor || formData.versao ? 'complete' : 'pending';
 
-  const tipoLabel = tiposAtivo.find((t) => t.value === formData.tipo)?.label;
+  const tipoLabel = tiposAtivo(t).find((tp) => tp.value === formData.tipo)?.label;
 
   const tabs: WizardTab[] = useMemo(
     () => [
       {
         id: 'identificacao',
-        label: 'Identificação',
+        label: t('contratosAtivos.ativoDialog.tabIdentification'),
         icon: Box,
         state: identState,
-        hint: 'Nome, tipo e descrição',
+        hint: t('contratosAtivos.ativoDialog.tabIdentificationHint'),
         content: (
           <div className="space-y-5 max-w-3xl">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="flex items-center gap-1">
-                  Nome <span className="text-destructive">*</span>
-                  <FieldHelpTooltip content="Nome único do ativo. Ex: 'Servidor de Produção SRV-01'." />
+                  {t('contratosAtivos.ativoDialog.labelName')} <span className="text-destructive">*</span>
+                  <FieldHelpTooltip content={t('contratosAtivos.ativoDialog.nameHelp')} />
                 </Label>
                 <Input value={formData.nome} onChange={(e) => update({ nome: e.target.value })} required />
               </div>
               <div className="space-y-2">
                 <Label className="flex items-center gap-1">
-                  Tipo <span className="text-destructive">*</span>
-                  <FieldHelpTooltip content="Categoria principal do ativo (servidor, software, mobiliário, etc.)." />
+                  {t('contratosAtivos.ativoDialog.labelType')} <span className="text-destructive">*</span>
+                  <FieldHelpTooltip content={t('contratosAtivos.ativoDialog.typeHelp')} />
                 </Label>
                 <Select value={formData.tipo} onValueChange={(v) => update({ tipo: v })}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione o tipo" />
+                    <SelectValue placeholder={t('contratosAtivos.ativoDialog.typePlaceholder')} />
                   </SelectTrigger>
                   <SelectContent>
-                    {tiposAtivo.map((t) => (
-                      <SelectItem key={t.value} value={t.value}>
-                        {t.label}
+                    {tiposAtivo(t).map((tp) => (
+                      <SelectItem key={tp.value} value={tp.value}>
+                        {tp.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -167,21 +169,21 @@ const AtivoDialog: React.FC<AtivoDialogProps> = ({ open, onOpenChange, formData,
             </div>
 
             <div className="space-y-2">
-              <Label>Descrição</Label>
+              <Label>{t('contratosAtivos.ativoDialog.labelDescription')}</Label>
               <Textarea value={formData.descricao} onChange={(e) => update({ descricao: e.target.value })} rows={4} />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Tags</Label>
+                <Label>{t('contratosAtivos.ativoDialog.labelTags')}</Label>
                 <Input
                   value={formData.tags}
                   onChange={(e) => update({ tags: e.target.value })}
-                  placeholder="Ex: servidor, crítico, backup"
+                  placeholder={t('contratosAtivos.ativoDialog.tagsPlaceholder')}
                 />
               </div>
               <div className="space-y-2">
-                <Label>Quantidade</Label>
+                <Label>{t('contratosAtivos.ativoDialog.labelQuantity')}</Label>
                 <Input
                   type="number"
                   min="1"
@@ -195,36 +197,36 @@ const AtivoDialog: React.FC<AtivoDialogProps> = ({ open, onOpenChange, formData,
       },
       {
         id: 'localizacao',
-        label: 'Localização & Posse',
+        label: t('contratosAtivos.ativoDialog.tabLocation'),
         icon: MapPin,
         state: localState,
-        hint: 'Onde está e quem é o dono',
+        hint: t('contratosAtivos.ativoDialog.tabLocationHint'),
         content: (
           <div className="space-y-5 max-w-3xl">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="flex items-center gap-1">
-                  Proprietário
-                  <FieldHelpTooltip content="Pessoa responsável pela manutenção, uso e decisões sobre o ativo." />
+                  {t('contratosAtivos.ativoDialog.labelOwner')}
+                  <FieldHelpTooltip content={t('contratosAtivos.ativoDialog.ownerHelp')} />
                 </Label>
                 <UserSelect
                   value={formData.proprietario}
                   onValueChange={(v) => update({ proprietario: v })}
-                  placeholder="Selecionar proprietário..."
+                  placeholder={t('contratosAtivos.ativoDialog.ownerPlaceholder')}
                 />
               </div>
               <div className="space-y-2">
-                <Label>Localização</Label>
+                <Label>{t('contratosAtivos.ativoDialog.labelLocation')}</Label>
                 <LocalizacaoSelect value={formData.localizacao} onValueChange={(v) => update({ localizacao: v })} />
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Cliente</Label>
+                <Label>{t('contratosAtivos.ativoDialog.labelClient')}</Label>
                 <Input value={formData.cliente} onChange={(e) => update({ cliente: e.target.value })} />
               </div>
               <div className="space-y-2">
-                <Label>IMEI / Identificador</Label>
+                <Label>{t('contratosAtivos.ativoDialog.labelImei')}</Label>
                 <Input value={formData.imei} onChange={(e) => update({ imei: e.target.value })} />
               </div>
             </div>
@@ -233,24 +235,24 @@ const AtivoDialog: React.FC<AtivoDialogProps> = ({ open, onOpenChange, formData,
       },
       {
         id: 'classificacao',
-        label: 'Classificação',
+        label: t('contratosAtivos.ativoDialog.tabClassification'),
         icon: Settings2,
         state: classifState,
-        hint: 'Criticidade e valor',
+        hint: t('contratosAtivos.ativoDialog.tabClassificationHint'),
         content: (
           <div className="space-y-5 max-w-3xl">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label className="flex items-center gap-1">
-                  Criticidade
-                  <FieldHelpTooltip content="Quanto a indisponibilidade deste ativo afeta o negócio." />
+                  {t('contratosAtivos.ativoDialog.labelCriticality')}
+                  <FieldHelpTooltip content={t('contratosAtivos.ativoDialog.criticalityHelp')} />
                 </Label>
                 <Select value={formData.criticidade} onValueChange={(v) => update({ criticidade: v })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {criticidades.map((c) => (
+                    {criticidades(t).map((c) => (
                       <SelectItem key={c.value} value={c.value}>
                         {c.label}
                       </SelectItem>
@@ -260,12 +262,12 @@ const AtivoDialog: React.FC<AtivoDialogProps> = ({ open, onOpenChange, formData,
               </div>
               <div className="space-y-2">
                 <Label className="flex items-center gap-1">
-                  Valor de Negócio
-                  <FieldHelpTooltip content="Importância estratégica do ativo para os processos da organização." />
+                  {t('contratosAtivos.ativoDialog.labelBusinessValue')}
+                  <FieldHelpTooltip content={t('contratosAtivos.ativoDialog.businessValueHelp')} />
                 </Label>
                 <Select value={formData.valor_negocio} onValueChange={(v) => update({ valor_negocio: v })}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
+                    <SelectValue placeholder={t('contratosAtivos.ativoDialog.businessValuePlaceholder')} />
                   </SelectTrigger>
                   <SelectContent>
                     {valoresNegocio.map((v) => (
@@ -277,15 +279,15 @@ const AtivoDialog: React.FC<AtivoDialogProps> = ({ open, onOpenChange, formData,
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Status</Label>
+                <Label>{t('contratosAtivos.ativoDialog.labelStatus')}</Label>
                 <Select value={formData.status} onValueChange={(v) => update({ status: v })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {statusOptions.map((s) => (
-                      <SelectItem key={s.value} value={s.value}>
-                        {s.label}
+                    {statusOptions(t).map((st) => (
+                      <SelectItem key={st.value} value={st.value}>
+                        {st.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -297,17 +299,17 @@ const AtivoDialog: React.FC<AtivoDialogProps> = ({ open, onOpenChange, formData,
       },
       {
         id: 'aquisicao',
-        label: 'Aquisição',
+        label: t('contratosAtivos.ativoDialog.tabAcquisition'),
         icon: FileText,
         state: aquisState,
-        hint: 'Fornecedor, data, versão',
+        hint: t('contratosAtivos.ativoDialog.tabAcquisitionHint'),
         content: (
           <div className="space-y-5 max-w-3xl">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label className="flex items-center gap-1">
                   <CalendarIcon className="h-3.5 w-3.5" />
-                  Data de Aquisição
+                  {t('contratosAtivos.ativoDialog.labelAcquisitionDate')}
                 </Label>
                 <Input
                   type="date"
@@ -316,11 +318,11 @@ const AtivoDialog: React.FC<AtivoDialogProps> = ({ open, onOpenChange, formData,
                 />
               </div>
               <div className="space-y-2">
-                <Label>Fornecedor</Label>
+                <Label>{t('contratosAtivos.ativoDialog.labelSupplier')}</Label>
                 <Input value={formData.fornecedor} onChange={(e) => update({ fornecedor: e.target.value })} />
               </div>
               <div className="space-y-2">
-                <Label>Versão</Label>
+                <Label>{t('contratosAtivos.ativoDialog.labelVersion')}</Label>
                 <Input value={formData.versao} onChange={(e) => update({ versao: e.target.value })} />
               </div>
             </div>
@@ -332,19 +334,19 @@ const AtivoDialog: React.FC<AtivoDialogProps> = ({ open, onOpenChange, formData,
   );
 
   const summary = (
-    <WizardSummaryCard title="Resumo do Ativo">
-      <WizardSummaryRow label="Nome" value={formData.nome || <span className="text-muted-foreground italic">Sem nome</span>} highlight />
-      <WizardSummaryRow label="Tipo" value={tipoLabel || <span className="text-muted-foreground italic">—</span>} />
+    <WizardSummaryCard title={t('contratosAtivos.ativoDialog.summaryTitle')}>
+      <WizardSummaryRow label={t('contratosAtivos.ativoDialog.summaryName')} value={formData.nome || <span className="text-muted-foreground italic">{t('contratosAtivos.ativoDialog.summaryNoName')}</span>} highlight />
+      <WizardSummaryRow label={t('contratosAtivos.ativoDialog.summaryType')} value={tipoLabel || <span className="text-muted-foreground italic">—</span>} />
       <WizardSummaryRow
-        label="Criticidade"
+        label={t('contratosAtivos.ativoDialog.summaryCriticality')}
         value={
           formData.criticidade
             ? <StatusBadge size="sm" {...resolveCriticidadeTone(formData.criticidade)}>{formatStatus(formData.criticidade)}</StatusBadge>
             : <span className="text-muted-foreground italic">—</span>
         }
       />
-      <WizardSummaryRow label="Status" value={<span>{formatStatus(formData.status)}</span>} />
-      <WizardSummaryRow label="Quantidade" value={formData.quantidade} />
+      <WizardSummaryRow label={t('contratosAtivos.ativoDialog.summaryStatus')} value={<span>{formatStatus(formData.status)}</span>} />
+      <WizardSummaryRow label={t('contratosAtivos.ativoDialog.summaryQuantity')} value={formData.quantidade} />
     </WizardSummaryCard>
   );
 
@@ -352,15 +354,15 @@ const AtivoDialog: React.FC<AtivoDialogProps> = ({ open, onOpenChange, formData,
     <WizardDialog
       open={open}
       onOpenChange={onOpenChange}
-      title={isEditing ? 'Editar Ativo' : 'Novo Ativo'}
-      description="Preencha as seções para cadastrar o ativo na plataforma."
+      title={isEditing ? t('contratosAtivos.ativoDialog.dialogTitleEdit') : t('contratosAtivos.ativoDialog.dialogTitleNew')}
+      description={t('contratosAtivos.ativoDialog.dialogDescription')}
       icon={Box}
       tabs={tabs}
       summary={summary}
       activeTab={activeTab}
       onActiveTabChange={setActiveTab}
       onSubmit={handleSubmit}
-      submitLabel={isEditing ? 'Atualizar Ativo' : 'Criar Ativo'}
+      submitLabel={isEditing ? t('contratosAtivos.ativoDialog.submitUpdate') : t('contratosAtivos.ativoDialog.submitCreate')}
       submitDisabled={!formData.nome.trim() || !formData.tipo}
       isDirty={isDirty}
       size="xl"

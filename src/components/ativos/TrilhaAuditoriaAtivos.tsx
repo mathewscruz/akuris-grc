@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 interface TrilhaAuditoriaProps {
@@ -33,6 +34,7 @@ interface AuditLog {
 }
 
 const TrilhaAuditoriaAtivos: React.FC<TrilhaAuditoriaProps> = ({ ativoId, open, onOpenChange }) => {
+  const { t } = useLanguage();
   const [filtroAcao, setFiltroAcao] = useState<string>('');
 
   const { data: auditLogs = [], isLoading } = useQuery({
@@ -70,11 +72,11 @@ const TrilhaAuditoriaAtivos: React.FC<TrilhaAuditoriaProps> = ({ ativoId, open, 
   const getActionBadge = (action: string) => {
     switch (action) {
       case 'INSERT':
-        return <Badge variant="default">Criação</Badge>;
+        return <Badge variant="default">{t('contratosAtivos.trilhaAuditoriaAtivos.actionInsert')}</Badge>;
       case 'UPDATE':
-        return <Badge variant="secondary">Atualização</Badge>;
+        return <Badge variant="secondary">{t('contratosAtivos.trilhaAuditoriaAtivos.actionUpdate')}</Badge>;
       case 'DELETE':
-        return <Badge variant="destructive">Exclusão</Badge>;
+        return <Badge variant="destructive">{t('contratosAtivos.trilhaAuditoriaAtivos.actionDelete')}</Badge>;
       default:
         return <Badge variant="outline">{action}</Badge>;
     }
@@ -90,38 +92,38 @@ const TrilhaAuditoriaAtivos: React.FC<TrilhaAuditoriaProps> = ({ ativoId, open, 
     try {
       return JSON.stringify(data, null, 2);
     } catch {
-      return 'Dados inválidos';
+      return t('contratosAtivos.trilhaAuditoriaAtivos.invalidData');
     }
   };
 
   const getFieldDisplayName = (fieldName: string) => {
     const fieldMap: { [key: string]: string } = {
-      nome: 'Nome',
-      tipo: 'Tipo',
-      descricao: 'Descrição',
-      proprietario: 'Proprietário',
-      localizacao: 'Localização',
-      valor_negocio: 'Valor de Negócio',
-      criticidade: 'Criticidade',
-      status: 'Status',
-      data_aquisicao: 'Data de Aquisição',
-      fornecedor: 'Fornecedor',
-      versao: 'Versão',
-      tags: 'Tags',
-      imei: 'IMEI',
-      cliente: 'Cliente',
-      quantidade: 'Quantidade',
+      nome: t('contratosAtivos.trilhaAuditoriaAtivos.fieldNome'),
+      tipo: t('contratosAtivos.trilhaAuditoriaAtivos.fieldTipo'),
+      descricao: t('contratosAtivos.trilhaAuditoriaAtivos.fieldDescricao'),
+      proprietario: t('contratosAtivos.trilhaAuditoriaAtivos.fieldProprietario'),
+      localizacao: t('contratosAtivos.trilhaAuditoriaAtivos.fieldLocalizacao'),
+      valor_negocio: t('contratosAtivos.trilhaAuditoriaAtivos.fieldValorNegocio'),
+      criticidade: t('contratosAtivos.trilhaAuditoriaAtivos.fieldCriticidade'),
+      status: t('contratosAtivos.trilhaAuditoriaAtivos.fieldStatus'),
+      data_aquisicao: t('contratosAtivos.trilhaAuditoriaAtivos.fieldDataAquisicao'),
+      fornecedor: t('contratosAtivos.trilhaAuditoriaAtivos.fieldFornecedor'),
+      versao: t('contratosAtivos.trilhaAuditoriaAtivos.fieldVersao'),
+      tags: t('contratosAtivos.trilhaAuditoriaAtivos.fieldTags'),
+      imei: t('contratosAtivos.trilhaAuditoriaAtivos.fieldImei'),
+      cliente: t('contratosAtivos.trilhaAuditoriaAtivos.fieldCliente'),
+      quantidade: t('contratosAtivos.trilhaAuditoriaAtivos.fieldQuantidade'),
     };
     return fieldMap[fieldName] || fieldName;
   };
 
   const exportLogs = () => {
     const csvContent = [
-      ['Data/Hora', 'Ação', 'Usuário', 'Campos Alterados', 'IP'].join(','),
+      [t('contratosAtivos.trilhaAuditoriaAtivos.csvHeaderDate'), t('contratosAtivos.trilhaAuditoriaAtivos.csvHeaderAction'), t('contratosAtivos.trilhaAuditoriaAtivos.csvHeaderUser'), t('contratosAtivos.trilhaAuditoriaAtivos.csvHeaderChangedFields'), t('contratosAtivos.trilhaAuditoriaAtivos.csvHeaderIp')].join(','),
       ...auditLogs.map(log => [
         new Date(log.created_at).toLocaleString('pt-BR'),
         log.action,
-        log.profiles?.nome || 'Sistema',
+        log.profiles?.nome || t('contratosAtivos.trilhaAuditoriaAtivos.systemFallback'),
         formatChangedFields(log.changed_fields),
         'N/A'
       ].join(','))
@@ -142,9 +144,9 @@ const TrilhaAuditoriaAtivos: React.FC<TrilhaAuditoriaProps> = ({ ativoId, open, 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Trilha de Auditoria - Ativos</DialogTitle>
+          <DialogTitle>{t('contratosAtivos.trilhaAuditoriaAtivos.title')}</DialogTitle>
           <DialogDescription>
-            Visualize o histórico completo de alterações nos ativos
+            {t('contratosAtivos.trilhaAuditoriaAtivos.description')}
           </DialogDescription>
         </DialogHeader>
 
@@ -152,22 +154,22 @@ const TrilhaAuditoriaAtivos: React.FC<TrilhaAuditoriaProps> = ({ ativoId, open, 
           {/* Filtros */}
           <div className="flex items-center gap-4">
             <div className="flex-1">
-              <Label htmlFor="filtro-acao">Filtrar por Ação</Label>
+              <Label htmlFor="filtro-acao">{t('contratosAtivos.trilhaAuditoriaAtivos.filterLabel')}</Label>
               <Select value={filtroAcao} onValueChange={setFiltroAcao}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Todas as ações" />
+                  <SelectValue placeholder={t('contratosAtivos.trilhaAuditoriaAtivos.filterPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ALL">Todas as ações</SelectItem>
-                  <SelectItem value="INSERT">Criação</SelectItem>
-                  <SelectItem value="UPDATE">Atualização</SelectItem>
-                  <SelectItem value="DELETE">Exclusão</SelectItem>
+                  <SelectItem value="ALL">{t('contratosAtivos.trilhaAuditoriaAtivos.filterAll')}</SelectItem>
+                  <SelectItem value="INSERT">{t('contratosAtivos.trilhaAuditoriaAtivos.actionInsert')}</SelectItem>
+                  <SelectItem value="UPDATE">{t('contratosAtivos.trilhaAuditoriaAtivos.actionUpdate')}</SelectItem>
+                  <SelectItem value="DELETE">{t('contratosAtivos.trilhaAuditoriaAtivos.actionDelete')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="flex items-end">
               <Button onClick={exportLogs} variant="outline">
-                Exportar Logs
+                {t('contratosAtivos.trilhaAuditoriaAtivos.exportButton')}
               </Button>
             </div>
           </div>
@@ -180,7 +182,7 @@ const TrilhaAuditoriaAtivos: React.FC<TrilhaAuditoriaProps> = ({ ativoId, open, 
               </div>
             ) : auditLogs.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                Nenhum log de auditoria encontrado
+                {t('contratosAtivos.trilhaAuditoriaAtivos.emptyState')}
               </div>
             ) : (
               <div className="space-y-4">
@@ -191,9 +193,9 @@ const TrilhaAuditoriaAtivos: React.FC<TrilhaAuditoriaProps> = ({ ativoId, open, 
                         <div className="flex items-center gap-3">
                           {getActionBadge(log.action)}
                           <CardTitle className="text-base">
-                            {log.action === 'INSERT' ? 'Ativo Criado' :
-                             log.action === 'UPDATE' ? 'Ativo Atualizado' :
-                             log.action === 'DELETE' ? 'Ativo Excluído' : log.action}
+                            {log.action === 'INSERT' ? t('contratosAtivos.trilhaAuditoriaAtivos.assetCreated') :
+                             log.action === 'UPDATE' ? t('contratosAtivos.trilhaAuditoriaAtivos.assetUpdated') :
+                             log.action === 'DELETE' ? t('contratosAtivos.trilhaAuditoriaAtivos.assetDeleted') : log.action}
                           </CardTitle>
                         </div>
                         <div className="text-sm text-muted-foreground">
@@ -201,10 +203,10 @@ const TrilhaAuditoriaAtivos: React.FC<TrilhaAuditoriaProps> = ({ ativoId, open, 
                         </div>
                       </div>
                       <CardDescription>
-                        Por: {log.profiles?.nome || 'Sistema'} ({log.profiles?.email || 'N/A'})
+                        {t('contratosAtivos.trilhaAuditoriaAtivos.byLabel', { name: log.profiles?.nome || t('contratosAtivos.trilhaAuditoriaAtivos.systemFallback'), email: log.profiles?.email || 'N/A' })}
                         {log.changed_fields && log.changed_fields.length > 0 && (
                           <span className="ml-2">
-                            • Campos alterados: {log.changed_fields.map(getFieldDisplayName).join(', ')}
+                            {t('contratosAtivos.trilhaAuditoriaAtivos.changedFieldsLabel', { fields: log.changed_fields.map(getFieldDisplayName).join(', ') })}
                           </span>
                         )}
                       </CardDescription>
@@ -214,20 +216,20 @@ const TrilhaAuditoriaAtivos: React.FC<TrilhaAuditoriaProps> = ({ ativoId, open, 
                       <CardContent>
                         <Tabs defaultValue="resumo" className="w-full">
                           <TabsList>
-                            <TabsTrigger value="resumo">Resumo</TabsTrigger>
-                            {log.old_values && <TabsTrigger value="anterior">Valores Anteriores</TabsTrigger>}
-                            {log.new_values && <TabsTrigger value="novos">Novos Valores</TabsTrigger>}
+                            <TabsTrigger value="resumo">{t('contratosAtivos.trilhaAuditoriaAtivos.tabSummary')}</TabsTrigger>
+                            {log.old_values && <TabsTrigger value="anterior">{t('contratosAtivos.trilhaAuditoriaAtivos.tabOldValues')}</TabsTrigger>}
+                            {log.new_values && <TabsTrigger value="novos">{t('contratosAtivos.trilhaAuditoriaAtivos.tabNewValues')}</TabsTrigger>}
                           </TabsList>
 
                           <TabsContent value="resumo" className="space-y-2">
                             <div className="text-sm">
-                              <strong>Ação:</strong> {log.action === 'INSERT' ? 'Criação de novo ativo' :
-                                                    log.action === 'UPDATE' ? 'Atualização de ativo existente' :
-                                                    log.action === 'DELETE' ? 'Exclusão de ativo' : log.action}
+                              <strong>{t('contratosAtivos.trilhaAuditoriaAtivos.summaryAction')}</strong> {log.action === 'INSERT' ? t('contratosAtivos.trilhaAuditoriaAtivos.summaryActionInsert') :
+                                                    log.action === 'UPDATE' ? t('contratosAtivos.trilhaAuditoriaAtivos.summaryActionUpdate') :
+                                                    log.action === 'DELETE' ? t('contratosAtivos.trilhaAuditoriaAtivos.summaryActionDelete') : log.action}
                             </div>
                             {log.changed_fields && log.changed_fields.length > 0 && (
                               <div className="text-sm">
-                                <strong>Campos modificados:</strong>
+                                <strong>{t('contratosAtivos.trilhaAuditoriaAtivos.summaryModifiedFields')}</strong>
                                 <div className="flex flex-wrap gap-1 mt-1">
                                   {log.changed_fields.map((field) => (
                                     <Badge key={field} variant="outline" className="text-xs">

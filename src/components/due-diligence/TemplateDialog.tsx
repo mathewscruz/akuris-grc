@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { QuestionsManager } from './QuestionsManager';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Template {
   id: string;
@@ -41,11 +42,12 @@ export function TemplateDialog({
   });
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (template && (mode === 'edit' || mode === 'duplicate')) {
       setFormData({
-        nome: mode === 'duplicate' ? `${template.nome} (Cópia)` : template.nome,
+        nome: mode === 'duplicate' ? `${template.nome}${t('dueDiligence.templateDialog.copySuffix')}` : template.nome,
         descricao: template.descricao || '',
         categoria: template.categoria
       });
@@ -63,8 +65,8 @@ export function TemplateDialog({
     
     if (!formData.nome.trim()) {
       toast({
-        title: "Erro",
-        description: "O nome do template é obrigatório.",
+        title: t('dueDiligence.templateDialog.errorTitle'),
+        description: t('dueDiligence.templateDialog.errorNameRequiredDescription'),
         variant: "destructive",
       });
       return;
@@ -135,8 +137,8 @@ export function TemplateDialog({
         }
 
         toast({
-          title: "Template criado",
-          description: `Template "${formData.nome}" criado com sucesso.`,
+          title: t('dueDiligence.templateDialog.toastCreatedTitle'),
+          description: t('dueDiligence.templateDialog.toastCreatedDescription', { nome: formData.nome }),
         });
 
       } else if (mode === 'edit') {
@@ -153,8 +155,8 @@ export function TemplateDialog({
         if (error) throw error;
 
         toast({
-          title: "Template atualizado",
-          description: `Template "${formData.nome}" atualizado com sucesso.`,
+          title: t('dueDiligence.templateDialog.toastUpdatedTitle'),
+          description: t('dueDiligence.templateDialog.toastUpdatedDescription', { nome: formData.nome }),
         });
       }
 
@@ -162,8 +164,8 @@ export function TemplateDialog({
     } catch (error: any) {
       console.error('Erro ao salvar template:', error);
       toast({
-        title: "Erro",
-        description: error.message || "Não foi possível salvar o template.",
+        title: t('dueDiligence.templateDialog.errorTitle'),
+        description: error.message || t('dueDiligence.templateDialog.errorSaveDescriptionFallback'),
         variant: "destructive",
       });
     } finally {
@@ -173,20 +175,20 @@ export function TemplateDialog({
 
   const getDialogTitle = () => {
     switch (mode) {
-      case 'create': return 'Novo Template';
-      case 'edit': return 'Editar Template';
-      case 'duplicate': return 'Duplicar Template';
-      case 'questions': return 'Gerenciar Perguntas';
-      default: return 'Template';
+      case 'create': return t('dueDiligence.templateDialog.titleCreate');
+      case 'edit': return t('dueDiligence.templateDialog.titleEdit');
+      case 'duplicate': return t('dueDiligence.templateDialog.titleDuplicate');
+      case 'questions': return t('dueDiligence.templateDialog.titleQuestions');
+      default: return t('dueDiligence.templateDialog.titleFallback');
     }
   };
 
   const getDialogDescription = () => {
     switch (mode) {
-      case 'create': return 'Crie um novo template de questionário para avaliações de fornecedores.';
-      case 'edit': return 'Edite as informações básicas do template.';
-      case 'duplicate': return 'Crie uma cópia do template com todas as perguntas.';
-      case 'questions': return 'Adicione e organize as perguntas do questionário.';
+      case 'create': return t('dueDiligence.templateDialog.descriptionCreate');
+      case 'edit': return t('dueDiligence.templateDialog.descriptionEdit');
+      case 'duplicate': return t('dueDiligence.templateDialog.descriptionDuplicate');
+      case 'questions': return t('dueDiligence.templateDialog.descriptionQuestions');
       default: return '';
     }
   };
@@ -203,7 +205,7 @@ export function TemplateDialog({
       size={isQuestions ? 'xl' : 'sm'}
       hideFooter={isQuestions}
       onSubmit={isQuestions ? undefined : () => handleSubmit(new Event('submit') as unknown as React.FormEvent)}
-      submitLabel="Salvar"
+      submitLabel={t('dueDiligence.templateDialog.submitLabel')}
       isSubmitting={loading}
     >
         {isQuestions ? (
@@ -214,42 +216,42 @@ export function TemplateDialog({
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="nome">Nome do Template</Label>
+            <Label htmlFor="nome">{t('dueDiligence.templateDialog.fieldName')}</Label>
             <Input
               id="nome"
               value={formData.nome}
               onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-              placeholder="Ex: Avaliação de Segurança"
+              placeholder={t('dueDiligence.templateDialog.namePlaceholder')}
               required
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="descricao">Descrição</Label>
+            <Label htmlFor="descricao">{t('dueDiligence.templateDialog.fieldDescription')}</Label>
             <Textarea
               id="descricao"
               value={formData.descricao}
               onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
-              placeholder="Descreva o propósito deste template..."
+              placeholder={t('dueDiligence.templateDialog.descriptionPlaceholder')}
               rows={3}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="categoria">Categoria</Label>
+            <Label htmlFor="categoria">{t('dueDiligence.templateDialog.fieldCategory')}</Label>
             <Select
               value={formData.categoria}
               onValueChange={(value) => setFormData({ ...formData, categoria: value })}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Selecione uma categoria" />
+                <SelectValue placeholder={t('dueDiligence.templateDialog.categoryPlaceholder')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="geral">Geral</SelectItem>
-                <SelectItem value="seguranca">Segurança</SelectItem>
-                <SelectItem value="compliance">Compliance</SelectItem>
-                <SelectItem value="financeiro">Financeiro</SelectItem>
-                <SelectItem value="operacional">Operacional</SelectItem>
+                <SelectItem value="geral">{t('dueDiligence.templateDialog.categoryGeneral')}</SelectItem>
+                <SelectItem value="seguranca">{t('dueDiligence.templateDialog.categorySecurity')}</SelectItem>
+                <SelectItem value="compliance">{t('dueDiligence.templateDialog.categoryCompliance')}</SelectItem>
+                <SelectItem value="financeiro">{t('dueDiligence.templateDialog.categoryFinancial')}</SelectItem>
+                <SelectItem value="operacional">{t('dueDiligence.templateDialog.categoryOperational')}</SelectItem>
               </SelectContent>
             </Select>
           </div>

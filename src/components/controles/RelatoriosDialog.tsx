@@ -17,6 +17,7 @@ import jsPDF from "jspdf";
 import { loadAkurisLogo, addAkurisHeader, addAkurisFooter, addSectionTitle, drawTableHeader, formatLabel, AKURIS_COLORS } from "@/lib/pdf-utils";
 import { exportCSV } from "@/lib/csv-utils";
 import { formatStatus } from '@/lib/text-utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface RelatoriosDialogProps {
   open: boolean;
@@ -67,10 +68,11 @@ export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) 
   });
 
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const exportarRelatorio = async (formato: 'excel' | 'pdf') => {
     if (!controles || controles.length === 0) {
-      toast({ title: "Sem dados", description: "Nenhum controle encontrado para exportar.", variant: "destructive" });
+      toast({ title: t('controlesAuditorias.rdToastNoDataTitle'), description: t('controlesAuditorias.rdToastNoDataDesc'), variant: "destructive" });
       return;
     }
 
@@ -87,7 +89,7 @@ export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) 
         ]),
         'relatorio_controles'
       );
-      toast({ title: "CSV exportado", description: `${controles.length} controles exportados.` });
+      toast({ title: t('controlesAuditorias.rdToastCsvExportedTitle'), description: t('controlesAuditorias.rdToastCsvExportedDesc', { count: controles.length }) });
       return;
     }
 
@@ -103,26 +105,26 @@ export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) 
       doc.setFontSize(16);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(AKURIS_COLORS.text);
-      doc.text('Relatorio de Controles', pageWidth / 2, y, { align: 'center' });
+      doc.text(t('controlesAuditorias.rdPdfTitle'), pageWidth / 2, y, { align: 'center' });
       y += 6;
       doc.setFontSize(9);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(AKURIS_COLORS.textLight);
-      doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} | Total: ${controles.length} controles`, pageWidth / 2, y, { align: 'center' });
+      doc.text(t('controlesAuditorias.rdPdfGeneratedAt', { date: new Date().toLocaleDateString('pt-BR'), count: controles.length }), pageWidth / 2, y, { align: 'center' });
       y += 12;
 
-      y = addSectionTitle(doc, 'Resumo', y, margin);
+      y = addSectionTitle(doc, t('controlesAuditorias.rdPdfResumo'), y, margin);
       doc.setFontSize(10);
       doc.setTextColor(AKURIS_COLORS.text);
-      doc.text(`Total: ${stats?.total || 0}  |  Ativos: ${stats?.ativos || 0}  |  Criticos: ${stats?.criticos || 0}  |  Preventivos: ${stats?.preventivos || 0}`, margin + 8, y);
+      doc.text(t('controlesAuditorias.rdPdfResumoLine', { total: stats?.total || 0, ativos: stats?.ativos || 0, criticos: stats?.criticos || 0, preventivos: stats?.preventivos || 0 }), margin + 8, y);
       y += 12;
 
-      y = addSectionTitle(doc, 'Lista de Controles', y, margin);
+      y = addSectionTitle(doc, t('controlesAuditorias.rdPdfListaControles'), y, margin);
       drawTableHeader(doc, [
-        { text: 'Nome', x: margin + 2 },
-        { text: 'Tipo', x: margin + 72 },
-        { text: 'Criticidade', x: margin + 102 },
-        { text: 'Status', x: margin + 140 },
+        { text: t('controlesAuditorias.rdPdfColNome'), x: margin + 2 },
+        { text: t('controlesAuditorias.rdPdfColTipo'), x: margin + 72 },
+        { text: t('controlesAuditorias.rdPdfColCriticidade'), x: margin + 102 },
+        { text: t('controlesAuditorias.rdPdfColStatus'), x: margin + 140 },
       ], y, margin, contentWidth);
       y += 5;
 
@@ -147,9 +149,9 @@ export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) 
 
       addAkurisFooter(doc);
       doc.save(`relatorio_controles_${new Date().toISOString().split('T')[0]}.pdf`);
-      toast({ title: "PDF gerado", description: "Relatorio de controles baixado com sucesso." });
+      toast({ title: t('controlesAuditorias.rdToastPdfGeneratedTitle'), description: t('controlesAuditorias.rdToastPdfGeneratedDesc') });
     } catch {
-      toast({ title: "Erro", description: "Erro ao gerar PDF.", variant: "destructive" });
+      toast({ title: t('controlesAuditorias.rdToastPdfErrorTitle'), description: t('controlesAuditorias.rdToastPdfErrorDesc'), variant: "destructive" });
     }
   };
 
@@ -191,16 +193,16 @@ export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) 
       open={open}
       onOpenChange={onOpenChange}
       icon={BarChart3}
-      title="Relatórios e Análises"
+      title={t('controlesAuditorias.rdTitle')}
       size="lg"
       hideFooter
     >
         <Tabs value={tipoRelatorio} onValueChange={setTipoRelatorio}>
           <TabsList>
-            <TabsTrigger value="eficacia">Eficácia</TabsTrigger>
-            <TabsTrigger value="compliance">Compliance</TabsTrigger>
-            <TabsTrigger value="gaps">Análise de Gaps</TabsTrigger>
-            <TabsTrigger value="cobertura">Cobertura</TabsTrigger>
+            <TabsTrigger value="eficacia">{t('controlesAuditorias.rdTabEficacia')}</TabsTrigger>
+            <TabsTrigger value="compliance">{t('controlesAuditorias.rdTabCompliance')}</TabsTrigger>
+            <TabsTrigger value="gaps">{t('controlesAuditorias.rdTabGaps')}</TabsTrigger>
+            <TabsTrigger value="cobertura">{t('controlesAuditorias.rdTabCobertura')}</TabsTrigger>
           </TabsList>
 
           {/* Filtros Gerais */}
@@ -216,7 +218,7 @@ export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) 
                 className="flex items-center gap-2"
               >
                 <Download className="h-4 w-4" />
-                Excel
+                {t('controlesAuditorias.rdBtnExcel')}
               </Button>
               <Button 
                 variant="outline" 
@@ -224,10 +226,10 @@ export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) 
                 className="flex items-center gap-2"
               >
                 <FileText className="h-4 w-4" />
-                PDF
+                {t('controlesAuditorias.rdBtnPdf')}
               </Button>
               <Button onClick={salvarRelatorio}>
-                Salvar Relatório
+                {t('controlesAuditorias.rdBtnSalvar')}
               </Button>
             </div>
           </div>
@@ -238,7 +240,7 @@ export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) 
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">Total de Controles</p>
+                      <p className="text-sm font-medium text-muted-foreground">{t('controlesAuditorias.rdStatTotal')}</p>
                       <p className="text-2xl font-bold">{stats?.total || 0}</p>
                     </div>
                     <BarChart3 className="h-8 w-8 text-muted-foreground" />
@@ -250,7 +252,7 @@ export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) 
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">Controles Ativos</p>
+                      <p className="text-sm font-medium text-muted-foreground">{t('controlesAuditorias.rdStatAtivos')}</p>
                       <p className="text-2xl font-bold text-success">{stats?.ativos || 0}</p>
                     </div>
                     <TrendingUp className="h-8 w-8 text-success" />
@@ -262,7 +264,7 @@ export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) 
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">Críticos</p>
+                      <p className="text-sm font-medium text-muted-foreground">{t('controlesAuditorias.rdStatCriticos')}</p>
                       <p className="text-2xl font-bold text-destructive">{stats?.criticos || 0}</p>
                     </div>
                     <AlertTriangle className="h-8 w-8 text-destructive" />
@@ -274,7 +276,7 @@ export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) 
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">Preventivos</p>
+                      <p className="text-sm font-medium text-muted-foreground">{t('controlesAuditorias.rdStatPreventivos')}</p>
                       <p className="text-2xl font-bold text-info">{stats?.preventivos || 0}</p>
                     </div>
                     <PieChart className="h-8 w-8 text-info" />
@@ -285,14 +287,14 @@ export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) 
 
             <Card>
               <CardHeader>
-                <CardTitle>Tendência de Eficácia</CardTitle>
+                <CardTitle>{t('controlesAuditorias.rdTendenciaTitle')}</CardTitle>
                 <CardDescription>
-                  Evolução da eficácia dos controles ao longo do tempo
+                  {t('controlesAuditorias.rdTendenciaDescription')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="h-64 flex items-center justify-center text-muted-foreground">
-                  Gráfico de tendência será implementado aqui
+                  {t('controlesAuditorias.rdTendenciaPlaceholder')}
                 </div>
               </CardContent>
             </Card>
@@ -301,9 +303,9 @@ export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) 
           <TabsContent value="compliance" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Status de Compliance</CardTitle>
+                <CardTitle>{t('controlesAuditorias.rdComplianceTitle')}</CardTitle>
                 <CardDescription>
-                  Avaliação de conformidade por área e processo
+                  {t('controlesAuditorias.rdComplianceDescription')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -312,7 +314,7 @@ export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) 
                     <div key={controle.id} className="flex items-center justify-between p-4 border rounded-lg">
                       <div>
                         <h4 className="font-medium">{controle.nome}</h4>
-                        <p className="text-sm text-muted-foreground">{controle.area || 'Não especificada'}</p>
+                        <p className="text-sm text-muted-foreground">{controle.area || t('controlesAuditorias.rdAreaNaoEspecificada')}</p>
                       </div>
                       <div className="flex items-center gap-2">
                         <StatusBadge size="sm" {...resolveControleStatusTone(controle.status)}>
@@ -332,27 +334,27 @@ export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) 
           <TabsContent value="gaps" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Análise de Gaps</CardTitle>
+                <CardTitle>{t('controlesAuditorias.rdGapsTitle')}</CardTitle>
                 <CardDescription>
-                  Identificação de riscos sem controles adequados
+                  {t('controlesAuditorias.rdGapsDescription')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between p-4 border rounded-lg border-warning/20 bg-warning/10">
                     <div>
-                      <h4 className="font-medium text-warning">Área Financeira</h4>
-                      <p className="text-sm text-muted-foreground">3 riscos sem controles preventivos</p>
+                      <h4 className="font-medium text-warning">{t('controlesAuditorias.rdGapFinanceiraTitle')}</h4>
+                      <p className="text-sm text-muted-foreground">{t('controlesAuditorias.rdGapFinanceiraDesc')}</p>
                     </div>
-                    <StatusBadge tone="warning">Gap Identificado</StatusBadge>
+                    <StatusBadge tone="warning">{t('controlesAuditorias.rdGapIdentificado')}</StatusBadge>
                   </div>
 
                   <div className="flex items-center justify-between p-4 border rounded-lg border-destructive/20 bg-destructive/10">
                     <div>
-                      <h4 className="font-medium text-destructive">Área de TI</h4>
-                      <p className="text-sm text-muted-foreground">2 riscos críticos sem controles</p>
+                      <h4 className="font-medium text-destructive">{t('controlesAuditorias.rdGapTiTitle')}</h4>
+                      <p className="text-sm text-muted-foreground">{t('controlesAuditorias.rdGapTiDesc')}</p>
                     </div>
-                    <StatusBadge tone="destructive" intensity="high">Gap Crítico</StatusBadge>
+                    <StatusBadge tone="destructive" intensity="high">{t('controlesAuditorias.rdGapCritico')}</StatusBadge>
                   </div>
                 </div>
               </CardContent>
@@ -362,9 +364,9 @@ export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) 
           <TabsContent value="cobertura" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Matriz de Cobertura</CardTitle>
+                <CardTitle>{t('controlesAuditorias.rdCoberturaTitle')}</CardTitle>
                 <CardDescription>
-                  Visualização cruzada de riscos vs controles
+                  {t('controlesAuditorias.rdCoberturaDescription')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -372,21 +374,21 @@ export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) 
                   <Card className="bg-success/10 border-success/20">
                     <CardContent className="p-4 text-center">
                       <p className="text-2xl font-bold text-success">85%</p>
-                      <p className="text-sm text-success">Cobertura Geral</p>
+                      <p className="text-sm text-success">{t('controlesAuditorias.rdCoberturaGeral')}</p>
                     </CardContent>
                   </Card>
 
                   <Card className="bg-info/10 border-info/20">
                     <CardContent className="p-4 text-center">
                       <p className="text-2xl font-bold text-info">92%</p>
-                      <p className="text-sm text-info">Riscos Críticos</p>
+                      <p className="text-sm text-info">{t('controlesAuditorias.rdCoberturaRiscosCriticos')}</p>
                     </CardContent>
                   </Card>
 
                   <Card className="bg-warning/10 border-warning/20">
                     <CardContent className="p-4 text-center">
                       <p className="text-2xl font-bold text-warning">78%</p>
-                      <p className="text-sm text-warning">Riscos Médios</p>
+                      <p className="text-sm text-warning">{t('controlesAuditorias.rdCoberturaRiscosMedios')}</p>
                     </CardContent>
                   </Card>
                 </div>

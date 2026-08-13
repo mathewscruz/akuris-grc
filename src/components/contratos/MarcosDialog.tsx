@@ -16,6 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Contrato {
   id: string;
@@ -63,6 +64,7 @@ export function MarcosDialog({ contrato, open, onOpenChange }: MarcosDialogProps
     observacoes: ''
   });
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (open && contrato) {
@@ -118,8 +120,8 @@ export function MarcosDialog({ contrato, open, onOpenChange }: MarcosDialogProps
     
     if (!formData.nome || !formData.data_prevista || !contrato) {
       toast({
-        title: "Erro",
-        description: "Preencha todos os campos obrigatórios",
+        title: t('contratosAtivos.common.error'),
+        description: t('contratosAtivos.marcosDialog.toastFillRequired'),
         variant: "destructive",
       });
       return;
@@ -160,8 +162,8 @@ export function MarcosDialog({ contrato, open, onOpenChange }: MarcosDialogProps
       if (error) throw error;
 
       toast({
-        title: "Sucesso",
-        description: `Marco ${editingMarco ? 'atualizado' : 'criado'} com sucesso`,
+        title: t('contratosAtivos.common.success'),
+        description: t('contratosAtivos.marcosDialog.toastSaveSuccess').replace('{action}', editingMarco ? t('contratosAtivos.marcosDialog.actionUpdated') : t('contratosAtivos.marcosDialog.actionCreated')),
       });
 
       resetForm();
@@ -169,8 +171,8 @@ export function MarcosDialog({ contrato, open, onOpenChange }: MarcosDialogProps
     } catch (error) {
       console.error('Erro ao salvar marco:', error);
       toast({
-        title: "Erro",
-        description: "Erro ao salvar marco",
+        title: t('contratosAtivos.common.error'),
+        description: t('contratosAtivos.marcosDialog.toastSaveError'),
         variant: "destructive",
       });
     } finally {
@@ -205,16 +207,16 @@ export function MarcosDialog({ contrato, open, onOpenChange }: MarcosDialogProps
       if (error) throw error;
 
       toast({
-        title: "Sucesso",
-        description: "Marco excluído com sucesso",
+        title: t('contratosAtivos.common.success'),
+        description: t('contratosAtivos.marcosDialog.toastDeleteSuccess'),
       });
 
       fetchMarcos();
     } catch (error) {
       console.error('Erro ao excluir marco:', error);
       toast({
-        title: "Erro",
-        description: "Erro ao excluir marco",
+        title: t('contratosAtivos.common.error'),
+        description: t('contratosAtivos.marcosDialog.toastDeleteError'),
         variant: "destructive",
       });
     } finally {
@@ -254,8 +256,8 @@ export function MarcosDialog({ contrato, open, onOpenChange }: MarcosDialogProps
       open={open}
       onOpenChange={onOpenChange}
       icon={CalendarClock}
-      title={`Marcos — ${contrato.nome}`}
-      description={`Gerencie marcos importantes e datas do contrato ${contrato.numero_contrato}`}
+      title={t('contratosAtivos.marcosDialog.title').replace('{nome}', contrato.nome)}
+      description={t('contratosAtivos.marcosDialog.description').replace('{numero}', contrato.numero_contrato)}
       size="lg"
       hideFooter
     >
@@ -264,7 +266,7 @@ export function MarcosDialog({ contrato, open, onOpenChange }: MarcosDialogProps
             <div className="flex justify-end items-center">
               <Button onClick={() => setShowForm(true)}>
                 <Plus className="h-4 w-4 mr-2" />
-                Novo Marco
+                {t('contratosAtivos.marcosDialog.newButton')}
               </Button>
             </div>
           )}
@@ -273,41 +275,41 @@ export function MarcosDialog({ contrato, open, onOpenChange }: MarcosDialogProps
             <Card>
               <CardHeader>
                 <CardTitle>
-                  {editingMarco ? 'Editar Marco' : 'Novo Marco'}
+                  {editingMarco ? t('contratosAtivos.marcosDialog.cardTitleEdit') : t('contratosAtivos.marcosDialog.cardTitleNew')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="nome">Nome do Marco *</Label>
+                      <Label htmlFor="nome">{t('contratosAtivos.marcosDialog.labelName')}</Label>
                       <Input
                         id="nome"
                         value={formData.nome}
                         onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                        placeholder="Ex: Vencimento do contrato"
+                        placeholder={t('contratosAtivos.marcosDialog.namePlaceholder')}
                         required
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="tipo">Tipo</Label>
+                      <Label htmlFor="tipo">{t('contratosAtivos.marcosDialog.labelType')}</Label>
                       <Select value={formData.tipo} onValueChange={(value) => setFormData({ ...formData, tipo: value })}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="vencimento">Vencimento</SelectItem>
-                          <SelectItem value="renovacao">Renovação</SelectItem>
-                          <SelectItem value="pagamento">Pagamento</SelectItem>
-                          <SelectItem value="entrega">Entrega</SelectItem>
-                          <SelectItem value="revisao">Revisão</SelectItem>
+                          <SelectItem value="vencimento">{t('contratosAtivos.marcosDialog.typeVencimento')}</SelectItem>
+                          <SelectItem value="renovacao">{t('contratosAtivos.marcosDialog.typeRenovacao')}</SelectItem>
+                          <SelectItem value="pagamento">{t('contratosAtivos.marcosDialog.typePagamento')}</SelectItem>
+                          <SelectItem value="entrega">{t('contratosAtivos.marcosDialog.typeEntrega')}</SelectItem>
+                          <SelectItem value="revisao">{t('contratosAtivos.marcosDialog.typeRevisao')}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="data_prevista">Data Prevista *</Label>
+                      <Label htmlFor="data_prevista">{t('contratosAtivos.marcosDialog.labelExpectedDate')}</Label>
                       <Input
                         id="data_prevista"
                         type="date"
@@ -318,7 +320,7 @@ export function MarcosDialog({ contrato, open, onOpenChange }: MarcosDialogProps
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="data_realizada">Data Realizada</Label>
+                      <Label htmlFor="data_realizada">{t('contratosAtivos.marcosDialog.labelActualDate')}</Label>
                       <Input
                         id="data_realizada"
                         type="date"
@@ -328,25 +330,25 @@ export function MarcosDialog({ contrato, open, onOpenChange }: MarcosDialogProps
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="status">Status</Label>
+                      <Label htmlFor="status">{t('contratosAtivos.marcosDialog.labelStatus')}</Label>
                       <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="pendente">Pendente</SelectItem>
-                          <SelectItem value="concluido">Concluído</SelectItem>
-                          <SelectItem value="atrasado">Atrasado</SelectItem>
-                          <SelectItem value="cancelado">Cancelado</SelectItem>
+                          <SelectItem value="pendente">{t('contratosAtivos.marcosDialog.statusPendente')}</SelectItem>
+                          <SelectItem value="concluido">{t('contratosAtivos.marcosDialog.statusConcluido')}</SelectItem>
+                          <SelectItem value="atrasado">{t('contratosAtivos.marcosDialog.statusAtrasado')}</SelectItem>
+                          <SelectItem value="cancelado">{t('contratosAtivos.marcosDialog.statusCancelado')}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="responsavel">Responsável</Label>
+                      <Label htmlFor="responsavel">{t('contratosAtivos.marcosDialog.labelResponsible')}</Label>
                       <Select value={formData.responsavel} onValueChange={(value) => setFormData({ ...formData, responsavel: value })}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecione o responsável" />
+                          <SelectValue placeholder={t('contratosAtivos.marcosDialog.responsiblePlaceholder')} />
                         </SelectTrigger>
                         <SelectContent>
                           {usuarios.map((usuario) => (
@@ -359,7 +361,7 @@ export function MarcosDialog({ contrato, open, onOpenChange }: MarcosDialogProps
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="valor">Valor</Label>
+                      <Label htmlFor="valor">{t('contratosAtivos.marcosDialog.labelValue')}</Label>
                       <Input
                         id="valor"
                         type="number"
@@ -371,7 +373,7 @@ export function MarcosDialog({ contrato, open, onOpenChange }: MarcosDialogProps
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="alerta_antecedencia">Alerta (dias)</Label>
+                      <Label htmlFor="alerta_antecedencia">{t('contratosAtivos.marcosDialog.labelAlertDays')}</Label>
                       <Input
                         id="alerta_antecedencia"
                         type="number"
@@ -382,23 +384,23 @@ export function MarcosDialog({ contrato, open, onOpenChange }: MarcosDialogProps
                     </div>
 
                     <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="descricao">Descrição</Label>
+                      <Label htmlFor="descricao">{t('contratosAtivos.marcosDialog.labelDescription')}</Label>
                       <Textarea
                         id="descricao"
                         value={formData.descricao}
                         onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
-                        placeholder="Descrição do marco..."
+                        placeholder={t('contratosAtivos.marcosDialog.descriptionPlaceholder')}
                         rows={2}
                       />
                     </div>
 
                     <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="observacoes">Observações</Label>
+                      <Label htmlFor="observacoes">{t('contratosAtivos.marcosDialog.labelObservations')}</Label>
                       <Textarea
                         id="observacoes"
                         value={formData.observacoes}
                         onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
-                        placeholder="Observações adicionais..."
+                        placeholder={t('contratosAtivos.marcosDialog.observationsPlaceholder')}
                         rows={2}
                       />
                     </div>
@@ -406,10 +408,10 @@ export function MarcosDialog({ contrato, open, onOpenChange }: MarcosDialogProps
 
                   <div className="flex justify-end space-x-2">
                     <Button type="button" variant="outline" onClick={resetForm}>
-                      Cancelar
+                      {t('contratosAtivos.marcosDialog.cancelButton')}
                     </Button>
                     <Button type="submit" disabled={loading}>
-                      {loading ? 'Salvando...' : (editingMarco ? 'Atualizar' : 'Criar')}
+                      {loading ? t('contratosAtivos.marcosDialog.savingButton') : (editingMarco ? t('contratosAtivos.marcosDialog.submitUpdate') : t('contratosAtivos.marcosDialog.submitCreate'))}
                     </Button>
                   </div>
                 </form>
@@ -441,7 +443,7 @@ export function MarcosDialog({ contrato, open, onOpenChange }: MarcosDialogProps
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-muted-foreground" />
                       <div>
-                        <span className="font-medium">Data Prevista:</span>
+                        <span className="font-medium">{t('contratosAtivos.marcosDialog.fieldExpectedDate')}</span>
                         <p>{format(new Date(marco.data_prevista), 'dd/MM/yyyy', { locale: ptBR })}</p>
                       </div>
                     </div>
@@ -450,7 +452,7 @@ export function MarcosDialog({ contrato, open, onOpenChange }: MarcosDialogProps
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4 text-success" />
                         <div>
-                          <span className="font-medium">Data Realizada:</span>
+                          <span className="font-medium">{t('contratosAtivos.marcosDialog.fieldActualDate')}</span>
                           <p>{format(new Date(marco.data_realizada), 'dd/MM/yyyy', { locale: ptBR })}</p>
                         </div>
                       </div>
@@ -460,7 +462,7 @@ export function MarcosDialog({ contrato, open, onOpenChange }: MarcosDialogProps
                       <div className="flex items-center gap-2">
                         <DollarSign className="h-4 w-4 text-muted-foreground" />
                         <div>
-                          <span className="font-medium">Valor:</span>
+                          <span className="font-medium">{t('contratosAtivos.marcosDialog.fieldValue')}</span>
                           <p>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(marco.valor))}</p>
                         </div>
                       </div>
@@ -470,8 +472,8 @@ export function MarcosDialog({ contrato, open, onOpenChange }: MarcosDialogProps
                       <div className="flex items-center gap-2">
                         <User className="h-4 w-4 text-muted-foreground" />
                         <div>
-                          <span className="font-medium">Responsável:</span>
-                          <p>{usuarios.find(u => u.user_id === marco.responsavel)?.nome || 'N/A'}</p>
+                          <span className="font-medium">{t('contratosAtivos.marcosDialog.fieldResponsible')}</span>
+                          <p>{usuarios.find(u => u.user_id === marco.responsavel)?.nome || t('contratosAtivos.marcosDialog.naFallback')}</p>
                         </div>
                       </div>
                     )}
@@ -485,10 +487,10 @@ export function MarcosDialog({ contrato, open, onOpenChange }: MarcosDialogProps
 
                   <div className="flex justify-end gap-2 mt-4">
                     <Button variant="outline" size="sm" onClick={() => handleEdit(marco)}>
-                      Editar
+                      {t('contratosAtivos.marcosDialog.editButton')}
                     </Button>
                     <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => setDeleteConfirm({ open: true, id: marco.id, nome: marco.nome })}>
-                      Excluir
+                      {t('contratosAtivos.marcosDialog.deleteButton')}
                     </Button>
                   </div>
                 </CardContent>
@@ -500,7 +502,7 @@ export function MarcosDialog({ contrato, open, onOpenChange }: MarcosDialogProps
             <Card>
               <CardContent className="text-center py-8">
                 <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">Nenhum marco cadastrado</p>
+                <p className="text-muted-foreground">{t('contratosAtivos.marcosDialog.emptyState')}</p>
               </CardContent>
             </Card>
           )}
@@ -510,10 +512,10 @@ export function MarcosDialog({ contrato, open, onOpenChange }: MarcosDialogProps
     <ConfirmDialog
       open={deleteConfirm.open}
       onOpenChange={(open) => setDeleteConfirm(prev => ({ ...prev, open }))}
-      title="Excluir Marco"
-      description={`Tem certeza que deseja excluir o marco "${deleteConfirm.nome}"? Esta ação não pode ser desfeita.`}
-      confirmText="Excluir"
-      cancelText="Cancelar"
+      title={t('contratosAtivos.marcosDialog.deleteDialogTitle')}
+      description={t('contratosAtivos.marcosDialog.deleteDialogDescription').replace('{nome}', deleteConfirm.nome || '')}
+      confirmText={t('contratosAtivos.marcosDialog.deleteDialogConfirm')}
+      cancelText={t('contratosAtivos.marcosDialog.cancelButton')}
       variant="destructive"
       onConfirm={handleDelete}
     />
