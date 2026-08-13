@@ -11,6 +11,7 @@ import { Pencil, Plus, Trash2, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { logger } from '@/lib/logger';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 type Post = {
   id: string;
@@ -48,6 +49,7 @@ const slugify = (s: string) =>
     .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
 export default function BlogManager() {
+  const { t } = useLanguage();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -61,7 +63,7 @@ export default function BlogManager() {
       .from('blog_posts')
       .select('*')
       .order('created_at', { ascending: false });
-    if (error) { logger.error('blog load', error); toast.error('Erro ao carregar posts'); }
+    if (error) { logger.error('blog load', error); toast.error(t('configPlanos.blog.loadError')); }
     setPosts((data as Post[]) || []);
     setLoading(false);
   };
@@ -73,7 +75,7 @@ export default function BlogManager() {
 
   const save = async () => {
     if (!editing.titulo || !editing.resumo || !editing.conteudo_md) {
-      toast.error('Título, resumo e conteúdo são obrigatórios');
+      toast.error(t('configPlanos.blog.requiredFields'));
       return;
     }
     setSaving(true);
@@ -100,17 +102,17 @@ export default function BlogManager() {
       ({ error } = await supabase.from('blog_posts').insert(payload));
     }
     setSaving(false);
-    if (error) { toast.error('Erro ao salvar: ' + error.message); return; }
-    toast.success('Post salvo');
+    if (error) { toast.error(t('configPlanos.blog.saveError', { message: error.message })); return; }
+    toast.success(t('configPlanos.blog.savedSuccess'));
     setOpen(false);
     load();
   };
 
   const remove = async (id: string) => {
-    if (!confirm('Excluir este post?')) return;
+    if (!confirm(t('configPlanos.blog.deleteConfirm'))) return;
     const { error } = await supabase.from('blog_posts').delete().eq('id', id);
-    if (error) { toast.error('Erro ao excluir'); return; }
-    toast.success('Post excluído');
+    if (error) { toast.error(t('configPlanos.blog.deleteError')); return; }
+    toast.success(t('configPlanos.blog.deletedSuccess'));
     load();
   };
 
@@ -119,8 +121,8 @@ export default function BlogManager() {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <p className="text-sm text-muted-foreground">{posts.length} post(s)</p>
-        <Button onClick={openNew}><Plus className="h-4 w-4 mr-2" /> Novo post</Button>
+        <p className="text-sm text-muted-foreground">{t('configPlanos.blog.postCount', { count: posts.length })}</p>
+        <Button onClick={openNew}><Plus className="h-4 w-4 mr-2" /> {t('configPlanos.blog.newPost')}</Button>
       </div>
 
       <div className="space-y-2">
@@ -130,7 +132,7 @@ export default function BlogManager() {
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <span className={`text-xs px-2 py-0.5 rounded ${p.published ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
-                    {p.published ? 'Publicado' : 'Rascunho'}
+                    {p.published ? t('configPlanos.blog.published') : t('configPlanos.blog.draft')}
                   </span>
                   <span className="font-medium truncate">{p.titulo}</span>
                 </div>
@@ -148,67 +150,67 @@ export default function BlogManager() {
             </CardContent>
           </Card>
         ))}
-        {posts.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">Nenhum post ainda.</p>}
+        {posts.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">{t('configPlanos.blog.emptyState')}</p>}
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editing.id ? 'Editar post' : 'Novo post'}</DialogTitle>
+            <DialogTitle>{editing.id ? t('configPlanos.blog.dialogEditTitle') : t('configPlanos.blog.dialogNewTitle')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>Título</Label>
+              <Label>{t('configPlanos.blog.fieldTitulo')}</Label>
               <Input value={editing.titulo || ''} onChange={e => setEditing({ ...editing, titulo: e.target.value, slug: editing.slug || slugify(e.target.value) })} />
             </div>
             <div>
-              <Label>Slug (URL)</Label>
+              <Label>{t('configPlanos.blog.fieldSlug')}</Label>
               <Input value={editing.slug || ''} onChange={e => setEditing({ ...editing, slug: slugify(e.target.value) })} />
             </div>
             <div>
-              <Label>Resumo</Label>
+              <Label>{t('configPlanos.blog.fieldResumo')}</Label>
               <Textarea rows={2} value={editing.resumo || ''} onChange={e => setEditing({ ...editing, resumo: e.target.value })} />
             </div>
             <div>
-              <Label>Conteúdo (Markdown)</Label>
+              <Label>{t('configPlanos.blog.fieldConteudo')}</Label>
               <Textarea rows={14} className="font-mono text-sm" value={editing.conteudo_md || ''} onChange={e => setEditing({ ...editing, conteudo_md: e.target.value })} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>Autor</Label>
+                <Label>{t('configPlanos.blog.fieldAutor')}</Label>
                 <Input value={editing.autor || ''} onChange={e => setEditing({ ...editing, autor: e.target.value })} />
               </div>
               <div>
-                <Label>Framework slug (opcional)</Label>
-                <Input placeholder="iso-27001, lgpd..." value={editing.framework_slug || ''} onChange={e => setEditing({ ...editing, framework_slug: e.target.value || null })} />
+                <Label>{t('configPlanos.blog.fieldFrameworkSlug')}</Label>
+                <Input placeholder={t('configPlanos.blog.fieldFrameworkPlaceholder')} value={editing.framework_slug || ''} onChange={e => setEditing({ ...editing, framework_slug: e.target.value || null })} />
               </div>
             </div>
             <div>
-              <Label>Tags (separadas por vírgula)</Label>
+              <Label>{t('configPlanos.blog.fieldTags')}</Label>
               <Input value={tagInput} onChange={e => setTagInput(e.target.value)} />
             </div>
             <div>
-              <Label>Capa URL (opcional)</Label>
+              <Label>{t('configPlanos.blog.fieldCapaUrl')}</Label>
               <Input value={editing.capa_url || ''} onChange={e => setEditing({ ...editing, capa_url: e.target.value || null })} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>SEO Title</Label>
+                <Label>{t('configPlanos.blog.fieldSeoTitle')}</Label>
                 <Input value={editing.seo_title || ''} onChange={e => setEditing({ ...editing, seo_title: e.target.value || null })} />
               </div>
               <div>
-                <Label>SEO Description</Label>
+                <Label>{t('configPlanos.blog.fieldSeoDescription')}</Label>
                 <Input value={editing.seo_description || ''} onChange={e => setEditing({ ...editing, seo_description: e.target.value || null })} />
               </div>
             </div>
             <div className="flex items-center gap-3 pt-2">
               <Switch checked={!!editing.published} onCheckedChange={v => setEditing({ ...editing, published: v })} />
-              <Label>Publicado</Label>
+              <Label>{t('configPlanos.blog.fieldPublicado')}</Label>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
-            <Button onClick={save} disabled={saving}>{saving ? 'Salvando...' : 'Salvar'}</Button>
+            <Button variant="ghost" onClick={() => setOpen(false)}>{t('configPlanos.blog.cancel')}</Button>
+            <Button onClick={save} disabled={saving}>{saving ? t('configPlanos.blog.saving') : t('configPlanos.blog.save')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
