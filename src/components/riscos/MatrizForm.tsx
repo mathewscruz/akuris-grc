@@ -331,6 +331,20 @@ export function MatrizForm({ onSuccess }: Props) {
     return null;
   };
 
+  /** Traduz falhas do Postgres/PostgREST em mensagens compreensíveis (nunca o erro cru). */
+  const mensagemErroMatriz = (error: any): string => {
+    const raw = `${error?.code || ''} ${error?.message || ''} ${error?.details || ''}`;
+    if (raw.includes('riscos_matrizes_empresa_nome_uidx') || error?.code === '23505') {
+      return t('sweepRiscos.riscos.matrizForm.erroNomeDuplicado');
+    }
+    if (raw.includes('NOME_OBRIGATORIO')) return t('sweepRiscos.riscos.matrizForm.erroNomeObrigatorio');
+    if (raw.includes('MATRIZ_NAO_ENCONTRADA')) return t('sweepRiscos.riscos.matrizForm.erroMatrizNaoEncontrada');
+    if (raw.includes('EMPRESA_NAO_ENCONTRADA') || error?.code === '42501') {
+      return t('sweepRiscos.riscos.matrizForm.erroPermissao');
+    }
+    return t('sweepRiscos.riscos.matrizForm.erroGenerico');
+  };
+
   const onSubmitMatriz = async (data: MatrizForm) => {
     if (!profile?.empresa_id) {
       toast.error(t('fin.riscos.wizard.erroEmpresa'));
@@ -347,82 +361,37 @@ export function MatrizForm({ onSuccess }: Props) {
     setLoading(true);
 
     try {
-      if (editingMatriz) {
-        // Atualizar matriz existente
-        const { error: matrizError } = await supabase
-          .from('riscos_matrizes')
-          .update({
-            nome: data.nome,
-            descricao: data.descricao
-          })
-          .eq('id', editingMatriz.id);
+      // Gravação atômica: matriz + configuração numa única transação no banco.
+      // Se a configuração falhar, a matriz não fica gravada (sem matrizes órfãs).
+      const { data: matrizId, error } = await supabase.rpc('criar_matriz_com_configuracao', {
+        p_nome: data.nome.trim(),
+        p_descricao: data.descricao || null,
+        p_escala_probabilidade: escalaProbabilidade as any,
+        p_escala_impacto: escalaImpacto as any,
+        p_niveis_risco: niveisRisco as any,
+        p_metodo_calculo: metodoCalculo,
+        p_matriz_id: editingMatriz?.id ?? null,
+      });
 
-        if (matrizError) throw matrizError;
+      if (error) throw error;
+      if (!matrizId) throw new Error('SEM_RETORNO');
 
-        // Upsert repara matrizes legadas sem configuração. O retorno é verificado:
-        // UPDATE sem linha correspondente não produz erro no PostgREST.
-        const { data: configSalva, error: configError } = await supabase
-          .from('riscos_matriz_configuracao')
-          .upsert({
-            matriz_id: editingMatriz.id,
-            escala_probabilidade: escalaProbabilidade as any,
-            escala_impacto: escalaImpacto as any,
-            niveis_risco: niveisRisco as any,
-            metodo_calculo: metodoCalculo
-          }, { onConflict: 'matriz_id' })
-          .select('matriz_id')
-          .single();
-
-        if (configError) throw configError;
-        if (!configSalva || configSalva.matriz_id !== editingMatriz.id) {
-          throw new Error(t('fin.riscos.matrizForm.configNaoConfirmada'));
-        }
-
-        toast.success(t('cardsKpi.sweep.riscos.matrizAtualizada'));
-      } else {
-        // Criar nova matriz
-        const { data: novaMatriz, error: matrizError } = await supabase
-          .from('riscos_matrizes')
-          .insert([{
-            nome: data.nome,
-            descricao: data.descricao,
-            empresa_id: profile.empresa_id
-          }])
-          .select()
-          .single();
-
-        if (matrizError) throw matrizError;
-
-        // Criar configuração da matriz (idempotente sob repetição do pedido)
-        const { data: configSalva, error: configError } = await supabase
-          .from('riscos_matriz_configuracao')
-          .upsert({
-            matriz_id: novaMatriz.id,
-            escala_probabilidade: escalaProbabilidade as any,
-            escala_impacto: escalaImpacto as any,
-            niveis_risco: niveisRisco as any,
-            metodo_calculo: metodoCalculo
-          }, { onConflict: 'matriz_id' })
-          .select('matriz_id')
-          .single();
-
-        if (configError) throw configError;
-        if (!configSalva || configSalva.matriz_id !== novaMatriz.id) {
-          throw new Error(t('fin.riscos.matrizForm.configNaoConfirmada'));
-        }
-
-        toast.success(t('cardsKpi.sweep.riscos.matrizCriada'));
-      }
+      toast.success(
+        editingMatriz
+          ? t('cardsKpi.sweep.riscos.matrizAtualizada')
+          : t('cardsKpi.sweep.riscos.matrizCriada')
+      );
 
       limparFormularioMatriz();
       fetchData();
       // Fecha o diálogo e propaga o refresh (matriz usada em todo o módulo).
       onSuccess();
     } catch (error: any) {
-      toast.error(t('fin.riscos.matrizForm.erroSalvar', { mensagem: error.message }));
+      toast.error(mensagemErroMatriz(error));
     } finally {
       setLoading(false);
     }
+
   };
 
   // Feedback quando o submit é bloqueado pela validação (ex.: nome vazio) —
