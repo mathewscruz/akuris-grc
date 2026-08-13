@@ -58,8 +58,6 @@ import { isAcimaApetite, severityFromNivel, slaFromRevisao, scoreFromPI, shortRi
 import { assertTratamentosLookup, deriveRiscoStatus, isTratamentoConcluido, isTratamentoRequerido } from '@/components/riscos/risk-status';
 import {
   apetiteScoreFromNiveis,
-  MATRIZ_CONFIG_ERRO_DESCRICAO,
-  MATRIZ_CONFIG_ERRO_TITULO,
   type NivelRisco,
 } from '@/components/riscos/matriz-config';
 import { filterUuids, splitResponsavel } from '@/lib/uuid';
@@ -742,9 +740,9 @@ export function Riscos() {
         {matrizConfigIndisponivel && (
           <Alert variant="destructive" data-testid="matriz-config-indisponivel">
             <AlertTriangle className="h-4 w-4" strokeWidth={1.5} />
-            <AlertTitle>{MATRIZ_CONFIG_ERRO_TITULO}</AlertTitle>
+            <AlertTitle>{t('riscos.page.matrizErroTitulo')}</AlertTitle>
             <AlertDescription className="space-y-3">
-              <p>{MATRIZ_CONFIG_ERRO_DESCRICAO}</p>
+              <p>{t('riscos.page.matrizErroDescricao')}</p>
               <div className="flex flex-wrap gap-2">
                 <Button size="sm" variant="outline" onClick={() => setMatrizDialogOpen(true)}>
                   <Settings className="h-4 w-4 mr-2" strokeWidth={1.5} />

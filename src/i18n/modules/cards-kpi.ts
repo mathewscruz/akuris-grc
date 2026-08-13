@@ -43,7 +43,6 @@ export const cardsKpi = {
       chaves: {
         totalChaves: 'Total de Chaves',
       },
-    },
     sweep: {
       contratos: {
         vencimentos: 'Vencimentos',
@@ -127,6 +126,9 @@ export const cardsKpi = {
         sessaoExpirandoDesc: 'Sua sessão será encerrada em 1 minuto por inatividade.',
         sessaoExpirando: 'Sessão prestes a expirar',
         camposObrigatorios: 'Campos obrigatórios',
+        roleAdmin: 'Administrador',
+        roleUser: 'Usuário',
+        roleReadonly: 'Somente Leitura',
         preenchaTenantClient: 'Preencha Tenant ID e Client ID.',
         informeClientSecret: 'Informe o Client Secret.',
         configurePlataformaDesc: 'Complete os passos abaixo para aproveitar ao máximo o Akuris',
@@ -153,6 +155,7 @@ export const cardsKpi = {
         erroComentar: 'Erro ao comentar',
         erroVincular: 'Erro ao vincular',
       },
+    },
     },
   },
   en: {
@@ -194,7 +197,6 @@ export const cardsKpi = {
       chaves: {
         totalChaves: 'Total keys',
       },
-    },
     sweep: {
       contratos: {
         vencimentos: 'Expirations',
@@ -278,6 +280,9 @@ export const cardsKpi = {
         sessaoExpirandoDesc: 'Your session will end in 1 minute due to inactivity.',
         sessaoExpirando: 'Session about to expire',
         camposObrigatorios: 'Required fields',
+        roleAdmin: 'Administrator',
+        roleUser: 'User',
+        roleReadonly: 'Read Only',
         preenchaTenantClient: 'Fill in Tenant ID and Client ID.',
         informeClientSecret: 'Enter the Client Secret.',
         configurePlataformaDesc: 'Complete the steps below to get the most out of Akuris',
@@ -304,6 +309,7 @@ export const cardsKpi = {
         erroComentar: 'Error commenting',
         erroVincular: 'Error linking',
       },
+    },
     },
   },
 };
