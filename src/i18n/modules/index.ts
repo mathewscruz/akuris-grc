@@ -25,6 +25,7 @@ import { contratosAtivos } from './contratos-ativos';
 import { dueDiligence } from './due-diligence';
 import { controlesAuditorias } from './controles-auditorias';
 import { projetos } from './projetos';
+import { dadosDashboard } from './dados-dashboard';
 
 type ModuleDict = { pt: Record<string, unknown>; en: Record<string, unknown> };
 
@@ -45,6 +46,7 @@ const modules: Record<string, ModuleDict> = {
   projetos,
   controlesAuditorias,
   dueDiligence,
+  dadosDashboard,
 };
 
 

@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { Check, ChevronLeft, ChevronRight, FileText, DollarSign, Calendar, Users, ClipboardList } from 'lucide-react';
 import { formatStatus } from '@/lib/text-utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Contrato {
   id: string;
@@ -51,12 +52,12 @@ interface ContratoDialogWizardProps {
   fornecedores: Fornecedor[];
 }
 
-const STEPS = [
-  { id: 1, title: 'Dados Básicos', icon: FileText, description: 'Nome, número e tipo do contrato' },
-  { id: 2, title: 'Valores e Datas', icon: DollarSign, description: 'Valor, moeda e período de vigência' },
-  { id: 3, title: 'Partes Envolvidas', icon: Users, description: 'Fornecedor, gestor e área solicitante' },
-  { id: 4, title: 'Detalhes', icon: ClipboardList, description: 'Objeto, SLA e cláusulas' },
-  { id: 5, title: 'Revisão', icon: Check, description: 'Confirme as informações' }
+const buildSteps = (t: (key: string) => string) => [
+  { id: 1, title: t('contratosAtivos.contratoDialogWizard.stepBasicData'), icon: FileText, description: t('contratosAtivos.contratoDialogWizard.stepBasicDataDescription') },
+  { id: 2, title: t('contratosAtivos.contratoDialogWizard.stepValuesAndDates'), icon: DollarSign, description: t('contratosAtivos.contratoDialogWizard.stepValuesAndDatesDescription') },
+  { id: 3, title: t('contratosAtivos.contratoDialogWizard.stepParties'), icon: Users, description: t('contratosAtivos.contratoDialogWizard.stepPartiesDescription') },
+  { id: 4, title: t('contratosAtivos.contratoDialogWizard.stepDetails'), icon: ClipboardList, description: t('contratosAtivos.contratoDialogWizard.stepDetailsDescription') },
+  { id: 5, title: t('contratosAtivos.contratoDialogWizard.stepReview'), icon: Check, description: t('contratosAtivos.contratoDialogWizard.stepReviewDescription') }
 ];
 
 export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, fornecedores }: ContratoDialogWizardProps) {
@@ -86,6 +87,8 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
   const [loading, setLoading] = useState(false);
   const [usuarios, setUsuarios] = useState<any[]>([]);
   const { toast } = useToast();
+  const { t } = useLanguage();
+  const STEPS = buildSteps(t);
 
   useEffect(() => {
     if (open) {
@@ -185,16 +188,16 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
   const getStepError = (step: number): string | null => {
     switch (step) {
       case 1:
-        if (!formData.nome) return 'Nome do contrato é obrigatório';
-        if (!formData.numero_contrato) return 'Número do contrato é obrigatório';
+        if (!formData.nome) return t('contratosAtivos.contratoDialogWizard.errorNameRequired');
+        if (!formData.numero_contrato) return t('contratosAtivos.contratoDialogWizard.errorNumberRequired');
         return null;
       case 2:
         if (formData.data_inicio && formData.data_fim && new Date(formData.data_inicio) > new Date(formData.data_fim)) {
-          return 'Data de início não pode ser posterior à data de fim';
+          return t('contratosAtivos.contratoDialogWizard.errorDateRange');
         }
         return null;
       case 3:
-        if (!formData.fornecedor_id) return 'Fornecedor é obrigatório';
+        if (!formData.fornecedor_id) return t('contratosAtivos.contratoDialogWizard.errorSupplierRequired');
         return null;
       default:
         return null;
@@ -205,7 +208,7 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
     const error = getStepError(currentStep);
     if (error) {
       toast({
-        title: "Atenção",
+        title: t('contratosAtivos.contratoDialogWizard.toastAttentionTitle'),
         description: error,
         variant: "destructive",
       });
@@ -228,7 +231,7 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
       const error = getStepError(i);
       if (error) {
         toast({
-          title: "Erro de validação",
+          title: t('contratosAtivos.contratoDialogWizard.toastValidationErrorTitle'),
           description: error,
           variant: "destructive",
         });
@@ -290,8 +293,8 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
       if (error) throw error;
 
       toast({
-        title: "Sucesso",
-        description: `Contrato ${contrato ? 'atualizado' : 'criado'} com sucesso`,
+        title: t('contratosAtivos.common.success'),
+        description: t('contratosAtivos.contratoDialogWizard.toastSaveSuccess').replace('{action}', contrato ? t('contratosAtivos.contratoDialogWizard.actionUpdated') : t('contratosAtivos.contratoDialogWizard.actionCreated')),
       });
 
       onSuccess();
@@ -299,8 +302,8 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
     } catch (error) {
       console.error('Erro ao salvar contrato:', error);
       toast({
-        title: "Erro",
-        description: "Erro ao salvar contrato",
+        title: t('contratosAtivos.common.error'),
+        description: t('contratosAtivos.contratoDialogWizard.toastSaveError'),
         variant: "destructive",
       });
     } finally {
@@ -324,60 +327,60 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="numero_contrato">
-                  Número do Contrato <span className="text-destructive">*</span>
+                  {t('contratosAtivos.contratoDialogWizard.labelContractNumber')} <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="numero_contrato"
                   value={formData.numero_contrato}
                   onChange={(e) => setFormData({ ...formData, numero_contrato: e.target.value })}
-                  placeholder="Ex: CT-2024-001"
+                  placeholder={t('contratosAtivos.contratoDialogWizard.contractNumberPlaceholder')}
                 />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="nome">
-                  Nome do Contrato <span className="text-destructive">*</span>
+                  {t('contratosAtivos.contratoDialogWizard.labelContractName')} <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="nome"
                   value={formData.nome}
                   onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                  placeholder="Ex: Contrato de Licenciamento"
+                  placeholder={t('contratosAtivos.contratoDialogWizard.contractNamePlaceholder')}
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="tipo">Tipo</Label>
+                <Label htmlFor="tipo">{t('contratosAtivos.contratoDialogWizard.labelType')}</Label>
                 <Select value={formData.tipo} onValueChange={(value) => setFormData({ ...formData, tipo: value })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="servicos">Serviços</SelectItem>
-                    <SelectItem value="licenciamento">Licenciamento</SelectItem>
-                    <SelectItem value="manutencao">Manutenção</SelectItem>
-                    <SelectItem value="consultoria">Consultoria</SelectItem>
-                    <SelectItem value="produto">Produto</SelectItem>
+                    <SelectItem value="servicos">{t('contratosAtivos.contratoDialogWizard.typeServicos')}</SelectItem>
+                    <SelectItem value="licenciamento">{t('contratosAtivos.contratoDialogWizard.typeLicenciamento')}</SelectItem>
+                    <SelectItem value="manutencao">{t('contratosAtivos.contratoDialogWizard.typeManutencao')}</SelectItem>
+                    <SelectItem value="consultoria">{t('contratosAtivos.contratoDialogWizard.typeConsultoria')}</SelectItem>
+                    <SelectItem value="produto">{t('contratosAtivos.contratoDialogWizard.typeProduto')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
+                <Label htmlFor="status">{t('contratosAtivos.contratoDialogWizard.labelStatus')}</Label>
                 <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="rascunho">Rascunho</SelectItem>
-                    <SelectItem value="negociacao">Negociação</SelectItem>
-                    <SelectItem value="aprovacao">Aprovação</SelectItem>
-                    <SelectItem value="ativo">Ativo</SelectItem>
-                    <SelectItem value="suspenso">Suspenso</SelectItem>
-                    <SelectItem value="encerrado">Encerrado</SelectItem>
-                    <SelectItem value="cancelado">Cancelado</SelectItem>
+                    <SelectItem value="rascunho">{t('contratosAtivos.contratoDialogWizard.statusRascunho')}</SelectItem>
+                    <SelectItem value="negociacao">{t('contratosAtivos.contratoDialogWizard.statusNegociacao')}</SelectItem>
+                    <SelectItem value="aprovacao">{t('contratosAtivos.contratoDialogWizard.statusAprovacao')}</SelectItem>
+                    <SelectItem value="ativo">{t('contratosAtivos.contratoDialogWizard.statusAtivo')}</SelectItem>
+                    <SelectItem value="suspenso">{t('contratosAtivos.contratoDialogWizard.statusSuspenso')}</SelectItem>
+                    <SelectItem value="encerrado">{t('contratosAtivos.contratoDialogWizard.statusEncerrado')}</SelectItem>
+                    <SelectItem value="cancelado">{t('contratosAtivos.contratoDialogWizard.statusCancelado')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -389,7 +392,7 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
                 checked={formData.confidencial}
                 onCheckedChange={(checked) => setFormData({ ...formData, confidencial: checked })}
               />
-              <Label htmlFor="confidencial">Contrato Confidencial</Label>
+              <Label htmlFor="confidencial">{t('contratosAtivos.contratoDialogWizard.labelConfidential')}</Label>
             </div>
           </div>
         );
@@ -399,7 +402,7 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="valor">Valor</Label>
+                <Label htmlFor="valor">{t('contratosAtivos.contratoDialogWizard.labelValue')}</Label>
                 <Input
                   id="valor"
                   type="number"
@@ -411,15 +414,15 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="moeda">Moeda</Label>
+                <Label htmlFor="moeda">{t('contratosAtivos.contratoDialogWizard.labelCurrency')}</Label>
                 <Select value={formData.moeda} onValueChange={(value) => setFormData({ ...formData, moeda: value })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="BRL">BRL - Real</SelectItem>
-                    <SelectItem value="USD">USD - Dólar</SelectItem>
-                    <SelectItem value="EUR">EUR - Euro</SelectItem>
+                    <SelectItem value="BRL">{t('contratosAtivos.contratoDialogWizard.currencyBrl')}</SelectItem>
+                    <SelectItem value="USD">{t('contratosAtivos.contratoDialogWizard.currencyUsd')}</SelectItem>
+                    <SelectItem value="EUR">{t('contratosAtivos.contratoDialogWizard.currencyEur')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -427,7 +430,7 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="data_inicio">Data de Início</Label>
+                <Label htmlFor="data_inicio">{t('contratosAtivos.contratoDialogWizard.labelStartDate')}</Label>
                 <Input
                   id="data_inicio"
                   type="date"
@@ -437,7 +440,7 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="data_fim">Data de Fim</Label>
+                <Label htmlFor="data_fim">{t('contratosAtivos.contratoDialogWizard.labelEndDate')}</Label>
                 <Input
                   id="data_fim"
                   type="date"
@@ -447,7 +450,7 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="data_assinatura">Data de Assinatura</Label>
+                <Label htmlFor="data_assinatura">{t('contratosAtivos.contratoDialogWizard.labelSignatureDate')}</Label>
                 <Input
                   id="data_assinatura"
                   type="date"
@@ -464,18 +467,18 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
                   checked={formData.renovacao_automatica}
                   onCheckedChange={(checked) => setFormData({ ...formData, renovacao_automatica: checked })}
                 />
-                <Label htmlFor="renovacao_automatica">Renovação Automática</Label>
+                <Label htmlFor="renovacao_automatica">{t('contratosAtivos.contratoDialogWizard.labelAutoRenewal')}</Label>
               </div>
 
               {formData.renovacao_automatica && (
                 <div className="space-y-2">
-                  <Label htmlFor="prazo_renovacao">Prazo Renovação (dias)</Label>
+                  <Label htmlFor="prazo_renovacao">{t('contratosAtivos.contratoDialogWizard.labelRenewalTerm')}</Label>
                   <Input
                     id="prazo_renovacao"
                     type="number"
                     value={formData.prazo_renovacao}
                     onChange={(e) => setFormData({ ...formData, prazo_renovacao: e.target.value })}
-                    placeholder="30"
+                    placeholder={t('contratosAtivos.contratoDialogWizard.renewalTermPlaceholder')}
                   />
                 </div>
               )}
@@ -488,11 +491,11 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="fornecedor_id">
-                Fornecedor <span className="text-destructive">*</span>
+                {t('contratosAtivos.contratoDialogWizard.labelSupplier')} <span className="text-destructive">*</span>
               </Label>
               <Select value={formData.fornecedor_id} onValueChange={(value) => setFormData({ ...formData, fornecedor_id: value })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione o fornecedor" />
+                  <SelectValue placeholder={t('contratosAtivos.contratoDialogWizard.supplierPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
                   {fornecedores.map((fornecedor) => (
@@ -506,10 +509,10 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="gestor_contrato">Gestor do Contrato</Label>
+                <Label htmlFor="gestor_contrato">{t('contratosAtivos.contratoDialogWizard.labelManager')}</Label>
                 <Select value={formData.gestor_contrato} onValueChange={(value) => setFormData({ ...formData, gestor_contrato: value })}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione o gestor" />
+                    <SelectValue placeholder={t('contratosAtivos.contratoDialogWizard.managerPlaceholder')} />
                   </SelectTrigger>
                   <SelectContent>
                     {usuarios.map((usuario) => (
@@ -522,12 +525,12 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="area_solicitante">Área Solicitante</Label>
+                <Label htmlFor="area_solicitante">{t('contratosAtivos.contratoDialogWizard.labelRequestingArea')}</Label>
                 <Input
                   id="area_solicitante"
                   value={formData.area_solicitante}
                   onChange={(e) => setFormData({ ...formData, area_solicitante: e.target.value })}
-                  placeholder="Ex: TI, Financeiro, RH"
+                  placeholder={t('contratosAtivos.contratoDialogWizard.requestingAreaPlaceholder')}
                 />
               </div>
             </div>
@@ -538,56 +541,56 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
         return (
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="objeto">Objeto do Contrato</Label>
+              <Label htmlFor="objeto">{t('contratosAtivos.contratoDialogWizard.labelObject')}</Label>
               <Textarea
                 id="objeto"
                 value={formData.objeto}
                 onChange={(e) => setFormData({ ...formData, objeto: e.target.value })}
-                placeholder="Descrição detalhada do objeto do contrato..."
+                placeholder={t('contratosAtivos.contratoDialogWizard.objectPlaceholder')}
                 rows={3}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="sla_principal">SLA Principal</Label>
+              <Label htmlFor="sla_principal">{t('contratosAtivos.contratoDialogWizard.labelMainSla')}</Label>
               <Textarea
                 id="sla_principal"
                 value={formData.sla_principal}
                 onChange={(e) => setFormData({ ...formData, sla_principal: e.target.value })}
-                placeholder="Descrição dos principais SLAs..."
+                placeholder={t('contratosAtivos.contratoDialogWizard.mainSlaPlaceholder')}
                 rows={2}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="clausulas_especiais">Cláusulas Especiais</Label>
+              <Label htmlFor="clausulas_especiais">{t('contratosAtivos.contratoDialogWizard.labelSpecialClauses')}</Label>
               <Textarea
                 id="clausulas_especiais"
                 value={formData.clausulas_especiais}
                 onChange={(e) => setFormData({ ...formData, clausulas_especiais: e.target.value })}
-                placeholder="Cláusulas especiais e observações..."
+                placeholder={t('contratosAtivos.contratoDialogWizard.specialClausesPlaceholder')}
                 rows={2}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="penalidades">Penalidades</Label>
+              <Label htmlFor="penalidades">{t('contratosAtivos.contratoDialogWizard.labelPenalties')}</Label>
               <Textarea
                 id="penalidades"
                 value={formData.penalidades}
                 onChange={(e) => setFormData({ ...formData, penalidades: e.target.value })}
-                placeholder="Descrição das penalidades..."
+                placeholder={t('contratosAtivos.contratoDialogWizard.penaltiesPlaceholder')}
                 rows={2}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="observacoes">Observações</Label>
+              <Label htmlFor="observacoes">{t('contratosAtivos.contratoDialogWizard.labelObservations')}</Label>
               <Textarea
                 id="observacoes"
                 value={formData.observacoes}
                 onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
-                placeholder="Observações adicionais..."
+                placeholder={t('contratosAtivos.contratoDialogWizard.observationsPlaceholder')}
                 rows={2}
               />
             </div>
@@ -599,38 +602,38 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
-                <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Dados Básicos</h4>
+                <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">{t('contratosAtivos.contratoDialogWizard.reviewBasicData')}</h4>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Número:</span>
+                    <span className="text-muted-foreground">{t('contratosAtivos.contratoDialogWizard.reviewNumber')}</span>
                     <span className="font-medium">{formData.numero_contrato || '-'}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Nome:</span>
+                    <span className="text-muted-foreground">{t('contratosAtivos.contratoDialogWizard.reviewName')}</span>
                     <span className="font-medium">{formData.nome || '-'}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Tipo:</span>
+                    <span className="text-muted-foreground">{t('contratosAtivos.contratoDialogWizard.reviewType')}</span>
                     <StatusBadge tone="neutral" variant="outline" size="sm">{formatStatus(formData.tipo)}</StatusBadge>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Status:</span>
+                    <span className="text-muted-foreground">{t('contratosAtivos.contratoDialogWizard.reviewStatus')}</span>
                     <StatusBadge size="sm" {...resolveContratoStatusTone(formData.status)}>{formatStatus(formData.status)}</StatusBadge>
                   </div>
                   {formData.confidencial && (
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Confidencial:</span>
-                      <StatusBadge tone="destructive" size="sm">Sim</StatusBadge>
+                      <span className="text-muted-foreground">{t('contratosAtivos.contratoDialogWizard.reviewConfidential')}</span>
+                      <StatusBadge tone="destructive" size="sm">{t('contratosAtivos.contratoDialogWizard.reviewYes')}</StatusBadge>
                     </div>
                   )}
                 </div>
               </div>
 
               <div className="space-y-4">
-                <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Valores e Datas</h4>
+                <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">{t('contratosAtivos.contratoDialogWizard.reviewValuesAndDates')}</h4>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Valor:</span>
+                    <span className="text-muted-foreground">{t('contratosAtivos.contratoDialogWizard.reviewValue')}</span>
                     <span className="font-medium">
                       {formData.valor 
                         ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: formData.moeda }).format(Number(formData.valor))
@@ -639,43 +642,43 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Início:</span>
+                    <span className="text-muted-foreground">{t('contratosAtivos.contratoDialogWizard.reviewStart')}</span>
                     <span className="font-medium">{formData.data_inicio || '-'}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Fim:</span>
+                    <span className="text-muted-foreground">{t('contratosAtivos.contratoDialogWizard.reviewEnd')}</span>
                     <span className="font-medium">{formData.data_fim || '-'}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Renovação Automática:</span>
-                    <span className="font-medium">{formData.renovacao_automatica ? 'Sim' : 'Não'}</span>
+                    <span className="text-muted-foreground">{t('contratosAtivos.contratoDialogWizard.reviewAutoRenewal')}</span>
+                    <span className="font-medium">{formData.renovacao_automatica ? t('contratosAtivos.contratoDialogWizard.reviewYes') : t('contratosAtivos.contratoDialogWizard.reviewNo')}</span>
                   </div>
                 </div>
               </div>
 
               <div className="space-y-4">
-                <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Partes Envolvidas</h4>
+                <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">{t('contratosAtivos.contratoDialogWizard.reviewParties')}</h4>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Fornecedor:</span>
+                    <span className="text-muted-foreground">{t('contratosAtivos.contratoDialogWizard.reviewSupplier')}</span>
                     <span className="font-medium">{getFornecedorNome(formData.fornecedor_id)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Gestor:</span>
+                    <span className="text-muted-foreground">{t('contratosAtivos.contratoDialogWizard.reviewManager')}</span>
                     <span className="font-medium">{getUsuarioNome(formData.gestor_contrato)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Área:</span>
+                    <span className="text-muted-foreground">{t('contratosAtivos.contratoDialogWizard.reviewArea')}</span>
                     <span className="font-medium">{formData.area_solicitante || '-'}</span>
                   </div>
                 </div>
               </div>
 
               <div className="space-y-4">
-                <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">Detalhes</h4>
+                <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">{t('contratosAtivos.contratoDialogWizard.reviewDetails')}</h4>
                 <div className="space-y-2 text-sm">
                   <div>
-                    <span className="text-muted-foreground">Objeto:</span>
+                    <span className="text-muted-foreground">{t('contratosAtivos.contratoDialogWizard.reviewObject')}</span>
                     <p className="font-medium mt-1 line-clamp-2">{formData.objeto || '-'}</p>
                   </div>
                 </div>
@@ -694,10 +697,10 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
       open={open}
       onOpenChange={onOpenChange}
       icon={FileText}
-      title={contrato ? 'Editar Contrato' : 'Novo Contrato'}
+      title={contrato ? t('contratosAtivos.contratoDialogWizard.dialogTitleEdit') : t('contratosAtivos.contratoDialogWizard.dialogTitleNew')}
       description={contrato
-        ? 'Atualize as informações do contrato conforme necessário.'
-        : 'Preencha os campos para cadastrar um novo contrato.'}
+        ? t('contratosAtivos.contratoDialogWizard.dialogDescriptionEdit')
+        : t('contratosAtivos.contratoDialogWizard.dialogDescriptionNew')}
       size="lg"
       noScroll
       footer={
@@ -710,21 +713,21 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
             disabled={currentStep === 1}
           >
             <ChevronLeft className="h-4 w-4 mr-2" />
-            Anterior
+            {t('contratosAtivos.contratoDialogWizard.previousButton')}
           </Button>
 
           <div className="flex gap-2">
             <Button type="button" variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
-              Cancelar
+              {t('contratosAtivos.contratoDialogWizard.cancelButton')}
             </Button>
             {currentStep < STEPS.length ? (
               <Button type="button" size="sm" onClick={handleNext}>
-                Próximo
+                {t('contratosAtivos.contratoDialogWizard.nextButton')}
                 <ChevronRight className="h-4 w-4 ml-2" />
               </Button>
             ) : (
               <Button type="button" size="sm" onClick={handleSubmit} disabled={loading}>
-                {loading ? 'Salvando...' : (contrato ? 'Atualizar' : 'Criar Contrato')}
+                {loading ? t('contratosAtivos.contratoDialogWizard.savingButton') : (contrato ? t('contratosAtivos.contratoDialogWizard.updateButton') : t('contratosAtivos.contratoDialogWizard.createButton'))}
               </Button>
             )}
           </div>

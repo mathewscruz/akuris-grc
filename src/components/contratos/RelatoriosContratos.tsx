@@ -16,6 +16,7 @@ import jsPDF from 'jspdf';
 import { loadAkurisLogo, addAkurisHeader, addAkurisFooter, addSectionTitle, drawTableHeader, formatLabel, AKURIS_COLORS } from '@/lib/pdf-utils';
 import { exportCSV } from '@/lib/csv-utils';
 import { formatStatus } from '@/lib/text-utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface RelatorioData {
   contratos: any[];
@@ -49,6 +50,7 @@ export default function RelatoriosContratos() {
   });
   const [empresaId, setEmpresaId] = useState<string | null>(null);
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   useEffect(() => {
     const fetchEmpresa = async () => {
@@ -124,8 +126,8 @@ export default function RelatoriosContratos() {
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
       toast({
-        title: "Erro",
-        description: "Erro ao carregar dados do relatório",
+        title: t('contratosAtivos.common.error'),
+        description: t('contratosAtivos.relatoriosContratos.toastLoadError'),
         variant: "destructive"
       });
     } finally {
@@ -165,7 +167,7 @@ export default function RelatoriosContratos() {
 
   const exportarRelatorio = async (formato: 'excel' | 'pdf') => {
     if (dados.contratos.length === 0) {
-      toast({ title: "Sem dados", description: "Nenhum contrato encontrado no periodo.", variant: "destructive" });
+      toast({ title: t('contratosAtivos.relatoriosContratos.toastNoData'), description: t('contratosAtivos.relatoriosContratos.toastNoDataDescription'), variant: "destructive" });
       return;
     }
 
@@ -183,7 +185,7 @@ export default function RelatoriosContratos() {
         ]),
         'relatorio_contratos'
       );
-      toast({ title: "CSV exportado", description: `${dados.contratos.length} contratos exportados.` });
+      toast({ title: t('contratosAtivos.relatoriosContratos.toastCsvExported'), description: t('contratosAtivos.relatoriosContratos.toastCsvExportedDescription').replace('{count}', String(dados.contratos.length)) });
       return;
     }
 
@@ -199,22 +201,22 @@ export default function RelatoriosContratos() {
       doc.setFontSize(16);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(AKURIS_COLORS.text);
-      doc.text('Relatorio de Contratos', pageWidth / 2, y, { align: 'center' });
+      doc.text(t('contratosAtivos.relatoriosContratos.pdfReportTitle'), pageWidth / 2, y, { align: 'center' });
       y += 6;
       doc.setFontSize(9);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(AKURIS_COLORS.textLight);
-      doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')} | Total: ${dados.contratos.length} contratos`, pageWidth / 2, y, { align: 'center' });
+      doc.text(t('contratosAtivos.relatoriosContratos.pdfGeneratedAt').replace('{date}', new Date().toLocaleDateString('pt-BR')).replace('{count}', String(dados.contratos.length)), pageWidth / 2, y, { align: 'center' });
       y += 12;
 
-      y = addSectionTitle(doc, 'Resumo', y, margin);
+      y = addSectionTitle(doc, t('contratosAtivos.relatoriosContratos.pdfSummarySection'), y, margin);
       doc.setFontSize(10);
       doc.setTextColor(AKURIS_COLORS.text);
       const valorFormatado = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(estatisticasGerais.valorTotal);
-      doc.text(`Total: ${estatisticasGerais.totalContratos}  |  Ativos: ${estatisticasGerais.contratosAtivos}  |  Valor: ${valorFormatado}`, margin + 8, y);
+      doc.text(t('contratosAtivos.relatoriosContratos.pdfSummaryLine').replace('{total}', String(estatisticasGerais.totalContratos)).replace('{ativos}', String(estatisticasGerais.contratosAtivos)).replace('{valor}', valorFormatado), margin + 8, y);
       y += 12;
 
-      y = addSectionTitle(doc, 'Lista de Contratos', y, margin);
+      y = addSectionTitle(doc, t('contratosAtivos.relatoriosContratos.pdfListSection'), y, margin);
       drawTableHeader(doc, [
         { text: 'Numero', x: margin + 2 },
         { text: 'Nome', x: margin + 32 },
@@ -246,9 +248,9 @@ export default function RelatoriosContratos() {
 
       addAkurisFooter(doc);
       doc.save(`relatorio_contratos_${new Date().toISOString().split('T')[0]}.pdf`);
-      toast({ title: "PDF gerado", description: "Relatorio de contratos baixado com sucesso." });
+      toast({ title: t('contratosAtivos.relatoriosContratos.toastPdfGenerated'), description: t('contratosAtivos.relatoriosContratos.toastPdfGeneratedDescription') });
     } catch {
-      toast({ title: "Erro", description: "Erro ao gerar PDF.", variant: "destructive" });
+      toast({ title: t('contratosAtivos.common.error'), description: t('contratosAtivos.relatoriosContratos.toastPdfError'), variant: "destructive" });
     }
   };
 
@@ -305,14 +307,14 @@ export default function RelatoriosContratos() {
       <DialogTrigger asChild>
         <Button variant="outline">
           <BarChart3 className="h-4 w-4 mr-2" />
-          Relatórios
+          {t('contratosAtivos.relatoriosContratos.triggerButton')}
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Relatórios de Contratos</DialogTitle>
+          <DialogTitle>{t('contratosAtivos.relatoriosContratos.title')}</DialogTitle>
           <DialogDescription>
-            Análise detalhada dos contratos, fornecedores e marcos
+            {t('contratosAtivos.relatoriosContratos.description')}
           </DialogDescription>
         </DialogHeader>
 
@@ -320,19 +322,19 @@ export default function RelatoriosContratos() {
           {/* Filtros */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Filtros</CardTitle>
+              <CardTitle className="text-lg">{t('contratosAtivos.relatoriosContratos.filtersTitle')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <Select value={filtros.periodo} onValueChange={(value: any) => setFiltros(prev => ({ ...prev, periodo: value }))}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Período" />
+                    <SelectValue placeholder={t('contratosAtivos.relatoriosContratos.periodPlaceholder')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="mes">Este mês</SelectItem>
-                    <SelectItem value="trimestre">Último trimestre</SelectItem>
-                    <SelectItem value="ano">Este ano</SelectItem>
-                    <SelectItem value="personalizado">Personalizado</SelectItem>
+                    <SelectItem value="mes">{t('contratosAtivos.relatoriosContratos.periodMonth')}</SelectItem>
+                    <SelectItem value="trimestre">{t('contratosAtivos.relatoriosContratos.periodQuarter')}</SelectItem>
+                    <SelectItem value="ano">{t('contratosAtivos.relatoriosContratos.periodYear')}</SelectItem>
+                    <SelectItem value="personalizado">{t('contratosAtivos.relatoriosContratos.periodCustom')}</SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -342,7 +344,7 @@ export default function RelatoriosContratos() {
                         <PopoverTrigger asChild>
                           <Button variant="outline" className={cn("justify-start text-left font-normal", !filtros.dataInicio && "text-muted-foreground")}>
                             <CalendarIcon className="mr-2 h-4 w-4" />
-                            {filtros.dataInicio ? format(filtros.dataInicio, "dd/MM/yyyy", { locale: ptBR }) : "Data início"}
+                            {filtros.dataInicio ? format(filtros.dataInicio, "dd/MM/yyyy", { locale: ptBR }) : t('contratosAtivos.relatoriosContratos.startDatePlaceholder')}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
@@ -353,7 +355,7 @@ export default function RelatoriosContratos() {
                         <PopoverTrigger asChild>
                           <Button variant="outline" className={cn("justify-start text-left font-normal", !filtros.dataFim && "text-muted-foreground")}>
                             <CalendarIcon className="mr-2 h-4 w-4" />
-                            {filtros.dataFim ? format(filtros.dataFim, "dd/MM/yyyy", { locale: ptBR }) : "Data fim"}
+                            {filtros.dataFim ? format(filtros.dataFim, "dd/MM/yyyy", { locale: ptBR }) : t('contratosAtivos.relatoriosContratos.endDatePlaceholder')}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
@@ -366,11 +368,11 @@ export default function RelatoriosContratos() {
                 <div className="flex gap-2">
                   <Button onClick={() => exportarRelatorio('excel')} size="sm">
                     <Download className="h-4 w-4 mr-2" />
-                    Excel
+                    {t('contratosAtivos.relatoriosContratos.excelButton')}
                   </Button>
                   <Button onClick={() => exportarRelatorio('pdf')} size="sm" variant="outline">
                     <FileText className="h-4 w-4 mr-2" />
-                    PDF
+                    {t('contratosAtivos.relatoriosContratos.pdfButton')}
                   </Button>
                 </div>
               </div>
@@ -378,14 +380,14 @@ export default function RelatoriosContratos() {
           </Card>
 
           {loading ? (
-            <div className="text-center py-8">Carregando dados...</div>
+            <div className="text-center py-8">{t('contratosAtivos.relatoriosContratos.loading')}</div>
           ) : (
             <>
               {/* Estatísticas Gerais */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total de Contratos</CardTitle>
+                    <CardTitle className="text-sm font-medium">{t('contratosAtivos.relatoriosContratos.statTotalContracts')}</CardTitle>
                     <FileText className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
@@ -395,7 +397,7 @@ export default function RelatoriosContratos() {
 
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Valor Total</CardTitle>
+                    <CardTitle className="text-sm font-medium">{t('contratosAtivos.relatoriosContratos.statTotalValue')}</CardTitle>
                     <DollarSign className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
@@ -410,7 +412,7 @@ export default function RelatoriosContratos() {
 
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Contratos Ativos</CardTitle>
+                    <CardTitle className="text-sm font-medium">{t('contratosAtivos.relatoriosContratos.statActiveContracts')}</CardTitle>
                     <TrendingUp className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
@@ -420,7 +422,7 @@ export default function RelatoriosContratos() {
 
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Marcos Vencendo</CardTitle>
+                    <CardTitle className="text-sm font-medium">{t('contratosAtivos.relatoriosContratos.statExpiringMilestones')}</CardTitle>
                     <Calendar className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
@@ -433,7 +435,7 @@ export default function RelatoriosContratos() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Contratos por Status</CardTitle>
+                    <CardTitle>{t('contratosAtivos.relatoriosContratos.chartContractsByStatus')}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <ResponsiveContainer width="100%" height={300}>
@@ -460,7 +462,7 @@ export default function RelatoriosContratos() {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle>Valor por Tipo de Contrato</CardTitle>
+                    <CardTitle>{t('contratosAtivos.relatoriosContratos.chartValueByType')}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <ResponsiveContainer width="100%" height={300}>
@@ -474,7 +476,7 @@ export default function RelatoriosContratos() {
                               style: 'currency',
                               currency: 'BRL'
                             }).format(value),
-                            'Valor'
+                            t('contratosAtivos.relatoriosContratos.tooltipValue')
                           ]}
                         />
                         <Bar dataKey="valor" fill="hsl(var(--primary))" />
@@ -485,7 +487,7 @@ export default function RelatoriosContratos() {
 
                 <Card className="lg:col-span-2">
                   <CardHeader>
-                    <CardTitle>Marcos por Mês</CardTitle>
+                    <CardTitle>{t('contratosAtivos.relatoriosContratos.chartContractsByStatus') === '' ? '' : 'Marcos por Mês'}</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <ResponsiveContainer width="100%" height={300}>
@@ -504,7 +506,7 @@ export default function RelatoriosContratos() {
               {/* Tabela de Fornecedores por Risco */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Fornecedores por Avaliação de Risco</CardTitle>
+                  <CardTitle>{t('contratosAtivos.relatoriosContratos.chartSuppliersByRisk')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
@@ -521,12 +523,12 @@ export default function RelatoriosContratos() {
                               risco === 'alto' ? 'bg-red-500' : 
                               risco === 'medio' ? 'bg-yellow-500' : 'bg-green-500'
                             }`} />
-                            <span>Risco {formatStatus(risco)}</span>
+                            <span>{t('contratosAtivos.relatoriosContratos.riskLabel').replace('{risco}', formatStatus(risco))}</span>
                           </div>
                           <div className="text-right">
-                            <div className="font-medium">{fornecedoresRisco.length} fornecedores</div>
+                            <div className="font-medium">{t('contratosAtivos.relatoriosContratos.suppliersCount').replace('{count}', String(fornecedoresRisco.length))}</div>
                             <div className="text-sm text-muted-foreground">
-                              {contratosPorRisco.length} contratos
+                              {t('contratosAtivos.relatoriosContratos.contractsCount').replace('{count}', String(contratosPorRisco.length))}
                             </div>
                           </div>
                         </div>
