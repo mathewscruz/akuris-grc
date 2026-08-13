@@ -486,6 +486,11 @@ serve(async (req) => {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+    if (action === 'auto_refine' && (!document || !Array.isArray(document?.secoes) || !document.secoes.length)) {
+      return new Response(JSON.stringify({ error: 'document com seções é obrigatório' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     if (action === 'refine_document' && (!document || !instruction)) {
       return new Response(JSON.stringify({ error: 'document e instruction são obrigatórios' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
