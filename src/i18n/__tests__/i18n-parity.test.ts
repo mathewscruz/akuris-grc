@@ -61,7 +61,7 @@ describe('i18n — paridade PT/EN', () => {
     const aggregatedPt = mergeDictionaries(corePt, modulesPt) as Dict;
     const aggregatedEn = mergeDictionaries(coreEn, modulesEn) as Dict;
 
-    expect((aggregatedPt.common as Dict).viewDetails).toBe('Ver detalhes');
-    expect((aggregatedEn.common as Dict).viewDetails).toBe('View details');
+    expect((aggregatedPt.notifications as Dict).viewDetails).toBe('Ver detalhes');
+    expect((aggregatedEn.notifications as Dict).viewDetails).toBe('View details');
   });
 });
