@@ -331,7 +331,7 @@ export const incidentesComp = {
         toastUpdated: 'Incident updated successfully!',
         toastCreated: 'Incident registered successfully!',
         toastErrorTitle: 'Error',
-        toastErrorNoCompany: 'Could not identify the user\\'s company. Please log in again.',
+        toastErrorNoCompany: "Could not identify the user's company. Please log in again.",
       },
     },
   },
