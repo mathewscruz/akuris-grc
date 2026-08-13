@@ -25,6 +25,7 @@ import { WizardSummaryCard, WizardSummaryRow } from '@/components/ui/wizard-summ
 import { FieldHelpTooltip } from '@/components/ui/field-help-tooltip';
 import { useWizardDraft } from '@/hooks/useWizardDraft';
 import { formatStatus } from '@/lib/text-utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const incidenteSchema = z.object({
   titulo: z.string().min(1, 'Título é obrigatório'),
@@ -54,12 +55,6 @@ interface IncidenteDialogProps {
 }
 
 
-const TIPO_LABELS: Record<string, string> = {
-  seguranca: 'Segurança',
-  privacidade: 'Privacidade',
-  disponibilidade: 'Disponibilidade',
-};
-
 export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, onExternalOpenChange }: IncidenteDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const isControlled = externalOpen !== undefined;
@@ -72,6 +67,7 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
   const [activeTab, setActiveTab] = useState('identificacao');
   const { toast } = useToast();
   const { notify } = useIntegrationNotify();
+  const { t } = useLanguage();
 
   const form = useForm<IncidenteFormData>({
     resolver: zodResolver(incidenteSchema),
@@ -157,7 +153,7 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
         .single();
 
       if (!profile?.empresa_id) {
-        throw new Error('Não foi possível identificar a empresa do usuário. Faça login novamente.');
+        throw new Error(t('incidentesComp.incidente.toastErrorNoCompany'));
       }
 
       const incidenteData = {
@@ -182,7 +178,7 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
       if (incidente) {
         const { error } = await supabase.from('incidentes').update(incidenteData).eq('id', incidente.id);
         if (error) throw error;
-        toast({ title: 'Incidente atualizado com sucesso!' });
+        toast({ title: t('incidentesComp.incidente.toastUpdated') });
       } else {
         const { error } = await supabase.from('incidentes').insert([incidenteData]);
         if (error) throw error;
@@ -204,7 +200,7 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
             dados: { tipo: data.tipo_incidente, criticidade: data.criticidade },
           }
         );
-        toast({ title: 'Incidente registrado com sucesso!' });
+        toast({ title: t('incidentesComp.incidente.toastCreated') });
       }
 
       clearDraft();
@@ -212,7 +208,7 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
       form.reset();
       onSuccess?.();
     } catch (error: any) {
-      toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+      toast({ title: t('incidentesComp.incidente.toastErrorTitle'), description: error.message, variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -235,10 +231,10 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
     () => [
       {
         id: 'identificacao',
-        label: 'Identificação',
+        label: t('incidentesComp.incidente.tabIdentificacao'),
         icon: AlertTriangle,
         state: identState,
-        hint: 'Título, tipo, criticidade',
+        hint: t('incidentesComp.incidente.tabIdentificacaoHint'),
         content: (
           <div className="space-y-5 max-w-3xl">
             <FormField
@@ -247,11 +243,11 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="flex items-center gap-1">
-                    Título do Incidente <span className="text-destructive">*</span>
-                    <FieldHelpTooltip content="Resumo curto e direto do que aconteceu. Ex: 'Tentativa de phishing reportada por usuário'." />
+                    {t('incidentesComp.incidente.fieldTitulo')} <span className="text-destructive">*</span>
+                    <FieldHelpTooltip content={t('incidentesComp.incidente.fieldTituloHelp')} />
                   </FormLabel>
                   <FormControl>
-                    <Input placeholder="Descreva brevemente o incidente" {...field} />
+                    <Input placeholder={t('incidentesComp.incidente.fieldTituloPlaceholder')} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -265,24 +261,24 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="flex items-center gap-1">
-                      Tipo <span className="text-destructive">*</span>
-                      <FieldHelpTooltip content="Classifique o domínio principal do incidente." />
+                      {t('incidentesComp.incidente.fieldTipo')} <span className="text-destructive">*</span>
+                      <FieldHelpTooltip content={t('incidentesComp.incidente.fieldTipoHelp')} />
                     </FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecione o tipo" />
+                          <SelectValue placeholder={t('incidentesComp.incidente.fieldTipoPlaceholder')} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="seguranca">
-                          <div className="flex items-center gap-2"><Shield className="h-4 w-4" /> Segurança</div>
+                          <div className="flex items-center gap-2"><Shield className="h-4 w-4" /> {t('incidentesComp.incidente.tipoSeguranca')}</div>
                         </SelectItem>
                         <SelectItem value="privacidade">
-                          <div className="flex items-center gap-2"><Database className="h-4 w-4" /> Privacidade</div>
+                          <div className="flex items-center gap-2"><Database className="h-4 w-4" /> {t('incidentesComp.incidente.tipoPrivacidade')}</div>
                         </SelectItem>
                         <SelectItem value="disponibilidade">
-                          <div className="flex items-center gap-2"><AlertTriangle className="h-4 w-4" /> Disponibilidade</div>
+                          <div className="flex items-center gap-2"><AlertTriangle className="h-4 w-4" /> {t('incidentesComp.incidente.tipoDisponibilidade')}</div>
                         </SelectItem>
                       </SelectContent>
                     </Select>
@@ -297,20 +293,20 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="flex items-center gap-1">
-                      Criticidade <span className="text-destructive">*</span>
-                      <FieldHelpTooltip content="Quanto este incidente impacta a operação ou segurança da empresa." />
+                      {t('incidentesComp.incidente.fieldCriticidade')} <span className="text-destructive">*</span>
+                      <FieldHelpTooltip content={t('incidentesComp.incidente.fieldCriticidadeHelp')} />
                     </FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecione a criticidade" />
+                          <SelectValue placeholder={t('incidentesComp.incidente.fieldCriticidadePlaceholder')} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="baixa">Baixa</SelectItem>
-                        <SelectItem value="media">Média</SelectItem>
-                        <SelectItem value="alta">Alta</SelectItem>
-                        <SelectItem value="critica">Crítica</SelectItem>
+                        <SelectItem value="baixa">{t('incidentesComp.incidente.criticidadeBaixa')}</SelectItem>
+                        <SelectItem value="media">{t('incidentesComp.incidente.criticidadeMedia')}</SelectItem>
+                        <SelectItem value="alta">{t('incidentesComp.incidente.criticidadeAlta')}</SelectItem>
+                        <SelectItem value="critica">{t('incidentesComp.incidente.criticidadeCritica')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -325,9 +321,9 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
                 name="categoria"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Categoria</FormLabel>
+                    <FormLabel>{t('incidentesComp.incidente.fieldCategoria')}</FormLabel>
                     <FormControl>
-                      <Input placeholder="Ex: Malware, Phishing, DDoS" {...field} />
+                      <Input placeholder={t('incidentesComp.incidente.fieldCategoriaPlaceholder')} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -338,7 +334,7 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
                 name="data_ocorrencia"
                 render={({ field }) => (
                   <FormItem className="flex flex-col">
-                    <FormLabel>Data de Ocorrência</FormLabel>
+                    <FormLabel>{t('incidentesComp.incidente.fieldDataOcorrencia')}</FormLabel>
                     <Popover>
                       <PopoverTrigger asChild>
                         <FormControl>
@@ -346,7 +342,7 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
                             variant="outline"
                             className={cn('w-full pl-3 text-left font-normal', !field.value && 'text-muted-foreground')}
                           >
-                            {field.value ? format(field.value, 'PPP', { locale: ptBR }) : <span>Selecione uma data</span>}
+                            {field.value ? format(field.value, 'PPP', { locale: ptBR }) : <span>{t('incidentesComp.incidente.fieldDataOcorrenciaPlaceholder')}</span>}
                             <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                           </Button>
                         </FormControl>
@@ -373,10 +369,10 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
               name="descricao"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Descrição Detalhada</FormLabel>
+                  <FormLabel>{t('incidentesComp.incidente.fieldDescricao')}</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Descreva detalhadamente o incidente, como foi descoberto e quais ações imediatas foram tomadas..."
+                      placeholder={t('incidentesComp.incidente.fieldDescricaoPlaceholder')}
                       rows={6}
                       {...field}
                     />
@@ -390,10 +386,10 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
       },
       {
         id: 'deteccao',
-        label: 'Detecção',
+        label: t('incidentesComp.incidente.tabDeteccao'),
         icon: FileText,
         state: detectState,
-        hint: 'Origem e responsável',
+        hint: t('incidentesComp.incidente.tabDeteccaoHint'),
         content: (
           <div className="space-y-5 max-w-3xl">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -403,11 +399,11 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="flex items-center gap-1">
-                      Origem da Detecção
-                      <FieldHelpTooltip content="Como o incidente foi descoberto (SIEM, usuário, auditoria, fornecedor)." />
+                      {t('incidentesComp.incidente.fieldOrigemDeteccao')}
+                      <FieldHelpTooltip content={t('incidentesComp.incidente.fieldOrigemDeteccaoHelp')} />
                     </FormLabel>
                     <FormControl>
-                      <Input placeholder="Ex: Monitoramento, Usuário, Auditoria..." {...field} />
+                      <Input placeholder={t('incidentesComp.incidente.fieldOrigemDeteccaoPlaceholder')} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -418,12 +414,12 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
                 name="responsavel_deteccao"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Responsável pela Detecção</FormLabel>
+                    <FormLabel>{t('incidentesComp.incidente.fieldResponsavelDeteccao')}</FormLabel>
                     <FormControl>
                       <UserSelect
                         value={field.value || ''}
                         onValueChange={field.onChange}
-                        placeholder="Selecionar responsável..."
+                        placeholder={t('incidentesComp.incidente.fieldResponsavelPlaceholder')}
                       />
                     </FormControl>
                     <FormMessage />
@@ -436,10 +432,10 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
       },
       {
         id: 'impacto',
-        label: 'Impacto',
+        label: t('incidentesComp.incidente.tabImpacto'),
         icon: Layers,
         state: impactoState,
-        hint: 'Dados e sistemas afetados',
+        hint: t('incidentesComp.incidente.tabImpactoHint'),
         content: (
           <div className="space-y-5 max-w-3xl">
             <FormField
@@ -448,11 +444,11 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="flex items-center gap-1">
-                    Impacto Estimado
-                    <FieldHelpTooltip content="Descrição clara do impacto operacional, financeiro ou reputacional." />
+                    {t('incidentesComp.incidente.fieldImpactoEstimado')}
+                    <FieldHelpTooltip content={t('incidentesComp.incidente.fieldImpactoEstimadoHelp')} />
                   </FormLabel>
                   <FormControl>
-                    <Input placeholder="Ex: Indisponibilidade do sistema X por 2h, dados expostos" {...field} />
+                    <Input placeholder={t('incidentesComp.incidente.fieldImpactoEstimadoPlaceholder')} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -464,12 +460,12 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="flex items-center gap-1">
-                    Dados Afetados
-                    <FieldHelpTooltip content="Tipos e volumes aproximados de dados envolvidos (pessoais, sensíveis, financeiros)." />
+                    {t('incidentesComp.incidente.fieldDadosAfetados')}
+                    <FieldHelpTooltip content={t('incidentesComp.incidente.fieldDadosAfetadosHelp')} />
                   </FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Descreva quais tipos de dados foram afetados (pessoais, financeiros, etc.)"
+                      placeholder={t('incidentesComp.incidente.fieldDadosAfetadosPlaceholder')}
                       rows={4}
                       {...field}
                     />
@@ -483,10 +479,10 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
       },
       {
         id: 'tratamento',
-        label: 'Tratamento',
+        label: t('incidentesComp.incidente.tabTratamento'),
         icon: Users,
         state: tratamentoState,
-        hint: 'Quem vai tratar',
+        hint: t('incidentesComp.incidente.tabTratamentoHint'),
         content: (
           <div className="space-y-5 max-w-3xl">
             <FormField
@@ -495,14 +491,14 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="flex items-center gap-1">
-                    Responsável pelo Tratamento
-                    <FieldHelpTooltip content="Quem ficará responsável por conduzir a resposta e o tratamento do incidente." />
+                    {t('incidentesComp.incidente.fieldResponsavelTratamento')}
+                    <FieldHelpTooltip content={t('incidentesComp.incidente.fieldResponsavelTratamentoHelp')} />
                   </FormLabel>
                   <FormControl>
                     <UserSelect
                       value={field.value || ''}
                       onValueChange={field.onChange}
-                      placeholder="Selecionar responsável..."
+                      placeholder={t('incidentesComp.incidente.fieldResponsavelPlaceholder')}
                     />
                   </FormControl>
                   <FormMessage />
@@ -517,18 +513,18 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
   );
 
   const summary = (
-    <WizardSummaryCard title="Resumo do Incidente">
+    <WizardSummaryCard title={t('incidentesComp.incidente.summaryTitle')}>
       <WizardSummaryRow
-        label="Título"
-        value={watched.titulo || <span className="text-muted-foreground italic">Sem título</span>}
+        label={t('incidentesComp.incidente.summaryTitulo')}
+        value={watched.titulo || <span className="text-muted-foreground italic">{t('incidentesComp.incidente.summarySemTitulo')}</span>}
         highlight
       />
       <WizardSummaryRow
-        label="Tipo"
-        value={TIPO_LABELS[watched.tipo_incidente] || '—'}
+        label={t('incidentesComp.incidente.summaryTipo')}
+        value={t(`incidentesComp.incidente.tipo${watched.tipo_incidente ? watched.tipo_incidente.charAt(0).toUpperCase() + watched.tipo_incidente.slice(1) : ''}`) || '—'}
       />
       <WizardSummaryRow
-        label="Criticidade"
+        label={t('incidentesComp.incidente.summaryCriticidade')}
         value={
           <StatusBadge size="sm" {...resolveCriticidadeTone(watched.criticidade)}>
             {formatStatus(watched.criticidade)}
@@ -536,7 +532,7 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
         }
       />
       <WizardSummaryRow
-        label="Data"
+        label={t('incidentesComp.incidente.summaryData')}
         value={watched.data_ocorrencia ? format(watched.data_ocorrencia, 'dd/MM/yyyy') : <span className="text-muted-foreground italic">—</span>}
       />
     </WizardSummaryCard>
@@ -544,7 +540,7 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
 
   const draftLabel =
     !incidente && hasDraft && savedAt
-      ? `Rascunho salvo às ${new Date(savedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`
+      ? t('incidentesComp.incidente.draftSavedAt', { time: new Date(savedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) })
       : undefined;
 
   return (
@@ -555,7 +551,7 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
             {trigger || (
               <Button onClick={() => setOpen(true)}>
                 <Plus className="mr-2 h-4 w-4" />
-                Novo Incidente
+                {t('incidentesComp.incidente.newButton')}
               </Button>
             )}
           </DialogTrigger>
@@ -564,9 +560,9 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
       <WizardDialog
         open={open}
         onOpenChange={setOpen}
-        title={incidente ? 'Editar Incidente' : 'Registrar Novo Incidente'}
+        title={incidente ? t('incidentesComp.incidente.titleEdit') : t('incidentesComp.incidente.titleNew')}
         description={
-          incidente ? 'Atualize as informações do incidente.' : 'Registre um novo incidente de segurança ou privacidade.'
+          incidente ? t('incidentesComp.incidente.descEdit') : t('incidentesComp.incidente.descNew')
         }
         icon={AlertTriangle}
         tabs={tabs}
@@ -574,7 +570,7 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
         activeTab={activeTab}
         onActiveTabChange={setActiveTab}
         onSubmit={form.handleSubmit(onSubmit)}
-        submitLabel={incidente ? 'Atualizar' : 'Registrar'}
+        submitLabel={incidente ? t('incidentesComp.incidente.submitUpdate') : t('incidentesComp.incidente.submitCreate')}
         isSubmitting={loading}
         isDirty={isDirty}
         draftLabel={draftLabel}

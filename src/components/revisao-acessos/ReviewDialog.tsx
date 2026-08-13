@@ -26,6 +26,7 @@ import { useEmpresaId } from "@/hooks/useEmpresaId";
 import { useOptimizedQuery } from "@/hooks/useOptimizedQuery";
 import { supabase } from "@/integrations/supabase/client";
 import { parseDateForDB } from "@/lib/date-utils";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const reviewSchema = z.object({
   nome_revisao: z.string().min(3, "Nome deve ter no mínimo 3 caracteres"),
@@ -48,6 +49,7 @@ interface ReviewDialogProps {
 }
 
 export function ReviewDialog({ open, onClose, review, onSuccess }: ReviewDialogProps) {
+  const { t } = useLanguage();
   const { empresaId } = useEmpresaId();
   const { createReview, updateReview } = useReviewData();
 
@@ -127,7 +129,7 @@ export function ReviewDialog({ open, onClose, review, onSuccess }: ReviewDialogP
   const onSubmit = async (data: ReviewFormData) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não autenticado");
+      if (!user) throw new Error(t("revisaoAcessosComp.reviewDialog.toastErrorNaoAutenticado"));
 
       const payload = {
         ...data,
@@ -158,11 +160,11 @@ export function ReviewDialog({ open, onClose, review, onSuccess }: ReviewDialogP
     <DialogShell
         open={open}
         onOpenChange={onClose}
-        title={`${review?.id ? "Editar" : "Nova"} Revisão de Acessos`}
+        title={review?.id ? t("revisaoAcessosComp.reviewDialog.titleEdit") : t("revisaoAcessosComp.reviewDialog.titleNew")}
         icon={Eye}
         size="lg"
         onSubmit={form.handleSubmit(onSubmit)}
-        submitLabel={review ? "Atualizar" : "Criar Revisão"}
+        submitLabel={review ? t("revisaoAcessosComp.reviewDialog.submitUpdate") : t("revisaoAcessosComp.reviewDialog.submitCreate")}
         isDirty={form.formState.isDirty}
       >
 <Form {...form}>
@@ -172,9 +174,9 @@ export function ReviewDialog({ open, onClose, review, onSuccess }: ReviewDialogP
               name="nome_revisao"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Nome da Revisão *</FormLabel>
+                  <FormLabel>{t("revisaoAcessosComp.reviewDialog.fieldNome")}</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder="Ex: Revisão Trimestral Q4 2025" />
+                    <Input {...field} placeholder={t("revisaoAcessosComp.reviewDialog.fieldNomePlaceholder")} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -186,7 +188,7 @@ export function ReviewDialog({ open, onClose, review, onSuccess }: ReviewDialogP
               name="descricao"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Descrição</FormLabel>
+                  <FormLabel>{t("revisaoAcessosComp.reviewDialog.fieldDescricao")}</FormLabel>
                   <FormControl>
                     <Textarea {...field} rows={3} />
                   </FormControl>
@@ -201,7 +203,7 @@ export function ReviewDialog({ open, onClose, review, onSuccess }: ReviewDialogP
                 name="tipo_revisao"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Tipo de Revisão *</FormLabel>
+                    <FormLabel>{t("revisaoAcessosComp.reviewDialog.fieldTipo")}</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
@@ -209,9 +211,9 @@ export function ReviewDialog({ open, onClose, review, onSuccess }: ReviewDialogP
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="periodica">Periódica</SelectItem>
-                        <SelectItem value="ad_hoc">Ad-hoc</SelectItem>
-                        <SelectItem value="recertificacao">Recertificação</SelectItem>
+                        <SelectItem value="periodica">{t("revisaoAcessosComp.reviewDialog.tipoPeriodica")}</SelectItem>
+                        <SelectItem value="ad_hoc">{t("revisaoAcessosComp.reviewDialog.tipoAdHoc")}</SelectItem>
+                        <SelectItem value="recertificacao">{t("revisaoAcessosComp.reviewDialog.tipoRecertificacao")}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -224,11 +226,11 @@ export function ReviewDialog({ open, onClose, review, onSuccess }: ReviewDialogP
                 name="sistema_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Sistema *</FormLabel>
+                    <FormLabel>{t("revisaoAcessosComp.reviewDialog.fieldSistema")}</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecione" />
+                          <SelectValue placeholder={t("revisaoAcessosComp.reviewDialog.fieldSistemaPlaceholder")} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -250,11 +252,11 @@ export function ReviewDialog({ open, onClose, review, onSuccess }: ReviewDialogP
               name="responsavel_revisao"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Responsável pela Revisão *</FormLabel>
+                  <FormLabel>{t("revisaoAcessosComp.reviewDialog.fieldResponsavel")}</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Selecione" />
+                        <SelectValue placeholder={t("revisaoAcessosComp.reviewDialog.fieldResponsavelPlaceholder")} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -276,7 +278,7 @@ export function ReviewDialog({ open, onClose, review, onSuccess }: ReviewDialogP
                 name="data_inicio"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Data de Início *</FormLabel>
+                    <FormLabel>{t("revisaoAcessosComp.reviewDialog.fieldDataInicio")}</FormLabel>
                     <FormControl>
                       <Input type="date" {...field} />
                     </FormControl>
@@ -290,7 +292,7 @@ export function ReviewDialog({ open, onClose, review, onSuccess }: ReviewDialogP
                 name="data_limite"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Data Limite *</FormLabel>
+                    <FormLabel>{t("revisaoAcessosComp.reviewDialog.fieldDataLimite")}</FormLabel>
                     <FormControl>
                       <Input type="date" {...field} />
                     </FormControl>
@@ -305,7 +307,7 @@ export function ReviewDialog({ open, onClose, review, onSuccess }: ReviewDialogP
               name="observacoes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Observações</FormLabel>
+                  <FormLabel>{t("revisaoAcessosComp.reviewDialog.fieldObservacoes")}</FormLabel>
                   <FormControl>
                     <Textarea {...field} rows={3} />
                   </FormControl>

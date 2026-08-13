@@ -43,6 +43,7 @@ import { capitalizeText, formatStatus } from '@/lib/text-utils';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveCriticidadeTone, resolveControleStatusTone, resolveControleTipoTone } from '@/lib/status-tone';
 import { formatDateOnly } from '@/lib/date-utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Controle {
   id: string;
@@ -75,6 +76,7 @@ interface Categoria {
 }
 
 export default function ControlesContent() {
+  const { t } = useLanguage();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [controleDialogOpen, setControleDialogOpen] = useState(false);
@@ -276,14 +278,14 @@ export default function ControlesContent() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['controles'] });
       toast({
-        title: "Controle excluído",
-        description: "O controle foi excluído com sucesso.",
+        title: t("governancaComp.controles.toastDeletedTitle"),
+        description: t("governancaComp.controles.toastDeletedDesc"),
       });
     },
     onError: () => {
       toast({
-        title: "Erro",
-        description: "Não foi possível excluir o controle.",
+        title: t("governancaComp.controles.toastErrorTitle"),
+        description: t("governancaComp.controles.toastErrorDesc"),
         variant: "destructive",
       });
     }
@@ -394,7 +396,7 @@ export default function ControlesContent() {
   const controlesColumns = [
     {
       key: 'codigo' as keyof Controle,
-      label: 'Código',
+      label: t("governancaComp.controles.columnCodigo"),
       sortable: true,
       render: (value: any, controle: Controle) => (
         <span className="font-mono text-xs text-muted-foreground">
@@ -404,7 +406,7 @@ export default function ControlesContent() {
     },
     {
       key: 'nome' as keyof Controle,
-      label: 'Nome',
+      label: t("governancaComp.controles.columnNome"),
       sortable: true,
       render: (value: any, controle: Controle) => (
         <button 
@@ -420,7 +422,7 @@ export default function ControlesContent() {
     },
     {
       key: 'categoria' as keyof Controle,
-      label: 'Categoria',
+      label: t("governancaComp.controles.columnCategoria"),
       sortable: true,
       render: (value: any, controle: Controle) => controle.categoria ? (
         <Badge 
@@ -433,7 +435,7 @@ export default function ControlesContent() {
     },
     {
       key: 'tipo' as keyof Controle,
-      label: 'Tipo',
+      label: t("governancaComp.controles.columnTipo"),
       sortable: true,
       render: (value: any, controle: Controle) => (
         <StatusBadge size="sm" {...resolveControleTipoTone(controle.tipo)}>
@@ -443,19 +445,19 @@ export default function ControlesContent() {
     },
     {
       key: 'status' as keyof Controle,
-      label: 'Status',
+      label: t("governancaComp.controles.columnStatus"),
       sortable: true,
       render: (value: any, controle: Controle) => getStatusBadge(controle.status)
     },
     {
       key: 'criticidade' as keyof Controle,
-      label: 'Criticidade',
+      label: t("governancaComp.controles.columnCriticidade"),
       sortable: true,
       render: (value: any, controle: Controle) => getCriticidadeBadge(controle.criticidade)
     },
     {
       key: 'responsavel' as keyof Controle,
-      label: 'Responsável',
+      label: t("governancaComp.controles.columnResponsavel"),
       sortable: true,
       render: (value: any, controle: Controle) => {
         if (controle.responsavel_nome) {
@@ -489,7 +491,7 @@ export default function ControlesContent() {
     },
     {
       key: 'testesCount' as keyof Controle,
-      label: 'Testes',
+      label: t("governancaComp.controles.columnTestes"),
       sortable: true,
       render: (value: any, controle: Controle) => (
         <Badge 
@@ -502,7 +504,7 @@ export default function ControlesContent() {
     },
     {
       key: 'proxima_avaliacao' as keyof Controle,
-      label: 'Vencimento',
+      label: t("governancaComp.controles.columnVencimento"),
       sortable: true,
       render: (value: any, controle: Controle) => {
         if (!controle.proxima_avaliacao) {
@@ -518,14 +520,14 @@ export default function ControlesContent() {
         return (
           <span className={isVencido ? "text-destructive font-medium" : ""}>
             {formatDateOnly(controle.proxima_avaliacao)}
-            {isVencido && <span className="ml-1 text-xs">(Vencido)</span>}
+            {isVencido && <span className="ml-1 text-xs">{t("governancaComp.controles.vencido")}</span>}
           </span>
         );
       }
     },
     {
       key: 'actions' as keyof Controle,
-      label: 'Ações',
+      label: t("governancaComp.controles.columnAcoes"),
       sortable: false,
       render: (value: any, controle: Controle) => (
         <DropdownMenu>
@@ -537,25 +539,25 @@ export default function ControlesContent() {
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => handleEdit(controle)}>
               <Edit className="h-4 w-4 mr-2" />
-              Editar
+              {t("governancaComp.controles.buttonEditar")}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => {
               setSelectedControleForTests(controle);
               setTestesDialogOpen(true);
             }}>
               <TestTube className="h-4 w-4 mr-2" />
-              Gerenciar Testes
+              {t("governancaComp.controles.buttonGerenciarTestes")}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => {
               setSelectedControleForVinculacao(controle);
               setVinculacaoDialogOpen(true);
             }}>
               <Link className="h-4 w-4 mr-2" />
-              Gerenciar Vinculações
+              {t("governancaComp.controles.buttonGerenciarVinculacoes")}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => handleDelete(controle.id)} className="text-destructive focus:text-destructive">
               <Trash2 className="h-4 w-4 mr-2" />
-              Excluir
+              {t("governancaComp.controles.buttonExcluir")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -568,35 +570,35 @@ export default function ControlesContent() {
       {/* Cards de KPI */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          title="Total de Controles"
+          title={t("governancaComp.controles.statTotal")}
           value={stats?.total || 0}
-          description={`${stats?.ativos || 0} ativos`}
+          description={t("governancaComp.controles.statTotalDesc", { count: stats?.ativos || 0 })}
           icon={<Shield />}
           loading={isLoading}
           variant="primary"
           showAccent
-          emptyHint="Cadastre controles para acompanhar a efetividade."
+          emptyHint={t("governancaComp.controles.statTotalEmptyHint")}
         />
         <StatCard
-          title="Avaliações Vencidas"
+          title={t("governancaComp.controles.statVencidas")}
           value={stats?.vencidos || 0}
-          description="Requerem atenção imediata"
+          description={t("governancaComp.controles.statVencidasDesc")}
           icon={<AlertTriangle />}
           variant="destructive"
           loading={isLoading}
         />
         <StatCard
-          title="Vencendo em 30 Dias"
+          title={t("governancaComp.controles.statVencendo")}
           value={stats?.vencendoAvaliacao || 0}
-          description="Próximas avaliações"
+          description={t("governancaComp.controles.statVencendoDesc")}
           icon={<Clock />}
           variant="warning"
           loading={isLoading}
         />
         <StatCard
-          title="Efetividade"
+          title={t("governancaComp.controles.statEfetividade")}
           value={`${stats?.total ? Math.round((stats?.preventivos / stats?.total) * 100) : 0}%`}
-          description="Controles preventivos"
+          description={t("governancaComp.controles.statEfetividadeDesc")}
           icon={<TrendingUp />}
           variant="success"
           loading={isLoading}
@@ -610,7 +612,7 @@ export default function ControlesContent() {
           <Tooltip>
             <TooltipTrigger asChild>
               <Button variant="outline" size="icon" onClick={() => {
-                const headers = ["Código", "Nome", "Tipo", "Status", "Criticidade", "Responsável", "Testes"];
+                const headers = [t("governancaComp.controles.columnCodigo"), t("governancaComp.controles.columnNome"), t("governancaComp.controles.columnTipo"), t("governancaComp.controles.columnStatus"), t("governancaComp.controles.columnCriticidade"), t("governancaComp.controles.columnResponsavel"), t("governancaComp.controles.columnTestes")];
                 const rows = sortedControles.map(c => [
                   c.codigo || '',
                   c.nome,
@@ -626,19 +628,19 @@ export default function ControlesContent() {
                 link.href = URL.createObjectURL(blob);
                 link.download = `controles_${new Date().toISOString().split("T")[0]}.csv`;
                 link.click();
-                toast({ title: "Exportação concluída", description: "O arquivo CSV foi baixado." });
+                toast({ title: t("governancaComp.controles.toastExportTitle"), description: t("governancaComp.controles.toastExportDesc") });
               }}>
                 <Download className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Exportar CSV</TooltipContent>
+            <TooltipContent>{t("governancaComp.controles.exportarCsv")}</TooltipContent>
           </Tooltip>
           <Button 
             variant="outline" 
             size="sm"
             onClick={() => setCategoriasDialogOpen(true)}
           >
-            Categorias
+            {t("governancaComp.controles.buttonCategorias")}
           </Button>
           <Button 
             variant="outline" 
@@ -646,14 +648,14 @@ export default function ControlesContent() {
             onClick={() => setRelatoriosDialogOpen(true)}
           >
             <BarChart3 className="mr-2 h-4 w-4" />
-            Relatórios
+            {t("governancaComp.controles.buttonRelatorios")}
           </Button>
           <Button 
             size="sm"
             onClick={() => setControleDialogOpen(true)}
           >
             <Plus className="mr-2 h-4 w-4" />
-            Novo Controle
+            {t("governancaComp.controles.buttonNovo")}
           </Button>
         </div>
       </div>
@@ -666,7 +668,7 @@ export default function ControlesContent() {
             columns={controlesColumns}
             loading={isLoading}
             searchable={true}
-            searchPlaceholder="Buscar controles..."
+            searchPlaceholder={t("governancaComp.controles.searchPlaceholder")}
             searchValue={searchValue}
             onSearchChange={setSearchValue}
             sortField={sortField}
@@ -675,47 +677,47 @@ export default function ControlesContent() {
             filters={[
               {
                 key: 'status',
-                label: 'Status',
+                label: t("governancaComp.controles.filterStatus"),
                 options: [
-                  { value: 'todos', label: 'Todos os Status' },
-                  { value: 'ativo', label: 'Ativo' },
-                  { value: 'inativo', label: 'Inativo' },
-                  { value: 'em_revisao', label: 'Em Revisão' },
-                  { value: 'descontinuado', label: 'Descontinuado' },
+                  { value: 'todos', label: t("governancaComp.controles.filterStatusAll") },
+                  { value: 'ativo', label: t("governancaComp.controles.statusAtivo") },
+                  { value: 'inativo', label: t("governancaComp.controles.statusInativo") },
+                  { value: 'em_revisao', label: t("governancaComp.controles.statusEmRevisao") },
+                  { value: 'descontinuado', label: t("governancaComp.controles.statusDescontinuado") },
                 ],
                 value: statusFilter,
                 onChange: setStatusFilter,
               },
               {
                 key: 'tipo',
-                label: 'Tipo',
+                label: t("governancaComp.controles.filterTipo"),
                 options: [
-                  { value: 'todos', label: 'Todos os Tipos' },
-                  { value: 'preventivo', label: 'Preventivo' },
-                  { value: 'detectivo', label: 'Detectivo' },
-                  { value: 'corretivo', label: 'Corretivo' },
+                  { value: 'todos', label: t("governancaComp.controles.filterTipoAll") },
+                  { value: 'preventivo', label: t("governancaComp.controles.tipoPreventivo") },
+                  { value: 'detectivo', label: t("governancaComp.controles.tipoDetectivo") },
+                  { value: 'corretivo', label: t("governancaComp.controles.tipoCorretivo") },
                 ],
                 value: tipoFilter,
                 onChange: setTipoFilter,
               },
               {
                 key: 'criticidade',
-                label: 'Criticidade',
+                label: t("governancaComp.controles.filterCriticidade"),
                 options: [
-                  { value: 'todos', label: 'Todas as Criticidades' },
-                  { value: 'baixo', label: 'Baixo' },
-                  { value: 'medio', label: 'Médio' },
-                  { value: 'alto', label: 'Alto' },
-                  { value: 'critico', label: 'Crítico' },
+                  { value: 'todos', label: t("governancaComp.controles.filterCriticidadeAll") },
+                  { value: 'baixo', label: t("governancaComp.controles.criticidadeBaixo") },
+                  { value: 'medio', label: t("governancaComp.controles.criticidadeMedio") },
+                  { value: 'alto', label: t("governancaComp.controles.criticidadeAlto") },
+                  { value: 'critico', label: t("governancaComp.controles.criticidadeCritico") },
                 ],
                 value: criticidadeFilter,
                 onChange: setCriticidadeFilter,
               },
               {
                 key: 'auditoria',
-                label: 'Auditoria',
+                label: t("governancaComp.controles.filterAuditoria"),
                 options: [
-                  { value: 'todas', label: 'Todas as Auditorias' },
+                  { value: 'todas', label: t("governancaComp.controles.filterAuditoriaAll") },
                   ...auditorias.map(a => ({ value: a.id, label: a.nome }))
                 ],
                 value: auditoriaFilter,
@@ -724,10 +726,10 @@ export default function ControlesContent() {
             ]}
             emptyState={{
               icon: <Shield className="h-12 w-12" />,
-              title: "Nenhum controle cadastrado",
-              description: "Comece criando seu primeiro controle interno",
+              title: t("governancaComp.controles.emptyTitle"),
+              description: t("governancaComp.controles.emptyDescription"),
               action: {
-                label: "Criar Primeiro Controle",
+                label: t("governancaComp.controles.emptyAction"),
                 onClick: () => setControleDialogOpen(true)
               }
             }}
@@ -739,7 +741,7 @@ export default function ControlesContent() {
       {sortedControles.length > itemsPerPage && (
         <div className="flex items-center justify-between px-2 py-4">
           <div className="text-sm text-muted-foreground">
-            Mostrando {((currentPage - 1) * itemsPerPage) + 1} a {Math.min(currentPage * itemsPerPage, sortedControles.length)} de {sortedControles.length} controles
+            {t("governancaComp.controles.showingRange", { from: ((currentPage - 1) * itemsPerPage) + 1, to: Math.min(currentPage * itemsPerPage, sortedControles.length), total: sortedControles.length })}
           </div>
           <Pagination>
             <PaginationContent>
@@ -849,9 +851,9 @@ export default function ControlesContent() {
       <ConfirmDialog
         open={deleteConfirm.open}
         onOpenChange={(open) => setDeleteConfirm(prev => ({ ...prev, open }))}
-        title="Excluir Controle"
-        description="Tem certeza que deseja excluir este controle? Esta ação não pode ser desfeita."
-        confirmText="Excluir"
+        title={t("governancaComp.controles.deleteTitle")}
+        description={t("governancaComp.controles.deleteDescription")}
+        confirmText={t("governancaComp.controles.deleteConfirm")}
         variant="destructive"
         onConfirm={confirmDelete}
       />

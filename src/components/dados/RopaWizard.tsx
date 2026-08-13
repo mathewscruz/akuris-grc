@@ -15,6 +15,7 @@ import { ChevronLeft, ChevronRight, Check } from "lucide-react";
 import { formatStatus } from "@/lib/text-utils";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { resolveCriticidadeTone, resolveSensibilidadeTone } from "@/lib/status-tone";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface RopaWizardProps {
   isOpen: boolean;
@@ -24,6 +25,7 @@ interface RopaWizardProps {
 }
 
 export function RopaWizard({ isOpen, onClose, onSave, preSelectedDadoId }: RopaWizardProps) {
+  const { t } = useLanguage();
   const { empresaId } = useEmpresaId();
   const [step, setStep] = useState(1);
   const [selectedDados, setSelectedDados] = useState<string[]>(preSelectedDadoId ? [preSelectedDadoId] : []);
@@ -79,7 +81,7 @@ export function RopaWizard({ isOpen, onClose, onSave, preSelectedDadoId }: RopaW
         .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
         .single();
 
-      if (!profile?.empresa_id) throw new Error('Empresa não encontrada');
+      if (!profile?.empresa_id) throw new Error(t('dadosDashboard.ropaWizard.errorEmpresaNaoEncontrada'));
 
       // Criar ROPA
       const { data: ropa, error: ropaError } = await supabase
@@ -129,13 +131,13 @@ export function RopaWizard({ isOpen, onClose, onSave, preSelectedDadoId }: RopaW
         if (mapError) console.error('Erro ao criar mapeamentos:', mapError);
       }
 
-      toast({ title: "ROPA criado com sucesso!", description: `${selectedDados.length} dados vinculados` });
+      toast({ title: t('dadosDashboard.ropaWizard.toastSuccessTitle'), description: t('dadosDashboard.ropaWizard.toastSuccessDescription', { count: selectedDados.length }) });
       onSave();
       onClose();
       resetWizard();
     } catch (error: any) {
       toast({
-        title: "Erro ao criar ROPA",
+        title: t('dadosDashboard.ropaWizard.toastErrorTitle'),
         description: error.message,
         variant: "destructive"
       });
@@ -183,7 +185,7 @@ export function RopaWizard({ isOpen, onClose, onSave, preSelectedDadoId }: RopaW
       open={isOpen}
       onOpenChange={onClose}
       icon={ClipboardList}
-      title="Novo ROPA — Wizard Guiado"
+      title={t('dadosDashboard.ropaWizard.dialogTitle')}
       size="lg"
       footer={
         <div className="flex justify-between w-full">
@@ -194,18 +196,18 @@ export function RopaWizard({ isOpen, onClose, onSave, preSelectedDadoId }: RopaW
             disabled={isLoading}
           >
             <ChevronLeft className="h-4 w-4 mr-1" />
-            {step === 1 ? 'Cancelar' : 'Voltar'}
+            {step === 1 ? t('dadosDashboard.ropaWizard.buttonCancelar') : t('dadosDashboard.ropaWizard.buttonVoltar')}
           </Button>
 
           {step < 4 ? (
             <Button size="sm" onClick={() => setStep(step + 1)} disabled={!canProceed()}>
-              Próximo
+              {t('dadosDashboard.ropaWizard.buttonProximo')}
               <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
           ) : (
             <Button size="sm" onClick={handleSave} disabled={isLoading}>
               <Check className="h-4 w-4 mr-1" />
-              {isLoading ? 'Criando...' : 'Criar ROPA'}
+              {isLoading ? t('dadosDashboard.ropaWizard.buttonCriando') : t('dadosDashboard.ropaWizard.buttonCriarRopa')}
             </Button>
           )}
         </div>
@@ -214,7 +216,7 @@ export function RopaWizard({ isOpen, onClose, onSave, preSelectedDadoId }: RopaW
         <div className="space-y-4">
           <div className="space-y-2">
             <div className="flex justify-between text-sm text-muted-foreground mb-1">
-              <span>Etapa {step} de 4</span>
+              <span>{t('dadosDashboard.ropaWizard.stepLabel', { step })}</span>
               <span>{Math.round((step / 4) * 100)}%</span>
             </div>
             <Progress value={(step / 4) * 100} />
@@ -223,9 +225,9 @@ export function RopaWizard({ isOpen, onClose, onSave, preSelectedDadoId }: RopaW
           {step === 1 && (
             <div className="space-y-4">
               <div>
-                <h3 className="font-semibold mb-2">Passo 1: Selecione os Dados Pessoais</h3>
+                <h3 className="font-semibold mb-2">{t('dadosDashboard.ropaWizard.step1Title')}</h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Escolha quais dados pessoais serão tratados neste ROPA
+                  {t('dadosDashboard.ropaWizard.step1Description')}
                 </p>
               </div>
               
@@ -250,7 +252,7 @@ export function RopaWizard({ isOpen, onClose, onSave, preSelectedDadoId }: RopaW
               
               {selectedDados.length > 0 && (
                 <div className="text-sm text-muted-foreground">
-                  {selectedDados.length} dado(s) selecionado(s)
+                  {selectedDados.length} {t('dadosDashboard.ropaWizard.step1SelectedSuffix')}
                 </div>
               )}
             </div>
@@ -259,72 +261,72 @@ export function RopaWizard({ isOpen, onClose, onSave, preSelectedDadoId }: RopaW
           {step === 2 && (
             <div className="space-y-4">
               <div>
-                <h3 className="font-semibold mb-2">Passo 2: Defina a Finalidade e Base Legal</h3>
+                <h3 className="font-semibold mb-2">{t('dadosDashboard.ropaWizard.step2Title')}</h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Informações principais do tratamento de dados
+                  {t('dadosDashboard.ropaWizard.step2Description')}
                 </p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="nome_tratamento">Nome do Tratamento *</Label>
+                <Label htmlFor="nome_tratamento">{t('dadosDashboard.ropaWizard.labelNomeTratamento')}</Label>
                 <Input
                   id="nome_tratamento"
                   value={formData.nome_tratamento}
                   onChange={(e) => setFormData({ ...formData, nome_tratamento: e.target.value })}
-                  placeholder="Ex: Gestão de clientes"
+                  placeholder={t('dadosDashboard.ropaWizard.placeholderNomeTratamento')}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="finalidade">Finalidade *</Label>
+                <Label htmlFor="finalidade">{t('dadosDashboard.ropaWizard.labelFinalidade')}</Label>
                 <Textarea
                   id="finalidade"
                   value={formData.finalidade}
                   onChange={(e) => setFormData({ ...formData, finalidade: e.target.value })}
-                  placeholder="Descreva a finalidade específica do tratamento"
+                  placeholder={t('dadosDashboard.ropaWizard.placeholderFinalidade')}
                   rows={3}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="base_legal">Base Legal *</Label>
+                  <Label htmlFor="base_legal">{t('dadosDashboard.ropaWizard.labelBaseLegal')}</Label>
                   <Select value={formData.base_legal} onValueChange={(value) => setFormData({ ...formData, base_legal: value })}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
+                      <SelectValue placeholder={t('dadosDashboard.ropaWizard.placeholderSelecione')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="consentimento">Consentimento</SelectItem>
-                      <SelectItem value="legitimo_interesse">Legítimo Interesse</SelectItem>
-                      <SelectItem value="execucao_contrato">Execução de Contrato</SelectItem>
-                      <SelectItem value="cumprimento_obrigacao">Obrigação Legal</SelectItem>
+                      <SelectItem value="consentimento">{t('dadosDashboard.ropaWizard.baseLegalConsentimento')}</SelectItem>
+                      <SelectItem value="legitimo_interesse">{t('dadosDashboard.ropaWizard.baseLegalLegitimoInteresse')}</SelectItem>
+                      <SelectItem value="execucao_contrato">{t('dadosDashboard.ropaWizard.baseLegalExecucaoContrato')}</SelectItem>
+                      <SelectItem value="cumprimento_obrigacao">{t('dadosDashboard.ropaWizard.baseLegalObrigacaoLegal')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="categoria_titulares">Categoria de Titulares</Label>
+                  <Label htmlFor="categoria_titulares">{t('dadosDashboard.ropaWizard.labelCategoriaTitulares')}</Label>
                   <Select value={formData.categoria_titulares} onValueChange={(value) => setFormData({ ...formData, categoria_titulares: value })}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
+                      <SelectValue placeholder={t('dadosDashboard.ropaWizard.placeholderSelecione')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="clientes">Clientes</SelectItem>
-                      <SelectItem value="funcionarios">Funcionários</SelectItem>
-                      <SelectItem value="fornecedores">Fornecedores</SelectItem>
-                      <SelectItem value="prospects">Prospects</SelectItem>
+                      <SelectItem value="clientes">{t('dadosDashboard.ropaWizard.categoriaClientes')}</SelectItem>
+                      <SelectItem value="funcionarios">{t('dadosDashboard.ropaWizard.categoriaFuncionarios')}</SelectItem>
+                      <SelectItem value="fornecedores">{t('dadosDashboard.ropaWizard.categoriaFornecedores')}</SelectItem>
+                      <SelectItem value="prospects">{t('dadosDashboard.ropaWizard.categoriaProspects')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="prazo_retencao">Prazo de Retenção</Label>
+                <Label htmlFor="prazo_retencao">{t('dadosDashboard.ropaWizard.labelPrazoRetencao')}</Label>
                 <Input
                   id="prazo_retencao"
                   value={formData.prazo_retencao}
                   onChange={(e) => setFormData({ ...formData, prazo_retencao: e.target.value })}
-                  placeholder="Ex: 5 anos após fim do contrato"
+                  placeholder={t('dadosDashboard.ropaWizard.placeholderPrazoRetencao')}
                 />
               </div>
             </div>
@@ -333,9 +335,9 @@ export function RopaWizard({ isOpen, onClose, onSave, preSelectedDadoId }: RopaW
           {step === 3 && (
             <div className="space-y-4">
               <div>
-                <h3 className="font-semibold mb-2">Passo 3: Vincule aos Ativos (Opcional)</h3>
+                <h3 className="font-semibold mb-2">{t('dadosDashboard.ropaWizard.step3Title')}</h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Selecione onde estes dados são armazenados ou processados
+                  {t('dadosDashboard.ropaWizard.step3Description')}
                 </p>
               </div>
               
@@ -360,7 +362,7 @@ export function RopaWizard({ isOpen, onClose, onSave, preSelectedDadoId }: RopaW
               
               {selectedAtivos.length > 0 && (
                 <div className="text-sm text-muted-foreground">
-                  {selectedAtivos.length} ativo(s) selecionado(s)
+                  {selectedAtivos.length} {t('dadosDashboard.ropaWizard.step3SelectedSuffix')}
                 </div>
               )}
             </div>
@@ -369,19 +371,19 @@ export function RopaWizard({ isOpen, onClose, onSave, preSelectedDadoId }: RopaW
           {step === 4 && (
             <div className="space-y-4">
               <div>
-                <h3 className="font-semibold mb-2">Passo 4: Revisão e Confirmação</h3>
+                <h3 className="font-semibold mb-2">{t('dadosDashboard.ropaWizard.step4Title')}</h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Revise as informações antes de criar o ROPA
+                  {t('dadosDashboard.ropaWizard.step4Description')}
                 </p>
               </div>
 
               <div className="space-y-3 border rounded-lg p-4">
                 <div>
-                  <Label className="text-muted-foreground">Nome do Tratamento</Label>
+                  <Label className="text-muted-foreground">{t('dadosDashboard.ropaWizard.labelNomeTratamentoReview')}</Label>
                   <p className="font-medium">{formData.nome_tratamento}</p>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Dados Pessoais Vinculados</Label>
+                  <Label className="text-muted-foreground">{t('dadosDashboard.ropaWizard.labelDadosVinculados')}</Label>
                   <div className="flex flex-wrap gap-2 mt-1">
                     {selectedDados.map(id => {
                       const dado = dadosPessoais.find(d => d.id === id);
@@ -390,7 +392,7 @@ export function RopaWizard({ isOpen, onClose, onSave, preSelectedDadoId }: RopaW
                   </div>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Ativos Vinculados</Label>
+                  <Label className="text-muted-foreground">{t('dadosDashboard.ropaWizard.labelAtivosVinculados')}</Label>
                   <div className="flex flex-wrap gap-2 mt-1">
                     {selectedAtivos.length > 0 ? (
                       selectedAtivos.map(id => {
@@ -398,23 +400,23 @@ export function RopaWizard({ isOpen, onClose, onSave, preSelectedDadoId }: RopaW
                         return <StatusBadge key={id} size="sm" tone="neutral" variant="outline">{ativo?.nome}</StatusBadge>;
                       })
                     ) : (
-                      <span className="text-sm text-muted-foreground">Nenhum ativo vinculado</span>
+                      <span className="text-sm text-muted-foreground">{t('dadosDashboard.ropaWizard.nenhumAtivoVinculado')}</span>
                     )}
                   </div>
                 </div>
                 <div>
-                  <Label className="text-muted-foreground">Base Legal</Label>
+                  <Label className="text-muted-foreground">{t('dadosDashboard.ropaWizard.labelBaseLegalReview')}</Label>
                   <p className="font-medium">{formData.base_legal}</p>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="medidas_seguranca">Medidas de Segurança (Opcional)</Label>
+                <Label htmlFor="medidas_seguranca">{t('dadosDashboard.ropaWizard.labelMedidasSegurancaOpcional')}</Label>
                 <Textarea
                   id="medidas_seguranca"
                   value={formData.medidas_seguranca}
                   onChange={(e) => setFormData({ ...formData, medidas_seguranca: e.target.value })}
-                  placeholder="Descreva as medidas de segurança aplicadas"
+                  placeholder={t('dadosDashboard.ropaWizard.placeholderMedidasSeguranca')}
                   rows={3}
                 />
               </div>

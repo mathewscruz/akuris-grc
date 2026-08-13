@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Globe, Trash2, Eye, Plus, Search, ExternalLink, FileText, AlertTriangle, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -56,50 +57,50 @@ interface Descoberta {
   created_at: string;
 }
 
-const getSensitivityBadge = (sensitivity: string) => {
+const getSensitivityBadge = (sensitivity: string, t: (key: string) => string) => {
   switch (sensitivity) {
     case 'critico':
-      return <StatusBadge size="sm" tone="destructive" intensity="high">Crítico</StatusBadge>;
+      return <StatusBadge size="sm" tone="destructive" intensity="high">{t('dadosDashboard.descobertaDadosTab.sensitivityCritico')}</StatusBadge>;
     case 'sensivel':
-      return <StatusBadge size="sm" tone="warning">Sensível</StatusBadge>;
+      return <StatusBadge size="sm" tone="warning">{t('dadosDashboard.descobertaDadosTab.sensitivitySensivel')}</StatusBadge>;
     default:
-      return <StatusBadge size="sm" tone="neutral">Comum</StatusBadge>;
+      return <StatusBadge size="sm" tone="neutral">{t('dadosDashboard.descobertaDadosTab.sensitivityComum')}</StatusBadge>;
   }
 };
 
-const getCategoryLabel = (category: string) => {
+const getCategoryLabel = (category: string, t: (key: string) => string) => {
   const labels: Record<string, string> = {
-    identificacao: 'Identificação',
-    contato: 'Contato',
-    localizacao: 'Localização',
-    financeiro: 'Financeiro',
-    credenciais: 'Credenciais',
-    saude: 'Saúde',
-    documentos: 'Documentos',
-    texto_livre: 'Texto Livre',
-    outros: 'Outros'
+    identificacao: t('dadosDashboard.descobertaDadosTab.categoriaIdentificacao'),
+    contato: t('dadosDashboard.descobertaDadosTab.categoriaContato'),
+    localizacao: t('dadosDashboard.descobertaDadosTab.categoriaLocalizacao'),
+    financeiro: t('dadosDashboard.descobertaDadosTab.categoriaFinanceiro'),
+    credenciais: t('dadosDashboard.descobertaDadosTab.categoriaCredenciais'),
+    saude: t('dadosDashboard.descobertaDadosTab.categoriaSaude'),
+    documentos: t('dadosDashboard.descobertaDadosTab.categoriaDocumentos'),
+    texto_livre: t('dadosDashboard.descobertaDadosTab.categoriaTextoLivre'),
+    outros: t('dadosDashboard.descobertaDadosTab.categoriaOutros')
   };
   return labels[category] || category;
 };
 
-const getDataTypeLabel = (dataType: string) => {
+const getDataTypeLabel = (dataType: string, t: (key: string) => string) => {
   const labels: Record<string, string> = {
-    email: 'E-mail',
-    nome: 'Nome',
-    cpf: 'CPF',
-    rg: 'RG',
-    cnpj: 'CNPJ',
-    telefone: 'Telefone',
-    endereco: 'Endereço',
-    data_nascimento: 'Data de Nascimento',
-    senha: 'Senha',
-    cartao_credito: 'Cartão de Crédito',
-    conta_bancaria: 'Conta Bancária',
-    saude: 'Dados de Saúde',
-    genero: 'Gênero',
-    arquivo: 'Arquivo',
-    comentario: 'Comentário/Mensagem',
-    desconhecido: 'Não Classificado'
+    email: t('dadosDashboard.descobertaDadosTab.tipoEmail'),
+    nome: t('dadosDashboard.descobertaDadosTab.tipoNome'),
+    cpf: t('dadosDashboard.descobertaDadosTab.tipoCpf'),
+    rg: t('dadosDashboard.descobertaDadosTab.tipoRg'),
+    cnpj: t('dadosDashboard.descobertaDadosTab.tipoCnpj'),
+    telefone: t('dadosDashboard.descobertaDadosTab.tipoTelefone'),
+    endereco: t('dadosDashboard.descobertaDadosTab.tipoEndereco'),
+    data_nascimento: t('dadosDashboard.descobertaDadosTab.tipoDataNascimento'),
+    senha: t('dadosDashboard.descobertaDadosTab.tipoSenha'),
+    cartao_credito: t('dadosDashboard.descobertaDadosTab.tipoCartaoCredito'),
+    conta_bancaria: t('dadosDashboard.descobertaDadosTab.tipoContaBancaria'),
+    saude: t('dadosDashboard.descobertaDadosTab.tipoSaude'),
+    genero: t('dadosDashboard.descobertaDadosTab.tipoGenero'),
+    arquivo: t('dadosDashboard.descobertaDadosTab.tipoArquivo'),
+    comentario: t('dadosDashboard.descobertaDadosTab.tipoComentario'),
+    desconhecido: t('dadosDashboard.descobertaDadosTab.tipoDesconhecido')
   };
   return labels[dataType] || dataType;
 };
@@ -109,6 +110,7 @@ interface DescoberDadosTabProps {
 }
 
 export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
+  const { t } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { empresaId } = useEmpresaId();
@@ -152,16 +154,16 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
       if (error) throw error;
 
       toast({
-        title: "Sucesso",
-        description: "Descoberta excluída com sucesso"
+        title: t('dadosDashboard.descobertaDadosTab.toastDeleteSuccessTitle'),
+        description: t('dadosDashboard.descobertaDadosTab.toastDeleteSuccessDescription')
       });
 
       refetch();
       setDeleteConfirm({ open: false, id: '' });
     } catch (error: any) {
       toast({
-        title: "Erro",
-        description: error.message || "Erro ao excluir",
+        title: t('dadosDashboard.descobertaDadosTab.toastDeleteErrorTitle'),
+        description: error.message || t('dadosDashboard.descobertaDadosTab.toastDeleteErrorDefault'),
         variant: "destructive"
       });
     }
@@ -202,11 +204,11 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
   const columns = [
     {
       key: 'titulo_pagina',
-      label: 'Página',
+      label: t('dadosDashboard.descobertaDadosTab.columnPagina'),
       sortable: true,
       render: (value: string, row: Descoberta) => (
         <div className="max-w-[200px]">
-          <p className="font-medium truncate">{value || 'Sem título'}</p>
+          <p className="font-medium truncate">{value || t('dadosDashboard.descobertaDadosTab.semTitulo')}</p>
           <a 
             href={row.url} 
             target="_blank" 
@@ -220,7 +222,7 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
     },
     {
       key: 'total_formularios',
-      label: 'Formulários',
+      label: t('dadosDashboard.descobertaDadosTab.columnFormularios'),
       sortable: true,
       render: (value: number) => (
         <StatusBadge size="sm" tone="neutral" variant="outline">{value}</StatusBadge>
@@ -228,7 +230,7 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
     },
     {
       key: 'total_campos',
-      label: 'Campos',
+      label: t('dadosDashboard.descobertaDadosTab.columnCampos'),
       sortable: true,
       render: (value: number) => (
         <StatusBadge size="sm" tone="neutral">{value}</StatusBadge>
@@ -236,7 +238,7 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
     },
     {
       key: 'campos_sensiveis',
-      label: 'Sensíveis',
+      label: t('dadosDashboard.descobertaDadosTab.columnSensiveis'),
       sortable: true,
       render: (value: number) => (
         value > 0 ? (
@@ -246,7 +248,7 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
     },
     {
       key: 'campos_criticos',
-      label: 'Críticos',
+      label: t('dadosDashboard.descobertaDadosTab.columnCriticos'),
       sortable: true,
       render: (value: number) => (
         value > 0 ? (
@@ -256,7 +258,7 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
     },
     {
       key: 'campos_importados',
-      label: 'Importados',
+      label: t('dadosDashboard.descobertaDadosTab.columnImportados'),
       sortable: true,
       render: (value: number) => (
         value > 0 ? (
@@ -266,13 +268,13 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
     },
     {
       key: 'created_at',
-      label: 'Data',
+      label: t('dadosDashboard.descobertaDadosTab.columnData'),
       sortable: true,
       render: (value: string) => formatDateOnly(value)
     },
     {
       key: 'actions',
-      label: 'Ações',
+      label: t('dadosDashboard.descobertaDadosTab.columnAcoes'),
       render: (_: any, row: Descoberta) => (
         <TooltipProvider>
           <div className="flex items-center gap-1">
@@ -286,7 +288,7 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
                   <Eye className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Ver Detalhes</TooltipContent>
+              <TooltipContent>{t('dadosDashboard.descobertaDadosTab.tooltipVerDetalhes')}</TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -299,7 +301,7 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Excluir</TooltipContent>
+              <TooltipContent>{t('dadosDashboard.descobertaDadosTab.tooltipExcluir')}</TooltipContent>
             </Tooltip>
           </div>
         </TooltipProvider>
@@ -312,21 +314,21 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
       <CardContent className="p-0">
         <div className="p-6 pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h3 className="text-lg font-semibold">Descobertas de Dados</h3>
+            <h3 className="text-lg font-semibold">{t('dadosDashboard.descobertaDadosTab.headerTitle')}</h3>
             <p className="text-sm text-muted-foreground">
-              Histórico de escaneamentos de formulários web
+              {t('dadosDashboard.descobertaDadosTab.headerSubtitle')}
             </p>
           </div>
           <Button size="sm" onClick={() => setShowUrlScanner(true)}>
             <Globe className="h-4 w-4 mr-2" />
-            Nova Descoberta
+            {t('dadosDashboard.descobertaDadosTab.buttonNovaDescoberta')}
           </Button>
         </div>
 
         <DataTable
           data={descobertas}
           columns={columns}
-          searchPlaceholder="Buscar descobertas..."
+          searchPlaceholder={t('dadosDashboard.descobertaDadosTab.searchPlaceholder')}
           sortField={sortField}
           sortDirection={sortDirection}
           onSort={(field) => {
@@ -339,10 +341,10 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
           }}
           emptyState={{
             icon: <Globe className="h-8 w-8" />,
-            title: "Nenhuma descoberta registrada",
-            description: "Use o scanner para detectar dados pessoais coletados em formulários web.",
+            title: t('dadosDashboard.descobertaDadosTab.emptyTitle'),
+            description: t('dadosDashboard.descobertaDadosTab.emptyDescription'),
             action: {
-              label: "Nova Descoberta",
+              label: t('dadosDashboard.descobertaDadosTab.buttonNovaDescoberta'),
               onClick: () => setShowUrlScanner(true)
             }
           }}
@@ -357,10 +359,13 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
         onImport={async (fields, scanResult) => {
           let created = 0;
           for (const field of fields) {
-            const nome = field.label || field.name || field.id || `Campo ${field.dataType}`;
+            const nome = field.label || field.name || field.id || t('dadosDashboard.descobertaDadosTab.importCampoDefault', { dataType: field.dataType });
             const { error } = await supabase.from('dados_pessoais').insert({
               nome: nome,
-              descricao: `Detectado via scanner - Campo: ${field.name || field.id}${field.placeholder ? `, Placeholder: ${field.placeholder}` : ''}`,
+              descricao: t('dadosDashboard.descobertaDadosTab.importDescricao', {
+                field: field.name || field.id,
+                placeholder: field.placeholder ? t('dadosDashboard.descobertaDadosTab.importPlaceholderSuffix', { placeholder: field.placeholder }) : ''
+              }),
               categoria_dados: field.lgpdCategory || 'outros',
               tipo_dados: field.sensitivity === 'critico' ? 'sensivel' : 'comum',
               sensibilidade: field.sensitivity === 'critico' ? 'muito_sensivel' : field.sensitivity === 'sensivel' ? 'sensivel' : 'comum',
@@ -378,8 +383,8 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
           }
           
           toast({
-            title: "Importação concluída",
-            description: `${created} dado(s) pessoal(is) adicionado(s) ao catálogo`,
+            title: t('dadosDashboard.descobertaDadosTab.toastImportSuccessTitle'),
+            description: t('dadosDashboard.descobertaDadosTab.toastImportSuccessDescription', { count: created }),
           });
           onRefresh();
         }}
@@ -390,7 +395,7 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
         open={showDetailDialog}
         onOpenChange={setShowDetailDialog}
         icon={Globe}
-        title="Detalhes da Descoberta"
+        title={t('dadosDashboard.descobertaDadosTab.detailDialogTitle')}
         size="lg"
         hideFooter
       >
@@ -404,7 +409,7 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
                       <FileText className="h-4 w-4 text-primary" />
                       <div>
                         <p className="text-2xl font-bold">{selectedDescoberta.total_formularios}</p>
-                        <p className="text-xs text-muted-foreground">Formulários</p>
+                        <p className="text-xs text-muted-foreground">{t('dadosDashboard.descobertaDadosTab.cardFormularios')}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -415,7 +420,7 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
                       <Search className="h-4 w-4 text-info" />
                       <div>
                         <p className="text-2xl font-bold">{selectedDescoberta.total_campos}</p>
-                        <p className="text-xs text-muted-foreground">Campos</p>
+                        <p className="text-xs text-muted-foreground">{t('dadosDashboard.descobertaDadosTab.cardCampos')}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -426,7 +431,7 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
                       <AlertTriangle className="h-4 w-4 text-warning" />
                       <div>
                         <p className="text-2xl font-bold">{selectedDescoberta.campos_sensiveis}</p>
-                        <p className="text-xs text-muted-foreground">Sensíveis</p>
+                        <p className="text-xs text-muted-foreground">{t('dadosDashboard.descobertaDadosTab.cardSensiveis')}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -437,7 +442,7 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
                       <Shield className="h-4 w-4 text-destructive" />
                       <div>
                         <p className="text-2xl font-bold">{selectedDescoberta.campos_criticos}</p>
-                        <p className="text-xs text-muted-foreground">Críticos</p>
+                        <p className="text-xs text-muted-foreground">{t('dadosDashboard.descobertaDadosTab.cardCriticos')}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -449,7 +454,7 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
                 <CardContent className="py-3">
                   <div className="flex items-center gap-2 mb-1">
                     <ExternalLink className="h-4 w-4" />
-                    <span className="font-medium">{selectedDescoberta.titulo_pagina || 'Sem título'}</span>
+                    <span className="font-medium">{selectedDescoberta.titulo_pagina || t('dadosDashboard.descobertaDadosTab.semTitulo')}</span>
                   </div>
                   <a 
                     href={selectedDescoberta.url} 
@@ -460,9 +465,9 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
                     {selectedDescoberta.url}
                   </a>
                   <div className="mt-2 text-xs text-muted-foreground">
-                    Escaneado em: {formatDateOnly(selectedDescoberta.created_at)}
+                    {t('dadosDashboard.descobertaDadosTab.scannedAtPrefix')}: {formatDateOnly(selectedDescoberta.created_at)}
                     {selectedDescoberta.campos_importados > 0 && (
-                      <> • {selectedDescoberta.campos_importados} campo(s) importado(s)</>
+                      <> • {selectedDescoberta.campos_importados} {t('dadosDashboard.descobertaDadosTab.importedFieldsSuffix')}</>
                     )}
                   </div>
                 </CardContent>
@@ -478,7 +483,7 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
                           <FileText className="h-4 w-4" />
                           <span className="font-medium">{form.formName}</span>
                           <StatusBadge size="sm" tone="neutral">
-                            {form.fields.length} campos
+                            {t('dadosDashboard.descobertaDadosTab.camposCount', { count: form.fields.length })}
                           </StatusBadge>
                         </div>
                       </AccordionTrigger>
@@ -486,11 +491,11 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
                         <Table>
                           <TableHeader>
                             <TableRow>
-                              <TableHead>Campo</TableHead>
-                              <TableHead>Tipo HTML</TableHead>
-                              <TableHead>Tipo de Dado</TableHead>
-                              <TableHead>Categoria LGPD</TableHead>
-                              <TableHead>Sensibilidade</TableHead>
+                              <TableHead>{t('dadosDashboard.descobertaDadosTab.campoLabel')}</TableHead>
+                              <TableHead>{t('dadosDashboard.descobertaDadosTab.tipoHtmlLabel')}</TableHead>
+                              <TableHead>{t('dadosDashboard.descobertaDadosTab.tipoDadoLabel')}</TableHead>
+                              <TableHead>{t('dadosDashboard.descobertaDadosTab.categoriaLgpdLabel')}</TableHead>
+                              <TableHead>{t('dadosDashboard.descobertaDadosTab.sensibilidadeLabel')}</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -498,7 +503,7 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
                               <TableRow key={fieldIndex}>
                                 <TableCell>
                                   <div>
-                                    <p className="font-medium">{field.label || field.name || field.id || 'Sem nome'}</p>
+                                    <p className="font-medium">{field.label || field.name || field.id || t('dadosDashboard.descobertaDadosTab.semNome')}</p>
                                     {field.placeholder && (
                                       <p className="text-xs text-muted-foreground">"{field.placeholder}"</p>
                                     )}
@@ -507,9 +512,9 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
                                 <TableCell>
                                   <code className="text-xs bg-muted px-1 py-0.5 rounded">{field.type}</code>
                                 </TableCell>
-                                <TableCell>{getDataTypeLabel(field.dataType)}</TableCell>
-                                <TableCell>{getCategoryLabel(field.lgpdCategory)}</TableCell>
-                                <TableCell>{getSensitivityBadge(field.sensitivity)}</TableCell>
+                                <TableCell>{getDataTypeLabel(field.dataType, t)}</TableCell>
+                                <TableCell>{getCategoryLabel(field.lgpdCategory, t)}</TableCell>
+                                <TableCell>{getSensitivityBadge(field.sensitivity, t)}</TableCell>
                               </TableRow>
                             ))}
                           </TableBody>
@@ -527,9 +532,9 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
       <ConfirmDialog
         open={deleteConfirm.open}
         onOpenChange={(open) => setDeleteConfirm(prev => ({ ...prev, open }))}
-        title="Excluir Descoberta"
-        description="Tem certeza que deseja excluir esta descoberta? Esta ação não pode ser desfeita."
-        confirmText="Excluir"
+        title={t('dadosDashboard.descobertaDadosTab.deleteDialogTitle')}
+        description={t('dadosDashboard.descobertaDadosTab.deleteDialogDescription')}
+        confirmText={t('dadosDashboard.descobertaDadosTab.deleteDialogConfirm')}
         variant="destructive"
         onConfirm={confirmDelete}
       />

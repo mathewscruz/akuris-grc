@@ -20,6 +20,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface SistemaPrivilegiado {
   id: string;
@@ -35,6 +36,7 @@ interface SistemaPrivilegiado {
 }
 
 export default function SistemasContent() {
+  const { t } = useLanguage();
   const { empresaId } = useEmpresaId();
   const [showSistemaDialog, setShowSistemaDialog] = useState(false);
   const [selectedSistema, setSelectedSistema] = useState<SistemaPrivilegiado | null>(null);
@@ -89,8 +91,8 @@ export default function SistemasContent() {
 
     if (contasVinculadas && contasVinculadas.length > 0) {
       toast({
-        title: "Não é possível excluir",
-        description: `O sistema "${sistemaNome}" possui ${contasVinculadas.length} conta(s) vinculada(s). Exclua-as primeiro.`,
+        title: t("governancaComp.sistemas.toastNaoPossivelExcluirTitle"),
+        description: t("governancaComp.sistemas.toastNaoPossivelExcluirDesc", { nome: sistemaNome, count: contasVinculadas.length }),
         variant: "destructive",
       });
       return;
@@ -107,7 +109,7 @@ export default function SistemasContent() {
 
     if (error) {
       toast({
-        title: "Erro ao excluir sistema",
+        title: t("governancaComp.sistemas.toastErrorTitle"),
         description: error.message,
         variant: "destructive",
       });
@@ -115,8 +117,8 @@ export default function SistemasContent() {
     }
 
     toast({
-      title: "Sistema excluído",
-      description: `O sistema foi excluído com sucesso.`,
+      title: t("governancaComp.sistemas.toastDeletedTitle"),
+      description: t("governancaComp.sistemas.toastDeletedDesc"),
     });
     refetchSistemas();
     setDeleteConfirm({ open: false, id: '', nome: '' });
@@ -165,7 +167,7 @@ export default function SistemasContent() {
   const sistemasColumns = [
     {
       key: 'nome_sistema',
-      label: 'Sistema',
+      label: t("governancaComp.sistemas.columnSistema"),
       sortable: true,
       render: (_: any, sistema: SistemaPrivilegiado) => (
         <div className="flex items-center gap-3">
@@ -186,7 +188,7 @@ export default function SistemasContent() {
     },
     {
       key: 'tipo_sistema',
-      label: 'Tipo',
+      label: t("governancaComp.sistemas.columnTipo"),
       sortable: true,
       render: (_: any, sistema: SistemaPrivilegiado) => (
         <Badge variant="outline">{capitalizeText(sistema.tipo_sistema)}</Badge>
@@ -194,29 +196,29 @@ export default function SistemasContent() {
     },
     {
       key: 'criticidade',
-      label: 'Criticidade',
+      label: t("governancaComp.sistemas.columnCriticidade"),
       sortable: true,
       render: (_: any, sistema: SistemaPrivilegiado) => getCriticidadeBadge(sistema.criticidade)
     },
     {
       key: 'categoria',
-      label: 'Categoria',
+      label: t("governancaComp.sistemas.columnCategoria"),
       sortable: true,
       render: (_: any, sistema: SistemaPrivilegiado) => sistema.categoria ? capitalizeText(sistema.categoria.replace('_', ' ')) : '-'
     },
     {
       key: 'ativo',
-      label: 'Status',
+      label: t("governancaComp.sistemas.columnStatus"),
       sortable: true,
       render: (_: any, sistema: SistemaPrivilegiado) => (
         <Badge variant={sistema.ativo ? "default" : "secondary"} className="whitespace-nowrap">
-          {sistema.ativo ? 'Ativo' : 'Inativo'}
+          {sistema.ativo ? t("governancaComp.sistemas.statusAtivo") : t("governancaComp.sistemas.statusInativo")}
         </Badge>
       )
     },
     {
       key: 'url_sistema',
-      label: 'URL',
+      label: t("governancaComp.sistemas.columnUrl"),
       render: (_: any, sistema: SistemaPrivilegiado) => (
         sistema.url_sistema ? (
           <a 
@@ -225,14 +227,14 @@ export default function SistemasContent() {
             rel="noopener noreferrer"
             className="text-primary hover:underline"
           >
-            Acessar
+            {t("governancaComp.sistemas.linkAcessar")}
           </a>
         ) : '-'
       )
     },
     {
       key: 'acoes',
-      label: 'Ações',
+      label: t("governancaComp.sistemas.columnAcoes"),
       render: (_: any, sistema: SistemaPrivilegiado) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -243,14 +245,14 @@ export default function SistemasContent() {
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => handleEditSistema(sistema)}>
               <Edit className="h-4 w-4 mr-2" />
-              Editar
+              {t("governancaComp.sistemas.buttonEditar")}
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => handleDeleteSistema(sistema.id, sistema.nome_sistema)}
               className="text-destructive focus:text-destructive"
             >
               <Trash2 className="h-4 w-4 mr-2" />
-              Excluir
+              {t("governancaComp.sistemas.buttonExcluir")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -261,45 +263,45 @@ export default function SistemasContent() {
   const sistemasFilters = [
     {
       key: 'status',
-      label: 'Status',
+      label: t("governancaComp.sistemas.filterStatus"),
       value: statusFilter,
       onChange: setStatusFilter,
       options: [
-        { value: 'todos', label: 'Todos' },
-        { value: 'ativo', label: 'Ativo' },
-        { value: 'inativo', label: 'Inativo' },
+        { value: 'todos', label: t("governancaComp.sistemas.filterAll") },
+        { value: 'ativo', label: t("governancaComp.sistemas.statusAtivo") },
+        { value: 'inativo', label: t("governancaComp.sistemas.statusInativo") },
       ]
     },
     {
       key: 'tipo',
-      label: 'Tipo',
+      label: t("governancaComp.sistemas.filterTipo"),
       value: tipoFilter,
       onChange: setTipoFilter,
       options: [
-        { value: 'todos', label: 'Todos' },
-        { value: 'aplicacao', label: 'Aplicação' },
-        { value: 'banco_dados', label: 'Banco de Dados' },
-        { value: 'sistema_operacional', label: 'Sistema Operacional' },
-        { value: 'rede', label: 'Rede/Infraestrutura' },
-        { value: 'nuvem', label: 'Nuvem' },
-        { value: 'erp', label: 'ERP' },
-        { value: 'crm', label: 'CRM' },
-        { value: 'bi', label: 'Business Intelligence' },
-        { value: 'seguranca', label: 'Segurança' },
-        { value: 'outro', label: 'Outro' },
+        { value: 'todos', label: t("governancaComp.sistemas.filterAll") },
+        { value: 'aplicacao', label: t("governancaComp.sistemas.tipoAplicacao") },
+        { value: 'banco_dados', label: t("governancaComp.sistemas.tipoBancoDados") },
+        { value: 'sistema_operacional', label: t("governancaComp.sistemas.tipoSistemaOperacional") },
+        { value: 'rede', label: t("governancaComp.sistemas.tipoRede") },
+        { value: 'nuvem', label: t("governancaComp.sistemas.tipoNuvem") },
+        { value: 'erp', label: t("governancaComp.sistemas.tipoErp") },
+        { value: 'crm', label: t("governancaComp.sistemas.tipoCrm") },
+        { value: 'bi', label: t("governancaComp.sistemas.tipoBi") },
+        { value: 'seguranca', label: t("governancaComp.sistemas.tipoSeguranca") },
+        { value: 'outro', label: t("governancaComp.sistemas.tipoOutro") },
       ]
     },
     {
       key: 'criticidade',
-      label: 'Criticidade',
+      label: t("governancaComp.sistemas.filterCriticidade"),
       value: criticidadeFilter,
       onChange: setCriticidadeFilter,
       options: [
-        { value: 'todos', label: 'Todas' },
-        { value: 'critica', label: 'Crítica' },
-        { value: 'alta', label: 'Alta' },
-        { value: 'media', label: 'Média' },
-        { value: 'baixa', label: 'Baixa' },
+        { value: 'todos', label: t("governancaComp.sistemas.filterCriticidadeAllFem") },
+        { value: 'critica', label: t("governancaComp.sistemas.criticidadeCritica") },
+        { value: 'alta', label: t("governancaComp.sistemas.criticidadeAlta") },
+        { value: 'media', label: t("governancaComp.sistemas.criticidadeMedia") },
+        { value: 'baixa', label: t("governancaComp.sistemas.criticidadeBaixa") },
       ]
     }
   ];
@@ -308,31 +310,31 @@ export default function SistemasContent() {
     <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          title="Total de Sistemas"
+          title={t("governancaComp.sistemas.statTotal")}
           value={sistemas.length}
           icon={<Server />}
           variant="primary"
           showAccent
-          emptyHint="Cadastre sistemas para mapear o ambiente."
+          emptyHint={t("governancaComp.sistemas.statTotalEmptyHint")}
           segments={[
-            { label: 'ativos', value: sistemasAtivos, tone: 'success' },
-            { label: 'inativos', value: Math.max(0, sistemas.length - sistemasAtivos), tone: 'neutral' },
+            { label: t("governancaComp.sistemas.segmentAtivos"), value: sistemasAtivos, tone: 'success' },
+            { label: t("governancaComp.sistemas.segmentInativos"), value: Math.max(0, sistemas.length - sistemasAtivos), tone: 'neutral' },
           ]}
         />
         <StatCard
-          title="Sistemas Ativos"
+          title={t("governancaComp.sistemas.statAtivos")}
           value={sistemasAtivos}
           icon={<Monitor />}
           variant="success"
         />
         <StatCard
-          title="Criticidade Alta"
+          title={t("governancaComp.sistemas.statCriticidadeAlta")}
           value={sistemasCriticos}
           icon={<Shield />}
           variant="warning"
         />
         <StatCard
-          title="Sistemas Inativos"
+          title={t("governancaComp.sistemas.statInativos")}
           value={sistemas.length - sistemasAtivos}
           icon={<Lock />}
           variant="default"
@@ -342,17 +344,17 @@ export default function SistemasContent() {
       <Card className="rounded-lg border overflow-hidden">
         <CardContent className="p-0">
           <div className="p-6 pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <h3 className="text-lg font-semibold">Sistemas Cadastrados</h3>
+            <h3 className="text-lg font-semibold">{t("governancaComp.sistemas.title")}</h3>
             <Button onClick={() => setShowSistemaDialog(true)} size="sm">
               <Plus className="h-4 w-4 mr-2" />
-              Novo Sistema
+              {t("governancaComp.sistemas.buttonNovo")}
             </Button>
           </div>
           
           <DataTable
             data={filteredAndSortedSistemas}
             columns={sistemasColumns}
-            searchPlaceholder="Buscar sistemas..."
+            searchPlaceholder={t("governancaComp.sistemas.searchPlaceholder")}
             filters={sistemasFilters}
             sortField={sortField}
             sortDirection={sortDirection}
@@ -365,8 +367,8 @@ export default function SistemasContent() {
               }
             }}
             emptyState={{
-              title: "Nenhum sistema encontrado",
-              description: "Cadastre um novo sistema para começar a gerenciar acessos privilegiados.",
+              title: t("governancaComp.sistemas.emptyTitle"),
+              description: t("governancaComp.sistemas.emptyDescription"),
               icon: <Server className="h-12 w-12" />,
             }}
             loading={isLoading}
@@ -383,10 +385,10 @@ export default function SistemasContent() {
       <ConfirmDialog
         open={deleteConfirm.open}
         onOpenChange={(open) => setDeleteConfirm(prev => ({ ...prev, open }))}
-        title="Excluir Sistema"
-        description={`Tem certeza que deseja excluir o sistema "${deleteConfirm.nome}"? Esta ação não pode ser desfeita.`}
-        confirmText="Excluir"
-        cancelText="Cancelar"
+        title={t("governancaComp.sistemas.deleteTitle")}
+        description={t("governancaComp.sistemas.deleteDescription", { nome: deleteConfirm.nome })}
+        confirmText={t("governancaComp.sistemas.deleteConfirm")}
+        cancelText={t("governancaComp.sistemas.deleteCancel")}
         variant="destructive"
         onConfirm={confirmDelete}
       />

@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { formatDateForInput, parseDateForDB } from "@/lib/date-utils";
 import { useEmpresaId } from "@/hooks/useEmpresaId";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface RopaDialogProps {
   isOpen: boolean;
@@ -24,6 +25,7 @@ interface RopaDialogProps {
 }
 
 export function RopaDialog({ isOpen, onClose, onSave, ropa }: RopaDialogProps) {
+  const { t } = useLanguage();
   const [formData, setFormData] = useState({
     nome_tratamento: ropa?.nome_tratamento || "",
     finalidade: ropa?.finalidade || "",
@@ -83,7 +85,7 @@ export function RopaDialog({ isOpen, onClose, onSave, ropa }: RopaDialogProps) {
         .single();
 
       if (!profile?.empresa_id) {
-        throw new Error('Empresa não encontrada');
+        throw new Error(t('dadosDashboard.common.errorEmpresaNaoEncontrada'));
       }
 
       const payload = {
@@ -101,21 +103,21 @@ export function RopaDialog({ isOpen, onClose, onSave, ropa }: RopaDialogProps) {
           .eq('id', ropa.id);
         
         if (error) throw error;
-        toast({ title: "Registro ROPA atualizado com sucesso!" });
+        toast({ title: t('dadosDashboard.ropaDialog.toastUpdated') });
       } else {
         const { error } = await supabase
           .from('ropa_registros')
           .insert([payload]);
         
         if (error) throw error;
-        toast({ title: "Registro ROPA criado com sucesso!" });
+        toast({ title: t('dadosDashboard.ropaDialog.toastCreated') });
       }
       
       onSave();
       onClose();
     } catch (error: any) {
       toast({
-        title: "Erro ao salvar registro ROPA",
+        title: t('dadosDashboard.ropaDialog.toastErrorTitle'),
         description: error.message,
         variant: "destructive"
       });
@@ -128,7 +130,7 @@ export function RopaDialog({ isOpen, onClose, onSave, ropa }: RopaDialogProps) {
     <DialogShell
         open={isOpen}
         onOpenChange={onClose}
-        title={`${ropa?.id ? "Editar" : "Novo"} Registro ROPA`}
+        title={ropa?.id ? t('dadosDashboard.ropaDialog.titleEdit') : t('dadosDashboard.ropaDialog.titleNew')}
         icon={FileText}
         size="xl"
         onSubmit={handleSave}
@@ -136,72 +138,72 @@ export function RopaDialog({ isOpen, onClose, onSave, ropa }: RopaDialogProps) {
 <div className="grid gap-4 py-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="nome_tratamento">Nome do Tratamento *</Label>
+              <Label htmlFor="nome_tratamento">{t('dadosDashboard.ropaDialog.labelNomeTratamento')}</Label>
               <Input
                 id="nome_tratamento"
                 value={formData.nome_tratamento}
                 onChange={(e) => setFormData({ ...formData, nome_tratamento: e.target.value })}
-                placeholder="Ex: Gestão de clientes"
+                placeholder={t('dadosDashboard.ropaDialog.placeholderNomeTratamento')}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="categoria_titulares">Categoria de Titulares *</Label>
+              <Label htmlFor="categoria_titulares">{t('dadosDashboard.ropaDialog.labelCategoriaTitulares')}</Label>
               <Select value={formData.categoria_titulares} onValueChange={(value) => setFormData({ ...formData, categoria_titulares: value })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione a categoria" />
+                  <SelectValue placeholder={t('dadosDashboard.ropaDialog.placeholderCategoriaTitulares')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="clientes">Clientes</SelectItem>
-                  <SelectItem value="funcionarios">Funcionários</SelectItem>
-                  <SelectItem value="fornecedores">Fornecedores</SelectItem>
-                  <SelectItem value="prospects">Prospects</SelectItem>
-                  <SelectItem value="parceiros">Parceiros</SelectItem>
-                  <SelectItem value="visitantes">Visitantes</SelectItem>
-                  <SelectItem value="outros">Outros</SelectItem>
+                  <SelectItem value="clientes">{t('dadosDashboard.ropaDialog.categoriaClientes')}</SelectItem>
+                  <SelectItem value="funcionarios">{t('dadosDashboard.ropaDialog.categoriaFuncionarios')}</SelectItem>
+                  <SelectItem value="fornecedores">{t('dadosDashboard.ropaDialog.categoriaFornecedores')}</SelectItem>
+                  <SelectItem value="prospects">{t('dadosDashboard.ropaDialog.categoriaProspects')}</SelectItem>
+                  <SelectItem value="parceiros">{t('dadosDashboard.ropaDialog.categoriaParceiros')}</SelectItem>
+                  <SelectItem value="visitantes">{t('dadosDashboard.ropaDialog.categoriaVisitantes')}</SelectItem>
+                  <SelectItem value="outros">{t('dadosDashboard.ropaDialog.categoriaOutros')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="finalidade">Finalidade *</Label>
+            <Label htmlFor="finalidade">{t('dadosDashboard.ropaDialog.labelFinalidade')}</Label>
             <Textarea
               id="finalidade"
               value={formData.finalidade}
               onChange={(e) => setFormData({ ...formData, finalidade: e.target.value })}
-              placeholder="Descreva a finalidade específica do tratamento"
+              placeholder={t('dadosDashboard.ropaDialog.placeholderFinalidade')}
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="base_legal">Base Legal *</Label>
+              <Label htmlFor="base_legal">{t('dadosDashboard.ropaDialog.labelBaseLegal')}</Label>
               <Select value={formData.base_legal} onValueChange={(value) => setFormData({ ...formData, base_legal: value })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione a base legal" />
+                  <SelectValue placeholder={t('dadosDashboard.ropaDialog.placeholderBaseLegal')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="consentimento">Consentimento</SelectItem>
-                  <SelectItem value="legitimo_interesse">Legítimo Interesse</SelectItem>
-                  <SelectItem value="execucao_contrato">Execução de Contrato</SelectItem>
-                  <SelectItem value="cumprimento_obrigacao">Cumprimento de Obrigação Legal</SelectItem>
-                  <SelectItem value="protecao_vida">Proteção da Vida</SelectItem>
-                  <SelectItem value="exercicio_direitos">Exercício de Direitos</SelectItem>
-                  <SelectItem value="politicas_publicas">Políticas Públicas</SelectItem>
+                  <SelectItem value="consentimento">{t('dadosDashboard.common.baseLegalConsentimento')}</SelectItem>
+                  <SelectItem value="legitimo_interesse">{t('dadosDashboard.common.baseLegalLegitimoInteresse')}</SelectItem>
+                  <SelectItem value="execucao_contrato">{t('dadosDashboard.common.baseLegalExecucaoContrato')}</SelectItem>
+                  <SelectItem value="cumprimento_obrigacao">{t('dadosDashboard.common.baseLegalCumprimentoObrigacao')}</SelectItem>
+                  <SelectItem value="protecao_vida">{t('dadosDashboard.common.baseLegalProtecaoVida')}</SelectItem>
+                  <SelectItem value="exercicio_direitos">{t('dadosDashboard.common.baseLegalExercicioDireitos')}</SelectItem>
+                  <SelectItem value="politicas_publicas">{t('dadosDashboard.common.baseLegalPoliticasPublicas')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="origem_dados">Origem dos Dados</Label>
+              <Label htmlFor="origem_dados">{t('dadosDashboard.ropaDialog.labelOrigemDados')}</Label>
               <Select value={formData.origem_dados} onValueChange={(value) => setFormData({ ...formData, origem_dados: value })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione a origem" />
+                  <SelectValue placeholder={t('dadosDashboard.ropaDialog.placeholderOrigemDados')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="diretamente_titular">Diretamente do Titular</SelectItem>
-                  <SelectItem value="terceiros">Terceiros</SelectItem>
-                  <SelectItem value="publico">Fonte Pública</SelectItem>
-                  <SelectItem value="misto">Misto</SelectItem>
+                  <SelectItem value="diretamente_titular">{t('dadosDashboard.ropaDialog.origemDiretamenteTitular')}</SelectItem>
+                  <SelectItem value="terceiros">{t('dadosDashboard.ropaDialog.origemTerceiros')}</SelectItem>
+                  <SelectItem value="publico">{t('dadosDashboard.ropaDialog.origemPublico')}</SelectItem>
+                  <SelectItem value="misto">{t('dadosDashboard.ropaDialog.origemMisto')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -209,27 +211,27 @@ export function RopaDialog({ isOpen, onClose, onSave, ropa }: RopaDialogProps) {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="compartilhamento_dados">Compartilhamento de Dados</Label>
+              <Label htmlFor="compartilhamento_dados">{t('dadosDashboard.ropaDialog.labelCompartilhamentoDados')}</Label>
               <Select value={formData.compartilhamento_dados} onValueChange={(value) => setFormData({ ...formData, compartilhamento_dados: value })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione o compartilhamento" />
+                  <SelectValue placeholder={t('dadosDashboard.ropaDialog.placeholderCompartilhamentoDados')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="nao_compartilha">Não Compartilha</SelectItem>
-                  <SelectItem value="interno">Interno</SelectItem>
-                  <SelectItem value="terceiros">Terceiros</SelectItem>
-                  <SelectItem value="subsidiarias">Subsidiárias</SelectItem>
-                  <SelectItem value="parceiros">Parceiros</SelectItem>
+                  <SelectItem value="nao_compartilha">{t('dadosDashboard.ropaDialog.compartilhamentoNaoCompartilha')}</SelectItem>
+                  <SelectItem value="interno">{t('dadosDashboard.ropaDialog.compartilhamentoInterno')}</SelectItem>
+                  <SelectItem value="terceiros">{t('dadosDashboard.ropaDialog.compartilhamentoTerceiros')}</SelectItem>
+                  <SelectItem value="subsidiarias">{t('dadosDashboard.ropaDialog.compartilhamentoSubsidiarias')}</SelectItem>
+                  <SelectItem value="parceiros">{t('dadosDashboard.ropaDialog.compartilhamentoParceiros')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="prazo_retencao">Prazo de Retenção *</Label>
+              <Label htmlFor="prazo_retencao">{t('dadosDashboard.ropaDialog.labelPrazoRetencao')}</Label>
               <Input
                 id="prazo_retencao"
                 value={formData.prazo_retencao}
                 onChange={(e) => setFormData({ ...formData, prazo_retencao: e.target.value })}
-                placeholder="Ex: 5 anos após fim do contrato"
+                placeholder={t('dadosDashboard.ropaDialog.placeholderPrazoRetencao')}
               />
             </div>
           </div>
@@ -240,30 +242,30 @@ export function RopaDialog({ isOpen, onClose, onSave, ropa }: RopaDialogProps) {
               checked={formData.transferencia_internacional}
               onCheckedChange={(checked) => setFormData({ ...formData, transferencia_internacional: !!checked })}
             />
-            <Label htmlFor="transferencia_internacional">Transferência Internacional</Label>
+            <Label htmlFor="transferencia_internacional">{t('dadosDashboard.ropaDialog.labelTransferenciaInternacional')}</Label>
           </div>
 
           {formData.transferencia_internacional && (
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="pais_destino">País de Destino</Label>
+                <Label htmlFor="pais_destino">{t('dadosDashboard.ropaDialog.labelPaisDestino')}</Label>
                 <Input
                   id="pais_destino"
                   value={formData.pais_destino}
                   onChange={(e) => setFormData({ ...formData, pais_destino: e.target.value })}
-                  placeholder="Ex: Estados Unidos"
+                  placeholder={t('dadosDashboard.ropaDialog.placeholderPaisDestino')}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="adequacao_destino">Adequação do Destino</Label>
+                <Label htmlFor="adequacao_destino">{t('dadosDashboard.ropaDialog.labelAdequacaoDestino')}</Label>
                 <Select value={formData.adequacao_destino} onValueChange={(value) => setFormData({ ...formData, adequacao_destino: value })}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione a adequação" />
+                    <SelectValue placeholder={t('dadosDashboard.ropaDialog.placeholderAdequacaoDestino')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="adequado">País Adequado</SelectItem>
-                    <SelectItem value="garantias">Garantias Específicas</SelectItem>
-                    <SelectItem value="autorizacao_anpd">Autorização ANPD</SelectItem>
+                    <SelectItem value="adequado">{t('dadosDashboard.ropaDialog.adequacaoAdequado')}</SelectItem>
+                    <SelectItem value="garantias">{t('dadosDashboard.ropaDialog.adequacaoGarantias')}</SelectItem>
+                    <SelectItem value="autorizacao_anpd">{t('dadosDashboard.ropaDialog.adequacaoAutorizacaoAnpd')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -272,10 +274,10 @@ export function RopaDialog({ isOpen, onClose, onSave, ropa }: RopaDialogProps) {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="responsavel_tratamento">Responsável pelo Tratamento</Label>
+              <Label htmlFor="responsavel_tratamento">{t('dadosDashboard.ropaDialog.labelResponsavelTratamento')}</Label>
               <Select value={formData.responsavel_tratamento} onValueChange={(value) => setFormData({ ...formData, responsavel_tratamento: value })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione o responsável" />
+                  <SelectValue placeholder={t('dadosDashboard.ropaDialog.placeholderResponsavelTratamento')} />
                 </SelectTrigger>
                 <SelectContent>
                   {usuarios.map((usuario) => (
@@ -287,10 +289,10 @@ export function RopaDialog({ isOpen, onClose, onSave, ropa }: RopaDialogProps) {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="encarregado_dados">Encarregado de Dados (DPO)</Label>
+              <Label htmlFor="encarregado_dados">{t('dadosDashboard.ropaDialog.labelEncarregadoDados')}</Label>
               <Select value={formData.encarregado_dados} onValueChange={(value) => setFormData({ ...formData, encarregado_dados: value })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione o encarregado" />
+                  <SelectValue placeholder={t('dadosDashboard.ropaDialog.placeholderEncarregadoDados')} />
                 </SelectTrigger>
                 <SelectContent>
                   {usuarios.map((usuario) => (
@@ -305,12 +307,12 @@ export function RopaDialog({ isOpen, onClose, onSave, ropa }: RopaDialogProps) {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Data de Início</Label>
+              <Label>{t('dadosDashboard.ropaDialog.labelDataInicio')}</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="w-full justify-start">
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.data_inicio ? format(formData.data_inicio, "dd/MM/yyyy", { locale: ptBR }) : "Selecionar data"}
+                    {formData.data_inicio ? format(formData.data_inicio, "dd/MM/yyyy", { locale: ptBR }) : t('dadosDashboard.ropaDialog.placeholderSelecionarData')}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
@@ -324,12 +326,12 @@ export function RopaDialog({ isOpen, onClose, onSave, ropa }: RopaDialogProps) {
               </Popover>
             </div>
             <div className="space-y-2">
-              <Label>Data de Fim</Label>
+              <Label>{t('dadosDashboard.ropaDialog.labelDataFim')}</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="w-full justify-start">
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.data_fim ? format(formData.data_fim, "dd/MM/yyyy", { locale: ptBR }) : "Selecionar data"}
+                    {formData.data_fim ? format(formData.data_fim, "dd/MM/yyyy", { locale: ptBR }) : t('dadosDashboard.ropaDialog.placeholderSelecionarData')}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
@@ -345,22 +347,22 @@ export function RopaDialog({ isOpen, onClose, onSave, ropa }: RopaDialogProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="medidas_seguranca">Medidas de Segurança</Label>
+            <Label htmlFor="medidas_seguranca">{t('dadosDashboard.ropaDialog.labelMedidasSeguranca')}</Label>
             <Textarea
               id="medidas_seguranca"
               value={formData.medidas_seguranca}
               onChange={(e) => setFormData({ ...formData, medidas_seguranca: e.target.value })}
-              placeholder="Descreva as medidas de segurança aplicadas"
+              placeholder={t('dadosDashboard.ropaDialog.placeholderMedidasSeguranca')}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="observacoes">Observações</Label>
+            <Label htmlFor="observacoes">{t('dadosDashboard.ropaDialog.labelObservacoes')}</Label>
             <Textarea
               id="observacoes"
               value={formData.observacoes}
               onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
-              placeholder="Observações adicionais"
+              placeholder={t('dadosDashboard.ropaDialog.placeholderObservacoes')}
             />
           </div>
         </div>

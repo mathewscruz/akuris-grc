@@ -12,6 +12,7 @@ import { formatDateOnly } from '@/lib/date-utils';
 import { TarefaDialog } from './TarefaDialog';
 import { TesteDialog } from './TesteDialog';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface PlanoDetalheDialogProps {
   open: boolean;
@@ -19,34 +20,36 @@ interface PlanoDetalheDialogProps {
   plano: any;
 }
 
-const statusMap: Record<string, { label: string; tone: StatusTone }> = {
-  rascunho: { label: 'Rascunho', tone: 'neutral' },
-  ativo: { label: 'Ativo', tone: 'success' },
-  em_revisao: { label: 'Em Revisão', tone: 'warning' },
-  desativado: { label: 'Desativado', tone: 'destructive' },
-};
-
-const prioridadeMap: Record<string, { label: string; tone: StatusTone }> = {
-  baixa: { label: 'Baixa', tone: 'neutral' },
-  media: { label: 'Média', tone: 'info' },
-  alta: { label: 'Alta', tone: 'warning' },
-  critica: { label: 'Crítica', tone: 'destructive' },
-};
-
-const tipoTesteMap: Record<string, string> = {
-  tabletop: 'Tabletop',
-  simulacao: 'Simulação',
-  real: 'Teste Real',
-};
-
-const resultadoMap: Record<string, { label: string; tone: StatusTone }> = {
-  aprovado: { label: 'Aprovado', tone: 'success' },
-  reprovado: { label: 'Reprovado', tone: 'destructive' },
-  parcial: { label: 'Parcial', tone: 'warning' },
-};
-
 export function PlanoDetalheDialog({ open, onOpenChange, plano }: PlanoDetalheDialogProps) {
   const { toast } = useToast();
+  const { t } = useLanguage();
+
+  const statusMap: Record<string, { label: string; tone: StatusTone }> = {
+    rascunho: { label: t('continuidadeComp.status.rascunho'), tone: 'neutral' },
+    ativo: { label: t('continuidadeComp.status.ativo'), tone: 'success' },
+    em_revisao: { label: t('continuidadeComp.status.em_revisao'), tone: 'warning' },
+    desativado: { label: t('continuidadeComp.status.desativado'), tone: 'destructive' },
+  };
+
+  const prioridadeMap: Record<string, { label: string; tone: StatusTone }> = {
+    baixa: { label: t('continuidadeComp.prioridade.baixa'), tone: 'neutral' },
+    media: { label: t('continuidadeComp.prioridade.media'), tone: 'info' },
+    alta: { label: t('continuidadeComp.prioridade.alta'), tone: 'warning' },
+    critica: { label: t('continuidadeComp.prioridade.critica'), tone: 'destructive' },
+  };
+
+  const tipoTesteMap: Record<string, string> = {
+    tabletop: t('continuidadeComp.tipoTeste.tabletop'),
+    simulacao: t('continuidadeComp.tipoTeste.simulacao'),
+    real: t('continuidadeComp.tipoTeste.real'),
+  };
+
+  const resultadoMap: Record<string, { label: string; tone: StatusTone }> = {
+    aprovado: { label: t('continuidadeComp.resultado.aprovado'), tone: 'success' },
+    reprovado: { label: t('continuidadeComp.resultado.reprovado'), tone: 'destructive' },
+    parcial: { label: t('continuidadeComp.resultado.parcial'), tone: 'warning' },
+  };
+
   const queryClient = useQueryClient();
   const [tarefaDialog, setTarefaDialog] = useState<{ open: boolean; tarefa?: any }>({ open: false });
   const [testeDialog, setTesteDialog] = useState<{ open: boolean; teste?: any }>({ open: false });
@@ -81,10 +84,10 @@ export function PlanoDetalheDialog({ open, onOpenChange, plano }: PlanoDetalheDi
       const table = deleteConfirm.type === 'tarefa' ? 'continuidade_tarefas' : 'continuidade_testes';
       const { error } = await supabase.from(table).delete().eq('id', deleteConfirm.id);
       if (error) throw error;
-      toast({ title: `${deleteConfirm.type === 'tarefa' ? 'Tarefa' : 'Teste'} excluído` });
+      toast({ title: t('continuidadeComp.detalhe.toastDeleted', { tipo: deleteConfirm.type === 'tarefa' ? t('continuidadeComp.detalhe.labelTarefa') : t('continuidadeComp.detalhe.labelTeste') }) });
       refreshData();
     } catch (error: any) {
-      toast({ title: 'Erro ao excluir', description: error.message, variant: 'destructive' });
+      toast({ title: t('continuidadeComp.detalhe.toastDeleteError'), description: error.message, variant: 'destructive' });
     }
     setDeleteConfirm({ open: false, type: '', id: '' });
   };
@@ -105,29 +108,29 @@ export function PlanoDetalheDialog({ open, onOpenChange, plano }: PlanoDetalheDi
       >
           <div className="flex items-center gap-2 mb-4">
             <StatusBadge tone={st.tone}>{st.label}</StatusBadge>
-            <StatusBadge tone="neutral" variant="outline">{plano.tipo === 'bcp' ? 'BCP' : plano.tipo === 'drp' ? 'DRP' : 'BCP + DRP'}</StatusBadge>
+            <StatusBadge tone="neutral" variant="outline">{plano.tipo === 'bcp' ? t('continuidadeComp.detalhe.tipoBcp') : plano.tipo === 'drp' ? t('continuidadeComp.detalhe.tipoDrp') : t('continuidadeComp.detalhe.tipoAmbos')}</StatusBadge>
           </div>
 
           {/* Resumo */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 my-4">
             {plano.rto_horas != null && (
               <Card className="p-3">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground"><Clock className="h-4 w-4" /> RTO</div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground"><Clock className="h-4 w-4" /> {t('continuidadeComp.detalhe.rto')}</div>
                 <p className="text-lg font-semibold mt-1">{plano.rto_horas}h</p>
               </Card>
             )}
             {plano.rpo_horas != null && (
               <Card className="p-3">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground"><Target className="h-4 w-4" /> RPO</div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground"><Target className="h-4 w-4" /> {t('continuidadeComp.detalhe.rpo')}</div>
                 <p className="text-lg font-semibold mt-1">{plano.rpo_horas}h</p>
               </Card>
             )}
             <Card className="p-3">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground"><ClipboardList className="h-4 w-4" /> Tarefas</div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground"><ClipboardList className="h-4 w-4" /> {t('continuidadeComp.detalhe.tarefas')}</div>
               <p className="text-lg font-semibold mt-1">{tarefas.length}</p>
             </Card>
             <Card className="p-3">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground"><TestTube className="h-4 w-4" /> Testes</div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground"><TestTube className="h-4 w-4" /> {t('continuidadeComp.detalhe.testes')}</div>
               <p className="text-lg font-semibold mt-1">{testes.length}</p>
             </Card>
           </div>
@@ -136,40 +139,40 @@ export function PlanoDetalheDialog({ open, onOpenChange, plano }: PlanoDetalheDi
 
           <Tabs defaultValue="tarefas">
             <TabsList>
-              <TabsTrigger value="tarefas">Tarefas ({tarefas.length})</TabsTrigger>
-              <TabsTrigger value="testes">Testes ({testes.length})</TabsTrigger>
+              <TabsTrigger value="tarefas">{t('continuidadeComp.detalhe.tabTarefas', { count: tarefas.length })}</TabsTrigger>
+              <TabsTrigger value="testes">{t('continuidadeComp.detalhe.tabTestes', { count: testes.length })}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="tarefas" className="space-y-3 mt-4">
               <div className="flex justify-end">
                 <Button size="sm" onClick={() => setTarefaDialog({ open: true })}>
-                  <Plus className="h-4 w-4 mr-1" /> Tarefa
+                  <Plus className="h-4 w-4 mr-1" /> {t('continuidadeComp.detalhe.buttonTarefa')}
                 </Button>
               </div>
               {tarefas.length === 0 ? (
-                <p className="text-center text-sm text-muted-foreground py-8">Nenhuma tarefa cadastrada</p>
+                <p className="text-center text-sm text-muted-foreground py-8">{t('continuidadeComp.detalhe.emptyTarefas')}</p>
               ) : (
-                tarefas.map((t: any) => {
-                  const pri = prioridadeMap[t.prioridade] || prioridadeMap.media;
+                tarefas.map((tarefa: any) => {
+                  const pri = prioridadeMap[tarefa.prioridade] || prioridadeMap.media;
                   return (
-                    <Card key={t.id} className="p-3">
+                    <Card key={tarefa.id} className="p-3">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-medium text-sm">{t.titulo}</span>
+                            <span className="font-medium text-sm">{tarefa.titulo}</span>
                             <StatusBadge tone={pri.tone} size="sm">{pri.label}</StatusBadge>
-                            <StatusBadge tone={t.status === 'concluida' ? 'success' : t.status === 'em_andamento' ? 'info' : 'neutral'} size="sm">
-                              {t.status === 'pendente' ? 'Pendente' : t.status === 'em_andamento' ? 'Em Andamento' : 'Concluída'}
+                            <StatusBadge tone={tarefa.status === 'concluida' ? 'success' : tarefa.status === 'em_andamento' ? 'info' : 'neutral'} size="sm">
+                              {tarefa.status === 'pendente' ? t('continuidadeComp.detalhe.statusPendente') : tarefa.status === 'em_andamento' ? t('continuidadeComp.detalhe.statusEmAndamento') : t('continuidadeComp.detalhe.statusConcluida')}
                             </StatusBadge>
                           </div>
-                          {t.descricao && <p className="text-xs text-muted-foreground mt-1">{t.descricao}</p>}
-                          {t.prazo && <p className="text-xs text-muted-foreground mt-1">Prazo: {formatDateOnly(t.prazo)}</p>}
+                          {tarefa.descricao && <p className="text-xs text-muted-foreground mt-1">{tarefa.descricao}</p>}
+                          {tarefa.prazo && <p className="text-xs text-muted-foreground mt-1">{t('continuidadeComp.detalhe.prazoPrefix')}: {formatDateOnly(tarefa.prazo)}</p>}
                         </div>
                         <div className="flex gap-1 shrink-0">
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setTarefaDialog({ open: true, tarefa: t })}>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setTarefaDialog({ open: true, tarefa })}>
                             <Edit className="h-3.5 w-3.5" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteConfirm({ open: true, type: 'tarefa', id: t.id })}>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteConfirm({ open: true, type: 'tarefa', id: tarefa.id })}>
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
                         </div>
@@ -183,31 +186,31 @@ export function PlanoDetalheDialog({ open, onOpenChange, plano }: PlanoDetalheDi
             <TabsContent value="testes" className="space-y-3 mt-4">
               <div className="flex justify-end">
                 <Button size="sm" onClick={() => setTesteDialog({ open: true })}>
-                  <Plus className="h-4 w-4 mr-1" /> Teste
+                  <Plus className="h-4 w-4 mr-1" /> {t('continuidadeComp.detalhe.buttonTeste')}
                 </Button>
               </div>
               {testes.length === 0 ? (
-                <p className="text-center text-sm text-muted-foreground py-8">Nenhum teste registrado</p>
+                <p className="text-center text-sm text-muted-foreground py-8">{t('continuidadeComp.detalhe.emptyTestes')}</p>
               ) : (
-                testes.map((t: any) => {
-                  const res = t.resultado ? (resultadoMap[t.resultado] || { label: t.resultado, tone: 'neutral' as StatusTone }) : null;
+                testes.map((teste: any) => {
+                  const res = teste.resultado ? (resultadoMap[teste.resultado] || { label: teste.resultado, tone: 'neutral' as StatusTone }) : null;
                   return (
-                    <Card key={t.id} className="p-3">
+                    <Card key={teste.id} className="p-3">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-medium text-sm">{tipoTesteMap[t.tipo_teste] || t.tipo_teste}</span>
-                            <StatusBadge tone="neutral" variant="outline" size="sm">{formatDateOnly(t.data_teste)}</StatusBadge>
+                            <span className="font-medium text-sm">{tipoTesteMap[teste.tipo_teste] || teste.tipo_teste}</span>
+                            <StatusBadge tone="neutral" variant="outline" size="sm">{formatDateOnly(teste.data_teste)}</StatusBadge>
                             {res && <StatusBadge tone={res.tone} size="sm">{res.label}</StatusBadge>}
                           </div>
-                          {t.descricao && <p className="text-xs text-muted-foreground mt-1">{t.descricao}</p>}
-                          {t.licoes_aprendidas && <p className="text-xs text-muted-foreground mt-1"><strong>Lições:</strong> {t.licoes_aprendidas}</p>}
+                          {teste.descricao && <p className="text-xs text-muted-foreground mt-1">{teste.descricao}</p>}
+                          {teste.licoes_aprendidas && <p className="text-xs text-muted-foreground mt-1"><strong>{t('continuidadeComp.detalhe.licoesPrefix')}:</strong> {teste.licoes_aprendidas}</p>}
                         </div>
                         <div className="flex gap-1 shrink-0">
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setTesteDialog({ open: true, teste: t })}>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setTesteDialog({ open: true, teste })}>
                             <Edit className="h-3.5 w-3.5" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteConfirm({ open: true, type: 'teste', id: t.id })}>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteConfirm({ open: true, type: 'teste', id: teste.id })}>
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
                         </div>
@@ -239,10 +242,10 @@ export function PlanoDetalheDialog({ open, onOpenChange, plano }: PlanoDetalheDi
       <ConfirmDialog
         open={deleteConfirm.open}
         onOpenChange={o => setDeleteConfirm(p => ({ ...p, open: o }))}
-        title="Confirmar exclusão"
-        description={`Deseja excluir ${deleteConfirm.type === 'tarefa' ? 'esta tarefa' : 'este teste'}?`}
-        confirmText="Excluir"
-        cancelText="Cancelar"
+        title={t('continuidadeComp.detalhe.confirmDeleteTitle')}
+        description={deleteConfirm.type === 'tarefa' ? t('continuidadeComp.detalhe.confirmDeleteTarefa') : t('continuidadeComp.detalhe.confirmDeleteTeste')}
+        confirmText={t('continuidadeComp.detalhe.confirmDeleteConfirm')}
+        cancelText={t('continuidadeComp.detalhe.confirmDeleteCancel')}
         variant="destructive"
         onConfirm={handleDelete}
       />
