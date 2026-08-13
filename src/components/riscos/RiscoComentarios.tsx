@@ -82,6 +82,7 @@ function useRiscoComentarios(riscoId: string) {
 
 export function RiscoComentarios({ riscoId }: { riscoId: string }) {
   const { toast } = useToast();
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const { data: comentarios = [], isLoading, isError, error, isFetching, refetch } = useRiscoComentarios(riscoId);
   const [texto, setTexto] = useState('');
@@ -128,8 +129,8 @@ export function RiscoComentarios({ riscoId }: { riscoId: string }) {
   });
 
   const submit = () => {
-    const t = texto.trim();
-    if (t) add.mutate(t);
+    const value = texto.trim();
+    if (value) add.mutate(value);
   };
 
   return (

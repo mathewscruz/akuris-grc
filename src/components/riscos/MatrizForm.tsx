@@ -21,6 +21,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 const COLOR_PALETTE = ['#22c55e', '#84cc16', '#eab308', '#f97316', '#dc2626', '#6b7280', '#3b82f6', '#7552ff'];
 
 function ColorSwatch({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const { t } = useLanguage();
   return (
     <Popover>
       <PopoverTrigger asChild>
