@@ -838,16 +838,18 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                       <h4 className="text-sm font-semibold text-foreground">{t('gapUi.detail.guidanceTitle')}</h4>
                       <ChevronDown className={cn('h-3.5 w-3.5 text-muted-foreground transition-transform', guidanceOpen ? '' : '-rotate-90')} strokeWidth={1.5} />
                     </button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
-                      onClick={() => triggerGuidanceGeneration(true)}
-                      disabled={generatingGuidance}
-                    >
-                      {generatingGuidance ? <AkurisPulse size={12} className="mr-1" /> : <RefreshCw className="h-3 w-3 mr-1" strokeWidth={1.5} />}
-                      {generatingGuidance ? t('gapUi.detail.generating') : t('gapUi.detail.regenerate')}
-                    </Button>
+                    {isSuperAdmin && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                        onClick={() => triggerGuidanceGeneration(true)}
+                        disabled={generatingGuidance}
+                      >
+                        {generatingGuidance ? <AkurisPulse size={12} className="mr-1" /> : <RefreshCw className="h-3 w-3 mr-1" strokeWidth={1.5} />}
+                        {generatingGuidance ? t('gapUi.detail.generating') : t('gapUi.detail.regenerate')}
+                      </Button>
+                    )}
                   </div>
 
                   {guidanceOpen && (generatingGuidance && !guidanceText ? (
