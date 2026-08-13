@@ -44,10 +44,14 @@ describe('i18n — paridade PT/EN', () => {
     expect({ faltandoEmEn, faltandoEmPt }).toEqual({ faltandoEmEn: [], faltandoEmPt: [] });
   });
 
+  // Chaves cujo valor vazio é intencional (usadas como fallback silencioso).
+  const VAZIAS_PERMITIDAS = ['dashWidgets.drill.fallback.description'];
+
   it('não tem valores vazios', () => {
+    const filtrar = (chaves: string[]) => chaves.filter((k) => !VAZIAS_PERMITIDAS.includes(k));
     expect({
-      pt: emptyValues(modulesPt as Dict),
-      en: emptyValues(modulesEn as Dict),
+      pt: filtrar(emptyValues(modulesPt as Dict)),
+      en: filtrar(emptyValues(modulesEn as Dict)),
     }).toEqual({ pt: [], en: [] });
   });
 });
