@@ -353,25 +353,25 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     setIsLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('docgen-chat', {
-        body: {
-          message: text,
-          conversation_id: conversationId,
-          user_id: userInfo.user_id,
-          empresa_id: userInfo.empresa_id,
-          action: 'chat',
-          ...(effFrameworkName && { framework_context: { framework_name: effFrameworkName, framework_id: effFrameworkId } }),
-          ...(requirementContext && { requirement_context: requirementContext }),
-          ...(companyContext && { company_context: companyContext }),
-        }
+      const res = await callDocGen({
+        message: text,
+        conversation_id: conversationId,
+        user_id: userInfo.user_id,
+        empresa_id: userInfo.empresa_id,
+        action: 'chat',
+        ...(effFrameworkName && { framework_context: { framework_name: effFrameworkName, framework_id: effFrameworkId } }),
+        ...(requirementContext && { requirement_context: requirementContext }),
+        ...(companyContext && { company_context: companyContext }),
       });
 
-      if (error) throw error;
-
-      if (data?.error === 'CREDITS_EXHAUSTED') {
-        setShowCreditsDialog(true);
+      if (res.credits) { setShowCreditsDialog(true); return; }
+      if (res.timeout) {
+        toast({ title: t('docgen.dialog.timeoutTitle'), description: t('docgen.dialog.timeoutDescription'), variant: 'destructive' });
         return;
       }
+      if (res.error) throw new Error(res.error);
+      const data = res.data;
+
 
       const assistantMessage: ChatMessage = {
         role: 'assistant',
