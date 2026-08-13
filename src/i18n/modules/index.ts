@@ -60,6 +60,31 @@ import { sweepCore } from './sweep-core';
 
 type ModuleDict = { pt: Record<string, unknown>; en: Record<string, unknown> };
 
+function isDictionary(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Combina dicionários sem apagar chaves irmãs de namespaces compartilhados
+ * como `common`. Um Object.assign superficial fazia o último módulo substituir
+ * todo o namespace e deixava chaves válidas visíveis na interface.
+ */
+export function mergeDictionaries(
+  base: Record<string, unknown>,
+  addition: Record<string, unknown>,
+): Record<string, unknown> {
+  const merged = { ...base };
+
+  for (const [key, value] of Object.entries(addition)) {
+    const current = merged[key];
+    merged[key] = isDictionary(current) && isDictionary(value)
+      ? mergeDictionaries(current, value)
+      : value;
+  }
+
+  return merged;
+}
+
 const modules: Record<string, ModuleDict> = {
   riscos,
   riscosVisoes,
@@ -115,9 +140,9 @@ const modules: Record<string, ModuleDict> = {
 
 
 function collect(locale: 'pt' | 'en'): Record<string, unknown> {
-  const out: Record<string, unknown> = {};
+  let out: Record<string, unknown> = {};
   for (const mod of Object.values(modules)) {
-    Object.assign(out, mod[locale]);
+    out = mergeDictionaries(out, mod[locale]);
   }
   return out;
 }

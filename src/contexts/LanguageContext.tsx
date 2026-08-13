@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
 import { pt } from '@/i18n/pt';
 import { en } from '@/i18n/en';
-import { modulesPt, modulesEn } from '@/i18n/modules';
+import { modulesPt, modulesEn, mergeDictionaries } from '@/i18n/modules';
 import { supabase } from '@/integrations/supabase/client';
 import { setAppLocale, getInitialLocale, persistExplicitLocale } from '@/lib/i18n-locale';
 
@@ -9,8 +9,8 @@ export type Locale = 'pt' | 'en';
 type Dictionary = Record<string, any>;
 
 const dictionaries: Record<Locale, Dictionary> = {
-  pt: { ...pt, ...modulesPt },
-  en: { ...en, ...modulesEn },
+  pt: mergeDictionaries(pt, modulesPt),
+  en: mergeDictionaries(en, modulesEn),
 };
 
 
