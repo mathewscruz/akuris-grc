@@ -3,7 +3,7 @@ import { pt } from '@/i18n/pt';
 import { en } from '@/i18n/en';
 import { modulesPt, modulesEn } from '@/i18n/modules';
 import { supabase } from '@/integrations/supabase/client';
-import { setAppLocale } from '@/lib/i18n-locale';
+import { setAppLocale, detectLocaleByRegion } from '@/lib/i18n-locale';
 
 export type Locale = 'pt' | 'en';
 type Dictionary = Record<string, any>;
@@ -42,8 +42,11 @@ function detectInitialLocale(): Locale {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved === 'en' || saved === 'pt') return saved;
-    const browserLang = navigator.language || '';
-    return browserLang.startsWith('pt') ? 'pt' : 'en';
+  } catch {
+    // localStorage indisponível
+  }
+  try {
+    return detectLocaleByRegion();
   } catch {
     return 'pt';
   }
