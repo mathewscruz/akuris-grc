@@ -904,10 +904,7 @@ export const gapAnalysis = {
           audience: 'Organizações que desejam elevar seu nível de maturidade e demonstrar conformidade com padrões reconhecidos do mercado.',
           benefits: ['Processos mais organizados e documentados', 'Redução de riscos operacionais', 'Maior confiança de clientes e parceiros', 'Base para certificações futuras'],
         },
-      },
-
-        status: { conforme: 'Conforme', parcial: 'Parcial', naoConforme: 'Não Conforme', na: 'N/A', naoAvaliado: 'Não Avaliado', pendente: 'Pendente' },
-      },
+      status: { conforme: 'Conforme', parcial: 'Parcial', naoConforme: 'Não Conforme', na: 'N/A', naoAvaliado: 'Não Avaliado', pendente: 'Pendente' },
     },
   },
   en: {
@@ -1815,10 +1812,7 @@ export const gapAnalysis = {
           audience: 'Organizations that want to raise their maturity level and demonstrate compliance with recognized market standards.',
           benefits: ['More organized and documented processes', 'Reduced operational risks', 'Greater trust from customers and partners', 'Foundation for future certifications'],
         },
-      },
-
-        status: { conforme: 'Compliant', parcial: 'Partial', naoConforme: 'Non-compliant', na: 'N/A', naoAvaliado: 'Not Evaluated', pendente: 'Pending' },
-      },
+      status: { conforme: 'Compliant', parcial: 'Partial', naoConforme: 'Non-compliant', na: 'N/A', naoAvaliado: 'Not Evaluated', pendente: 'Pending' },
     },
   },
 };
