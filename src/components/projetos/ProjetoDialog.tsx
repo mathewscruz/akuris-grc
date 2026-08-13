@@ -9,6 +9,7 @@ import { UserSelect } from '@/components/riscos/UserSelect';
 import { useUpsertProjeto } from '@/hooks/useProjetos';
 import { useAuth } from '@/components/AuthProvider';
 import type { Projeto, ProjetoStatus } from '@/types/projetos';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Props {
   open: boolean;
@@ -18,6 +19,7 @@ interface Props {
 
 export function ProjetoDialog({ open, onOpenChange, projeto }: Props) {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const upsert = useUpsertProjeto();
   const [form, setForm] = useState({
     nome: '',
@@ -64,50 +66,50 @@ export function ProjetoDialog({ open, onOpenChange, projeto }: Props) {
       open={open}
       onOpenChange={onOpenChange}
       icon={FolderKanban}
-      title={projeto ? 'Editar projeto' : 'Novo projeto'}
+      title={projeto ? t('projetos.dialog.titleEdit') : t('projetos.dialog.titleNew')}
       size="sm"
       onSubmit={() => handleSubmit(new Event('submit') as unknown as React.FormEvent)}
-      submitLabel="Salvar"
+      submitLabel={t('projetos.dialog.save')}
       isSubmitting={upsert.isPending}
     >
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label>Nome *</Label>
+            <Label>{t('projetos.dialog.fieldNome')}</Label>
             <Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} required />
           </div>
           <div>
-            <Label>Descrição</Label>
+            <Label>{t('projetos.dialog.fieldDescricao')}</Label>
             <Textarea value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} rows={3} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Status</Label>
+              <Label>{t('projetos.dialog.fieldStatus')}</Label>
               <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as ProjetoStatus })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ativo">Ativo</SelectItem>
-                  <SelectItem value="pausado">Pausado</SelectItem>
-                  <SelectItem value="concluido">Concluído</SelectItem>
-                  <SelectItem value="arquivado">Arquivado</SelectItem>
+                  <SelectItem value="ativo">{t('projetos.status.ativo')}</SelectItem>
+                  <SelectItem value="pausado">{t('projetos.status.pausado')}</SelectItem>
+                  <SelectItem value="concluido">{t('projetos.status.concluido')}</SelectItem>
+                  <SelectItem value="arquivado">{t('projetos.status.arquivado')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label>Cor</Label>
+              <Label>{t('projetos.dialog.fieldCor')}</Label>
               <Input type="color" value={form.cor} onChange={(e) => setForm({ ...form, cor: e.target.value })} className="h-10" />
             </div>
           </div>
           <div>
-            <Label>Responsável (owner) *</Label>
+            <Label>{t('projetos.dialog.fieldOwner')}</Label>
             <UserSelect value={form.owner_id} onValueChange={(v) => setForm({ ...form, owner_id: v })} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Início</Label>
+              <Label>{t('projetos.dialog.fieldInicio')}</Label>
               <Input type="date" value={form.data_inicio} onChange={(e) => setForm({ ...form, data_inicio: e.target.value })} />
             </div>
             <div>
-              <Label>Fim previsto</Label>
+              <Label>{t('projetos.dialog.fieldFimPrevisto')}</Label>
               <Input type="date" value={form.data_fim_prevista} onChange={(e) => setForm({ ...form, data_fim_prevista: e.target.value })} />
             </div>
           </div>

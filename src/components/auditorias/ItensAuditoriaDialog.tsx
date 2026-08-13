@@ -30,6 +30,7 @@ import { formatDateOnly } from "@/lib/date-utils";
 import { formatStatus } from "@/lib/text-utils";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { resolveWorkflowStatusTone, resolveAuditoriaPrioridadeTone } from "@/lib/status-tone";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface ItensAuditoriaDialogProps {
   open: boolean;
@@ -38,11 +39,11 @@ interface ItensAuditoriaDialogProps {
   auditoriaNome: string;
 }
 
-const statusOptions = [
-  { value: "pendente", label: "Pendente" },
-  { value: "em_andamento", label: "Em Andamento" },
-  { value: "concluido", label: "Concluído" },
-  { value: "nao_aplicavel", label: "Não Aplicável" },
+const getStatusOptions = (t: (key: string) => string) => [
+  { value: "pendente", label: t("controlesAuditorias.iadStatusPendente") },
+  { value: "em_andamento", label: t("controlesAuditorias.iadStatusEmAndamento") },
+  { value: "concluido", label: t("controlesAuditorias.iadStatusConcluido") },
+  { value: "nao_aplicavel", label: t("controlesAuditorias.iadStatusNaoAplicavel") },
 ];
 
 export function ItensAuditoriaDialog({
@@ -51,6 +52,7 @@ export function ItensAuditoriaDialog({
   auditoriaId,
   auditoriaNome,
 }: ItensAuditoriaDialogProps) {
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("todos");
@@ -60,6 +62,8 @@ export function ItensAuditoriaDialog({
   const [isDetalheOpen, setIsDetalheOpen] = useState(false);
   const [detalheItem, setDetalheItem] = useState<any>(null);
   const [isImportOpen, setIsImportOpen] = useState(false);
+
+  const statusOptions = getStatusOptions(t);
 
   const { data: usuarios } = useUsuariosEmpresa();
 
@@ -229,7 +233,7 @@ export function ItensAuditoriaDialog({
         open={open}
         onOpenChange={onOpenChange}
         icon={FileText}
-        title={`Itens de Verificação — ${auditoriaNome}`}
+        title={t("controlesAuditorias.iadTitle", { nome: auditoriaNome })}
         size="xl"
         noScroll
         hideFooter
@@ -238,15 +242,15 @@ export function ItensAuditoriaDialog({
           {/* Progresso */}
           <div className="bg-muted/50 rounded-lg p-4 space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Progresso da Auditoria</span>
-              <span className="font-medium">{progressPercent}% concluído</span>
+              <span className="text-muted-foreground">{t("controlesAuditorias.iadProgresso")}</span>
+              <span className="font-medium">{t("controlesAuditorias.iadProgressoConcluido", { percent: progressPercent })}</span>
             </div>
             <Progress value={progressPercent} className="h-2" />
             <div className="flex gap-4 text-xs text-muted-foreground">
-              <span>Total: {stats.total}</span>
-              <span className="text-muted-foreground">Pendente: {stats.pendente}</span>
-              <span className="text-info">Em Andamento: {stats.em_andamento}</span>
-              <span className="text-success">Concluído: {stats.concluido}</span>
+              <span>{t("controlesAuditorias.iadTotal", { count: stats.total })}</span>
+              <span className="text-muted-foreground">{t("controlesAuditorias.iadPendente", { count: stats.pendente })}</span>
+              <span className="text-info">{t("controlesAuditorias.iadEmAndamento", { count: stats.em_andamento })}</span>
+              <span className="text-success">{t("controlesAuditorias.iadConcluido", { count: stats.concluido })}</span>
             </div>
           </div>
 
@@ -255,7 +259,7 @@ export function ItensAuditoriaDialog({
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar por código ou título..."
+                placeholder={t("controlesAuditorias.iadSearchPlaceholder")}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -263,10 +267,10 @@ export function ItensAuditoriaDialog({
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder="Status" />
+                <SelectValue placeholder={t("controlesAuditorias.iadStatusFilter")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="todos">Todos Status</SelectItem>
+                <SelectItem value="todos">{t("controlesAuditorias.iadTodosStatus")}</SelectItem>
                 {statusOptions.map((s) => (
                   <SelectItem key={s.value} value={s.value}>
                     {s.label}
@@ -276,10 +280,10 @@ export function ItensAuditoriaDialog({
             </Select>
             <Select value={responsavelFilter} onValueChange={setResponsavelFilter}>
               <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Responsável" />
+                <SelectValue placeholder={t("controlesAuditorias.iadResponsavelFilter")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="todos">Todos Responsáveis</SelectItem>
+                <SelectItem value="todos">{t("controlesAuditorias.iadTodosResponsaveis")}</SelectItem>
                 {usuarios?.map((u) => (
                   <SelectItem key={u.user_id} value={u.user_id}>
                     {u.nome}
@@ -289,11 +293,11 @@ export function ItensAuditoriaDialog({
             </Select>
             <Button variant="outline" onClick={() => setIsImportOpen(true)}>
               <Download className="h-4 w-4 mr-2" />
-              Importar Controles
+              {t("controlesAuditorias.iadBtnImportarControles")}
             </Button>
             <Button onClick={handleAddItem}>
               <Plus className="h-4 w-4 mr-2" />
-              Adicionar Item
+              {t("controlesAuditorias.iadBtnAdicionarItem")}
             </Button>
           </div>
 
@@ -302,26 +306,26 @@ export function ItensAuditoriaDialog({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[100px]">Código</TableHead>
-                  <TableHead>Título</TableHead>
-                  <TableHead className="w-[150px]">Responsável</TableHead>
-                  <TableHead className="w-[100px]">Prazo</TableHead>
-                  <TableHead className="w-[100px]">Prioridade</TableHead>
-                  <TableHead className="w-[120px]">Status</TableHead>
-                  <TableHead className="w-[80px] text-center">Ações</TableHead>
+                  <TableHead className="w-[100px]">{t("controlesAuditorias.iadColCodigo")}</TableHead>
+                  <TableHead>{t("controlesAuditorias.iadColTitulo")}</TableHead>
+                  <TableHead className="w-[150px]">{t("controlesAuditorias.iadColResponsavel")}</TableHead>
+                  <TableHead className="w-[100px]">{t("controlesAuditorias.iadColPrazo")}</TableHead>
+                  <TableHead className="w-[100px]">{t("controlesAuditorias.iadColPrioridade")}</TableHead>
+                  <TableHead className="w-[120px]">{t("controlesAuditorias.iadColStatus")}</TableHead>
+                  <TableHead className="w-[80px] text-center">{t("controlesAuditorias.iadColAcoes")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                      Carregando...
+                      {t("controlesAuditorias.iadLoading")}
                     </TableCell>
                   </TableRow>
                 ) : filteredItens?.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                      Nenhum item encontrado
+                      {t("controlesAuditorias.iadEmpty")}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -344,7 +348,7 @@ export function ItensAuditoriaDialog({
                           <span className="font-medium">{item.titulo}</span>
                           {(item as any).is_controle_vinculado ? (
                             <StatusBadge size="sm" tone="neutral" variant="outline" className="w-fit mt-1">
-                              Controle Vinculado
+                              {t("controlesAuditorias.iadControleVinculado")}
                             </StatusBadge>
                           ) : (
                             <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">

@@ -3,6 +3,7 @@ import { ListTodo } from 'lucide-react';
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { CriarTarefaFromGRC } from './CriarTarefaFromGRC';
 import type { ProjetoVinculoEntidade } from '@/types/projetos';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 /**
  * Item de menu controlado: abre o dialog do CriarTarefaFromGRC mesmo quando
@@ -15,10 +16,11 @@ export function CriarTarefaMenuItem(props: {
   descricaoSugerida?: string;
 }) {
   const [open, setOpen] = React.useState(false);
+  const { t } = useLanguage();
   return (
     <>
       <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setOpen(true); }}>
-        <ListTodo className="mr-2 h-4 w-4" /> Criar tarefa de projeto
+        <ListTodo className="mr-2 h-4 w-4" /> {t('projetos.criarTarefaGRC.buttonLabel')}
       </DropdownMenuItem>
       <CriarTarefaFromGRCControlled
         open={open}

@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { formatStatus } from '@/lib/text-utils';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveCriticidadeTone } from '@/lib/status-tone';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface ImportacaoAtivosProps {
   open: boolean;
@@ -42,6 +43,7 @@ interface ImportedAtivo {
 }
 
 const ImportacaoAtivos: React.FC<ImportacaoAtivosProps> = ({ open, onOpenChange, onSuccess }) => {
+  const { t } = useLanguage();
   const { profile } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [step, setStep] = useState<'upload' | 'preview' | 'importing' | 'success'>('upload');
@@ -96,36 +98,36 @@ const ImportacaoAtivos: React.FC<ImportacaoAtivosProps> = ({ open, onOpenChange,
     const errors: string[] = [];
 
     // Validações obrigatórias
-    if (!ativo.nome?.trim()) errors.push('Nome é obrigatório');
-    if (!ativo.tipo?.trim()) errors.push('Tipo é obrigatório');
-    if (!ativo.criticidade?.trim()) errors.push('Criticidade é obrigatória');
-    if (!ativo.status?.trim()) errors.push('Status é obrigatório');
+    if (!ativo.nome?.trim()) errors.push(t('contratosAtivos.importacaoAtivos.errorRequiredName'));
+    if (!ativo.tipo?.trim()) errors.push(t('contratosAtivos.importacaoAtivos.errorRequiredType'));
+    if (!ativo.criticidade?.trim()) errors.push(t('contratosAtivos.importacaoAtivos.errorRequiredCriticality'));
+    if (!ativo.status?.trim()) errors.push(t('contratosAtivos.importacaoAtivos.errorRequiredStatus'));
 
     // Validações de valores permitidos
     if (ativo.tipo && !tiposAtivo.includes(ativo.tipo.toLowerCase())) {
-      errors.push(`Tipo inválido. Valores permitidos: ${tiposAtivo.join(', ')}`);
+      errors.push(t('contratosAtivos.importacaoAtivos.errorInvalidType', { values: tiposAtivo.join(', ') }));
     }
     if (ativo.criticidade && !criticidades.includes(ativo.criticidade.toLowerCase())) {
-      errors.push(`Criticidade inválida. Valores permitidos: ${criticidades.join(', ')}`);
+      errors.push(t('contratosAtivos.importacaoAtivos.errorInvalidCriticality', { values: criticidades.join(', ') }));
     }
     if (ativo.status && !statusOptions.includes(ativo.status.toLowerCase())) {
-      errors.push(`Status inválido. Valores permitidos: ${statusOptions.join(', ')}`);
+      errors.push(t('contratosAtivos.importacaoAtivos.errorInvalidStatus', { values: statusOptions.join(', ') }));
     }
     if (ativo.valor_negocio && !valoresNegocio.includes(ativo.valor_negocio.toLowerCase())) {
-      errors.push(`Valor de negócio inválido. Valores permitidos: ${valoresNegocio.join(', ')}`);
+      errors.push(t('contratosAtivos.importacaoAtivos.errorInvalidBusinessValue', { values: valoresNegocio.join(', ') }));
     }
 
     // Validação de data
     if (ativo.data_aquisicao && ativo.data_aquisicao.trim()) {
       const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
       if (!dateRegex.test(ativo.data_aquisicao)) {
-        errors.push('Data de aquisição deve estar no formato AAAA-MM-DD');
+        errors.push(t('contratosAtivos.importacaoAtivos.errorInvalidDate'));
       }
     }
 
     // Validação de quantidade
     if (ativo.quantidade && isNaN(Number(ativo.quantidade))) {
-      errors.push('Quantidade deve ser um número');
+      errors.push(t('contratosAtivos.importacaoAtivos.errorInvalidQuantity'));
     }
 
     return {
@@ -161,7 +163,7 @@ const ImportacaoAtivos: React.FC<ImportacaoAtivosProps> = ({ open, onOpenChange,
         const lines = text.split('\n').map(line => line.trim()).filter(line => line);
         
         if (lines.length < 2) {
-          toast.error('Arquivo deve conter pelo menos um cabeçalho e uma linha de dados');
+          toast.error(t('contratosAtivos.importacaoAtivos.errorEmptyFile'));
           return;
         }
 
@@ -184,7 +186,7 @@ const ImportacaoAtivos: React.FC<ImportacaoAtivosProps> = ({ open, onOpenChange,
         setErrorCount(data.filter(a => !a.valid).length);
         setStep('preview');
       } catch (error) {
-        toast.error('Erro ao processar arquivo. Verifique o formato CSV.');
+        toast.error(t('contratosAtivos.importacaoAtivos.errorParseFile'));
       }
     };
     reader.readAsText(file);
@@ -192,7 +194,7 @@ const ImportacaoAtivos: React.FC<ImportacaoAtivosProps> = ({ open, onOpenChange,
 
   const performImport = async () => {
     if (!profile?.empresa_id) {
-      toast.error('Usuário deve estar vinculado a uma empresa');
+      toast.error(t('contratosAtivos.importacaoAtivos.errorNoEmpresa'));
       return;
     }
 
@@ -247,11 +249,11 @@ const ImportacaoAtivos: React.FC<ImportacaoAtivosProps> = ({ open, onOpenChange,
     setStep('success');
     
     if (successCount > 0) {
-      toast.success(`${successCount} ativo(s) importado(s) com sucesso!`);
+      toast.success(t('contratosAtivos.importacaoAtivos.toastImportSuccess', { count: successCount }));
       onSuccess();
     }
     if (errorCount > 0) {
-      toast.error(`${errorCount} ativo(s) falharam na importação`);
+      toast.error(t('contratosAtivos.importacaoAtivos.toastImportError', { count: errorCount }));
     }
   };
 
@@ -272,10 +274,10 @@ const ImportacaoAtivos: React.FC<ImportacaoAtivosProps> = ({ open, onOpenChange,
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Upload className="h-5 w-5" />
-            Importação em Massa de Ativos
+            {t('contratosAtivos.importacaoAtivos.title')}
           </DialogTitle>
           <DialogDescription>
-            Importe múltiplos ativos usando um arquivo CSV
+            {t('contratosAtivos.importacaoAtivos.description')}
           </DialogDescription>
         </DialogHeader>
 
@@ -285,32 +287,31 @@ const ImportacaoAtivos: React.FC<ImportacaoAtivosProps> = ({ open, onOpenChange,
               <Alert>
                 <AlertTriangle className="h-4 w-4" />
                 <AlertDescription>
-                  <strong>Formato obrigatório:</strong> O arquivo deve ser um CSV com campos separados por vírgula.
-                  Campos obrigatórios: nome, tipo, criticidade, status.
+                  <strong>{t('contratosAtivos.importacaoAtivos.alertTitle')}</strong> {t('contratosAtivos.importacaoAtivos.alertDescription')}
                 </AlertDescription>
               </Alert>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">1. Download do Template</CardTitle>
+                    <CardTitle className="text-lg">{t('contratosAtivos.importacaoAtivos.step1Title')}</CardTitle>
                     <CardDescription>
-                      Baixe o modelo com a estrutura correta
+                      {t('contratosAtivos.importacaoAtivos.step1Description')}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <Button onClick={downloadTemplate} variant="outline" className="w-full">
                       <Download className="h-4 w-4 mr-2" />
-                      Baixar Template CSV
+                      {t('contratosAtivos.importacaoAtivos.downloadTemplateButton')}
                     </Button>
                   </CardContent>
                 </Card>
 
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">2. Upload do Arquivo</CardTitle>
+                    <CardTitle className="text-lg">{t('contratosAtivos.importacaoAtivos.step2Title')}</CardTitle>
                     <CardDescription>
-                      Selecione o arquivo CSV preenchido
+                      {t('contratosAtivos.importacaoAtivos.step2Description')}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -323,7 +324,7 @@ const ImportacaoAtivos: React.FC<ImportacaoAtivosProps> = ({ open, onOpenChange,
                     />
                     <Button onClick={() => fileInputRef.current?.click()} className="w-full">
                       <Upload className="h-4 w-4 mr-2" />
-                      Selecionar Arquivo CSV
+                      {t('contratosAtivos.importacaoAtivos.selectFileButton')}
                     </Button>
                   </CardContent>
                 </Card>
@@ -331,12 +332,12 @@ const ImportacaoAtivos: React.FC<ImportacaoAtivosProps> = ({ open, onOpenChange,
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Campos Disponíveis</CardTitle>
+                  <CardTitle className="text-lg">{t('contratosAtivos.importacaoAtivos.fieldsAvailableTitle')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                     <div>
-                      <strong>Obrigatórios:</strong>
+                      <strong>{t('contratosAtivos.importacaoAtivos.fieldsRequired')}</strong>
                       <ul className="list-disc list-inside mt-1 space-y-1">
                         <li>nome</li>
                         <li>tipo</li>
@@ -345,7 +346,7 @@ const ImportacaoAtivos: React.FC<ImportacaoAtivosProps> = ({ open, onOpenChange,
                       </ul>
                     </div>
                     <div>
-                      <strong>Opcionais:</strong>
+                      <strong>{t('contratosAtivos.importacaoAtivos.fieldsOptional')}</strong>
                       <ul className="list-disc list-inside mt-1 space-y-1">
                         <li>descricao</li>
                         <li>proprietario</li>
@@ -355,7 +356,7 @@ const ImportacaoAtivos: React.FC<ImportacaoAtivosProps> = ({ open, onOpenChange,
                       </ul>
                     </div>
                     <div>
-                      <strong>Outros:</strong>
+                      <strong>{t('contratosAtivos.importacaoAtivos.fieldsOther')}</strong>
                       <ul className="list-disc list-inside mt-1 space-y-1">
                         <li>fornecedor</li>
                         <li>versao</li>
@@ -375,14 +376,14 @@ const ImportacaoAtivos: React.FC<ImportacaoAtivosProps> = ({ open, onOpenChange,
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-semibold">Preview da Importação</h3>
+                  <h3 className="text-lg font-semibold">{t('contratosAtivos.importacaoAtivos.previewTitle')}</h3>
                   <p className="text-sm text-muted-foreground">
-                    Revise os dados antes de importar
+                    {t('contratosAtivos.importacaoAtivos.previewDescription')}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant="default">{validCount} válidos</Badge>
-                  {errorCount > 0 && <Badge variant="destructive">{errorCount} com erro</Badge>}
+                  <Badge variant="default">{validCount} {t('contratosAtivos.importacaoAtivos.badgeValid')}</Badge>
+                  {errorCount > 0 && <Badge variant="destructive">{errorCount} {t('contratosAtivos.importacaoAtivos.badgeError')}</Badge>}
                 </div>
               </div>
 
@@ -390,12 +391,12 @@ const ImportacaoAtivos: React.FC<ImportacaoAtivosProps> = ({ open, onOpenChange,
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Linha</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Nome</TableHead>
-                      <TableHead>Tipo</TableHead>
-                      <TableHead>Criticidade</TableHead>
-                      <TableHead>Erros</TableHead>
+                      <TableHead>{t('contratosAtivos.importacaoAtivos.columnLine')}</TableHead>
+                      <TableHead>{t('contratosAtivos.importacaoAtivos.columnStatus')}</TableHead>
+                      <TableHead>{t('contratosAtivos.importacaoAtivos.columnName')}</TableHead>
+                      <TableHead>{t('contratosAtivos.importacaoAtivos.columnType')}</TableHead>
+                      <TableHead>{t('contratosAtivos.importacaoAtivos.columnCriticality')}</TableHead>
+                      <TableHead>{t('contratosAtivos.importacaoAtivos.columnErrors')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -433,13 +434,13 @@ const ImportacaoAtivos: React.FC<ImportacaoAtivosProps> = ({ open, onOpenChange,
 
               <div className="flex justify-between">
                 <Button variant="outline" onClick={resetImport}>
-                  Voltar
+                  {t('contratosAtivos.importacaoAtivos.backButton')}
                 </Button>
                 <Button 
                   onClick={performImport} 
                   disabled={validCount === 0}
                 >
-                  Importar {validCount} Ativo(s)
+                  {t('contratosAtivos.importacaoAtivos.importButton', { count: validCount })}
                 </Button>
               </div>
             </div>
@@ -448,13 +449,13 @@ const ImportacaoAtivos: React.FC<ImportacaoAtivosProps> = ({ open, onOpenChange,
           {step === 'importing' && (
             <div className="space-y-6 text-center">
               <div>
-                <h3 className="text-lg font-semibold">Importando Ativos...</h3>
+                <h3 className="text-lg font-semibold">{t('contratosAtivos.importacaoAtivos.importingTitle')}</h3>
                 <p className="text-sm text-muted-foreground">
-                  Por favor, aguarde enquanto os ativos são importados
+                  {t('contratosAtivos.importacaoAtivos.importingDescription')}
                 </p>
               </div>
               <Progress value={importProgress} className="w-full" />
-              <p className="text-sm">{importProgress}% concluído</p>
+              <p className="text-sm">{t('contratosAtivos.importacaoAtivos.importingPercent', { percent: importProgress })}</p>
             </div>
           )}
 
@@ -462,13 +463,13 @@ const ImportacaoAtivos: React.FC<ImportacaoAtivosProps> = ({ open, onOpenChange,
             <div className="space-y-6 text-center">
               <CheckCircle className="h-16 w-16 text-green-500 mx-auto" />
               <div>
-                <h3 className="text-lg font-semibold">Importação Concluída!</h3>
+                <h3 className="text-lg font-semibold">{t('contratosAtivos.importacaoAtivos.successTitle')}</h3>
                 <p className="text-sm text-muted-foreground">
-                  Os ativos foram importados com sucesso
+                  {t('contratosAtivos.importacaoAtivos.successDescription')}
                 </p>
               </div>
               <Button onClick={() => onOpenChange(false)}>
-                Fechar
+                {t('contratosAtivos.importacaoAtivos.closeButton')}
               </Button>
             </div>
           )}

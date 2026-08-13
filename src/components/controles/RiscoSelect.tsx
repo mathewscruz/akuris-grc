@@ -9,6 +9,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { formatStatus } from '@/lib/text-utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Risco {
   id: string;
@@ -23,7 +24,8 @@ interface RiscoSelectProps {
   placeholder?: string;
 }
 
-export function RiscoSelect({ value, onValueChange, placeholder = "Selecionar risco..." }: RiscoSelectProps) {
+export function RiscoSelect({ value, onValueChange, placeholder }: RiscoSelectProps) {
+  const { t } = useLanguage();
   const { profile } = useAuth();
   const [open, setOpen] = useState(false);
   const [riscos, setRiscos] = useState<Risco[]>([]);
@@ -49,7 +51,7 @@ export function RiscoSelect({ value, onValueChange, placeholder = "Selecionar ri
       setRiscos(data || []);
     } catch (error: any) {
       console.error('Erro ao buscar riscos:', error);
-      toast.error('Erro ao carregar lista de riscos');
+      toast.error(t('controlesAuditorias.rsErrorLoad'));
     } finally {
       setLoading(false);
     }
@@ -82,19 +84,19 @@ export function RiscoSelect({ value, onValueChange, placeholder = "Selecionar ri
               </Badge>
             </div>
           ) : (
-            <span className="text-muted-foreground">{placeholder}</span>
+            <span className="text-muted-foreground">{placeholder ?? t('controlesAuditorias.rsPlaceholder')}</span>
           )}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-full p-0 bg-popover" align="start">
         <Command>
-          <CommandInput placeholder="Buscar risco..." />
+          <CommandInput placeholder={t('controlesAuditorias.rsSearchPlaceholder')} />
           <CommandList>
             {loading ? (
-              <CommandEmpty>Carregando riscos...</CommandEmpty>
+              <CommandEmpty>{t('controlesAuditorias.rsLoading')}</CommandEmpty>
             ) : riscos.length === 0 ? (
-              <CommandEmpty>Nenhum risco encontrado.</CommandEmpty>
+              <CommandEmpty>{t('controlesAuditorias.rsEmpty')}</CommandEmpty>
             ) : (
               <CommandGroup>
                 <CommandItem
@@ -110,7 +112,7 @@ export function RiscoSelect({ value, onValueChange, placeholder = "Selecionar ri
                       !value ? "opacity-100" : "opacity-0"
                     )}
                   />
-                  <span className="text-muted-foreground">Nenhum risco</span>
+                  <span className="text-muted-foreground">{t('controlesAuditorias.rsNenhumRisco')}</span>
                 </CommandItem>
                 {riscos.map((risco) => (
                   <CommandItem

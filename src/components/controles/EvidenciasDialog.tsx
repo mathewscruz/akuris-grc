@@ -12,6 +12,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface EvidenciasDialogProps {
   open: boolean;
@@ -43,6 +44,7 @@ export function EvidenciasDialog({ open, onOpenChange, controleId, controleNome 
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: string; nome?: string }>({ open: false, id: '' });
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
 
   // Buscar evidências do controle
   const { data: evidencias, isLoading } = useQuery({
@@ -74,14 +76,14 @@ export function EvidenciasDialog({ open, onOpenChange, controleId, controleNome 
       setNovaEvidencia({ nome: "", descricao: "" });
       setUploadFile(null);
       toast({
-        title: "Evidência adicionada",
-        description: "A evidência foi adicionada com sucesso.",
+        title: t('controlesAuditorias.evdToastAddedTitle'),
+        description: t('controlesAuditorias.evdToastAddedDesc'),
       });
     },
     onError: (error) => {
       toast({
-        title: "Erro",
-        description: "Erro ao adicionar evidência: " + error.message,
+        title: t('controlesAuditorias.evdToastErrorTitle'),
+        description: t('controlesAuditorias.evdToastAddErrorDesc', { message: error.message }),
         variant: "destructive",
       });
     }
@@ -100,15 +102,15 @@ export function EvidenciasDialog({ open, onOpenChange, controleId, controleNome 
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['controles-evidencias', controleId] });
       toast({
-        title: "Evidência removida",
-        description: "A evidência foi removida com sucesso.",
+        title: t('controlesAuditorias.evdToastRemovedTitle'),
+        description: t('controlesAuditorias.evdToastRemovedDesc'),
       });
       setDeleteConfirm({ open: false, id: '' });
     },
     onError: () => {
       toast({
-        title: "Erro",
-        description: "Não foi possível remover a evidência.",
+        title: t('controlesAuditorias.evdToastErrorTitle'),
+        description: t('controlesAuditorias.evdToastRemoveErrorDesc'),
         variant: "destructive",
       });
       setDeleteConfirm({ open: false, id: '' });
@@ -118,8 +120,8 @@ export function EvidenciasDialog({ open, onOpenChange, controleId, controleNome 
   const handleFileUpload = async () => {
     if (!uploadFile || !novaEvidencia.nome.trim()) {
       toast({
-        title: "Campos obrigatórios",
-        description: "Preencha o nome e selecione um arquivo.",
+        title: t('controlesAuditorias.evdValidationTitle'),
+        description: t('controlesAuditorias.evdValidationDesc'),
         variant: "destructive",
       });
       return;
@@ -150,7 +152,7 @@ export function EvidenciasDialog({ open, onOpenChange, controleId, controleNome 
       addEvidenciaMutation.mutate(evidenciaData);
     } catch (error: any) {
       toast({
-        title: "Erro no upload",
+        title: t('controlesAuditorias.evdToastUploadErrorTitle'),
         description: error.message,
         variant: "destructive",
       });
@@ -176,7 +178,7 @@ export function EvidenciasDialog({ open, onOpenChange, controleId, controleNome 
       URL.revokeObjectURL(url);
     } catch (error: any) {
       toast({
-        title: "Erro no download",
+        title: t('controlesAuditorias.evdToastDownloadErrorTitle'),
         description: error.message,
         variant: "destructive",
       });
@@ -197,23 +199,23 @@ export function EvidenciasDialog({ open, onOpenChange, controleId, controleNome 
       open={open}
       onOpenChange={onOpenChange}
       icon={FileUp}
-      title="Gestão de Evidências"
+      title={t('controlesAuditorias.evdTitle')}
       description={controleNome}
       size="lg"
       hideFooter
     >
         <Tabs defaultValue="evidencias">
           <TabsList>
-            <TabsTrigger value="evidencias">Evidências</TabsTrigger>
-            <TabsTrigger value="upload">Adicionar Evidência</TabsTrigger>
+            <TabsTrigger value="evidencias">{t('controlesAuditorias.evdTabEvidencias')}</TabsTrigger>
+            <TabsTrigger value="upload">{t('controlesAuditorias.evdTabUpload')}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="evidencias" className="space-y-4">
             {isLoading ? (
-              <div className="text-center py-8">Carregando evidências...</div>
+              <div className="text-center py-8">{t('controlesAuditorias.evdLoading')}</div>
             ) : evidencias?.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                Nenhuma evidência cadastrada para este controle.
+                {t('controlesAuditorias.evdEmpty')}
               </div>
             ) : (
               <div className="space-y-4">
@@ -231,7 +233,7 @@ export function EvidenciasDialog({ open, onOpenChange, controleId, controleNome 
                         </div>
                         <div className="flex items-center gap-2">
                           {evidencia.is_current_version && (
-                            <Badge variant="default">Atual</Badge>
+                            <Badge variant="default">{t('controlesAuditorias.evdBadgeCurrent')}</Badge>
                           )}
                           <Badge variant="outline">v{evidencia.versao}</Badge>
                         </div>
@@ -242,7 +244,7 @@ export function EvidenciasDialog({ open, onOpenChange, controleId, controleNome 
                         <div className="flex items-center gap-4 text-sm text-muted-foreground">
                           <div className="flex items-center gap-1">
                             <File className="h-4 w-4" />
-                            {evidencia.arquivo_nome || 'Arquivo não disponível'}
+                            {evidencia.arquivo_nome || t('controlesAuditorias.evdNoFile')}
                           </div>
                           <span>{formatFileSize(evidencia.arquivo_tamanho)}</span>
                           <span>{new Date(evidencia.created_at).toLocaleDateString()}</span>
@@ -275,28 +277,28 @@ export function EvidenciasDialog({ open, onOpenChange, controleId, controleNome 
           <TabsContent value="upload" className="space-y-4">
             <div className="space-y-4">
               <div>
-                <Label htmlFor="nome">Nome da Evidência *</Label>
+                <Label htmlFor="nome">{t('controlesAuditorias.evdFieldNome')}</Label>
                 <Input
                   id="nome"
                   value={novaEvidencia.nome}
                   onChange={(e) => setNovaEvidencia(prev => ({ ...prev, nome: e.target.value }))}
-                  placeholder="Ex: Relatório de Teste - Janeiro 2024"
+                  placeholder={t('controlesAuditorias.evdFieldNomePlaceholder')}
                 />
               </div>
 
               <div>
-                <Label htmlFor="descricao">Descrição</Label>
+                <Label htmlFor="descricao">{t('controlesAuditorias.evdFieldDescricao')}</Label>
                 <Textarea
                   id="descricao"
                   value={novaEvidencia.descricao}
                   onChange={(e) => setNovaEvidencia(prev => ({ ...prev, descricao: e.target.value }))}
-                  placeholder="Descreva o conteúdo da evidência..."
+                  placeholder={t('controlesAuditorias.evdFieldDescricaoPlaceholder')}
                   rows={3}
                 />
               </div>
 
               <div>
-                <Label htmlFor="arquivo">Arquivo *</Label>
+                <Label htmlFor="arquivo">{t('controlesAuditorias.evdFieldArquivo')}</Label>
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
                   <input
                     type="file"
@@ -308,10 +310,10 @@ export function EvidenciasDialog({ open, onOpenChange, controleId, controleNome 
                   <label htmlFor="arquivo" className="cursor-pointer">
                     <Upload className="h-12 w-12 mx-auto text-gray-400 mb-4" />
                     <p className="text-lg font-medium text-gray-700">
-                      {uploadFile ? uploadFile.name : "Clique para selecionar arquivo"}
+                      {uploadFile ? uploadFile.name : t('controlesAuditorias.evdDropClickToSelect')}
                     </p>
                     <p className="text-sm text-gray-500 mt-2">
-                      PDF, DOC, XLS, PNG, JPG (máx. 10MB)
+                      {t('controlesAuditorias.evdDropHint')}
                     </p>
                   </label>
                 </div>
@@ -322,7 +324,7 @@ export function EvidenciasDialog({ open, onOpenChange, controleId, controleNome 
                 disabled={addEvidenciaMutation.isPending}
                 className="w-full"
               >
-                {addEvidenciaMutation.isPending ? "Enviando..." : "Adicionar Evidência"}
+                {addEvidenciaMutation.isPending ? t('controlesAuditorias.evdSubmitSending') : t('controlesAuditorias.evdSubmitAdd')}
               </Button>
             </div>
           </TabsContent>
@@ -332,10 +334,10 @@ export function EvidenciasDialog({ open, onOpenChange, controleId, controleNome 
     <ConfirmDialog
       open={deleteConfirm.open}
       onOpenChange={(open) => setDeleteConfirm(prev => ({ ...prev, open }))}
-      title="Excluir Evidência"
-      description={`Tem certeza que deseja excluir "${deleteConfirm.nome}"? Esta ação não pode ser desfeita.`}
-      confirmText="Excluir"
-      cancelText="Cancelar"
+      title={t('controlesAuditorias.evdDeleteDialogTitle')}
+      description={t('controlesAuditorias.evdDeleteDialogDescription', { nome: deleteConfirm.nome || '' })}
+      confirmText={t('controlesAuditorias.evdDeleteConfirm')}
+      cancelText={t('controlesAuditorias.evdDeleteCancel')}
       variant="destructive"
       onConfirm={() => deleteEvidenciaMutation.mutate(deleteConfirm.id)}
       loading={deleteEvidenciaMutation.isPending}

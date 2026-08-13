@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -61,6 +62,7 @@ export function AssessmentDialog({
   const [loading, setLoading] = useState(false);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (open) {
@@ -100,8 +102,8 @@ export function AssessmentDialog({
     } catch (error: any) {
       console.error('Erro ao buscar templates:', error);
       toast({
-        title: "Erro",
-        description: "Não foi possível carregar os templates.",
+        title: t('dueDiligence.assessmentDialog.errorTitle'),
+        description: t('dueDiligence.assessmentDialog.errorTemplatesDescription'),
         variant: "destructive",
       });
     } finally {
@@ -118,8 +120,8 @@ export function AssessmentDialog({
     
     if (!formData.template_id || !formData.fornecedor_nome.trim() || !formData.fornecedor_email.trim()) {
       toast({
-        title: "Erro",
-        description: "Todos os campos obrigatórios devem ser preenchidos.",
+        title: t('dueDiligence.assessmentDialog.errorTitle'),
+        description: t('dueDiligence.assessmentDialog.errorRequiredFieldsDescription'),
         variant: "destructive",
       });
       return;
@@ -129,8 +131,8 @@ export function AssessmentDialog({
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.fornecedor_email)) {
       toast({
-        title: "Erro",
-        description: "Digite um email válido.",
+        title: t('dueDiligence.assessmentDialog.errorTitle'),
+        description: t('dueDiligence.assessmentDialog.errorInvalidEmailDescription'),
         variant: "destructive",
       });
       return;
@@ -235,14 +237,14 @@ export function AssessmentDialog({
         console.log('Resposta do email:', emailResponse);
 
         toast({
-          title: "Avaliação criada e enviada",
-          description: `Avaliação para "${formData.fornecedor_nome}" criada e convite enviado por email.`,
+          title: t('dueDiligence.assessmentDialog.toastCreatedSentTitle'),
+          description: t('dueDiligence.assessmentDialog.toastCreatedSentDescription', { fornecedor: formData.fornecedor_nome }),
         });
       } catch (emailError: any) {
         console.error('Erro ao enviar email:', emailError);
         toast({
-          title: "Avaliação criada",
-          description: `Avaliação criada, mas houve erro no envio do email: ${emailError.message}`,
+          title: t('dueDiligence.assessmentDialog.toastCreatedOnlyTitle'),
+          description: t('dueDiligence.assessmentDialog.toastCreatedEmailErrorDescription', { error: emailError.message }),
           variant: "destructive",
         });
       }
@@ -251,8 +253,8 @@ export function AssessmentDialog({
     } catch (error: any) {
       console.error('Erro ao criar avaliação:', error);
       toast({
-        title: "Erro",
-        description: error.message || "Não foi possível criar a avaliação.",
+        title: t('dueDiligence.assessmentDialog.errorTitle'),
+        description: error.message || t('dueDiligence.assessmentDialog.errorCreateDescriptionFallback'),
         variant: "destructive",
       });
     } finally {
@@ -268,13 +270,13 @@ export function AssessmentDialog({
     try {
       await navigator.clipboard.writeText(link);
       toast({
-        title: "Link copiado",
-        description: "O link da avaliação foi copiado para a área de transferência.",
+        title: t('dueDiligence.assessmentDialog.toastLinkCopiedTitle'),
+        description: t('dueDiligence.assessmentDialog.toastLinkCopiedDescription'),
       });
     } catch (error) {
       toast({
-        title: "Erro",
-        description: "Não foi possível copiar o link.",
+        title: t('dueDiligence.assessmentDialog.errorTitle'),
+        description: t('dueDiligence.assessmentDialog.errorCopyLinkDescription'),
         variant: "destructive",
       });
     }
@@ -288,34 +290,34 @@ export function AssessmentDialog({
         open={open}
         onOpenChange={onOpenChange}
         icon={ClipboardCheck}
-        title="Detalhes da Avaliação"
-        description="Informações sobre a avaliação enviada ao fornecedor"
+        title={t('dueDiligence.assessmentDialog.viewTitle')}
+        description={t('dueDiligence.assessmentDialog.viewDescription')}
         size="md"
         footer={
           <div className="flex justify-end">
-            <Button size="sm" onClick={() => onOpenChange(false)}>Fechar</Button>
+            <Button size="sm" onClick={() => onOpenChange(false)}>{t('dueDiligence.assessmentDialog.close')}</Button>
           </div>
         }
       >
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Fornecedor</Label>
+                <Label>{t('dueDiligence.assessmentDialog.fieldSupplier')}</Label>
                 <p className="font-medium">{assessment.fornecedor_nome}</p>
               </div>
               <div>
-                <Label>Email</Label>
+                <Label>{t('dueDiligence.assessmentDialog.fieldEmail')}</Label>
                 <p className="text-sm text-muted-foreground">{assessment.fornecedor_email}</p>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Template</Label>
+                <Label>{t('dueDiligence.assessmentDialog.fieldTemplate')}</Label>
                 <p className="font-medium">{assessment.template.nome}</p>
               </div>
               <div>
-                <Label>Status</Label>
+                <Label>{t('dueDiligence.assessmentDialog.fieldStatus')}</Label>
                 <div className="mt-1">
                   <StatusBadge size="md" {...resolveDueDiligenceStatusTone(assessment.status)}>{formatStatus(assessment.status)}</StatusBadge>
                 </div>
@@ -324,12 +326,12 @@ export function AssessmentDialog({
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Data de Envio</Label>
+                <Label>{t('dueDiligence.assessmentDialog.fieldSentDate')}</Label>
                 <p className="text-sm">{new Date(assessment.data_envio).toLocaleString('pt-BR')}</p>
               </div>
               {assessment.data_conclusao && (
                 <div>
-                  <Label>Data de Conclusão</Label>
+                  <Label>{t('dueDiligence.assessmentDialog.fieldCompletionDate')}</Label>
                   <p className="text-sm">{new Date(assessment.data_conclusao).toLocaleString('pt-BR')}</p>
                 </div>
               )}
@@ -337,13 +339,13 @@ export function AssessmentDialog({
 
             {assessment.score_final && (
               <div>
-                <Label>Score Final</Label>
+                <Label>{t('dueDiligence.assessmentDialog.fieldFinalScore')}</Label>
                 <p className="text-2xl font-bold text-primary">{assessment.score_final.toFixed(1)}%</p>
               </div>
             )}
 
             <div>
-              <Label>Link da Avaliação</Label>
+              <Label>{t('dueDiligence.assessmentDialog.fieldAssessmentLink')}</Label>
               <div className="flex gap-2 mt-1">
                 <Button
                   variant="outline"
@@ -352,7 +354,7 @@ export function AssessmentDialog({
                   className="flex items-center gap-2"
                 >
                   <Copy className="h-4 w-4" />
-                  Copiar Link
+                  {t('dueDiligence.assessmentDialog.copyLink')}
                 </Button>
                 <Button
                   variant="outline"
@@ -361,7 +363,7 @@ export function AssessmentDialog({
                   className="flex items-center gap-2"
                 >
                   <ExternalLink className="h-4 w-4" />
-                  Abrir
+                  {t('dueDiligence.assessmentDialog.open')}
                 </Button>
               </div>
             </div>
@@ -375,23 +377,23 @@ export function AssessmentDialog({
       open={open}
       onOpenChange={onOpenChange}
       icon={ClipboardCheck}
-      title="Nova Avaliação"
-      description="Crie uma nova avaliação para enviar ao fornecedor"
+      title={t('dueDiligence.assessmentDialog.createTitle')}
+      description={t('dueDiligence.assessmentDialog.createDescription')}
       size="sm"
       onSubmit={() => handleSubmit(new Event('submit') as unknown as React.FormEvent)}
-      submitLabel="Criar Avaliação"
+      submitLabel={t('dueDiligence.assessmentDialog.submitLabel')}
       isSubmitting={loading}
     >
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="template">Template *</Label>
+            <Label htmlFor="template">{t('dueDiligence.assessmentDialog.fieldTemplateRequired')}</Label>
             <Select
               value={formData.template_id}
               onValueChange={(value) => setFormData({ ...formData, template_id: value })}
               disabled={loadingTemplates}
             >
               <SelectTrigger>
-                <SelectValue placeholder={loadingTemplates ? "Carregando..." : "Selecione um template"} />
+                <SelectValue placeholder={loadingTemplates ? t('dueDiligence.assessmentDialog.loadingTemplates') : t('dueDiligence.assessmentDialog.selectTemplatePlaceholder')} />
               </SelectTrigger>
               <SelectContent>
                 {templates.map((template) => (
@@ -416,31 +418,31 @@ export function AssessmentDialog({
             />
 
           <div className="space-y-2">
-            <Label htmlFor="prazo">Prazo para Resposta *</Label>
+            <Label htmlFor="prazo">{t('dueDiligence.assessmentDialog.fieldDeadlineRequired')}</Label>
             <Select
               value={formData.prazo_dias}
               onValueChange={(value) => setFormData({ ...formData, prazo_dias: value })}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Selecione o prazo" />
+                <SelectValue placeholder={t('dueDiligence.assessmentDialog.selectDeadlinePlaceholder')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="7">7 dias</SelectItem>
-                <SelectItem value="15">15 dias</SelectItem>
-                <SelectItem value="30">30 dias</SelectItem>
-                <SelectItem value="60">60 dias</SelectItem>
-                <SelectItem value="90">90 dias</SelectItem>
+                <SelectItem value="7">{t('dueDiligence.assessmentDialog.deadline7')}</SelectItem>
+                <SelectItem value="15">{t('dueDiligence.assessmentDialog.deadline15')}</SelectItem>
+                <SelectItem value="30">{t('dueDiligence.assessmentDialog.deadline30')}</SelectItem>
+                <SelectItem value="60">{t('dueDiligence.assessmentDialog.deadline60')}</SelectItem>
+                <SelectItem value="90">{t('dueDiligence.assessmentDialog.deadline90')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="observacoes">Observações</Label>
+            <Label htmlFor="observacoes">{t('dueDiligence.assessmentDialog.fieldObservations')}</Label>
             <Textarea
               id="observacoes"
               value={formData.observacoes}
               onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
-              placeholder="Informações adicionais sobre esta avaliação..."
+              placeholder={t('dueDiligence.assessmentDialog.observationsPlaceholder')}
               rows={3}
             />
           </div>

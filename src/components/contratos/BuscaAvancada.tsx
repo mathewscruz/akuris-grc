@@ -11,6 +11,7 @@ import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface FiltroAvancado {
   termo: string;
@@ -34,26 +35,27 @@ interface BuscaAvancadaProps {
   fornecedores: Array<{ id: string; nome: string }>;
 }
 
-const statusOptions = [
-  { value: 'rascunho', label: 'Rascunho' },
-  { value: 'ativo', label: 'Ativo' },
-  { value: 'suspenso', label: 'Suspenso' },
-  { value: 'encerrado', label: 'Encerrado' },
-  { value: 'cancelado', label: 'Cancelado' }
-];
-
-const tipoOptions = [
-  { value: 'prestacao_servicos', label: 'Prestação de Serviços' },
-  { value: 'fornecimento', label: 'Fornecimento' },
-  { value: 'locacao', label: 'Locação' },
-  { value: 'licenciamento', label: 'Licenciamento' },
-  { value: 'manutencao', label: 'Manutenção' },
-  { value: 'consultoria', label: 'Consultoria' },
-  { value: 'outros', label: 'Outros' }
-];
-
 export default function BuscaAvancada({ filtros, onFiltrosChange, fornecedores }: BuscaAvancadaProps) {
   const [open, setOpen] = useState(false);
+  const { t } = useLanguage();
+
+  const statusOptions = [
+    { value: 'rascunho', label: t('contratosAtivos.buscaAvancada.statusRascunho') },
+    { value: 'ativo', label: t('contratosAtivos.buscaAvancada.statusAtivo') },
+    { value: 'suspenso', label: t('contratosAtivos.buscaAvancada.statusSuspenso') },
+    { value: 'encerrado', label: t('contratosAtivos.buscaAvancada.statusEncerrado') },
+    { value: 'cancelado', label: t('contratosAtivos.buscaAvancada.statusCancelado') }
+  ];
+
+  const tipoOptions = [
+    { value: 'prestacao_servicos', label: t('contratosAtivos.buscaAvancada.typePrestacaoServicos') },
+    { value: 'fornecimento', label: t('contratosAtivos.buscaAvancada.typeFornecimento') },
+    { value: 'locacao', label: t('contratosAtivos.buscaAvancada.typeLocacao') },
+    { value: 'licenciamento', label: t('contratosAtivos.buscaAvancada.typeLicenciamento') },
+    { value: 'manutencao', label: t('contratosAtivos.buscaAvancada.typeManutencao') },
+    { value: 'consultoria', label: t('contratosAtivos.buscaAvancada.typeConsultoria') },
+    { value: 'outros', label: t('contratosAtivos.buscaAvancada.typeOutros') }
+  ];
 
   const handleFiltroChange = (campo: keyof FiltroAvancado, valor: any) => {
     onFiltrosChange({
@@ -101,7 +103,7 @@ export default function BuscaAvancada({ filtros, onFiltrosChange, fornecedores }
     if (filtros.status?.length) {
       badges.push(
         <Badge key="status" variant="secondary" className="gap-1">
-          Status: {filtros.status.length}
+          {t('contratosAtivos.buscaAvancada.badgeStatus').replace('{count}', String(filtros.status.length))}
           <X 
             className="h-3 w-3 cursor-pointer" 
             onClick={() => handleFiltroChange('status', [])}
@@ -113,7 +115,7 @@ export default function BuscaAvancada({ filtros, onFiltrosChange, fornecedores }
     if (filtros.tipo?.length) {
       badges.push(
         <Badge key="tipo" variant="secondary" className="gap-1">
-          Tipo: {filtros.tipo.length}
+          {t('contratosAtivos.buscaAvancada.badgeType').replace('{count}', String(filtros.tipo.length))}
           <X 
             className="h-3 w-3 cursor-pointer" 
             onClick={() => handleFiltroChange('tipo', [])}
@@ -125,7 +127,7 @@ export default function BuscaAvancada({ filtros, onFiltrosChange, fornecedores }
     if (filtros.fornecedor?.length) {
       badges.push(
         <Badge key="fornecedor" variant="secondary" className="gap-1">
-          Fornecedor: {filtros.fornecedor.length}
+          {t('contratosAtivos.buscaAvancada.badgeSupplier').replace('{count}', String(filtros.fornecedor.length))}
           <X 
             className="h-3 w-3 cursor-pointer" 
             onClick={() => handleFiltroChange('fornecedor', [])}
@@ -137,7 +139,7 @@ export default function BuscaAvancada({ filtros, onFiltrosChange, fornecedores }
     if (filtros.vencendoEm) {
       badges.push(
         <Badge key="vencimento" variant="secondary" className="gap-1">
-          Vencendo em {filtros.vencendoEm} dias
+          {t('contratosAtivos.buscaAvancada.badgeExpiring').replace('{days}', String(filtros.vencendoEm))}
           <X 
             className="h-3 w-3 cursor-pointer" 
             onClick={() => handleFiltroChange('vencendoEm', undefined)}
@@ -158,7 +160,7 @@ export default function BuscaAvancada({ filtros, onFiltrosChange, fornecedores }
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
-            placeholder="Buscar por número, nome, fornecedor..."
+            placeholder={t('contratosAtivos.buscaAvancada.searchPlaceholder')}
             value={filtros.termo}
             onChange={(e) => handleFiltroChange('termo', e.target.value)}
             className="pl-10"
@@ -169,7 +171,7 @@ export default function BuscaAvancada({ filtros, onFiltrosChange, fornecedores }
           <PopoverTrigger asChild>
             <Button variant="outline" className="relative">
               <Filter className="h-4 w-4 mr-2" />
-              Filtros Avançados
+              {t('contratosAtivos.buscaAvancada.advancedFiltersButton')}
               {filtrosAtivos > 0 && (
                 <Badge 
                   variant="destructive" 
@@ -184,19 +186,19 @@ export default function BuscaAvancada({ filtros, onFiltrosChange, fornecedores }
             <Card className="border-0 shadow-none">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle>Filtros Avançados</CardTitle>
+                  <CardTitle>{t('contratosAtivos.buscaAvancada.advancedFiltersButton')}</CardTitle>
                   <Button variant="ghost" size="sm" onClick={limparFiltros}>
-                    Limpar Tudo
+                    {t('contratosAtivos.buscaAvancada.clearAllButton')}
                   </Button>
                 </div>
                 <CardDescription>
-                  Configure filtros detalhados para sua busca
+                  {t('contratosAtivos.buscaAvancada.panelDescription')}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Status */}
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Status</label>
+                  <label className="text-sm font-medium mb-2 block">{t('contratosAtivos.buscaAvancada.statusLabel')}</label>
                   <div className="grid grid-cols-2 gap-2">
                     {statusOptions.map(option => (
                       <label key={option.value} className="flex items-center space-x-2 cursor-pointer">
@@ -216,7 +218,7 @@ export default function BuscaAvancada({ filtros, onFiltrosChange, fornecedores }
 
                 {/* Tipo */}
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Tipo de Contrato</label>
+                  <label className="text-sm font-medium mb-2 block">{t('contratosAtivos.buscaAvancada.typeLabel')}</label>
                   <div className="grid grid-cols-1 gap-2">
                     {tipoOptions.map(option => (
                       <label key={option.value} className="flex items-center space-x-2 cursor-pointer">
@@ -236,7 +238,7 @@ export default function BuscaAvancada({ filtros, onFiltrosChange, fornecedores }
 
                 {/* Fornecedor */}
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Fornecedor</label>
+                  <label className="text-sm font-medium mb-2 block">{t('contratosAtivos.buscaAvancada.supplierLabel')}</label>
                   <div className="space-y-2 max-h-32 overflow-y-auto">
                     {fornecedores.map(fornecedor => (
                       <label key={fornecedor.id} className="flex items-center space-x-2 cursor-pointer">
@@ -256,13 +258,13 @@ export default function BuscaAvancada({ filtros, onFiltrosChange, fornecedores }
 
                 {/* Datas */}
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Data de Início</label>
+                  <label className="text-sm font-medium mb-2 block">{t('contratosAtivos.buscaAvancada.startDateLabel')}</label>
                   <div className="grid grid-cols-2 gap-2">
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button variant="outline" className={cn("justify-start text-left font-normal", !filtros.dataInicioFrom && "text-muted-foreground")}>
                           <CalendarIcon className="mr-2 h-4 w-4" />
-                          {filtros.dataInicioFrom ? format(filtros.dataInicioFrom, "dd/MM/yyyy", { locale: ptBR }) : "De"}
+                          {filtros.dataInicioFrom ? format(filtros.dataInicioFrom, "dd/MM/yyyy", { locale: ptBR }) : t('contratosAtivos.buscaAvancada.fromPlaceholder')}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
@@ -273,7 +275,7 @@ export default function BuscaAvancada({ filtros, onFiltrosChange, fornecedores }
                       <PopoverTrigger asChild>
                         <Button variant="outline" className={cn("justify-start text-left font-normal", !filtros.dataInicioTo && "text-muted-foreground")}>
                           <CalendarIcon className="mr-2 h-4 w-4" />
-                          {filtros.dataInicioTo ? format(filtros.dataInicioTo, "dd/MM/yyyy", { locale: ptBR }) : "Até"}
+                          {filtros.dataInicioTo ? format(filtros.dataInicioTo, "dd/MM/yyyy", { locale: ptBR }) : t('contratosAtivos.buscaAvancada.toPlaceholder')}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
@@ -284,13 +286,13 @@ export default function BuscaAvancada({ filtros, onFiltrosChange, fornecedores }
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Data de Fim</label>
+                  <label className="text-sm font-medium mb-2 block">{t('contratosAtivos.buscaAvancada.endDateLabel')}</label>
                   <div className="grid grid-cols-2 gap-2">
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button variant="outline" className={cn("justify-start text-left font-normal", !filtros.dataFimFrom && "text-muted-foreground")}>
                           <CalendarIcon className="mr-2 h-4 w-4" />
-                          {filtros.dataFimFrom ? format(filtros.dataFimFrom, "dd/MM/yyyy", { locale: ptBR }) : "De"}
+                          {filtros.dataFimFrom ? format(filtros.dataFimFrom, "dd/MM/yyyy", { locale: ptBR }) : t('contratosAtivos.buscaAvancada.fromPlaceholder')}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
@@ -301,7 +303,7 @@ export default function BuscaAvancada({ filtros, onFiltrosChange, fornecedores }
                       <PopoverTrigger asChild>
                         <Button variant="outline" className={cn("justify-start text-left font-normal", !filtros.dataFimTo && "text-muted-foreground")}>
                           <CalendarIcon className="mr-2 h-4 w-4" />
-                          {filtros.dataFimTo ? format(filtros.dataFimTo, "dd/MM/yyyy", { locale: ptBR }) : "Até"}
+                          {filtros.dataFimTo ? format(filtros.dataFimTo, "dd/MM/yyyy", { locale: ptBR }) : t('contratosAtivos.buscaAvancada.toPlaceholder')}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
@@ -315,17 +317,17 @@ export default function BuscaAvancada({ filtros, onFiltrosChange, fornecedores }
 
                 {/* Valor */}
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Valor do Contrato</label>
+                  <label className="text-sm font-medium mb-2 block">{t('contratosAtivos.buscaAvancada.valueLabel')}</label>
                   <div className="grid grid-cols-2 gap-2">
                     <Input
                       type="number"
-                      placeholder="Valor mínimo"
+                      placeholder={t('contratosAtivos.buscaAvancada.minValuePlaceholder')}
                       value={filtros.valorMin || ''}
                       onChange={(e) => handleFiltroChange('valorMin', e.target.value ? Number(e.target.value) : undefined)}
                     />
                     <Input
                       type="number"
-                      placeholder="Valor máximo"
+                      placeholder={t('contratosAtivos.buscaAvancada.maxValuePlaceholder')}
                       value={filtros.valorMax || ''}
                       onChange={(e) => handleFiltroChange('valorMax', e.target.value ? Number(e.target.value) : undefined)}
                     />
@@ -336,21 +338,21 @@ export default function BuscaAvancada({ filtros, onFiltrosChange, fornecedores }
 
                 {/* Vencimento */}
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Vencimento</label>
+                  <label className="text-sm font-medium mb-2 block">{t('contratosAtivos.buscaAvancada.expirationLabel')}</label>
                   <Select 
                     value={filtros.vencendoEm?.toString() || 'all'} 
                     onValueChange={(value) => handleFiltroChange('vencendoEm', value === 'all' ? undefined : Number(value))}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Vencendo em..." />
+                      <SelectValue placeholder={t('contratosAtivos.buscaAvancada.expirationPlaceholder')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
-                      <SelectItem value="7">7 dias</SelectItem>
-                      <SelectItem value="15">15 dias</SelectItem>
-                      <SelectItem value="30">30 dias</SelectItem>
-                      <SelectItem value="60">60 dias</SelectItem>
-                      <SelectItem value="90">90 dias</SelectItem>
+                      <SelectItem value="all">{t('contratosAtivos.buscaAvancada.expirationAll')}</SelectItem>
+                      <SelectItem value="7">{t('contratosAtivos.buscaAvancada.expiration7')}</SelectItem>
+                      <SelectItem value="15">{t('contratosAtivos.buscaAvancada.expiration15')}</SelectItem>
+                      <SelectItem value="30">{t('contratosAtivos.buscaAvancada.expiration30')}</SelectItem>
+                      <SelectItem value="60">{t('contratosAtivos.buscaAvancada.expiration60')}</SelectItem>
+                      <SelectItem value="90">{t('contratosAtivos.buscaAvancada.expiration90')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -366,7 +368,7 @@ export default function BuscaAvancada({ filtros, onFiltrosChange, fornecedores }
                       onChange={(e) => handleFiltroChange('renovacaoAutomatica', e.target.checked ? true : undefined)}
                       className="rounded"
                     />
-                    <span className="text-sm">Renovação Automática</span>
+                    <span className="text-sm">{t('contratosAtivos.buscaAvancada.autoRenewalLabel')}</span>
                   </label>
                   
                   <label className="flex items-center space-x-2 cursor-pointer">
@@ -376,7 +378,7 @@ export default function BuscaAvancada({ filtros, onFiltrosChange, fornecedores }
                       onChange={(e) => handleFiltroChange('confidencial', e.target.checked ? true : undefined)}
                       className="rounded"
                     />
-                    <span className="text-sm">Confidencial</span>
+                    <span className="text-sm">{t('contratosAtivos.buscaAvancada.confidentialLabel')}</span>
                   </label>
                 </div>
               </CardContent>
@@ -395,7 +397,7 @@ export default function BuscaAvancada({ filtros, onFiltrosChange, fornecedores }
             onClick={limparFiltros}
             className="h-6 px-2 text-xs"
           >
-            Limpar todos
+            {t('contratosAtivos.buscaAvancada.clearAllFilters')}
           </Button>
         </div>
       )}

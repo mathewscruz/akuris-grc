@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { UserSelect } from "@/components/riscos/UserSelect";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface LicencaDialogProps {
   open: boolean;
@@ -32,6 +33,7 @@ interface LicencaDialogProps {
 }
 
 export function LicencaDialog({ open, onOpenChange, licenca }: LicencaDialogProps) {
+  const { t } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { empresaId } = useEmpresaId();
@@ -115,15 +117,15 @@ export function LicencaDialog({ open, onOpenChange, licenca }: LicencaDialogProp
       queryClient.invalidateQueries({ queryKey: ['ativos-licencas'] });
       queryClient.invalidateQueries({ queryKey: ['licencas-stats'] });
       toast({
-        title: "Sucesso",
-        description: `Licença ${licenca ? 'atualizada' : 'cadastrada'} com sucesso`,
+        title: t('contratosAtivos.common.success'),
+        description: t('contratosAtivos.licencaDialog.toastSuccessDescription', { action: licenca ? t('contratosAtivos.licencaDialog.actionUpdated') : t('contratosAtivos.licencaDialog.actionCreated') }),
       });
       onOpenChange(false);
       form.reset();
     },
     onError: (error: any) => {
       toast({
-        title: "Erro",
+        title: t('contratosAtivos.common.error'),
         description: error.message,
         variant: "destructive",
       });
@@ -139,7 +141,7 @@ export function LicencaDialog({ open, onOpenChange, licenca }: LicencaDialogProp
       open={open}
       onOpenChange={onOpenChange}
       icon={BadgeCheck}
-      title={licenca ? 'Editar Licença' : 'Nova Licença'}
+      title={licenca ? t('contratosAtivos.licencaDialog.titleEdit') : t('contratosAtivos.licencaDialog.title')}
       size="lg"
       onSubmit={form.handleSubmit(onSubmit)}
       isSubmitting={saveMutation.isPending}
@@ -153,9 +155,9 @@ export function LicencaDialog({ open, onOpenChange, licenca }: LicencaDialogProp
                 name="nome"
                 render={({ field }) => (
                   <FormItem className="col-span-2">
-                    <FormLabel>Nome da Licença *</FormLabel>
+                    <FormLabel>{t('contratosAtivos.licencaDialog.labelName')}</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Ex: Microsoft 365 Business" />
+                      <Input {...field} placeholder={t('contratosAtivos.licencaDialog.namePlaceholder')} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -167,7 +169,7 @@ export function LicencaDialog({ open, onOpenChange, licenca }: LicencaDialogProp
                 name="tipo_licenca"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Tipo *</FormLabel>
+                    <FormLabel>{t('contratosAtivos.licencaDialog.labelType')}</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
@@ -175,10 +177,10 @@ export function LicencaDialog({ open, onOpenChange, licenca }: LicencaDialogProp
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="software">Software</SelectItem>
-                        <SelectItem value="servico">Serviço</SelectItem>
-                        <SelectItem value="certificacao">Certificação</SelectItem>
-                        <SelectItem value="outro">Outro</SelectItem>
+                        <SelectItem value="software">{t('contratosAtivos.licencaDialog.typeSoftware')}</SelectItem>
+                        <SelectItem value="servico">{t('contratosAtivos.licencaDialog.typeServico')}</SelectItem>
+                        <SelectItem value="certificacao">{t('contratosAtivos.licencaDialog.typeCertificacao')}</SelectItem>
+                        <SelectItem value="outro">{t('contratosAtivos.licencaDialog.typeOutro')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -191,7 +193,7 @@ export function LicencaDialog({ open, onOpenChange, licenca }: LicencaDialogProp
                 name="fornecedor"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Fornecedor</FormLabel>
+                    <FormLabel>{t('contratosAtivos.licencaDialog.labelSupplier')}</FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
@@ -205,7 +207,7 @@ export function LicencaDialog({ open, onOpenChange, licenca }: LicencaDialogProp
                 name="numero_licenca"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Número da Licença</FormLabel>
+                    <FormLabel>{t('contratosAtivos.licencaDialog.labelLicenseNumber')}</FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
@@ -219,7 +221,7 @@ export function LicencaDialog({ open, onOpenChange, licenca }: LicencaDialogProp
                 name="quantidade_licencas"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Quantidade *</FormLabel>
+                    <FormLabel>{t('contratosAtivos.licencaDialog.labelQuantity')}</FormLabel>
                     <FormControl>
                       <Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value))} />
                     </FormControl>
@@ -233,7 +235,7 @@ export function LicencaDialog({ open, onOpenChange, licenca }: LicencaDialogProp
                 name="data_inicio"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Data Início *</FormLabel>
+                    <FormLabel>{t('contratosAtivos.licencaDialog.labelStartDate')}</FormLabel>
                     <FormControl>
                       <Input type="date" {...field} />
                     </FormControl>
@@ -247,7 +249,7 @@ export function LicencaDialog({ open, onOpenChange, licenca }: LicencaDialogProp
                 name="data_vencimento"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Data Vencimento *</FormLabel>
+                    <FormLabel>{t('contratosAtivos.licencaDialog.labelExpirationDate')}</FormLabel>
                     <FormControl>
                       <Input type="date" {...field} />
                     </FormControl>
@@ -261,7 +263,7 @@ export function LicencaDialog({ open, onOpenChange, licenca }: LicencaDialogProp
                 name="periodicidade"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Periodicidade</FormLabel>
+                    <FormLabel>{t('contratosAtivos.licencaDialog.labelPeriodicity')}</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
@@ -269,11 +271,11 @@ export function LicencaDialog({ open, onOpenChange, licenca }: LicencaDialogProp
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="mensal">Mensal</SelectItem>
-                        <SelectItem value="trimestral">Trimestral</SelectItem>
-                        <SelectItem value="semestral">Semestral</SelectItem>
-                        <SelectItem value="anual">Anual</SelectItem>
-                        <SelectItem value="bienal">Bienal</SelectItem>
+                        <SelectItem value="mensal">{t('contratosAtivos.licencaDialog.periodMensal')}</SelectItem>
+                        <SelectItem value="trimestral">{t('contratosAtivos.licencaDialog.periodTrimestral')}</SelectItem>
+                        <SelectItem value="semestral">{t('contratosAtivos.licencaDialog.periodSemestral')}</SelectItem>
+                        <SelectItem value="anual">{t('contratosAtivos.licencaDialog.periodAnual')}</SelectItem>
+                        <SelectItem value="bienal">{t('contratosAtivos.licencaDialog.periodBienal')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -286,7 +288,7 @@ export function LicencaDialog({ open, onOpenChange, licenca }: LicencaDialogProp
                 name="valor_aquisicao"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Valor Aquisição (R$)</FormLabel>
+                    <FormLabel>{t('contratosAtivos.licencaDialog.labelAcquisitionValue')}</FormLabel>
                     <FormControl>
                       <Input type="number" step="0.01" {...field} />
                     </FormControl>
@@ -300,7 +302,7 @@ export function LicencaDialog({ open, onOpenChange, licenca }: LicencaDialogProp
                 name="valor_renovacao"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Valor Renovação (R$)</FormLabel>
+                    <FormLabel>{t('contratosAtivos.licencaDialog.labelRenewalValue')}</FormLabel>
                     <FormControl>
                       <Input type="number" step="0.01" {...field} />
                     </FormControl>
@@ -314,7 +316,7 @@ export function LicencaDialog({ open, onOpenChange, licenca }: LicencaDialogProp
                 name="criticidade"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Criticidade *</FormLabel>
+                    <FormLabel>{t('contratosAtivos.licencaDialog.labelCriticality')}</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
@@ -322,10 +324,10 @@ export function LicencaDialog({ open, onOpenChange, licenca }: LicencaDialogProp
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="baixa">Baixa</SelectItem>
-                        <SelectItem value="media">Média</SelectItem>
-                        <SelectItem value="alta">Alta</SelectItem>
-                        <SelectItem value="critica">Crítica</SelectItem>
+                        <SelectItem value="baixa">{t('contratosAtivos.licencaDialog.critBaixa')}</SelectItem>
+                        <SelectItem value="media">{t('contratosAtivos.licencaDialog.critMedia')}</SelectItem>
+                        <SelectItem value="alta">{t('contratosAtivos.licencaDialog.critAlta')}</SelectItem>
+                        <SelectItem value="critica">{t('contratosAtivos.licencaDialog.critCritica')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -338,7 +340,7 @@ export function LicencaDialog({ open, onOpenChange, licenca }: LicencaDialogProp
                 name="status"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Status *</FormLabel>
+                    <FormLabel>{t('contratosAtivos.licencaDialog.labelStatus')}</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
@@ -346,11 +348,11 @@ export function LicencaDialog({ open, onOpenChange, licenca }: LicencaDialogProp
                         </SelectTrigger>
                       </FormControl>
                   <SelectContent>
-                    <SelectItem value="ativa">Ativa</SelectItem>
-                    <SelectItem value="vencida">Vencida</SelectItem>
-                    <SelectItem value="a_vencer">A Vencer</SelectItem>
-                    <SelectItem value="em_renovacao">Em Renovação</SelectItem>
-                    <SelectItem value="cancelada">Cancelada</SelectItem>
+                    <SelectItem value="ativa">{t('contratosAtivos.licencaDialog.statusAtiva')}</SelectItem>
+                    <SelectItem value="vencida">{t('contratosAtivos.licencaDialog.statusVencida')}</SelectItem>
+                    <SelectItem value="a_vencer">{t('contratosAtivos.licencaDialog.statusAVencer')}</SelectItem>
+                    <SelectItem value="em_renovacao">{t('contratosAtivos.licencaDialog.statusEmRenovacao')}</SelectItem>
+                    <SelectItem value="cancelada">{t('contratosAtivos.licencaDialog.statusCancelada')}</SelectItem>
                   </SelectContent>
                     </Select>
                     <FormMessage />
@@ -363,12 +365,12 @@ export function LicencaDialog({ open, onOpenChange, licenca }: LicencaDialogProp
                 name="responsavel"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Responsável</FormLabel>
+                    <FormLabel>{t('contratosAtivos.licencaDialog.labelResponsible')}</FormLabel>
                     <FormControl>
                       <UserSelect
                         value={field.value}
                         onValueChange={field.onChange}
-                        placeholder="Selecionar responsável..."
+                        placeholder={t('contratosAtivos.licencaDialog.responsiblePlaceholder')}
                       />
                     </FormControl>
                     <FormMessage />
@@ -381,7 +383,7 @@ export function LicencaDialog({ open, onOpenChange, licenca }: LicencaDialogProp
                 name="departamento"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Departamento</FormLabel>
+                    <FormLabel>{t('contratosAtivos.licencaDialog.labelDepartment')}</FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
@@ -395,7 +397,7 @@ export function LicencaDialog({ open, onOpenChange, licenca }: LicencaDialogProp
                 name="observacoes"
                 render={({ field }) => (
                   <FormItem className="col-span-2">
-                    <FormLabel>Observações</FormLabel>
+                    <FormLabel>{t('contratosAtivos.licencaDialog.labelObservations')}</FormLabel>
                     <FormControl>
                       <Textarea {...field} rows={3} />
                     </FormControl>

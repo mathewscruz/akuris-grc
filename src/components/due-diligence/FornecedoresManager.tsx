@@ -16,6 +16,7 @@ import { Plus, Edit2, Trash2, Building, Mail, Phone, Filter, Eye, X, Shield, Cli
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { formatDateOnly } from '@/lib/date-utils';
 import { formatStatus } from '@/lib/text-utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Fornecedor {
   id: string;
@@ -56,6 +57,7 @@ const CATEGORIAS = [
 ];
 
 export function FornecedoresManager() {
+  const { t } = useLanguage();
   const { empresaId } = useEmpresaId();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingFornecedor, setEditingFornecedor] = useState<Fornecedor | null>(null);
@@ -155,10 +157,10 @@ export function FornecedoresManager() {
       queryClient.invalidateQueries({ queryKey: ['fornecedores-with-stats'] });
       setDialogOpen(false);
       resetForm();
-      toast({ title: "Sucesso", description: "Fornecedor criado com sucesso!" });
+      toast({ title: t('dueDiligence.fornecedoresManager.toastCreatedTitle'), description: t('dueDiligence.fornecedoresManager.toastCreatedDescription') });
     },
     onError: (error) => {
-      toast({ title: "Erro", description: "Erro ao criar fornecedor: " + error.message, variant: "destructive" });
+      toast({ title: t('dueDiligence.fornecedoresManager.toastCreateErrorTitle'), description: t('dueDiligence.fornecedoresManager.toastCreateErrorDescription', { error: error.message }), variant: "destructive" });
     }
   });
 
@@ -185,10 +187,10 @@ export function FornecedoresManager() {
       setDialogOpen(false);
       resetForm();
       setEditingFornecedor(null);
-      toast({ title: "Sucesso", description: "Fornecedor atualizado com sucesso!" });
+      toast({ title: t('dueDiligence.fornecedoresManager.toastCreatedTitle'), description: t('dueDiligence.fornecedoresManager.toastUpdatedDescription') });
     },
     onError: (error) => {
-      toast({ title: "Erro", description: "Erro ao atualizar fornecedor: " + error.message, variant: "destructive" });
+      toast({ title: t('dueDiligence.fornecedoresManager.toastCreateErrorTitle'), description: t('dueDiligence.fornecedoresManager.toastUpdateErrorDescription', { error: error.message }), variant: "destructive" });
     }
   });
 
@@ -203,10 +205,10 @@ export function FornecedoresManager() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['fornecedores-with-stats'] });
       setDeleteDialog({ open: false, fornecedor: null });
-      toast({ title: "Sucesso", description: "Fornecedor removido com sucesso!" });
+      toast({ title: t('dueDiligence.fornecedoresManager.toastCreatedTitle'), description: t('dueDiligence.fornecedoresManager.toastRemovedDescription') });
     },
     onError: (error) => {
-      toast({ title: "Erro", description: "Erro ao remover fornecedor: " + error.message, variant: "destructive" });
+      toast({ title: t('dueDiligence.fornecedoresManager.toastCreateErrorTitle'), description: t('dueDiligence.fornecedoresManager.toastRemoveErrorDescription', { error: error.message }), variant: "destructive" });
     }
   });
 
@@ -232,7 +234,7 @@ export function FornecedoresManager() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.nome.trim()) {
-      toast({ title: "Erro", description: "Nome é obrigatório", variant: "destructive" });
+      toast({ title: t('dueDiligence.fornecedoresManager.toastCreateErrorTitle'), description: t('dueDiligence.fornecedoresManager.nameRequired'), variant: "destructive" });
       return;
     }
     if (editingFornecedor) {
@@ -249,8 +251,8 @@ export function FornecedoresManager() {
 
   const getRiskBadge = (stats: { total: number; lastScore: number | null; pending: number }) => {
     const shieldIcon = <Shield strokeWidth={1.5} className="h-3 w-3" />;
-    if (stats.total === 0) return <StatusBadge size="sm" tone="neutral" icon={shieldIcon}>Nunca avaliado</StatusBadge>;
-    if (stats.lastScore === null) return <StatusBadge size="sm" tone="warning" icon={shieldIcon}>Pendente</StatusBadge>;
+    if (stats.total === 0) return <StatusBadge size="sm" tone="neutral" icon={shieldIcon}>{t('dueDiligence.fornecedoresManager.riskNeverEvaluated')}</StatusBadge>;
+    if (stats.lastScore === null) return <StatusBadge size="sm" tone="warning" icon={shieldIcon}>{t('dueDiligence.fornecedoresManager.riskPending')}</StatusBadge>;
     const score = stats.lastScore * 10;
     if (score >= 80) return <StatusBadge size="sm" tone="success" icon={shieldIcon}>{score.toFixed(0)}%</StatusBadge>;
     if (score >= 60) return <StatusBadge size="sm" tone="warning" icon={shieldIcon}>{score.toFixed(0)}%</StatusBadge>;
@@ -273,14 +275,14 @@ export function FornecedoresManager() {
           <div className="p-6 pb-4">
             <div className="flex items-center justify-between gap-4 mb-4">
               <div className="relative flex-1 max-w-sm">
-                <Input placeholder="Buscar fornecedores..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                <Input placeholder={t('dueDiligence.fornecedoresManager.searchPlaceholder')} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
               </div>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={() => setShowFilters(!showFilters)}>
-                  <Filter className="h-4 w-4 mr-2" />Filtros
+                  <Filter className="h-4 w-4 mr-2" />{t('dueDiligence.fornecedoresManager.filters')}
                 </Button>
                 <Button size="sm" onClick={() => setDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />Novo Fornecedor
+                  <Plus className="h-4 w-4 mr-2" />{t('dueDiligence.fornecedoresManager.newSupplier')}
                 </Button>
               </div>
             </div>
@@ -288,19 +290,19 @@ export function FornecedoresManager() {
             {showFilters && (
               <div className="bg-muted/50 rounded-lg p-4 mb-4 flex items-center gap-4">
                 <div className="flex items-center gap-2">
-                  <Label className="text-sm">Status:</Label>
+                  <Label className="text-sm">{t('dueDiligence.fornecedoresManager.statusLabel')}</Label>
                   <Select value={statusFilter} onValueChange={setStatusFilter}>
                     <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">Todos</SelectItem>
-                      <SelectItem value="ativo">Ativo</SelectItem>
-                      <SelectItem value="inativo">Inativo</SelectItem>
+                      <SelectItem value="all">{t('dueDiligence.fornecedoresManager.statusAll')}</SelectItem>
+                      <SelectItem value="ativo">{t('dueDiligence.fornecedoresManager.statusActive')}</SelectItem>
+                      <SelectItem value="inativo">{t('dueDiligence.fornecedoresManager.statusInactive')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 {(statusFilter !== 'ativo' || searchTerm) && (
                   <Button variant="ghost" size="sm" onClick={() => { setStatusFilter('ativo'); setSearchTerm(''); }}>
-                    <X className="h-4 w-4 mr-1" />Limpar Filtros
+                    <X className="h-4 w-4 mr-1" />{t('dueDiligence.fornecedoresManager.clearFilters')}
                   </Button>
                 )}
               </div>
@@ -311,34 +313,34 @@ export function FornecedoresManager() {
             open={dialogOpen}
             onOpenChange={handleOpenChange}
             icon={Building}
-            title={editingFornecedor ? 'Editar Fornecedor' : 'Novo Fornecedor'}
+            title={editingFornecedor ? t('dueDiligence.fornecedoresManager.editTitle') : t('dueDiligence.fornecedoresManager.createTitle')}
             size="md"
             onSubmit={() => handleSubmit(new Event('submit') as unknown as React.FormEvent)}
-            submitLabel={editingFornecedor ? 'Atualizar' : 'Criar'}
+            submitLabel={editingFornecedor ? t('dueDiligence.fornecedoresManager.update') : t('dueDiligence.fornecedoresManager.create')}
             isSubmitting={createMutation.isPending || updateMutation.isPending}
           >
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="nome">Nome *</Label>
+                    <Label htmlFor="nome">{t('dueDiligence.fornecedoresManager.fieldName')}</Label>
                     <Input id="nome" value={formData.nome} onChange={(e) => setFormData({ ...formData, nome: e.target.value })} required />
                   </div>
                   <div>
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="email">{t('dueDiligence.fornecedoresManager.fieldEmail')}</Label>
                     <Input id="email" type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
                   </div>
                   <div>
-                    <Label htmlFor="cnpj">CNPJ</Label>
+                    <Label htmlFor="cnpj">{t('dueDiligence.fornecedoresManager.fieldCnpj')}</Label>
                     <Input id="cnpj" value={formData.cnpj} onChange={(e) => setFormData({ ...formData, cnpj: e.target.value })} />
                   </div>
                   <div>
-                    <Label htmlFor="telefone">Telefone</Label>
+                    <Label htmlFor="telefone">{t('dueDiligence.fornecedoresManager.fieldPhone')}</Label>
                     <Input id="telefone" value={formData.telefone} onChange={(e) => setFormData({ ...formData, telefone: e.target.value })} />
                   </div>
                   <div>
-                    <Label htmlFor="categoria">Categoria</Label>
+                    <Label htmlFor="categoria">{t('dueDiligence.fornecedoresManager.fieldCategory')}</Label>
                     <Select value={formData.categoria} onValueChange={(value) => setFormData({ ...formData, categoria: value })}>
-                      <SelectTrigger><SelectValue placeholder="Selecione a categoria" /></SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder={t('dueDiligence.fornecedoresManager.selectCategoryPlaceholder')} /></SelectTrigger>
                       <SelectContent>
                         {CATEGORIAS.map((cat) => (
                           <SelectItem key={cat} value={cat}>{cat}</SelectItem>
@@ -347,15 +349,15 @@ export function FornecedoresManager() {
                     </Select>
                   </div>
                   <div>
-                    <Label htmlFor="contato_responsavel">Contato Responsável</Label>
+                    <Label htmlFor="contato_responsavel">{t('dueDiligence.fornecedoresManager.fieldResponsibleContact')}</Label>
                     <Input id="contato_responsavel" value={formData.contato_responsavel} onChange={(e) => setFormData({ ...formData, contato_responsavel: e.target.value })} />
                   </div>
                   <div className="col-span-2">
-                    <Label htmlFor="endereco">Endereço</Label>
+                    <Label htmlFor="endereco">{t('dueDiligence.fornecedoresManager.fieldAddress')}</Label>
                     <Input id="endereco" value={formData.endereco} onChange={(e) => setFormData({ ...formData, endereco: e.target.value })} />
                   </div>
                   <div className="col-span-2">
-                    <Label htmlFor="observacoes">Observações</Label>
+                    <Label htmlFor="observacoes">{t('dueDiligence.fornecedoresManager.fieldObservations')}</Label>
                     <Textarea id="observacoes" value={formData.observacoes} onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })} rows={3} />
                   </div>
                 </div>
@@ -365,7 +367,7 @@ export function FornecedoresManager() {
           
           <div className="p-6 pt-0">
             {isLoading ? (
-              <div className="text-center py-8"><p>Carregando fornecedores...</p></div>
+              <div className="text-center py-8"><p>{t('dueDiligence.fornecedoresManager.loading')}</p></div>
             ) : (
               <div className="space-y-3">
                 {filteredFornecedores.map((fornecedor: any) => (
@@ -378,7 +380,7 @@ export function FornecedoresManager() {
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-1 flex-wrap">
                                 <h3 className="text-lg font-semibold truncate">{fornecedor.nome}</h3>
-                                {fornecedor.status === 'inativo' && <StatusBadge size="sm" tone="neutral">Inativo</StatusBadge>}
+                                {fornecedor.status === 'inativo' && <StatusBadge size="sm" tone="neutral">{t('dueDiligence.fornecedoresManager.inactiveBadge')}</StatusBadge>}
                                 {fornecedor.categoria && (
                                   <StatusBadge size="sm" tone="neutral" variant="outline">{formatStatus(fornecedor.categoria)}</StatusBadge>
                                 )}
@@ -391,11 +393,11 @@ export function FornecedoresManager() {
                                 {fornecedor.telefone && (
                                   <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{fornecedor.telefone}</span>
                                 )}
-                                {fornecedor.cnpj && <span>CNPJ: {fornecedor.cnpj}</span>}
+                                {fornecedor.cnpj && <span>{t('dueDiligence.fornecedoresManager.cnpjLabel', { cnpj: fornecedor.cnpj })}</span>}
                                 {fornecedor._assessmentStats.total > 0 && (
                                   <span className="flex items-center gap-1">
                                     <ClipboardList className="w-3 h-3" />
-                                    {fornecedor._assessmentStats.total} avaliação(ões)
+                                    {t('dueDiligence.fornecedoresManager.assessmentsCount', { count: fornecedor._assessmentStats.total })}
                                   </span>
                                 )}
                               </div>
@@ -417,7 +419,7 @@ export function FornecedoresManager() {
                                 });
                                 window.dispatchEvent(event);
                               }}>
-                                <Eye className="h-4 w-4 mr-2" />Ver Avaliações
+                                <Eye className="h-4 w-4 mr-2" />{t('dueDiligence.fornecedoresManager.viewAssessments')}
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => {
                                 const event = new CustomEvent('createAssessment', {
@@ -425,13 +427,13 @@ export function FornecedoresManager() {
                                 });
                                 window.dispatchEvent(event);
                               }}>
-                                <Plus className="h-4 w-4 mr-2" />Nova Avaliação
+                                <Plus className="h-4 w-4 mr-2" />{t('dueDiligence.fornecedoresManager.newAssessment')}
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleEdit(fornecedor)}>
-                                <Edit2 className="h-4 w-4 mr-2" />Editar
+                                <Edit2 className="h-4 w-4 mr-2" />{t('dueDiligence.fornecedoresManager.edit')}
                               </DropdownMenuItem>
                               <DropdownMenuItem className="text-destructive" onClick={() => setDeleteDialog({ open: true, fornecedor })}>
-                                <Trash2 className="h-4 w-4 mr-2" />Remover
+                                <Trash2 className="h-4 w-4 mr-2" />{t('dueDiligence.fornecedoresManager.remove')}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -444,7 +446,7 @@ export function FornecedoresManager() {
                 {filteredFornecedores.length === 0 && (
                   <div className="text-center py-8">
                     <Building className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-                    <p className="text-muted-foreground">Nenhum fornecedor encontrado</p>
+                    <p className="text-muted-foreground">{t('dueDiligence.fornecedoresManager.emptyList')}</p>
                   </div>
                 )}
               </div>
@@ -456,10 +458,10 @@ export function FornecedoresManager() {
       <ConfirmDialog
         open={deleteDialog.open}
         onOpenChange={(open) => setDeleteDialog({ open, fornecedor: null })}
-        title="Remover Fornecedor"
-        description={`Tem certeza que deseja remover o fornecedor "${deleteDialog.fornecedor?.nome}"?`}
+        title={t('dueDiligence.fornecedoresManager.deleteDialogTitle')}
+        description={t('dueDiligence.fornecedoresManager.deleteDialogDescription', { nome: deleteDialog.fornecedor?.nome })}
         onConfirm={() => deleteDialog.fornecedor && deleteMutation.mutate(deleteDialog.fornecedor.id)}
-        confirmText="Remover"
+        confirmText={t('dueDiligence.fornecedoresManager.deleteConfirm')}
         variant="destructive"
       />
     </>

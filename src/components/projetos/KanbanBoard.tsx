@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import type { ProjetoColuna, ProjetoTarefa, ProjetoTarefaPrioridade } from '@/types/projetos';
 import { useMoveTarefa, useUpsertTarefa } from '@/hooks/useProjetoTarefas';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const prioridadeTone: Record<ProjetoTarefaPrioridade, 'destructive' | 'warning' | 'info' | 'neutral'> = {
   critica: 'destructive',
@@ -25,6 +26,7 @@ interface Props {
 }
 
 export function KanbanBoard({ projetoId, colunas, tarefas, onAddTarefa, onEditTarefa }: Props) {
+  const { t } = useLanguage();
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
   const move = useMoveTarefa(projetoId);
   const [activeId, setActiveId] = React.useState<string | null>(null);
@@ -64,6 +66,7 @@ export function KanbanBoard({ projetoId, colunas, tarefas, onAddTarefa, onEditTa
             tarefas={tarefasPorColuna[col.id] ?? []}
             onAdd={() => onAddTarefa(col.id)}
             onEdit={onEditTarefa}
+            t={t}
           />
         ))}
       </div>
@@ -72,7 +75,7 @@ export function KanbanBoard({ projetoId, colunas, tarefas, onAddTarefa, onEditTa
   );
 }
 
-function ColumnDroppable({ projetoId, coluna, tarefas, onAdd, onEdit }: { projetoId: string; coluna: ProjetoColuna; tarefas: ProjetoTarefa[]; onAdd: () => void; onEdit: (t: ProjetoTarefa) => void; }) {
+function ColumnDroppable({ projetoId, coluna, tarefas, onAdd, onEdit, t }: { projetoId: string; coluna: ProjetoColuna; tarefas: ProjetoTarefa[]; onAdd: () => void; onEdit: (t: ProjetoTarefa) => void; t: (key: string, params?: Record<string, string | number>) => string; }) {
   const { setNodeRef, isOver } = useDroppable({ id: coluna.id });
   const [quickValue, setQuickValue] = React.useState('');
   const [quickOpen, setQuickOpen] = React.useState(false);
@@ -98,13 +101,13 @@ function ColumnDroppable({ projetoId, coluna, tarefas, onAdd, onEdit }: { projet
           <h3 className="text-sm font-semibold">{coluna.nome}</h3>
           <span className="text-xs text-muted-foreground tabular-nums">({tarefas.length})</span>
         </div>
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onAdd} title="Tarefa detalhada">
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onAdd} title={t('projetos.kanban.addTaskDetailed')}>
           <Plus className="h-4 w-4" />
         </Button>
       </div>
       <div className="space-y-2 min-h-[100px]">
-        {tarefas.map((t) => (
-          <DraggableTask key={t.id} tarefa={t} onClick={() => onEdit(t)} />
+        {tarefas.map((tt) => (
+          <DraggableTask key={tt.id} tarefa={tt} onClick={() => onEdit(tt)} />
         ))}
       </div>
 
@@ -118,12 +121,12 @@ function ColumnDroppable({ projetoId, coluna, tarefas, onAdd, onEdit }: { projet
               if (e.key === 'Enter') { e.preventDefault(); submitQuick(); }
               if (e.key === 'Escape') { setQuickOpen(false); setQuickValue(''); }
             }}
-            placeholder="Título da tarefa…"
+            placeholder={t('projetos.kanban.quickPlaceholder')}
             className="h-8 text-sm"
           />
           <div className="flex gap-1">
-            <Button size="sm" className="flex-1 h-7" onClick={submitQuick} disabled={upsert.isPending}>Adicionar</Button>
-            <Button size="sm" variant="ghost" className="h-7" onClick={() => { setQuickOpen(false); setQuickValue(''); }}>Cancelar</Button>
+            <Button size="sm" className="flex-1 h-7" onClick={submitQuick} disabled={upsert.isPending}>{t('projetos.kanban.add')}</Button>
+            <Button size="sm" variant="ghost" className="h-7" onClick={() => { setQuickOpen(false); setQuickValue(''); }}>{t('projetos.kanban.cancel')}</Button>
           </div>
         </div>
       ) : (
@@ -133,7 +136,7 @@ function ColumnDroppable({ projetoId, coluna, tarefas, onAdd, onEdit }: { projet
           className="mt-2 w-full h-7 justify-start text-xs text-muted-foreground hover:text-foreground"
           onClick={() => setQuickOpen(true)}
         >
-          <Plus className="h-3 w-3" /> Adicionar tarefa
+          <Plus className="h-3 w-3" /> {t('projetos.kanban.addTask')}
         </Button>
       )}
     </div>
@@ -150,6 +153,7 @@ function DraggableTask({ tarefa, onClick }: { tarefa: ProjetoTarefa; onClick: ()
 }
 
 function TaskCard({ tarefa, dragging }: { tarefa: ProjetoTarefa; dragging?: boolean }) {
+  const { t } = useLanguage();
   const atrasada = tarefa.prazo && !tarefa.concluida_em && new Date(tarefa.prazo) < new Date();
   return (
     <Card className={`p-3 cursor-pointer hover:border-primary/40 transition-colors ${dragging ? 'shadow-elegant rotate-2' : ''}`}>
@@ -165,7 +169,7 @@ function TaskCard({ tarefa, dragging }: { tarefa: ProjetoTarefa; dragging?: bool
         )}
         {tarefa.responsavel_id && (
           <StatusBadge tone="info" size="sm" icon={<UserIcon className="h-2.5 w-2.5" />}>
-            atribuída
+            {t('projetos.kanban.assigned')}
           </StatusBadge>
         )}
       </div>

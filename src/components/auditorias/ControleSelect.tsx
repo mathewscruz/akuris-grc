@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Shield } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Controle {
   id: string;
@@ -27,8 +28,9 @@ interface ControleSelectProps {
 export function ControleSelect({
   value,
   onValueChange,
-  placeholder = "Vincular a controle existente...",
+  placeholder,
 }: ControleSelectProps) {
+  const { t } = useLanguage();
   const { empresaId } = useEmpresaId();
   const [controles, setControles] = useState<Controle[]>([]);
   const [loading, setLoading] = useState(false);
@@ -66,17 +68,17 @@ export function ControleSelect({
   return (
     <Select value={value || "_none"} onValueChange={handleChange}>
       <SelectTrigger className="w-full">
-        <SelectValue placeholder={placeholder}>
+        <SelectValue placeholder={placeholder ?? t('controlesAuditorias.csPlaceholder')}>
           {value && controles.find((c) => c.id === value)?.nome}
         </SelectValue>
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="_none">
-          <span className="text-muted-foreground">Nenhum</span>
+          <span className="text-muted-foreground">{t('controlesAuditorias.csNenhum')}</span>
         </SelectItem>
         {loading ? (
           <SelectItem value="_loading" disabled>
-            Carregando...
+            {t('controlesAuditorias.csLoading')}
           </SelectItem>
         ) : (
           controles.map((controle) => (

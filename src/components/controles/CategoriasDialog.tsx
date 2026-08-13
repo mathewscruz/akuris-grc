@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { useEmpresaId } from "@/hooks/useEmpresaId";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Categoria {
   id: string;
@@ -36,6 +37,7 @@ export default function CategoriasDialog({ open, onOpenChange }: CategoriasDialo
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { empresaId } = useEmpresaId();
+  const { t } = useLanguage();
 
   const cores = [
     "#3B82F6", "#EF4444", "#10B981", "#F59E0B",
@@ -84,15 +86,15 @@ export default function CategoriasDialog({ open, onOpenChange }: CategoriasDialo
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['controles_categorias'] });
       toast({
-        title: editingId ? "Categoria atualizada" : "Categoria criada",
-        description: editingId ? "A categoria foi atualizada com sucesso." : "A categoria foi criada com sucesso.",
+        title: editingId ? t('controlesAuditorias.catToastUpdatedTitle') : t('controlesAuditorias.catToastCreatedTitle'),
+        description: editingId ? t('controlesAuditorias.catToastUpdatedDesc') : t('controlesAuditorias.catToastCreatedDesc'),
       });
       resetForm();
     },
     onError: (error) => {
       toast({
-        title: "Erro",
-        description: `Não foi possível ${editingId ? 'atualizar' : 'criar'} a categoria: ${error.message}`,
+        title: t('controlesAuditorias.catToastErrorTitle'),
+        description: t('controlesAuditorias.catToastSaveErrorDesc', { action: editingId ? t('controlesAuditorias.catActionUpdate') : t('controlesAuditorias.catActionCreate'), message: error.message }),
         variant: "destructive",
       });
     }
@@ -110,15 +112,15 @@ export default function CategoriasDialog({ open, onOpenChange }: CategoriasDialo
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['controles_categorias'] });
       toast({
-        title: "Categoria excluída",
-        description: "A categoria foi excluída com sucesso.",
+        title: t('controlesAuditorias.catToastDeletedTitle'),
+        description: t('controlesAuditorias.catToastDeletedDesc'),
       });
       setDeleteConfirm({ open: false, id: '' });
     },
     onError: () => {
       toast({
-        title: "Erro",
-        description: "Não foi possível excluir a categoria.",
+        title: t('controlesAuditorias.catToastErrorTitle'),
+        description: t('controlesAuditorias.catToastDeleteErrorDesc'),
         variant: "destructive",
       });
       setDeleteConfirm({ open: false, id: '' });
@@ -143,8 +145,8 @@ export default function CategoriasDialog({ open, onOpenChange }: CategoriasDialo
     e.preventDefault();
     if (!formData.nome.trim()) {
       toast({
-        title: "Erro",
-        description: "O nome da categoria é obrigatório.",
+        title: t('controlesAuditorias.catToastErrorTitle'),
+        description: t('controlesAuditorias.catValidationNomeRequired'),
         variant: "destructive",
       });
       return;
@@ -166,8 +168,8 @@ export default function CategoriasDialog({ open, onOpenChange }: CategoriasDialo
         open={open}
         onOpenChange={onOpenChange}
         icon={Tag}
-        title="Gerenciar Categorias"
-        description="Crie e gerencie as categorias utilizadas para classificar os controles."
+        title={t('controlesAuditorias.catDialogTitle')}
+        description={t('controlesAuditorias.catDialogDescription')}
         size="lg"
         hideFooter
       >
@@ -176,29 +178,29 @@ export default function CategoriasDialog({ open, onOpenChange }: CategoriasDialo
           <div>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <Label htmlFor="nome">Nome *</Label>
+                <Label htmlFor="nome">{t('controlesAuditorias.catFieldNome')}</Label>
                 <Input
                   id="nome"
                   value={formData.nome}
                   onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
-                  placeholder="Nome da categoria"
+                  placeholder={t('controlesAuditorias.catFieldNomePlaceholder')}
                   required
                 />
               </div>
 
               <div>
-                <Label htmlFor="descricao">Descrição</Label>
+                <Label htmlFor="descricao">{t('controlesAuditorias.catFieldDescricao')}</Label>
                 <Textarea
                   id="descricao"
                   value={formData.descricao}
                   onChange={(e) => setFormData(prev => ({ ...prev, descricao: e.target.value }))}
-                  placeholder="Descrição da categoria"
+                  placeholder={t('controlesAuditorias.catFieldDescricaoPlaceholder')}
                   rows={3}
                 />
               </div>
 
               <div>
-                <Label>Cor</Label>
+                <Label>{t('controlesAuditorias.catFieldCor')}</Label>
                 <div className="flex gap-2 mt-2">
                   {cores.map((cor) => (
                     <button
@@ -214,11 +216,11 @@ export default function CategoriasDialog({ open, onOpenChange }: CategoriasDialo
 
               <div className="flex gap-2">
                 <Button type="submit" disabled={saveCategoriaMutation.isPending}>
-                  {saveCategoriaMutation.isPending ? "Salvando..." : (editingId ? "Atualizar" : "Criar")}
+                  {saveCategoriaMutation.isPending ? t('controlesAuditorias.catBtnSaving') : (editingId ? t('controlesAuditorias.catBtnUpdate') : t('controlesAuditorias.catBtnCreate'))}
                 </Button>
                 {editingId && (
                   <Button type="button" variant="outline" onClick={resetForm}>
-                    Cancelar
+                    {t('controlesAuditorias.catBtnCancel')}
                   </Button>
                 )}
               </div>
@@ -227,13 +229,13 @@ export default function CategoriasDialog({ open, onOpenChange }: CategoriasDialo
 
           {/* Lista de categorias */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Categorias Existentes</h3>
+            <h3 className="text-lg font-semibold">{t('controlesAuditorias.catExistingTitle')}</h3>
             
             {categorias.length === 0 ? (
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-8">
                   <Plus className="w-8 h-8 text-muted-foreground mb-2" />
-                  <p className="text-muted-foreground">Nenhuma categoria criada</p>
+                  <p className="text-muted-foreground">{t('controlesAuditorias.catEmpty')}</p>
                 </CardContent>
               </Card>
             ) : (
@@ -286,10 +288,10 @@ export default function CategoriasDialog({ open, onOpenChange }: CategoriasDialo
       <ConfirmDialog
         open={deleteConfirm.open}
         onOpenChange={(open) => setDeleteConfirm(prev => ({ ...prev, open }))}
-        title="Excluir Categoria"
-        description={`Tem certeza que deseja excluir "${deleteConfirm.nome}"? Esta ação não pode ser desfeita.`}
-        confirmText="Excluir"
-        cancelText="Cancelar"
+        title={t('controlesAuditorias.catDeleteDialogTitle')}
+        description={t('controlesAuditorias.catDeleteDialogDescription', { nome: deleteConfirm.nome || '' })}
+        confirmText={t('controlesAuditorias.catDeleteConfirm')}
+        cancelText={t('controlesAuditorias.catDeleteCancel')}
         variant="destructive"
         onConfirm={confirmDelete}
         loading={deleteCategoriaMutation.isPending}

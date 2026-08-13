@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import ControlesTestesDialog from "./ControlesTestesDialog";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { formatDateOnly } from "@/lib/date-utils";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface ControleTeste {
   id: string;
@@ -33,6 +34,7 @@ export default function TestesList({ controleId, controleNome }: TestesListProps
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: string }>({ open: false, id: '' });
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
 
   // Buscar testes do controle
   const { data: testes = [], isLoading } = useQuery({
@@ -62,15 +64,15 @@ export default function TestesList({ controleId, controleNome }: TestesListProps
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['controles_testes', controleId] });
       toast({
-        title: "Teste excluído",
-        description: "O teste foi excluído com sucesso.",
+        title: t('controlesAuditorias.tlToastDeletedTitle'),
+        description: t('controlesAuditorias.tlToastDeletedDesc'),
       });
       setDeleteConfirm({ open: false, id: '' });
     },
     onError: () => {
       toast({
-        title: "Erro",
-        description: "Não foi possível excluir o teste.",
+        title: t('controlesAuditorias.tlToastErrorTitle'),
+        description: t('controlesAuditorias.tlToastErrorDesc'),
         variant: "destructive",
       });
       setDeleteConfirm({ open: false, id: '' });
@@ -98,9 +100,9 @@ export default function TestesList({ controleId, controleNome }: TestesListProps
     } as const;
     
     const labels = {
-      eficaz: "Eficaz",
-      ineficaz: "Ineficaz", 
-      parcialmente_eficaz: "Parcialmente Eficaz"
+      eficaz: t('controlesAuditorias.tlResultadoEficaz'),
+      ineficaz: t('controlesAuditorias.tlResultadoIneficaz'),
+      parcialmente_eficaz: t('controlesAuditorias.tlResultadoParcial')
     } as const;
     
     return (
@@ -127,7 +129,7 @@ export default function TestesList({ controleId, controleNome }: TestesListProps
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
           <TestTube className="w-5 h-5" />
-          <h3 className="text-lg font-semibold">Histórico de Testes</h3>
+          <h3 className="text-lg font-semibold">{t('controlesAuditorias.tlTitle')}</h3>
         </div>
         <Button
           onClick={() => {
@@ -137,7 +139,7 @@ export default function TestesList({ controleId, controleNome }: TestesListProps
           size="sm"
         >
           <Plus className="w-4 h-4 mr-2" />
-          Novo Teste
+          {t('controlesAuditorias.tlBtnNovo')}
         </Button>
       </div>
 
@@ -145,9 +147,9 @@ export default function TestesList({ controleId, controleNome }: TestesListProps
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <TestTube className="w-12 h-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Nenhum teste registrado</h3>
+            <h3 className="text-lg font-semibold mb-2">{t('controlesAuditorias.tlEmptyTitle')}</h3>
             <p className="text-muted-foreground mb-4 text-center">
-              Registre o primeiro teste para este controle
+              {t('controlesAuditorias.tlEmptyDesc')}
             </p>
             <Button 
               onClick={() => {
@@ -156,7 +158,7 @@ export default function TestesList({ controleId, controleNome }: TestesListProps
               }}
             >
               <Plus className="w-4 h-4 mr-2" />
-              Registrar Teste
+              {t('controlesAuditorias.tlBtnRegistrar')}
             </Button>
           </CardContent>
         </Card>
@@ -168,7 +170,7 @@ export default function TestesList({ controleId, controleNome }: TestesListProps
                 <div className="flex items-start justify-between">
                   <div>
                     <CardTitle className="text-base">
-                      Teste de {formatDateOnly(teste.data_teste)}
+                      {t('controlesAuditorias.tlTesteDe', { data: formatDateOnly(teste.data_teste) })}
                     </CardTitle>
                     <CardDescription className="flex items-center gap-4 mt-1">
                       {teste.testador && (
@@ -180,7 +182,7 @@ export default function TestesList({ controleId, controleNome }: TestesListProps
                       {teste.proxima_avaliacao && (
                         <span className="flex items-center gap-1">
                           <Calendar className="w-3 h-3" />
-                          Próxima: {formatDateOnly(teste.proxima_avaliacao)}
+                          {t('controlesAuditorias.tlProxima', { data: formatDateOnly(teste.proxima_avaliacao) })}
                         </span>
                       )}
                     </CardDescription>
@@ -193,14 +195,14 @@ export default function TestesList({ controleId, controleNome }: TestesListProps
               <CardContent>
                 {teste.observacoes && (
                   <div className="mb-3">
-                    <p className="text-sm text-muted-foreground mb-1">Observações:</p>
+                    <p className="text-sm text-muted-foreground mb-1">{t('controlesAuditorias.tlObservacoes')}</p>
                     <p className="text-sm">{teste.observacoes}</p>
                   </div>
                 )}
                 
                 {teste.evidencias && (
                   <div className="mb-3">
-                    <p className="text-sm text-muted-foreground mb-1">Evidências:</p>
+                    <p className="text-sm text-muted-foreground mb-1">{t('controlesAuditorias.tlEvidencias')}</p>
                     <p className="text-sm">{teste.evidencias}</p>
                   </div>
                 )}
@@ -212,7 +214,7 @@ export default function TestesList({ controleId, controleNome }: TestesListProps
                     onClick={() => handleEdit(teste)}
                   >
                     <Edit className="w-3 h-3 mr-1" />
-                    Editar
+                    {t('controlesAuditorias.tlBtnEditar')}
                   </Button>
                   <Button
                     variant="destructive"
@@ -220,7 +222,7 @@ export default function TestesList({ controleId, controleNome }: TestesListProps
                     onClick={() => handleDelete(teste.id)}
                   >
                     <Trash2 className="w-3 h-3 mr-1" />
-                    Excluir
+                    {t('controlesAuditorias.tlBtnExcluir')}
                   </Button>
                 </div>
               </CardContent>
@@ -242,10 +244,10 @@ export default function TestesList({ controleId, controleNome }: TestesListProps
       <ConfirmDialog
         open={deleteConfirm.open}
         onOpenChange={(open) => setDeleteConfirm(prev => ({ ...prev, open }))}
-        title="Excluir Teste"
-        description="Tem certeza que deseja excluir este teste? Esta ação não pode ser desfeita."
-        confirmText="Excluir"
-        cancelText="Cancelar"
+        title={t('controlesAuditorias.tlDeleteDialogTitle')}
+        description={t('controlesAuditorias.tlDeleteDialogDescription')}
+        confirmText={t('controlesAuditorias.tlDeleteConfirm')}
+        cancelText={t('controlesAuditorias.tlDeleteCancel')}
         variant="destructive"
         onConfirm={confirmDelete}
         loading={deleteTesteMutation.isPending}

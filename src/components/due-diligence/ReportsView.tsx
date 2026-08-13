@@ -11,10 +11,12 @@ import { exportCSV } from '@/lib/csv-utils';
 import jsPDF from 'jspdf';
 import { loadAkurisLogo, addAkurisHeader, addAkurisFooter, addSectionTitle, drawTableHeader, formatLabel, AKURIS_COLORS } from '@/lib/pdf-utils';
 import { formatStatus } from '@/lib/text-utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export function ReportsView() {
   const { data: reportsData, isLoading, error } = useReportsData();
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const handleExportPDF = async () => {
     if (!reportsData) return;
@@ -29,23 +31,23 @@ export function ReportsView() {
       doc.setFontSize(16);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(AKURIS_COLORS.text);
-      doc.text('Relatorio Due Diligence', pageWidth / 2, y, { align: 'center' });
+      doc.text(t('dueDiligence.reportsView.pdfTitle'), pageWidth / 2, y, { align: 'center' });
       y += 12;
 
-      y = addSectionTitle(doc, 'Metricas Gerais', y, margin);
+      y = addSectionTitle(doc, t('dueDiligence.reportsView.pdfMetricsTitle'), y, margin);
       doc.setFontSize(10);
       doc.setTextColor(AKURIS_COLORS.text);
-      doc.text(`Score Medio: ${reportsData.overallMetrics.averageScore.toFixed(1)}%`, margin + 8, y); y += 6;
-      doc.text(`Fornecedores Avaliados: ${reportsData.overallMetrics.totalSuppliers}`, margin + 8, y); y += 6;
-      doc.text(`Taxa de Resposta: ${reportsData.overallMetrics.responseRate.toFixed(0)}%`, margin + 8, y); y += 6;
-      doc.text(`Tempo Medio: ${reportsData.overallMetrics.averageCompletionTime.toFixed(1)} dias`, margin + 8, y); y += 12;
+      doc.text(t('dueDiligence.reportsView.pdfAverageScore', { score: reportsData.overallMetrics.averageScore.toFixed(1) }), margin + 8, y); y += 6;
+      doc.text(t('dueDiligence.reportsView.pdfSuppliersEvaluated', { count: String(reportsData.overallMetrics.totalSuppliers) }), margin + 8, y); y += 6;
+      doc.text(t('dueDiligence.reportsView.pdfResponseRate', { rate: reportsData.overallMetrics.responseRate.toFixed(0) }), margin + 8, y); y += 6;
+      doc.text(t('dueDiligence.reportsView.pdfAverageTime', { dias: reportsData.overallMetrics.averageCompletionTime.toFixed(1) }), margin + 8, y); y += 12;
 
       if (reportsData.topSuppliers.length > 0) {
-        y = addSectionTitle(doc, 'Melhores Fornecedores', y, margin);
+        y = addSectionTitle(doc, t('dueDiligence.reportsView.pdfTopSuppliersTitle'), y, margin);
         drawTableHeader(doc, [
-          { text: 'Fornecedor', x: margin + 2 },
-          { text: 'Categoria', x: margin + 80 },
-          { text: 'Score', x: margin + 140 },
+          { text: t('dueDiligence.reportsView.pdfColSupplier'), x: margin + 2 },
+          { text: t('dueDiligence.reportsView.pdfColCategory'), x: margin + 80 },
+          { text: t('dueDiligence.reportsView.pdfColScore'), x: margin + 140 },
         ], y, margin, contentWidth);
         y += 5;
         doc.setFont('helvetica', 'normal');
@@ -61,9 +63,9 @@ export function ReportsView() {
 
       addAkurisFooter(doc);
       doc.save(`relatorio_due_diligence_${new Date().toISOString().split('T')[0]}.pdf`);
-      toast({ title: "PDF gerado", description: "Relatorio exportado com sucesso." });
+      toast({ title: t('dueDiligence.reportsView.toastPdfGeneratedTitle'), description: t('dueDiligence.reportsView.toastPdfGeneratedDescription') });
     } catch {
-      toast({ title: "Erro", description: "Erro ao gerar PDF.", variant: "destructive" });
+      toast({ title: t('dueDiligence.reportsView.errorTitle'), description: t('dueDiligence.reportsView.errorPdfDescription'), variant: "destructive" });
     }
   };
 
@@ -72,25 +74,25 @@ export function ReportsView() {
     if (type === 'scores') {
       const allSuppliers = [...reportsData.topSuppliers, ...reportsData.lowPerformingSuppliers];
       exportCSV(
-        ['Fornecedor', 'Categoria', 'Score'],
+        [t('dueDiligence.reportsView.csvColSupplier'), t('dueDiligence.reportsView.csvColCategory'), t('dueDiligence.reportsView.csvColScore')],
         allSuppliers.map(s => [s.nome, s.categoria, s.score.toFixed(1)]),
         'due_diligence_scores'
       );
     } else {
       exportCSV(
-        ['Categoria', 'Score'],
+        [t('dueDiligence.reportsView.csvColCategoryTrend'), t('dueDiligence.reportsView.csvColScore')],
         reportsData.categoryPerformance.map(c => [c.category, c.score.toFixed(1)]),
         'due_diligence_tendencias'
       );
     }
-    toast({ title: "CSV exportado" });
+    toast({ title: t('dueDiligence.reportsView.toastCsvExported') });
   };
 
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 py-24">
         <AkurisPulse size={40} />
-        <p className="text-sm text-muted-foreground">Carregando…</p>
+        <p className="text-sm text-muted-foreground">{t('dueDiligence.reportsView.loading')}</p>
       </div>
     );
   }
@@ -98,7 +100,7 @@ export function ReportsView() {
   if (error) {
     return (
       <div className="text-center p-8">
-        <p className="text-muted-foreground">Erro ao carregar dados dos relatórios</p>
+        <p className="text-muted-foreground">{t('dueDiligence.reportsView.errorLoadDescription')}</p>
       </div>
     );
   }
@@ -106,9 +108,9 @@ export function ReportsView() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold">Relatórios e Análises</h2>
+        <h2 className="text-2xl font-bold">{t('dueDiligence.reportsView.pageTitle')}</h2>
         <p className="text-muted-foreground">
-          Análise detalhada dos resultados das avaliações de fornecedores
+          {t('dueDiligence.reportsView.pageDescription')}
         </p>
       </div>
 
@@ -116,7 +118,7 @@ export function ReportsView() {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Score Médio Geral</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('dueDiligence.reportsView.statAverageScoreTitle')}</CardTitle>
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -124,27 +126,27 @@ export function ReportsView() {
               {reportsData?.overallMetrics.averageScore.toFixed(1)}%
             </div>
             <p className="text-xs text-muted-foreground">
-              Baseado em avaliações concluídas
+              {t('dueDiligence.reportsView.statAverageScoreDescription')}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Fornecedores Avaliados</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('dueDiligence.reportsView.statSuppliersEvaluatedTitle')}</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{reportsData?.overallMetrics.totalSuppliers}</div>
             <p className="text-xs text-muted-foreground">
-              Fornecedores únicos
+              {t('dueDiligence.reportsView.statSuppliersEvaluatedDescription')}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Taxa de Resposta</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('dueDiligence.reportsView.statResponseRateTitle')}</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -152,22 +154,22 @@ export function ReportsView() {
               {reportsData?.overallMetrics.responseRate.toFixed(0)}%
             </div>
             <p className="text-xs text-muted-foreground">
-              Assessments concluídos
+              {t('dueDiligence.reportsView.statResponseRateDescription')}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Tempo Médio</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('dueDiligence.reportsView.statAverageTimeTitle')}</CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {reportsData?.overallMetrics.averageCompletionTime.toFixed(1)} dias
+              {t('dueDiligence.reportsView.statAverageTimeDescriptionDays', { dias: reportsData?.overallMetrics.averageCompletionTime.toFixed(1) ?? '0' })}
             </div>
             <p className="text-xs text-muted-foreground">
-              Para conclusão da avaliação
+              {t('dueDiligence.reportsView.statAverageTimeDescription')}
             </p>
           </CardContent>
         </Card>
@@ -176,9 +178,9 @@ export function ReportsView() {
       {/* Análise por Categoria */}
       <Card>
         <CardHeader>
-          <CardTitle>Desempenho por Categoria</CardTitle>
+          <CardTitle>{t('dueDiligence.reportsView.categoryPerformanceTitle')}</CardTitle>
           <CardDescription>
-            Scores médios organizados por categoria de avaliação
+            {t('dueDiligence.reportsView.categoryPerformanceDescription')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -199,7 +201,7 @@ export function ReportsView() {
             })}
             {(!reportsData?.categoryPerformance || reportsData.categoryPerformance.length === 0) && (
               <p className="text-center text-muted-foreground py-4">
-                Nenhuma categoria encontrada
+                {t('dueDiligence.reportsView.emptyCategoryPerformance')}
               </p>
             )}
           </div>
@@ -210,9 +212,9 @@ export function ReportsView() {
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Melhores Fornecedores</CardTitle>
+            <CardTitle>{t('dueDiligence.reportsView.topSuppliersTitle')}</CardTitle>
             <CardDescription>
-              Top 5 fornecedores por score
+              {t('dueDiligence.reportsView.topSuppliersDescription')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -231,7 +233,7 @@ export function ReportsView() {
               ))}
               {(!reportsData?.topSuppliers || reportsData.topSuppliers.length === 0) && (
                 <p className="text-center text-muted-foreground py-4">
-                  Nenhum fornecedor avaliado
+                  {t('dueDiligence.reportsView.emptyTopSuppliers')}
                 </p>
               )}
             </div>
@@ -240,9 +242,9 @@ export function ReportsView() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Fornecedores em Atenção</CardTitle>
+            <CardTitle>{t('dueDiligence.reportsView.lowPerformingTitle')}</CardTitle>
             <CardDescription>
-              Fornecedores com scores baixos que precisam de atenção
+              {t('dueDiligence.reportsView.lowPerformingDescription')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -263,7 +265,7 @@ export function ReportsView() {
               ))}
               {(!reportsData?.lowPerformingSuppliers || reportsData.lowPerformingSuppliers.length === 0) && (
                 <p className="text-center text-muted-foreground py-4">
-                  Todos os fornecedores têm boa performance
+                  {t('dueDiligence.reportsView.emptyLowPerforming')}
                 </p>
               )}
             </div>
@@ -274,28 +276,28 @@ export function ReportsView() {
       {/* Exportar Relatórios */}
       <Card>
         <CardHeader>
-          <CardTitle>Exportar Relatórios</CardTitle>
+          <CardTitle>{t('dueDiligence.reportsView.exportTitle')}</CardTitle>
           <CardDescription>
-            Baixe relatórios detalhados em diferentes formatos
+            {t('dueDiligence.reportsView.exportDescription')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex gap-4 flex-wrap">
             <Button variant="outline" className="flex items-center gap-2" onClick={handleExportPDF}>
               <Download className="h-4 w-4" />
-              Relatório Completo (PDF)
+              {t('dueDiligence.reportsView.exportFullReport')}
             </Button>
             <Button variant="outline" className="flex items-center gap-2" onClick={() => handleExportCSV('scores')}>
               <Download className="h-4 w-4" />
-              Scores por Fornecedor (CSV)
+              {t('dueDiligence.reportsView.exportScoresCsv')}
             </Button>
             <Button variant="outline" className="flex items-center gap-2" onClick={() => handleExportCSV('trends')}>
               <Download className="h-4 w-4" />
-              Análise de Tendências (CSV)
+              {t('dueDiligence.reportsView.exportTrendsCsv')}
             </Button>
             <Button variant="outline" className="flex items-center gap-2" onClick={handleExportPDF}>
               <Download className="h-4 w-4" />
-              Dashboard Executivo (PDF)
+              {t('dueDiligence.reportsView.exportExecutiveDashboard')}
             </Button>
           </div>
         </CardContent>

@@ -21,14 +21,22 @@ import { MetricasPanel } from '@/components/projetos/MetricasPanel';
 import { AutomacoesPanel } from '@/components/projetos/AutomacoesPanel';
 import { exportTarefasCSV } from '@/components/projetos/exportProjeto';
 import type { ProjetoTarefa } from '@/types/projetos';
-import { STATUS_LABEL } from '@/types/projetos';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function ProjetoDetalhe() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const { data: projeto, isLoading } = useProjeto(id);
   const { data: colunas = [] } = useProjetoColunas(id);
   const { data: tarefas = [] } = useProjetoTarefas(id);
+
+  const STATUS_LABEL: Record<string, string> = {
+    ativo: t('projetos.status.ativo'),
+    pausado: t('projetos.status.pausado'),
+    concluido: t('projetos.status.concluido'),
+    arquivado: t('projetos.status.arquivado'),
+  };
 
   const [tarefaDialog, setTarefaDialog] = useState(false);
   const [tarefaAtual, setTarefaAtual] = useState<ProjetoTarefa | null>(null);
@@ -38,7 +46,7 @@ export default function ProjetoDetalhe() {
   const [reportDialog, setReportDialog] = useState(false);
 
   if (isLoading) return <div className="flex justify-center py-16"><AkurisPulse size={56} /></div>;
-  if (!projeto) return <div className="p-6">Projeto não encontrado.</div>;
+  if (!projeto) return <div className="p-6">{t('projetos.detalhe.notFound')}</div>;
 
   const openNovaTarefa = (colunaId?: string) => {
     setTarefaAtual(null);
@@ -65,32 +73,32 @@ export default function ProjetoDetalhe() {
         </div>
         <StatusBadge tone="primary" size="md">{STATUS_LABEL[projeto.status]}</StatusBadge>
         <Button variant="outline" size="sm" onClick={() => setReportDialog(true)}>
-          <FileText className="h-4 w-4" /> Status report IA
+          <FileText className="h-4 w-4" /> {t('projetos.detalhe.statusReportIa')}
         </Button>
         <Button variant="outline" size="sm" onClick={() => setSuggestDialog(true)}>
-          <Sparkles className="h-4 w-4" /> Quebrar com IA
+          <Sparkles className="h-4 w-4" /> {t('projetos.detalhe.breakWithAi')}
         </Button>
         <Button variant="outline" size="sm" onClick={() => exportTarefasCSV(projeto.nome, tarefas, colunas)}>
-          <Download className="h-4 w-4" /> Exportar CSV
+          <Download className="h-4 w-4" /> {t('projetos.detalhe.exportCsv')}
         </Button>
         <Button variant="outline" size="sm" onClick={() => setProjetoDialog(true)}>
-          <Settings className="h-4 w-4" /> Editar
+          <Settings className="h-4 w-4" /> {t('projetos.detalhe.edit')}
         </Button>
         <ProjetoActionsMenu projeto={projeto} onEdit={() => setProjetoDialog(true)} variant="button" />
         <Button size="sm" onClick={() => openNovaTarefa()}>
-          <Plus className="h-4 w-4" /> Nova tarefa
+          <Plus className="h-4 w-4" /> {t('projetos.detalhe.newTask')}
         </Button>
       </div>
 
       <Tabs defaultValue="kanban">
         <TabsList>
-          <TabsTrigger value="kanban">Kanban</TabsTrigger>
-          <TabsTrigger value="lista">Lista</TabsTrigger>
-          <TabsTrigger value="calendario">Calendário</TabsTrigger>
-          <TabsTrigger value="gantt">Gantt</TabsTrigger>
-          <TabsTrigger value="sprints">Sprints</TabsTrigger>
-          <TabsTrigger value="metricas">Métricas</TabsTrigger>
-          <TabsTrigger value="automacoes">Automações</TabsTrigger>
+          <TabsTrigger value="kanban">{t('projetos.detalhe.tabKanban')}</TabsTrigger>
+          <TabsTrigger value="lista">{t('projetos.detalhe.tabLista')}</TabsTrigger>
+          <TabsTrigger value="calendario">{t('projetos.detalhe.tabCalendario')}</TabsTrigger>
+          <TabsTrigger value="gantt">{t('projetos.detalhe.tabGantt')}</TabsTrigger>
+          <TabsTrigger value="sprints">{t('projetos.detalhe.tabSprints')}</TabsTrigger>
+          <TabsTrigger value="metricas">{t('projetos.detalhe.tabMetricas')}</TabsTrigger>
+          <TabsTrigger value="automacoes">{t('projetos.detalhe.tabAutomacoes')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="kanban" className="mt-4">

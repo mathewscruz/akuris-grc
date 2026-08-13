@@ -23,6 +23,7 @@ import { formatStatus } from '@/lib/text-utils';
 import { logger } from '@/lib/logger';
 import { MasterDetailDialog, type MasterDetailItem } from '@/components/ui/master-detail-dialog';
 import { Separator } from '@/components/ui/separator';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const aditivoSchema = z.object({
   numero_aditivo: z.string().min(1, 'Número do aditivo é obrigatório'),
@@ -77,12 +78,12 @@ interface AditivosDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const STATUS_INFO: Record<string, { label: string; icon: typeof FileText; tone: StatusTone }> = {
-  rascunho: { label: 'Rascunho', icon: FileText, tone: 'neutral' },
-  aprovacao: { label: 'Em Aprovação', icon: Clock, tone: 'info' },
-  ativo: { label: 'Ativo', icon: CheckCircle, tone: 'success' },
-  rejeitado: { label: 'Rejeitado', icon: XCircle, tone: 'destructive' },
-};
+const getStatusInfo = (t: (key: string) => string): Record<string, { label: string; icon: typeof FileText; tone: StatusTone }> => ({
+  rascunho: { label: t('contratosAtivos.aditivosDialog.statusRascunho'), icon: FileText, tone: 'neutral' },
+  aprovacao: { label: t('contratosAtivos.aditivosDialog.statusAprovacao'), icon: Clock, tone: 'info' },
+  ativo: { label: t('contratosAtivos.aditivosDialog.statusAtivo'), icon: CheckCircle, tone: 'success' },
+  rejeitado: { label: t('contratosAtivos.aditivosDialog.statusRejeitado'), icon: XCircle, tone: 'destructive' },
+});
 
 const formatCurrency = (value: number | null) => {
   if (value === null || value === undefined) return 'N/A';
@@ -101,6 +102,8 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [aditivoToDelete, setAditivoToDelete] = useState<Aditivo | null>(null);
   const { toast } = useToast();
+  const { t } = useLanguage();
+  const STATUS_INFO = useMemo(() => getStatusInfo(t), [t]);
 
   const form = useForm<AditivoFormData>({
     resolver: zodResolver(aditivoSchema),
@@ -174,7 +177,7 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
       }
     } catch (error) {
       logger.error('Erro ao carregar aditivos:', error);
-      toast({ title: 'Erro', description: 'Erro ao carregar aditivos', variant: 'destructive' });
+      toast({ title: t('contratosAtivos.common.error'), description: t('contratosAtivos.aditivosDialog.toastLoadError'), variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -213,15 +216,15 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
         if (inserted) setSelectedId(inserted.id);
       }
 
-      toast({ title: 'Sucesso', description: `Aditivo ${editingAditivo ? 'atualizado' : 'criado'} com sucesso` });
+      toast({ title: t('contratosAtivos.common.success'), description: t('contratosAtivos.aditivosDialog.toastSaveSuccess').replace('{action}', editingAditivo ? t('contratosAtivos.aditivosDialog.actionUpdated') : t('contratosAtivos.aditivosDialog.actionCreated')) });
       setFormOpen(false);
       setEditingAditivo(null);
       fetchAditivos();
     } catch (error) {
       logger.error('Erro ao salvar aditivo:', error);
       toast({
-        title: 'Erro',
-        description: `Erro ao ${editingAditivo ? 'atualizar' : 'criar'} aditivo`,
+        title: t('contratosAtivos.common.error'),
+        description: editingAditivo ? t('contratosAtivos.aditivosDialog.toastSaveErrorUpdate') : t('contratosAtivos.aditivosDialog.toastSaveErrorCreate'),
         variant: 'destructive',
       });
     } finally {
@@ -235,12 +238,12 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
       setLoading(true);
       const { error } = await supabase.from('contrato_aditivos').delete().eq('id', aditivoToDelete.id);
       if (error) throw error;
-      toast({ title: 'Sucesso', description: 'Aditivo excluído com sucesso' });
+      toast({ title: t('contratosAtivos.common.success'), description: t('contratosAtivos.aditivosDialog.toastDeleteSuccess') });
       if (selectedId === aditivoToDelete.id) setSelectedId(null);
       fetchAditivos();
     } catch (error) {
       logger.error('Erro ao excluir aditivo:', error);
-      toast({ title: 'Erro', description: 'Erro ao excluir aditivo', variant: 'destructive' });
+      toast({ title: t('contratosAtivos.common.error'), description: t('contratosAtivos.aditivosDialog.toastDeleteError'), variant: 'destructive' });
     } finally {
       setLoading(false);
       setDeleteConfirmOpen(false);
@@ -254,7 +257,7 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
         const info = STATUS_INFO[a.status] ?? STATUS_INFO.rascunho;
         return {
           id: a.id,
-          label: `Aditivo ${a.numero_aditivo}`,
+          label: t('contratosAtivos.aditivosDialog.aditivoLabel').replace('{numero}', a.numero_aditivo),
           description: `${formatStatus(a.tipo)} · ${formatDate(a.data_assinatura)}`,
           badge: (
             <StatusBadge tone={info.tone} size="sm">
@@ -280,7 +283,7 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
       <div className="space-y-6">
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1">
-            <h2 className="text-xl font-semibold tracking-tight">Aditivo {a.numero_aditivo}</h2>
+            <h2 className="text-xl font-semibold tracking-tight">{t('contratosAtivos.aditivosDialog.aditivoLabel').replace('{numero}', a.numero_aditivo)}</h2>
             <p className="text-sm text-muted-foreground">{formatStatus(a.tipo)}</p>
           </div>
           <StatusBadge tone={info.tone} icon={<StatusIcon className="h-3 w-3" />}>
@@ -290,11 +293,11 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Motivo</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('contratosAtivos.aditivosDialog.detailMotivo')}</p>
             <p className="text-sm">{a.motivo}</p>
           </div>
           <div className="space-y-1">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Data de Assinatura</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('contratosAtivos.aditivosDialog.detailSignatureDate')}</p>
             <p className="text-sm">{formatDate(a.data_assinatura)}</p>
           </div>
         </div>
@@ -303,7 +306,7 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
           <>
             <Separator />
             <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Alteração de Valor</p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">{t('contratosAtivos.aditivosDialog.detailValueChange')}</p>
               <div className="flex items-center gap-3 text-sm">
                 <span className="font-mono">{formatCurrency(a.valor_anterior)}</span>
                 <ArrowRight className="h-4 w-4 text-muted-foreground" />
@@ -318,13 +321,13 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
             <Separator />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Vigência Anterior</p>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('contratosAtivos.aditivosDialog.detailPreviousTerm')}</p>
                 <p className="text-sm">
                   {formatDate(a.data_inicio_anterior)} → {formatDate(a.data_fim_anterior)}
                 </p>
               </div>
               <div className="space-y-1">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Nova Vigência</p>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('contratosAtivos.aditivosDialog.detailNewTerm')}</p>
                 <p className="text-sm font-medium">
                   {formatDate(a.data_inicio_nova)} → {formatDate(a.data_fim_nova)}
                 </p>
@@ -335,7 +338,7 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
 
         <Separator />
         <div className="space-y-1">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Justificativa</p>
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('contratosAtivos.aditivosDialog.detailJustification')}</p>
           <p className="text-sm whitespace-pre-wrap leading-relaxed bg-muted/40 rounded-md p-3 border">
             {a.justificativa}
           </p>
@@ -351,7 +354,7 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
             }}
           >
             <Edit className="h-4 w-4 mr-2" />
-            Editar
+            {t('contratosAtivos.aditivosDialog.editButton')}
           </Button>
           <Button
             variant="outline"
@@ -363,7 +366,7 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
             }}
           >
             <Trash2 className="h-4 w-4 mr-2" />
-            Excluir
+            {t('contratosAtivos.aditivosDialog.deleteButton')}
           </Button>
         </div>
       </div>
@@ -375,7 +378,7 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
       <MasterDetailDialog
         open={open}
         onOpenChange={onOpenChange}
-        title="Aditivos Contratuais"
+        title={t('contratosAtivos.aditivosDialog.title')}
         description={`${contrato.nome} (${contrato.numero_contrato})`}
         icon={FileEdit}
         items={items}
@@ -386,16 +389,16 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
           setEditingAditivo(null);
           setFormOpen(true);
         }}
-        createLabel="Novo Aditivo"
-        searchPlaceholder="Buscar aditivo..."
+        createLabel={t('contratosAtivos.aditivosDialog.createLabel')}
+        searchPlaceholder={t('contratosAtivos.aditivosDialog.searchPlaceholder')}
         emptyState={
           <div className="space-y-2">
             <FileText className="h-8 w-8 mx-auto text-muted-foreground/60" />
-            <p>Nenhum aditivo cadastrado</p>
-            <p className="text-xs">Use "Novo Aditivo" para começar</p>
+            <p>{t('contratosAtivos.aditivosDialog.emptyStateText')}</p>
+            <p className="text-xs">{t('contratosAtivos.aditivosDialog.emptyStateHint')}</p>
           </div>
         }
-        emptySelection="Selecione um aditivo à esquerda para ver os detalhes."
+        emptySelection={t('contratosAtivos.aditivosDialog.emptySelection')}
         size="xl"
       />
 
@@ -404,11 +407,11 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
         open={formOpen}
         onOpenChange={setFormOpen}
         icon={FileEdit}
-        title={editingAditivo ? 'Editar Aditivo' : 'Novo Aditivo'}
-        description="Preencha as informações do aditivo contratual"
+        title={editingAditivo ? t('contratosAtivos.aditivosDialog.dialogTitleEdit') : t('contratosAtivos.aditivosDialog.dialogTitleNew')}
+        description={t('contratosAtivos.aditivosDialog.dialogDescription')}
         size="lg"
         onSubmit={form.handleSubmit(onSubmit)}
-        submitLabel={editingAditivo ? 'Atualizar' : 'Criar'}
+        submitLabel={editingAditivo ? t('contratosAtivos.common.update') : t('contratosAtivos.common.create')}
         isSubmitting={loading}
         isDirty={form.formState.isDirty}
       >
@@ -419,9 +422,9 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
                 name="numero_aditivo"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Número do Aditivo</FormLabel>
+                    <FormLabel>{t('contratosAtivos.aditivosDialog.labelNumber')}</FormLabel>
                     <FormControl>
-                      <Input placeholder="Ex: 001/2024" {...field} />
+                      <Input placeholder={t('contratosAtivos.aditivosDialog.numberPlaceholder')} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -433,18 +436,18 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
                 name="tipo"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Tipo</FormLabel>
+                    <FormLabel>{t('contratosAtivos.aditivosDialog.labelType')}</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecione o tipo" />
+                          <SelectValue placeholder={t('contratosAtivos.aditivosDialog.typePlaceholder')} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="prazo">Prazo</SelectItem>
-                        <SelectItem value="valor">Valor</SelectItem>
-                        <SelectItem value="escopo">Escopo</SelectItem>
-                        <SelectItem value="outros">Outros</SelectItem>
+                        <SelectItem value="prazo">{t('contratosAtivos.aditivosDialog.typePrazo')}</SelectItem>
+                        <SelectItem value="valor">{t('contratosAtivos.aditivosDialog.typeValor')}</SelectItem>
+                        <SelectItem value="escopo">{t('contratosAtivos.aditivosDialog.typeEscopo')}</SelectItem>
+                        <SelectItem value="outros">{t('contratosAtivos.aditivosDialog.typeOutros')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -457,9 +460,9 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
                 name="motivo"
                 render={({ field }) => (
                   <FormItem className="md:col-span-2">
-                    <FormLabel>Motivo</FormLabel>
+                    <FormLabel>{t('contratosAtivos.aditivosDialog.labelMotivo')}</FormLabel>
                     <FormControl>
-                      <Input placeholder="Descreva o motivo do aditivo" {...field} />
+                      <Input placeholder={t('contratosAtivos.aditivosDialog.motivoPlaceholder')} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -471,7 +474,7 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
                 name="valor_anterior"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Valor Anterior</FormLabel>
+                    <FormLabel>{t('contratosAtivos.aditivosDialog.labelPreviousValue')}</FormLabel>
                     <FormControl>
                       <Input type="number" step="0.01" placeholder="0.00" {...field} />
                     </FormControl>
@@ -485,7 +488,7 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
                 name="valor_novo"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Valor Novo</FormLabel>
+                    <FormLabel>{t('contratosAtivos.aditivosDialog.labelNewValue')}</FormLabel>
                     <FormControl>
                       <Input type="number" step="0.01" placeholder="0.00" {...field} />
                     </FormControl>
@@ -497,11 +500,11 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
               {(['data_inicio_anterior', 'data_fim_anterior', 'data_inicio_nova', 'data_fim_nova', 'data_assinatura'] as const).map(
                 (fieldName) => {
                   const labels: Record<typeof fieldName, string> = {
-                    data_inicio_anterior: 'Data Início Anterior',
-                    data_fim_anterior: 'Data Fim Anterior',
-                    data_inicio_nova: 'Data Início Nova',
-                    data_fim_nova: 'Data Fim Nova',
-                    data_assinatura: 'Data de Assinatura',
+                    data_inicio_anterior: t('contratosAtivos.aditivosDialog.labelPreviousStartDate'),
+                    data_fim_anterior: t('contratosAtivos.aditivosDialog.labelPreviousEndDate'),
+                    data_inicio_nova: t('contratosAtivos.aditivosDialog.labelNewStartDate'),
+                    data_fim_nova: t('contratosAtivos.aditivosDialog.labelNewEndDate'),
+                    data_assinatura: t('contratosAtivos.aditivosDialog.labelSignatureDate'),
                   };
                   return (
                     <FormField
@@ -524,7 +527,7 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
                                   {field.value ? (
                                     format(field.value, 'dd/MM/yyyy', { locale: ptBR })
                                   ) : (
-                                    <span>Selecione a data</span>
+                                    <span>{t('contratosAtivos.aditivosDialog.selectDatePlaceholder')}</span>
                                   )}
                                   <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                                 </Button>
@@ -553,18 +556,18 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
                 name="status"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Status</FormLabel>
+                    <FormLabel>{t('contratosAtivos.aditivosDialog.labelStatus')}</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecione o status" />
+                          <SelectValue placeholder={t('contratosAtivos.aditivosDialog.statusPlaceholder')} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="rascunho">Rascunho</SelectItem>
-                        <SelectItem value="aprovacao">Em Aprovação</SelectItem>
-                        <SelectItem value="ativo">Ativo</SelectItem>
-                        <SelectItem value="rejeitado">Rejeitado</SelectItem>
+                        <SelectItem value="rascunho">{t('contratosAtivos.aditivosDialog.statusRascunho')}</SelectItem>
+                        <SelectItem value="aprovacao">{t('contratosAtivos.aditivosDialog.statusAprovacao')}</SelectItem>
+                        <SelectItem value="ativo">{t('contratosAtivos.aditivosDialog.statusAtivo')}</SelectItem>
+                        <SelectItem value="rejeitado">{t('contratosAtivos.aditivosDialog.statusRejeitado')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -577,10 +580,10 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
                 name="justificativa"
                 render={({ field }) => (
                   <FormItem className="md:col-span-2">
-                    <FormLabel>Justificativa</FormLabel>
+                    <FormLabel>{t('contratosAtivos.aditivosDialog.labelJustificativa')}</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="Descreva detalhadamente a justificativa para este aditivo..."
+                        placeholder={t('contratosAtivos.aditivosDialog.justificativaPlaceholder')}
                         className="min-h-20"
                         {...field}
                       />
@@ -597,10 +600,10 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
       <ConfirmDialog
         open={deleteConfirmOpen}
         onOpenChange={setDeleteConfirmOpen}
-        title="Confirmar Exclusão"
-        description={`Tem certeza que deseja excluir o aditivo "${aditivoToDelete?.numero_aditivo}"? Esta ação não pode ser desfeita.`}
-        confirmText="Excluir"
-        cancelText="Cancelar"
+        title={t('contratosAtivos.common.confirmDeleteTitle')}
+        description={t('contratosAtivos.aditivosDialog.confirmDeleteDescription').replace('{numero}', aditivoToDelete?.numero_aditivo || '')}
+        confirmText={t('contratosAtivos.common.delete')}
+        cancelText={t('contratosAtivos.common.cancel')}
         variant="destructive"
         onConfirm={handleDelete}
       />

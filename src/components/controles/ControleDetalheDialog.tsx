@@ -16,6 +16,7 @@ import { capitalizeText, formatStatus } from "@/lib/text-utils";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { resolveControleStatusTone, resolveCriticidadeTone } from "@/lib/status-tone";
 import { openStorageFile } from "@/lib/storage";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 interface ControleDetalheDialogProps {
@@ -32,6 +33,7 @@ export function ControleDetalheDialog({
   onEdit,
 }: ControleDetalheDialogProps) {
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
   const [novoComentario, setNovoComentario] = useState("");
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -204,8 +206,8 @@ export function ControleDetalheDialog({
           // Notificação in-app
           await supabase.from("notifications").insert({
             user_id: userId,
-            title: "Você foi mencionado",
-            message: `Você foi mencionado em um comentário no controle "${controle.nome}"`,
+            title: t('controlesAuditorias.cddMentionNotifyTitle'),
+            message: t('controlesAuditorias.cddMentionNotifyMessage', { nome: controle.nome }),
             type: "info",
             link_to: `/controles?detalhe=${controle.id}`,
           });
@@ -230,9 +232,9 @@ export function ControleDetalheDialog({
       setNovoComentario("");
       await refetchComentarios();
       queryClient.invalidateQueries({ queryKey: ["controle-comentarios", controle.id] });
-      toast.success("Comentário adicionado");
+      toast.success(t('controlesAuditorias.cddCommentAdded'));
     } catch (error: any) {
-      toast.error(error.message || "Erro ao adicionar comentário");
+      toast.error(error.message || t('controlesAuditorias.cddCommentAddError'));
     } finally {
       setIsSubmittingComment(false);
     }
@@ -248,9 +250,9 @@ export function ControleDetalheDialog({
       if (error) throw error;
 
       refetchComentarios();
-      toast.success("Comentário removido");
+      toast.success(t('controlesAuditorias.cddCommentRemoved'));
     } catch (error: any) {
-      toast.error(error.message || "Erro ao remover comentário");
+      toast.error(error.message || t('controlesAuditorias.cddCommentRemoveError'));
     }
     setDeleteTarget(null);
   };
@@ -273,13 +275,13 @@ export function ControleDetalheDialog({
     ];
     
     if (!allowedTypes.includes(file.type)) {
-      toast.error("Tipo de arquivo não permitido. Use PDF, DOC, DOCX, XLS, XLSX, PNG ou JPG.");
+      toast.error(t('controlesAuditorias.cddInvalidFileType'));
       return;
     }
 
     // Validar tamanho (máx 10MB)
     if (file.size > 10 * 1024 * 1024) {
-      toast.error("Arquivo muito grande. Máximo 10MB.");
+      toast.error(t('controlesAuditorias.cddFileTooLarge'));
       return;
     }
 
@@ -311,9 +313,9 @@ export function ControleDetalheDialog({
       if (insertError) throw insertError;
 
       refetchEvidencias();
-      toast.success("Evidência anexada com sucesso");
+      toast.success(t('controlesAuditorias.cddEvidenciaAdded'));
     } catch (error: any) {
-      toast.error(error.message || "Erro ao fazer upload");
+      toast.error(error.message || t('controlesAuditorias.cddUploadError'));
     } finally {
       setIsUploading(false);
       event.target.value = "";
@@ -331,9 +333,9 @@ export function ControleDetalheDialog({
       if (error) throw error;
 
       refetchEvidencias();
-      toast.success("Evidência removida");
+      toast.success(t('controlesAuditorias.cddEvidenciaRemoved'));
     } catch (error: any) {
-      toast.error(error.message || "Erro ao remover evidência");
+      toast.error(error.message || t('controlesAuditorias.cddEvidenciaRemoveError'));
     }
     setDeleteTarget(null);
   };
@@ -342,7 +344,7 @@ export function ControleDetalheDialog({
   const handleDownload = async (evidencia: any) => {
     if (!evidencia?.arquivo_url) return;
     const ok = await openStorageFile("controles-evidencias", evidencia.arquivo_url);
-    if (!ok) toast.error("Não foi possível abrir o arquivo");
+    if (!ok) toast.error(t('controlesAuditorias.cddDownloadError'));
   };
 
   // Formatar tamanho do arquivo
@@ -398,7 +400,7 @@ export function ControleDetalheDialog({
             </div>
             <Button variant="outline" size="sm" onClick={onEdit}>
               <Edit className="h-4 w-4 mr-2" />
-              Editar
+              {t('controlesAuditorias.cddEdit')}
             </Button>
           </div>
 
@@ -437,7 +439,7 @@ export function ControleDetalheDialog({
             <div className="mt-4">
               <h4 className="text-sm font-medium mb-2 text-foreground flex items-center gap-2">
                 <FileText className="h-4 w-4" />
-                Descrição
+                {t('controlesAuditorias.cddDescricao')}
               </h4>
               <ScrollArea className="max-h-[200px]">
                 <div className="bg-muted/50 rounded-lg p-4 border border-border/50">
@@ -454,15 +456,15 @@ export function ControleDetalheDialog({
             <TabsList className="flex-shrink-0">
               <TabsTrigger value="comentarios" className="flex items-center gap-2">
                 <MessageSquare className="h-4 w-4" />
-                Comentários ({comentarios?.length || 0})
+                {t('controlesAuditorias.cddTabComentarios', { count: comentarios?.length || 0 })}
               </TabsTrigger>
               <TabsTrigger value="evidencias" className="flex items-center gap-2">
                 <Paperclip className="h-4 w-4" />
-                Evidências ({evidencias?.length || 0})
+                {t('controlesAuditorias.cddTabEvidencias', { count: evidencias?.length || 0 })}
               </TabsTrigger>
               <TabsTrigger value="auditorias" className="flex items-center gap-2">
                 <Link2 className="h-4 w-4" />
-                Auditorias ({auditoriasVinculadas?.length || 0})
+                {t('controlesAuditorias.cddTabAuditorias', { count: auditoriasVinculadas?.length || 0 })}
               </TabsTrigger>
             </TabsList>
 
@@ -472,7 +474,7 @@ export function ControleDetalheDialog({
                 <div className="flex-1 relative">
                   <Textarea
                     ref={textareaRef}
-                    placeholder="Adicione um comentário... Use @ para mencionar alguém"
+                    placeholder={t('controlesAuditorias.cddCommentPlaceholder')}
                     value={novoComentario}
                     onChange={handleCommentChange}
                     rows={2}
@@ -488,7 +490,7 @@ export function ControleDetalheDialog({
                       setShowMentions(true);
                       textareaRef.current?.focus();
                     }}
-                    title="Mencionar usuário"
+                    title={t('controlesAuditorias.cddMentionTitle')}
                   >
                     <AtSign className="h-4 w-4 text-muted-foreground" />
                   </Button>
@@ -535,7 +537,7 @@ export function ControleDetalheDialog({
                 <div className="space-y-3 pr-4">
                   {comentarios?.length === 0 ? (
                     <p className="text-center text-muted-foreground py-8">
-                      Nenhum comentário ainda
+                      {t('controlesAuditorias.cddNoComments')}
                     </p>
                   ) : (
                     comentarios?.map((c) => (
@@ -589,7 +591,7 @@ export function ControleDetalheDialog({
                     <Upload className="h-5 w-5 text-muted-foreground" />
                   )}
                   <span className="text-sm text-muted-foreground">
-                    {isUploading ? "Enviando..." : "Clique para anexar evidência (PDF, DOC, XLS, PNG, JPG)"}
+                    {isUploading ? t('controlesAuditorias.cddUploadingLabel') : t('controlesAuditorias.cddUploadLabel')}
                   </span>
                 </label>
               </div>
@@ -599,7 +601,7 @@ export function ControleDetalheDialog({
                 <div className="space-y-2 pr-4">
                   {evidencias?.length === 0 ? (
                     <p className="text-center text-muted-foreground py-8">
-                      Nenhuma evidência anexada
+                      {t('controlesAuditorias.cddNoEvidencias')}
                     </p>
                   ) : (
                     evidencias?.map((ev) => (
@@ -624,7 +626,7 @@ export function ControleDetalheDialog({
                             size="sm"
                             className="h-8 w-8 p-0"
                             onClick={() => handleDownload(ev)}
-                            title="Baixar"
+                            title={t('controlesAuditorias.cddDownloadTitle')}
                           >
                             <Download className="h-4 w-4 text-muted-foreground" />
                           </Button>
@@ -633,7 +635,7 @@ export function ControleDetalheDialog({
                             size="sm"
                             className="h-8 w-8 p-0"
                             onClick={() => setDeleteTarget({ type: "evidencia", id: ev.id })}
-                            title="Excluir"
+                            title={t('controlesAuditorias.cddDeleteTitle')}
                           >
                             <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
                           </Button>
@@ -650,7 +652,7 @@ export function ControleDetalheDialog({
                 <div className="space-y-2 pr-4">
                   {auditoriasVinculadas?.length === 0 ? (
                     <p className="text-center text-muted-foreground py-8">
-                      Este controle não está vinculado a nenhuma auditoria
+                      {t('controlesAuditorias.cddNoAuditorias')}
                     </p>
                   ) : (
                     auditoriasVinculadas?.map((av: any) => (
@@ -678,13 +680,13 @@ export function ControleDetalheDialog({
       <ConfirmDialog
         open={!!deleteTarget}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
-        title={deleteTarget?.type === "evidencia" ? "Excluir Evidência" : "Excluir Comentário"}
+        title={deleteTarget?.type === "evidencia" ? t('controlesAuditorias.cddDeleteEvidenciaTitle') : t('controlesAuditorias.cddDeleteComentarioTitle')}
         description={deleteTarget?.type === "evidencia" 
-          ? "Tem certeza que deseja excluir esta evidência? Esta ação não pode ser desfeita."
-          : "Tem certeza que deseja excluir este comentário? Esta ação não pode ser desfeita."
+          ? t('controlesAuditorias.cddDeleteEvidenciaDescription')
+          : t('controlesAuditorias.cddDeleteComentarioDescription')
         }
-        confirmText="Excluir"
-        cancelText="Cancelar"
+        confirmText={t('controlesAuditorias.cddDeleteConfirm')}
+        cancelText={t('controlesAuditorias.cddDeleteCancel')}
         variant="destructive"
         onConfirm={() => {
           if (deleteTarget?.type === "evidencia") {

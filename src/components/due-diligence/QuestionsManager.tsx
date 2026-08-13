@@ -16,6 +16,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Question {
   id: string;
@@ -36,6 +37,7 @@ interface QuestionsManagerProps {
 }
 
 export function QuestionsManager({ templateId, templateName }: QuestionsManagerProps) {
+  const { t } = useLanguage();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDialog, setShowDialog] = useState(false);
@@ -74,7 +76,7 @@ export function QuestionsManager({ templateId, templateName }: QuestionsManagerP
       setQuestions((data || []) as Question[]);
     } catch (error: any) {
       toast({
-        title: "Erro ao carregar perguntas",
+        title: t('dueDiligence.questionsManager.errorLoadTitle'),
         description: error.message,
         variant: "destructive"
       });
@@ -128,8 +130,8 @@ export function QuestionsManager({ templateId, templateName }: QuestionsManagerP
       if (error) throw error;
 
       toast({
-        title: editingQuestion ? "Pergunta atualizada" : "Pergunta criada",
-        description: editingQuestion ? "A pergunta foi atualizada com sucesso." : "A pergunta foi criada com sucesso."
+        title: editingQuestion ? t('dueDiligence.questionsManager.updatedTitle') : t('dueDiligence.questionsManager.createdTitle'),
+        description: editingQuestion ? t('dueDiligence.questionsManager.updatedDescription') : t('dueDiligence.questionsManager.createdDescription')
       });
 
       setShowDialog(false);
@@ -137,7 +139,7 @@ export function QuestionsManager({ templateId, templateName }: QuestionsManagerP
       fetchQuestions();
     } catch (error: any) {
       toast({
-        title: "Erro ao salvar pergunta",
+        title: t('dueDiligence.questionsManager.errorSaveTitle'),
         description: error.message,
         variant: "destructive"
       });
@@ -170,15 +172,15 @@ export function QuestionsManager({ templateId, templateName }: QuestionsManagerP
       if (error) throw error;
 
       toast({
-        title: "Pergunta excluída",
-        description: "A pergunta foi excluída com sucesso."
+        title: t('dueDiligence.questionsManager.deletedTitle'),
+        description: t('dueDiligence.questionsManager.deletedDescription')
       });
 
       setDeleteConfirm({ open: false, question: null });
       fetchQuestions();
     } catch (error: any) {
       toast({
-        title: "Erro ao excluir pergunta",
+        title: t('dueDiligence.questionsManager.errorDeleteTitle'),
         description: error.message,
         variant: "destructive"
       });
@@ -210,7 +212,7 @@ export function QuestionsManager({ templateId, templateName }: QuestionsManagerP
       fetchQuestions();
     } catch (error: any) {
       toast({
-        title: "Erro ao reordenar pergunta",
+        title: t('dueDiligence.questionsManager.errorReorderTitle'),
         description: error.message,
         variant: "destructive"
       });
@@ -240,14 +242,14 @@ export function QuestionsManager({ templateId, templateName }: QuestionsManagerP
 
   const getTypeLabel = (type: string) => {
     const types = {
-      'text': 'Texto',
-      'textarea': 'Texto Longo',
-      'select': 'Seleção',
-      'radio': 'Escolha Única',
-      'checkbox': 'Múltipla Escolha',
-      'file': 'Arquivo',
-      'score': 'Score (1-5)',
-      'date': 'Data'
+      'text': t('dueDiligence.questionsManager.typeText'),
+      'textarea': t('dueDiligence.questionsManager.typeTextarea'),
+      'select': t('dueDiligence.questionsManager.typeSelect'),
+      'radio': t('dueDiligence.questionsManager.typeRadio'),
+      'checkbox': t('dueDiligence.questionsManager.typeCheckbox'),
+      'file': t('dueDiligence.questionsManager.typeFile'),
+      'score': t('dueDiligence.questionsManager.typeScore'),
+      'date': t('dueDiligence.questionsManager.typeDate')
     };
     return types[type as keyof typeof types] || type;
   };
@@ -258,7 +260,7 @@ export function QuestionsManager({ templateId, templateName }: QuestionsManagerP
     return (
       <div className="flex flex-col items-center justify-center gap-3 py-24">
         <AkurisPulse size={40} />
-        <p className="text-sm text-muted-foreground">Carregando…</p>
+        <p className="text-sm text-muted-foreground">{t('dueDiligence.questionsManager.loading')}</p>
       </div>
     );
   }
@@ -267,29 +269,29 @@ export function QuestionsManager({ templateId, templateName }: QuestionsManagerP
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Perguntas - {templateName}</h2>
+          <h2 className="text-2xl font-bold">{t('dueDiligence.questionsManager.pageTitle', { template: templateName })}</h2>
           <p className="text-muted-foreground">
-            Gerencie as perguntas do template de due diligence
+            {t('dueDiligence.questionsManager.pageDescription')}
           </p>
         </div>
 
         <Button onClick={() => { resetForm(); setShowDialog(true); }}>
           <Plus className="mr-2 h-4 w-4" />
-          Nova Pergunta
+          {t('dueDiligence.questionsManager.newQuestion')}
         </Button>
         <DialogShell
           open={showDialog}
           onOpenChange={setShowDialog}
           icon={Plus}
-          title={editingQuestion ? 'Editar Pergunta' : 'Nova Pergunta'}
+          title={editingQuestion ? t('dueDiligence.questionsManager.editTitle') : t('dueDiligence.questionsManager.createTitle')}
           size="md"
           onSubmit={() => handleSubmit(new Event('submit') as unknown as React.FormEvent)}
-          submitLabel={editingQuestion ? 'Atualizar' : 'Criar'}
+          submitLabel={editingQuestion ? t('dueDiligence.questionsManager.update') : t('dueDiligence.questionsManager.create')}
         >
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="titulo">Título da Pergunta *</Label>
+                  <Label htmlFor="titulo">{t('dueDiligence.questionsManager.fieldTitle')}</Label>
                   <Input
                     id="titulo"
                     value={formData.titulo}
@@ -299,19 +301,19 @@ export function QuestionsManager({ templateId, templateName }: QuestionsManagerP
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="secao">Seção</Label>
+                  <Label htmlFor="secao">{t('dueDiligence.questionsManager.fieldSection')}</Label>
                   <Input
                     id="secao"
                     value={formData.secao}
                     onChange={(e) => setFormData(prev => ({ ...prev, secao: e.target.value }))}
-                    placeholder="Ex: Segurança da Informação"
+                    placeholder={t('dueDiligence.questionsManager.sectionPlaceholder')}
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="tipo">Tipo de Pergunta</Label>
+                  <Label htmlFor="tipo">{t('dueDiligence.questionsManager.fieldType')}</Label>
                   <Select
                     value={formData.tipo}
                     onValueChange={(value) => setFormData(prev => ({ ...prev, tipo: value as Question['tipo'] }))}
@@ -320,21 +322,21 @@ export function QuestionsManager({ templateId, templateName }: QuestionsManagerP
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="text">Texto</SelectItem>
-                      <SelectItem value="textarea">Texto Longo</SelectItem>
-                      <SelectItem value="select">Seleção</SelectItem>
-                      <SelectItem value="radio">Escolha Única</SelectItem>
-                      <SelectItem value="checkbox">Múltipla Escolha</SelectItem>
-                      <SelectItem value="file">Arquivo</SelectItem>
-                      <SelectItem value="score">Score (1-5)</SelectItem>
-                      <SelectItem value="date">Data</SelectItem>
+                      <SelectItem value="text">{t('dueDiligence.questionsManager.typeText')}</SelectItem>
+                      <SelectItem value="textarea">{t('dueDiligence.questionsManager.typeTextarea')}</SelectItem>
+                      <SelectItem value="select">{t('dueDiligence.questionsManager.typeSelect')}</SelectItem>
+                      <SelectItem value="radio">{t('dueDiligence.questionsManager.typeRadio')}</SelectItem>
+                      <SelectItem value="checkbox">{t('dueDiligence.questionsManager.typeCheckbox')}</SelectItem>
+                      <SelectItem value="file">{t('dueDiligence.questionsManager.typeFile')}</SelectItem>
+                      <SelectItem value="score">{t('dueDiligence.questionsManager.typeScore')}</SelectItem>
+                      <SelectItem value="date">{t('dueDiligence.questionsManager.typeDate')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="descricao">Descrição (opcional)</Label>
+                <Label htmlFor="descricao">{t('dueDiligence.questionsManager.fieldDescription')}</Label>
                 <Textarea
                   id="descricao"
                   value={formData.descricao}
@@ -345,13 +347,13 @@ export function QuestionsManager({ templateId, templateName }: QuestionsManagerP
 
               {['select', 'radio', 'checkbox'].includes(formData.tipo) && (
                 <div className="space-y-2">
-                  <Label>Opções de Resposta</Label>
+                  <Label>{t('dueDiligence.questionsManager.optionsLabel')}</Label>
                   {formData.opcoes.map((opcao, index) => (
                     <div key={index} className="flex gap-2">
                       <Input
                         value={opcao}
                         onChange={(e) => updateOption(index, e.target.value)}
-                        placeholder={`Opção ${index + 1}`}
+                        placeholder={t('dueDiligence.questionsManager.optionPlaceholder', { index: index + 1 })}
                       />
                       {formData.opcoes.length > 1 && (
                         <Button
@@ -367,7 +369,7 @@ export function QuestionsManager({ templateId, templateName }: QuestionsManagerP
                   ))}
                   <Button type="button" variant="outline" onClick={addOption}>
                     <Plus className="mr-2 h-4 w-4" />
-                    Adicionar Opção
+                    {t('dueDiligence.questionsManager.addOption')}
                   </Button>
                 </div>
               )}
@@ -379,11 +381,11 @@ export function QuestionsManager({ templateId, templateName }: QuestionsManagerP
                     checked={formData.obrigatoria}
                     onCheckedChange={(checked) => setFormData(prev => ({ ...prev, obrigatoria: checked }))}
                   />
-                  <Label htmlFor="obrigatoria">Pergunta obrigatória</Label>
+                  <Label htmlFor="obrigatoria">{t('dueDiligence.questionsManager.fieldRequired')}</Label>
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="peso">Peso (para scoring)</Label>
+                  <Label htmlFor="peso">{t('dueDiligence.questionsManager.fieldWeight')}</Label>
                   <Input
                     id="peso"
                     type="number"
@@ -403,19 +405,19 @@ export function QuestionsManager({ templateId, templateName }: QuestionsManagerP
         <Card>
           <CardContent className="text-center py-8">
             <p className="text-muted-foreground mb-4">
-              Nenhuma pergunta encontrada para este template.
+              {t('dueDiligence.questionsManager.emptyDescription')}
             </p>
             <Button onClick={() => setShowDialog(true)}>
               <Plus className="mr-2 h-4 w-4" />
-              Criar Primeira Pergunta
+              {t('dueDiligence.questionsManager.createFirst')}
             </Button>
           </CardContent>
         </Card>
       ) : (
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Perguntas ({questions.length})</CardTitle>
-            <CardDescription>Lista de perguntas do template</CardDescription>
+            <CardTitle className="text-lg">{t('dueDiligence.questionsManager.questionsCount', { count: questions.length })}</CardTitle>
+            <CardDescription>{t('dueDiligence.questionsManager.questionsListDescription')}</CardDescription>
           </CardHeader>
           <CardContent className="p-0">
             <ScrollArea className="h-[600px]">
@@ -429,16 +431,16 @@ export function QuestionsManager({ templateId, templateName }: QuestionsManagerP
                           {getTypeLabel(question.tipo)}
                         </StatusBadge>
                         {question.obrigatoria && (
-                          <StatusBadge size="sm" tone="destructive">Obrigatória</StatusBadge>
+                          <StatusBadge size="sm" tone="destructive">{t('dueDiligence.questionsManager.requiredBadge')}</StatusBadge>
                         )}
-                        <StatusBadge size="sm" tone="neutral">Peso: {question.peso}</StatusBadge>
+                        <StatusBadge size="sm" tone="neutral">{t('dueDiligence.questionsManager.weightBadge', { peso: question.peso })}</StatusBadge>
                       </div>
                       {question.descricao && (
                         <p className="text-xs text-muted-foreground truncate">{question.descricao}</p>
                       )}
                       {question.opcoes && question.opcoes.length > 0 && (
                         <p className="text-xs text-muted-foreground truncate">
-                          Opções: {question.opcoes.join(', ')}
+                          {t('dueDiligence.questionsManager.optionsPrefix', { opcoes: question.opcoes.join(', ') })}
                         </p>
                       )}
                     </div>
@@ -490,9 +492,9 @@ export function QuestionsManager({ templateId, templateName }: QuestionsManagerP
       <ConfirmDialog
         open={deleteConfirm.open}
         onOpenChange={(open) => setDeleteConfirm({ open, question: null })}
-        title="Excluir Pergunta"
-        description={`Tem certeza que deseja excluir a pergunta "${deleteConfirm.question?.titulo}"? Esta ação não pode ser desfeita.`}
-        confirmText="Excluir"
+        title={t('dueDiligence.questionsManager.deleteDialogTitle')}
+        description={t('dueDiligence.questionsManager.deleteDialogDescription', { titulo: deleteConfirm.question?.titulo })}
+        confirmText={t('dueDiligence.questionsManager.deleteConfirm')}
         variant="destructive"
         onConfirm={handleDelete}
       />

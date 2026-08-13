@@ -6,8 +6,10 @@ import { useDueDiligenceStats } from '@/hooks/useDueDiligenceStats';
 import { useReportsData } from '@/hooks/useReportsData';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Badge } from '@/components/ui/badge';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export function ReportsSidebar() {
+  const { t } = useLanguage();
   const { data: stats, isLoading: statsLoading } = useDueDiligenceStats();
   const { data: reports, isLoading: reportsLoading } = useReportsData();
   
@@ -45,13 +47,13 @@ export function ReportsSidebar() {
       <SheetTrigger asChild>
         <Button variant="outline" size="sm">
           <BarChart3 className="h-4 w-4 mr-2" />
-          Relatórios
+          {t('dueDiligence.reportsSidebar.reports')}
         </Button>
       </SheetTrigger>
       
       <SheetContent side="right" className="w-[600px] overflow-y-auto">
         <SheetHeader>
-          <SheetTitle>Relatórios de Due Diligence</SheetTitle>
+          <SheetTitle>{t('dueDiligence.reportsSidebar.title')}</SheetTitle>
         </SheetHeader>
         
         <div className="space-y-6 mt-6">
@@ -60,7 +62,7 @@ export function ReportsSidebar() {
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <TrendingUp className="h-4 w-4" />
-                Visão Geral
+                {t('dueDiligence.reportsSidebar.overviewTitle')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -73,11 +75,11 @@ export function ReportsSidebar() {
               ) : (
                 <>
                   <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Total Avaliações:</span>
+                    <span className="text-muted-foreground">{t('dueDiligence.reportsSidebar.totalAssessments')}</span>
                     <span className="font-semibold">{stats?.totalAssessments || 0}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Score Médio:</span>
+                    <span className="text-muted-foreground">{t('dueDiligence.reportsSidebar.averageScore')}</span>
                     <Badge variant={
                       (stats?.averageScore || 0) >= 80 ? 'default' : 
                       (stats?.averageScore || 0) >= 60 ? 'secondary' : 
@@ -87,7 +89,7 @@ export function ReportsSidebar() {
                     </Badge>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Taxa de Conclusão:</span>
+                    <span className="text-muted-foreground">{t('dueDiligence.reportsSidebar.completionRate')}</span>
                     <span className="font-semibold">
                       {stats?.totalAssessments > 0 
                         ? ((stats.completedAssessments / stats.totalAssessments) * 100).toFixed(1) 
@@ -95,11 +97,11 @@ export function ReportsSidebar() {
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Concluídas:</span>
+                    <span className="text-muted-foreground">{t('dueDiligence.reportsSidebar.completed')}</span>
                     <span className="font-semibold text-green-600">{stats?.completedAssessments || 0}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Pendentes:</span>
+                    <span className="text-muted-foreground">{t('dueDiligence.reportsSidebar.pending')}</span>
                     <span className="font-semibold text-orange-600">
                       {(stats?.totalAssessments || 0) - (stats?.completedAssessments || 0)}
                     </span>
@@ -113,7 +115,7 @@ export function ReportsSidebar() {
           {!reportsLoading && reports?.categoryPerformance && reports.categoryPerformance.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Performance por Categoria</CardTitle>
+                <CardTitle className="text-lg">{t('dueDiligence.reportsSidebar.categoryPerformanceTitle')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={250}>
@@ -123,7 +125,7 @@ export function ReportsSidebar() {
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Bar dataKey="averageScore" fill="hsl(var(--primary))" name="Score Médio" />
+                    <Bar dataKey="averageScore" fill="hsl(var(--primary))" name={t('dueDiligence.reportsSidebar.averageScoreLegend')} />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -136,7 +138,7 @@ export function ReportsSidebar() {
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Award className="h-4 w-4" />
-                  Top Fornecedores
+                  {t('dueDiligence.reportsSidebar.topSuppliersTitle')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -163,7 +165,7 @@ export function ReportsSidebar() {
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Users className="h-4 w-4" />
-                  Fornecedores com Atenção Necessária
+                  {t('dueDiligence.reportsSidebar.lowPerformingTitle')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -184,7 +186,7 @@ export function ReportsSidebar() {
           {/* Botão de Exportação */}
           <Button onClick={exportReport} className="w-full">
             <Download className="h-4 w-4 mr-2" />
-            Exportar Relatório Completo
+            {t('dueDiligence.reportsSidebar.exportButton')}
           </Button>
         </div>
       </SheetContent>

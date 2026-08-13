@@ -24,6 +24,7 @@ import { ReacoesPorComentario } from './ReacoesBar';
 import { useReacoes, useSprints } from '@/hooks/useProjetoExtras';
 import type { ProjetoTarefa, ProjetoTarefaPrioridade, ProjetoColuna } from '@/types/projetos';
 import { Trash2, Plus, Send } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Props {
   open: boolean;
@@ -35,6 +36,7 @@ interface Props {
 }
 
 export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, defaultColunaId }: Props) {
+  const { t } = useLanguage();
   const upsert = useUpsertTarefa();
   const remove = useDeleteTarefa(projetoId);
   const { data: sprints = [] } = useSprints(projetoId);
@@ -89,7 +91,7 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
       open={open}
       onOpenChange={onOpenChange}
       icon={ListChecks}
-      title={tarefa ? 'Editar tarefa' : 'Nova tarefa'}
+      title={tarefa ? t('projetos.tarefaDialog.titleEdit') : t('projetos.tarefaDialog.titleNew')}
       size="lg"
       footer={
         <div className="flex items-center justify-end gap-2 w-full">
@@ -101,36 +103,36 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
               className="mr-auto"
               onClick={() => setDeleteConfirm(true)}
             >
-              <Trash2 className="h-4 w-4" /> Excluir
+              <Trash2 className="h-4 w-4" /> {t('projetos.tarefaDialog.delete')}
             </Button>
           )}
-          <Button type="button" variant="ghost" size="sm" onClick={() => onOpenChange(false)}>Fechar</Button>
-          <Button type="submit" size="sm" form="tarefa-form" disabled={upsert.isPending}>Salvar</Button>
+          <Button type="button" variant="ghost" size="sm" onClick={() => onOpenChange(false)}>{t('projetos.tarefaDialog.close')}</Button>
+          <Button type="submit" size="sm" form="tarefa-form" disabled={upsert.isPending}>{t('projetos.tarefaDialog.save')}</Button>
         </div>
       }
     >
         <Tabs defaultValue="detalhes">
           <TabsList>
-            <TabsTrigger value="detalhes">Detalhes</TabsTrigger>
-            {tarefa && <TabsTrigger value="checklist">Checklist</TabsTrigger>}
-            {tarefa && <TabsTrigger value="tempo">Tempo</TabsTrigger>}
-            {tarefa && <TabsTrigger value="comentarios">Comentários</TabsTrigger>}
-            {tarefa && <TabsTrigger value="vinculos">Vínculos GRC</TabsTrigger>}
+            <TabsTrigger value="detalhes">{t('projetos.tarefaDialog.tabDetalhes')}</TabsTrigger>
+            {tarefa && <TabsTrigger value="checklist">{t('projetos.tarefaDialog.tabChecklist')}</TabsTrigger>}
+            {tarefa && <TabsTrigger value="tempo">{t('projetos.tarefaDialog.tabTempo')}</TabsTrigger>}
+            {tarefa && <TabsTrigger value="comentarios">{t('projetos.tarefaDialog.tabComentarios')}</TabsTrigger>}
+            {tarefa && <TabsTrigger value="vinculos">{t('projetos.tarefaDialog.tabVinculos')}</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="detalhes" className="space-y-4 pt-3">
             <form onSubmit={handleSubmit} className="space-y-4" id="tarefa-form">
               <div>
-                <Label>Título *</Label>
+                <Label>{t('projetos.tarefaDialog.fieldTitulo')}</Label>
                 <Input value={form.titulo} onChange={(e) => setForm({ ...form, titulo: e.target.value })} required />
               </div>
               <div>
-                <Label>Descrição</Label>
+                <Label>{t('projetos.tarefaDialog.fieldDescricao')}</Label>
                 <Textarea value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} rows={4} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>Coluna</Label>
+                  <Label>{t('projetos.tarefaDialog.fieldColuna')}</Label>
                   <Select value={form.coluna_id} onValueChange={(v) => setForm({ ...form, coluna_id: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -139,41 +141,41 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
                   </Select>
                 </div>
                 <div>
-                  <Label>Prioridade</Label>
+                  <Label>{t('projetos.tarefaDialog.fieldPrioridade')}</Label>
                   <Select value={form.prioridade} onValueChange={(v) => setForm({ ...form, prioridade: v as ProjetoTarefaPrioridade })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="baixa">Baixa</SelectItem>
-                      <SelectItem value="media">Média</SelectItem>
-                      <SelectItem value="alta">Alta</SelectItem>
-                      <SelectItem value="critica">Crítica</SelectItem>
+                      <SelectItem value="baixa">{t('projetos.priority.baixa')}</SelectItem>
+                      <SelectItem value="media">{t('projetos.priority.media')}</SelectItem>
+                      <SelectItem value="alta">{t('projetos.priority.alta')}</SelectItem>
+                      <SelectItem value="critica">{t('projetos.priority.critica')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
               <div>
-                <Label>Responsável</Label>
+                <Label>{t('projetos.tarefaDialog.fieldResponsavel')}</Label>
                 <UserSelect value={form.responsavel_id} onValueChange={(v) => setForm({ ...form, responsavel_id: v })} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>Prazo</Label>
+                  <Label>{t('projetos.tarefaDialog.fieldPrazo')}</Label>
                   <Input type="date" value={form.prazo} onChange={(e) => setForm({ ...form, prazo: e.target.value })} />
                 </div>
                 <div>
-                  <Label>Estimativa (h)</Label>
+                  <Label>{t('projetos.tarefaDialog.fieldEstimativa')}</Label>
                   <Input type="number" step="0.5" value={form.estimativa_horas} onChange={(e) => setForm({ ...form, estimativa_horas: e.target.value })} />
                 </div>
               </div>
               <div>
-                <Label>Sprint</Label>
+                <Label>{t('projetos.tarefaDialog.fieldSprint')}</Label>
                 <Select value={form.sprint_id || 'none'} onValueChange={(v) => setForm({ ...form, sprint_id: v === 'none' ? '' : v })}>
-                  <SelectTrigger><SelectValue placeholder="Sem sprint" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t('projetos.tarefaDialog.noSprint')} /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Sem sprint</SelectItem>
+                    <SelectItem value="none">{t('projetos.tarefaDialog.noSprint')}</SelectItem>
                     {sprints.map((s) => (
                       <SelectItem key={s.id} value={s.id}>
-                        {s.nome} {s.ativa ? '· ativa' : s.concluida ? '· concluída' : ''}
+                        {s.nome} {s.ativa ? `· ${t('projetos.sprints.active')}` : s.concluida ? `· ${t('projetos.sprints.completed')}` : ''}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -209,10 +211,10 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
     <ConfirmDialog
       open={deleteConfirm}
       onOpenChange={setDeleteConfirm}
-      title="Excluir Tarefa"
-      description="Tem certeza que deseja excluir esta tarefa? Esta ação não pode ser desfeita."
-      confirmText="Excluir"
-      cancelText="Cancelar"
+      title={t('projetos.tarefaDialog.deleteConfirmTitle')}
+      description={t('projetos.tarefaDialog.deleteConfirmDesc')}
+      confirmText={t('projetos.tarefaDialog.confirmText')}
+      cancelText={t('projetos.tarefaDialog.cancelText')}
       variant="destructive"
       onConfirm={async () => {
         if (tarefa) {
@@ -228,6 +230,7 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
 }
 
 function ChecklistPanel({ tarefaId }: { tarefaId: string }) {
+  const { t } = useLanguage();
   const { data: itens = [] } = useTarefaChecklist(tarefaId);
   const { add, toggle, remove } = useChecklistMutations(tarefaId);
   const [novo, setNovo] = useState('');
@@ -236,7 +239,7 @@ function ChecklistPanel({ tarefaId }: { tarefaId: string }) {
     <div className="space-y-2">
       <div className="flex gap-2">
         <Input
-          placeholder="Adicionar item..."
+          placeholder={t('projetos.tarefaDialog.addItemPlaceholder')}
           value={novo}
           onChange={(e) => setNovo(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); if (novo.trim()) { add.mutate(novo.trim()); setNovo(''); } } }}
@@ -261,6 +264,7 @@ function ChecklistPanel({ tarefaId }: { tarefaId: string }) {
 }
 
 function ComentariosPanel({ tarefaId }: { tarefaId: string }) {
+  const { t } = useLanguage();
   const { data: coms = [] } = useTarefaComentarios(tarefaId);
   const add = useAddComentario(tarefaId);
   const ids = coms.map((c) => c.id);
@@ -269,7 +273,7 @@ function ComentariosPanel({ tarefaId }: { tarefaId: string }) {
   return (
     <div className="space-y-3">
       <div className="space-y-2 max-h-72 overflow-y-auto">
-        {coms.length === 0 && <p className="text-sm text-muted-foreground">Sem comentários ainda.</p>}
+        {coms.length === 0 && <p className="text-sm text-muted-foreground">{t('projetos.tarefaDialog.noCommentsYet')}</p>}
         {coms.map((c) => (
           <div key={c.id} className="rounded-md border border-border bg-card p-3 text-sm space-y-2">
             <p className="text-xs text-muted-foreground">{new Date(c.created_at).toLocaleString('pt-BR')}</p>
@@ -279,7 +283,7 @@ function ComentariosPanel({ tarefaId }: { tarefaId: string }) {
         ))}
       </div>
       <div className="flex gap-2">
-        <Textarea rows={2} placeholder="Escreva um comentário..." value={novo} onChange={(e) => setNovo(e.target.value)} />
+        <Textarea rows={2} placeholder={t('projetos.tarefaDialog.commentPlaceholder')} value={novo} onChange={(e) => setNovo(e.target.value)} />
         <Button type="button" onClick={() => { if (novo.trim()) { add.mutate(novo.trim()); setNovo(''); } }}>
           <Send className="h-4 w-4" />
         </Button>

@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDateOnly } from '@/lib/date-utils';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Contrato {
   id: string;
@@ -58,6 +59,7 @@ export function DocumentosDialog({ contrato, open, onOpenChange }: DocumentosDia
   });
   const [deleting, setDeleting] = useState(false);
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (open && contrato) {
@@ -98,7 +100,7 @@ export function DocumentosDialog({ contrato, open, onOpenChange }: DocumentosDia
     if (!formData.nome || !selectedFile || !contrato) {
       toast({
         title: "Erro",
-        description: "Preencha todos os campos e selecione um arquivo",
+        description: t('contratosAtivos.documentosDialog.toastFillAllFields'),
         variant: "destructive",
       });
       return;
@@ -138,7 +140,7 @@ export function DocumentosDialog({ contrato, open, onOpenChange }: DocumentosDia
 
       toast({
         title: "Sucesso",
-        description: "Documento enviado com sucesso",
+        description: t('contratosAtivos.documentosDialog.toastUploadSuccess'),
       });
 
       resetForm();
@@ -147,7 +149,7 @@ export function DocumentosDialog({ contrato, open, onOpenChange }: DocumentosDia
       console.error('Erro ao enviar documento:', error);
       toast({
         title: "Erro",
-        description: "Erro ao enviar documento",
+        description: t('contratosAtivos.documentosDialog.toastUploadError'),
         variant: "destructive",
       });
     } finally {
@@ -177,7 +179,7 @@ export function DocumentosDialog({ contrato, open, onOpenChange }: DocumentosDia
       console.error('Erro ao baixar documento:', error);
       toast({
         title: "Erro",
-        description: "Erro ao baixar documento",
+        description: t('contratosAtivos.documentosDialog.toastDownloadError'),
         variant: "destructive",
       });
     }
@@ -210,7 +212,7 @@ export function DocumentosDialog({ contrato, open, onOpenChange }: DocumentosDia
 
       toast({
         title: "Sucesso",
-        description: "Documento excluído com sucesso",
+        description: t('contratosAtivos.documentosDialog.toastDeleteSuccess'),
       });
 
       fetchDocumentos();
@@ -218,7 +220,7 @@ export function DocumentosDialog({ contrato, open, onOpenChange }: DocumentosDia
       console.error('Erro ao excluir documento:', error);
       toast({
         title: "Erro",
-        description: "Erro ao excluir documento",
+        description: t('contratosAtivos.documentosDialog.toastDeleteError'),
         variant: "destructive",
       });
     } finally {
@@ -239,11 +241,11 @@ export function DocumentosDialog({ contrato, open, onOpenChange }: DocumentosDia
 
   const getTipoBadge = (tipo: string) => {
     const tipoMap: Record<string, { tone: StatusTone; label: string }> = {
-      contrato_principal: { tone: 'info', label: 'Contrato Principal' },
-      aditivo: { tone: 'primary', label: 'Aditivo' },
-      anexo: { tone: 'success', label: 'Anexo' },
-      proposta: { tone: 'warning', label: 'Proposta' },
-      outros: { tone: 'neutral', label: 'Outros' }
+      contrato_principal: { tone: 'info', label: t('contratosAtivos.documentosDialog.typeContratoPrincipal') },
+      aditivo: { tone: 'primary', label: t('contratosAtivos.documentosDialog.typeAditivo') },
+      anexo: { tone: 'success', label: t('contratosAtivos.documentosDialog.typeAnexo') },
+      proposta: { tone: 'warning', label: t('contratosAtivos.documentosDialog.typeProposta') },
+      outros: { tone: 'neutral', label: t('contratosAtivos.documentosDialog.typeOutros') }
     };
 
     const tipoInfo = tipoMap[tipo] || { tone: 'neutral' as StatusTone, label: tipo };
@@ -266,8 +268,8 @@ export function DocumentosDialog({ contrato, open, onOpenChange }: DocumentosDia
         open={open}
         onOpenChange={onOpenChange}
         icon={FolderOpen}
-        title={`Documentos — ${contrato.nome}`}
-        description={`Gerencie documentos relacionados ao contrato ${contrato.numero_contrato}`}
+        title={t('contratosAtivos.documentosDialog.title').replace('{nome}', contrato.nome)}
+        description={t('contratosAtivos.documentosDialog.description').replace('{numero}', contrato.numero_contrato)}
         size="lg"
         hideFooter
       >
@@ -276,7 +278,7 @@ export function DocumentosDialog({ contrato, open, onOpenChange }: DocumentosDia
               <div className="flex justify-end items-center">
                 <Button onClick={() => setShowForm(true)}>
                   <Plus className="h-4 w-4 mr-2" />
-                  Novo Documento
+                  {t('contratosAtivos.documentosDialog.newButton')}
                 </Button>
               </div>
             )}
@@ -284,40 +286,40 @@ export function DocumentosDialog({ contrato, open, onOpenChange }: DocumentosDia
             {showForm && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Enviar Documento</CardTitle>
+                  <CardTitle>{t('contratosAtivos.documentosDialog.uploadCardTitle')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="nome">Nome do Documento *</Label>
+                        <Label htmlFor="nome">{t('contratosAtivos.documentosDialog.labelDocumentName')}</Label>
                         <Input
                           id="nome"
                           value={formData.nome}
                           onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                          placeholder="Ex: Contrato Principal v1.0"
+                          placeholder={t('contratosAtivos.documentosDialog.documentNamePlaceholder')}
                           required
                         />
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="tipo">Tipo</Label>
+                        <Label htmlFor="tipo">{t('contratosAtivos.documentosDialog.labelType')}</Label>
                         <Select value={formData.tipo} onValueChange={(value) => setFormData({ ...formData, tipo: value })}>
                           <SelectTrigger>
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="contrato_principal">Contrato Principal</SelectItem>
-                            <SelectItem value="aditivo">Aditivo</SelectItem>
-                            <SelectItem value="anexo">Anexo</SelectItem>
-                            <SelectItem value="proposta">Proposta</SelectItem>
-                            <SelectItem value="outros">Outros</SelectItem>
+                            <SelectItem value="contrato_principal">{t('contratosAtivos.documentosDialog.typeContratoPrincipal')}</SelectItem>
+                            <SelectItem value="aditivo">{t('contratosAtivos.documentosDialog.typeAditivo')}</SelectItem>
+                            <SelectItem value="anexo">{t('contratosAtivos.documentosDialog.typeAnexo')}</SelectItem>
+                            <SelectItem value="proposta">{t('contratosAtivos.documentosDialog.typeProposta')}</SelectItem>
+                            <SelectItem value="outros">{t('contratosAtivos.documentosDialog.typeOutros')}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
 
                       <div className="space-y-2 md:col-span-2">
-                        <Label htmlFor="arquivo">Arquivo *</Label>
+                        <Label htmlFor="arquivo">{t('contratosAtivos.documentosDialog.labelFile')}</Label>
                         <Input
                           id="arquivo"
                           type="file"
@@ -326,17 +328,17 @@ export function DocumentosDialog({ contrato, open, onOpenChange }: DocumentosDia
                           required
                         />
                         <p className="text-xs text-muted-foreground">
-                          Formatos aceitos: PDF, DOC, DOCX, XLS, XLSX, JPG, PNG (máx. 10MB)
+                          {t('contratosAtivos.documentosDialog.fileFormatsHint')}
                         </p>
                       </div>
 
                       <div className="space-y-2 md:col-span-2">
-                        <Label htmlFor="descricao">Descrição</Label>
+                        <Label htmlFor="descricao">{t('contratosAtivos.documentosDialog.labelDescription')}</Label>
                         <Textarea
                           id="descricao"
                           value={formData.descricao}
                           onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
-                          placeholder="Descrição do documento..."
+                          placeholder={t('contratosAtivos.documentosDialog.descriptionPlaceholder')}
                           rows={2}
                         />
                       </div>
@@ -344,10 +346,10 @@ export function DocumentosDialog({ contrato, open, onOpenChange }: DocumentosDia
 
                     <div className="flex justify-end space-x-2">
                       <Button type="button" variant="outline" onClick={resetForm}>
-                        Cancelar
+                        {t('contratosAtivos.documentosDialog.cancelButton')}
                       </Button>
                       <Button type="submit" disabled={uploading}>
-                        {uploading ? 'Enviando...' : 'Enviar'}
+                        {uploading ? t('contratosAtivos.documentosDialog.sendingButton') : t('contratosAtivos.documentosDialog.sendButton')}
                       </Button>
                     </div>
                   </form>
@@ -365,7 +367,7 @@ export function DocumentosDialog({ contrato, open, onOpenChange }: DocumentosDia
                           <FileText className="h-5 w-5 text-muted-foreground" />
                           <h3 className="font-semibold">{documento.nome}</h3>
                           {documento.is_current_version && (
-                            <StatusBadge size="sm" tone="success" variant="outline">Versão Atual</StatusBadge>
+                            <StatusBadge size="sm" tone="success" variant="outline">{t('contratosAtivos.documentosDialog.currentVersionBadge')}</StatusBadge>
                           )}
                         </div>
                         <p className="text-sm text-muted-foreground">{documento.descricao}</p>
@@ -377,15 +379,15 @@ export function DocumentosDialog({ contrato, open, onOpenChange }: DocumentosDia
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mb-4">
                       <div>
-                        <span className="font-medium text-muted-foreground">Arquivo:</span>
+                        <span className="font-medium text-muted-foreground">{t('contratosAtivos.documentosDialog.fieldFile')}</span>
                         <p>{documento.arquivo_nome}</p>
                       </div>
                       <div>
-                        <span className="font-medium text-muted-foreground">Tamanho:</span>
+                        <span className="font-medium text-muted-foreground">{t('contratosAtivos.documentosDialog.fieldSize')}</span>
                         <p>{formatFileSize(documento.arquivo_tamanho)}</p>
                       </div>
                       <div>
-                        <span className="font-medium text-muted-foreground">Upload:</span>
+                        <span className="font-medium text-muted-foreground">{t('contratosAtivos.documentosDialog.fieldUpload')}</span>
                         <p>{formatDateOnly(documento.data_upload)}</p>
                       </div>
                     </div>
@@ -397,7 +399,7 @@ export function DocumentosDialog({ contrato, open, onOpenChange }: DocumentosDia
                         onClick={() => handleDownload(documento)}
                       >
                         <Download className="h-4 w-4 mr-1" />
-                        Baixar
+                        {t('contratosAtivos.documentosDialog.downloadButton')}
                       </Button>
                       <Button 
                         variant="outline" 
@@ -405,7 +407,7 @@ export function DocumentosDialog({ contrato, open, onOpenChange }: DocumentosDia
                         onClick={() => handleDeleteClick(documento)}
                       >
                         <Trash2 className="h-4 w-4 mr-1" />
-                        Excluir
+                        {t('contratosAtivos.documentosDialog.deleteButton')}
                       </Button>
                     </div>
                   </CardContent>
@@ -417,7 +419,7 @@ export function DocumentosDialog({ contrato, open, onOpenChange }: DocumentosDia
               <Card>
                 <CardContent className="text-center py-8">
                   <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">Nenhum documento cadastrado</p>
+                  <p className="text-muted-foreground">{t('contratosAtivos.documentosDialog.emptyState')}</p>
                 </CardContent>
               </Card>
             )}
@@ -427,9 +429,9 @@ export function DocumentosDialog({ contrato, open, onOpenChange }: DocumentosDia
       <ConfirmDialog
         open={deleteConfirm.open}
         onOpenChange={(open) => setDeleteConfirm(prev => ({ ...prev, open }))}
-        title="Excluir Documento"
-        description={`Tem certeza que deseja excluir o documento "${deleteConfirm.documento?.nome}"? Esta ação não pode ser desfeita.`}
-        confirmText="Excluir"
+        title={t('contratosAtivos.documentosDialog.deleteDialogTitle')}
+        description={t('contratosAtivos.documentosDialog.deleteDialogDescription').replace('{nome}', deleteConfirm.documento?.nome || '')}
+        confirmText={t('contratosAtivos.documentosDialog.deleteDialogConfirm')}
         variant="destructive"
         onConfirm={confirmDelete}
         loading={deleting}

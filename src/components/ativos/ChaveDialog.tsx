@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { UserSelect } from "@/components/riscos/UserSelect";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface ChaveDialogProps {
   open: boolean;
@@ -32,6 +33,7 @@ interface ChaveDialogProps {
 }
 
 export function ChaveDialog({ open, onOpenChange, chave }: ChaveDialogProps) {
+  const { t } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { empresaId } = useEmpresaId();
@@ -93,15 +95,15 @@ export function ChaveDialog({ open, onOpenChange, chave }: ChaveDialogProps) {
       queryClient.invalidateQueries({ queryKey: ['ativos-chaves'] });
       queryClient.invalidateQueries({ queryKey: ['chaves-stats'] });
       toast({
-        title: "Sucesso",
-        description: `Chave ${chave ? 'atualizada' : 'cadastrada'} com sucesso`,
+        title: t('contratosAtivos.common.success'),
+        description: t('contratosAtivos.chaveDialog.toastSuccessDescription', { action: chave ? t('contratosAtivos.chaveDialog.actionUpdated') : t('contratosAtivos.chaveDialog.actionCreated') }),
       });
       onOpenChange(false);
       form.reset();
     },
     onError: (error: any) => {
       toast({
-        title: "Erro",
+        title: t('contratosAtivos.common.error'),
         description: error.message,
         variant: "destructive",
       });
@@ -117,7 +119,7 @@ export function ChaveDialog({ open, onOpenChange, chave }: ChaveDialogProps) {
       open={open}
       onOpenChange={onOpenChange}
       icon={KeyRound}
-      title={chave ? 'Editar Chave' : 'Nova Chave Criptográfica'}
+      title={chave ? t('contratosAtivos.chaveDialog.titleEdit') : t('contratosAtivos.chaveDialog.title')}
       size="lg"
       onSubmit={form.handleSubmit(onSubmit)}
       isSubmitting={saveMutation.isPending}
@@ -131,9 +133,9 @@ export function ChaveDialog({ open, onOpenChange, chave }: ChaveDialogProps) {
                 name="nome"
                 render={({ field }) => (
                   <FormItem className="col-span-2">
-                    <FormLabel>Nome da Chave *</FormLabel>
+                    <FormLabel>{t('contratosAtivos.chaveDialog.labelName')}</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Ex: API Key AWS Produção" />
+                      <Input {...field} placeholder={t('contratosAtivos.chaveDialog.namePlaceholder')} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -145,7 +147,7 @@ export function ChaveDialog({ open, onOpenChange, chave }: ChaveDialogProps) {
                 name="tipo_chave"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Tipo *</FormLabel>
+                    <FormLabel>{t('contratosAtivos.chaveDialog.labelType')}</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
@@ -153,12 +155,12 @@ export function ChaveDialog({ open, onOpenChange, chave }: ChaveDialogProps) {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="api_key">API Key</SelectItem>
-                        <SelectItem value="certificado_ssl">Certificado SSL</SelectItem>
-                        <SelectItem value="ssh_key">SSH Key</SelectItem>
-                        <SelectItem value="token_acesso">Token de Acesso</SelectItem>
-                        <SelectItem value="secret_key">Secret Key</SelectItem>
-                        <SelectItem value="outro">Outro</SelectItem>
+                        <SelectItem value="api_key">{t('contratosAtivos.chaveDialog.typeApiKey')}</SelectItem>
+                        <SelectItem value="certificado_ssl">{t('contratosAtivos.chaveDialog.typeCertificadoSsl')}</SelectItem>
+                        <SelectItem value="ssh_key">{t('contratosAtivos.chaveDialog.typeSshKey')}</SelectItem>
+                        <SelectItem value="token_acesso">{t('contratosAtivos.chaveDialog.typeTokenAcesso')}</SelectItem>
+                        <SelectItem value="secret_key">{t('contratosAtivos.chaveDialog.typeSecretKey')}</SelectItem>
+                        <SelectItem value="outro">{t('contratosAtivos.chaveDialog.typeOutro')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -171,7 +173,7 @@ export function ChaveDialog({ open, onOpenChange, chave }: ChaveDialogProps) {
                 name="ambiente"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Ambiente *</FormLabel>
+                    <FormLabel>{t('contratosAtivos.chaveDialog.labelEnvironment')}</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
@@ -179,10 +181,10 @@ export function ChaveDialog({ open, onOpenChange, chave }: ChaveDialogProps) {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="producao">Produção</SelectItem>
-                        <SelectItem value="homologacao">Homologação</SelectItem>
-                        <SelectItem value="desenvolvimento">Desenvolvimento</SelectItem>
-                        <SelectItem value="qa">QA</SelectItem>
+                        <SelectItem value="producao">{t('contratosAtivos.chaveDialog.envProducao')}</SelectItem>
+                        <SelectItem value="homologacao">{t('contratosAtivos.chaveDialog.envHomologacao')}</SelectItem>
+                        <SelectItem value="desenvolvimento">{t('contratosAtivos.chaveDialog.envDesenvolvimento')}</SelectItem>
+                        <SelectItem value="qa">{t('contratosAtivos.chaveDialog.envQa')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -195,9 +197,9 @@ export function ChaveDialog({ open, onOpenChange, chave }: ChaveDialogProps) {
                 name="localizacao"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Localização *</FormLabel>
+                    <FormLabel>{t('contratosAtivos.chaveDialog.labelLocation')}</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Ex: AWS Secrets Manager" />
+                      <Input {...field} placeholder={t('contratosAtivos.chaveDialog.locationPlaceholder')} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -209,7 +211,7 @@ export function ChaveDialog({ open, onOpenChange, chave }: ChaveDialogProps) {
                 name="sistema_aplicacao"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Sistema/Aplicação</FormLabel>
+                    <FormLabel>{t('contratosAtivos.chaveDialog.labelSystem')}</FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
@@ -223,12 +225,12 @@ export function ChaveDialog({ open, onOpenChange, chave }: ChaveDialogProps) {
                 name="responsavel"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Responsável</FormLabel>
+                    <FormLabel>{t('contratosAtivos.chaveDialog.labelResponsible')}</FormLabel>
                     <FormControl>
                       <UserSelect
                         value={field.value}
                         onValueChange={field.onChange}
-                        placeholder="Selecionar responsável..."
+                        placeholder={t('contratosAtivos.chaveDialog.responsiblePlaceholder')}
                       />
                     </FormControl>
                     <FormMessage />
@@ -241,7 +243,7 @@ export function ChaveDialog({ open, onOpenChange, chave }: ChaveDialogProps) {
                 name="data_criacao"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Data Criação *</FormLabel>
+                    <FormLabel>{t('contratosAtivos.chaveDialog.labelCreationDate')}</FormLabel>
                     <FormControl>
                       <Input type="date" {...field} />
                     </FormControl>
@@ -255,7 +257,7 @@ export function ChaveDialog({ open, onOpenChange, chave }: ChaveDialogProps) {
                 name="data_ultima_rotacao"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Última Rotação</FormLabel>
+                    <FormLabel>{t('contratosAtivos.chaveDialog.labelLastRotation')}</FormLabel>
                     <FormControl>
                       <Input type="date" {...field} />
                     </FormControl>
@@ -269,7 +271,7 @@ export function ChaveDialog({ open, onOpenChange, chave }: ChaveDialogProps) {
                 name="data_proxima_rotacao"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Próxima Rotação *</FormLabel>
+                    <FormLabel>{t('contratosAtivos.chaveDialog.labelNextRotation')}</FormLabel>
                     <FormControl>
                       <Input type="date" {...field} />
                     </FormControl>
@@ -283,7 +285,7 @@ export function ChaveDialog({ open, onOpenChange, chave }: ChaveDialogProps) {
                 name="periodicidade_rotacao"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Periodicidade</FormLabel>
+                    <FormLabel>{t('contratosAtivos.chaveDialog.labelPeriodicity')}</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
@@ -291,10 +293,10 @@ export function ChaveDialog({ open, onOpenChange, chave }: ChaveDialogProps) {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="mensal">Mensal</SelectItem>
-                        <SelectItem value="trimestral">Trimestral</SelectItem>
-                        <SelectItem value="semestral">Semestral</SelectItem>
-                        <SelectItem value="anual">Anual</SelectItem>
+                        <SelectItem value="mensal">{t('contratosAtivos.chaveDialog.periodMensal')}</SelectItem>
+                        <SelectItem value="trimestral">{t('contratosAtivos.chaveDialog.periodTrimestral')}</SelectItem>
+                        <SelectItem value="semestral">{t('contratosAtivos.chaveDialog.periodSemestral')}</SelectItem>
+                        <SelectItem value="anual">{t('contratosAtivos.chaveDialog.periodAnual')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -307,7 +309,7 @@ export function ChaveDialog({ open, onOpenChange, chave }: ChaveDialogProps) {
                 name="criticidade"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Criticidade *</FormLabel>
+                    <FormLabel>{t('contratosAtivos.chaveDialog.labelCriticality')}</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
@@ -315,10 +317,10 @@ export function ChaveDialog({ open, onOpenChange, chave }: ChaveDialogProps) {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="baixa">Baixa</SelectItem>
-                        <SelectItem value="media">Média</SelectItem>
-                        <SelectItem value="alta">Alta</SelectItem>
-                        <SelectItem value="critica">Crítica</SelectItem>
+                        <SelectItem value="baixa">{t('contratosAtivos.chaveDialog.critBaixa')}</SelectItem>
+                        <SelectItem value="media">{t('contratosAtivos.chaveDialog.critMedia')}</SelectItem>
+                        <SelectItem value="alta">{t('contratosAtivos.chaveDialog.critAlta')}</SelectItem>
+                        <SelectItem value="critica">{t('contratosAtivos.chaveDialog.critCritica')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -331,7 +333,7 @@ export function ChaveDialog({ open, onOpenChange, chave }: ChaveDialogProps) {
                 name="status"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Status *</FormLabel>
+                    <FormLabel>{t('contratosAtivos.chaveDialog.labelStatus')}</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
@@ -339,10 +341,10 @@ export function ChaveDialog({ open, onOpenChange, chave }: ChaveDialogProps) {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="ativa">Ativa</SelectItem>
-                        <SelectItem value="expirada">Expirada</SelectItem>
-                        <SelectItem value="revogada">Revogada</SelectItem>
-                        <SelectItem value="em_rotacao">Em Rotação</SelectItem>
+                        <SelectItem value="ativa">{t('contratosAtivos.chaveDialog.statusAtiva')}</SelectItem>
+                        <SelectItem value="expirada">{t('contratosAtivos.chaveDialog.statusExpirada')}</SelectItem>
+                        <SelectItem value="revogada">{t('contratosAtivos.chaveDialog.statusRevogada')}</SelectItem>
+                        <SelectItem value="em_rotacao">{t('contratosAtivos.chaveDialog.statusEmRotacao')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -355,9 +357,9 @@ export function ChaveDialog({ open, onOpenChange, chave }: ChaveDialogProps) {
                 name="algoritmo"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Algoritmo</FormLabel>
+                    <FormLabel>{t('contratosAtivos.chaveDialog.labelAlgorithm')}</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Ex: RSA-2048, AES-256" />
+                      <Input {...field} placeholder={t('contratosAtivos.chaveDialog.algorithmPlaceholder')} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -369,7 +371,7 @@ export function ChaveDialog({ open, onOpenChange, chave }: ChaveDialogProps) {
                 name="observacoes"
                 render={({ field }) => (
                   <FormItem className="col-span-2">
-                    <FormLabel>Observações</FormLabel>
+                    <FormLabel>{t('contratosAtivos.chaveDialog.labelObservations')}</FormLabel>
                     <FormControl>
                       <Textarea {...field} rows={3} />
                     </FormControl>

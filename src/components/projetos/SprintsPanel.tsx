@@ -11,6 +11,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Plus, Pencil, Trash2, Play, CheckCircle2, Flag } from 'lucide-react';
 import { useSprints, useUpsertSprint, useDeleteSprint, type ProjetoSprint } from '@/hooks/useProjetoExtras';
 import type { ProjetoTarefa } from '@/types/projetos';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Props {
   projetoId: string;
@@ -19,6 +20,7 @@ interface Props {
 }
 
 export function SprintsPanel({ projetoId, tarefas, onSelectTarefa }: Props) {
+  const { t } = useLanguage();
   const { data: sprints = [], isLoading } = useSprints(projetoId);
   const [open, setOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<ProjetoSprint | null>(null);
@@ -33,22 +35,22 @@ export function SprintsPanel({ projetoId, tarefas, onSelectTarefa }: Props) {
     <div className="space-y-4">
       <div className="flex items-center gap-2 flex-wrap">
         <Select value={sprintAtiva} onValueChange={setSprintAtiva}>
-          <SelectTrigger className="h-9 w-[260px]"><SelectValue placeholder="Selecione uma sprint" /></SelectTrigger>
+          <SelectTrigger className="h-9 w-[260px]"><SelectValue placeholder={t('projetos.sprints.selectPlaceholder')} /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="todas">Todas as sprints</SelectItem>
+            <SelectItem value="todas">{t('projetos.sprints.allSprints')}</SelectItem>
             {sprints.map((s) => (
               <SelectItem key={s.id} value={s.id}>
-                {s.nome} {s.ativa ? '· ativa' : s.concluida ? '· concluída' : ''}
+                {s.nome} {s.ativa ? `· ${t('projetos.sprints.active')}` : s.concluida ? `· ${t('projetos.sprints.completed')}` : ''}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
         <Button size="sm" onClick={() => { setEditing(null); setOpen(true); }}>
-          <Plus className="h-4 w-4" /> Nova sprint
+          <Plus className="h-4 w-4" /> {t('projetos.sprints.newSprint')}
         </Button>
         {ativa && (
           <Button size="sm" variant="outline" onClick={() => { setEditing(ativa); setOpen(true); }}>
-            <Pencil className="h-4 w-4" /> Editar
+            <Pencil className="h-4 w-4" /> {t('projetos.sprints.edit')}
           </Button>
         )}
       </div>
@@ -57,9 +59,9 @@ export function SprintsPanel({ projetoId, tarefas, onSelectTarefa }: Props) {
         <EmptyState
           variant="illustrated"
           icon={<Flag className="h-8 w-8" />}
-          title="Nenhuma sprint criada"
-          description="Crie iterações para organizar entregas no estilo ágil leve (1 a 4 semanas)."
-          action={{ label: 'Criar primeira sprint', onClick: () => { setEditing(null); setOpen(true); } }}
+          title={t('projetos.sprints.emptyTitle')}
+          description={t('projetos.sprints.emptyDesc')}
+          action={{ label: t('projetos.sprints.createFirst'), onClick: () => { setEditing(null); setOpen(true); } }}
         />
       ) : (
         <>
@@ -75,19 +77,20 @@ export function SprintsPanel({ projetoId, tarefas, onSelectTarefa }: Props) {
 }
 
 function SprintCabecalho({ sprint, tarefas }: { sprint: ProjetoSprint; tarefas: ProjetoTarefa[] }) {
+  const { t } = useLanguage();
   const conc = tarefas.filter((t) => t.concluida_em).length;
   const pct = tarefas.length === 0 ? 0 : Math.round((conc / tarefas.length) * 100);
   return (
     <div className="rounded-lg border border-border bg-card p-4 space-y-2">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
-          <div className="text-xs uppercase tracking-wide text-muted-foreground">Sprint</div>
+          <div className="text-xs uppercase tracking-wide text-muted-foreground">{t('projetos.sprints.sprintLabel')}</div>
           <h3 className="text-lg font-semibold">{sprint.nome}</h3>
           {sprint.objetivo && <p className="text-sm text-muted-foreground">{sprint.objetivo}</p>}
         </div>
         <div className="flex gap-2 items-center">
-          {sprint.ativa && <StatusBadge tone="success" size="sm">Ativa</StatusBadge>}
-          {sprint.concluida && <StatusBadge tone="info" size="sm">Concluída</StatusBadge>}
+          {sprint.ativa && <StatusBadge tone="success" size="sm">{t('projetos.sprints.activeBadge')}</StatusBadge>}
+          {sprint.concluida && <StatusBadge tone="info" size="sm">{t('projetos.sprints.completedBadge')}</StatusBadge>}
           <span className="text-xs text-muted-foreground">
             {new Date(sprint.data_inicio).toLocaleDateString('pt-BR')} → {new Date(sprint.data_fim).toLocaleDateString('pt-BR')}
           </span>
@@ -104,6 +107,7 @@ function SprintCabecalho({ sprint, tarefas }: { sprint: ProjetoSprint; tarefas: 
 }
 
 function Burndown({ sprint, tarefas }: { sprint?: ProjetoSprint; tarefas: ProjetoTarefa[] }) {
+  const { t } = useLanguage();
   if (!sprint || tarefas.length === 0) return null;
 
   const total = tarefas.length;
@@ -131,10 +135,10 @@ function Burndown({ sprint, tarefas }: { sprint?: ProjetoSprint; tarefas: Projet
   return (
     <div className="rounded-lg border border-border bg-card p-4">
       <div className="flex items-center justify-between mb-2">
-        <div className="text-sm font-semibold">Burndown</div>
+        <div className="text-sm font-semibold">{t('projetos.sprints.burndown')}</div>
         <div className="text-xs text-muted-foreground flex gap-3">
-          <span className="inline-flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-muted-foreground" />Ideal</span>
-          <span className="inline-flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-primary" />Real</span>
+          <span className="inline-flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-muted-foreground" />{t('projetos.sprints.ideal')}</span>
+          <span className="inline-flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-primary" />{t('projetos.sprints.real')}</span>
         </div>
       </div>
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" role="img" aria-label="Burndown da sprint">
@@ -151,8 +155,9 @@ function Burndown({ sprint, tarefas }: { sprint?: ProjetoSprint; tarefas: Projet
 }
 
 function ListaTarefasSprint({ tarefas, onSelect }: { tarefas: ProjetoTarefa[]; onSelect: (t: ProjetoTarefa) => void }) {
+  const { t } = useLanguage();
   if (tarefas.length === 0) {
-    return <p className="text-sm text-muted-foreground p-4 text-center">Nenhuma tarefa nesta sprint. Use a edição da tarefa para atribuí-la à sprint.</p>;
+    return <p className="text-sm text-muted-foreground p-4 text-center">{t('projetos.sprints.noTasksHint')}</p>;
   }
   return (
     <div className="rounded-lg border border-border bg-card divide-y divide-border">
@@ -174,6 +179,7 @@ function ListaTarefasSprint({ tarefas, onSelect }: { tarefas: ProjetoTarefa[]; o
 }
 
 function SprintDialog({ open, onOpenChange, projetoId, sprint }: { open: boolean; onOpenChange: (v: boolean) => void; projetoId: string; sprint: ProjetoSprint | null }) {
+  const { t } = useLanguage();
   const upsert = useUpsertSprint(projetoId);
   const del = useDeleteSprint(projetoId);
   const [deleteConfirm, setDeleteConfirm] = React.useState(false);
@@ -203,30 +209,30 @@ function SprintDialog({ open, onOpenChange, projetoId, sprint }: { open: boolean
       open={open}
       onOpenChange={onOpenChange}
       icon={Flag}
-      title={sprint ? 'Editar sprint' : 'Nova sprint'}
+      title={sprint ? t('projetos.sprints.dialogTitleEdit') : t('projetos.sprints.dialogTitleNew')}
       size="sm"
       footer={
         <div className="flex items-center justify-end gap-2 w-full">
           {sprint && (
             <Button variant="destructive" size="sm" className="mr-auto" onClick={() => setDeleteConfirm(true)}>
-              <Trash2 className="h-4 w-4" /> Excluir
+              <Trash2 className="h-4 w-4" /> {t('projetos.sprints.deleteButton')}
             </Button>
           )}
-          <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button size="sm" onClick={submit} disabled={upsert.isPending}>Salvar</Button>
+          <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>{t('projetos.sprints.cancel')}</Button>
+          <Button size="sm" onClick={submit} disabled={upsert.isPending}>{t('projetos.sprints.save')}</Button>
         </div>
       }
     >
         <div className="space-y-3">
-          <div><Label>Nome</Label><Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} /></div>
-          <div><Label>Objetivo</Label><Textarea rows={2} value={form.objetivo} onChange={(e) => setForm({ ...form, objetivo: e.target.value })} /></div>
+          <div><Label>{t('projetos.sprints.fieldNome')}</Label><Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} /></div>
+          <div><Label>{t('projetos.sprints.fieldObjetivo')}</Label><Textarea rows={2} value={form.objetivo} onChange={(e) => setForm({ ...form, objetivo: e.target.value })} /></div>
           <div className="grid grid-cols-2 gap-3">
-            <div><Label>Início</Label><Input type="date" value={form.data_inicio} onChange={(e) => setForm({ ...form, data_inicio: e.target.value })} /></div>
-            <div><Label>Fim</Label><Input type="date" value={form.data_fim} onChange={(e) => setForm({ ...form, data_fim: e.target.value })} /></div>
+            <div><Label>{t('projetos.sprints.fieldInicio')}</Label><Input type="date" value={form.data_inicio} onChange={(e) => setForm({ ...form, data_inicio: e.target.value })} /></div>
+            <div><Label>{t('projetos.sprints.fieldFim')}</Label><Input type="date" value={form.data_fim} onChange={(e) => setForm({ ...form, data_fim: e.target.value })} /></div>
           </div>
           <div className="flex gap-4 text-sm">
-            <label className="flex items-center gap-2"><input type="checkbox" checked={form.ativa} onChange={(e) => setForm({ ...form, ativa: e.target.checked })} /> Ativa</label>
-            <label className="flex items-center gap-2"><input type="checkbox" checked={form.concluida} onChange={(e) => setForm({ ...form, concluida: e.target.checked })} /> Concluída</label>
+            <label className="flex items-center gap-2"><input type="checkbox" checked={form.ativa} onChange={(e) => setForm({ ...form, ativa: e.target.checked })} /> {t('projetos.sprints.fieldAtiva')}</label>
+            <label className="flex items-center gap-2"><input type="checkbox" checked={form.concluida} onChange={(e) => setForm({ ...form, concluida: e.target.checked })} /> {t('projetos.sprints.fieldConcluida')}</label>
           </div>
         </div>
     </DialogShell>
@@ -234,10 +240,10 @@ function SprintDialog({ open, onOpenChange, projetoId, sprint }: { open: boolean
     <ConfirmDialog
       open={deleteConfirm}
       onOpenChange={setDeleteConfirm}
-      title="Excluir Sprint"
-      description="Tem certeza que deseja remover esta sprint? Esta ação não pode ser desfeita."
-      confirmText="Excluir"
-      cancelText="Cancelar"
+      title={t('projetos.sprints.deleteConfirmTitle')}
+      description={t('projetos.sprints.deleteConfirmDesc')}
+      confirmText={t('projetos.sprints.confirmText')}
+      cancelText={t('projetos.sprints.cancelText')}
       variant="destructive"
       onConfirm={async () => { if (sprint) { await del.mutateAsync(sprint.id); setDeleteConfirm(false); onOpenChange(false); } }}
       loading={del.isPending}

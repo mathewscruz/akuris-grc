@@ -22,6 +22,7 @@ import { formatDateOnly } from '@/lib/date-utils';
 import { formatStatus } from '@/lib/text-utils';
 import { StatusBadge, type StatusTone } from '@/components/ui/status-badge';
 import { resolveDueDiligenceStatusTone } from '@/lib/status-tone';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 interface Assessment {
@@ -53,6 +54,7 @@ interface ReminderDialogProps {
 function ReminderDialog({ assessment, open, onOpenChange, onSuccess }: ReminderDialogProps) {
   const [sending, setSending] = useState(false);
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   const sendReminder = async () => {
     if (!assessment) return;
@@ -104,8 +106,8 @@ function ReminderDialog({ assessment, open, onOpenChange, onSuccess }: ReminderD
         .eq('id', assessment.id);
 
       toast({
-        title: "Lembrete enviado",
-        description: `Lembrete enviado para ${assessment.fornecedor_nome}`,
+        title: t('dueDiligence.assessmentsManagerEnhanced.toastReminderSentTitle'),
+        description: t('dueDiligence.assessmentsManagerEnhanced.toastReminderSentDescription', { fornecedor: assessment.fornecedor_nome }),
       });
 
       onSuccess();
@@ -113,7 +115,7 @@ function ReminderDialog({ assessment, open, onOpenChange, onSuccess }: ReminderD
 
     } catch (error: any) {
       toast({
-        title: "Erro ao enviar lembrete",
+        title: t('dueDiligence.assessmentsManagerEnhanced.toastReminderErrorTitle'),
         description: error.message,
         variant: "destructive"
       });
@@ -127,15 +129,15 @@ function ReminderDialog({ assessment, open, onOpenChange, onSuccess }: ReminderD
       open={open}
       onOpenChange={onOpenChange}
       icon={Mail}
-      title="Enviar Lembrete"
+      title={t('dueDiligence.assessmentsManagerEnhanced.reminderTitle')}
       size="sm"
       footer={
         <div className="flex justify-end gap-2">
           <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
-            Cancelar
+            {t('dueDiligence.assessmentsManagerEnhanced.cancel')}
           </Button>
           <Button size="sm" onClick={sendReminder} disabled={sending}>
-            {sending ? 'Enviando...' : 'Enviar Lembrete'}
+            {sending ? t('dueDiligence.assessmentsManagerEnhanced.sending') : t('dueDiligence.assessmentsManagerEnhanced.sendReminder')}
           </Button>
         </div>
       }
@@ -143,10 +145,10 @@ function ReminderDialog({ assessment, open, onOpenChange, onSuccess }: ReminderD
         {assessment && (
           <div className="space-y-4">
             <div className="space-y-2">
-              <p><strong>Fornecedor:</strong> {assessment.fornecedor_nome}</p>
-              <p><strong>Email:</strong> {assessment.fornecedor_email}</p>
-              <p><strong>Template:</strong> {assessment.template.nome}</p>
-              <p><strong>Status:</strong> {formatStatus(assessment.status)}</p>
+              <p><strong>{t('dueDiligence.assessmentsManagerEnhanced.reminderSupplier')}</strong> {assessment.fornecedor_nome}</p>
+              <p><strong>{t('dueDiligence.assessmentsManagerEnhanced.reminderEmail')}</strong> {assessment.fornecedor_email}</p>
+              <p><strong>{t('dueDiligence.assessmentsManagerEnhanced.reminderTemplate')}</strong> {assessment.template.nome}</p>
+              <p><strong>{t('dueDiligence.assessmentsManagerEnhanced.reminderStatus')}</strong> {formatStatus(assessment.status)}</p>
             </div>
           </div>
         )}
@@ -209,6 +211,7 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
     assessment: null
   });
   const { toast } = useToast();
+  const { t } = useLanguage();
   const { data: stats, isLoading: statsLoading } = useDueDiligenceStats();
 
   useEffect(() => {
@@ -284,7 +287,7 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
       setAssessments(formattedAssessments);
     } catch (error: any) {
       toast({
-        title: "Erro ao carregar assessments",
+        title: t('dueDiligence.assessmentsManagerEnhanced.errorLoadTitle'),
         description: error.message,
         variant: "destructive"
       });
@@ -372,11 +375,11 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
   };
 
   const getScoreBadge = (score?: number): { text: string; tone: StatusTone } => {
-    if (!score || score === 0) return { text: "Aguardando", tone: "neutral" };
-    if (score >= 8) return { text: "Excelente", tone: "success" };
-    if (score >= 6) return { text: "Bom", tone: "info" };
-    if (score >= 4) return { text: "Regular", tone: "warning" };
-    return { text: "Ruim", tone: "destructive" };
+    if (!score || score === 0) return { text: t('dueDiligence.assessmentsManagerEnhanced.scoreAwaiting'), tone: "neutral" };
+    if (score >= 8) return { text: t('dueDiligence.assessmentsManagerEnhanced.scoreExcellent'), tone: "success" };
+    if (score >= 6) return { text: t('dueDiligence.assessmentsManagerEnhanced.scoreGood'), tone: "info" };
+    if (score >= 4) return { text: t('dueDiligence.assessmentsManagerEnhanced.scoreRegular'), tone: "warning" };
+    return { text: t('dueDiligence.assessmentsManagerEnhanced.scoreBad'), tone: "destructive" };
   };
 
   const isExpired = (dateString: string) => {
@@ -448,13 +451,13 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
       });
 
       toast({
-        title: "Avaliação reenviada",
-        description: `Convite reenviado para ${assessment.fornecedor_nome}`,
+        title: t('dueDiligence.assessmentsManagerEnhanced.toastResentTitle'),
+        description: t('dueDiligence.assessmentsManagerEnhanced.toastResentDescription', { fornecedor: assessment.fornecedor_nome }),
       });
 
     } catch (error: any) {
       toast({
-        title: "Erro ao reenviar avaliação",
+        title: t('dueDiligence.assessmentsManagerEnhanced.toastResentErrorTitle'),
         description: error.message,
         variant: "destructive"
       });
@@ -471,8 +474,8 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
       if (error) throw error;
 
       toast({
-        title: "Avaliação excluída",
-        description: "Avaliação foi excluída com sucesso",
+        title: t('dueDiligence.assessmentsManagerEnhanced.toastDeletedTitle'),
+        description: t('dueDiligence.assessmentsManagerEnhanced.toastDeletedDescription'),
       });
 
       fetchAssessments();
@@ -480,7 +483,7 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
 
     } catch (error: any) {
       toast({
-        title: "Erro ao excluir avaliação",
+        title: t('dueDiligence.assessmentsManagerEnhanced.toastDeletedErrorTitle'),
         description: error.message,
         variant: "destructive"
       });
@@ -496,7 +499,7 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
   const hasActiveFilters = searchTerm || statusFilter !== 'all' || categoriaFilter !== 'all';
 
   if (loading) {
-    return <div className="text-center p-8">Carregando assessments...</div>;
+    return <div className="text-center p-8">{t('dueDiligence.assessmentsManagerEnhanced.loading')}</div>;
   }
 
   const calcularScoreMedio = () => {
@@ -556,7 +559,7 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
               <div className="flex items-center justify-between gap-4 mb-4">
                 <div className="relative flex-1 max-w-sm">
                   <Input
-                    placeholder="Buscar por fornecedor ou template..."
+                    placeholder={t('dueDiligence.assessmentsManagerEnhanced.searchPlaceholder')}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
@@ -569,14 +572,14 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
                     onClick={() => setShowFilters(!showFilters)}
                   >
                     <Filter className="h-4 w-4 mr-2" />
-                    Filtros
+                    {t('dueDiligence.assessmentsManagerEnhanced.filters')}
                   </Button>
                   <Button 
                     size="sm"
                     onClick={() => setAssessmentDialog({ open: true, assessment: null, mode: 'create' })}
                   >
                     <Plus className="h-4 w-4 mr-2" />
-                    Nova Avaliação
+                    {t('dueDiligence.assessmentsManagerEnhanced.newAssessment')}
                   </Button>
                 </div>
               </div>
@@ -584,29 +587,29 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
               {showFilters && (
                 <div className="bg-muted/50 rounded-lg p-4 mb-4 flex items-center gap-4 flex-wrap">
                   <div className="flex items-center gap-2">
-                    <Label className="text-sm">Status:</Label>
+                    <Label className="text-sm">{t('dueDiligence.assessmentsManagerEnhanced.filterStatusLabel')}</Label>
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
                       <SelectTrigger className="w-40">
-                        <SelectValue placeholder="Filtrar por status" />
+                        <SelectValue placeholder={t('dueDiligence.assessmentsManagerEnhanced.filterStatusPlaceholder')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">Todos os status</SelectItem>
-                        <SelectItem value="pendente">Pendente</SelectItem>
-                        <SelectItem value="ativo">Ativo</SelectItem>
-                        <SelectItem value="em_andamento">Em Andamento</SelectItem>
-                        <SelectItem value="concluido">Concluído</SelectItem>
-                        <SelectItem value="expirado">Expirado</SelectItem>
+                        <SelectItem value="all">{t('dueDiligence.assessmentsManagerEnhanced.statusAll')}</SelectItem>
+                        <SelectItem value="pendente">{t('dueDiligence.assessmentsManagerEnhanced.statusPending')}</SelectItem>
+                        <SelectItem value="ativo">{t('dueDiligence.assessmentsManagerEnhanced.statusActive')}</SelectItem>
+                        <SelectItem value="em_andamento">{t('dueDiligence.assessmentsManagerEnhanced.statusInProgress')}</SelectItem>
+                        <SelectItem value="concluido">{t('dueDiligence.assessmentsManagerEnhanced.statusCompleted')}</SelectItem>
+                        <SelectItem value="expirado">{t('dueDiligence.assessmentsManagerEnhanced.statusExpired')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Label className="text-sm">Categoria:</Label>
+                    <Label className="text-sm">{t('dueDiligence.assessmentsManagerEnhanced.filterCategoryLabel')}</Label>
                     <Select value={categoriaFilter} onValueChange={setCategoriaFilter}>
                       <SelectTrigger className="w-40">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">Todas</SelectItem>
+                        <SelectItem value="all">{t('dueDiligence.assessmentsManagerEnhanced.categoryAll')}</SelectItem>
                         {categorias.map((cat) => (
                           <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                         ))}
@@ -620,7 +623,7 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
                       onClick={clearFilters}
                     >
                       <X className="h-4 w-4 mr-1" />
-                      Limpar Filtros
+                      {t('dueDiligence.assessmentsManagerEnhanced.clearFilters')}
                     </Button>
                   )}
                 </div>
@@ -641,12 +644,12 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
                         {getStatusBadge(assessment.status)}
                         {isExpired(assessment.data_expiracao) && assessment.status !== 'concluido' && (
                           <StatusBadge size="sm" tone="destructive" intensity="high" icon={<AlertTriangle className="h-3 w-3" />}>
-                            Expirado
+                            {t('dueDiligence.assessmentsManagerEnhanced.expired')}
                           </StatusBadge>
                         )}
                         {isExpiringSoon(assessment.data_expiracao) && assessment.status !== 'concluido' && !isExpired(assessment.data_expiracao) && (
                           <StatusBadge size="sm" tone="warning" icon={<Clock className="h-3 w-3" />}>
-                            Vence em {getDaysUntilExpiration(assessment.data_expiracao)}d
+                            {t('dueDiligence.assessmentsManagerEnhanced.expiresIn', { dias: getDaysUntilExpiration(assessment.data_expiracao) })}
                           </StatusBadge>
                         )}
                       </div>
@@ -656,21 +659,21 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                       <div>
-                        <span className="text-muted-foreground">Template:</span>
+                        <span className="text-muted-foreground">{t('dueDiligence.assessmentsManagerEnhanced.template')}</span>
                         <p className="font-medium">{assessment.template.nome}</p>
                       </div>
                       <div>
-                        <span className="text-muted-foreground">Categoria:</span>
+                        <span className="text-muted-foreground">{t('dueDiligence.assessmentsManagerEnhanced.category')}</span>
                         <p className="font-medium">{assessment.template.categoria}</p>
                       </div>
                       <div>
-                        <span className="text-muted-foreground">Expira em:</span>
+                        <span className="text-muted-foreground">{t('dueDiligence.assessmentsManagerEnhanced.expiresOn')}</span>
                         <p className="font-medium">
                           {formatDateOnly(assessment.data_expiracao)}
                         </p>
                       </div>
                       <div>
-                        <span className="text-muted-foreground">Score:</span>
+                        <span className="text-muted-foreground">{t('dueDiligence.assessmentsManagerEnhanced.score')}</span>
                         <div className="flex items-center gap-2">
                           {assessment.score_final && assessment.score_final > 0 ? (
                             <button
@@ -690,9 +693,9 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
                               </StatusBadge>
                             </button>
                           ) : assessment.status === 'concluido' ? (
-                            <span className="text-sm text-muted-foreground">Calculando...</span>
+                            <span className="text-sm text-muted-foreground">{t('dueDiligence.assessmentsManagerEnhanced.calculating')}</span>
                           ) : (
-                            <span className="text-sm text-muted-foreground">Pendente</span>
+                            <span className="text-sm text-muted-foreground">{t('dueDiligence.assessmentsManagerEnhanced.pending')}</span>
                           )}
                         </div>
                       </div>
@@ -702,9 +705,9 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Clock className="h-4 w-4" />
                         {assessment.data_inicio ? (
-                          <span>Iniciado em {formatDateOnly(assessment.data_inicio)}</span>
+                          <span>{t('dueDiligence.assessmentsManagerEnhanced.startedOn', { data: formatDateOnly(assessment.data_inicio) })}</span>
                         ) : (
-                          <span>Ainda não iniciado</span>
+                          <span>{t('dueDiligence.assessmentsManagerEnhanced.notStarted')}</span>
                         )}
                       </div>
 
@@ -717,10 +720,10 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
                               onClick={() => viewAssessment(assessment)}
                             >
                               <Eye className="h-4 w-4 mr-1" />
-                              Visualizar
+                              {t('dueDiligence.assessmentsManagerEnhanced.view')}
                             </Button>
                           </TooltipTrigger>
-                          <TooltipContent>Abrir formulário de avaliação</TooltipContent>
+                          <TooltipContent>{t('dueDiligence.assessmentsManagerEnhanced.viewTooltip')}</TooltipContent>
                         </Tooltip>
 
                         <DropdownMenu>
@@ -732,24 +735,24 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
                                 </Button>
                               </DropdownMenuTrigger>
                             </TooltipTrigger>
-                            <TooltipContent>Mais ações</TooltipContent>
+                            <TooltipContent>{t('dueDiligence.assessmentsManagerEnhanced.moreActions')}</TooltipContent>
                           </Tooltip>
                           <DropdownMenuContent align="end">
                             {assessment.score_final && assessment.score_final > 0 && (
                               <DropdownMenuItem onClick={() => setScoreDialog({ open: true, assessment, scoreData: null })}>
                                 <Award className="h-4 w-4 mr-2" />
-                                Ver Score
+                                {t('dueDiligence.assessmentsManagerEnhanced.viewScore')}
                               </DropdownMenuItem>
                             )}
                             {assessment.status === 'concluido' && (
                               <DropdownMenuItem onClick={() => setResponsesDialog({ open: true, assessment })}>
                                 <FileText className="h-4 w-4 mr-2" />
-                                Ver Respostas
+                                {t('dueDiligence.assessmentsManagerEnhanced.viewResponses')}
                               </DropdownMenuItem>
                             )}
                             <DropdownMenuItem onClick={() => setAssessmentDialog({ open: true, assessment, mode: 'view' })}>
                               <Edit2 className="h-4 w-4 mr-2" />
-                              Detalhes
+                              {t('dueDiligence.assessmentsManagerEnhanced.details')}
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem 
@@ -757,12 +760,12 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
                               disabled={assessment.status === 'concluido'}
                             >
                               <RefreshCw className="h-4 w-4 mr-2" />
-                              Reenviar
+                              {t('dueDiligence.assessmentsManagerEnhanced.resend')}
                             </DropdownMenuItem>
                             {canSendReminder(assessment) && (
                               <DropdownMenuItem onClick={() => setReminderDialog({ open: true, assessment })}>
                                 <Send className="h-4 w-4 mr-2" />
-                                Lembrete
+                                {t('dueDiligence.assessmentsManagerEnhanced.reminder')}
                               </DropdownMenuItem>
                             )}
                             <DropdownMenuSeparator />
@@ -771,7 +774,7 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
                               className="text-destructive"
                             >
                               <Trash2 className="h-4 w-4 mr-2" />
-                              Excluir
+                              {t('dueDiligence.assessmentsManagerEnhanced.delete')}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -786,7 +789,7 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
             {filteredAndSortedAssessments.length > 0 && (
               <div className="flex items-center justify-between p-6 pt-0 border-t">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <span>Mostrando {((currentPage - 1) * itemsPerPage) + 1} a {Math.min(currentPage * itemsPerPage, filteredAndSortedAssessments.length)} de {filteredAndSortedAssessments.length}</span>
+                  <span>{t('dueDiligence.assessmentsManagerEnhanced.showing', { from: ((currentPage - 1) * itemsPerPage) + 1, to: Math.min(currentPage * itemsPerPage, filteredAndSortedAssessments.length), total: filteredAndSortedAssessments.length })}</span>
                   <Select value={String(itemsPerPage)} onValueChange={(v) => { setItemsPerPage(Number(v)); setCurrentPage(1); }}>
                     <SelectTrigger className="w-20 h-8">
                       <SelectValue />
@@ -797,7 +800,7 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
                       ))}
                     </SelectContent>
                   </Select>
-                  <span>por página</span>
+                  <span>{t('dueDiligence.assessmentsManagerEnhanced.perPage')}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Button 
@@ -806,10 +809,10 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
                   >
-                    Anterior
+                    {t('dueDiligence.assessmentsManagerEnhanced.previous')}
                   </Button>
                   <span className="text-sm">
-                    Página {currentPage} de {totalPages || 1}
+                    {t('dueDiligence.assessmentsManagerEnhanced.pageOf', { current: currentPage, total: totalPages || 1 })}
                   </span>
                   <Button 
                     variant="outline" 
@@ -817,7 +820,7 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                     disabled={currentPage >= totalPages}
                   >
-                    Próxima
+                    {t('dueDiligence.assessmentsManagerEnhanced.next')}
                   </Button>
                 </div>
               </div>
@@ -830,11 +833,11 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
             <Card>
               <CardContent className="text-center py-8">
                 <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Nenhum assessment encontrado</h3>
+                <h3 className="text-lg font-semibold mb-2">{t('dueDiligence.assessmentsManagerEnhanced.emptyTitle')}</h3>
                 <p className="text-muted-foreground">
                   {hasActiveFilters 
-                    ? 'Tente ajustar os filtros para encontrar assessments'
-                    : 'Crie seu primeiro assessment para começar'}
+                    ? t('dueDiligence.assessmentsManagerEnhanced.emptyFilteredDescription')
+                    : t('dueDiligence.assessmentsManagerEnhanced.emptyDescription')}
                 </p>
               </CardContent>
             </Card>
@@ -858,11 +861,11 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
           <ConfirmDialog
             open={deleteDialog.open}
             onOpenChange={(open) => setDeleteDialog({ open, assessment: null })}
-            title="Confirmar Exclusão"
-            description={`Tem certeza que deseja excluir a avaliação de ${deleteDialog.assessment?.fornecedor_nome}? Esta ação não pode ser desfeita.`}
+            title={t('dueDiligence.assessmentsManagerEnhanced.deleteDialogTitle')}
+            description={t('dueDiligence.assessmentsManagerEnhanced.deleteDialogDescription', { fornecedor: deleteDialog.assessment?.fornecedor_nome })}
             onConfirm={() => deleteDialog.assessment && deleteAssessment(deleteDialog.assessment)}
-            confirmText="Excluir"
-            cancelText="Cancelar"
+            confirmText={t('dueDiligence.assessmentsManagerEnhanced.deleteConfirm')}
+            cancelText={t('dueDiligence.assessmentsManagerEnhanced.deleteCancel')}
           />
 
           {/* Dialog de Score com Integrações */}
@@ -870,7 +873,7 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
             open={scoreDialog.open}
             onOpenChange={(open) => setScoreDialog({ open, assessment: null, scoreData: null })}
             icon={Award}
-            title={`Resultado da Avaliação — ${scoreDialog.assessment?.fornecedor_nome ?? ''}`}
+            title={t('dueDiligence.assessmentsManagerEnhanced.scoreDialogTitle', { fornecedor: scoreDialog.assessment?.fornecedor_nome ?? '' })}
             size="xl"
             hideFooter
           >
@@ -911,6 +914,7 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
 function ScoreVisualizationWrapper({ assessment }: { assessment: Assessment }) {
   const [scoreData, setScoreData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const { t } = useLanguage();
 
   useEffect(() => {
     const fetchScoreData = async () => {
@@ -947,7 +951,7 @@ function ScoreVisualizationWrapper({ assessment }: { assessment: Assessment }) {
   if (!scoreData) {
     return (
       <div className="text-center py-8">
-        <p className="text-muted-foreground">Score ainda não calculado para esta avaliação.</p>
+        <p className="text-muted-foreground">{t('dueDiligence.assessmentsManagerEnhanced.scoreNotCalculated')}</p>
       </div>
     );
   }

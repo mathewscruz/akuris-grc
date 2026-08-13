@@ -3,8 +3,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { TrendingUp, Clock, AlertTriangle, CheckCircle2, Timer } from 'lucide-react';
 import type { ProjetoTarefa, ProjetoColuna } from '@/types/projetos';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export function MetricasPanel({ tarefas, colunas }: { tarefas: ProjetoTarefa[]; colunas: ProjetoColuna[] }) {
+  const { t } = useLanguage();
   const m = React.useMemo(() => {
     const total = tarefas.length;
     const concluidas = tarefas.filter((t) => t.concluida_em);
@@ -50,39 +52,39 @@ export function MetricasPanel({ tarefas, colunas }: { tarefas: ProjetoTarefa[]; 
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Mini icon={<TrendingUp />} label="Velocidade (sem.)" value={(m.semanas[3]?.concluidas ?? 0).toString()} hint={`média 4sem: ${(m.semanas.reduce((s, x) => s + x.concluidas, 0) / 4).toFixed(1)}/sem`} />
-        <Mini icon={<Clock />} label="Cycle time médio" value={`${m.cycleMed.toFixed(1)}d`} hint="criação → conclusão" />
-        <Mini icon={<AlertTriangle />} label="Atrasadas" value={m.atrasadas.toString()} hint={m.atrasadas > 0 ? 'Requer ação' : 'OK'} tone={m.atrasadas > 0 ? 'destructive' : 'success'} />
-        <Mini icon={<CheckCircle2 />} label="Conclusão" value={m.total ? `${Math.round((m.concluidas / m.total) * 100)}%` : '—'} hint={`${m.concluidas} de ${m.total}`} />
+        <Mini icon={<TrendingUp />} label={t('projetos.metricas.velocity')} value={(m.semanas[3]?.concluidas ?? 0).toString()} hint={t('projetos.metricas.avg4Weeks', { value: (m.semanas.reduce((s, x) => s + x.concluidas, 0) / 4).toFixed(1) })} />
+        <Mini icon={<Clock />} label={t('projetos.metricas.cycleTime')} value={`${m.cycleMed.toFixed(1)}d`} hint={t('projetos.metricas.cycleTimeHint')} />
+        <Mini icon={<AlertTriangle />} label={t('projetos.metricas.overdue')} value={m.atrasadas.toString()} hint={m.atrasadas > 0 ? t('projetos.metricas.requiresAction') : t('projetos.metricas.ok')} tone={m.atrasadas > 0 ? 'destructive' : 'success'} />
+        <Mini icon={<CheckCircle2 />} label={t('projetos.metricas.completion')} value={m.total ? `${Math.round((m.concluidas / m.total) * 100)}%` : '—'} hint={t('projetos.metricas.completionHint', { done: m.concluidas, total: m.total })} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card variant="elevated">
           <CardContent className="p-4">
-            <div className="text-sm font-semibold mb-3">Velocidade — últimas 4 semanas</div>
+            <div className="text-sm font-semibold mb-3">{t('projetos.metricas.velocityChart')}</div>
             <BarChart data={m.semanas.map((s) => ({ label: s.label, valor: s.concluidas }))} max={Math.max(1, ...m.semanas.map((s) => s.concluidas))} />
           </CardContent>
         </Card>
         <Card variant="elevated">
           <CardContent className="p-4">
-            <div className="text-sm font-semibold mb-3">Por coluna</div>
+            <div className="text-sm font-semibold mb-3">{t('projetos.metricas.byColumn')}</div>
             <BarChart data={m.porColuna.map((c) => ({ label: c.nome, valor: c.qtd }))} max={Math.max(1, ...m.porColuna.map((c) => c.qtd))} />
           </CardContent>
         </Card>
         <Card variant="elevated">
           <CardContent className="p-4">
-            <div className="text-sm font-semibold mb-3">Por prioridade</div>
+            <div className="text-sm font-semibold mb-3">{t('projetos.metricas.byPriority')}</div>
             <BarChart data={m.porPrior.map((p) => ({ label: p.prior, valor: p.qtd }))} max={Math.max(1, ...m.porPrior.map((p) => p.qtd))} />
           </CardContent>
         </Card>
         <Card variant="elevated">
           <CardContent className="p-4 space-y-3">
-            <div className="text-sm font-semibold flex items-center gap-2"><Timer className="h-4 w-4 text-primary" /> Tempo & SLA</div>
-            <Row label="Estimado total" value={`${m.estimado.toFixed(1)}h`} />
-            <Row label="Gasto total" value={`${m.gasto.toFixed(1)}h`} />
-            <Row label="Eficiência" value={m.estimado ? `${Math.round((m.gasto / m.estimado) * 100)}%` : '—'} hint={m.estimado && m.gasto > m.estimado ? 'Acima do orçado' : ''} />
-            <Row label="SLA violado" value={String(m.slaViolado)} tone={m.slaViolado > 0 ? 'destructive' : 'success'} />
-            <Row label="SLA em risco" value={String(m.slaRisco)} tone={m.slaRisco > 0 ? 'warning' : 'neutral'} />
+            <div className="text-sm font-semibold flex items-center gap-2"><Timer className="h-4 w-4 text-primary" /> {t('projetos.metricas.timeAndSla')}</div>
+            <Row label={t('projetos.metricas.estimatedTotal')} value={`${m.estimado.toFixed(1)}h`} />
+            <Row label={t('projetos.metricas.spentTotal')} value={`${m.gasto.toFixed(1)}h`} />
+            <Row label={t('projetos.metricas.efficiency')} value={m.estimado ? `${Math.round((m.gasto / m.estimado) * 100)}%` : '—'} hint={m.estimado && m.gasto > m.estimado ? t('projetos.metricas.aboveBudget') : ''} />
+            <Row label={t('projetos.metricas.slaViolated')} value={String(m.slaViolado)} tone={m.slaViolado > 0 ? 'destructive' : 'success'} />
+            <Row label={t('projetos.metricas.slaAtRisk')} value={String(m.slaRisco)} tone={m.slaRisco > 0 ? 'warning' : 'neutral'} />
           </CardContent>
         </Card>
       </div>

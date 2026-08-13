@@ -19,6 +19,7 @@ import { WizardSummaryCard, WizardSummaryRow } from "@/components/ui/wizard-summ
 import { FieldHelpTooltip } from "@/components/ui/field-help-tooltip";
 import { logger } from "@/lib/logger";
 import { formatStatus } from '@/lib/text-utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const formatDateForDatabase = (dateString: string): string | null => (!dateString ? null : dateString);
 const formatDateForInput = (dateString: string | null): string => (!dateString ? '' : dateString.split('T')[0]);
@@ -49,6 +50,7 @@ interface ControleDialogProps {
 }
 
 export default function ControleDialog({ open, onOpenChange, controle, categorias }: ControleDialogProps) {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('identificacao');
   const [formData, setFormData] = useState({
     codigo: "", nome: "", descricao: "", tipo: "preventivo", categoria_id: "sem_categoria",
@@ -100,7 +102,7 @@ export default function ControleDialog({ open, onOpenChange, controle, categoria
       const { data: profile } = await supabase
         .from('profiles').select('empresa_id')
         .eq('user_id', (await supabase.auth.getUser()).data.user?.id).single();
-      if (!profile?.empresa_id) throw new Error('Empresa não encontrada');
+      if (!profile?.empresa_id) throw new Error(t('controlesAuditorias.cdlgErrorEmpresaNotFound'));
 
       const controleData = {
         codigo: data.codigo?.trim() || null, nome: data.nome, descricao: data.descricao, tipo: data.tipo,
@@ -162,18 +164,18 @@ export default function ControleDialog({ open, onOpenChange, controle, categoria
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['controles'] });
-      toast({ title: controle ? "Controle atualizado" : "Controle criado" });
+      toast({ title: controle ? t('controlesAuditorias.cdlgToastUpdated') : t('controlesAuditorias.cdlgToastCreated') });
       onOpenChange(false);
     },
     onError: (error) => {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
+      toast({ title: t('controlesAuditorias.cdlgErrorTitle'), description: error.message, variant: "destructive" });
     },
   });
 
   const handleSubmit = () => {
     if (!formData.nome.trim()) {
       setActiveTab('identificacao');
-      toast({ title: "Erro", description: "O nome do controle é obrigatório.", variant: "destructive" });
+      toast({ title: t('controlesAuditorias.cdlgErrorTitle'), description: t('controlesAuditorias.cdlgValidationNomeRequired'), variant: "destructive" });
       return;
     }
     saveControleMutation.mutate(formData);
@@ -188,40 +190,40 @@ export default function ControleDialog({ open, onOpenChange, controle, categoria
 
   const tabs: WizardTab[] = useMemo(() => [
     {
-      id: 'identificacao', label: 'Identificação', icon: ShieldCheck, state: identState, hint: 'Código, nome, descrição',
+      id: 'identificacao', label: t('controlesAuditorias.cdlgTabIdent'), icon: ShieldCheck, state: identState, hint: t('controlesAuditorias.cdlgTabIdentHint'),
       content: (
         <div className="space-y-5 max-w-3xl">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <Label className="flex items-center gap-1">
-                Código
-                <FieldHelpTooltip content="Identificador interno (ex: CTRL-001). Opcional." />
+                {t('controlesAuditorias.cdlgFieldCodigo')}
+                <FieldHelpTooltip content={t('controlesAuditorias.cdlgFieldCodigoHelp')} />
               </Label>
-              <Input value={formData.codigo} onChange={(e) => update({ codigo: e.target.value })} placeholder="Ex: CTRL-001" />
+              <Input value={formData.codigo} onChange={(e) => update({ codigo: e.target.value })} placeholder={t('controlesAuditorias.cdlgFieldCodigoPlaceholder')} />
             </div>
             <div className="md:col-span-2">
               <Label className="flex items-center gap-1">
-                Nome <span className="text-destructive">*</span>
-                <FieldHelpTooltip content="Nome curto e claro do controle." />
+                {t('controlesAuditorias.cdlgFieldNome')} <span className="text-destructive">*</span>
+                <FieldHelpTooltip content={t('controlesAuditorias.cdlgFieldNomeHelp')} />
               </Label>
-              <Input value={formData.nome} onChange={(e) => update({ nome: e.target.value })} placeholder="Nome do controle" required />
+              <Input value={formData.nome} onChange={(e) => update({ nome: e.target.value })} placeholder={t('controlesAuditorias.cdlgFieldNomePlaceholder')} required />
             </div>
           </div>
           <div>
-            <Label>Descrição</Label>
+            <Label>{t('controlesAuditorias.cdlgFieldDescricao')}</Label>
             <Textarea value={formData.descricao} onChange={(e) => update({ descricao: e.target.value })} rows={6} />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label>Área</Label>
-              <Input value={formData.area} onChange={(e) => update({ area: e.target.value })} placeholder="Área responsável" />
+              <Label>{t('controlesAuditorias.cdlgFieldArea')}</Label>
+              <Input value={formData.area} onChange={(e) => update({ area: e.target.value })} placeholder={t('controlesAuditorias.cdlgFieldAreaPlaceholder')} />
             </div>
             <div>
-              <Label>Categoria</Label>
+              <Label>{t('controlesAuditorias.cdlgFieldCategoria')}</Label>
               <Select value={formData.categoria_id || "sem_categoria"} onValueChange={(v) => update({ categoria_id: v === "sem_categoria" ? "" : v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="sem_categoria">Sem categoria</SelectItem>
+                  <SelectItem value="sem_categoria">{t('controlesAuditorias.cdlgSemCategoria')}</SelectItem>
                   {categorias.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
                 </SelectContent>
               </Select>
@@ -231,47 +233,47 @@ export default function ControleDialog({ open, onOpenChange, controle, categoria
       ),
     },
     {
-      id: 'classificacao', label: 'Classificação', icon: Settings2, state: classifState, hint: 'Tipo, frequência, status',
+      id: 'classificacao', label: t('controlesAuditorias.cdlgTabClassif'), icon: Settings2, state: classifState, hint: t('controlesAuditorias.cdlgTabClassifHint'),
       content: (
         <div className="space-y-5 max-w-3xl">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <Label className="flex items-center gap-1">
-                Tipo
-                <FieldHelpTooltip content="Preventivo evita; Detectivo identifica; Corretivo resolve." />
+                {t('controlesAuditorias.cdlgFieldTipo')}
+                <FieldHelpTooltip content={t('controlesAuditorias.cdlgFieldTipoHelp')} />
               </Label>
               <Select value={formData.tipo} onValueChange={(v) => update({ tipo: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="preventivo">Preventivo</SelectItem>
-                  <SelectItem value="detectivo">Detectivo</SelectItem>
-                  <SelectItem value="corretivo">Corretivo</SelectItem>
+                  <SelectItem value="preventivo">{t('controlesAuditorias.cdlgTipoPreventivo')}</SelectItem>
+                  <SelectItem value="detectivo">{t('controlesAuditorias.cdlgTipoDetectivo')}</SelectItem>
+                  <SelectItem value="corretivo">{t('controlesAuditorias.cdlgTipoCorretivo')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label>Frequência</Label>
+              <Label>{t('controlesAuditorias.cdlgFieldFrequencia')}</Label>
               <Select value={formData.frequencia} onValueChange={(v) => update({ frequencia: v })}>
-                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={t('controlesAuditorias.cdlgFrequenciaSelecione')} /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="diaria">Diária</SelectItem>
-                  <SelectItem value="semanal">Semanal</SelectItem>
-                  <SelectItem value="mensal">Mensal</SelectItem>
-                  <SelectItem value="trimestral">Trimestral</SelectItem>
-                  <SelectItem value="semestral">Semestral</SelectItem>
-                  <SelectItem value="anual">Anual</SelectItem>
+                  <SelectItem value="diaria">{t('controlesAuditorias.cdlgFrequenciaDiaria')}</SelectItem>
+                  <SelectItem value="semanal">{t('controlesAuditorias.cdlgFrequenciaSemanal')}</SelectItem>
+                  <SelectItem value="mensal">{t('controlesAuditorias.cdlgFrequenciaMensal')}</SelectItem>
+                  <SelectItem value="trimestral">{t('controlesAuditorias.cdlgFrequenciaTrimestral')}</SelectItem>
+                  <SelectItem value="semestral">{t('controlesAuditorias.cdlgFrequenciaSemestral')}</SelectItem>
+                  <SelectItem value="anual">{t('controlesAuditorias.cdlgFrequenciaAnual')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label>Status</Label>
+              <Label>{t('controlesAuditorias.cdlgFieldStatus')}</Label>
               <Select value={formData.status} onValueChange={(v) => update({ status: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ativo">Ativo</SelectItem>
-                  <SelectItem value="inativo">Inativo</SelectItem>
-                  <SelectItem value="em_revisao">Em Revisão</SelectItem>
-                  <SelectItem value="descontinuado">Descontinuado</SelectItem>
+                  <SelectItem value="ativo">{t('controlesAuditorias.cdlgStatusAtivo')}</SelectItem>
+                  <SelectItem value="inativo">{t('controlesAuditorias.cdlgStatusInativo')}</SelectItem>
+                  <SelectItem value="em_revisao">{t('controlesAuditorias.cdlgStatusEmRevisao')}</SelectItem>
+                  <SelectItem value="descontinuado">{t('controlesAuditorias.cdlgStatusDescontinuado')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -279,25 +281,25 @@ export default function ControleDialog({ open, onOpenChange, controle, categoria
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <Label className="flex items-center gap-1">
-                Criticidade
-                <FieldHelpTooltip content="Quanto este controle é importante para o programa de GRC." />
+                {t('controlesAuditorias.cdlgFieldCriticidade')}
+                <FieldHelpTooltip content={t('controlesAuditorias.cdlgFieldCriticidadeHelp')} />
               </Label>
               <Select value={formData.criticidade} onValueChange={(v) => update({ criticidade: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="baixo">Baixo</SelectItem>
-                  <SelectItem value="medio">Médio</SelectItem>
-                  <SelectItem value="alto">Alto</SelectItem>
-                  <SelectItem value="critico">Crítico</SelectItem>
+                  <SelectItem value="baixo">{t('controlesAuditorias.cdlgCriticidadeBaixo')}</SelectItem>
+                  <SelectItem value="medio">{t('controlesAuditorias.cdlgCriticidadeMedio')}</SelectItem>
+                  <SelectItem value="alto">{t('controlesAuditorias.cdlgCriticidadeAlto')}</SelectItem>
+                  <SelectItem value="critico">{t('controlesAuditorias.cdlgCriticidadeCritico')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label className="flex items-center gap-1"><CalendarIcon className="h-3.5 w-3.5" /> Implementação</Label>
+              <Label className="flex items-center gap-1"><CalendarIcon className="h-3.5 w-3.5" /> {t('controlesAuditorias.cdlgFieldImplementacao')}</Label>
               <Input type="date" value={formData.data_implementacao} onChange={(e) => update({ data_implementacao: e.target.value })} />
             </div>
             <div>
-              <Label className="flex items-center gap-1"><CalendarIcon className="h-3.5 w-3.5" /> Próxima Avaliação</Label>
+              <Label className="flex items-center gap-1"><CalendarIcon className="h-3.5 w-3.5" /> {t('controlesAuditorias.cdlgFieldProximaAvaliacao')}</Label>
               <Input type="date" value={formData.proxima_avaliacao} onChange={(e) => update({ proxima_avaliacao: e.target.value })} />
             </div>
           </div>
@@ -305,46 +307,46 @@ export default function ControleDialog({ open, onOpenChange, controle, categoria
       ),
     },
     {
-      id: 'responsabilidade', label: 'Responsabilidade', icon: Settings2, state: respState, hint: 'Responsável',
+      id: 'responsabilidade', label: t('controlesAuditorias.cdlgTabResp'), icon: Settings2, state: respState, hint: t('controlesAuditorias.cdlgTabRespHint'),
       content: (
         <div className="space-y-5 max-w-2xl">
           <div>
             <Label className="flex items-center gap-1">
-              Responsável
-              <FieldHelpTooltip content="Pessoa accountable pela execução e revisão deste controle." />
+              {t('controlesAuditorias.cdlgFieldResponsavel')}
+              <FieldHelpTooltip content={t('controlesAuditorias.cdlgFieldResponsavelHelp')} />
             </Label>
             <UserSelect
               value={formData.responsavel_id}
               onValueChange={(v) => update({ responsavel_id: v })}
-              placeholder="Selecionar responsável..."
+              placeholder={t('controlesAuditorias.cdlgFieldResponsavelPlaceholder')}
             />
             <p className="text-xs text-muted-foreground mt-2">
-              O responsável receberá notificação sempre que for designado pela primeira vez.
+              {t('controlesAuditorias.cdlgResponsavelHint')}
             </p>
           </div>
         </div>
       ),
     },
     {
-      id: 'vinculacoes', label: 'Vinculações', icon: Link2, state: vincState, hint: 'Risco e auditorias',
+      id: 'vinculacoes', label: t('controlesAuditorias.cdlgTabVinc'), icon: Link2, state: vincState, hint: t('controlesAuditorias.cdlgTabVincHint'),
       content: (
         <div className="space-y-5 max-w-3xl">
           <div>
             <Label className="flex items-center gap-1">
-              Risco Relacionado
-              <FieldHelpTooltip content="Risco que este controle ajuda a mitigar." />
+              {t('controlesAuditorias.cdlgFieldRisco')}
+              <FieldHelpTooltip content={t('controlesAuditorias.cdlgFieldRiscoHelp')} />
             </Label>
-            <RiscoSelect value={formData.risco_id} onValueChange={(v) => update({ risco_id: v })} placeholder="Nenhum risco" />
+            <RiscoSelect value={formData.risco_id} onValueChange={(v) => update({ risco_id: v })} placeholder={t('controlesAuditorias.cdlgFieldRiscoPlaceholder')} />
           </div>
           <div>
             <Label className="flex items-center gap-1">
-              Auditorias Relacionadas
-              <FieldHelpTooltip content="Auditorias onde este controle será testado/avaliado." />
+              {t('controlesAuditorias.cdlgFieldAuditorias')}
+              <FieldHelpTooltip content={t('controlesAuditorias.cdlgFieldAuditoriasHelp')} />
             </Label>
             <AuditoriasMultiSelect
               value={formData.auditorias_ids}
               onValueChange={(v) => update({ auditorias_ids: v })}
-              placeholder="Nenhuma auditoria selecionada"
+              placeholder={t('controlesAuditorias.cdlgFieldAuditoriasPlaceholder')}
             />
           </div>
         </div>
@@ -353,15 +355,15 @@ export default function ControleDialog({ open, onOpenChange, controle, categoria
   ], [formData, categorias, identState, classifState, respState, vincState]);
 
   const summary = (
-    <WizardSummaryCard title="Resumo do Controle">
-      <WizardSummaryRow label="Nome" value={formData.nome || <span className="text-muted-foreground italic">Sem nome</span>} highlight />
-      <WizardSummaryRow label="Tipo" value={<span>{formatStatus(formData.tipo)}</span>} />
+    <WizardSummaryCard title={t('controlesAuditorias.cdlgSummaryTitle')}>
+      <WizardSummaryRow label={t('controlesAuditorias.cdlgSummaryNome')} value={formData.nome || <span className="text-muted-foreground italic">{t('controlesAuditorias.cdlgSummarySemNome')}</span>} highlight />
+      <WizardSummaryRow label={t('controlesAuditorias.cdlgSummaryTipo')} value={<span>{formatStatus(formData.tipo)}</span>} />
       <WizardSummaryRow
-        label="Criticidade"
+        label={t('controlesAuditorias.cdlgSummaryCriticidade')}
         value={<StatusBadge size="sm" {...resolveCriticidadeTone(formData.criticidade)}>{formatStatus(formData.criticidade)}</StatusBadge>}
       />
-      <WizardSummaryRow label="Status" value={<span>{formatStatus(formData.status)}</span>} />
-      <WizardSummaryRow label="Auditorias" value={formData.auditorias_ids.length} />
+      <WizardSummaryRow label={t('controlesAuditorias.cdlgSummaryStatus')} value={<span>{formatStatus(formData.status)}</span>} />
+      <WizardSummaryRow label={t('controlesAuditorias.cdlgSummaryAuditorias')} value={formData.auditorias_ids.length} />
     </WizardSummaryCard>
   );
 
@@ -369,15 +371,15 @@ export default function ControleDialog({ open, onOpenChange, controle, categoria
     <WizardDialog
       open={open}
       onOpenChange={onOpenChange}
-      title={controle ? "Editar Controle" : "Novo Controle"}
-      description="Defina identificação, classificação, responsável e vinculações."
+      title={controle ? t('controlesAuditorias.cdlgTitleEdit') : t('controlesAuditorias.cdlgTitleNew')}
+      description={t('controlesAuditorias.cdlgDescription')}
       icon={ShieldCheck}
       tabs={tabs}
       summary={summary}
       activeTab={activeTab}
       onActiveTabChange={setActiveTab}
       onSubmit={handleSubmit}
-      submitLabel={controle ? "Atualizar" : "Criar"}
+      submitLabel={controle ? t('controlesAuditorias.cdlgSubmitUpdate') : t('controlesAuditorias.cdlgSubmitCreate')}
       isSubmitting={saveControleMutation.isPending}
       submitDisabled={!formData.nome.trim() || saveControleMutation.isPending}
       isDirty={isDirty}

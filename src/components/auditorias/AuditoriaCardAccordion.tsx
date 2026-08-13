@@ -20,6 +20,7 @@ import { formatStatus } from "@/lib/text-utils";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { resolveAuditoriaStatusTone, resolveAuditoriaPrioridadeTone } from "@/lib/status-tone";
 import { formatDateOnly } from "@/lib/date-utils";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface AuditoriaCardAccordionProps {
   auditoria: any;
@@ -39,6 +40,7 @@ export function AuditoriaCardAccordion({
   onOpenControles,
   auditorNome
 }: AuditoriaCardAccordionProps) {
+  const { t } = useLanguage();
   const progressPercent = counts.itens > 0 ? Math.round((counts.itensConcluidos / counts.itens) * 100) : 0;
 
   return (
@@ -72,7 +74,7 @@ export function AuditoriaCardAccordion({
               className="h-6 px-2 text-[11px] gap-1.5"
             >
               <ClipboardList className="h-3 w-3" />
-              <span>Itens</span>
+              <span>{t('controlesAuditorias.acaItens')}</span>
               <StatusBadge size="sm" tone="neutral" className="ml-1">
                 {counts.itensConcluidos}/{counts.itens}
               </StatusBadge>
@@ -110,15 +112,15 @@ export function AuditoriaCardAccordion({
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={onEdit}>
                   <Edit className="h-4 w-4 mr-2" />
-                  Editar
+                  {t('controlesAuditorias.acaEditar')}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={onOpenControles}>
                   <ClipboardList className="h-4 w-4 mr-2" />
-                  Gerenciar Itens
+                  {t('controlesAuditorias.acaGerenciarItens')}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive">
                   <Trash2 className="h-4 w-4 mr-2" />
-                  Excluir
+                  {t('controlesAuditorias.acaExcluir')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

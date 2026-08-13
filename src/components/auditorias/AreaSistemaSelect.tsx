@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Building, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { formatStatus } from '@/lib/text-utils';
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface AreaSistema {
   id: string;
@@ -32,8 +33,9 @@ export function AreaSistemaSelect({
   auditoriaId,
   value,
   onValueChange,
-  placeholder = "Selecionar área/sistema...",
+  placeholder,
 }: AreaSistemaSelectProps) {
+  const { t } = useLanguage();
   const { empresaId } = useEmpresaId();
   const [areas, setAreas] = useState<AreaSistema[]>([]);
   const [loading, setLoading] = useState(false);
@@ -85,10 +87,10 @@ export function AreaSistemaSelect({
       onValueChange(data.id);
       setNewAreaNome("");
       setIsAdding(false);
-      toast.success("Área/sistema criado com sucesso");
+      toast.success(t("controlesAuditorias.assToastCreated"));
     } catch (error: any) {
       console.error("Erro ao criar área:", error);
-      toast.error("Erro ao criar área/sistema");
+      toast.error(t("controlesAuditorias.assToastError"));
     }
   };
 
@@ -96,17 +98,17 @@ export function AreaSistemaSelect({
     <div className="space-y-2">
       <Select value={value || "_none"} onValueChange={(v) => onValueChange(v === "_none" ? "" : v)}>
         <SelectTrigger className="w-full">
-          <SelectValue placeholder={placeholder}>
+          <SelectValue placeholder={placeholder ?? t("controlesAuditorias.assPlaceholder")}>
             {value && areas.find((a) => a.id === value)?.nome}
           </SelectValue>
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="_none">
-            <span className="text-muted-foreground">Nenhum</span>
+            <span className="text-muted-foreground">{t("controlesAuditorias.assNenhum")}</span>
           </SelectItem>
           {loading ? (
             <SelectItem value="_loading" disabled>
-              Carregando...
+              {t("controlesAuditorias.assLoading")}
             </SelectItem>
           ) : (
             areas.map((area) => (
@@ -129,15 +131,15 @@ export function AreaSistemaSelect({
           <Input
             value={newAreaNome}
             onChange={(e) => setNewAreaNome(e.target.value)}
-            placeholder="Nome da nova área/sistema"
+            placeholder={t("controlesAuditorias.assNomePlaceholder")}
             className="flex-1"
             onKeyDown={(e) => e.key === "Enter" && handleAddArea()}
           />
           <Button size="sm" onClick={handleAddArea} disabled={!newAreaNome.trim()}>
-            Adicionar
+            {t("controlesAuditorias.assBtnAdicionar")}
           </Button>
           <Button size="sm" variant="outline" onClick={() => setIsAdding(false)}>
-            Cancelar
+            {t("controlesAuditorias.assBtnCancelar")}
           </Button>
         </div>
       ) : (
@@ -149,7 +151,7 @@ export function AreaSistemaSelect({
           onClick={() => setIsAdding(true)}
         >
           <Plus className="h-3 w-3 mr-1" />
-          Nova Área/Sistema
+          {t("controlesAuditorias.assBtnNovaArea")}
         </Button>
       )}
     </div>

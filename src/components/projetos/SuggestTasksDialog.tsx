@@ -12,6 +12,7 @@ import { useUpsertTarefa } from '@/hooks/useProjetoTarefas';
 import type { ProjetoColuna, ProjetoTarefaPrioridade } from '@/types/projetos';
 import { PRIORIDADE_LABEL } from '@/types/projetos';
 import { toast } from 'sonner';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface SuggestTasksDialogProps {
   open: boolean;
@@ -28,6 +29,7 @@ interface Sugestao {
 }
 
 export const SuggestTasksDialog: React.FC<SuggestTasksDialogProps> = ({ open, onOpenChange, projetoId, colunas }) => {
+  const { t } = useLanguage();
   const [objetivo, setObjetivo] = useState('');
   const [contextoExtra, setContextoExtra] = useState('');
   const [sugestoes, setSugestoes] = useState<Sugestao[]>([]);
@@ -37,7 +39,7 @@ export const SuggestTasksDialog: React.FC<SuggestTasksDialogProps> = ({ open, on
 
   const handleGerar = async () => {
     if (objetivo.trim().length < 5) {
-      toast.error('Descreva o objetivo (mín. 5 caracteres)');
+      toast.error(t('projetos.suggestTasks.objectiveErrorMin'));
       return;
     }
     setLoading(true);
@@ -55,7 +57,7 @@ export const SuggestTasksDialog: React.FC<SuggestTasksDialogProps> = ({ open, on
   const handleCriar = async () => {
     const primeiraColuna = colunas[0]?.id;
     if (!primeiraColuna) {
-      toast.error('Projeto sem colunas configuradas');
+      toast.error(t('projetos.suggestTasks.noColumnsError'));
       return;
     }
     const escolhidas = sugestoes.filter((_, i) => selecionadas.has(i));
@@ -69,7 +71,7 @@ export const SuggestTasksDialog: React.FC<SuggestTasksDialogProps> = ({ open, on
         estimativa_horas: s.estimativa_horas ?? null,
       });
     }
-    toast.success(`${escolhidas.length} tarefa(s) criada(s)`);
+    toast.success(t('projetos.suggestTasks.createdSuccess', { count: escolhidas.length }));
     onOpenChange(false);
     setObjetivo('');
     setContextoExtra('');
@@ -82,24 +84,24 @@ export const SuggestTasksDialog: React.FC<SuggestTasksDialogProps> = ({ open, on
       open={open}
       onOpenChange={onOpenChange}
       icon={Sparkles}
-      title="Quebrar objetivo em tarefas com IA"
-      description="A IA propõe tarefas acionáveis. Você escolhe quais criar. Consome 1 crédito."
+      title={t('projetos.suggestTasks.title')}
+      description={t('projetos.suggestTasks.description')}
       size="md"
       hideFooter
     >
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label>Objetivo</Label>
-            <Textarea value={objetivo} onChange={(e) => setObjetivo(e.target.value)} placeholder="Ex.: Implementar política de classificação de dados conforme LGPD" rows={2} />
+            <Label>{t('projetos.suggestTasks.objective')}</Label>
+            <Textarea value={objetivo} onChange={(e) => setObjetivo(e.target.value)} placeholder={t('projetos.suggestTasks.objectivePlaceholder')} rows={2} />
           </div>
           <div className="space-y-2">
-            <Label>Contexto adicional (opcional)</Label>
-            <Textarea value={contextoExtra} onChange={(e) => setContextoExtra(e.target.value)} placeholder="Restrições, prazos, stakeholders…" rows={2} />
+            <Label>{t('projetos.suggestTasks.extraContext')}</Label>
+            <Textarea value={contextoExtra} onChange={(e) => setContextoExtra(e.target.value)} placeholder={t('projetos.suggestTasks.extraContextPlaceholder')} rows={2} />
           </div>
 
           {sugestoes.length === 0 ? (
             <Button onClick={handleGerar} disabled={loading} className="w-full">
-              {loading ? <AkurisPulse size={20} /> : <><Sparkles className="h-4 w-4 mr-2" />Gerar sugestões</>}
+              {loading ? <AkurisPulse size={20} /> : <><Sparkles className="h-4 w-4 mr-2" />{t('projetos.suggestTasks.generateSuggestions')}</>}
             </Button>
           ) : (
             <div className="space-y-2 max-h-64 overflow-auto rounded-md border border-border p-3">
@@ -124,9 +126,9 @@ export const SuggestTasksDialog: React.FC<SuggestTasksDialogProps> = ({ open, on
                 </div>
               ))}
               <div className="flex gap-2 pt-2">
-                <Button variant="outline" className="flex-1" onClick={() => { setSugestoes([]); setSelecionadas(new Set()); }}>Refazer</Button>
+                <Button variant="outline" className="flex-1" onClick={() => { setSugestoes([]); setSelecionadas(new Set()); }}>{t('projetos.suggestTasks.redo')}</Button>
                 <Button className="flex-1" disabled={selecionadas.size === 0} onClick={handleCriar}>
-                  Criar {selecionadas.size} tarefa(s)
+                  {t('projetos.suggestTasks.createTasks', { count: selecionadas.size })}
                 </Button>
               </div>
             </div>

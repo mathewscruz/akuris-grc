@@ -10,6 +10,7 @@ import { Plus, Search, Mail, Eye, BarChart3, Calendar, Clock } from 'lucide-reac
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { AssessmentDialog } from './AssessmentDialog';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Assessment {
   id: string;
@@ -39,6 +40,7 @@ export function AssessmentsManager() {
   }>({ open: false });
   
   const { toast } = useToast();
+  const { t } = useLanguage();
 
   useEffect(() => {
     fetchAssessments();
@@ -91,8 +93,8 @@ export function AssessmentsManager() {
     } catch (error: any) {
       console.error('Erro ao buscar avaliações:', error);
       toast({
-        title: "Erro",
-        description: "Não foi possível carregar as avaliações.",
+        title: t('dueDiligence.assessmentsManager.errorTitle'),
+        description: t('dueDiligence.assessmentsManager.errorLoadDescription'),
         variant: "destructive",
       });
     } finally {
@@ -147,9 +149,9 @@ export function AssessmentsManager() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold">Avaliações de Fornecedores</h2>
+          <h2 className="text-2xl font-bold">{t('dueDiligence.assessmentsManager.pageTitle')}</h2>
           <p className="text-muted-foreground">
-            Gerencie e acompanhe as avaliações enviadas aos fornecedores
+            {t('dueDiligence.assessmentsManager.pageDescription')}
           </p>
         </div>
         <Button 
@@ -157,7 +159,7 @@ export function AssessmentsManager() {
           className="flex items-center gap-2"
         >
           <Plus className="h-4 w-4" />
-          Nova Avaliação
+          {t('dueDiligence.assessmentsManager.newAssessment')}
         </Button>
       </div>
 
@@ -166,7 +168,7 @@ export function AssessmentsManager() {
         <div className="relative flex-1 min-w-[300px]">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar por fornecedor, email ou template..."
+            placeholder={t('dueDiligence.assessmentsManager.searchPlaceholder')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -177,11 +179,11 @@ export function AssessmentsManager() {
           onChange={(e) => setStatusFilter(e.target.value)}
           className="px-3 py-2 border rounded-md bg-background"
         >
-          <option value="all">Todos os status</option>
-          <option value="enviado">Enviado</option>
-          <option value="em_andamento">Em Andamento</option>
-          <option value="concluido">Concluído</option>
-          <option value="expirado">Expirado</option>
+          <option value="all">{t('dueDiligence.assessmentsManager.statusAll')}</option>
+          <option value="enviado">{t('dueDiligence.assessmentsManager.statusSent')}</option>
+          <option value="em_andamento">{t('dueDiligence.assessmentsManager.statusInProgress')}</option>
+          <option value="concluido">{t('dueDiligence.assessmentsManager.statusCompleted')}</option>
+          <option value="expirado">{t('dueDiligence.assessmentsManager.statusExpired')}</option>
         </select>
       </div>
 
@@ -206,19 +208,19 @@ export function AssessmentsManager() {
                     </p>
                     
                     <p className="text-sm font-medium">
-                      Template: {assessment.template.nome}
+                      {t('dueDiligence.assessmentsManager.templateLabel', { nome: assessment.template.nome })}
                     </p>
 
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
                       <div className="flex items-center gap-1">
                         <Mail className="h-4 w-4" />
-                        Enviado em {new Date(assessment.data_envio).toLocaleDateString('pt-BR')}
+                        {t('dueDiligence.assessmentsManager.sentOn', { data: new Date(assessment.data_envio).toLocaleDateString('pt-BR') })}
                       </div>
                       
                       {assessment.data_conclusao && (
                         <div className="flex items-center gap-1">
                           <Calendar className="h-4 w-4" />
-                          Concluído em {new Date(assessment.data_conclusao).toLocaleDateString('pt-BR')}
+                          {t('dueDiligence.assessmentsManager.completedOn', { data: new Date(assessment.data_conclusao).toLocaleDateString('pt-BR') })}
                         </div>
                       )}
                       
@@ -226,7 +228,7 @@ export function AssessmentsManager() {
                         <div className="flex items-center gap-1">
                           <BarChart3 className="h-4 w-4" />
                           <span className={`font-medium ${getScoreColor(assessment.score_final)}`}>
-                            Score: {assessment.score_final.toFixed(1)}%
+                            {t('dueDiligence.assessmentsManager.scoreLabel', { score: assessment.score_final.toFixed(1) })}
                           </span>
                         </div>
                       )}
@@ -244,7 +246,7 @@ export function AssessmentsManager() {
                       })}
                     >
                       <Eye className="h-4 w-4 mr-1" />
-                      Visualizar
+                      {t('dueDiligence.assessmentsManager.view')}
                     </Button>
                   </div>
                 </div>
@@ -258,14 +260,14 @@ export function AssessmentsManager() {
             <Mail className="h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">
               {searchTerm || statusFilter !== 'all' 
-                ? 'Nenhuma avaliação encontrada' 
-                : 'Nenhuma avaliação criada'
+                ? t('dueDiligence.assessmentsManager.emptyFilteredTitle')
+                : t('dueDiligence.assessmentsManager.emptyTitle')
               }
             </h3>
             <p className="text-muted-foreground text-center mb-4">
               {searchTerm || statusFilter !== 'all'
-                ? 'Tente ajustar os filtros de busca'
-                : 'Crie sua primeira avaliação para começar a avaliar fornecedores'
+                ? t('dueDiligence.assessmentsManager.emptyFilteredDescription')
+                : t('dueDiligence.assessmentsManager.emptyDescription')
               }
             </p>
             {!searchTerm && statusFilter === 'all' && (
@@ -274,7 +276,7 @@ export function AssessmentsManager() {
                 className="flex items-center gap-2"
               >
                 <Plus className="h-4 w-4" />
-                Criar Primeira Avaliação
+                {t('dueDiligence.assessmentsManager.createFirst')}
               </Button>
             )}
           </CardContent>
