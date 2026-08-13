@@ -30,6 +30,7 @@ import { AkurisAIIcon } from '@/components/icons';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
 import { EmailPreview } from './EmailPreview';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { AiCostHint } from '@/components/ui/ai-cost-hint';
@@ -51,6 +52,7 @@ interface Props {
 const stripTestePrefix = (value: string) => value.replace(/\[\s*teste\s*\]\s*/gi, '').trim();
 
 export function EmailCampanhaEditor({ open, onOpenChange, campanha, onSaved }: Props) {
+  const { t } = useLanguage();
   const { profile } = useAuth();
   const [id, setId] = useState<string | null>(null);
   const [assunto, setAssunto] = useState('');
@@ -81,7 +83,7 @@ export function EmailCampanhaEditor({ open, onOpenChange, campanha, onSaved }: P
 
   const handleGenerate = async () => {
     if (!aiPrompt.trim()) {
-      toast.error('Descreva o que a IA deve criar');
+      toast.error(t('configGeral.emailCampanhaEditor.toastPromptRequired'));
       return;
     }
     setGenerating(true);
@@ -94,12 +96,12 @@ export function EmailCampanhaEditor({ open, onOpenChange, campanha, onSaved }: P
       setConteudoHtml((data as any).html || '');
       if ((data as any).imageUrl) setImagemUrl((data as any).imageUrl);
       if (aiIncludeSubject && (data as any).subject) setAssunto(stripTestePrefix((data as any).subject));
-      toast.success('Conteúdo gerado pela IA');
+      toast.success(t('configGeral.emailCampanhaEditor.toastGenerated'));
     } catch (err: any) {
       logger.error('Erro ao gerar conteúdo', err);
       const msg = err?.message?.includes('402') || err?.context?.status === 402
-        ? 'Créditos da IA esgotados. Adicione créditos no workspace.'
-        : err?.message || 'Não foi possível gerar o conteúdo';
+        ? t('configGeral.emailCampanhaEditor.toastCreditsExhausted')
+        : err?.message || t('configGeral.emailCampanhaEditor.toastGenerateError');
       toast.error(msg);
     } finally {
       setGenerating(false);
@@ -110,7 +112,7 @@ export function EmailCampanhaEditor({ open, onOpenChange, campanha, onSaved }: P
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) {
-      toast.error('Selecione um arquivo de imagem');
+      toast.error(t('configGeral.emailCampanhaEditor.toastSelectImage'));
       return;
     }
     setUploading(true);
@@ -124,10 +126,10 @@ export function EmailCampanhaEditor({ open, onOpenChange, campanha, onSaved }: P
       if (error) throw error;
       const { data } = supabase.storage.from('email-assets').getPublicUrl(path);
       setImagemUrl(data.publicUrl);
-      toast.success('Imagem enviada');
+      toast.success(t('configGeral.emailCampanhaEditor.toastImageUploaded'));
     } catch (err: any) {
       logger.error('Erro ao subir imagem', err);
-      toast.error('Não foi possível enviar a imagem');
+      toast.error(t('configGeral.emailCampanhaEditor.toastImageUploadError'));
     } finally {
       setUploading(false);
       e.target.value = '';
@@ -136,11 +138,11 @@ export function EmailCampanhaEditor({ open, onOpenChange, campanha, onSaved }: P
 
   const validate = () => {
     if (!assunto.trim()) {
-      toast.error('Informe o assunto');
+      toast.error(t('configGeral.emailCampanhaEditor.toastSubjectRequired'));
       return false;
     }
     if (!conteudoHtml.trim()) {
-      toast.error('Conteúdo do e-mail está vazio');
+      toast.error(t('configGeral.emailCampanhaEditor.toastContentRequired'));
       return false;
     }
     return true;
@@ -173,7 +175,7 @@ export function EmailCampanhaEditor({ open, onOpenChange, campanha, onSaved }: P
       return data.id as string;
     } catch (err: any) {
       logger.error('Erro ao salvar campanha', err);
-      toast.error('Não foi possível salvar a campanha');
+      toast.error(t('configGeral.emailCampanhaEditor.toastDraftSaveError'));
       return null;
     } finally {
       setSaving(false);
@@ -183,7 +185,7 @@ export function EmailCampanhaEditor({ open, onOpenChange, campanha, onSaved }: P
   const handleSaveDraft = async () => {
     const savedId = await persist('rascunho');
     if (savedId) {
-      toast.success('Rascunho salvo');
+      toast.success(t('configGeral.emailCampanhaEditor.toastDraftSaved'));
       onSaved();
     }
   };
@@ -201,7 +203,7 @@ export function EmailCampanhaEditor({ open, onOpenChange, campanha, onSaved }: P
       .not('email', 'is', null);
     if (error) {
       logger.error('Erro contar destinatários', error);
-      toast.error('Erro ao contar destinatários');
+      toast.error(t('configGeral.emailCampanhaEditor.toastCountRecipientsError'));
       return;
     }
     setActiveUserCount(count ?? 0);
@@ -218,13 +220,13 @@ export function EmailCampanhaEditor({ open, onOpenChange, campanha, onSaved }: P
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
       const { sent, failed } = (data as any) || {};
-      toast.success(`Campanha enviada: ${sent ?? 0} entregues, ${failed ?? 0} falhas`);
+      toast.success(t('configGeral.emailCampanhaEditor.toastSendSuccess').replace('{sent}', String(sent ?? 0)).replace('{failed}', String(failed ?? 0)));
       setConfirmSend(false);
       onSaved();
       onOpenChange(false);
     } catch (err: any) {
       logger.error('Erro ao enviar campanha', err);
-      toast.error(err?.message || 'Falha ao enviar');
+      toast.error(err?.message || t('configGeral.emailCampanhaEditor.toastSendError'));
     } finally {
       setSending(false);
     }
@@ -243,14 +245,14 @@ export function EmailCampanhaEditor({ open, onOpenChange, campanha, onSaved }: P
       if ((data as any)?.error) throw new Error((data as any).error);
       const { sent, failed } = (data as any) || {};
       if (sent > 0) {
-        toast.success(`Teste enviado para ${profile?.email ?? 'seu e-mail'}`);
+        toast.success(profile?.email ? t('configGeral.emailCampanhaEditor.toastTestSentSuccess').replace('{email}', profile.email) : t('configGeral.emailCampanhaEditor.toastTestSentDefault'));
       } else {
-        toast.error(`Falha ao enviar teste${failed ? ` (${failed} erro)` : ''}`);
+        toast.error(t('configGeral.emailCampanhaEditor.toastTestSentFailure').replace('{detail}', failed ? ` (${failed} erro)` : ''));
       }
       onSaved();
     } catch (err: any) {
       logger.error('Erro ao enviar teste', err);
-      toast.error(err?.message || 'Falha ao enviar teste');
+      toast.error(err?.message || t('configGeral.emailCampanhaEditor.toastTestSentErrorGeneric'));
     } finally {
       setSendingTest(false);
     }
@@ -261,9 +263,9 @@ export function EmailCampanhaEditor({ open, onOpenChange, campanha, onSaved }: P
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-6xl">
           <DialogHeader>
-            <DialogTitle>{id ? 'Editar campanha' : 'Nova campanha de e-mail'}</DialogTitle>
+            <DialogTitle>{id ? t('configGeral.emailCampanhaEditor.titleEdit') : t('configGeral.emailCampanhaEditor.titleNew')}</DialogTitle>
             <DialogDescription>
-              Crie um e-mail informativo para todos os usuários ativos. O cabeçalho e rodapé Akuris são aplicados automaticamente.
+              {t('configGeral.emailCampanhaEditor.description')}
             </DialogDescription>
           </DialogHeader>
 
@@ -273,11 +275,11 @@ export function EmailCampanhaEditor({ open, onOpenChange, campanha, onSaved }: P
               <div className="rounded-lg border border-border bg-card/50 p-4 space-y-3">
                 <div className="flex items-center gap-2 text-sm font-semibold">
                   <AkurisAIIcon className="h-4 w-4 text-primary" />
-                  Gerar com IA
-                  <AiCostHint className="ml-auto" action="cada geração" />
+                  {t('configGeral.emailCampanhaEditor.aiGenerateTitle')}
+                  <AiCostHint className="ml-auto" action={t('configGeral.emailCampanhaEditor.aiGenerateActionLabel')} />
                 </div>
                 <Textarea
-                  placeholder='Ex.: "Crie um e-mail de marketing falando sobre o módulo de Gestão de Riscos, destacando os diferenciais e o que faz a Akuris ser superior aos concorrentes."'
+                  placeholder={t('configGeral.emailCampanhaEditor.aiPromptPlaceholder')}
                   value={aiPrompt}
                   onChange={(e) => setAiPrompt(e.target.value)}
                   rows={3}
@@ -285,35 +287,35 @@ export function EmailCampanhaEditor({ open, onOpenChange, campanha, onSaved }: P
                 <div className="flex flex-wrap items-center gap-4 text-sm">
                   <label className="flex items-center gap-2 cursor-pointer">
                     <Checkbox checked={aiIncludeImage} onCheckedChange={(v) => setAiIncludeImage(Boolean(v))} />
-                    Gerar imagem ilustrativa
+                    {t('configGeral.emailCampanhaEditor.checkboxGenerateImage')}
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <Checkbox checked={aiIncludeSubject} onCheckedChange={(v) => setAiIncludeSubject(Boolean(v))} />
-                    Sugerir assunto
+                    {t('configGeral.emailCampanhaEditor.checkboxSuggestSubject')}
                   </label>
                   <Button onClick={handleGenerate} disabled={generating} size="sm" className="ml-auto">
                     {generating ? <AkurisPulse size={16} /> : <AkurisAIIcon className="h-4 w-4" />}
-                    Gerar
+                    {t('configGeral.emailCampanhaEditor.generateButton')}
                   </Button>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="assunto">Assunto</Label>
+                <Label htmlFor="assunto">{t('configGeral.emailCampanhaEditor.subjectLabel')}</Label>
                 <Input
                   id="assunto"
                   value={assunto}
                   onChange={(e) => setAssunto(e.target.value)}
-                  placeholder="Assunto do e-mail"
+                  placeholder={t('configGeral.emailCampanhaEditor.subjectPlaceholder')}
                   maxLength={150}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label>Imagem ilustrativa (opcional)</Label>
+                <Label>{t('configGeral.emailCampanhaEditor.imageLabel')}</Label>
                 {imagemUrl ? (
                   <div className="relative inline-block">
-                    <img src={imagemUrl} alt="Imagem do e-mail" className="max-h-40 rounded-md border border-border" />
+                    <img src={imagemUrl} alt={t('configGeral.emailCampanhaEditor.imageAlt')} className="max-h-40 rounded-md border border-border" />
                     <Button
                       type="button"
                       size="icon"
@@ -331,26 +333,26 @@ export function EmailCampanhaEditor({ open, onOpenChange, campanha, onSaved }: P
                       className="inline-flex items-center gap-2 cursor-pointer rounded-md border border-dashed border-border px-3 py-2 text-sm hover:bg-muted/50"
                     >
                       {uploading ? <AkurisPulse size={16} /> : <Upload className="h-4 w-4" />}
-                      Enviar imagem manualmente
+                      {t('configGeral.emailCampanhaEditor.uploadManualLabel')}
                     </Label>
                     <Input id="upload-img" type="file" accept="image/*" onChange={handleUpload} className="hidden" disabled={uploading} />
-                    <span className="text-xs text-muted-foreground">ou use a IA acima</span>
+                    <span className="text-xs text-muted-foreground">{t('configGeral.emailCampanhaEditor.uploadOrAiHint')}</span>
                   </div>
                 )}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="conteudo">Conteúdo do e-mail (HTML)</Label>
+                <Label htmlFor="conteudo">{t('configGeral.emailCampanhaEditor.contentLabel')}</Label>
                 <Textarea
                   id="conteudo"
                   value={conteudoHtml}
                   onChange={(e) => setConteudoHtml(e.target.value)}
-                  placeholder="<h2>Título</h2><p>Texto…</p>"
+                  placeholder={t('configGeral.emailCampanhaEditor.contentPlaceholder')}
                   rows={14}
                   className="font-mono text-xs"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Apenas o conteúdo principal. O cabeçalho com logo Akuris e o rodapé são aplicados automaticamente.
+                  {t('configGeral.emailCampanhaEditor.contentHint')}
                 </p>
               </div>
             </div>
@@ -359,30 +361,30 @@ export function EmailCampanhaEditor({ open, onOpenChange, campanha, onSaved }: P
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm font-semibold">
                 <Eye className="h-4 w-4 text-primary" />
-                Pré-visualização
+                {t('configGeral.emailCampanhaEditor.previewLabel')}
               </div>
               <EmailPreview assunto={assunto} conteudoHtml={conteudoHtml} imagemUrl={imagemUrl} />
             </div>
           </div>
 
           <DialogFooter className="flex-wrap gap-2">
-            <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
+            <Button variant="ghost" onClick={() => onOpenChange(false)}>{t('configGeral.emailCampanhaEditor.cancelButton')}</Button>
             <Button variant="outline" onClick={handleSaveDraft} disabled={saving || sending || sendingTest}>
               {saving ? <AkurisPulse size={16} /> : <Save className="h-4 w-4" />}
-              Salvar rascunho
+              {t('configGeral.emailCampanhaEditor.saveDraftButton')}
             </Button>
             <Button
               variant="secondary"
               onClick={handleSendTest}
               disabled={saving || sending || sendingTest}
-              title={profile?.email ? `Enviar somente para ${profile.email}` : 'Enviar somente para você'}
+              title={profile?.email ? t('configGeral.emailCampanhaEditor.sendTestTitleWithEmail').replace('{email}', profile.email) : t('configGeral.emailCampanhaEditor.sendTestTitleDefault')}
             >
               {sendingTest ? <AkurisPulse size={16} /> : <MailCheck className="h-4 w-4" />}
-              Enviar teste para mim
+              {t('configGeral.emailCampanhaEditor.sendTestButton')}
             </Button>
             <Button onClick={openConfirmSend} disabled={saving || sending || sendingTest}>
               <Send className="h-4 w-4" />
-              Enviar para todos
+              {t('configGeral.emailCampanhaEditor.sendAllButton')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -391,18 +393,18 @@ export function EmailCampanhaEditor({ open, onOpenChange, campanha, onSaved }: P
       <AlertDialog open={confirmSend} onOpenChange={setConfirmSend}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Enviar campanha para todos os usuários?</AlertDialogTitle>
+            <AlertDialogTitle>{t('configGeral.emailCampanhaEditor.confirmSendTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
               {activeUserCount === null
-                ? 'Calculando destinatários…'
-                : `Esta campanha será enviada para ${activeUserCount} usuário(s) ativo(s). Esta ação não pode ser desfeita.`}
+                ? t('configGeral.emailCampanhaEditor.confirmSendCalculating')
+                : t('configGeral.emailCampanhaEditor.confirmSendDescription').replace('{count}', String(activeUserCount))}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={sending}>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={sending}>{t('configGeral.emailCampanhaEditor.confirmSendCancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirmSend} disabled={sending || !activeUserCount}>
               {sending ? <AkurisPulse size={16} /> : <Send className="h-4 w-4" />}
-              Confirmar envio
+              {t('configGeral.emailCampanhaEditor.confirmSendAction')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -1,5 +1,5 @@
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -33,9 +33,9 @@ import { AreaSistemaSelect } from "./AreaSistemaSelect";
 import { useIntegrationNotify } from "@/hooks/useIntegrationNotify";
 import { logger } from "@/lib/logger";
 
-const formSchema = z.object({
-  codigo: z.string().min(1, "Código é obrigatório"),
-  titulo: z.string().min(1, "Título é obrigatório"),
+const makeFormSchema = (t: (key: string) => string) => z.object({
+  codigo: z.string().min(1, t("govDialogs.itemAuditoriaFormDialog.zodCodigoRequired")),
+  titulo: z.string().min(1, t("govDialogs.itemAuditoriaFormDialog.zodTituloRequired")),
   descricao: z.string().optional(),
   responsavel_id: z.string().optional(),
   prazo: z.string().optional(),
@@ -46,7 +46,7 @@ const formSchema = z.object({
   area_sistema_id: z.string().optional(),
 });
 
-type FormData = z.infer<typeof formSchema>;
+type FormData = z.infer<ReturnType<typeof makeFormSchema>>;
 
 interface ItemAuditoriaFormDialogProps {
   open: boolean;
@@ -69,6 +69,7 @@ export function ItemAuditoriaFormDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { data: usuarios } = useUsuariosEmpresa();
   const { notify } = useIntegrationNotify();
+  const formSchema = useMemo(() => makeFormSchema(t), [t]);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -159,12 +160,12 @@ export function ItemAuditoriaFormDialog({
           .eq("id", item.id);
 
         if (error) throw error;
-        toast.success("Item atualizado com sucesso");
+        toast.success(t("govDialogs.itemAuditoriaFormDialog.toastUpdated"));
       } else {
         const { error } = await supabase.from("auditoria_itens").insert(payload);
 
         if (error) throw error;
-        toast.success("Item adicionado com sucesso");
+        toast.success(t("govDialogs.itemAuditoriaFormDialog.toastCreated"));
       }
 
       // Enviar notificação se responsável foi definido/alterado
@@ -205,7 +206,7 @@ export function ItemAuditoriaFormDialog({
       onOpenChange(false);
     } catch (error: any) {
       logger.error("Erro ao salvar item de auditoria", { error: error?.message, module: 'auditorias' });
-      toast.error(error.message || "Erro ao salvar item");
+      toast.error(error.message || t("govDialogs.itemAuditoriaFormDialog.toastSaveError"));
     } finally {
       setIsSubmitting(false);
     }
@@ -215,12 +216,12 @@ export function ItemAuditoriaFormDialog({
     <DialogShell
         open={open}
         onOpenChange={onOpenChange}
-        title={`${item?.id ? "Editar" : "Novo"} Item de Auditoria`}
+        title={item?.id ? t("govDialogs.itemAuditoriaFormDialog.titleEdit") : t("govDialogs.itemAuditoriaFormDialog.titleNew")}
         icon={ListChecks}
         size="lg"
         onSubmit={form.handleSubmit(onSubmit)}
         isSubmitting={isSubmitting}
-        submitLabel={item ? "Salvar Alterações" : "Adicionar Item"}
+        submitLabel={item ? t("govDialogs.itemAuditoriaFormDialog.submitUpdate") : t("govDialogs.itemAuditoriaFormDialog.submitCreate")}
       >
 <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -230,16 +231,16 @@ export function ItemAuditoriaFormDialog({
               name="controle_vinculado_id"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Vincular a Controle Existente (opcional)</FormLabel>
+                  <FormLabel>{t("govDialogs.itemAuditoriaFormDialog.fieldVincularControle")}</FormLabel>
                   <FormControl>
                     <ControleSelect
                       value={field.value}
                       onValueChange={handleControleChange}
-                      placeholder="Selecionar controle..."
+                      placeholder={t("govDialogs.itemAuditoriaFormDialog.vincularControlePlaceholder")}
                     />
                   </FormControl>
                   <FormDescription>
-                    Ao vincular, o título e descrição serão preenchidos automaticamente
+                    {t("govDialogs.itemAuditoriaFormDialog.vincularControleDescription")}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -252,7 +253,7 @@ export function ItemAuditoriaFormDialog({
                 name="codigo"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Código *</FormLabel>
+                    <FormLabel>{t("govDialogs.itemAuditoriaFormDialog.fieldCodigo")}</FormLabel>
                     <FormControl>
                       <Input placeholder="Ex: CT-001" {...field} />
                     </FormControl>
@@ -266,7 +267,7 @@ export function ItemAuditoriaFormDialog({
                 name="prioridade"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Prioridade</FormLabel>
+                    <FormLabel>{t("govDialogs.itemAuditoriaFormDialog.fieldPrioridade")}</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>

@@ -1,0 +1,54 @@
+export const govDialogs = {
+  pt: {
+    govDialogs: {
+      itemAuditoriaFormDialog: {
+        zodCodigoRequired: 'Código é obrigatório',
+        zodTituloRequired: 'Título é obrigatório',
+        toastUpdated: 'Item atualizado com sucesso',
+        toastCreated: 'Item adicionado com sucesso',
+        toastSaveError: 'Erro ao salvar item',
+        titleEdit: 'Editar Item de Auditoria',
+        titleNew: 'Novo Item de Auditoria',
+        submitUpdate: 'Salvar Alterações',
+        submitCreate: 'Adicionar Item',
+        fieldVincularControle: 'Vincular a Controle Existente (opcional)',
+        vincularControlePlaceholder: 'Selecionar controle...',
+        vincularControleDescription: 'Ao vincular, o título e descrição serão preenchidos automaticamente',
+        fieldCodigo: 'Código *',
+        fieldPrioridade: 'Prioridade',
+      },
+      controleDetalheDialog: {
+        usuarioFallback: 'Usuário',
+      },
+      itemAuditoriaDetalheDialog: {
+        usuarioFallback: 'Usuário',
+      },
+    },
+  },
+  en: {
+    govDialogs: {
+      itemAuditoriaFormDialog: {
+        zodCodigoRequired: 'Code is required',
+        zodTituloRequired: 'Title is required',
+        toastUpdated: 'Item updated successfully',
+        toastCreated: 'Item added successfully',
+        toastSaveError: 'Error saving item',
+        titleEdit: 'Edit Audit Item',
+        titleNew: 'New Audit Item',
+        submitUpdate: 'Save Changes',
+        submitCreate: 'Add Item',
+        fieldVincularControle: 'Link to Existing Control (optional)',
+        vincularControlePlaceholder: 'Select control...',
+        vincularControleDescription: 'When linked, the title and description will be filled in automatically',
+        fieldCodigo: 'Code *',
+        fieldPrioridade: 'Priority',
+      },
+      controleDetalheDialog: {
+        usuarioFallback: 'User',
+      },
+      itemAuditoriaDetalheDialog: {
+        usuarioFallback: 'User',
+      },
+    },
+  },
+};

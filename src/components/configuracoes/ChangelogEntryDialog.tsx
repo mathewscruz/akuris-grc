@@ -10,6 +10,7 @@ import { AkurisAIIcon } from '@/components/icons';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export type ChangelogItemType = 'feature' | 'improvement' | 'fix';
 
@@ -32,17 +33,17 @@ interface Props {
   onSaved: () => void;
 }
 
-const TYPE_OPTIONS: { value: ChangelogItemType; label: string }[] = [
-  { value: 'feature', label: 'Novo' },
-  { value: 'improvement', label: 'Melhoria' },
-  { value: 'fix', label: 'Correção' },
-];
-
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
 
 export function ChangelogEntryDialog({ open, onOpenChange, entry, onSaved }: Props) {
+  const { t } = useLanguage();
+  const TYPE_OPTIONS: { value: ChangelogItemType; label: string }[] = [
+    { value: 'feature', label: t('configPlanos.changelogDialog.typeFeature') },
+    { value: 'improvement', label: t('configPlanos.changelogDialog.typeImprovement') },
+    { value: 'fix', label: t('configPlanos.changelogDialog.typeFix') },
+  ];
   const [version, setVersion] = useState('');
   const [releaseDate, setReleaseDate] = useState(todayIso());
   const [items, setItems] = useState<ChangelogItem[]>([{ type: 'feature', text: '' }]);
@@ -64,18 +65,18 @@ export function ChangelogEntryDialog({ open, onOpenChange, entry, onSaved }: Pro
   const handleSave = async () => {
     const cleanVersion = version.trim();
     if (!cleanVersion) {
-      toast.error('Informe a versão (ex: v3.0)');
+      toast.error(t('configPlanos.changelogDialog.toastVersionRequired'));
       return;
     }
     if (!releaseDate) {
-      toast.error('Informe a data de lançamento');
+      toast.error(t('configPlanos.changelogDialog.toastDateRequired'));
       return;
     }
     const cleanItems = items
       .map((i) => ({ type: i.type, text: i.text.trim() }))
       .filter((i) => i.text.length > 0);
     if (cleanItems.length === 0) {
-      toast.error('Adicione ao menos um item');
+      toast.error(t('configPlanos.changelogDialog.toastItemRequired'));
       return;
     }
 
@@ -94,12 +95,12 @@ export function ChangelogEntryDialog({ open, onOpenChange, entry, onSaved }: Pro
       const { error } = await query;
       if (error) throw error;
 
-      toast.success(entry?.id ? 'Versão atualizada' : 'Versão publicada');
+      toast.success(entry?.id ? t('configPlanos.changelogDialog.toastUpdated') : t('configPlanos.changelogDialog.toastCreated'));
       onSaved();
       onOpenChange(false);
     } catch (err) {
       logger.error('Erro ao salvar changelog', err as Error);
-      toast.error('Não foi possível salvar a versão');
+      toast.error(t('configPlanos.changelogDialog.toastSaveError'));
     } finally {
       setSaving(false);
     }
@@ -110,16 +111,16 @@ export function ChangelogEntryDialog({ open, onOpenChange, entry, onSaved }: Pro
       open={open}
       onOpenChange={onOpenChange}
       icon={AkurisAIIcon as any}
-      title={entry?.id ? 'Editar versão' : 'Nova versão'}
+      title={entry?.id ? t('configPlanos.changelogDialog.titleEdit') : t('configPlanos.changelogDialog.titleNew')}
       size="md"
       onSubmit={handleSave}
-      submitLabel="Salvar versão"
+      submitLabel={t('configPlanos.changelogDialog.submitLabel')}
       isSubmitting={saving}
     >
         <div className="space-y-4 py-2">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="version">Versão</Label>
+              <Label htmlFor="version">{t('configPlanos.changelogDialog.fieldVersion')}</Label>
               <Input
                 id="version"
                 placeholder="v3.0"
@@ -128,7 +129,7 @@ export function ChangelogEntryDialog({ open, onOpenChange, entry, onSaved }: Pro
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="release_date">Data de lançamento</Label>
+              <Label htmlFor="release_date">{t('configPlanos.changelogDialog.fieldReleaseDate')}</Label>
               <Input
                 id="release_date"
                 type="date"
@@ -140,9 +141,9 @@ export function ChangelogEntryDialog({ open, onOpenChange, entry, onSaved }: Pro
 
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label>Itens</Label>
+              <Label>{t('configPlanos.changelogDialog.itemsLabel')}</Label>
               <Button type="button" size="sm" variant="outline" onClick={addItem}>
-                <Plus className="h-4 w-4 mr-1" /> Adicionar item
+                <Plus className="h-4 w-4 mr-1" /> {t('configPlanos.changelogDialog.addItem')}
               </Button>
             </div>
 
@@ -167,7 +168,7 @@ export function ChangelogEntryDialog({ open, onOpenChange, entry, onSaved }: Pro
                   </SelectContent>
                 </Select>
                 <Textarea
-                  placeholder="Descreva a entrega de forma clara e objetiva"
+                  placeholder={t('configPlanos.changelogDialog.itemPlaceholder')}
                   value={item.text}
                   onChange={(e) => updateItem(idx, { text: e.target.value })}
                   rows={2}
@@ -178,7 +179,7 @@ export function ChangelogEntryDialog({ open, onOpenChange, entry, onSaved }: Pro
                   size="icon"
                   onClick={() => removeItem(idx)}
                   disabled={items.length === 1}
-                  aria-label="Remover item"
+                  aria-label={t('configPlanos.changelogDialog.removeItemAria')}
                 >
                   <Trash2 className="h-4 w-4 text-destructive" />
                 </Button>

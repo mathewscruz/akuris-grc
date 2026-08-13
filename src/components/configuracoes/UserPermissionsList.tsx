@@ -8,6 +8,7 @@ import { Shield, Search, Users } from 'lucide-react';
 import { UserPermissionDialog } from './UserPermissionDialog';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { useLanguage } from '@/contexts/LanguageContext';
 interface User {
   user_id: string;
   nome: string;
@@ -23,6 +24,7 @@ interface Props {
 }
 
 export const UserPermissionsList: React.FC<Props> = ({ empresaId, selectedUserId }) => {
+  const { t } = useLanguage();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -60,7 +62,7 @@ export const UserPermissionsList: React.FC<Props> = ({ empresaId, selectedUserId
       })));
     } catch (error) {
       console.error('Error fetching users:', error);
-      toast.error('Erro ao carregar usuários');
+      toast.error(t('configPerms.usersList.errorFetch'));
     } finally {
       setLoading(false);
     }
@@ -87,10 +89,10 @@ export const UserPermissionsList: React.FC<Props> = ({ empresaId, selectedUserId
 
   const getRoleLabel = (role: string) => {
     const labels: Record<string, string> = {
-      super_admin: 'Super Admin',
-      admin: 'Admin',
-      user: 'Usuário',
-      readonly: 'Somente Leitura',
+      super_admin: t('configPerms.usersList.role.super_admin'),
+      admin: t('configPerms.usersList.role.admin'),
+      user: t('configPerms.usersList.role.user'),
+      readonly: t('configPerms.usersList.role.readonly'),
     };
     return labels[role] || role;
   };
@@ -108,7 +110,7 @@ export const UserPermissionsList: React.FC<Props> = ({ empresaId, selectedUserId
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Buscar por nome ou email..."
+          placeholder={t('configPerms.usersList.searchPlaceholder')}
           value={searchTerm}
           onChange={e => setSearchTerm(e.target.value)}
           className="pl-9"
@@ -118,7 +120,7 @@ export const UserPermissionsList: React.FC<Props> = ({ empresaId, selectedUserId
       {filteredUsers.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
           <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
-          <p>Nenhum usuário encontrado</p>
+          <p>{t('configPerms.usersList.emptyState')}</p>
         </div>
       ) : (
         <div className="border rounded-lg divide-y">
@@ -141,7 +143,7 @@ export const UserPermissionsList: React.FC<Props> = ({ empresaId, selectedUserId
                   </Badge>
                 ) : (
                   <Badge variant="outline" className="text-xs text-muted-foreground">
-                    Sem perfil
+                    {t('configPerms.usersList.noProfileBadge')}
                   </Badge>
                 )}
 
@@ -150,7 +152,7 @@ export const UserPermissionsList: React.FC<Props> = ({ empresaId, selectedUserId
                   size="sm"
                   onClick={() => { setSelectedUser(user); setDialogOpen(true); }}
                 >
-                  Gerenciar
+                  {t('configPerms.usersList.manage')}
                 </Button>
               </div>
             </div>

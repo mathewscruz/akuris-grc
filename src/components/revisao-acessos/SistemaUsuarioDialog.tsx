@@ -28,6 +28,7 @@ import { useEmpresaId } from "@/hooks/useEmpresaId";
 import { useToast } from "@/hooks/use-toast";
 import { useOptimizedQuery } from "@/hooks/useOptimizedQuery";
 import { parseDateForDB, formatDateForInput } from "@/lib/date-utils";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const usuarioSchema = z.object({
   sistema_id: z.string().min(1, "Sistema é obrigatório"),
@@ -67,6 +68,7 @@ export function SistemaUsuarioDialog({
   sistemaIdPadrao,
 }: SistemaUsuarioDialogProps) {
   const { empresaId } = useEmpresaId();
+  const { t } = useLanguage();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -383,10 +385,10 @@ export function SistemaUsuarioDialog({
               name="justificativa"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Justificativa de Acesso</FormLabel>
+                  <FormLabel>{t("revisaoAcessosComp.usuarioDialog.fieldJustificativa")}</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Motivo para concessão do acesso..."
+                      placeholder={t("revisaoAcessosComp.usuarioDialog.fieldJustificativaPlaceholder")}
                       rows={2}
                       {...field}
                     />
@@ -401,10 +403,10 @@ export function SistemaUsuarioDialog({
               name="observacoes"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Observações</FormLabel>
+                  <FormLabel>{t("revisaoAcessosComp.usuarioDialog.fieldObservacoes")}</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Observações adicionais..."
+                      placeholder={t("revisaoAcessosComp.usuarioDialog.fieldObservacoesPlaceholder")}
                       rows={2}
                       {...field}
                     />

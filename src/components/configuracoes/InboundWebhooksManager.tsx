@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { Webhook, Plus, Copy, Trash2, Send, Code } from 'lucide-react';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 interface InboundWebhook {
@@ -30,20 +31,20 @@ interface InboundWebhook {
   created_at: string;
 }
 
-const MODULOS_DESTINO = [
-  { value: 'incidentes', label: 'Incidentes de Segurança' },
-  { value: 'riscos', label: 'Riscos' },
-  { value: 'ativos', label: 'Ativos' },
-  { value: 'controles', label: 'Controles Internos' },
-  { value: 'denuncias', label: 'Denúncias' },
+const MODULOS_DESTINO_KEYS = [
+  { value: 'incidentes', key: 'incidentes' },
+  { value: 'riscos', key: 'riscos' },
+  { value: 'ativos', key: 'ativos' },
+  { value: 'controles', key: 'controles' },
+  { value: 'denuncias', key: 'denuncias' },
 ];
 
-const TIPOS_EVENTO = [
-  { value: 'siem_alert', label: 'Alerta de SIEM' },
-  { value: 'vulnerability_scan', label: 'Scan de Vulnerabilidade' },
-  { value: 'asset_discovery', label: 'Descoberta de Ativos' },
-  { value: 'compliance_finding', label: 'Achado de Compliance' },
-  { value: 'custom', label: 'Evento Customizado' },
+const TIPOS_EVENTO_KEYS = [
+  { value: 'siem_alert', key: 'siemAlert' },
+  { value: 'vulnerability_scan', key: 'vulnerabilityScan' },
+  { value: 'asset_discovery', key: 'assetDiscovery' },
+  { value: 'compliance_finding', key: 'complianceFinding' },
+  { value: 'custom', key: 'custom' },
 ];
 
 const PAYLOAD_EXAMPLES: Record<string, object> = {
@@ -94,7 +95,10 @@ function generateToken(): string {
 }
 
 export function InboundWebhooksManager() {
+  const { t } = useLanguage();
   const { empresaId } = useEmpresaId();
+  const MODULOS_DESTINO = MODULOS_DESTINO_KEYS.map(m => ({ value: m.value, label: t(`configGeral.inboundWebhooks.modulos.${m.key}`) }));
+  const TIPOS_EVENTO = TIPOS_EVENTO_KEYS.map(m => ({ value: m.value, label: t(`configGeral.inboundWebhooks.tiposEvento.${m.key}`) }));
   const [webhooks, setWebhooks] = useState<InboundWebhook[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -149,7 +153,7 @@ export function InboundWebhooksManager() {
       });
 
       if (error) throw error;
-      toast.success('Webhook criado', { description: 'Use a URL gerada para enviar eventos.' });
+      toast.success(t('configGeral.inboundWebhooks.toastCreated'), { description: t('configGeral.inboundWebhooks.toastCreatedDescription') });
       setDialogOpen(false);
       setNome('');
       setDescricao('');
@@ -157,7 +161,7 @@ export function InboundWebhooksManager() {
       setModuloDestino('');
       fetchWebhooks();
     } catch (err: any) {
-      toast.error('Erro ao criar webhook', { description: err.message });
+      toast.error(t('configGeral.inboundWebhooks.toastCreateError'), { description: err.message });
     } finally {
       setSaving(false);
     }
@@ -167,9 +171,9 @@ export function InboundWebhooksManager() {
     try {
       await supabase.from('api_inbound_webhooks').update({ ativo }).eq('id', id);
       fetchWebhooks();
-      toast.success(ativo ? 'Webhook ativado' : 'Webhook desativado');
+      toast.success(ativo ? t('configGeral.inboundWebhooks.toastActivated') : t('configGeral.inboundWebhooks.toastDeactivated'));
     } catch (err: any) {
-      toast.error('Erro ao alterar status', { description: err.message });
+      toast.error(t('configGeral.inboundWebhooks.toastToggleError'), { description: err.message });
     }
   };
 
@@ -177,12 +181,12 @@ export function InboundWebhooksManager() {
     await supabase.from('api_inbound_webhooks').delete().eq('id', id);
     setDeleteConfirm(null);
     fetchWebhooks();
-    toast.success('Webhook removido');
+    toast.success(t('configGeral.inboundWebhooks.toastDeleted'));
   };
 
   const copyUrl = (token: string) => {
     navigator.clipboard.writeText(`${baseUrl}?token=${token}`);
-    toast.info('URL copiada!');
+    toast.info(t('configGeral.inboundWebhooks.toastUrlCopied'));
   };
 
   const handleTestWebhook = async (wh: InboundWebhook) => {
@@ -197,14 +201,14 @@ export function InboundWebhooksManager() {
       });
 
       if (response.ok) {
-        toast.success('Teste enviado!', { description: `Evento de teste processado com sucesso no módulo ${wh.modulo_destino}.` });
+        toast.success(t('configGeral.inboundWebhooks.toastTestSuccess'), { description: t('configGeral.inboundWebhooks.toastTestSuccessDescription').replace('{modulo}', wh.modulo_destino) });
         fetchWebhooks();
       } else {
         const err = await response.json();
-        toast.error('Erro no teste', { description: err.error || 'Falha ao processar evento' });
+        toast.error(t('configGeral.inboundWebhooks.toastTestError'), { description: err.error || t('configGeral.inboundWebhooks.toastTestErrorDescriptionDefault') });
       }
     } catch (err: any) {
-      toast.error('Erro', { description: err.message });
+      toast.error(t('configGeral.inboundWebhooks.toastError'), { description: err.message });
     } finally {
       setTestingWebhook(null);
     }
@@ -218,13 +222,13 @@ export function InboundWebhooksManager() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold">Webhooks de Entrada</h3>
+          <h3 className="text-lg font-semibold">{t('configGeral.inboundWebhooks.title')}</h3>
           <p className="text-sm text-muted-foreground">
-            Receba eventos de sistemas externos (SIEM, scanners, etc.) e crie registros automaticamente.
+            {t('configGeral.inboundWebhooks.description')}
           </p>
         </div>
         <Button onClick={() => setDialogOpen(true)} className="gap-2">
-          <Plus className="h-4 w-4" /> Novo Webhook
+          <Plus className="h-4 w-4" /> {t('configGeral.inboundWebhooks.newButton')}
         </Button>
       </div>
 
@@ -234,9 +238,9 @@ export function InboundWebhooksManager() {
         <Card className="border-dashed">
           <CardContent className="py-10 text-center">
             <Webhook className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-            <p className="text-sm text-muted-foreground">Nenhum webhook de entrada configurado.</p>
+            <p className="text-sm text-muted-foreground">{t('configGeral.inboundWebhooks.emptyTitle')}</p>
             <p className="text-xs text-muted-foreground mt-1">
-              Configure webhooks para receber alertas de SIEM, scanners de vulnerabilidade e mais.
+              {t('configGeral.inboundWebhooks.emptyHint')}
             </p>
           </CardContent>
         </Card>
@@ -245,13 +249,13 @@ export function InboundWebhooksManager() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Destino</TableHead>
-                <TableHead>URL</TableHead>
-                <TableHead>Recebidos</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="w-[140px]">Ações</TableHead>
+                <TableHead>{t('configGeral.inboundWebhooks.tableName')}</TableHead>
+                <TableHead>{t('configGeral.inboundWebhooks.tableType')}</TableHead>
+                <TableHead>{t('configGeral.inboundWebhooks.tableDestination')}</TableHead>
+                <TableHead>{t('configGeral.inboundWebhooks.tableUrl')}</TableHead>
+                <TableHead>{t('configGeral.inboundWebhooks.tableReceived')}</TableHead>
+                <TableHead>{t('configGeral.inboundWebhooks.tableStatus')}</TableHead>
+                <TableHead className="w-[140px]">{t('configGeral.inboundWebhooks.tableActions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -288,7 +292,7 @@ export function InboundWebhooksManager() {
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7"
-                        title="Ver payload de exemplo"
+                        title={t('configGeral.inboundWebhooks.actionViewPayload')}
                         onClick={() => setPayloadDialogOpen(wh.modulo_destino)}
                       >
                         <Code className="h-3.5 w-3.5" />
@@ -297,7 +301,7 @@ export function InboundWebhooksManager() {
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7"
-                        title="Enviar evento de teste"
+                        title={t('configGeral.inboundWebhooks.actionSendTest')}
                         disabled={testingWebhook === wh.id || !wh.ativo}
                         onClick={() => handleTestWebhook(wh)}
                       >
@@ -323,28 +327,28 @@ export function InboundWebhooksManager() {
       <DialogShell
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        title="Novo Webhook de Entrada"
+        title={t('configGeral.inboundWebhooks.newDialogTitle')}
         icon={Webhook}
         size="md"
         onSubmit={handleCreate}
-        submitLabel="Criar Webhook"
+        submitLabel={t('configGeral.inboundWebhooks.createButton')}
         submitDisabled={!nome.trim() || !tipoEvento || !moduloDestino || saving}
         isSubmitting={saving}
         isDirty={!!(nome || descricao || tipoEvento || moduloDestino)}
       >
         <div className="space-y-4">
           <div>
-            <Label>Nome</Label>
-            <Input value={nome} onChange={e => setNome(e.target.value)} placeholder="Ex: Splunk SIEM Alerts" />
+            <Label>{t('configGeral.inboundWebhooks.labelName')}</Label>
+            <Input value={nome} onChange={e => setNome(e.target.value)} placeholder={t('configGeral.inboundWebhooks.placeholderName')} />
           </div>
           <div>
-            <Label>Descrição</Label>
-            <Textarea value={descricao} onChange={e => setDescricao(e.target.value)} placeholder="Descrição opcional..." rows={2} />
+            <Label>{t('configGeral.inboundWebhooks.labelDescription')}</Label>
+            <Textarea value={descricao} onChange={e => setDescricao(e.target.value)} placeholder={t('configGeral.inboundWebhooks.placeholderDescription')} rows={2} />
           </div>
           <div>
-            <Label>Tipo de Evento</Label>
+            <Label>{t('configGeral.inboundWebhooks.labelEventType')}</Label>
             <Select value={tipoEvento} onValueChange={setTipoEvento}>
-              <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder={t('configGeral.inboundWebhooks.placeholderSelect')} /></SelectTrigger>
               <SelectContent>
                 {TIPOS_EVENTO.map(t => (
                   <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
@@ -353,9 +357,9 @@ export function InboundWebhooksManager() {
             </Select>
           </div>
           <div>
-            <Label>Módulo Destino</Label>
+            <Label>{t('configGeral.inboundWebhooks.labelDestinationModule')}</Label>
             <Select value={moduloDestino} onValueChange={setModuloDestino}>
-              <SelectTrigger><SelectValue placeholder="Para onde enviar..." /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder={t('configGeral.inboundWebhooks.placeholderDestinationModule')} /></SelectTrigger>
               <SelectContent>
                 {MODULOS_DESTINO.map(m => (
                   <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
@@ -366,7 +370,7 @@ export function InboundWebhooksManager() {
 
           {moduloDestino && (
             <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Payload JSON esperado para {MODULOS_DESTINO.find(m => m.value === moduloDestino)?.label}</Label>
+              <Label className="text-xs text-muted-foreground">{t('configGeral.inboundWebhooks.expectedPayloadLabel').replace('{modulo}', MODULOS_DESTINO.find(m => m.value === moduloDestino)?.label || '')}</Label>
               <pre className="text-xs bg-muted p-3 rounded-lg overflow-x-auto font-mono">
                 {getPayloadForModule(moduloDestino)}
               </pre>
@@ -379,7 +383,7 @@ export function InboundWebhooksManager() {
       <DialogShell
         open={!!payloadDialogOpen}
         onOpenChange={(o) => !o && setPayloadDialogOpen(null)}
-        title="Payload de Exemplo"
+        title={t('configGeral.inboundWebhooks.payloadDialogTitle')}
         icon={Code}
         size="md"
         footer={
@@ -392,27 +396,27 @@ export function InboundWebhooksManager() {
                 toast.info('Payload copiado!');
               }}
             >
-              <Copy className="h-4 w-4 mr-2" /> Copiar
+              <Copy className="h-4 w-4 mr-2" /> {t('configGeral.inboundWebhooks.copyButton')}
             </Button>
           </div>
         }
       >
         <p className="text-sm text-muted-foreground mb-2">
-          Envie um JSON com esta estrutura via POST para a URL do webhook:
+          {t('configGeral.inboundWebhooks.payloadDialogDescription')}
         </p>
         <pre className="text-xs bg-muted p-4 rounded-lg overflow-x-auto font-mono">
           {payloadDialogOpen ? getPayloadForModule(payloadDialogOpen) : ''}
         </pre>
         <p className="text-xs text-muted-foreground mt-3">
-          Os campos <code className="bg-muted px-1 rounded">title</code>/<code className="bg-muted px-1 rounded">nome</code> e <code className="bg-muted px-1 rounded">description</code>/<code className="bg-muted px-1 rounded">descricao</code> são aceitos em inglês ou português.
+          {t('configGeral.inboundWebhooks.payloadFieldsHint')}
         </p>
       </DialogShell>
 
       <ConfirmDialog
         open={!!deleteConfirm}
         onOpenChange={() => setDeleteConfirm(null)}
-        title="Excluir Webhook"
-        description="Qualquer sistema que envie dados para este webhook deixará de funcionar."
+        title={t('configGeral.inboundWebhooks.deleteDialogTitle')}
+        description={t('configGeral.inboundWebhooks.deleteDialogDescription')}
         onConfirm={() => deleteConfirm && handleDelete(deleteConfirm)}
       />
     </div>

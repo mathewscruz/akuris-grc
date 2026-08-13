@@ -25,6 +25,7 @@ interface SlackConfigDialogProps {
 import { INTEGRATION_EVENTS } from '@/lib/integration-events';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { useLanguage } from '@/contexts/LanguageContext';
 const EVENTOS_DISPONIVEIS = INTEGRATION_EVENTS;
 
 export function SlackConfigDialog({
@@ -34,6 +35,7 @@ export function SlackConfigDialog({
   existingConfig,
   onSaved
 }: SlackConfigDialogProps) {
+  const { t } = useLanguage();
   const [webhookUrl, setWebhookUrl] = useState('');
   const [selectedEvents, setSelectedEvents] = useState<string[]>(EVENTOS_DISPONIVEIS.map(e => e.id));
   const [saving, setSaving] = useState(false);
@@ -55,7 +57,7 @@ export function SlackConfigDialog({
 
   const handleTestConnection = async () => {
     if (!webhookUrl) {
-      toast.error('URL obrigatória', { description: 'Informe a URL do webhook.' });
+      toast.error(t('configIntegrations.slack.toastUrlObrig'), { description: t('configIntegrations.slack.toastUrlObrigDesc') });
       return;
     }
 
@@ -74,16 +76,16 @@ export function SlackConfigDialog({
 
       if (data?.success) {
         setTestResult('success');
-        toast.success('Conexão bem-sucedida!', {
-          description: 'Mensagem de teste enviada para o Slack.'
+        toast.success(t('configIntegrations.slack.toastConexaoOk'), {
+          description: t('configIntegrations.slack.toastConexaoOkDesc')
         });
       } else {
         throw new Error(data?.error || 'Falha no teste');
       }
     } catch (error: any) {
       setTestResult('error');
-      toast.error('Falha na conexão', {
-        description: error.message || 'Verifique a URL do webhook.'
+      toast.error(t('configIntegrations.slack.toastConexaoFalha'), {
+        description: error.message || t('configIntegrations.slack.toastConexaoFalhaDesc')
       });
     } finally {
       setTesting(false);
@@ -92,7 +94,7 @@ export function SlackConfigDialog({
 
   const handleSave = async () => {
     if (!webhookUrl) {
-      toast.error('URL obrigatória', { description: 'Informe a URL do webhook.' });
+      toast.error(t('configIntegrations.slack.toastUrlObrig'), { description: t('configIntegrations.slack.toastUrlObrigDesc') });
       return;
     }
 
@@ -123,13 +125,13 @@ export function SlackConfigDialog({
         if (error) throw error;
       }
 
-      toast.success('Slack configurado!', {
-        description: 'Você receberá notificações no canal configurado.'
+      toast.success(t('configIntegrations.slack.toastConfigurado'), {
+        description: t('configIntegrations.slack.toastConfiguradoDesc')
       });
       onSaved();
       onOpenChange(false);
     } catch (error: any) {
-      toast.error('Erro ao salvar', { description: error.message });
+      toast.error(t('configIntegrations.slack.toastErroSalvar'), { description: error.message });
     } finally {
       setSaving(false);
     }
@@ -146,11 +148,11 @@ export function SlackConfigDialog({
         .eq('id', existingConfig.id);
       if (error) throw error;
 
-      toast.success('Slack desconectado');
+      toast.success(t('configIntegrations.slack.toastDesconectado'));
       onSaved();
       onOpenChange(false);
     } catch (error: any) {
-      toast.error('Erro ao desconectar', { description: error.message });
+      toast.error(t('configIntegrations.slack.toastErroDesconectar'), { description: error.message });
     } finally {
       setSaving(false);
     }
@@ -174,16 +176,16 @@ export function SlackConfigDialog({
           disabled={saving}
           className="sm:mr-auto"
         >
-          Desconectar
+          {t('configIntegrations.slack.btnDesconectar')}
         </Button>
       )}
       <div className="flex gap-2 sm:ml-auto">
         <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)} disabled={saving}>
-          Cancelar
+          {t('configIntegrations.slack.btnCancelar')}
         </Button>
         <Button size="sm" onClick={handleSave} disabled={saving || !webhookUrl}>
           {saving && <AkurisPulse size={16} className="mr-2" />}
-          Salvar
+          {t('configIntegrations.slack.btnSalvar')}
         </Button>
       </div>
     </div>
@@ -193,8 +195,8 @@ export function SlackConfigDialog({
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      title="Configurar Slack"
-      description="Receba notificações do Akuris diretamente no seu canal do Slack."
+      title={t('configIntegrations.slack.title')}
+      description={t('configIntegrations.slack.description')}
       icon={MessageSquare}
       size="md"
       footer={footer}
@@ -206,20 +208,20 @@ export function SlackConfigDialog({
           <div className="p-3 rounded-lg bg-muted/50 border space-y-2">
             <h4 className="font-medium text-sm flex items-center gap-2">
               <AlertCircle className="h-4 w-4 text-primary" />
-              Como configurar
+              {t('configIntegrations.slack.instrucoesTitle')}
             </h4>
             <ol className="text-xs text-muted-foreground space-y-1 ml-6 list-decimal">
-              <li>Acesse seu Slack Workspace</li>
-              <li>Vá em Apps → Incoming Webhooks</li>
-              <li>Clique em "Add New Webhook to Workspace"</li>
-              <li>Selecione o canal e copie a URL</li>
-              <li>Cole a URL abaixo e teste a conexão</li>
+              <li>{t('configIntegrations.slack.instrucao1')}</li>
+              <li>{t('configIntegrations.slack.instrucao2')}</li>
+              <li>{t('configIntegrations.slack.instrucao3')}</li>
+              <li>{t('configIntegrations.slack.instrucao4')}</li>
+              <li>{t('configIntegrations.slack.instrucao5')}</li>
             </ol>
           </div>
 
           {/* Webhook URL */}
           <div className="space-y-2">
-            <Label htmlFor="slack-webhook">URL do Incoming Webhook *</Label>
+            <Label htmlFor="slack-webhook">{t('configIntegrations.slack.fieldWebhook')}</Label>
             <div className="flex gap-2">
               <Input
                 id="slack-webhook"
@@ -249,16 +251,16 @@ export function SlackConfigDialog({
               </Button>
             </div>
             {testResult === 'success' && (
-              <p className="text-xs text-green-600">✓ Conexão verificada com sucesso</p>
+              <p className="text-xs text-green-600">{t('configIntegrations.slack.testSuccess')}</p>
             )}
             {testResult === 'error' && (
-              <p className="text-xs text-destructive">✗ Falha na conexão - verifique a URL</p>
+              <p className="text-xs text-destructive">{t('configIntegrations.slack.testError')}</p>
             )}
           </div>
 
           {/* Eventos */}
           <div className="space-y-3">
-            <Label>Eventos para notificar</Label>
+            <Label>{t('configIntegrations.slack.eventosLabel')}</Label>
             <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto">
               {EVENTOS_DISPONIVEIS.map(evento => (
                 <div
@@ -275,11 +277,11 @@ export function SlackConfigDialog({
                       htmlFor={evento.id}
                       className="text-sm cursor-pointer"
                     >
-                      {evento.label}
+                      {t(`configIntegrations.events.${evento.id}.label`)}
                     </label>
                   </div>
                   <Badge variant="outline" className="text-xs">
-                    {evento.modulo}
+                    {t(`configIntegrations.events.${evento.id}.modulo`)}
                   </Badge>
                 </div>
               ))}
@@ -293,7 +295,7 @@ export function SlackConfigDialog({
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
           >
-            Ver documentação do Slack
+            {t('configIntegrations.slack.linkDocs')}
             <ExternalLink className="h-3 w-3" />
           </a>
       </div>

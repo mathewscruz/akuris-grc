@@ -35,6 +35,17 @@ import { governancaComp } from './governanca-comp';
 import { dadosDashboard } from './dados-dashboard';
 import { dashboardWidgets } from './dashboard-widgets';
 import { publicPortal } from './public-portal';
+import { denunciasAdmin } from './denuncias';
+import { admin } from './admin-empresas';
+import { acessosDd } from './acessos-dd';
+import { modDialogs } from './modulos-dialogs';
+import { contratosDialogs } from './contratos-dialogs';
+import { dadosDialogs } from './dados-dialogs';
+import { govDialogs } from './gov-dialogs';
+import { configIntegrations } from './config-integrations';
+import { configPerms } from './config-permissoes';
+import { configPlanos } from './config-planos';
+import { configGeral } from './config-geral';
 
 type ModuleDict = { pt: Record<string, unknown>; en: Record<string, unknown> };
 
@@ -66,6 +77,17 @@ const modules: Record<string, ModuleDict> = {
   relatoriosComp,
   governancaComp,
   publicPortal,
+  denunciasAdmin,
+  admin,
+  acessosDd,
+  modDialogs,
+  contratosDialogs,
+  dadosDialogs,
+  govDialogs,
+  configIntegrations,
+  configPerms,
+  configPlanos,
+  configGeral,
 };
 
 

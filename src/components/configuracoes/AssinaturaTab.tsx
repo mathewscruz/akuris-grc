@@ -10,6 +10,7 @@ import { differenceInDays } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { formatBRL, type Plano } from '@/lib/planos-utils';
 import { Link } from 'react-router-dom';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 interface EmpresaInfo {
@@ -34,6 +35,7 @@ const planIcons: Record<string, React.ElementType> = {
 };
 
 export function AssinaturaTab() {
+  const { t } = useLanguage();
   const { profile } = useAuth();
   const empresaId = profile?.empresa_id;
   const [info, setInfo] = useState<EmpresaInfo | null>(null);
@@ -90,7 +92,7 @@ export function AssinaturaTab() {
     return (
       <Card>
         <CardContent className="py-8 text-center text-muted-foreground">
-          Não foi possível carregar dados da assinatura.
+          {t('configPlanos.assinatura.loadError')}
         </CardContent>
       </Card>
     );
@@ -112,9 +114,9 @@ export function AssinaturaTab() {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-foreground">Assinatura</h3>
+        <h3 className="text-lg font-semibold text-foreground">{t('configPlanos.assinatura.title')}</h3>
         <p className="text-sm text-muted-foreground">
-          Acompanhe o plano da sua empresa, uso e vigência.
+          {t('configPlanos.assinatura.subtitle')}
         </p>
       </div>
 
@@ -127,17 +129,17 @@ export function AssinaturaTab() {
             </div>
             <div className="flex-1">
               <p className="text-sm font-semibold text-foreground">
-                Período de teste — {trialDiasRestantes} {trialDiasRestantes === 1 ? 'dia restante' : 'dias restantes'}
+                {t('configPlanos.assinatura.trialBanner', { dias: trialDiasRestantes, diaLabel: t(trialDiasRestantes === 1 ? 'configPlanos.assinatura.diaSingular' : 'configPlanos.assinatura.diaPlural') })}
               </p>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {trialFim
-                  ? `Seu trial termina em ${trialFim.toLocaleDateString('pt-BR')}. Fale com o time comercial para escolher um plano.`
-                  : 'Fale com o time comercial para escolher um plano.'}
+                  ? t('configPlanos.assinatura.trialFimMsg', { data: trialFim.toLocaleDateString('pt-BR') })
+                  : t('configPlanos.assinatura.trialFimMsgSemData')}
               </p>
             </div>
             <Button asChild size="sm">
               <a href="mailto:contato@akuris.com.br?subject=Assinatura%20do%20plano%20Akuris">
-                Falar com comercial
+                {t('configPlanos.assinatura.falarComercial')}
               </a>
             </Button>
           </CardContent>
@@ -154,7 +156,7 @@ export function AssinaturaTab() {
               </div>
               <div>
                 <CardTitle className="text-base">
-                  Plano {info.plano?.nome || 'não atribuído'}
+                  {t('configPlanos.assinatura.planoLabel', { nome: info.plano?.nome || t('configPlanos.assinatura.planoNaoAtribuido') })}
                 </CardTitle>
                 {info.plano?.publico_alvo && (
                   <p className="text-[11px] uppercase tracking-wide text-muted-foreground mt-0.5">
@@ -167,7 +169,7 @@ export function AssinaturaTab() {
               </div>
             </div>
             <Badge variant={info.status_licenca === 'trial' ? 'warning' : 'soft'}>
-              {info.status_licenca === 'trial' ? 'Em teste' : 'Em operação'}
+              {info.status_licenca === 'trial' ? t('configPlanos.assinatura.statusTrial') : t('configPlanos.assinatura.statusOperacao')}
             </Badge>
           </div>
         </CardHeader>
@@ -177,11 +179,11 @@ export function AssinaturaTab() {
               <div className="flex items-center gap-2">
                 <CreditCard className="h-4 w-4 text-muted-foreground" />
                 <div>
-                  <p className="text-xs text-muted-foreground">Valor mensal</p>
-                  <p className="text-sm font-medium">{formatBRL(info.plano.preco_mensal)}/mês</p>
+                  <p className="text-xs text-muted-foreground">{t('configPlanos.assinatura.valorMensal')}</p>
+                  <p className="text-sm font-medium">{formatBRL(info.plano.preco_mensal)}{t('configPlanos.assinatura.porMes')}</p>
                   {(info.plano.preco_setup ?? 0) > 0 && (
                     <p className="text-[11px] text-muted-foreground mt-0.5">
-                      Setup: {info.plano.setup_observacao || `${formatBRL(info.plano.preco_setup ?? 0)} (único)`}
+                      {t('configPlanos.assinatura.setup', { valor: info.plano.setup_observacao || t('configPlanos.assinatura.setupUnico', { valor: formatBRL(info.plano.preco_setup ?? 0) }) })}
                     </p>
                   )}
                 </div>
@@ -189,16 +191,16 @@ export function AssinaturaTab() {
               <div className="flex items-center gap-2">
                 <Zap className="h-4 w-4 text-muted-foreground" />
                 <div>
-                  <p className="text-xs text-muted-foreground">Créditos IA</p>
+                  <p className="text-xs text-muted-foreground">{t('configPlanos.assinatura.creditosIA')}</p>
                   <p className="text-sm font-medium">
-                    {info.creditos_consumidos} / {limiteCreditos}/mês
+                    {t('configPlanos.assinatura.porMesLimite', { atual: info.creditos_consumidos, limite: limiteCreditos })}
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 <Users className="h-4 w-4 text-muted-foreground" />
                 <div>
-                  <p className="text-xs text-muted-foreground">Usuários</p>
+                  <p className="text-xs text-muted-foreground">{t('configPlanos.assinatura.usuarios')}</p>
                   <p className="text-sm font-medium">
                     {info.total_usuarios} / {limiteUsuarios ?? '∞'}
                   </p>
@@ -212,7 +214,7 @@ export function AssinaturaTab() {
               {limiteUsuarios !== null && (
                 <div className="space-y-1">
                   <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>Usuários</span>
+                    <span>{t('configPlanos.assinatura.usuarios')}</span>
                     <span>{info.total_usuarios}/{limiteUsuarios}</span>
                   </div>
                   <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
@@ -226,7 +228,7 @@ export function AssinaturaTab() {
               {limiteCreditos > 0 && (
                 <div className="space-y-1">
                   <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>Créditos IA do mês</span>
+                    <span>{t('configPlanos.assinatura.creditosIA')}</span>
                     <span>{info.creditos_consumidos}/{limiteCreditos}</span>
                   </div>
                   <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
@@ -245,7 +247,7 @@ export function AssinaturaTab() {
               <Separator />
               <div className="flex items-center gap-2 text-sm">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">Vigência até:</span>
+                <span className="text-muted-foreground">{t('configPlanos.assinatura.vigenciaAte')}</span>
                 <span className="font-medium">{new Date(info.data_fim_assinatura).toLocaleDateString('pt-BR')}</span>
               </div>
             </>
@@ -255,11 +257,11 @@ export function AssinaturaTab() {
           <div className="flex flex-col sm:flex-row gap-3">
             <Button asChild>
               <a href="mailto:contato@akuris.com.br?subject=Mudança%20de%20plano%20Akuris">
-                Solicitar mudança de plano
+                {t('configPlanos.assinatura.solicitarMudanca')}
               </a>
             </Button>
             <Button asChild variant="outline">
-              <Link to="/planos">Ver todos os planos</Link>
+              <Link to="/planos">{t('configPlanos.assinatura.verTodosPlanos')}</Link>
             </Button>
           </div>
         </CardContent>

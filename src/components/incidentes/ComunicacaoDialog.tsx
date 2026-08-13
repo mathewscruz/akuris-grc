@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import {
@@ -31,16 +31,16 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 
-const comunicacaoSchema = z.object({
-  tipo_comunicacao: z.string().min(1, 'Tipo de comunicação é obrigatório'),
-  destinatario: z.string().min(1, 'Destinatário é obrigatório'),
-  meio_comunicacao: z.string().min(1, 'Meio de comunicação é obrigatório'),
+const makeComunicacaoSchema = (t: (key: string) => string) => z.object({
+  tipo_comunicacao: z.string().min(1, t('modDialogs.incidentes.comunicacao.validation.tipoRequired')),
+  destinatario: z.string().min(1, t('modDialogs.incidentes.comunicacao.validation.destinatarioRequired')),
+  meio_comunicacao: z.string().min(1, t('modDialogs.incidentes.comunicacao.validation.meioRequired')),
   data_comunicacao: z.date().optional(),
   observacoes: z.string().optional(),
   template_usado: z.string().optional(),
 });
 
-type ComunicacaoFormData = z.infer<typeof comunicacaoSchema>;
+type ComunicacaoFormData = z.infer<ReturnType<typeof makeComunicacaoSchema>>;
 
 interface ComunicacaoDialogProps {
   incidenteId: string;
@@ -62,6 +62,7 @@ export function ComunicacaoDialog({ incidenteId, comunicacao, onSuccess, trigger
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const { t } = useLanguage();
+  const comunicacaoSchema = useMemo(() => makeComunicacaoSchema(t), [t]);
 
   const form = useForm<ComunicacaoFormData>({
     resolver: zodResolver(comunicacaoSchema),

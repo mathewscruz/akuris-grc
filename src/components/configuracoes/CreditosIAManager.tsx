@@ -13,6 +13,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { formatDateOnly } from '@/lib/date-utils';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface EmpresaCredito {
   id: string;
@@ -32,6 +33,7 @@ interface ConsumoHistorico {
 }
 
 export function CreditosIAManager() {
+  const { t } = useLanguage();
   const [empresas, setEmpresas] = useState<EmpresaCredito[]>([]);
   const [loading, setLoading] = useState(true);
   const [resetConfirm, setResetConfirm] = useState<{ open: boolean; empresaId: string; empresaNome: string }>({
@@ -68,14 +70,14 @@ export function CreditosIAManager() {
         id: e.id,
         nome: e.nome,
         creditos_consumidos: e.creditos_consumidos || 0,
-        plano_nome: e.plano?.nome || 'Sem plano',
+        plano_nome: e.plano?.nome || t('configPlanos.creditosIA.semPlano'),
         creditos_franquia: e.plano?.creditos_franquia || 0,
       }));
 
       setEmpresas(mapped);
     } catch (error) {
-      console.error('Erro ao buscar empresas:', error);
-      toast.error('Erro ao carregar dados de créditos');
+      console.error(t('configPlanos.creditosIA.errorFetch'), error);
+      toast.error(t('configPlanos.creditosIA.errorLoad'));
     } finally {
       setLoading(false);
     }
@@ -90,11 +92,11 @@ export function CreditosIAManager() {
 
       if (error) throw error;
 
-      toast.success(`Créditos de "${resetConfirm.empresaNome}" resetados com sucesso`);
+      toast.success(t('configPlanos.creditosIA.resetSuccess', { nome: resetConfirm.empresaNome }));
       setResetConfirm({ open: false, empresaId: '', empresaNome: '' });
       fetchEmpresas();
     } catch (error) {
-      toast.error('Erro ao resetar créditos');
+      toast.error(t('configPlanos.creditosIA.resetError'));
     }
   };
 
@@ -128,10 +130,10 @@ export function CreditosIAManager() {
 
       setHistorico((data || []).map((d: any) => ({
         ...d,
-        user_nome: profilesMap[d.user_id] || 'Desconhecido'
+        user_nome: profilesMap[d.user_id] || t('configPlanos.creditosIA.desconhecido')
       })));
     } catch (error) {
-      toast.error('Erro ao carregar histórico');
+      toast.error(t('configPlanos.creditosIA.historicoError'));
     } finally {
       setHistoricoLoading(false);
     }
@@ -145,18 +147,18 @@ export function CreditosIAManager() {
   const columns = [
     {
       key: 'nome',
-      label: 'Empresa',
+      label: t('configPlanos.creditosIA.colEmpresa'),
       sortable: true,
       render: (value: string) => <span className="font-medium">{value}</span>
     },
     {
       key: 'plano_nome',
-      label: 'Plano',
+      label: t('configPlanos.creditosIA.colPlano'),
       render: (value: string) => <Badge variant="outline">{value}</Badge>
     },
     {
       key: 'creditos_consumidos',
-      label: 'Consumo',
+      label: t('configPlanos.creditosIA.colConsumo'),
       sortable: true,
       render: (value: number, row: EmpresaCredito) => {
         const percent = row.creditos_franquia > 0 ? (value / row.creditos_franquia) * 100 : 0;
@@ -173,7 +175,7 @@ export function CreditosIAManager() {
     },
     {
       key: 'actions',
-      label: 'Ações',
+      label: t('configPlanos.creditosIA.colAcoes'),
       render: (_: any, row: EmpresaCredito) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -184,14 +186,14 @@ export function CreditosIAManager() {
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => openHistorico(row.id, row.nome)}>
               <History className="h-4 w-4 mr-2" />
-              Histórico
+              {t('configPlanos.creditosIA.historicoAction')}
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => setResetConfirm({ open: true, empresaId: row.id, empresaNome: row.nome })}
               className="text-destructive focus:text-destructive"
             >
               <RotateCcw className="h-4 w-4 mr-2" />
-              Resetar Créditos
+              {t('configPlanos.creditosIA.resetAction')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -202,22 +204,22 @@ export function CreditosIAManager() {
   const historicoColumns = [
     {
       key: 'created_at',
-      label: 'Data',
+      label: t('configPlanos.creditosIA.colData'),
       render: (value: string) => formatDateOnly(value)
     },
     {
       key: 'user_nome',
-      label: 'Usuário',
+      label: t('configPlanos.creditosIA.colUsuario'),
       render: (value: string) => <span className="font-medium">{value}</span>
     },
     {
       key: 'funcionalidade',
-      label: 'Funcionalidade',
+      label: t('configPlanos.creditosIA.colFuncionalidade'),
       render: (value: string) => <Badge variant="secondary">{value}</Badge>
     },
     {
       key: 'descricao',
-      label: 'Descrição',
+      label: t('configPlanos.creditosIA.colDescricao'),
       render: (value: string | null) => value || <span className="text-muted-foreground">-</span>
     }
   ];
@@ -226,19 +228,19 @@ export function CreditosIAManager() {
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <StatCard
-          title="Total de Empresas"
+          title={t('configPlanos.creditosIA.statTotalEmpresas')}
           value={empresas.length}
-          description="Com plano ativo"
+          description={t('configPlanos.creditosIA.statTotalEmpresasDesc')}
           icon={<Building2 className="h-4 w-4" />}
         />
         <StatCard
-          title="Créditos Consumidos"
+          title={t('configPlanos.creditosIA.statCreditosConsumidos')}
           value={totalConsumo}
-          description="Todas as empresas"
+          description={t('configPlanos.creditosIA.statCreditosConsumidosDesc')}
           icon={<AkurisAIIcon className="h-4 w-4" />}
         />
         <StatCard
-          title="Maior Consumo"
+          title={t('configPlanos.creditosIA.statMaiorConsumo')}
           value={empresaMaisConsumo?.creditos_consumidos || 0}
           description={empresaMaisConsumo?.nome || '-'}
           icon={<TrendingUp className="h-4 w-4" />}
@@ -249,7 +251,7 @@ export function CreditosIAManager() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <AkurisAIIcon className="h-5 w-5" />
-            Consumo por Empresa
+            {t('configPlanos.creditosIA.cardTitle')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -257,12 +259,12 @@ export function CreditosIAManager() {
             data={empresas}
             columns={columns}
             loading={loading}
-            searchPlaceholder="Buscar empresa..."
+            searchPlaceholder={t('configPlanos.creditosIA.searchPlaceholder')}
             paginated
             emptyState={{
               icon: <AkurisAIIcon className="h-8 w-8" />,
-              title: "Nenhuma empresa encontrada",
-              description: "Não há empresas cadastradas no sistema."
+              title: t('configPlanos.creditosIA.emptyTitle'),
+              description: t('configPlanos.creditosIA.emptyDescription')
             }}
           />
         </CardContent>
@@ -271,9 +273,9 @@ export function CreditosIAManager() {
       <ConfirmDialog
         open={resetConfirm.open}
         onOpenChange={(open) => setResetConfirm(prev => ({ ...prev, open }))}
-        title="Resetar Créditos"
-        description={`Tem certeza que deseja zerar os créditos consumidos de "${resetConfirm.empresaNome}"? Esta ação não pode ser desfeita.`}
-        confirmText="Resetar"
+        title={t('configPlanos.creditosIA.resetDialogTitle')}
+        description={t('configPlanos.creditosIA.resetDialogDescription', { nome: resetConfirm.empresaNome })}
+        confirmText={t('configPlanos.creditosIA.resetConfirm')}
         variant="destructive"
         onConfirm={handleReset}
       />
@@ -281,19 +283,19 @@ export function CreditosIAManager() {
       <Sheet open={historicoSheet.open} onOpenChange={(open) => setHistoricoSheet(prev => ({ ...prev, open }))}>
         <SheetContent className="w-[600px] overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>Histórico de Consumo — {historicoSheet.empresaNome}</SheetTitle>
+            <SheetTitle>{t('configPlanos.creditosIA.sheetTitle', { nome: historicoSheet.empresaNome })}</SheetTitle>
           </SheetHeader>
           <div className="mt-4">
             <DataTable
               data={historico}
               columns={historicoColumns}
               loading={historicoLoading}
-              searchPlaceholder="Buscar no histórico..."
+              searchPlaceholder={t('configPlanos.creditosIA.historicoSearchPlaceholder')}
               paginated
               emptyState={{
                 icon: <History className="h-8 w-8" />,
-                title: "Sem histórico",
-                description: "Nenhum consumo de crédito registrado para esta empresa."
+                title: t('configPlanos.creditosIA.historicoEmptyTitle'),
+                description: t('configPlanos.creditosIA.historicoEmptyDescription')
               }}
             />
           </div>

@@ -9,6 +9,7 @@ import { Plus, Edit, Star, Users, Sparkles, Building2 } from 'lucide-react';
 import { fetchPlanos, formatBRL, MODULOS_DISPONIVEIS, type Plano } from '@/lib/planos-utils';
 import { PlanoFormDialog } from './PlanoFormDialog';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 interface PlanoWithCount extends Plano {
@@ -16,6 +17,7 @@ interface PlanoWithCount extends Plano {
 }
 
 export const GerenciamentoPlanos: React.FC = () => {
+  const { t } = useLanguage();
   const [planos, setPlanos] = useState<PlanoWithCount[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -36,7 +38,7 @@ export const GerenciamentoPlanos: React.FC = () => {
       });
       setPlanos(data.map(p => ({ ...p, empresas_count: counts.get(p.id) || 0 })));
     } catch (err: any) {
-      toast.error(err.message || 'Erro ao carregar planos');
+      toast.error(err.message || t('configPlanos.gerenciamentoPlanos.loadError'));
     } finally {
       setLoading(false);
     }
@@ -68,7 +70,7 @@ export const GerenciamentoPlanos: React.FC = () => {
       toast.error(error.message);
       return;
     }
-    toast.success(ativo ? 'Plano ativado' : 'Plano desativado');
+    toast.success(ativo ? t('configPlanos.gerenciamentoPlanos.toggleOnSuccess') : t('configPlanos.gerenciamentoPlanos.toggleOffSuccess'));
     load();
   };
 
@@ -84,20 +86,20 @@ export const GerenciamentoPlanos: React.FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-start gap-3 flex-wrap">
         <div>
-          <h3 className="text-lg font-semibold text-foreground">Planos da plataforma</h3>
+          <h3 className="text-lg font-semibold text-foreground">{t('configPlanos.gerenciamentoPlanos.headerTitle')}</h3>
           <p className="text-sm text-muted-foreground">
-            Crie planos com preços, limites e módulos. Apenas super admins veem essa tela.
+            {t('configPlanos.gerenciamentoPlanos.headerSubtitle')}
           </p>
         </div>
         <Button onClick={handleNew}>
-          <Plus className="h-4 w-4 mr-2" /> Novo plano
+          <Plus className="h-4 w-4 mr-2" /> {t('configPlanos.gerenciamentoPlanos.newPlano')}
         </Button>
       </div>
 
       {planos.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
-            Nenhum plano cadastrado. Crie o primeiro clicando em "Novo plano".
+            {t('configPlanos.gerenciamentoPlanos.emptyState')}
           </CardContent>
         </Card>
       ) : (
@@ -127,29 +129,29 @@ export const GerenciamentoPlanos: React.FC = () => {
                 )}
                 <div className="flex items-baseline gap-1">
                   <span className="text-2xl font-bold text-foreground">{formatBRL(plano.preco_mensal)}</span>
-                  <span className="text-sm text-muted-foreground">/mês</span>
+                  <span className="text-sm text-muted-foreground">{t('configPlanos.gerenciamentoPlanos.porMes')}</span>
                   {plano.preco_anual > 0 && (
-                    <span className="text-xs text-muted-foreground ml-2">· {formatBRL(plano.preco_anual)}/ano</span>
+                    <span className="text-xs text-muted-foreground ml-2">{t('configPlanos.gerenciamentoPlanos.porAno', { valor: formatBRL(plano.preco_anual) })}</span>
                   )}
                 </div>
 
                 <div className="grid grid-cols-3 gap-2 text-xs">
                   <div className="space-y-0.5">
-                    <p className="text-muted-foreground">Usuários</p>
+                    <p className="text-muted-foreground">{t('configPlanos.gerenciamentoPlanos.usuarios')}</p>
                     <p className="font-medium text-foreground flex items-center gap-1">
                       <Users className="h-3 w-3" />
                       {plano.limite_usuarios ?? '∞'}
                     </p>
                   </div>
                   <div className="space-y-0.5">
-                    <p className="text-muted-foreground">Créditos IA</p>
+                    <p className="text-muted-foreground">{t('configPlanos.gerenciamentoPlanos.creditosIA')}</p>
                     <p className="font-medium text-foreground flex items-center gap-1">
                       <Sparkles className="h-3 w-3" />
                       {plano.creditos_franquia}
                     </p>
                   </div>
                   <div className="space-y-0.5">
-                    <p className="text-muted-foreground">Empresas</p>
+                    <p className="text-muted-foreground">{t('configPlanos.gerenciamentoPlanos.empresas')}</p>
                     <p className="font-medium text-foreground flex items-center gap-1">
                       <Building2 className="h-3 w-3" />
                       {plano.empresas_count}
@@ -158,10 +160,10 @@ export const GerenciamentoPlanos: React.FC = () => {
                 </div>
 
                 <div className="space-y-1.5">
-                  <p className="text-xs text-muted-foreground">Módulos liberados ({plano.modulos_habilitados.length})</p>
+                  <p className="text-xs text-muted-foreground">{t('configPlanos.gerenciamentoPlanos.modulosLiberados', { count: plano.modulos_habilitados.length })}</p>
                   <div className="flex flex-wrap gap-1">
                     {plano.modulos_habilitados.length === 0 ? (
-                      <span className="text-xs text-muted-foreground">Nenhum</span>
+                      <span className="text-xs text-muted-foreground">{t('configPlanos.gerenciamentoPlanos.nenhum')}</span>
                     ) : (
                       plano.modulos_habilitados.slice(0, 6).map(key => {
                         const mod = MODULOS_DISPONIVEIS.find(m => m.key === key);
@@ -181,7 +183,7 @@ export const GerenciamentoPlanos: React.FC = () => {
                 </div>
 
                 <Button variant="outline" size="sm" className="w-full" onClick={() => handleEdit(plano)}>
-                  <Edit className="h-3.5 w-3.5 mr-1.5" /> Editar
+                  <Edit className="h-3.5 w-3.5 mr-1.5" /> {t('configPlanos.gerenciamentoPlanos.editar')}
                 </Button>
               </CardContent>
             </Card>

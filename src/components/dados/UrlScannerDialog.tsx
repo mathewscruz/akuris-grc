@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { useLanguage } from "@/contexts/LanguageContext";
 interface FormField {
   name: string;
   type: string;
@@ -63,55 +64,56 @@ interface UrlScannerDialogProps {
   onImport: (fields: FormField[], scanResult?: ScanResult) => void;
 }
 
-const getSensitivityBadge = (sensitivity: string) => {
+const getSensitivityBadge = (sensitivity: string, t: (key: string) => string) => {
   switch (sensitivity) {
     case 'critico':
-      return <StatusBadge size="sm" tone="destructive" intensity="high">Crítico</StatusBadge>;
+      return <StatusBadge size="sm" tone="destructive" intensity="high">{t('dadosDialogs.urlScanner.sensitivityCritico')}</StatusBadge>;
     case 'sensivel':
-      return <StatusBadge size="sm" tone="warning">Sensível</StatusBadge>;
+      return <StatusBadge size="sm" tone="warning">{t('dadosDialogs.urlScanner.sensitivitySensivel')}</StatusBadge>;
     default:
-      return <StatusBadge size="sm" tone="neutral">Comum</StatusBadge>;
+      return <StatusBadge size="sm" tone="neutral">{t('dadosDialogs.urlScanner.sensitivityComum')}</StatusBadge>;
   }
 };
 
-const getCategoryLabel = (category: string) => {
+const getCategoryLabel = (category: string, t: (key: string) => string) => {
   const labels: Record<string, string> = {
-    identificacao: 'Identificação',
-    contato: 'Contato',
-    localizacao: 'Localização',
-    financeiro: 'Financeiro',
-    credenciais: 'Credenciais',
-    saude: 'Saúde',
-    documentos: 'Documentos',
-    texto_livre: 'Texto Livre',
-    outros: 'Outros'
+    identificacao: t('dadosDialogs.urlScanner.categoriaIdentificacao'),
+    contato: t('dadosDialogs.urlScanner.categoriaContato'),
+    localizacao: t('dadosDialogs.urlScanner.categoriaLocalizacao'),
+    financeiro: t('dadosDialogs.urlScanner.categoriaFinanceiro'),
+    credenciais: t('dadosDialogs.urlScanner.categoriaCredenciais'),
+    saude: t('dadosDialogs.urlScanner.categoriaSaude'),
+    documentos: t('dadosDialogs.urlScanner.categoriaDocumentos'),
+    texto_livre: t('dadosDialogs.urlScanner.categoriaTextoLivre'),
+    outros: t('dadosDialogs.urlScanner.categoriaOutros')
   };
   return labels[category] || category;
 };
 
-const getDataTypeLabel = (dataType: string) => {
+const getDataTypeLabel = (dataType: string, t: (key: string) => string) => {
   const labels: Record<string, string> = {
-    email: 'E-mail',
-    nome: 'Nome',
-    cpf: 'CPF',
-    rg: 'RG',
-    cnpj: 'CNPJ',
-    telefone: 'Telefone',
-    endereco: 'Endereço',
-    data_nascimento: 'Data de Nascimento',
-    senha: 'Senha',
-    cartao_credito: 'Cartão de Crédito',
-    conta_bancaria: 'Conta Bancária',
-    saude: 'Dados de Saúde',
-    genero: 'Gênero',
-    arquivo: 'Arquivo',
-    comentario: 'Comentário/Mensagem',
-    desconhecido: 'Não Classificado'
+    email: t('dadosDialogs.urlScanner.tipoEmail'),
+    nome: t('dadosDialogs.urlScanner.tipoNome'),
+    cpf: t('dadosDialogs.urlScanner.tipoCpf'),
+    rg: t('dadosDialogs.urlScanner.tipoRg'),
+    cnpj: t('dadosDialogs.urlScanner.tipoCnpj'),
+    telefone: t('dadosDialogs.urlScanner.tipoTelefone'),
+    endereco: t('dadosDialogs.urlScanner.tipoEndereco'),
+    data_nascimento: t('dadosDialogs.urlScanner.tipoDataNascimento'),
+    senha: t('dadosDialogs.urlScanner.tipoSenha'),
+    cartao_credito: t('dadosDialogs.urlScanner.tipoCartaoCredito'),
+    conta_bancaria: t('dadosDialogs.urlScanner.tipoContaBancaria'),
+    saude: t('dadosDialogs.urlScanner.tipoSaude'),
+    genero: t('dadosDialogs.urlScanner.tipoGenero'),
+    arquivo: t('dadosDialogs.urlScanner.tipoArquivo'),
+    comentario: t('dadosDialogs.urlScanner.tipoComentario'),
+    desconhecido: t('dadosDialogs.urlScanner.tipoDesconhecido')
   };
   return labels[dataType] || dataType;
 };
 
 export const UrlScannerDialog = ({ isOpen, onClose, onImport }: UrlScannerDialogProps) => {
+  const { t } = useLanguage();
   const { toast } = useToast();
   const [url, setUrl] = useState('');
   const [scanMode, setScanMode] = useState<'single' | 'domain'>('single');
@@ -126,8 +128,8 @@ export const UrlScannerDialog = ({ isOpen, onClose, onImport }: UrlScannerDialog
   const handleScan = async () => {
     if (!url.trim()) {
       toast({
-        title: "URL obrigatória",
-        description: "Insira uma URL válida para escanear",
+        title: t('dadosDialogs.urlScanner.toastUrlObrigatoriaTitle'),
+        description: t('dadosDialogs.urlScanner.toastUrlObrigatoriaDescription'),
         variant: "destructive"
       });
       return;
@@ -136,7 +138,7 @@ export const UrlScannerDialog = ({ isOpen, onClose, onImport }: UrlScannerDialog
     setIsScanning(true);
     setScanResult(null);
     setSelectedFields(new Set());
-    setScanProgress({ current: 0, total: 0, phase: scanMode === 'domain' ? 'Descobrindo URLs...' : 'Escaneando página...' });
+    setScanProgress({ current: 0, total: 0, phase: scanMode === 'domain' ? t('dadosDialogs.urlScanner.phaseDescobrindoUrls') : t('dadosDialogs.urlScanner.phaseEscaneandoPagina') });
 
     try {
       const { data, error } = await supabase.functions.invoke('scan-url-forms', {
@@ -151,7 +153,7 @@ export const UrlScannerDialog = ({ isOpen, onClose, onImport }: UrlScannerDialog
       if (error) throw error;
 
       if (!data.success) {
-        throw new Error(data.error || 'Erro ao escanear URL');
+        throw new Error(data.error || t('dadosDialogs.urlScanner.errorEscanearUrl'));
       }
 
       setScanResult(data.data);
@@ -162,33 +164,33 @@ export const UrlScannerDialog = ({ isOpen, onClose, onImport }: UrlScannerDialog
         
         if (pagesWithForms === 0) {
           toast({
-            title: "Nenhum formulário encontrado",
-            description: `${pagesScanned} página(s) escaneada(s), nenhuma contém formulários com campos de dados`,
+            title: t('dadosDialogs.urlScanner.toastNenhumFormularioTitle'),
+            description: t('dadosDialogs.urlScanner.toastNenhumFormularioDomainDescription').replace('{count}', String(pagesScanned)),
           });
         } else {
           toast({
-            title: "Scan concluído",
-            description: `${pagesWithForms} página(s) com formulários encontrada(s) de ${pagesScanned} escaneadas`,
+            title: t('dadosDialogs.urlScanner.toastScanConcluidoTitle'),
+            description: t('dadosDialogs.urlScanner.toastScanConcluidoDomainDescription').replace('{withForms}', String(pagesWithForms)).replace('{scanned}', String(pagesScanned)),
           });
         }
       } else {
         if (data.data.forms.length === 0) {
           toast({
-            title: "Nenhum formulário encontrado",
-            description: "A página não contém formulários com campos de entrada de dados",
+            title: t('dadosDialogs.urlScanner.toastNenhumFormularioTitle'),
+            description: t('dadosDialogs.urlScanner.toastNenhumFormularioSingleDescription'),
           });
         } else {
           toast({
-            title: "Scan concluído",
-            description: `Encontrados ${data.data.forms.length} formulário(s) com ${data.data.totalFields} campo(s)`,
+            title: t('dadosDialogs.urlScanner.toastScanConcluidoTitle'),
+            description: t('dadosDialogs.urlScanner.toastScanConcluidoSingleDescription').replace('{forms}', String(data.data.forms.length)).replace('{fields}', String(data.data.totalFields)),
           });
         }
       }
     } catch (error) {
       console.error('Scan error:', error);
       toast({
-        title: "Erro ao escanear",
-        description: error instanceof Error ? error.message : "Não foi possível escanear a URL",
+        title: t('dadosDialogs.urlScanner.toastErrorTitle'),
+        description: error instanceof Error ? error.message : t('dadosDialogs.urlScanner.toastErrorDefaultDescription'),
         variant: "destructive"
       });
     } finally {
@@ -296,11 +298,11 @@ export const UrlScannerDialog = ({ isOpen, onClose, onImport }: UrlScannerDialog
       <TableHeader>
         <TableRow>
           <TableHead className="w-12"></TableHead>
-          <TableHead>Campo</TableHead>
-          <TableHead>Tipo HTML</TableHead>
-          <TableHead>Tipo de Dado</TableHead>
-          <TableHead>Categoria LGPD</TableHead>
-          <TableHead>Sensibilidade</TableHead>
+          <TableHead>{t('dadosDialogs.urlScanner.columnCampo')}</TableHead>
+          <TableHead>{t('dadosDialogs.urlScanner.columnTipoHtml')}</TableHead>
+          <TableHead>{t('dadosDialogs.urlScanner.columnTipoDado')}</TableHead>
+          <TableHead>{t('dadosDialogs.urlScanner.columnCategoriaLgpd')}</TableHead>
+          <TableHead>{t('dadosDialogs.urlScanner.columnSensibilidade')}</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -316,7 +318,7 @@ export const UrlScannerDialog = ({ isOpen, onClose, onImport }: UrlScannerDialog
               </TableCell>
               <TableCell>
                 <div>
-                  <p className="font-medium">{field.label || field.name || field.id || 'Sem nome'}</p>
+                  <p className="font-medium">{field.label || field.name || field.id || t('dadosDialogs.urlScanner.semNome')}</p>
                   {field.placeholder && (
                     <p className="text-xs text-muted-foreground">"{field.placeholder}"</p>
                   )}
@@ -325,9 +327,9 @@ export const UrlScannerDialog = ({ isOpen, onClose, onImport }: UrlScannerDialog
               <TableCell>
                 <code className="text-xs bg-muted px-1 py-0.5 rounded">{field.type}</code>
               </TableCell>
-              <TableCell>{getDataTypeLabel(field.dataType)}</TableCell>
-              <TableCell>{getCategoryLabel(field.lgpdCategory)}</TableCell>
-              <TableCell>{getSensitivityBadge(field.sensitivity)}</TableCell>
+              <TableCell>{getDataTypeLabel(field.dataType, t)}</TableCell>
+              <TableCell>{getCategoryLabel(field.lgpdCategory, t)}</TableCell>
+              <TableCell>{getSensitivityBadge(field.sensitivity, t)}</TableCell>
             </TableRow>
           );
         })}
@@ -340,17 +342,17 @@ export const UrlScannerDialog = ({ isOpen, onClose, onImport }: UrlScannerDialog
       open={isOpen}
       onOpenChange={handleClose}
       icon={Globe}
-      title="Scanner de Formulários Web"
+      title={t('dadosDialogs.urlScanner.dialogTitle')}
       size="lg"
       footer={
         <div className="flex justify-end gap-2">
           <Button variant="ghost" size="sm" onClick={handleClose}>
-            Fechar
+            {t('dadosDialogs.urlScanner.buttonFechar')}
           </Button>
           {scanResult && selectedFields.size > 0 && (
             <Button size="sm" onClick={handleImport}>
               <Plus className="h-4 w-4 mr-2" />
-              Importar {selectedFields.size} Campo(s) para Catálogo
+              {t('dadosDialogs.urlScanner.buttonImportar').replace('{count}', String(selectedFields.size))}
             </Button>
           )}
         </div>
@@ -359,12 +361,12 @@ export const UrlScannerDialog = ({ isOpen, onClose, onImport }: UrlScannerDialog
         <div className="space-y-4">
           {/* URL Input */}
           <div className="space-y-2">
-            <Label htmlFor="url">URL para escanear</Label>
+            <Label htmlFor="url">{t('dadosDialogs.urlScanner.labelUrl')}</Label>
             <div className="flex gap-2">
               <Input
                 id="url"
                 type="url"
-                placeholder="https://exemplo.com.br"
+                placeholder={t('dadosDialogs.urlScanner.placeholderUrl')}
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && !isScanning && handleScan()}
@@ -374,12 +376,12 @@ export const UrlScannerDialog = ({ isOpen, onClose, onImport }: UrlScannerDialog
                 {isScanning ? (
                   <>
                     <AkurisPulse size={16} className="mr-2" />
-                    Escaneando...
+                    {t('dadosDialogs.urlScanner.buttonEscaneando')}
                   </>
                 ) : (
                   <>
                     <Search className="h-4 w-4 mr-2" />
-                    Escanear
+                    {t('dadosDialogs.urlScanner.buttonEscanear')}
                   </>
                 )}
               </Button>
@@ -388,7 +390,7 @@ export const UrlScannerDialog = ({ isOpen, onClose, onImport }: UrlScannerDialog
 
           {/* Scan Mode Selection */}
           <div className="space-y-3">
-            <Label>Modo de Escaneamento</Label>
+            <Label>{t('dadosDialogs.urlScanner.labelModoEscaneamento')}</Label>
             <RadioGroup
               value={scanMode}
               onValueChange={(value) => setScanMode(value as 'single' | 'domain')}
@@ -398,20 +400,20 @@ export const UrlScannerDialog = ({ isOpen, onClose, onImport }: UrlScannerDialog
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="single" id="single" />
                 <Label htmlFor="single" className="cursor-pointer font-normal">
-                  Página única
+                  {t('dadosDialogs.urlScanner.modoPaginaUnica')}
                 </Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="domain" id="domain" />
                 <Label htmlFor="domain" className="cursor-pointer font-normal">
-                  Descobrir todo o domínio
+                  {t('dadosDialogs.urlScanner.modoDominio')}
                 </Label>
               </div>
             </RadioGroup>
             <p className="text-xs text-muted-foreground">
               {scanMode === 'single' 
-                ? 'Escaneia apenas a página informada'
-                : 'Descobre todas as páginas do domínio (ex: /contato, /cadastro) e escaneia cada uma'}
+                ? t('dadosDialogs.urlScanner.modoPaginaUnicaHint')
+                : t('dadosDialogs.urlScanner.modoDominioHint')}
             </p>
           </div>
 
@@ -421,13 +423,13 @@ export const UrlScannerDialog = ({ isOpen, onClose, onImport }: UrlScannerDialog
               <CollapsibleTrigger asChild>
                 <Button variant="ghost" size="sm" className="gap-2">
                   <Settings2 className="h-4 w-4" />
-                  Opções avançadas
+                  {t('dadosDialogs.urlScanner.buttonOpcoesAvancadas')}
                 </Button>
               </CollapsibleTrigger>
               <CollapsibleContent className="space-y-3 mt-3 p-3 border rounded-lg bg-muted/30">
                 <div className="flex items-center gap-4">
                   <div className="flex-1">
-                    <Label htmlFor="pageLimit">Limite de páginas</Label>
+                    <Label htmlFor="pageLimit">{t('dadosDialogs.urlScanner.labelLimitePaginas')}</Label>
                     <Input
                       id="pageLimit"
                       type="number"
@@ -447,7 +449,7 @@ export const UrlScannerDialog = ({ isOpen, onClose, onImport }: UrlScannerDialog
                       disabled={isScanning}
                     />
                     <Label htmlFor="subdomains" className="cursor-pointer font-normal">
-                      Incluir subdomínios
+                      {t('dadosDialogs.urlScanner.labelIncluirSubdominios')}
                     </Label>
                   </div>
                 </div>
@@ -465,7 +467,7 @@ export const UrlScannerDialog = ({ isOpen, onClose, onImport }: UrlScannerDialog
                     <>
                       <Progress value={(scanProgress.current / scanProgress.total) * 100} />
                       <p className="text-xs text-muted-foreground">
-                        {scanProgress.current} de {scanProgress.total}
+                        {t('dadosDialogs.urlScanner.progressDe').replace('{current}', String(scanProgress.current)).replace('{total}', String(scanProgress.total))}
                       </p>
                     </>
                   )}
@@ -487,7 +489,7 @@ export const UrlScannerDialog = ({ isOpen, onClose, onImport }: UrlScannerDialog
                         <p className="text-2xl font-bold">
                           {scanResult.pages ? scanResult.pages.reduce((sum, p) => sum + p.forms.length, 0) : scanResult.forms.length}
                         </p>
-                        <p className="text-xs text-muted-foreground">Formulários</p>
+                        <p className="text-xs text-muted-foreground">{t('dadosDialogs.urlScanner.cardFormularios')}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -498,7 +500,7 @@ export const UrlScannerDialog = ({ isOpen, onClose, onImport }: UrlScannerDialog
                       <Search className="h-4 w-4 text-info" />
                       <div>
                         <p className="text-2xl font-bold">{getTotalFieldsCount()}</p>
-                        <p className="text-xs text-muted-foreground">Campos</p>
+                        <p className="text-xs text-muted-foreground">{t('dadosDialogs.urlScanner.cardCampos')}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -509,7 +511,7 @@ export const UrlScannerDialog = ({ isOpen, onClose, onImport }: UrlScannerDialog
                       <AlertTriangle className="h-4 w-4 text-warning" />
                       <div>
                         <p className="text-2xl font-bold">{scanResult.sensitiveFieldsCount}</p>
-                        <p className="text-xs text-muted-foreground">Sensíveis</p>
+                        <p className="text-xs text-muted-foreground">{t('dadosDialogs.urlScanner.cardSensiveis')}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -520,7 +522,7 @@ export const UrlScannerDialog = ({ isOpen, onClose, onImport }: UrlScannerDialog
                       <Shield className="h-4 w-4 text-destructive" />
                       <div>
                         <p className="text-2xl font-bold">{scanResult.criticalFieldsCount}</p>
-                        <p className="text-xs text-muted-foreground">Críticos</p>
+                        <p className="text-xs text-muted-foreground">{t('dadosDialogs.urlScanner.cardCriticos')}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -532,8 +534,7 @@ export const UrlScannerDialog = ({ isOpen, onClose, onImport }: UrlScannerDialog
                 <Card>
                   <CardContent className="py-3">
                     <p className="text-sm">
-                      <span className="font-medium">{scanResult.pagesScanned}</span> página(s) escaneada(s) • 
-                      <span className="font-medium ml-1">{scanResult.pagesWithForms}</span> com formulários
+                      {t('dadosDialogs.urlScanner.domainInfo').replace('{scanned}', String(scanResult.pagesScanned)).replace('{withForms}', String(scanResult.pagesWithForms))}
                     </p>
                   </CardContent>
                 </Card>
@@ -565,9 +566,9 @@ export const UrlScannerDialog = ({ isOpen, onClose, onImport }: UrlScannerDialog
               {(getTotalFieldsCount() > 0) && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label>Campos Detectados</Label>
+                    <Label>{t('dadosDialogs.urlScanner.labelCamposDetectados')}</Label>
                     <Button variant="outline" size="sm" onClick={handleSelectAll}>
-                      {selectedFields.size === getAllFieldKeys().size ? 'Desmarcar Todos' : 'Selecionar Todos'}
+                      {selectedFields.size === getAllFieldKeys().size ? t('dadosDialogs.urlScanner.buttonDesmarcarTodos') : t('dadosDialogs.urlScanner.buttonSelecionarTodos')}
                     </Button>
                   </div>
 
@@ -581,10 +582,10 @@ export const UrlScannerDialog = ({ isOpen, onClose, onImport }: UrlScannerDialog
                               <Globe className="h-4 w-4" />
                               <span className="font-medium truncate max-w-[300px]">{page.title || page.url}</span>
                               <StatusBadge size="sm" tone="neutral">
-                                {page.forms.length} form(s)
+                                {t('dadosDialogs.urlScanner.formsCount').replace('{count}', String(page.forms.length))}
                               </StatusBadge>
                               <StatusBadge size="sm" tone="neutral" variant="outline">
-                                {page.totalFields} campos
+                                {t('dadosDialogs.urlScanner.camposCount').replace('{count}', String(page.totalFields))}
                               </StatusBadge>
                             </div>
                           </AccordionTrigger>
@@ -623,7 +624,7 @@ export const UrlScannerDialog = ({ isOpen, onClose, onImport }: UrlScannerDialog
                               <FileText className="h-4 w-4" />
                               <span className="font-medium">{form.formName}</span>
                               <StatusBadge size="sm" tone="neutral">
-                                {form.fields.length} campos
+                                {t('dadosDialogs.urlScanner.camposCount').replace('{count}', String(form.fields.length))}
                               </StatusBadge>
                               {form.method && (
                                 <StatusBadge size="sm" tone="neutral" variant="outline">

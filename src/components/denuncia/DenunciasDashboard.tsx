@@ -12,6 +12,7 @@ import { formatDateOnly } from '@/lib/date-utils';
 import { formatStatus } from '@/lib/text-utils';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveDenunciaStatusTone, resolveCriticidadeTone } from '@/lib/status-tone';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Denuncia {
   id: string;
@@ -35,6 +36,7 @@ interface Denuncia {
 
 
 export function DenunciasDashboard({ itemIdToOpen }: { itemIdToOpen?: string | null }) {
+  const { t } = useLanguage();
   const [denuncias, setDenuncias] = useState<Denuncia[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDenuncia, setSelectedDenuncia] = useState<Denuncia | null>(null);
@@ -80,8 +82,8 @@ export function DenunciasDashboard({ itemIdToOpen }: { itemIdToOpen?: string | n
     } catch (error) {
       console.error('Erro ao carregar denúncias:', error);
       toast({
-        title: "Erro",
-        description: "Erro ao carregar denúncias",
+        title: t('denunciasAdmin.dashboard.errorLoad'),
+        description: t('denunciasAdmin.dashboard.errorLoad'),
         variant: "destructive"
       });
     } finally {
@@ -136,7 +138,7 @@ export function DenunciasDashboard({ itemIdToOpen }: { itemIdToOpen?: string | n
   const columns = [
     {
       key: 'protocolo',
-      label: 'Protocolo',
+      label: t('denunciasAdmin.dashboard.colProtocolo'),
       sortable: true,
       render: (_: any, denuncia: Denuncia) => (
         <span className="font-mono text-sm">{denuncia.protocolo}</span>
@@ -144,7 +146,7 @@ export function DenunciasDashboard({ itemIdToOpen }: { itemIdToOpen?: string | n
     },
     {
       key: 'titulo',
-      label: 'Título',
+      label: t('denunciasAdmin.dashboard.colTitulo'),
       sortable: true,
       render: (_: any, denuncia: Denuncia) => (
         <div className="max-w-xs truncate">{denuncia.titulo}</div>
@@ -152,7 +154,7 @@ export function DenunciasDashboard({ itemIdToOpen }: { itemIdToOpen?: string | n
     },
     {
       key: 'status',
-      label: 'Status',
+      label: t('denunciasAdmin.dashboard.colStatus'),
       sortable: true,
       render: (_: any, denuncia: Denuncia) => (
         <StatusBadge size="sm" {...resolveDenunciaStatusTone(denuncia.status)}>
@@ -162,7 +164,7 @@ export function DenunciasDashboard({ itemIdToOpen }: { itemIdToOpen?: string | n
     },
     {
       key: 'gravidade',
-      label: 'Gravidade',
+      label: t('denunciasAdmin.dashboard.colGravidade'),
       sortable: true,
       render: (_: any, denuncia: Denuncia) => (
         <StatusBadge size="sm" {...resolveCriticidadeTone(denuncia.gravidade)}>
@@ -172,7 +174,7 @@ export function DenunciasDashboard({ itemIdToOpen }: { itemIdToOpen?: string | n
     },
     {
       key: 'categoria',
-      label: 'Categoria',
+      label: t('denunciasAdmin.dashboard.colCategoria'),
       sortable: true,
       render: (_: any, denuncia: Denuncia) => (
         denuncia.categoria ? (
@@ -186,19 +188,19 @@ export function DenunciasDashboard({ itemIdToOpen }: { itemIdToOpen?: string | n
     },
     {
       key: 'denunciante',
-      label: 'Denunciante',
+      label: t('denunciasAdmin.dashboard.colDenunciante'),
       sortable: true,
       render: (_: any, denuncia: Denuncia) => (
         denuncia.anonima ? (
-          <Badge variant="secondary">Anônima</Badge>
+          <Badge variant="secondary">{t('denunciasAdmin.dashboard.anonymousBadge')}</Badge>
         ) : (
-          denuncia.nome_denunciante || 'Não informado'
+          denuncia.nome_denunciante || t('denunciasAdmin.dashboard.notInformed')
         )
       )
     },
     {
       key: 'created_at',
-      label: 'Data',
+      label: t('denunciasAdmin.dashboard.colData'),
       sortable: true,
       render: (_: any, denuncia: Denuncia) => (
         <div className="flex items-center gap-1">
@@ -209,7 +211,7 @@ export function DenunciasDashboard({ itemIdToOpen }: { itemIdToOpen?: string | n
     },
     {
       key: 'acoes',
-      label: 'Ações',
+      label: t('denunciasAdmin.dashboard.colAcoes'),
       render: (_: any, denuncia: Denuncia) => (
         <Button
           variant="ghost"
@@ -226,29 +228,29 @@ export function DenunciasDashboard({ itemIdToOpen }: { itemIdToOpen?: string | n
   const filters = [
     {
       key: 'status',
-      label: 'Status',
+      label: t('denunciasAdmin.dashboard.filterStatusLabel'),
       value: statusFilter,
       onChange: setStatusFilter,
       options: [
-        { value: 'todos', label: 'Todos os status' },
-        { value: 'nova', label: 'Nova' },
-        { value: 'em_analise', label: 'Em Análise' },
-        { value: 'em_investigacao', label: 'Em Investigação' },
-        { value: 'resolvida', label: 'Resolvida' },
-        { value: 'arquivada', label: 'Arquivada' },
+        { value: 'todos', label: t('denunciasAdmin.dashboard.filterStatusAll') },
+        { value: 'nova', label: t('denunciasAdmin.dashboard.statusNova') },
+        { value: 'em_analise', label: t('denunciasAdmin.dashboard.statusEmAnalise') },
+        { value: 'em_investigacao', label: t('denunciasAdmin.dashboard.statusEmInvestigacao') },
+        { value: 'resolvida', label: t('denunciasAdmin.dashboard.statusResolvida') },
+        { value: 'arquivada', label: t('denunciasAdmin.dashboard.statusArquivada') },
       ]
     },
     {
       key: 'gravidade',
-      label: 'Gravidade',
+      label: t('denunciasAdmin.dashboard.filterGravidadeLabel'),
       value: gravidadeFilter,
       onChange: setGravidadeFilter,
       options: [
-        { value: 'todos', label: 'Todas' },
-        { value: 'baixa', label: 'Baixa' },
-        { value: 'media', label: 'Média' },
-        { value: 'alta', label: 'Alta' },
-        { value: 'critica', label: 'Crítica' },
+        { value: 'todos', label: t('denunciasAdmin.dashboard.filterGravidadeAll') },
+        { value: 'baixa', label: t('denunciasAdmin.dashboard.gravidadeBaixa') },
+        { value: 'media', label: t('denunciasAdmin.dashboard.gravidadeMedia') },
+        { value: 'alta', label: t('denunciasAdmin.dashboard.gravidadeAlta') },
+        { value: 'critica', label: t('denunciasAdmin.dashboard.gravidadeCritica') },
       ]
     }
   ];
@@ -262,7 +264,7 @@ export function DenunciasDashboard({ itemIdToOpen }: { itemIdToOpen?: string | n
             columns={columns}
             loading={loading}
             searchable
-            searchPlaceholder="Buscar por protocolo, título ou conteúdo..."
+            searchPlaceholder={t('denunciasAdmin.dashboard.searchPlaceholder')}
             searchValue={searchTerm}
             onSearchChange={setSearchTerm}
             filters={filters}
@@ -278,10 +280,10 @@ export function DenunciasDashboard({ itemIdToOpen }: { itemIdToOpen?: string | n
             }}
             emptyState={{
               icon: <Shield className="h-8 w-8" />,
-              title: searchTerm ? "Nenhuma denúncia encontrada" : "Nenhuma denúncia registrada",
+              title: searchTerm ? t('denunciasAdmin.dashboard.emptyTitleSearch') : t('denunciasAdmin.dashboard.emptyTitle'),
               description: searchTerm 
-                ? "Tente ajustar os termos de busca ou limpe os filtros."
-                : "Denúncias recebidas aparecerão aqui.",
+                ? t('denunciasAdmin.dashboard.emptyDescriptionSearch')
+                : t('denunciasAdmin.dashboard.emptyDescription'),
             }}
             onRefresh={carregarDenuncias}
           />

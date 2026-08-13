@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { useAuth } from '@/components/AuthProvider';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface TesteDialogProps {
   open: boolean;
@@ -22,6 +23,7 @@ export function TesteDialog({ open, onOpenChange, planoId, teste, onSuccess }: T
   const { toast } = useToast();
   const { empresaId } = useEmpresaId();
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
 
   const [form, setForm] = useState({
@@ -50,7 +52,7 @@ export function TesteDialog({ open, onOpenChange, planoId, teste, onSuccess }: T
 
   const handleSubmit = async () => {
     if (!form.data_teste) {
-      toast({ title: 'Data do teste é obrigatória', variant: 'destructive' });
+      toast({ title: t('modDialogs.continuidade.teste.dataObrigatoria'), variant: 'destructive' });
       return;
     }
     if (!empresaId) return;
@@ -72,16 +74,16 @@ export function TesteDialog({ open, onOpenChange, planoId, teste, onSuccess }: T
       if (teste) {
         const { error } = await supabase.from('continuidade_testes').update(payload).eq('id', teste.id);
         if (error) throw error;
-        toast({ title: 'Teste atualizado' });
+        toast({ title: t('modDialogs.continuidade.teste.toastUpdated') });
       } else {
         const { error } = await supabase.from('continuidade_testes').insert(payload);
         if (error) throw error;
-        toast({ title: 'Teste registrado' });
+        toast({ title: t('modDialogs.continuidade.teste.toastCreated') });
       }
       onSuccess();
       onOpenChange(false);
     } catch (error: any) {
-      toast({ title: 'Erro ao salvar teste', description: error.message, variant: 'destructive' });
+      toast({ title: t('modDialogs.continuidade.teste.toastError'), description: error.message, variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -92,55 +94,55 @@ export function TesteDialog({ open, onOpenChange, planoId, teste, onSuccess }: T
       open={open}
       onOpenChange={onOpenChange}
       icon={FlaskConical}
-      title={teste ? 'Editar Teste' : 'Registrar Teste'}
+      title={teste ? t('modDialogs.continuidade.teste.titleEdit') : t('modDialogs.continuidade.teste.titleNew')}
       size="sm"
       onSubmit={handleSubmit}
-      submitLabel={teste ? 'Atualizar' : 'Registrar'}
+      submitLabel={teste ? t('modDialogs.continuidade.teste.submitUpdate') : t('modDialogs.continuidade.teste.submitCreate')}
       isSubmitting={loading}
     >
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Tipo de Teste</Label>
+              <Label>{t('modDialogs.continuidade.teste.fieldTipo')}</Label>
               <Select value={form.tipo_teste} onValueChange={v => setForm(p => ({ ...p, tipo_teste: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="tabletop">Tabletop</SelectItem>
-                  <SelectItem value="simulacao">Simulação</SelectItem>
-                  <SelectItem value="real">Teste Real</SelectItem>
+                  <SelectItem value="tabletop">{t('modDialogs.continuidade.teste.tipoTabletop')}</SelectItem>
+                  <SelectItem value="simulacao">{t('modDialogs.continuidade.teste.tipoSimulacao')}</SelectItem>
+                  <SelectItem value="real">{t('modDialogs.continuidade.teste.tipoReal')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Data do Teste *</Label>
+              <Label>{t('modDialogs.continuidade.teste.fieldData')}</Label>
               <Input type="date" value={form.data_teste} onChange={e => setForm(p => ({ ...p, data_teste: e.target.value }))} />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label>Descrição</Label>
-            <Textarea value={form.descricao} onChange={e => setForm(p => ({ ...p, descricao: e.target.value }))} rows={3} placeholder="Descreva o cenário do teste" />
+            <Label>{t('modDialogs.continuidade.teste.fieldDescricao')}</Label>
+            <Textarea value={form.descricao} onChange={e => setForm(p => ({ ...p, descricao: e.target.value }))} rows={3} placeholder={t('modDialogs.continuidade.teste.fieldDescricaoPlaceholder')} />
           </div>
 
           <div className="space-y-2">
-            <Label>Resultado</Label>
+            <Label>{t('modDialogs.continuidade.teste.fieldResultado')}</Label>
             <Select value={form.resultado} onValueChange={v => setForm(p => ({ ...p, resultado: v }))}>
-              <SelectTrigger><SelectValue placeholder="Selecione o resultado" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder={t('modDialogs.continuidade.teste.fieldResultadoPlaceholder')} /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="aprovado">Aprovado</SelectItem>
-                <SelectItem value="reprovado">Reprovado</SelectItem>
-                <SelectItem value="parcial">Parcialmente Aprovado</SelectItem>
+                <SelectItem value="aprovado">{t('modDialogs.continuidade.teste.resultadoAprovado')}</SelectItem>
+                <SelectItem value="reprovado">{t('modDialogs.continuidade.teste.resultadoReprovado')}</SelectItem>
+                <SelectItem value="parcial">{t('modDialogs.continuidade.teste.resultadoParcial')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-2">
-            <Label>Observações</Label>
+            <Label>{t('modDialogs.continuidade.teste.fieldObservacoes')}</Label>
             <Textarea value={form.observacoes} onChange={e => setForm(p => ({ ...p, observacoes: e.target.value }))} rows={2} />
           </div>
 
           <div className="space-y-2">
-            <Label>Lições Aprendidas</Label>
+            <Label>{t('modDialogs.continuidade.teste.fieldLicoes')}</Label>
             <Textarea value={form.licoes_aprendidas} onChange={e => setForm(p => ({ ...p, licoes_aprendidas: e.target.value }))} rows={2} />
           </div>
         </div>

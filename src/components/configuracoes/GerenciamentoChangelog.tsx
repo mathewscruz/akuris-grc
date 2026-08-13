@@ -23,15 +23,15 @@ import { formatDate } from '@/lib/i18n-format';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ChangelogEntryDialog, type ChangelogEntryRow } from './ChangelogEntryDialog';
 
-const TYPE_LABEL: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' }> = {
-  feature: { label: 'Novo', variant: 'default' },
-  improvement: { label: 'Melhoria', variant: 'secondary' },
-  fix: { label: 'Correção', variant: 'outline' },
-};
 
 export default function GerenciamentoChangelog() {
   const { profile } = useAuth();
-  const { locale } = useLanguage();
+  const { locale, t } = useLanguage();
+  const TYPE_LABEL: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' }> = {
+    feature: { label: t('configPlanos.gerenciamentoChangelog.typeFeature'), variant: 'default' },
+    improvement: { label: t('configPlanos.gerenciamentoChangelog.typeImprovement'), variant: 'secondary' },
+    fix: { label: t('configPlanos.gerenciamentoChangelog.typeFix'), variant: 'outline' },
+  };
   const isSuperAdmin = profile?.role === 'super_admin';
 
   const [entries, setEntries] = useState<ChangelogEntryRow[]>([]);
@@ -58,7 +58,7 @@ export default function GerenciamentoChangelog() {
       );
     } catch (err) {
       logger.error('Erro ao carregar changelog', err as Error);
-      toast.error('Não foi possível carregar as versões');
+      toast.error(t('configPlanos.gerenciamentoChangelog.loadError'));
     } finally {
       setLoading(false);
     }
@@ -72,9 +72,9 @@ export default function GerenciamentoChangelog() {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
         <ShieldAlert className="h-12 w-12 text-muted-foreground mb-4" />
-        <h3 className="text-lg font-semibold">Acesso restrito</h3>
+        <h3 className="text-lg font-semibold">{t('configPlanos.gerenciamentoChangelog.accessRestrictedTitle')}</h3>
         <p className="text-sm text-muted-foreground mt-1">
-          Somente super-administradores podem gerenciar as Novidades.
+          {t('configPlanos.gerenciamentoChangelog.accessRestrictedDesc')}
         </p>
       </div>
     );
@@ -95,12 +95,12 @@ export default function GerenciamentoChangelog() {
     try {
       const { error } = await supabase.from('changelog_entries').delete().eq('id', deletingId);
       if (error) throw error;
-      toast.success('Versão excluída');
+      toast.success(t('configPlanos.gerenciamentoChangelog.deletedSuccess'));
       setDeletingId(null);
       load();
     } catch (err) {
       logger.error('Erro ao excluir versão', err as Error);
-      toast.error('Não foi possível excluir');
+      toast.error(t('configPlanos.gerenciamentoChangelog.deleteError'));
     }
   };
 
@@ -110,14 +110,14 @@ export default function GerenciamentoChangelog() {
         <div>
           <h3 className="text-base font-semibold flex items-center gap-2">
             <AkurisAIIcon className="h-4 w-4 text-primary" />
-            Novidades da Plataforma
+            {t('configPlanos.gerenciamentoChangelog.headerTitle')}
           </h3>
           <p className="text-sm text-muted-foreground">
-            Gerencie as versões exibidas no popover do header para todos os usuários.
+            {t('configPlanos.gerenciamentoChangelog.headerSubtitle')}
           </p>
         </div>
         <Button onClick={handleNew}>
-          <Plus className="h-4 w-4 mr-1" /> Nova versão
+          <Plus className="h-4 w-4 mr-1" /> {t('configPlanos.gerenciamentoChangelog.newVersion')}
         </Button>
       </div>
 
@@ -128,7 +128,7 @@ export default function GerenciamentoChangelog() {
       ) : entries.length === 0 ? (
         <Card>
           <CardContent className="py-10 text-center text-sm text-muted-foreground">
-            Nenhuma versão publicada ainda. Clique em "Nova versão" para começar.
+            {t('configPlanos.gerenciamentoChangelog.emptyState')}
           </CardContent>
         </Card>
       ) : (
@@ -146,7 +146,7 @@ export default function GerenciamentoChangelog() {
                         {formatDate(entry.release_date + 'T00:00:00', locale)}
                       </span>
                       <span className="text-xs text-muted-foreground">
-                        · {entry.items.length} {entry.items.length === 1 ? 'item' : 'itens'}
+                        · {entry.items.length} {entry.items.length === 1 ? t('configPlanos.gerenciamentoChangelog.itemSingular') : t('configPlanos.gerenciamentoChangelog.itemPlural')}
                       </span>
                     </div>
                     <ul className="space-y-1.5">
@@ -164,14 +164,14 @@ export default function GerenciamentoChangelog() {
                     </ul>
                   </div>
                   <div className="flex flex-col gap-1 shrink-0">
-                    <Button variant="ghost" size="icon" onClick={() => handleEdit(entry)} aria-label="Editar">
+                    <Button variant="ghost" size="icon" onClick={() => handleEdit(entry)} aria-label={t('configPlanos.gerenciamentoChangelog.editAria')}>
                       <Pencil className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => setDeletingId(entry.id!)}
-                      aria-label="Excluir"
+                      aria-label={t('configPlanos.gerenciamentoChangelog.deleteAria')}
                     >
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
@@ -193,14 +193,14 @@ export default function GerenciamentoChangelog() {
       <AlertDialog open={!!deletingId} onOpenChange={(o) => !o && setDeletingId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir versão?</AlertDialogTitle>
+            <AlertDialogTitle>{t('configPlanos.gerenciamentoChangelog.deleteDialogTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação não pode ser desfeita. A versão deixará de aparecer no popover de Novidades.
+              {t('configPlanos.gerenciamentoChangelog.deleteDialogDescription')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}>Excluir</AlertDialogAction>
+            <AlertDialogCancel>{t('configPlanos.gerenciamentoChangelog.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>{t('configPlanos.gerenciamentoChangelog.confirmDelete')}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

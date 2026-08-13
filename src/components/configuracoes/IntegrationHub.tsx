@@ -14,6 +14,7 @@ import { AzureConfigDialog } from './integrations/AzureConfigDialog';
 import { IntegrationLogViewer } from './integrations/IntegrationLogViewer';
 import { ApiKeysManager } from './ApiKeysManager';
 import { InboundWebhooksManager } from './InboundWebhooksManager';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 // Logos inline SVG
@@ -97,12 +98,12 @@ interface IntegrationConfig {
   ultima_sincronizacao?: string;
 }
 
-const INTEGRACOES_DISPONIVEIS: Integration[] = [
+const buildIntegracoesDisponiveis = (t: (k: string) => string): Integration[] => [
   {
     id: 'slack',
     tipo: 'slack',
-    nome: 'Slack',
-    descricao: 'Quando incidentes, riscos ou controles são criados/alterados, uma mensagem formatada é enviada ao canal Slack configurado com detalhes e link direto.',
+    nome: t('configIntegrations.hub.integracoes.slack.nome'),
+    descricao: t('configIntegrations.hub.integracoes.slack.descricao'),
     categoria: 'comunicacao',
     disponivel: true,
     betaLabel: 'Webhook',
@@ -112,8 +113,8 @@ const INTEGRACOES_DISPONIVEIS: Integration[] = [
   {
     id: 'teams',
     tipo: 'teams',
-    nome: 'Microsoft Teams',
-    descricao: 'Notificações automáticas em formato de card no canal do Teams quando eventos de segurança, compliance ou riscos ocorrem no Akuris.',
+    nome: t('configIntegrations.hub.integracoes.teams.nome'),
+    descricao: t('configIntegrations.hub.integracoes.teams.descricao'),
     categoria: 'comunicacao',
     disponivel: true,
     betaLabel: 'Webhook',
@@ -123,8 +124,8 @@ const INTEGRACOES_DISPONIVEIS: Integration[] = [
   {
     id: 'webhooks',
     tipo: 'webhooks',
-    nome: 'Webhooks',
-    descricao: 'Envie payloads JSON para qualquer URL quando eventos ocorrerem. Ideal para integrar com sistemas internos, SIEMs ou plataformas de automação.',
+    nome: t('configIntegrations.hub.integracoes.webhooks.nome'),
+    descricao: t('configIntegrations.hub.integracoes.webhooks.descricao'),
     categoria: 'automacao',
     disponivel: true,
     cor: '#7C3AED',
@@ -133,8 +134,8 @@ const INTEGRACOES_DISPONIVEIS: Integration[] = [
   {
     id: 'jira',
     tipo: 'jira',
-    nome: 'Jira',
-    descricao: 'Cria tickets automaticamente no Jira quando incidentes críticos, riscos ou denúncias são registrados, com detalhes e link direto ao Akuris.',
+    nome: t('configIntegrations.hub.integracoes.jira.nome'),
+    descricao: t('configIntegrations.hub.integracoes.jira.descricao'),
     categoria: 'itsm',
     disponivel: true,
     cor: '#0052CC',
@@ -143,8 +144,8 @@ const INTEGRACOES_DISPONIVEIS: Integration[] = [
   {
     id: 'azure',
     tipo: 'azure',
-    nome: 'Azure / Intune',
-    descricao: 'Sincroniza dispositivos gerenciados do Microsoft Intune com o módulo de Ativos, incluindo status de compliance e dados do dispositivo.',
+    nome: t('configIntegrations.hub.integracoes.azure.nome'),
+    descricao: t('configIntegrations.hub.integracoes.azure.descricao'),
     categoria: 'cloud',
     disponivel: true,
     cor: '#0078D4',
@@ -152,14 +153,17 @@ const INTEGRACOES_DISPONIVEIS: Integration[] = [
   },
 ];
 
-const CATEGORIAS = {
-  comunicacao: { nome: 'Comunicação', descricao: 'Ferramentas de comunicação e colaboração' },
-  automacao: { nome: 'Automação', descricao: 'Plataformas de automação e webhooks' },
-  itsm: { nome: 'ITSM / Gestão de TI', descricao: 'Ferramentas de gestão de serviços' },
-  cloud: { nome: 'Cloud & Identidade', descricao: 'Provedores de nuvem e gestão de identidade' },
-};
+const buildCategorias = (t: (k: string) => string) => ({
+  comunicacao: { nome: t('configIntegrations.hub.categorias.comunicacao.nome'), descricao: t('configIntegrations.hub.categorias.comunicacao.descricao') },
+  automacao: { nome: t('configIntegrations.hub.categorias.automacao.nome'), descricao: t('configIntegrations.hub.categorias.automacao.descricao') },
+  itsm: { nome: t('configIntegrations.hub.categorias.itsm.nome'), descricao: t('configIntegrations.hub.categorias.itsm.descricao') },
+  cloud: { nome: t('configIntegrations.hub.categorias.cloud.nome'), descricao: t('configIntegrations.hub.categorias.cloud.descricao') },
+});
 
 export function IntegrationHub() {
+  const { t } = useLanguage();
+  const INTEGRACOES_DISPONIVEIS = buildIntegracoesDisponiveis(t);
+  const CATEGORIAS = buildCategorias(t);
   const [loading, setLoading] = useState(true);
   const [configuredIntegrations, setConfiguredIntegrations] = useState<IntegrationConfig[]>([]);
   const [empresaId, setEmpresaId] = useState<string | null>(null);
@@ -205,7 +209,7 @@ export function IntegrationHub() {
       }
     } catch (error) {
       console.error('Erro ao buscar integrações:', error);
-      toast.error('Erro ao carregar integrações');
+      toast.error(t('configIntegrations.hub.toastErrorLoad'));
     } finally {
       setLoading(false);
     }
@@ -223,8 +227,8 @@ export function IntegrationHub() {
 
   const handleConfigureClick = (integration: Integration) => {
     if (!integration.disponivel) {
-      toast.info('Em breve', {
-        description: `A integração com ${integration.nome} estará disponível em breve.`,
+      toast.info(t('configIntegrations.hub.toastEmBreveTitle'), {
+        description: t('configIntegrations.hub.toastEmBreveDesc').replace('{nome}', integration.nome),
       });
       return;
     }
@@ -261,7 +265,7 @@ export function IntegrationHub() {
       >
         {!integration.disponivel && (
           <Badge variant="secondary" className="absolute top-3 right-3 text-xs">
-            Em breve
+            {t('configIntegrations.hub.emBreve')}
           </Badge>
         )}
         {integration.disponivel && integration.betaLabel && (
@@ -301,7 +305,7 @@ export function IntegrationHub() {
               variant={status === 'conectado' ? 'default' : 'outline'}
               className={status === 'conectado' ? 'bg-green-500/10 text-green-600 border-green-200' : ''}
             >
-              {status === 'conectado' ? 'Conectado' : 'Desconectado'}
+              {status === 'conectado' ? t('configIntegrations.hub.conectado') : t('configIntegrations.hub.desconectado')}
             </Badge>
             
             <Button 
@@ -310,7 +314,7 @@ export function IntegrationHub() {
               onClick={() => handleConfigureClick(integration)}
               disabled={!integration.disponivel}
             >
-              {status === 'conectado' ? 'Configurar' : 'Conectar'}
+              {status === 'conectado' ? t('configIntegrations.hub.btnConfigurar') : t('configIntegrations.hub.btnConectar')}
             </Button>
           </div>
         </CardContent>
@@ -337,13 +341,13 @@ export function IntegrationHub() {
       <Tabs defaultValue="conectores" className="space-y-6">
         <TabsList>
           <TabsTrigger value="conectores" className="gap-2">
-            <Plug className="h-4 w-4" /> Conectores
+            <Plug className="h-4 w-4" /> {t('configIntegrations.hub.tabConectores')}
           </TabsTrigger>
           <TabsTrigger value="api-keys" className="gap-2">
-            <Key className="h-4 w-4" /> API Keys
+            <Key className="h-4 w-4" /> {t('configIntegrations.hub.tabApiKeys')}
           </TabsTrigger>
           <TabsTrigger value="inbound-webhooks" className="gap-2">
-            <Webhook className="h-4 w-4" /> Webhooks de Entrada
+            <Webhook className="h-4 w-4" /> {t('configIntegrations.hub.tabInboundWebhooks')}
           </TabsTrigger>
         </TabsList>
 
@@ -353,12 +357,12 @@ export function IntegrationHub() {
               <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/50 border flex-1">
                 <Info className="h-5 w-5 text-primary shrink-0" />
                 <p className="text-sm text-muted-foreground">
-                  Conecte o Akuris com suas ferramentas favoritas para automatizar processos e receber notificações em tempo real.
+                  {t('configIntegrations.hub.infoBanner')}
                 </p>
               </div>
               <Button variant="outline" className="ml-4" onClick={() => setLogViewerOpen(true)}>
                 <History className="h-4 w-4 mr-2" />
-                Ver Logs
+                {t('configIntegrations.hub.verLogs')}
               </Button>
             </div>
 

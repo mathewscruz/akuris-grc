@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { useLanguage } from '@/contexts/LanguageContext';
 interface JiraConfigDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -29,6 +30,7 @@ export function JiraConfigDialog({
   existingConfig,
   onSaved
 }: JiraConfigDialogProps) {
+  const { t } = useLanguage();
   const [instanceUrl, setInstanceUrl] = useState(
     (existingConfig?.configuracoes?.instance_url as string) || ''
   );
@@ -48,7 +50,7 @@ export function JiraConfigDialog({
 
   const handleTestConnection = async () => {
     if (!instanceUrl || !email || !apiToken) {
-      toast.error('Campos obrigatórios', { description: 'Preencha URL, email e API Token.' });
+      toast.error(t('configIntegrations.jira.toastCamposObrigatorios'), { description: t('configIntegrations.jira.toastCamposUrlEmailToken') });
       return;
     }
 
@@ -70,16 +72,16 @@ export function JiraConfigDialog({
 
       if (data?.success) {
         setTestResult('success');
-        toast.success('Conexão bem-sucedida!', {
-          description: 'Credenciais do Jira validadas.'
+        toast.success(t('configIntegrations.jira.toastConexaoOk'), {
+          description: t('configIntegrations.jira.toastConexaoOkDesc')
         });
       } else {
         throw new Error(data?.error || 'Falha no teste');
       }
     } catch (error: any) {
       setTestResult('error');
-      toast.error('Falha na conexão', {
-        description: error.message || 'Verifique as credenciais.'
+      toast.error(t('configIntegrations.jira.toastConexaoFalha'), {
+        description: error.message || t('configIntegrations.jira.toastConexaoFalhaDesc')
       });
     } finally {
       setTesting(false);
@@ -88,13 +90,13 @@ export function JiraConfigDialog({
 
   const handleSave = async () => {
     if (!instanceUrl || !email || !projectKey) {
-      toast.error('Campos obrigatórios', { description: 'Preencha todos os campos.' });
+      toast.error(t('configIntegrations.jira.toastCamposObrigatorios'), { description: t('configIntegrations.jira.toastCamposTodos') });
       return;
     }
 
     // Se não tem config existente, precisa do token
     if (!existingConfig && !apiToken) {
-      toast.error('API Token obrigatório', { description: 'Informe o API Token do Jira.' });
+      toast.error(t('configIntegrations.jira.toastTokenObrig'), { description: t('configIntegrations.jira.toastTokenObrigDesc') });
       return;
     }
 
@@ -132,13 +134,13 @@ export function JiraConfigDialog({
         if (error) throw error;
       }
 
-      toast.success('Jira configurado!', {
-        description: 'Incidentes serão sincronizados automaticamente.'
+      toast.success(t('configIntegrations.jira.toastConfigurado'), {
+        description: t('configIntegrations.jira.toastConfiguradoDesc')
       });
       onSaved();
       onOpenChange(false);
     } catch (error: any) {
-      toast.error('Erro ao salvar', { description: error.message });
+      toast.error(t('configIntegrations.jira.toastErroSalvar'), { description: error.message });
     } finally {
       setSaving(false);
     }
@@ -155,11 +157,11 @@ export function JiraConfigDialog({
         .eq('id', existingConfig.id);
       if (error) throw error;
 
-      toast.success('Jira desconectado');
+      toast.success(t('configIntegrations.jira.toastDesconectado'));
       onSaved();
       onOpenChange(false);
     } catch (error: any) {
-      toast.error('Erro ao desconectar', { description: error.message });
+      toast.error(t('configIntegrations.jira.toastErroDesconectar'), { description: error.message });
     } finally {
       setSaving(false);
     }
@@ -175,16 +177,16 @@ export function JiraConfigDialog({
           disabled={saving}
           className="sm:mr-auto"
         >
-          Desconectar
+          {t('configIntegrations.jira.btnDesconectar')}
         </Button>
       )}
       <div className="flex gap-2 sm:ml-auto">
         <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)} disabled={saving}>
-          Cancelar
+          {t('configIntegrations.jira.btnCancelar')}
         </Button>
         <Button size="sm" onClick={handleSave} disabled={saving || !instanceUrl || !email || !projectKey}>
           {saving && <AkurisPulse size={16} className="mr-2" />}
-          Salvar
+          {t('configIntegrations.jira.btnSalvar')}
         </Button>
       </div>
     </div>
@@ -194,8 +196,8 @@ export function JiraConfigDialog({
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      title="Configurar Jira Service Management"
-      description="Crie tickets no Jira automaticamente a partir de incidentes e riscos."
+      title={t('configIntegrations.jira.title')}
+      description={t('configIntegrations.jira.description')}
       icon={Ticket}
       size="md"
       footer={footer}
@@ -207,16 +209,16 @@ export function JiraConfigDialog({
           <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 space-y-2">
             <h4 className="font-medium text-sm flex items-center gap-2 text-primary">
               <AlertCircle className="h-4 w-4" />
-              Como funciona
+              {t('configIntegrations.jira.comoFuncionaTitle')}
             </h4>
             <p className="text-xs text-muted-foreground">
-              Quando incidentes críticos, riscos ou denúncias forem criados no Akuris, um ticket será automaticamente criado no projeto Jira configurado com todos os detalhes e link direto.
+              {t('configIntegrations.jira.comoFuncionaDesc')}
             </p>
           </div>
 
           {/* URL da instância */}
           <div className="space-y-2">
-            <Label htmlFor="jira-url">URL da Instância Jira *</Label>
+            <Label htmlFor="jira-url">{t('configIntegrations.jira.fieldUrl')}</Label>
             <Input
               id="jira-url"
               placeholder="https://sua-empresa.atlassian.net"
@@ -230,7 +232,7 @@ export function JiraConfigDialog({
 
           {/* Email */}
           <div className="space-y-2">
-            <Label htmlFor="jira-email">Email da Conta Atlassian *</Label>
+            <Label htmlFor="jira-email">{t('configIntegrations.jira.fieldEmail')}</Label>
             <Input
               id="jira-email"
               type="email"
@@ -246,7 +248,7 @@ export function JiraConfigDialog({
           {/* API Token */}
           <div className="space-y-2">
             <Label htmlFor="jira-token">
-              API Token {existingConfig ? '(deixe em branco para manter)' : '*'}
+              {t('configIntegrations.jira.fieldToken')} {existingConfig ? t('configIntegrations.jira.fieldTokenKeep') : '*'}
             </Label>
             <Input
               id="jira-token"
@@ -264,14 +266,14 @@ export function JiraConfigDialog({
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
             >
-              Criar API Token
+              {t('configIntegrations.jira.criarToken')}
               <ExternalLink className="h-3 w-3" />
             </a>
           </div>
 
           {/* Project Key */}
           <div className="space-y-2">
-            <Label htmlFor="jira-project">Chave do Projeto *</Label>
+            <Label htmlFor="jira-project">{t('configIntegrations.jira.fieldProject')}</Label>
             <Input
               id="jira-project"
               placeholder="PROJ"
@@ -279,23 +281,23 @@ export function JiraConfigDialog({
               onChange={(e) => setProjectKey(e.target.value.toUpperCase())}
             />
             <p className="text-xs text-muted-foreground">
-              A chave do projeto onde os tickets serão criados (ex: GRC, RISK)
+              {t('configIntegrations.jira.fieldProjectHelp')}
             </p>
           </div>
 
           {/* Issue Type */}
           <div className="space-y-2">
-            <Label>Tipo de Issue</Label>
+            <Label>{t('configIntegrations.jira.fieldIssueType')}</Label>
             <Select value={issueType} onValueChange={setIssueType}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Task">Task</SelectItem>
-                <SelectItem value="Bug">Bug</SelectItem>
-                <SelectItem value="Story">Story</SelectItem>
-                <SelectItem value="Incident">Incident</SelectItem>
-                <SelectItem value="Service Request">Service Request</SelectItem>
+                <SelectItem value="Task">{t('configIntegrations.jira.issueTask')}</SelectItem>
+                <SelectItem value="Bug">{t('configIntegrations.jira.issueBug')}</SelectItem>
+                <SelectItem value="Story">{t('configIntegrations.jira.issueStory')}</SelectItem>
+                <SelectItem value="Incident">{t('configIntegrations.jira.issueIncident')}</SelectItem>
+                <SelectItem value="Service Request">{t('configIntegrations.jira.issueServiceRequest')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -317,14 +319,14 @@ export function JiraConfigDialog({
               ) : (
                 <Send className="h-4 w-4 mr-2" />
               )}
-              Testar Conexão
+              {t('configIntegrations.jira.btnTestar')}
             </Button>
           </div>
           {testResult === 'success' && (
-            <p className="text-xs text-green-600">✓ Conexão verificada com sucesso</p>
+            <p className="text-xs text-green-600">{t('configIntegrations.jira.testSuccess')}</p>
           )}
           {testResult === 'error' && (
-            <p className="text-xs text-destructive">✗ Falha na conexão - verifique as credenciais</p>
+            <p className="text-xs text-destructive">{t('configIntegrations.jira.testError')}</p>
           )}
       </div>
     </DialogShell>

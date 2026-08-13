@@ -9,6 +9,7 @@ import { PermissionProfileDialog } from './PermissionProfileDialog';
 import ConfirmDialog from '@/components/ConfirmDialog';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { useLanguage } from '@/contexts/LanguageContext';
 interface Profile {
   id: string;
   name: string;
@@ -23,6 +24,7 @@ interface Props {
 }
 
 export const PermissionProfilesList: React.FC<Props> = ({ empresaId }) => {
+  const { t } = useLanguage();
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -60,7 +62,7 @@ export const PermissionProfilesList: React.FC<Props> = ({ empresaId }) => {
       })));
     } catch (error) {
       console.error('Error fetching profiles:', error);
-      toast.error('Erro ao carregar perfis');
+      toast.error(t('configPerms.profilesList.errorFetch'));
     } finally {
       setLoading(false);
     }
@@ -90,10 +92,10 @@ export const PermissionProfilesList: React.FC<Props> = ({ empresaId }) => {
         .eq('id', profileToDelete.id);
       if (error) throw error;
 
-      toast.success('Perfil excluído');
+      toast.success(t('configPerms.profilesList.profileDeleted'));
       fetchProfiles();
     } catch (error: any) {
-      toast.error(error.message || 'Erro ao excluir perfil');
+      toast.error(error.message || t('configPerms.profilesList.errorDelete'));
     } finally {
       setDeleteDialogOpen(false);
       setProfileToDelete(null);
@@ -113,15 +115,15 @@ export const PermissionProfilesList: React.FC<Props> = ({ empresaId }) => {
       <div className="flex justify-end">
         <Button onClick={() => { setEditingProfile(null); setDialogOpen(true); }}>
           <Plus className="h-4 w-4 mr-2" />
-          Novo Perfil
+          {t('configPerms.profilesList.newProfile')}
         </Button>
       </div>
 
       {profiles.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
           <Shield className="h-12 w-12 mx-auto mb-3 opacity-50" />
-          <p className="font-medium">Nenhum perfil criado</p>
-          <p className="text-sm">Crie perfis para simplificar a gestão de permissões</p>
+          <p className="font-medium">{t('configPerms.profilesList.emptyTitle')}</p>
+          <p className="text-sm">{t('configPerms.profilesList.emptyDesc')}</p>
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -137,7 +139,7 @@ export const PermissionProfilesList: React.FC<Props> = ({ empresaId }) => {
                     {profile.is_default && (
                       <Badge variant="secondary" className="text-xs">
                         <Star className="h-3 w-3 mr-1" />
-                        Padrão
+                        {t('configPerms.profilesList.defaultBadge')}
                       </Badge>
                     )}
                   </div>
@@ -150,7 +152,7 @@ export const PermissionProfilesList: React.FC<Props> = ({ empresaId }) => {
                 <div className="flex items-center justify-between">
                   <Badge variant="outline" className="text-xs">
                     <Users className="h-3 w-3 mr-1" />
-                    {profile.user_count} usuário(s)
+                    {t('configPerms.profilesList.userCount').replace('{count}', String(profile.user_count))}
                   </Badge>
 
                   <div className="flex gap-1">
@@ -184,10 +186,10 @@ export const PermissionProfilesList: React.FC<Props> = ({ empresaId }) => {
       <ConfirmDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        title="Excluir Perfil"
-        description={`Tem certeza que deseja excluir o perfil "${profileToDelete?.name}"? Usuários vinculados perderão a associação, mas manterão suas permissões individuais.`}
-        confirmText="Excluir"
-        cancelText="Cancelar"
+        title={t('configPerms.profilesList.deleteTitle')}
+        description={t('configPerms.profilesList.deleteDescription').replace('{name}', profileToDelete?.name || '')}
+        confirmText={t('configPerms.profilesList.deleteConfirm')}
+        cancelText={t('configPerms.profilesList.deleteCancel')}
         variant="destructive"
         onConfirm={handleDelete}
       />

@@ -1,6 +1,131 @@
 import jsPDF from 'jspdf';
 import { supabase } from '@/integrations/supabase/client';
 import { loadAkurisLogo, addAkurisCover, addAkurisFooter, addSectionTitle as addPdfSectionTitle, drawTableHeader, formatLabel, AKURIS_COLORS } from '@/lib/pdf-utils';
+import { getAppLocale } from '@/lib/i18n-locale';
+
+const PDF_LABELS: Record<string, string> = {
+  "Altos": "High",
+  "Anonimas": "Anonymous",
+  "Aprovados": "Approved",
+  "Assessments": "Assessments",
+  "Ativos": "Active",
+  "Ativos Criticos": "Critical Assets",
+  "Auditorias": "Audits",
+  "Baixos": "Low",
+  "Canal de Etica": "Ethics Channel",
+  "Chaves Criptograficas": "Cryptographic Keys",
+  "Concluidas": "Completed",
+  "Concluidos": "Completed",
+  "Conformes": "Compliant",
+  "Contratos Ativos": "Active Contracts",
+  "Controles": "Controls",
+  "Controles Ativos": "Active Controls",
+  "Controles Implementados": "Implemented Controls",
+  "Criticos": "Critical",
+  "Dados Pessoais Mapeados": "Mapped Personal Data",
+  "Denuncias": "Reports",
+  "Detalhamento dos Riscos": "Risk Details",
+  "Distribuicao por Gravidade": "Distribution by Severity",
+  "Distribuicao por Tipo": "Distribution by Type",
+  "Documentos": "Documents",
+  "Due Diligence de Fornecedores": "Supplier Due Diligence",
+  "Em Aberto/Investigacao": "Open/Under Investigation",
+  "Em Andamento": "In Progress",
+  "Em Revisao": "Under Review",
+  "Fornecedores Aprovados": "Approved Suppliers",
+  "Frameworks": "Frameworks",
+  "Frameworks ISO encontrados": "ISO Frameworks Found",
+  "Frameworks Monitorados": "Monitored Frameworks",
+  "Governanca Documental": "Document Governance",
+  "Gravidade Alta": "High Severity",
+  "Gravidade Critica": "Critical Severity",
+  "Historico de Testes": "Test History",
+  "Incidentes (90 dias)": "Incidents (90 days)",
+  "Incidentes Recentes": "Recent Incidents",
+  "Inventario de Ativos": "Asset Inventory",
+  "Itens Identificados": "Identified Items",
+  "Itens de Auditoria": "Audit Items",
+  "Itens em Aberto": "Open Items",
+  "Licencas Cadastradas": "Registered Licenses",
+  "Licencas Vencendo (90d)": "Licenses Expiring (90d)",
+  "Lista de Ativos": "Asset List",
+  "Lista de Contratos": "Contract List",
+  "Lista de Incidentes": "Incident List",
+  "Medios": "Medium",
+  "Nao conformes": "Non-Compliant",
+  "Panorama LGPD": "LGPD Overview",
+  "Parcialmente conformes": "Partially Compliant",
+  "Pendentes": "Pending",
+  "Planos Ativos": "Active Plans",
+  "Planos de Continuidade": "Continuity Plans",
+  "Requisitos avaliados": "Requirements Assessed",
+  "Resolvidos": "Resolved",
+  "Resumo Executivo": "Executive Summary",
+  "Resumo Executivo - Ultimos 90 dias": "Executive Summary - Last 90 days",
+  "Resumo de Auditorias": "Audit Summary",
+  "Resumo de Continuidade de Negocios": "Business Continuity Summary",
+  "Resumo de Contratos": "Contract Summary",
+  "Resumo de Incidentes": "Incident Summary",
+  "Revisao Vencendo (30d)": "Review Due (30d)",
+  "Riscos Ativos": "Active Risks",
+  "Riscos Criticos": "Critical Risks",
+  "Score Medio (0-10)": "Average Score (0-10)",
+  "Solicitacoes de Titulares": "Data Subject Requests",
+  "Status Geral de Compliance": "Overall Compliance Status",
+  "Status ISO 27001": "ISO 27001 Status",
+  "Tarefas Pendentes": "Pending Tasks",
+  "Testes Realizados": "Tests Performed",
+  "Testes com Sucesso": "Successful Tests",
+  "Total de Assessments": "Total Assessments",
+  "Total de Ativos": "Total Assets",
+  "Total de Auditorias": "Total Audits",
+  "Total de Contratos": "Total Contracts",
+  "Total de Controles": "Total Controls",
+  "Total de Denuncias": "Total Reports",
+  "Total de Documentos": "Total Documents",
+  "Total de Incidentes": "Total Incidents",
+  "Total de Planos": "Total Plans",
+  "Total de Riscos": "Total Risks",
+  "Total de Tarefas": "Total Tasks",
+  "Tratamentos Concluidos": "Completed Treatments",
+  "Valor Total (BRL)": "Total Value (BRL)",
+  "Vencendo (30d)": "Expiring (30d)",
+  "Vencendo (90 dias)": "Expiring (90 days)",
+  "Vencidos": "Expired",
+  "Nome": "Name",
+  "Nivel": "Level",
+  "Status": "Status",
+  "Responsavel": "Owner",
+  "Titulo": "Title",
+  "Categoria": "Category",
+  "Criticidade": "Criticality",
+  "Base Legal": "Legal Basis",
+  "Sensibilidade": "Sensitivity",
+  "Criado em": "Created At",
+  "Versao": "Version",
+  "Tipo": "Type",
+  "RTO/RPO": "RTO/RPO",
+  "Data": "Date",
+  "Resultado": "Result",
+  "Vencimento": "Expiration",
+  "Quantidade": "Quantity",
+  "Inicio": "Start",
+  "Codigo": "Code",
+  "Prioridade": "Priority",
+  "Fornecedor": "Supplier",
+  "Score": "Score",
+  "Conclusao": "Conclusion",
+  "Gravidade": "Severity",
+  "Protocolo": "Protocol",
+  "Nenhum dado encontrado para este template.": "No data found for this template.",
+  "Verifique se ha dados cadastrados nos modulos correspondentes.": "Check whether data has been registered in the corresponding modules."
+};
+
+function tr(ptLabel: string): string {
+  if (getAppLocale() === 'pt') return ptLabel;
+  return PDF_LABELS[ptLabel] ?? ptLabel;
+}
+
 
 // ── helpers ──────────────────────────────────────────────────────────
 function addSectionTitleLocal(doc: jsPDF, title: string, y: number): number {
@@ -122,15 +247,15 @@ async function fetchRiscosData(empresaId: string) {
   const respLabel = (v: any) => (v ? (respMap[v] || v) : '-');
   return {
     sections: [
-      { title: 'Resumo Executivo', metrics: [
-        { label: 'Total de Riscos', value: r.length },
-        { label: 'Criticos', value: criticos },
-        { label: 'Altos', value: altos },
-        { label: 'Medios', value: medios },
-        { label: 'Baixos', value: baixos },
-        { label: 'Tratamentos Concluidos', value: `${concluidos}/${t.length}` },
+      { title: tr('Resumo Executivo'), metrics: [
+        { label: tr('Total de Riscos'), value: r.length },
+        { label: tr('Criticos'), value: criticos },
+        { label: tr('Altos'), value: altos },
+        { label: tr('Medios'), value: medios },
+        { label: tr('Baixos'), value: baixos },
+        { label: tr('Tratamentos Concluidos'), value: `${concluidos}/${t.length}` },
       ]},
-      { title: 'Detalhamento dos Riscos', tableHeaders: ['Nome', 'Nivel', 'Status', 'Responsavel'],
+      { title: tr('Detalhamento dos Riscos'), tableHeaders: [tr('Nome'), tr('Nivel'), tr('Status'), tr('Responsavel')],
         tableRows: r.map(x => [x.nome, x.nivel_risco_inicial || '-', x.status || '-', respLabel(x.responsavel)]),
         colWidths: [60, 30, 35, 45] },
     ] as Section[]
@@ -145,13 +270,13 @@ async function fetchIncidentesData(empresaId: string) {
   const resolvidos = i.filter(x => x.status === 'resolvido').length;
   return {
     sections: [
-      { title: 'Resumo de Incidentes', metrics: [
-        { label: 'Total de Incidentes', value: i.length },
-        { label: 'Gravidade Critica', value: critica },
-        { label: 'Gravidade Alta', value: alta },
-        { label: 'Resolvidos', value: resolvidos },
+      { title: tr('Resumo de Incidentes'), metrics: [
+        { label: tr('Total de Incidentes'), value: i.length },
+        { label: tr('Gravidade Critica'), value: critica },
+        { label: tr('Gravidade Alta'), value: alta },
+        { label: tr('Resolvidos'), value: resolvidos },
       ]},
-      { title: 'Lista de Incidentes', tableHeaders: ['Titulo', 'Categoria', 'Criticidade', 'Status'],
+      { title: tr('Lista de Incidentes'), tableHeaders: [tr('Titulo'), tr('Categoria'), tr('Criticidade'), tr('Status')],
         tableRows: i.map(x => [x.titulo, x.categoria || '-', x.criticidade || '-', x.status || '-']),
         colWidths: [60, 35, 35, 40] },
     ] as Section[]
@@ -166,14 +291,14 @@ async function fetchLGPDData(empresaId: string) {
   const d = dados || []; const s = sol || [];
   return {
     sections: [
-      { title: 'Panorama LGPD', metrics: [
-        { label: 'Dados Pessoais Mapeados', value: d.length },
-        { label: 'Solicitacoes de Titulares', value: s.length },
+      { title: tr('Panorama LGPD'), metrics: [
+        { label: tr('Dados Pessoais Mapeados'), value: d.length },
+        { label: tr('Solicitacoes de Titulares'), value: s.length },
       ]},
-      { title: 'Dados Pessoais Mapeados', tableHeaders: ['Nome', 'Categoria', 'Base Legal', 'Sensibilidade'],
+      { title: tr('Dados Pessoais Mapeados'), tableHeaders: [tr('Nome'), tr('Categoria'), tr('Base Legal'), tr('Sensibilidade')],
         tableRows: d.map(x => [x.nome, x.categoria_dados || '-', x.base_legal || '-', x.sensibilidade || '-']),
         colWidths: [50, 35, 45, 40] },
-      ...(s.length > 0 ? [{ title: 'Solicitacoes de Titulares', tableHeaders: ['Tipo', 'Status', 'Criado em'],
+      ...(s.length > 0 ? [{ title: tr('Solicitacoes de Titulares'), tableHeaders: [tr('Tipo'), tr('Status'), tr('Criado em')],
         tableRows: s.map((x: any) => [x.tipo_solicitacao || '-', x.status || '-', new Date(x.created_at).toLocaleDateString('pt-BR')]),
         colWidths: [60, 50, 60] }] : []),
     ] as Section[]
@@ -197,16 +322,16 @@ async function fetchISO27001Data(empresaId: string) {
   
   return {
     sections: [
-      { title: 'Status ISO 27001', metrics: [
-        { label: 'Frameworks ISO encontrados', value: f.length },
-        { label: 'Requisitos avaliados', value: isoEvals.length },
-        { label: 'Conformes', value: conformes },
-        { label: 'Parcialmente conformes', value: parciais },
-        { label: 'Nao conformes', value: naoConformes },
-        { label: 'Total de Controles', value: c.length },
-        { label: 'Controles Ativos', value: ativos },
+      { title: tr('Status ISO 27001'), metrics: [
+        { label: tr('Frameworks ISO encontrados'), value: f.length },
+        { label: tr('Requisitos avaliados'), value: isoEvals.length },
+        { label: tr('Conformes'), value: conformes },
+        { label: tr('Parcialmente conformes'), value: parciais },
+        { label: tr('Nao conformes'), value: naoConformes },
+        { label: tr('Total de Controles'), value: c.length },
+        { label: tr('Controles Ativos'), value: ativos },
       ]},
-      { title: 'Controles Implementados', tableHeaders: ['Nome', 'Tipo', 'Criticidade', 'Status'],
+      { title: tr('Controles Implementados'), tableHeaders: [tr('Nome'), tr('Tipo'), tr('Criticidade'), tr('Status')],
         tableRows: c.map(x => [x.nome, x.tipo || '-', x.criticidade || '-', x.status || '-']),
         colWidths: [55, 30, 40, 45] },
     ] as Section[]
@@ -223,14 +348,14 @@ async function fetchExecutivoData(empresaId: string) {
   const r = riscos || []; const i = incidentes || []; const c = controles || []; const f = frameworks || [];
   return {
     sections: [
-      { title: 'Resumo Executivo - Ultimos 90 dias', metrics: [
-        { label: 'Riscos Ativos', value: r.length },
-        { label: 'Riscos Criticos', value: r.filter(x => x.nivel_risco_inicial === 'critico').length },
-        { label: 'Incidentes (90 dias)', value: i.length },
-        { label: 'Controles Ativos', value: c.filter(x => x.status === 'ativo').length },
-        { label: 'Frameworks Monitorados', value: f.length },
+      { title: tr('Resumo Executivo - Ultimos 90 dias'), metrics: [
+        { label: tr('Riscos Ativos'), value: r.length },
+        { label: tr('Riscos Criticos'), value: r.filter(x => x.nivel_risco_inicial === 'critico').length },
+        { label: tr('Incidentes (90 dias)'), value: i.length },
+        { label: tr('Controles Ativos'), value: c.filter(x => x.status === 'ativo').length },
+        { label: tr('Frameworks Monitorados'), value: f.length },
       ]},
-      { title: 'Incidentes Recentes', tableHeaders: ['Titulo', 'Gravidade', 'Status'],
+      { title: tr('Incidentes Recentes'), tableHeaders: [tr('Titulo'), tr('Gravidade'), tr('Status')],
         tableRows: i.slice(0, 15).map(x => [x.titulo, x.criticidade || '-', x.status || '-']),
         colWidths: [80, 45, 45] },
     ] as Section[]
@@ -245,16 +370,16 @@ async function fetchComplianceData(empresaId: string) {
   const f = (frameworks || []) as any[]; const c = controles || []; const a = auditorias || [];
   return {
     sections: [
-      { title: 'Status Geral de Compliance', metrics: [
-        { label: 'Frameworks', value: f.length },
-        { label: 'Controles', value: c.length },
-        { label: 'Controles Ativos', value: c.filter(x => x.status === 'ativo').length },
-        { label: 'Auditorias', value: a.length },
+      { title: tr('Status Geral de Compliance'), metrics: [
+        { label: tr('Frameworks'), value: f.length },
+        { label: tr('Controles'), value: c.length },
+        { label: tr('Controles Ativos'), value: c.filter(x => x.status === 'ativo').length },
+        { label: tr('Auditorias'), value: a.length },
       ]},
-      { title: 'Frameworks', tableHeaders: ['Nome', 'Versao', 'Tipo'],
+      { title: tr('Frameworks'), tableHeaders: [tr('Nome'), tr('Versao'), tr('Tipo')],
         tableRows: f.map(x => [x.nome, x.versao || '-', x.tipo_framework || '-']),
         colWidths: [80, 40, 50] },
-      { title: 'Auditorias', tableHeaders: ['Nome', 'Tipo', 'Status'],
+      { title: tr('Auditorias'), tableHeaders: [tr('Nome'), tr('Tipo'), tr('Status')],
         tableRows: a.map((x: any) => [x.nome || x.titulo || '-', x.tipo || '-', x.status || '-']),
         colWidths: [80, 40, 50] },
     ] as Section[]
@@ -274,20 +399,20 @@ async function fetchContinuidadeData(empresaId: string) {
   const testesSucesso = te.filter((x: any) => x.resultado === 'sucesso').length;
   return {
     sections: [
-      { title: 'Resumo de Continuidade de Negocios', metrics: [
-        { label: 'Total de Planos', value: p.length },
-        { label: 'Planos Ativos', value: p.filter((x: any) => x.status === 'ativo').length },
-        { label: 'Em Revisao', value: p.filter((x: any) => x.status === 'em_revisao').length },
-        { label: 'Revisao Vencendo (30d)', value: planosVencendo },
-        { label: 'Total de Tarefas', value: t.length },
-        { label: 'Tarefas Pendentes', value: tarefasPendentes },
-        { label: 'Testes Realizados', value: te.length },
-        { label: 'Testes com Sucesso', value: testesSucesso },
+      { title: tr('Resumo de Continuidade de Negocios'), metrics: [
+        { label: tr('Total de Planos'), value: p.length },
+        { label: tr('Planos Ativos'), value: p.filter((x: any) => x.status === 'ativo').length },
+        { label: tr('Em Revisao'), value: p.filter((x: any) => x.status === 'em_revisao').length },
+        { label: tr('Revisao Vencendo (30d)'), value: planosVencendo },
+        { label: tr('Total de Tarefas'), value: t.length },
+        { label: tr('Tarefas Pendentes'), value: tarefasPendentes },
+        { label: tr('Testes Realizados'), value: te.length },
+        { label: tr('Testes com Sucesso'), value: testesSucesso },
       ]},
-      { title: 'Planos de Continuidade', tableHeaders: ['Nome', 'Tipo', 'Status', 'RTO/RPO'],
+      { title: tr('Planos de Continuidade'), tableHeaders: [tr('Nome'), tr('Tipo'), tr('Status'), tr('RTO/RPO')],
         tableRows: p.map((x: any) => [x.nome, x.tipo || '-', x.status || '-', `${x.rto_horas || '-'}h / ${x.rpo_horas || '-'}h`]),
         colWidths: [70, 30, 35, 35] },
-      ...(te.length > 0 ? [{ title: 'Historico de Testes', tableHeaders: ['Tipo', 'Data', 'Resultado'],
+      ...(te.length > 0 ? [{ title: tr('Historico de Testes'), tableHeaders: [tr('Tipo'), tr('Data'), tr('Resultado')],
         tableRows: te.map((x: any) => [x.tipo_teste || '-', x.data_teste ? new Date(x.data_teste).toLocaleDateString('pt-BR') : '-', x.resultado || '-']),
         colWidths: [60, 50, 60] }] : []),
     ] as Section[]
@@ -304,14 +429,14 @@ async function fetchContratosData(empresaId: string) {
   const valorTotal = c.reduce((sum: number, x: any) => sum + (Number(x.valor) || 0), 0);
   return {
     sections: [
-      { title: 'Resumo de Contratos', metrics: [
-        { label: 'Total de Contratos', value: c.length },
-        { label: 'Contratos Ativos', value: ativos },
-        { label: 'Vencendo (90 dias)', value: vencendo },
-        { label: 'Vencidos', value: vencidos },
-        { label: 'Valor Total (BRL)', value: valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) },
+      { title: tr('Resumo de Contratos'), metrics: [
+        { label: tr('Total de Contratos'), value: c.length },
+        { label: tr('Contratos Ativos'), value: ativos },
+        { label: tr('Vencendo (90 dias)'), value: vencendo },
+        { label: tr('Vencidos'), value: vencidos },
+        { label: tr('Valor Total (BRL)'), value: valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) },
       ]},
-      { title: 'Lista de Contratos', tableHeaders: ['Nome', 'Tipo', 'Status', 'Vencimento'],
+      { title: tr('Lista de Contratos'), tableHeaders: [tr('Nome'), tr('Tipo'), tr('Status'), tr('Vencimento')],
         tableRows: c.map((x: any) => [x.nome || x.numero_contrato || '-', x.tipo || '-', x.status || '-', x.data_fim ? new Date(x.data_fim).toLocaleDateString('pt-BR') : '-']),
         colWidths: [70, 30, 35, 35] },
     ] as Section[]
@@ -332,17 +457,17 @@ async function fetchAtivosData(empresaId: string) {
   const licencasVencendo = l.filter((x: any) => x.data_vencimento && new Date(x.data_vencimento) > hoje && new Date(x.data_vencimento) < new Date(hoje.getTime() + 90 * 86400000)).length;
   return {
     sections: [
-      { title: 'Inventario de Ativos', metrics: [
-        { label: 'Total de Ativos', value: a.length },
-        { label: 'Ativos Criticos', value: criticos },
-        { label: 'Licencas Cadastradas', value: l.length },
-        { label: 'Licencas Vencendo (90d)', value: licencasVencendo },
-        { label: 'Chaves Criptograficas', value: k.length },
+      { title: tr('Inventario de Ativos'), metrics: [
+        { label: tr('Total de Ativos'), value: a.length },
+        { label: tr('Ativos Criticos'), value: criticos },
+        { label: tr('Licencas Cadastradas'), value: l.length },
+        { label: tr('Licencas Vencendo (90d)'), value: licencasVencendo },
+        { label: tr('Chaves Criptograficas'), value: k.length },
       ]},
-      { title: 'Distribuicao por Tipo', tableHeaders: ['Tipo', 'Quantidade'],
+      { title: tr('Distribuicao por Tipo'), tableHeaders: [tr('Tipo'), tr('Quantidade')],
         tableRows: Object.entries(tipos).map(([t, q]) => [t, String(q)]),
         colWidths: [120, 50] },
-      { title: 'Lista de Ativos', tableHeaders: ['Nome', 'Tipo', 'Criticidade', 'Status'],
+      { title: tr('Lista de Ativos'), tableHeaders: [tr('Nome'), tr('Tipo'), tr('Criticidade'), tr('Status')],
         tableRows: a.map((x: any) => [x.nome, x.tipo || '-', x.criticidade || '-', x.status || '-']),
         colWidths: [60, 35, 35, 40] },
     ] as Section[]
@@ -362,17 +487,17 @@ async function fetchAuditoriaInternaData(empresaId: string) {
   const itensAbertos = i.filter((x: any) => x.status !== 'concluido').length;
   return {
     sections: [
-      { title: 'Resumo de Auditorias', metrics: [
-        { label: 'Total de Auditorias', value: a.length },
-        { label: 'Em Andamento', value: emAndamento },
-        { label: 'Concluidas', value: concluidas },
-        { label: 'Itens Identificados', value: i.length },
-        { label: 'Itens em Aberto', value: itensAbertos },
+      { title: tr('Resumo de Auditorias'), metrics: [
+        { label: tr('Total de Auditorias'), value: a.length },
+        { label: tr('Em Andamento'), value: emAndamento },
+        { label: tr('Concluidas'), value: concluidas },
+        { label: tr('Itens Identificados'), value: i.length },
+        { label: tr('Itens em Aberto'), value: itensAbertos },
       ]},
-      { title: 'Auditorias', tableHeaders: ['Nome', 'Tipo', 'Status', 'Inicio'],
+      { title: tr('Auditorias'), tableHeaders: [tr('Nome'), tr('Tipo'), tr('Status'), tr('Inicio')],
         tableRows: a.map((x: any) => [x.nome, x.tipo || '-', x.status || '-', x.data_inicio ? new Date(x.data_inicio).toLocaleDateString('pt-BR') : '-']),
         colWidths: [70, 30, 35, 35] },
-      ...(i.length > 0 ? [{ title: 'Itens de Auditoria', tableHeaders: ['Codigo', 'Titulo', 'Prioridade', 'Status'],
+      ...(i.length > 0 ? [{ title: tr('Itens de Auditoria'), tableHeaders: [tr('Codigo'), tr('Titulo'), tr('Prioridade'), tr('Status')],
         tableRows: i.slice(0, 30).map((x: any) => [x.codigo || '-', (x.titulo || '').substring(0, 40), x.prioridade || '-', x.status || '-']),
         colWidths: [25, 80, 30, 35] }] : []),
     ] as Section[]
@@ -389,14 +514,14 @@ async function fetchDueDiligenceData(empresaId: string) {
   const aprovados = concluidos.filter((x: any) => (Number(x.score_final) || 0) >= 7).length;
   return {
     sections: [
-      { title: 'Due Diligence de Fornecedores', metrics: [
-        { label: 'Total de Assessments', value: dd.length },
-        { label: 'Concluidos', value: concluidos.length },
-        { label: 'Pendentes', value: pendentes },
-        { label: 'Score Medio (0-10)', value: scoreMedio },
-        { label: 'Fornecedores Aprovados', value: aprovados },
+      { title: tr('Due Diligence de Fornecedores'), metrics: [
+        { label: tr('Total de Assessments'), value: dd.length },
+        { label: tr('Concluidos'), value: concluidos.length },
+        { label: tr('Pendentes'), value: pendentes },
+        { label: tr('Score Medio (0-10)'), value: scoreMedio },
+        { label: tr('Fornecedores Aprovados'), value: aprovados },
       ]},
-      { title: 'Assessments', tableHeaders: ['Fornecedor', 'Status', 'Score', 'Conclusao'],
+      { title: tr('Assessments'), tableHeaders: [tr('Fornecedor'), tr('Status'), tr('Score'), tr('Conclusao')],
         tableRows: dd.map((x: any) => [
           x.fornecedor_nome || '-',
           x.status || '-',
@@ -420,17 +545,17 @@ async function fetchDocumentosData(empresaId: string) {
   d.forEach((x: any) => { tipos[x.tipo] = (tipos[x.tipo] || 0) + 1; });
   return {
     sections: [
-      { title: 'Governanca Documental', metrics: [
-        { label: 'Total de Documentos', value: d.length },
-        { label: 'Ativos', value: ativos },
-        { label: 'Aprovados', value: aprovados },
-        { label: 'Vencidos', value: vencidos },
-        { label: 'Vencendo (30d)', value: vencendo },
+      { title: tr('Governanca Documental'), metrics: [
+        { label: tr('Total de Documentos'), value: d.length },
+        { label: tr('Ativos'), value: ativos },
+        { label: tr('Aprovados'), value: aprovados },
+        { label: tr('Vencidos'), value: vencidos },
+        { label: tr('Vencendo (30d)'), value: vencendo },
       ]},
-      { title: 'Distribuicao por Tipo', tableHeaders: ['Tipo', 'Quantidade'],
+      { title: tr('Distribuicao por Tipo'), tableHeaders: [tr('Tipo'), tr('Quantidade')],
         tableRows: Object.entries(tipos).map(([t, q]) => [t, String(q)]),
         colWidths: [120, 50] },
-      { title: 'Documentos', tableHeaders: ['Nome', 'Tipo', 'Status', 'Vencimento'],
+      { title: tr('Documentos'), tableHeaders: [tr('Nome'), tr('Tipo'), tr('Status'), tr('Vencimento')],
         tableRows: d.slice(0, 50).map((x: any) => [(x.nome || '').substring(0, 40), x.tipo || '-', x.status || '-', x.data_vencimento ? new Date(x.data_vencimento).toLocaleDateString('pt-BR') : '-']),
         colWidths: [70, 30, 35, 35] },
     ] as Section[]
@@ -447,16 +572,16 @@ async function fetchDenunciasData(empresaId: string) {
   d.forEach((x: any) => { grav[x.gravidade || 'sem_gravidade'] = (grav[x.gravidade || 'sem_gravidade'] || 0) + 1; });
   return {
     sections: [
-      { title: 'Canal de Etica', metrics: [
-        { label: 'Total de Denuncias', value: d.length },
-        { label: 'Em Aberto/Investigacao', value: abertas },
-        { label: 'Concluidas', value: concluidas },
-        { label: 'Anonimas', value: anonimas },
+      { title: tr('Canal de Etica'), metrics: [
+        { label: tr('Total de Denuncias'), value: d.length },
+        { label: tr('Em Aberto/Investigacao'), value: abertas },
+        { label: tr('Concluidas'), value: concluidas },
+        { label: tr('Anonimas'), value: anonimas },
       ]},
-      { title: 'Distribuicao por Gravidade', tableHeaders: ['Gravidade', 'Quantidade'],
+      { title: tr('Distribuicao por Gravidade'), tableHeaders: [tr('Gravidade'), tr('Quantidade')],
         tableRows: Object.entries(grav).map(([g, q]) => [g, String(q)]),
         colWidths: [120, 50] },
-      { title: 'Denuncias', tableHeaders: ['Protocolo', 'Titulo', 'Gravidade', 'Status'],
+      { title: tr('Denuncias'), tableHeaders: [tr('Protocolo'), tr('Titulo'), tr('Gravidade'), tr('Status')],
         tableRows: d.map((x: any) => [x.protocolo || '-', (x.titulo || '').substring(0, 40), x.gravidade || '-', x.status || '-']),
         colWidths: [40, 70, 30, 35] },
     ] as Section[]
@@ -500,8 +625,8 @@ export async function generateTemplatePDF(relatorio: any, empresaId: string) {
     doc.addPage();
     doc.setFontSize(14);
     doc.setTextColor(AKURIS_COLORS.textLight);
-    doc.text('Nenhum dado encontrado para este template.', 105, 140, { align: 'center' });
-    doc.text('Verifique se ha dados cadastrados nos modulos correspondentes.', 105, 155, { align: 'center' });
+    doc.text(tr('Nenhum dado encontrado para este template.'), 105, 140, { align: 'center' });
+    doc.text(tr('Verifique se ha dados cadastrados nos modulos correspondentes.'), 105, 155, { align: 'center' });
   }
 
   addAkurisFooter(doc);

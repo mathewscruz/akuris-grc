@@ -83,7 +83,7 @@ export function ControleDetalheDialog({
       
       return data.map(c => ({
         ...c,
-        user_nome: userMap.get(c.user_id) || "Usuário"
+        user_nome: userMap.get(c.user_id) || t("govDialogs.controleDetalheDialog.usuarioFallback")
       }));
     },
     enabled: open && !!controle?.id,

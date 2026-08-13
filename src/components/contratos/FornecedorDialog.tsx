@@ -92,7 +92,7 @@ export function FornecedorDialog({ fornecedor, open, onOpenChange, onSuccess }: 
     
     if (!formData.nome) {
       toast({
-        title: "Erro",
+        title: t('contratosAtivos.common.error'),
         description: t('contratosAtivos.fornecedorDialog.toastNameRequired'),
         variant: "destructive",
       });
@@ -143,7 +143,7 @@ export function FornecedorDialog({ fornecedor, open, onOpenChange, onSuccess }: 
       if (error) throw error;
 
       toast({
-        title: "Sucesso",
+        title: t('contratosAtivos.common.success'),
         description: t('contratosAtivos.fornecedorDialog.toastSaveSuccess').replace('{action}', fornecedor ? t('contratosAtivos.fornecedorDialog.actionUpdated') : t('contratosAtivos.fornecedorDialog.actionCreated')),
       });
 
@@ -152,7 +152,7 @@ export function FornecedorDialog({ fornecedor, open, onOpenChange, onSuccess }: 
     } catch (error) {
       console.error('Erro ao salvar fornecedor:', error);
       toast({
-        title: "Erro",
+        title: t('contratosAtivos.common.error'),
         description: t('contratosAtivos.fornecedorDialog.toastSaveError'),
         variant: "destructive",
       });

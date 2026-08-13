@@ -32,6 +32,7 @@ import {
 import { format, subDays, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { DateRange } from 'react-day-picker';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 interface RelatorioMetricas {
@@ -51,6 +52,7 @@ const CORES_GRAFICOS = [
 ];
 
 export function RelatoriosDenuncia() {
+  const { t } = useLanguage();
   const [metricas, setMetricas] = useState<RelatorioMetricas | null>(null);
   const [loading, setLoading] = useState(true);
   const [periodo, setPeriodo] = useState('30dias');
@@ -133,11 +135,11 @@ export function RelatoriosDenuncia() {
 
       // Agrupar por status
       const statusMap = {
-        nova: 'Nova',
-        em_analise: 'Em Análise',
-        em_investigacao: 'Em Investigação',
-        resolvida: 'Resolvida',
-        arquivada: 'Arquivada'
+        nova: t('denunciasAdmin.relatorios.statusNova'),
+        em_analise: t('denunciasAdmin.relatorios.statusEmAnalise'),
+        em_investigacao: t('denunciasAdmin.relatorios.statusEmInvestigacao'),
+        resolvida: t('denunciasAdmin.relatorios.statusResolvida'),
+        arquivada: t('denunciasAdmin.relatorios.statusArquivada')
       };
 
       const denuncias_por_status = Object.entries(statusMap).map(([status, label]) => ({
@@ -148,7 +150,7 @@ export function RelatoriosDenuncia() {
 
       // Agrupar por categoria
       const categoriaGroups = denuncias?.reduce((acc, d) => {
-        const categoria = d.categoria?.nome || 'Sem categoria';
+        const categoria = d.categoria?.nome || t('denunciasAdmin.relatorios.semCategoria');
         const cor = d.categoria?.cor || '#6B7280';
         if (!acc[categoria]) {
           acc[categoria] = { count: 0, cor };
@@ -165,10 +167,10 @@ export function RelatoriosDenuncia() {
 
       // Agrupar por gravidade
       const gravidadeMap = {
-        baixa: 'Baixa',
-        media: 'Média',
-        alta: 'Alta',
-        critica: 'Crítica'
+        baixa: t('denunciasAdmin.relatorios.gravidadeBaixa'),
+        media: t('denunciasAdmin.relatorios.gravidadeMedia'),
+        alta: t('denunciasAdmin.relatorios.gravidadeAlta'),
+        critica: t('denunciasAdmin.relatorios.gravidadeCritica')
       };
 
       const denuncias_por_gravidade = Object.entries(gravidadeMap).map(([gravidade, label]) => ({
@@ -209,19 +211,19 @@ export function RelatoriosDenuncia() {
     if (!metricas) return;
 
     const dadosCSV = [
-      ['Período', periodo],
-      ['Total de Denúncias', metricas.total_denuncias],
-      ['Denúncias no Período', metricas.denuncias_periodo],
-      ['Tempo Médio de Resolução (dias)', metricas.tempo_medio_resolucao.toFixed(1)],
-      ['Taxa de Resolução (%)', metricas.taxa_resolucao.toFixed(1)],
+      [t('denunciasAdmin.relatorios.csvPeriodo'), periodo],
+      [t('denunciasAdmin.relatorios.csvTotal'), metricas.total_denuncias],
+      [t('denunciasAdmin.relatorios.csvPeriodoLabel'), metricas.denuncias_periodo],
+      [t('denunciasAdmin.relatorios.csvTempoMedio'), metricas.tempo_medio_resolucao.toFixed(1)],
+      [t('denunciasAdmin.relatorios.csvTaxaResolucao'), metricas.taxa_resolucao.toFixed(1)],
       [''],
-      ['Status', 'Quantidade'],
+      [t('denunciasAdmin.relatorios.csvStatus'), t('denunciasAdmin.relatorios.csvQuantidade')],
       ...metricas.denuncias_por_status.map(item => [item.label, item.count]),
       [''],
-      ['Categoria', 'Quantidade'],
+      [t('denunciasAdmin.relatorios.csvCategoria'), t('denunciasAdmin.relatorios.csvQuantidade')],
       ...metricas.denuncias_por_categoria.map(item => [item.categoria, item.count]),
       [''],
-      ['Gravidade', 'Quantidade'],
+      [t('denunciasAdmin.relatorios.csvGravidade'), t('denunciasAdmin.relatorios.csvQuantidade')],
       ...metricas.denuncias_por_gravidade.map(item => [item.label, item.count])
     ];
 
@@ -245,15 +247,15 @@ export function RelatoriosDenuncia() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Relatórios e Analytics</h2>
+          <h2 className="text-2xl font-bold">{t('denunciasAdmin.relatorios.pageTitle')}</h2>
           <p className="text-muted-foreground">
-            Análise estatística das denúncias recebidas
+            {t('denunciasAdmin.relatorios.pageDescription')}
           </p>
         </div>
         
         <Button onClick={exportarRelatorio}>
           <Download className="w-4 h-4 mr-2" />
-          Exportar CSV
+          {t('denunciasAdmin.relatorios.exportCsv')}
         </Button>
       </div>
 
@@ -262,7 +264,7 @@ export function RelatoriosDenuncia() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
-            Período de Análise
+            {t('denunciasAdmin.relatorios.periodTitle')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -272,11 +274,11 @@ export function RelatoriosDenuncia() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="7dias">Últimos 7 dias</SelectItem>
-                <SelectItem value="30dias">Últimos 30 dias</SelectItem>
-                <SelectItem value="90dias">Últimos 90 dias</SelectItem>
-                <SelectItem value="mes_atual">Mês atual</SelectItem>
-                <SelectItem value="personalizado">Personalizado</SelectItem>
+                <SelectItem value="7dias">{t('denunciasAdmin.relatorios.period7')}</SelectItem>
+                <SelectItem value="30dias">{t('denunciasAdmin.relatorios.period30')}</SelectItem>
+                <SelectItem value="90dias">{t('denunciasAdmin.relatorios.period90')}</SelectItem>
+                <SelectItem value="mes_atual">{t('denunciasAdmin.relatorios.periodCurrentMonth')}</SelectItem>
+                <SelectItem value="personalizado">{t('denunciasAdmin.relatorios.periodCustom')}</SelectItem>
               </SelectContent>
             </Select>
             
@@ -296,35 +298,35 @@ export function RelatoriosDenuncia() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total de Denúncias</CardTitle>
+                <CardTitle className="text-sm font-medium">{t('denunciasAdmin.relatorios.totalCard')}</CardTitle>
                 <BarChart3 className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{metricas.total_denuncias}</div>
                 <p className="text-xs text-muted-foreground">
-                  {metricas.denuncias_periodo} no período selecionado
+                  {t('denunciasAdmin.relatorios.totalCardFooter', { count: metricas.denuncias_periodo })}
                 </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Tempo Médio</CardTitle>
+                <CardTitle className="text-sm font-medium">{t('denunciasAdmin.relatorios.avgTimeCard')}</CardTitle>
                 <Clock className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {metricas.tempo_medio_resolucao.toFixed(1)} dias
+                  {t('denunciasAdmin.relatorios.avgTimeDays', { days: metricas.tempo_medio_resolucao.toFixed(1) })}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Para resolução
+                  {t('denunciasAdmin.relatorios.avgTimeFooter')}
                 </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Taxa de Resolução</CardTitle>
+                <CardTitle className="text-sm font-medium">{t('denunciasAdmin.relatorios.resolutionRateCard')}</CardTitle>
                 <CheckCircle className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -332,14 +334,14 @@ export function RelatoriosDenuncia() {
                   {metricas.taxa_resolucao.toFixed(1)}%
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Denúncias resolvidas
+                  {t('denunciasAdmin.relatorios.resolutionRateFooter')}
                 </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Pendentes</CardTitle>
+                <CardTitle className="text-sm font-medium">{t('denunciasAdmin.relatorios.pendingCard')}</CardTitle>
                 <AlertTriangle className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -350,7 +352,7 @@ export function RelatoriosDenuncia() {
                   }
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Requerem atenção
+                  {t('denunciasAdmin.relatorios.pendingFooter')}
                 </p>
               </CardContent>
             </Card>
@@ -363,7 +365,7 @@ export function RelatoriosDenuncia() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <BarChart3 className="h-5 w-5" />
-                  Denúncias por Status
+                  {t('denunciasAdmin.relatorios.statusChartTitle')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -390,7 +392,7 @@ export function RelatoriosDenuncia() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <PieChartIcon className="h-5 w-5" />
-                  Denúncias por Categoria
+                  {t('denunciasAdmin.relatorios.categoryChartTitle')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -421,7 +423,7 @@ export function RelatoriosDenuncia() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <AlertTriangle className="h-5 w-5" />
-                  Denúncias por Gravidade
+                  {t('denunciasAdmin.relatorios.gravityChartTitle')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -447,10 +449,10 @@ export function RelatoriosDenuncia() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <TrendingUp className="h-5 w-5" />
-                  Evolução Temporal
+                  {t('denunciasAdmin.relatorios.timelineTitle')}
                 </CardTitle>
                 <CardDescription>
-                  Denúncias recebidas nos últimos 30 dias
+                  {t('denunciasAdmin.relatorios.timelineDescription')}
                 </CardDescription>
               </CardHeader>
               <CardContent>

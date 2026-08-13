@@ -24,6 +24,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { useLanguage } from '@/contexts/LanguageContext';
 interface ConfiguracaoDenuncia {
   id?: string;
   empresa_id: string;
@@ -38,6 +39,7 @@ interface ConfiguracaoDenuncia {
 }
 
 export function ConfiguracoesDenuncia() {
+  const { t } = useLanguage();
   const [config, setConfig] = useState<ConfiguracaoDenuncia | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -96,8 +98,8 @@ export function ConfiguracoesDenuncia() {
     } catch (error) {
       console.error('Erro ao carregar configuração:', error);
       toast({
-        title: "Erro",
-        description: "Erro ao carregar configurações",
+        title: t('denunciasAdmin.config.errorLoad'),
+        description: t('denunciasAdmin.config.errorLoad'),
         variant: "destructive"
       });
     } finally {
@@ -162,16 +164,16 @@ export function ConfiguracoesDenuncia() {
       }
 
       toast({
-        title: "Sucesso",
-        description: "Configurações salvas com sucesso"
+        title: t('denunciasAdmin.config.saved'),
+        description: t('denunciasAdmin.config.saved')
       });
 
       carregarConfiguracao();
     } catch (error) {
       console.error('Erro ao salvar:', error);
       toast({
-        title: "Erro",
-        description: "Erro ao salvar configurações",
+        title: t('denunciasAdmin.config.errorSave'),
+        description: t('denunciasAdmin.config.errorSave'),
         variant: "destructive"
       });
     } finally {
@@ -187,8 +189,8 @@ export function ConfiguracoesDenuncia() {
     
     navigator.clipboard.writeText(link);
     toast({
-      title: "Copiado!",
-      description: "Link copiado para a área de transferência"
+      title: t('denunciasAdmin.config.copied'),
+      description: t('denunciasAdmin.config.linkCopied')
     });
   };
 
@@ -206,8 +208,8 @@ export function ConfiguracoesDenuncia() {
       const link = `${window.location.origin}/${empresaSlug}/denuncia/consulta`;
       navigator.clipboard.writeText(link);
       toast({
-        title: "Copiado!",
-        description: "Link de consulta copiado para a área de transferência"
+        title: t('denunciasAdmin.config.copied'),
+        description: t('denunciasAdmin.config.queryLinkCopied')
       });
     }
   };
@@ -227,16 +229,16 @@ export function ConfiguracoesDenuncia() {
       if (error) throw error;
 
       toast({
-        title: "Sucesso",
-        description: "Link regenerado com sucesso. O link anterior não funcionará mais."
+        title: t('denunciasAdmin.config.saved'),
+        description: t('denunciasAdmin.config.tokenRegenerated')
       });
 
       carregarConfiguracao();
     } catch (error) {
       console.error('Erro ao regenerar token:', error);
       toast({
-        title: "Erro",
-        description: "Erro ao regenerar link",
+        title: t('denunciasAdmin.config.errorRegenerate'),
+        description: t('denunciasAdmin.config.errorRegenerate'),
         variant: "destructive"
       });
     }
@@ -254,9 +256,9 @@ export function ConfiguracoesDenuncia() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">Configurações do Canal de Denúncia</h2>
+          <h2 className="text-2xl font-bold">{t('denunciasAdmin.config.pageTitle')}</h2>
           <p className="text-muted-foreground">
-            Configure como o canal de denúncia funcionará na sua empresa
+            {t('denunciasAdmin.config.pageDescription')}
           </p>
         </div>
       </div>
@@ -267,16 +269,16 @@ export function ConfiguracoesDenuncia() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Link2 className="h-5 w-5" />
-              Links Públicos do Canal de Denúncia
+              {t('denunciasAdmin.config.publicLinksTitle')}
             </CardTitle>
             <CardDescription>
-              Links que devem ser compartilhados para receber denúncias e consultas
+              {t('denunciasAdmin.config.publicLinksDescription')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Link para criar denúncia */}
             <div className="space-y-2">
-              <Label className="text-sm font-medium">Formulário de Denúncia</Label>
+              <Label className="text-sm font-medium">{t('denunciasAdmin.config.formLinkLabel')}</Label>
               <div className="flex items-center gap-2">
                 <div className="flex-1 p-3 bg-muted rounded-lg font-mono text-sm">
                   {empresaSlug 
@@ -296,7 +298,7 @@ export function ConfiguracoesDenuncia() {
             {/* Link para consultar denúncia (apenas com slug) */}
             {empresaSlug && (
               <div className="space-y-2">
-                <Label className="text-sm font-medium">Consulta de Protocolo</Label>
+                <Label className="text-sm font-medium">{t('denunciasAdmin.config.queryLinkLabel')}</Label>
                 <div className="flex items-center gap-2">
                   <div className="flex-1 p-3 bg-muted rounded-lg font-mono text-sm">
                     {window.location.origin}/{empresaSlug}/denuncia/consulta
@@ -317,16 +319,16 @@ export function ConfiguracoesDenuncia() {
             
             <div className="flex items-center gap-2">
               <Badge variant={formData.ativo ? "default" : "secondary"}>
-                {formData.ativo ? "Ativo" : "Inativo"}
+                {formData.ativo ? t('denunciasAdmin.config.statusActive') : t('denunciasAdmin.config.statusInactive')}
               </Badge>
               {empresaSlug ? (
                 <Badge variant="success">
-                  URLs Amigáveis
+                  {t('denunciasAdmin.config.friendlyUrls')}
                 </Badge>
               ) : (
                 <Button variant="outline" size="sm" onClick={regenerarToken}>
                   <RefreshCw className="h-4 w-4 mr-1" />
-                  Regenerar Link
+                  {t('denunciasAdmin.config.regenerateLink')}
                 </Button>
               )}
             </div>
@@ -336,14 +338,11 @@ export function ConfiguracoesDenuncia() {
               <AlertDescription>
                 {empresaSlug ? (
                   <>
-                    <strong>URLs Amigáveis Ativas:</strong> Suas denúncias agora usam links 
-                    profissionais com o nome da empresa. Os denunciantes podem acompanhar 
-                    o status usando o protocolo recebido.
+                    <strong>{t('denunciasAdmin.config.alertFriendlyTitle')}</strong>{t('denunciasAdmin.config.alertFriendlyText')}
                   </>
                 ) : (
                   <>
-                    Mantenha este link seguro. Qualquer pessoa com acesso poderá enviar denúncias.
-                    Ao regenerar o link, o anterior deixará de funcionar.
+                    {t('denunciasAdmin.config.alertSecureText')}
                   </>
                 )}
               </AlertDescription>
@@ -357,7 +356,7 @@ export function ConfiguracoesDenuncia() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Settings className="h-5 w-5" />
-            Configurações Gerais
+            {t('denunciasAdmin.config.generalTitle')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -365,9 +364,9 @@ export function ConfiguracoesDenuncia() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label>Canal Ativo</Label>
+                  <Label>{t('denunciasAdmin.config.labelCanalAtivo')}</Label>
                   <div className="text-sm text-muted-foreground">
-                    Permitir recebimento de novas denúncias
+                    {t('denunciasAdmin.config.descCanalAtivo')}
                   </div>
                 </div>
                 <Switch
@@ -380,9 +379,9 @@ export function ConfiguracoesDenuncia() {
 
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label>Permitir Denúncias Anônimas</Label>
+                  <Label>{t('denunciasAdmin.config.labelPermitirAnonimas')}</Label>
                   <div className="text-sm text-muted-foreground">
-                    Denunciantes podem optar por não se identificar
+                    {t('denunciasAdmin.config.descPermitirAnonimas')}
                   </div>
                 </div>
                 <Switch
@@ -395,9 +394,9 @@ export function ConfiguracoesDenuncia() {
 
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label>E-mail Obrigatório</Label>
+                  <Label>{t('denunciasAdmin.config.labelEmailObrigatorio')}</Label>
                   <div className="text-sm text-muted-foreground">
-                    Exigir e-mail em denúncias não anônimas
+                    {t('denunciasAdmin.config.descEmailObrigatorio')}
                   </div>
                 </div>
                 <Switch
@@ -412,9 +411,9 @@ export function ConfiguracoesDenuncia() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label>Notificar Administradores</Label>
+                  <Label>{t('denunciasAdmin.config.labelNotificarAdmins')}</Label>
                   <div className="text-sm text-muted-foreground">
-                    Enviar e-mail quando nova denúncia for recebida
+                    {t('denunciasAdmin.config.descNotificarAdmins')}
                   </div>
                 </div>
                 <Switch
@@ -427,17 +426,17 @@ export function ConfiguracoesDenuncia() {
 
               {formData.notificar_administradores && (
                 <div className="space-y-2">
-                  <Label htmlFor="emails">E-mails para Notificação</Label>
+                  <Label htmlFor="emails">{t('denunciasAdmin.config.labelEmailsNotificacao')}</Label>
                   <Input
                     id="emails"
                     value={formData.emails_notificacao}
                     onChange={(e) => 
                       setFormData(prev => ({ ...prev, emails_notificacao: e.target.value }))
                     }
-                    placeholder="email1@empresa.com, email2@empresa.com"
+                    placeholder={t('denunciasAdmin.config.placeholderEmails')}
                   />
                   <div className="text-xs text-muted-foreground">
-                    Separe múltiplos e-mails com vírgula
+                    {t('denunciasAdmin.config.hintEmails')}
                   </div>
                 </div>
               )}
@@ -449,34 +448,34 @@ export function ConfiguracoesDenuncia() {
       {/* Textos do Formulário */}
       <Card>
         <CardHeader>
-          <CardTitle>Personalização do Formulário</CardTitle>
+          <CardTitle>{t('denunciasAdmin.config.customizationTitle')}</CardTitle>
           <CardDescription>
-            Customize os textos exibidos no formulário público
+            {t('denunciasAdmin.config.customizationDescription')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="apresentacao">Texto de Apresentação</Label>
+            <Label htmlFor="apresentacao">{t('denunciasAdmin.config.labelApresentacao')}</Label>
             <Textarea
               id="apresentacao"
               value={formData.texto_apresentacao}
               onChange={(e) => 
                 setFormData(prev => ({ ...prev, texto_apresentacao: e.target.value }))
               }
-              placeholder="Texto que aparecerá no topo do formulário..."
+              placeholder={t('denunciasAdmin.config.placeholderApresentacao')}
               rows={3}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="politica">Política de Privacidade</Label>
+            <Label htmlFor="politica">{t('denunciasAdmin.config.labelPolitica')}</Label>
             <Textarea
               id="politica"
               value={formData.politica_privacidade}
               onChange={(e) => 
                 setFormData(prev => ({ ...prev, politica_privacidade: e.target.value }))
               }
-              placeholder="Política de privacidade que o denunciante deve aceitar..."
+              placeholder={t('denunciasAdmin.config.placeholderPolitica')}
               rows={5}
             />
           </div>
@@ -487,7 +486,7 @@ export function ConfiguracoesDenuncia() {
       <div className="flex justify-end">
         <Button onClick={handleSalvar} disabled={saving}>
           <Save className="w-4 h-4 mr-2" />
-          {saving ? 'Salvando...' : 'Salvar Configurações'}
+          {saving ? t('denunciasAdmin.config.saving') : t('denunciasAdmin.config.saveButton')}
         </Button>
       </div>
     </div>

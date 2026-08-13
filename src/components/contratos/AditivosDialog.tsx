@@ -25,10 +25,10 @@ import { MasterDetailDialog, type MasterDetailItem } from '@/components/ui/maste
 import { Separator } from '@/components/ui/separator';
 import { useLanguage } from '@/contexts/LanguageContext';
 
-const aditivoSchema = z.object({
-  numero_aditivo: z.string().min(1, 'Número do aditivo é obrigatório'),
-  tipo: z.string().min(1, 'Tipo é obrigatório'),
-  motivo: z.string().min(1, 'Motivo é obrigatório'),
+const makeAditivoSchema = (t: (key: string) => string) => z.object({
+  numero_aditivo: z.string().min(1, t('contratosDialogs.aditivosDialog.zodNumeroRequired')),
+  tipo: z.string().min(1, t('contratosDialogs.aditivosDialog.zodTipoRequired')),
+  motivo: z.string().min(1, t('contratosDialogs.aditivosDialog.zodMotivoRequired')),
   valor_anterior: z.string().optional(),
   valor_novo: z.string().optional(),
   data_inicio_anterior: z.date().optional(),
@@ -36,11 +36,11 @@ const aditivoSchema = z.object({
   data_inicio_nova: z.date().optional(),
   data_fim_nova: z.date().optional(),
   data_assinatura: z.date().optional(),
-  justificativa: z.string().min(1, 'Justificativa é obrigatória'),
+  justificativa: z.string().min(1, t('contratosDialogs.aditivosDialog.zodJustificativaRequired')),
   status: z.string().default('rascunho'),
 });
 
-type AditivoFormData = z.infer<typeof aditivoSchema>;
+type AditivoFormData = z.infer<ReturnType<typeof makeAditivoSchema>>;
 
 interface Aditivo {
   id: string;
@@ -104,6 +104,7 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
   const { toast } = useToast();
   const { t } = useLanguage();
   const STATUS_INFO = useMemo(() => getStatusInfo(t), [t]);
+  const aditivoSchema = useMemo(() => makeAditivoSchema(t), [t]);
 
   const form = useForm<AditivoFormData>({
     resolver: zodResolver(aditivoSchema),

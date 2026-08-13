@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { CheckCircle2, XCircle, ExternalLink, Send, AlertCircle, Users } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface TeamsConfigDialogProps {
   open: boolean;
@@ -43,6 +44,7 @@ export function TeamsConfigDialog({
   existingConfig,
   onSaved
 }: TeamsConfigDialogProps) {
+  const { t } = useLanguage();
   const [webhookUrl, setWebhookUrl] = useState('');
   const [selectedEvents, setSelectedEvents] = useState<string[]>(EVENTOS_DISPONIVEIS.map(e => e.id));
   const [saving, setSaving] = useState(false);
@@ -64,7 +66,7 @@ export function TeamsConfigDialog({
 
   const handleTestConnection = async () => {
     if (!webhookUrl) {
-      toast.error('URL obrigatória', { description: 'Informe a URL do webhook.' });
+      toast.error(t('configIntegrations.teams.toastUrlObrig'), { description: t('configIntegrations.teams.toastUrlObrigDesc') });
       return;
     }
 
@@ -83,16 +85,16 @@ export function TeamsConfigDialog({
 
       if (data?.success) {
         setTestResult('success');
-        toast.success('Conexão bem-sucedida!', {
-          description: 'Mensagem de teste enviada para o Teams.'
+        toast.success(t('configIntegrations.teams.toastConexaoOk'), {
+          description: t('configIntegrations.teams.toastConexaoOkDesc')
         });
       } else {
         throw new Error(data?.error || 'Falha no teste');
       }
     } catch (error: any) {
       setTestResult('error');
-      toast.error('Falha na conexão', {
-        description: error.message || 'Verifique a URL do webhook.'
+      toast.error(t('configIntegrations.teams.toastConexaoFalha'), {
+        description: error.message || t('configIntegrations.teams.toastConexaoFalhaDesc')
       });
     } finally {
       setTesting(false);
@@ -101,7 +103,7 @@ export function TeamsConfigDialog({
 
   const handleSave = async () => {
     if (!webhookUrl) {
-      toast.error('URL obrigatória', { description: 'Informe a URL do webhook.' });
+      toast.error(t('configIntegrations.teams.toastUrlObrig'), { description: t('configIntegrations.teams.toastUrlObrigDesc') });
       return;
     }
 
@@ -132,13 +134,13 @@ export function TeamsConfigDialog({
         if (error) throw error;
       }
 
-      toast.success('Teams configurado!', {
-        description: 'Você receberá notificações no canal configurado.'
+      toast.success(t('configIntegrations.teams.toastConfigurado'), {
+        description: t('configIntegrations.teams.toastConfiguradoDesc')
       });
       onSaved();
       onOpenChange(false);
     } catch (error: any) {
-      toast.error('Erro ao salvar', { description: error.message });
+      toast.error(t('configIntegrations.teams.toastErroSalvar'), { description: error.message });
     } finally {
       setSaving(false);
     }
@@ -155,11 +157,11 @@ export function TeamsConfigDialog({
         .eq('id', existingConfig.id);
       if (error) throw error;
 
-      toast.success('Teams desconectado');
+      toast.success(t('configIntegrations.teams.toastDesconectado'));
       onSaved();
       onOpenChange(false);
     } catch (error: any) {
-      toast.error('Erro ao desconectar', { description: error.message });
+      toast.error(t('configIntegrations.teams.toastErroDesconectar'), { description: error.message });
     } finally {
       setSaving(false);
     }
@@ -183,16 +185,16 @@ export function TeamsConfigDialog({
           disabled={saving}
           className="sm:mr-auto"
         >
-          Desconectar
+          {t('configIntegrations.teams.btnDesconectar')}
         </Button>
       )}
       <div className="flex gap-2 sm:ml-auto">
         <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)} disabled={saving}>
-          Cancelar
+          {t('configIntegrations.teams.btnCancelar')}
         </Button>
         <Button size="sm" onClick={handleSave} disabled={saving || !webhookUrl}>
           {saving && <AkurisPulse size={16} className="mr-2" />}
-          Salvar
+          {t('configIntegrations.teams.btnSalvar')}
         </Button>
       </div>
     </div>
@@ -202,8 +204,8 @@ export function TeamsConfigDialog({
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      title="Configurar Microsoft Teams"
-      description="Receba notificações do Akuris diretamente no seu canal do Teams."
+      title={t('configIntegrations.teams.title')}
+      description={t('configIntegrations.teams.description')}
       icon={Users}
       size="md"
       footer={footer}
@@ -215,20 +217,20 @@ export function TeamsConfigDialog({
           <div className="p-3 rounded-lg bg-muted/50 border space-y-2">
             <h4 className="font-medium text-sm flex items-center gap-2">
               <AlertCircle className="h-4 w-4 text-primary" />
-              Como configurar
+              {t('configIntegrations.teams.instrucoesTitle')}
             </h4>
             <ol className="text-xs text-muted-foreground space-y-1 ml-6 list-decimal">
-              <li>Abra o canal do Teams onde deseja receber notificações</li>
-              <li>Clique em "..." → "Conectores"</li>
-              <li>Busque por "Incoming Webhook" e configure</li>
-              <li>Dê um nome (ex: Akuris) e copie a URL</li>
-              <li>Cole a URL abaixo e teste a conexão</li>
+              <li>{t('configIntegrations.teams.instrucao1')}</li>
+              <li>{t('configIntegrations.teams.instrucao2')}</li>
+              <li>{t('configIntegrations.teams.instrucao3')}</li>
+              <li>{t('configIntegrations.teams.instrucao4')}</li>
+              <li>{t('configIntegrations.teams.instrucao5')}</li>
             </ol>
           </div>
 
           {/* Webhook URL */}
           <div className="space-y-2">
-            <Label htmlFor="teams-webhook">URL do Incoming Webhook *</Label>
+            <Label htmlFor="teams-webhook">{t('configIntegrations.teams.fieldWebhook')}</Label>
             <div className="flex gap-2">
               <Input
                 id="teams-webhook"
@@ -259,16 +261,16 @@ export function TeamsConfigDialog({
               </Button>
             </div>
             {testResult === 'success' && (
-              <p className="text-xs text-green-600">✓ Conexão verificada com sucesso</p>
+              <p className="text-xs text-green-600">{t('configIntegrations.teams.testSuccess')}</p>
             )}
             {testResult === 'error' && (
-              <p className="text-xs text-destructive">✗ Falha na conexão - verifique a URL</p>
+              <p className="text-xs text-destructive">{t('configIntegrations.teams.testError')}</p>
             )}
           </div>
 
           {/* Eventos */}
           <div className="space-y-3">
-            <Label>Eventos para notificar</Label>
+            <Label>{t('configIntegrations.teams.eventosLabel')}</Label>
             <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto">
               {EVENTOS_DISPONIVEIS.map(evento => (
                 <div
@@ -286,11 +288,11 @@ export function TeamsConfigDialog({
                       htmlFor={`teams-${evento.id}`}
                       className="text-sm cursor-pointer"
                     >
-                      {evento.label}
+                      {t(`configIntegrations.events.${evento.id}.label`)}
                     </label>
                   </div>
                   <Badge variant="outline" className="text-xs">
-                    {evento.modulo}
+                    {t(`configIntegrations.events.${evento.id}.modulo`)}
                   </Badge>
                 </div>
               ))}
@@ -304,7 +306,7 @@ export function TeamsConfigDialog({
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
           >
-            Ver documentação do Teams
+            {t('configIntegrations.teams.linkDocs')}
             <ExternalLink className="h-3 w-3" />
           </a>
       </div>

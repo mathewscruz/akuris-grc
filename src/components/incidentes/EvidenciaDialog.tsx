@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import {
@@ -26,13 +26,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
 
-const evidenciaSchema = z.object({
-  nome: z.string().min(1, 'Nome é obrigatório'),
+const makeEvidenciaSchema = (t: (key: string) => string) => z.object({
+  nome: z.string().min(1, t('modDialogs.incidentes.evidencia.validation.nomeRequired')),
   descricao: z.string().optional(),
-  tipo_evidencia: z.string().min(1, 'Tipo de evidência é obrigatório'),
+  tipo_evidencia: z.string().min(1, t('modDialogs.incidentes.evidencia.validation.tipoRequired')),
 });
 
-type EvidenciaFormData = z.infer<typeof evidenciaSchema>;
+type EvidenciaFormData = z.infer<ReturnType<typeof makeEvidenciaSchema>>;
 
 interface EvidenciaDialogProps {
   incidenteId: string;
@@ -56,6 +56,7 @@ export function EvidenciaDialog({ incidenteId, evidencia, onSuccess, trigger, ex
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const { toast } = useToast();
   const { t } = useLanguage();
+  const evidenciaSchema = useMemo(() => makeEvidenciaSchema(t), [t]);
 
   const form = useForm<EvidenciaFormData>({
     resolver: zodResolver(evidenciaSchema),
@@ -218,18 +219,18 @@ export function EvidenciaDialog({ incidenteId, evidencia, onSuccess, trigger, ex
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Selecione o tipo" />
+                        <SelectValue placeholder={t('incidentesComp.evidencia.fieldTipoPlaceholder')} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="documento">Documento</SelectItem>
-                      <SelectItem value="screenshot">Screenshot</SelectItem>
-                      <SelectItem value="log">Log de Sistema</SelectItem>
-                      <SelectItem value="video">Vídeo</SelectItem>
-                      <SelectItem value="audio">Áudio</SelectItem>
-                      <SelectItem value="foto">Fotografia</SelectItem>
-                      <SelectItem value="backup">Backup</SelectItem>
-                      <SelectItem value="forense">Evidência Forense</SelectItem>
+                      <SelectItem value="documento">{t('incidentesComp.evidencia.tipoDocumento')}</SelectItem>
+                      <SelectItem value="screenshot">{t('incidentesComp.evidencia.tipoScreenshot')}</SelectItem>
+                      <SelectItem value="log">{t('incidentesComp.evidencia.tipoLog')}</SelectItem>
+                      <SelectItem value="video">{t('incidentesComp.evidencia.tipoVideo')}</SelectItem>
+                      <SelectItem value="audio">{t('incidentesComp.evidencia.tipoAudio')}</SelectItem>
+                      <SelectItem value="foto">{t('incidentesComp.evidencia.tipoFoto')}</SelectItem>
+                      <SelectItem value="backup">{t('incidentesComp.evidencia.tipoBackup')}</SelectItem>
+                      <SelectItem value="forense">{t('incidentesComp.evidencia.tipoForense')}</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
