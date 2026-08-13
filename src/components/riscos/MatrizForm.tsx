@@ -119,6 +119,10 @@ export function MatrizForm({ onSuccess }: Props) {
   const [matrizes, setMatrizes] = useState<Matriz[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [editingMatriz, setEditingMatriz] = useState<Matriz | null>(null);
+  // Modo explícito de criação: só entra aqui via botão "Nova matriz".
+  // Sem isto o modal reabre num formulário vazio e induz a criação de duplicados.
+  const [modoNovo, setModoNovo] = useState(false);
+
   
   // Estado para ConfirmDialog de exclusão
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
