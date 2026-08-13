@@ -39,7 +39,7 @@ export function TraducaoFrameworksTab() {
 
       const result: FrameworkRow[] = [];
       for (const fw of frameworks || []) {
-        const [{ count: total }, { count: pendentes }] = await Promise.all([
+        const [{ count: total }, { count: pendentes }, { count: guidancePendente }] = await Promise.all([
           supabase
             .from('gap_analysis_requirements')
             .select('id', { count: 'exact', head: true })
@@ -49,12 +49,18 @@ export function TraducaoFrameworksTab() {
             .select('id', { count: 'exact', head: true })
             .eq('framework_id', fw.id)
             .or('titulo_en.is.null,descricao_en.is.null'),
+          supabase
+            .from('gap_analysis_requirements')
+            .select('id', { count: 'exact', head: true })
+            .eq('framework_id', fw.id)
+            .is('orientacao_implementacao_en', null),
         ]);
         result.push({
           id: fw.id,
           nome: fw.nome,
           total: total ?? 0,
           traduzidos: Math.max((total ?? 0) - (pendentes ?? 0), 0),
+          guidanceEn: Math.max((total ?? 0) - (guidancePendente ?? 0), 0),
         });
       }
       setRows(result);
