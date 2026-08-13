@@ -294,6 +294,8 @@ const STATUS_LABELS_EN: Record<string, string> = {
   medio: 'Medium', media: 'Medium', baixo: 'Low', baixa: 'Low',
   muito_alto: 'Very High', muito_baixo: 'Very Low',
   pendente: 'Pending', pendente_aprovacao: 'Pending Approval', em_andamento: 'In Progress',
+  em_execucao: 'In Execution', autenticacao: 'Authentication',
+
   em_analise: 'Under Review', em_revisao: 'Under Revision', em_investigacao: 'Under Investigation',
   concluido: 'Completed', concluida: 'Completed', cancelado: 'Cancelled', cancelada: 'Cancelled',
   aprovado: 'Approved', aprovada: 'Approved', rejeitado: 'Rejected', rejeitada: 'Rejected',
