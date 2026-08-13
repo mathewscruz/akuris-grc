@@ -534,8 +534,7 @@ export const UrlScannerDialog = ({ isOpen, onClose, onImport }: UrlScannerDialog
                 <Card>
                   <CardContent className="py-3">
                     <p className="text-sm">
-                      <span className="font-medium">{scanResult.pagesScanned}</span> {t('dadosDialogs.urlScanner.domainInfo').split('•')[0].replace('{scanned}', '').trim()} • 
-                      <span className="font-medium ml-1">{scanResult.pagesWithForms}</span> {t('dadosDialogs.urlScanner.domainInfo').split('•')[1].replace('{withForms}', '').trim()}
+                      {t('dadosDialogs.urlScanner.domainInfo').replace('{scanned}', String(scanResult.pagesScanned)).replace('{withForms}', String(scanResult.pagesWithForms))}
                     </p>
                   </CardContent>
                 </Card>

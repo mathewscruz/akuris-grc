@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useEmpresaId } from "@/hooks/useEmpresaId";
 import { useOptimizedQuery } from "@/hooks/useOptimizedQuery";
@@ -53,7 +54,8 @@ export function SistemaUsuariosList() {
   const { empresaId } = useEmpresaId();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  
+  const { t } = useLanguage();
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedUsuario, setSelectedUsuario] = useState<SistemaUsuario | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -118,11 +120,11 @@ export function SistemaUsuariosList() {
 
       if (error) throw error;
 
-      toast({ title: "Sucesso", description: "Usuário removido com sucesso" });
+      toast({ title: t("revisaoAcessosComp.usuariosList.toastSuccessTitle"), description: t("revisaoAcessosComp.usuariosList.toastDeleted") });
       invalidateCache();
     } catch (error: any) {
       toast({
-        title: "Erro ao remover usuário",
+        title: t("revisaoAcessosComp.usuariosList.toastErrorTitle"),
         description: error.message,
         variant: "destructive",
       });
@@ -138,30 +140,30 @@ export function SistemaUsuariosList() {
   const columns: Column<SistemaUsuario>[] = [
     {
       key: "nome_usuario",
-      label: "Nome",
+      label: t("revisaoAcessosComp.usuariosList.columnNome"),
       sortable: true,
     },
     {
       key: "email_usuario",
-      label: "Email",
+      label: t("revisaoAcessosComp.usuariosList.columnEmail"),
       sortable: true,
       render: (row) => row.email_usuario || "-",
     },
     {
       key: "sistema.nome_sistema",
-      label: "Sistema",
+      label: t("revisaoAcessosComp.usuariosList.columnSistema"),
       sortable: true,
       render: (row) => row.sistema?.nome_sistema || "-",
     },
     {
       key: "departamento",
-      label: "Departamento",
+      label: t("revisaoAcessosComp.usuariosList.columnDepartamento"),
       sortable: true,
       render: (row) => row.departamento || "-",
     },
     {
       key: "tipo_acesso",
-      label: "Tipo de Acesso",
+      label: t("revisaoAcessosComp.usuariosList.columnTipoAcesso"),
       sortable: true,
       render: (row) => (
         <StatusBadge size="sm" {...resolveTipoAcessoTone(row.tipo_acesso)}>
@@ -171,23 +173,23 @@ export function SistemaUsuariosList() {
     },
     {
       key: "data_concessao",
-      label: "Concessão",
+      label: t("revisaoAcessosComp.usuariosList.columnConcessao"),
       sortable: true,
       render: (row) => formatDateOnly(row.data_concessao) || "-",
     },
     {
       key: "ativo",
-      label: "Status",
+      label: t("revisaoAcessosComp.usuariosList.columnStatus"),
       sortable: true,
       render: (row) => (
         <StatusBadge size="sm" {...resolveAtivoTone(row.ativo)}>
-          {row.ativo ? "Ativo" : "Inativo"}
+          {row.ativo ? t("revisaoAcessosComp.usuariosList.statusAtivo") : t("revisaoAcessosComp.usuariosList.statusInativo")}
         </StatusBadge>
       ),
     },
     {
       key: "actions",
-      label: "Ações",
+      label: t("revisaoAcessosComp.usuariosList.columnAcoes"),
       render: (row) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -198,7 +200,7 @@ export function SistemaUsuariosList() {
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => handleEdit(row)}>
               <Pencil className="h-4 w-4 mr-2" />
-              Editar
+              {t("revisaoAcessosComp.usuariosList.buttonEditar")}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
@@ -209,7 +211,7 @@ export function SistemaUsuariosList() {
               className="text-destructive focus:text-destructive"
             >
               <Trash2 className="h-4 w-4 mr-2" />
-              Excluir
+              {t("revisaoAcessosComp.usuariosList.buttonExcluir")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -223,10 +225,10 @@ export function SistemaUsuariosList() {
         <div className="flex justify-between items-center">
           <Select value={filtroSistema} onValueChange={setFiltroSistema}>
             <SelectTrigger className="w-[250px]">
-              <SelectValue placeholder="Filtrar por sistema" />
+              <SelectValue placeholder={t("revisaoAcessosComp.usuariosList.filterPlaceholder")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="todos">Todos os Sistemas</SelectItem>
+              <SelectItem value="todos">{t("revisaoAcessosComp.usuariosList.filterAllSystems")}</SelectItem>
               {sistemas?.map((sistema) => (
                 <SelectItem key={sistema.id} value={sistema.id}>
                   {sistema.nome_sistema}
@@ -236,16 +238,16 @@ export function SistemaUsuariosList() {
           </Select>
           <Button onClick={() => { setSelectedUsuario(null); setDialogOpen(true); }}>
             <Plus className="h-4 w-4 mr-2" />
-            Novo Usuário
+            {t("revisaoAcessosComp.usuariosList.buttonNovo")}
           </Button>
         </div>
 
         <EmptyState
           icon={<Users className="h-10 w-10" />}
-          title="Nenhum usuário cadastrado"
-          description="Cadastre usuários vinculados aos sistemas para gerenciar revisões de acesso."
+          title={t("revisaoAcessosComp.usuariosList.emptyTitle")}
+          description={t("revisaoAcessosComp.usuariosList.emptyDescription")}
           action={{
-            label: "Cadastrar Usuário",
+            label: t("revisaoAcessosComp.usuariosList.emptyAction"),
             onClick: () => { setSelectedUsuario(null); setDialogOpen(true); },
           }}
         />
@@ -266,10 +268,10 @@ export function SistemaUsuariosList() {
       <div className="flex justify-between items-center">
         <Select value={filtroSistema} onValueChange={setFiltroSistema}>
           <SelectTrigger className="w-[250px]">
-            <SelectValue placeholder="Filtrar por sistema" />
+            <SelectValue placeholder={t("revisaoAcessosComp.usuariosList.filterPlaceholder")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="todos">Todos os Sistemas</SelectItem>
+            <SelectItem value="todos">{t("revisaoAcessosComp.usuariosList.filterAllSystems")}</SelectItem>
             {sistemas?.map((sistema) => (
               <SelectItem key={sistema.id} value={sistema.id}>
                 {sistema.nome_sistema}
@@ -279,7 +281,7 @@ export function SistemaUsuariosList() {
         </Select>
         <Button onClick={() => { setSelectedUsuario(null); setDialogOpen(true); }}>
           <Plus className="h-4 w-4 mr-2" />
-          Novo Usuário
+          {t("revisaoAcessosComp.usuariosList.buttonNovo")}
         </Button>
       </div>
 
@@ -287,7 +289,7 @@ export function SistemaUsuariosList() {
         columns={columns}
         data={usuarios || []}
         searchable
-        searchPlaceholder="Buscar usuários..."
+        searchPlaceholder={t("revisaoAcessosComp.usuariosList.searchPlaceholder")}
         pageSize={10}
       />
 
@@ -302,9 +304,9 @@ export function SistemaUsuariosList() {
       <ConfirmDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        title="Excluir Usuário"
-        description={`Tem certeza que deseja excluir o usuário "${usuarioToDelete?.nome_usuario}"? Esta ação não pode ser desfeita.`}
-        confirmText="Excluir"
+        title={t("revisaoAcessosComp.usuariosList.deleteTitle")}
+        description={t("revisaoAcessosComp.usuariosList.deleteDescription").replace("{nome}", usuarioToDelete?.nome_usuario || "")}
+        confirmText={t("revisaoAcessosComp.usuariosList.deleteConfirm")}
         onConfirm={handleDelete}
         loading={isDeleting}
         variant="destructive"

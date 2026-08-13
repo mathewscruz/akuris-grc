@@ -7,11 +7,13 @@ import { PermissionProfilesList } from './PermissionProfilesList';
 import { UserPermissionsList } from './UserPermissionsList';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { useLanguage } from '@/contexts/LanguageContext';
 interface PermissionMatrixProps {
   selectedUserId?: string;
 }
 
 export const PermissionMatrix: React.FC<PermissionMatrixProps> = ({ selectedUserId }) => {
+  const { t } = useLanguage();
   const [empresaId, setEmpresaId] = useState<string>('');
   const [loading, setLoading] = useState(true);
 
@@ -43,7 +45,7 @@ export const PermissionMatrix: React.FC<PermissionMatrixProps> = ({ selectedUser
     return (
       <Card>
         <CardContent className="py-12 text-center text-muted-foreground">
-          Empresa não encontrada. Vincule seu usuário a uma empresa.
+          {t('configPerms.matrix.empresaNotFound')}
         </CardContent>
       </Card>
     );
@@ -55,11 +57,11 @@ export const PermissionMatrix: React.FC<PermissionMatrixProps> = ({ selectedUser
         <TabsList>
           <TabsTrigger value="perfis" className="flex items-center gap-2">
             <Shield className="h-4 w-4" />
-            Perfis de Permissão
+            {t('configPerms.matrix.tabProfiles')}
           </TabsTrigger>
           <TabsTrigger value="usuarios" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
-            Permissões por Usuário
+            {t('configPerms.matrix.tabUsers')}
           </TabsTrigger>
         </TabsList>
 
