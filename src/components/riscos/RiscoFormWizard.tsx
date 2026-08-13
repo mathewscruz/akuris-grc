@@ -598,7 +598,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
 
   const tabsMeta: Array<{ key: TabKey; label: string; icon: any; description: string }> = [
     { key: 'identificacao', label: t('fin.riscos.wizard.stepIdentificacao'), icon: FileText, description: t('fin.riscos.wizard.stepIdentificacaoDesc') },
-    { key: 'avaliacao', label: t('fin.riscos.wizard.stepAvaliacao'), icon: Gauge, description: 'Probabilidade × Impacto' },
+    { key: 'avaliacao', label: t('fin.riscos.wizard.stepAvaliacao'), icon: Gauge, description: t('campos.risco.avaliacaoInicialDescShort') },
     { key: 'detalhes', label: 'Detalhes', icon: Settings2, description: 'Status, controles, ativos' },
     { key: 'residual', label: t('fin.riscos.wizard.stepResidual'), icon: Link2, description: t('fin.riscos.wizard.stepResidualDesc') },
     { key: 'aceite', label: t('fin.riscos.wizard.stepAceite'), icon: ShieldCheck, description: t('fin.riscos.wizard.stepAceiteDesc') },
@@ -743,9 +743,9 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                 name="nome"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Nome do Risco *</FormLabel>
+                    <FormLabel>{t('campos.risco.nome')}</FormLabel>
                     <FormControl>
-                      <Input placeholder="Ex: Falha de backup de dados" {...field} />
+                      <Input placeholder={t('campos.risco.nomePlaceholder')} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -758,7 +758,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                   name="categoria_id"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Categoria</FormLabel>
+                      <FormLabel>{t('campos.risco.categoria')}</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
@@ -813,7 +813,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                     <FormLabel>{t('fin.comum.descricao')}</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="Descreva o risco detalhadamente..."
+                        placeholder={t('campos.risco.descricaoPlaceholder')}
                         className="min-h-[100px]"
                         {...field}
                       />
@@ -828,7 +828,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                 name="matriz_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Matriz de Risco *</FormLabel>
+                    <FormLabel>{t('campos.risco.matriz')}</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
@@ -854,7 +854,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
             <TabsContent value="avaliacao" className="mt-0 space-y-4 max-w-3xl mx-auto">
               <div>
                 <h2 className="text-lg font-semibold flex items-center gap-2"><Gauge className="h-5 w-5" />{t('fin.riscos.wizard.stepAvaliacao')}</h2>
-                <p className="text-sm text-muted-foreground">Probabilidade × Impacto sem considerar controles.</p>
+                <p className="text-sm text-muted-foreground">{t('campos.risco.avaliacaoInicialDesc')}</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -863,7 +863,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                   name="probabilidade_inicial"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Probabilidade *</FormLabel>
+                      <FormLabel>{t('campos.risco.probabilidade')}</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
@@ -894,7 +894,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                   name="impacto_inicial"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Impacto *</FormLabel>
+                      <FormLabel>{t('campos.risco.impacto')}</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
@@ -943,13 +943,13 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                   const exp = financialExposure(field.value, watchProbabilidade);
                   return (
                     <FormItem>
-                      <FormLabel>Impacto financeiro estimado (R$)</FormLabel>
+                      <FormLabel>{t('campos.risco.impactoFinanceiro')}</FormLabel>
                       <FormControl>
                         <Input
                           type="number"
                           min="0"
                           step="1000"
-                          placeholder="Ex.: 250000 (perda potencial se o risco ocorrer)"
+                          placeholder={t('campos.risco.impactoFinanceiroPlaceholder')}
                           {...field}
                         />
                       </FormControl>
@@ -972,9 +972,9 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                   name="causas"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Causas</FormLabel>
+                      <FormLabel>{t('campos.risco.causas')}</FormLabel>
                       <FormControl>
-                        <Textarea placeholder="O que pode causar este risco?" className="min-h-[80px]" {...field} />
+                        <Textarea placeholder={t('campos.risco.causasPlaceholder')} className="min-h-[80px]" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -988,7 +988,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                     <FormItem>
                       <FormLabel>{t('fin.riscos.wizard.consequencias')}</FormLabel>
                       <FormControl>
-                        <Textarea placeholder="Quais os impactos se ocorrer?" className="min-h-[80px]" {...field} />
+                        <Textarea placeholder={t('campos.risco.consequenciasPlaceholder')} className="min-h-[80px]" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -1009,7 +1009,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                 name="status"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Status *</FormLabel>
+                    <FormLabel>{t('campos.risco.status')}</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
@@ -1038,7 +1038,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                     <FormControl>
                       <Input type="date" {...field} />
                     </FormControl>
-                    <FormDescription>Agende quando este risco deve ser reavaliado</FormDescription>
+                    <FormDescription>{t('campos.risco.proxRevisaoDesc')}</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -1049,7 +1049,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                 name="controles_existentes"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Controles Existentes</FormLabel>
+                    <FormLabel>{t('campos.risco.controlesExistentes')}</FormLabel>
                     <FormControl>
                       <Textarea placeholder={t('fin.riscos.wizard.controlesPlaceholder')} className="min-h-[80px]" {...field} />
                     </FormControl>
@@ -1059,7 +1059,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
               />
 
               <div className="space-y-2">
-                <FormLabel>Ativos Vinculados</FormLabel>
+                <FormLabel>{t('campos.risco.ativosVinculados')}</FormLabel>
                 <FormField
                   control={form.control}
                   name="ativos_vinculados"
@@ -1106,7 +1106,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                   name="probabilidade_residual"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Probabilidade Residual</FormLabel>
+                      <FormLabel>{t('campos.risco.probabilidadeResidual')}</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
@@ -1137,7 +1137,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                   name="impacto_residual"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Impacto Residual</FormLabel>
+                      <FormLabel>{t('campos.risco.impactoResidual')}</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
@@ -1212,9 +1212,9 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                       />
                     </FormControl>
                     <div className="space-y-1 leading-none">
-                      <FormLabel>Solicitar aceite formal deste risco</FormLabel>
+                      <FormLabel>{t('campos.risco.solicitarAceite')}</FormLabel>
                       <FormDescription>
-                        Ao marcar, será necessário indicar um aprovador e aguardar a aprovação
+                        {t('campos.risco.solicitarAceiteDesc')}
                       </FormDescription>
                     </div>
                   </FormItem>
@@ -1228,7 +1228,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                     name="aprovador_aceite"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Aprovador do Aceite *</FormLabel>
+                        <FormLabel>{t('campos.risco.aprovadorAceite')}</FormLabel>
                         <FormControl>
                           <UserSelect
                             value={field.value || ''}
@@ -1237,7 +1237,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                           />
                         </FormControl>
                         <FormDescription>
-                          Esta pessoa receberá uma notificação e e-mail para aprovar ou rejeitar
+                          {t('campos.risco.aprovadorAceiteDesc')}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -1249,9 +1249,9 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                     name="justificativa_aceite"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Justificativa do Aceite *</FormLabel>
+                        <FormLabel>{t('campos.risco.justificativaAceite')}</FormLabel>
                         <FormControl>
-                          <Textarea placeholder="Justifique a decisão de aceitar o risco..." className="min-h-[80px]" {...field} />
+                          <Textarea placeholder={t('campos.risco.justificativaAceitePlaceholder')} className="min-h-[80px]" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -1275,7 +1275,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
 
                   {risco?.id && (
                     <div className="space-y-2">
-                      <FormLabel>Anexos de Aceite</FormLabel>
+                      <FormLabel>{t('campos.risco.anexosAceite')}</FormLabel>
                       <RiscoAnexosUpload
                         riscoId={risco.id}
                         anexos={anexosAceite}

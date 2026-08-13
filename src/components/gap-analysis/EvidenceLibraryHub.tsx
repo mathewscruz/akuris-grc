@@ -13,8 +13,10 @@ import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { Sparkles, Search, FileText, ExternalLink, Library, ChevronRight, CheckCircle2 } from 'lucide-react';
 import { akurisToast } from '@/lib/akuris-toast';
 import { toast } from 'sonner';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export function EvidenceLibraryHub() {
+  const { t } = useLanguage();
   const { empresaId } = useEmpresaId();
   const lib = useEvidenceLibrary(empresaId);
   const [search, setSearch] = useState('');
@@ -26,7 +28,7 @@ export function EvidenceLibraryHub() {
     const q = search.trim().toLowerCase();
     if (!q) return true;
     return [it.nome, it.descricao, (it.tags || []).join(' '), it.arquivo_nome]
-      .filter(Boolean).some((t) => String(t).toLowerCase().includes(q));
+      .filter(Boolean).some((v) => String(v).toLowerCase().includes(q));
   });
 
   const runMatch = async (ev: EvidenceLibraryItem) => {
@@ -86,7 +88,7 @@ export function EvidenceLibraryHub() {
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar evidência por nome, descrição ou tag..."
+              placeholder={t('campos.comum.buscarEvidencia')}
               className="pl-9"
             />
           </div>

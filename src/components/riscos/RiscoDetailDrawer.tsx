@@ -329,14 +329,14 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
             <TabsContent value="visao" className="m-0 space-y-5 data-[state=active]:animate-fade-in">
               {risco.descricao && (
                 <section>
-                  <SectionLabel>Descrição</SectionLabel>
+                  <SectionLabel>{t('campos.risco.descricaoSecao')}</SectionLabel>
                   <p className="text-sm text-foreground/85 leading-relaxed">{risco.descricao}</p>
                 </section>
               )}
 
               {/* Movimento inerente → residual */}
               <section>
-                <SectionLabel>Inerente → Residual</SectionLabel>
+                <SectionLabel>{t('campos.risco.inerenteResidual')}</SectionLabel>
                 <div className="flex items-stretch gap-2 mt-0.5">
                   <ScoreBlock label="Inerente" nivel={risco.nivel_risco_inicial} score={inicialScore} p={risco.probabilidade_inicial} i={risco.impacto_inicial} />
                   <div className="flex flex-col items-center justify-center px-0.5 shrink-0">
@@ -408,7 +408,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
               )}
               {risco.controles_existentes && (
                 <section>
-                  <SectionLabel>Controles existentes</SectionLabel>
+                  <SectionLabel>{t('campos.risco.controlesExistentesSecao')}</SectionLabel>
                   <p className="text-sm text-foreground/85 leading-relaxed whitespace-pre-line">{risco.controles_existentes}</p>
                 </section>
               )}

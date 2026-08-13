@@ -210,7 +210,7 @@ export function SistemaUsuarioDialog({
                 name="sistema_id"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Sistema *</FormLabel>
+                    <FormLabel>{t('campos.sistemaUsuario.sistema')}</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
@@ -237,7 +237,7 @@ export function SistemaUsuarioDialog({
                   <FormItem>
                     <FormLabel>{t('fin.sistemaUsuario.nomeUsuario')}</FormLabel>
                     <FormControl>
-                      <Input placeholder="Nome completo" {...field} />
+                      <Input placeholder={t('campos.sistemaUsuario.nomeCompletoPlaceholder')} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -249,7 +249,7 @@ export function SistemaUsuarioDialog({
                 name="email_usuario"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>{t('campos.sistemaUsuario.email')}</FormLabel>
                     <FormControl>
                       <Input type="email" placeholder="email@exemplo.com" {...field} />
                     </FormControl>
@@ -263,9 +263,9 @@ export function SistemaUsuarioDialog({
                 name="departamento"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Departamento</FormLabel>
+                    <FormLabel>{t('campos.sistemaUsuario.departamento')}</FormLabel>
                     <FormControl>
-                      <Input placeholder="Ex: TI, Financeiro" {...field} />
+                      <Input placeholder={t('campos.sistemaUsuario.departamentoPlaceholder')} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -277,9 +277,9 @@ export function SistemaUsuarioDialog({
                 name="cargo"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Cargo</FormLabel>
+                    <FormLabel>{t('campos.sistemaUsuario.cargo')}</FormLabel>
                     <FormControl>
-                      <Input placeholder="Ex: Analista, Gerente" {...field} />
+                      <Input placeholder={t('campos.sistemaUsuario.cargoPlaceholder')} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -339,7 +339,7 @@ export function SistemaUsuarioDialog({
                 name="data_concessao"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Data de Concessão</FormLabel>
+                    <FormLabel>{t('campos.sistemaUsuario.dataConcessao')}</FormLabel>
                     <FormControl>
                       <Input type="date" {...field} />
                     </FormControl>

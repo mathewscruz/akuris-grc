@@ -276,7 +276,7 @@ export function JiraConfigDialog({
             <Label htmlFor="jira-project">{t('configIntegrations.jira.fieldProject')}</Label>
             <Input
               id="jira-project"
-              placeholder="PROJ"
+              placeholder={t('campos.comum.exProjectKey')}
               value={projectKey}
               onChange={(e) => setProjectKey(e.target.value.toUpperCase())}
             />

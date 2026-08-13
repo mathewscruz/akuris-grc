@@ -358,7 +358,7 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
         </div>
 
         <div className="space-y-2">
-          <Label>Prazo</Label>
+          <Label>{t('campos.risco.prazo')}</Label>
           <Popover>
             <PopoverTrigger asChild>
               <Button

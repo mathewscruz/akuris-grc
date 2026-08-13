@@ -149,13 +149,13 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
 
             {risco.descricao && (
               <section>
-                <SectionLabel>Descrição</SectionLabel>
+                <SectionLabel>{t('campos.risco.descricaoSecao')}</SectionLabel>
                 <p className="text-sm text-foreground/85 leading-relaxed">{risco.descricao}</p>
               </section>
             )}
 
             <section>
-              <SectionLabel>Inerente → Residual</SectionLabel>
+              <SectionLabel>{t('campos.risco.inerenteResidual')}</SectionLabel>
               <div className="flex items-stretch gap-2">
                 <ScoreBlock label="Inerente" nivel={risco.nivel_risco_inicial} score={inicialScore} p={risco.probabilidade_inicial} i={risco.impacto_inicial} />
                 <div className="flex flex-col items-center justify-center px-0.5 shrink-0">
