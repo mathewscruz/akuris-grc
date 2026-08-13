@@ -43,7 +43,6 @@ export const cardsKpi = {
       chaves: {
         totalChaves: 'Total de Chaves',
       },
-    },
     sweep: {
       contratos: {
         vencimentos: 'Vencimentos',
@@ -154,6 +153,7 @@ export const cardsKpi = {
         erroVincular: 'Erro ao vincular',
       },
     },
+    },
   },
   en: {
     cardsKpi: {
@@ -194,7 +194,6 @@ export const cardsKpi = {
       chaves: {
         totalChaves: 'Total keys',
       },
-    },
     sweep: {
       contratos: {
         vencimentos: 'Expirations',
@@ -304,6 +303,7 @@ export const cardsKpi = {
         erroComentar: 'Error commenting',
         erroVincular: 'Error linking',
       },
+    },
     },
   },
 };
