@@ -1073,8 +1073,9 @@ ${weak.map(w => `- índice ${w.index} ("${w.nome}") — motivo: ${w.motivo}\n  C
         warnings.push('A IA não devolveu coverage_map — a análise de compliance pode ficar inconsistente.');
       }
       if (catalogCodes.length && residualGaps.length > 0 && finalScore < AUDIT_THRESHOLD) {
-        warnings.push(`${residualGaps.length} requisito(s) permanecem sem cobertura após ${auto_refine_attempts} refino(s) automático(s). Peça um refino no chat para incluí-los.`);
+        warnings.push(`${residualGaps.length} requisito(s) ainda sem cobertura. Execute o refino automático para incluí-los.`);
       }
+
       if (finalScore > 0 && finalScore < AUDIT_THRESHOLD) {
         warnings.push(`Score final ${finalScore}% — abaixo do gate de ${AUDIT_THRESHOLD}% (${finalInScopeNaoCobertos.length} requisito(s) sem cobertura explícita).`);
       }
