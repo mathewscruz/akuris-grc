@@ -352,6 +352,8 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
 }) => {
   const { empresaId } = useEmpresaId();
   const { t } = useLanguage();
+  const { profile } = useAuth();
+  const isSuperAdmin = profile?.role === 'super_admin';
   const STATUS_OPTIONS = getStatusOptions(t);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
