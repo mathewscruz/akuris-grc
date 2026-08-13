@@ -948,11 +948,21 @@ INFORMAÇÕES COLETADAS: ${JSON.stringify(context.informacoes_coletadas)}
 
 Regras editoriais (obrigatórias):
 - Cada seção com no mínimo 3 parágrafos SUBSTANTIVOS (300+ caracteres cada) ou uma lista numerada com pelo menos 5 itens acionáveis.
-- Seções "Papéis e Responsabilidades" DEVEM conter uma tabela RACI textual: linhas = atividades; colunas = R/A/C/I, com papéis reais (CISO, DPO, Gestor de TI, Colaborador, Comitê de Segurança).
+- Seções "Papéis e Responsabilidades" DEVEM conter uma tabela RACI em MARKDOWN (formato GFM): linhas = atividades; colunas = Atividade | CISO | DPO | Gestor de TI | Colaborador, preenchidas com R/A/C/I.
 - Seções "Vigência", "Aprovação" e "Controle de Versões" DEVEM citar data real (DATA_ATUAL), responsável e frequência de revisão.
 - Onde houver métrica (retenção, RTO/RPO, prazos), traga valores CONCRETOS coerentes com o briefing do usuário. Se o usuário não deu, escolha um valor de mercado defensável e cite "(valor sugerido — validar)".
 - CADA cláusula que satisfaz um requisito do framework deve conter o CÓDIGO do requisito entre colchetes (ex.: "[A.8.13]") na primeira frase da cláusula.
 - Personalização real: reflita as respostas do usuário na conversa acima — não use frases genéricas quando o usuário deu um dado concreto.
+
+FORMATAÇÃO DO CAMPO "conteudo" (markdown restrito — o exportador só entende este subconjunto):
+- Subtítulos com "## " (nível 2) e "### " (nível 3). NUNCA use "# " (o título da seção já é o H1).
+- Listas com marcador usando "- " e listas numeradas usando "1. ", "2. " (uma por linha; indente com 2 espaços para sub-item).
+- Tabelas SEMPRE em markdown GFM com linha separadora, ex.:
+  | Atividade | CISO | DPO |
+  | --- | --- | --- |
+  | Aprovar a política | A | C |
+- Ênfase apenas com **negrito** e *itálico*. NUNCA use HTML, NUNCA use asteriscos decorativos, "===", "---" como separador, emojis ou arte ASCII.
+- Parágrafos separados por uma linha em branco. Não use tabulação para alinhar texto.
 
 Estrutura obrigatória do documento:
 - Capa: título=DOCUMENTO_EXATO, versão=1.0, data=DATA_ATUAL, empresa=EMPRESA, classificação
