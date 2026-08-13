@@ -240,7 +240,7 @@ export default function Continuidade() {
                 <Badge variant={insights.semRTO > 0 ? 'warning' : 'success'}>{insights.semRTO}</Badge>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Cobertura de testes</span>
+                <span className="text-muted-foreground">{t('cardsKpi.continuidade.coberturaTestes')}</span>
                 <Badge variant="outline">
                   {stats?.testesRealizados ?? 0} testes / {planos.length} planos
                 </Badge>

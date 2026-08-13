@@ -489,7 +489,7 @@ export default function Contratos() {
                           <EmptyState
                             icon={<FileText className="h-8 w-8" />}
                             title={t('fin.contratos.nenhum')}
-                            description='Comece criando contratos para gerenciar suas parcerias.'
+                            description='{t('cardsKpi.contratos.emptyContratos')}'
                             action={{
                               label: t('fin.contratos.novo'),
                               onClick: () => { setSelectedContrato(null); setDialogOpen(true); }
@@ -699,7 +699,7 @@ export default function Contratos() {
                           <EmptyState
                             icon={<Users className="h-8 w-8" />}
                             title={t('fin.fornecedores.nenhum')}
-                            description='Cadastre fornecedores para associar aos contratos.'
+                            description='{t('cardsKpi.contratos.emptyFornecedores')}'
                             action={{
                               label: t('fin.fornecedores.novo'),
                               onClick: () => { setSelectedFornecedor(null); setFornecedorDialogOpen(true); }

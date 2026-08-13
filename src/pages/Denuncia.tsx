@@ -88,7 +88,7 @@ export default function Denuncia() {
       <Dialog open={relatoriosOpen} onOpenChange={setRelatoriosOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Relatórios de Denúncias</DialogTitle>
+            <DialogTitle>{t('cardsKpi.denuncias.relatorios')}</DialogTitle>
           </DialogHeader>
           <RelatoriosDenuncia />
         </DialogContent>

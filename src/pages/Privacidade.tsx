@@ -571,9 +571,9 @@ export default function Privacidade() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
-          <TabsTrigger value="catalogo">Catálogo & Mapeamento</TabsTrigger>
+          <TabsTrigger value="catalogo">{t('cardsKpi.privacidade.abaCatalogo')}</TabsTrigger>
           <TabsTrigger value="ropa">ROPA</TabsTrigger>
-          <TabsTrigger value="solicitacoes">Solicitações</TabsTrigger>
+          <TabsTrigger value="solicitacoes">{t('cardsKpi.privacidade.abaSolicitacoes')}</TabsTrigger>
           <TabsTrigger value="descobertas">Descobertas</TabsTrigger>
         </TabsList>
 
@@ -747,7 +747,7 @@ export default function Privacidade() {
       <Sheet open={showDadoSheet} onOpenChange={setShowDadoSheet}>
         <SheetContent className="w-[600px] overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>Detalhes do Dado Pessoal</SheetTitle>
+            <SheetTitle>{t('cardsKpi.privacidade.detalhesDado')}</SheetTitle>
           </SheetHeader>
           {selectedDado && (
             <div className="space-y-4 mt-6">

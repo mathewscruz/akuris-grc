@@ -48,6 +48,7 @@ import { configPlanos } from './config-planos';
 import { configGeral } from './config-geral';
 import { finalI18n } from './final-i18n';
 import { campos } from './campos';
+import { cardsKpi } from './cards-kpi';
 
 type ModuleDict = { pt: Record<string, unknown>; en: Record<string, unknown> };
 
@@ -92,6 +93,7 @@ const modules: Record<string, ModuleDict> = {
   configGeral,
   finalI18n,
   campos,
+  cardsKpi,
 };
 
 
