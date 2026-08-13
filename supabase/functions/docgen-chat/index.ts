@@ -934,25 +934,33 @@ Responda APENAS com um JSON na seguinte estrutura (sem markdown, sem comentário
       );
       await chargeAiCredit();
 
-      let documentContent;
-      try {
-        const cleaned = docContent.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-        documentContent = JSON.parse(cleaned);
-      } catch (_e) {
-        documentContent = {
-          titulo: `Documento ${context.tipo_documento_identificado || ''}`.trim(),
-          versao: '1.0',
-          data_criacao: new Date().toISOString().slice(0, 10),
-          secoes: [
-            { nome: 'Conteúdo', conteudo: String(docContent || '') }
-          ],
-          metadados: {
-            classificacao: 'Interno',
-            responsavel_elaboracao: context.user_name,
-            responsavel_aprovacao: '',
-            frequencia_revisao: 'Anual'
-          }
-        };
+      let documentContent = parseDocumentJson(docContent);
+
+      // Uma única re-tentativa quando o JSON veio truncado/inválido: em vez de
+      // degradar o documento para um bloco de texto cru, pedimos o JSON de novo.
+      if (!isValidDocument(documentContent)) {
+        console.log('DocGen — JSON inválido na 1ª tentativa, refazendo geração');
+        const retryContent = await callClaude(
+          [{ role: 'user', content: 'A resposta anterior não era um JSON válido e completo. Gere o documento novamente devolvendo APENAS o JSON no formato exigido, sem cercas de código e sem texto fora do JSON. Se necessário, seja mais conciso para caber inteiro na resposta.' }],
+          documentPrompt,
+          LOVABLE_API_KEY,
+          20000,
+          0.3,
+          MODEL_QUALITY,
+        );
+        await chargeAiCredit();
+        const retryParsed = parseDocumentJson(retryContent);
+        if (isValidDocument(retryParsed)) {
+          documentContent = retryParsed;
+        }
+      }
+
+      if (!isValidDocument(documentContent)) {
+        console.error('DocGen — documento inválido após retry');
+        return new Response(
+          JSON.stringify({ error: 'INVALID_DOCUMENT', message: 'A IA não devolveu um documento estruturado válido.' }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        );
       }
 
       // A IA não conhece a data atual (chuta valores errados). Sempre sobrescrever
