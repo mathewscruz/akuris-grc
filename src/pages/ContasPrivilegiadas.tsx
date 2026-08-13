@@ -402,7 +402,7 @@ export default function ContasPrivilegiadas() {
           emptyHint={t('residuos.empty.contasPrivilegiadas')}
         />
         <StatCard
-          title="Pendentes"
+          title={t('cardsKpi.sweep.acessos.pendentes')}
           value={contasPendentes}
           loading={isLoading}
           variant="info"

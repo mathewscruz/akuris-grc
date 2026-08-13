@@ -526,7 +526,7 @@ export default function Privacidade() {
         <StatCard
           title={t('cardsKpi.privacidade.totalDados')}
           value={stats.totalDados}
-          description="Tipos catalogados"
+          description={t('cardsKpi.sweep.privacidade.tiposCatalogados')}
           icon={<Database />}
           showAccent
           emptyHint={t('residuos.privacidade.cadastreCatalogo')}
@@ -539,9 +539,9 @@ export default function Privacidade() {
           variant="warning"
         />
         <StatCard
-          title="Mapeamentos"
+          title={t('cardsKpi.privacidade.mapeamentos')}
           value={stats.mapeamentos}
-          description="Dados x Ativos"
+          description={t('cardsKpi.sweep.privacidade.dadosXAtivos')}
           icon={<Database />}
         />
         <StatCard
@@ -554,15 +554,15 @@ export default function Privacidade() {
         <StatCard
           title={t('cardsKpi.privacidade.foraPrazoLgpd')}
           value={solicitacoesForaPrazo}
-          description="Excederam 15 dias"
+          description={t('cardsKpi.privacidade.excederam15Dias')}
           icon={<Clock />}
           variant={solicitacoesForaPrazo > 0 ? "destructive" : "default"}
           drillDown="privacidade"
         />
         <StatCard
-          title="Incidentes Privacidade"
+          title={t('cardsKpi.sweep.privacidade.incidentesPrivacidade')}
           value={incidentesPrivacidade}
-          description={incidentesPrivacidade > 0 ? "Em aberto" : "Nenhum ativo"}
+          description={incidentesPrivacidade > 0 ? t('cardsKpi.privacidade.emAberto') : t('cardsKpi.privacidade.nenhumAtivo')}
           icon={<ShieldAlert />}
           variant={incidentesPrivacidade > 0 ? "warning" : "default"}
           onClick={() => navigate('/incidentes')}
