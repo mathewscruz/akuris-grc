@@ -63,6 +63,11 @@ export const sweepCore = {
         createdOn: 'Criado em {date}', view: 'Visualizar', exportPdf: 'Exportar PDF', edit: 'Editar',
         useTemplate: 'Usar este template →', generatedOn: 'Gerado em: {date}', status: 'Status: {status}',
       },
+      assets: {
+        edit: 'Editar', maintenance: 'Manutenções', auditTrail: 'Trilha de Auditoria', delete: 'Excluir',
+        all: 'Todos', high: 'altos', others: 'demais', import: 'Importar', newAsset: 'Novo Ativo',
+        updatedNotification: 'Ativo atualizado: {name}', createdNotification: 'Novo ativo: {name}',
+      },
     },
   },
   en: {
@@ -124,6 +129,11 @@ export const sweepCore = {
         publishedStatus: 'Published', archivedStatus: 'Archived', draftStatus: 'Draft',
         createdOn: 'Created on {date}', view: 'View', exportPdf: 'Export PDF', edit: 'Edit',
         useTemplate: 'Use this template →', generatedOn: 'Generated on: {date}', status: 'Status: {status}',
+      },
+      assets: {
+        edit: 'Edit', maintenance: 'Maintenance', auditTrail: 'Audit Trail', delete: 'Delete',
+        all: 'All', high: 'high', others: 'others', import: 'Import', newAsset: 'New Asset',
+        updatedNotification: 'Asset updated: {name}', createdNotification: 'New asset: {name}',
       },
     },
   },
