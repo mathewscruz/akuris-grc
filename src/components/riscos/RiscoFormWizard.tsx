@@ -219,7 +219,9 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
         supabase.from('ativos').select('id, nome, tipo').eq('empresa_id', profile.empresa_id)
       ]);
 
-      if (matrizesRes.data) setMatrizes(matrizesRes.data);
+      // Só matrizes com configuração: sem escalas/faixas o nível não é calculável.
+      if (matrizesRes.data) setMatrizes(matrizesRes.data.filter(m => m.configuracao?.[0]));
+
       if (categoriasRes.data) setCategorias(categoriasRes.data);
       if (ativosRes.data) setAtivos(ativosRes.data);
     } catch (error: any) {
