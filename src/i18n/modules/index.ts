@@ -49,6 +49,7 @@ import { configGeral } from './config-geral';
 import { finalI18n } from './final-i18n';
 import { campos } from './campos';
 import { cardsKpi } from './cards-kpi';
+import { residuos } from './residuos';
 
 type ModuleDict = { pt: Record<string, unknown>; en: Record<string, unknown> };
 
@@ -94,6 +95,7 @@ const modules: Record<string, ModuleDict> = {
   finalI18n,
   campos,
   cardsKpi,
+  residuos,
 };
 
 
