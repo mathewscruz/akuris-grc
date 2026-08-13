@@ -50,15 +50,6 @@ interface NaoConformeReq {
   peso: number | null;
 }
 
-const STATUS_LABEL: Record<string, string> = {
-  pendente: 'A iniciar',
-  em_andamento: 'Em andamento',
-  em_revisao: 'Em revisão',
-  concluido: 'Concluído',
-  cancelado: 'Cancelado',
-  atrasado: 'Atrasado',
-};
-
 const COLUMNS: Array<{ key: string; labelKey: string; match: (s: string) => boolean }> = [
   { key: 'a_iniciar', labelKey: 'gapV2.remediation.colToStart', match: (s) => s === 'pendente' },
   { key: 'em_andamento', labelKey: 'gapV2.remediation.colInProgress', match: (s) => s === 'em_andamento' || s === 'atrasado' },
@@ -146,7 +137,7 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
             id: r.id,
             codigo: r.codigo || '',
             titulo: reqTitulo(r as any),
-            categoria: r.categoria || 'Outros',
+            categoria: r.categoria || t('sweepRiscos.gap.fallbacks.outros'),
             peso: r.peso,
           }));
 
@@ -180,9 +171,9 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
     if (grouping === 'esforco') {
       // Buckets por esforço (1, 2-4, 5+) atravessando categorias
       const buckets: Array<{ key: string; label: string; items: NaoConformeReq[] }> = [
-        { key: 'baixo', label: 'Esforço Baixo', items: [] },
-        { key: 'medio', label: 'Esforço Médio', items: [] },
-        { key: 'alto', label: 'Esforço Alto', items: [] },
+        { key: 'baixo', label: t('sweepRiscos.gap.effortLevel.bucketBaixo'), items: [] },
+        { key: 'medio', label: t('sweepRiscos.gap.effortLevel.bucketMedio'), items: [] },
+        { key: 'alto', label: t('sweepRiscos.gap.effortLevel.bucketAlto'), items: [] },
       ];
       naoConformes.forEach(r => {
         const peso = Number(r.peso) || 1;

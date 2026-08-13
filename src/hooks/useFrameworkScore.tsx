@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { FrameworkConfig, NIST_PILLAR_NAMES } from '@/lib/framework-configs';
+import { tGlobal } from '@/lib/i18n-global';
 
 interface Requirement {
   id: string;
@@ -137,7 +138,7 @@ export function useFrameworkScore(frameworkId: string, config: FrameworkConfig, 
         // Agrupar requisitos por pilar
         const pillarGroups = new Map<string, Requirement[]>();
         (requirements || []).forEach((req: Requirement) => {
-          const pillar = req.categoria || 'Outros';
+          const pillar = req.categoria || tGlobal('sweepRiscos.gap.fallbacks.outros');
           if (!pillarGroups.has(pillar)) {
             pillarGroups.set(pillar, []);
           }
@@ -215,7 +216,7 @@ export function useFrameworkScore(frameworkId: string, config: FrameworkConfig, 
         // Calcular scores por área responsável
         const areaGroups = new Map<string, Requirement[]>();
         (requirements || []).forEach((req: Requirement) => {
-          const area = req.area_responsavel || 'Não Atribuída';
+          const area = req.area_responsavel || tGlobal('sweepRiscos.gap.fallbacks.naoAtribuida');
           if (!areaGroups.has(area)) {
             areaGroups.set(area, []);
           }

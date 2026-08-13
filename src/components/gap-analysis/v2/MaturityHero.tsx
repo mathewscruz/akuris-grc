@@ -52,7 +52,7 @@ export function MaturityHero({
 }: MaturityHeroProps) {
   const { t } = useLanguage();
   const score = Math.round(Number(overallScore) || 0);
-  const maturity = getMaturityLevel(score);
+  const maturity = getMaturityLevel(score, t);
   const coverage = totalRequirements > 0
     ? Math.round((totalEvaluated / totalRequirements) * 100)
     : 0;

@@ -42,7 +42,7 @@ export const DocLayoutBuilder: React.FC<DocLayoutBuilderProps> = ({ value, onCha
   };
 
   const addSection = () => {
-    const next = [...(value.secoes || []), { nome: 'Nova Seção', conteudo: '' }];
+    const next = [...(value.secoes || []), { nome: t('sweepDocumentos.docLayoutBuilder.novaSecaoDefault'), conteudo: '' }];
     onChange({ ...value, secoes: next });
   };
 

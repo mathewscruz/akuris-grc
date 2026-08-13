@@ -241,14 +241,14 @@ export function FinanceiroIATab() {
       if (data?.data) {
         const d = data.data;
         const parts: string[] = [];
-        if (d.resumo) parts.push(`**Resumo:** ${d.resumo}`);
-        if (d.diagnostico) parts.push(`**Diagnóstico:** ${d.diagnostico}`);
+        if (d.resumo) parts.push(`**${t('sweepConfig.financeiroIA.labelResumo')}:** ${d.resumo}`);
+        if (d.diagnostico) parts.push(`**${t('sweepConfig.financeiroIA.labelDiagnostico')}:** ${d.diagnostico}`);
         if (d.recomendacoes?.length) {
-          parts.push('**Recomendações:**');
+          parts.push(`**${t('sweepConfig.financeiroIA.labelRecomendacoes')}:**`);
           d.recomendacoes.forEach((r: string, i: number) => parts.push(`${i + 1}. ${r}`));
         }
-        if (d.alerta_empresas) parts.push(`**Alertas:** ${d.alerta_empresas}`);
-        if (d.conclusao) parts.push(`**Conclusão:** ${d.conclusao}`);
+        if (d.alerta_empresas) parts.push(`**${t('sweepConfig.financeiroIA.labelAlertas')}:** ${d.alerta_empresas}`);
+        if (d.conclusao) parts.push(`**${t('sweepConfig.financeiroIA.labelConclusao')}:** ${d.conclusao}`);
         setAiAnalysis(parts.join('\n\n') || JSON.stringify(d, null, 2));
       }
     } catch (err: any) {

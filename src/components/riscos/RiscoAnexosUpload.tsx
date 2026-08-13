@@ -60,7 +60,7 @@ export function RiscoAnexosUpload({
     if (!allowedTypes.includes(file.type)) {
       toast({
         title: t('fin.anexos.tipoNaoPermitido'),
-        description: "Apenas PDF, DOC, DOCX e imagens são permitidos.",
+        description: t("sweepRiscos.riscos.anexos.tipoNaoPermitidoDesc"),
         variant: "destructive"
       });
       return;

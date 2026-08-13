@@ -532,20 +532,20 @@ export default function Contratos() {
                                 <DropdownMenuContent align="end">
                                   <DropdownMenuItem onClick={() => handleEdit(contrato, 'contrato')}>
                                     <Edit className="mr-2 h-4 w-4" />
-                                    Editar
+                                    {t('sweepDados.contratos.editar')}
                                   </DropdownMenuItem>
                                   <DropdownMenuSeparator />
                                   <DropdownMenuItem onClick={() => { setSelectedContrato(contrato); setDocumentosDialogOpen(true); }}>
                                     <FileStack className="mr-2 h-4 w-4" />
-                                    Documentos
+                                    {t('sweepDados.contratos.documentos')}
                                   </DropdownMenuItem>
                                   <DropdownMenuItem onClick={() => { setSelectedContrato(contrato); setMarcosDialogOpen(true); }}>
                                     <Milestone className="mr-2 h-4 w-4" />
-                                    Marcos
+                                    {t('sweepDados.contratos.marcos')}
                                   </DropdownMenuItem>
                                   <DropdownMenuItem onClick={() => { setSelectedContrato(contrato); setAditivosDialogOpen(true); }}>
                                     <FilePlus2 className="mr-2 h-4 w-4" />
-                                    Aditivos
+                                    {t('sweepDados.contratos.aditivos')}
                                   </DropdownMenuItem>
                                   <DropdownMenuSeparator />
                                   <DropdownMenuItem
@@ -733,7 +733,7 @@ export default function Contratos() {
                               <DropdownMenuContent align="end">
                                 <DropdownMenuItem onClick={() => handleEdit(fornecedor, 'fornecedor')}>
                                   <Edit className="h-4 w-4 mr-2" />
-                                  Editar
+                                  {t('sweepDados.contratos.editar')}
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
@@ -839,8 +839,8 @@ export default function Contratos() {
         <ConfirmDialog
           open={deleteConfirm.open}
           onOpenChange={(open) => setDeleteConfirm(prev => ({ ...prev, open }))}
-          title={`Excluir ${deleteConfirm.type === 'contrato' ? 'Contrato' : t('fin.comum.fornecedor')}`}
-          description={`Tem certeza que deseja excluir este ${deleteConfirm.type === 'contrato' ? 'contrato' : 'fornecedor'}? Esta ação não pode ser desfeita.`}
+          title={deleteConfirm.type === 'contrato' ? t('sweepDados.contratos.excluirTitleContrato') : t('sweepDados.contratos.excluirTitleFornecedor')}
+          description={deleteConfirm.type === 'contrato' ? t('sweepDados.contratos.excluirDescContrato') : t('sweepDados.contratos.excluirDescFornecedor')}
           confirmText={t('fin.comum.excluir')}
           variant="destructive"
           onConfirm={confirmDelete}

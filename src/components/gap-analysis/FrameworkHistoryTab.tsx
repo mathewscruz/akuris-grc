@@ -115,13 +115,13 @@ export function FrameworkHistoryTab({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardContent className="pt-6 text-center">
-            <p className="text-sm text-muted-foreground mb-1">Score Inicial</p>
+            <p className="text-sm text-muted-foreground mb-1">{t('sweepRiscos.gap.history.scoreInicial')}</p>
             <p className="text-3xl font-bold">{stats ? formatScore(stats.initialScore) : '—'}</p>
           </CardContent>
         </Card>
         <Card className="border-primary/30">
           <CardContent className="pt-6 text-center">
-            <p className="text-sm text-muted-foreground mb-1">Score Atual</p>
+            <p className="text-sm text-muted-foreground mb-1">{t('sweepRiscos.gap.history.scoreAtual')}</p>
             <p className="text-3xl font-bold text-primary">{formatScore(currentScore)}</p>
             {stats && (
               <div className="flex items-center justify-center gap-1 mt-1">
@@ -139,11 +139,11 @@ export function FrameworkHistoryTab({
         </Card>
         <Card>
           <CardContent className="pt-6 text-center">
-            <p className="text-sm text-muted-foreground mb-1">Progresso</p>
+            <p className="text-sm text-muted-foreground mb-1">{t('sweepRiscos.gap.history.progresso')}</p>
             <p className="text-3xl font-bold">
               {totalRequirements > 0 ? Math.round((evaluatedRequirements / totalRequirements) * 100) : 0}%
             </p>
-            <p className="text-xs text-muted-foreground">{evaluatedRequirements}/{totalRequirements} avaliados</p>
+            <p className="text-xs text-muted-foreground">{t('sweepRiscos.gap.history.requisitosAvaliados', { evaluated: evaluatedRequirements, total: totalRequirements })}</p>
           </CardContent>
         </Card>
       </div>
@@ -155,7 +155,7 @@ export function FrameworkHistoryTab({
       <div className="flex justify-end">
         <Button variant="outline" onClick={handleExportEvolution}>
           <Download className="h-4 w-4 mr-2" strokeWidth={1.5}/>
-          Exportar Relatório de Evolução
+          {t('sweepRiscos.gap.history.exportarRelatorio')}
         </Button>
       </div>
 
@@ -165,7 +165,7 @@ export function FrameworkHistoryTab({
           <CardHeader>
             <CardTitle className="text-base">{t('residuos.score.timelineAvaliacoes')}</CardTitle>
             <p className="text-xs text-muted-foreground">
-              Medições registradas ao longo do tempo. O "Score Atual" acima reflete a avaliação em tempo real e pode diferir da última medição registrada.
+              {t('sweepRiscos.gap.history.medicoesDesc')}
             </p>
           </CardHeader>
           <CardContent>
@@ -178,9 +178,9 @@ export function FrameworkHistoryTab({
                   </div>
                   <div className="h-2 w-2 rounded-full bg-primary shrink-0" />
                   <span>
-                    Score: <strong>{formatScore(point.score)}</strong>
+                    {t('sweepRiscos.gap.scoreChart.score')}: <strong>{formatScore(point.score)}</strong>
                     {' · '}
-                    {point.evaluatedRequirements}/{point.totalRequirements} requisitos avaliados
+                    {t('sweepRiscos.gap.history.requisitosAvaliados', { evaluated: point.evaluatedRequirements, total: point.totalRequirements })}
                   </span>
                 </div>
               ))}

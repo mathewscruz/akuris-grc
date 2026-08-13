@@ -32,11 +32,12 @@ import {
   severityFromNivel,
   shortRiskId,
   slaFromRevisao,
-  SLA_LABELS,
+  getSlaLabels,
   financialExposure,
   formatBRL,
   type Severity,
 } from '@/components/riscos/risk-utils';
+import { tGlobal } from '@/lib/i18n-global';
 import { useRiscoDetail } from '@/hooks/useRiscoDetail';
 import {
   deriveRiscoStatus,
@@ -88,13 +89,13 @@ interface Props {
   nav?: { current: number; total: number; onPrev?: () => void; onNext?: () => void };
 }
 
-const STATUS_OPTIONS = [
-  { value: 'identificado', label: 'Identificado' },
-  { value: 'analisado', label: 'Analisado' },
-  { value: 'em_tratamento', label: 'Em Tratamento' },
-  { value: 'tratado', label: 'Tratado' },
-  { value: 'monitorado', label: 'Monitorado' },
-  { value: 'aceito', label: 'Aceito' },
+const getStatusOptions = () => [
+  { value: 'identificado', label: tGlobal('campos.enums.riscoStatus.identificado') },
+  { value: 'analisado', label: tGlobal('campos.enums.riscoStatus.analisado') },
+  { value: 'em_tratamento', label: tGlobal('sweepRiscos.riscos.detail.emTratamento') },
+  { value: 'tratado', label: tGlobal('campos.enums.riscoStatus.tratado') },
+  { value: 'monitorado', label: tGlobal('campos.enums.riscoStatus.monitorado') },
+  { value: 'aceito', label: tGlobal('sweepRiscos.riscos.detail.aceito') },
 ];
 
 export function TratadoBlockedOption({ motivo, onActivate }: { motivo: string; onActivate: () => void }) {
@@ -105,7 +106,7 @@ export function TratadoBlockedOption({ motivo, onActivate }: { motivo: string; o
         event.preventDefault();
         onActivate();
       }}
-      aria-label={`Tratado indisponível: ${motivo}`}
+      aria-label={t("sweepRiscos.riscos.tratadoIndisponivelAria", { motivo })}
       className="flex-col items-start gap-0.5 text-muted-foreground"
     >
       <span>{t('fin.riscos.tratadoIndisponivel')}</span>
@@ -257,7 +258,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start" className="w-44">
-                    {STATUS_OPTIONS.filter((opt) => !(opt.value === STATUS_TRATADO && tratadoBloqueado)).map((opt) => (
+                    {getStatusOptions().filter((opt) => !(opt.value === STATUS_TRATADO && tratadoBloqueado)).map((opt) => (
                       <DropdownMenuItem
                         key={opt.value}
                         onClick={() => handleStatusChange(opt.value)}
@@ -277,7 +278,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
                 </DropdownMenu>
                 {statusCoerente.ajustado && <span className="sr-only" role="status">{statusCoerente.motivo}</span>}
                 {risco.aceito && (
-                  <StatusBadge size="sm" tone="info" variant="outline">Aceito</StatusBadge>
+                  <StatusBadge size="sm" tone="info" variant="outline">{t('sweepRiscos.riscos.detail.aceito')}</StatusBadge>
                 )}
               </div>
               <SheetTitle className="text-xl leading-tight font-semibold">{risco.nome}</SheetTitle>
@@ -287,7 +288,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
 
           {/* Metadados em linhas com ícone */}
           <div className="grid grid-cols-2 gap-x-6 gap-y-2.5 pt-1 relative">
-            <HeaderMeta icon={<Tag />} label="Categoria" value={risco.categoria?.nome || '—'} />
+            <HeaderMeta icon={<Tag />} label={t('sweepRiscos.riscos.detail.categoria')} value={risco.categoria?.nome || '—'} />
             <HeaderMeta
               icon={<User />}
               label={t('residuos.risco.responsavel')}
@@ -307,7 +308,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
             <HeaderMeta
               icon={<Timer />}
               label="SLA"
-              value={<StatusBadge size="sm" {...(sla === 'vencido' ? { tone: 'destructive' as const } : sla === 'atencao' ? { tone: 'warning' as const } : sla === 'no_prazo' ? { tone: 'success' as const } : { tone: 'neutral' as const })}>{SLA_LABELS[sla]}</StatusBadge>}
+              value={<StatusBadge size="sm" {...(sla === 'vencido' ? { tone: 'destructive' as const } : sla === 'atencao' ? { tone: 'warning' as const } : sla === 'no_prazo' ? { tone: 'success' as const } : { tone: 'neutral' as const })}>{getSlaLabels()[sla]}</StatusBadge>}
             />
           </div>
         </SheetHeader>
@@ -338,12 +339,12 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
               <section>
                 <SectionLabel>{t('campos.risco.inerenteResidual')}</SectionLabel>
                 <div className="flex items-stretch gap-2 mt-0.5">
-                  <ScoreBlock label="Inerente" nivel={risco.nivel_risco_inicial} score={inicialScore} p={risco.probabilidade_inicial} i={risco.impacto_inicial} />
+                  <ScoreBlock label={t('sweepRiscos.riscos.detail.inerente')} nivel={risco.nivel_risco_inicial} score={inicialScore} p={risco.probabilidade_inicial} i={risco.impacto_inicial} />
                   <div className="flex flex-col items-center justify-center px-0.5 shrink-0">
                     <ArrowRight className={reduziu ? 'h-5 w-5 text-success' : 'h-5 w-5 text-muted-foreground/50'} strokeWidth={2} />
                     {reduziu && <span className="text-[9px] text-success font-semibold tabular-nums mt-0.5">−{inicialScore - residualScore}</span>}
                   </div>
-                  <ScoreBlock label="Residual" nivel={risco.nivel_risco_residual} score={residualScore} p={risco.probabilidade_residual} i={risco.impacto_residual} emptyLabel={t('fin.riscos.naoAvaliado')} />
+                  <ScoreBlock label={t('sweepRiscos.riscos.detail.residual')} nivel={risco.nivel_risco_residual} score={residualScore} p={risco.probabilidade_residual} i={risco.impacto_residual} emptyLabel={t('fin.riscos.naoAvaliado')} />
                 </div>
               </section>
 

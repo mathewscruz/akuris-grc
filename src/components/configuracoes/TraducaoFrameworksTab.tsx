@@ -98,7 +98,7 @@ export function TraducaoFrameworksTab() {
         );
         if (res.data.done || res.data.translated === 0) break;
       }
-      toast.success(`Tradução concluída: ${fw.nome}`);
+      toast.success(t('sweepConfig.traducaoFrameworks.toastTranslateDone', { nome: fw.nome }));
     } finally {
       setRunningId(null);
       load();
@@ -127,7 +127,7 @@ export function TraducaoFrameworksTab() {
         );
         if ((res.data.remaining ?? 0) === 0 || res.data.processed === 0) break;
       }
-      toast.success(`Orientações em inglês atualizadas: ${fw.nome}`);
+      toast.success(t('sweepConfig.traducaoFrameworks.toastGuidanceDone', { nome: fw.nome }));
     } finally {
       setRunningId(null);
       load();
@@ -145,9 +145,7 @@ export function TraducaoFrameworksTab() {
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        Traduz para inglês títulos, descrições, categorias e textos de apoio dos requisitos.
-        O conteúdo em português continua como base — o inglês é exibido apenas quando o idioma
-        ativo é EN. {pendentesTotais} requisito(s) pendente(s).
+        {t('sweepConfig.traducaoFrameworks.intro')} {t('sweepConfig.traducaoFrameworks.pendingCount', { count: String(pendentesTotais) })}
       </p>
 
       <div className="space-y-3">
@@ -168,7 +166,7 @@ export function TraducaoFrameworksTab() {
                   </div>
                   <Progress value={pct} className="h-1.5" />
                   <span className="text-xs text-muted-foreground">
-                    {fw.traduzidos} de {fw.total} requisitos · orientações EN: {fw.guidanceEn} de {fw.total}
+                    {t('sweepConfig.traducaoFrameworks.progressLine', { traduzidos: String(fw.traduzidos), total: String(fw.total), guidanceEn: String(fw.guidanceEn) })}
                   </span>
                 </div>
                 <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
@@ -178,7 +176,7 @@ export function TraducaoFrameworksTab() {
                     disabled={!!runningId || fw.total === 0 || pct === 100}
                     onClick={() => traduzir(fw)}
                   >
-                    {running ? 'Traduzindo…' : pct === 100 ? 'Traduzido' : 'Traduzir para EN'}
+                    {running ? t('sweepConfig.traducaoFrameworks.btnTranslating') : pct === 100 ? t('sweepConfig.traducaoFrameworks.btnTranslated') : t('sweepConfig.traducaoFrameworks.btnTranslate')}
                   </Button>
                   <Button
                     size="sm"
@@ -187,10 +185,10 @@ export function TraducaoFrameworksTab() {
                     onClick={() => traduzirOrientacoes(fw)}
                   >
                     {runningGuidance
-                      ? 'Gerando…'
+                      ? t('sweepConfig.traducaoFrameworks.btnGenerating')
                       : pctGuidance === 100
-                        ? 'Orientações OK'
-                        : 'Traduzir orientações'}
+                        ? t('sweepConfig.traducaoFrameworks.btnGuidanceOk')
+                        : t('sweepConfig.traducaoFrameworks.btnGuidanceTranslate')}
                   </Button>
                 </div>
               </CardContent>

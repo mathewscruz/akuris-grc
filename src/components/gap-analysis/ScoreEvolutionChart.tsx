@@ -27,10 +27,10 @@ export const ScoreEvolutionChart = ({ frameworkId, scoreType = 'scale_0_5' }: Sc
   const { history, loading } = useScoreHistory(frameworkId, period);
 
   const periods: { value: ScoreHistoryPeriod; label: string }[] = [
-    { value: 'daily', label: 'Dia' },
-    { value: 'weekly', label: 'Semana' },
-    { value: 'monthly', label: 'Mês' },
-    { value: 'yearly', label: 'Ano' },
+    { value: 'daily', label: t('sweepRiscos.gap.scoreChart.dia') },
+    { value: 'weekly', label: t('sweepRiscos.gap.scoreChart.semana') },
+    { value: 'monthly', label: t('sweepRiscos.gap.scoreChart.mes') },
+    { value: 'yearly', label: t('sweepRiscos.gap.scoreChart.ano') },
   ];
 
   const isPercentage = scoreType === 'percentage';
@@ -51,7 +51,7 @@ export const ScoreEvolutionChart = ({ frameworkId, scoreType = 'scale_0_5' }: Sc
       const single = history[0];
       return {
         displayData: [
-          { ...single, date: 'Início' },
+          { ...single, date: t('sweepRiscos.gap.scoreChart.inicio') },
           { ...single },
         ],
         delta: null,
@@ -108,7 +108,7 @@ export const ScoreEvolutionChart = ({ frameworkId, scoreType = 'scale_0_5' }: Sc
               )}
               {!delta && history.length === 1 && (
                 <span className="inline-flex items-center text-[11px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                  primeiro registro
+                  {t('sweepRiscos.gap.scoreChart.primeiroRegistro')}
                 </span>
               )}
             </div>
@@ -140,7 +140,7 @@ export const ScoreEvolutionChart = ({ frameworkId, scoreType = 'scale_0_5' }: Sc
             <div className="text-center space-y-1 max-w-[280px]">
               <p className="text-sm font-medium text-foreground">{t('residuos.score.semHistorico')}</p>
               <p className="text-xs text-muted-foreground">
-                Avalie alguns requisitos para começar a registrar a evolução do seu score nesse período.
+                {t('sweepRiscos.gap.scoreChart.avalieRequisitos')}
               </p>
             </div>
           </div>
@@ -181,7 +181,7 @@ export const ScoreEvolutionChart = ({ frameworkId, scoreType = 'scale_0_5' }: Sc
                   strokeDasharray="4 4"
                   strokeOpacity={0.5}
                   label={{
-                    value: 'Meta',
+                    value: t('sweepRiscos.gap.scoreChart.meta'),
                     position: 'right',
                     fill: 'hsl(var(--success))',
                     fontSize: 10,
@@ -202,7 +202,7 @@ export const ScoreEvolutionChart = ({ frameworkId, scoreType = 'scale_0_5' }: Sc
                     marginBottom: 4,
                   }}
                   itemStyle={{ color: 'hsl(var(--popover-foreground))', fontSize: 13 }}
-                  formatter={(value: number) => [formatValue(value), 'Score']}
+                  formatter={(value: number) => [formatValue(value), t('sweepRiscos.gap.scoreChart.score')]}
                 />
                 <Area
                   type="monotone"
@@ -227,7 +227,7 @@ export const ScoreEvolutionChart = ({ frameworkId, scoreType = 'scale_0_5' }: Sc
 
             {history.length === 1 && (
               <div className="absolute top-2 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-md bg-muted/80 backdrop-blur-sm border border-border text-[11px] text-muted-foreground pointer-events-none">
-                Registre mais avaliações para visualizar a tendência
+                {t('sweepRiscos.gap.scoreChart.registreMais')}
               </div>
             )}
           </div>

@@ -5,6 +5,7 @@
  */
 import { cn } from '@/lib/utils';
 import { SectionHead } from './SectionHead';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export interface HeatCell {
   id: string;
@@ -53,18 +54,20 @@ export function SectionHeatmap({
   cells,
   activeId,
   onCellClick,
-  title = 'ADERÊNCIA POR CATEGORIA',
+  title,
 }: SectionHeatmapProps) {
+  const { t } = useLanguage();
   if (!cells.length) return null;
+  const resolvedTitle = (title ?? t('sweepRiscos.gap.heatmap.tituloPadrao')).toUpperCase();
 
   return (
     <section>
       <SectionHead
-        title={title}
+        title={resolvedTitle}
         count={cells.length}
         right={
           <span className="text-[10px] font-sans uppercase tracking-wider text-muted-foreground">
-            Clique para filtrar
+            {t('sweepRiscos.gap.heatmap.cliqueParaFiltrar')}
           </span>
         }
       />

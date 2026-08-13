@@ -240,7 +240,7 @@ export default function Incidentes() {
     },
     {
       key: "criticidade" as keyof Incidente,
-      label: "Criticidade",
+      label: t('sweepRiscos.incidentes.colCriticidade'),
       sortable: true,
       render: (_v: any, item: Incidente) => (
         <StatusBadge size="sm" {...resolveCriticidadeTone(item.criticidade)}>
@@ -250,7 +250,7 @@ export default function Incidentes() {
     },
     {
       key: "status" as keyof Incidente,
-      label: "Status",
+      label: t('sweepRiscos.incidentes.colStatus'),
       sortable: true,
       render: (_v: any, item: Incidente) => {
         const StatusIcon = getStatusIcon(item.status);
@@ -283,24 +283,24 @@ export default function Incidentes() {
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => handleEdit(item)}>
                 <Edit className="mr-2 h-4 w-4" />
-                Editar
+                {t('sweepRiscos.incidentes.actionEditar')}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleComunicacao(item)}>
                 <MessageSquare className="mr-2 h-4 w-4" />
-                Comunicação
+                {t('sweepRiscos.incidentes.actionComunicacao')}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleEvidencias(item)}>
                 <FileText className="mr-2 h-4 w-4" />
-                Evidências
+                {t('sweepRiscos.incidentes.actionEvidencias')}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleTratamentos(item)}>
                 <Shield className="mr-2 h-4 w-4" />
-                Tratamentos
+                {t('sweepRiscos.incidentes.actionTratamentos')}
               </DropdownMenuItem>
               <CriarTarefaMenuItem
                 entidadeTipo="incidente"
                 entidadeId={item.id}
-                tituloSugerido={`Responder incidente: ${item.titulo ?? ''}`}
+                tituloSugerido={t('sweepRiscos.incidentes.tarefaTituloSugerido', { titulo: item.titulo ?? '' })}
               />
               <DropdownMenuItem onClick={() => handleDelete(item.id)} className="text-destructive">
                 <Trash2 className="mr-2 h-4 w-4" />{t('fin.comum.excluir')}</DropdownMenuItem>
@@ -313,18 +313,18 @@ export default function Incidentes() {
 
   const statsCards = [
     {
-      title: "Total de Incidentes",
+      title: t('sweepRiscos.incidentes.statTotalTitulo'),
       value: statsIncidentes?.total || 0,
-      description: `${statsIncidentes?.abertos || 0} abertos`,
+      description: t('sweepRiscos.incidentes.statAbertosDesc', { count: statsIncidentes?.abertos || 0 }),
       icon: <AlertTriangle />,
       drillDown: 'incidentes' as const,
       showAccent: true,
       segments: [
         { label: t('fin.comum.criticosLower'), value: statsIncidentes?.criticos || 0, tone: 'destructive' as const },
-        { label: 'altos', value: statsIncidentes?.altos || 0, tone: 'warning' as const },
-        { label: 'demais', value: Math.max(0, (statsIncidentes?.total || 0) - (statsIncidentes?.criticos || 0) - (statsIncidentes?.altos || 0)), tone: 'neutral' as const },
+        { label: t('sweepRiscos.incidentes.segAltos'), value: statsIncidentes?.altos || 0, tone: 'warning' as const },
+        { label: t('sweepRiscos.incidentes.segDemais'), value: Math.max(0, (statsIncidentes?.total || 0) - (statsIncidentes?.criticos || 0) - (statsIncidentes?.altos || 0)), tone: 'neutral' as const },
       ],
-      emptyHint: "Registre o primeiro incidente para começar.",
+      emptyHint: t('sweepRiscos.incidentes.emptyHintRegistrar'),
     },
     {
       title: t('fin.incidentes.criticosAltos'),
@@ -337,7 +337,7 @@ export default function Incidentes() {
     {
       title: t('fin.incidentes.emInvestigacao'),
       value: statsIncidentes?.investigacao || 0,
-      description: "Sendo investigados",
+      description: t('sweepRiscos.incidentes.statInvestigacaoDesc'),
       icon: <Clock />,
       variant: 'info' as const,
       drillDown: 'incidentes' as const,
@@ -353,16 +353,16 @@ export default function Incidentes() {
   const filters = [
     {
       key: 'status',
-      label: 'Status',
+      label: t('sweepRiscos.incidentes.filterStatusLabel'),
       value: statusFilter,
       onChange: setStatusFilter,
       options: [
-        { value: 'todos', label: 'Todos os Status' },
-        { value: 'aberto', label: 'Aberto' },
+        { value: 'todos', label: t('sweepRiscos.incidentes.filterStatusTodos') },
+        { value: 'aberto', label: t('sweepRiscos.incidentes.filterStatusAberto') },
         { value: 'investigacao', label: t('fin.incidentes.investigacao') },
-        { value: 'contido', label: 'Contido' },
-        { value: 'resolvido', label: 'Resolvido' },
-        { value: 'fechado', label: 'Fechado' },
+        { value: 'contido', label: t('sweepRiscos.incidentes.filterStatusContido') },
+        { value: 'resolvido', label: t('sweepRiscos.incidentes.filterStatusResolvido') },
+        { value: 'fechado', label: t('sweepRiscos.incidentes.filterStatusFechado') },
       ]
     },
     {
@@ -372,21 +372,21 @@ export default function Incidentes() {
       onChange: setTipoFilter,
       options: [
         { value: 'todos', label: t('fin.comum.todosTipos') },
-        { value: 'seguranca', label: 'Segurança' },
-        { value: 'privacidade', label: 'Privacidade' },
-        { value: 'disponibilidade', label: 'Disponibilidade' },
+        { value: 'seguranca', label: t('sweepRiscos.incidentes.filterTipoSeguranca') },
+        { value: 'privacidade', label: t('sweepRiscos.incidentes.filterTipoPrivacidade') },
+        { value: 'disponibilidade', label: t('sweepRiscos.incidentes.filterTipoDisponibilidade') },
       ]
     },
     {
       key: 'criticidade',
-      label: 'Criticidade',
+      label: t('sweepRiscos.incidentes.filterCriticidadeLabel'),
       value: criticidadeFilter,
       onChange: setCriticidadeFilter,
       options: [
-        { value: 'todos', label: 'Todas as Criticidades' },
-        { value: 'baixa', label: 'Baixa' },
-        { value: 'media', label: 'Média' },
-        { value: 'alta', label: 'Alta' },
+        { value: 'todos', label: t('sweepRiscos.incidentes.filterCriticidadeTodas') },
+        { value: 'baixa', label: t('sweepRiscos.incidentes.filterCriticidadeBaixa') },
+        { value: 'media', label: t('sweepRiscos.incidentes.filterCriticidadeMedia') },
+        { value: 'alta', label: t('sweepRiscos.incidentes.filterCriticidadeAlta') },
         { value: 'critica', label: t('fin.comum.criticaF') },
       ]
     }
@@ -401,7 +401,7 @@ export default function Incidentes() {
           <Button variant="outline" size="sm" onClick={() => {
             if (incidentes.length === 0) return;
             exportCSV(
-              ['Titulo', t('fin.comum.tipo'), 'Categoria', 'Criticidade', 'Status', 'Data Deteccao', 'Data Resolucao'],
+              [t('sweepRiscos.incidentes.exportColTitulo'), t('fin.comum.tipo'), t('sweepRiscos.incidentes.exportColCategoria'), t('sweepRiscos.incidentes.exportColCriticidade'), t('sweepRiscos.incidentes.exportColStatus'), t('sweepRiscos.incidentes.exportColDataDeteccao'), t('sweepRiscos.incidentes.exportColDataResolucao')],
               incidentes.map((inc: any) => [
                 inc.titulo, inc.tipo || '', inc.categoria || '', inc.criticidade || '',
                 inc.status || '', inc.data_deteccao || '', inc.data_resolucao || ''
@@ -409,7 +409,7 @@ export default function Incidentes() {
               'incidentes'
             );
           }}>
-            <Download className="h-4 w-4 mr-2" />Exportar CSV
+            <Download className="h-4 w-4 mr-2" />{t('sweepRiscos.incidentes.exportBtnLabel')}
           </Button>
         }
       />
@@ -468,7 +468,7 @@ export default function Incidentes() {
             emptyState={{
               icon: <AlertTriangle className="h-8 w-8" />,
               title: t('fin.incidentes.nenhum'),
-              description: 'Registre o primeiro incidente para começar o monitoramento.'
+              description: t('sweepRiscos.incidentes.emptyStateDesc')
             }}
           />
         </CardContent>

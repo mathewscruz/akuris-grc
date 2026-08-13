@@ -3,6 +3,7 @@
  * Mantém regras de score, derivações de SLA, ID curto e mapeamentos para tons semânticos.
  */
 import { differenceInDays } from 'date-fns';
+import { tGlobal } from '@/lib/i18n-global';
 
 export type Severity = 'critico' | 'alto' | 'medio' | 'baixo';
 
@@ -136,12 +137,14 @@ export function slaFromRevisao(dataProximaRevisao?: string | null): SlaStatus {
   return 'no_prazo';
 }
 
-export const SLA_LABELS: Record<SlaStatus, string> = {
-  no_prazo: 'No prazo',
-  atencao: 'Atenção',
-  vencido: 'Vencido',
-  sem_revisao: '—',
-};
+export function getSlaLabels(): Record<SlaStatus, string> {
+  return {
+    no_prazo: tGlobal('sweepRiscos.riscos.utils.slaNoPrazo'),
+    atencao: tGlobal('sweepRiscos.riscos.utils.slaAtencao'),
+    vencido: tGlobal('sweepRiscos.riscos.utils.slaVencido'),
+    sem_revisao: tGlobal('sweepRiscos.riscos.utils.slaSemRevisao'),
+  };
+}
 
 /** Iniciais para avatar fallback. */
 export function initials(name?: string | null): string {
@@ -159,10 +162,10 @@ export function initials(name?: string | null): string {
 export function relativeShort(iso?: string | null): string {
   if (!iso) return '—';
   const days = differenceInDays(new Date(), new Date(iso));
-  if (days < 1) return 'hoje';
-  if (days < 30) return `há ${days}d`;
-  if (days < 365) return `há ${Math.floor(days / 30)}m`;
-  return `há ${Math.floor(days / 365)}a`;
+  if (days < 1) return tGlobal('sweepRiscos.riscos.utils.relHoje');
+  if (days < 30) return tGlobal('sweepRiscos.riscos.utils.relDias', { n: days });
+  if (days < 365) return tGlobal('sweepRiscos.riscos.utils.relMeses', { n: Math.floor(days / 30) });
+  return tGlobal('sweepRiscos.riscos.utils.relAnos', { n: Math.floor(days / 365) });
 }
 
 /**

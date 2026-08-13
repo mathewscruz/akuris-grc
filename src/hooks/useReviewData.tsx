@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { tGlobal } from "@/lib/i18n-global";
 
 export const useReviewData = () => {
   const { profile } = useAuth();
@@ -65,14 +66,14 @@ export const useReviewData = () => {
 
       invalidateCache();
       toast({
-        title: "Sucesso",
-        description: "Revisão criada com sucesso",
+        title: tGlobal('sweepDenuncias.revisao.toastSucesso'),
+        description: tGlobal('sweepDenuncias.revisao.toastRevisaoCriada'),
       });
 
       return review;
     } catch (error: any) {
       toast({
-        title: "Erro ao criar revisão",
+        title: tGlobal('sweepDenuncias.revisao.toastErroCriar'),
         description: error.message,
         variant: "destructive",
       });
@@ -91,12 +92,12 @@ export const useReviewData = () => {
 
       invalidateCache();
       toast({
-        title: "Sucesso",
-        description: "Revisão atualizada com sucesso",
+        title: tGlobal('sweepDenuncias.revisao.toastSucesso'),
+        description: tGlobal('sweepDenuncias.revisao.toastRevisaoAtualizada'),
       });
     } catch (error: any) {
       toast({
-        title: "Erro ao atualizar revisão",
+        title: tGlobal('sweepDenuncias.revisao.toastErroAtualizar'),
         description: error.message,
         variant: "destructive",
       });
@@ -115,12 +116,12 @@ export const useReviewData = () => {
 
       invalidateCache();
       toast({
-        title: "Sucesso",
-        description: "Revisão excluída com sucesso",
+        title: tGlobal('sweepDenuncias.revisao.toastSucesso'),
+        description: tGlobal('sweepDenuncias.revisao.toastRevisaoExcluida'),
       });
     } catch (error: any) {
       toast({
-        title: "Erro ao excluir revisão",
+        title: tGlobal('sweepDenuncias.revisao.toastErroExcluir'),
         description: error.message,
         variant: "destructive",
       });
@@ -143,7 +144,7 @@ export const useReviewData = () => {
       invalidateCache();
     } catch (error: any) {
       toast({
-        title: "Erro ao atualizar item",
+        title: tGlobal('sweepDenuncias.revisao.toastErroAtualizarItem'),
         description: error.message,
         variant: "destructive",
       });
@@ -161,14 +162,14 @@ export const useReviewData = () => {
 
       invalidateCache();
       toast({
-        title: "Sucesso",
-        description: "Revisão finalizada com sucesso",
+        title: tGlobal('sweepDenuncias.revisao.toastSucesso'),
+        description: tGlobal('sweepDenuncias.revisao.toastRevisaoFinalizada'),
       });
 
       return data;
     } catch (error: any) {
       toast({
-        title: "Erro ao finalizar revisão",
+        title: tGlobal('sweepDenuncias.revisao.toastErroFinalizar'),
         description: error.message,
         variant: "destructive",
       });

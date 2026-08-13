@@ -148,11 +148,11 @@ export default function AtivosLicencas() {
 
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { icon: React.ComponentType<any>, label: string }> = {
-      'ativa': { icon: CheckCircle, label: 'Ativa' },
-      'vencida': { icon: AlertTriangle, label: 'Vencida' },
-      'a_vencer': { icon: Clock, label: 'A Vencer' },
+      'ativa': { icon: CheckCircle, label: t('sweepDados.ativos.statusAtiva') },
+      'vencida': { icon: AlertTriangle, label: t('sweepDados.ativos.statusVencida') },
+      'a_vencer': { icon: Clock, label: t('sweepDados.ativos.statusAVencer') },
       'em_renovacao': { icon: Clock, label: t('fin.licencas.emRenovacao') },
-      'cancelada': { icon: Clock, label: 'Cancelada' },
+      'cancelada': { icon: Clock, label: t('sweepDados.ativos.statusCancelada') },
     };
 
     const config = statusConfig[status] || statusConfig.ativa;
@@ -212,7 +212,7 @@ export default function AtivosLicencas() {
   const columns = [
     {
       key: 'nome',
-      label: 'Nome da Licença',
+      label: t('sweepDados.ativos.colNomeLicenca'),
       sortable: true,
       render: (_: any, licenca: Licenca) => (
         <div>
@@ -231,12 +231,12 @@ export default function AtivosLicencas() {
     },
     {
       key: 'quantidade_licencas',
-      label: 'Quantidade',
+      label: t('sweepDados.ativos.colQuantidade'),
       sortable: true,
     },
     {
       key: 'data_vencimento',
-      label: 'Data Vencimento',
+      label: t('sweepDados.ativos.colDataVencimento'),
       sortable: true,
       render: (_: any, licenca: Licenca) => formatDateOnly(licenca.data_vencimento)
     },
@@ -252,13 +252,13 @@ export default function AtivosLicencas() {
     },
     {
       key: 'criticidade',
-      label: 'Criticidade',
+      label: t('sweepDados.ativos.colCriticidade'),
       sortable: true,
       render: (_: any, licenca: Licenca) => getCriticidadeBadge(licenca.criticidade)
     },
     {
       key: 'status',
-      label: 'Status',
+      label: t('sweepDados.ativos.colStatus'),
       sortable: true,
       render: (_: any, licenca: Licenca) => getStatusBadge(licenca.status)
     },
@@ -307,7 +307,7 @@ export default function AtivosLicencas() {
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => handleEdit(licenca)}>
               <Edit className="h-4 w-4 mr-2" />
-              Editar
+              {t('sweepDados.ativos.editar')}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
@@ -325,29 +325,29 @@ export default function AtivosLicencas() {
   const filters = [
     {
       key: 'status',
-      label: 'Status',
+      label: t('sweepDados.ativos.colStatus'),
       value: statusFilter,
       onChange: setStatusFilter,
       options: [
-        { value: 'todos', label: 'Todos os status' },
-          { value: 'ativa', label: 'Ativa' },
-          { value: 'vencida', label: 'Vencida' },
-          { value: 'a_vencer', label: 'A Vencer' },
+        { value: 'todos', label: t('sweepDados.ativos.filtroTodosStatus') },
+          { value: 'ativa', label: t('sweepDados.ativos.statusAtiva') },
+          { value: 'vencida', label: t('sweepDados.ativos.statusVencida') },
+          { value: 'a_vencer', label: t('sweepDados.ativos.statusAVencer') },
           { value: 'em_renovacao', label: t('fin.licencas.emRenovacao') },
-          { value: 'cancelada', label: 'Cancelada' },
+          { value: 'cancelada', label: t('sweepDados.ativos.statusCancelada') },
       ]
     },
     {
       key: 'criticidade',
-      label: 'Criticidade',
+      label: t('sweepDados.ativos.colCriticidade'),
       value: criticidadeFilter,
       onChange: setCriticidadeFilter,
       options: [
-        { value: 'todos', label: 'Todas' },
+        { value: 'todos', label: t('sweepDados.ativos.filtroTodasCriticidades') },
         { value: 'critica', label: t('fin.comum.criticaF') },
-        { value: 'alta', label: 'Alta' },
-        { value: 'media', label: 'Média' },
-        { value: 'baixa', label: 'Baixa' },
+        { value: 'alta', label: t('sweepDados.ativos.criticidadeAlta') },
+        { value: 'media', label: t('sweepDados.ativos.criticidadeMedia') },
+        { value: 'baixa', label: t('sweepDados.ativos.criticidadeBaixa') },
       ]
     },
     {
@@ -356,11 +356,11 @@ export default function AtivosLicencas() {
       value: tipoFilter,
       onChange: setTipoFilter,
       options: [
-        { value: 'todos', label: 'Todos os tipos' },
-          { value: 'software', label: 'Software' },
-          { value: 'servico', label: 'Serviço' },
+        { value: 'todos', label: t('sweepDados.ativos.filtroTodosTipos') },
+          { value: 'software', label: t('sweepDados.ativos.tipoSoftware') },
+          { value: 'servico', label: t('sweepDados.ativos.tipoServico') },
           { value: 'certificacao', label: t('fin.licencas.certificacao') },
-          { value: 'outro', label: 'Outro' },
+          { value: 'outro', label: t('sweepDados.ativos.tipoOutro') },
       ]
     }
   ];
@@ -395,7 +395,7 @@ export default function AtivosLicencas() {
         />
 
         <StatCard
-          title="A Vencer"
+          title={t('sweepDados.ativos.statusAVencer')}
           value={stats?.vencendo30dias ?? 0}
           description={t('fin.comum.proximos30')}
           icon={<Clock />}
@@ -405,9 +405,9 @@ export default function AtivosLicencas() {
         />
 
         <StatCard
-          title="Vencidas"
+          title={t('sweepDados.ativos.kpiVencidasTitle')}
           value={stats?.vencidas ?? 0}
-          description="Expiradas"
+          description={t('sweepDados.ativos.kpiVencidasDesc')}
           icon={<AlertTriangle />}
           loading={statsLoading}
           variant="destructive"
@@ -418,7 +418,7 @@ export default function AtivosLicencas() {
       <div className="flex justify-end">
         <Button size="sm" onClick={handleNew}>
           <Plus className="h-4 w-4 mr-2" />
-          Nova Licença
+          {t('sweepDados.ativos.novaLicenca')}
         </Button>
       </div>
 
@@ -445,7 +445,7 @@ export default function AtivosLicencas() {
             }}
             onExport={() => {
               const csvContent = [
-                [t('fin.comum.nome'), t('fin.comum.tipo'), t('fin.comum.fornecedor'), t('fin.comum.vencimento'), t('fin.licencas.valorRenovacao'), 'Criticidade', 'Status', t('fin.comum.responsavel')].join(','),
+                [t('fin.comum.nome'), t('fin.comum.tipo'), t('fin.comum.fornecedor'), t('fin.comum.vencimento'), t('fin.licencas.valorRenovacao'), t('sweepDados.ativos.colCriticidade'), t('sweepDados.ativos.colStatus'), t('fin.comum.responsavel')].join(','),
                 ...filteredAndSortedLicencas.map(l => [
                   l.nome,
                   l.tipo_licenca,
@@ -468,10 +468,10 @@ export default function AtivosLicencas() {
               icon: <FileCheck className="h-8 w-8" />,
               title: searchTerm ? t('fin.licencas.nenhumaEncontrada') : t('fin.licencas.nenhumaCadastrada'),
               description: searchTerm 
-                ? "Tente ajustar os termos de busca ou limpe os filtros."
+                ? t('sweepDados.ativos.buscaSemResultadosDesc')
                 : t('fin.licencas.vazioDesc'),
               action: !searchTerm ? {
-                label: "Cadastrar Primeira Licença",
+                label: t('sweepDados.ativos.cadastrarPrimeiraLicenca'),
                 onClick: handleNew
               } : undefined
             }}

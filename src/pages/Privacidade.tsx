@@ -157,12 +157,12 @@ export default function Privacidade() {
     let nivel = sensibilidade || 'comum';
     if (tipo === 'sensivel' && nivel === 'comum') nivel = 'sensivel';
     const labels: Record<string, string> = {
-      muito_sensivel: 'Muito Sensível',
-      sensivel: 'Sensível',
-      moderado: 'Moderado',
-      comum: 'Comum',
+      muito_sensivel: t('sweepDados.privacidade.sensibilidade.muitoSensivel'),
+      sensivel: t('sweepDados.privacidade.sensibilidade.sensivel'),
+      moderado: t('sweepDados.privacidade.sensibilidade.moderado'),
+      comum: t('sweepDados.privacidade.sensibilidade.comum'),
     };
-    return <StatusBadge size="sm" {...resolveSensibilidadeTone(nivel)}>{labels[nivel] || 'Comum'}</StatusBadge>;
+    return <StatusBadge size="sm" {...resolveSensibilidadeTone(nivel)}>{labels[nivel] || t('sweepDados.privacidade.sensibilidade.comum')}</StatusBadge>;
   };
 
   const getStatusBadge = (status: string) => {
@@ -173,14 +173,14 @@ export default function Privacidade() {
 
   const getCategoriaLabel = (categoria: string) => {
     const labels: Record<string, string> = {
-      identificacao: 'Identificação',
-      contato: 'Contato',
-      localizacao: 'Localização',
-      financeiro: 'Financeiro',
-      saude: 'Saúde',
-      biometrico: 'Biométrico',
-      comportamental: 'Comportamental',
-      outros: 'Outros'
+      identificacao: t('sweepDados.privacidade.categoria.identificacao'),
+      contato: t('sweepDados.privacidade.categoria.contato'),
+      localizacao: t('sweepDados.privacidade.categoria.localizacao'),
+      financeiro: t('sweepDados.privacidade.categoria.financeiro'),
+      saude: t('sweepDados.privacidade.categoria.saude'),
+      biometrico: t('sweepDados.privacidade.categoria.biometrico'),
+      comportamental: t('sweepDados.privacidade.categoria.comportamental'),
+      outros: t('sweepDados.privacidade.categoria.outros')
     };
     return labels[categoria] || formatStatus(categoria);
   };
@@ -189,7 +189,7 @@ export default function Privacidade() {
   const catalogoColumns = [
     {
       key: 'nome',
-      label: 'Nome',
+      label: t('sweepDados.privacidade.colNome'),
       sortable: true,
       render: (value: string, row: any) => (
         <div>
@@ -205,25 +205,25 @@ export default function Privacidade() {
     },
     {
       key: 'categoria_dados',
-      label: 'Categoria',
+      label: t('sweepDados.privacidade.colCategoria'),
       sortable: true,
       render: (value: string) => <Badge variant="outline">{getCategoriaLabel(value)}</Badge>
     },
     {
       key: 'sensibilidade',
-      label: 'Sensibilidade',
+      label: t('sweepDados.privacidade.colSensibilidade'),
       sortable: true,
       render: (value: string, row: any) => getSensibilidadeBadge(row.tipo_dados, value)
     },
     {
       key: 'base_legal',
-      label: 'Base Legal',
+      label: t('sweepDados.privacidade.colBaseLegal'),
       sortable: true,
       render: (value: string) => value ? <Badge variant="secondary">{formatStatus(value)}</Badge> : <span className="text-muted-foreground">-</span>
     },
     {
       key: 'mapeamentos_count',
-      label: 'Mapeamentos',
+      label: t('sweepDados.privacidade.colMapeamentos'),
       sortable: true,
       render: (value: number) => value > 0 ? (
         <Badge variant="secondary">{value}</Badge>
@@ -231,7 +231,7 @@ export default function Privacidade() {
     },
     {
       key: 'ropas_count',
-      label: 'ROPAs',
+      label: t('sweepDados.privacidade.colRopas'),
       sortable: true,
       render: (value: number) => value > 0 ? (
         <Badge variant="secondary">{value}</Badge>
@@ -239,7 +239,7 @@ export default function Privacidade() {
     },
     {
       key: 'actions',
-      label: 'Ações',
+      label: t('sweepDados.privacidade.colAcoes'),
       render: (_: any, row: any) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -249,19 +249,19 @@ export default function Privacidade() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => { setSelectedDado(row); setShowDadoSheet(true); }}>
-              <Eye className="h-4 w-4 mr-2" /> Ver Detalhes
+              <Eye className="h-4 w-4 mr-2" /> {t('sweepDados.privacidade.verDetalhes')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => { setSelectedDado(row); setShowDadosDialog(true); }}>
-              <Edit className="h-4 w-4 mr-2" /> Editar
+              <Edit className="h-4 w-4 mr-2" /> {t('sweepDados.privacidade.editar')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => { setSelectedDado(row); setShowMapeamentoDialog(true); }}>
-              <Link2 className="h-4 w-4 mr-2" /> Mapear
+              <Link2 className="h-4 w-4 mr-2" /> {t('sweepDados.privacidade.mapear')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => { setPreSelectedDadoId(row.id); setShowRopaWizard(true); }}>
-              <FileText className="h-4 w-4 mr-2" /> Criar ROPA
+              <FileText className="h-4 w-4 mr-2" /> {t('sweepDados.privacidade.criarRopa')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => handleDelete(row.id, 'dados')} className="text-destructive focus:text-destructive">
-              <Trash2 className="h-4 w-4 mr-2" /> Excluir
+              <Trash2 className="h-4 w-4 mr-2" /> {t('sweepDados.privacidade.excluir')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -272,29 +272,29 @@ export default function Privacidade() {
   const catalogoFilters = [
     {
       key: 'categoria_dados',
-      label: 'Categoria',
+      label: t('sweepDados.privacidade.colCategoria'),
       type: 'select' as const,
       options: [
-        { value: 'identificacao', label: 'Identificação' },
-        { value: 'contato', label: 'Contato' },
-        { value: 'localizacao', label: 'Localização' },
-        { value: 'financeiro', label: 'Financeiro' },
-        { value: 'saude', label: 'Saúde' },
-        { value: 'biometrico', label: 'Biométrico' },
-        { value: 'comportamental', label: 'Comportamental' },
-        { value: 'outros', label: 'Outros' }
+        { value: 'identificacao', label: t('sweepDados.privacidade.categoria.identificacao') },
+        { value: 'contato', label: t('sweepDados.privacidade.categoria.contato') },
+        { value: 'localizacao', label: t('sweepDados.privacidade.categoria.localizacao') },
+        { value: 'financeiro', label: t('sweepDados.privacidade.categoria.financeiro') },
+        { value: 'saude', label: t('sweepDados.privacidade.categoria.saude') },
+        { value: 'biometrico', label: t('sweepDados.privacidade.categoria.biometrico') },
+        { value: 'comportamental', label: t('sweepDados.privacidade.categoria.comportamental') },
+        { value: 'outros', label: t('sweepDados.privacidade.categoria.outros') }
       ],
       value: categoriaFilter,
       onChange: setCategoriaFilter
     },
     {
       key: 'sensibilidade',
-      label: 'Sensibilidade',
+      label: t('sweepDados.privacidade.colSensibilidade'),
       type: 'select' as const,
       options: [
-        { value: 'comum', label: 'Comum' },
-        { value: 'sensivel', label: 'Moderado' },
-        { value: 'muito_sensivel', label: 'Sensível' }
+        { value: 'comum', label: t('sweepDados.privacidade.sensibilidade.comum') },
+        { value: 'sensivel', label: t('sweepDados.privacidade.sensibilidade.moderado') },
+        { value: 'muito_sensivel', label: t('sweepDados.privacidade.sensibilidade.sensivel') }
       ],
       value: sensibilidadeFilter,
       onChange: setSensibilidadeFilter
@@ -305,29 +305,29 @@ export default function Privacidade() {
   const ropaColumns = [
     {
       key: 'nome_tratamento',
-      label: 'Nome do Tratamento',
+      label: t('sweepDados.privacidade.colNomeTratamento'),
       sortable: true,
       render: (value: string) => <span className="font-medium">{value}</span>
     },
     {
       key: 'base_legal',
-      label: 'Base Legal',
+      label: t('sweepDados.privacidade.colBaseLegal'),
       sortable: true,
       render: (value: string) => <Badge variant="outline">{value}</Badge>
     },
     {
       key: 'categoria_titulares',
-      label: 'Categoria Titulares',
+      label: t('sweepDados.privacidade.colCategoriaTitulares'),
       sortable: true,
     },
     {
       key: 'status',
-      label: 'Status',
+      label: t('sweepDados.privacidade.colStatus'),
       render: (value: string) => getStatusBadge(value)
     },
     {
       key: 'actions',
-      label: 'Ações',
+      label: t('sweepDados.privacidade.colAcoes'),
       render: (_: any, ropa: any) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -337,10 +337,10 @@ export default function Privacidade() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => { setSelectedRopa(ropa); setShowRopaDialog(true); }}>
-              <Edit className="h-4 w-4 mr-2" /> Editar
+              <Edit className="h-4 w-4 mr-2" /> {t('sweepDados.privacidade.editar')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => handleDelete(ropa.id, 'ropa')} className="text-destructive focus:text-destructive">
-              <Trash2 className="h-4 w-4 mr-2" /> Excluir
+              <Trash2 className="h-4 w-4 mr-2" /> {t('sweepDados.privacidade.excluir')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -351,25 +351,25 @@ export default function Privacidade() {
   const ropaFilters = [
     {
       key: 'status',
-      label: 'Status',
+      label: t('sweepDados.privacidade.colStatus'),
       type: 'select' as const,
       options: [
-        { value: 'ativo', label: 'Ativo' },
-        { value: 'inativo', label: 'Inativo' },
-        { value: 'revisao', label: 'Em Revisão' }
+        { value: 'ativo', label: t('sweepDados.privacidade.statusRopa.ativo') },
+        { value: 'inativo', label: t('sweepDados.privacidade.statusRopa.inativo') },
+        { value: 'revisao', label: t('sweepDados.privacidade.statusRopa.revisao') }
       ],
       value: statusRopaFilter,
       onChange: setStatusRopaFilter
     },
     {
       key: 'base_legal',
-      label: 'Base Legal',
+      label: t('sweepDados.privacidade.colBaseLegal'),
       type: 'select' as const,
       options: [
-        { value: 'consentimento', label: 'Consentimento' },
-        { value: 'legitimo_interesse', label: 'Legítimo Interesse' },
-        { value: 'execucao_contrato', label: 'Execução de Contrato' },
-        { value: 'cumprimento_obrigacao', label: 'Cumprimento de Obrigação Legal' }
+        { value: 'consentimento', label: t('sweepDados.privacidade.baseLegal.consentimento') },
+        { value: 'legitimo_interesse', label: t('sweepDados.privacidade.baseLegal.legitimoInteresse') },
+        { value: 'execucao_contrato', label: t('sweepDados.privacidade.baseLegal.execucaoContrato') },
+        { value: 'cumprimento_obrigacao', label: t('sweepDados.privacidade.baseLegal.cumprimentoObrigacao') }
       ],
       value: baseLegalFilter,
       onChange: setBaseLegalFilter
@@ -380,13 +380,13 @@ export default function Privacidade() {
   const solicitacoesColumns = [
     {
       key: 'tipo_solicitacao',
-      label: 'Tipo',
+      label: t('sweepDados.privacidade.colTipo'),
       sortable: true,
       render: (value: string) => <Badge variant="outline">{value}</Badge>
     },
     {
       key: 'dados_titular',
-      label: 'Titular',
+      label: t('sweepDados.privacidade.colTitular'),
       render: (value: string) => {
         try {
           const titular = JSON.parse(value);
@@ -398,23 +398,23 @@ export default function Privacidade() {
     },
     {
       key: 'canal_solicitacao',
-      label: 'Canal',
+      label: t('sweepDados.privacidade.colCanal'),
       sortable: true,
     },
     {
       key: 'status',
-      label: 'Status',
+      label: t('sweepDados.privacidade.colStatus'),
       render: (value: string) => getStatusBadge(value)
     },
     {
       key: 'prazo_resposta',
-      label: 'Prazo',
+      label: t('sweepDados.privacidade.colPrazo'),
       sortable: true,
       render: (value: string) => formatDateOnly(value)
     },
     {
       key: 'actions',
-      label: 'Ações',
+      label: t('sweepDados.privacidade.colAcoes'),
       render: (_: any, solicitacao: any) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -424,10 +424,10 @@ export default function Privacidade() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => { setSelectedSolicitacao(solicitacao); setShowSolicitacaoDialog(true); }}>
-              <Edit className="h-4 w-4 mr-2" /> Editar
+              <Edit className="h-4 w-4 mr-2" /> {t('sweepDados.privacidade.editar')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => handleDelete(solicitacao.id, 'solicitacao')} className="text-destructive focus:text-destructive">
-              <Trash2 className="h-4 w-4 mr-2" /> Excluir
+              <Trash2 className="h-4 w-4 mr-2" /> {t('sweepDados.privacidade.excluir')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -438,28 +438,28 @@ export default function Privacidade() {
   const solicitacoesFilters = [
     {
       key: 'status',
-      label: 'Status',
+      label: t('sweepDados.privacidade.colStatus'),
       type: 'select' as const,
       options: [
-        { value: 'pendente', label: 'Pendente' },
-        { value: 'em_analise', label: 'Em Análise' },
-        { value: 'atendida', label: 'Atendida' },
-        { value: 'rejeitada', label: 'Rejeitada' }
+        { value: 'pendente', label: t('sweepDados.privacidade.statusSolicitacao.pendente') },
+        { value: 'em_analise', label: t('sweepDados.privacidade.statusSolicitacao.emAnalise') },
+        { value: 'atendida', label: t('sweepDados.privacidade.statusSolicitacao.atendida') },
+        { value: 'rejeitada', label: t('sweepDados.privacidade.statusSolicitacao.rejeitada') }
       ],
       value: statusSolicitacoesFilter,
       onChange: setStatusSolicitacoesFilter
     },
     {
       key: 'tipo_solicitacao',
-      label: 'Tipo',
+      label: t('sweepDados.privacidade.colTipo'),
       type: 'select' as const,
       options: [
-        { value: 'acesso', label: 'Acesso' },
-        { value: 'correcao', label: 'Correção' },
-        { value: 'exclusao', label: 'Exclusão' },
-        { value: 'portabilidade', label: 'Portabilidade' },
-        { value: 'oposicao', label: 'Oposição' },
-        { value: 'revogacao_consentimento', label: 'Revogação de Consentimento' }
+        { value: 'acesso', label: t('sweepDados.privacidade.tipoSolicitacao.acesso') },
+        { value: 'correcao', label: t('sweepDados.privacidade.tipoSolicitacao.correcao') },
+        { value: 'exclusao', label: t('sweepDados.privacidade.tipoSolicitacao.exclusao') },
+        { value: 'portabilidade', label: t('sweepDados.privacidade.tipoSolicitacao.portabilidade') },
+        { value: 'oposicao', label: t('sweepDados.privacidade.tipoSolicitacao.oposicao') },
+        { value: 'revogacao_consentimento', label: t('sweepDados.privacidade.tipoSolicitacao.revogacaoConsentimento') }
       ],
       value: tipoSolicitacaoFilter,
       onChange: setTipoSolicitacaoFilter
@@ -492,14 +492,14 @@ export default function Privacidade() {
           ({ error } = await supabase.from('dados_solicitacoes_titular').delete().eq('id', deleteConfirm.id));
           break;
         default:
-          throw new Error('Tipo inválido');
+          throw new Error(t('sweepDados.privacidade.tipoInvalido'));
       }
 
       if (error) throw error;
 
       toast({
-        title: "Sucesso",
-        description: "Item excluído com sucesso!",
+        title: t('sweepDados.privacidade.sucesso'),
+        description: t('sweepDados.privacidade.itemExcluido'),
       });
 
       invalidatePrivacidade();
@@ -507,8 +507,8 @@ export default function Privacidade() {
     } catch (error: any) {
       logger.error('Erro ao excluir item de privacidade', { error: error instanceof Error ? error.message : String(error) });
       toast({
-        title: "Erro",
-        description: error.message || "Erro ao excluir item",
+        title: t('sweepDados.privacidade.erro'),
+        description: error.message || t('sweepDados.privacidade.erroExcluirItem'),
         variant: "destructive",
       });
     }
@@ -572,20 +572,20 @@ export default function Privacidade() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
           <TabsTrigger value="catalogo">{t('cardsKpi.privacidade.abaCatalogo')}</TabsTrigger>
-          <TabsTrigger value="ropa">ROPA</TabsTrigger>
+          <TabsTrigger value="ropa">{t('sweepDados.privacidade.abaRopa')}</TabsTrigger>
           <TabsTrigger value="solicitacoes">{t('cardsKpi.privacidade.abaSolicitacoes')}</TabsTrigger>
-          <TabsTrigger value="descobertas">Descobertas</TabsTrigger>
+          <TabsTrigger value="descobertas">{t('sweepDados.privacidade.abaDescobertas')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="catalogo" className="space-y-4">
           <div className="flex justify-end gap-2">
             <Button variant="outline" size="sm" onClick={() => setShowMapeamentoDialog(true)}>
               <Link2 className="mr-2 h-4 w-4" />
-              Mapear Dado
+              {t('sweepDados.privacidade.mapearDado')}
             </Button>
             <Button size="sm" onClick={() => setShowDadosDialog(true)}>
               <Plus className="mr-2 h-4 w-4" />
-              Novo Dado
+              {t('sweepDados.privacidade.novoDado')}
             </Button>
           </div>
           <Card className="rounded-lg border overflow-hidden">
@@ -593,7 +593,7 @@ export default function Privacidade() {
               <DataTable
                 data={dadosPessoais}
                 columns={catalogoColumns}
-                searchPlaceholder="Buscar dados pessoais..."
+                searchPlaceholder={t('sweepDados.privacidade.buscarDados')}
                 filters={catalogoFilters}
                 sortField={catalogoSortField}
                 sortDirection={catalogoSortDirection}
@@ -607,10 +607,10 @@ export default function Privacidade() {
                 }}
                 emptyState={{
                   icon: <Database className="h-8 w-8" />,
-                  title: "Nenhum dado catalogado",
-                  description: "Ainda não há dados pessoais catalogados. Comece criando o primeiro registro.",
+                  title: t('sweepDados.privacidade.emptyDadosTitulo'),
+                  description: t('sweepDados.privacidade.emptyDadosDescricao'),
                   action: {
-                    label: "Novo Dado",
+                    label: t('sweepDados.privacidade.novoDado'),
                     onClick: () => setShowDadosDialog(true)
                   }
                 }}
@@ -623,7 +623,7 @@ export default function Privacidade() {
           <div className="flex justify-end">
             <Button size="sm" onClick={() => setShowRopaWizard(true)}>
               <Plus className="mr-2 h-4 w-4" />
-              Novo ROPA
+              {t('sweepDados.privacidade.novoRopa')}
             </Button>
           </div>
           <Card className="rounded-lg border overflow-hidden">
@@ -633,7 +633,7 @@ export default function Privacidade() {
                 columns={ropaColumns}
                 loading={false}
                 searchable
-                searchPlaceholder="Buscar ROPA..."
+                searchPlaceholder={t('sweepDados.privacidade.buscarRopa')}
                 searchValue={searchRopaTerm}
                 onSearchChange={setSearchRopaTerm}
                 filters={ropaFilters}
@@ -649,10 +649,10 @@ export default function Privacidade() {
                 }}
                 emptyState={{
                   icon: <FileText className="h-8 w-8" />,
-                  title: "Nenhum registro ROPA criado",
-                  description: "Ainda não há registros ROPA cadastrados. Comece criando o primeiro registro.",
+                  title: t('sweepDados.privacidade.emptyRopaTitulo'),
+                  description: t('sweepDados.privacidade.emptyRopaDescricao'),
                   action: {
-                    label: "Novo ROPA",
+                    label: t('sweepDados.privacidade.novoRopa'),
                     onClick: () => setShowRopaWizard(true)
                   }
                 }}
@@ -665,7 +665,7 @@ export default function Privacidade() {
           <div className="flex justify-end">
             <Button size="sm" onClick={() => setShowSolicitacaoDialog(true)}>
               <Plus className="mr-2 h-4 w-4" />
-              Nova Solicitação
+              {t('sweepDados.privacidade.novaSolicitacao')}
             </Button>
           </div>
           <Card className="rounded-lg border overflow-hidden">
@@ -675,7 +675,7 @@ export default function Privacidade() {
                 columns={solicitacoesColumns}
                 loading={false}
                 searchable
-                searchPlaceholder="Buscar solicitações..."
+                searchPlaceholder={t('sweepDados.privacidade.buscarSolicitacoes')}
                 searchValue={searchSolicitacoesTerm}
                 onSearchChange={setSearchSolicitacoesTerm}
                 filters={solicitacoesFilters}
@@ -691,10 +691,10 @@ export default function Privacidade() {
                 }}
                 emptyState={{
                   icon: <Users className="h-8 w-8" />,
-                  title: "Nenhuma solicitação registrada",
-                  description: "Ainda não há solicitações de titulares. Comece criando o primeiro registro.",
+                  title: t('sweepDados.privacidade.emptySolicitacoesTitulo'),
+                  description: t('sweepDados.privacidade.emptySolicitacoesDescricao'),
                   action: {
-                    label: "Nova Solicitação",
+                    label: t('sweepDados.privacidade.novaSolicitacao'),
                     onClick: () => setShowSolicitacaoDialog(true)
                   }
                 }}
@@ -757,11 +757,11 @@ export default function Privacidade() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <span className="text-sm text-muted-foreground">Categoria</span>
+                  <span className="text-sm text-muted-foreground">{t('sweepDados.privacidade.colCategoria')}</span>
                   <p className="font-medium">{selectedDado.categoria_dados}</p>
                 </div>
                 <div>
-                  <span className="text-sm text-muted-foreground">Base Legal</span>
+                  <span className="text-sm text-muted-foreground">{t('sweepDados.privacidade.colBaseLegal')}</span>
                   <p className="font-medium">{selectedDado.base_legal}</p>
                 </div>
               </div>
@@ -775,7 +775,7 @@ export default function Privacidade() {
         onOpenChange={(open) => setDeleteConfirm(prev => ({ ...prev, open }))}
         title={t('residuos.privacidade.excluirItem')}
         description={t('residuos.privacidade.excluirItemConfirm')}
-        confirmText="Excluir"
+        confirmText={t('sweepDados.privacidade.excluir')}
         variant="destructive"
         onConfirm={confirmDelete}
       />
