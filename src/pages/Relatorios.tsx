@@ -39,7 +39,7 @@ const templateConfigs: Record<string, { nome: string; descricao: string; icon: a
 };
 
 export default function Relatorios() {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const { user, profile } = useAuth();
   const empresaId = profile?.empresa_id;
   const queryClient = useQueryClient();
@@ -125,8 +125,8 @@ export default function Relatorios() {
         doc.setTextColor(100);
         doc.text(relatorio.descricao || t('fin.comum.semDescricao'), 20, 45);
         doc.setFontSize(10);
-        doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, 20, 60);
-        doc.text(`Status: ${formatStatus(relatorio.status)}`, 20, 70);
+        doc.text(t('sweepCore.reports.generatedOn', { date: new Date().toLocaleDateString(locale === 'pt' ? 'pt-BR' : 'en-US') }), 20, 60);
+        doc.text(t('sweepCore.reports.status', { status: formatStatus(relatorio.status) }), 20, 70);
         doc.save(`${relatorio.nome.replace(/\s+/g, '_')}.pdf`);
       }
       toast.success(t('cardsKpi.sweep.sistema.pdfExportado'));
@@ -194,15 +194,15 @@ export default function Relatorios() {
         actions={
           <Button onClick={() => setDialogOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
-            Novo Relatório
+            {t('sweepCore.reports.newReport')}
           </Button>
         }
       />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <StatCard title={t('fin.relatorios.total')} value={stats.total} icon={<FileText />} variant="primary" showAccent emptyHint={t('fin.relatorios.emptyHint')} />
-        <StatCard title="Publicados" value={stats.publicados} icon={<Eye />} variant="success" />
-        <StatCard title="Rascunhos" value={stats.rascunhos} icon={<Clock />} variant="warning" />
+        <StatCard title={t('sweepCore.reports.published')} value={stats.publicados} icon={<Eye />} variant="success" />
+        <StatCard title={t('sweepCore.reports.drafts')} value={stats.rascunhos} icon={<Clock />} variant="warning" />
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -227,7 +227,7 @@ export default function Relatorios() {
                 <h3 className="text-lg font-semibold">{t('fin.relatorios.nenhum')}</h3>
                 <p className="text-muted-foreground text-sm mt-1 mb-4">{t('fin.relatorios.vazioDesc')}</p>
                 <Button onClick={() => setDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />Novo Relatório
+                  <Plus className="h-4 w-4 mr-2" />{t('sweepCore.reports.newReport')}
                 </Button>
               </CardContent>
             </Card>
@@ -242,7 +242,7 @@ export default function Relatorios() {
                         <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{rel.descricao || t('fin.comum.semDescricao')}</p>
                       </div>
                       <Badge variant={rel.status === 'publicado' ? 'success' : rel.status === 'arquivado' ? 'secondary' : 'warning'}>
-                        {rel.status === 'publicado' ? 'Publicado' : rel.status === 'arquivado' ? 'Arquivado' : 'Rascunho'}
+                        {rel.status === 'publicado' ? t('sweepCore.reports.publishedStatus') : rel.status === 'arquivado' ? t('sweepCore.reports.archivedStatus') : t('sweepCore.reports.draftStatus')}
                       </Badge>
                     </div>
                   </CardHeader>
@@ -253,7 +253,7 @@ export default function Relatorios() {
                       </Badge>
                     )}
                     <p className="text-xs text-muted-foreground mb-3">
-                      Criado em {formatDateOnly(rel.created_at)}
+                      {t('sweepCore.reports.createdOn', { date: formatDateOnly(rel.created_at) })}
                     </p>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -264,15 +264,15 @@ export default function Relatorios() {
                       <DropdownMenuContent align="end">
                         {rel.template_base && templateConfigs[rel.template_base] && (
                           <DropdownMenuItem onClick={() => setPreviewRelatorio(rel)}>
-                            <Eye className="h-4 w-4 mr-2" />Visualizar
+                            <Eye className="h-4 w-4 mr-2" />{t('sweepCore.reports.view')}
                           </DropdownMenuItem>
                         )}
                         <DropdownMenuItem onClick={() => handleExportPDF(rel)} disabled={exporting === rel.id}>
                           {exporting === rel.id ? <AkurisPulse size={16} className="mr-2" /> : <Download className="h-4 w-4 mr-2" />}
-                          Exportar PDF
+                          {t('sweepCore.reports.exportPdf')}
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => setEditRelatorio(rel)}>
-                          <Pencil className="h-4 w-4 mr-2" />Editar
+                          <Pencil className="h-4 w-4 mr-2" />{t('sweepCore.reports.edit')}
                         </DropdownMenuItem>
                         <DropdownMenuItem className="text-destructive" onClick={() => setDeleteId(rel.id)}>
                           <Trash2 className="h-4 w-4 mr-2" />{t('fin.comum.excluir')}</DropdownMenuItem>
@@ -300,7 +300,7 @@ export default function Relatorios() {
                         <h3 className="font-semibold text-sm">{t(config.nome)}</h3>
                         <p className="text-xs text-muted-foreground mt-1">{t(config.descricao)}</p>
                         <Button variant="link" size="sm" className="p-0 h-auto mt-2 text-xs group-hover:underline">
-                          Usar este template →
+                          {t('sweepCore.reports.useTemplate')}
                         </Button>
                       </div>
                     </div>

@@ -717,11 +717,11 @@ const NotificationCenter: React.FC = () => {
 
               <DialogFooter>
                 <Button variant="outline" onClick={() => setDetail(null)}>
-                  {t('common.close') || 'Fechar'}
+                   {t('common.close')}
                 </Button>
                 {detail.link_to && (
                   <Button onClick={handleNavigateFromDetail} className="gap-1">
-                    {t('notifications.viewAll') !== 'notifications.viewAll' ? 'Abrir módulo' : 'Abrir módulo'}
+                     {t('sweepCore.notifications.openModule')}
                     <ExternalLink className="h-3.5 w-3.5" strokeWidth={1.5} />
                   </Button>
                 )}

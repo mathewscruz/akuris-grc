@@ -55,6 +55,14 @@ export const sweepCore = {
       },
       maturity: { excellent: 'Excelente', good: 'Bom', warning: 'Atenção', critical: 'Crítico', noData: 'Sem dados' },
       unsavedChanges: 'Você tem alterações não salvas. Deseja realmente sair?',
+      notifications: { openModule: 'Abrir módulo' },
+      statCard: { variation: 'Variação' },
+      reports: {
+        newReport: 'Novo Relatório', published: 'Publicados', drafts: 'Rascunhos',
+        publishedStatus: 'Publicado', archivedStatus: 'Arquivado', draftStatus: 'Rascunho',
+        createdOn: 'Criado em {date}', view: 'Visualizar', exportPdf: 'Exportar PDF', edit: 'Editar',
+        useTemplate: 'Usar este template →', generatedOn: 'Gerado em: {date}', status: 'Status: {status}',
+      },
     },
   },
   en: {
@@ -109,6 +117,14 @@ export const sweepCore = {
       },
       maturity: { excellent: 'Excellent', good: 'Good', warning: 'Attention', critical: 'Critical', noData: 'No data' },
       unsavedChanges: 'You have unsaved changes. Are you sure you want to leave?',
+      notifications: { openModule: 'Open module' },
+      statCard: { variation: 'Change' },
+      reports: {
+        newReport: 'New Report', published: 'Published', drafts: 'Drafts',
+        publishedStatus: 'Published', archivedStatus: 'Archived', draftStatus: 'Draft',
+        createdOn: 'Created on {date}', view: 'View', exportPdf: 'Export PDF', edit: 'Edit',
+        useTemplate: 'Use this template →', generatedOn: 'Generated on: {date}', status: 'Status: {status}',
+      },
     },
   },
 };

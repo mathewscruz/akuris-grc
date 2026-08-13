@@ -141,10 +141,10 @@ export default function Continuidade() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => setDetalheDialog({ open: true, plano: row })}>
-              <Eye className="h-4 w-4 mr-2" /> Visualizar
+               <Eye className="h-4 w-4 mr-2" /> {t('sweepDados.continuidade.visualizar')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setPlanoDialog({ open: true, plano: row })}>
-              <Edit className="h-4 w-4 mr-2" /> Editar
+               <Edit className="h-4 w-4 mr-2" /> {t('sweepDados.continuidade.editar')}
             </DropdownMenuItem>
             <DropdownMenuItem className="text-destructive" onClick={() => setDeleteConfirm({ open: true, id: row.id })}>
               <Trash2 className="h-4 w-4 mr-2" />{t('fin.comum.excluir')}</DropdownMenuItem>
@@ -180,7 +180,7 @@ export default function Continuidade() {
               <Download className="h-4 w-4 mr-2" />CSV
             </Button>
             <Button onClick={() => setPlanoDialog({ open: true })}>
-              <Plus className="h-4 w-4 mr-2" /> Novo Plano
+               <Plus className="h-4 w-4 mr-2" /> {t('sweepDados.continuidade.novoPlano')}
             </Button>
           </div>
         }
@@ -202,7 +202,7 @@ export default function Continuidade() {
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <CalendarClock className="h-4 w-4 text-warning" />
-                Próximas Revisões (30 dias)
+                 {t('sweepDados.continuidade.proximasRevisoesTitle')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -227,7 +227,7 @@ export default function Continuidade() {
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4 text-destructive" />
-                Itens de Atenção
+                 {t('sweepDados.continuidade.itensAtencaoTitle')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
