@@ -50,6 +50,7 @@ import { finalI18n } from './final-i18n';
 import { campos } from './campos';
 import { cardsKpi } from './cards-kpi';
 import { residuos } from './residuos';
+import { publico } from './publico';
 
 type ModuleDict = { pt: Record<string, unknown>; en: Record<string, unknown> };
 
@@ -96,6 +97,7 @@ const modules: Record<string, ModuleDict> = {
   campos,
   cardsKpi,
   residuos,
+  publico,
 };
 
 
