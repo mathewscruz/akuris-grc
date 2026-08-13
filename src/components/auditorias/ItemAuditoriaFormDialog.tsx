@@ -46,7 +46,7 @@ const makeFormSchema = (t: (key: string) => string) => z.object({
   area_sistema_id: z.string().optional(),
 });
 
-type FormData = z.infer<typeof formSchema>;
+type FormData = z.infer<ReturnType<typeof makeFormSchema>>;
 
 interface ItemAuditoriaFormDialogProps {
   open: boolean;
