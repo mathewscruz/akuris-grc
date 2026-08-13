@@ -143,8 +143,10 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     return interpolate(result, params);
   }, [locale]);
 
+  const tList = useCallback((key: string): string[] => resolveList(dictionaries[locale], key), [locale]);
+
   return (
-    <LanguageContext.Provider value={{ locale, setLocale, t }}>
+    <LanguageContext.Provider value={{ locale, setLocale, t, tList }}>
       {children}
     </LanguageContext.Provider>
   );
