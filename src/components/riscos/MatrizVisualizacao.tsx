@@ -50,7 +50,9 @@ export function MatrizVisualizacao({ onNavigate, onConfigure }: Props) {
 
   const fetchMatrizAndRiscos = async () => {
     try {
-      const { data: matrizData } = await supabase
+      // Lista todas e escolhe a primeira COM configuração — matrizes sem
+      // escalas/faixas não são renderizáveis e não devem ganhar a seleção.
+      const { data: matrizesData } = await supabase
         .from('riscos_matrizes')
         .select(`
           id,
@@ -63,12 +65,14 @@ export function MatrizVisualizacao({ onNavigate, onConfigure }: Props) {
           )
         `)
         .eq('empresa_id', profile?.empresa_id)
-        .limit(1)
-        .single();
+        .order('created_at', { ascending: true });
+
+      const matrizData = matrizesData?.find(m => m.configuracao?.[0]);
 
       if (matrizData && matrizData.configuracao && matrizData.configuracao[0]) {
         setMatriz({
-          ...matrizData,
+          id: matrizData.id,
+          nome: matrizData.nome,
           configuracao: {
             escala_probabilidade: matrizData.configuracao[0].escala_probabilidade as Array<{ valor: number; descricao: string }>,
             escala_impacto: matrizData.configuracao[0].escala_impacto as Array<{ valor: number; descricao: string }>,
@@ -77,6 +81,7 @@ export function MatrizVisualizacao({ onNavigate, onConfigure }: Props) {
           }
         });
       }
+
 
       const { data: riscosData } = await supabase
         .from('riscos')
