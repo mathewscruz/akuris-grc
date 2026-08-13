@@ -137,6 +137,9 @@ const ptDict = {
   },
   akuria: {
     creditsExhausted: 'Créditos de IA esgotados.',
+    connectError: 'Erro ao conectar com AkurIA.',
+    inputPlaceholder: 'Pergunte sobre GRC… (Shift+Enter quebra linha)',
+    openingModule: 'Abrindo {module}…',
     tooManyRequests: 'Muitas requisições. Aguarde um momento.',
     history: 'Histórico',
     newConversation: 'Nova conversa',
@@ -335,6 +338,9 @@ const enDict = {
   },
   akuria: {
     creditsExhausted: 'AI credits exhausted.',
+    connectError: 'Failed to connect to AkurIA.',
+    inputPlaceholder: 'Ask about GRC… (Shift+Enter for a new line)',
+    openingModule: 'Opening {module}…',
     tooManyRequests: 'Too many requests. Please wait a moment.',
     history: 'History',
     newConversation: 'New conversation',

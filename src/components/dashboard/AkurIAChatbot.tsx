@@ -26,7 +26,7 @@ const userInitialsFrom = (name: string | null | undefined) => {
 
 export function AkurIAChatbot() {
   const { user, session, profile } = useAuth();
-  const { locale } = useLanguage();
+  const { locale, t } = useLanguage();
   const location = useLocation();
 
   const [open, setOpen] = useState(false);
@@ -115,17 +115,17 @@ export function AkurIAChatbot() {
         });
 
         if (resp.status === 402) {
-          toast.error("Créditos de IA esgotados.");
+          toast.error(t("dashWidgets.akuria.creditsExhausted"));
           setIsLoading(false);
           return;
         }
         if (resp.status === 429) {
-          toast.error("Muitas requisições. Aguarde um momento.");
+          toast.error(t("dashWidgets.akuria.tooManyRequests"));
           setIsLoading(false);
           return;
         }
         if (!resp.ok || !resp.body) {
-          toast.error("Erro ao conectar com AkurIA.");
+          toast.error(t("dashWidgets.akuria.connectError"));
           setIsLoading(false);
           return;
         }
@@ -268,7 +268,7 @@ export function AkurIAChatbot() {
                     size="icon"
                     className="h-7 w-7"
                     onClick={() => setShowSidebar((v) => !v)}
-                    title="Histórico"
+                    title={t("dashWidgets.akuria.history")}
                   >
                     <History className="h-3.5 w-3.5" />
                   </Button>
@@ -278,7 +278,7 @@ export function AkurIAChatbot() {
                   size="icon"
                   className="h-7 w-7"
                   onClick={newConversation}
-                  title="Nova conversa"
+                  title={t("dashWidgets.akuria.newConversation")}
                 >
                   <Plus className="h-3.5 w-3.5" />
                 </Button>
@@ -355,13 +355,13 @@ export function AkurIAChatbot() {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Pergunte sobre GRC… (Shift+Enter quebra linha)"
+                  placeholder={t("dashWidgets.akuria.inputPlaceholder")}
                   rows={1}
                   className="flex-1 resize-none min-h-[36px] max-h-[120px] text-sm py-2 px-3 rounded-lg"
                   disabled={isLoading}
                 />
                 {isLoading ? (
-                  <Button type="button" size="icon" variant="destructive" className="h-9 w-9 shrink-0" onClick={stop} title="Cancelar">
+                  <Button type="button" size="icon" variant="destructive" className="h-9 w-9 shrink-0" onClick={stop} title={t("dashWidgets.akuria.cancel")}>
                     <StopCircle className="h-4 w-4" />
                   </Button>
                 ) : (

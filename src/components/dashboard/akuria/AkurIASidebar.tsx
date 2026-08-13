@@ -1,5 +1,6 @@
 import { Plus, MessageSquare, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { AkurIAConversation } from "@/hooks/useAkurIASession";
 
@@ -76,7 +77,7 @@ export function AkurIASidebar({
                       onDelete(c.id);
                     }}
                     className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
-                    title="Excluir"
+                    title={t("dashWidgets.akuria.delete")}
                   >
                     <Trash2 className="h-3 w-3" />
                   </button>
