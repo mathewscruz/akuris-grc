@@ -1047,115 +1047,20 @@ ${weak.map(w => `- índice ${w.index} ("${w.nome}") — motivo: ${w.motivo}\n  C
         initial_score,
       });
 
-      // === Onda auto-refino: se score < AUDIT_THRESHOLD e há gaps residuais, ===
-      // ===   executa até MAX_REFINE_ATTEMPTS refinos gap-driven internamente ===
-      // Isso garante que o servidor não devolve um documento abaixo do gate
-      // enquanto houver gaps endereçáveis do catálogo real do framework.
-      let auto_refine_attempts = 0;
+      // === Auto-refino movido para a action `auto_refine` ===
+      // O pipeline em série (geração + quality gate + 2 refinos "pro") estourava
+      // o timeout da plataforma (~150s). Agora a geração retorna assim que tem
+      // o documento + score, e o frontend dispara `auto_refine` por tentativa.
+      const auto_refine_attempts = 0;
       const auto_refine_history: Array<{ attempt: number; before: number; after: number; gaps_targeted: string[] }> = [];
-      let finalScore = initial_score;
-
-      if (
+      const finalScore = initial_score;
+      const should_auto_refine =
         initial_score < AUDIT_THRESHOLD &&
         residualGaps.length > 0 &&
         catalogCodes.length > 0 &&
         Array.isArray(documentContent?.secoes) &&
-        documentContent.secoes.length > 0
-      ) {
-        for (let attempt = 1; attempt <= MAX_REFINE_ATTEMPTS; attempt++) {
-          const before = finalScore;
-          const gapsBatch = residualGaps.slice(0, 10);
-          const instructionAuto = `Cubra explicitamente os seguintes requisitos ainda não endereçados no documento: ${gapsBatch.join(', ')}. Adicione cláusulas concretas nas seções mais apropriadas, sem perder cobertura já existente, e devolva o coverage_map atualizado incluindo esses códigos.`;
+        documentContent.secoes.length > 0;
 
-          const secoesForRefine = (documentContent.secoes || []).map((s: any) => ({ nome: s.nome, conteudo: s.conteudo }));
-          const docJsonR = JSON.stringify({
-            titulo: documentContent.titulo,
-            versao: documentContent.versao,
-            secoes: secoesForRefine,
-          });
-          const currentCov: any[] = Array.isArray(documentContent?.coverage_map) ? documentContent.coverage_map : [];
-          const covBlock = currentCov.length
-            ? `\n\n=== COVERAGE MAP ATUAL (NÃO PERDER COBERTURA) ===\n${currentCov
-                .map((c: any) => `- [${c.requirement_codigo || 'S/C'}] ${c.requirement_titulo || ''} → seções ${JSON.stringify(c.section_indexes || [])} — evidência: "${(c.evidencia || '').slice(0, 160)}"`)
-                .join('\n')}`
-            : '';
-
-          const sysR = `Você é um editor sênior de documentos corporativos com foco em compliance. Aplique a instrução cobrindo TODOS os requisitos indicados sem perder cobertura existente. Mantenha a lista de seções (mesmos nomes e ordem). Responda SOMENTE com JSON válido, sem markdown, no formato:
-{
-  "sections_changed": ["Nome da seção 1", ...],
-  "summary": "1 frase descrevendo a mudança",
-  "document": {
-    "titulo": "...",
-    "versao": "...",
-    "secoes": [ { "nome": "...", "conteudo": "..." } ],
-    "coverage_map": [ { "requirement_codigo": "A.8.13", "requirement_titulo": "...", "section_indexes": [2], "evidencia": "trecho literal (max 220 chars)" } ]
-  },
-  "removed_coverage": []
-}`;
-          const userR = `EMPRESA: ${context.empresa_nome}
-${framework_context?.framework_name ? `FRAMEWORK: ${framework_context.framework_name}\n` : ''}
-DOCUMENTO ATUAL (JSON):
-${docJsonR}${covBlock}
-
-INSTRUÇÃO (auto-refino gap-driven, tentativa ${attempt}/${MAX_REFINE_ATTEMPTS}):
-${instructionAuto}
-
-Devolva o JSON completo com coverage_map atualizado.`;
-
-          let parsedR: any = null;
-          try {
-            const rawR = await callClaude(
-              [{ role: 'user', content: userR }],
-              sysR,
-              LOVABLE_API_KEY,
-              18000,
-              0.35,
-              MODEL_QUALITY,
-            );
-            await chargeAiCredit();
-            parsedR = JSON.parse(rawR.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim());
-          } catch (autoErr) {
-            console.log('DocGen auto-refino falhou na tentativa', attempt, autoErr);
-            parsedR = null;
-          }
-
-          if (!parsedR?.document?.secoes?.length) break;
-
-          const removed = new Set((parsedR?.removed_coverage || []).map((r: any) => String(r?.requirement_codigo || '')));
-          const nextCoverage: any[] = Array.isArray(parsedR?.document?.coverage_map) && parsedR.document.coverage_map.length
-            ? parsedR.document.coverage_map
-            : currentCov.filter((c: any) => !removed.has(String(c?.requirement_codigo || '')));
-
-          documentContent.titulo = parsedR.document.titulo || documentContent.titulo;
-          documentContent.versao = parsedR.document.versao || documentContent.versao;
-          documentContent.secoes = parsedR.document.secoes;
-          documentContent.coverage_map = nextCoverage;
-
-          // Remove justificativas cujos códigos agora aparecem cobertos e re-expande do catálogo.
-          const coveredNow = new Set(nextCoverage.map((c: any) => String(c?.requirement_codigo || '').trim()).filter(Boolean));
-          let ncBase: any[] = Array.isArray(documentContent?.requisitos_nao_cobertos_justificativa)
-            ? documentContent.requisitos_nao_cobertos_justificativa
-            : [];
-          ncBase = ncBase.filter((n: any) => !coveredNow.has(String(n?.codigo || '').trim()));
-          const expandedNaoCob = expandNaoCobertosFromCatalog(catalogCodes, nextCoverage, ncBase);
-          documentContent.requisitos_nao_cobertos_justificativa = expandedNaoCob;
-
-          const after = computeCoverageScore(nextCoverage, expandedNaoCob, 0);
-          documentContent._initial_score = after;
-          finalScore = after;
-          naoCobertos = expandedNaoCob;
-          residualGaps = computeResidualGaps(catalogCodes, nextCoverage, expandedNaoCob, 15);
-          documentContent._residual_gaps = residualGaps;
-          auto_refine_attempts = attempt;
-          auto_refine_history.push({ attempt, before, after, gaps_targeted: gapsBatch });
-
-          console.log('DocGen auto-refino resultado', { attempt, before, after, residuais: residualGaps.length });
-
-          if (after >= AUDIT_THRESHOLD) break;
-          if (residualGaps.length === 0) break;
-          if (after <= before) break; // não converge — evita gastar créditos em looping estéril
-        }
-      }
 
       documentContent._auto_refine_attempts = auto_refine_attempts;
       documentContent._auto_refine_history = auto_refine_history;
