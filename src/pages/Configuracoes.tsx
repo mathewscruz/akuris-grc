@@ -5,6 +5,7 @@ import { PageHeader } from '@/components/ui/page-header';
 import { Users, Building2, Plug, MessageSquare, CreditCard, Landmark, DollarSign, Package, Newspaper, BookOpen, Languages } from 'lucide-react';
 import { AkurisAIIcon } from '@/components/icons';
 import { useSearchParams } from 'react-router-dom';
+import { useLanguage } from '@/contexts/LanguageContext';
 import GerenciamentoEmpresas from '@/components/configuracoes/GerenciamentoEmpresas';
 import { IntegrationHub } from '@/components/configuracoes/IntegrationHub';
 import { ConfiguracoesDenuncia } from '@/components/denuncia/ConfiguracoesDenuncia';
@@ -22,6 +23,7 @@ import { TraducaoFrameworksTab } from '@/components/configuracoes/TraducaoFramew
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 const Configuracoes = () => {
+  const { t } = useLanguage();
   const { profile, loading } = useAuth();
   const [searchParams] = useSearchParams();
   const defaultTab = searchParams.get('tab') || 'usuarios';
@@ -34,7 +36,7 @@ const Configuracoes = () => {
       <div className="flex items-center justify-center min-h-96">
         <div className="text-center">
           <AkurisPulse size={48} className="mb-4" />
-          <p className="text-muted-foreground">Carregando configurações...</p>
+          <p className="text-muted-foreground">{t('configGeral.page.loading')}</p>
         </div>
       </div>
     );
@@ -46,8 +48,8 @@ const Configuracoes = () => {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Configurações"
-        description="Gerencie empresas, usuários e configurações do sistema"
+        title={t('configGeral.page.headerTitle')}
+        description={t('configGeral.page.headerDescription')}
       />
 
       <Tabs defaultValue={defaultTab} className="space-y-6">
@@ -55,69 +57,69 @@ const Configuracoes = () => {
           {isSuperAdmin && (
             <TabsTrigger value="empresas" className="flex items-center gap-2">
               <Building2 className="h-4 w-4" />
-              <span className="hidden min-[1800px]:inline">Empresas</span>
+              <span className="hidden min-[1800px]:inline">{t('configGeral.page.tabEmpresas')}</span>
             </TabsTrigger>
           )}
           {isSuperAdmin && (
             <TabsTrigger value="planos" className="flex items-center gap-2">
               <Package className="h-4 w-4" />
-              <span className="hidden min-[1800px]:inline">Planos</span>
+              <span className="hidden min-[1800px]:inline">{t('configGeral.page.tabPlanos')}</span>
             </TabsTrigger>
           )}
           <TabsTrigger value="usuarios" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
-            <span className="hidden min-[1800px]:inline">Usuários & Acessos</span>
+            <span className="hidden min-[1800px]:inline">{t('configGeral.page.tabUsuarios')}</span>
           </TabsTrigger>
           {isAdmin && (
             <TabsTrigger value="organizacao" className="flex items-center gap-2">
               <Landmark className="h-4 w-4" />
-              <span className="hidden min-[1800px]:inline">Organização</span>
+              <span className="hidden min-[1800px]:inline">{t('configGeral.page.tabOrganizacao')}</span>
             </TabsTrigger>
           )}
           {isAdmin && (
             <TabsTrigger value="integracoes" className="flex items-center gap-2">
               <Plug className="h-4 w-4" />
-              <span className="hidden min-[1800px]:inline">Integrações</span>
+              <span className="hidden min-[1800px]:inline">{t('configGeral.page.tabIntegracoes')}</span>
             </TabsTrigger>
           )}
           {isAdmin && (
             <TabsTrigger value="denuncia" className="flex items-center gap-2">
               <MessageSquare className="h-4 w-4" />
-              <span className="hidden min-[1800px]:inline">Denúncia</span>
+              <span className="hidden min-[1800px]:inline">{t('configGeral.page.tabDenuncia')}</span>
             </TabsTrigger>
           )}
           <TabsTrigger value="assinatura" className="flex items-center gap-2">
             <CreditCard className="h-4 w-4" />
-            <span className="hidden min-[1800px]:inline">Assinatura</span>
+            <span className="hidden min-[1800px]:inline">{t('configGeral.page.tabAssinatura')}</span>
           </TabsTrigger>
           {isSuperAdmin && (
             <TabsTrigger value="financeiro-ia" className="flex items-center gap-2">
               <DollarSign className="h-4 w-4" />
-              <span className="hidden min-[1800px]:inline">Financeiro IA</span>
+              <span className="hidden min-[1800px]:inline">{t('configGeral.page.tabFinanceiroIA')}</span>
             </TabsTrigger>
           )}
           {isSuperAdmin && (
             <TabsTrigger value="novidades" className="flex items-center gap-2">
               <AkurisAIIcon className="h-4 w-4" />
-              <span className="hidden min-[1800px]:inline">Novidades</span>
+              <span className="hidden min-[1800px]:inline">{t('configGeral.page.tabNovidades')}</span>
             </TabsTrigger>
           )}
           {isSuperAdmin && (
             <TabsTrigger value="noticias" className="flex items-center gap-2">
               <Newspaper className="h-4 w-4" />
-              <span className="hidden min-[1800px]:inline">Notícias</span>
+              <span className="hidden min-[1800px]:inline">{t('configGeral.page.tabNoticias')}</span>
             </TabsTrigger>
           )}
           {isSuperAdmin && (
             <TabsTrigger value="traducoes" className="flex items-center gap-2">
               <Languages className="h-4 w-4" />
-              <span className="hidden min-[1800px]:inline">Traduções</span>
+              <span className="hidden min-[1800px]:inline">{t('configGeral.page.tabTraducoes')}</span>
             </TabsTrigger>
           )}
           {isSuperAdmin && (
             <TabsTrigger value="blog" className="flex items-center gap-2">
               <BookOpen className="h-4 w-4" />
-              <span className="hidden min-[1800px]:inline">Blog</span>
+              <span className="hidden min-[1800px]:inline">{t('configGeral.page.tabBlog')}</span>
             </TabsTrigger>
           )}
         </TabsList>
@@ -128,7 +130,7 @@ const Configuracoes = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Building2 className="h-5 w-5" />
-                  Gerenciamento de Empresas
+                  {t('configGeral.page.empresasCardTitle')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -144,7 +146,7 @@ const Configuracoes = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Package className="h-5 w-5" />
-                  Gerenciamento de Planos
+                  {t('configGeral.page.planosCardTitle')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -174,7 +176,7 @@ const Configuracoes = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Plug className="h-5 w-5" />
-                  Integrações
+                  {t('configGeral.page.integracoesCardTitle')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -201,7 +203,7 @@ const Configuracoes = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <AkurisAIIcon className="h-5 w-5" />
-                    Gestão de Créditos IA
+                    {t('configGeral.page.creditosIACardTitle')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -222,7 +224,7 @@ const Configuracoes = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <AkurisAIIcon className="h-5 w-5" />
-                  Novidades
+                  {t('configGeral.page.novidadesCardTitle')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -237,7 +239,7 @@ const Configuracoes = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Newspaper className="h-5 w-5" />
-                  Notícias & Comunicados
+                  {t('configGeral.page.noticiasCardTitle')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -252,7 +254,7 @@ const Configuracoes = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Languages className="h-5 w-5" />
-                  Traduções dos Frameworks (Gap Analysis)
+                  {t('configGeral.page.traducoesCardTitle')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -267,7 +269,7 @@ const Configuracoes = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <BookOpen className="h-5 w-5" />
-                  Blog (SEO)
+                  {t('configGeral.page.blogCardTitle')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
