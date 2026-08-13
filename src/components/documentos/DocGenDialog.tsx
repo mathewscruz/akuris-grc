@@ -620,6 +620,14 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
         toast({ title: t('docgen.dialog.timeoutTitle'), description: t('docgen.dialog.timeoutDescription'), variant: 'destructive' });
         return;
       }
+      if (res.error === 'INVALID_DOCUMENT') {
+        toast({
+          title: t('docgen.dialog.invalidDocumentTitle'),
+          description: t('docgen.dialog.invalidDocumentDescription'),
+          variant: 'destructive',
+        });
+        return;
+      }
       if (res.error) throw new Error(res.error);
       const data = res.data;
 
