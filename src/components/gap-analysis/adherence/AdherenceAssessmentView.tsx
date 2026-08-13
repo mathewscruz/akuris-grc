@@ -30,7 +30,7 @@ interface AdherenceAssessmentViewProps {
 }
 
 export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNome, embedded, openSignal }: AdherenceAssessmentViewProps) {
-  const { t } = useLanguage();
+  const { t, tList } = useLanguage();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [assessmentToDelete, setAssessmentToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -179,14 +179,14 @@ export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNo
   ];
 
   const DOCUMENT_EXAMPLES: Record<string, string[]> = {
-    'ISO': t('gapAdherence.docExamples.iso') as unknown as string[],
-    'LGPD': t('gapAdherence.docExamples.lgpd') as unknown as string[],
-    'NIST': t('gapAdherence.docExamples.nist') as unknown as string[],
-    'PCI': t('gapAdherence.docExamples.pci') as unknown as string[],
+    'ISO': tList('gapAdherence.docExamples.iso'),
+    'LGPD': tList('gapAdherence.docExamples.lgpd'),
+    'NIST': tList('gapAdherence.docExamples.nist'),
+    'PCI': tList('gapAdherence.docExamples.pci'),
   };
 
   const getDocExamples = (): string[] => {
-    const defaultExamples = t('gapAdherence.docExamples.default') as unknown as string[];
+    const defaultExamples = tList('gapAdherence.docExamples.default');
     if (!frameworkNome) return defaultExamples;
     for (const [key, examples] of Object.entries(DOCUMENT_EXAMPLES)) {
       if (frameworkNome.toUpperCase().includes(key)) return examples;

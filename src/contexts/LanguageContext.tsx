@@ -17,6 +17,17 @@ interface LanguageContextType {
   locale: Locale;
   setLocale: (locale: Locale) => void;
   t: (key: string, params?: Record<string, string | number>) => string;
+  /** Resolve chaves cujo valor é uma lista de strings (ex.: exemplos de documentos). */
+  tList: (key: string) => string[];
+}
+
+function resolveList(dict: Dictionary, key: string): string[] {
+  let result: any = dict;
+  for (const k of key.split('.')) {
+    result = result?.[k];
+    if (result === undefined) return [];
+  }
+  return Array.isArray(result) ? result.filter((v) => typeof v === 'string') : [];
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -132,8 +143,10 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     return interpolate(result, params);
   }, [locale]);
 
+  const tList = useCallback((key: string): string[] => resolveList(dictionaries[locale], key), [locale]);
+
   return (
-    <LanguageContext.Provider value={{ locale, setLocale, t }}>
+    <LanguageContext.Provider value={{ locale, setLocale, t, tList }}>
       {children}
     </LanguageContext.Provider>
   );
@@ -155,7 +168,10 @@ const fallbackContext: LanguageContextType = {
     if (typeof result !== 'string') return key;
     return interpolate(result, params);
   },
+  tList: (key: string) =>
+    resolveList(dictionaries[(typeof window !== 'undefined' && (localStorage.getItem(STORAGE_KEY) as Locale)) || 'pt'], key),
 };
+
 
 export function useLanguage() {
   const context = useContext(LanguageContext);

@@ -110,7 +110,7 @@ export const gapAnalysis = {
       },
       audit: {
         user: 'Usuário', system: 'Sistema', noChanges: 'Nenhuma alteração registrada',
-
+      },
       pdfExport: {
         board: {
           reportTitle: 'Relatório Executivo',
@@ -905,9 +905,7 @@ export const gapAnalysis = {
           benefits: ['Processos mais organizados e documentados', 'Redução de riscos operacionais', 'Maior confiança de clientes e parceiros', 'Base para certificações futuras'],
         },
       },
-
-        status: { conforme: 'Conforme', parcial: 'Parcial', naoConforme: 'Não Conforme', na: 'N/A', naoAvaliado: 'Não Avaliado', pendente: 'Pendente' },
-      },
+      status: { conforme: 'Conforme', parcial: 'Parcial', naoConforme: 'Não Conforme', na: 'N/A', naoAvaliado: 'Não Avaliado', pendente: 'Pendente' },
     },
   },
   en: {
@@ -1021,7 +1019,7 @@ export const gapAnalysis = {
       },
       audit: {
         user: 'User', system: 'System', noChanges: 'No changes recorded',
-
+      },
       pdfExport: {
         board: {
           reportTitle: 'Executive Report',
@@ -1816,9 +1814,7 @@ export const gapAnalysis = {
           benefits: ['More organized and documented processes', 'Reduced operational risks', 'Greater trust from customers and partners', 'Foundation for future certifications'],
         },
       },
-
-        status: { conforme: 'Compliant', parcial: 'Partial', naoConforme: 'Non-compliant', na: 'N/A', naoAvaliado: 'Not Evaluated', pendente: 'Pending' },
-      },
+      status: { conforme: 'Compliant', parcial: 'Partial', naoConforme: 'Non-compliant', na: 'N/A', naoAvaliado: 'Not Evaluated', pendente: 'Pending' },
     },
   },
 };

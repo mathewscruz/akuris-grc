@@ -582,6 +582,7 @@ export const en = {
     validationEmailInvalid: 'Invalid email',
   },
   notifications: {
+    viewDetails: 'View details',
     title: 'Notifications',
     eyebrow: 'NOTIFICATIONS',
     markAll: 'Mark all',

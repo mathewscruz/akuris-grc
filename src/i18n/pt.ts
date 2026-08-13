@@ -582,6 +582,7 @@ export const pt = {
     validationEmailInvalid: 'Email inválido',
   },
   notifications: {
+    viewDetails: 'Ver detalhes',
     title: 'Notificações',
     eyebrow: 'NOTIFICAÇÕES',
     markAll: 'Marcar todas',

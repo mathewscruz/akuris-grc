@@ -1,6 +1,10 @@
 export const projetos = {
   pt: {
     projetos: {
+      gantt: {
+        noDatesTitle: 'Sem datas para exibir',
+        noDatesDescription: 'Defina data de início e fim nas tarefas para visualizar o cronograma.',
+      },
       page: {
         title: 'Projetos',
         subtitle: 'Gestão de atividades, Kanban e entregas integrada ao GRC.',
@@ -358,6 +362,10 @@ export const projetos = {
   },
   en: {
     projetos: {
+      gantt: {
+        noDatesTitle: 'No dates to display',
+        noDatesDescription: 'Set start and end dates on tasks to see the timeline.',
+      },
       page: {
         title: 'Projects',
         subtitle: 'Activity management, Kanban and delivery integrated with GRC.',
