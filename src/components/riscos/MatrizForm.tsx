@@ -96,8 +96,10 @@ interface Matriz {
     escala_probabilidade: EscalaItem[];
     escala_impacto: EscalaItem[];
     niveis_risco: NivelRisco[];
+    metodo_calculo?: string;
   };
 }
+
 
 interface Categoria {
   id: string;
@@ -117,6 +119,10 @@ export function MatrizForm({ onSuccess }: Props) {
   const [matrizes, setMatrizes] = useState<Matriz[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [editingMatriz, setEditingMatriz] = useState<Matriz | null>(null);
+  // Modo explícito de criação: só entra aqui via botão "Nova matriz".
+  // Sem isto o modal reabre num formulário vazio e induz a criação de duplicados.
+  const [modoNovo, setModoNovo] = useState(false);
+
   
   // Estado para ConfirmDialog de exclusão
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -173,8 +179,9 @@ export function MatrizForm({ onSuccess }: Props) {
   });
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    fetchData(true);
+  }, [profile?.empresa_id]);
+
 
   // Validar faixas sempre que niveisRisco mudar
   useEffect(() => {
@@ -182,7 +189,8 @@ export function MatrizForm({ onSuccess }: Props) {
     setFaixasError(error);
   }, [niveisRisco]);
 
-  const fetchData = async () => {
+  const fetchData = async (autoCarregar = false) => {
+    if (!profile?.empresa_id) return;
     try {
       // Buscar matrizes existentes com suas configurações
       const { data: matrizesData } = await supabase
@@ -196,6 +204,7 @@ export function MatrizForm({ onSuccess }: Props) {
             metodo_calculo
           )
         `)
+        .eq('empresa_id', profile.empresa_id)
         .order('created_at', { ascending: false });
 
       const matrizesComConfig = matrizesData?.map(matriz => ({
@@ -210,10 +219,18 @@ export function MatrizForm({ onSuccess }: Props) {
 
       setMatrizes(matrizesComConfig);
 
+      // UX: ao abrir com matriz já existente, editar a ativa em vez de um form vazio.
+      if (autoCarregar) {
+        const ativa = matrizesComConfig.find(m => m.configuracao) || matrizesComConfig[0];
+        if (ativa) carregarMatrizParaEdicao(ativa);
+        else setModoNovo(true);
+      }
+
       // Buscar categorias existentes
       const { data: categoriasData } = await supabase
         .from('riscos_categorias')
         .select('id, nome, descricao, cor')
+        .eq('empresa_id', profile.empresa_id)
         .order('created_at', { ascending: false });
 
       setCategorias(categoriasData || []);
@@ -224,6 +241,7 @@ export function MatrizForm({ onSuccess }: Props) {
 
   const carregarMatrizParaEdicao = (matriz: Matriz) => {
     setEditingMatriz(matriz);
+    setModoNovo(false);
     matrizForm.setValue('nome', matriz.nome);
     matrizForm.setValue('descricao', matriz.descricao || '');
     
@@ -231,12 +249,31 @@ export function MatrizForm({ onSuccess }: Props) {
       setEscalaProbabilidade(matriz.configuracao.escala_probabilidade);
       setEscalaImpacto(matriz.configuracao.escala_impacto);
       setNiveisRisco(matriz.configuracao.niveis_risco);
-      setMetodoCalculo((matriz.configuracao as any).metodo_calculo || 'multiplicacao');
+      setMetodoCalculo((matriz.configuracao.metodo_calculo as 'multiplicacao' | 'soma') || 'multiplicacao');
     }
   };
 
+  /** Resumo curto para distinguir matrizes na lista e no seletor. */
+  const resumoMatriz = (matriz: Matriz): string | null => {
+    const cfg = matriz.configuracao;
+    if (!cfg) return null;
+    const metodo = cfg.metodo_calculo === 'soma' ? 'P + I' : 'P × I';
+    const apetite = [...(cfg.niveis_risco || [])].find(n => n.apetite);
+    const params = {
+      p: cfg.escala_probabilidade?.length || 0,
+      i: cfg.escala_impacto?.length || 0,
+      metodo,
+    };
+    return apetite
+      ? t('sweepRiscos.riscos.matrizForm.resumo', { ...params, apetite: apetite.max })
+      : t('sweepRiscos.riscos.matrizForm.resumoSemApetite', params);
+  };
+
+
   const limparFormularioMatriz = () => {
     setEditingMatriz(null);
+    setModoNovo(false);
+
     matrizForm.reset();
     setEscalaProbabilidade([
       { valor: '1', descricao: 'Muito Raro' },
@@ -261,6 +298,25 @@ export function MatrizForm({ onSuccess }: Props) {
     setMetodoCalculo('multiplicacao');
     setFaixasError(null);
   };
+
+  /** Entrada explícita no modo de criação (evita duplicados acidentais). */
+  const iniciarNovaMatriz = () => {
+    limparFormularioMatriz();
+    setModoNovo(true);
+  };
+
+  /** Cancelar edição: descarta alterações e volta à matriz carregada. */
+  const cancelarEdicao = () => {
+    if (editingMatriz) {
+      carregarMatrizParaEdicao(editingMatriz);
+      return;
+    }
+    limparFormularioMatriz();
+    const ativa = matrizes.find(m => m.configuracao) || matrizes[0];
+    if (ativa) carregarMatrizParaEdicao(ativa);
+  };
+
+
 
   // Validação de sobreposição e gaps nas faixas de níveis de risco
   const validarFaixasNiveisRisco = (): string | null => {
@@ -296,6 +352,20 @@ export function MatrizForm({ onSuccess }: Props) {
     return null;
   };
 
+  /** Traduz falhas do Postgres/PostgREST em mensagens compreensíveis (nunca o erro cru). */
+  const mensagemErroMatriz = (error: any): string => {
+    const raw = `${error?.code || ''} ${error?.message || ''} ${error?.details || ''}`;
+    if (raw.includes('riscos_matrizes_empresa_nome_uidx') || error?.code === '23505') {
+      return t('sweepRiscos.riscos.matrizForm.erroNomeDuplicado');
+    }
+    if (raw.includes('NOME_OBRIGATORIO')) return t('sweepRiscos.riscos.matrizForm.erroNomeObrigatorio');
+    if (raw.includes('MATRIZ_NAO_ENCONTRADA')) return t('sweepRiscos.riscos.matrizForm.erroMatrizNaoEncontrada');
+    if (raw.includes('EMPRESA_NAO_ENCONTRADA') || error?.code === '42501') {
+      return t('sweepRiscos.riscos.matrizForm.erroPermissao');
+    }
+    return t('sweepRiscos.riscos.matrizForm.erroGenerico');
+  };
+
   const onSubmitMatriz = async (data: MatrizForm) => {
     if (!profile?.empresa_id) {
       toast.error(t('fin.riscos.wizard.erroEmpresa'));
@@ -312,82 +382,38 @@ export function MatrizForm({ onSuccess }: Props) {
     setLoading(true);
 
     try {
-      if (editingMatriz) {
-        // Atualizar matriz existente
-        const { error: matrizError } = await supabase
-          .from('riscos_matrizes')
-          .update({
-            nome: data.nome,
-            descricao: data.descricao
-          })
-          .eq('id', editingMatriz.id);
+      // Gravação atômica: matriz + configuração numa única transação no banco.
+      // Se a configuração falhar, a matriz não fica gravada (sem matrizes órfãs).
+      const { data: matrizId, error } = await supabase.rpc('criar_matriz_com_configuracao', {
+        p_nome: data.nome.trim(),
+        p_descricao: data.descricao || null,
+        p_escala_probabilidade: escalaProbabilidade as any,
+        p_escala_impacto: escalaImpacto as any,
+        p_niveis_risco: niveisRisco as any,
+        p_metodo_calculo: metodoCalculo,
+        p_matriz_id: editingMatriz?.id ?? null,
+      });
 
-        if (matrizError) throw matrizError;
+      if (error) throw error;
+      if (!matrizId) throw new Error('SEM_RETORNO');
 
-        // Upsert repara matrizes legadas sem configuração. O retorno é verificado:
-        // UPDATE sem linha correspondente não produz erro no PostgREST.
-        const { data: configSalva, error: configError } = await supabase
-          .from('riscos_matriz_configuracao')
-          .upsert({
-            matriz_id: editingMatriz.id,
-            escala_probabilidade: escalaProbabilidade as any,
-            escala_impacto: escalaImpacto as any,
-            niveis_risco: niveisRisco as any,
-            metodo_calculo: metodoCalculo
-          }, { onConflict: 'matriz_id' })
-          .select('matriz_id')
-          .single();
-
-        if (configError) throw configError;
-        if (!configSalva || configSalva.matriz_id !== editingMatriz.id) {
-          throw new Error(t('fin.riscos.matrizForm.configNaoConfirmada'));
-        }
-
-        toast.success(t('cardsKpi.sweep.riscos.matrizAtualizada'));
-      } else {
-        // Criar nova matriz
-        const { data: novaMatriz, error: matrizError } = await supabase
-          .from('riscos_matrizes')
-          .insert([{
-            nome: data.nome,
-            descricao: data.descricao,
-            empresa_id: profile.empresa_id
-          }])
-          .select()
-          .single();
-
-        if (matrizError) throw matrizError;
-
-        // Criar configuração da matriz (idempotente sob repetição do pedido)
-        const { data: configSalva, error: configError } = await supabase
-          .from('riscos_matriz_configuracao')
-          .upsert({
-            matriz_id: novaMatriz.id,
-            escala_probabilidade: escalaProbabilidade as any,
-            escala_impacto: escalaImpacto as any,
-            niveis_risco: niveisRisco as any,
-            metodo_calculo: metodoCalculo
-          }, { onConflict: 'matriz_id' })
-          .select('matriz_id')
-          .single();
-
-        if (configError) throw configError;
-        if (!configSalva || configSalva.matriz_id !== novaMatriz.id) {
-          throw new Error(t('fin.riscos.matrizForm.configNaoConfirmada'));
-        }
-
-        toast.success(t('cardsKpi.sweep.riscos.matrizCriada'));
-      }
+      toast.success(
+        editingMatriz
+          ? t('cardsKpi.sweep.riscos.matrizAtualizada')
+          : t('cardsKpi.sweep.riscos.matrizCriada')
+      );
 
       limparFormularioMatriz();
-      fetchData();
+      fetchData(true);
+
       // Fecha o diálogo e propaga o refresh (matriz usada em todo o módulo).
       onSuccess();
     } catch (error: any) {
-      toast.error(t('fin.riscos.matrizForm.erroSalvar', { mensagem: error.message }));
+      toast.error(mensagemErroMatriz(error));
     } finally {
       setLoading(false);
     }
+
   };
 
   // Feedback quando o submit é bloqueado pela validação (ex.: nome vazio) —
@@ -545,12 +571,21 @@ export function MatrizForm({ onSuccess }: Props) {
                 {editingMatriz ? editingMatriz.nome : t('fin.riscos.wizard.stepIdentificacao')}
               </h4>
             </div>
-            {editingMatriz && (
-              <Button variant="ghost" size="sm" onClick={limparFormularioMatriz} className="gap-1.5">
-                <XIcon className="h-3.5 w-3.5" strokeWidth={1.5} />
-                {t('sweepRiscos.riscos.matrizForm.cancelarEdicao')}
-              </Button>
-            )}
+            <div className="flex items-center gap-1.5">
+              {editingMatriz && (
+                <Button type="button" variant="ghost" size="sm" onClick={cancelarEdicao} className="gap-1.5">
+                  <XIcon className="h-3.5 w-3.5" strokeWidth={1.5} />
+                  {t('sweepRiscos.riscos.matrizForm.cancelarEdicao')}
+                </Button>
+              )}
+              {!modoNovo && (
+                <Button type="button" variant="outline" size="sm" onClick={iniciarNovaMatriz} className="gap-1.5">
+                  <Plus className="h-3.5 w-3.5" strokeWidth={1.5} />
+                  {t('sweepRiscos.riscos.matrizForm.novaMatriz')}
+                </Button>
+              )}
+            </div>
+
           </div>
 
           <Form {...matrizForm}>
@@ -885,10 +920,22 @@ export function MatrizForm({ onSuccess }: Props) {
                     )}
                   >
                     <div className="min-w-0 flex-1">
-                      <h5 className="font-medium text-sm truncate">{matriz.nome}</h5>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <h5 className="font-medium text-sm truncate">{matriz.nome}</h5>
+                        <span className={cn(
+                          'shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium',
+                          matriz.configuracao
+                            ? 'border-border bg-muted/40 text-muted-foreground'
+                            : 'border-destructive/40 bg-destructive/10 text-destructive'
+                        )}>
+                          {resumoMatriz(matriz) ?? t('sweepRiscos.riscos.matrizForm.semConfiguracao')}
+                        </span>
+                      </div>
                       {matriz.descricao && (
                         <p className="text-xs text-muted-foreground truncate">{matriz.descricao}</p>
                       )}
+
+
                     </div>
                     <div className="flex gap-1 shrink-0">
                       <Tooltip>
@@ -932,7 +979,7 @@ export function MatrizForm({ onSuccess }: Props) {
           </p>
           <div className="flex gap-2 ml-auto">
             {editingMatriz && (
-              <Button type="button" variant="outline" onClick={limparFormularioMatriz}>{t('fin.comum.cancelar')}</Button>
+              <Button type="button" variant="outline" onClick={cancelarEdicao}>{t('fin.comum.cancelar')}</Button>
             )}
             <Button
               type="submit"
