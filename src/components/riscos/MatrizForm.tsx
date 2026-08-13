@@ -920,10 +920,20 @@ export function MatrizForm({ onSuccess }: Props) {
                     )}
                   >
                     <div className="min-w-0 flex-1">
-                      <h5 className="font-medium text-sm truncate">{matriz.nome}</h5>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <h5 className="font-medium text-sm truncate">{matriz.nome}</h5>
+                        <span className={cn(
+                          'shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium',
+                          matriz.configuracao
+                            ? 'border-border bg-muted/40 text-muted-foreground'
+                            : 'border-destructive/40 bg-destructive/10 text-destructive'
+                        )}>
+                          {resumoMatriz(matriz) ?? t('sweepRiscos.riscos.matrizForm.semConfiguracao')}
+                        </span>
+                      </div>
                       {matriz.descricao && (
                         <p className="text-xs text-muted-foreground truncate">{matriz.descricao}</p>
-                      )}
+
                     </div>
                     <div className="flex gap-1 shrink-0">
                       <Tooltip>
