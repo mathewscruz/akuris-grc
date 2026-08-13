@@ -28,6 +28,8 @@ import type { ConformityStatus } from "@/lib/gap-analysis-tokens";
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { EvidenceReusePanel } from '@/components/gap-analysis/dialogs/EvidenceReusePanel';
 import { localizeRequirement } from "@/lib/gap-i18n";
+import { getAppLocale } from "@/lib/i18n-locale";
+import { useAuth } from "@/components/AuthProvider";
 import { useLanguage } from '@/contexts/LanguageContext';
 interface RequirementDetail {
   id: string;
