@@ -571,12 +571,21 @@ export function MatrizForm({ onSuccess }: Props) {
                 {editingMatriz ? editingMatriz.nome : t('fin.riscos.wizard.stepIdentificacao')}
               </h4>
             </div>
-            {editingMatriz && (
-              <Button variant="ghost" size="sm" onClick={limparFormularioMatriz} className="gap-1.5">
-                <XIcon className="h-3.5 w-3.5" strokeWidth={1.5} />
-                {t('sweepRiscos.riscos.matrizForm.cancelarEdicao')}
-              </Button>
-            )}
+            <div className="flex items-center gap-1.5">
+              {editingMatriz && (
+                <Button type="button" variant="ghost" size="sm" onClick={cancelarEdicao} className="gap-1.5">
+                  <XIcon className="h-3.5 w-3.5" strokeWidth={1.5} />
+                  {t('sweepRiscos.riscos.matrizForm.cancelarEdicao')}
+                </Button>
+              )}
+              {!modoNovo && (
+                <Button type="button" variant="outline" size="sm" onClick={iniciarNovaMatriz} className="gap-1.5">
+                  <Plus className="h-3.5 w-3.5" strokeWidth={1.5} />
+                  {t('sweepRiscos.riscos.matrizForm.novaMatriz')}
+                </Button>
+              )}
+            </div>
+
           </div>
 
           <Form {...matrizForm}>
