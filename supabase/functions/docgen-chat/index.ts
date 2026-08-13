@@ -248,7 +248,7 @@ Devolva o JSON completo com coverage_map atualizado.`;
  * tokens). Sem isso, um único caractere sobrando derrubava o documento inteiro
  * para um bloco de texto cru sem capa/seções.
  */
-function parseDocumentJson(raw: string): any | null {
+export function parseDocumentJson(raw: string): any | null {
   const text = String(raw || '')
     .replace(/```json\s*/gi, '')
     .replace(/```/g, '')
@@ -297,7 +297,7 @@ function parseDocumentJson(raw: string): any | null {
 }
 
 /** Esquema mínimo aceitável para não publicar um documento capenga. */
-function isValidDocument(doc: any): boolean {
+export function isValidDocument(doc: any): boolean {
   if (!doc || typeof doc !== 'object') return false;
   if (!Array.isArray(doc.secoes)) return false;
   const validSections = doc.secoes.filter(
