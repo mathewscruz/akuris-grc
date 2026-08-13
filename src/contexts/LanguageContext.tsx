@@ -168,7 +168,10 @@ const fallbackContext: LanguageContextType = {
     if (typeof result !== 'string') return key;
     return interpolate(result, params);
   },
+  tList: (key: string) =>
+    resolveList(dictionaries[(typeof window !== 'undefined' && (localStorage.getItem(STORAGE_KEY) as Locale)) || 'pt'], key),
 };
+
 
 export function useLanguage() {
   const context = useContext(LanguageContext);
