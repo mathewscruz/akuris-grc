@@ -9,6 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { CheckCircle2, XCircle, ExternalLink, Send, AlertCircle, RefreshCw, Monitor, Cloud } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 interface AzureConfigDialogProps {
@@ -24,11 +25,11 @@ interface AzureConfigDialogProps {
   onSaved: () => void;
 }
 
-const SYNC_OPTIONS = [
-  { id: 'intune_devices', label: 'Dispositivos do Intune', descricao: 'Sincronizar dispositivos gerenciados pelo Intune' },
-  { id: 'azure_ad_devices', label: 'Dispositivos do Azure AD', descricao: 'Sincronizar dispositivos registrados no Azure AD' },
-  { id: 'azure_ad_users', label: 'Usuários do Azure AD', descricao: 'Sincronizar lista de usuários (somente leitura)' },
-  { id: 'azure_ad_groups', label: 'Grupos do Azure AD', descricao: 'Sincronizar grupos para revisão de acessos' },
+const buildSyncOptions = (t: (k: string) => string) => [
+  { id: 'intune_devices', label: t('configIntegrations.azure.syncOptions.intuneDevices.label'), descricao: t('configIntegrations.azure.syncOptions.intuneDevices.descricao') },
+  { id: 'azure_ad_devices', label: t('configIntegrations.azure.syncOptions.azureAdDevices.label'), descricao: t('configIntegrations.azure.syncOptions.azureAdDevices.descricao') },
+  { id: 'azure_ad_users', label: t('configIntegrations.azure.syncOptions.azureAdUsers.label'), descricao: t('configIntegrations.azure.syncOptions.azureAdUsers.descricao') },
+  { id: 'azure_ad_groups', label: t('configIntegrations.azure.syncOptions.azureAdGroups.label'), descricao: t('configIntegrations.azure.syncOptions.azureAdGroups.descricao') },
 ];
 
 export function AzureConfigDialog({
@@ -38,6 +39,8 @@ export function AzureConfigDialog({
   existingConfig,
   onSaved
 }: AzureConfigDialogProps) {
+  const { t } = useLanguage();
+  const SYNC_OPTIONS = buildSyncOptions(t);
   const [tenantId, setTenantId] = useState(
     (existingConfig?.configuracoes?.tenant_id as string) || ''
   );
@@ -59,7 +62,7 @@ export function AzureConfigDialog({
 
   const handleTestConnection = async () => {
     if (!tenantId || !clientId || (!clientSecret && !existingConfig)) {
-      toast.error('Campos obrigatórios', { description: 'Preencha Tenant ID, Client ID e Client Secret.' });
+      toast.error(t('configIntegrations.azure.toastCamposObrigatorios'), { description: t('configIntegrations.azure.toastCamposDesc') });
       return;
     }
 
@@ -81,16 +84,16 @@ export function AzureConfigDialog({
 
       if (data?.success) {
         setTestResult('success');
-        toast.success('Conexão bem-sucedida!', {
-          description: `Conectado ao tenant: ${data.tenant_name || tenantId}`
+        toast.success(t('configIntegrations.azure.toastConexaoOk'), {
+          description: t('configIntegrations.azure.toastConexaoOkDesc').replace('{tenant}', data.tenant_name || tenantId)
         });
       } else {
         throw new Error(data?.error || 'Falha no teste');
       }
     } catch (error: any) {
       setTestResult('error');
-      toast.error('Falha na conexão', {
-        description: error.message || 'Verifique as credenciais.'
+      toast.error(t('configIntegrations.azure.toastConexaoFalha'), {
+        description: error.message || t('configIntegrations.azure.toastConexaoFalhaDesc')
       });
     } finally {
       setTesting(false);
@@ -99,7 +102,7 @@ export function AzureConfigDialog({
 
   const handleSyncNow = async () => {
     if (!existingConfig?.id) {
-      toast.error('Salve a configuração primeiro');
+      toast.error(t('configIntegrations.azure.toastSalvePrimeiro'));
       return;
     }
 
@@ -120,14 +123,14 @@ export function AzureConfigDialog({
           count: data.devices_synced || 0,
           date: new Date().toLocaleString('pt-BR')
         });
-        toast.success('Sincronização concluída!', {
-          description: `${data.devices_synced || 0} dispositivos sincronizados.`
+        toast.success(t('configIntegrations.azure.toastSyncOk'), {
+          description: t('configIntegrations.azure.toastSyncOkDesc').replace('{count}', String(data.devices_synced || 0))
         });
       } else {
         throw new Error(data?.error || 'Falha na sincronização');
       }
     } catch (error: any) {
-      toast.error('Erro na sincronização', { description: error.message });
+      toast.error(t('configIntegrations.azure.toastSyncErro'), { description: error.message });
     } finally {
       setSyncing(false);
     }
@@ -180,13 +183,13 @@ export function AzureConfigDialog({
       // Salvar credenciais de forma segura (em produção, usar Vault)
       // Por enquanto, armazenamos criptografado na config
 
-      toast.success('Azure configurado!', {
-        description: 'Dispositivos serão sincronizados conforme configurado.'
+      toast.success(t('configIntegrations.azure.toastConfigurado'), {
+        description: t('configIntegrations.azure.toastConfiguradoDesc')
       });
       onSaved();
       onOpenChange(false);
     } catch (error: any) {
-      toast.error('Erro ao salvar', { description: error.message });
+      toast.error(t('configIntegrations.azure.toastErroSalvar'), { description: error.message });
     } finally {
       setSaving(false);
     }
@@ -203,11 +206,11 @@ export function AzureConfigDialog({
         .eq('id', existingConfig.id);
       if (error) throw error;
 
-      toast.success('Azure desconectado');
+      toast.success(t('configIntegrations.azure.toastDesconectado'));
       onSaved();
       onOpenChange(false);
     } catch (error: any) {
-      toast.error('Erro ao desconectar', { description: error.message });
+      toast.error(t('configIntegrations.azure.toastErroDesconectar'), { description: error.message });
     } finally {
       setSaving(false);
     }
@@ -231,16 +234,16 @@ export function AzureConfigDialog({
           disabled={saving}
           className="sm:mr-auto"
         >
-          Desconectar
+          {t('configIntegrations.azure.btnDesconectar')}
         </Button>
       )}
       <div className="flex gap-2 sm:ml-auto">
         <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)} disabled={saving}>
-          Cancelar
+          {t('configIntegrations.azure.btnCancelar')}
         </Button>
         <Button size="sm" onClick={handleSave} disabled={saving || !tenantId || !clientId}>
           {saving && <AkurisPulse size={16} className="mr-2" />}
-          Salvar
+          {t('configIntegrations.azure.btnSalvar')}
         </Button>
       </div>
     </div>
@@ -250,8 +253,8 @@ export function AzureConfigDialog({
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      title="Configurar Microsoft Azure / Intune"
-      description="Sincronize dispositivos do Intune e Azure AD com o módulo de Ativos."
+      title={t('configIntegrations.azure.title')}
+      description={t('configIntegrations.azure.description')}
       icon={Cloud}
       size="lg"
       footer={footer}
@@ -261,8 +264,8 @@ export function AzureConfigDialog({
     >
       <Tabs defaultValue="config" className="w-full h-full flex flex-col">
         <TabsList className="mx-6 mt-4 flex-shrink-0" style={{ width: 'calc(100% - 3rem)' }}>
-          <TabsTrigger value="config">Configuração</TabsTrigger>
-          <TabsTrigger value="sync">Sincronização</TabsTrigger>
+          <TabsTrigger value="config">{t('configIntegrations.azure.tabConfig')}</TabsTrigger>
+          <TabsTrigger value="sync">{t('configIntegrations.azure.tabSync')}</TabsTrigger>
         </TabsList>
 
         <ScrollArea className="flex-1 min-h-0">
@@ -271,27 +274,27 @@ export function AzureConfigDialog({
             <div className="p-3 rounded-lg bg-muted/50 border space-y-2">
               <h4 className="font-medium text-sm flex items-center gap-2">
                 <AlertCircle className="h-4 w-4 text-primary" />
-                Como configurar o App Registration
+                {t('configIntegrations.azure.instrucoesTitle')}
               </h4>
               <ol className="text-xs text-muted-foreground space-y-1 ml-6 list-decimal">
-                <li>Acesse o <a href="https://portal.azure.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Portal Azure</a></li>
-                <li>Vá em Azure Active Directory → App registrations → New registration</li>
-                <li>Crie o app e anote o <strong>Application (client) ID</strong> e <strong>Directory (tenant) ID</strong></li>
-                <li>Em Certificates & secrets, crie um Client Secret</li>
-                <li>Em API permissions, adicione:
+                <li>{t('configIntegrations.azure.instrucao1')} <a href="https://portal.azure.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{t('configIntegrations.azure.instrucao1Link')}</a></li>
+                <li>{t('configIntegrations.azure.instrucao2')}</li>
+                <li>{t('configIntegrations.azure.instrucao3Pre')} <strong>{t('configIntegrations.azure.instrucao3Client')}</strong> {t('configIntegrations.azure.instrucao3E')} <strong>{t('configIntegrations.azure.instrucao3Tenant')}</strong></li>
+                <li>{t('configIntegrations.azure.instrucao4')}</li>
+                <li>{t('configIntegrations.azure.instrucao5')}
                   <ul className="ml-4 mt-1 list-disc">
-                    <li>DeviceManagementManagedDevices.Read.All (Intune)</li>
-                    <li>Device.Read.All (Azure AD Devices)</li>
-                    <li>User.Read.All (opcional, para usuários)</li>
+                    <li>{t('configIntegrations.azure.perm1')}</li>
+                    <li>{t('configIntegrations.azure.perm2')}</li>
+                    <li>{t('configIntegrations.azure.perm3')}</li>
                   </ul>
                 </li>
-                <li>Clique em "Grant admin consent"</li>
+                <li>{t('configIntegrations.azure.instrucao6')}</li>
               </ol>
             </div>
 
             {/* Tenant ID */}
             <div className="space-y-2">
-              <Label htmlFor="azure-tenant">Directory (Tenant) ID *</Label>
+              <Label htmlFor="azure-tenant">{t('configIntegrations.azure.fieldTenant')}</Label>
               <Input
                 id="azure-tenant"
                 placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
@@ -305,7 +308,7 @@ export function AzureConfigDialog({
 
             {/* Client ID */}
             <div className="space-y-2">
-              <Label htmlFor="azure-client">Application (Client) ID *</Label>
+              <Label htmlFor="azure-client">{t('configIntegrations.azure.fieldClient')}</Label>
               <Input
                 id="azure-client"
                 placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
@@ -320,7 +323,7 @@ export function AzureConfigDialog({
             {/* Client Secret */}
             <div className="space-y-2">
               <Label htmlFor="azure-secret">
-                Client Secret {existingConfig ? '(deixe em branco para manter)' : '*'}
+                {t('configIntegrations.azure.fieldSecret')} {existingConfig ? t('configIntegrations.azure.fieldSecretKeep') : '*'}
               </Label>
               <Input
                 id="azure-secret"
@@ -351,14 +354,14 @@ export function AzureConfigDialog({
                 ) : (
                   <Send className="h-4 w-4 mr-2" />
                 )}
-                Testar Conexão
+                {t('configIntegrations.azure.btnTestar')}
               </Button>
             </div>
             {testResult === 'success' && (
-              <p className="text-xs text-green-600">✓ Conexão com Azure estabelecida</p>
+              <p className="text-xs text-green-600">{t('configIntegrations.azure.testSuccess')}</p>
             )}
             {testResult === 'error' && (
-              <p className="text-xs text-destructive">✗ Falha na conexão - verifique as credenciais</p>
+              <p className="text-xs text-destructive">{t('configIntegrations.azure.testError')}</p>
             )}
 
             {/* Link documentação */}
@@ -368,7 +371,7 @@ export function AzureConfigDialog({
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
             >
-              Ver documentação do Microsoft Graph
+              {t('configIntegrations.azure.linkDocs')}
               <ExternalLink className="h-3 w-3" />
             </a>
           </TabsContent>
@@ -376,7 +379,7 @@ export function AzureConfigDialog({
           <TabsContent value="sync" className="space-y-6 px-6 py-4 mt-0">
             {/* Opções de sincronização */}
             <div className="space-y-3">
-              <Label>O que sincronizar</Label>
+              <Label>{t('configIntegrations.azure.syncOptionsLabel')}</Label>
               <div className="space-y-3">
                 {SYNC_OPTIONS.map(option => (
                   <div
@@ -408,12 +411,12 @@ export function AzureConfigDialog({
 
             {/* Intervalo de sincronização */}
             <div className="space-y-2">
-              <Label>Frequência de sincronização</Label>
+              <Label>{t('configIntegrations.azure.syncFreqLabel')}</Label>
               <div className="flex gap-2">
                 {[
-                  { value: 'manual', label: 'Manual' },
-                  { value: 'daily', label: 'Diária' },
-                  { value: 'weekly', label: 'Semanal' },
+                  { value: 'manual', label: t('configIntegrations.azure.freqManual') },
+                  { value: 'daily', label: t('configIntegrations.azure.freqDaily') },
+                  { value: 'weekly', label: t('configIntegrations.azure.freqWeekly') },
                 ].map(opt => (
                   <Button
                     key={opt.value}
@@ -432,9 +435,9 @@ export function AzureConfigDialog({
               <div className="space-y-3 p-4 rounded-lg border bg-muted/30">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h4 className="font-medium text-sm">Sincronização Manual</h4>
+                    <h4 className="font-medium text-sm">{t('configIntegrations.azure.syncManualTitle')}</h4>
                     <p className="text-xs text-muted-foreground">
-                      Sincronize os dispositivos agora
+                      {t('configIntegrations.azure.syncManualDesc')}
                     </p>
                   </div>
                   <Button
@@ -446,14 +449,14 @@ export function AzureConfigDialog({
                     ) : (
                       <RefreshCw className="h-4 w-4 mr-2" />
                     )}
-                    Sincronizar Agora
+                    {t('configIntegrations.azure.btnSyncNow')}
                   </Button>
                 </div>
 
                 {lastSyncInfo && (
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <CheckCircle2 className="h-3 w-3 text-green-500" />
-                    Última sincronização: {lastSyncInfo.count} dispositivos em {lastSyncInfo.date}
+                    {t('configIntegrations.azure.lastSync').replace('{count}', String(lastSyncInfo.count)).replace('{date}', lastSyncInfo.date)}
                   </div>
                 )}
               </div>
@@ -461,14 +464,14 @@ export function AzureConfigDialog({
 
             {/* Mapeamento */}
             <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/30">
-              <h4 className="font-medium text-sm text-blue-600 mb-2">Mapeamento de Dados</h4>
+              <h4 className="font-medium text-sm text-blue-600 mb-2">{t('configIntegrations.azure.mappingTitle')}</h4>
               <div className="text-xs text-muted-foreground space-y-1">
-                <p>• <strong>Nome do dispositivo</strong> → Nome do Ativo</p>
-                <p>• <strong>Modelo</strong> → Descrição</p>
-                <p>• <strong>Sistema Operacional</strong> → Tipo de Ativo</p>
-                <p>• <strong>Usuário Principal</strong> → Proprietário</p>
-                <p>• <strong>Compliance State</strong> → Status</p>
-                <p>• <strong>Serial Number</strong> → Tags</p>
+                <p>• <strong>{t('configIntegrations.azure.mapNome')}</strong> {t('configIntegrations.azure.mapNomeArrow')}</p>
+                <p>• <strong>{t('configIntegrations.azure.mapModelo')}</strong> {t('configIntegrations.azure.mapModeloArrow')}</p>
+                <p>• <strong>{t('configIntegrations.azure.mapOs')}</strong> {t('configIntegrations.azure.mapOsArrow')}</p>
+                <p>• <strong>{t('configIntegrations.azure.mapUser')}</strong> {t('configIntegrations.azure.mapUserArrow')}</p>
+                <p>• <strong>{t('configIntegrations.azure.mapCompliance')}</strong> {t('configIntegrations.azure.mapComplianceArrow')}</p>
+                <p>• <strong>{t('configIntegrations.azure.mapSerial')}</strong> {t('configIntegrations.azure.mapSerialArrow')}</p>
               </div>
             </div>
           </TabsContent>
