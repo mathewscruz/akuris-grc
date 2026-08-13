@@ -14,6 +14,8 @@ interface FrameworkRow {
   nome: string;
   total: number;
   traduzidos: number;
+  /** Requisitos com orientação (guidance) já salva em inglês. */
+  guidanceEn: number;
 }
 
 /**
