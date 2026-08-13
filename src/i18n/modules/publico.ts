@@ -5,6 +5,7 @@
  */
 export const publico = {
   pt: {
+    publico: {
     landing: {
       seoTitle: 'Akuris — Plataforma GRC para Governança, Riscos e Conformidade',
       seoDesc:
@@ -333,8 +334,10 @@ export const publico = {
       cook3: 'Analisar métricas de uso para melhorar nossos serviços',
       dpo: 'Encarregado de Proteção de Dados (DPO)',
     },
+    },
   },
   en: {
+    publico: {
     landing: {
       seoTitle: 'Akuris — GRC Platform for Governance, Risk and Compliance',
       seoDesc:
@@ -662,6 +665,7 @@ export const publico = {
       cook2: 'Remember your usage preferences',
       cook3: 'Analyse usage metrics to improve our services',
       dpo: 'Data Protection Officer (DPO)',
+    },
     },
   },
 } as const;
