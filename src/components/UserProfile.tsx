@@ -85,11 +85,11 @@ const UserProfile: React.FC = () => {
       case 'super_admin':
         return 'Super Admin';
       case 'admin':
-        return 'Administrador';
+        return t('cardsKpi.sweep.sistema.roleAdmin');
       case 'user':
-        return 'Usuário';
+        return t('cardsKpi.sweep.sistema.roleUser');
       case 'readonly':
-        return 'Somente Leitura';
+        return t('cardsKpi.sweep.sistema.roleReadonly');
       default:
         return role;
     }

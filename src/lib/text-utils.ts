@@ -3,6 +3,21 @@ import { getAppLocale } from '@/lib/i18n-locale';
 
 // Mapa de traduções para português correto com acentos
 const STATUS_LABELS: Record<string, string> = {
+  // Tipos de contrato / fornecedor
+  'servico': 'Serviço',
+  'servicos': 'Serviços',
+  'produto': 'Produto',
+  'produtos': 'Produtos',
+  'software': 'Software',
+  'consultoria': 'Consultoria',
+  'prestacao_servicos': 'Prestação de Serviços',
+  'fornecimento': 'Fornecimento',
+  'locacao': 'Locação',
+  'manutencao': 'Manutenção',
+  'licenciamento': 'Licenciamento',
+  'parceria': 'Parceria',
+  'nda': 'NDA',
+  'outro': 'Outro',
   // Tipos de Ativos/Sistemas
   'aplicacao': 'Aplicação',
   'banco_dados': 'Banco de Dados',
@@ -283,6 +298,20 @@ const STATUS_LABELS: Record<string, string> = {
 
 // English translations for STATUS_LABELS keys
 const STATUS_LABELS_EN: Record<string, string> = {
+  servico: 'Service',
+  servicos: 'Services',
+  produto: 'Product',
+  produtos: 'Products',
+  software: 'Software',
+  consultoria: 'Consulting',
+  prestacao_servicos: 'Service Provision',
+  fornecimento: 'Supply',
+  locacao: 'Lease',
+  manutencao: 'Maintenance',
+  licenciamento: 'Licensing',
+  parceria: 'Partnership',
+  nda: 'NDA',
+  outro: 'Other',
   aplicacao: 'Application', banco_dados: 'Database', sistema_operacional: 'Operating System',
   hardware: 'Hardware', software: 'Software', rede: 'Network', nuvem: 'Cloud',
   servidor: 'Server', dispositivo: 'Device', seguranca: 'Security', comunicacao: 'Communication',
