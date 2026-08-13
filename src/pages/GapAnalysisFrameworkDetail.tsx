@@ -42,6 +42,7 @@ import { logger } from '@/lib/logger';
 import { FRAMEWORK_DESCRIPTIONS } from '@/lib/framework-descriptions';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { reqTitulo, reqCategoria, fwNome, fwDescricao } from "@/lib/gap-i18n";
 
 interface Framework {
   id: string;
@@ -106,7 +107,7 @@ function GapAnalysisFrameworkDetailInner() {
     if (!frameworkId || !empresaId) return;
     try {
       const [reqsRes, evalsRes] = await Promise.all([
-        supabase.from('gap_analysis_requirements').select('id, categoria').eq('framework_id', frameworkId),
+        supabase.from('gap_analysis_requirements').select('id, categoria, categoria_en').eq('framework_id', frameworkId),
         supabase.from('gap_analysis_evaluations').select('requirement_id, conformity_status').eq('framework_id', frameworkId).eq('empresa_id', empresaId),
       ]);
       const reqs = reqsRes.data || [];
@@ -114,7 +115,7 @@ function GapAnalysisFrameworkDetailInner() {
       const evalMap = new Map(evals.map(e => [e.requirement_id, e.conformity_status || 'nao_avaliado']));
       const catMap: Record<string, { conforme: number; parcial: number; nao_conforme: number; nao_aplicavel: number; nao_avaliado: number; total: number }> = {};
       reqs.forEach(r => {
-        const cat = r.categoria || 'Outros';
+        const cat = reqCategoria(r as any) || 'Outros';
         if (!catMap[cat]) catMap[cat] = { conforme: 0, parcial: 0, nao_conforme: 0, nao_aplicavel: 0, nao_avaliado: 0, total: 0 };
         catMap[cat].total++;
         const st = evalMap.get(r.id) || 'nao_avaliado';
@@ -170,7 +171,7 @@ function GapAnalysisFrameworkDetailInner() {
   const getExportData = async () => {
     const { data: reqs } = await supabase
       .from('gap_analysis_requirements')
-      .select('id, codigo, titulo, categoria, peso, area_responsavel')
+      .select('id, codigo, titulo, categoria, peso, area_responsavel, titulo_en, categoria_en')
       .eq('framework_id', frameworkId)
       .order('ordem', { ascending: true });
 
@@ -182,7 +183,7 @@ function GapAnalysisFrameworkDetailInner() {
 
     const evalMap = new Map(evals?.map(e => [e.requirement_id, e.conformity_status]) || []);
     const requirements = (reqs || []).map(r => ({
-      codigo: r.codigo || '', titulo: r.titulo, categoria: r.categoria || '',
+      codigo: r.codigo || '', titulo: reqTitulo(r as any), categoria: reqCategoria(r as any) || '',
       conformity_status: evalMap.get(r.id) || 'nao_avaliado', peso: r.peso, area_responsavel: r.area_responsavel,
     }));
 
@@ -255,7 +256,7 @@ function GapAnalysisFrameworkDetailInner() {
 
         <PageHeader
           title={`${framework.nome} ${framework.versao}`}
-          description={framework.descricao || FRAMEWORK_DESCRIPTIONS[framework.nome] || t('gapAnalysis.detail.defaultDescription', { tipo: framework.tipo_framework })}
+          description={fwDescricao(framework) || FRAMEWORK_DESCRIPTIONS[framework.nome] || t('gapAnalysis.detail.defaultDescription', { tipo: framework.tipo_framework })}
           actions={
             <div className="flex items-center gap-2 flex-wrap">
               {/* Ação primária — Consultor IA (ícone proprietário Akuris) */}

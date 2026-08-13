@@ -19,6 +19,8 @@ import { KpiTiny } from './KpiTiny';
 import { AIBadge } from './AIBadge';
 import { SectionHead } from './SectionHead';
 import { CornerAccent } from '@/components/identity/CornerAccent';
+import { reqTitulo } from "@/lib/gap-i18n";
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Props {
   frameworkId: string;
@@ -57,17 +59,18 @@ const STATUS_LABEL: Record<string, string> = {
   atrasado: 'Atrasado',
 };
 
-const COLUMNS: Array<{ key: string; label: string; match: (s: string) => boolean }> = [
-  { key: 'a_iniciar', label: 'A iniciar', match: (s) => s === 'pendente' },
-  { key: 'em_andamento', label: 'Em andamento', match: (s) => s === 'em_andamento' || s === 'atrasado' },
-  { key: 'em_revisao', label: 'Em revisão', match: (s) => s === 'em_revisao' },
-  { key: 'concluido', label: 'Concluído', match: (s) => s === 'concluido' },
+const COLUMNS: Array<{ key: string; labelKey: string; match: (s: string) => boolean }> = [
+  { key: 'a_iniciar', labelKey: 'gapV2.remediation.colToStart', match: (s) => s === 'pendente' },
+  { key: 'em_andamento', labelKey: 'gapV2.remediation.colInProgress', match: (s) => s === 'em_andamento' || s === 'atrasado' },
+  { key: 'em_revisao', labelKey: 'gapV2.remediation.colInReview', match: (s) => s === 'em_revisao' },
+  { key: 'concluido', labelKey: 'gapV2.remediation.colDone', match: (s) => s === 'concluido' },
 ];
 
 export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
   const { profile } = useAuth();
   const empresaId = profile?.empresa_id;
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [planos, setPlanos] = useState<PlanoAcao[]>([]);
   const [naoConformes, setNaoConformes] = useState<NaoConformeReq[]>([]);
   const [loading, setLoading] = useState(true);
@@ -86,7 +89,7 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
             .eq('empresa_id', empresaId),
           supabase
             .from('gap_analysis_requirements')
-            .select('id, codigo, titulo, categoria, peso')
+            .select('id, codigo, titulo, categoria, peso, titulo_en, categoria_en')
             .eq('framework_id', frameworkId),
         ]);
 
@@ -128,7 +131,7 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
               responsavel_nome: p.responsavel_id ? (profMap.get(p.responsavel_id) || null) : null,
               requirement_id: reqId || '',
               requirement_codigo: req?.codigo || '',
-              requirement_titulo: req?.titulo || '',
+              requirement_titulo: reqTitulo(req as any) || '',
               requirement_categoria: req?.categoria || null,
             };
           });
@@ -142,7 +145,7 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
           .map((r: any) => ({
             id: r.id,
             codigo: r.codigo || '',
-            titulo: r.titulo,
+            titulo: reqTitulo(r as any),
             categoria: r.categoria || 'Outros',
             peso: r.peso,
           }));
@@ -221,7 +224,7 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
     return (
       <div className="min-h-[280px] flex flex-col items-center justify-center gap-3">
         <AkurisPulse size={56} />
-        <p className="text-sm text-muted-foreground">Carregando remediação...</p>
+        <p className="text-sm text-muted-foreground">{t('gapV2.remediation.loading')}</p>
       </div>
     );
   }
@@ -231,29 +234,29 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <KpiTiny
-          eyebrow="GAPS ABERTOS"
+          eyebrow={t('gapV2.remediation.kpiOpenGaps')}
           value={kpis.gapsAbertos}
-          foot="requisitos não conformes"
+          foot={t('gapV2.remediation.footNonCompliantReqs')}
           tone={kpis.gapsAbertos > 0 ? 'destructive' : 'success'}
         />
         <KpiTiny
-          eyebrow="PLANOS CONSOLIDADOS"
+          eyebrow={t('gapV2.remediation.kpiConsolidatedPlans')}
           value={aiClusters.length}
           foot={aiClusters.length > 0
-            ? `cobre ${aiClusters.reduce((s, c) => s + c.items.length, 0)} gaps`
-            : 'sem agrupamentos'}
+            ? t('gapV2.remediation.footCovers', { count: aiClusters.reduce((s, c) => s + c.items.length, 0) })
+            : t('gapV2.remediation.footNoGroupings')}
           tone="primary"
         />
         <KpiTiny
-          eyebrow="EM EXECUÇÃO"
+          eyebrow={t('gapV2.remediation.kpiInExecution')}
           value={kpis.emExecucao}
-          foot="planos ativos"
+          foot={t('gapV2.remediation.footActivePlans')}
           tone="info"
         />
         <KpiTiny
-          eyebrow="IMPACTO POTENCIAL"
+          eyebrow={t('gapV2.remediation.kpiPotentialImpact')}
           value={`+${kpis.impactoPotencial}pts`}
-          foot="se resolver todos os gaps"
+          foot={t('gapV2.remediation.footIfResolveAll')}
           tone={kpis.impactoPotencial > 0 ? 'success' : 'neutral'}
         />
       </div>
@@ -263,25 +266,25 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
         <section className="space-y-3">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <SectionHead
-              title="Planos consolidados"
+              title={t('gapV2.remediation.consolidatedPlansTitle')}
               count={aiClusters.length}
             />
             <SegmentToggle
               value={grouping}
               onChange={(v) => setGrouping(v as 'causa' | 'secao' | 'esforco')}
               options={[
-                { value: 'causa', label: 'Por causa-raiz' },
-                { value: 'secao', label: 'Por seção' },
-                { value: 'esforco', label: 'Por esforço' },
+                { value: 'causa', label: t('gapV2.remediation.segByRootCause') },
+                { value: 'secao', label: t('gapV2.remediation.segBySection') },
+                { value: 'esforco', label: t('gapV2.remediation.segByEffort') },
               ]}
             />
           </div>
 
           <p className="text-xs text-muted-foreground">
             <Sparkles className="inline h-3 w-3 mr-1 text-primary" strokeWidth={1.5} />
-            Seus <strong className="text-foreground">{naoConformes.length} gaps</strong> foram agrupados em{' '}
-            <strong className="text-foreground">{aiClusters.length} planos consolidados</strong>{' '}
-            que cobrem <strong className="text-foreground">{aiClusters.reduce((s, c) => s + c.items.length, 0)} requisitos</strong>.
+            {t('gapV2.remediation.summaryPrefix')} <strong className="text-foreground">{t('gapV2.remediation.summaryGaps', { count: naoConformes.length })}</strong> {t('gapV2.remediation.summaryGroupedInto')}{' '}
+            <strong className="text-foreground">{t('gapV2.remediation.summaryConsolidatedPlans', { count: aiClusters.length })}</strong>{' '}
+            {t('gapV2.remediation.summaryCovering')} <strong className="text-foreground">{t('gapV2.remediation.summaryRequirements', { count: aiClusters.reduce((s, c) => s + c.items.length, 0) })}</strong>.
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -293,15 +296,15 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
                 <CornerAccent position="top-right" size={10} />
                 <span className="absolute left-0 top-3 bottom-3 w-[2px] rounded-r bg-primary" />
                 <div className="flex items-center gap-1.5 text-[10px] font-sans uppercase tracking-wider text-primary">
-                  Cobre {c.items.length} requisitos
+                  {t('gapV2.remediation.covers', { count: c.items.length })}
                 </div>
                 <h4 className="mt-1 text-sm font-semibold leading-snug">
-                  {grouping === 'esforco' ? `Plano consolidado · ${c.categoria}` : `Tratar ${c.categoria}`}
+                  {grouping === 'esforco' ? t('gapV2.remediation.consolidatedPlanFor', { category: c.categoria }) : t('gapV2.remediation.treatCategory', { category: c.categoria })}
                 </h4>
                 <p className="mt-1.5 text-xs text-muted-foreground line-clamp-2">
                   {grouping === 'esforco'
-                    ? 'Agrupamento por carga estimada — execute em paralelo para otimizar entrega.'
-                    : 'Causa-raiz comum identificada. Um único plano pode endereçar todos os requisitos.'}
+                    ? t('gapV2.remediation.byEffortDesc')
+                    : t('gapV2.remediation.byRootCauseDesc')}
                 </p>
 
                 {/* Chips de códigos */}
@@ -322,9 +325,9 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
                 </div>
 
                 <div className="mt-3 flex items-center gap-2 text-[11px] text-muted-foreground">
-                  <span><strong className="text-foreground">{c.esforco === 'L' ? 'Baixo' : c.esforco === 'M' ? 'Médio' : 'Alto'}</strong> esforço</span>
+                  <span><strong className="text-foreground">{c.esforco === 'L' ? t('gapV2.remediation.effortLow') : c.esforco === 'M' ? t('gapV2.remediation.effortMedium') : t('gapV2.remediation.effortHigh')}</strong> {t('gapV2.remediation.effortSuffix')}</span>
                   <span>·</span>
-                  <span><strong className="text-foreground">{c.dias}d</strong> estimado</span>
+                  <span><strong className="text-foreground">{c.dias}d</strong> {t('gapV2.remediation.estimated')}</span>
                   <span>·</span>
                   <span className="text-success">+{c.peso} pts impacto</span>
                 </div>
@@ -334,7 +337,7 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
                   onClick={() => navigate('/planos-acao')}
                   className="mt-3 inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
                 >
-                  Criar plano
+                  {t('gapV2.remediation.createPlan')}
                   <ArrowRight className="h-3 w-3" strokeWidth={1.5} />
                 </button>
               </article>
@@ -347,18 +350,18 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
       <section className="space-y-3">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <SectionHead
-            title="Planos de ação"
+            title={t('gapV2.remediation.actionPlansTitle')}
             count={planos.length}
           />
           <div className="inline-flex items-center rounded-full border border-border bg-card p-0.5">
             <ViewBtn icon={LayoutGrid} active={boardView === 'quadro'} onClick={() => setBoardView('quadro')}>
-              Quadro
+              {t('gapV2.remediation.viewBoard')}
             </ViewBtn>
             <ViewBtn icon={List} active={boardView === 'lista'} onClick={() => setBoardView('lista')} disabled>
-              Lista
+              {t('gapV2.remediation.viewList')}
             </ViewBtn>
             <ViewBtn icon={GitBranch} active={boardView === 'timeline'} onClick={() => setBoardView('timeline')} disabled>
-              Timeline
+              {t('gapV2.remediation.viewTimeline')}
             </ViewBtn>
           </div>
         </div>
@@ -366,9 +369,9 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
         {planos.length === 0 ? (
           <div className="rounded-xl border border-dashed border-border bg-card py-12 text-center">
             <ClipboardList className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" strokeWidth={1.5} />
-            <p className="text-sm font-medium">Crie um plano de ação a partir de um requisito não conforme.</p>
+            <p className="text-sm font-medium">{t('gapV2.remediation.emptyCreatePlan')}</p>
             <p className="text-xs text-muted-foreground mt-1 max-w-md mx-auto">
-              Marque requisitos como "Não Conforme" e crie planos de ação a partir do drawer do requisito.
+              {t('gapV2.remediation.emptyCreatePlanDesc')}
             </p>
           </div>
         ) : (
@@ -380,7 +383,7 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
                   <div className="flex items-center justify-between mb-3 px-1">
                     <span className="inline-flex items-center gap-2 text-[11px] font-sans uppercase tracking-wider text-muted-foreground">
                       <span className={cn('h-1.5 w-1.5 rounded-full', COL_DOT[col.key])} />
-                      {col.label}
+                      {t(col.labelKey)}
                     </span>
                     <span className="text-xs text-muted-foreground tabular-nums">
                       {items.length}
@@ -405,7 +408,7 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
                         <p className="text-xs font-medium leading-snug line-clamp-2">{p.titulo}</p>
                         <div className="mt-2 flex items-center justify-between text-[10px] text-muted-foreground">
                           <span className="truncate">
-                            {p.responsavel_nome || 'Sem responsável'}
+                            {p.responsavel_nome || t('gapV2.remediation.noResponsible')}
                           </span>
                           {p.prazo && (
                             <span
@@ -486,6 +489,7 @@ function ViewBtn({
   disabled?: boolean;
   children: React.ReactNode;
 }) {
+  const { t } = useLanguage();
   const btn = (
     <button
       type="button"
@@ -505,7 +509,7 @@ function ViewBtn({
     return (
       <Tooltip>
         <TooltipTrigger asChild>{btn}</TooltipTrigger>
-        <TooltipContent><span className="text-xs">Em breve</span></TooltipContent>
+        <TooltipContent><span className="text-xs">{t('gapV2.remediation.comingSoon')}</span></TooltipContent>
       </Tooltip>
     );
   }

@@ -24,6 +24,10 @@ import { FrameworkConfig, NIST_PILLAR_NAMES } from "@/lib/framework-configs";
 import { RequirementDetailDialog } from "./dialogs/RequirementDetailDialog";
 import { saveScoreHistory } from "@/hooks/useScoreHistory";
 import { AkurisPulse } from "@/components/ui/AkurisPulse";
+import { reqTitulo, reqDescricao, reqOrientacao, reqEvidencias } from "@/lib/gap-i18n";
+import { getAppLocale } from "@/lib/i18n-locale";
+
+
 
 interface Requirement {
   id: string;
@@ -157,7 +161,12 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
         return {
           ...req,
           codigo: req.codigo || '',
-          descricao: req.descricao || '',
+          // Exibição bilíngue: o campo PT segue como chave de agrupamento/scoring,
+          // apenas o texto mostrado troca conforme o idioma ativo.
+          titulo: reqTitulo(req),
+          descricao: reqDescricao(req) || '',
+          orientacao_implementacao: reqOrientacao(req) || null,
+          exemplos_evidencias: reqEvidencias(req) || null,
           categoria: req.categoria || 'Outros',
           conformity_status: evaluation?.conformity_status || 'nao_avaliado',
           evaluation_id: evaluation?.id || null,
@@ -168,6 +177,7 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
           responsavel_avaliacao: evaluation?.responsavel_avaliacao || null,
         };
       });
+
 
       setRequirements(merged);
     } catch (error: any) {
@@ -284,10 +294,21 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
     return totalWeight > 0 ? weightedScore / totalWeight : 0;
   };
 
+  // Mapa categoria (PT, chave de agrupamento) -> rótulo em inglês vindo do banco.
+  const categoriaEnMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    requirements.forEach((r: any) => {
+      if (r.categoria && r.categoria_en) map[r.categoria] = r.categoria_en;
+    });
+    return map;
+  }, [requirements]);
+
   const translateCategory = (cat: string) => {
     if (frameworkName.toLowerCase().includes('nist')) return NIST_PILLAR_NAMES[cat] || cat;
+    if (getAppLocale() === 'en') return categoriaEnMap[cat] || cat;
     return cat;
   };
+
 
   const handleRowClick = (requirement: Requirement) => {
     setSelectedRequirement(requirement);

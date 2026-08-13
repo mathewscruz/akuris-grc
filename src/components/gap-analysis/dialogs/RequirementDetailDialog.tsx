@@ -27,6 +27,8 @@ import type { ConformityStatus } from "@/lib/gap-analysis-tokens";
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { EvidenceReusePanel } from '@/components/gap-analysis/dialogs/EvidenceReusePanel';
+import { localizeRequirement } from "@/lib/gap-i18n";
+import { useLanguage } from '@/contexts/LanguageContext';
 interface RequirementDetail {
   id: string;
   codigo: string;
@@ -68,18 +70,21 @@ interface EvaluationData {
 // ---------------------------------------------------------------------------
 // Status Segmented Control — barra inline para mudar conformity_status
 // ---------------------------------------------------------------------------
-const STATUS_OPTIONS: Array<{ value: ConformityStatus; label: string; activeClass: string }> = [
-  { value: 'conforme', label: 'Conforme', activeClass: 'bg-success text-success-foreground hover:bg-success/90 border-success' },
-  { value: 'parcial', label: 'Parcial', activeClass: 'bg-warning text-warning-foreground hover:bg-warning/90 border-warning' },
-  { value: 'nao_conforme', label: 'Não Conforme', activeClass: 'bg-destructive text-destructive-foreground hover:bg-destructive/90 border-destructive' },
-  { value: 'nao_aplicavel', label: 'N/A', activeClass: 'bg-secondary text-secondary-foreground hover:bg-secondary/90 border-secondary' },
+const getStatusOptions = (t: (key: string) => string): Array<{ value: ConformityStatus; label: string; activeClass: string }> => [
+  { value: 'conforme', label: t('gapUi.status.conforme'), activeClass: 'bg-success text-success-foreground hover:bg-success/90 border-success' },
+  { value: 'parcial', label: t('gapUi.status.parcial'), activeClass: 'bg-warning text-warning-foreground hover:bg-warning/90 border-warning' },
+  { value: 'nao_conforme', label: t('gapUi.status.naoConforme'), activeClass: 'bg-destructive text-destructive-foreground hover:bg-destructive/90 border-destructive' },
+  { value: 'nao_aplicavel', label: t('gapUi.status.na'), activeClass: 'bg-secondary text-secondary-foreground hover:bg-secondary/90 border-secondary' },
 ];
 
 const StatusSegmentedControl: React.FC<{
   value: string | null | undefined;
   onChange: (next: ConformityStatus) => void;
   disabled?: boolean;
-}> = ({ value, onChange, disabled }) => (
+}> = ({ value, onChange, disabled }) => {
+  const { t } = useLanguage();
+  const STATUS_OPTIONS = getStatusOptions(t);
+  return (
   <div className="inline-flex flex-wrap gap-1.5 rounded-lg bg-muted/40 p-1 border">
     {STATUS_OPTIONS.map(opt => {
       const isActive = value === opt.value;
@@ -102,7 +107,8 @@ const StatusSegmentedControl: React.FC<{
       );
     })}
   </div>
-);
+  );
+};
 
 // ---------------------------------------------------------------------------
 // Journey Step — passo numerado da jornada de avaliação
@@ -326,12 +332,15 @@ const MarkdownContent = ({ content }: { content: string }) => {
   );
 };
 
-const GuidanceSkeleton = () => (
+const GuidanceSkeleton = () => {
+  const { t } = useLanguage();
+  return (
   <div className="min-h-[180px] flex flex-col items-center justify-center gap-2 py-6">
     <AkurisPulse size={48} />
-    <p className="text-xs text-muted-foreground">Carregando orientação...</p>
+    <p className="text-xs text-muted-foreground">{t('gapUi.detail.loadingGuidance')}</p>
   </div>
-);
+  );
+};
 
 // ---------------------------------------------------------------------------
 // Main component
@@ -340,6 +349,8 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
   open, onOpenChange, requirement, frameworkId, onClose, onStatusChange
 }) => {
   const { empresaId } = useEmpresaId();
+  const { t } = useLanguage();
+  const STATUS_OPTIONS = getStatusOptions(t);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
@@ -403,9 +414,9 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
     } catch (error: any) {
       logger.error('Error generating guidance:', { error: error instanceof Error ? error.message : String(error) });
       if (error?.message?.includes('402') || error?.status === 402) {
-        toast.error('Créditos de IA esgotados. Entre em contato com a Akuris para adquirir mais créditos.');
+        toast.error(t('gapUi.detail.aiCreditsExhausted'));
       } else if (forceRegenerate) {
-        toast.error('Erro ao gerar orientações');
+        toast.error(t('gapUi.detail.errorGenerateGuidance'));
       }
     } finally {
       setGeneratingGuidance(false);
@@ -418,14 +429,17 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
       const [usersRes, riscosRes, reqDetailsRes] = await Promise.all([
         supabase.from('profiles').select('user_id, nome, email').eq('empresa_id', empresaId).order('nome'),
         supabase.from('riscos').select('id, nome, nivel_risco_inicial').eq('empresa_id', empresaId).order('nome'),
-        supabase.from('gap_analysis_requirements').select('orientacao_implementacao, exemplos_evidencias, perguntas_diagnostico').eq('id', requirement.id).single()
+        supabase.from('gap_analysis_requirements').select('orientacao_implementacao, exemplos_evidencias, perguntas_diagnostico, orientacao_implementacao_en, exemplos_evidencias_en, perguntas_diagnostico_en').eq('id', requirement.id).single()
       ]);
       if (usersRes.error) throw usersRes.error;
       if (riscosRes.error) throw riscosRes.error;
       setUsers(usersRes.data || []);
       setRiscos(riscosRes.data || []);
 
-      const details = reqDetailsRes.data as { orientacao_implementacao?: string | null; exemplos_evidencias?: string | null; perguntas_diagnostico?: string | null } || {};
+      // Conteúdo bilíngue: exibe a versão em inglês quando existir, senão a portuguesa.
+      const details = localizeRequirement((reqDetailsRes.data || {}) as any) as {
+        orientacao_implementacao?: string | null; exemplos_evidencias?: string | null; perguntas_diagnostico?: string | null;
+      };
       setGuidanceText(details.orientacao_implementacao || null);
       setEvidenciasText(details.exemplos_evidencias || null);
 
@@ -478,7 +492,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
       }
     } catch (error: any) {
       logger.error('Error loading data:', { error: error instanceof Error ? error.message : String(error) });
-      toast.error('Erro ao carregar dados');
+      toast.error(t('gapUi.detail.errorLoadData'));
     } finally {
       setLoading(false);
     }
@@ -518,11 +532,11 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
       }
       onStatusChange?.(requirement.id, newStatus);
       const label = STATUS_OPTIONS.find(o => o.value === newStatus)?.label ?? newStatus;
-      toast.success(`Status atualizado para ${label}`);
+      toast.success(t('gapUi.detail.statusUpdatedTo', { label }));
     } catch (error: any) {
       logger.error('Error updating status:', { error: error instanceof Error ? error.message : String(error) });
       setCurrentStatus(previous);
-      toast.error('Erro ao atualizar status');
+      toast.error(t('gapUi.detail.errorUpdateStatus'));
     } finally {
       setSavingStatus(false);
     }
@@ -547,13 +561,13 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
 
     const oversize = Array.from(files).find(f => f.size > MAX_BYTES);
     if (oversize) {
-      toast.error(`Arquivo "${oversize.name}" excede 25MB. Comprima ou divida antes de anexar.`);
+      toast.error(t('gapUi.detail.fileTooLarge', { name: oversize.name }));
       event.target.value = '';
       return;
     }
     const invalidType = Array.from(files).find(f => f.type && !ALLOWED.has(f.type));
     if (invalidType) {
-      toast.error(`Tipo não permitido: ${invalidType.type || invalidType.name}. Envie PDF, Office, texto ou imagem.`);
+      toast.error(t('gapUi.detail.fileTypeNotAllowed', { type: invalidType.type || invalidType.name }));
       event.target.value = '';
       return;
     }
@@ -572,10 +586,10 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
         uploadedFiles.push({ name: file.name, path: filePath, url: filePath, size: file.size, type: file.type });
       }
       setFormData(prev => ({ ...prev, evidence_files: [...prev.evidence_files, ...uploadedFiles] }));
-      toast.success(`${uploadedFiles.length} arquivo(s) anexado(s)`);
+      toast.success(t('gapUi.detail.filesAttached', { count: uploadedFiles.length }));
     } catch (error: any) {
       logger.error('Error uploading files:', { error: error instanceof Error ? error.message : String(error) });
-      toast.error('Erro ao fazer upload');
+      toast.error(t('gapUi.detail.errorUpload'));
     } finally {
       setUploading(false);
       event.target.value = '';
@@ -610,7 +624,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
       if (error) {
         const status = (error as any)?.status;
         if (status === 402 || (data as any)?.creditsExhausted) {
-          toast.error('Créditos de IA esgotados. Entre em contato com a Akuris.');
+          toast.error(t('gapUi.detail.aiCreditsExhaustedShort'));
           return;
         }
         throw error;
@@ -621,11 +635,11 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
       }
       setValidationByUrl(prev => ({ ...prev, [file.url]: data as any }));
       const v = (data as any).verdict;
-      const label = v === 'conforme' ? 'Conforme' : v === 'parcial' ? 'Parcialmente conforme' : v === 'nao_conforme' ? 'Não conforme' : 'Indeterminado';
-      toast.success(`IA: ${label} (${(data as any).score ?? 0}%)`);
+      const label = v === 'conforme' ? t('gapUi.verdict.conforme') : v === 'parcial' ? t('gapUi.verdict.parcialmenteConforme') : v === 'nao_conforme' ? t('gapUi.verdict.naoConforme') : t('gapUi.verdict.indeterminado');
+      toast.success(t('gapUi.detail.aiVerdict', { label, score: (data as any).score ?? 0 }));
     } catch (e) {
       logger.error('Validation error', { error: e instanceof Error ? e.message : String(e) });
-      toast.error('Não foi possível validar a evidência.');
+      toast.error(t('gapUi.detail.errorValidateEvidence'));
     } finally {
       setValidatingUrl(null);
     }
@@ -656,7 +670,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
             .maybeSingle();
           const currentUpdatedAt = (current as any)?.updated_at as string | undefined;
           if (currentUpdatedAt && currentUpdatedAt !== loadedUpdatedAtRef.current) {
-            toast.error('Este requisito foi atualizado por outro usuário. Feche e reabra para não perder as alterações mais recentes.');
+            toast.error(t('gapUi.detail.concurrencyConflict'));
             setSaving(false);
             return;
           }
@@ -694,11 +708,11 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
           .insert(formData.riscos_vinculados.map(riscoId => ({ evaluation_id: evaluationId, risco_id: riscoId })));
         if (error) throw error;
       }
-      toast.success('Avaliação salva com sucesso');
+      toast.success(t('gapUi.detail.evaluationSaved'));
       onClose();
     } catch (error: any) {
       logger.error('Error saving:', { error: error instanceof Error ? error.message : String(error) });
-      toast.error('Erro ao salvar avaliação');
+      toast.error(t('gapUi.detail.errorSaveEvaluation'));
     } finally {
       setSaving(false);
     }
@@ -715,10 +729,10 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
       setFormData(prev => ({ ...prev, plano_acao_id: newPlano.id }));
       setPlanoAcaoVinculado(newPlano);
       setPlanoAcaoDialogOpen(false);
-      toast.success('Plano de ação criado e vinculado');
+      toast.success(t('gapUi.detail.planoCreated'));
     } catch (error: any) {
       logger.error('Error creating plano:', { error: error instanceof Error ? error.message : String(error) });
-      toast.error('Erro ao criar plano de ação');
+      toast.error(t('gapUi.detail.errorCreatePlano'));
     } finally {
       setSavingPlano(false);
     }
@@ -726,10 +740,10 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
 
   const getPlanoStatusBadge = (status: string) => {
     const map: Record<string, { label: string; variant: 'success' | 'warning' | 'destructive' | 'outline' }> = {
-      concluido: { label: 'Concluído', variant: 'success' },
-      em_andamento: { label: 'Em Andamento', variant: 'warning' },
-      pendente: { label: 'Pendente', variant: 'destructive' },
-      cancelado: { label: 'Cancelado', variant: 'outline' },
+      concluido: { label: t('gapUi.detail.planoStatus.concluido'), variant: 'success' },
+      em_andamento: { label: t('gapUi.detail.planoStatus.emAndamento'), variant: 'warning' },
+      pendente: { label: t('gapUi.detail.planoStatus.pendente'), variant: 'destructive' },
+      cancelado: { label: t('gapUi.detail.planoStatus.cancelado'), variant: 'outline' },
     };
     const s = map[status] || { label: status, variant: 'outline' as const };
     return <Badge variant={s.variant}>{s.label}</Badge>;
@@ -747,12 +761,12 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
 
   // CTA contextual no footer
   const footerLabel = useMemo(() => {
-    if (saving) return 'Salvando...';
-    if (!isStatusDefined) return 'Salvar rascunho';
+    if (saving) return t('gapUi.detail.footer.saving');
+    if (!isStatusDefined) return t('gapUi.detail.footer.saveDraft');
     const allDone = isStatusDefined && (!requiresPlanoStep || planoStepDone) && detalhesDone;
-    if (allDone) return 'Concluir avaliação';
-    return 'Salvar avaliação';
-  }, [saving, isStatusDefined, requiresPlanoStep, planoStepDone, detalhesDone]);
+    if (allDone) return t('gapUi.detail.footer.finishEvaluation');
+    return t('gapUi.detail.footer.saveEvaluation');
+  }, [saving, isStatusDefined, requiresPlanoStep, planoStepDone, detalhesDone, t]);
 
   // Sugestão automática do diagnóstico
   const diagnosticSuggestion = useMemo(() => {
@@ -768,7 +782,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
     });
     const pct = totalWeight > 0 ? (weightedScore / totalWeight) * 100 : 0;
     const suggested: ConformityStatus = pct >= 80 ? 'conforme' : pct >= 40 ? 'parcial' : 'nao_conforme';
-    const label = pct >= 80 ? 'Conforme' : pct >= 40 ? 'Parcial' : 'Não Conforme';
+    const label = pct >= 80 ? t('gapUi.status.conforme') : pct >= 40 ? t('gapUi.status.parcial') : t('gapUi.status.naoConforme');
     const color = pct >= 80 ? 'text-success' : pct >= 40 ? 'text-warning' : 'text-destructive';
     return { pct: Math.round(pct), suggested, label, color };
   }, [diagnosticAnswers, diagnosticQuestions]);

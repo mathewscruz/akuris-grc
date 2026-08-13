@@ -2,7 +2,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PageHeader } from '@/components/ui/page-header';
-import { Users, Building2, Plug, MessageSquare, CreditCard, Landmark, DollarSign, Package, Newspaper, BookOpen } from 'lucide-react';
+import { Users, Building2, Plug, MessageSquare, CreditCard, Landmark, DollarSign, Package, Newspaper, BookOpen, Languages } from 'lucide-react';
 import { AkurisAIIcon } from '@/components/icons';
 import { useSearchParams } from 'react-router-dom';
 import GerenciamentoEmpresas from '@/components/configuracoes/GerenciamentoEmpresas';
@@ -18,6 +18,7 @@ import { GerenciamentoPlanos } from '@/components/configuracoes/GerenciamentoPla
 import GerenciamentoChangelog from '@/components/configuracoes/GerenciamentoChangelog';
 import NoticiasTab from '@/components/configuracoes/NoticiasTab';
 import BlogManager from '@/components/configuracoes/BlogManager';
+import { TraducaoFrameworksTab } from '@/components/configuracoes/TraducaoFrameworksTab';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 const Configuracoes = () => {
@@ -105,6 +106,12 @@ const Configuracoes = () => {
             <TabsTrigger value="noticias" className="flex items-center gap-2">
               <Newspaper className="h-4 w-4" />
               <span className="hidden min-[1800px]:inline">Notícias</span>
+            </TabsTrigger>
+          )}
+          {isSuperAdmin && (
+            <TabsTrigger value="traducoes" className="flex items-center gap-2">
+              <Languages className="h-4 w-4" />
+              <span className="hidden min-[1800px]:inline">Traduções</span>
             </TabsTrigger>
           )}
           {isSuperAdmin && (
@@ -235,6 +242,21 @@ const Configuracoes = () => {
               </CardHeader>
               <CardContent>
                 <NoticiasTab />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
+        {isSuperAdmin && (
+          <TabsContent value="traducoes">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Languages className="h-5 w-5" />
+                  Traduções dos Frameworks (Gap Analysis)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <TraducaoFrameworksTab />
               </CardContent>
             </Card>
           </TabsContent>

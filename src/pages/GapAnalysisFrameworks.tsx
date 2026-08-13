@@ -22,6 +22,7 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { Shield, Search, ChevronDown } from 'lucide-react';
 import { logger } from '@/lib/logger';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { fwDescricao } from "@/lib/gap-i18n";
 
 interface Framework {
   id: string;
@@ -430,7 +431,7 @@ export default function GapAnalysisFrameworks() {
                       nome={fw.nome}
                       versao={fw.versao}
                       tipo_framework={fw.tipo_framework}
-                      descricao={fw.descricao}
+                      descricao={fwDescricao(fw as any) || fw.descricao}
                       overlapPercent={overlap}
                       requirementCount={requirementCounts[fw.id] || 0}
                       onClick={() => handleFrameworkClick(fw)}
