@@ -27,6 +27,8 @@ import type { ConformityStatus } from "@/lib/gap-analysis-tokens";
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { EvidenceReusePanel } from '@/components/gap-analysis/dialogs/EvidenceReusePanel';
+import { localizeRequirement } from "@/lib/gap-i18n";
+import { useLanguage } from '@/contexts/LanguageContext';
 interface RequirementDetail {
   id: string;
   codigo: string;
@@ -68,18 +70,21 @@ interface EvaluationData {
 // ---------------------------------------------------------------------------
 // Status Segmented Control — barra inline para mudar conformity_status
 // ---------------------------------------------------------------------------
-const STATUS_OPTIONS: Array<{ value: ConformityStatus; label: string; activeClass: string }> = [
-  { value: 'conforme', label: 'Conforme', activeClass: 'bg-success text-success-foreground hover:bg-success/90 border-success' },
-  { value: 'parcial', label: 'Parcial', activeClass: 'bg-warning text-warning-foreground hover:bg-warning/90 border-warning' },
-  { value: 'nao_conforme', label: 'Não Conforme', activeClass: 'bg-destructive text-destructive-foreground hover:bg-destructive/90 border-destructive' },
-  { value: 'nao_aplicavel', label: 'N/A', activeClass: 'bg-secondary text-secondary-foreground hover:bg-secondary/90 border-secondary' },
+const getStatusOptions = (t: (key: string) => string): Array<{ value: ConformityStatus; label: string; activeClass: string }> => [
+  { value: 'conforme', label: t('gapUi.status.conforme'), activeClass: 'bg-success text-success-foreground hover:bg-success/90 border-success' },
+  { value: 'parcial', label: t('gapUi.status.parcial'), activeClass: 'bg-warning text-warning-foreground hover:bg-warning/90 border-warning' },
+  { value: 'nao_conforme', label: t('gapUi.status.naoConforme'), activeClass: 'bg-destructive text-destructive-foreground hover:bg-destructive/90 border-destructive' },
+  { value: 'nao_aplicavel', label: t('gapUi.status.na'), activeClass: 'bg-secondary text-secondary-foreground hover:bg-secondary/90 border-secondary' },
 ];
 
 const StatusSegmentedControl: React.FC<{
   value: string | null | undefined;
   onChange: (next: ConformityStatus) => void;
   disabled?: boolean;
-}> = ({ value, onChange, disabled }) => (
+}> = ({ value, onChange, disabled }) => {
+  const { t } = useLanguage();
+  const STATUS_OPTIONS = getStatusOptions(t);
+  return (
   <div className="inline-flex flex-wrap gap-1.5 rounded-lg bg-muted/40 p-1 border">
     {STATUS_OPTIONS.map(opt => {
       const isActive = value === opt.value;
@@ -102,7 +107,8 @@ const StatusSegmentedControl: React.FC<{
       );
     })}
   </div>
-);
+  );
+};
 
 // ---------------------------------------------------------------------------
 // Journey Step — passo numerado da jornada de avaliação
@@ -326,12 +332,15 @@ const MarkdownContent = ({ content }: { content: string }) => {
   );
 };
 
-const GuidanceSkeleton = () => (
+const GuidanceSkeleton = () => {
+  const { t } = useLanguage();
+  return (
   <div className="min-h-[180px] flex flex-col items-center justify-center gap-2 py-6">
     <AkurisPulse size={48} />
-    <p className="text-xs text-muted-foreground">Carregando orientação...</p>
+    <p className="text-xs text-muted-foreground">{t('gapUi.detail.loadingGuidance')}</p>
   </div>
-);
+  );
+};
 
 // ---------------------------------------------------------------------------
 // Main component
@@ -340,6 +349,8 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
   open, onOpenChange, requirement, frameworkId, onClose, onStatusChange
 }) => {
   const { empresaId } = useEmpresaId();
+  const { t } = useLanguage();
+  const STATUS_OPTIONS = getStatusOptions(t);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
@@ -403,9 +414,9 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
     } catch (error: any) {
       logger.error('Error generating guidance:', { error: error instanceof Error ? error.message : String(error) });
       if (error?.message?.includes('402') || error?.status === 402) {
-        toast.error('Créditos de IA esgotados. Entre em contato com a Akuris para adquirir mais créditos.');
+        toast.error(t('gapUi.detail.aiCreditsExhausted'));
       } else if (forceRegenerate) {
-        toast.error('Erro ao gerar orientações');
+        toast.error(t('gapUi.detail.errorGenerateGuidance'));
       }
     } finally {
       setGeneratingGuidance(false);
@@ -418,14 +429,17 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
       const [usersRes, riscosRes, reqDetailsRes] = await Promise.all([
         supabase.from('profiles').select('user_id, nome, email').eq('empresa_id', empresaId).order('nome'),
         supabase.from('riscos').select('id, nome, nivel_risco_inicial').eq('empresa_id', empresaId).order('nome'),
-        supabase.from('gap_analysis_requirements').select('orientacao_implementacao, exemplos_evidencias, perguntas_diagnostico').eq('id', requirement.id).single()
+        supabase.from('gap_analysis_requirements').select('orientacao_implementacao, exemplos_evidencias, perguntas_diagnostico, orientacao_implementacao_en, exemplos_evidencias_en, perguntas_diagnostico_en').eq('id', requirement.id).single()
       ]);
       if (usersRes.error) throw usersRes.error;
       if (riscosRes.error) throw riscosRes.error;
       setUsers(usersRes.data || []);
       setRiscos(riscosRes.data || []);
 
-      const details = reqDetailsRes.data as { orientacao_implementacao?: string | null; exemplos_evidencias?: string | null; perguntas_diagnostico?: string | null } || {};
+      // Conteúdo bilíngue: exibe a versão em inglês quando existir, senão a portuguesa.
+      const details = localizeRequirement((reqDetailsRes.data || {}) as any) as {
+        orientacao_implementacao?: string | null; exemplos_evidencias?: string | null; perguntas_diagnostico?: string | null;
+      };
       setGuidanceText(details.orientacao_implementacao || null);
       setEvidenciasText(details.exemplos_evidencias || null);
 
@@ -478,7 +492,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
       }
     } catch (error: any) {
       logger.error('Error loading data:', { error: error instanceof Error ? error.message : String(error) });
-      toast.error('Erro ao carregar dados');
+      toast.error(t('gapUi.detail.errorLoadData'));
     } finally {
       setLoading(false);
     }
@@ -518,11 +532,11 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
       }
       onStatusChange?.(requirement.id, newStatus);
       const label = STATUS_OPTIONS.find(o => o.value === newStatus)?.label ?? newStatus;
-      toast.success(`Status atualizado para ${label}`);
+      toast.success(t('gapUi.detail.statusUpdatedTo', { label }));
     } catch (error: any) {
       logger.error('Error updating status:', { error: error instanceof Error ? error.message : String(error) });
       setCurrentStatus(previous);
-      toast.error('Erro ao atualizar status');
+      toast.error(t('gapUi.detail.errorUpdateStatus'));
     } finally {
       setSavingStatus(false);
     }
@@ -547,13 +561,13 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
 
     const oversize = Array.from(files).find(f => f.size > MAX_BYTES);
     if (oversize) {
-      toast.error(`Arquivo "${oversize.name}" excede 25MB. Comprima ou divida antes de anexar.`);
+      toast.error(t('gapUi.detail.fileTooLarge', { name: oversize.name }));
       event.target.value = '';
       return;
     }
     const invalidType = Array.from(files).find(f => f.type && !ALLOWED.has(f.type));
     if (invalidType) {
-      toast.error(`Tipo não permitido: ${invalidType.type || invalidType.name}. Envie PDF, Office, texto ou imagem.`);
+      toast.error(t('gapUi.detail.fileTypeNotAllowed', { type: invalidType.type || invalidType.name }));
       event.target.value = '';
       return;
     }
@@ -572,10 +586,10 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
         uploadedFiles.push({ name: file.name, path: filePath, url: filePath, size: file.size, type: file.type });
       }
       setFormData(prev => ({ ...prev, evidence_files: [...prev.evidence_files, ...uploadedFiles] }));
-      toast.success(`${uploadedFiles.length} arquivo(s) anexado(s)`);
+      toast.success(t('gapUi.detail.filesAttached', { count: uploadedFiles.length }));
     } catch (error: any) {
       logger.error('Error uploading files:', { error: error instanceof Error ? error.message : String(error) });
-      toast.error('Erro ao fazer upload');
+      toast.error(t('gapUi.detail.errorUpload'));
     } finally {
       setUploading(false);
       event.target.value = '';
@@ -610,7 +624,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
       if (error) {
         const status = (error as any)?.status;
         if (status === 402 || (data as any)?.creditsExhausted) {
-          toast.error('Créditos de IA esgotados. Entre em contato com a Akuris.');
+          toast.error(t('gapUi.detail.aiCreditsExhaustedShort'));
           return;
         }
         throw error;
@@ -621,11 +635,11 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
       }
       setValidationByUrl(prev => ({ ...prev, [file.url]: data as any }));
       const v = (data as any).verdict;
-      const label = v === 'conforme' ? 'Conforme' : v === 'parcial' ? 'Parcialmente conforme' : v === 'nao_conforme' ? 'Não conforme' : 'Indeterminado';
-      toast.success(`IA: ${label} (${(data as any).score ?? 0}%)`);
+      const label = v === 'conforme' ? t('gapUi.verdict.conforme') : v === 'parcial' ? t('gapUi.verdict.parcialmenteConforme') : v === 'nao_conforme' ? t('gapUi.verdict.naoConforme') : t('gapUi.verdict.indeterminado');
+      toast.success(t('gapUi.detail.aiVerdict', { label, score: (data as any).score ?? 0 }));
     } catch (e) {
       logger.error('Validation error', { error: e instanceof Error ? e.message : String(e) });
-      toast.error('Não foi possível validar a evidência.');
+      toast.error(t('gapUi.detail.errorValidateEvidence'));
     } finally {
       setValidatingUrl(null);
     }
@@ -656,7 +670,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
             .maybeSingle();
           const currentUpdatedAt = (current as any)?.updated_at as string | undefined;
           if (currentUpdatedAt && currentUpdatedAt !== loadedUpdatedAtRef.current) {
-            toast.error('Este requisito foi atualizado por outro usuário. Feche e reabra para não perder as alterações mais recentes.');
+            toast.error(t('gapUi.detail.concurrencyConflict'));
             setSaving(false);
             return;
           }
@@ -694,11 +708,11 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
           .insert(formData.riscos_vinculados.map(riscoId => ({ evaluation_id: evaluationId, risco_id: riscoId })));
         if (error) throw error;
       }
-      toast.success('Avaliação salva com sucesso');
+      toast.success(t('gapUi.detail.evaluationSaved'));
       onClose();
     } catch (error: any) {
       logger.error('Error saving:', { error: error instanceof Error ? error.message : String(error) });
-      toast.error('Erro ao salvar avaliação');
+      toast.error(t('gapUi.detail.errorSaveEvaluation'));
     } finally {
       setSaving(false);
     }
@@ -715,10 +729,10 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
       setFormData(prev => ({ ...prev, plano_acao_id: newPlano.id }));
       setPlanoAcaoVinculado(newPlano);
       setPlanoAcaoDialogOpen(false);
-      toast.success('Plano de ação criado e vinculado');
+      toast.success(t('gapUi.detail.planoCreated'));
     } catch (error: any) {
       logger.error('Error creating plano:', { error: error instanceof Error ? error.message : String(error) });
-      toast.error('Erro ao criar plano de ação');
+      toast.error(t('gapUi.detail.errorCreatePlano'));
     } finally {
       setSavingPlano(false);
     }
@@ -726,10 +740,10 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
 
   const getPlanoStatusBadge = (status: string) => {
     const map: Record<string, { label: string; variant: 'success' | 'warning' | 'destructive' | 'outline' }> = {
-      concluido: { label: 'Concluído', variant: 'success' },
-      em_andamento: { label: 'Em Andamento', variant: 'warning' },
-      pendente: { label: 'Pendente', variant: 'destructive' },
-      cancelado: { label: 'Cancelado', variant: 'outline' },
+      concluido: { label: t('gapUi.detail.planoStatus.concluido'), variant: 'success' },
+      em_andamento: { label: t('gapUi.detail.planoStatus.emAndamento'), variant: 'warning' },
+      pendente: { label: t('gapUi.detail.planoStatus.pendente'), variant: 'destructive' },
+      cancelado: { label: t('gapUi.detail.planoStatus.cancelado'), variant: 'outline' },
     };
     const s = map[status] || { label: status, variant: 'outline' as const };
     return <Badge variant={s.variant}>{s.label}</Badge>;
@@ -747,12 +761,12 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
 
   // CTA contextual no footer
   const footerLabel = useMemo(() => {
-    if (saving) return 'Salvando...';
-    if (!isStatusDefined) return 'Salvar rascunho';
+    if (saving) return t('gapUi.detail.footer.saving');
+    if (!isStatusDefined) return t('gapUi.detail.footer.saveDraft');
     const allDone = isStatusDefined && (!requiresPlanoStep || planoStepDone) && detalhesDone;
-    if (allDone) return 'Concluir avaliação';
-    return 'Salvar avaliação';
-  }, [saving, isStatusDefined, requiresPlanoStep, planoStepDone, detalhesDone]);
+    if (allDone) return t('gapUi.detail.footer.finishEvaluation');
+    return t('gapUi.detail.footer.saveEvaluation');
+  }, [saving, isStatusDefined, requiresPlanoStep, planoStepDone, detalhesDone, t]);
 
   // Sugestão automática do diagnóstico
   const diagnosticSuggestion = useMemo(() => {
@@ -768,7 +782,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
     });
     const pct = totalWeight > 0 ? (weightedScore / totalWeight) * 100 : 0;
     const suggested: ConformityStatus = pct >= 80 ? 'conforme' : pct >= 40 ? 'parcial' : 'nao_conforme';
-    const label = pct >= 80 ? 'Conforme' : pct >= 40 ? 'Parcial' : 'Não Conforme';
+    const label = pct >= 80 ? t('gapUi.status.conforme') : pct >= 40 ? t('gapUi.status.parcial') : t('gapUi.status.naoConforme');
     const color = pct >= 80 ? 'text-success' : pct >= 40 ? 'text-warning' : 'text-destructive';
     return { pct: Math.round(pct), suggested, label, color };
   }, [diagnosticAnswers, diagnosticQuestions]);
@@ -810,7 +824,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                       aria-expanded={guidanceOpen}
                     >
                       <BookOpen className="h-4 w-4 text-primary" strokeWidth={1.5} />
-                      <h4 className="text-sm font-semibold text-foreground">Orientação do Requisito</h4>
+                      <h4 className="text-sm font-semibold text-foreground">{t('gapUi.detail.guidanceTitle')}</h4>
                       <ChevronDown className={cn('h-3.5 w-3.5 text-muted-foreground transition-transform', guidanceOpen ? '' : '-rotate-90')} strokeWidth={1.5} />
                     </button>
                     <Button
@@ -821,7 +835,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                       disabled={generatingGuidance}
                     >
                       {generatingGuidance ? <AkurisPulse size={12} className="mr-1" /> : <RefreshCw className="h-3 w-3 mr-1" strokeWidth={1.5} />}
-                      {generatingGuidance ? 'Gerando...' : 'Regenerar'}
+                      {generatingGuidance ? t('gapUi.detail.generating') : t('gapUi.detail.regenerate')}
                     </Button>
                   </div>
 
@@ -835,7 +849,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                         <div className="mt-5 pt-5 border-t border-border/50">
                           <div className="flex items-center gap-1.5 mb-3">
                             <CheckCircle2 className="h-4 w-4 text-success" strokeWidth={1.5} />
-                            <h4 className="text-sm font-bold text-foreground">Exemplos de Evidências Aceitas</h4>
+                            <h4 className="text-sm font-bold text-foreground">{t('gapUi.detail.acceptedEvidenceExamples')}</h4>
                           </div>
                           <ul className="space-y-2">
                             {evidenciasText.split('\n').filter(l => l.trim()).map((ex, i) => (
@@ -856,7 +870,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                       <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50 border border-dashed">
                         <Lightbulb className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" strokeWidth={1.5} />
                         <p className="text-xs text-muted-foreground">
-                          Clique em "Regenerar" para gerar orientações detalhadas para este requisito.
+                          {t('gapUi.detail.clickRegenerateHint')}
                         </p>
                       </div>
                     </div>
@@ -873,13 +887,13 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                   {/* ===== STEP 1: Avaliar Conformidade ===== */}
                   <JourneyStep
                     number={1}
-                    title="Avaliar Conformidade"
-                    description="Defina o status e, se disponível, use o diagnóstico guiado"
+                    title={t('gapUi.detail.step1Title')}
+                    description={t('gapUi.detail.step1Description')}
                     state={isStatusDefined ? 'complete' : 'active'}
                     badge={
                       isStatusDefined
-                        ? <Badge variant="success" className="text-[10px]">Definido</Badge>
-                        : <Badge variant="outline" className="text-[10px]">Pendente</Badge>
+                        ? <Badge variant="success" className="text-[10px]">{t('gapUi.detail.defined')}</Badge>
+                        : <Badge variant="outline" className="text-[10px]">{t('gapUi.detail.pending')}</Badge>
                     }
                   >
                     <div className="space-y-3">
@@ -895,10 +909,10 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                         <div className="space-y-3 pt-3 border-t border-border/50">
                         <div className="flex items-center gap-1.5">
                           <HelpCircle className="h-3.5 w-3.5 text-primary" strokeWidth={1.5} />
-                          <p className="text-xs font-medium text-foreground">Diagnóstico Guiado</p>
+                          <p className="text-xs font-medium text-foreground">{t('gapUi.detail.guidedDiagnostic')}</p>
                         </div>
                         <p className="text-[11px] text-muted-foreground">
-                          Responda às perguntas para receber uma recomendação de status.
+                          {t('gapUi.detail.guidedDiagnosticHint')}
                         </p>
                         <div className="space-y-2.5">
                           {diagnosticQuestions.map((q, idx) => {
@@ -906,7 +920,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                             return (
                               <div key={idx} className="p-3 rounded-md bg-muted/40 border space-y-2">
                                 <p className="text-[13px] text-foreground leading-relaxed">
-                                  {q.peso >= 2 && <Badge variant="outline" className="text-[10px] mr-1.5">Peso {q.peso}</Badge>}
+                                  {q.peso >= 2 && <Badge variant="outline" className="text-[10px] mr-1.5">{t('gapUi.detail.weight', { peso: q.peso })}</Badge>}
                                   {q.pergunta}
                                 </p>
                                 <div className="flex gap-1.5">
@@ -923,7 +937,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                                       )}
                                       onClick={() => setDiagnosticAnswers(prev => ({ ...prev, [idx]: opt }))}
                                     >
-                                      {opt === 'sim' ? 'Sim' : opt === 'parcial' ? 'Parcial' : 'Não'}
+                                      {opt === 'sim' ? t('gapUi.detail.answerYes') : opt === 'parcial' ? t('gapUi.detail.answerPartial') : t('gapUi.detail.answerNo')}
                                     </Button>
                                   ))}
                                 </div>
@@ -935,11 +949,11 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                         {diagnosticSuggestion && (
                           <div className="flex items-center justify-between gap-3 p-3 rounded-md bg-primary/5 border border-primary/20">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-[11px] text-muted-foreground">Recomendação:</span>
+                              <span className="text-[11px] text-muted-foreground">{t('gapUi.detail.recommendation')}</span>
                               <Badge variant="outline" className={cn('font-semibold', diagnosticSuggestion.color)}>
                                 {diagnosticSuggestion.label}
                               </Badge>
-                              <span className="text-[11px] text-muted-foreground">({diagnosticSuggestion.pct}% aderência)</span>
+                              <span className="text-[11px] text-muted-foreground">{t('gapUi.detail.adherencePct', { pct: diagnosticSuggestion.pct })}</span>
                             </div>
                             <Button
                               size="sm"
@@ -949,7 +963,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                               onClick={() => handleStatusChange(diagnosticSuggestion.suggested)}
                             >
                               <Check className="h-3 w-3 mr-1" strokeWidth={2} />
-                              Aplicar
+                              {t('gapUi.common.apply')}
                             </Button>
                           </div>
                         )}
@@ -961,13 +975,13 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                   {/* ===== STEP 2: Evidências ===== */}
                   <JourneyStep
                     number={2}
-                    title="Evidências"
-                    description="Anexe documentos ou gere com IA. Valide a aderência ao requisito."
+                    title={t('gapUi.detail.step2Title')}
+                    description={t('gapUi.detail.step2Description')}
                     state={evidenciasCount > 0 ? 'complete' : (isStatusDefined ? 'active' : 'pending')}
                     badge={
                       evidenciasCount > 0
-                        ? <Badge variant="secondary" className="text-[10px]">{evidenciasCount} {evidenciasCount === 1 ? 'item' : 'itens'}</Badge>
-                        : <Badge variant="outline" className="text-[10px]">Vazio</Badge>
+                        ? <Badge variant="secondary" className="text-[10px]">{evidenciasCount} {evidenciasCount === 1 ? t('gapUi.detail.item') : t('gapUi.detail.items')}</Badge>
+                        : <Badge variant="outline" className="text-[10px]">{t('gapUi.detail.empty')}</Badge>
                     }
                   >
                     <div className="space-y-3">
@@ -989,8 +1003,8 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                         >
                           <AkurisAIIcon size={16} className="mr-2 text-primary shrink-0" />
                           <div className="text-left leading-tight">
-                            <div className="text-xs font-semibold">Gerar com IA</div>
-                            <div className="text-[10px] text-muted-foreground">Documento sob medida</div>
+                            <div className="text-xs font-semibold">{t('gapUi.detail.generateWithAi')}</div>
+                            <div className="text-[10px] text-muted-foreground">{t('gapUi.detail.customDocument')}</div>
                           </div>
                         </Button>
                         <Button
@@ -1002,8 +1016,8 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                         >
                           <Upload className="h-4 w-4 mr-2 shrink-0" strokeWidth={1.5} />
                           <div className="text-left leading-tight">
-                            <div className="text-xs font-semibold">Anexar arquivo</div>
-                            <div className="text-[10px] text-muted-foreground">PDF, Word, imagem...</div>
+                            <div className="text-xs font-semibold">{t('gapUi.detail.attachFile')}</div>
+                            <div className="text-[10px] text-muted-foreground">{t('gapUi.detail.fileTypesHint')}</div>
                           </div>
                         </Button>
                         <Button
@@ -1015,15 +1029,15 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                         >
                           <ExternalLink className="h-4 w-4 mr-2 shrink-0" strokeWidth={1.5} />
                           <div className="text-left leading-tight">
-                            <div className="text-xs font-semibold">Adicionar link</div>
-                            <div className="text-[10px] text-muted-foreground">URL externa</div>
+                            <div className="text-xs font-semibold">{t('gapUi.detail.addLink')}</div>
+                            <div className="text-[10px] text-muted-foreground">{t('gapUi.detail.externalUrl')}</div>
                           </div>
                         </Button>
                       </div>
 
                       <p className="text-[11px] text-muted-foreground flex items-start gap-1.5">
                         <AkurisAIIcon size={12} className="mt-0.5 text-primary shrink-0" />
-                        Após anexar, clique em <strong className="mx-0.5 text-foreground">Validar com IA</strong> para confirmar a aderência ao requisito.
+                        {t('gapUi.detail.afterAttachHint').split('Validar com IA')[0]}<strong className="mx-0.5 text-foreground">{t('gapUi.detail.validateWithAi')}</strong>{t('gapUi.detail.afterAttachHint').split('Validar com IA')[1]}
                       </p>
 
                       {/* Drop zone */}
@@ -1042,7 +1056,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                         }}
                         onClick={() => document.getElementById('file-upload')?.click()}
                       >
-                        <p className="text-[11px] text-muted-foreground">{uploading ? 'Enviando...' : 'Ou arraste arquivos aqui'}</p>
+                        <p className="text-[11px] text-muted-foreground">{uploading ? t('gapUi.detail.sending') : t('gapUi.detail.dragFilesHere')}</p>
                       </div>
                       <input id="file-upload" type="file" multiple className="hidden" onChange={handleFileUpload} accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.txt" />
 
@@ -1057,10 +1071,10 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                               validation?.verdict === 'nao_conforme' ? 'bg-destructive/10 text-destructive border-destructive/30' :
                               'bg-muted text-muted-foreground border-border';
                             const verdictLabel =
-                              validation?.verdict === 'conforme' ? 'Conforme' :
-                              validation?.verdict === 'parcial' ? 'Parcial' :
-                              validation?.verdict === 'nao_conforme' ? 'Não conforme' :
-                              validation?.verdict === 'indeterminado' ? 'Indeterminado' : '';
+                              validation?.verdict === 'conforme' ? t('gapUi.status.conforme') :
+                              validation?.verdict === 'parcial' ? t('gapUi.status.parcial') :
+                              validation?.verdict === 'nao_conforme' ? t('gapUi.verdict.naoConforme') :
+                              validation?.verdict === 'indeterminado' ? t('gapUi.verdict.indeterminado') : '';
                             return (
                               <div key={index} className="rounded bg-muted/50 p-2 space-y-1.5">
                                 <div className="flex items-center justify-between">
@@ -1090,10 +1104,10 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                                               ) : (
                                                 <AkurisAIIcon size={12} className="mr-1 text-primary" />
                                               )}
-                                              {isValidating ? 'Analisando...' : 'Validar com IA'}
+                                              {isValidating ? t('gapUi.detail.analyzing') : t('gapUi.detail.validateWithAi')}
                                             </Button>
                                           </TooltipTrigger>
-                                          <TooltipContent>A IA analisa o arquivo e diz se ele atende ao requisito.</TooltipContent>
+                                          <TooltipContent>{t('gapUi.detail.aiValidatesFileTooltip')}</TooltipContent>
                                         </Tooltip>
                                       </TooltipProvider>
                                     )}
@@ -1105,7 +1119,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                                 {validation && (
                                   <div className={cn('rounded border px-2 py-1.5 text-[11px]', verdictColor)}>
                                     <div className="flex items-center justify-between mb-0.5">
-                                      <span className="font-semibold">IA: {verdictLabel}</span>
+                                      <span className="font-semibold">{t('gapUi.detail.aiLabel', { label: verdictLabel })}</span>
                                       <span className="font-mono">{validation.score}%</span>
                                     </div>
                                     <p className="leading-snug opacity-90">{validation.justification}</p>
@@ -1137,13 +1151,13 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                   {requiresPlanoStep && (
                     <JourneyStep
                       number={3}
-                      title="Plano de Ação"
-                      description="Requisito não conforme — defina como será adequado"
+                      title={t('gapUi.detail.step3Title')}
+                      description={t('gapUi.detail.step3Description')}
                       state={planoStepDone ? 'complete' : 'active'}
                       badge={
                         planoAcaoVinculado
                           ? getPlanoStatusBadge(planoAcaoVinculado.status)
-                          : <Badge variant="warning" className="text-[10px]">Sem plano</Badge>
+                          : <Badge variant="warning" className="text-[10px]">{t('gapUi.detail.noPlano')}</Badge>
                       }
                     >
                       {planoAcaoVinculado ? (
@@ -1151,7 +1165,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium truncate">{planoAcaoVinculado.titulo}</p>
                             {planoAcaoVinculado.prazo && (
-                              <span className="text-xs text-muted-foreground">Prazo: {new Date(planoAcaoVinculado.prazo).toLocaleDateString('pt-BR')}</span>
+                              <span className="text-xs text-muted-foreground">{t('gapUi.detail.deadlinePrefix')}{new Date(planoAcaoVinculado.prazo).toLocaleDateString('pt-BR')}</span>
                             )}
                           </div>
                           <Button size="sm" variant="ghost" onClick={() => window.open('/planos-acao', '_blank')}>
@@ -1163,19 +1177,19 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                           <div className="flex items-start gap-2 p-3 rounded-md bg-warning/10 border border-warning/30">
                             <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" strokeWidth={1.5} />
                             <p className="text-xs text-foreground">
-                              Como este requisito não está conforme, recomendamos criar um plano de ação para tratá-lo.
+                              {t('gapUi.detail.nonCompliantWarning')}
                             </p>
                           </div>
                           <Button size="sm" variant="outline" onClick={() => setPlanoAcaoDialogOpen(true)}>
                             <ClipboardList className="h-4 w-4 mr-1.5" strokeWidth={1.5} />
-                            Criar Plano de Ação
+                            {t('gapUi.detail.createActionPlan')}
                           </Button>
                         </div>
                       )}
                       <div className="mt-3 space-y-1.5">
-                        <Label htmlFor="plano" className="text-xs">Notas do Plano (opcional)</Label>
+                        <Label htmlFor="plano" className="text-xs">{t('gapUi.detail.planoNotesLabel')}</Label>
                         <Textarea
-                          id="plano" placeholder="Ações necessárias, marcos, dependências..."
+                          id="plano" placeholder={t('gapUi.detail.planoNotesPlaceholder')}
                           value={formData.plano_acao}
                           onChange={(e) => setFormData(prev => ({ ...prev, plano_acao: e.target.value }))}
                           rows={2}
@@ -1187,20 +1201,20 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                   {/* ===== STEP 4: Detalhes da Avaliação ===== */}
                   <JourneyStep
                     number={requiresPlanoStep ? 4 : 3}
-                    title="Detalhes da Avaliação"
-                    description="Responsável, prazo e observações"
+                    title={t('gapUi.detail.step4Title')}
+                    description={t('gapUi.detail.step4Description')}
                     state={detalhesDone ? 'complete' : 'pending'}
-                    badge={detalhesDone ? <Badge variant="success" className="text-[10px]">Completo</Badge> : <Badge variant="outline" className="text-[10px]">Opcional</Badge>}
+                    badge={detalhesDone ? <Badge variant="success" className="text-[10px]">{t('gapUi.detail.complete')}</Badge> : <Badge variant="outline" className="text-[10px]">{t('gapUi.detail.optional')}</Badge>}
                   >
                     <div className="space-y-3">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         <div className="space-y-1.5">
-                          <Label htmlFor="responsavel" className="text-xs">Responsável</Label>
+                          <Label htmlFor="responsavel" className="text-xs">{t('gapUi.detail.responsibleLabel')}</Label>
                           <Select
                             value={formData.responsavel_avaliacao}
                             onValueChange={(value) => setFormData(prev => ({ ...prev, responsavel_avaliacao: value }))}
                           >
-                            <SelectTrigger id="responsavel"><SelectValue placeholder="Selecionar..." /></SelectTrigger>
+                            <SelectTrigger id="responsavel"><SelectValue placeholder={t('gapUi.detail.selectPlaceholder')} /></SelectTrigger>
                             <SelectContent>
                               {users.map(user => (
                                 <SelectItem key={user.user_id} value={user.user_id}>{user.nome}</SelectItem>
@@ -1210,7 +1224,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                         </div>
                         <div className="space-y-1.5">
                           <Label htmlFor="prazo" className="text-xs flex items-center gap-1">
-                            <Calendar className="h-3.5 w-3.5" strokeWidth={1.5} />Prazo
+                            <Calendar className="h-3.5 w-3.5" strokeWidth={1.5} />{t('gapUi.detail.deadlineLabel')}
                           </Label>
                           <input
                             id="prazo" type="date"
@@ -1221,9 +1235,9 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                         </div>
                       </div>
                       <div className="space-y-1.5">
-                        <Label htmlFor="observacoes" className="text-xs">Observações</Label>
+                        <Label htmlFor="observacoes" className="text-xs">{t('gapUi.detail.observationsLabel')}</Label>
                         <Textarea
-                          id="observacoes" placeholder="Informações adicionais, contexto, justificativas..."
+                          id="observacoes" placeholder={t('gapUi.detail.observationsPlaceholder')}
                           value={formData.observacoes}
                           onChange={(e) => setFormData(prev => ({ ...prev, observacoes: e.target.value }))}
                           rows={2}
@@ -1235,10 +1249,10 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                   {/* ===== STEP 5: Vínculos & Histórico (colapsado) ===== */}
                   <JourneyStep
                     number={requiresPlanoStep ? 5 : 4}
-                    title="Vínculos & Histórico"
-                    description="Riscos relacionados e linha do tempo de alterações"
+                    title={t('gapUi.detail.step5Title')}
+                    description={t('gapUi.detail.step5Description')}
                     state="pending"
-                    badge={formData.riscos_vinculados.length > 0 ? <Badge variant="secondary" className="text-[10px]">{formData.riscos_vinculados.length} risco(s)</Badge> : undefined}
+                    badge={formData.riscos_vinculados.length > 0 ? <Badge variant="secondary" className="text-[10px]">{t('gapUi.detail.risksCount', { count: formData.riscos_vinculados.length })}</Badge> : undefined}
                     defaultOpen={false}
                     collapsible
                   >
@@ -1246,11 +1260,11 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                       <div>
                         <div className="flex items-center gap-1.5 mb-2">
                           <AlertTriangle className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.5} />
-                          <p className="text-xs font-medium text-foreground">Riscos Vinculados</p>
+                          <p className="text-xs font-medium text-foreground">{t('gapUi.detail.linkedRisks')}</p>
                         </div>
                         <div className="max-h-40 overflow-y-auto space-y-1 border rounded-md p-2">
                           {riscos.length === 0 ? (
-                            <p className="text-xs text-muted-foreground text-center py-3">Nenhum risco cadastrado</p>
+                            <p className="text-xs text-muted-foreground text-center py-3">{t('gapUi.detail.noRisksRegistered')}</p>
                           ) : (
                             riscos.map(risco => (
                               <label key={risco.id} className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 p-1.5 rounded text-sm">
@@ -1266,7 +1280,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                       <div>
                         <div className="flex items-center gap-1.5 mb-2">
                           <History className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.5} />
-                          <p className="text-xs font-medium text-foreground">Histórico de Alterações</p>
+                          <p className="text-xs font-medium text-foreground">{t('gapUi.detail.changeHistory')}</p>
                         </div>
                         <div className="max-h-48 overflow-y-auto border rounded-md">
                           <AuditTrailTimeline requirementId={requirement.id} frameworkId={frameworkId} />
@@ -1288,7 +1302,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
         onSave={handleSavePlanoAcao}
         loading={savingPlano}
         plano={{
-          titulo: `Adequar: ${requirement.codigo} - ${requirement.titulo}`,
+          titulo: t('gapUi.detail.planoAdequarTitle', { codigo: requirement.codigo, titulo: requirement.titulo }),
           descricao: requirement.descricao || '',
           prioridade: (requirement.peso || 0) >= 3 ? 'alta' : 'media',
           modulo_origem: 'frameworks',
@@ -1300,16 +1314,16 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
         open={linkDialogOpen}
         onOpenChange={setLinkDialogOpen}
         icon={ExternalLink}
-        title="Adicionar link como evidência"
+        title={t('gapUi.detail.addLinkDialogTitle')}
         size="sm"
         footer={
           <div className="flex justify-end gap-2">
-            <Button variant="ghost" size="sm" onClick={() => setLinkDialogOpen(false)}>Cancelar</Button>
+            <Button variant="ghost" size="sm" onClick={() => setLinkDialogOpen(false)}>{t('gapUi.common.cancel')}</Button>
             <Button
               size="sm"
               onClick={() => {
                 const url = linkUrl.trim();
-                if (!url) { toast.error('Informe a URL'); return; }
+                if (!url) { toast.error(t('gapUi.detail.informUrl')); return; }
                 let safeName = linkName.trim();
                 if (!safeName) {
                   try { safeName = new URL(url).hostname; } catch { safeName = url; }
@@ -1319,17 +1333,17 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                   evidence_files: [...prev.evidence_files, { type: 'link', name: safeName, url }],
                 }));
                 setLinkDialogOpen(false);
-                toast.success('Link adicionado como evidência');
+                toast.success(t('gapUi.detail.linkAdded'));
               }}
             >
-              Adicionar
+              {t('gapUi.common.add')}
             </Button>
           </div>
         }
       >
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <Label htmlFor="link-url" className="text-xs">URL <span className="text-destructive">*</span></Label>
+              <Label htmlFor="link-url" className="text-xs">{t('gapUi.detail.urlLabel')} <span className="text-destructive">*</span></Label>
               <Input
                 id="link-url"
                 type="url"
@@ -1340,14 +1354,14 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="link-name" className="text-xs">Nome do link (opcional)</Label>
+              <Label htmlFor="link-name" className="text-xs">{t('gapUi.detail.linkNameLabel')}</Label>
               <Input
                 id="link-name"
-                placeholder="Ex.: Política de Segurança no Confluence"
+                placeholder={t('gapUi.detail.linkNamePlaceholder')}
                 value={linkName}
                 onChange={(e) => setLinkName(e.target.value)}
               />
-              <p className="text-[11px] text-muted-foreground">Se vazio, usaremos o domínio da URL.</p>
+              <p className="text-[11px] text-muted-foreground">{t('gapUi.detail.linkNameHint')}</p>
             </div>
           </div>
       </DialogShell>

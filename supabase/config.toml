@@ -205,3 +205,6 @@ verify_jwt = true
 
 [functions.api-public]
 verify_jwt = false
+
+[functions.translate-framework-content]
+verify_jwt = true

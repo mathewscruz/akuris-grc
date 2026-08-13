@@ -27,6 +27,8 @@ import { CornerAccent } from '@/components/identity/CornerAccent';
 import { StatusSeg } from './StatusSeg';
 import { SectionHead } from './SectionHead';
 import { AIDiagnosticCard, type AIDiagnosticResult } from './AIDiagnosticCard';
+import { localizeRequirement } from "@/lib/gap-i18n";
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface RequirementDrawerProps {
   open: boolean;
@@ -75,6 +77,7 @@ export function RequirementDrawer({
   const [saving, setSaving] = useState(false);
   const [diagnosing, setDiagnosing] = useState(false);
   const [diagnostic, setDiagnostic] = useState<AIDiagnosticResult | null>(null);
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (!open || !requirementId || !empresaId) return;
@@ -86,7 +89,7 @@ export function RequirementDrawer({
         const [reqRes, evalRes] = await Promise.all([
           supabase
             .from('gap_analysis_requirements')
-            .select('id, codigo, titulo, descricao, categoria, orientacao_implementacao, exemplos_evidencias, framework_id')
+            .select('id, codigo, titulo, descricao, categoria, orientacao_implementacao, exemplos_evidencias, framework_id, titulo_en, descricao_en, categoria_en, orientacao_implementacao_en, exemplos_evidencias_en')
             .eq('id', requirementId)
             .maybeSingle(),
           supabase
@@ -98,11 +101,11 @@ export function RequirementDrawer({
         ]);
         if (cancelled) return;
         if (reqRes.error || !reqRes.data) {
-          toast.error('Requisito não encontrado');
+          toast.error(t('gapUi.drawer.requirementNotFound'));
           onOpenChange(false);
           return;
         }
-        setRequirement(reqRes.data);
+        setRequirement(localizeRequirement(reqRes.data as any) as any);
         setEvaluation({
           id: evalRes.data?.id,
           conformity_status: evalRes.data?.conformity_status || null,
@@ -159,14 +162,14 @@ export function RequirementDrawer({
         saveError = error;
       }
       if (saveError) throw saveError;
-      toast.success('Avaliação salva');
+      toast.success(t('gapUi.drawer.evaluationSaved'));
       onSaved?.();
       onOpenChange(false);
     } catch (e) {
       logger.error('Erro ao salvar avaliação no drawer', {
         error: e instanceof Error ? e.message : String(e),
       });
-      toast.error('Não foi possível salvar a avaliação');
+      toast.error(t('gapUi.drawer.errorSaveEvaluation'));
     } finally {
       setSaving(false);
     }
@@ -213,7 +216,7 @@ export function RequirementDrawer({
         side="right"
         className="w-full sm:w-[640px] lg:w-[820px] sm:max-w-[820px] p-0 overflow-hidden flex flex-col bg-background"
       >
-        <SheetTitle className="sr-only">Triagem de requisito</SheetTitle>
+        <SheetTitle className="sr-only">{t('gapUi.drawer.title')}</SheetTitle>
 
         {loading || !requirement ? (
           <div className="flex-1 flex items-center justify-center">
@@ -228,7 +231,7 @@ export function RequirementDrawer({
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-[10px] font-sans uppercase tracking-wider text-muted-foreground">
-                      Triagem rápida
+                      {t('gapUi.drawer.quickTriage')}
                     </span>
                     {requirement.codigo && (
                       <>
@@ -259,7 +262,7 @@ export function RequirementDrawer({
                     onClick={() => onOpenFullDialog(requirement.id)}
                   >
                     <ExternalLink className="h-3.5 w-3.5 mr-1.5" strokeWidth={1.5} />
-                    Edição completa
+                    {t('gapUi.drawer.fullEdit')}
                   </Button>
                 )}
               </div>
@@ -270,7 +273,7 @@ export function RequirementDrawer({
               {/* Texto oficial / orientação (renderizado como Markdown) */}
               {(requirement.descricao || requirement.orientacao_implementacao) && (
                 <section>
-                  <SectionHead title="O QUE A NORMA EXIGE" />
+                  <SectionHead title={t('gapUi.drawer.whatStandardRequires')} />
                   <div className={`rounded-lg border border-border bg-muted/30 p-4 text-sm text-foreground/85 leading-relaxed ${PROSE_CLASS}`}>
                     <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSanitize]}>
                       {requirement.orientacao_implementacao || requirement.descricao || ''}
@@ -282,7 +285,7 @@ export function RequirementDrawer({
               {/* Evidências esperadas — orienta o usuário sobre que prova buscar/anexar */}
               {requirement.exemplos_evidencias && (
                 <section>
-                  <SectionHead title="EVIDÊNCIAS ESPERADAS" />
+                  <SectionHead title={t('gapUi.drawer.expectedEvidence')} />
                   <div className={`rounded-lg border border-border bg-muted/30 p-4 text-sm text-foreground/85 leading-relaxed ${PROSE_CLASS}`}>
                     <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSanitize]}>
                       {requirement.exemplos_evidencias}
@@ -293,7 +296,7 @@ export function RequirementDrawer({
 
               {/* Status */}
               <section>
-                <SectionHead title="STATUS DE CONFORMIDADE" />
+                <SectionHead title={t('gapUi.drawer.complianceStatus')} />
                 <StatusSeg
                   value={(evaluation.conformity_status as any) || null}
                   onChange={(v) => setEvaluation(e => ({ ...e, conformity_status: v }))}
@@ -303,7 +306,7 @@ export function RequirementDrawer({
               {/* Diagnóstico IA */}
               <section>
                 <SectionHead
-                  title="DIAGNÓSTICO IA"
+                  title={t('gapUi.drawer.aiDiagnostic')}
                   right={
                     !diagnostic && (
                       <Button
@@ -314,7 +317,7 @@ export function RequirementDrawer({
                         onClick={runDiagnostic}
                       >
                         <AkurisAIIcon className="h-3.5 w-3.5 mr-1.5" />
-                        {diagnosing ? 'Analisando...' : 'Gerar diagnóstico'}
+                        {diagnosing ? t('gapUi.drawer.analyzing') : t('gapUi.drawer.generateDiagnostic')}
                       </Button>
                     )
                   }
@@ -326,8 +329,7 @@ export function RequirementDrawer({
                 )}
                 {!diagnosing && !diagnostic && (
                   <p className="text-xs text-muted-foreground italic px-1">
-                    Clique em "Gerar diagnóstico" para receber a análise da IA com
-                    pontos avaliados, gaps e justificativa pronta.
+                    {t('gapUi.drawer.diagnosticHint')}
                   </p>
                 )}
                 {diagnostic && (
@@ -341,11 +343,11 @@ export function RequirementDrawer({
 
               {/* Justificativa */}
               <section>
-                <SectionHead title="JUSTIFICATIVA / OBSERVAÇÕES" />
+                <SectionHead title={t('gapUi.drawer.justificationObservations')} />
                 <Textarea
                   value={evaluation.observacoes || ''}
                   onChange={(e) => setEvaluation(prev => ({ ...prev, observacoes: e.target.value }))}
-                  placeholder="Documente a base da avaliação: evidências citadas, lacunas observadas, decisões tomadas..."
+                  placeholder={t('gapUi.drawer.observationsPlaceholder')}
                   rows={5}
                   className="resize-y"
                 />
@@ -354,7 +356,7 @@ export function RequirementDrawer({
               {/* Prazo — só aparece para o que precisa ser implementado */}
               {(evaluation.conformity_status === 'nao_conforme' || evaluation.conformity_status === 'parcial') && (
                 <section>
-                  <SectionHead title="PRAZO DE IMPLEMENTAÇÃO" />
+                  <SectionHead title={t('gapUi.drawer.implementationDeadline')} />
                   <Input
                     id="prazo-drawer"
                     type="date"
@@ -369,20 +371,20 @@ export function RequirementDrawer({
             {/* Footer */}
             <footer className="border-t border-border bg-card px-6 py-4 shrink-0 flex items-center justify-between gap-3">
               <span className="text-[11px] text-muted-foreground hidden sm:inline-flex items-center gap-2">
-                Atalhos:
-                <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted font-mono text-[10px]">1</kbd>conforme
-                <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted font-mono text-[10px]">2</kbd>parcial
-                <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted font-mono text-[10px]">3</kbd>não conforme
-                <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted font-mono text-[10px]">4</kbd>N/A
-                <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted font-mono text-[10px]">⌘↵</kbd>salvar
+                {t('gapUi.drawer.shortcuts')}
+                <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted font-mono text-[10px]">1</kbd>{t('gapUi.drawer.shortcutConforme')}
+                <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted font-mono text-[10px]">2</kbd>{t('gapUi.drawer.shortcutParcial')}
+                <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted font-mono text-[10px]">3</kbd>{t('gapUi.drawer.shortcutNaoConforme')}
+                <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted font-mono text-[10px]">4</kbd>{t('gapUi.status.na')}
+                <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted font-mono text-[10px]">⌘↵</kbd>{t('gapUi.drawer.shortcutSave')}
               </span>
 
               <div className="flex items-center gap-2">
                 <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)} disabled={saving}>
-                  Cancelar
+                  {t('gapUi.drawer.cancel')}
                 </Button>
                 <Button size="sm" onClick={handleSave} disabled={saving || !evaluation.conformity_status}>
-                  {saving ? 'Salvando...' : 'Salvar avaliação'}
+                  {saving ? t('gapUi.drawer.saving') : t('gapUi.drawer.saveEvaluation')}
                 </Button>
               </div>
             </footer>

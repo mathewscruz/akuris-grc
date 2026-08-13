@@ -15,6 +15,8 @@ import { logger } from '@/lib/logger';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { AIBadge } from './AIBadge';
 import { SectionHead } from './SectionHead';
+import { reqTitulo } from "@/lib/gap-i18n";
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface PriorityRequirement {
   id: string;
@@ -48,16 +50,19 @@ function statusPenalty(s: string | null | undefined): number {
   }
 }
 
-function deadlineUrgency(prazo: string | null): { factor: number; reason: string } {
-  if (!prazo) return { factor: 0.1, reason: 'sem prazo' };
+function deadlineUrgency(
+  prazo: string | null,
+  t: (key: string, params?: Record<string, string | number>) => string
+): { factor: number; reason: string } {
+  if (!prazo) return { factor: 0.1, reason: t('gapV2.priorityQueue.noDeadline') };
   try {
     const days = differenceInCalendarDays(parseISO(prazo), new Date());
-    if (days < 0) return { factor: 1.0, reason: `vencido há ${Math.abs(days)}d` };
-    if (days <= 7) return { factor: 0.85, reason: `vence em ${days}d` };
-    if (days <= 30) return { factor: 0.55, reason: `vence em ${days}d` };
-    return { factor: 0.2, reason: `vence em ${days}d` };
+    if (days < 0) return { factor: 1.0, reason: t('gapV2.priorityQueue.overdueBy', { days: Math.abs(days) }) };
+    if (days <= 7) return { factor: 0.85, reason: t('gapV2.priorityQueue.dueIn', { days }) };
+    if (days <= 30) return { factor: 0.55, reason: t('gapV2.priorityQueue.dueIn', { days }) };
+    return { factor: 0.2, reason: t('gapV2.priorityQueue.dueIn', { days }) };
   } catch {
-    return { factor: 0.1, reason: 'prazo inválido' };
+    return { factor: 0.1, reason: t('gapV2.priorityQueue.invalidDeadline') };
   }
 }
 
@@ -68,6 +73,7 @@ export function PriorityQueueCard({
   onRequirementClick,
   onSeeAll,
 }: PriorityQueueCardProps) {
+  const { t } = useLanguage();
   const [items, setItems] = useState<PriorityRequirement[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -80,7 +86,7 @@ export function PriorityQueueCard({
         const [reqsRes, evalsRes] = await Promise.all([
           supabase
             .from('gap_analysis_requirements')
-            .select('id, codigo, titulo, categoria, peso, area_responsavel')
+            .select('id, codigo, titulo, categoria, peso, area_responsavel, titulo_en, categoria_en')
             .eq('framework_id', frameworkId),
           supabase
             .from('gap_analysis_evaluations')
@@ -96,19 +102,19 @@ export function PriorityQueueCard({
           const ev = evalMap.get(r.id);
           const peso = Number(r.peso || 3);
           const sPen = statusPenalty(ev?.conformity_status);
-          const dl = deadlineUrgency(ev?.prazo_implementacao || null);
+          const dl = deadlineUrgency(ev?.prazo_implementacao || null, t);
           const priority = peso * sPen * (0.4 + dl.factor * 0.6);
           // Não duplicamos o status no texto — o chip já o mostra ao lado.
           const reasonParts: string[] = [];
           if (!ev?.conformity_status || ev.conformity_status === 'nao_avaliado') {
-            reasonParts.push('não avaliado');
+            reasonParts.push(t('gapV2.priorityQueue.notEvaluated'));
           }
-          if (peso >= 4) reasonParts.push('peso alto');
+          if (peso >= 4) reasonParts.push(t('gapV2.priorityQueue.highWeight'));
           if (dl.factor >= 0.85) reasonParts.push(dl.reason);
           return {
             id: r.id,
             codigo: r.codigo,
-            titulo: r.titulo,
+            titulo: reqTitulo(r as any),
             categoria: r.categoria,
             peso: r.peso,
             prazo_implementacao: ev?.prazo_implementacao || null,
@@ -142,7 +148,7 @@ export function PriorityQueueCard({
     <section className="relative overflow-hidden rounded-xl border border-border bg-card">
       <div className="p-5">
         <SectionHead
-          title="FILA DE PRIORIDADE"
+          title={t('gapV2.priorityQueue.title')}
           count={items.length}
           right={
             <div className="flex items-center gap-2">
@@ -152,7 +158,7 @@ export function PriorityQueueCard({
                   onClick={onSeeAll}
                   className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
                 >
-                  Ver todos
+                  {t('gapV2.priorityQueue.seeAll')}
                   <ArrowRight className="h-3 w-3" strokeWidth={1.5} />
                 </button>
               )}
@@ -166,7 +172,7 @@ export function PriorityQueueCard({
           </div>
         ) : items.length === 0 ? (
           <p className="text-sm text-muted-foreground italic py-4">
-            Sem requisitos críticos no momento — todos os pendentes estão dentro do prazo.
+            {t('gapV2.priorityQueue.emptyState')}
           </p>
         ) : (
           <ol className="space-y-2">
@@ -208,13 +214,13 @@ export function PriorityQueueCard({
                         {isCritical && (
                           <span className="inline-flex items-center gap-1 text-[10px] font-sans uppercase tracking-wider text-destructive">
                             <AlertTriangle className="h-3 w-3" strokeWidth={1.5} />
-                            Não conforme
+                            {t('gapV2.priorityQueue.nonCompliant')}
                           </span>
                         )}
                         {isOverdue && (
                           <span className="inline-flex items-center gap-1 text-[10px] font-sans uppercase tracking-wider text-destructive">
                             <CalendarClock className="h-3 w-3" strokeWidth={1.5} />
-                            Vencido
+                            {t('gapV2.priorityQueue.overdue')}
                           </span>
                         )}
                         <span className="text-[10px] text-muted-foreground italic">{item.reason}</span>
@@ -222,7 +228,7 @@ export function PriorityQueueCard({
                     </div>
 
                     <span className="inline-flex items-center gap-1 text-xs font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                      Triagem
+                      {t('gapV2.priorityQueue.triage')}
                       <ArrowRight className="h-3 w-3" strokeWidth={1.5} />
                     </span>
                   </button>
@@ -234,8 +240,7 @@ export function PriorityQueueCard({
 
         {totalCritical > 0 && (
           <div className="mt-3 pt-3 border-t border-border/60 text-[11px] text-muted-foreground">
-            <span className="font-semibold text-destructive tabular-nums">{totalCritical}</span> requisito(s)
-            não-conforme(s) entre os {items.length} priorizados.
+            <span className="font-semibold text-destructive tabular-nums">{totalCritical}</span> {t('gapV2.priorityQueue.footerSummary', { total: items.length })}
           </div>
         )}
       </div>

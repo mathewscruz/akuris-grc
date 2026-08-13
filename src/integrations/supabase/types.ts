@@ -5062,10 +5062,12 @@ export type Database = {
           created_at: string
           created_by: string | null
           descricao: string | null
+          descricao_en: string | null
           empresa_id: string | null
           id: string
           is_template: boolean | null
           nome: string
+          nome_en: string | null
           tipo: string
           tipo_framework: string | null
           updated_at: string
@@ -5075,10 +5077,12 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           descricao?: string | null
+          descricao_en?: string | null
           empresa_id?: string | null
           id?: string
           is_template?: boolean | null
           nome: string
+          nome_en?: string | null
           tipo?: string
           tipo_framework?: string | null
           updated_at?: string
@@ -5088,10 +5092,12 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           descricao?: string | null
+          descricao_en?: string | null
           empresa_id?: string | null
           id?: string
           is_template?: boolean | null
           nome?: string
+          nome_en?: string | null
           tipo?: string
           tipo_framework?: string | null
           updated_at?: string
@@ -5103,52 +5109,70 @@ export type Database = {
         Row: {
           area_responsavel: string | null
           categoria: string | null
+          categoria_en: string | null
           codigo: string | null
           created_at: string
           descricao: string | null
+          descricao_en: string | null
           exemplos_evidencias: string | null
+          exemplos_evidencias_en: string | null
           framework_id: string
           id: string
           obrigatorio: boolean | null
           ordem: number | null
           orientacao_implementacao: string | null
+          orientacao_implementacao_en: string | null
           perguntas_diagnostico: string | null
+          perguntas_diagnostico_en: string | null
           peso: number | null
           titulo: string
+          titulo_en: string | null
           updated_at: string
         }
         Insert: {
           area_responsavel?: string | null
           categoria?: string | null
+          categoria_en?: string | null
           codigo?: string | null
           created_at?: string
           descricao?: string | null
+          descricao_en?: string | null
           exemplos_evidencias?: string | null
+          exemplos_evidencias_en?: string | null
           framework_id: string
           id?: string
           obrigatorio?: boolean | null
           ordem?: number | null
           orientacao_implementacao?: string | null
+          orientacao_implementacao_en?: string | null
           perguntas_diagnostico?: string | null
+          perguntas_diagnostico_en?: string | null
           peso?: number | null
           titulo: string
+          titulo_en?: string | null
           updated_at?: string
         }
         Update: {
           area_responsavel?: string | null
           categoria?: string | null
+          categoria_en?: string | null
           codigo?: string | null
           created_at?: string
           descricao?: string | null
+          descricao_en?: string | null
           exemplos_evidencias?: string | null
+          exemplos_evidencias_en?: string | null
           framework_id?: string
           id?: string
           obrigatorio?: boolean | null
           ordem?: number | null
           orientacao_implementacao?: string | null
+          orientacao_implementacao_en?: string | null
           perguntas_diagnostico?: string | null
+          perguntas_diagnostico_en?: string | null
           peso?: number | null
           titulo?: string
+          titulo_en?: string | null
           updated_at?: string
         }
         Relationships: [

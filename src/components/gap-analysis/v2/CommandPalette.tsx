@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
 import { useRequirementDrawer } from './RequirementDrawerProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { reqTitulo, reqCategoria } from "@/lib/gap-i18n";
 
 interface RequirementRow {
   id: string;
@@ -53,7 +54,7 @@ export function CommandPalette({ frameworkId, empresaId, onSaved }: CommandPalet
         const [reqsRes, evalsRes] = await Promise.all([
           supabase
             .from('gap_analysis_requirements')
-            .select('id, codigo, titulo, categoria, framework_id')
+            .select('id, codigo, titulo, categoria, framework_id, titulo_en, categoria_en')
             .eq('framework_id', frameworkId)
             .order('ordem', { ascending: true })
             .limit(500),
@@ -82,7 +83,7 @@ export function CommandPalette({ frameworkId, empresaId, onSaved }: CommandPalet
   const grouped = useMemo(() => {
     const g: Record<string, RequirementRow[]> = {};
     requirements.forEach((r) => {
-      const cat = r.categoria || t('gapAnalysis.v2.commandPalette.otherCategory');
+      const cat = reqCategoria(r as any) || t('gapAnalysis.v2.commandPalette.otherCategory');
       if (!g[cat]) g[cat] = [];
       g[cat].push(r);
     });
@@ -109,7 +110,7 @@ export function CommandPalette({ frameworkId, empresaId, onSaved }: CommandPalet
             {items.map((r) => (
               <CommandItem
                 key={r.id}
-                value={`${r.codigo || ''} ${r.titulo} ${cat}`}
+                value={`${r.codigo || ''} ${reqTitulo(r as any)} ${cat}`}
                 onSelect={() => {
                   setOpen(false);
                   openRequirement({
@@ -125,7 +126,7 @@ export function CommandPalette({ frameworkId, empresaId, onSaved }: CommandPalet
                     {r.codigo}
                   </span>
                 )}
-                <span className="truncate">{r.titulo}</span>
+                <span className="truncate">{reqTitulo(r as any)}</span>
               </CommandItem>
             ))}
           </CommandGroup>

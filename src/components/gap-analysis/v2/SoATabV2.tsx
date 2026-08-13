@@ -22,6 +22,8 @@ import { resolveConformityTone } from '@/lib/status-tone';
 import { KpiTiny } from './KpiTiny';
 import { BulkActionBar } from './BulkActionBar';
 import { cn } from '@/lib/utils';
+import { reqTitulo, reqCategoria } from "@/lib/gap-i18n";
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface SoAItem {
   id: string;
@@ -41,23 +43,24 @@ interface Props {
   frameworkVersion: string;
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  conforme: 'Conforme',
-  parcial: 'Parcial',
-  nao_conforme: 'Não Conforme',
-  nao_aplicavel: 'N/A',
-  nao_avaliado: 'Não Avaliado',
+const STATUS_LABEL_KEYS: Record<string, string> = {
+  conforme: 'gapV2.soa.statusConforme',
+  parcial: 'gapV2.soa.statusParcial',
+  nao_conforme: 'gapV2.soa.statusNaoConforme',
+  nao_aplicavel: 'gapV2.soa.statusNaoAplicavel',
+  nao_avaliado: 'gapV2.soa.statusNaoAvaliado',
 };
 
 type Segment = 'todos' | 'clausulas' | 'anexo_a';
 
-const SEGMENTS: Array<{ key: Segment; label: string }> = [
-  { key: 'todos', label: 'Todos' },
-  { key: 'clausulas', label: 'Cláusulas' },
-  { key: 'anexo_a', label: 'Anexo A' },
+const SEGMENT_KEYS: Array<{ key: Segment; labelKey: string }> = [
+  { key: 'todos', labelKey: 'gapV2.soa.segAll' },
+  { key: 'clausulas', labelKey: 'gapV2.soa.segClauses' },
+  { key: 'anexo_a', labelKey: 'gapV2.soa.segAnnexA' },
 ];
 
 export function SoATabV2({ frameworkId, frameworkName, frameworkVersion }: Props) {
+  const { t } = useLanguage();
   const { empresaId } = useEmpresaId();
   const [items, setItems] = useState<SoAItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,7 +84,7 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion }: Props
       const [reqsRes, evalsRes] = await Promise.all([
         supabase
           .from('gap_analysis_requirements')
-          .select('id, codigo, titulo, categoria, area_responsavel')
+          .select('id, codigo, titulo, categoria, area_responsavel, titulo_en, categoria_en')
           .eq('framework_id', frameworkId)
           .order('ordem', { ascending: true }),
         supabase
@@ -115,8 +118,8 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion }: Props
         return {
           id: r.id,
           codigo: r.codigo || '',
-          titulo: r.titulo,
-          categoria: r.categoria || 'Outros',
+          titulo: reqTitulo(r as any),
+          categoria: reqCategoria(r as any) || 'Outros',
           aplicavel: soaEntry ? soaEntry.aplicavel : !isNA,
           justificativa: soaEntry?.justificativa || (isNA ? (evalData?.observacoes || '') : ''),
           conformity_status: status,
@@ -130,7 +133,7 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion }: Props
       soaItems.forEach(item => { justMap[item.id] = item.justificativa; });
       setJustificativas(justMap);
     } catch {
-      toast.error('Erro ao carregar dados da SoA');
+      toast.error(t('gapV2.soa.errorLoad'));
     } finally {
       setLoading(false);
     }
@@ -196,11 +199,11 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion }: Props
         .from('gap_analysis_evaluations')
         .upsert(records, { onConflict: 'framework_id,empresa_id,requirement_id' });
       if (error) throw error;
-      toast.success(`${selected.size} requisito(s) atualizado(s) para ${STATUS_LABELS[status] || status}`);
+      toast.success(t('gapV2.soa.bulkUpdateSuccess', { count: selected.size, status: t(STATUS_LABEL_KEYS[status]) || status }));
       setSelected(new Set());
       loadSoAData();
     } catch (e: any) {
-      toast.error('Erro ao atualizar em lote');
+      toast.error(t('gapV2.soa.errorBulkUpdate'));
     }
   };
 
@@ -252,10 +255,10 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion }: Props
         if (evalErr) throw evalErr;
       }
 
-      toast.success('Declaração de Aplicabilidade salva. Score do framework atualizado.');
+      toast.success(t('gapV2.soa.saveSuccess'));
       loadSoAData();
     } catch {
-      toast.error('Erro ao salvar SoA');
+      toast.error(t('gapV2.soa.errorSave'));
     } finally {
       setSaving(false);
     }
@@ -273,9 +276,9 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion }: Props
         items: items.map(item => ({ ...item, justificativa: justificativas[item.id] || item.justificativa })),
         stats,
       });
-      toast.success('PDF da SoA exportado com sucesso');
+      toast.success(t('gapV2.soa.exportSuccess'));
     } catch {
-      toast.error('Erro ao exportar PDF');
+      toast.error(t('gapV2.soa.errorExport'));
     } finally {
       setExporting(false);
     }
@@ -285,7 +288,7 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion }: Props
     return (
       <div className="min-h-[280px] flex flex-col items-center justify-center gap-3">
         <AkurisPulse size={56} />
-        <p className="text-sm text-muted-foreground">Carregando SoA...</p>
+        <p className="text-sm text-muted-foreground">{t('gapV2.soa.loading')}</p>
       </div>
     );
   }
@@ -294,19 +297,19 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion }: Props
     <div className="space-y-6 pb-24">
       {/* 7 KPIs editoriais */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2.5">
-        <KpiTiny eyebrow="TOTAL" value={stats.total} foot="requisitos" />
-        <KpiTiny eyebrow="APLICÁVEIS" value={stats.aplicavel} foot="no escopo" tone="primary" />
-        <KpiTiny eyebrow="N/A" value={stats.naoAplicavel} foot="fora do escopo" />
-        <KpiTiny eyebrow="CONFORMES" value={stats.conforme} tone="success" />
-        <KpiTiny eyebrow="PARCIAIS" value={stats.parcial} tone="warning" />
-        <KpiTiny eyebrow="NÃO CONFORMES" value={stats.naoConforme} tone="destructive" />
-        <KpiTiny eyebrow="NÃO AVALIADOS" value={stats.naoAvaliado} />
+        <KpiTiny eyebrow={t('gapV2.soa.kpiTotal')} value={stats.total} foot={t('gapV2.soa.footRequirements')} />
+        <KpiTiny eyebrow={t('gapV2.soa.kpiApplicable')} value={stats.aplicavel} foot={t('gapV2.soa.footInScope')} tone="primary" />
+        <KpiTiny eyebrow={t('gapV2.soa.kpiNA')} value={stats.naoAplicavel} foot={t('gapV2.soa.footOutOfScope')} />
+        <KpiTiny eyebrow={t('gapV2.soa.kpiConforme')} value={stats.conforme} tone="success" />
+        <KpiTiny eyebrow={t('gapV2.soa.kpiParcial')} value={stats.parcial} tone="warning" />
+        <KpiTiny eyebrow={t('gapV2.soa.kpiNaoConforme')} value={stats.naoConforme} tone="destructive" />
+        <KpiTiny eyebrow={t('gapV2.soa.kpiNaoAvaliado')} value={stats.naoAvaliado} />
       </div>
 
       {/* Toolbar com segmentos */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
         <div className="inline-flex items-center rounded-lg border border-border bg-card p-0.5">
-          {SEGMENTS.map(seg => (
+          {SEGMENT_KEYS.map(seg => (
             <button
               key={seg.key}
               type="button"
@@ -318,14 +321,14 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion }: Props
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
-              {seg.label}
+              {t(seg.labelKey)}
             </button>
           ))}
         </div>
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
           <Input
-            placeholder="Buscar por código ou título..."
+            placeholder={t('gapV2.soa.searchPlaceholder')}
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="pl-9"
@@ -333,11 +336,11 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion }: Props
         </div>
         <div className="flex gap-2 ml-auto">
           <Button variant="outline" onClick={handleSave} disabled={saving}>
-            {saving ? 'Salvando...' : 'Salvar SoA'}
+            {saving ? t('gapV2.soa.saving') : t('gapV2.soa.saveButton')}
           </Button>
           <Button onClick={handleExportPDF} disabled={exporting}>
             <Download className="h-4 w-4 mr-2" strokeWidth={1.5} />
-            {exporting ? 'Exportando...' : 'Exportar PDF'}
+            {exporting ? t('gapV2.soa.exporting') : t('gapV2.soa.exportButton')}
           </Button>
         </div>
       </div>
@@ -347,10 +350,10 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion }: Props
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
             <FileText className="h-5 w-5 text-primary" strokeWidth={1.5} />
-            Declaração de Aplicabilidade (SoA)
+            {t('gapV2.soa.title')}
           </CardTitle>
           <p className="text-xs text-muted-foreground">
-            Para a certificação, cada controle aplicável precisa de uma justificativa de inclusão (e cada exclusão, sua razão). Preencha a coluna Justificativa e clique em "Salvar SoA".
+            {t('gapV2.soa.description')}
           </p>
         </CardHeader>
         <CardContent className="p-0">
@@ -362,16 +365,16 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion }: Props
                     <Checkbox
                       checked={filteredItems.length > 0 && selected.size === filteredItems.length}
                       onCheckedChange={toggleSelectAll}
-                      aria-label="Selecionar todos"
+                      aria-label={t('gapV2.soa.selectAll')}
                     />
                   </TableHead>
-                  <TableHead className="w-24">Código</TableHead>
-                  <TableHead>Requisito</TableHead>
-                  <TableHead className="w-28">Aplicável</TableHead>
-                  <TableHead className="w-32">Status</TableHead>
-                  <TableHead className="w-32">Responsável</TableHead>
-                  <TableHead className="w-20 text-center">Evid.</TableHead>
-                  <TableHead className="min-w-[200px]">Justificativa</TableHead>
+                  <TableHead className="w-24">{t('gapV2.soa.colCode')}</TableHead>
+                  <TableHead>{t('gapV2.soa.colRequirement')}</TableHead>
+                  <TableHead className="w-28">{t('gapV2.soa.colApplicable')}</TableHead>
+                  <TableHead className="w-32">{t('gapV2.soa.colStatus')}</TableHead>
+                  <TableHead className="w-32">{t('gapV2.soa.colResponsible')}</TableHead>
+                  <TableHead className="w-20 text-center">{t('gapV2.soa.colEvidence')}</TableHead>
+                  <TableHead className="min-w-[200px]">{t('gapV2.soa.colJustification')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -390,7 +393,7 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion }: Props
                         <Checkbox
                           checked={isSelected}
                           onCheckedChange={() => toggleSelect(item.id)}
-                          aria-label={`Selecionar ${item.codigo}`}
+                          aria-label={t('gapV2.soa.selectItem', { code: item.codigo })}
                         />
                       </TableCell>
                       <TableCell className="font-mono text-xs">{item.codigo}</TableCell>
@@ -404,12 +407,12 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion }: Props
                           className="text-xs h-7"
                           onClick={() => toggleApplicability(item.id)}
                         >
-                          {item.aplicavel ? 'Sim' : 'Não'}
+                          {item.aplicavel ? t('gapV2.soa.yes') : t('gapV2.soa.no')}
                         </Button>
                       </TableCell>
                       <TableCell>
                         <StatusBadge size="sm" {...resolveConformityTone(statusKey)}>
-                          {STATUS_LABELS[statusKey] || statusKey}
+                          {t(STATUS_LABEL_KEYS[statusKey]) || statusKey}
                         </StatusBadge>
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
@@ -422,7 +425,7 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion }: Props
                       </TableCell>
                       <TableCell>
                         <Textarea
-                          placeholder={!item.aplicavel ? 'Justificativa para exclusão...' : 'Observações...'}
+                          placeholder={!item.aplicavel ? t('gapV2.soa.placeholderExclusion') : t('gapV2.soa.placeholderObservations')}
                           value={justificativas[item.id] || ''}
                           onChange={e => updateJustificativa(item.id, e.target.value)}
                           rows={1}
@@ -435,7 +438,7 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion }: Props
                 {filteredItems.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                      Nenhum requisito encontrado com os filtros selecionados.
+                      {t('gapV2.soa.noResults')}
                     </TableCell>
                   </TableRow>
                 )}
@@ -449,10 +452,10 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion }: Props
         selectedCount={selected.size}
         onClear={() => setSelected(new Set())}
         onStatusChange={bulkChangeStatus}
-        onAssign={() => toast.info('Atribuição em lote em breve')}
-        onSetDeadline={() => toast.info('Prazo em lote em breve')}
-        onCreatePlan={() => toast.info('Plano em lote em breve')}
-        onGenerateJustification={() => toast.info('Geração de justificativa IA em breve')}
+        onAssign={() => toast.info(t('gapV2.soa.comingSoonAssign'))}
+        onSetDeadline={() => toast.info(t('gapV2.soa.comingSoonDeadline'))}
+        onCreatePlan={() => toast.info(t('gapV2.soa.comingSoonPlan'))}
+        onGenerateJustification={() => toast.info(t('gapV2.soa.comingSoonJustification'))}
       />
     </div>
   );
