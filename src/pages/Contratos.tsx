@@ -436,13 +436,13 @@ export default function Contratos() {
                         <SelectValue placeholder={t('fin.comum.status')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="todos">Todos</SelectItem>
-                        <SelectItem value="ativo">Ativo</SelectItem>
-                        <SelectItem value="rascunho">Rascunho</SelectItem>
+                        <SelectItem value="todos">{t('campos.filtros.todos')}</SelectItem>
+                        <SelectItem value="ativo">{t('campos.opcoes.ativo')}</SelectItem>
+                        <SelectItem value="rascunho">{t('campos.opcoes.rascunho')}</SelectItem>
                         <SelectItem value="negociacao">{t('fin.contratos.negociacao')}</SelectItem>
                         <SelectItem value="aprovacao">{t('fin.comum.aprovacao')}</SelectItem>
-                        <SelectItem value="suspenso">Suspenso</SelectItem>
-                        <SelectItem value="encerrado">Encerrado</SelectItem>
+                        <SelectItem value="suspenso">{t('campos.opcoes.suspenso')}</SelectItem>
+                        <SelectItem value="encerrado">{t('campos.opcoes.encerrado')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <Select value={tipoFilter} onValueChange={setTipoFilter}>
@@ -450,12 +450,12 @@ export default function Contratos() {
                         <SelectValue placeholder={t('fin.comum.tipo')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="todos">Todos</SelectItem>
-                        <SelectItem value="servicos">Serviços</SelectItem>
-                        <SelectItem value="licenciamento">Licenciamento</SelectItem>
+                        <SelectItem value="todos">{t('campos.filtros.todos')}</SelectItem>
+                        <SelectItem value="servicos">{t('campos.opcoes.servicos')}</SelectItem>
+                        <SelectItem value="licenciamento">{t('campos.opcoes.licenciamento')}</SelectItem>
                         <SelectItem value="manutencao">{t('fin.comum.manutencao')}</SelectItem>
-                        <SelectItem value="consultoria">Consultoria</SelectItem>
-                        <SelectItem value="produto">Produto</SelectItem>
+                        <SelectItem value="consultoria">{t('campos.opcoes.consultoria')}</SelectItem>
+                        <SelectItem value="produto">{t('campos.opcoes.produto')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <Select value={String(itemsPerPage)} onValueChange={(v) => setItemsPerPage(Number(v))}>
@@ -639,10 +639,10 @@ export default function Contratos() {
                         <SelectValue placeholder={t('fin.comum.status')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="todos">Todos Status</SelectItem>
-                        <SelectItem value="ativo">Ativo</SelectItem>
-                        <SelectItem value="inativo">Inativo</SelectItem>
-                        <SelectItem value="suspenso">Suspenso</SelectItem>
+                        <SelectItem value="todos">{t('campos.filtros.todosStatus')}</SelectItem>
+                        <SelectItem value="ativo">{t('campos.opcoes.ativo')}</SelectItem>
+                        <SelectItem value="inativo">{t('campos.opcoes.inativo')}</SelectItem>
+                        <SelectItem value="suspenso">{t('campos.opcoes.suspenso')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <Select value={categoriaFornecedorFilter} onValueChange={setCategoriaFornecedorFilter}>
@@ -650,7 +650,7 @@ export default function Contratos() {
                         <SelectValue placeholder={t('campos.comum.categoria')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="todos">Todas Categorias</SelectItem>
+                        <SelectItem value="todos">{t('campos.filtros.todasCategorias')}</SelectItem>
                         {categoriasFornecedor.map(cat => (
                           <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                         ))}
@@ -661,10 +661,10 @@ export default function Contratos() {
                         <SelectValue placeholder={t('campos.comum.risco')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="todos">Todos Riscos</SelectItem>
-                        <SelectItem value="baixo">Baixo</SelectItem>
-                        <SelectItem value="medio">Médio</SelectItem>
-                        <SelectItem value="alto">Alto</SelectItem>
+                        <SelectItem value="todos">{t('campos.filtros.todosRiscos')}</SelectItem>
+                        <SelectItem value="baixo">{t('campos.opcoes.baixo')}</SelectItem>
+                        <SelectItem value="medio">{t('campos.opcoes.medio')}</SelectItem>
+                        <SelectItem value="alto">{t('campos.opcoes.alto')}</SelectItem>
                         <SelectItem value="critico">{t('fin.comum.critico')}</SelectItem>
                       </SelectContent>
                     </Select>
