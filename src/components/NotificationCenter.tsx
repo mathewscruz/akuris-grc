@@ -55,6 +55,23 @@ const markAutomaticNotificationAsRead = (notificationId: string) => {
   }
 };
 
+
+const getNotificationDisplay = (
+  notification: Notification,
+  t: (key: string, params?: Record<string, unknown>) => string,
+): { title: string; message: string | null } => {
+  const metadata = notification.metadata;
+  const i18nKey = metadata && typeof metadata === 'object' ? (metadata as Record<string, unknown>).i18n_key : undefined;
+  const i18nMessageKey = metadata && typeof metadata === 'object' ? (metadata as Record<string, unknown>).i18n_message_key : undefined;
+  const i18nParams = metadata && typeof metadata === 'object' ? (metadata as Record<string, unknown>).i18n_params : undefined;
+  const params = (i18nParams && typeof i18nParams === 'object') ? (i18nParams as Record<string, unknown>) : undefined;
+
+  const title = typeof i18nKey === 'string' ? t(i18nKey, params) : notification.title;
+  const message = typeof i18nMessageKey === 'string' ? t(i18nMessageKey, params) : notification.message;
+
+  return { title, message };
+};
+
 const NotificationCenter: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [detail, setDetail] = useState<Notification | null>(null);
@@ -84,7 +101,7 @@ const NotificationCenter: React.FC = () => {
 
   // Buscar todas as notificações automáticas do sistema
   const { data: automaticNotifications = [] } = useQuery({
-    queryKey: ['automatic-notifications', [...readAutomaticIds]],
+    queryKey: ['automatic-notifications', [...readAutomaticIds], locale],
     queryFn: async () => {
       const notificacoes: Notification[] = [];
       const readIds = readAutomaticIds;
@@ -144,6 +161,7 @@ const NotificationCenter: React.FC = () => {
             title: t('fin.notif.docVencido'),
             message: t('fin.notif.docVencidoMsg', { nome: doc.nome, dias: Math.abs(diasParaVencimento) }),
             type: 'error', read: false, link_to: '/documentos',
+            metadata: { documento_id: doc.id },
             created_at: new Date().toISOString(), isAutomatic: true
           });
         } else if (diasParaVencimento === 0) {
@@ -152,6 +170,7 @@ const NotificationCenter: React.FC = () => {
             title: t('fin.notif.docHoje'),
             message: t('fin.notif.docHojeMsg', { nome: doc.nome }),
             type: 'warning', read: false, link_to: '/documentos',
+            metadata: { documento_id: doc.id },
             created_at: new Date().toISOString(), isAutomatic: true
           });
         } else if (diasParaVencimento <= 7) {
@@ -160,6 +179,7 @@ const NotificationCenter: React.FC = () => {
             title: t('fin.notif.docBreve'),
             message: t('fin.notif.docBreveMsg', { nome: doc.nome, dias: diasParaVencimento }),
             type: 'warning', read: false, link_to: '/documentos',
+            metadata: { documento_id: doc.id },
             created_at: new Date().toISOString(), isAutomatic: true
           });
         }
@@ -175,6 +195,7 @@ const NotificationCenter: React.FC = () => {
             title: t('fin.notif.contratoVencido'),
             message: t('fin.notif.contratoVencidoMsg', { nome: contrato.nome, dias: Math.abs(diasParaVencimento) }),
             type: 'error', read: false, link_to: '/contratos',
+            metadata: { contrato_id: contrato.id },
             created_at: new Date().toISOString(), isAutomatic: true
           });
         } else if (diasParaVencimento <= 30) {
@@ -184,6 +205,7 @@ const NotificationCenter: React.FC = () => {
             title: t('fin.notif.contratoProximo'),
             message: t('fin.notif.contratoProximoMsg', { nome: contrato.nome, dias: diasParaVencimento, extra: renovacaoMsg }),
             type: 'warning', read: false, link_to: '/contratos',
+            metadata: { contrato_id: contrato.id },
             created_at: new Date().toISOString(), isAutomatic: true
           });
         }
@@ -199,6 +221,7 @@ const NotificationCenter: React.FC = () => {
             title: t('fin.notif.controlePendente'),
             message: t('fin.notif.controlePendenteMsg', { nome: controle.nome, dias: diasParaAvaliacao }),
             type: 'warning', read: false, link_to: `/controles?detalhe=${controle.id}`,
+            metadata: { controle_id: controle.id },
             created_at: new Date().toISOString(), isAutomatic: true
           });
         }
@@ -211,6 +234,7 @@ const NotificationCenter: React.FC = () => {
           title: t('fin.notif.incidenteCritico'),
           message: t('fin.notif.incidenteCriticoMsg', { nome: incidente.titulo, status: formatStatus(incidente.status) }),
           type: 'error', read: false, link_to: `/incidentes?detalhe=${incidente.id}`,
+          metadata: { incidente_id: incidente.id },
           created_at: new Date().toISOString(), isAutomatic: true
         });
       });
@@ -222,6 +246,7 @@ const NotificationCenter: React.FC = () => {
           title: t('fin.notif.ativoCritico'),
           message: t('fin.notif.ativoCriticoMsg', { nome: ativo.nome }),
           type: 'warning', read: false, link_to: '/ativos',
+          metadata: { ativo_id: ativo.id },
           created_at: new Date().toISOString(), isAutomatic: true
         });
       });
@@ -249,6 +274,7 @@ const NotificationCenter: React.FC = () => {
             title: t('fin.notif.licencaVencida'),
             message: t('fin.notif.licencaVencidaMsg', { nome: licenca.nome, dias: Math.abs(diasParaVencimento) }),
             type: 'error', read: false, link_to: '/ativos/licencas',
+            metadata: { licenca_id: licenca.id },
             created_at: new Date().toISOString(), isAutomatic: true
           });
         } else if (diasParaVencimento <= 30) {
@@ -257,6 +283,7 @@ const NotificationCenter: React.FC = () => {
             title: t('fin.notif.licencaVencendo'),
             message: t('fin.notif.licencaVencendoMsg', { nome: licenca.nome, dias: diasParaVencimento }),
             type: 'warning', read: false, link_to: '/ativos/licencas',
+            metadata: { licenca_id: licenca.id },
             created_at: new Date().toISOString(), isAutomatic: true
           });
         }
@@ -278,6 +305,7 @@ const NotificationCenter: React.FC = () => {
             title: t('fin.notif.chaveExpirada'),
             message: t('fin.notif.chaveExpiradaMsg', { nome: chave.nome, ambiente: chave.ambiente, dias: Math.abs(diasParaRotacao) }),
             type: 'error', read: false, link_to: '/ativos/chaves',
+            metadata: { chave_id: chave.id },
             created_at: new Date().toISOString(), isAutomatic: true
           });
         } else if (diasParaRotacao <= 30) {
@@ -286,6 +314,7 @@ const NotificationCenter: React.FC = () => {
             title: t('fin.notif.chaveRotacao'),
             message: t('fin.notif.chaveRotacaoMsg', { nome: chave.nome, dias: diasParaRotacao }),
             type: 'warning', read: false, link_to: '/ativos/chaves',
+            metadata: { chave_id: chave.id },
             created_at: new Date().toISOString(), isAutomatic: true
           });
         }
@@ -300,6 +329,7 @@ const NotificationCenter: React.FC = () => {
             title: t('fin.notif.manutencao'),
             message: t('fin.notif.manutencaoMsg', { tipo: manutencao.tipo_manutencao, nome: (manutencao as any).ativos?.nome, quando: diasParaManutencao === 0 ? t('fin.comum.hoje') : t('fin.comum.emDias', { dias: diasParaManutencao }) }),
             type: 'warning', read: false, link_to: '/ativos',
+            metadata: { ativo_id: manutencao.ativo_id },
             created_at: new Date().toISOString(), isAutomatic: true
           });
         }
@@ -320,6 +350,7 @@ const NotificationCenter: React.FC = () => {
             title: t('fin.notif.riscoRevisaoVencida'),
             message: t('fin.notif.riscoRevisaoVencidaMsg', { nome: risco.nome, nivel: risco.nivel_risco_inicial || 'N/A', dias: Math.abs(diasParaRevisao) }),
             type: 'error', read: false, link_to: '/riscos',
+            metadata: { risco_id: risco.id },
             created_at: new Date().toISOString(), isAutomatic: true
           });
         } else if (diasParaRevisao <= 7) {
@@ -328,6 +359,7 @@ const NotificationCenter: React.FC = () => {
             title: t('fin.notif.riscoRevisaoProxima'),
             message: t('fin.notif.riscoRevisaoProximaMsg', { nome: risco.nome, dias: diasParaRevisao }),
             type: 'warning', read: false, link_to: '/riscos',
+            metadata: { risco_id: risco.id },
             created_at: new Date().toISOString(), isAutomatic: true
           });
         }
@@ -342,6 +374,7 @@ const NotificationCenter: React.FC = () => {
           title: t('fin.notif.solicitacaoAprovacao'),
           message: t('fin.notif.solicitacaoAprovacaoMsg', { solicitante: solicitanteNome, documento: documentoNome }),
           type: 'info', read: false, link_to: `/documentos?aprovar=${aprovacao.documento_id}`,
+          metadata: { documento_id: aprovacao.documento_id },
           created_at: aprovacao.created_at, isAutomatic: true
         });
       });
@@ -502,6 +535,7 @@ const NotificationCenter: React.FC = () => {
     const moduleMeta = resolveNotificationModule(notification);
     const ModuleIcon = moduleMeta.Icon;
     const moduleLabel = t(moduleMeta.i18nKey);
+    const { title: displayTitle, message: displayMessage } = getNotificationDisplay(notification, t);
 
     return (
       <button
@@ -537,11 +571,11 @@ const NotificationCenter: React.FC = () => {
               'text-[13px] font-semibold leading-snug tracking-tight break-words line-clamp-2',
               !notification.read ? 'text-foreground' : 'text-muted-foreground'
             )}>
-              {notification.title}
+              {displayTitle}
             </p>
-            {notification.message && (
+            {displayMessage && (
               <p className="text-xs text-muted-foreground leading-relaxed mt-0.5 break-words line-clamp-3">
-                {notification.message}
+                {displayMessage}
               </p>
             )}
             <span className="text-[11px] text-muted-foreground tabular-nums mt-1.5 block">
@@ -568,6 +602,7 @@ const NotificationCenter: React.FC = () => {
     : 'neutral';
   const detailToneCls = detail ? TONE_CLS[getTypeTone(detail.type)] : null;
   const DetailIcon = detailModule?.Icon;
+  const detailDisplay = detail ? getNotificationDisplay(detail, t) : null;
   const detailGroupLabel = detail
     ? (detail.type === 'error'
         ? t('notifications.groupUrgent')
@@ -705,7 +740,7 @@ const NotificationCenter: React.FC = () => {
                       {t(detailModule.i18nKey)}
                     </p>
                     <DialogTitle className="mt-1.5 text-base font-semibold leading-tight tracking-tight break-words">
-                      {detail.title}
+                      {detailDisplay?.title ?? detail.title}
                     </DialogTitle>
                     <div className="mt-2 flex flex-wrap items-center gap-2">
                       <StatusBadge size="sm" tone={detailToneKey}>
@@ -723,9 +758,9 @@ const NotificationCenter: React.FC = () => {
               </DialogHeader>
 
               <div className="mt-2 max-h-[50vh] overflow-y-auto">
-                {detail.message ? (
+                {detailDisplay?.message ? (
                   <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap break-words">
-                    {detail.message}
+                    {detailDisplay.message}
                   </p>
                 ) : (
                   <p className="text-sm text-muted-foreground italic">

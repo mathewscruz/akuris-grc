@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useIntegrationNotify } from '@/hooks/useIntegrationNotify';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus, Server, Activity, AlertTriangle, TrendingUp, Upload, Shield, CloudCog, MoreHorizontal, Edit, Trash2, Wrench, History } from 'lucide-react';
@@ -148,6 +149,7 @@ const Ativos = () => {
   // Manutenção & Auditoria dialogs
   const [manutencaoDialog, setManutencaoDialog] = useState<{ open: boolean; ativoId: string; ativoNome: string }>({ open: false, ativoId: '', ativoNome: '' });
   const [trilhaDialog, setTrilhaDialog] = useState<{ open: boolean; ativoId?: string }>({ open: false });
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // Fetch ativos with React Query
   const { data: ativos = [], isLoading: loading } = useQuery<Ativo[]>({
@@ -293,6 +295,20 @@ const Ativos = () => {
     });
     setIsDialogOpen(true);
   };
+
+  // Deep link vindo da busca global (Cmd+K): abre o registo focado para edição/visualização.
+  useEffect(() => {
+    const focusId = searchParams.get('focus');
+    if (!focusId || ativos.length === 0) return;
+    const ativo = ativos.find((a) => a.id === focusId);
+    if (ativo) {
+      handleEdit(ativo);
+      const next = new URLSearchParams(searchParams);
+      next.delete('focus');
+      setSearchParams(next, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, ativos]);
 
   const confirmDelete = async () => {
     try {

@@ -14,8 +14,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { useAuth } from '@/components/AuthProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatStatus } from '@/lib/text-utils';
+import { getEnumLabel, categoryFromFieldName } from '@/lib/enum-labels';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
-import { EntityKey, EntityRow, fetchEntityRows, matchesTokens, queryTokens } from '@/lib/entity-search';
+import { ENTITY_BY_KEY, EntityKey, EntityRow, fetchEntityRows, matchesTokens, queryTokens } from '@/lib/entity-search';
 
 interface EntidadeSelectProps {
   entidade: EntityKey;
@@ -53,6 +54,7 @@ export function EntidadeSelect({
   }, [rows, busca]);
 
   const selecionado = rows.find((r) => r.id === value);
+  const subtituloCategory = categoryFromFieldName(ENTITY_BY_KEY[entidade]?.subtituloField);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -109,7 +111,7 @@ export function EntidadeSelect({
                       <span className="truncate font-medium">{row.titulo}</span>
                       <span className="flex items-center gap-2 text-xs text-muted-foreground">
                         <span className="font-mono">{row.codigo}</span>
-                        {row.subtitulo && <Badge variant="outline" className="text-[10px]">{formatStatus(row.subtitulo)}</Badge>}
+                        {row.subtitulo && <Badge variant="outline" className="text-[10px]">{getEnumLabel(t, subtituloCategory, row.subtitulo)}</Badge>}
                       </span>
                     </div>
                   </CommandItem>

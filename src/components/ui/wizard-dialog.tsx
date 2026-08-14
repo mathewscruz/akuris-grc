@@ -23,6 +23,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useWizardShortcuts } from '@/hooks/useWizardShortcuts';
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -69,8 +70,17 @@ interface WizardDialogProps {
   /**
    * Explicação mostrada quando o botão final está desativado (ex.: lista dos
    * campos obrigatórios em falta). Evita o botão "morto" sem justificação.
+   * Também é usada como texto do tooltip (title) do botão desativado.
    */
   submitBlockedReason?: ReactNode;
+  /**
+   * DEFECT 5 — chamado antes de sair da etapa `fromId` (via "Próximo" ou
+   * clique direto numa aba). Deve devolver `false` para bloquear a navegação
+   * (o próprio chamador é responsável por assinalar o erro inline/estado da
+   * etapa antes de devolver `false`). Sem isto, o utilizador conseguia avançar
+   * com campos obrigatórios vazios.
+   */
+  canAdvance?: (fromId: string, toId: string) => boolean;
 }
 
 const SIZE_CLASSES: Record<NonNullable<WizardDialogProps['size']>, string> = {
@@ -116,6 +126,7 @@ export function WizardDialog({
   size = 'xl',
   footerExtra,
   submitBlockedReason,
+  canAdvance,
 }: WizardDialogProps) {
   const { t } = useLanguage();
   const _submitLabel = submitLabel ?? t('common.save');
@@ -125,6 +136,13 @@ export function WizardDialog({
   const setActiveTab = (id: string) => {
     if (onActiveTabChange) onActiveTabChange(id);
     else setInternalTab(id);
+  };
+
+  /** DEFECT 5 — todas as trocas de etapa (aba, Próximo) passam por aqui. */
+  const attemptSetActiveTab = (id: string) => {
+    if (id === activeTab) return;
+    if (canAdvance && !canAdvance(activeTab, id)) return;
+    setActiveTab(id);
   };
 
   // Reset tab when reopening
@@ -145,7 +163,7 @@ export function WizardDialog({
     if (!isFirst) setActiveTab(tabs[currentIndex - 1].id);
   };
   const goNext = () => {
-    if (!isLast) setActiveTab(tabs[currentIndex + 1].id);
+    if (!isLast) attemptSetActiveTab(tabs[currentIndex + 1].id);
   };
 
   const { showConfirm, confirmCloseIfDirty, confirmDiscard, cancelDiscard } = useUnsavedChangesGuard({
@@ -191,7 +209,7 @@ export function WizardDialog({
 
           <Tabs
             value={activeTab}
-            onValueChange={setActiveTab}
+            onValueChange={attemptSetActiveTab}
             className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0"
           >
             {/* Sidebar (desktop) */}
@@ -329,16 +347,42 @@ export function WizardDialog({
                   </Button>
                 ) : null}
                 {onSubmit && (
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={onSubmit}
-                    disabled={submitDisabled || isSubmitting}
-                    className="gap-1"
-                  >
-                    <Save className="h-4 w-4" />
-                    {isSubmitting ? t('common.saving') : _submitLabel}
-                  </Button>
+                  submitDisabled && submitBlockedReason ? (
+                    <TooltipProvider delayDuration={200}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          {/* span wrapper: Tooltip precisa de um alvo focável mesmo com o botão desativado */}
+                          <span tabIndex={0} className="inline-flex">
+                            <Button
+                              type="button"
+                              size="sm"
+                              onClick={onSubmit}
+                              disabled={submitDisabled || isSubmitting}
+                              className="gap-1"
+                              title={typeof submitBlockedReason === 'string' ? submitBlockedReason : undefined}
+                            >
+                              <Save className="h-4 w-4" />
+                              {isSubmitting ? t('common.saving') : _submitLabel}
+                            </Button>
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
+                          {submitBlockedReason}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  ) : (
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={onSubmit}
+                      disabled={submitDisabled || isSubmitting}
+                      className="gap-1"
+                    >
+                      <Save className="h-4 w-4" />
+                      {isSubmitting ? t('common.saving') : _submitLabel}
+                    </Button>
+                  )
                 )}
               </div>
             </div>

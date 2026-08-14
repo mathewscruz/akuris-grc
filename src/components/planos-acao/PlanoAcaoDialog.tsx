@@ -156,18 +156,22 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading, or
 
   const [showTitleError, setShowTitleError] = useState(false);
 
-  /** Bloqueia avançar/trocar de aba enquanto a etapa de Identificação tiver
-   * campos obrigatórios por preencher, assinalando o erro inline. */
-  const handleTabChange = (id: string) => {
-    if (activeTab === 'identificacao' && id !== 'identificacao' && !titulo.trim()) {
+  /** DEFECT 5 — bloqueia avançar/trocar de aba enquanto a etapa de
+   * Identificação tiver campos obrigatórios por preencher, assinalando o
+   * erro inline e marcando a etapa como 'error' na barra lateral. */
+  const canAdvance = (fromId: string) => {
+    if (fromId === 'identificacao' && !titulo.trim()) {
       setShowTitleError(true);
-      return;
+      return false;
     }
-    setActiveTab(id);
+    return true;
   };
 
   const missingFields: string[] = [];
   if (!titulo.trim()) missingFields.push(t('planosAcaoWizard.missingFieldTitle'));
+  const submitBlockedReason = missingFields.length > 0
+    ? `${t('planosAcaoWizard.missingFieldsPrefix')}: ${missingFields.join(', ')}`
+    : undefined;
 
   const handleSave = () => {
     if (!titulo.trim()) {
@@ -392,6 +396,8 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading, or
       submitLabel={plano ? t('planosAcao.submitLabelSave') : t('planosAcao.submitLabelCreate')}
       isSubmitting={loading}
       submitDisabled={!titulo.trim() || loading}
+      submitBlockedReason={submitBlockedReason}
+      canAdvance={canAdvance}
       isDirty={isDirty}
       draftLabel={draftLabel}
       size="lg"

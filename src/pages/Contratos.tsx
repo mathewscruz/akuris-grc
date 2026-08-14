@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useFocusRow } from '@/hooks/useFocusRow';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -87,6 +88,7 @@ export default function Contratos() {
   const { t } = useLanguage();
   const { format: formatMoedaEmpresa } = useEmpresaMoeda();
   useFocusRow();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { empresaId } = useEmpresaId();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
@@ -182,6 +184,33 @@ export default function Contratos() {
     },
     enabled: !!empresaId,
   });
+
+  // Aplica a aba indicada via query param (ex.: deep link da busca global).
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab === 'fornecedores' || tab === 'contratos') {
+      setCurrentTab(tab);
+    }
+  }, [searchParams]);
+
+  // Deep link vindo da busca global (Cmd+K): abre o registo focado.
+  useEffect(() => {
+    const focusId = searchParams.get('focus');
+    if (!focusId) return;
+    const contrato = contratos.find((c) => c.id === focusId);
+    if (contrato) {
+      setCurrentTab('contratos');
+      setSelectedContrato(contrato);
+      setDialogOpen(true);
+      return;
+    }
+    const fornecedor = fornecedores.find((f) => f.id === focusId);
+    if (fornecedor) {
+      setCurrentTab('fornecedores');
+      setSelectedFornecedor(fornecedor);
+      setFornecedorDialogOpen(true);
+    }
+  }, [searchParams, contratos, fornecedores]);
 
   const loading = loadingContratos || loadingFornecedores;
 
@@ -715,7 +744,7 @@ export default function Contratos() {
                       </TableRow>
                     ) : (
                       paginatedFornecedores.map((fornecedor) => (
-                        <TableRow key={fornecedor.id}>
+                        <TableRow key={fornecedor.id} data-focus-id={fornecedor.id}>
                           <TableCell>
                             <div>
                               <div className="font-medium">{fornecedor.nome}</div>

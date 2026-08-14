@@ -62,9 +62,14 @@ export function ConfiguracoesDenuncia() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const { toast } = useToast();
 
+  // Endereço público do canal: preferimos o URL amigável com slug, mas o canal
+  // também é acessível pelo token enquanto a empresa não define o identificador.
   const publicChannelUrl = empresaSlug
     ? `${window.location.origin}/${empresaSlug}/denuncia`
-    : '';
+    : config?.token_publico
+      ? `${window.location.origin}/denuncia/externa/${config.token_publico}`
+      : '';
+
 
   const copiarLinkPublico = () => {
     if (!publicChannelUrl) return;
@@ -317,7 +322,8 @@ export function ConfiguracoesDenuncia() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {empresaSlug ? (
+          {publicChannelUrl ? (
+
             <>
               <div className="space-y-2">
                 <Label className="text-sm font-medium">{t('p3Denuncia.channel.urlLabel')}</Label>
@@ -358,7 +364,21 @@ export function ConfiguracoesDenuncia() {
                   </Button>
                 </div>
               </div>
+
+              {!empresaSlug && (
+                <Alert>
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>{t('p3Denuncia.channel.noSlugTitle')}</AlertTitle>
+                  <AlertDescription className="space-y-3">
+                    <p>{t('p3Denuncia.channel.noSlugDescription')}</p>
+                    <Button variant="outline" size="sm" onClick={() => navigate('/configuracoes?tab=empresas')}>
+                      {t('p3Denuncia.channel.noSlugAction')}
+                    </Button>
+                  </AlertDescription>
+                </Alert>
+              )}
             </>
+
           ) : (
             <Alert variant="destructive">
               <AlertTriangle className="h-4 w-4" />

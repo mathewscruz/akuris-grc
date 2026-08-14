@@ -173,6 +173,17 @@ export default function Documentos() {
     }
   }, [location.state, documentos]);
 
+  // Detectar parâmetro de foco na URL (deep link da busca global / Cmd+K)
+  useEffect(() => {
+    const focusId = searchParams.get('focus');
+    if (focusId && documentos.length > 0) {
+      const documento = documentos.find(d => d.id === focusId);
+      if (documento) {
+        setDocumentoDialog({ open: true, documento });
+      }
+    }
+  }, [searchParams, documentos]);
+
   // Detectar parâmetro de aprovação na URL (deep link do e-mail)
   useEffect(() => {
     const aprovarId = searchParams.get('aprovar');

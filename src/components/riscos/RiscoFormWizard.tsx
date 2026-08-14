@@ -99,8 +99,24 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
   type TabKey = typeof TABS[number];
   const [activeTab, setActiveTab] = useState<TabKey>('identificacao');
 
-  const goToTab = (direction: 'prev' | 'next') => {
+  /** DEFECT 5 — campos obrigatórios por etapa (validação inline via RHF/zod). */
+  const REQUIRED_FIELDS_BY_TAB: Record<TabKey, (keyof RiscoForm)[]> = {
+    identificacao: ['nome', 'matriz_id'],
+    avaliacao: ['probabilidade_inicial', 'impacto_inicial'],
+    detalhes: [],
+    residual: [],
+    aceite: [],
+  };
+
+  const goToTab = async (direction: 'prev' | 'next') => {
     const idx = TABS.indexOf(activeTab);
+    if (direction === 'next') {
+      const fields = REQUIRED_FIELDS_BY_TAB[activeTab];
+      if (fields.length > 0) {
+        const valid = await form.trigger(fields as any);
+        if (!valid) return;
+      }
+    }
     const nextIdx = direction === 'next' ? Math.min(idx + 1, TABS.length - 1) : Math.max(idx - 1, 0);
     setActiveTab(TABS[nextIdx]);
   };
@@ -677,7 +693,24 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit((d) => onSubmit(d))} className="flex flex-col h-full">
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabKey)} className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0">
+        <Tabs
+          value={activeTab}
+          onValueChange={(v) => {
+            const targetIdx = TABS.indexOf(v as TabKey);
+            const curIdx = TABS.indexOf(activeTab);
+            // DEFECT 5 — só permite avançar diretamente pela aba se as etapas
+            // anteriores (incluindo a atual) tiverem os campos obrigatórios.
+            if (targetIdx > curIdx) {
+              const fields = REQUIRED_FIELDS_BY_TAB[activeTab];
+              if (fields.length > 0) {
+                form.trigger(fields as any).then((valid) => { if (valid) setActiveTab(v as TabKey); });
+                return;
+              }
+            }
+            setActiveTab(v as TabKey);
+          }}
+          className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0"
+        >
           {/* Sidebar — Navegação + Resumo Vivo (desktop) */}
           <aside className="hidden lg:flex flex-col w-72 border-r bg-muted/30 flex-shrink-0">
             <div className="p-4 border-b">
@@ -1436,10 +1469,25 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                 {t('sweepRiscos.riscos.wizard.proxima')} <ChevronRight className="h-4 w-4 ml-1" />
               </Button>
             )}
-            <Button type="submit" disabled={loading} size="sm">
-              <Save className="h-4 w-4 mr-1.5" />
-              {loading ? t('fin.comum.salvando') : risco ? t('fin.comum.atualizar') : t('fin.comum.salvar')}
-            </Button>
+            {(() => {
+              const missing: string[] = [];
+              if (!watchNome?.trim()) missing.push(t('p7Wizard.riscos.missingFieldName'));
+              if (!watchMatriz) missing.push(t('p7Wizard.riscos.missingFieldMatriz'));
+              if (!watchProbabilidade) missing.push(t('p7Wizard.riscos.missingFieldProbabilidade'));
+              if (!watchImpacto) missing.push(t('p7Wizard.riscos.missingFieldImpacto'));
+              const reason = missing.length > 0 ? `${t('p7Wizard.missingFieldsPrefix')}: ${missing.join(', ')}` : undefined;
+              return (
+                <span title={reason} className="inline-flex flex-col items-end gap-1">
+                  <Button type="submit" disabled={loading} size="sm">
+                    <Save className="h-4 w-4 mr-1.5" />
+                    {loading ? t('fin.comum.salvando') : risco ? t('fin.comum.atualizar') : t('fin.comum.salvar')}
+                  </Button>
+                  {reason && (
+                    <span className="text-[11px] text-destructive">{reason}</span>
+                  )}
+                </span>
+              );
+            })()}
           </div>
         </div>
 

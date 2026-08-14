@@ -100,6 +100,7 @@ const AtivoDialog: React.FC<AtivoDialogProps> = ({ open, onOpenChange, formData,
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('identificacao');
   const [initialSnapshot, setInitialSnapshot] = useState('');
+  const [showIdentErrors, setShowIdentErrors] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -113,6 +114,7 @@ const AtivoDialog: React.FC<AtivoDialogProps> = ({ open, onOpenChange, formData,
 
   const handleSubmit = () => {
     if (!formData.nome.trim() || !formData.tipo) {
+      setShowIdentErrors(true);
       setActiveTab('identificacao');
       return;
     }
@@ -120,10 +122,29 @@ const AtivoDialog: React.FC<AtivoDialogProps> = ({ open, onOpenChange, formData,
     onSubmit({ preventDefault: () => {} } as React.FormEvent);
   };
 
+  /** DEFECT 5 — bloqueia avançar enquanto Identificação tiver campos
+   * obrigatórios (nome, tipo) por preencher. */
+  const canAdvance = (fromId: string) => {
+    if (fromId === 'identificacao' && (!formData.nome.trim() || !formData.tipo)) {
+      setShowIdentErrors(true);
+      return false;
+    }
+    return true;
+  };
+
+  const missingFields: string[] = [];
+  if (!formData.nome.trim()) missingFields.push(t('p7Wizard.ativos.missingFieldName'));
+  if (!formData.tipo) missingFields.push(t('p7Wizard.ativos.missingFieldType'));
+  const submitBlockedReason = missingFields.length > 0
+    ? `${t('p7Wizard.missingFieldsPrefix')}: ${missingFields.join(', ')}`
+    : undefined;
+
   const update = (patch: Partial<AtivoFormData>) => setFormData((prev) => ({ ...prev, ...patch }));
 
   // 'complete' só com dados preenchidos pelo usuário (tipo/criticidade/status têm defaults).
-  const identState: WizardTabState = formData.nome?.trim() && formData.descricao?.trim() ? 'complete' : (formData.nome?.trim() ? 'partial' : 'pending');
+  const identState: WizardTabState = (showIdentErrors && (!formData.nome?.trim() || !formData.tipo))
+    ? 'error'
+    : (formData.nome?.trim() && formData.descricao?.trim() ? 'complete' : (formData.nome?.trim() ? 'partial' : 'pending'));
   const localState: WizardTabState = formData.proprietario || formData.localizacao ? 'complete' : 'pending';
   const classifState: WizardTabState = (typeof formData.tags === 'string' ? formData.tags.trim().length > 0 : false) ? 'complete' : 'pending';
   const aquisState: WizardTabState = formData.data_aquisicao || formData.fornecedor || formData.versao ? 'complete' : 'pending';
@@ -146,7 +167,16 @@ const AtivoDialog: React.FC<AtivoDialogProps> = ({ open, onOpenChange, formData,
                   {t('contratosAtivos.ativoDialog.labelName')} <span className="text-destructive">*</span>
                   <FieldHelpTooltip content={t('contratosAtivos.ativoDialog.nameHelp')} />
                 </Label>
-                <Input value={formData.nome} onChange={(e) => update({ nome: e.target.value })} required />
+                <Input
+                  value={formData.nome}
+                  onChange={(e) => update({ nome: e.target.value })}
+                  required
+                  aria-invalid={showIdentErrors && !formData.nome.trim()}
+                  className={showIdentErrors && !formData.nome.trim() ? 'border-destructive focus-visible:ring-destructive' : undefined}
+                />
+                {showIdentErrors && !formData.nome.trim() && (
+                  <p className="text-xs text-destructive">{t('p7Wizard.ativos.nameRequiredError')}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label className="flex items-center gap-1">
@@ -154,7 +184,10 @@ const AtivoDialog: React.FC<AtivoDialogProps> = ({ open, onOpenChange, formData,
                   <FieldHelpTooltip content={t('contratosAtivos.ativoDialog.typeHelp')} />
                 </Label>
                 <Select value={formData.tipo} onValueChange={(v) => update({ tipo: v })}>
-                  <SelectTrigger>
+                  <SelectTrigger
+                    aria-invalid={showIdentErrors && !formData.tipo}
+                    className={showIdentErrors && !formData.tipo ? 'border-destructive focus-visible:ring-destructive' : undefined}
+                  >
                     <SelectValue placeholder={t('contratosAtivos.ativoDialog.typePlaceholder')} />
                   </SelectTrigger>
                   <SelectContent>
@@ -165,6 +198,9 @@ const AtivoDialog: React.FC<AtivoDialogProps> = ({ open, onOpenChange, formData,
                     ))}
                   </SelectContent>
                 </Select>
+                {showIdentErrors && !formData.tipo && (
+                  <p className="text-xs text-destructive">{t('p7Wizard.ativos.typeRequiredError')}</p>
+                )}
               </div>
             </div>
 
@@ -364,6 +400,8 @@ const AtivoDialog: React.FC<AtivoDialogProps> = ({ open, onOpenChange, formData,
       onSubmit={handleSubmit}
       submitLabel={isEditing ? t('contratosAtivos.ativoDialog.submitUpdate') : t('contratosAtivos.ativoDialog.submitCreate')}
       submitDisabled={!formData.nome.trim() || !formData.tipo}
+      submitBlockedReason={submitBlockedReason}
+      canAdvance={canAdvance}
       isDirty={isDirty}
       size="xl"
     />
