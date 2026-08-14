@@ -77,17 +77,20 @@ export function CalendarView({ tarefas, onSelectTarefa }: { tarefas: ProjetoTare
                 </div>
               )}
               <div className="space-y-1">
-                {items.slice(0, 3).map((t) => (
-                  <button
-                    key={t.id}
-                    className="w-full text-left text-[11px] leading-tight px-1.5 py-0.5 rounded bg-muted hover:bg-primary/10 truncate"
-                    onClick={() => onSelectTarefa(t)}
-                    title={t.titulo}
-                  >
-                    <StatusBadge tone={prioridadeTone[t.prioridade]} size="sm">{t.prioridade[0].toUpperCase()}</StatusBadge>{' '}
-                    {t.titulo}
-                  </button>
-                ))}
+                {items.slice(0, 3).map((tarefaItem) => {
+                  const prioridadeLabel = getPrioridadeLabel(t, tarefaItem.prioridade);
+                  return (
+                    <button
+                      key={tarefaItem.id}
+                      className="w-full text-left text-[11px] leading-tight px-1.5 py-0.5 rounded bg-muted hover:bg-primary/10 truncate"
+                      onClick={() => onSelectTarefa(tarefaItem)}
+                      title={`${prioridadeLabel} · ${tarefaItem.titulo}`}
+                    >
+                      <StatusBadge tone={prioridadeTone[tarefaItem.prioridade]} size="sm">{prioridadeLabel[0].toUpperCase()}</StatusBadge>{' '}
+                      {tarefaItem.titulo}
+                    </button>
+                  );
+                })}
                 {items.length > 3 && <div className="text-[10px] text-muted-foreground px-1.5">{t('projetos.calendar.more', { count: items.length - 3 })}</div>}
               </div>
             </div>

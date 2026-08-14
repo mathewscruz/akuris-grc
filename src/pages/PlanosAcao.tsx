@@ -558,15 +558,15 @@ export default function PlanosAcao() {
         }
       />
 
-      {/* Stats */}
+      {/* Stats — todos os cartões abrem a mesma vista filtrada (lista + filtro de estado). */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <StatCard
           title={t('planosAcao.statTotal')}
           value={stats.total}
           icon={<ListTodo />}
           variant="primary"
-          drillDown="planos"
           showAccent
+          onClick={() => { setStatusFilter('todos'); setViewMode('lista'); }}
           segments={[
             { label: t('planosAcao.segmentPending'), value: stats.pendentes, tone: 'warning' },
             { label: t('planosAcao.segmentInProgress'), value: stats.emAndamento, tone: 'info' },
@@ -574,10 +574,10 @@ export default function PlanosAcao() {
           ]}
           emptyHint={t('planosAcao.emptyHintTotal')}
         />
-        <StatCard title={t('planosAcao.statPending')} value={stats.pendentes} icon={<Clock />} variant="warning" drillDown="planos" />
-        <StatCard title={t('planosAcao.statInProgress')} value={stats.emAndamento} icon={<Target />} variant="info" drillDown="planos" />
-        <StatCard title={t('planosAcao.statCompleted')} value={stats.concluidos} icon={<CheckCircle2 />} variant="success" />
-        <StatCard title={t('planosAcao.statOverdue')} value={stats.atrasados} icon={<AlertTriangle />} variant="destructive" drillDown="planos" />
+        <StatCard title={t('planosAcao.statPending')} value={stats.pendentes} icon={<Clock />} variant="warning" onClick={() => { setStatusFilter('pendente'); setViewMode('lista'); }} />
+        <StatCard title={t('planosAcao.statInProgress')} value={stats.emAndamento} icon={<Target />} variant="info" onClick={() => { setStatusFilter('em_andamento'); setViewMode('lista'); }} />
+        <StatCard title={t('planosAcao.statCompleted')} value={stats.concluidos} icon={<CheckCircle2 />} variant="success" onClick={() => { setStatusFilter('concluido'); setViewMode('lista'); }} />
+        <StatCard title={t('planosAcao.statOverdue')} value={stats.atrasados} icon={<AlertTriangle />} variant="destructive" onClick={() => { setStatusFilter('atrasado'); setViewMode('lista'); }} />
       </div>
 
       {/* Tabs */}
