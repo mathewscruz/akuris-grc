@@ -27,6 +27,8 @@ import { AkurisPulse } from "@/components/ui/AkurisPulse";
 import { reqTitulo, reqDescricao, reqOrientacao, reqEvidencias } from "@/lib/gap-i18n";
 import { getAppLocale } from "@/lib/i18n-locale";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useRequisitoRiscos } from "@/hooks/useRiscoRequisitos";
+import { ShieldAlert } from "lucide-react";
 
 
 
@@ -86,6 +88,8 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
   const { empresaId, loading: loadingEmpresa } = useEmpresaId();
   const { t } = useLanguage();
   const [searchParams, setSearchParams] = useSearchParams();
+  // Quantos riscos dependem de cada requisito (prioriza remediação).
+  const { data: riscosPorRequisito } = useRequisitoRiscos(frameworkId);
   const [requirements, setRequirements] = useState<Requirement[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<string>(searchParams.get('cat') || 'all');
@@ -718,6 +722,15 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
                     <div>
                       <p className="font-medium text-sm">{req.titulo}</p>
                       {req.descricao && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{req.descricao}</p>}
+                      {(riscosPorRequisito?.get(req.id)?.length || 0) > 0 && (
+                        <span
+                          className="mt-1.5 inline-flex items-center gap-1 text-[11px] text-warning"
+                          title={(riscosPorRequisito?.get(req.id) || []).map(r => r.nome).join(', ')}
+                        >
+                          <ShieldAlert className="h-3.5 w-3.5" strokeWidth={1.5} />
+                          {t('riscosControles.requisito.riscosDependentes', { count: riscosPorRequisito!.get(req.id)!.length })}
+                        </span>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell>{renderDueDate(req.prazo_implementacao)}</TableCell>

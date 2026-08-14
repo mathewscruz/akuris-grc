@@ -90,6 +90,7 @@ interface Risco {
   responsavel_nome?: string;
   responsavel_foto?: string;
   controles_existentes?: string;
+  mitigacao_snapshot?: unknown;
   causas?: string;
   consequencias?: string;
   aceito: boolean;
@@ -176,7 +177,7 @@ export function Riscos() {
           probabilidade_inicial, impacto_inicial,
           probabilidade_residual, impacto_residual,
           nivel_risco_inicial, nivel_risco_residual,
-          status, responsavel, controles_existentes,
+          status, responsavel, controles_existentes, mitigacao_snapshot,
           causas, consequencias, aceito, justificativa_aceite,
           created_at, data_proxima_revisao,
           status_aprovacao, aprovador_id, historico_aprovacao,
