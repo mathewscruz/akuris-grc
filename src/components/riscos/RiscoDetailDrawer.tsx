@@ -34,9 +34,9 @@ import {
   slaFromRevisao,
   getSlaLabels,
   financialExposure,
-  formatBRL,
   type Severity,
 } from '@/components/riscos/risk-utils';
+import { useEmpresaMoeda } from '@/hooks/useEmpresaMoeda';
 import { tGlobal } from '@/lib/i18n-global';
 import { useRiscoDetail } from '@/hooks/useRiscoDetail';
 import {
@@ -117,6 +117,7 @@ export function TratadoBlockedOption({ motivo, onActivate }: { motivo: string; o
 
 export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept, onOpenTratamentos, nav }: Props) {
   const { t } = useLanguage();
+  const { format: formatMoedaEmpresa } = useEmpresaMoeda();
   const { data: detail, isLoading, isError, error: detailError } = useRiscoDetail(risco?.id ?? null);
   const [vincularOpen, setVincularOpen] = useState(false);
   const [perfilOpen, setPerfilOpen] = useState(false);
@@ -350,7 +351,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
 
               {/* Tiles de contexto */}
               <section className="grid grid-cols-3 gap-2">
-                <StatTile icon={<Wallet />} label={t('fin.riscos.exposicao')} value={exposicao !== null ? formatBRL(exposicao, true) : '—'} />
+                <StatTile icon={<Wallet />} label={t('fin.riscos.exposicao')} value={exposicao !== null ? formatMoedaEmpresa(exposicao, true) : '—'} />
                 <StatTile icon={<Shield />} label={t('cardsKpi.sweep.riscos.tratamentos')} value={`${tratStats.concluidos}/${tratStats.total}`} />
                 <StatTile icon={<Layers />} label={t('cardsKpi.sweep.riscos.controles')} value={String(detail?.controles.length ?? 0)} />
               </section>
@@ -371,11 +372,11 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
                     {exp !== null && (
                       <div className="bg-card border border-border rounded-lg p-3">
                         <SectionLabel>{t('fin.riscos.exposicaoFinanceira')}</SectionLabel>
-                        <div className="mt-1.5 text-lg font-semibold tabular-nums" title={formatBRL(exp)}>
-                          {formatBRL(exp)}
+                        <div className="mt-1.5 text-lg font-semibold tabular-nums" title={formatMoedaEmpresa(exp)}>
+                          {formatMoedaEmpresa(exp)}
                         </div>
                         <div className="text-[11px] text-muted-foreground mt-1">
-                          impacto {formatBRL(risco.impacto_financeiro ?? null, true)} × probabilidade
+                          impacto {formatMoedaEmpresa(risco.impacto_financeiro ?? null, true)} × probabilidade
                         </div>
                       </div>
                     )}

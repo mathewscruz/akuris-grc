@@ -54,7 +54,8 @@ import { AppetiteFooter } from '@/components/riscos/matrix/AppetiteFooter';
 import { RiscosViewChips, type SavedView } from '@/components/riscos/table/RiscosViewChips';
 import { SparklineCell } from '@/components/riscos/table/SparklineCell';
 import { SlaCell } from '@/components/riscos/table/SlaCell';
-import { isAcimaApetite, severityFromNivel, slaFromRevisao, scoreFromPI, shortRiskId, relativeShort, toScaleNumber, formatScaleValue, financialExposure, formatBRL } from '@/components/riscos/risk-utils';
+import { isAcimaApetite, severityFromNivel, slaFromRevisao, scoreFromPI, shortRiskId, relativeShort, toScaleNumber, formatScaleValue, financialExposure } from '@/components/riscos/risk-utils';
+import { useEmpresaMoeda } from '@/hooks/useEmpresaMoeda';
 import { assertTratamentosLookup, deriveRiscoStatus, isTratamentoConcluido, isTratamentoRequerido } from '@/components/riscos/risk-status';
 import {
   apetiteScoreFromNiveis,
@@ -125,6 +126,7 @@ export function Riscos() {
   const { data: trendPoints = [] } = useRiskScoreTrend();
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
+  const { format: formatMoedaEmpresa } = useEmpresaMoeda();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
@@ -313,10 +315,32 @@ export function Riscos() {
   /** Configuração indisponível: sem linha (ausente) ou consulta com erro. */
   const matrizConfigIndisponivel = !matrizConfigLoading && (matrizConfigError || !matrizConfig);
 
-  const invalidateRiscos = () => {
-    queryClient.invalidateQueries({ queryKey: ['riscos'] });
-    refetchStats();
+  /**
+   * Refaz TODAS as consultas afetadas por criar/editar/apagar risco.
+   * `refetchType: 'all'` garante que abas ainda não montadas (Visão geral,
+   * Matriz) e os KPIs do Dashboard também sejam atualizados, e o `await`
+   * permite fechar o modal só depois de a lista já conter o novo risco.
+   */
+  const invalidateRiscos = async () => {
+    const keys = [
+      ['riscos'],
+      ['riscos-stats'],
+      ['risco-detail'],
+      ['risk-score-trend'],
+      ['riscos-categorias'],
+      ['dashboard-stats'],
+      ['grc-maturity'],
+      ['trend-data'],
+      ['planos-acao-stats'],
+    ];
+    await Promise.all(
+      keys.map((queryKey) =>
+        queryClient.invalidateQueries({ queryKey, refetchType: 'all' }),
+      ),
+    );
+    await Promise.all([refetchRiscos(), refetchStats()]);
   };
+
 
   useEffect(() => {
     const itemId = location.state?.itemId;
@@ -387,9 +411,9 @@ export function Riscos() {
         title: t('riscos.page.toast.successTitle'),
         description: t('riscos.page.toast.deleteSuccess'),
       });
+      await invalidateRiscos();
       setDeleteDialogOpen(false);
       setRiscoToDelete(null);
-      invalidateRiscos();
     } catch (error: any) {
       toast({
         title: t('riscos.page.toast.errorTitle'),
@@ -404,21 +428,22 @@ export function Riscos() {
     setRiscoDialogOpen(true);
   };
 
-  const handleDialogSuccess = () => {
+  const handleDialogSuccess = async () => {
+    // Fecha só depois do refetch: o utilizador vê o risco já na lista.
+    await invalidateRiscos();
     setRiscoDialogOpen(false);
     setEditingRisco(null);
-    invalidateRiscos();
   };
 
-  const handleMatrizDialogSuccess = () => {
+  const handleMatrizDialogSuccess = async () => {
+    await queryClient.invalidateQueries({ queryKey: ['riscos-matriz-config'], refetchType: 'all' });
+    await invalidateRiscos();
     setMatrizDialogOpen(false);
-    invalidateRiscos();
-    queryClient.invalidateQueries({ queryKey: ['riscos-matriz-config'] });
   };
 
-  const handleCategoriasDialogSuccess = () => {
+  const handleCategoriasDialogSuccess = async () => {
+    await invalidateRiscos();
     setCategoriasDialogOpen(false);
-    invalidateRiscos();
   };
 
   const handleSort = (field: string) => {
@@ -571,8 +596,8 @@ export function Riscos() {
         return exp === null ? (
           <span className="text-xs text-muted-foreground">—</span>
         ) : (
-          <span className="font-mono tabular-nums text-xs font-medium text-foreground" title={formatBRL(exp)}>
-            {formatBRL(exp, true)}
+          <span className="font-mono tabular-nums text-xs font-medium text-foreground" title={formatMoedaEmpresa(exp)}>
+            {formatMoedaEmpresa(exp, true)}
           </span>
         );
       },

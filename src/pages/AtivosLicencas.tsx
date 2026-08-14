@@ -21,6 +21,7 @@ import { formatStatus } from '@/lib/text-utils';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveCriticidadeTone, resolveItemStatusTone } from '@/lib/status-tone';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useEmpresaMoeda } from '@/hooks/useEmpresaMoeda';
 
 interface Licenca {
   id: string;
@@ -42,6 +43,7 @@ interface Licenca {
 
 export default function AtivosLicencas() {
   const { t } = useLanguage();
+  const { format: formatMoedaEmpresa } = useEmpresaMoeda();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedLicenca, setSelectedLicenca] = useState<Licenca | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -246,7 +248,7 @@ export default function AtivosLicencas() {
       sortable: true,
       render: (_: any, licenca: Licenca) => (
         licenca.valor_renovacao 
-          ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(licenca.valor_renovacao)
+          ? formatMoedaEmpresa(licenca.valor_renovacao)
           : '-'
       )
     },

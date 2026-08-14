@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/select";
 import { UserSelect } from "@/components/riscos/UserSelect";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useEmpresaMoeda } from "@/hooks/useEmpresaMoeda";
 
 interface LicencaDialogProps {
   open: boolean;
@@ -34,6 +35,7 @@ interface LicencaDialogProps {
 
 export function LicencaDialog({ open, onOpenChange, licenca }: LicencaDialogProps) {
   const { t } = useLanguage();
+  const { simbolo: simboloMoeda } = useEmpresaMoeda();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { empresaId } = useEmpresaId();
@@ -288,7 +290,7 @@ export function LicencaDialog({ open, onOpenChange, licenca }: LicencaDialogProp
                 name="valor_aquisicao"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('contratosAtivos.licencaDialog.labelAcquisitionValue')}</FormLabel>
+                    <FormLabel>{t('contratosAtivos.licencaDialog.labelAcquisitionValue', { moeda: simboloMoeda })}</FormLabel>
                     <FormControl>
                       <Input type="number" step="0.01" {...field} />
                     </FormControl>
@@ -302,7 +304,7 @@ export function LicencaDialog({ open, onOpenChange, licenca }: LicencaDialogProp
                 name="valor_renovacao"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('contratosAtivos.licencaDialog.labelRenewalValue')}</FormLabel>
+                    <FormLabel>{t('contratosAtivos.licencaDialog.labelRenewalValue', { moeda: simboloMoeda })}</FormLabel>
                     <FormControl>
                       <Input type="number" step="0.01" {...field} />
                     </FormControl>

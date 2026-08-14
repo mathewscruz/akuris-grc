@@ -4331,6 +4331,7 @@ export type Database = {
           data_inicio_trial: string | null
           id: string
           logo_url: string | null
+          moeda: string
           nome: string
           objetivo_compliance: string | null
           plano_id: string | null
@@ -4353,6 +4354,7 @@ export type Database = {
           data_inicio_trial?: string | null
           id?: string
           logo_url?: string | null
+          moeda?: string
           nome: string
           objetivo_compliance?: string | null
           plano_id?: string | null
@@ -4375,6 +4377,7 @@ export type Database = {
           data_inicio_trial?: string | null
           id?: string
           logo_url?: string | null
+          moeda?: string
           nome?: string
           objetivo_compliance?: string | null
           plano_id?: string | null

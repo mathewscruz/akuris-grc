@@ -18,6 +18,7 @@ import ConfirmDialog from '@/components/ConfirmDialog';
 import { UserSelect } from '@/components/riscos/UserSelect';
 import { formatDateOnly } from '@/lib/date-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useEmpresaMoeda } from '@/hooks/useEmpresaMoeda';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 interface Manutencao {
@@ -70,6 +71,7 @@ const criticidades = (t: (k: string) => string) => [
 
 const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome, open, onOpenChange }) => {
   const { t } = useLanguage();
+  const { simbolo: simboloMoeda } = useEmpresaMoeda();
   const { profile } = useAuth();
   const [manutencoes, setManutencoes] = useState<Manutencao[]>([]);
   const [loading, setLoading] = useState(true);
@@ -492,7 +494,7 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
 
                   <div className="grid grid-cols-3 gap-5">
                     <div className="space-y-2">
-                      <Label htmlFor="custo">{t('contratosAtivos.manutencaoDialog.labelCost')}</Label>
+                      <Label htmlFor="custo">{t('contratosAtivos.manutencaoDialog.labelCost', { moeda: simboloMoeda })}</Label>
                       <Input
                         id="custo"
                         type="number"
