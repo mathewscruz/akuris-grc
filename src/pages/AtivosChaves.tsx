@@ -22,6 +22,7 @@ import { formatDateOnly } from '@/lib/date-utils';
 import { formatStatus } from '@/lib/text-utils';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveCriticidadeTone, resolveItemStatusTone } from '@/lib/status-tone';
+import { RecordDetailDrawer } from '@/components/common/RecordDetailDrawer';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface ChaveCriptografica {
@@ -50,6 +51,7 @@ export default function AtivosChaves() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [selectedChave, setSelectedChave] = useState<ChaveCriptografica | null>(null);
+  const [detalheChave, setDetalheChave] = useState<ChaveCriptografica | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
   const [criticidadeFilter, setCriticidadeFilter] = useState('todos');
@@ -438,6 +440,7 @@ export default function AtivosChaves() {
           <DataTable
             data={filteredAndSortedChaves}
             columns={columns}
+            onRowClick={(chave) => setDetalheChave(chave)}
             loading={isLoading}
             searchable
             searchPlaceholder={t('fin.chaves.buscar')}
@@ -520,6 +523,33 @@ export default function AtivosChaves() {
         variant="destructive"
         onConfirm={confirmDelete}
       />
+      <RecordDetailDrawer
+        open={!!detalheChave}
+        onOpenChange={(o) => !o && setDetalheChave(null)}
+        title={detalheChave?.nome}
+        subtitle={detalheChave ? formatStatus(detalheChave.tipo_chave) : undefined}
+        badges={detalheChave ? (
+          <>
+            <StatusBadge size="sm" {...resolveItemStatusTone(detalheChave.status)}>{formatStatus(detalheChave.status)}</StatusBadge>
+            <StatusBadge size="sm" {...resolveCriticidadeTone(detalheChave.criticidade)}>{formatStatus(detalheChave.criticidade)}</StatusBadge>
+          </>
+        ) : undefined}
+        actions={detalheChave ? (
+          <Button variant="outline" size="sm" onClick={() => { const c = detalheChave; setDetalheChave(null); handleEdit(c); }}>
+            {t('fin.comum.editar')}
+          </Button>
+        ) : undefined}
+        fields={detalheChave ? [
+          { label: t('fin.comum.ambiente'), value: formatStatus(detalheChave.ambiente) },
+          { label: t('fin.comum.localizacao'), value: detalheChave.localizacao },
+          { label: t('fin.comum.responsavel'), value: detalheChave.responsavel_nome },
+          { label: t('detalheRegisto.algoritmo'), value: detalheChave.algoritmo },
+          { label: t('detalheRegisto.dataCriacao'), value: detalheChave.data_criacao ? formatDateOnly(detalheChave.data_criacao) : null },
+          { label: t('fin.chaves.proximaRotacao'), value: detalheChave.data_proxima_rotacao ? formatDateOnly(detalheChave.data_proxima_rotacao) : null },
+          { label: t('detalheRegisto.observacoes'), value: detalheChave.observacoes, full: true },
+        ] : []}
+      />
+
     </div>
   );
 }

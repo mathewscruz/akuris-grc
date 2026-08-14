@@ -48,6 +48,7 @@ import { estadoIncidente } from '@/lib/metrics';
 import { formatDateOnly } from '@/lib/date-utils';
 import { IncidenteDialog } from '@/components/incidentes/IncidenteDialog';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import { RecordDetailDrawer } from '@/components/common/RecordDetailDrawer';
 import { TratamentoDialog } from '@/components/incidentes/TratamentoDialog';
 import { ComunicacaoDialog } from '@/components/incidentes/ComunicacaoDialog';
 import { EvidenciaDialog } from '@/components/incidentes/EvidenciaDialog';
@@ -80,6 +81,7 @@ export default function Incidentes() {
   const { t } = useLanguage();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedIncidente, setSelectedIncidente] = useState<Incidente | null>(null);
+  const [detalheIncidente, setDetalheIncidente] = useState<Incidente | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [comunicacaoDialogOpen, setComunicacaoDialogOpen] = useState(false);
   const [evidenciaDialogOpen, setEvidenciaDialogOpen] = useState(false);
@@ -471,6 +473,7 @@ export default function Incidentes() {
           <DataTable
             data={sortedIncidentes}
             columns={incidentesColumns}
+            onRowClick={(item) => setDetalheIncidente(item)}
             loading={loading}
             searchValue={searchTerm}
             onSearchChange={setSearchTerm}
@@ -487,6 +490,36 @@ export default function Incidentes() {
           />
         </CardContent>
       </Card>
+
+      <RecordDetailDrawer
+        open={!!detalheIncidente}
+        onOpenChange={(o) => !o && setDetalheIncidente(null)}
+        title={detalheIncidente?.titulo}
+        subtitle={detalheIncidente ? formatStatus(detalheIncidente.tipo_incidente) : undefined}
+        badges={detalheIncidente ? (
+          <>
+            <StatusBadge size="sm" {...resolveWorkflowStatusTone(detalheIncidente.status)}>
+              {formatStatus(detalheIncidente.status)}
+            </StatusBadge>
+            <StatusBadge size="sm" {...resolveCriticidadeTone(detalheIncidente.criticidade)}>
+              {formatStatus(detalheIncidente.criticidade)}
+            </StatusBadge>
+          </>
+        ) : undefined}
+        actions={detalheIncidente ? (
+          <Button variant="outline" size="sm" onClick={() => { const i = detalheIncidente; setDetalheIncidente(null); handleEdit(i); }}>
+            <Edit className="h-4 w-4 mr-2" />{t('sweepRiscos.incidentes.actionEditar')}
+          </Button>
+        ) : undefined}
+        fields={detalheIncidente ? [
+          { label: t('fin.comum.categoria'), value: detalheIncidente.categoria ? formatStatus(detalheIncidente.categoria) : null },
+          { label: t('fin.incidentes.dataOcorrencia'), value: detalheIncidente.data_ocorrencia ? formatDateOnly(detalheIncidente.data_ocorrencia) : null },
+          { label: t('fin.incidentes.dataDeteccao'), value: detalheIncidente.data_deteccao ? formatDateOnly(detalheIncidente.data_deteccao) : null },
+          { label: t('fin.incidentes.dataResolucao'), value: detalheIncidente.data_resolucao ? formatDateOnly(detalheIncidente.data_resolucao) : null },
+          { label: t('fin.comum.descricao'), value: detalheIncidente.descricao, full: true },
+        ] : []}
+        createdAt={detalheIncidente?.created_at}
+      />
 
       {/* Dialog de Comunicação - controlado pelo dropdown */}
       {selectedIncidente && (

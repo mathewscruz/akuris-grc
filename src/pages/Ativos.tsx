@@ -19,6 +19,7 @@ import ConfirmDialog from '@/components/ConfirmDialog';
 import { useAtivosStats } from '@/hooks/useAtivosStats';
 import ImportacaoAtivos from '@/components/ativos/ImportacaoAtivos';
 import AtivoDialog from '@/components/ativos/AtivoDialog';
+import { RecordDetailDrawer } from '@/components/common/RecordDetailDrawer';
 import ManutencaoDialog from '@/components/ativos/ManutencaoDialog';
 import TrilhaAuditoriaAtivos from '@/components/ativos/TrilhaAuditoriaAtivos';
 import { formatDateOnly } from '@/lib/date-utils';
@@ -143,6 +144,7 @@ const Ativos = () => {
   const [importDialog, setImportDialog] = useState(false);
   const [azureSyncing, setAzureSyncing] = useState(false);
   const [editingAtivo, setEditingAtivo] = useState<Ativo | null>(null);
+  const [detalheAtivo, setDetalheAtivo] = useState<Ativo | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; ativoId: string }>({ open: false, ativoId: '' });
   const [formData, setFormData] = useState(initialFormData);
 
@@ -554,6 +556,7 @@ const Ativos = () => {
           <DataTable
             data={filteredAndSortedAtivos}
             columns={columns}
+            onRowClick={(ativo) => setDetalheAtivo(ativo)}
             loading={loading}
             searchable
             searchPlaceholder={t('fin.ativos.buscar')}
@@ -585,6 +588,35 @@ const Ativos = () => {
           />
         </CardContent>
       </Card>
+
+      <RecordDetailDrawer
+        open={!!detalheAtivo}
+        onOpenChange={(o) => !o && setDetalheAtivo(null)}
+        title={detalheAtivo?.nome}
+        subtitle={detalheAtivo ? getTipoLabel(detalheAtivo.tipo) : undefined}
+        badges={detalheAtivo ? (
+          <>
+            <StatusBadge size="sm" {...resolveItemStatusTone(detalheAtivo.status)}>
+              {formatStatus(detalheAtivo.status)}
+            </StatusBadge>
+            <StatusBadge size="sm" {...resolveCriticidadeTone(detalheAtivo.criticidade)}>
+              {(() => { const o = criticidades.find(c => c.value === detalheAtivo.criticidade); return o ? t(o.label) : detalheAtivo.criticidade; })()}
+            </StatusBadge>
+          </>
+        ) : undefined}
+        actions={detalheAtivo ? (
+          <Button variant="outline" size="sm" onClick={() => { const a = detalheAtivo; setDetalheAtivo(null); handleEdit(a); }}>
+            <Edit className="h-4 w-4 mr-2" />{t('sweepCore.assets.edit')}
+          </Button>
+        ) : undefined}
+        fields={detalheAtivo ? [
+          { label: t('fin.comum.proprietario'), value: detalheAtivo.proprietario_nome },
+          { label: t('fin.comum.localizacao'), value: detalheAtivo.localizacao },
+          { label: t('fin.comum.descricao'), value: (detalheAtivo as any).descricao, full: true },
+        ] : []}
+        createdAt={(detalheAtivo as any)?.created_at}
+        updatedAt={(detalheAtivo as any)?.updated_at}
+      />
 
       <ConfirmDialog
         open={deleteConfirm.open}

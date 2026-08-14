@@ -14,6 +14,7 @@ import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { formatStatus, capitalizeText } from '@/lib/text-utils';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveCriticidadeTone } from '@/lib/status-tone';
+import { RecordDetailDrawer } from '@/components/common/RecordDetailDrawer';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,6 +41,7 @@ export default function SistemasContent() {
   const { empresaId } = useEmpresaId();
   const [showSistemaDialog, setShowSistemaDialog] = useState(false);
   const [selectedSistema, setSelectedSistema] = useState<SistemaPrivilegiado | null>(null);
+  const [detalheSistema, setDetalheSistema] = useState<SistemaPrivilegiado | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
   const [tipoFilter, setTipoFilter] = useState('todos');
@@ -331,6 +333,7 @@ export default function SistemasContent() {
           <DataTable
             data={filteredAndSortedSistemas}
             columns={sistemasColumns}
+            onRowClick={(sistema) => setDetalheSistema(sistema)}
             searchPlaceholder={t("governancaComp.sistemas.searchPlaceholder")}
             filters={sistemasFilters}
             sortField={sortField}
@@ -369,6 +372,28 @@ export default function SistemasContent() {
         variant="destructive"
         onConfirm={confirmDelete}
       />
+      <RecordDetailDrawer
+        open={!!detalheSistema}
+        onOpenChange={(o) => !o && setDetalheSistema(null)}
+        title={detalheSistema?.nome_sistema}
+        subtitle={detalheSistema ? formatStatus(detalheSistema.tipo_sistema) : undefined}
+        badges={detalheSistema ? (
+          <StatusBadge size="sm" {...resolveCriticidadeTone(detalheSistema.criticidade)}>
+            {formatStatus(detalheSistema.criticidade)}
+          </StatusBadge>
+        ) : undefined}
+        actions={detalheSistema ? (
+          <Button variant="outline" size="sm" onClick={() => { const s = detalheSistema; setDetalheSistema(null); handleEditSistema(s); }}>
+            {t('fin.comum.editar')}
+          </Button>
+        ) : undefined}
+        fields={detalheSistema ? [
+          { label: t('detalheRegisto.responsavel'), value: detalheSistema.responsavel_sistema },
+          { label: t('fin.comum.categoria'), value: detalheSistema.categoria ? capitalizeText(detalheSistema.categoria) : null },
+          { label: t('detalheRegisto.url'), value: detalheSistema.url_sistema, full: true },
+        ] : []}
+      />
+
     </div>
   );
 }

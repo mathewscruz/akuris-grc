@@ -262,6 +262,7 @@ export function DenunciasDashboard({ itemIdToOpen }: { itemIdToOpen?: string | n
           <DataTable
             data={filteredAndSortedDenuncias}
             columns={columns}
+            onRowClick={(denuncia) => handleVisualizarDenuncia(denuncia)}
             loading={loading}
             searchable
             searchPlaceholder={t('denunciasAdmin.dashboard.searchPlaceholder')}

@@ -976,6 +976,7 @@ export function Riscos() {
                   <DataTable
                     data={viewedRiscos}
                     columns={riscoColumns as Column<Risco>[]}
+                    onRowClick={(risco) => setDrawerRiscoId(risco.id)}
                     loading={loading}
                     searchable
                     searchPlaceholder={t('riscos.page.searchPlaceholder')}

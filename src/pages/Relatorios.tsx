@@ -1,3 +1,4 @@
+import { rowOpenProps, CARD_HOVER } from '@/lib/row-interaction';
 import { useState, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -236,7 +237,13 @@ export default function Relatorios() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {relatorios.map((rel: any) => (
-                <Card key={rel.id} className="hover:shadow-md transition-shadow">
+                <Card
+                  key={rel.id}
+                  {...(() => {
+                    const props = rowOpenProps(() => setPreviewRelatorio(rel), rel.nome, CARD_HOVER);
+                    return { ...props, className: `transition-shadow ${props.className}` };
+                  })()}
+                >
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">

@@ -1,4 +1,5 @@
 import React, { type ReactNode } from 'react';
+import { rowOpenProps } from '@/lib/row-interaction';
 import {
   Activity,
   CheckCircle,
@@ -239,7 +240,14 @@ export function DocumentosLista<T extends DocumentoListaItem>({
         ) : (
           <ul role="list" className="divide-y divide-border">
             {documentos.map((documento) => (
-              <li key={documento.id} data-focus-id={documento.id} className="px-4 py-4">
+              <li
+                key={documento.id}
+                data-focus-id={documento.id}
+                {...(() => {
+                  const props = rowOpenProps(() => acoes.onPreview(documento), documento.nome);
+                  return { ...props, className: `px-4 py-4 ${props.className}` };
+                })()}
+              >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 space-y-1">
                     <p className="font-medium leading-snug break-words">{documento.nome}</p>
@@ -318,7 +326,7 @@ export function DocumentosLista<T extends DocumentoListaItem>({
               </TableRow>
             ) : (
               documentos.map((documento) => (
-                <TableRow key={documento.id} data-focus-id={documento.id}>
+                <TableRow key={documento.id} data-focus-id={documento.id} {...rowOpenProps(() => acoes.onPreview(documento), documento.nome)}>
                   <TableCell>
                     <div className="space-y-1">
                       <div className="font-medium">{documento.nome}</div>

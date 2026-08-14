@@ -1,3 +1,4 @@
+import { rowOpenProps, CARD_HOVER } from '@/lib/row-interaction';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -44,7 +45,12 @@ export function AuditoriaCardAccordion({
   const progressPercent = counts.itens > 0 ? Math.round((counts.itensConcluidos / counts.itens) * 100) : 0;
 
   return (
-    <Card className="hover:shadow-sm transition-shadow">
+    <Card
+      {...(() => {
+        const props = rowOpenProps(onOpenControles, auditoria.nome, CARD_HOVER);
+        return { ...props, className: `transition-shadow ${props.className}` };
+      })()}
+    >
       <CardContent className="p-3">
         {/* Linha principal */}
         <div className="flex items-start justify-between gap-3">

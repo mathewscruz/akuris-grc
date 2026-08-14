@@ -346,6 +346,7 @@ export default function RevisaoAcessos() {
               <DataTable
                 data={filteredAndSortedReviews || []}
                 columns={columns}
+                onRowClick={(review) => handleViewItems(review)}
                 loading={reviewsLoading}
                 searchValue={searchTerm}
                 onSearchChange={setSearchTerm}

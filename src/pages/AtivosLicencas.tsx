@@ -22,6 +22,7 @@ import { formatDateOnly } from '@/lib/date-utils';
 import { formatStatus } from '@/lib/text-utils';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveCriticidadeTone, resolveItemStatusTone } from '@/lib/status-tone';
+import { RecordDetailDrawer } from '@/components/common/RecordDetailDrawer';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useEmpresaMoeda } from '@/hooks/useEmpresaMoeda';
 
@@ -49,6 +50,7 @@ export default function AtivosLicencas() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [selectedLicenca, setSelectedLicenca] = useState<Licenca | null>(null);
+  const [detalheLicenca, setDetalheLicenca] = useState<Licenca | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
   const [criticidadeFilter, setCriticidadeFilter] = useState('todos');
@@ -421,6 +423,7 @@ export default function AtivosLicencas() {
           <DataTable
             data={filteredAndSortedLicencas}
             columns={columns}
+            onRowClick={(licenca) => setDetalheLicenca(licenca)}
             loading={isLoading}
             searchable
             searchPlaceholder={t('fin.licencas.buscar')}
@@ -503,6 +506,32 @@ export default function AtivosLicencas() {
         variant="destructive"
         onConfirm={confirmDelete}
       />
+      <RecordDetailDrawer
+        open={!!detalheLicenca}
+        onOpenChange={(o) => !o && setDetalheLicenca(null)}
+        title={detalheLicenca?.nome}
+        subtitle={detalheLicenca ? formatStatus(detalheLicenca.tipo_licenca) : undefined}
+        badges={detalheLicenca ? (
+          <>
+            <StatusBadge size="sm" {...resolveItemStatusTone(detalheLicenca.status)}>{formatStatus(detalheLicenca.status)}</StatusBadge>
+            <StatusBadge size="sm" {...resolveCriticidadeTone(detalheLicenca.criticidade)}>{formatStatus(detalheLicenca.criticidade)}</StatusBadge>
+          </>
+        ) : undefined}
+        actions={detalheLicenca ? (
+          <Button variant="outline" size="sm" onClick={() => { const l = detalheLicenca; setDetalheLicenca(null); handleEdit(l); }}>
+            {t('fin.comum.editar')}
+          </Button>
+        ) : undefined}
+        fields={detalheLicenca ? [
+          { label: t('detalheRegisto.fornecedor'), value: detalheLicenca.fornecedor },
+          { label: t('detalheRegisto.quantidade'), value: detalheLicenca.quantidade_licencas },
+          { label: t('detalheRegisto.responsavel'), value: detalheLicenca.responsavel_nome },
+          { label: t('detalheRegisto.vencimento'), value: detalheLicenca.data_vencimento ? formatDateOnly(detalheLicenca.data_vencimento) : null },
+          { label: t('detalheRegisto.valorRenovacao'), value: detalheLicenca.valor_renovacao != null ? formatMoedaEmpresa(detalheLicenca.valor_renovacao) : null },
+          { label: t('detalheRegisto.observacoes'), value: detalheLicenca.observacoes, full: true },
+        ] : []}
+      />
+
     </div>
   );
 }

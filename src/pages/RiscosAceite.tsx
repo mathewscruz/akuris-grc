@@ -383,6 +383,7 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
           <Card className="rounded-lg border overflow-hidden">
             <CardContent className="p-0">
               <DataTable
+                onRowClick={(risco) => { setSelectedRisco(risco); setDetalheOpen(true); }}
                 data={filteredPendentes}
                 columns={pendentesColumns}
                 loading={isLoadingPendentes}
@@ -404,6 +405,7 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
           <Card className="rounded-lg border overflow-hidden">
             <CardContent className="p-0">
               <DataTable
+                onRowClick={(risco) => { setSelectedRisco(risco); setDetalheOpen(true); }}
                 data={filteredRiscos}
                 columns={columns}
                 loading={isLoading}
@@ -426,6 +428,7 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
           <Card className="rounded-lg border overflow-hidden">
             <CardContent className="p-0">
               <DataTable
+                onRowClick={(risco) => { setSelectedRisco(risco); setDetalheOpen(true); }}
                 data={filteredExpirados}
                 columns={columns.filter(c => c.key !== 'actions')}
                 loading={isLoadingExpirados}

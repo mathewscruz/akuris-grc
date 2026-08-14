@@ -17,6 +17,7 @@ import ConfirmDialog from '@/components/ConfirmDialog';
 import { formatDateOnly } from '@/lib/date-utils';
 import { capitalizeText } from '@/lib/text-utils';
 import { resolveItemStatusTone } from '@/lib/status-tone';
+import { RecordDetailDrawer } from '@/components/common/RecordDetailDrawer';
 import { exportCSV } from '@/lib/csv-utils';
 import {
   DropdownMenu,
@@ -48,6 +49,7 @@ export default function ContasPrivilegiadas() {
   const { t } = useLanguage();
   const [showContaDialog, setShowContaDialog] = useState(false);
   const [selectedConta, setSelectedConta] = useState<ContaPrivilegiada | null>(null);
+  const [detalheConta, setDetalheConta] = useState<ContaPrivilegiada | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
   const [nivelFilter, setNivelFilter] = useState('todos');
@@ -414,6 +416,7 @@ export default function ContasPrivilegiadas() {
           <DataTable
             data={filteredAndSortedContas}
             columns={contasColumns}
+            onRowClick={(conta) => setDetalheConta(conta)}
             loading={isLoading}
             searchValue={searchTerm}
             onSearchChange={setSearchTerm}
@@ -447,6 +450,27 @@ export default function ContasPrivilegiadas() {
         description={t('fin.contas.excluirDesc', { nome: deleteConfirm.nome })}
         variant="destructive"
       />
+      <RecordDetailDrawer
+        open={!!detalheConta}
+        onOpenChange={(o) => !o && setDetalheConta(null)}
+        title={detalheConta?.usuario_beneficiario}
+        subtitle={detalheConta?.email_beneficiario}
+        badges={detalheConta ? getStatusBadge(detalheConta.status) : undefined}
+        actions={detalheConta ? (
+          <Button variant="outline" size="sm" onClick={() => { const c = detalheConta; setDetalheConta(null); handleEditConta(c); }}>
+            {t('fin.comum.editar')}
+          </Button>
+        ) : undefined}
+        fields={detalheConta ? [
+          { label: t('detalheRegisto.sistema'), value: detalheConta.sistemas_privilegiados?.nome_sistema },
+          { label: t('detalheRegisto.tipoAcesso'), value: detalheConta.tipo_acesso },
+          { label: t('detalheRegisto.nivelPrivilegio'), value: detalheConta.nivel_privilegio },
+          { label: t('detalheRegisto.concessao'), value: detalheConta.data_concessao ? formatDateOnly(detalheConta.data_concessao) : null },
+          { label: t('detalheRegisto.expiracao'), value: detalheConta.data_expiracao ? formatDateOnly(detalheConta.data_expiracao) : null },
+          { label: t('detalheRegisto.justificativa'), value: detalheConta.justificativa_negocio, full: true },
+        ] : []}
+      />
+
     </div>
   );
 }

@@ -40,6 +40,8 @@ import { formatDateOnly } from '@/lib/date-utils';
 import { formatStatus } from '@/lib/text-utils';
 import { resolveContratoStatusTone, resolveCriticidadeTone } from '@/lib/status-tone';
 import { estadoContrato } from '@/lib/metrics';
+import { rowOpenProps } from '@/lib/row-interaction';
+import { RecordDetailDrawer } from '@/components/common/RecordDetailDrawer';
 
 interface Contrato {
   id: string;
@@ -101,6 +103,7 @@ export default function Contratos() {
   const [categoriaFornecedorFilter, setCategoriaFornecedorFilter] = useState('todos');
   const [riscoFornecedorFilter, setRiscoFornecedorFilter] = useState('todos');
   const [selectedContrato, setSelectedContrato] = useState<Contrato | null>(null);
+  const [detalheContrato, setDetalheContrato] = useState<Contrato | null>(null);
   const [selectedFornecedor, setSelectedFornecedor] = useState<Fornecedor | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [fornecedorDialogOpen, setFornecedorDialogOpen] = useState(false);
@@ -551,7 +554,7 @@ export default function Contratos() {
                       </TableRow>
                     ) : (
                       paginatedContratos.map((contrato) => (
-                        <TableRow key={contrato.id} data-focus-id={contrato.id}>
+                        <TableRow key={contrato.id} data-focus-id={contrato.id} {...rowOpenProps(() => setDetalheContrato(contrato), contrato.nome)}>
                           <TableCell>
                             <div>
                               <div className="font-medium">{contrato.nome}</div>
@@ -904,6 +907,33 @@ export default function Contratos() {
           variant="destructive"
           onConfirm={confirmDelete}
         />
+        <RecordDetailDrawer
+          open={!!detalheContrato}
+          onOpenChange={(o) => !o && setDetalheContrato(null)}
+          title={detalheContrato?.nome}
+          subtitle={detalheContrato?.numero_contrato}
+          badges={detalheContrato ? (
+            <>
+              {getContratoStatusBadge(detalheContrato)}
+              {detalheContrato.fornecedores?.avaliacao_risco ? getRiskBadge(detalheContrato.fornecedores.avaliacao_risco) : null}
+            </>
+          ) : undefined}
+          actions={detalheContrato ? (
+            <Button variant="outline" size="sm" onClick={() => { const c = detalheContrato; setDetalheContrato(null); handleEdit(c, 'contrato'); }}>
+              {t('fin.comum.editar')}
+            </Button>
+          ) : undefined}
+          fields={detalheContrato ? [
+            { label: t('fin.comum.fornecedor'), value: detalheContrato.fornecedores?.nome },
+            { label: t('fin.comum.tipo'), value: formatStatus(detalheContrato.tipo) },
+            { label: t('fin.comum.valor'), value: detalheContrato.valor != null ? formatMoedaEmpresa(detalheContrato.valor) : null },
+            { label: t('fin.comum.dataInicio'), value: detalheContrato.data_inicio ? formatDateOnly(detalheContrato.data_inicio) : null },
+            { label: t('detalheRegisto.dataFim'), value: detalheContrato.data_fim ? formatDateOnly(detalheContrato.data_fim) : null },
+            { label: t('detalheRegisto.responsavel'), value: detalheContrato.gestor_contrato },
+            { label: t('detalheRegisto.observacoes'), value: detalheContrato.objeto || detalheContrato.observacoes, full: true },
+          ] : []}
+        />
+
       </div>
     </TooltipProvider>
   );

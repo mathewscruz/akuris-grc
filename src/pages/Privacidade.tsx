@@ -592,6 +592,7 @@ export default function Privacidade() {
               <DataTable
                 data={dadosPessoais}
                 columns={catalogoColumns}
+                onRowClick={(row) => { setSelectedDado(row); setShowDadoSheet(true); }}
                 searchPlaceholder={t('sweepDados.privacidade.buscarDados')}
                 filters={catalogoFilters}
                 sortField={catalogoSortField}
@@ -627,6 +628,7 @@ export default function Privacidade() {
               <DataTable
                 data={ropaRegistros}
                 columns={ropaColumns}
+                onRowClick={(ropa) => { setSelectedRopa(ropa); setShowRopaDialog(true); }}
                 loading={false}
                 searchable
                 searchPlaceholder={t('sweepDados.privacidade.buscarRopa')}
@@ -663,6 +665,7 @@ export default function Privacidade() {
               <DataTable
                 data={solicitacoes}
                 columns={solicitacoesColumns}
+                onRowClick={(solicitacao) => { setSelectedSolicitacao(solicitacao); setShowSolicitacaoDialog(true); }}
                 loading={false}
                 searchable
                 searchPlaceholder={t('sweepDados.privacidade.buscarSolicitacoes')}
