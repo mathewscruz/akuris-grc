@@ -179,7 +179,7 @@ export function PriorityQueueCard({
         ) : (
           <ol className="space-y-2">
             {items.map((item, idx) => {
-              const isCritical = isGapCritico(item);
+              const isCritical = item.conformity_status === 'nao_conforme';
               const isOverdue = isGapAtrasado(item.prazo_implementacao);
               return (
                 <li key={item.id}>
