@@ -18,6 +18,7 @@ import { Edit, ShieldCheck, Shield, X, ArrowRight, Wallet, Layers, Tag, User, Ca
 import {
   initials, scoreFromPI, severityFromNivel, shortRiskId, slaFromRevisao, getSlaLabels, financialExposure, type Severity,
 } from '@/components/riscos/risk-utils';
+import { useEmpresaMoeda } from '@/hooks/useEmpresaMoeda';
 
 /** Variável de cor da severidade para o fundo levíssimo do painel. */
 const SEV_TINT: Record<Severity, string> = {
@@ -69,6 +70,7 @@ function treatmentPct(status: string): number {
 
 export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccept, onOpenTratamentos }: Props) {
   const { t } = useLanguage();
+  const { format: formatMoedaEmpresa, simbolo: simboloMoeda } = useEmpresaMoeda();
   const { data: detail, isLoading, isError, error: detailError } = useRiscoDetail(risco?.id ?? null);
   const inicialScore = useMemo(() => scoreFromPI(risco?.probabilidade_inicial, risco?.impacto_inicial), [risco]);
   const residualScore = useMemo(() => scoreFromPI(risco?.probabilidade_residual, risco?.impacto_residual), [risco]);

@@ -80,6 +80,7 @@ interface Props {
 
 export function RiscoFormWizard({ risco, onSuccess }: Props) {
   const { t } = useLanguage();
+  const { format: formatMoedaEmpresa, simbolo: simboloMoeda } = useEmpresaMoeda();
   const { profile } = useAuth();
   const { notify } = useIntegrationNotify();
   const [loading, setLoading] = useState(false);

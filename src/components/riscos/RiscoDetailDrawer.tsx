@@ -36,6 +36,7 @@ import {
   financialExposure,
   type Severity,
 } from '@/components/riscos/risk-utils';
+import { useEmpresaMoeda } from '@/hooks/useEmpresaMoeda';
 import { tGlobal } from '@/lib/i18n-global';
 import { useRiscoDetail } from '@/hooks/useRiscoDetail';
 import {
@@ -116,6 +117,7 @@ export function TratadoBlockedOption({ motivo, onActivate }: { motivo: string; o
 
 export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept, onOpenTratamentos, nav }: Props) {
   const { t } = useLanguage();
+  const { format: formatMoedaEmpresa, simbolo: simboloMoeda } = useEmpresaMoeda();
   const { data: detail, isLoading, isError, error: detailError } = useRiscoDetail(risco?.id ?? null);
   const [vincularOpen, setVincularOpen] = useState(false);
   const [perfilOpen, setPerfilOpen] = useState(false);
