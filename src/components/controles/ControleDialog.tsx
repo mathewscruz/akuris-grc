@@ -53,6 +53,7 @@ interface ControleDialogProps {
 export default function ControleDialog({ open, onOpenChange, controle, categorias }: ControleDialogProps) {
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('identificacao');
+  const [showIdentErrors, setShowIdentErrors] = useState(false);
   const [formData, setFormData] = useState({
     codigo: "", nome: "", descricao: "", tipo: "preventivo", categoria_id: "sem_categoria",
     risco_id: "", area: "", responsavel_id: "", frequencia: "", status: "ativo",
@@ -175,6 +176,7 @@ export default function ControleDialog({ open, onOpenChange, controle, categoria
 
   const handleSubmit = () => {
     if (!formData.nome.trim()) {
+      setShowIdentErrors(true);
       setActiveTab('identificacao');
       toast({ title: t('controlesAuditorias.cdlgErrorTitle'), description: t('controlesAuditorias.cdlgValidationNomeRequired'), variant: "destructive" });
       return;
@@ -182,9 +184,26 @@ export default function ControleDialog({ open, onOpenChange, controle, categoria
     saveControleMutation.mutate(formData);
   };
 
+  /** DEFECT 5 — bloqueia avançar enquanto Identificação não tiver nome. */
+  const canAdvance = (fromId: string) => {
+    if (fromId === 'identificacao' && !formData.nome.trim()) {
+      setShowIdentErrors(true);
+      return false;
+    }
+    return true;
+  };
+
+  const missingFields: string[] = [];
+  if (!formData.nome.trim()) missingFields.push(t('p7Wizard.controles.missingFieldName'));
+  const submitBlockedReason = missingFields.length > 0
+    ? `${t('p7Wizard.missingFieldsPrefix')}: ${missingFields.join(', ')}`
+    : undefined;
+
   // 'complete' só quando campos sem default foram preenchidos pelo usuário.
   // tipo/criticidade/status têm defaults hardcoded — não contam isoladamente.
-  const identState: WizardTabState = formData.nome.trim() && formData.codigo.trim() ? 'complete' : (formData.nome.trim() || formData.codigo.trim() ? 'partial' : 'pending');
+  const identState: WizardTabState = (showIdentErrors && !formData.nome.trim())
+    ? 'error'
+    : (formData.nome.trim() && formData.codigo.trim() ? 'complete' : (formData.nome.trim() || formData.codigo.trim() ? 'partial' : 'pending'));
   const classifState: WizardTabState = formData.frequencia || formData.area.trim() ? 'complete' : 'pending';
   const respState: WizardTabState = formData.responsavel_id ? 'complete' : 'pending';
   const vincState: WizardTabState = formData.risco_id || formData.auditorias_ids.length > 0 ? 'complete' : 'pending';
@@ -207,7 +226,17 @@ export default function ControleDialog({ open, onOpenChange, controle, categoria
                 {t('controlesAuditorias.cdlgFieldNome')} <span className="text-destructive">*</span>
                 <FieldHelpTooltip content={t('controlesAuditorias.cdlgFieldNomeHelp')} />
               </Label>
-              <Input value={formData.nome} onChange={(e) => update({ nome: e.target.value })} placeholder={t('controlesAuditorias.cdlgFieldNomePlaceholder')} required />
+              <Input
+                value={formData.nome}
+                onChange={(e) => update({ nome: e.target.value })}
+                placeholder={t('controlesAuditorias.cdlgFieldNomePlaceholder')}
+                required
+                aria-invalid={showIdentErrors && !formData.nome.trim()}
+                className={showIdentErrors && !formData.nome.trim() ? 'border-destructive focus-visible:ring-destructive' : undefined}
+              />
+              {showIdentErrors && !formData.nome.trim() && (
+                <p className="text-xs text-destructive">{t('p7Wizard.controles.nameRequiredError')}</p>
+              )}
             </div>
           </div>
           <div>
@@ -383,6 +412,8 @@ export default function ControleDialog({ open, onOpenChange, controle, categoria
       submitLabel={controle ? t('controlesAuditorias.cdlgSubmitUpdate') : t('controlesAuditorias.cdlgSubmitCreate')}
       isSubmitting={saveControleMutation.isPending}
       submitDisabled={!formData.nome.trim() || saveControleMutation.isPending}
+      submitBlockedReason={submitBlockedReason}
+      canAdvance={canAdvance}
       isDirty={isDirty}
       size="xl"
     />
