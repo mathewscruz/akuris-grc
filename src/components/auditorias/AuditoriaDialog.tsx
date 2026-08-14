@@ -101,12 +101,47 @@ const AuditoriaDialog = ({ open, onOpenChange, auditoria, onSuccess }: Auditoria
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  /**
+   * T4 · Gate — uma auditoria não fecha sem trabalho registado, e só fecha com
+   * pendências se houver uma razão escrita, que fica gravada no registo.
+   */
+  const [semItens, setSemItens] = useState(false);
+  const [pendencias, setPendencias] = useState<{ itens: number; maiores: number } | null>(null);
+  const [razaoConclusao, setRazaoConclusao] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent, razaoGate?: string) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       toast.error(t('controlesAuditorias.adToastFormError'));
       return;
+    }
+
+    if (formData.status === 'concluida' && auditoria?.id && auditoria?.status !== 'concluida') {
+      const { data: itens } = await supabase
+        .from('auditoria_itens')
+        .select('id, status')
+        .eq('auditoria_id', auditoria.id);
+      const { data: achados } = await supabase
+        .from('auditoria_achados')
+        .select('id, classificacao, status')
+        .eq('auditoria_id', auditoria.id);
+
+      const totalItens = itens?.length || 0;
+      if (totalItens === 0) {
+        setSemItens(true);
+        return;
+      }
+      const porResolver = (itens || []).filter((i: any) => i.status !== 'concluido').length;
+      const maioresAbertas = (achados || []).filter(
+        (a: any) => a.classificacao === 'nc_maior' && (a.status || 'aberto') !== 'fechado',
+      ).length;
+
+      if (porResolver > 0 || maioresAbertas > 0) {
+        setPendencias({ itens: porResolver, maiores: maioresAbertas });
+        setRazaoConclusao('');
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -131,13 +166,17 @@ const AuditoriaDialog = ({ open, onOpenChange, auditoria, onSuccess }: Auditoria
         return;
       }
 
-      const auditoriaData = {
+      const auditoriaData: Record<string, any> = {
         ...formData,
         empresa_id: profile.empresa_id,
         data_inicio: formData.data_inicio?.toISOString().split('T')[0] || null,
         data_fim_prevista: formData.data_fim_prevista?.toISOString().split('T')[0] || null,
-        
       };
+
+      if (razaoGate) {
+        auditoriaData.conclusao_forcada = true;
+        auditoriaData.conclusao_justificativa = razaoGate;
+      }
 
       if (auditoria) {
         const { error } = await supabase
