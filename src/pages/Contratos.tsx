@@ -418,8 +418,17 @@ export default function Contratos() {
             },
             {
               key: 'valor',
-              label: t('cardsKpi.contratos.valorTotal'),
+              label: t('cardsKpi.contratos.valorVigente'),
               value: formatMoedaEmpresa(statsContratos?.valorTotal || 0, true),
+              hint: t('cardsKpi.contratos.valorVigenteHint'),
+              drillDown: 'contratos',
+            },
+            {
+              key: 'valorVencido',
+              label: t('cardsKpi.contratos.valorVencido'),
+              value: formatMoedaEmpresa(statsContratos?.valorVencido || 0, true),
+              tone: (statsContratos?.valorVencido || 0) > 0 ? 'destructive' : undefined,
+              hint: t('cardsKpi.contratos.valorVencidoHint'),
               drillDown: 'contratos',
             },
             {
@@ -430,14 +439,9 @@ export default function Contratos() {
               hint: t('fin.comum.proximos30'),
               drillDown: 'contratos',
             },
-            {
-              key: 'renovacao',
-              label: t('fin.contratos.renovacaoAutomatica'),
-              value: `${statsContratos?.total ? Math.round((statsContratos?.renovacaoAutomatica / statsContratos?.total) * 100) : 0}%`,
-              drillDown: 'contratos',
-            },
           ]}
         />
+
 
         <RelatoriosContratos open={relatoriosOpen} onOpenChange={setRelatoriosOpen} hideTrigger />
         <TemplatesContratos open={templatesOpen} onOpenChange={setTemplatesOpen} hideTrigger />
