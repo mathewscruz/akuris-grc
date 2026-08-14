@@ -199,7 +199,7 @@ const AuditoriaDialog = ({ open, onOpenChange, auditoria, onSuccess }: Auditoria
       } else {
         const { error } = await supabase
           .from('auditorias')
-          .insert(auditoriaData);
+          .insert(auditoriaData as any);
 
         if (error) throw error;
         toast.success(t('controlesAuditorias.adToastCreated'));
