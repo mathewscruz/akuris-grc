@@ -433,16 +433,33 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
         probabilidade_residual: data.probabilidade_residual || null,
         impacto_residual: data.impacto_residual || null,
         nivel_risco_residual: nivelResidual,
-        status: data.status,
+        status: invalidarAceite ? 'em_revisao' : data.status,
         responsavel: data.responsavel || null,
         controles_existentes: data.controles_existentes || null,
         causas: data.causas || null,
         consequencias: data.consequencias || null,
-        aceito: isNovoAceite ? false : (data.aceito && risco?.status_aceite === 'aprovado'),
+        aceito: invalidarAceite ? false : (isNovoAceite ? false : (data.aceito && risco?.status_aceite === 'aprovado')),
         justificativa_aceite: data.justificativa_aceite || null,
         aprovador_aceite: data.aprovador_aceite || null,
+        aceite_valido_ate: data.aceite_valido_ate || null,
         data_proxima_revisao: data.data_proxima_revisao || null,
-        status_aceite: isNovoAceite ? 'pendente' : (data.aceito ? (risco?.status_aceite || null) : null),
+        status_aceite: invalidarAceite
+          ? 'invalidado'
+          : (isNovoAceite ? 'pendente' : (data.aceito ? (risco?.status_aceite || null) : null)),
+        ...(invalidarAceite
+          ? {
+              historico_aceite: [
+                ...(((risco as any)?.historico_aceite as any[]) || []),
+                {
+                  evento: 'invalidado_por_reavaliacao',
+                  em: new Date().toISOString(),
+                  por: profile.user_id,
+                  valido_ate: (risco as any)?.aceite_valido_ate || null,
+                  justificativa: risco?.justificativa_aceite || null,
+                },
+              ],
+            }
+          : {}),
         ...(risco?.id ? {} : { created_by: profile.user_id }),
       };
 
