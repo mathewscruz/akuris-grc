@@ -33,30 +33,39 @@ export function ModuleToolbar({
   const { t } = useLanguage()
   const showSearch = typeof onSearchChange === "function"
 
+  const hasFilters = Boolean(filters)
+
   return (
     <div
       className={cn(
-        "flex flex-col gap-3 md:flex-row md:items-end md:justify-between",
+        "flex flex-col gap-3 md:flex-row md:items-start md:justify-between",
         className
       )}
       {...props}
     >
       {showSearch ? (
-        <div className="relative w-full md:max-w-sm">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" strokeWidth={1.5} />
-          <Input
-            value={searchValue ?? ""}
-            onChange={(e) => onSearchChange?.(e.target.value)}
-            placeholder={searchPlaceholder ?? t("common.searchPlaceholder")}
-            className="pl-9"
-            aria-label={searchPlaceholder ?? t("common.searchPlaceholder")}
-          />
+        <div className="w-full md:max-w-sm">
+          {hasFilters && (
+            <span aria-hidden className="hidden md:block text-[11px] font-medium leading-none mb-1.5 invisible">
+              &nbsp;
+            </span>
+          )}
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" strokeWidth={1.5} />
+            <Input
+              value={searchValue ?? ""}
+              onChange={(e) => onSearchChange?.(e.target.value)}
+              placeholder={searchPlaceholder ?? t("common.searchPlaceholder")}
+              className="pl-9"
+              aria-label={searchPlaceholder ?? t("common.searchPlaceholder")}
+            />
+          </div>
         </div>
       ) : (
         <div />
       )}
 
-      <div className="flex flex-wrap items-end gap-3">
+      <div className="flex flex-wrap items-end gap-3 md:justify-end">
         {filters}
         {children}
         {viewSwitcher}
