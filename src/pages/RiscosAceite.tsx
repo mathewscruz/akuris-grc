@@ -346,7 +346,7 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        <StatCard title={t('riscos.aceite.stats.acceptedTitle')} value={totalAceitos} description={t('riscos.aceite.stats.acceptedDesc')} icon={<CheckCircle />} variant="success" drillDown="riscos_aceite" showAccent emptyHint={t('riscos.aceite.stats.acceptedEmptyHint')} />
+        <StatCard title={t('riscos.aceite.stats.acceptedTitle')} value={totalAceitos} description={t('riscos.aceite.stats.acceptedDesc')} icon={<CheckCircle />} variant="success" drillDown="riscos_aceite" emptyHint={t('riscos.aceite.stats.acceptedEmptyHint')} />
         <StatCard title={t('riscos.aceite.stats.pendingTitle')} value={totalPendentes} description={t('riscos.aceite.stats.pendingDesc')} icon={<Clock />} variant={totalPendentes > 0 ? "warning" : "default"} drillDown="riscos_aceite" />
         <StatCard title="Aceites a expirar" value={aceitesAExpirar} description="Nos próximos 30 dias" icon={<CalendarClock />} variant={aceitesAExpirar > 0 ? "warning" : "default"} />
         <StatCard title="Aceites expirados" value={totalExpirados} description="Riscos reabertos" icon={<CalendarX />} variant={totalExpirados > 0 ? "destructive" : "default"} />

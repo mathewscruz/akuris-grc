@@ -47,11 +47,11 @@ export function AuditoriaCardAccordion({
     <Card className="hover:shadow-sm transition-shadow">
       <CardContent className="p-3">
         {/* Linha principal */}
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex items-start justify-between gap-3">
           {/* Nome */}
-          <div className="flex items-center gap-2 min-w-0 flex-shrink-0" style={{ width: '200px' }}>
-            <FileText className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-            <span className="font-medium text-sm truncate">{auditoria.nome}</span>
+          <div className="flex items-start gap-2 min-w-0 flex-shrink-0" style={{ width: '220px' }}>
+            <FileText className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0 mt-0.5" />
+            <span className="font-medium text-sm line-clamp-2 break-words">{auditoria.nome}</span>
           </div>
 
           {/* Badges */}

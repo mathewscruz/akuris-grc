@@ -321,7 +321,6 @@ export default function Incidentes() {
       description: t('sweepRiscos.incidentes.statAbertosDesc', { count: statsIncidentes?.abertos || 0 }),
       icon: <AlertTriangle />,
       drillDown: 'incidentes' as const,
-      showAccent: true,
       segments: [
         { label: t('fin.comum.criticosLower'), value: statsIncidentes?.criticos || 0, tone: 'destructive' as const },
         { label: t('sweepRiscos.incidentes.segAltos'), value: statsIncidentes?.altos || 0, tone: 'warning' as const },

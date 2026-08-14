@@ -20,7 +20,8 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core';
 import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { Chip } from '@/components/ui/chip';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -35,8 +36,8 @@ import { useLanguage } from '@/contexts/LanguageContext';
 export const PLANO_STATUS_EDITAVEIS = ['pendente', 'em_andamento', 'concluido', 'cancelado'] as const;
 
 interface Cfg {
-  statusConfig: Record<string, { label: string; variant: any; icon: any }>;
-  prioridadeConfig: Record<string, { label: string; variant: any }>;
+  statusConfig: Record<string, { label: string; tone: any; icon: any }>;
+  prioridadeConfig: Record<string, { label: string; tone: any; mark: string }>;
   moduloLabels: Record<string, string>;
 }
 
@@ -146,7 +147,7 @@ function KanbanColumn({
   t,
 }: Cfg & {
   status: string;
-  cfg: { label: string; variant: any };
+  cfg: { label: string; tone: any };
   items: any[];
   highlight: boolean;
   dragging: boolean;
@@ -160,7 +161,7 @@ function KanbanColumn({
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2 px-2">
-        <Badge variant={cfg?.variant}>{cfg?.label}</Badge>
+        <StatusBadge tone={cfg?.tone}>{cfg?.label}</StatusBadge>
         <span className="text-sm text-muted-foreground tabular-nums">({items.length})</span>
       </div>
       <div
@@ -276,12 +277,16 @@ function PlanoCard({
         </div>
 
         <div className="flex items-center gap-2 mt-2 flex-wrap">
-          <Badge variant={prioridadeConfig[item.prioridade]?.variant || 'default'} className="text-xs">
+          <StatusBadge
+            size="sm"
+            tone={prioridadeConfig[item.prioridade]?.tone || 'neutral'}
+            mark={prioridadeConfig[item.prioridade]?.mark}
+          >
             {prioridadeConfig[item.prioridade]?.label || item.prioridade}
-          </Badge>
-          <Badge variant={item._isExternal ? 'default' : 'outline'} className="text-xs">
+          </StatusBadge>
+          <Chip family="category" size="sm">
             {moduloLabels[item.modulo_origem] || item.modulo_origem || 'Manual'}
-          </Badge>
+          </Chip>
         </div>
         {item.prazo && (
           <p className={`text-xs mt-2 ${item._displayStatus === 'atrasado' ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>

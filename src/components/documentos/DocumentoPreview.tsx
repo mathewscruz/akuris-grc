@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { resolveItemStatusTone } from '@/lib/status-tone';
 import { X, Download, ExternalLink, FileText, Image, File } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -128,9 +130,9 @@ export function DocumentoPreview({ open, onOpenChange, documento }: DocumentoPre
             </DialogTitle>
             <div className="flex items-center gap-2">
               <Badge variant="secondary">{formatStatus(documento.tipo)}</Badge>
-              <Badge variant={documento.status === 'ativo' ? 'default' : 'secondary'}>
+              <StatusBadge tone={resolveItemStatusTone(documento.status).tone}>
                 {formatStatus(documento.status)}
-              </Badge>
+              </StatusBadge>
             </div>
           </div>
         </DialogHeader>

@@ -5,6 +5,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { resolveContratoStatusTone } from '@/lib/status-tone';
 import { FileSignature, DollarSign, Calendar, FileText, Shield } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -34,10 +36,6 @@ interface ContratoDialogProps {
   onSuccess: () => void;
   fornecedores: Fornecedor[];
 }
-
-const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-  ativo: 'default', rascunho: 'outline', encerrado: 'secondary', cancelado: 'destructive',
-};
 
 const BLANK = {
   numero_contrato: '', nome: '', tipo: 'servicos', status: 'rascunho', valor: '', moeda: 'BRL',
@@ -340,7 +338,7 @@ export function ContratoDialog({ contrato, open, onOpenChange, onSuccess, fornec
       <WizardSummaryRow label={t('contratosAtivos.contratoDialog.summarySupplier')} value={fornecedorNome || <span className="text-muted-foreground italic">—</span>} />
       <WizardSummaryRow
         label={t('contratosAtivos.contratoDialog.summaryStatus')}
-        value={<Badge variant={STATUS_VARIANT[formData.status] || 'outline'} className="text-[10px]">{formatStatus(formData.status)}</Badge>}
+        value={<StatusBadge size="sm" tone={resolveContratoStatusTone(formData.status).tone}>{formatStatus(formData.status)}</StatusBadge>}
       />
       <WizardSummaryRow
         label={t('contratosAtivos.contratoDialog.summaryValue')}

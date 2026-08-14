@@ -132,12 +132,12 @@ function CommandPaletteDialog({ open, onOpenChange }: { open: boolean; onOpenCha
                 key={`${group.key}-${row.id}`}
                 value={`${group.key}-${row.id}`}
                 onSelect={() => handleRecord(group.key, row)}
-                className="flex items-center gap-3 cursor-pointer"
+                className="flex items-start gap-3 cursor-pointer"
               >
-                <Badge variant="outline" className="font-mono text-[10px]">{row.codigo}</Badge>
-                <span className="min-w-0 flex-1 truncate">{row.titulo}</span>
+                <Badge variant="outline" className="font-mono text-[10px] mt-0.5">{row.codigo}</Badge>
+                <span className="min-w-0 flex-1 line-clamp-2 break-words">{row.titulo}</span>
                 {row.subtitulo && (
-                  <span className="text-xs text-muted-foreground">{formatStatus(row.subtitulo)}</span>
+                  <span className="text-xs text-muted-foreground shrink-0 mt-0.5">{formatStatus(row.subtitulo)}</span>
                 )}
               </CommandItem>
             ))}
