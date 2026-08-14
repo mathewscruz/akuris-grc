@@ -62,9 +62,14 @@ export function ConfiguracoesDenuncia() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const { toast } = useToast();
 
+  // Endereço público do canal: preferimos o URL amigável com slug, mas o canal
+  // também é acessível pelo token enquanto a empresa não define o identificador.
   const publicChannelUrl = empresaSlug
     ? `${window.location.origin}/${empresaSlug}/denuncia`
-    : '';
+    : config?.token_publico
+      ? `${window.location.origin}/denuncia/externa/${config.token_publico}`
+      : '';
+
 
   const copiarLinkPublico = () => {
     if (!publicChannelUrl) return;
