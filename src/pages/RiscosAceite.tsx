@@ -181,7 +181,7 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
   const getValidadeBadge = (validoAte?: string) => {
     if (!validoAte) return <StatusBadge size="sm" tone="neutral">Sem validade</StatusBadge>;
     const dias = differenceInDays(new Date(validoAte), new Date());
-    if (dias < 0) return <StatusBadge size="sm" tone="danger">Expirado</StatusBadge>;
+    if (dias < 0) return <StatusBadge size="sm" tone="destructive">Expirado</StatusBadge>;
     if (dias <= 30) return <StatusBadge size="sm" tone="warning">{dias}d</StatusBadge>;
     return <StatusBadge size="sm" tone="success">{dias}d</StatusBadge>;
   };
