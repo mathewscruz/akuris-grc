@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useLocation } from "react-router-dom";
 import { useEmpresaId } from "@/hooks/useEmpresaId";
-import { Plus, FileText, AlertTriangle, CheckCircle, Clock, Filter, Download } from "lucide-react";
+import { Plus, FileText, AlertTriangle, CheckCircle, Clock, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -49,7 +49,6 @@ export default function AuditoriasContent({ actionsSlot }: { actionsSlot?: HTMLE
   const [selectedAuditoria, setSelectedAuditoria] = useState<any>(null);
   const [showAuditoriaDialog, setShowAuditoriaDialog] = useState(false);
   const [showControlesDialog, setShowControlesDialog] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: string; nome?: string }>({ open: false, id: '' });
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
