@@ -456,7 +456,7 @@ export function ControleDetalheDialog({
           </div>
 
           {/* Descrição separada com suporte a quebras de linha e scroll */}
-          {controle.descricao && (
+          {controle.descricao?.trim() && (
             <div className="mt-4">
               <h4 className="text-sm font-medium mb-2 text-foreground flex items-center gap-2">
                 <FileText className="h-4 w-4" />
@@ -738,8 +738,9 @@ export function ControleDetalheDialog({
                           <span className="text-xs text-muted-foreground">{r.framework_nome}</span>
                         </div>
                         <StatusBadge size="sm" {...resolveConformityTone(r.conformity_status)}>
-                          {formatStatus(r.conformity_status)}
+                          {getStatusLabel(conformidadeRequisito({ conformity_status: r.conformity_status } as never))}
                         </StatusBadge>
+
                       </div>
                     ))
                   )}
