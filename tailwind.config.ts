@@ -91,7 +91,36 @@ export default {
 				surface: {
 					1: 'hsl(var(--surface-1))',
 					2: 'hsl(var(--surface-2))',
-					3: 'hsl(var(--surface-3))'
+					3: 'hsl(var(--surface-3))',
+					page: 'hsl(var(--surface-page))',
+					card: 'hsl(var(--surface-card))',
+					elevated: 'hsl(var(--surface-elevated))'
+				},
+				'border-strong': 'hsl(var(--border-strong))',
+				severity: {
+					critical: 'hsl(var(--severity-critical))',
+					high: 'hsl(var(--severity-high))',
+					medium: 'hsl(var(--severity-medium))',
+					low: 'hsl(var(--severity-low))',
+					none: 'hsl(var(--severity-none))'
+				},
+				state: {
+					rest: 'hsl(var(--state-rest))',
+					'rest-surface': 'hsl(var(--state-rest-surface))',
+					active: 'hsl(var(--state-active))',
+					'active-surface': 'hsl(var(--state-active-surface))',
+					done: 'hsl(var(--state-done))',
+					'done-surface': 'hsl(var(--state-done-surface))'
+				},
+				chart: {
+					1: 'hsl(var(--chart-1))',
+					2: 'hsl(var(--chart-2))',
+					3: 'hsl(var(--chart-3))',
+					4: 'hsl(var(--chart-4))',
+					5: 'hsl(var(--chart-5))',
+					6: 'hsl(var(--chart-6))',
+					grid: 'hsl(var(--chart-grid))',
+					axis: 'hsl(var(--chart-axis))'
 				},
 				'brand-ink': 'hsl(var(--brand-ink))'
 			},
