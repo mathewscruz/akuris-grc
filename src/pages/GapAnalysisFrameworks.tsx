@@ -25,6 +25,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { fwDescricao } from "@/lib/gap-i18n";
 import { useJurisdicao } from '@/hooks/useJurisdicao';
 import type { JurisdicaoCodigo } from '@/lib/jurisdicao';
+import { summarizeGaps, EMPTY_GAP_SUMMARY, type GapSummary } from '@/lib/gap-criticality';
 
 interface Framework {
   id: string;
@@ -104,6 +105,7 @@ export default function GapAnalysisFrameworks() {
   const [requirementCounts, setRequirementCounts] = useState<Record<string, number>>({});
   const [frameworkProgress, setFrameworkProgress] = useState<Record<string, FrameworkProgress>>({});
   const [frameworkStatusCounts, setFrameworkStatusCounts] = useState<Record<string, StatusCounts>>({});
+  const [frameworkGapSummary, setFrameworkGapSummary] = useState<Record<string, GapSummary>>({});
   const [loading, setLoading] = useState(true);
   const [showCatalog, setShowCatalog] = useState(false);
   const [catalogOpen, setCatalogOpen] = useState(false);
@@ -133,6 +135,7 @@ export default function GapAnalysisFrameworks() {
       const counts: Record<string, number> = {};
       const progress: Record<string, FrameworkProgress> = {};
       const statusCountsMap: Record<string, StatusCounts> = {};
+      const gapSummaryMap: Record<string, GapSummary> = {};
 
       if (frameworkIds.length > 0) {
         // PostgREST caps queries at 1000 rows by default. Frameworks globais somam >1000 requisitos,
@@ -157,11 +160,11 @@ export default function GapAnalysisFrameworks() {
           return { data: acc, error: null };
         };
 
-        const { data: allRequirements, error: reqError } = await fetchAllPaginated<{ id: string; framework_id: string }>(
+        const { data: allRequirements, error: reqError } = await fetchAllPaginated<{ id: string; framework_id: string; peso: number | null }>(
           () =>
             supabase
               .from('gap_analysis_requirements')
-              .select('id, framework_id')
+              .select('id, framework_id, peso')
               .in('framework_id', frameworkIds) as any,
         );
 
@@ -171,13 +174,19 @@ export default function GapAnalysisFrameworks() {
           });
 
           if (empresaId) {
+            const pesoPorRequisito = new Map<string, number>(
+              allRequirements.map(r => [r.id, Number(r.peso ?? 3)]),
+            );
+
             const { data: allEvaluations, error: evalError } = await fetchAllPaginated<{
               conformity_status: string;
               framework_id: string;
+              requirement_id: string;
+              prazo_implementacao: string | null;
             }>(() =>
               supabase
                 .from('gap_analysis_evaluations')
-                .select('conformity_status, framework_id')
+                .select('conformity_status, framework_id, requirement_id, prazo_implementacao')
                 .in('framework_id', frameworkIds)
                 .eq('empresa_id', empresaId) as any,
             );
@@ -210,6 +219,14 @@ export default function GapAnalysisFrameworks() {
                   nao_avaliado: Math.max(0, nao_avaliado),
                 };
 
+                gapSummaryMap[fwId] = summarizeGaps(
+                  evals.map(e => ({
+                    conformity_status: e.conformity_status,
+                    peso: pesoPorRequisito.get(e.requirement_id),
+                    prazo_implementacao: e.prazo_implementacao,
+                  })),
+                );
+
                 let avgScore = 0;
                 if (totalReqs > 0) {
                   const applicableCount = totalReqs - nao_aplicavel;
@@ -238,6 +255,7 @@ export default function GapAnalysisFrameworks() {
       setRequirementCounts(counts);
       setFrameworkProgress(progress);
       setFrameworkStatusCounts(statusCountsMap);
+      setFrameworkGapSummary(gapSummaryMap);
     } catch (error) {
       logger.error('Erro ao carregar frameworks', {
         error: error instanceof Error ? error.message : String(error),
@@ -295,6 +313,7 @@ export default function GapAnalysisFrameworks() {
     const global: StatusCounts = {
       conforme: 0, parcial: 0, nao_conforme: 0, nao_aplicavel: 0, nao_avaliado: 0,
     };
+    const gaps: GapSummary = { ...EMPTY_GAP_SUMMARY };
 
     activeFrameworks.forEach(fw => {
       const p = frameworkProgress[fw.id];
@@ -304,6 +323,12 @@ export default function GapAnalysisFrameworks() {
         totalWeight += p.evaluatedRequirements;
         totalReqs += p.totalRequirements;
         totalEvaluated += p.evaluatedRequirements;
+      }
+      const gs = frameworkGapSummary[fw.id];
+      if (gs) {
+        gaps.abertos += gs.abertos;
+        gaps.criticos += gs.criticos;
+        gaps.atrasados += gs.atrasados;
       }
       if (sc) {
         global.conforme += sc.conforme;
@@ -319,9 +344,11 @@ export default function GapAnalysisFrameworks() {
       segments: buildSegments(global),
       totalRequirements: totalReqs,
       totalEvaluated,
-      criticalCount: global.nao_conforme,
+      openGaps: gaps.abertos,
+      criticalCount: gaps.criticos,
+      overdueCount: gaps.atrasados,
     };
-  }, [activeFrameworks, frameworkProgress, frameworkStatusCounts, hasActiveFrameworks]);
+  }, [activeFrameworks, frameworkProgress, frameworkStatusCounts, frameworkGapSummary, hasActiveFrameworks]);
 
   // Recomendados pela IA — usa SUGGESTED_NAMES, e calcula overlap heurístico baseado
   // em tipo_framework idêntico aos ativos (placeholder do que será semântico em Wave futura).
@@ -428,7 +455,9 @@ export default function GapAnalysisFrameworks() {
                 segments={heroData.segments}
                 totalRequirements={heroData.totalRequirements}
                 totalEvaluated={heroData.totalEvaluated}
+                openGaps={heroData.openGaps}
                 criticalCount={heroData.criticalCount}
+                overdueCount={heroData.overdueCount}
                 activeFrameworksCount={activeFrameworks.length}
               />
             )}
