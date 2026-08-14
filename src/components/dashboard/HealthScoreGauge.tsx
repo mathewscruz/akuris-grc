@@ -98,28 +98,35 @@ export function HealthScoreGauge({ maturity }: HealthScoreGaugeProps) {
         {t('dashboard.maturity')}
       </p>
 
-      {/* Compact context row (kept from new design at user's request) */}
-      <div className="flex items-center gap-2 mt-2 flex-wrap justify-center">
-        {maturity.totalModules > 0 && maturity.status !== 'no_data' && (
-          <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4">
-            {t('dashWidgets.radar.modulesShort', { withData: String(maturity.modulesWithData), total: String(maturity.totalModules) })}
-          </Badge>
-        )}
-        {trend?.delta !== null && trend?.delta !== undefined && trend.delta !== 0 && (
-          <span className="flex items-center gap-1 text-[11px] font-medium">
+      {/* Tendência vs. 30 dias — centralizada */}
+      <div className="mt-2 flex w-full items-center justify-center">
+        {trend?.delta === null || trend?.delta === undefined ? (
+          <span className="text-[11px] text-muted-foreground">
+            {t('dashWidgets.radar.trendNoBaseline')}
+          </span>
+        ) : trend.delta === 0 ? (
+          <span className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
+            <Minus className="h-3 w-3" strokeWidth={1.5} />
+            {t('dashWidgets.radar.trendFlat')}
+          </span>
+        ) : (
+          <span
+            className={`flex items-center gap-1 text-[11px] font-medium ${
+              trend.delta > 0 ? 'text-success' : 'text-destructive'
+            }`}
+          >
             {trend.delta > 0 ? (
-              <TrendingUp className="h-3 w-3 text-success" />
+              <TrendingUp className="h-3 w-3" strokeWidth={1.5} />
             ) : (
-              <TrendingDown className="h-3 w-3 text-destructive" />
+              <TrendingDown className="h-3 w-3" strokeWidth={1.5} />
             )}
-            <span className={trend.delta > 0 ? 'text-success' : 'text-destructive'}>
-              {trend.delta > 0 ? '+' : ''}
-              {trend.delta} pts
-            </span>
-            <span className="text-muted-foreground">vs. 30d</span>
+            {trend.delta > 0
+              ? t('dashWidgets.radar.trendUp', { delta: String(trend.delta) })
+              : t('dashWidgets.radar.trendDown', { delta: String(trend.delta) })}
           </span>
         )}
       </div>
+
     </div>
   );
 }
