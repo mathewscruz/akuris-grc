@@ -181,13 +181,24 @@ export const cardsKpi = {
   },
   en: {
     cardsKpi: {
+      metricas: {
+        semDados: 'No data',
+        efetividadeSemTestes: 'Effectiveness appears only after the first control test is recorded.',
+        efetividadeTestada: 'Average of the latest tests on {testados} of {total} controls',
+        preventivosDe: 'Preventive {preventivos} of {total}',
+      },
       contratos: {
         totalContratos: 'Total contracts',
         valorTotal: 'Total value',
         valorEmAtivos: 'Value in active contracts',
+        valorVigente: 'Active value',
+        valorVigenteHint: 'Only active contracts within term',
+        valorVencido: 'Expired value',
+        valorVencidoHint: 'Active contracts past their end date',
         emptyContratos: 'Start by creating contracts to manage your partnerships.',
         emptyFornecedores: 'Register suppliers to link them to contracts.',
       },
+
       privacidade: {
         totalDados: 'Total data records',
         dadosSensiveis: 'Sensitive data',
