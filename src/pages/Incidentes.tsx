@@ -130,7 +130,8 @@ export default function Incidentes() {
       incidente.categoria?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       incidente.responsavel_tratamento?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesStatus = statusFilter === 'todos' || incidente.status === statusFilter;
+    // Mesmo predicado dos cartões (camada única de métricas)
+    const matchesStatus = statusFilter === 'todos' || estadoIncidente(incidente) === statusFilter;
     const matchesTipo = tipoFilter === 'todos' || incidente.tipo_incidente === tipoFilter;
     const matchesCriticidade = criticidadeFilter === 'todos' || incidente.criticidade === criticidadeFilter;
 
