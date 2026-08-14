@@ -12,6 +12,8 @@ import { Plus, Pencil, Trash2, Play, CheckCircle2, Flag } from 'lucide-react';
 import { useSprints, useUpsertSprint, useDeleteSprint, type ProjetoSprint } from '@/hooks/useProjetoExtras';
 import type { ProjetoTarefa } from '@/types/projetos';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { getPrioridadeLabel } from './enum-labels';
+import { DateField } from '@/components/ui/date-field';
 
 interface Props {
   projetoId: string;
@@ -155,9 +157,9 @@ function Burndown({ sprint, tarefas }: { sprint?: ProjetoSprint; tarefas: Projet
 }
 
 function ListaTarefasSprint({ tarefas, onSelect }: { tarefas: ProjetoTarefa[]; onSelect: (t: ProjetoTarefa) => void }) {
-  const { t } = useLanguage();
+  const { t: t2 } = useLanguage();
   if (tarefas.length === 0) {
-    return <p className="text-sm text-muted-foreground p-4 text-center">{t('projetos.sprints.noTasksHint')}</p>;
+    return <p className="text-sm text-muted-foreground p-4 text-center">{t2('projetos.sprints.noTasksHint')}</p>;
   }
   return (
     <div className="rounded-lg border border-border bg-card divide-y divide-border">
@@ -171,7 +173,7 @@ function ListaTarefasSprint({ tarefas, onSelect }: { tarefas: ProjetoTarefa[]; o
             ? <CheckCircle2 className="h-4 w-4 text-emerald-500" />
             : <span className="h-3.5 w-3.5 rounded-full border border-muted-foreground/40" />}
           <span className={`flex-1 text-sm ${t.concluida_em ? 'line-through text-muted-foreground' : ''}`}>{t.titulo}</span>
-          <span className="text-xs text-muted-foreground">{t.prioridade}</span>
+          <span className="text-xs text-muted-foreground">{getPrioridadeLabel(t2, t.prioridade)}</span>
         </button>
       ))}
     </div>
@@ -227,8 +229,8 @@ function SprintDialog({ open, onOpenChange, projetoId, sprint }: { open: boolean
           <div><Label>{t('projetos.sprints.fieldNome')}</Label><Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} /></div>
           <div><Label>{t('projetos.sprints.fieldObjetivo')}</Label><Textarea rows={2} value={form.objetivo} onChange={(e) => setForm({ ...form, objetivo: e.target.value })} /></div>
           <div className="grid grid-cols-2 gap-3">
-            <div><Label>{t('projetos.sprints.fieldInicio')}</Label><Input type="date" value={form.data_inicio} onChange={(e) => setForm({ ...form, data_inicio: e.target.value })} /></div>
-            <div><Label>{t('projetos.sprints.fieldFim')}</Label><Input type="date" value={form.data_fim} onChange={(e) => setForm({ ...form, data_fim: e.target.value })} /></div>
+            <div><Label>{t('projetos.sprints.fieldInicio')}</Label><DateField value={form.data_inicio || null} onChange={(v) => setForm({ ...form, data_inicio: v ?? '' })} /></div>
+            <div><Label>{t('projetos.sprints.fieldFim')}</Label><DateField value={form.data_fim || null} onChange={(v) => setForm({ ...form, data_fim: v ?? '' })} /></div>
           </div>
           <div className="flex gap-4 text-sm">
             <label className="flex items-center gap-2"><input type="checkbox" checked={form.ativa} onChange={(e) => setForm({ ...form, ativa: e.target.checked })} /> {t('projetos.sprints.fieldAtiva')}</label>

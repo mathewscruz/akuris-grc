@@ -1,21 +1,27 @@
 import type { ProjetoTarefa, ProjetoColuna } from '@/types/projetos';
-import { PRIORIDADE_LABEL, STATUS_LABEL } from '@/types/projetos';
+import { PRIORIDADE_LABEL } from '@/types/projetos';
+import { getPrioridadeLabel } from './enum-labels';
+
+type TFn = (key: string, params?: Record<string, string | number>) => string;
 
 /** CSV com BOM UTF-8 para Excel pt-BR. */
-export function exportTarefasCSV(projetoNome: string, tarefas: ProjetoTarefa[], colunas: ProjetoColuna[]) {
+export function exportTarefasCSV(projetoNome: string, tarefas: ProjetoTarefa[], colunas: ProjetoColuna[], t?: TFn) {
   const colName = (id: string | null) => colunas.find((c) => c.id === id)?.nome ?? '';
+  const prioridadeLabel = (p: ProjetoTarefa['prioridade']) => (t ? getPrioridadeLabel(t, p) : (PRIORIDADE_LABEL[p] ?? p));
+  const doneLabel = t ? t('projetos.lista.done') : 'Concluída';
+  const openLabel = t ? t('projetos.lista.open') : 'Em aberto';
   const headers = ['ID', 'Título', 'Descrição', 'Coluna', 'Prioridade', 'Responsável', 'Prazo', 'Estimativa (h)', 'Gasto (h)', 'Status', 'Concluída em', 'Criada em'];
-  const rows = tarefas.map((t: any) => [
-    t.id, t.titulo, (t.descricao ?? '').replace(/\n/g, ' '),
-    colName(t.coluna_id),
-    PRIORIDADE_LABEL[t.prioridade] ?? t.prioridade,
-    t.responsavel_id ?? '',
-    t.prazo ?? '',
-    t.estimativa_horas ?? '',
-    t.tempo_gasto_horas ?? '',
-    t.concluida_em ? 'Concluída' : 'Em aberto',
-    t.concluida_em ?? '',
-    t.created_at ?? '',
+  const rows = tarefas.map((tr: any) => [
+    tr.id, tr.titulo, (tr.descricao ?? '').replace(/\n/g, ' '),
+    colName(tr.coluna_id),
+    prioridadeLabel(tr.prioridade),
+    tr.responsavel_id ?? '',
+    tr.prazo ?? '',
+    tr.estimativa_horas ?? '',
+    tr.tempo_gasto_horas ?? '',
+    tr.concluida_em ? doneLabel : openLabel,
+    tr.concluida_em ?? '',
+    tr.created_at ?? '',
   ]);
   const csv = [headers, ...rows]
     .map((r) => r.map((v) => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','))

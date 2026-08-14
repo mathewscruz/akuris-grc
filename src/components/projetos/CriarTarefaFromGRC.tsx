@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DateField } from '@/components/ui/date-field';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
@@ -146,7 +147,7 @@ export const CriarTarefaFromGRC: React.FC<CriarTarefaFromGRCProps> = ({
               </div>
               <div className="space-y-2">
                 <Label>{t('projetos.criarTarefaGRC.fieldPrazo')}</Label>
-                <Input type="date" value={prazo} onChange={(e) => setPrazo(e.target.value)} />
+                <DateField value={prazo || null} onChange={(v) => setPrazo(v ?? '')} />
               </div>
             </div>
 
