@@ -7,13 +7,15 @@ interface RiscoDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   risco?: any;
-  onSuccess: () => void;
+  onSuccess: () => void | Promise<void>;
 }
 
 export function RiscoDialog({ open, onOpenChange, risco, onSuccess }: RiscoDialogProps) {
   const { t } = useLanguage();
-  const handleSuccess = () => {
-    onSuccess();
+  // Aguarda o refetch da lista antes de fechar: sem isto o modal fecha e a
+  // tabela continua vazia até um reload manual.
+  const handleSuccess = async () => {
+    await onSuccess();
     onOpenChange(false);
   };
 
