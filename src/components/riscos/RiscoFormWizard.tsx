@@ -631,7 +631,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
+      <form onSubmit={form.handleSubmit((d) => onSubmit(d))} className="flex flex-col h-full">
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabKey)} className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0">
           {/* Sidebar — Navegação + Resumo Vivo (desktop) */}
           <aside className="hidden lg:flex flex-col w-72 border-r bg-muted/30 flex-shrink-0">
