@@ -364,7 +364,21 @@ export function ConfiguracoesDenuncia() {
                   </Button>
                 </div>
               </div>
+
+              {!empresaSlug && (
+                <Alert>
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>{t('p3Denuncia.channel.noSlugTitle')}</AlertTitle>
+                  <AlertDescription className="space-y-3">
+                    <p>{t('p3Denuncia.channel.noSlugDescription')}</p>
+                    <Button variant="outline" size="sm" onClick={() => navigate('/configuracoes?tab=empresas')}>
+                      {t('p3Denuncia.channel.noSlugAction')}
+                    </Button>
+                  </AlertDescription>
+                </Alert>
+              )}
             </>
+
           ) : (
             <Alert variant="destructive">
               <AlertTriangle className="h-4 w-4" />
