@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { PageHeader } from '@/components/ui/page-header';
-import { StatCard } from '@/components/ui/stat-card';
+import { StatStrip } from '@/components/ui/stat-strip';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -190,7 +190,6 @@ export default function Relatorios() {
       <PageHeader
         title={t('modules.relatorios.title')}
         description={t('modules.relatorios.description')}
-        breadcrumbs={[{ label: 'Dashboard', href: '/dashboard' }, { label: t('fin.relatorios.title') }]}
         actions={
           <Button onClick={() => setDialogOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
@@ -199,11 +198,13 @@ export default function Relatorios() {
         }
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <StatCard title={t('fin.relatorios.total')} value={stats.total} icon={<FileText />} variant="primary" showAccent emptyHint={t('fin.relatorios.emptyHint')} />
-        <StatCard title={t('sweepCore.reports.published')} value={stats.publicados} icon={<Eye />} variant="success" />
-        <StatCard title={t('sweepCore.reports.drafts')} value={stats.rascunhos} icon={<Clock />} variant="warning" />
-      </div>
+      <StatStrip
+        items={[
+          { key: 'total', label: t('fin.relatorios.total'), value: stats.total },
+          { key: 'publicados', label: t('sweepCore.reports.published'), value: stats.publicados },
+          { key: 'rascunhos', label: t('sweepCore.reports.drafts'), value: stats.rascunhos, tone: 'warning' },
+        ]}
+      />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>

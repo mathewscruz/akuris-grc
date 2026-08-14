@@ -3,7 +3,7 @@ import { Plus, Shield, FileCheck, Clock, TestTube, ListTodo, Edit, Trash2, Eye, 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { PageHeader } from '@/components/ui/page-header';
-import { StatCard } from '@/components/ui/stat-card';
+import { StatStrip } from '@/components/ui/stat-strip';
 
 import { DataTable, Column } from '@/components/ui/data-table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -160,9 +160,16 @@ export default function Continuidade() {
         title={t('fin.continuidade.title')}
         description={t('fin.continuidade.desc')}
         actions={
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => {
-              if (planos.length === 0) return;
+          <Button onClick={() => setPlanoDialog({ open: true })}>
+            <Plus className="h-4 w-4 mr-2" /> {t('sweepDados.continuidade.novoPlano')}
+          </Button>
+        }
+        secondaryActions={[
+          {
+            label: t('sweepDenuncias.contas.exportCsv'),
+            icon: <Download className="h-4 w-4" />,
+            disabled: planos.length === 0,
+            onClick: () => {
               exportCSV(
                 [t('fin.comum.nome'), t('fin.comum.tipo'), t('fin.comum.status'), 'RTO (h)', 'RPO (h)', t('fin.comum.proxRevisao'), t('fin.comum.versao'), t('fin.comum.criadoEm')],
                 planos.map((p: any) => [
@@ -176,24 +183,21 @@ export default function Continuidade() {
                 ]),
                 'continuidade_planos'
               );
-            }}>
-              <Download className="h-4 w-4 mr-2" />CSV
-            </Button>
-            <Button onClick={() => setPlanoDialog({ open: true })}>
-               <Plus className="h-4 w-4 mr-2" /> {t('sweepDados.continuidade.novoPlano')}
-            </Button>
-          </div>
-        }
+            },
+          },
+        ]}
       />
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <StatCard title={t('cardsKpi.continuidade.totalPlanos')} value={stats?.total ?? 0} icon={<Shield />} variant="primary" loading={statsLoading} drillDown="continuidade" showAccent emptyHint={t('residuos.empty.continuidade')} />
-        <StatCard title={t('cardsKpi.sweep.continuidade.planosAtivos')} value={stats?.ativos ?? 0} icon={<FileCheck />} variant="success" loading={statsLoading} drillDown="continuidade" />
-        <StatCard title={t('cardsKpi.continuidade.emRevisao')} value={stats?.emRevisao ?? 0} icon={<Clock />} variant="warning" loading={statsLoading} drillDown="continuidade" />
-        <StatCard title={t('cardsKpi.continuidade.testesRealizados')} value={stats?.testesRealizados ?? 0} icon={<TestTube />} variant="info" loading={statsLoading} drillDown="continuidade" />
-        <StatCard title={t('cardsKpi.sweep.continuidade.tarefasPendentes')} value={stats?.tarefasPendentes ?? 0} icon={<ListTodo />} variant="destructive" loading={statsLoading} drillDown="planos" />
-      </div>
+      <StatStrip
+        loading={statsLoading}
+        items={[
+          { key: 'total', label: t('cardsKpi.continuidade.totalPlanos'), value: stats?.total ?? 0, drillDown: 'continuidade' },
+          { key: 'ativos', label: t('cardsKpi.sweep.continuidade.planosAtivos'), value: stats?.ativos ?? 0, drillDown: 'continuidade' },
+          { key: 'emRevisao', label: t('cardsKpi.continuidade.emRevisao'), value: stats?.emRevisao ?? 0, tone: 'warning', drillDown: 'continuidade' },
+          { key: 'testes', label: t('cardsKpi.continuidade.testesRealizados'), value: stats?.testesRealizados ?? 0, drillDown: 'continuidade' },
+          { key: 'tarefasPendentes', label: t('cardsKpi.sweep.continuidade.tarefasPendentes'), value: stats?.tarefasPendentes ?? 0, tone: 'destructive', drillDown: 'planos' },
+        ]}
+      />
 
       {/* Insights Executivos */}
       {planos.length > 0 && (

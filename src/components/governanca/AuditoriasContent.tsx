@@ -6,7 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
-import { StatCard } from "@/components/ui/stat-card";
+import { StatStrip } from "@/components/ui/stat-strip";
+import { ModuleToolbar } from "@/components/ui/module-toolbar";
+import {
+  DropdownMenu as ActionsMenu,
+  DropdownMenuContent as ActionsMenuContent,
+  DropdownMenuItem as ActionsMenuItem,
+  DropdownMenuTrigger as ActionsMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { MoreHorizontal } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -233,86 +241,56 @@ export default function AuditoriasContent() {
 
   const totalPages = Math.ceil((auditorias?.length || 0) / itemsPerPage);
 
-  const statsCards = [
-    {
-      title: t("governancaComp.auditorias.statTotal"),
-      value: auditorias?.length || 0,
-      description: t("governancaComp.auditorias.statTotalDesc"),
-      icon: FileText,
-    },
-    {
-      title: t("governancaComp.auditorias.statEmAndamento"),
-      value: auditorias?.filter(a => a.status === 'em_andamento' || a.status === 'em_execucao').length || 0,
-      description: t("governancaComp.auditorias.statEmAndamentoDesc"),
-      icon: Clock,
-    },
-    {
-      title: t("governancaComp.auditorias.statControles"),
-      value: `${totalConcluidos}/${totalItens}`,
-      description: totalItens > 0 ? t("governancaComp.auditorias.statControlesDescConcluido", { pct: Math.round((totalConcluidos / totalItens) * 100) }) : t("governancaComp.auditorias.statControlesDescNenhum"),
-      icon: CheckCircle,
-    },
-    {
-      title: t("governancaComp.auditorias.statPendentes"),
-      value: auditorias?.filter(a => a.status === 'planejamento').length || 0,
-      description: t("governancaComp.auditorias.statPendentesDesc"),
-      icon: AlertTriangle,
-    }
-  ];
-
   return (
     <div className="space-y-6">
-      {/* StatCards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {statsCards.map((stat, index) => (
-          <StatCard
-            key={index}
-            title={stat.title}
-            value={stat.value}
-            description={stat.description}
-            icon={<stat.icon />}
-            loading={isLoading}
-            drillDown="auditorias"
-            showAccent={index === 0}
-          />
-        ))}
-      </div>
-
+      {/* KPIs */}
+      <StatStrip
+        loading={isLoading}
+        items={[
+          { key: 'total', label: t("governancaComp.auditorias.statTotal"), value: auditorias?.length || 0, drillDown: 'auditorias' },
+          { key: 'em_andamento', label: t("governancaComp.auditorias.statEmAndamento"), value: auditorias?.filter(a => a.status === 'em_andamento' || a.status === 'em_execucao').length || 0, drillDown: 'auditorias' },
+          { key: 'controles', label: t("governancaComp.auditorias.statControles"), value: `${totalConcluidos}/${totalItens}`, drillDown: 'auditorias' },
+          { key: 'pendentes', label: t("governancaComp.auditorias.statPendentes"), value: auditorias?.filter(a => a.status === 'planejamento').length || 0, tone: 'warning', drillDown: 'auditorias' },
+        ]}
+      />
 
       <Card className="rounded-lg border overflow-hidden">
         <CardContent className="p-0">
           <div className="p-6 pb-4">
-            <div className="flex items-center justify-between gap-4 mb-4">
-              <Input
-                placeholder={t("governancaComp.auditorias.searchPlaceholder")}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="max-w-sm"
-              />
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={handleExportCSV}
-                  disabled={!auditorias || auditorias.length === 0}
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  {t("governancaComp.auditorias.buttonExportar")}
-                </Button>
-                <Button 
-                  variant="outline" 
+            <ModuleToolbar
+              className="mb-4"
+              searchValue={searchTerm}
+              onSearchChange={setSearchTerm}
+              searchPlaceholder={t("governancaComp.auditorias.searchPlaceholder")}
+              filters={
+                <Button
+                  variant="outline"
                   size="sm"
                   onClick={() => setShowFilters(!showFilters)}
                 >
                   <Filter className="h-4 w-4 mr-2" />
                   {t("governancaComp.auditorias.buttonFiltros")}
                 </Button>
-                <Button size="sm" onClick={() => setShowAuditoriaDialog(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  {t("governancaComp.auditorias.buttonNova")}
-                </Button>
-              </div>
-            </div>
+              }
+            >
+              <ActionsMenu>
+                <ActionsMenuTrigger asChild>
+                  <Button variant="outline" size="icon" aria-label={t("layout.moreActions")} title={t("layout.moreActions")}>
+                    <MoreHorizontal className="h-4 w-4" strokeWidth={1.5} />
+                  </Button>
+                </ActionsMenuTrigger>
+                <ActionsMenuContent align="end" className="w-56">
+                  <ActionsMenuItem onClick={handleExportCSV} disabled={!auditorias || auditorias.length === 0}>
+                    <Download className="mr-2 h-4 w-4" strokeWidth={1.5} />
+                    {t("governancaComp.auditorias.buttonExportar")}
+                  </ActionsMenuItem>
+                </ActionsMenuContent>
+              </ActionsMenu>
+              <Button size="sm" onClick={() => setShowAuditoriaDialog(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                {t("governancaComp.auditorias.buttonNova")}
+              </Button>
+            </ModuleToolbar>
             {showFilters && (
               <div className="flex gap-4 items-center flex-wrap p-4 bg-muted/50 rounded-lg mb-4">
                 <Select value={statusFilter} onValueChange={setStatusFilter}>

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { useLocation, useSearchParams } from "react-router-dom";
-import { Plus, Shield, AlertTriangle, CheckCircle, Clock, Link, BarChart3, Activity, Target, TrendingUp, Edit, Trash2, Filter, TestTube, Download, MoreHorizontal } from "lucide-react";
+import { Plus, Shield, AlertTriangle, CheckCircle, Clock, Link, BarChart3, Edit, Trash2, Filter, TestTube, Download, MoreHorizontal } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,7 +26,13 @@ import TestesDialog from "@/components/controles/TestesDialog";
 import ControlesVinculacaoDialog from "@/components/controles/ControlesVinculacaoDialog";
 import { RelatoriosDialog } from "@/components/controles/RelatoriosDialog";
 import { useControlesStats } from "@/hooks/useControlesStats";
-import { StatCard } from "@/components/ui/stat-card";
+import { StatStrip } from "@/components/ui/stat-strip";
+import {
+  DropdownMenu as ActionsMenu,
+  DropdownMenuContent as ActionsMenuContent,
+  DropdownMenuItem as ActionsMenuItem,
+  DropdownMenuTrigger as ActionsMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { EmptyState } from "@/components/ui/empty-state";
 import { DataTable } from "@/components/ui/data-table";
 import ConfirmDialog from '@/components/ConfirmDialog';
@@ -567,101 +573,64 @@ export default function ControlesContent() {
 
   return (
     <div className="space-y-6">
-      {/* Cards de KPI */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title={t("governancaComp.controles.statTotal")}
-          value={stats?.total || 0}
-          description={t("governancaComp.controles.statTotalDesc", { count: stats?.ativos || 0 })}
-          icon={<Shield />}
-          loading={isLoading}
-          variant="primary"
-          showAccent
-          emptyHint={t("governancaComp.controles.statTotalEmptyHint")}
-          drillDown="controles"
-        />
-        <StatCard
-          title={t("governancaComp.controles.statVencidas")}
-          value={stats?.vencidos || 0}
-          description={t("governancaComp.controles.statVencidasDesc")}
-          icon={<AlertTriangle />}
-          variant="destructive"
-          loading={isLoading}
-          drillDown="controles"
-        />
-        <StatCard
-          title={t("governancaComp.controles.statVencendo")}
-          value={stats?.vencendoAvaliacao || 0}
-          description={t("governancaComp.controles.statVencendoDesc")}
-          icon={<Clock />}
-          variant="warning"
-          loading={isLoading}
-          drillDown="controles"
-        />
-        <StatCard
-          title={t("governancaComp.controles.statEfetividade")}
-          value={`${stats?.total ? Math.round((stats?.preventivos / stats?.total) * 100) : 0}%`}
-          description={t("governancaComp.controles.statEfetividadeDesc")}
-          icon={<TrendingUp />}
-          variant="success"
-          loading={isLoading}
-          drillDown="controles"
-        />
-      </div>
+      {/* KPIs */}
+      <StatStrip
+        loading={isLoading}
+        items={[
+          { key: 'total', label: t("governancaComp.controles.statTotal"), value: stats?.total || 0, drillDown: 'controles' },
+          { key: 'vencidas', label: t("governancaComp.controles.statVencidas"), value: stats?.vencidos || 0, tone: 'destructive', drillDown: 'controles' },
+          { key: 'vencendo', label: t("governancaComp.controles.statVencendo"), value: stats?.vencendoAvaliacao || 0, tone: 'warning', drillDown: 'controles' },
+          { key: 'efetividade', label: t("governancaComp.controles.statEfetividade"), value: `${stats?.total ? Math.round((stats?.preventivos / stats?.total) * 100) : 0}%`, drillDown: 'controles' },
+        ]}
+      />
 
       {/* Toolbar */}
-      <div className="flex items-center justify-between gap-4 mb-4">
-        <div className="flex-1"></div>
-        <div className="flex gap-2">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="outline" size="icon" onClick={() => {
-                const headers = [t("governancaComp.controles.columnCodigo"), t("governancaComp.controles.columnNome"), t("governancaComp.controles.columnTipo"), t("governancaComp.controles.columnStatus"), t("governancaComp.controles.columnCriticidade"), t("governancaComp.controles.columnResponsavel"), t("governancaComp.controles.columnTestes")];
-                const rows = sortedControles.map(c => [
-                  c.codigo || '',
-                  c.nome,
-                  c.tipo,
-                  c.status,
-                  c.criticidade,
-                  c.responsavel_nome || '',
-                  c.testesCount || 0
-                ]);
-                const csvContent = [headers.join(";"), ...rows.map(r => r.join(";"))].join("\n");
-                const blob = new Blob(["\ufeff" + csvContent], { type: "text/csv;charset=utf-8;" });
-                const link = document.createElement("a");
-                link.href = URL.createObjectURL(blob);
-                link.download = `controles_${new Date().toISOString().split("T")[0]}.csv`;
-                link.click();
-                toast({ title: t("governancaComp.controles.toastExportTitle"), description: t("governancaComp.controles.toastExportDesc") });
-              }}>
-                <Download className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>{t("governancaComp.controles.exportarCsv")}</TooltipContent>
-          </Tooltip>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => setCategoriasDialogOpen(true)}
-          >
-            {t("governancaComp.controles.buttonCategorias")}
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => setRelatoriosDialogOpen(true)}
-          >
-            <BarChart3 className="mr-2 h-4 w-4" />
-            {t("governancaComp.controles.buttonRelatorios")}
-          </Button>
-          <Button 
-            size="sm"
-            onClick={() => setControleDialogOpen(true)}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            {t("governancaComp.controles.buttonNovo")}
-          </Button>
-        </div>
+      <div className="flex items-center justify-end gap-2">
+        <ActionsMenu>
+          <ActionsMenuTrigger asChild>
+            <Button variant="outline" size="icon" aria-label={t("layout.moreActions")} title={t("layout.moreActions")}>
+              <MoreHorizontal className="h-4 w-4" strokeWidth={1.5} />
+            </Button>
+          </ActionsMenuTrigger>
+          <ActionsMenuContent align="end" className="w-56">
+            <ActionsMenuItem onClick={() => {
+              const headers = [t("governancaComp.controles.columnCodigo"), t("governancaComp.controles.columnNome"), t("governancaComp.controles.columnTipo"), t("governancaComp.controles.columnStatus"), t("governancaComp.controles.columnCriticidade"), t("governancaComp.controles.columnResponsavel"), t("governancaComp.controles.columnTestes")];
+              const rows = sortedControles.map(c => [
+                c.codigo || '',
+                c.nome,
+                c.tipo,
+                c.status,
+                c.criticidade,
+                c.responsavel_nome || '',
+                c.testesCount || 0
+              ]);
+              const csvContent = [headers.join(";"), ...rows.map(r => r.join(";"))].join("\n");
+              const blob = new Blob(["\ufeff" + csvContent], { type: "text/csv;charset=utf-8;" });
+              const link = document.createElement("a");
+              link.href = URL.createObjectURL(blob);
+              link.download = `controles_${new Date().toISOString().split("T")[0]}.csv`;
+              link.click();
+              toast({ title: t("governancaComp.controles.toastExportTitle"), description: t("governancaComp.controles.toastExportDesc") });
+            }}>
+              <Download className="mr-2 h-4 w-4" strokeWidth={1.5} />
+              {t("governancaComp.controles.exportarCsv")}
+            </ActionsMenuItem>
+            <ActionsMenuItem onClick={() => setCategoriasDialogOpen(true)}>
+              {t("governancaComp.controles.buttonCategorias")}
+            </ActionsMenuItem>
+            <ActionsMenuItem onClick={() => setRelatoriosDialogOpen(true)}>
+              <BarChart3 className="mr-2 h-4 w-4" strokeWidth={1.5} />
+              {t("governancaComp.controles.buttonRelatorios")}
+            </ActionsMenuItem>
+          </ActionsMenuContent>
+        </ActionsMenu>
+        <Button
+          size="sm"
+          onClick={() => setControleDialogOpen(true)}
+        >
+          <Plus className="mr-2 h-4 w-4" strokeWidth={1.5} />
+          {t("governancaComp.controles.buttonNovo")}
+        </Button>
       </div>
 
       {/* DataTable with sorting */}

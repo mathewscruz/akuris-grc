@@ -7,10 +7,10 @@ import { exportCSV } from '@/lib/csv-utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { PageHeader } from '@/components/ui/page-header';
-import { StatCard } from '@/components/ui/stat-card';
+import { StatStrip } from '@/components/ui/stat-strip';
+import { ModuleToolbar, ToolbarField } from '@/components/ui/module-toolbar';
 import { DataTable, Column } from '@/components/ui/data-table';
 import { Card } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -528,10 +528,17 @@ export default function PlanosAcao() {
       <PageHeader
         title={t('modules.planosAcao.title')}
         description={t('modules.planosAcao.description')}
-        breadcrumbs={[{ label: t('planosAcao.breadcrumbDashboard'), href: '/dashboard' }, { label: t('planosAcao.breadcrumbTitle') }]}
         actions={
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => {
+          <Button onClick={() => { setEditingPlano(null); setDialogOpen(true); }}>
+            <Plus className="h-4 w-4 mr-2" />
+            {t('planosAcao.newAction')}
+          </Button>
+        }
+        secondaryActions={[
+          {
+            label: t('planosAcao.csv'),
+            icon: <Download className="h-4 w-4" />,
+            onClick: () => {
               if (planos.length === 0) return;
               exportCSV(
                 [t('planosAcao.csvHeaderTitle'), t('planosAcao.csvHeaderStatus'), t('planosAcao.csvHeaderPriority'), t('planosAcao.csvHeaderModule'), t('planosAcao.csvHeaderDeadline'), t('planosAcao.csvHeaderCreatedAt')],
@@ -541,46 +548,21 @@ export default function PlanosAcao() {
                 ]),
                 'planos_acao'
               );
-            }}>
-              <Download className="h-4 w-4 mr-2" />{t('planosAcao.csv')}
-            </Button>
-            <div className="flex border rounded-md overflow-hidden">
-              <Button variant={viewMode === 'lista' ? 'default' : 'ghost'} size="sm" onClick={() => setViewMode('lista')} className="rounded-none">
-                <List className="h-4 w-4" />
-              </Button>
-              <Button variant={viewMode === 'kanban' ? 'default' : 'ghost'} size="sm" onClick={() => setViewMode('kanban')} className="rounded-none">
-                <LayoutGrid className="h-4 w-4" />
-              </Button>
-            </div>
-            <Button onClick={() => { setEditingPlano(null); setDialogOpen(true); }}>
-              <Plus className="h-4 w-4 mr-2" />
-              {t('planosAcao.newAction')}
-            </Button>
-          </div>
-        }
+            },
+          },
+        ]}
       />
 
-      {/* Stats — todos os cartões abrem a mesma vista filtrada (lista + filtro de estado). */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <StatCard
-          title={t('planosAcao.statTotal')}
-          value={stats.total}
-          icon={<ListTodo />}
-          variant="primary"
-          showAccent
-          onClick={() => { setStatusFilter('todos'); setViewMode('lista'); }}
-          segments={[
-            { label: t('planosAcao.segmentPending'), value: stats.pendentes, tone: 'warning' },
-            { label: t('planosAcao.segmentInProgress'), value: stats.emAndamento, tone: 'info' },
-            { label: t('planosAcao.segmentCompleted'), value: stats.concluidos, tone: 'success' },
-          ]}
-          emptyHint={t('planosAcao.emptyHintTotal')}
-        />
-        <StatCard title={t('planosAcao.statPending')} value={stats.pendentes} icon={<Clock />} variant="warning" onClick={() => { setStatusFilter('pendente'); setViewMode('lista'); }} />
-        <StatCard title={t('planosAcao.statInProgress')} value={stats.emAndamento} icon={<Target />} variant="info" onClick={() => { setStatusFilter('em_andamento'); setViewMode('lista'); }} />
-        <StatCard title={t('planosAcao.statCompleted')} value={stats.concluidos} icon={<CheckCircle2 />} variant="success" onClick={() => { setStatusFilter('concluido'); setViewMode('lista'); }} />
-        <StatCard title={t('planosAcao.statOverdue')} value={stats.atrasados} icon={<AlertTriangle />} variant="destructive" onClick={() => { setStatusFilter('atrasado'); setViewMode('lista'); }} />
-      </div>
+      {/* Stats — todos os itens abrem a mesma vista filtrada (lista + filtro de estado). */}
+      <StatStrip
+        items={[
+          { key: 'total', label: t('planosAcao.statTotal'), value: stats.total, onClick: () => { setStatusFilter('todos'); setViewMode('lista'); } },
+          { key: 'pendentes', label: t('planosAcao.statPending'), value: stats.pendentes, tone: 'warning', onClick: () => { setStatusFilter('pendente'); setViewMode('lista'); } },
+          { key: 'emAndamento', label: t('planosAcao.statInProgress'), value: stats.emAndamento, onClick: () => { setStatusFilter('em_andamento'); setViewMode('lista'); } },
+          { key: 'concluidos', label: t('planosAcao.statCompleted'), value: stats.concluidos, onClick: () => { setStatusFilter('concluido'); setViewMode('lista'); } },
+          { key: 'atrasados', label: t('planosAcao.statOverdue'), value: stats.atrasados, tone: 'destructive', onClick: () => { setStatusFilter('atrasado'); setViewMode('lista'); } },
+        ]}
+      />
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -589,18 +571,13 @@ export default function PlanosAcao() {
           {isAdmin && <TabsTrigger value="todos">{t('planosAcao.tabAll')}</TabsTrigger>}
         </TabsList>
 
-        <TabsContent value={activeTab} className="mt-4">
-          {viewMode === 'lista' ? (
-            <Card>
-              {/* Filtros com rótulo visível — o Select nativo do DataTable só usa o
-                  rótulo como placeholder, que desaparece assim que há um valor selecionado. */}
-              <div className="flex flex-wrap items-end gap-4 px-4 sm:px-6 pt-4 sm:pt-6">
-                <div className="space-y-1.5">
-                  <Label htmlFor="planos-filtro-status" title={t('planosAcaoFiltros.statusLabel')}>
-                    {t('planosAcaoFiltros.statusLabel')}
-                  </Label>
+        <TabsContent value={activeTab} className="mt-4 space-y-4">
+          <ModuleToolbar
+            filters={
+              <>
+                <ToolbarField label={t('planosAcaoFiltros.statusLabel')}>
                   <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger id="planos-filtro-status" className="w-[220px]" title={t('planosAcaoFiltros.statusLabel')}>
+                    <SelectTrigger id="planos-filtro-status" className="w-[200px]" title={t('planosAcaoFiltros.statusLabel')}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -612,13 +589,10 @@ export default function PlanosAcao() {
                       <SelectItem value="cancelado">{t('planosAcao.statusCancelado')}</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="planos-filtro-prioridade" title={t('planosAcaoFiltros.priorityLabel')}>
-                    {t('planosAcaoFiltros.priorityLabel')}
-                  </Label>
+                </ToolbarField>
+                <ToolbarField label={t('planosAcaoFiltros.priorityLabel')}>
                   <Select value={prioridadeFilter} onValueChange={setPrioridadeFilter}>
-                    <SelectTrigger id="planos-filtro-prioridade" className="w-[220px]" title={t('planosAcaoFiltros.priorityLabel')}>
+                    <SelectTrigger id="planos-filtro-prioridade" className="w-[200px]" title={t('planosAcaoFiltros.priorityLabel')}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -629,8 +603,20 @@ export default function PlanosAcao() {
                       <SelectItem value="critica">{t('planosAcao.priorityCritica')}</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-              </div>
+                </ToolbarField>
+              </>
+            }
+            viewSwitcher={
+              <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'lista' | 'kanban')}>
+                <TabsList>
+                  <TabsTrigger value="lista"><List className="h-4 w-4 mr-1.5" />{t('planosAcao.viewList')}</TabsTrigger>
+                  <TabsTrigger value="kanban"><LayoutGrid className="h-4 w-4 mr-1.5" />{t('planosAcao.viewKanban')}</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            }
+          />
+          {viewMode === 'lista' ? (
+            <Card>
               <DataTable
                 data={filteredPlanos}
                 columns={columns}

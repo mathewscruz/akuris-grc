@@ -2,15 +2,15 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { useFocusRow } from '@/hooks/useFocusRow';
 import { Plus, Search, Filter, Upload, FileText, FolderOpen, Download, CheckCircle, Clock, Shield, TrendingUp } from 'lucide-react';
+import { StatStrip } from '@/components/ui/stat-strip';
+import { ModuleToolbar, ToolbarField } from '@/components/ui/module-toolbar';
 import { AkurisAIIcon } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
-import { StatCard } from '@/components/ui/stat-card';
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
 import { DocumentoDialog } from '@/components/documentos/DocumentoDialog';
@@ -95,7 +95,6 @@ export default function Documentos() {
   const [filtrosAvancados, setFiltrosAvancados] = useState<any>(null);
   const { openDocGen } = useDocGen();
   const [relatoriosDialog, setRelatoriosDialog] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
   const [renovarDialog, setRenovarDialog] = useState<{ open: boolean; documento?: Documento }>({ open: false });
   const [historicoDialog, setHistoricoDialog] = useState<{ open: boolean; documento?: Documento }>({ open: false });
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; documentoId: string }>({
@@ -416,215 +415,128 @@ export default function Documentos() {
   }
 
   return (
-    <TooltipProvider>
-      <div className="space-y-6">
+    <div className="space-y-6">
           <PageHeader
           title={t('modules.documentos.title')}
           description={t('modules.documentos.description')}
+          actions={
+            <Button size="sm" onClick={() => setDocumentoDialog({ open: true })}>
+              <Plus className="h-4 w-4 mr-2" />
+              {t('documentos.lista.novo')}
+            </Button>
+          }
+          secondaryActions={[
+            { label: t('documentos.lista.geradorIA'), icon: <AkurisAIIcon className="h-4 w-4" />, onClick: () => openDocGen({ onDone: invalidateDocumentos }) },
+            { label: t('documentos.lista.upload'), icon: <Upload className="h-4 w-4" />, onClick: () => setUploadMultiplos(true) },
+            { label: t('documentos.lista.categorias'), icon: <FolderOpen className="h-4 w-4" />, onClick: () => setCategoriasDialog(true) },
+            { label: t('documentos.lista.relatorios'), icon: <TrendingUp className="h-4 w-4" />, onClick: () => setRelatoriosDialog(true) },
+            { label: t('documentos.lista.exportarCSV'), icon: <Download className="h-4 w-4" />, onClick: handleExportCSV, separatorBefore: true },
+          ]}
         />
 
-        {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard
-            title={t('documentos.lista.totalDocumentos')}
-            value={statsDocumentos?.total || 0}
-            description={t('documentos.lista.ativos', { count: statsDocumentos?.ativos || 0 })}
-            icon={<FileText />}
-            loading={!statsDocumentos}
-            drillDown="documentos"
-            showAccent
-            emptyHint={t('documentos.lista.comeceCriando')}
-          />
+        <StatStrip
+          loading={!statsDocumentos}
+          items={[
+            { key: 'total', label: t('documentos.lista.totalDocumentos'), value: statsDocumentos?.total || 0, drillDown: 'documentos' },
+            { key: 'aprovados', label: t('documentos.lista.aprovados'), value: statsDocumentos?.aprovados || 0, drillDown: 'documentos' },
+            { key: 'vencendo30', label: t('documentos.lista.vencendo30'), value: statsDocumentos?.vencendo30Dias || 0, tone: 'warning', drillDown: 'documentos' },
+            { key: 'confidenciais', label: t('documentos.lista.confidenciais'), value: statsDocumentos?.confidenciais || 0, drillDown: 'documentos' },
+          ]}
+        />
 
-          <StatCard
-            title={t('documentos.lista.aprovados')}
-            value={statsDocumentos?.aprovados || 0}
-            description={t('documentos.lista.pendentes', { count: statsDocumentos?.pendentesAprovacao || 0 })}
-            icon={<CheckCircle />}
-            variant="success"
-            loading={!statsDocumentos}
-            drillDown="documentos"
-          />
+        <ModuleToolbar
+          searchValue={searchTerm}
+          onSearchChange={setSearchTerm}
+          searchPlaceholder={t('documentos.lista.buscarDocumentos')}
+          filters={
+            <>
+              <ToolbarField label={t('documentos.lista.classificacao')}>
+                <Select value={selectedCategoria} onValueChange={setSelectedCategoria}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder={t('documentos.lista.classificacao')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t('documentos.lista.todasClassificacoes')}</SelectItem>
+                    <SelectItem value="publica">{t('documentos.lista.publica')}</SelectItem>
+                    <SelectItem value="interna">{t('documentos.lista.interna')}</SelectItem>
+                    <SelectItem value="restrita">{t('documentos.lista.restrita')}</SelectItem>
+                    <SelectItem value="confidencial">{t('documentos.lista.confidencial')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </ToolbarField>
+              <ToolbarField label={t('documentos.lista.status')}>
+                <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue placeholder={t('documentos.lista.status')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t('documentos.lista.todos')}</SelectItem>
+                    <SelectItem value="ativo">{t('documentos.lista.ativo')}</SelectItem>
+                    <SelectItem value="inativo">{t('documentos.lista.inativo')}</SelectItem>
+                    <SelectItem value="arquivado">{t('documentos.lista.arquivado')}</SelectItem>
+                    <SelectItem value="vencido">{t('documentos.lista.vencido')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </ToolbarField>
+              <ToolbarField label={t('documentos.lista.itensPorPagina')}>
+                <Select value={String(itemsPerPage)} onValueChange={(v) => setItemsPerPage(Number(v))}>
+                  <SelectTrigger className="w-[100px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="20">20</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                  </SelectContent>
+                </Select>
+              </ToolbarField>
+              <ToolbarField label={t('documentos.lista.tipo')}>
+                <Select value={selectedTipo} onValueChange={setSelectedTipo}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder={t('documentos.lista.tipo')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t('documentos.lista.todosOsTipos')}</SelectItem>
+                    <SelectItem value="politica">{t('documentos.lista.politica')}</SelectItem>
+                    <SelectItem value="procedimento">{t('documentos.lista.procedimento')}</SelectItem>
+                    <SelectItem value="instrucao">{t('documentos.lista.instrucao')}</SelectItem>
+                    <SelectItem value="formulario">{t('documentos.lista.formulario')}</SelectItem>
+                    <SelectItem value="certificado">{t('documentos.lista.certificado')}</SelectItem>
+                    <SelectItem value="contrato">{t('documentos.lista.contrato')}</SelectItem>
+                    <SelectItem value="relatorio">{t('documentos.lista.relatorio')}</SelectItem>
+                    <SelectItem value="documento">{t('documentos.lista.documento')}</SelectItem>
+                    <SelectItem value="manual">{t('documentos.lista.manual')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </ToolbarField>
+            </>
+          }
+        >
+          <Button variant="ghost" size="sm" onClick={() => setBuscaAvancada(true)}>
+            <Search className="h-3 w-3 mr-1" />
+            {t('documentos.lista.buscaAvancada')}
+          </Button>
+          {temFiltrosAtivos && (
+            <Button variant="ghost" size="sm" onClick={limparFiltros}>
+              {t('documentos.lista.limpar')}
+            </Button>
+          )}
+        </ModuleToolbar>
 
-          <StatCard
-            title={t('documentos.lista.vencendo30')}
-            value={statsDocumentos?.vencendo30Dias || 0}
-            description={t('documentos.lista.jaVencidos', { count: statsDocumentos?.vencidos || 0 })}
-            icon={<Clock />}
-            variant={statsDocumentos?.vencendo30Dias ? "warning" : "default"}
-            loading={!statsDocumentos}
-            drillDown="documentos"
-          />
-
-          <StatCard
-            title={t('documentos.lista.confidenciais')}
-            value={statsDocumentos?.confidenciais || 0}
-            description={t('documentos.lista.acessoRestrito')}
-            icon={<Shield />}
-            variant="info"
-            loading={!statsDocumentos}
-            drillDown="documentos"
-          />
-        </div>
+        {/* Indicador de filtros aplicados */}
+        {filtrosAvancados && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Filter className="h-4 w-4" />
+            {t('documentos.lista.filtrosAplicados')}
+            <Badge variant="secondary">
+              {t('documentos.lista.filtrosCount', { count: Object.keys(filtrosAvancados).length })}
+            </Badge>
+          </div>
+        )}
 
         {/* Tabela de documentos com estrutura integrada */}
         <Card className="rounded-lg border overflow-hidden">
           <CardContent className="p-0">
-            <div className="p-6 pb-4">
-              <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-                <div className="relative flex-1 min-w-[200px] max-w-sm">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    placeholder={t('documentos.lista.buscarDocumentos')}
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-9"
-                  />
-                </div>
-                <div className="flex gap-2 flex-wrap">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="outline" size="icon" onClick={handleExportCSV}>
-                        <Download className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>{t('documentos.lista.exportarCSV')}</TooltipContent>
-                  </Tooltip>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setUploadMultiplos(true)}
-                  >
-                    <Upload className="h-4 w-4 mr-2" />
-                    {t('documentos.lista.upload')}
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setCategoriasDialog(true)}
-                  >
-                    <FolderOpen className="h-4 w-4 mr-2" />
-                    {t('documentos.lista.categorias')}
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setShowFilters(!showFilters)}
-                  >
-                    <Filter className="h-4 w-4 mr-2" />
-                    {t('documentos.lista.filtros')}
-                    {showFilters && (
-                      <span className="ml-1 text-xs text-muted-foreground">▲</span>
-                    )}
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setRelatoriosDialog(true)}
-                  >
-                    <TrendingUp className="h-4 w-4 mr-2" />
-                    {t('documentos.lista.relatorios')}
-                  </Button>
-                  <Button 
-                    size="sm"
-                    onClick={() => openDocGen({ onDone: invalidateDocumentos })} 
-                    className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-                  >
-                    <AkurisAIIcon className="h-4 w-4 mr-2" />
-                    {t('documentos.lista.geradorIA')}
-                  </Button>
-                  <Button 
-                    size="sm"
-                    onClick={() => setDocumentoDialog({ open: true })}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    {t('documentos.lista.novo')}
-                  </Button>
-                </div>
-              </div>
-              
-              {/* Filtros básicos */}
-              {showFilters && (
-                <div className="flex gap-4 items-center flex-wrap p-4 bg-muted/50 rounded-lg mb-4">
-                  <Select value={selectedCategoria} onValueChange={setSelectedCategoria}>
-                    <SelectTrigger className="w-48">
-                      <SelectValue placeholder={t('documentos.lista.classificacao')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t('documentos.lista.todasClassificacoes')}</SelectItem>
-                      <SelectItem value="publica">{t('documentos.lista.publica')}</SelectItem>
-                      <SelectItem value="interna">{t('documentos.lista.interna')}</SelectItem>
-                      <SelectItem value="restrita">{t('documentos.lista.restrita')}</SelectItem>
-                      <SelectItem value="confidencial">{t('documentos.lista.confidencial')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  
-                  <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                    <SelectTrigger className="w-32">
-                      <SelectValue placeholder={t('documentos.lista.status')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t('documentos.lista.todos')}</SelectItem>
-                      <SelectItem value="ativo">{t('documentos.lista.ativo')}</SelectItem>
-                      <SelectItem value="inativo">{t('documentos.lista.inativo')}</SelectItem>
-                      <SelectItem value="arquivado">{t('documentos.lista.arquivado')}</SelectItem>
-                      <SelectItem value="vencido">{t('documentos.lista.vencido')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  
-                  <Select value={selectedTipo} onValueChange={setSelectedTipo}>
-                    <SelectTrigger className="w-40">
-                      <SelectValue placeholder={t('documentos.lista.tipo')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t('documentos.lista.todosOsTipos')}</SelectItem>
-                      <SelectItem value="politica">{t('documentos.lista.politica')}</SelectItem>
-                      <SelectItem value="procedimento">{t('documentos.lista.procedimento')}</SelectItem>
-                      <SelectItem value="instrucao">{t('documentos.lista.instrucao')}</SelectItem>
-                      <SelectItem value="formulario">{t('documentos.lista.formulario')}</SelectItem>
-                      <SelectItem value="certificado">{t('documentos.lista.certificado')}</SelectItem>
-                      <SelectItem value="contrato">{t('documentos.lista.contrato')}</SelectItem>
-                      <SelectItem value="relatorio">{t('documentos.lista.relatorio')}</SelectItem>
-                      <SelectItem value="documento">{t('documentos.lista.documento')}</SelectItem>
-                      <SelectItem value="manual">{t('documentos.lista.manual')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-
-                  <Select value={String(itemsPerPage)} onValueChange={(v) => setItemsPerPage(Number(v))}>
-                    <SelectTrigger className="w-[100px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="10">10</SelectItem>
-                      <SelectItem value="20">20</SelectItem>
-                      <SelectItem value="50">50</SelectItem>
-                    </SelectContent>
-                  </Select>
-
-                  {(searchTerm || selectedCategoria !== 'all' || selectedStatus !== 'all' || selectedTipo !== 'all' || filtrosAvancados) && (
-                    <Button variant="ghost" size="sm" onClick={limparFiltros}>
-                      {t('documentos.lista.limpar')}
-                    </Button>
-                  )}
-                  <Button variant="ghost" size="sm" onClick={() => setBuscaAvancada(true)}>
-                    <Search className="h-3 w-3 mr-1" />
-                    {t('documentos.lista.buscaAvancada')}
-                  </Button>
-                </div>
-              )}
-
-              {/* Indicador de filtros aplicados */}
-              {filtrosAvancados && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-                  <Filter className="h-4 w-4" />
-                  {t('documentos.lista.filtrosAplicados')}
-                  <Badge variant="secondary">
-                    {t('documentos.lista.filtrosCount', { count: Object.keys(filtrosAvancados).length })}
-                  </Badge>
-                </div>
-              )}
-            </div>
-            
             <DocumentosLista
               documentos={paginatedDocumentos}
               podeRenovar={podeRenovar}
@@ -809,6 +721,5 @@ export default function Documentos() {
           documento={historicoDialog.documento || null}
         />
       </div>
-    </TooltipProvider>
   );
 }

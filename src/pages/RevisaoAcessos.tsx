@@ -3,7 +3,7 @@ import { Plus, Download, Eye, Edit, Trash2, MoreHorizontal, UserCheck } from "lu
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { StatCard } from "@/components/ui/stat-card";
+import { StatStrip } from "@/components/ui/stat-strip";
 import { PageHeader } from "@/components/ui/page-header";
 import { DataTable, Column } from "@/components/ui/data-table";
 import { useReviewStats } from "@/hooks/useReviewStats";
@@ -304,37 +304,33 @@ export default function RevisaoAcessos() {
       <PageHeader
         title={t('modules.revisaoAcessos.title')}
         description={t('modules.revisaoAcessos.description')}
+        actions={
+          <Button onClick={() => {
+            setSelectedReview(null);
+            setReviewDialogOpen(true);
+          }}>
+            <Plus className="mr-2 h-4 w-4" />
+            {t('sweepDenuncias.revisao.novaRevisao')}
+          </Button>
+        }
+        secondaryActions={[
+          {
+            label: t('sweepDenuncias.revisao.exportar'),
+            icon: <Download className="h-4 w-4" />,
+            onClick: () => {},
+          },
+        ]}
       />
 
-      <div className="grid gap-4 md:grid-cols-4">
-        <StatCard
-          title={t('residuos.geral.emAndamento')}
-          value={stats?.emAndamento || 0}
-          loading={statsLoading}
-          drillDown="revisao_acessos"
-          showAccent
-          emptyHint={t('residuos.empty.revisaoAcessos')}
-        />
-        <StatCard
-          title={t('fin.comum.concluidas')}
-          value={stats?.concluidas || 0}
-          loading={statsLoading}
-          variant="success"
-        />
-        <StatCard
-          title={t('sweepDenuncias.revisao.cardVencidas')}
-          value={stats?.vencidas || 0}
-          loading={statsLoading}
-          variant="destructive"
-          drillDown="revisao_acessos"
-        />
-        <StatCard
-          title={t('sweepDenuncias.revisao.cardContasRevisadas')}
-          value={stats?.contasRevisadas || 0}
-          loading={statsLoading}
-          variant="info"
-        />
-      </div>
+      <StatStrip
+        loading={statsLoading}
+        items={[
+          { key: 'emAndamento', label: t('residuos.geral.emAndamento'), value: stats?.emAndamento || 0, drillDown: 'revisao_acessos' },
+          { key: 'concluidas', label: t('fin.comum.concluidas'), value: stats?.concluidas || 0 },
+          { key: 'vencidas', label: t('sweepDenuncias.revisao.cardVencidas'), value: stats?.vencidas || 0, tone: 'destructive', drillDown: 'revisao_acessos' },
+          { key: 'contasRevisadas', label: t('sweepDenuncias.revisao.cardContasRevisadas'), value: stats?.contasRevisadas || 0 },
+        ]}
+      />
 
       <Tabs defaultValue="ativas">
         <TabsList>
@@ -344,20 +340,6 @@ export default function RevisaoAcessos() {
         </TabsList>
 
         <TabsContent value="ativas" className="space-y-4 mt-4">
-          <div className="flex gap-2 justify-end">
-            <Button onClick={() => {
-              setSelectedReview(null);
-              setReviewDialogOpen(true);
-            }}>
-              <Plus className="mr-2 h-4 w-4" />
-              {t('sweepDenuncias.revisao.novaRevisao')}
-            </Button>
-            <Button variant="outline">
-              <Download className="mr-2 h-4 w-4" />
-              {t('sweepDenuncias.revisao.exportar')}
-            </Button>
-          </div>
-
           <Card className="rounded-lg border overflow-hidden">
             <CardContent className="p-0">
               <DataTable
