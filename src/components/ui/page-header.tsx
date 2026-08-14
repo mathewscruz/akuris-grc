@@ -3,11 +3,23 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
-import { ChevronRight } from "lucide-react"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { ChevronRight, MoreHorizontal } from "lucide-react"
+import { useLanguage } from "@/contexts/LanguageContext"
 
 interface BreadcrumbItemType {
   label: string
   href?: string
+}
+
+/** Ação secundária recolhida no menu "..." ao lado da ação primária. */
+export interface SecondaryAction {
+  label: string
+  onClick: () => void
+  icon?: React.ReactNode
+  disabled?: boolean
+  /** Insere um divisor antes deste item. */
+  separatorBefore?: boolean
 }
 
 interface PageHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -18,9 +30,13 @@ interface PageHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
     label: string
     variant?: "default" | "secondary" | "destructive" | "success" | "warning" | "info"
   }
+  /** Ação primária — sempre uma só, botão roxo cheio, canto superior direito. */
   actions?: React.ReactNode
+  /** Ações secundárias (Importar, Exportar, Templates…) no menu "...". */
+  secondaryActions?: SecondaryAction[]
   children?: React.ReactNode
 }
+
 
 export function PageHeader({
   className,
