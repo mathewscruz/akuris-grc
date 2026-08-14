@@ -92,25 +92,11 @@ export default function TestesList({ controleId, controleNome }: TestesListProps
     deleteTesteMutation.mutate(deleteConfirm.id);
   };
 
-  const getResultadoBadge = (resultado: string) => {
-    const variants = {
-      eficaz: "default",
-      ineficaz: "destructive",
-      parcialmente_eficaz: "secondary"
-    } as const;
-    
-    const labels = {
-      eficaz: t('controlesAuditorias.tlResultadoEficaz'),
-      ineficaz: t('controlesAuditorias.tlResultadoIneficaz'),
-      parcialmente_eficaz: t('controlesAuditorias.tlResultadoParcial')
-    } as const;
-    
-    return (
-      <Badge variant={variants[resultado as keyof typeof variants] || "default"}>
-        {labels[resultado as keyof typeof labels] || resultado}
-      </Badge>
-    );
-  };
+  const getResultadoBadge = (resultado: string) => (
+    <StatusBadge size="sm" tone={resultadoTesteTone(resultado)}>
+      {resultadoTesteLabel(resultado, t)}
+    </StatusBadge>
+  );
 
   if (isLoading) {
     return (
