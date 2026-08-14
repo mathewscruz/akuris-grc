@@ -44,6 +44,7 @@ const makeRiscoSchema = (t: (k: string) => string) => z.object({
   aceito: z.boolean().default(false),
   justificativa_aceite: z.string().optional(),
   aprovador_aceite: z.string().optional(),
+  aceite_valido_ate: z.string().optional(),
   ativos_vinculados: z.array(z.string()).default([]),
   data_proxima_revisao: z.string().optional()
 });
