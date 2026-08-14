@@ -10,6 +10,10 @@ import ControlesTestesDialog from "./ControlesTestesDialog";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { formatDateOnly } from "@/lib/date-utils";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { resultadoTesteLabel, resultadoTesteTone } from "@/lib/controle-testes";
+import { openStorageFile } from "@/lib/storage";
+import { useQuery as useProfilesQuery } from "@tanstack/react-query";
 
 interface ControleTeste {
   id: string;
@@ -20,6 +24,9 @@ interface ControleTeste {
   evidencias?: string;
   testador?: string;
   proxima_avaliacao?: string;
+  testador_id?: string | null;
+  evidencia_url?: string | null;
+  evidencia_nome?: string | null;
   created_at: string;
 }
 
@@ -51,6 +58,15 @@ export default function TestesList({ controleId, controleNome }: TestesListProps
     },
     enabled: !!controleId
   });
+
+  const { data: perfis = [] } = useProfilesQuery({
+    queryKey: ['profiles-testadores'],
+    queryFn: async () => {
+      const { data } = await supabase.from('profiles').select('user_id, nome');
+      return data || [];
+    },
+  });
+  const nomePorUser = new Map((perfis as any[]).map((p) => [p.user_id, p.nome]));
 
   // Deletar teste
   const deleteTesteMutation = useMutation({
@@ -159,10 +175,10 @@ export default function TestesList({ controleId, controleNome }: TestesListProps
                       {t('controlesAuditorias.tlTesteDe', { data: formatDateOnly(teste.data_teste) })}
                     </CardTitle>
                     <CardDescription className="flex items-center gap-4 mt-1">
-                      {teste.testador && (
+                      {(teste.testador_id || teste.testador) && (
                         <span className="flex items-center gap-1">
                           <User className="w-3 h-3" />
-                          {teste.testador}
+                          {nomePorUser.get(teste.testador_id || '') || teste.testador}
                         </span>
                       )}
                       {teste.proxima_avaliacao && (
@@ -186,6 +202,19 @@ export default function TestesList({ controleId, controleNome }: TestesListProps
                   </div>
                 )}
                 
+                {teste.evidencia_nome && (
+                  <div className="mb-3">
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="h-auto p-0 text-primary"
+                      onClick={() => openStorageFile('controles-evidencias', teste.evidencia_url)}
+                    >
+                      {teste.evidencia_nome}
+                    </Button>
+                  </div>
+                )}
+
                 {teste.evidencias && (
                   <div className="mb-3">
                     <p className="text-sm text-muted-foreground mb-1">{t('controlesAuditorias.tlEvidencias')}</p>
