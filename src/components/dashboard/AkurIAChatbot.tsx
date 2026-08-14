@@ -204,6 +204,24 @@ export function AkurIAChatbot() {
 
   const userInitials = userInitialsFrom(profile?.nome);
 
+  // FAB recolhe enquanto se rola (para nunca tapar a última linha/menu "...")
+  // e volta assim que o scroll pára.
+  const [scrolling, setScrolling] = useState(false);
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+    const onScroll = () => {
+      setScrolling(true);
+      clearTimeout(timer);
+      timer = setTimeout(() => setScrolling(false), 450);
+    };
+    // capture: eventos de scroll de containers internos não borbulham
+    document.addEventListener('scroll', onScroll, true);
+    return () => {
+      document.removeEventListener('scroll', onScroll, true);
+      clearTimeout(timer);
+    };
+  }, []);
+
   // Dimensões por modo
   const panelClass = cn(
     "fixed z-50 rounded-2xl border border-border/60 bg-card/95 backdrop-blur-xl shadow-[0_20px_60px_-15px_hsl(var(--primary)/0.35)] flex overflow-hidden animate-fade-in",
@@ -218,7 +236,10 @@ export function AkurIAChatbot() {
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className="fixed bottom-20 md:bottom-6 right-4 md:right-6 z-50 h-14 w-14 rounded-full bg-card shadow-lg border border-border/60 hover:shadow-[0_0_30px_hsl(var(--primary)/0.4)] transition-all duration-300 hover:scale-110 flex items-center justify-center animate-fade-in group"
+          className={cn(
+            "fixed bottom-20 md:bottom-6 right-4 md:right-6 z-50 h-14 w-14 rounded-full bg-card shadow-lg border border-border/60 hover:shadow-[0_0_30px_hsl(var(--primary)/0.4)] transition-all duration-300 hover:scale-110 flex items-center justify-center animate-fade-in group",
+            scrolling && "pointer-events-none translate-y-24 opacity-0"
+          )}
           title="AkurIA — Assistente Inteligente"
         >
           <span className="absolute inset-0 rounded-full bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity" />
