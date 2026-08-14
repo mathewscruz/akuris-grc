@@ -322,7 +322,8 @@ export function ConfiguracoesDenuncia() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {empresaSlug ? (
+          {publicChannelUrl ? (
+
             <>
               <div className="space-y-2">
                 <Label className="text-sm font-medium">{t('p3Denuncia.channel.urlLabel')}</Label>
