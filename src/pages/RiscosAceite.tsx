@@ -256,6 +256,15 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
       ),
     },
     {
+      key: 'aceite_valido_ate', label: 'Válido até', sortable: true,
+      render: (value: string) => (
+        <div className="flex flex-col gap-1">
+          <span className="text-sm">{value ? formatDateOnly(value) : '-'}</span>
+          {getValidadeBadge(value)}
+        </div>
+      ),
+    },
+    {
       key: 'actions', label: t('riscos.aceite.columns.actions'), className: 'w-[60px]',
       render: (_: any, risco: RiscoAceito) => (
         <DropdownMenu>
