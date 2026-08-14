@@ -486,6 +486,14 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
                   })}
                 </>
               )}
+
+              {/* Planos de ação ligados por chave estrangeira a este risco */}
+              <PlanosAcaoVinculados
+                modulo="riscos"
+                registroId={risco.id}
+                registroTitulo={risco.nome}
+                tituloLegado={risco.nome}
+              />
             </TabsContent>
 
             {/* Histórico */}
