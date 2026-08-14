@@ -665,6 +665,7 @@ export default function Privacidade() {
               <DataTable
                 data={solicitacoes}
                 columns={solicitacoesColumns}
+                onRowClick={(solicitacao) => { setSelectedSolicitacao(solicitacao); setShowSolicitacaoDialog(true); }}
                 loading={false}
                 searchable
                 searchPlaceholder={t('sweepDados.privacidade.buscarSolicitacoes')}
