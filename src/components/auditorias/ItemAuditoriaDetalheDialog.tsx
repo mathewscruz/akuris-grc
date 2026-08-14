@@ -112,6 +112,20 @@ export function ItemAuditoriaDetalheDialog({
     enabled: open && !!item?.id,
   });
 
+  const { data: achadosDoItem } = useQuery({
+    queryKey: ["auditoria-achados", item?.auditoria_id, item?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("auditoria_achados")
+        .select("id")
+        .eq("item_id", item.id);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: open && !!item?.id,
+  });
+  const achadosCount = achadosDoItem?.length || 0;
+
   // Filtrar usuários para menção
   const filteredUsers = usuarios?.filter(u => 
     u.nome?.toLowerCase().includes(mentionSearch.toLowerCase()) ||
