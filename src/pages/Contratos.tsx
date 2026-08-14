@@ -39,6 +39,7 @@ import { useEmpresaMoeda } from '@/hooks/useEmpresaMoeda';
 import { formatDateOnly } from '@/lib/date-utils';
 import { formatStatus } from '@/lib/text-utils';
 import { resolveContratoStatusTone, resolveCriticidadeTone } from '@/lib/status-tone';
+import { estadoContrato } from '@/lib/metrics';
 
 interface Contrato {
   id: string;
