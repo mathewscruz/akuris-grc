@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Search, Filter, X, RotateCcw } from "lucide-react"
 import { useLanguage } from "@/contexts/LanguageContext"
+import { countActiveFilters } from "@/lib/filter-active"
 
 interface FilterOption {
   value: string
