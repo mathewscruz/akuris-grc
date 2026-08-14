@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { useLocation } from "react-router-dom";
 import { useEmpresaId } from "@/hooks/useEmpresaId";
 import { Plus, FileText, AlertTriangle, CheckCircle, Clock, Filter, Download } from "lucide-react";
@@ -7,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatStrip } from "@/components/ui/stat-strip";
-import { ModuleToolbar } from "@/components/ui/module-toolbar";
+import { ModuleToolbar, ToolbarField } from "@/components/ui/module-toolbar";
 import {
   DropdownMenu as ActionsMenu,
   DropdownMenuContent as ActionsMenuContent,
@@ -37,7 +38,7 @@ import { formatDateOnly } from "@/lib/date-utils";
 import { formatStatus } from "@/lib/text-utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 
-export default function AuditoriasContent() {
+export default function AuditoriasContent({ actionsSlot }: { actionsSlot?: HTMLElement | null } = {}) {
   const { t } = useLanguage();
   const { toast } = useToast();
   const location = useLocation();
@@ -254,72 +255,70 @@ export default function AuditoriasContent() {
         ]}
       />
 
+      {actionsSlot && createPortal(
+        <>
+          <ActionsMenu>
+            <ActionsMenuTrigger asChild>
+              <Button variant="outline" size="icon" aria-label={t("layout.moreActions")} title={t("layout.moreActions")}>
+                <MoreHorizontal className="h-4 w-4" strokeWidth={1.5} />
+              </Button>
+            </ActionsMenuTrigger>
+            <ActionsMenuContent align="end" className="w-56">
+              <ActionsMenuItem onClick={handleExportCSV} disabled={!auditorias || auditorias.length === 0}>
+                <Download className="mr-2 h-4 w-4" strokeWidth={1.5} />
+                {t("governancaComp.auditorias.buttonExportar")}
+              </ActionsMenuItem>
+            </ActionsMenuContent>
+          </ActionsMenu>
+          <Button size="sm" onClick={() => setShowAuditoriaDialog(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            {t("governancaComp.auditorias.buttonNova")}
+          </Button>
+        </>,
+        actionsSlot
+      )}
+
       <Card className="rounded-lg border overflow-hidden">
         <CardContent className="p-0">
-          <div className="p-6 pb-4">
+          <div className="p-4 sm:p-6 pb-4">
             <ModuleToolbar
-              className="mb-4"
               searchValue={searchTerm}
               onSearchChange={setSearchTerm}
               searchPlaceholder={t("governancaComp.auditorias.searchPlaceholder")}
               filters={
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowFilters(!showFilters)}
-                >
-                  <Filter className="h-4 w-4 mr-2" />
-                  {t("governancaComp.auditorias.buttonFiltros")}
-                </Button>
+                <>
+                  <ToolbarField label={t("governancaComp.auditorias.filterStatus")}>
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger className="w-full min-w-[160px]">
+                        <SelectValue placeholder={t("governancaComp.auditorias.filterStatus")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="todos">{t("governancaComp.auditorias.filterStatusAll")}</SelectItem>
+                        <SelectItem value="planejamento">{t("governancaComp.auditorias.statusPlanejamento")}</SelectItem>
+                        <SelectItem value="em_andamento">{t("governancaComp.auditorias.statusEmAndamento")}</SelectItem>
+                        <SelectItem value="concluida">{t("governancaComp.auditorias.statusConcluida")}</SelectItem>
+                        <SelectItem value="cancelada">{t("governancaComp.auditorias.statusCancelada")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </ToolbarField>
+                  <ToolbarField label={t("governancaComp.auditorias.filterTipo")}>
+                    <Select value={tipoFilter} onValueChange={setTipoFilter}>
+                      <SelectTrigger className="w-full min-w-[160px]">
+                        <SelectValue placeholder={t("governancaComp.auditorias.filterTipo")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="todos">{t("governancaComp.auditorias.filterTipoAll")}</SelectItem>
+                        <SelectItem value="interna">{t("governancaComp.auditorias.tipoInterna")}</SelectItem>
+                        <SelectItem value="externa">{t("governancaComp.auditorias.tipoExterna")}</SelectItem>
+                        <SelectItem value="compliance">{t("governancaComp.auditorias.tipoCompliance")}</SelectItem>
+                        <SelectItem value="operacional">{t("governancaComp.auditorias.tipoOperacional")}</SelectItem>
+                        <SelectItem value="ti">{t("governancaComp.auditorias.tipoTi")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </ToolbarField>
+                </>
               }
-            >
-              <ActionsMenu>
-                <ActionsMenuTrigger asChild>
-                  <Button variant="outline" size="icon" aria-label={t("layout.moreActions")} title={t("layout.moreActions")}>
-                    <MoreHorizontal className="h-4 w-4" strokeWidth={1.5} />
-                  </Button>
-                </ActionsMenuTrigger>
-                <ActionsMenuContent align="end" className="w-56">
-                  <ActionsMenuItem onClick={handleExportCSV} disabled={!auditorias || auditorias.length === 0}>
-                    <Download className="mr-2 h-4 w-4" strokeWidth={1.5} />
-                    {t("governancaComp.auditorias.buttonExportar")}
-                  </ActionsMenuItem>
-                </ActionsMenuContent>
-              </ActionsMenu>
-              <Button size="sm" onClick={() => setShowAuditoriaDialog(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                {t("governancaComp.auditorias.buttonNova")}
-              </Button>
-            </ModuleToolbar>
-            {showFilters && (
-              <div className="flex gap-4 items-center flex-wrap p-4 bg-muted/50 rounded-lg mb-4">
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder={t("governancaComp.auditorias.filterStatus")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">{t("governancaComp.auditorias.filterStatusAll")}</SelectItem>
-                    <SelectItem value="planejamento">{t("governancaComp.auditorias.statusPlanejamento")}</SelectItem>
-                    <SelectItem value="em_andamento">{t("governancaComp.auditorias.statusEmAndamento")}</SelectItem>
-                    <SelectItem value="concluida">{t("governancaComp.auditorias.statusConcluida")}</SelectItem>
-                    <SelectItem value="cancelada">{t("governancaComp.auditorias.statusCancelada")}</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={tipoFilter} onValueChange={setTipoFilter}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder={t("governancaComp.auditorias.filterTipo")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">{t("governancaComp.auditorias.filterTipoAll")}</SelectItem>
-                    <SelectItem value="interna">{t("governancaComp.auditorias.tipoInterna")}</SelectItem>
-                    <SelectItem value="externa">{t("governancaComp.auditorias.tipoExterna")}</SelectItem>
-                    <SelectItem value="compliance">{t("governancaComp.auditorias.tipoCompliance")}</SelectItem>
-                    <SelectItem value="operacional">{t("governancaComp.auditorias.tipoOperacional")}</SelectItem>
-                    <SelectItem value="ti">{t("governancaComp.auditorias.tipoTi")}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+            />
           </div>
           
           {isLoading ? (
