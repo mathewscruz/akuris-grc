@@ -7322,6 +7322,7 @@ export type Database = {
           impacto_residual: string | null
           justificativa_aceite: string | null
           matriz_id: string | null
+          mitigacao_snapshot: Json | null
           nivel_risco_inicial: string
           nivel_risco_residual: string | null
           nome: string
@@ -7361,6 +7362,7 @@ export type Database = {
           impacto_residual?: string | null
           justificativa_aceite?: string | null
           matriz_id?: string | null
+          mitigacao_snapshot?: Json | null
           nivel_risco_inicial: string
           nivel_risco_residual?: string | null
           nome: string
@@ -7400,6 +7402,7 @@ export type Database = {
           impacto_residual?: string | null
           justificativa_aceite?: string | null
           matriz_id?: string | null
+          mitigacao_snapshot?: Json | null
           nivel_risco_inicial?: string
           nivel_risco_residual?: string | null
           nome?: string
@@ -7753,6 +7756,64 @@ export type Database = {
             columns: ["empresa_id"]
             isOneToOne: false
             referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      riscos_requisitos: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          empresa_id: string
+          framework_id: string
+          id: string
+          requirement_id: string
+          risco_id: string
+          tipo_vinculacao: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          empresa_id: string
+          framework_id: string
+          id?: string
+          requirement_id: string
+          risco_id: string
+          tipo_vinculacao?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          empresa_id?: string
+          framework_id?: string
+          id?: string
+          requirement_id?: string
+          risco_id?: string
+          tipo_vinculacao?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "riscos_requisitos_framework_id_fkey"
+            columns: ["framework_id"]
+            isOneToOne: false
+            referencedRelation: "gap_analysis_frameworks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "riscos_requisitos_requirement_id_fkey"
+            columns: ["requirement_id"]
+            isOneToOne: false
+            referencedRelation: "gap_analysis_requirements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "riscos_requisitos_risco_id_fkey"
+            columns: ["risco_id"]
+            isOneToOne: false
+            referencedRelation: "riscos"
             referencedColumns: ["id"]
           },
         ]
