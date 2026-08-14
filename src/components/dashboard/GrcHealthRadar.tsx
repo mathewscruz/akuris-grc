@@ -92,11 +92,6 @@ export function GrcHealthRadar() {
           <StatusIcon className="h-3 w-3" />
           {t(`dashWidgets.radar.${status.key}`)}
         </Badge>
-        {maturity.totalModules > 0 && (
-          <span className="text-[11px] text-muted-foreground">
-            {t('dashWidgets.radar.modulesWithData', { withData: maturity.modulesWithData, total: maturity.totalModules })}
-          </span>
-        )}
       </div>
     </CardHeader>
   );
