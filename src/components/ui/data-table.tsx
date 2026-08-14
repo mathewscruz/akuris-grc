@@ -119,64 +119,16 @@ export function DataTable<T extends Record<string, any>>({
   // Always render the table structure to show headers
   return (
     <div className={cn("", className)}>
-      {/* Header with search and filters */}
-      <div className="p-4 sm:p-6 pb-4 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
-          {searchable && (
-            <div className="relative flex-1 sm:max-w-sm">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                placeholder={_searchPlaceholder}
-                value={searchValue}
-                onChange={(e) => onSearchChange?.(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          )}
-          
-          <div className="flex gap-2 flex-wrap">
-            {filters.length > 0 && (
-              (() => {
-                const activeFiltersCount = countActiveFilters(filters);
-                return (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowFilters(!showFilters)}
-                    className="relative"
-                  >
-                    <Filter className="h-4 w-4 sm:mr-2" />
-                    <span className="hidden sm:inline">{t('common.filters')}</span>
-                    {activeFiltersCount > 0 && (
-                      <span className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-primary-foreground">
-                        {activeFiltersCount}
-                      </span>
-                    )}
-                  </Button>
-                );
-              })()
-            )}
-            {onRefresh && (
-              <Button variant="outline" size="sm" onClick={onRefresh}>
-                <RefreshCw className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">{t('common.refresh')}</span>
-              </Button>
-            )}
-            {onExport && (
-              <Button variant="outline" size="sm" onClick={onExport}>
-                <Download className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">{t('common.export')}</span>
-              </Button>
-            )}
-          </div>
-        </div>
-
-        {/* Filters row */}
-        {showFilters && filters.length > 0 && (
-          <div className="flex gap-4 items-center flex-wrap p-4 bg-muted/50 rounded-lg">
-            {filters.map((filter) => (
-              <Select key={filter.key} value={filter.value} onValueChange={filter.onChange}>
-                <SelectTrigger className="w-auto min-w-[160px]">
+      {/* Barra padrão do sistema: pesquisa à esquerda, filtros rotulados e acções à direita */}
+      <div className="p-4 sm:p-6 pb-4">
+        <ModuleToolbar
+          searchValue={searchable ? searchValue : undefined}
+          onSearchChange={searchable ? (onSearchChange ?? (() => {})) : undefined}
+          searchPlaceholder={_searchPlaceholder}
+          filters={filters.map((filter) => (
+            <ToolbarField key={filter.key} label={filter.label}>
+              <Select value={filter.value} onValueChange={filter.onChange}>
+                <SelectTrigger className="w-full min-w-[160px]">
                   <SelectValue placeholder={filter.label} />
                 </SelectTrigger>
                 <SelectContent>
@@ -187,10 +139,24 @@ export function DataTable<T extends Record<string, any>>({
                   ))}
                 </SelectContent>
               </Select>
-            ))}
-          </div>
-        )}
+            </ToolbarField>
+          ))}
+        >
+          {onRefresh && (
+            <Button variant="outline" size="sm" onClick={onRefresh}>
+              <RefreshCw className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">{t('common.refresh')}</span>
+            </Button>
+          )}
+          {onExport && (
+            <Button variant="outline" size="sm" onClick={onExport}>
+              <Download className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">{t('common.export')}</span>
+            </Button>
+          )}
+        </ModuleToolbar>
       </div>
+
 
       {/* Table - with horizontal scroll for mobile */}
       <div className="overflow-x-auto">
