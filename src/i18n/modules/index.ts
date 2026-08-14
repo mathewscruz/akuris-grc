@@ -73,6 +73,7 @@ import { p7Enum } from './p7-enums';
 import { p8Layout } from './p8-layout';
 import { detalheRegisto } from './detalhe-registo';
 import { vinculoRequisitos } from './vinculo-requisitos';
+import { t4Ciclo } from './t4-ciclo';
 
 type ModuleDict = { pt: Record<string, unknown>; en: Record<string, unknown> };
 
@@ -104,6 +105,7 @@ export function mergeDictionaries(
 const modules: Record<string, ModuleDict> = {
   detalheRegisto,
   vinculoRequisitos,
+  t4Ciclo,
   riscos,
   riscosVisoes,
   riscosDialogs,
