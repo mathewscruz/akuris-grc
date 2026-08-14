@@ -229,8 +229,8 @@ export function RiskHeatmap({ riscos, selected, onSelectCell, onClearSelection, 
           <div
             className="grid"
             style={{
-              gridTemplateColumns: 'auto repeat(5, 1fr)',
-              gridTemplateRows: 'repeat(5, 76px) auto',
+              gridTemplateColumns: `auto repeat(${nImp}, 1fr)`,
+              gridTemplateRows: `repeat(${nProb}, 76px) auto`,
               gap: 4,
             }}
           >
@@ -241,8 +241,9 @@ export function RiskHeatmap({ riscos, selected, onSelectCell, onClearSelection, 
                   <span className="text-[10px] mt-1">{PROB_LABELS[p - 1]}</span>
                 </div>
                 {imps.map((i) => {
-                  const score = p * i;
-                  const sev = severityFromScore(score);
+                  const score = scoreFromMatriz(p, i, metodo);
+                  const sev = severityFromScoreConfig(score, niveis);
+
                   const cellRisks = byCell.get(`${p}-${i}`) || [];
                   const isSel = selected?.p === p && selected?.i === i;
                   const riskWord = cellRisks.length === 1 ? t('riscosVisoes.matrix.riskHeatmap.risco') : t('riscosVisoes.matrix.riskHeatmap.riscos');
