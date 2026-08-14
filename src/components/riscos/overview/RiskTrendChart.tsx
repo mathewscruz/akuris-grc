@@ -19,6 +19,7 @@ import {
 import { cn } from '@/lib/utils';
 import type { TrendPoint } from '@/hooks/useRiskScoreTrend';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { chartSeries, CHART_GRID, CHART_AXIS, CHART_AREA_OPACITY } from '@/lib/chart-tokens';
 
 interface Props {
   /** 12 pontos mensais (mais antigo → atual) vindos de useRiskScoreTrend. */
@@ -77,28 +78,28 @@ export function RiskTrendChart({ points, apetite }: Props) {
           <ComposedChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="riskTrendGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="hsl(var(--destructive))" stopOpacity={0.25} />
-                <stop offset="100%" stopColor="hsl(var(--destructive))" stopOpacity={0} />
+                <stop offset="0%" stopColor={chartSeries(0)} stopOpacity={1} />
+                <stop offset="100%" stopColor={chartSeries(0)} stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="2 4" vertical={false} />
+            <CartesianGrid stroke={CHART_GRID} strokeDasharray="2 4" vertical={false} />
             <XAxis
               dataKey="label"
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+              tick={{ fontSize: 10, fill: CHART_AXIS }}
             />
             <YAxis hide />
             {apetite ? (
               <ReferenceLine
                 y={apetite}
-                stroke="hsl(var(--primary))"
+                stroke={CHART_AXIS}
                 strokeDasharray="4 4"
                 strokeWidth={1.2}
                 label={{
                   value: t('riscosVisoes.overview.riskTrendChart.apetite'),
                   fontSize: 10,
-                  fill: 'hsl(var(--primary))',
+                  fill: CHART_AXIS,
                   position: 'right',
                 }}
               />
@@ -117,15 +118,16 @@ export function RiskTrendChart({ points, apetite }: Props) {
               type="monotone"
               dataKey="score"
               fill="url(#riskTrendGrad)"
+              fillOpacity={CHART_AREA_OPACITY}
               stroke="none"
               isAnimationActive={false}
             />
             <Line
               type="monotone"
               dataKey="score"
-              stroke="hsl(var(--destructive))"
+              stroke={chartSeries(0)}
               strokeWidth={2}
-              dot={{ r: 3, fill: 'hsl(var(--card))', stroke: 'hsl(var(--destructive))', strokeWidth: 1.6 }}
+              dot={{ r: 3, fill: 'hsl(var(--card))', stroke: chartSeries(0), strokeWidth: 1.6 }}
               activeDot={{ r: 4 }}
               isAnimationActive={false}
             />
