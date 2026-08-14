@@ -16,6 +16,8 @@ export function OrganizacaoTab() {
     <div className="space-y-6">
       <CompanyContextSettings />
 
+      <CompanySlugSettings />
+
       <CompanyLogoUpload />
 
       <Card>
