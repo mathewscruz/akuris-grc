@@ -28,6 +28,7 @@ import { toast } from "sonner";
 import { useUsuariosEmpresa } from "@/hooks/useAuditoriaData";
 import { ListChecks } from "lucide-react";
 import { formatDateForInput, parseDateForDB } from "@/lib/date-utils";
+import { DateField } from "@/components/ui/date-field";
 import { ControleSelect } from "./ControleSelect";
 import { AreaSistemaSelect } from "./AreaSistemaSelect";
 import { useIntegrationNotify } from "@/hooks/useIntegrationNotify";
@@ -352,7 +353,7 @@ export function ItemAuditoriaFormDialog({
                   <FormItem>
                     <FormLabel>{t("controlesAuditorias.iafdFieldPrazo")}</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <DateField value={field.value || null} onChange={(v) => field.onChange(v || "")} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
