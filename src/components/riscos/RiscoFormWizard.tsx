@@ -1440,6 +1440,21 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
             </Button>
           </div>
         </div>
+
+        <ConfirmDialog
+          open={invalidarAceiteOpen}
+          onOpenChange={setInvalidarAceiteOpen}
+          title="Reavaliação invalida o aceite"
+          description={'Este risco tem um aceite formal em vigor. Ao guardar esta reavaliação, o aceite é invalidado e o risco volta ao estado "Em revisão". O histórico de aceites é mantido. Deseja continuar?'}
+          confirmText="Guardar e invalidar aceite"
+          cancelText={t('fin.comum.cancelar')}
+          onConfirm={() => {
+            setInvalidarAceiteOpen(false);
+            if (pendingData) onSubmit(pendingData, true);
+            setPendingData(null);
+          }}
+          variant="destructive"
+        />
       </form>
     </Form>
   );
