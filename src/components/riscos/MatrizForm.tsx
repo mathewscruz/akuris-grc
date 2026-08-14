@@ -560,6 +560,14 @@ export function MatrizForm({ onSuccess }: Props) {
   return (
     <TooltipProvider delayDuration={150}>
       <div className="space-y-7 pb-2">
+        {/* Pré-visualização ao vivo da matriz em edição */}
+        <MatrizPreviewGrid
+          escalaProbabilidade={escalaProbabilidade}
+          escalaImpacto={escalaImpacto}
+          niveisRisco={niveisRisco}
+          metodoCalculo={metodoCalculo}
+        />
+
         {/* Seção: Identificação */}
         <section className="rounded-lg border border-border bg-card p-5">
           <div className="flex items-center justify-between mb-4">
