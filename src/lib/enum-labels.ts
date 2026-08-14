@@ -52,3 +52,22 @@ export function getEnumLabel(
 
   return humanize(String(rawValue ?? ''));
 }
+
+/** Mapeia o nome do campo bruto para a categoria de enum usada na tradução. */
+export function categoryFromFieldName(fieldName: string | undefined): EnumCategory {
+  switch (fieldName) {
+    case 'severidade':
+    case 'nivel_risco_inicial':
+    case 'nivel_risco_residual':
+    case 'gravidade':
+      return 'severidade';
+    case 'criticidade':
+    case 'sensibilidade':
+    case 'nivel_privilegio':
+      return 'criticidade';
+    case 'prioridade':
+      return 'prioridade';
+    default:
+      return 'status';
+  }
+}
