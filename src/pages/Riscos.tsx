@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useLocation } from 'react-router-dom';
-import { Plus, AlertTriangle, Shield, Settings, Tag, X, Clock, FileText, Download, MoreHorizontal, Edit, Trash2, History, ShieldCheck, Paperclip } from 'lucide-react';
+import { Plus, AlertTriangle, Shield, Settings, Tag, X, Clock, FileText, Download, MoreHorizontal, Edit, Trash2, History, ShieldCheck, Paperclip, Library } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
@@ -38,6 +38,7 @@ import { RiscoDialog } from '@/components/riscos/RiscoDialog';
 import { TratamentosDialog } from '@/components/riscos/TratamentosDialog';
 import { MatrizDialog } from '@/components/riscos/MatrizDialog';
 import { CategoriasDialog } from '@/components/riscos/CategoriasDialog';
+import { BibliotecaRiscosDialog } from '@/components/riscos/BibliotecaRiscosDialog';
 import { RiscoAnexosIcone } from '@/components/riscos/RiscoAnexosIcone';
 import { RiscosTabs } from '@/components/riscos/RiscosTabs';
 import RiscosAceite from '@/pages/RiscosAceite';
@@ -147,6 +148,7 @@ export function Riscos() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [riscoToDelete, setRiscoToDelete] = useState<Risco | null>(null);
   const [categoriasDialogOpen, setCategoriasDialogOpen] = useState(false);
+  const [bibliotecaDialogOpen, setBibliotecaDialogOpen] = useState(false);
   
   // Novos estados para dialogs
   const [auditRisco, setAuditRisco] = useState<Risco | null>(null);
@@ -847,6 +849,10 @@ export function Riscos() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            <Button variant="outline" size="sm" onClick={() => setBibliotecaDialogOpen(true)} className="whitespace-nowrap">
+              <Library className="h-4 w-4 sm:mr-2" strokeWidth={1.5} />
+              <span className="hidden sm:inline">{t('riscosBiblioteca.botao')}</span>
+            </Button>
             <Button variant="outline" size="sm" onClick={() => setCategoriasDialogOpen(true)} className="whitespace-nowrap" aria-label={t('riscos.page.categoriesAria')}>
               <Tag className="h-4 w-4 sm:mr-2" strokeWidth={1.5} />
               <span className="hidden sm:inline">{t('riscos.page.categories')}</span>
@@ -1010,10 +1016,10 @@ export function Riscos() {
                         : t('riscos.page.empty.noneTitle'),
                       description: searchTerm || statusFilter || nivelFilter || aceitoFilter || savedView !== 'todos'
                         ? t('riscos.page.empty.foundDesc')
-                        : t('riscos.page.empty.noneDesc'),
+                        : t('riscosBiblioteca.vazioDesc'),
                       action: !searchTerm && !statusFilter && !nivelFilter && !aceitoFilter && savedView === 'todos' ? {
-                        label: t('riscos.page.empty.cta'),
-                        onClick: openCreateDialog,
+                        label: t('riscosBiblioteca.vazioCta'),
+                        onClick: () => setBibliotecaDialogOpen(true),
                       } : undefined,
                     }}
                   />
@@ -1044,6 +1050,12 @@ export function Riscos() {
           open={matrizDialogOpen}
           onOpenChange={setMatrizDialogOpen}
           onSuccess={handleMatrizDialogSuccess}
+        />
+
+        <BibliotecaRiscosDialog
+          open={bibliotecaDialogOpen}
+          onOpenChange={setBibliotecaDialogOpen}
+          onSuccess={invalidateRiscos}
         />
 
         <CategoriasDialog
