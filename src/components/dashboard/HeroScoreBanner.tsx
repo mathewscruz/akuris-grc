@@ -5,9 +5,17 @@ import { HealthScoreGauge } from './HealthScoreGauge';
 import { AkurisMarkPattern } from '@/components/identity/AkurisMarkPattern';
 import { CornerAccent } from '@/components/identity/CornerAccent';
 
+interface CriticalBreakdown {
+  riscosCriticos: number;
+  naoConformidadesCriticas: number;
+  incidentesCriticos: number;
+  prazosVencidos: number;
+}
+
 interface HeroScoreBannerProps {
   maturity: GrcMaturity;
   criticalAlerts: number;
+  criticalBreakdown?: CriticalBreakdown;
   activeControls: number;
   userName: string;
 }
@@ -15,10 +23,21 @@ interface HeroScoreBannerProps {
 export function HeroScoreBanner({
   maturity,
   criticalAlerts,
+  criticalBreakdown,
   activeControls,
   userName,
 }: HeroScoreBannerProps) {
   const { t } = useLanguage();
+
+  const alertsTooltip = criticalBreakdown
+    ? [
+        t('dashboard.criticalAlertsTooltip'),
+        `• ${t('dashboard.criticalAlertsRisks')}: ${criticalBreakdown.riscosCriticos}`,
+        `• ${t('dashboard.criticalAlertsGaps')}: ${criticalBreakdown.naoConformidadesCriticas}`,
+        `• ${t('dashboard.criticalAlertsIncidents')}: ${criticalBreakdown.incidentesCriticos}`,
+        `• ${t('dashboard.criticalAlertsOverdue')}: ${criticalBreakdown.prazosVencidos}`,
+      ].join('\n')
+    : t('dashboard.criticalAlertsTooltip');
 
   const metrics = [
     {
@@ -27,7 +46,7 @@ export function HeroScoreBanner({
       value: criticalAlerts,
       color: criticalAlerts > 0 ? 'text-destructive' : 'text-success',
       bgColor: criticalAlerts > 0 ? 'bg-destructive/10' : 'bg-success/10',
-      title: undefined as string | undefined,
+      title: alertsTooltip as string | undefined,
     },
     {
       icon: Shield,
