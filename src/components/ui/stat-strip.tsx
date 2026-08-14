@@ -104,20 +104,27 @@ export function StatStrip({ items, loading = false, className, ...props }: StatS
           </>
         )
 
+        // Divisores finos, sem conflitos entre breakpoints (2 → 3 → n colunas).
+        const lMobile = index % 2 !== 0
+        const lSm = index % 3 !== 0
+        const lLg = index > 0
+        const tMobile = index >= 2
+        const tSm = index >= 3
+
         return (
           <div
             key={item.key ?? `${item.label}-${index}`}
             className={cn(
               "min-w-0 border-border/60 lg:flex-1",
-              index > 0 && "border-l",
-              index >= 2 && "border-t sm:border-t-0",
-              index >= 3 && "sm:border-t lg:border-t-0",
-              // divisores em grelha estreita: 2 e 3 colunas
-              index % 2 === 0 && "border-l-0 sm:border-l",
-              index % 3 === 0 && "sm:border-l-0 lg:border-l",
-              index === 0 && "lg:border-l-0"
+              lMobile && "border-l",
+              lSm !== lMobile && (lSm ? "sm:border-l" : "sm:border-l-0"),
+              lLg !== lSm && (lLg ? "lg:border-l" : "lg:border-l-0"),
+              tMobile && "border-t",
+              tSm !== tMobile && (tSm ? "sm:border-t" : "sm:border-t-0"),
+              tSm && "lg:border-t-0"
             )}
           >
+
             {interactive ? (
               <button
                 type="button"
