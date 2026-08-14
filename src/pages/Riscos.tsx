@@ -115,6 +115,9 @@ interface Risco {
 
 interface MatrizConfig {
   niveis_risco: NivelRisco[];
+  escala_probabilidade?: EscalaItem[];
+  escala_impacto?: EscalaItem[];
+  metodo_calculo?: string | null;
 }
 
 export function Riscos() {
@@ -296,7 +299,7 @@ export function Riscos() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('riscos_matriz_configuracao')
-        .select('niveis_risco, matriz:riscos_matrizes!inner(empresa_id)')
+        .select('niveis_risco, escala_probabilidade, escala_impacto, metodo_calculo, matriz:riscos_matrizes!inner(empresa_id)')
         .eq('matriz.empresa_id', profile!.empresa_id)
         .order('created_at', { ascending: true })
         .limit(1)
@@ -305,7 +308,12 @@ export function Riscos() {
       if (error) throw error;
       if (!data) return null;
 
-      return { niveis_risco: data.niveis_risco as unknown as NivelRisco[] } as MatrizConfig;
+      return {
+        niveis_risco: data.niveis_risco as unknown as NivelRisco[],
+        escala_probabilidade: data.escala_probabilidade as unknown as EscalaItem[],
+        escala_impacto: data.escala_impacto as unknown as EscalaItem[],
+        metodo_calculo: data.metodo_calculo as string | null,
+      } as MatrizConfig;
     },
     enabled: !!profile?.empresa_id,
     retry: 1,
@@ -918,6 +926,7 @@ export function Riscos() {
                     onOpenRisk={(id) => setDrawerRiscoId(id)}
                     mode={matrixMode}
                     onModeChange={(m) => { setMatrixMode(m); setMatrixCell(undefined); }}
+                    config={matrizConfig}
                   />
                   <AppetiteFooter apetiteScore={apetiteScore} acimaCount={acimaApetite} />
                 </div>
@@ -927,6 +936,7 @@ export function Riscos() {
                     risks={cellRisks as any}
                     onOpenRisk={(id) => setDrawerRiscoId(id)}
                     onClearSelection={() => setMatrixCell(undefined)}
+                    config={matrizConfig}
                   />
                 )}
               </div>
