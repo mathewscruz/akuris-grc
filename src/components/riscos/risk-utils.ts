@@ -210,3 +210,82 @@ export function isAcimaApetite(
   const sev = severityFromNivel(r.nivel_risco_residual || r.nivel_risco_inicial);
   return sev === 'critico' || sev === 'alto';
 }
+
+/**
+ * Letra redundante à cor da escala de severidade (WCAG 1.4.1 — a informação
+ * nunca pode depender só da cor). C = Crítico, A = Alto, M = Médio, B = Baixo.
+ */
+export const SEVERITY_LETTER: Record<Severity, string> = {
+  critico: 'C',
+  alto: 'A',
+  medio: 'M',
+  baixo: 'B',
+};
+
+export function severityLetter(sev: Severity): string {
+  return SEVERITY_LETTER[sev];
+}
+
+/** Ordem perceptual da escala (maior = mais grave), para comparar faixas. */
+export const SEVERITY_RANK: Record<Severity, number> = { baixo: 1, medio: 2, alto: 3, critico: 4 };
+
+export interface MovimentoRisco {
+  id: string;
+  from: { p: number; i: number };
+  to: { p: number; i: number } | null;
+  sevFrom: Severity;
+  sevTo: Severity | null;
+  /** 'desceu' | 'manteve' | 'subiu' — comparação de faixa (não de score). */
+  direcao: 'desceu' | 'manteve' | 'subiu' | null;
+}
+
+/**
+ * Movimento inerente → residual de cada risco, em coordenadas da matriz.
+ * Riscos sem residual avaliado ficam com `to: null` (só o ponto inerente).
+ */
+export function computeMovimentos(
+  riscos: Array<{
+    id: string;
+    probabilidade_inicial?: string | null;
+    impacto_inicial?: string | null;
+    probabilidade_residual?: string | null;
+    impacto_residual?: string | null;
+  }>,
+  niveis?: NivelRisco[] | null,
+  metodo?: string | null,
+): MovimentoRisco[] {
+  const out: MovimentoRisco[] = [];
+  riscos.forEach((r) => {
+    const pi = toScaleNumber(r.probabilidade_inicial);
+    const ii = toScaleNumber(r.impacto_inicial);
+    if (pi === null || ii === null) return;
+    const sevFrom = severityFromScoreConfig(scoreFromMatriz(pi, ii, metodo), niveis);
+    const pr = toScaleNumber(r.probabilidade_residual);
+    const ir = toScaleNumber(r.impacto_residual);
+    if (pr === null || ir === null) {
+      out.push({ id: r.id, from: { p: pi, i: ii }, to: null, sevFrom, sevTo: null, direcao: null });
+      return;
+    }
+    const sevTo = severityFromScoreConfig(scoreFromMatriz(pr, ir, metodo), niveis);
+    const delta = SEVERITY_RANK[sevTo] - SEVERITY_RANK[sevFrom];
+    out.push({
+      id: r.id,
+      from: { p: pi, i: ii },
+      to: { p: pr, i: ir },
+      sevFrom,
+      sevTo,
+      direcao: delta < 0 ? 'desceu' : delta > 0 ? 'subiu' : 'manteve',
+    });
+  });
+  return out;
+}
+
+/** Resumo agregado do movimento (desceram / mantiveram / subiram / sem residual). */
+export function resumoMovimento(movs: MovimentoRisco[]) {
+  return {
+    desceram: movs.filter((m) => m.direcao === 'desceu').length,
+    mantiveram: movs.filter((m) => m.direcao === 'manteve').length,
+    subiram: movs.filter((m) => m.direcao === 'subiu').length,
+    semResidual: movs.filter((m) => m.to === null).length,
+  };
+}

@@ -81,6 +81,7 @@ interface Risco {
   probabilidade_inicial?: string;
   impacto_inicial?: string;
   impacto_financeiro?: number;
+  historico_scores?: number[];
   probabilidade_residual?: string;
   impacto_residual?: string;
   nivel_risco_inicial: string;
@@ -155,7 +156,7 @@ export function Riscos() {
   // Drawer de detalhe
   const [drawerRiscoId, setDrawerRiscoId] = useState<string | null>(null);
   const [matrixCell, setMatrixCell] = useState<{ p: number; i: number } | undefined>();
-  const [matrixMode, setMatrixMode] = useState<'inerente' | 'residual'>('inerente');
+  const [matrixMode, setMatrixMode] = useState<'inerente' | 'residual' | 'movimento'>('inerente');
 
   // Saved view chips (apenas para a aba Tabela)
   const [savedView, setSavedView] = useState<SavedView>('todos');
@@ -230,6 +231,24 @@ export function Riscos() {
         }
       }
 
+      // Histórico real de avaliações → pontos da coluna "Tend.". Sem histórico
+      // suficiente a tabela mostra "sem histórico" (nunca uma linha inventada).
+      const historicoMap: Record<string, number[]> = {};
+      if (riscoIds.length > 0) {
+        const { data: hist, error: histErr } = await supabase
+          .from('riscos_historico_avaliacoes')
+          .select('risco_id, probabilidade, impacto, created_at')
+          .in('risco_id', riscoIds)
+          .order('created_at', { ascending: true });
+        if (!histErr && hist) {
+          hist.forEach((h: any) => {
+            const score = scoreFromPI(h.probabilidade, h.impacto);
+            if (!score) return;
+            (historicoMap[h.risco_id] ||= []).push(score);
+          });
+        }
+      }
+
       if (data && data.length > 0) {
         const normalizedData = data.map(risco => {
           const requeridos = tratamentosRequeridos[risco.id] || 0;
@@ -246,6 +265,7 @@ export function Riscos() {
             status_efetivo: coerente.status,
             status_ajuste_motivo: coerente.motivo,
             impacto_financeiro: financeMap[risco.id] ?? null,
+            historico_scores: historicoMap[risco.id] ?? [],
           };
         });
 
@@ -603,10 +623,18 @@ export function Riscos() {
       className: 'w-[100px]',
       render: (_v: any, r: Risco) => {
         const exp = financialExposure(r.impacto_financeiro, r.probabilidade_residual ?? r.probabilidade_inicial);
+        const probUsada = formatScaleValue(r.probabilidade_residual ?? r.probabilidade_inicial);
+        const tooltip = t('riscosVisoes.table.exposicaoTooltip', {
+          impacto: formatMoedaEmpresa(r.impacto_financeiro ?? null),
+          prob: probUsada,
+        });
         return exp === null ? (
-          <span className="text-xs text-muted-foreground">—</span>
+          <span className="text-xs text-muted-foreground" title={tooltip}>—</span>
         ) : (
-          <span className="font-mono tabular-nums text-xs font-medium text-foreground" title={formatMoedaEmpresa(exp)}>
+          <span
+            className="font-mono tabular-nums text-xs font-medium text-foreground"
+            title={`${formatMoedaEmpresa(exp)} · ${tooltip}`}
+          >
             {formatMoedaEmpresa(exp, true)}
           </span>
         );
@@ -615,14 +643,9 @@ export function Riscos() {
     {
       key: 'trend',
       label: t('riscos.page.columns.trend'),
-      className: 'w-[60px]',
+      className: 'w-[92px]',
       render: (_v: any, r: Risco) => (
-        <SparklineCell
-          probInicial={r.probabilidade_inicial}
-          impInicial={r.impacto_inicial}
-          probResidual={r.probabilidade_residual}
-          impResidual={r.impacto_residual}
-        />
+        <SparklineCell points={r.historico_scores} />
       ),
     },
     {
