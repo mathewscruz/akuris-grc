@@ -54,6 +54,7 @@ interface DataTableProps<T> {
   paginated?: boolean
   pageSize?: number
   pageSizeOptions?: number[]
+  onRowClick?: (item: T) => void
 }
 
 export function DataTable<T extends Record<string, any>>({
@@ -74,7 +75,8 @@ export function DataTable<T extends Record<string, any>>({
   className,
   paginated = false,
   pageSize: initialPageSize = 10,
-  pageSizeOptions = [10, 20, 50, 100]
+  pageSizeOptions = [10, 20, 50, 100],
+  onRowClick
 }: DataTableProps<T>) {
   const { t } = useLanguage()
   const _searchPlaceholder = searchPlaceholder ?? t('common.searchPlaceholder')
