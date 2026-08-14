@@ -144,6 +144,7 @@ const NotificationCenter: React.FC = () => {
             title: t('fin.notif.docVencido'),
             message: t('fin.notif.docVencidoMsg', { nome: doc.nome, dias: Math.abs(diasParaVencimento) }),
             type: 'error', read: false, link_to: '/documentos',
+            metadata: { documento_id: doc.id },
             created_at: new Date().toISOString(), isAutomatic: true
           });
         } else if (diasParaVencimento === 0) {
@@ -152,6 +153,7 @@ const NotificationCenter: React.FC = () => {
             title: t('fin.notif.docHoje'),
             message: t('fin.notif.docHojeMsg', { nome: doc.nome }),
             type: 'warning', read: false, link_to: '/documentos',
+            metadata: { documento_id: doc.id },
             created_at: new Date().toISOString(), isAutomatic: true
           });
         } else if (diasParaVencimento <= 7) {
@@ -160,6 +162,7 @@ const NotificationCenter: React.FC = () => {
             title: t('fin.notif.docBreve'),
             message: t('fin.notif.docBreveMsg', { nome: doc.nome, dias: diasParaVencimento }),
             type: 'warning', read: false, link_to: '/documentos',
+            metadata: { documento_id: doc.id },
             created_at: new Date().toISOString(), isAutomatic: true
           });
         }
@@ -175,6 +178,7 @@ const NotificationCenter: React.FC = () => {
             title: t('fin.notif.contratoVencido'),
             message: t('fin.notif.contratoVencidoMsg', { nome: contrato.nome, dias: Math.abs(diasParaVencimento) }),
             type: 'error', read: false, link_to: '/contratos',
+            metadata: { contrato_id: contrato.id },
             created_at: new Date().toISOString(), isAutomatic: true
           });
         } else if (diasParaVencimento <= 30) {
@@ -184,6 +188,7 @@ const NotificationCenter: React.FC = () => {
             title: t('fin.notif.contratoProximo'),
             message: t('fin.notif.contratoProximoMsg', { nome: contrato.nome, dias: diasParaVencimento, extra: renovacaoMsg }),
             type: 'warning', read: false, link_to: '/contratos',
+            metadata: { contrato_id: contrato.id },
             created_at: new Date().toISOString(), isAutomatic: true
           });
         }
@@ -199,6 +204,7 @@ const NotificationCenter: React.FC = () => {
             title: t('fin.notif.controlePendente'),
             message: t('fin.notif.controlePendenteMsg', { nome: controle.nome, dias: diasParaAvaliacao }),
             type: 'warning', read: false, link_to: `/controles?detalhe=${controle.id}`,
+            metadata: { controle_id: controle.id },
             created_at: new Date().toISOString(), isAutomatic: true
           });
         }
@@ -211,6 +217,7 @@ const NotificationCenter: React.FC = () => {
           title: t('fin.notif.incidenteCritico'),
           message: t('fin.notif.incidenteCriticoMsg', { nome: incidente.titulo, status: formatStatus(incidente.status) }),
           type: 'error', read: false, link_to: `/incidentes?detalhe=${incidente.id}`,
+          metadata: { incidente_id: incidente.id },
           created_at: new Date().toISOString(), isAutomatic: true
         });
       });
@@ -222,6 +229,7 @@ const NotificationCenter: React.FC = () => {
           title: t('fin.notif.ativoCritico'),
           message: t('fin.notif.ativoCriticoMsg', { nome: ativo.nome }),
           type: 'warning', read: false, link_to: '/ativos',
+          metadata: { ativo_id: ativo.id },
           created_at: new Date().toISOString(), isAutomatic: true
         });
       });
@@ -249,6 +257,7 @@ const NotificationCenter: React.FC = () => {
             title: t('fin.notif.licencaVencida'),
             message: t('fin.notif.licencaVencidaMsg', { nome: licenca.nome, dias: Math.abs(diasParaVencimento) }),
             type: 'error', read: false, link_to: '/ativos/licencas',
+            metadata: { licenca_id: licenca.id },
             created_at: new Date().toISOString(), isAutomatic: true
           });
         } else if (diasParaVencimento <= 30) {
@@ -257,6 +266,7 @@ const NotificationCenter: React.FC = () => {
             title: t('fin.notif.licencaVencendo'),
             message: t('fin.notif.licencaVencendoMsg', { nome: licenca.nome, dias: diasParaVencimento }),
             type: 'warning', read: false, link_to: '/ativos/licencas',
+            metadata: { licenca_id: licenca.id },
             created_at: new Date().toISOString(), isAutomatic: true
           });
         }
@@ -278,6 +288,7 @@ const NotificationCenter: React.FC = () => {
             title: t('fin.notif.chaveExpirada'),
             message: t('fin.notif.chaveExpiradaMsg', { nome: chave.nome, ambiente: chave.ambiente, dias: Math.abs(diasParaRotacao) }),
             type: 'error', read: false, link_to: '/ativos/chaves',
+            metadata: { chave_id: chave.id },
             created_at: new Date().toISOString(), isAutomatic: true
           });
         } else if (diasParaRotacao <= 30) {
@@ -286,6 +297,7 @@ const NotificationCenter: React.FC = () => {
             title: t('fin.notif.chaveRotacao'),
             message: t('fin.notif.chaveRotacaoMsg', { nome: chave.nome, dias: diasParaRotacao }),
             type: 'warning', read: false, link_to: '/ativos/chaves',
+            metadata: { chave_id: chave.id },
             created_at: new Date().toISOString(), isAutomatic: true
           });
         }
@@ -300,6 +312,7 @@ const NotificationCenter: React.FC = () => {
             title: t('fin.notif.manutencao'),
             message: t('fin.notif.manutencaoMsg', { tipo: manutencao.tipo_manutencao, nome: (manutencao as any).ativos?.nome, quando: diasParaManutencao === 0 ? t('fin.comum.hoje') : t('fin.comum.emDias', { dias: diasParaManutencao }) }),
             type: 'warning', read: false, link_to: '/ativos',
+            metadata: { ativo_id: manutencao.ativo_id },
             created_at: new Date().toISOString(), isAutomatic: true
           });
         }
@@ -320,6 +333,7 @@ const NotificationCenter: React.FC = () => {
             title: t('fin.notif.riscoRevisaoVencida'),
             message: t('fin.notif.riscoRevisaoVencidaMsg', { nome: risco.nome, nivel: risco.nivel_risco_inicial || 'N/A', dias: Math.abs(diasParaRevisao) }),
             type: 'error', read: false, link_to: '/riscos',
+            metadata: { risco_id: risco.id },
             created_at: new Date().toISOString(), isAutomatic: true
           });
         } else if (diasParaRevisao <= 7) {
@@ -328,6 +342,7 @@ const NotificationCenter: React.FC = () => {
             title: t('fin.notif.riscoRevisaoProxima'),
             message: t('fin.notif.riscoRevisaoProximaMsg', { nome: risco.nome, dias: diasParaRevisao }),
             type: 'warning', read: false, link_to: '/riscos',
+            metadata: { risco_id: risco.id },
             created_at: new Date().toISOString(), isAutomatic: true
           });
         }
@@ -342,6 +357,7 @@ const NotificationCenter: React.FC = () => {
           title: t('fin.notif.solicitacaoAprovacao'),
           message: t('fin.notif.solicitacaoAprovacaoMsg', { solicitante: solicitanteNome, documento: documentoNome }),
           type: 'info', read: false, link_to: `/documentos?aprovar=${aprovacao.documento_id}`,
+          metadata: { documento_id: aprovacao.documento_id },
           created_at: aprovacao.created_at, isAutomatic: true
         });
       });
