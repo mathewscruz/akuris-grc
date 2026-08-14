@@ -46,7 +46,6 @@ import { RiscosTabs } from '@/components/riscos/RiscosTabs';
 import RiscosAceite from '@/pages/RiscosAceite';
 import { RiscoDetailDrawer } from '@/components/riscos/RiscoDetailDrawer';
 import { AppetiteBanner } from '@/components/riscos/overview/AppetiteBanner';
-import { RiskKpiQuad } from '@/components/riscos/overview/RiskKpiQuad';
 import { RiskTrendChart } from '@/components/riscos/overview/RiskTrendChart';
 import { RiskCategoryBars } from '@/components/riscos/overview/RiskCategoryBars';
 import { RiskWatchlist } from '@/components/riscos/overview/RiskWatchlist';
