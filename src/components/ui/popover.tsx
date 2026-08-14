@@ -2,6 +2,7 @@ import * as React from "react"
 import * as PopoverPrimitive from "@radix-ui/react-popover"
 
 import { cn } from "@/lib/utils"
+import { useReleaseBodyPointerEvents } from "@/lib/radix-pointer-events"
 
 const Popover = PopoverPrimitive.Root
 
@@ -11,6 +12,7 @@ const PopoverContent = React.forwardRef<
   React.ElementRef<typeof PopoverPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content>
 >(({ className, align = "center", sideOffset = 4, ...props }, ref) => (
+  <PointerEventsGuard>
   <PopoverPrimitive.Portal>
     <PopoverPrimitive.Content
       ref={ref}
