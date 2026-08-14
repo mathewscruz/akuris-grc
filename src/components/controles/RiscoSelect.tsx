@@ -9,6 +9,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { formatStatus } from '@/lib/text-utils';
+import { getEnumLabel } from '@/lib/enum-labels';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Risco {
@@ -80,7 +81,7 @@ export function RiscoSelect({ value, onValueChange, placeholder }: RiscoSelectPr
               <AlertTriangle className="h-4 w-4 flex-shrink-0 text-orange-500" />
               <span className="truncate">{selectedRisco.nome}</span>
               <Badge variant={getNivelBadgeVariant(selectedRisco.nivel_risco_inicial)} className="ml-2 text-xs">
-                {selectedRisco.nivel_risco_inicial}
+                {getEnumLabel(t, 'severidade', selectedRisco.nivel_risco_inicial)}
               </Badge>
             </div>
           ) : (
@@ -135,7 +136,7 @@ export function RiscoSelect({ value, onValueChange, placeholder }: RiscoSelectPr
                         <span className="font-medium truncate">{risco.nome}</span>
                         <div className="flex items-center gap-2">
                           <Badge variant={getNivelBadgeVariant(risco.nivel_risco_inicial)} className="text-xs">
-                            {formatStatus(risco.nivel_risco_inicial)}
+                            {getEnumLabel(t, 'severidade', risco.nivel_risco_inicial)}
                           </Badge>
                           <Badge variant="outline" className="text-xs">{formatStatus(risco.status)}</Badge>
                         </div>

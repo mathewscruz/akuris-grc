@@ -68,6 +68,7 @@ import { p3Kpis } from './p3-kpis';
 import { p3Denuncia } from './p3-denuncia';
 import { p3Import } from './p3-import';
 import { p3Wizard } from './p3-wizard';
+import { p7Wizard } from './p7-wizard';
 import { p7Enum } from './p7-enums';
 
 type ModuleDict = { pt: Record<string, unknown>; en: Record<string, unknown> };
@@ -158,6 +159,7 @@ const modules: Record<string, ModuleDict> = {
   p3Denuncia,
   p3Import,
   p3Wizard,
+  p7Wizard,
   p7Enum,
 };
 

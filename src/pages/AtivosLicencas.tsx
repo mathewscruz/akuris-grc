@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Plus, Upload, FileCheck, AlertTriangle, CheckCircle, Clock, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -121,6 +122,22 @@ export default function AtivosLicencas() {
     setSelectedLicenca(licenca);
     setDialogOpen(true);
   };
+
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Deep link vindo da busca global (Cmd+K): abre o registo focado para edição/visualização.
+  useEffect(() => {
+    const focusId = searchParams.get('focus');
+    if (!focusId || licencas.length === 0) return;
+    const item = licencas.find((licenca) => licenca.id === focusId);
+    if (item) {
+      handleEdit(item);
+      const next = new URLSearchParams(searchParams);
+      next.delete('focus');
+      setSearchParams(next, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, licencas]);
 
   const handleDelete = (id: string, nome: string) => {
     setDeleteConfirm({ open: true, id, nome });
