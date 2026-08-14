@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { AkurisPulse } from '@/components/ui/akuris-pulse';
+import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import {
   DropdownMenu,
   DropdownMenuContent,
