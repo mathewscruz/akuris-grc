@@ -421,6 +421,27 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="expirados" className="mt-5 data-[state=active]:animate-fade-in">
+          <Card className="rounded-lg border overflow-hidden">
+            <CardContent className="p-0">
+              <DataTable
+                data={filteredExpirados}
+                columns={columns.filter(c => c.key !== 'actions')}
+                loading={isLoadingExpirados}
+                searchable
+                searchPlaceholder={t('riscos.aceite.searchAccepted')}
+                searchValue={searchTerm}
+                onSearchChange={setSearchTerm}
+                emptyState={{
+                  icon: <CalendarX className="h-8 w-8" />,
+                  title: 'Nenhum aceite expirado',
+                  description: 'Aceites que ultrapassarem a validade aparecem aqui com o risco reaberto.',
+                }}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
 
       {selectedRisco && (
