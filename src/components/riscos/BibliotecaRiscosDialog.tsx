@@ -54,6 +54,31 @@ const CATEGORIA_LABEL: Record<string, { pt: string; en: string }> = {
   Privacidade: { pt: 'Privacidade', en: 'Privacy' },
 };
 
+/**
+ * Tipos de ativo: os mesmos valores usados na Gestão de Ativos, com os rótulos
+ * oficiais do dicionário `contratosAtivos.ativoDialog.*` (sem tradutor no meio).
+ */
+const TIPO_ATIVO_I18N: Record<string, string> = {
+  servidor: 'typeServidor',
+  aplicacao: 'typeAplicacao',
+  banco_dados: 'typeBancoDados',
+  rede: 'typeRede',
+  endpoint: 'typeEndpoint',
+  dispositivo_movel: 'typeDispositivoMovel',
+  armazenamento: 'typeArmazenamento',
+  software: 'typeSoftware',
+  hardware: 'typeHardware',
+  estrutura_fisica: 'typeEstruturaFisica',
+  controle_acesso: 'typeControleAcesso',
+  equipamento_seguranca: 'typeEquipamentoSeguranca',
+  sistema_monitoramento: 'typeSistemaMonitoramento',
+  mobiliario: 'typeMobiliario',
+  equipamento_escritorio: 'typeEquipamentoEscritorio',
+  equipamento_comunicacao: 'typeEquipamentoComunicacao',
+  imovel: 'typeImovel',
+  outros: 'typeOutros',
+};
+
 function normalize(value: string) {
   return value
     .normalize('NFD')
@@ -243,6 +268,21 @@ export function BibliotecaRiscosDialog({
                 </div>
               )}
             </div>
+
+            {!!c.tipos_ativo?.length && (
+              <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                  {t('riscosBiblioteca.tiposAtivo')}
+                </span>
+                {c.tipos_ativo.map((tipo) => (
+                  <Badge key={tipo} variant="secondary" className="text-[11px]">
+                    {TIPO_ATIVO_I18N[tipo]
+                      ? t(`contratosAtivos.ativoDialog.${TIPO_ATIVO_I18N[tipo]}`)
+                      : tipo}
+                  </Badge>
+                ))}
+              </div>
+            )}
 
             {!!c.controlos_recomendados?.length && (
               <div className="mt-3 flex flex-wrap items-center gap-1.5">
