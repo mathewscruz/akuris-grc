@@ -2,6 +2,15 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { logger } from "@/lib/logger";
+import {
+  contarRiscosPorSeveridade,
+  severidadeRiscoEfetiva,
+  isRiscoCritico,
+  isRevisaoVencida,
+  isRevisaoProxima,
+  estadoRisco,
+  type Severidade,
+} from "@/lib/metrics";
 
 export interface RiscosStats {
   total: number;
@@ -25,22 +34,15 @@ export interface RiscosStats {
   aceitos_7d_atras: number | null;
 }
 
-// Função auxiliar para normalizar comparação de nível
-const normalizeNivel = (nivel: string | null | undefined): string => {
-  return (nivel || '').toLowerCase().trim()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+// Score derivado da severidade canónica (camada única de métricas).
+const SCORE_SEVERIDADE: Record<Severidade, number> = {
+  critico: 100,
+  alto: 75,
+  medio: 50,
+  baixo: 25,
+  indefinido: 0,
 };
-
-// Função para calcular score de risco (quanto menor, melhor)
-const calcularScore = (nivel: string): number => {
-  const nivelNorm = normalizeNivel(nivel);
-  if (nivelNorm === 'critico' || nivelNorm === 'muito alto') return 100;
-  if (nivelNorm === 'alto') return 75;
-  if (nivelNorm === 'medio') return 50;
-  if (nivelNorm === 'baixo') return 25;
-  if (nivelNorm === 'muito baixo') return 10;
-  return 0;
-};
+const calcularScore = (r: any): number => SCORE_SEVERIDADE[severidadeRiscoEfetiva(r)];
 
 export const useRiscosStats = () => {
   const { profile } = useAuth();
@@ -79,28 +81,21 @@ export const useRiscosStats = () => {
       if (riscosAntigosError) logger.error('Erro ao buscar riscos antigos', { data: riscosAntigosError, module: 'riscos' });
 
       const antiguosTotal = riscosAntigos?.length || 0;
-      const antiguosCriticos = riscosAntigos?.filter(r => {
-        const nivel = normalizeNivel(r.nivel_risco_residual || r.nivel_risco_inicial);
-        return nivel === 'critico' || nivel === 'muito alto';
-      }).length || 0;
+      const antiguosCriticos = (riscosAntigos || []).filter(r => isRiscoCritico(r as any)).length;
+
+      const contagem = contarRiscosPorSeveridade(riscos as any[]);
 
       const newStats: RiscosStats = {
-        total: riscos?.length || 0,
-        criticos: riscos?.filter(r => {
-          const nivel = normalizeNivel(r.nivel_risco_inicial);
-          return nivel === 'critico' || nivel === 'muito alto';
-        }).length || 0,
-        altos: riscos?.filter(r => normalizeNivel(r.nivel_risco_inicial) === 'alto').length || 0,
-        medios: riscos?.filter(r => normalizeNivel(r.nivel_risco_inicial) === 'medio').length || 0,
-        baixos: riscos?.filter(r => {
-          const nivel = normalizeNivel(r.nivel_risco_inicial);
-          return nivel === 'baixo' || nivel === 'muito baixo';
-        }).length || 0,
+        total: contagem.total,
+        criticos: contagem.criticos,
+        altos: contagem.altos,
+        medios: contagem.medios,
+        baixos: contagem.baixos,
         tratamentos_pendentes: 0,
         tratamentos_andamento: 0,
         tratamentos_concluidos: 0,
-        aceitos: riscos?.filter(r => r.aceito).length || 0,
-        tratados: riscos?.filter(r => r.nivel_risco_residual).length || 0,
+        aceitos: (riscos || []).filter(r => estadoRisco(r as any) === 'aceito').length,
+        tratados: (riscos || []).filter(r => estadoRisco(r as any) === 'tratado').length,
         scoreAtual: 0,
         variacao7dias: null,
         revisoes_vencidas: 0,
@@ -111,35 +106,23 @@ export const useRiscosStats = () => {
         aceitos_7d_atras: antiguosTotal > 0 ? (riscosAntigos?.filter(r => (r as any).aceito).length || 0) : null,
       };
 
-      // Calcular revisões vencidas e próximas
-      const hojeDate = new Date();
-      (riscos || []).forEach(r => {
-        const dataRevisao = (r as any).data_proxima_revisao;
-        if (dataRevisao) {
-          const dias = Math.ceil((new Date(dataRevisao).getTime() - hojeDate.getTime()) / (1000 * 60 * 60 * 24));
-          if (dias < 0) newStats.revisoes_vencidas++;
-          else if (dias <= 7) newStats.revisoes_proximas++;
-        }
-      });
+      // Revisões vencidas e próximas (predicados da camada de métricas)
+      newStats.revisoes_vencidas = (riscos || []).filter(r => isRevisaoVencida(r as any, hoje)).length;
+      newStats.revisoes_proximas = (riscos || []).filter(r => isRevisaoProxima(r as any, hoje)).length;
 
       // Calcular score atual
       if (riscos && riscos.length > 0) {
-        const somaScores = riscos.reduce((acc, r) => {
-          const nivel = r.nivel_risco_residual || r.nivel_risco_inicial;
-          return acc + calcularScore(nivel);
-        }, 0);
+        const somaScores = riscos.reduce((acc, r) => acc + calcularScore(r), 0);
         newStats.scoreAtual = Math.round(somaScores / riscos.length);
 
         if (riscosAntigos && riscosAntigos.length > 0) {
-          const somaScoresAntigos = riscosAntigos.reduce((acc, r) => {
-            const nivel = r.nivel_risco_residual || r.nivel_risco_inicial;
-            return acc + calcularScore(nivel);
-          }, 0);
+          const somaScoresAntigos = riscosAntigos.reduce((acc, r) => acc + calcularScore(r), 0);
           const scoreAntigo = somaScoresAntigos / riscosAntigos.length;
-          const variacao = ((scoreAntigo - newStats.scoreAtual) / scoreAntigo) * 100;
+          const variacao = scoreAntigo > 0 ? ((scoreAntigo - newStats.scoreAtual) / scoreAntigo) * 100 : 0;
           newStats.variacao7dias = Math.round(variacao);
         }
       }
+
 
       // Buscar estatísticas de tratamentos
       if (riscos && riscos.length > 0) {

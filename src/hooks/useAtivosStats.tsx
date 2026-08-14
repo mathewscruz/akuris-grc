@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
+import { contarAtivos, pct } from "@/lib/metrics";
 
 interface AtivosStats {
   total: number;
@@ -31,30 +32,10 @@ export const useAtivosStats = () => {
 
       if (error) throw error;
 
-      const total = ativos?.length || 0;
-      const ativos_status = ativos?.filter(a => a.status === 'ativo').length || 0;
-      const inativos = ativos?.filter(a => a.status === 'inativo').length || 0;
-      const descontinuados = ativos?.filter(a => a.status === 'descontinuado').length || 0;
-      
-      const criticos = ativos?.filter(a => a.criticidade === 'critico').length || 0;
-      const altos = ativos?.filter(a => a.criticidade === 'alto').length || 0;
-      const medios = ativos?.filter(a => a.criticidade === 'medio').length || 0;
-      const baixos = ativos?.filter(a => a.criticidade === 'baixo').length || 0;
-      
-      const altoValorNegocio = ativos?.filter(a => a.valor_negocio === 'alto').length || 0;
-      const percentualAltoValor = total > 0 ? Math.round((altoValorNegocio / total) * 100) : 0;
-
+      const base = contarAtivos(ativos);
       return {
-        total,
-        ativos: ativos_status,
-        inativos,
-        descontinuados,
-        criticos,
-        altos,
-        medios,
-        baixos,
-        altoValorNegocio,
-        percentualAltoValor
+        ...base,
+        percentualAltoValor: pct(base.altoValorNegocio, base.total) ?? 0,
       };
     },
   });

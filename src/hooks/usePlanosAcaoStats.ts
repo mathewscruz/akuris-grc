@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { logger } from '@/lib/logger';
+import { contarPlanos } from '@/lib/metrics';
 
 export interface PlanosAcaoStats {
   total: number;
@@ -9,8 +10,6 @@ export interface PlanosAcaoStats {
   atrasados: number;
   concluidos: number;
 }
-
-const CONCLUIDO_STATUSES = new Set(['concluido', 'concluído', 'finalizado', 'cancelado']);
 
 export const usePlanosAcaoStats = () => {
   const { profile } = useAuth();
@@ -29,21 +28,13 @@ export const usePlanosAcaoStats = () => {
 
         if (error) throw error;
 
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        const total = data?.length ?? 0;
-        const pendentes =
-          data?.filter((p) => !CONCLUIDO_STATUSES.has((p.status || '').toLowerCase())).length ?? 0;
-        const atrasados =
-          data?.filter((p) => {
-            const isOpen = !CONCLUIDO_STATUSES.has((p.status || '').toLowerCase());
-            const past = p.prazo ? new Date(p.prazo) < today : false;
-            return isOpen && past;
-          }).length ?? 0;
-        const concluidos = total - pendentes;
-
-        return { total, pendentes, atrasados, concluidos };
+        const base = contarPlanos(data);
+        return {
+          total: base.total,
+          pendentes: base.pendentes,
+          atrasados: base.atrasados,
+          concluidos: base.concluidos + base.cancelados,
+        };
       } catch (err) {
         logger.error('Erro ao carregar estatísticas de planos de ação', err);
         throw err;

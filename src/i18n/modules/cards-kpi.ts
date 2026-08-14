@@ -6,13 +6,24 @@
 export const cardsKpi = {
   pt: {
     cardsKpi: {
+      metricas: {
+        semDados: 'Sem dados',
+        efetividadeSemTestes: 'A efetividade só aparece depois do primeiro teste de controlo registado.',
+        efetividadeTestada: 'Média dos últimos testes de {testados} de {total} controlos',
+        preventivosDe: 'Preventivos {preventivos} de {total}',
+      },
       contratos: {
         totalContratos: 'Total de Contratos',
         valorTotal: 'Valor Total',
         valorEmAtivos: 'Valor em contratos ativos',
+        valorVigente: 'Valor Vigente',
+        valorVigenteHint: 'Só contratos ativos dentro do prazo',
+        valorVencido: 'Valor Vencido',
+        valorVencidoHint: 'Contratos ativos com prazo ultrapassado',
         emptyContratos: 'Comece criando contratos para gerenciar suas parcerias.',
         emptyFornecedores: 'Cadastre fornecedores para associar aos contratos.',
       },
+
       privacidade: {
         totalDados: 'Total de Dados',
         dadosSensiveis: 'Dados Sensíveis',
@@ -170,13 +181,24 @@ export const cardsKpi = {
   },
   en: {
     cardsKpi: {
+      metricas: {
+        semDados: 'No data',
+        efetividadeSemTestes: 'Effectiveness appears only after the first control test is recorded.',
+        efetividadeTestada: 'Average of the latest tests on {testados} of {total} controls',
+        preventivosDe: 'Preventive {preventivos} of {total}',
+      },
       contratos: {
         totalContratos: 'Total contracts',
         valorTotal: 'Total value',
         valorEmAtivos: 'Value in active contracts',
+        valorVigente: 'Active value',
+        valorVigenteHint: 'Only active contracts within term',
+        valorVencido: 'Expired value',
+        valorVencidoHint: 'Active contracts past their end date',
         emptyContratos: 'Start by creating contracts to manage your partnerships.',
         emptyFornecedores: 'Register suppliers to link them to contracts.',
       },
+
       privacidade: {
         totalDados: 'Total data records',
         dadosSensiveis: 'Sensitive data',

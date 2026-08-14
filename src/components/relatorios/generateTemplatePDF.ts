@@ -2,6 +2,7 @@ import jsPDF from 'jspdf';
 import { supabase } from '@/integrations/supabase/client';
 import { loadAkurisLogo, addAkurisCover, addAkurisFooter, addSectionTitle as addPdfSectionTitle, drawTableHeader, formatLabel, AKURIS_COLORS } from '@/lib/pdf-utils';
 import { getAppLocale } from '@/lib/i18n-locale';
+import { contarRiscosPorSeveridade, severidadeRisco } from '@/lib/metrics';
 
 const PDF_LABELS: Record<string, string> = {
   "Altos": "High",
@@ -230,11 +231,8 @@ async function fetchRiscosData(empresaId: string) {
     : { data: [] };
   const t = tratamentos || [];
   // Normaliza (sem acento/minúsculo) porque os dados misturam "Médio" e "medio" etc.
-  const nivel = (x: any) => (x.nivel_risco_inicial || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
-  const criticos = r.filter(x => nivel(x) === 'critico').length;
-  const altos = r.filter(x => nivel(x) === 'alto').length;
-  const medios = r.filter(x => nivel(x) === 'medio').length;
-  const baixos = r.filter(x => nivel(x) === 'baixo').length;
+  // Mesma definicao de severidade do modulo de Riscos (camada unica de metricas)
+  const { criticos, altos, medios, baixos } = contarRiscosPorSeveridade(r as any[]);
   const concluidos = t.filter((x: any) => x.status === 'concluido').length;
   // Resolve responsáveis gravados como UUID -> nome (dados legados têm ambos)
   const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -350,7 +348,7 @@ async function fetchExecutivoData(empresaId: string) {
     sections: [
       { title: tr('Resumo Executivo - Ultimos 90 dias'), metrics: [
         { label: tr('Riscos Ativos'), value: r.length },
-        { label: tr('Riscos Criticos'), value: r.filter(x => x.nivel_risco_inicial === 'critico').length },
+        { label: tr('Riscos Criticos'), value: r.filter(x => severidadeRisco(x as any) === 'critico').length },
         { label: tr('Incidentes (90 dias)'), value: i.length },
         { label: tr('Controles Ativos'), value: c.filter(x => x.status === 'ativo').length },
         { label: tr('Frameworks Monitorados'), value: f.length },

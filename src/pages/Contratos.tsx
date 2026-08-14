@@ -39,6 +39,7 @@ import { useEmpresaMoeda } from '@/hooks/useEmpresaMoeda';
 import { formatDateOnly } from '@/lib/date-utils';
 import { formatStatus } from '@/lib/text-utils';
 import { resolveContratoStatusTone, resolveCriticidadeTone } from '@/lib/status-tone';
+import { estadoContrato } from '@/lib/metrics';
 
 interface Contrato {
   id: string;
@@ -271,6 +272,18 @@ export default function Contratos() {
     );
   };
 
+  /** Estado derivado (camada única de métricas): vencido não fica "ativo". */
+  const getContratoStatusBadge = (contrato: { status: string; data_fim: string | null }) => {
+    const estado = estadoContrato(contrato);
+    const label = estado === 'vigente' ? 'ativo' : estado === 'a_vencer' ? 'ativo' : estado;
+    return (
+      <StatusBadge size="sm" {...resolveContratoStatusTone(label)}>
+        {formatStatus(label)}
+      </StatusBadge>
+    );
+  };
+
+
   const getRiskBadge = (risk: string) => {
     return (
       <StatusBadge size="sm" {...resolveCriticidadeTone(risk)}>
@@ -332,7 +345,7 @@ export default function Contratos() {
       const matchesSearch = contrato.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            contrato.numero_contrato.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            contrato.fornecedores?.nome?.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = statusFilter === 'todos' || contrato.status === statusFilter;
+      const matchesStatus = statusFilter === 'todos' || estadoContrato(contrato) === statusFilter || (statusFilter === 'ativo' && ['vigente','a_vencer'].includes(estadoContrato(contrato)));
       const matchesTipo = tipoFilter === 'todos' || contrato.tipo === tipoFilter;
       
       return matchesSearch && matchesStatus && matchesTipo;
@@ -418,8 +431,17 @@ export default function Contratos() {
             },
             {
               key: 'valor',
-              label: t('cardsKpi.contratos.valorTotal'),
+              label: t('cardsKpi.contratos.valorVigente'),
               value: formatMoedaEmpresa(statsContratos?.valorTotal || 0, true),
+              hint: t('cardsKpi.contratos.valorVigenteHint'),
+              drillDown: 'contratos',
+            },
+            {
+              key: 'valorVencido',
+              label: t('cardsKpi.contratos.valorVencido'),
+              value: formatMoedaEmpresa(statsContratos?.valorVencido || 0, true),
+              tone: (statsContratos?.valorVencido || 0) > 0 ? 'destructive' : undefined,
+              hint: t('cardsKpi.contratos.valorVencidoHint'),
               drillDown: 'contratos',
             },
             {
@@ -430,14 +452,9 @@ export default function Contratos() {
               hint: t('fin.comum.proximos30'),
               drillDown: 'contratos',
             },
-            {
-              key: 'renovacao',
-              label: t('fin.contratos.renovacaoAutomatica'),
-              value: `${statsContratos?.total ? Math.round((statsContratos?.renovacaoAutomatica / statsContratos?.total) * 100) : 0}%`,
-              drillDown: 'contratos',
-            },
           ]}
         />
+
 
         <RelatoriosContratos open={relatoriosOpen} onOpenChange={setRelatoriosOpen} hideTrigger />
         <TemplatesContratos open={templatesOpen} onOpenChange={setTemplatesOpen} hideTrigger />
@@ -464,6 +481,7 @@ export default function Contratos() {
                             <SelectContent>
                               <SelectItem value="todos">{t('campos.filtros.todos')}</SelectItem>
                               <SelectItem value="ativo">{t('campos.opcoes.ativo')}</SelectItem>
+                              <SelectItem value="vencido">{t('campos.opcoes.vencido')}</SelectItem>
                               <SelectItem value="rascunho">{t('campos.opcoes.rascunho')}</SelectItem>
                               <SelectItem value="negociacao">{t('fin.contratos.negociacao')}</SelectItem>
                               <SelectItem value="aprovacao">{t('fin.comum.aprovacao')}</SelectItem>
@@ -541,7 +559,7 @@ export default function Contratos() {
                             </div>
                           </TableCell>
                           <TableCell>{contrato.fornecedores?.nome || '-'}</TableCell>
-                          <TableCell>{getStatusBadge(contrato.status)}</TableCell>
+                          <TableCell>{getContratoStatusBadge(contrato)}</TableCell>
                           <TableCell><Badge variant="outline" className="capitalize whitespace-nowrap">{formatStatus(contrato.tipo)}</Badge></TableCell>
                           <TableCell>
                             {contrato.valor 

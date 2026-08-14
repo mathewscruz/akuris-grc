@@ -581,7 +581,23 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
           { key: 'total', label: t("governancaComp.controles.statTotal"), value: stats?.total || 0, drillDown: 'controles' },
           { key: 'vencidas', label: t("governancaComp.controles.statVencidas"), value: stats?.vencidos || 0, tone: 'destructive', drillDown: 'controles' },
           { key: 'vencendo', label: t("governancaComp.controles.statVencendo"), value: stats?.vencendoAvaliacao || 0, tone: 'warning', drillDown: 'controles' },
-          { key: 'efetividade', label: t("governancaComp.controles.statEfetividade"), value: `${stats?.total ? Math.round((stats?.preventivos / stats?.total) * 100) : 0}%`, drillDown: 'controles' },
+          {
+            key: 'efetividade',
+            label: t("governancaComp.controles.statEfetividade"),
+            value: stats?.efetividade === null || stats?.efetividade === undefined
+              ? t('cardsKpi.metricas.semDados')
+              : `${stats.efetividade}%`,
+            hint: stats?.efetividade === null || stats?.efetividade === undefined
+              ? t('cardsKpi.metricas.efetividadeSemTestes')
+              : t('cardsKpi.metricas.efetividadeTestada', { testados: stats?.controlesTestados ?? 0, total: stats?.total ?? 0 }),
+            drillDown: 'controles',
+          },
+          {
+            key: 'preventivos',
+            label: t('cardsKpi.metricas.preventivosDe', { preventivos: stats?.preventivos ?? 0, total: stats?.total ?? 0 }),
+            value: `${stats?.percentualPreventivos ?? 0}%`,
+            drillDown: 'controles',
+          },
         ]}
       />
 
