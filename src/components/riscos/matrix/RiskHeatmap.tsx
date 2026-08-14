@@ -203,7 +203,7 @@ export function RiskHeatmap({ riscos, selected, onSelectCell, onClearSelection, 
           </div>
           <div className="flex flex-wrap gap-x-3.5 gap-y-1 items-center text-[11px] text-muted-foreground">
             {legend.map((l) => (
-              <div key={l.sev} className="inline-flex items-center gap-1.5">
+              <div key={l.key} className="inline-flex items-center gap-1.5">
                 <span className={cn('h-2.5 w-2.5 rounded-sm', l.cls)} />
                 {l.label}
               </div>
