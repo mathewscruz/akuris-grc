@@ -60,6 +60,7 @@ import { assertTratamentosLookup, deriveRiscoStatus, isTratamentoConcluido, isTr
 import {
   apetiteScoreFromNiveis,
   type NivelRisco,
+  type EscalaItem,
 } from '@/components/riscos/matriz-config';
 import { filterUuids, splitResponsavel } from '@/lib/uuid';
 
