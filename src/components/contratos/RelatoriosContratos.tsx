@@ -36,8 +36,16 @@ interface FiltrosRelatorio {
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', 'hsl(var(--muted))'];
 
-export default function RelatoriosContratos() {
-  const [open, setOpen] = useState(false);
+interface RelatoriosContratosProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  hideTrigger?: boolean;
+}
+
+export default function RelatoriosContratos({ open: openProp, onOpenChange, hideTrigger }: RelatoriosContratosProps = {}) {
+  const [openState, setOpenState] = useState(false);
+  const open = openProp !== undefined ? openProp : openState;
+  const setOpen = onOpenChange ?? setOpenState;
   const [loading, setLoading] = useState(false);
   const [dados, setDados] = useState<RelatorioData>({
     contratos: [],
@@ -304,12 +312,14 @@ export default function RelatoriosContratos() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline">
-          <BarChart3 className="h-4 w-4 mr-2" />
-          {t('contratosAtivos.relatoriosContratos.triggerButton')}
-        </Button>
-      </DialogTrigger>
+      {!hideTrigger && (
+        <DialogTrigger asChild>
+          <Button variant="outline">
+            <BarChart3 className="h-4 w-4 mr-2" />
+            {t('contratosAtivos.relatoriosContratos.triggerButton')}
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t('contratosAtivos.relatoriosContratos.title')}</DialogTitle>

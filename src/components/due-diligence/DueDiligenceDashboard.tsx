@@ -6,7 +6,7 @@ import { resolveDueDiligenceStatusTone } from '@/lib/status-tone';
 import { formatStatus } from '@/lib/text-utils';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { StatCard } from '@/components/ui/stat-card';
+import { StatStrip } from '@/components/ui/stat-strip';
 import { ClipboardList, Users, CheckCircle, Clock, AlertTriangle, TrendingUp, Plus, Send, FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -107,46 +107,15 @@ export function DueDiligenceDashboard() {
 
   return (
     <div className="space-y-4">
-      {/* Stat Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title={t('dueDiligence.dashboard.statSuppliersTitle')}
-          value={stats.totalFornecedores}
-          description={t('dueDiligence.dashboard.statSuppliersDescription', { count: stats.totalTemplates })}
-          icon={<Users />}
-          loading={loading}
-          variant="primary"
-          showAccent
-          drillDown="due_diligence"
-          emptyHint={t('dueDiligence.dashboard.statSuppliersEmptyHint')}
-        />
-        <StatCard
-          title={t('dueDiligence.dashboard.statCompletedTitle')}
-          value={stats.completedAssessments}
-          description={t('dueDiligence.dashboard.statCompletedDescription', { count: stats.pendingAssessments })}
-          icon={<CheckCircle />}
-          loading={loading}
-          variant="success"
-          drillDown="due_diligence"
-        />
-        <StatCard
-          title={t('dueDiligence.dashboard.statExpiredTitle')}
-          value={stats.expiredAssessments}
-          description={t('dueDiligence.dashboard.statExpiredDescription')}
-          icon={<AlertTriangle />}
-          loading={loading}
-          variant={stats.expiredAssessments > 0 ? "destructive" : "default"}
-          drillDown="due_diligence"
-        />
-        <StatCard
-          title={t('dueDiligence.dashboard.statAverageScoreTitle')}
-          value={`${stats.averageScore.toFixed(0)}%`}
-          description={t('dueDiligence.dashboard.statAverageScoreDescription')}
-          icon={<TrendingUp />}
-          loading={loading}
-          variant={stats.averageScore >= 80 ? 'success' : stats.averageScore >= 60 ? 'warning' : stats.averageScore > 0 ? 'destructive' : 'default'}
-        />
-      </div>
+      <StatStrip
+        loading={loading}
+        items={[
+          { key: 'fornecedores', label: t('dueDiligence.dashboard.statSuppliersTitle'), value: stats.totalFornecedores, drillDown: 'due_diligence' },
+          { key: 'concluidos', label: t('dueDiligence.dashboard.statCompletedTitle'), value: stats.completedAssessments, drillDown: 'due_diligence' },
+          { key: 'expirados', label: t('dueDiligence.dashboard.statExpiredTitle'), value: stats.expiredAssessments, tone: 'destructive', drillDown: 'due_diligence' },
+          { key: 'scoreMedio', label: t('dueDiligence.dashboard.statAverageScoreTitle'), value: `${stats.averageScore.toFixed(0)}%` },
+        ]}
+      />
 
       {/* Assessments que precisam de atenção */}
       {stats.recentAssessments.length > 0 && (

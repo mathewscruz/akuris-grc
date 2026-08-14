@@ -18,7 +18,7 @@ import { RopaWizard } from "@/components/dados/RopaWizard";
 import { RopaDialog } from "@/components/dados/RopaDialog";
 import { SolicitacaoTitularDialog } from "@/components/dados/SolicitacaoTitularDialog";
 import { DescoberDadosTab } from "@/components/dados/DescoberDadosTab";
-import { StatCard } from "@/components/ui/stat-card";
+import { StatStrip } from "@/components/ui/stat-strip";
 import { PageHeader } from "@/components/ui/page-header";
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { formatDateOnly } from '@/lib/date-utils';
@@ -538,56 +538,17 @@ export default function Privacidade() {
         description={t('jurisdicao.privacidade.descricao', { lei: jurisdicao.lei })}
       />
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-        <StatCard
-          title={t('cardsKpi.privacidade.totalDados')}
-          value={stats.totalDados}
-          description={t('cardsKpi.sweep.privacidade.tiposCatalogados')}
-          icon={<Database />}
-          showAccent
-          emptyHint={t('residuos.privacidade.cadastreCatalogo')}
-          drillDown="privacidade"
-        />
-        <StatCard
-          title={t('cardsKpi.privacidade.dadosSensiveis')}
-          value={stats.dadosSensiveis}
-          description={t('cardsKpi.privacidade.requeremProtecao')}
-          icon={<AlertTriangle />}
-          variant="warning"
-          drillDown="privacidade"
-        />
-        <StatCard
-          title={t('cardsKpi.privacidade.mapeamentos')}
-          value={stats.mapeamentos}
-          description={t('cardsKpi.sweep.privacidade.dadosXAtivos')}
-          icon={<Database />}
-          drillDown="privacidade"
-        />
-        <StatCard
-          title={t('cardsKpi.privacidade.solicitacoesPendentes')}
-          value={stats.solicitacoesPendentes}
-          description={t('residuos.privacidade.deTitulares')}
-          icon={<Users />}
-          drillDown="privacidade"
-        />
-        <StatCard
-          title={t('jurisdicao.privacidade.foraPrazo', { lei: jurisdicao.lei })}
-          value={solicitacoesForaPrazo}
-          description={t('jurisdicao.privacidade.excederamPrazo', { prazo: jurisdicao.prazoTitularLabel })}
-          icon={<Clock />}
-          variant={solicitacoesForaPrazo > 0 ? "destructive" : "default"}
-          drillDown="privacidade"
-        />
-        <StatCard
-          title={t('cardsKpi.sweep.privacidade.incidentesPrivacidade')}
-          value={incidentesPrivacidade}
-          description={incidentesPrivacidade > 0 ? t('cardsKpi.privacidade.emAberto') : t('cardsKpi.privacidade.nenhumAtivo')}
-          icon={<ShieldAlert />}
-          variant={incidentesPrivacidade > 0 ? "warning" : "default"}
-          onClick={() => navigate('/incidentes')}
-        />
-      </div>
+      <StatStrip
+        loading={isLoading}
+        items={[
+          { key: 'totalDados', label: t('cardsKpi.privacidade.totalDados'), value: stats.totalDados, drillDown: 'privacidade' },
+          { key: 'dadosSensiveis', label: t('cardsKpi.privacidade.dadosSensiveis'), value: stats.dadosSensiveis, tone: 'warning', drillDown: 'privacidade' },
+          { key: 'mapeamentos', label: t('cardsKpi.privacidade.mapeamentos'), value: stats.mapeamentos, drillDown: 'privacidade' },
+          { key: 'solicitacoesPendentes', label: t('cardsKpi.privacidade.solicitacoesPendentes'), value: stats.solicitacoesPendentes, drillDown: 'privacidade' },
+          { key: 'foraPrazo', label: t('jurisdicao.privacidade.foraPrazo', { lei: jurisdicao.lei }), value: solicitacoesForaPrazo, tone: 'destructive', drillDown: 'privacidade' },
+          { key: 'incidentes', label: t('cardsKpi.sweep.privacidade.incidentesPrivacidade'), value: incidentesPrivacidade, tone: 'warning', onClick: () => navigate('/incidentes') },
+        ]}
+      />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>

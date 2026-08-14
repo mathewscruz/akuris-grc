@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DataTable } from '@/components/ui/data-table';
-import { StatCard } from '@/components/ui/stat-card';
+import { StatStrip } from '@/components/ui/stat-strip';
 import { PageHeader } from '@/components/ui/page-header';
 import {
   Tooltip,
@@ -401,45 +401,45 @@ export default function Incidentes() {
         title={t('modules.incidentes.title')}
         description={t('modules.incidentes.description')}
         actions={
-          <Button variant="outline" size="sm" onClick={() => {
-            if (incidentes.length === 0) return;
-            exportCSV(
-              [t('sweepRiscos.incidentes.exportColTitulo'), t('fin.comum.tipo'), t('sweepRiscos.incidentes.exportColCategoria'), t('sweepRiscos.incidentes.exportColCriticidade'), t('sweepRiscos.incidentes.exportColStatus'), t('sweepRiscos.incidentes.exportColDataDeteccao'), t('sweepRiscos.incidentes.exportColDataResolucao')],
-              incidentes.map((inc: any) => [
-                inc.titulo, inc.tipo || '', inc.categoria || '', inc.criticidade || '',
-                inc.status || '', inc.data_deteccao || '', inc.data_resolucao || ''
-              ]),
-              'incidentes'
-            );
-          }}>
-            <Download className="h-4 w-4 mr-2" />{t('sweepRiscos.incidentes.exportBtnLabel')}
-          </Button>
+          <IncidenteDialog
+            onSuccess={() => {
+              invalidateIncidentes();
+            }}
+          />
         }
+        secondaryActions={[
+          {
+            label: t('p3Import.importButtonLabel'),
+            icon: <Upload className="h-4 w-4" />,
+            onClick: () => setImportDialogOpen(true),
+          },
+          {
+            label: t('sweepRiscos.incidentes.exportBtnLabel'),
+            icon: <Download className="h-4 w-4" />,
+            disabled: incidentes.length === 0,
+            onClick: () => {
+              exportCSV(
+                [t('sweepRiscos.incidentes.exportColTitulo'), t('fin.comum.tipo'), t('sweepRiscos.incidentes.exportColCategoria'), t('sweepRiscos.incidentes.exportColCriticidade'), t('sweepRiscos.incidentes.exportColStatus'), t('sweepRiscos.incidentes.exportColDataDeteccao'), t('sweepRiscos.incidentes.exportColDataResolucao')],
+                incidentes.map((inc: any) => [
+                  inc.titulo, inc.tipo || '', inc.categoria || '', inc.criticidade || '',
+                  inc.status || '', inc.data_deteccao || '', inc.data_resolucao || ''
+                ]),
+                'incidentes'
+              );
+            },
+          },
+        ]}
       />
 
-      {/* StatCards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {statsCards.map((stat, index) => (
-          <StatCard
-            key={index}
-            {...stat}
-            loading={loading}
-          />
-        ))}
-      </div>
-
-      {/* Botão de ação */}
-      <div className="flex justify-end gap-2">
-        <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
-          <Upload className="h-4 w-4 mr-2" />
-          {t('p3Import.importButtonLabel')}
-        </Button>
-        <IncidenteDialog 
-          onSuccess={() => {
-            invalidateIncidentes();
-          }}
-        />
-      </div>
+      <StatStrip
+        loading={loading}
+        items={[
+          { key: 'total', label: statsCards[0].title, value: statsCards[0].value, drillDown: 'incidentes' },
+          { key: 'criticosAltos', label: statsCards[1].title, value: statsCards[1].value, tone: 'destructive', drillDown: 'incidentes' },
+          { key: 'investigacao', label: statsCards[2].title, value: statsCards[2].value, drillDown: 'incidentes' },
+          { key: 'mes', label: statsCards[3].title, value: statsCards[3].value },
+        ]}
+      />
 
       <ImportIncidentesDialog
         open={importDialogOpen}

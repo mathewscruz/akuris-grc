@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useLocation } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/page-header';
-import { StatCard } from '@/components/ui/stat-card';
+import { StatStrip } from '@/components/ui/stat-strip';
 import { DenunciasDashboard } from '@/components/denuncia/DenunciasDashboard';
 import { RelatoriosDenuncia } from '@/components/denuncia/RelatoriosDenuncia';
 import { useDenunciasStats } from '@/hooks/useDenunciasStats';
-import { Shield, AlertTriangle, Clock, CheckCircle, BarChart3 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { BarChart3 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -31,57 +30,24 @@ export default function Denuncia() {
       <PageHeader
         title={t('modules.denuncia.title')}
         description={t('modules.denuncia.description')}
-        actions={
-          <Button variant="outline" onClick={() => setRelatoriosOpen(true)}>
-            <BarChart3 className="h-4 w-4 mr-2" />
-            {t('cardsKpi.denuncias.abrirRelatorios')}
-          </Button>
-        }
+        secondaryActions={[
+          {
+            label: t('cardsKpi.denuncias.abrirRelatorios'),
+            icon: <BarChart3 className="h-4 w-4" />,
+            onClick: () => setRelatoriosOpen(true),
+          },
+        ]}
       />
 
-      {/* StatCards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <StatCard
-          title={t('cardsKpi.denuncias.total')}
-          value={stats?.total ?? 0}
-          icon={<Shield />}
-          description={t('cardsKpi.denuncias.denunciasRegistradas')}
-          loading={statsLoading}
-          drillDown="denuncias"
-          showAccent
-          emptyHint={t('residuos.empty.denuncias')}
-        />
-        
-        <StatCard
-          title={t('cardsKpi.denuncias.novas')}
-          value={stats?.novas ?? 0}
-          icon={<AlertTriangle />}
-          description={t('cardsKpi.denuncias.aguardandoAnalise')}
-          loading={statsLoading}
-          variant="warning"
-          drillDown="denuncias"
-        />
-        
-        <StatCard
-          title={t('cardsKpi.denuncias.emAndamento')}
-          value={stats?.em_andamento ?? 0}
-          icon={<Clock />}
-          description={t('cardsKpi.denuncias.sendoInvestigadas')}
-          loading={statsLoading}
-          variant="info"
-          drillDown="denuncias"
-        />
-        
-        <StatCard
-          title={t('cardsKpi.denuncias.resolvidas')}
-          value={stats?.resolvidas ?? 0}
-          icon={<CheckCircle />}
-          description={t('cardsKpi.denuncias.concluidas')}
-          loading={statsLoading}
-          variant="success"
-          drillDown="denuncias"
-        />
-      </div>
+      <StatStrip
+        loading={statsLoading}
+        items={[
+          { key: 'total', label: t('cardsKpi.denuncias.total'), value: stats?.total ?? 0, drillDown: 'denuncias' },
+          { key: 'novas', label: t('cardsKpi.denuncias.novas'), value: stats?.novas ?? 0, tone: 'warning', drillDown: 'denuncias' },
+          { key: 'emAndamento', label: t('cardsKpi.denuncias.emAndamento'), value: stats?.em_andamento ?? 0, drillDown: 'denuncias' },
+          { key: 'resolvidas', label: t('cardsKpi.denuncias.resolvidas'), value: stats?.resolvidas ?? 0, drillDown: 'denuncias' },
+        ]}
+      />
 
       <DenunciasDashboard itemIdToOpen={denunciaIdToOpen} />
 

@@ -13,13 +13,13 @@ import {
   SectionHead,
 } from '@/components/gap-analysis/v2';
 import type { StackSegment } from '@/components/gap-analysis/v2';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { ModuleToolbar } from '@/components/ui/module-toolbar';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { useDebounce } from '@/hooks/useDebounce';
-import { Shield, Search, ChevronDown } from 'lucide-react';
+import { Shield, ChevronDown } from 'lucide-react';
 import { logger } from '@/lib/logger';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { fwDescricao } from "@/lib/gap-i18n";
@@ -404,32 +404,28 @@ export default function GapAnalysisFrameworks() {
   }
 
   const FilterBar = (
-    <div className="flex items-center gap-3 flex-wrap">
-      <div className="relative flex-1 min-w-[220px] max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder={t('gapAnalysis.frameworks.searchPlaceholder')}
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-9 h-9"
-        />
-      </div>
-      <div className="flex items-center gap-1.5 flex-wrap">
-        {CATEGORY_OPTIONS.map(opt => {
-          const active = categoryFilter === opt.id;
-          return (
-            <Badge
-              key={opt.id}
-              variant={active ? 'default' : 'outline'}
-              className="cursor-pointer text-xs"
-              onClick={() => setCategoryFilter(opt.id)}
-            >
-              {t(opt.labelKey)}
-            </Badge>
-          );
-        })}
-      </div>
-    </div>
+    <ModuleToolbar
+      searchValue={searchTerm}
+      onSearchChange={setSearchTerm}
+      searchPlaceholder={t('gapAnalysis.frameworks.searchPlaceholder')}
+      filters={
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {CATEGORY_OPTIONS.map(opt => {
+            const active = categoryFilter === opt.id;
+            return (
+              <Badge
+                key={opt.id}
+                variant={active ? 'default' : 'outline'}
+                className="cursor-pointer text-xs"
+                onClick={() => setCategoryFilter(opt.id)}
+              >
+                {t(opt.labelKey)}
+              </Badge>
+            );
+          })}
+        </div>
+      }
+    />
   );
 
   return (

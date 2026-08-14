@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useLocation } from 'react-router-dom';
-import { Plus, AlertTriangle, Shield, Settings, Tag, X, Clock, FileText, Download, MoreHorizontal, Edit, Trash2, History, ShieldCheck, Paperclip, Library } from 'lucide-react';
+import { Plus, AlertTriangle, Shield, Settings, Tag, X, Clock, FileText, MoreHorizontal, Edit, Trash2, History, ShieldCheck, Paperclip, Library } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
@@ -791,6 +791,19 @@ export function Riscos() {
         <PageHeader
           title={t('modules.riscos.title')}
           description={t('modules.riscos.description')}
+          actions={
+            <Button size="sm" onClick={openCreateDialog} aria-label={t('riscos.page.newRiskAria')}>
+              <Plus className="h-4 w-4 sm:mr-2" strokeWidth={1.5} />
+              <span className="hidden sm:inline">{t('riscos.page.newRisk')}</span>
+            </Button>
+          }
+          secondaryActions={[
+            { label: t('riscos.page.export.csv'), icon: <FileText className="h-4 w-4" strokeWidth={1.5} />, onClick: () => exportRiscosCSV(sortedRiscos) },
+            { label: t('riscos.page.export.pdf'), icon: <FileText className="h-4 w-4" strokeWidth={1.5} />, onClick: () => exportRiscosPDF(sortedRiscos, stats) },
+            { label: t('riscosBiblioteca.botao'), icon: <Library className="h-4 w-4" strokeWidth={1.5} />, onClick: () => setBibliotecaDialogOpen(true), separatorBefore: true },
+            { label: t('riscos.page.categories'), icon: <Tag className="h-4 w-4" strokeWidth={1.5} />, onClick: () => setCategoriasDialogOpen(true) },
+            { label: t('riscos.page.configMatrix'), icon: <Settings className="h-4 w-4" strokeWidth={1.5} />, onClick: () => setMatrizDialogOpen(true) },
+          ]}
         />
 
         {/* KPI cards antigos removidos — KPIs agora vivem dentro das abas (Visão geral / Matriz). */}
@@ -818,55 +831,16 @@ export function Riscos() {
           </Alert>
         )}
 
-        {/* Toolbar global */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        {idsFilter.length > 0 && (
           <div className="flex items-center gap-2 flex-wrap">
-            {idsFilter.length > 0 && (
-              <Badge variant="secondary" className="flex items-center gap-1 whitespace-nowrap">
-                {t('riscos.page.matrixFilter')} ({idsFilter.length})
-                <Button variant="ghost" size="sm" className="h-4 w-4 p-0 hover:bg-transparent" onClick={clearIdsFilter}>
-                  <X className="h-3 w-3" />
-                </Button>
-              </Badge>
-            )}
+            <Badge variant="secondary" className="flex items-center gap-1 whitespace-nowrap">
+              {t('riscos.page.matrixFilter')} ({idsFilter.length})
+              <Button variant="ghost" size="sm" className="h-4 w-4 p-0 hover:bg-transparent" onClick={clearIdsFilter}>
+                <X className="h-3 w-3" />
+              </Button>
+            </Badge>
           </div>
-          <div className="flex gap-2 flex-wrap">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" aria-label={t('riscos.page.export.aria')}>
-                  <Download className="h-4 w-4 sm:mr-2" strokeWidth={1.5} />
-                  <span className="hidden sm:inline">{t('riscos.page.export.label')}</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => exportRiscosCSV(sortedRiscos)}>
-                  <FileText className="mr-2 h-4 w-4" strokeWidth={1.5} />
-                  {t('riscos.page.export.csv')}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => exportRiscosPDF(sortedRiscos, stats)}>
-                  <FileText className="mr-2 h-4 w-4" strokeWidth={1.5} />
-                  {t('riscos.page.export.pdf')}
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            <Button variant="outline" size="sm" onClick={() => setBibliotecaDialogOpen(true)} className="whitespace-nowrap">
-              <Library className="h-4 w-4 sm:mr-2" strokeWidth={1.5} />
-              <span className="hidden sm:inline">{t('riscosBiblioteca.botao')}</span>
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setCategoriasDialogOpen(true)} className="whitespace-nowrap" aria-label={t('riscos.page.categoriesAria')}>
-              <Tag className="h-4 w-4 sm:mr-2" strokeWidth={1.5} />
-              <span className="hidden sm:inline">{t('riscos.page.categories')}</span>
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setMatrizDialogOpen(true)} className="whitespace-nowrap" title={t('riscos.page.configMatrixTitle')}>
-              <Settings className="h-4 w-4 sm:mr-2" strokeWidth={1.5} />
-              <span className="hidden sm:inline">{t('riscos.page.configMatrix')}</span>
-            </Button>
-            <Button size="sm" onClick={openCreateDialog} aria-label={t('riscos.page.newRiskAria')}>
-              <Plus className="h-4 w-4 sm:mr-2" strokeWidth={1.5} />
-              <span className="hidden sm:inline">{t('riscos.page.newRisk')}</span>
-            </Button>
-          </div>
-        </div>
+        )}
 
         {(() => {
           // Derivações compartilhadas para Visão geral e Matriz

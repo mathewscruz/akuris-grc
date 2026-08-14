@@ -217,7 +217,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </div>
           </header>
 
-          <main className="min-w-0 flex-1 p-4 md:p-6 overflow-auto overflow-x-hidden w-full max-w-full pb-20 md:pb-6">
+          <main className="min-w-0 flex-1 p-4 md:p-6 overflow-auto overflow-x-hidden w-full max-w-full pb-28 md:pb-24">
             <ErrorBoundary>
               <React.Suspense fallback={<ModuleLoadingSkeleton />}>
                 <div className="min-w-0 max-w-full">

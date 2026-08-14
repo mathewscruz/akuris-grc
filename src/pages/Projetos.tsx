@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { StatCard } from '@/components/ui/stat-card';
+import { PageHeader } from '@/components/ui/page-header';
+import { StatStrip } from '@/components/ui/stat-strip';
 import { EmptyState } from '@/components/ui/empty-state';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { Plus, Kanban, ListTodo, CheckCircle2, AlertTriangle, Inbox, LayoutTemplate } from 'lucide-react';
@@ -46,28 +47,26 @@ export default function Projetos() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight">{t('projetos.page.title')}</h1>
-          <p className="text-sm text-muted-foreground mt-1">{t('projetos.page.subtitle')}</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => navigate('/projetos/templates')}>
-            <LayoutTemplate className="h-4 w-4" /> {t('projetos.page.templates')}
-          </Button>
-          <Button variant="outline" onClick={() => navigate('/projetos/minhas-tarefas')}>
-            <Inbox className="h-4 w-4" /> {t('projetos.page.myTasks')}
-          </Button>
+      <PageHeader
+        title={t('projetos.page.title')}
+        description={t('projetos.page.subtitle')}
+        actions={
           <Button onClick={openNovo}><Plus className="h-4 w-4" /> {t('projetos.page.newProject')}</Button>
-        </div>
-      </div>
+        }
+        secondaryActions={[
+          { label: t('projetos.page.templates'), icon: <LayoutTemplate className="h-4 w-4" />, onClick: () => navigate('/projetos/templates') },
+          { label: t('projetos.page.myTasks'), icon: <Inbox className="h-4 w-4" />, onClick: () => navigate('/projetos/minhas-tarefas') },
+        ]}
+      />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title={t('projetos.page.statActive')} value={stats?.projetosAtivos ?? 0} icon={<Kanban />} variant="primary" showAccent />
-        <StatCard title={t('projetos.page.statOpenTasks')} value={stats?.tarefasAbertas ?? 0} icon={<ListTodo />} variant="info" />
-        <StatCard title={t('projetos.page.statDoneTasks')} value={stats?.tarefasConcluidas ?? 0} icon={<CheckCircle2 />} variant="success" />
-        <StatCard title={t('projetos.page.statOverdueTasks')} value={stats?.tarefasAtrasadas ?? 0} icon={<AlertTriangle />} variant="destructive" />
-      </div>
+      <StatStrip
+        items={[
+          { key: 'ativos', label: t('projetos.page.statActive'), value: stats?.projetosAtivos ?? 0 },
+          { key: 'abertas', label: t('projetos.page.statOpenTasks'), value: stats?.tarefasAbertas ?? 0 },
+          { key: 'concluidas', label: t('projetos.page.statDoneTasks'), value: stats?.tarefasConcluidas ?? 0 },
+          { key: 'atrasadas', label: t('projetos.page.statOverdueTasks'), value: stats?.tarefasAtrasadas ?? 0, tone: 'destructive' },
+        ]}
+      />
 
       {totalArquivados > 0 && (
         <div className="flex justify-end">

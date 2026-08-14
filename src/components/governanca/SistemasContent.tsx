@@ -1,9 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Server, Shield, Lock, Monitor, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
+import { Plus, Server, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { StatCard } from '@/components/ui/stat-card';
+import { StatStrip } from '@/components/ui/stat-strip';
 import { DataTable } from '@/components/ui/data-table';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import SistemaDialog from '@/components/contas-privilegiadas/SistemaDialog';
@@ -308,42 +308,15 @@ export default function SistemasContent() {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          title={t("governancaComp.sistemas.statTotal")}
-          value={sistemas.length}
-          icon={<Server />}
-          variant="primary"
-          showAccent
-          emptyHint={t("governancaComp.sistemas.statTotalEmptyHint")}
-          drillDown="sistemas"
-          segments={[
-            { label: t("governancaComp.sistemas.segmentAtivos"), value: sistemasAtivos, tone: 'success' },
-            { label: t("governancaComp.sistemas.segmentInativos"), value: Math.max(0, sistemas.length - sistemasAtivos), tone: 'neutral' },
-          ]}
-        />
-        <StatCard
-          title={t("governancaComp.sistemas.statAtivos")}
-          value={sistemasAtivos}
-          icon={<Monitor />}
-          variant="success"
-          drillDown="sistemas"
-        />
-        <StatCard
-          title={t("governancaComp.sistemas.statCriticidadeAlta")}
-          value={sistemasCriticos}
-          icon={<Shield />}
-          variant="warning"
-          drillDown="sistemas"
-        />
-        <StatCard
-          title={t("governancaComp.sistemas.statInativos")}
-          value={sistemas.length - sistemasAtivos}
-          icon={<Lock />}
-          variant="default"
-          drillDown="sistemas"
-        />
-      </div>
+      <StatStrip
+        loading={isLoading}
+        items={[
+          { key: 'total', label: t("governancaComp.sistemas.statTotal"), value: sistemas.length, drillDown: 'sistemas' },
+          { key: 'ativos', label: t("governancaComp.sistemas.statAtivos"), value: sistemasAtivos, drillDown: 'sistemas' },
+          { key: 'criticidade_alta', label: t("governancaComp.sistemas.statCriticidadeAlta"), value: sistemasCriticos, tone: 'warning', drillDown: 'sistemas' },
+          { key: 'inativos', label: t("governancaComp.sistemas.statInativos"), value: sistemas.length - sistemasAtivos, drillDown: 'sistemas' },
+        ]}
+      />
 
       <Card className="rounded-lg border overflow-hidden">
         <CardContent className="p-0">

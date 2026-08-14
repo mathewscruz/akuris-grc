@@ -55,9 +55,17 @@ const camposDisponiveis = [
   'sla_principal'
 ];
 
-export default function TemplatesContratos({ onTemplateSelect }: TemplatesContratosProps) {
+interface TemplatesContratosPropsExtended extends TemplatesContratosProps {
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  hideTrigger?: boolean;
+}
+
+export default function TemplatesContratos({ onTemplateSelect, open: openProp, onOpenChange, hideTrigger }: TemplatesContratosPropsExtended) {
   const { t } = useLanguage();
-  const [open, setOpen] = useState(false);
+  const [openState, setOpenState] = useState(false);
+  const open = openProp !== undefined ? openProp : openState;
+  const setOpen = onOpenChange ?? setOpenState;
   const [formOpen, setFormOpen] = useState(false);
   const [templates, setTemplates] = useState<TemplateContrato[]>([]);
   const [loading, setLoading] = useState(false);
@@ -278,12 +286,14 @@ A manutenção preventiva e corretiva dos equipamentos será de responsabilidade
   return (
     <>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger asChild>
-          <Button variant="outline">
-            <FileText className="h-4 w-4 mr-2" />
-            {t('contratosAtivos.templatesContratos.triggerButton')}
-          </Button>
-        </DialogTrigger>
+        {!hideTrigger && (
+          <DialogTrigger asChild>
+            <Button variant="outline">
+              <FileText className="h-4 w-4 mr-2" />
+              {t('contratosAtivos.templatesContratos.triggerButton')}
+            </Button>
+          </DialogTrigger>
+        )}
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <div className="flex items-center justify-between">

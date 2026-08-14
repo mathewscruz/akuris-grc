@@ -11,13 +11,14 @@ import { resolveRevisaoTone } from '@/lib/status-tone';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
-import { StatCard } from '@/components/ui/stat-card';
+import { StatStrip } from '@/components/ui/stat-strip';
+import { ModuleToolbar, ToolbarField } from '@/components/ui/module-toolbar';
 import { PageHeader } from '@/components/ui/page-header';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { PageSkeleton } from '@/components/ui/page-skeleton';
-import { Plus, Search, FileText, DollarSign, Users, AlertCircle, Edit, TrendingUp, Trash2, Building2, FileStack, Milestone, FilePlus2, Download, Upload, MoreHorizontal } from 'lucide-react';
+import { Plus, Search, FileText, DollarSign, Users, AlertCircle, Edit, TrendingUp, Trash2, Building2, FileStack, Milestone, FilePlus2, Download, Upload, MoreHorizontal, BarChart3 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -107,6 +108,8 @@ export default function Contratos() {
   const [currentTab, setCurrentTab] = useState('contratos');
   const [aditivosDialogOpen, setAditivosDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [relatoriosOpen, setRelatoriosOpen] = useState(false);
+  const [templatesOpen, setTemplatesOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: string; type: 'contrato' | 'fornecedor' }>({
     open: false,
     id: '',
@@ -371,51 +374,62 @@ export default function Contratos() {
         <PageHeader
           title={t('modules.contratos.title')}
           description={t('modules.contratos.description')}
+          actions={
+            currentTab === 'contratos' ? (
+              <Button onClick={() => { setSelectedContrato(null); setDialogOpen(true); }}>
+                <Plus className="h-4 w-4 mr-2" />
+                {t('fin.contratos.novo')}
+              </Button>
+            ) : (
+              <Button onClick={() => { setSelectedFornecedor(null); setFornecedorDialogOpen(true); }}>
+                <Plus className="h-4 w-4 mr-2" />
+                {t('fin.fornecedores.novo')}
+              </Button>
+            )
+          }
+          secondaryActions={[
+            { label: t('cardsKpi.sweep.contratos.exportarCsv'), icon: <Download className="h-4 w-4" />, onClick: handleExportCSV },
+            { label: t('cardsKpi.denuncias.relatorios'), icon: <BarChart3 className="h-4 w-4" />, onClick: () => setRelatoriosOpen(true) },
+            { label: t('modules.dueDiligence.templates'), icon: <FileText className="h-4 w-4" />, onClick: () => setTemplatesOpen(true) },
+            { label: t('p3Import.importButtonLabel'), icon: <Upload className="h-4 w-4" />, onClick: () => setImportDialogOpen(true), separatorBefore: true },
+          ]}
         />
 
-        {/* Cards de KPI */}
-        <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-          <StatCard
-            title={t('cardsKpi.contratos.totalContratos')}
-            value={statsContratos?.total || 0}
-            description={`${statsContratos?.ativos || 0} ativos`}
-            icon={<FileText />}
-            loading={!statsContratos}
-            drillDown="contratos"
-            showAccent
-            emptyHint={t('residuos.empty.contratos')}
-          />
+        <StatStrip
+          loading={!statsContratos}
+          items={[
+            {
+              key: 'total',
+              label: t('cardsKpi.contratos.totalContratos'),
+              value: statsContratos?.total || 0,
+              drillDown: 'contratos',
+            },
+            {
+              key: 'valor',
+              label: t('cardsKpi.contratos.valorTotal'),
+              value: formatMoedaEmpresa(statsContratos?.valorTotal || 0, true),
+              drillDown: 'contratos',
+            },
+            {
+              key: 'vencendo',
+              label: t('cardsKpi.sweep.contratos.vencimentos'),
+              value: statsContratos?.vencendo30Dias || 0,
+              tone: 'warning',
+              hint: t('fin.comum.proximos30'),
+              drillDown: 'contratos',
+            },
+            {
+              key: 'renovacao',
+              label: t('fin.contratos.renovacaoAutomatica'),
+              value: `${statsContratos?.total ? Math.round((statsContratos?.renovacaoAutomatica / statsContratos?.total) * 100) : 0}%`,
+              drillDown: 'contratos',
+            },
+          ]}
+        />
 
-          <StatCard
-            title={t('cardsKpi.contratos.valorTotal')}
-            value={formatMoedaEmpresa(statsContratos?.valorTotal || 0, true)}
-            description={t('cardsKpi.contratos.valorEmAtivos')}
-            icon={<DollarSign />}
-            variant="success"
-            loading={!statsContratos}
-            drillDown="contratos"
-          />
+        <RelatoriosContratos open={relatoriosOpen} onOpenChange={setRelatoriosOpen} hideTrigger />
+        <TemplatesContratos open={templatesOpen} onOpenChange={setTemplatesOpen} hideTrigger />
 
-          <StatCard
-            title={t('cardsKpi.sweep.contratos.vencimentos')}
-            value={statsContratos?.vencendo30Dias || 0}
-            description={t('fin.comum.proximos30')}
-            icon={<AlertCircle />}
-            variant={statsContratos?.vencendo30Dias ? "warning" : "default"}
-            loading={!statsContratos}
-            drillDown="contratos"
-          />
-
-          <StatCard
-            title={t('fin.contratos.renovacaoAutomatica')}
-            value={`${statsContratos?.total ? Math.round((statsContratos?.renovacaoAutomatica / statsContratos?.total) * 100) : 0}%`}
-            description={`${statsContratos?.renovacaoAutomatica || 0} de ${statsContratos?.total || 0}`}
-            icon={<TrendingUp />}
-            variant="info"
-            loading={!statsContratos}
-            drillDown="contratos"
-          />
-        </div>
 
         {/* Tabs */}
         <Tabs value={currentTab} onValueChange={setCurrentTab} className="space-y-4">
@@ -434,77 +448,60 @@ export default function Contratos() {
             <Card className="rounded-lg border overflow-hidden">
               <CardContent className="p-0">
                 <div className="p-6 pb-4">
-                  <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-                    <div className="relative flex-1 min-w-[200px] max-w-sm">
-                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                      <Input
-                        placeholder={t('fin.contratos.buscar')}
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-9"
-                      />
-                    </div>
-                     <div className="flex gap-2 flex-wrap">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button variant="outline" size="icon" onClick={handleExportCSV}>
-                            <Download className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>{t('cardsKpi.sweep.contratos.exportarCsv')}</TooltipContent>
-                      </Tooltip>
-                      <RelatoriosContratos />
-                      <TemplatesContratos />
-                      <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
-                        <Upload className="h-4 w-4 sm:mr-2" />
-                        <span className="hidden sm:inline">{t('p3Import.importButtonLabel')}</span>
-                      </Button>
-                      <Button size="sm" onClick={() => { setSelectedContrato(null); setDialogOpen(true); }}>
-                        <Plus className="h-4 w-4 sm:mr-2" />
-                        <span className="hidden sm:inline">{t('fin.contratos.novo')}</span>
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-4">
-                    <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger className="w-[150px]">
-                        <SelectValue placeholder={t('fin.comum.status')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="todos">{t('campos.filtros.todos')}</SelectItem>
-                        <SelectItem value="ativo">{t('campos.opcoes.ativo')}</SelectItem>
-                        <SelectItem value="rascunho">{t('campos.opcoes.rascunho')}</SelectItem>
-                        <SelectItem value="negociacao">{t('fin.contratos.negociacao')}</SelectItem>
-                        <SelectItem value="aprovacao">{t('fin.comum.aprovacao')}</SelectItem>
-                        <SelectItem value="suspenso">{t('campos.opcoes.suspenso')}</SelectItem>
-                        <SelectItem value="encerrado">{t('campos.opcoes.encerrado')}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Select value={tipoFilter} onValueChange={setTipoFilter}>
-                      <SelectTrigger className="w-[150px]">
-                        <SelectValue placeholder={t('fin.comum.tipo')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="todos">{t('campos.filtros.todos')}</SelectItem>
-                        <SelectItem value="servicos">{t('campos.opcoes.servicos')}</SelectItem>
-                        <SelectItem value="licenciamento">{t('campos.opcoes.licenciamento')}</SelectItem>
-                        <SelectItem value="manutencao">{t('fin.comum.manutencao')}</SelectItem>
-                        <SelectItem value="consultoria">{t('campos.opcoes.consultoria')}</SelectItem>
-                        <SelectItem value="produto">{t('campos.opcoes.produto')}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Select value={String(itemsPerPage)} onValueChange={(v) => setItemsPerPage(Number(v))}>
-                      <SelectTrigger className="w-[100px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="10">10</SelectItem>
-                        <SelectItem value="20">20</SelectItem>
-                        <SelectItem value="50">50</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <ModuleToolbar
+                    searchValue={searchTerm}
+                    onSearchChange={setSearchTerm}
+                    searchPlaceholder={t('fin.contratos.buscar')}
+                    filters={
+                      <>
+                        <ToolbarField label={t('fin.comum.status')}>
+                          <Select value={statusFilter} onValueChange={setStatusFilter}>
+                            <SelectTrigger className="w-[150px]">
+                              <SelectValue placeholder={t('fin.comum.status')} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="todos">{t('campos.filtros.todos')}</SelectItem>
+                              <SelectItem value="ativo">{t('campos.opcoes.ativo')}</SelectItem>
+                              <SelectItem value="rascunho">{t('campos.opcoes.rascunho')}</SelectItem>
+                              <SelectItem value="negociacao">{t('fin.contratos.negociacao')}</SelectItem>
+                              <SelectItem value="aprovacao">{t('fin.comum.aprovacao')}</SelectItem>
+                              <SelectItem value="suspenso">{t('campos.opcoes.suspenso')}</SelectItem>
+                              <SelectItem value="encerrado">{t('campos.opcoes.encerrado')}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </ToolbarField>
+                        <ToolbarField label={t('fin.comum.tipo')}>
+                          <Select value={tipoFilter} onValueChange={setTipoFilter}>
+                            <SelectTrigger className="w-[150px]">
+                              <SelectValue placeholder={t('fin.comum.tipo')} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="todos">{t('campos.filtros.todos')}</SelectItem>
+                              <SelectItem value="servicos">{t('campos.opcoes.servicos')}</SelectItem>
+                              <SelectItem value="licenciamento">{t('campos.opcoes.licenciamento')}</SelectItem>
+                              <SelectItem value="manutencao">{t('fin.comum.manutencao')}</SelectItem>
+                              <SelectItem value="consultoria">{t('campos.opcoes.consultoria')}</SelectItem>
+                              <SelectItem value="produto">{t('campos.opcoes.produto')}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </ToolbarField>
+                        <ToolbarField label={t('fin.comum.itensPorPagina')}>
+                          <Select value={String(itemsPerPage)} onValueChange={(v) => setItemsPerPage(Number(v))}>
+                            <SelectTrigger className="w-[100px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="10">10</SelectItem>
+                              <SelectItem value="20">20</SelectItem>
+                              <SelectItem value="50">50</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </ToolbarField>
+                      </>
+                    }
+                  />
                 </div>
+
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -653,68 +650,69 @@ export default function Contratos() {
             <Card className="rounded-lg border overflow-hidden">
               <CardContent className="p-0">
                 <div className="p-6 pb-4">
-                  <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-                    <div className="relative flex-1 min-w-[200px] max-w-sm">
-                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                      <Input
-                        placeholder={t('fin.fornecedores.buscar')}
-                        value={searchTermFornecedor}
-                        onChange={(e) => setSearchTermFornecedor(e.target.value)}
-                        className="pl-9"
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" onClick={() => { setSelectedFornecedor(null); setFornecedorDialogOpen(true); }}>
-                        <Plus className="h-4 w-4 mr-2" />{t('fin.fornecedores.novo')}</Button>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-4">
-                    <Select value={statusFornecedorFilter} onValueChange={setStatusFornecedorFilter}>
-                      <SelectTrigger className="w-[150px]">
-                        <SelectValue placeholder={t('fin.comum.status')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="todos">{t('campos.filtros.todosStatus')}</SelectItem>
-                        <SelectItem value="ativo">{t('campos.opcoes.ativo')}</SelectItem>
-                        <SelectItem value="inativo">{t('campos.opcoes.inativo')}</SelectItem>
-                        <SelectItem value="suspenso">{t('campos.opcoes.suspenso')}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Select value={categoriaFornecedorFilter} onValueChange={setCategoriaFornecedorFilter}>
-                      <SelectTrigger className="w-[150px]">
-                        <SelectValue placeholder={t('campos.comum.categoria')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="todos">{t('campos.filtros.todasCategorias')}</SelectItem>
-                        {categoriasFornecedor.map(cat => (
-                          <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Select value={riscoFornecedorFilter} onValueChange={setRiscoFornecedorFilter}>
-                      <SelectTrigger className="w-[120px]">
-                        <SelectValue placeholder={t('campos.comum.risco')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="todos">{t('campos.filtros.todosRiscos')}</SelectItem>
-                        <SelectItem value="baixo">{t('campos.opcoes.baixo')}</SelectItem>
-                        <SelectItem value="medio">{t('campos.opcoes.medio')}</SelectItem>
-                        <SelectItem value="alto">{t('campos.opcoes.alto')}</SelectItem>
-                        <SelectItem value="critico">{t('fin.comum.critico')}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Select value={String(itemsPerPage)} onValueChange={(v) => setItemsPerPage(Number(v))}>
-                      <SelectTrigger className="w-[100px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="10">10</SelectItem>
-                        <SelectItem value="20">20</SelectItem>
-                        <SelectItem value="50">50</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <ModuleToolbar
+                    searchValue={searchTermFornecedor}
+                    onSearchChange={setSearchTermFornecedor}
+                    searchPlaceholder={t('fin.fornecedores.buscar')}
+                    filters={
+                      <>
+                        <ToolbarField label={t('fin.comum.status')}>
+                          <Select value={statusFornecedorFilter} onValueChange={setStatusFornecedorFilter}>
+                            <SelectTrigger className="w-[150px]">
+                              <SelectValue placeholder={t('fin.comum.status')} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="todos">{t('campos.filtros.todosStatus')}</SelectItem>
+                              <SelectItem value="ativo">{t('campos.opcoes.ativo')}</SelectItem>
+                              <SelectItem value="inativo">{t('campos.opcoes.inativo')}</SelectItem>
+                              <SelectItem value="suspenso">{t('campos.opcoes.suspenso')}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </ToolbarField>
+                        <ToolbarField label={t('campos.comum.categoria')}>
+                          <Select value={categoriaFornecedorFilter} onValueChange={setCategoriaFornecedorFilter}>
+                            <SelectTrigger className="w-[150px]">
+                              <SelectValue placeholder={t('campos.comum.categoria')} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="todos">{t('campos.filtros.todasCategorias')}</SelectItem>
+                              {categoriasFornecedor.map(cat => (
+                                <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </ToolbarField>
+                        <ToolbarField label={t('campos.comum.risco')}>
+                          <Select value={riscoFornecedorFilter} onValueChange={setRiscoFornecedorFilter}>
+                            <SelectTrigger className="w-[130px]">
+                              <SelectValue placeholder={t('campos.comum.risco')} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="todos">{t('campos.filtros.todosRiscos')}</SelectItem>
+                              <SelectItem value="baixo">{t('campos.opcoes.baixo')}</SelectItem>
+                              <SelectItem value="medio">{t('campos.opcoes.medio')}</SelectItem>
+                              <SelectItem value="alto">{t('campos.opcoes.alto')}</SelectItem>
+                              <SelectItem value="critico">{t('fin.comum.critico')}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </ToolbarField>
+                        <ToolbarField label={t('fin.comum.itensPorPagina')}>
+                          <Select value={String(itemsPerPage)} onValueChange={(v) => setItemsPerPage(Number(v))}>
+                            <SelectTrigger className="w-[100px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="10">10</SelectItem>
+                              <SelectItem value="20">20</SelectItem>
+                              <SelectItem value="50">50</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </ToolbarField>
+                      </>
+                    }
+                  />
                 </div>
+
                 <Table>
                   <TableHeader>
                     <TableRow>

@@ -10,7 +10,7 @@ import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import ContaDialog from '@/components/contas-privilegiadas/ContaDialog';
 import { Card, CardContent } from '@/components/ui/card';
-import { StatCard } from '@/components/ui/stat-card';
+import { StatStrip } from '@/components/ui/stat-strip';
 import { PageHeader } from '@/components/ui/page-header';
 import { DataTable } from '@/components/ui/data-table';
 import ConfirmDialog from '@/components/ConfirmDialog';
@@ -373,66 +373,44 @@ export default function ContasPrivilegiadas() {
         title={t('modules.contasPrivilegiadas.title')}
         description={t('modules.contasPrivilegiadas.description')}
         actions={
-          <Button variant="outline" size="sm" onClick={() => {
-            if (contas.length === 0) return;
-            exportCSV(
-              [t('sweepDenuncias.contas.csvUsuario'), t('sweepDenuncias.contas.csvEmail'), t('sweepDenuncias.contas.csvTipoAcesso'), t('sweepDenuncias.contas.csvNivel'), t('sweepDenuncias.contas.csvStatus'), t('sweepDenuncias.contas.csvDataConcessao'), t('sweepDenuncias.contas.csvDataExpiracao'), t('sweepDenuncias.contas.csvSistema')],
-              contas.map((c: any) => [
-                c.usuario_beneficiario || '', c.email_beneficiario || '',
-                c.tipo_acesso || '', c.nivel_privilegio || '', c.status || '',
-                c.data_concessao || '', c.data_expiracao || '',
-                c.sistemas_privilegiados?.nome_sistema || ''
-              ]),
-              'contas_privilegiadas'
-            );
-          }}>
-            <Download className="h-4 w-4 mr-2" />{t('sweepDenuncias.contas.exportCsv')}
+          <Button onClick={() => setShowContaDialog(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            {t('sweepDenuncias.contas.novaConta')}
           </Button>
         }
+        secondaryActions={[
+          {
+            label: t('sweepDenuncias.contas.exportCsv'),
+            icon: <Download className="h-4 w-4" />,
+            disabled: contas.length === 0,
+            onClick: () => {
+              exportCSV(
+                [t('sweepDenuncias.contas.csvUsuario'), t('sweepDenuncias.contas.csvEmail'), t('sweepDenuncias.contas.csvTipoAcesso'), t('sweepDenuncias.contas.csvNivel'), t('sweepDenuncias.contas.csvStatus'), t('sweepDenuncias.contas.csvDataConcessao'), t('sweepDenuncias.contas.csvDataExpiracao'), t('sweepDenuncias.contas.csvSistema')],
+                contas.map((c: any) => [
+                  c.usuario_beneficiario || '', c.email_beneficiario || '',
+                  c.tipo_acesso || '', c.nivel_privilegio || '', c.status || '',
+                  c.data_concessao || '', c.data_expiracao || '',
+                  c.sistemas_privilegiados?.nome_sistema || ''
+                ]),
+                'contas_privilegiadas'
+              );
+            },
+          },
+        ]}
       />
 
-      <div className="grid gap-4 md:grid-cols-4">
-        <StatCard
-          title={t('sweepDenuncias.contas.cardContasAtivas')}
-          value={contasAtivas}
-          loading={isLoading}
-          variant="primary"
-          drillDown="contas_privilegiadas"
-          showAccent
-          emptyHint={t('residuos.empty.contasPrivilegiadas')}
-        />
-        <StatCard
-          title={t('cardsKpi.sweep.acessos.pendentes')}
-          value={contasPendentes}
-          loading={isLoading}
-          variant="info"
-          drillDown="contas_privilegiadas"
-        />
-        <StatCard
-          title={t('residuos.geral.vencendo30')}
-          value={contasVencendo}
-          loading={isLoading}
-          variant={contasVencendo > 0 ? 'warning' : 'default'}
-          drillDown="contas_privilegiadas"
-        />
-        <StatCard
-          title={t('sweepDenuncias.contas.cardExpiradas')}
-          value={contasExpiradas}
-          loading={isLoading}
-          variant={contasExpiradas > 0 ? 'destructive' : 'default'}
-          drillDown="contas_privilegiadas"
-        />
-      </div>
+      <StatStrip
+        loading={isLoading}
+        items={[
+          { key: 'ativas', label: t('sweepDenuncias.contas.cardContasAtivas'), value: contasAtivas, drillDown: 'contas_privilegiadas' },
+          { key: 'pendentes', label: t('cardsKpi.sweep.acessos.pendentes'), value: contasPendentes, drillDown: 'contas_privilegiadas' },
+          { key: 'vencendo', label: t('residuos.geral.vencendo30'), value: contasVencendo, tone: 'warning', drillDown: 'contas_privilegiadas' },
+          { key: 'expiradas', label: t('sweepDenuncias.contas.cardExpiradas'), value: contasExpiradas, tone: 'destructive', drillDown: 'contas_privilegiadas' },
+        ]}
+      />
 
       <Card className="rounded-lg border overflow-hidden">
         <CardContent className="p-0">
-          <div className="p-6 pb-4 flex items-center justify-between gap-4">
-            <div className="flex-1" />
-            <Button onClick={() => setShowContaDialog(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              {t('sweepDenuncias.contas.novaConta')}
-            </Button>
-          </div>
           <DataTable
             data={filteredAndSortedContas}
             columns={contasColumns}
