@@ -25,6 +25,8 @@ interface KPIPillData {
   key: KpiKey;
   icon: React.ElementType;
   label: string;
+  /** Explica exatamente o que o número conta (tooltip nativo). */
+  hint?: string;
   value: number | string;
   route: string;
   color: string;
@@ -41,6 +43,7 @@ interface KPIPillsProps {
   contractsExpiring: number;
   contractsExpired: number;
   activeDocs: number;
+  totalDocs: number;
   docsExpiring: number;
   docsPending: number;
   // Novos pills (acionáveis, não duplicam Hero)
@@ -66,6 +69,7 @@ export function KPIPills(props: KPIPillsProps) {
       key: 'ativos',
       icon: AtivosIcon,
       label: t('kpi.assets'),
+      hint: t('kpi.hint.assets'),
       value: props.ativos,
       route: '/ativos',
       color: 'text-primary',
@@ -75,6 +79,7 @@ export function KPIPills(props: KPIPillsProps) {
       key: 'riscos',
       icon: RiscosIcon,
       label: t('kpi.risks'),
+      hint: t('kpi.hint.risks'),
       value: props.totalRiscos,
       route: '/riscos',
       color: props.riscosCriticos > 0 ? 'text-destructive' : 'text-primary',
@@ -89,7 +94,8 @@ export function KPIPills(props: KPIPillsProps) {
     {
       key: 'incidentes',
       icon: AlertCircle,
-      label: t('kpi.incidents'),
+      label: t('kpi.incidentsOpen'),
+      hint: t('kpi.hint.incidentsOpen'),
       value: props.activeIncidents,
       route: '/incidentes',
       color: props.activeIncidents > 0 ? 'text-destructive' : 'text-muted-foreground',
@@ -102,7 +108,8 @@ export function KPIPills(props: KPIPillsProps) {
     {
       key: 'planos',
       icon: ListChecks,
-      label: t('kpi.actionPlans'),
+      label: t('kpi.actionPlansOpen'),
+      hint: t('kpi.hint.actionPlansOpen'),
       value: props.planosPendentes,
       route: '/planos-acao',
       color: props.planosAtrasados > 0 ? 'text-destructive' : 'text-primary',
@@ -115,7 +122,8 @@ export function KPIPills(props: KPIPillsProps) {
     {
       key: 'contratos',
       icon: Scale,
-      label: t('kpi.contracts'),
+      label: t('kpi.contractsActive'),
+      hint: t('kpi.hint.contractsActive'),
       value: props.activeContracts,
       route: '/contratos',
       color: 'text-primary',
@@ -131,7 +139,8 @@ export function KPIPills(props: KPIPillsProps) {
       key: 'documentos',
       icon: DocumentosIcon,
       label: t('kpi.documents'),
-      value: props.activeDocs,
+      hint: t('kpi.hint.documents', { active: props.activeDocs }),
+      value: props.totalDocs,
       route: '/documentos',
       color: 'text-primary',
       bgColor: 'bg-primary/10',
@@ -145,7 +154,8 @@ export function KPIPills(props: KPIPillsProps) {
     {
       key: 'due_diligence',
       icon: DueDiligenceIcon,
-      label: t('kpi.dueDiligence'),
+      label: t('kpi.dueDiligenceActive'),
+      hint: t('kpi.hint.dueDiligenceActive'),
       value: props.ddAtivos,
       route: '/due-diligence',
       color: props.ddExpirados > 0 ? 'text-destructive' : 'text-primary',
@@ -158,7 +168,8 @@ export function KPIPills(props: KPIPillsProps) {
     {
       key: 'denuncias',
       icon: DenunciasIcon,
-      label: t('kpi.reports'),
+      label: t('kpi.reportsOpen'),
+      hint: t('kpi.hint.reportsOpen'),
       value: props.denunciasAbertas,
       route: '/denuncia',
       color: props.denunciasNovas > 0 ? 'text-warning' : 'text-primary',
@@ -177,7 +188,8 @@ export function KPIPills(props: KPIPillsProps) {
       <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide sm:scrollbar-thin">
         {pills.map((pill) => (
           <button
-            key={pill.label}
+            key={pill.key}
+            title={pill.hint}
             onClick={() => (props.onPillClick ? props.onPillClick(pill.key) : pill.onClick ? pill.onClick() : navigate(pill.route))}
             className="group flex items-center gap-2 px-3 py-2 rounded-lg border bg-card hover:bg-accent/50 hover:border-primary/30 transition-all duration-200 cursor-pointer flex-shrink-0"
           >
