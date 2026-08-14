@@ -532,8 +532,8 @@ export default function RelatoriosContratos({ open: openProp, onOpenChange, hide
                         <div key={risco} className="flex items-center justify-between p-3 border rounded">
                           <div className="flex items-center gap-3">
                             <div className={`w-3 h-3 rounded-full ${
-                              risco === 'alto' ? 'bg-red-500' : 
-                              risco === 'medio' ? 'bg-yellow-500' : 'bg-green-500'
+                              risco === 'alto' ? 'bg-severity-critical' :
+                              risco === 'medio' ? 'bg-severity-medium' : 'bg-severity-low'
                             }`} />
                             <span>{t('contratosAtivos.relatoriosContratos.riskLabel').replace('{risco}', formatStatus(risco))}</span>
                           </div>

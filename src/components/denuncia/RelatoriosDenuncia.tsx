@@ -149,7 +149,7 @@ export function RelatoriosDenuncia() {
       // Agrupar por categoria
       const categoriaGroups = denuncias?.reduce((acc, d) => {
         const categoria = d.categoria?.nome || t('denunciasAdmin.relatorios.semCategoria');
-        const cor = d.categoria?.cor || '#6B7280';
+        const cor = d.categoria?.cor || CHART_AXIS;
         if (!acc[categoria]) {
           acc[categoria] = { count: 0, cor };
         }
@@ -403,7 +403,7 @@ export function RelatoriosDenuncia() {
                       labelLine={false}
                       label={({ categoria, count }) => `${categoria}: ${count}`}
                       outerRadius={80}
-                      fill="#8884d8"
+                      fill={chartSeries(0)}
                       dataKey="count"
                     >
                       {metricas.denuncias_por_categoria.map((entry, index) => (
@@ -470,9 +470,9 @@ export function RelatoriosDenuncia() {
                     <Line 
                       type="monotone" 
                       dataKey="count" 
-                      stroke="#3B82F6" 
+                      stroke={chartSeries(0)} 
                       strokeWidth={2}
-                      dot={{ fill: '#3B82F6' }}
+                      dot={{ fill: chartSeries(0) }}
                     />
                   </LineChart>
                 </ResponsiveContainer>
