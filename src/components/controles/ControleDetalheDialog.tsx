@@ -14,7 +14,9 @@ import { formatDateOnly } from "@/lib/date-utils";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { capitalizeText, formatStatus } from "@/lib/text-utils";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { resolveControleStatusTone, resolveCriticidadeTone } from "@/lib/status-tone";
+import { resolveControleStatusTone, resolveCriticidadeTone, resolveConformityTone } from "@/lib/status-tone";
+import { useControleRequisitos } from "@/hooks/useControleRequisitos";
+import { VincularRequisitoControleDialog } from "@/components/controles/VincularRequisitoControleDialog";
 import { openStorageFile } from "@/lib/storage";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -42,6 +44,10 @@ export function ControleDetalheDialog({
   const [mentionSearch, setMentionSearch] = useState("");
   const [cursorPosition, setCursorPosition] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [vincularOpen, setVincularOpen] = useState(false);
+
+  // Requisitos de framework ligados a este controlo (N para N)
+  const { data: requisitosLigados } = useControleRequisitos(open ? controle?.id ?? null : null);
 
   // Buscar usuários da empresa para menções
   const { data: usuarios } = useQuery({
@@ -466,6 +472,10 @@ export function ControleDetalheDialog({
                 <Link2 className="h-4 w-4" />
                 {t('controlesAuditorias.cddTabAuditorias', { count: auditoriasVinculadas?.length || 0 })}
               </TabsTrigger>
+              <TabsTrigger value="requisitos" className="flex items-center gap-2">
+                <Shield className="h-4 w-4" />
+                {t('vinculoReq.tabRequisitos', { count: requisitosLigados?.length || 0 })}
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="comentarios" className="flex flex-col mt-4 space-y-4">
@@ -713,6 +723,13 @@ export function ControleDetalheDialog({
 
         </div>
       </DialogShell>
+
+      <VincularRequisitoControleDialog
+        open={vincularOpen}
+        onOpenChange={setVincularOpen}
+        controleId={controle.id}
+        controleNome={controle.nome}
+      />
 
       <ConfirmDialog
         open={!!deleteTarget}
