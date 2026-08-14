@@ -587,16 +587,6 @@ export default function Privacidade() {
 
 
         <TabsContent value="catalogo" className="space-y-4">
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={() => setShowMapeamentoDialog(true)}>
-              <Link2 className="mr-2 h-4 w-4" />
-              {t('sweepDados.privacidade.mapearDado')}
-            </Button>
-            <Button size="sm" onClick={() => setShowDadosDialog(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              {t('sweepDados.privacidade.novoDado')}
-            </Button>
-          </div>
           <Card className="rounded-lg border overflow-hidden">
             <CardContent className="p-0">
               <DataTable
@@ -632,12 +622,6 @@ export default function Privacidade() {
           <p className="text-sm text-muted-foreground">
             {t('jurisdicao.privacidade.ropaSubtitulo', { lei: jurisdicao.lei })}
           </p>
-          <div className="flex justify-end">
-            <Button size="sm" onClick={() => setShowRopaWizard(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              {t('sweepDados.privacidade.novoRopa')}
-            </Button>
-          </div>
           <Card className="rounded-lg border overflow-hidden">
             <CardContent className="p-0">
               <DataTable
@@ -674,12 +658,6 @@ export default function Privacidade() {
         </TabsContent>
 
         <TabsContent value="solicitacoes" className="space-y-4">
-          <div className="flex justify-end">
-            <Button size="sm" onClick={() => setShowSolicitacaoDialog(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              {t('sweepDados.privacidade.novaSolicitacao')}
-            </Button>
-          </div>
           <Card className="rounded-lg border overflow-hidden">
             <CardContent className="p-0">
               <DataTable
