@@ -360,6 +360,42 @@ export default function PlanosAcao() {
     }
   };
 
+  // Mudança rápida de estado com atualização otimista e reversão em caso de falha.
+  const handleStatusChange = async (item: any, novoStatus: string) => {
+    if (!empresaId || item?._isExternal || !item?.id) return;
+    if (!(PLANO_STATUS_EDITAVEIS as readonly string[]).includes(novoStatus)) return;
+    if (item.status === novoStatus) return;
+
+    const key = ['planos-acao', empresaId];
+    const anterior = queryClient.getQueryData<any[]>(key);
+    const patch = {
+      status: novoStatus,
+      data_conclusao: novoStatus === 'concluido' ? new Date().toISOString().slice(0, 10) : null,
+    };
+
+    queryClient.setQueryData<any[]>(key, (old) =>
+      (old || []).map((p: any) => (p.id === item.id ? { ...p, ...patch } : p)),
+    );
+    setDetailPlano((d: any) => (d && d.id === item.id ? { ...d, ...patch, _displayStatus: novoStatus } : d));
+
+    const { error } = await supabase
+      .from('planos_acao')
+      .update(patch)
+      .eq('id', item.id)
+      .eq('empresa_id', empresaId);
+
+    if (error) {
+      logger.error('Erro ao atualizar status do plano de ação', error);
+      queryClient.setQueryData(key, anterior);
+      setDetailPlano((d: any) => (d && d.id === item.id ? { ...d, status: item.status, _displayStatus: item._displayStatus } : d));
+      toast.error(t('planosAcao.statusUpdateError'));
+      return;
+    }
+
+    toast.success(t('planosAcao.statusUpdated'));
+    queryClient.invalidateQueries({ queryKey: ['planos-acao'] });
+  };
+
   const handleSort = (field: string) => {
     if (sortField === field) {
       setSortDirection(d => d === 'asc' ? 'desc' : 'asc');
