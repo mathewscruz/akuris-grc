@@ -10,7 +10,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { toast } from 'sonner';
-import { useLanguage } from '@/contexts/LanguageContext';
 
 /**
  * Componente genérico de importação CSV, extraído do padrão original de
@@ -76,22 +75,22 @@ export interface ImportCsvDialogTexts {
   columnStatus: string;
   columnErrors: string;
   backButton: string;
-  importButton: string;
   importingTitle: string;
   importingDescription: string;
-  importingPercent: string;
   successTitle: string;
   successDescription: string;
   closeButton: string;
   errorEmptyFile: string;
   errorParseFile: string;
   errorNoEmpresa: string;
-  toastImportSuccess: string;
-  toastImportError: string;
-  errorRequiredField: string;
-  errorInvalidEnum: string;
-  errorInvalidDate: string;
-  errorInvalidNumber: string;
+  toastImportSuccess: (count: number) => string;
+  toastImportError: (count: number) => string;
+  errorRequiredField: (field: string) => string;
+  errorInvalidEnum: (field: string, values: string) => string;
+  errorInvalidDate: (field: string) => string;
+  errorInvalidNumber: (field: string) => string;
+  importButton: (count: number) => string;
+  importingPercent: (percent: number) => string;
 }
 
 interface ImportCsvDialogProps {
@@ -148,7 +147,6 @@ const ImportCsvDialog: React.FC<ImportCsvDialogProps> = ({
   previewColumns,
   buildPayload,
 }) => {
-  const { t } = useLanguage();
   const { profile } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [step, setStep] = useState<'upload' | 'preview' | 'importing' | 'success'>('upload');
@@ -183,7 +181,7 @@ const ImportCsvDialog: React.FC<ImportCsvDialogProps> = ({
       const rawValue = (raw[col.key] ?? '').trim();
 
       if (col.required && !rawValue) {
-        errors.push(t(texts.errorRequiredField, { field: col.label }));
+        errors.push(texts.errorRequiredField(col.label));
         data[col.key] = '';
         continue;
       }
@@ -194,7 +192,7 @@ const ImportCsvDialog: React.FC<ImportCsvDialogProps> = ({
       }
 
       if (col.enumValues && !col.enumValues.includes(rawValue.toLowerCase())) {
-        errors.push(t(texts.errorInvalidEnum, { field: col.label, values: col.enumValues.join(', ') }));
+        errors.push(texts.errorInvalidEnum(col.label, col.enumValues.join(', ')));
         data[col.key] = rawValue.toLowerCase();
         continue;
       }
@@ -203,7 +201,7 @@ const ImportCsvDialog: React.FC<ImportCsvDialogProps> = ({
         case 'date': {
           const iso = normalizeDateToIso(rawValue);
           if (!iso) {
-            errors.push(t(texts.errorInvalidDate, { field: col.label }));
+            errors.push(texts.errorInvalidDate(col.label));
             data[col.key] = rawValue;
           } else {
             data[col.key] = iso;
@@ -212,7 +210,7 @@ const ImportCsvDialog: React.FC<ImportCsvDialogProps> = ({
         }
         case 'number': {
           if (isNaN(Number(rawValue))) {
-            errors.push(t(texts.errorInvalidNumber, { field: col.label }));
+            errors.push(texts.errorInvalidNumber(col.label));
             data[col.key] = rawValue;
           } else {
             data[col.key] = Number(rawValue);
@@ -315,11 +313,11 @@ const ImportCsvDialog: React.FC<ImportCsvDialogProps> = ({
     setStep('success');
 
     if (successCount > 0) {
-      toast.success(t(texts.toastImportSuccess, { count: successCount }));
+      toast.success(texts.toastImportSuccess(successCount));
       onSuccess();
     }
     if (failCount > 0) {
-      toast.error(t(texts.toastImportError, { count: failCount }));
+      toast.error(texts.toastImportError(failCount));
     }
   };
 
@@ -479,7 +477,7 @@ const ImportCsvDialog: React.FC<ImportCsvDialogProps> = ({
                   {texts.backButton}
                 </Button>
                 <Button onClick={performImport} disabled={validCount === 0}>
-                  {t(texts.importButton, { count: validCount })}
+                  {texts.importButton(validCount)}
                 </Button>
               </div>
             </div>
@@ -492,7 +490,7 @@ const ImportCsvDialog: React.FC<ImportCsvDialogProps> = ({
                 <p className="text-sm text-muted-foreground">{texts.importingDescription}</p>
               </div>
               <Progress value={importProgress} className="w-full" />
-              <p className="text-sm">{t(texts.importingPercent, { percent: importProgress })}</p>
+              <p className="text-sm">{texts.importingPercent(importProgress)}</p>
             </div>
           )}
 
