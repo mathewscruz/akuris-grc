@@ -33,6 +33,16 @@ import { ControleSelect } from "./ControleSelect";
 import { RequisitoSelect } from "./RequisitoSelect";
 import { AreaSistemaSelect } from "./AreaSistemaSelect";
 import { useIntegrationNotify } from "@/hooks/useIntegrationNotify";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { logger } from "@/lib/logger";
 
 const makeFormSchema = (t: (key: string) => string) => z.object({
@@ -127,6 +137,9 @@ export function ItemAuditoriaFormDialog({
     }
   }, [item, open]);
 
+  const [gateData, setGateData] = useState<FormData | null>(null);
+  const [justificativa, setJustificativa] = useState("");
+
   const handleControleChange = (value: string, controle?: any) => {
     form.setValue("controle_vinculado_id", value);
     // Auto-preencher campos se controle selecionado e campos estão vazios
@@ -148,7 +161,31 @@ export function ItemAuditoriaFormDialog({
     }
   };
 
+  /**
+   * T4 · Gate — um item só fica Concluído com evidência anexada ou com uma
+   * justificação escrita para a ausência de prova. A justificação fica gravada.
+   */
   const onSubmit = async (data: FormData) => {
+    if (data.status === "concluido") {
+      const jaJustificado = !!item?.justificativa_sem_evidencia;
+      let temEvidencia = false;
+      if (item?.id) {
+        const { count } = await supabase
+          .from("auditoria_itens_evidencias")
+          .select("id", { count: "exact", head: true })
+          .eq("item_id", item.id);
+        temEvidencia = (count || 0) > 0;
+      }
+      if (!temEvidencia && !jaJustificado) {
+        setGateData(data);
+        setJustificativa("");
+        return;
+      }
+    }
+    await executarSubmit(data);
+  };
+
+  const executarSubmit = async (data: FormData, justificativaGate?: string) => {
     setIsSubmitting(true);
     try {
       const { data: userData } = await supabase.auth.getUser();
@@ -168,6 +205,8 @@ export function ItemAuditoriaFormDialog({
         requisito_vinculado_id: data.requisito_vinculado_id || null,
         framework_vinculado_id: data.framework_vinculado_id || null,
         area_sistema_id: data.area_sistema_id || null,
+        justificativa_sem_evidencia:
+          justificativaGate?.trim() || item?.justificativa_sem_evidencia || null,
         created_by: item ? undefined : userId,
       };
 
@@ -457,6 +496,43 @@ export function ItemAuditoriaFormDialog({
 
           </form>
         </Form>
+
+        <AlertDialog open={!!gateData} onOpenChange={(o) => !o && setGateData(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t('t4.gates.itemSemEvidenciaTitulo')}</AlertDialogTitle>
+              <AlertDialogDescription>{t('t4.gates.itemSemEvidenciaDesc')}</AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="space-y-2">
+              <FormLabel>{t('t4.gates.itemJustificacao')}</FormLabel>
+              <Textarea
+                rows={3}
+                value={justificativa}
+                onChange={(e) => setJustificativa(e.target.value)}
+                placeholder={t('t4.gates.itemJustificacaoPlaceholder')}
+              />
+            </div>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{t('t4.gates.cancelar')}</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={!justificativa.trim()}
+                onClick={async (e) => {
+                  e.preventDefault();
+                  if (!justificativa.trim() || !gateData) {
+                    toast.error(t('t4.gates.itemJustificacaoObrigatoria'));
+                    return;
+                  }
+                  const dados = gateData;
+                  setGateData(null);
+                  await executarSubmit(dados, justificativa);
+                  toast.info(t('t4.gates.itemJustificacaoRegistada'));
+                }}
+              >
+                {t('t4.gates.confirmar')}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </DialogShell>
   );
 }

@@ -246,7 +246,12 @@ export default function Continuidade() {
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{t('cardsKpi.continuidade.coberturaTestes')}</span>
                 <Badge variant="outline">
-                  {stats?.testesRealizados ?? 0} testes / {planos.length} planos
+                  {planos.length === 0
+                    ? t('t4.continuidade.semTestes')
+                    : t('t4.continuidade.coberturaPlanos', {
+                        testados: stats?.planosTestados ?? 0,
+                        total: planos.length,
+                      })}
                 </Badge>
               </div>
             </CardContent>

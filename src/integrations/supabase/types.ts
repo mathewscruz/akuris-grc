@@ -943,11 +943,17 @@ export type Database = {
           area_afetada: string | null
           auditoria_id: string
           causa_raiz: string | null
+          classificacao: string
+          controle_ref_id: string | null
           created_at: string | null
+          created_by: string | null
           criticidade: string
           descricao: string
+          evidencia_objetiva: string | null
           id: string
           impacto: string | null
+          item_id: string | null
+          requisito_ref_id: string | null
           status: string
           tipo: string
           titulo: string
@@ -958,11 +964,17 @@ export type Database = {
           area_afetada?: string | null
           auditoria_id: string
           causa_raiz?: string | null
+          classificacao?: string
+          controle_ref_id?: string | null
           created_at?: string | null
+          created_by?: string | null
           criticidade?: string
           descricao: string
+          evidencia_objetiva?: string | null
           id?: string
           impacto?: string | null
+          item_id?: string | null
+          requisito_ref_id?: string | null
           status?: string
           tipo: string
           titulo: string
@@ -973,11 +985,17 @@ export type Database = {
           area_afetada?: string | null
           auditoria_id?: string
           causa_raiz?: string | null
+          classificacao?: string
+          controle_ref_id?: string | null
           created_at?: string | null
+          created_by?: string | null
           criticidade?: string
           descricao?: string
+          evidencia_objetiva?: string | null
           id?: string
           impacto?: string | null
+          item_id?: string | null
+          requisito_ref_id?: string | null
           status?: string
           tipo?: string
           titulo?: string
@@ -990,6 +1008,20 @@ export type Database = {
             columns: ["auditoria_id"]
             isOneToOne: false
             referencedRelation: "auditorias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "auditoria_achados_controle_ref_id_fkey"
+            columns: ["controle_ref_id"]
+            isOneToOne: false
+            referencedRelation: "controles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "auditoria_achados_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "auditoria_itens"
             referencedColumns: ["id"]
           },
           {
@@ -1123,6 +1155,7 @@ export type Database = {
           descricao: string | null
           framework_vinculado_id: string | null
           id: string
+          justificativa_sem_evidencia: string | null
           observacoes: string | null
           prazo: string | null
           prioridade: string
@@ -1142,6 +1175,7 @@ export type Database = {
           descricao?: string | null
           framework_vinculado_id?: string | null
           id?: string
+          justificativa_sem_evidencia?: string | null
           observacoes?: string | null
           prazo?: string | null
           prioridade?: string
@@ -1161,6 +1195,7 @@ export type Database = {
           descricao?: string | null
           framework_vinculado_id?: string | null
           id?: string
+          justificativa_sem_evidencia?: string | null
           observacoes?: string | null
           prazo?: string | null
           prioridade?: string
@@ -1410,6 +1445,8 @@ export type Database = {
         Row: {
           auditor_equipe: string[] | null
           auditor_responsavel: string | null
+          conclusao_forcada: boolean
+          conclusao_justificativa: string | null
           created_at: string | null
           created_by: string | null
           data_fim_prevista: string | null
@@ -1431,6 +1468,8 @@ export type Database = {
         Insert: {
           auditor_equipe?: string[] | null
           auditor_responsavel?: string | null
+          conclusao_forcada?: boolean
+          conclusao_justificativa?: string | null
           created_at?: string | null
           created_by?: string | null
           data_fim_prevista?: string | null
@@ -1452,6 +1491,8 @@ export type Database = {
         Update: {
           auditor_equipe?: string[] | null
           auditor_responsavel?: string | null
+          conclusao_forcada?: boolean
+          conclusao_justificativa?: string | null
           created_at?: string | null
           created_by?: string | null
           data_fim_prevista?: string | null
@@ -2687,37 +2728,49 @@ export type Database = {
         Row: {
           controle_id: string
           created_at: string
+          created_by: string | null
           data_teste: string
+          evidencia_nome: string | null
+          evidencia_url: string | null
           evidencias: string | null
           id: string
           observacoes: string | null
           proxima_avaliacao: string | null
           resultado: string
           testador: string | null
+          testador_id: string | null
           updated_at: string
         }
         Insert: {
           controle_id: string
           created_at?: string
+          created_by?: string | null
           data_teste: string
+          evidencia_nome?: string | null
+          evidencia_url?: string | null
           evidencias?: string | null
           id?: string
           observacoes?: string | null
           proxima_avaliacao?: string | null
           resultado: string
           testador?: string | null
+          testador_id?: string | null
           updated_at?: string
         }
         Update: {
           controle_id?: string
           created_at?: string
+          created_by?: string | null
           data_teste?: string
+          evidencia_nome?: string | null
+          evidencia_url?: string | null
           evidencias?: string | null
           id?: string
           observacoes?: string | null
           proxima_avaliacao?: string | null
           resultado?: string
           testador?: string | null
+          testador_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -8797,6 +8850,10 @@ export type Database = {
       projeto_pertence_empresa: {
         Args: { _projeto_id: string }
         Returns: boolean
+      }
+      proxima_data_por_frequencia: {
+        Args: { _base: string; _freq: string }
+        Returns: string
       }
       requirement_pertence_empresa: {
         Args: { requirement_id: string }

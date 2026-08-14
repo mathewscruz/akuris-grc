@@ -9,11 +9,11 @@ export function useContinuidadeStats() {
   return useQuery({
     queryKey: ['continuidade-stats', empresaId],
     queryFn: async () => {
-      if (!empresaId) return { total: 0, ativos: 0, emRevisao: 0, testesRealizados: 0, tarefasPendentes: 0 };
+      if (!empresaId) return { total: 0, ativos: 0, emRevisao: 0, testesRealizados: 0, planosTestados: 0, tarefasPendentes: 0 };
 
       const [planosRes, testesRes, tarefasRes] = await Promise.all([
         supabase.from('continuidade_planos').select('id, status').eq('empresa_id', empresaId),
-        supabase.from('continuidade_testes').select('id').eq('empresa_id', empresaId),
+        supabase.from('continuidade_testes').select('id, plano_id').eq('empresa_id', empresaId),
         supabase.from('continuidade_tarefas').select('id, status').eq('empresa_id', empresaId),
       ]);
 
@@ -26,6 +26,8 @@ export function useContinuidadeStats() {
         ativos: planos.filter(p => p.status === 'ativo').length,
         emRevisao: planos.filter(p => p.status === 'em_revisao').length,
         testesRealizados: testes.length,
+        // Cobertura honesta: quantos planos distintos já foram testados.
+        planosTestados: new Set(testes.map((t: any) => t.plano_id).filter(Boolean)).size,
         tarefasPendentes: tarefas.filter(t => t.status === 'pendente').length,
       };
     },

@@ -68,6 +68,11 @@ export function AuditoriaCardAccordion({
             <StatusBadge size="sm" {...resolveAuditoriaStatusTone(auditoria.status)}>
               {formatStatus(auditoria.status)}
             </StatusBadge>
+            {auditoria.conclusao_forcada && (
+              <StatusBadge size="sm" tone="warning" title={auditoria.conclusao_justificativa || undefined}>
+                {t('t4.gates.forcadaCurta')}
+              </StatusBadge>
+            )}
             <StatusBadge size="sm" {...resolveAuditoriaPrioridadeTone(auditoria.prioridade)}>
               {formatStatus(auditoria.prioridade)}
             </StatusBadge>

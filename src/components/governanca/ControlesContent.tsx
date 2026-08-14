@@ -49,6 +49,7 @@ import {
 import { capitalizeText, formatStatus } from '@/lib/text-utils';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveCriticidadeTone, resolveControleStatusTone, resolveControleTipoTone } from '@/lib/status-tone';
+import { resumirTestesPorControlo, resultadoTesteLabel, resultadoTesteTone } from '@/lib/controle-testes';
 import { formatDateOnly } from '@/lib/date-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -73,6 +74,7 @@ interface Controle {
     cor: string;
   };
   testesCount?: number;
+  ultimoResultado?: string | null;
 }
 
 interface Categoria {
@@ -171,14 +173,10 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
         const ids = data.map(c => c.id);
         const { data: testes } = await supabase
           .from('controles_testes')
-          .select('controle_id')
+          .select('controle_id, resultado, data_teste, proxima_avaliacao')
           .in('controle_id', ids);
-        
-        const testesCountMap = new Map<string, number>();
-        testes?.forEach(t => {
-          const count = testesCountMap.get(t.controle_id) || 0;
-          testesCountMap.set(t.controle_id, count + 1);
-        });
+
+        const resumoTestes = resumirTestesPorControlo(testes as any[]);
         
         let profileMap = new Map<string, { nome: string; foto_url: string | null }>();
         
@@ -201,7 +199,8 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
             ...controle,
             responsavel_nome: profileData?.nome || null,
             responsavel_foto: profileData?.foto_url || null,
-            testesCount: testesCountMap.get(controle.id) || 0
+            testesCount: resumoTestes.get(controle.id)?.total || 0,
+            ultimoResultado: resumoTestes.get(controle.id)?.ultimoResultado || null
           };
         });
         
@@ -501,12 +500,18 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
       label: t("governancaComp.controles.columnTestes"),
       sortable: true,
       render: (value: any, controle: Controle) => (
-        <Badge 
-          variant={controle.testesCount && controle.testesCount > 0 ? "secondary" : "outline"}
-          className="whitespace-nowrap"
-        >
-          {controle.testesCount || 0}
-        </Badge>
+        controle.testesCount ? (
+          <div className="flex items-center gap-2 whitespace-nowrap">
+            <span className="text-sm font-medium tabular-nums">{controle.testesCount}</span>
+            {controle.ultimoResultado && (
+              <StatusBadge size="sm" tone={resultadoTesteTone(controle.ultimoResultado)}>
+                {resultadoTesteLabel(controle.ultimoResultado, t)}
+              </StatusBadge>
+            )}
+          </div>
+        ) : (
+          <span className="text-xs text-muted-foreground">{t('t4.testes.semTestes')}</span>
+        )
       )
     },
     {
@@ -527,7 +532,7 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
         return (
           <span className={isVencido ? "text-destructive font-medium" : ""}>
             {formatDateOnly(controle.proxima_avaliacao)}
-            {isVencido && <span className="ml-1 text-xs">{t("governancaComp.controles.vencido")}</span>}
+            {isVencido && <span className="ml-1 text-xs">{t('t4.testes.vencido')}</span>}
           </span>
         );
       }

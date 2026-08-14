@@ -34,6 +34,7 @@ export function TesteDialog({ open, onOpenChange, planoId, teste, onSuccess }: T
     resultado: '',
     observacoes: '',
     licoes_aprendidas: '',
+    participantes: '',
   });
 
   useEffect(() => {
@@ -45,9 +46,10 @@ export function TesteDialog({ open, onOpenChange, planoId, teste, onSuccess }: T
         resultado: teste.resultado || '',
         observacoes: teste.observacoes || '',
         licoes_aprendidas: teste.licoes_aprendidas || '',
+        participantes: (teste.participantes || []).join(', '),
       });
     } else {
-      setForm({ tipo_teste: 'tabletop', descricao: '', data_teste: new Date().toISOString().split('T')[0], resultado: '', observacoes: '', licoes_aprendidas: '' });
+      setForm({ tipo_teste: 'tabletop', descricao: '', data_teste: new Date().toISOString().split('T')[0], resultado: '', observacoes: '', licoes_aprendidas: '', participantes: '' });
     }
   }, [teste, open]);
 
@@ -66,6 +68,10 @@ export function TesteDialog({ open, onOpenChange, planoId, teste, onSuccess }: T
       resultado: form.resultado || null,
       observacoes: form.observacoes || null,
       licoes_aprendidas: form.licoes_aprendidas || null,
+      participantes: form.participantes
+        .split(',')
+        .map((p) => p.trim())
+        .filter(Boolean),
       plano_id: planoId,
       empresa_id: empresaId,
       ...(teste ? {} : { created_by: user?.id }),
@@ -135,6 +141,15 @@ export function TesteDialog({ open, onOpenChange, planoId, teste, onSuccess }: T
                 <SelectItem value="parcial">{t('modDialogs.continuidade.teste.resultadoParcial')}</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>{t('t4.continuidade.participantes')}</Label>
+            <Input
+              value={form.participantes}
+              onChange={e => setForm(p => ({ ...p, participantes: e.target.value }))}
+              placeholder={t('t4.continuidade.participantesPlaceholder')}
+            />
           </div>
 
           <div className="space-y-2">
