@@ -18,6 +18,8 @@ import { resolveControleStatusTone, resolveCriticidadeTone, resolveConformityTon
 import { useControleRequisitos } from "@/hooks/useControleRequisitos";
 import { VincularRequisitoControleDialog } from "@/components/controles/VincularRequisitoControleDialog";
 import { openStorageFile } from "@/lib/storage";
+import TestesList from "@/components/controles/TestesList";
+import { FlaskConical } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
@@ -472,6 +474,10 @@ export function ControleDetalheDialog({
                 <Link2 className="h-4 w-4" />
                 {t('controlesAuditorias.cddTabAuditorias', { count: auditoriasVinculadas?.length || 0 })}
               </TabsTrigger>
+              <TabsTrigger value="testes" className="flex items-center gap-2">
+                <FlaskConical className="h-4 w-4" strokeWidth={1.5} />
+                {t('t4.testes.tab', { count: testesControle?.length || 0 })}
+              </TabsTrigger>
               <TabsTrigger value="requisitos" className="flex items-center gap-2">
                 <Shield className="h-4 w-4" />
                 {t('vinculoReq.tabRequisitos', { count: requisitosLigados?.length || 0 })}
@@ -680,6 +686,14 @@ export function ControleDetalheDialog({
                       </div>
                     ))
                   )}
+                </div>
+              </ScrollArea>
+            </TabsContent>
+
+            <TabsContent value="testes" className="flex-1 overflow-hidden mt-4">
+              <ScrollArea className="h-full">
+                <div className="pr-4">
+                  <TestesList controleId={controle.id} controleNome={controle.nome} />
                 </div>
               </ScrollArea>
             </TabsContent>
