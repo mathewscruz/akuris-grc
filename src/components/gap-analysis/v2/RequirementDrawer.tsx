@@ -13,6 +13,7 @@ import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
+import { DateField } from '@/components/ui/date-field';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeSanitize from 'rehype-sanitize';
@@ -357,11 +358,10 @@ export function RequirementDrawer({
               {(evaluation.conformity_status === 'nao_conforme' || evaluation.conformity_status === 'parcial') && (
                 <section>
                   <SectionHead title={t('gapUi.drawer.implementationDeadline')} />
-                  <Input
+                  <DateField
                     id="prazo-drawer"
-                    type="date"
-                    value={evaluation.prazo_implementacao || ''}
-                    onChange={(e) => setEvaluation(prev => ({ ...prev, prazo_implementacao: e.target.value || null }))}
+                    value={evaluation.prazo_implementacao || null}
+                    onChange={(v) => setEvaluation(prev => ({ ...prev, prazo_implementacao: v || null }))}
                     className="mt-1.5 max-w-[200px]"
                   />
                 </section>

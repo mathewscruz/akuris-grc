@@ -14,6 +14,7 @@ import { useEmpresaId } from "@/hooks/useEmpresaId";
 import { Upload, X, FileText, Calendar, Lightbulb, ClipboardList, CheckCircle2, ExternalLink, AlertTriangle, ChevronDown, History, BookOpen, RefreshCw, HelpCircle, Building2, Settings, FileCheck, CheckSquare, Shield, Target, Check, type LucideIcon } from 'lucide-react';
 import { AkurisAIIcon } from "@/components/icons";
 import { Input } from "@/components/ui/input";
+import { DateField } from "@/components/ui/date-field";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { formatDateForInput, parseDateForDB } from "@/lib/date-utils";
 import { formatStatus } from "@/lib/text-utils";
@@ -1239,11 +1240,10 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                           <Label htmlFor="prazo" className="text-xs flex items-center gap-1">
                             <Calendar className="h-3.5 w-3.5" strokeWidth={1.5} />{t('gapUi.detail.deadlineLabel')}
                           </Label>
-                          <input
-                            id="prazo" type="date"
-                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                            value={formData.prazo_implementacao}
-                            onChange={(e) => setFormData(prev => ({ ...prev, prazo_implementacao: e.target.value }))}
+                          <DateField
+                            id="prazo"
+                            value={formData.prazo_implementacao || null}
+                            onChange={(v) => setFormData(prev => ({ ...prev, prazo_implementacao: v || '' }))}
                           />
                         </div>
                       </div>

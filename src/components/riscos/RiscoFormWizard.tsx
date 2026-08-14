@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DateField } from '@/components/ui/date-field';
 import { financialExposure } from './risk-utils';
 import { useEmpresaMoeda } from '@/hooks/useEmpresaMoeda';
 import { Textarea } from '@/components/ui/textarea';
@@ -1112,7 +1113,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                   <FormItem>
                     <FormLabel>{t('fin.riscos.wizard.dataProxRevisao')}</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} />
+                      <DateField value={field.value || null} onChange={(v) => field.onChange(v || '')} />
                     </FormControl>
                     <FormDescription>{t('campos.risco.proxRevisaoDesc')}</FormDescription>
                     <FormMessage />
@@ -1341,7 +1342,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                       <FormItem>
                         <FormLabel>{t('fin.riscos.wizard.dataProxRevisaoObrig')}</FormLabel>
                         <FormControl>
-                          <Input type="date" {...field} />
+                          <DateField value={field.value || null} onChange={(v) => field.onChange(v || '')} />
                         </FormControl>
                         <FormDescription>{t('fin.riscos.wizard.dataProxRevisaoHint')}</FormDescription>
                         <FormMessage />
@@ -1356,7 +1357,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                       <FormItem>
                         <FormLabel>Válido até *</FormLabel>
                         <FormControl>
-                          <Input type="date" {...field} />
+                          <DateField value={field.value || null} onChange={(v) => field.onChange(v || '')} />
                         </FormControl>
                         <div className="flex flex-wrap gap-2 pt-1">
                           {[6, 12, 24].map((meses) => (

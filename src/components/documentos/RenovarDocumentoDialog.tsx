@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import { DateField } from "@/components/ui/date-field";
 import { Upload, FileText, AlertCircle } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -245,11 +246,10 @@ export const RenovarDocumentoDialog = ({
             <Label htmlFor="data_vencimento" className="text-sm font-medium">
               {t('documentosExtras.renovar.novaDataVencimentoLabel')}
             </Label>
-            <Input
+            <DateField
               id="data_vencimento"
-              type="date"
-              value={novaDataVencimento}
-              onChange={(e) => setNovaDataVencimento(e.target.value)}
+              value={novaDataVencimento || null}
+              onChange={(v) => setNovaDataVencimento(v || '')}
               disabled={loading}
             />
             <p className="text-xs text-muted-foreground">
