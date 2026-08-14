@@ -964,7 +964,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                   const exp = financialExposure(field.value, watchProbabilidade);
                   return (
                     <FormItem>
-                      <FormLabel>{t('campos.risco.impactoFinanceiro')}</FormLabel>
+                      <FormLabel>{t('campos.risco.impactoFinanceiro', { moeda: simboloMoeda })}</FormLabel>
                       <FormControl>
                         <Input
                           type="number"

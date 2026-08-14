@@ -70,7 +70,7 @@ function treatmentPct(status: string): number {
 
 export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccept, onOpenTratamentos }: Props) {
   const { t } = useLanguage();
-  const { format: formatMoedaEmpresa, simbolo: simboloMoeda } = useEmpresaMoeda();
+  const { format: formatMoedaEmpresa } = useEmpresaMoeda();
   const { data: detail, isLoading, isError, error: detailError } = useRiscoDetail(risco?.id ?? null);
   const inicialScore = useMemo(() => scoreFromPI(risco?.probabilidade_inicial, risco?.impacto_inicial), [risco]);
   const residualScore = useMemo(() => scoreFromPI(risco?.probabilidade_residual, risco?.impacto_residual), [risco]);
