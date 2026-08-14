@@ -4,7 +4,6 @@ import { X } from "lucide-react"
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
-import { useReleaseBodyPointerEvents } from "@/lib/radix-pointer-events"
 
 const Sheet = SheetPrimitive.Root
 
@@ -56,7 +55,6 @@ const SheetContent = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Content>,
   SheetContentProps
 >(({ side = "right", className, children, ...props }, ref) => (
-  <PointerEventsGuard>
   <SheetPortal>
     <SheetOverlay />
     <SheetPrimitive.Content
