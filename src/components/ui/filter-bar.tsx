@@ -56,9 +56,7 @@ export function FilterBar({
   const getActiveFiltersCount = () => {
     if (activeFiltersCount > 0) return activeFiltersCount
 
-    const activeCount = filters.filter(filter =>
-      filter.value && filter.value !== 'all' && filter.value !== ''
-    ).length
+    const activeCount = countActiveFilters(filters)
 
     if (searchValue) return activeCount + 1
     return activeCount

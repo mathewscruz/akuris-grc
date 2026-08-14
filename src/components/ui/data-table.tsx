@@ -136,7 +136,7 @@ export function DataTable<T extends Record<string, any>>({
           <div className="flex gap-2 flex-wrap">
             {filters.length > 0 && (
               (() => {
-                const activeFiltersCount = filters.filter(f => f.value !== 'todos' && f.value !== '').length;
+                const activeFiltersCount = countActiveFilters(filters);
                 return (
                   <Button
                     variant="outline"
