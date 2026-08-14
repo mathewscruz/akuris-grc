@@ -928,7 +928,7 @@ export default function Contratos() {
             { label: t('fin.comum.tipo'), value: formatStatus(detalheContrato.tipo) },
             { label: t('fin.comum.valor'), value: detalheContrato.valor != null ? formatMoedaEmpresa(detalheContrato.valor) : null },
             { label: t('fin.comum.dataInicio'), value: detalheContrato.data_inicio ? formatDateOnly(detalheContrato.data_inicio) : null },
-            { label: t('fin.comum.dataFim'), value: detalheContrato.data_fim ? formatDateOnly(detalheContrato.data_fim) : null },
+            { label: t('detalheRegisto.dataFim'), value: detalheContrato.data_fim ? formatDateOnly(detalheContrato.data_fim) : null },
             { label: t('detalheRegisto.responsavel'), value: detalheContrato.gestor_contrato },
             { label: t('detalheRegisto.observacoes'), value: detalheContrato.objeto || detalheContrato.observacoes, full: true },
           ] : []}

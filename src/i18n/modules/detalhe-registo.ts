@@ -30,6 +30,7 @@ export const detalheRegisto = {
       expiracao: 'Expiração',
       url: 'Endereço',
       responsavel: 'Responsável',
+      dataFim: 'Data de fim',
     },
   },
   en: {
@@ -59,6 +60,7 @@ export const detalheRegisto = {
       expiracao: 'Expires on',
       url: 'Address',
       responsavel: 'Owner',
+      dataFim: 'End date',
     },
   },
 };
