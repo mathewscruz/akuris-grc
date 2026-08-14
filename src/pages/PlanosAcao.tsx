@@ -12,7 +12,6 @@ import { ModuleToolbar, ToolbarField } from '@/components/ui/module-toolbar';
 import { DataTable, Column } from '@/components/ui/data-table';
 import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Chip } from '@/components/ui/chip';
 import { Button } from '@/components/ui/button';
