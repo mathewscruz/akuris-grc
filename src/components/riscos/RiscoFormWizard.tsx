@@ -307,6 +307,22 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
     (selectedMatriz?.configuracao as any)?.metodo_calculo || 'multiplicacao'
   );
 
+  /**
+   * Reavaliar (probabilidade, impacto ou controlos) invalida o aceite vigente.
+   */
+  const reavaliacaoInvalidaAceite = (data: RiscoForm) => {
+    if (!risco) return false;
+    const mudou = (a: any, b: any) => String(a ?? '') !== String(b ?? '');
+    return (
+      mudou(data.probabilidade_inicial, risco.probabilidade_inicial) ||
+      mudou(data.impacto_inicial, risco.impacto_inicial) ||
+      mudou(data.probabilidade_residual, risco.probabilidade_residual) ||
+      mudou(data.impacto_residual, risco.impacto_residual) ||
+      mudou(data.controles_existentes, risco.controles_existentes)
+    );
+  };
+
+
   const onSubmit = async (data: RiscoForm, confirmadoInvalidar = false) => {
     logger.debug('🚀 onSubmit chamado com dados:', { data: data });
 
