@@ -387,6 +387,14 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
       toast.error(t('fin.riscos.wizard.erroDataRevisao'));
       return;
     }
+    if (data.aceito && !data.aceite_valido_ate) {
+      toast.error('Indique até quando o aceite é válido.');
+      return;
+    }
+    if (data.aceito && data.aceite_valido_ate && new Date(data.aceite_valido_ate) <= new Date()) {
+      toast.error('A validade do aceite tem de ser uma data futura.');
+      return;
+    }
 
     setLoading(true);
 
