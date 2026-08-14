@@ -435,7 +435,7 @@ export const gapExports = {
         },
       },
       onboardingUi: {
-        requirementsBadge: '{count} requisitos',
+        requirementsBadge: { one: '{count} requisito', other: '{count} requisitos' },
         audienceTitle: 'Para quem é este framework?',
         benefitsTitle: 'O que você ganha?',
         roadmapTitle: 'Roteiro Recomendado',
@@ -850,7 +850,7 @@ export const gapExports = {
         },
       },
       onboardingUi: {
-        requirementsBadge: '{count} requirements',
+        requirementsBadge: { one: '{count} requirement', other: '{count} requirements' },
         audienceTitle: 'Who is this framework for?',
         benefitsTitle: 'What do you get?',
         roadmapTitle: 'Recommended Roadmap',
