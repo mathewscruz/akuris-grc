@@ -132,6 +132,20 @@ export function ConfiguracoesDenuncia() {
           notificar_administradores: data.notificar_administradores,
           emails_notificacao: data.emails_notificacao?.join(', ') || ''
         });
+      } else {
+        // Sem configuração ainda: cria uma com token público para que o canal
+        // tenha endereço mesmo antes de o identificador da empresa ser definido.
+        const token = await gerarToken();
+        if (token) {
+          const { data: created, error: createError } = await supabase
+            .from('denuncias_configuracoes')
+            .insert([{ token_publico: token }])
+            .select()
+            .single();
+          if (!createError && created) {
+            setConfig(created);
+          }
+        }
       }
 
       // Buscar slug da empresa
