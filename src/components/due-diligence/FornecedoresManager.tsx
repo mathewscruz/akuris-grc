@@ -17,6 +17,8 @@ import ConfirmDialog from '@/components/ConfirmDialog';
 import { formatDateOnly } from '@/lib/date-utils';
 import { formatStatus } from '@/lib/text-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { rowOpenProps, CARD_HOVER } from '@/lib/row-interaction';
+import { RecordDetailDrawer } from '@/components/common/RecordDetailDrawer';
 
 interface Fornecedor {
   id: string;
@@ -60,6 +62,7 @@ export function FornecedoresManager() {
   const { t } = useLanguage();
   const { empresaId } = useEmpresaId();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [detalheFornecedor, setDetalheFornecedor] = useState<any>(null);
   const [editingFornecedor, setEditingFornecedor] = useState<Fornecedor | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
@@ -371,7 +374,13 @@ export function FornecedoresManager() {
             ) : (
               <div className="space-y-3">
                 {filteredFornecedores.map((fornecedor: any) => (
-                  <Card key={fornecedor.id} className={fornecedor.status === 'inativo' ? 'opacity-60' : ''}>
+                  <Card
+                    key={fornecedor.id}
+                    {...(() => {
+                      const props = rowOpenProps(() => setDetalheFornecedor(fornecedor), fornecedor.nome, CARD_HOVER);
+                      return { ...props, className: `${props.className} ${fornecedor.status === 'inativo' ? 'opacity-60' : ''}` };
+                    })()}
+                  >
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between">
                         <div className="flex-1 min-w-0">
@@ -464,6 +473,29 @@ export function FornecedoresManager() {
         confirmText={t('dueDiligence.fornecedoresManager.deleteConfirm')}
         variant="destructive"
       />
+      <RecordDetailDrawer
+        open={!!detalheFornecedor}
+        onOpenChange={(o) => !o && setDetalheFornecedor(null)}
+        title={detalheFornecedor?.nome}
+        subtitle={detalheFornecedor?.email}
+        badges={detalheFornecedor ? (
+          <StatusBadge size="sm" tone={detalheFornecedor.status === 'ativo' ? 'positive' : 'neutral'}>
+            {formatStatus(detalheFornecedor.status)}
+          </StatusBadge>
+        ) : undefined}
+        actions={detalheFornecedor ? (
+          <Button variant="outline" size="sm" onClick={() => { const f = detalheFornecedor; setDetalheFornecedor(null); handleEdit(f); }}>
+            {t('dueDiligence.fornecedoresManager.edit')}
+          </Button>
+        ) : undefined}
+        fields={detalheFornecedor ? [
+          { label: t('detalheRegisto.responsavel'), value: detalheFornecedor.contato_responsavel },
+          { label: t('fin.comum.categoria'), value: detalheFornecedor.categoria ? formatStatus(detalheFornecedor.categoria) : null },
+          { label: t('detalheRegisto.url'), value: detalheFornecedor.telefone },
+        ] : []}
+        createdAt={detalheFornecedor?.created_at}
+      />
+
     </>
   );
 }

@@ -1,3 +1,4 @@
+import { rowOpenProps, CARD_HOVER } from '@/lib/row-interaction';
 import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -633,7 +634,13 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
             {/* Lista de assessments */}
             <div className="grid gap-4 p-6 pt-0">
               {paginatedAssessments.map((assessment) => (
-                <Card key={assessment.id} className={getExpirationBorderClass(assessment)}>
+                <Card
+                  key={assessment.id}
+                  {...(() => {
+                    const props = rowOpenProps(() => viewAssessment(assessment), assessment.fornecedor_nome, CARD_HOVER);
+                    return { ...props, className: `${props.className} ${getExpirationBorderClass(assessment)}` };
+                  })()}
+                >
                   <CardHeader>
                     <div className="flex justify-between items-start">
                       <div>
