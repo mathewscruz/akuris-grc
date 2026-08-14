@@ -4,6 +4,7 @@
  */
 import { differenceInDays } from 'date-fns';
 import { tGlobal } from '@/lib/i18n-global';
+import type { NivelRisco } from '@/components/riscos/matriz-config';
 
 export type Severity = 'critico' | 'alto' | 'medio' | 'baixo';
 
@@ -74,13 +75,35 @@ export function scoreFromPI(prob?: string | number | null, imp?: string | number
   return p * i;
 }
 
-/** Mapeamento score → severidade (usado pelo heatmap se não houver matriz cadastrada). */
+/** Mapeamento score → severidade (fallback quando não há matriz configurada). */
 export function severityFromScore(score: number): Severity {
   if (score >= 16) return 'critico';
   if (score >= 10) return 'alto';
   if (score >= 5) return 'medio';
   return 'baixo';
 }
+
+/** Score de uma célula P×I respeitando o método de cálculo da matriz ativa. */
+export function scoreFromMatriz(p: number, i: number, metodo?: string | null): number {
+  return metodo === 'soma' ? p + i : p * i;
+}
+
+/** Faixa (nível) da matriz ativa em que o score cai; null se não houver faixas. */
+export function faixaFromScore(score: number, niveis?: NivelRisco[] | null): NivelRisco | null {
+  if (!niveis || niveis.length === 0) return null;
+  return niveis.find((n) => score >= n.min && score <= n.max) ?? null;
+}
+
+/**
+ * FONTE ÚNICA de severidade por score (AKURIS QA-061): deriva das faixas
+ * (min/max) guardadas na configuração da matriz ativa. Só cai nos limiares
+ * fixos de `severityFromScore` quando a empresa não tem faixas configuradas.
+ */
+export function severityFromScoreConfig(score: number, niveis?: NivelRisco[] | null): Severity {
+  const faixa = faixaFromScore(score, niveis);
+  return faixa ? severityFromNivel(faixa.nivel) : severityFromScore(score);
+}
+
 
 /** ID curto display-only: "R-014" derivado dos últimos 3 chars do uuid. */
 export function shortRiskId(uuid?: string | null, codigo?: string | null): string {

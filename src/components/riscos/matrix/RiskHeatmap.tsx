@@ -1,13 +1,21 @@
 /**
- * RiskHeatmap — grade 5×5 Probabilidade × Impacto.
- * - Lê configuração da matriz da empresa (riscos_matriz_configuracao.niveis_risco) para colorir.
- * - Sem matriz cadastrada, cai em fallback por bandas de score.
+ * RiskHeatmap — grade P × I derivada da matriz configurada da empresa.
+ * - Rótulos dos eixos vêm de riscos_matriz_configuracao (escalas), nunca de constantes.
+ * - Grelha adapta-se a NxM conforme o número de níveis das escalas.
+ * - Cores das células/chips/legenda vêm das faixas (min/max) da configuração.
  * - Clique numa célula seleciona-a (callback). Clique num badge dispara onOpenRisk.
  */
 import { useMemo } from 'react';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { severityFromScore, shortRiskId, toScaleNumber, type Severity } from '@/components/riscos/risk-utils';
+import {
+  severityFromScoreConfig,
+  scoreFromMatriz,
+  shortRiskId,
+  toScaleNumber,
+  type Severity,
+} from '@/components/riscos/risk-utils';
+import type { MatrizConfiguracao, EscalaItem } from '@/components/riscos/matriz-config';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 export type HeatmapMode = 'inerente' | 'residual';
@@ -33,6 +41,8 @@ interface Props {
   /** Inerente = P×I inicial (antes dos controles); Residual = P×I residual (após tratamento). */
   mode?: HeatmapMode;
   onModeChange?: (mode: HeatmapMode) => void;
+  /** Configuração da matriz ativa: escalas (rótulos) e faixas (cores). */
+  config?: MatrizConfiguracao | null;
 }
 
 const SEV_BG: Record<Severity, string> = {
@@ -56,11 +66,34 @@ const SEV_BADGE: Record<Severity, string> = {
   baixo: 'bg-success text-success-foreground',
 };
 
-export function RiskHeatmap({ riscos, selected, onSelectCell, onClearSelection, onOpenRisk, mode = 'inerente', onModeChange }: Props) {
+const SEV_DOT: Record<Severity, string> = {
+  critico: 'bg-destructive',
+  alto: 'bg-warning',
+  medio: 'bg-warning/60',
+  baixo: 'bg-success',
+};
+
+/** Rótulos ordenados por valor 1..N a partir da escala configurada. */
+function labelsFromEscala(escala?: EscalaItem[] | null, fallback?: string[]): string[] {
+  if (escala && escala.length > 0) {
+    return [...escala]
+      .sort((a, b) => Number(a.valor) - Number(b.valor))
+      .map((e) => e.descricao ?? '');
+  }
+  return fallback ?? [];
+}
+
+export function RiskHeatmap({ riscos, selected, onSelectCell, onClearSelection, onOpenRisk, mode = 'inerente', onModeChange, config }: Props) {
   const { t } = useLanguage();
 
-  const PROB_LABELS = [1, 2, 3, 4, 5].map((n) => t(`riscosVisoes.matrix.riskHeatmap.probLabels.p${n}`));
-  const IMP_LABELS = [1, 2, 3, 4, 5].map((n) => t(`riscosVisoes.matrix.riskHeatmap.impLabels.i${n}`));
+  const fallbackProb = [1, 2, 3, 4, 5].map((n) => t(`riscosVisoes.matrix.riskHeatmap.probLabels.p${n}`));
+  const fallbackImp = [1, 2, 3, 4, 5].map((n) => t(`riscosVisoes.matrix.riskHeatmap.impLabels.i${n}`));
+
+  const PROB_LABELS = labelsFromEscala(config?.escala_probabilidade, fallbackProb);
+  const IMP_LABELS = labelsFromEscala(config?.escala_impacto, fallbackImp);
+
+  const niveis = config?.niveis_risco;
+  const metodo = config?.metodo_calculo;
 
   // Quantos riscos não têm avaliação residual (não aparecem no mapa residual).
   const semResidual = useMemo(
@@ -88,15 +121,30 @@ export function RiskHeatmap({ riscos, selected, onSelectCell, onClearSelection, 
     return map;
   }, [riscos, mode]);
 
-  const probs = [5, 4, 3, 2, 1];
-  const imps = [1, 2, 3, 4, 5];
+  // Grelha NxM: número de níveis vem das escalas configuradas (fallback 5×5).
+  const nProb = PROB_LABELS.length || 5;
+  const nImp = IMP_LABELS.length || 5;
+  const probs = Array.from({ length: nProb }, (_, ix) => nProb - ix);
+  const imps = Array.from({ length: nImp }, (_, ix) => ix + 1);
 
-  const legend: { sev: Severity; label: string; cls: string }[] = [
-    { sev: 'critico', label: t('riscosVisoes.matrix.riskHeatmap.legenda.critico'), cls: 'bg-destructive' },
-    { sev: 'alto', label: t('riscosVisoes.matrix.riskHeatmap.legenda.alto'), cls: 'bg-warning' },
-    { sev: 'medio', label: t('riscosVisoes.matrix.riskHeatmap.legenda.medio'), cls: 'bg-warning/60' },
-    { sev: 'baixo', label: t('riscosVisoes.matrix.riskHeatmap.legenda.baixo'), cls: 'bg-success' },
-  ];
+  // Legenda derivada das faixas configuradas (ordem decrescente de severidade).
+  const legend = useMemo(() => {
+    if (niveis && niveis.length > 0) {
+      return [...niveis]
+        .sort((a, b) => b.max - a.max)
+        .map((n) => {
+          const sev = severityFromScoreConfig(n.max, niveis);
+          return { key: `${n.nivel}-${n.min}`, label: `${n.nivel} (${n.min}–${n.max})`, cls: SEV_DOT[sev] };
+        });
+    }
+    return [
+      { key: 'critico', label: t('riscosVisoes.matrix.riskHeatmap.legenda.critico'), cls: SEV_DOT.critico },
+      { key: 'alto', label: t('riscosVisoes.matrix.riskHeatmap.legenda.alto'), cls: SEV_DOT.alto },
+      { key: 'medio', label: t('riscosVisoes.matrix.riskHeatmap.legenda.medio'), cls: SEV_DOT.medio },
+      { key: 'baixo', label: t('riscosVisoes.matrix.riskHeatmap.legenda.baixo'), cls: SEV_DOT.baixo },
+    ];
+  }, [niveis, t]);
+
 
   return (
     <div className="bg-card border border-border rounded-xl p-5 sm:p-6">
@@ -155,7 +203,7 @@ export function RiskHeatmap({ riscos, selected, onSelectCell, onClearSelection, 
           </div>
           <div className="flex flex-wrap gap-x-3.5 gap-y-1 items-center text-[11px] text-muted-foreground">
             {legend.map((l) => (
-              <div key={l.sev} className="inline-flex items-center gap-1.5">
+              <div key={l.key} className="inline-flex items-center gap-1.5">
                 <span className={cn('h-2.5 w-2.5 rounded-sm', l.cls)} />
                 {l.label}
               </div>
@@ -181,8 +229,8 @@ export function RiskHeatmap({ riscos, selected, onSelectCell, onClearSelection, 
           <div
             className="grid"
             style={{
-              gridTemplateColumns: 'auto repeat(5, 1fr)',
-              gridTemplateRows: 'repeat(5, 76px) auto',
+              gridTemplateColumns: `auto repeat(${nImp}, 1fr)`,
+              gridTemplateRows: `repeat(${nProb}, 76px) auto`,
               gap: 4,
             }}
           >
@@ -193,8 +241,9 @@ export function RiskHeatmap({ riscos, selected, onSelectCell, onClearSelection, 
                   <span className="text-[10px] mt-1">{PROB_LABELS[p - 1]}</span>
                 </div>
                 {imps.map((i) => {
-                  const score = p * i;
-                  const sev = severityFromScore(score);
+                  const score = scoreFromMatriz(p, i, metodo);
+                  const sev = severityFromScoreConfig(score, niveis);
+
                   const cellRisks = byCell.get(`${p}-${i}`) || [];
                   const isSel = selected?.p === p && selected?.i === i;
                   const riskWord = cellRisks.length === 1 ? t('riscosVisoes.matrix.riskHeatmap.risco') : t('riscosVisoes.matrix.riskHeatmap.riscos');
