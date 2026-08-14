@@ -98,7 +98,7 @@ export function ConstatacaoDialog({ open, onOpenChange, auditoriaId, itemId, ach
       open={open}
       onOpenChange={onOpenChange}
       title={achado?.id ? t('t4.constatacoes.editar') : t('t4.constatacoes.nova')}
-      icon={<AlertTriangle className="h-5 w-5" strokeWidth={1.5} />}
+      icon={AlertTriangle}
       size="lg"
       footer={
         <div className="flex justify-end gap-2">
