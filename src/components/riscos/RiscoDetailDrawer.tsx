@@ -363,7 +363,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
               <section className="grid grid-cols-3 gap-2">
                 <StatTile icon={<Wallet />} label={t('fin.riscos.exposicao')} value={exposicao !== null ? formatMoedaEmpresa(exposicao, true) : '—'} />
                 <StatTile icon={<Shield />} label={t('cardsKpi.sweep.riscos.tratamentos')} value={`${tratStats.concluidos}/${tratStats.total}`} />
-                <StatTile icon={<Layers />} label={t('cardsKpi.sweep.riscos.controles')} value={String(detail?.controles.length ?? 0)} />
+                <StatTile icon={<Layers />} label={t('cardsKpi.sweep.riscos.controles')} value={String(requisitos.length)} />
               </section>
 
               {/* Exposição financeira + evolução do risco */}
@@ -422,6 +422,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
                 <section>
                   <SectionLabel>{t('campos.risco.controlesExistentesSecao')}</SectionLabel>
                   <p className="text-sm text-foreground/85 leading-relaxed whitespace-pre-line">{risco.controles_existentes}</p>
+                  <p className="text-[11px] text-muted-foreground mt-1.5">{t('riscosControles.aba.notaTexto')}</p>
                 </section>
               )}
               {risco.aceito && (
