@@ -3,6 +3,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { useReleaseBodyPointerEvents } from "@/lib/radix-pointer-events"
 
 const Dialog = DialogPrimitive.Root
 
@@ -31,18 +32,9 @@ const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
 >(({ className, children, ...props }, ref) => {
-  /**
-   * Radix bloqueia `pointer-events` no body enquanto um modal está aberto e,
-   * quando dois overlays se sobrepõem (dropdown + dialog), o bloqueio pode
-   * sobreviver ao fecho — o primeiro clique seguinte é engolido. Ao desmontar,
-   * se não restar nenhum overlay aberto, limpamos o bloqueio.
-   */
-  React.useEffect(() => () => {
-    setTimeout(() => {
-      const aindaAberto = document.querySelector('[data-radix-popper-content-wrapper], [role="dialog"][data-state="open"], [role="alertdialog"][data-state="open"]');
-      if (!aindaAberto) document.body.style.pointerEvents = '';
-    }, 0);
-  }, []);
+  // Correção global do primeiro clique engolido após fechar overlays.
+  useReleaseBodyPointerEvents();
+
 
   return (
   <DialogPortal>

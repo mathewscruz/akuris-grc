@@ -11,6 +11,7 @@ import {
   SheetClose,
 } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PlanosAcaoVinculados } from '@/components/riscos/PlanosAcaoVinculados';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -486,6 +487,14 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
                   })}
                 </>
               )}
+
+              {/* Planos de ação ligados por chave estrangeira a este risco */}
+              <PlanosAcaoVinculados
+                modulo="riscos"
+                registroId={risco.id}
+                registroTitulo={risco.nome}
+                tituloLegado={risco.nome}
+              />
             </TabsContent>
 
             {/* Histórico */}
