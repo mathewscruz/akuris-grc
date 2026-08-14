@@ -1,5 +1,5 @@
 import React from 'react';
-import { DndContext, DragOverlay, useSensor, useSensors, PointerSensor, type DragEndEvent } from '@dnd-kit/core';
+import { DndContext, DragOverlay, useSensor, useSensors, PointerSensor, KeyboardSensor, pointerWithin, rectIntersection, type CollisionDetection, type DragEndEvent } from '@dnd-kit/core';
 import { useDroppable, useDraggable } from '@dnd-kit/core';
 import { Card } from '@/components/ui/card';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -9,6 +9,17 @@ import { Input } from '@/components/ui/input';
 import type { ProjetoColuna, ProjetoTarefa, ProjetoTarefaPrioridade } from '@/types/projetos';
 import { useMoveTarefa, useUpsertTarefa } from '@/hooks/useProjetoTarefas';
 import { useLanguage } from '@/contexts/LanguageContext';
+
+/**
+ * Colisão por ponteiro: a coluna de destino é a que está debaixo do cursor.
+ * Sem isto o dnd-kit usa o rect do cartão arrastado e cai uma coluna a mais
+ * no sentido do movimento.
+ */
+const collisionDetection: CollisionDetection = (args) => {
+  const pointerCollisions = pointerWithin(args);
+  if (pointerCollisions.length > 0) return pointerCollisions;
+  return rectIntersection(args);
+};
 
 const prioridadeTone: Record<ProjetoTarefaPrioridade, 'destructive' | 'warning' | 'info' | 'neutral'> = {
   critica: 'destructive',
@@ -27,9 +38,13 @@ interface Props {
 
 export function KanbanBoard({ projetoId, colunas, tarefas, onAddTarefa, onEditTarefa }: Props) {
   const { t } = useLanguage();
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor),
+  );
   const move = useMoveTarefa(projetoId);
   const [activeId, setActiveId] = React.useState<string | null>(null);
+  const [overId, setOverId] = React.useState<string | null>(null);
 
   const tarefasPorColuna = React.useMemo(() => {
     const m: Record<string, ProjetoTarefa[]> = {};
@@ -43,6 +58,7 @@ export function KanbanBoard({ projetoId, colunas, tarefas, onAddTarefa, onEditTa
 
   const handleDragEnd = (e: DragEndEvent) => {
     setActiveId(null);
+    setOverId(null);
     const tarefaId = e.active.id as string;
     const colunaDestino = e.over?.id as string | undefined;
     if (!colunaDestino) return;
@@ -56,7 +72,14 @@ export function KanbanBoard({ projetoId, colunas, tarefas, onAddTarefa, onEditTa
   const activeTarefa = tarefas.find((t) => t.id === activeId);
 
   return (
-    <DndContext sensors={sensors} onDragStart={(e) => setActiveId(e.active.id as string)} onDragEnd={handleDragEnd}>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={collisionDetection}
+      onDragStart={(e) => setActiveId(e.active.id as string)}
+      onDragOver={(e) => setOverId(e.over ? String(e.over.id) : null)}
+      onDragCancel={() => { setActiveId(null); setOverId(null); }}
+      onDragEnd={handleDragEnd}
+    >
       <div className="flex gap-4 overflow-x-auto pb-4">
         {colunas.map((col) => (
           <ColumnDroppable
@@ -66,6 +89,7 @@ export function KanbanBoard({ projetoId, colunas, tarefas, onAddTarefa, onEditTa
             tarefas={tarefasPorColuna[col.id] ?? []}
             onAdd={() => onAddTarefa(col.id)}
             onEdit={onEditTarefa}
+            highlight={overId === col.id && activeId !== null}
             t={t}
           />
         ))}
@@ -75,8 +99,8 @@ export function KanbanBoard({ projetoId, colunas, tarefas, onAddTarefa, onEditTa
   );
 }
 
-function ColumnDroppable({ projetoId, coluna, tarefas, onAdd, onEdit, t }: { projetoId: string; coluna: ProjetoColuna; tarefas: ProjetoTarefa[]; onAdd: () => void; onEdit: (t: ProjetoTarefa) => void; t: (key: string, params?: Record<string, string | number>) => string; }) {
-  const { setNodeRef, isOver } = useDroppable({ id: coluna.id });
+function ColumnDroppable({ projetoId, coluna, tarefas, onAdd, onEdit, highlight, t }: { projetoId: string; coluna: ProjetoColuna; tarefas: ProjetoTarefa[]; onAdd: () => void; onEdit: (t: ProjetoTarefa) => void; highlight?: boolean; t: (key: string, params?: Record<string, string | number>) => string; }) {
+  const { setNodeRef } = useDroppable({ id: coluna.id });
   const [quickValue, setQuickValue] = React.useState('');
   const [quickOpen, setQuickOpen] = React.useState(false);
   const upsert = useUpsertTarefa();
@@ -94,7 +118,7 @@ function ColumnDroppable({ projetoId, coluna, tarefas, onAdd, onEdit, t }: { pro
   };
 
   return (
-    <div ref={setNodeRef} className={`flex-shrink-0 w-72 rounded-lg border border-border bg-muted/30 p-3 transition-colors ${isOver ? 'border-primary bg-primary/5' : ''}`}>
+    <div ref={setNodeRef} className={`flex-shrink-0 w-72 rounded-lg border border-border bg-muted/30 p-3 transition-all ${highlight ? 'border-primary ring-2 ring-primary bg-primary/5' : ''}`}>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <span className="h-2 w-2 rounded-full" style={{ backgroundColor: coluna.cor ?? '#64748b' }} />

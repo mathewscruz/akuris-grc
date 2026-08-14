@@ -13,8 +13,10 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { PlanoAcaoDialog } from '@/components/planos-acao/PlanoAcaoDialog';
+import { PlanosAcaoKanban, PLANO_STATUS_EDITAVEIS } from '@/components/planos-acao/PlanosAcaoKanban';
+import { PlanoAcaoDetailDrawer } from '@/components/planos-acao/PlanoAcaoDetailDrawer';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
@@ -106,6 +108,7 @@ export default function PlanosAcao() {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingPlano, setEditingPlano] = useState<any>(null);
+  const [detailPlano, setDetailPlano] = useState<any>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
@@ -357,6 +360,42 @@ export default function PlanosAcao() {
     }
   };
 
+  // Mudança rápida de estado com atualização otimista e reversão em caso de falha.
+  const handleStatusChange = async (item: any, novoStatus: string) => {
+    if (!empresaId || item?._isExternal || !item?.id) return;
+    if (!(PLANO_STATUS_EDITAVEIS as readonly string[]).includes(novoStatus)) return;
+    if (item.status === novoStatus) return;
+
+    const key = ['planos-acao', empresaId];
+    const anterior = queryClient.getQueryData<any[]>(key);
+    const patch = {
+      status: novoStatus,
+      data_conclusao: novoStatus === 'concluido' ? new Date().toISOString().slice(0, 10) : null,
+    };
+
+    queryClient.setQueryData<any[]>(key, (old) =>
+      (old || []).map((p: any) => (p.id === item.id ? { ...p, ...patch } : p)),
+    );
+    setDetailPlano((d: any) => (d && d.id === item.id ? { ...d, ...patch, _displayStatus: novoStatus } : d));
+
+    const { error } = await supabase
+      .from('planos_acao')
+      .update(patch)
+      .eq('id', item.id)
+      .eq('empresa_id', empresaId);
+
+    if (error) {
+      logger.error('Erro ao atualizar status do plano de ação', error);
+      queryClient.setQueryData(key, anterior);
+      setDetailPlano((d: any) => (d && d.id === item.id ? { ...d, status: item.status, _displayStatus: item._displayStatus } : d));
+      toast.error(t('planosAcao.statusUpdateError'));
+      return;
+    }
+
+    toast.success(t('planosAcao.statusUpdated'));
+    queryClient.invalidateQueries({ queryKey: ['planos-acao'] });
+  };
+
   const handleSort = (field: string) => {
     if (sortField === field) {
       setSortDirection(d => d === 'asc' ? 'desc' : 'asc');
@@ -372,10 +411,10 @@ export default function PlanosAcao() {
       label: t('planosAcao.columnTitle'),
       sortable: true,
       render: (_: any, item: any) => (
-        <div className="max-w-xs">
-          <p className="font-medium truncate">{item.titulo}</p>
+        <div className="min-w-[220px] max-w-[420px]">
+          <p className="font-medium whitespace-normal break-words line-clamp-2">{item.titulo}</p>
           {item.registro_origem_titulo && (
-            <p className="text-xs text-muted-foreground truncate">
+            <p className="text-xs text-muted-foreground whitespace-normal break-words line-clamp-2">
               ↳ {moduloLabels[item.modulo_origem] || item.modulo_origem}: {item.registro_origem_titulo}
             </p>
           )}
@@ -441,13 +480,31 @@ export default function PlanosAcao() {
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuItem onClick={() => setDetailPlano(item)}>
+              <ExternalLink className="h-4 w-4 mr-2" />{t('planosAcao.actionOpenDetail')}
+            </DropdownMenuItem>
             {item._isExternal ? (
               <DropdownMenuItem onClick={() => navigate(item._route)}>
                 <ExternalLink className="h-4 w-4 mr-2" />{t('planosAcao.actionOpenInModule')}
               </DropdownMenuItem>
             ) : (
               <>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel className="text-xs text-muted-foreground">
+                  {t('planosAcao.quickStatusPrefix')}
+                </DropdownMenuLabel>
+                {PLANO_STATUS_EDITAVEIS.map((s) => (
+                  <DropdownMenuItem
+                    key={s}
+                    onClick={() => handleStatusChange(item, s)}
+                    className={item.status === s ? 'font-semibold' : ''}
+                  >
+                    {statusConfig[s]?.label}
+                    {item.status === s && <span className="ml-auto text-primary">✓</span>}
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => { setEditingPlano(item); setDialogOpen(true); }}>
                   <Pencil className="h-4 w-4 mr-2" />{t('planosAcao.actionEdit')}
                 </DropdownMenuItem>
@@ -536,6 +593,7 @@ export default function PlanosAcao() {
               <DataTable
                 data={filteredPlanos}
                 columns={columns}
+                onRowClick={(item) => setDetailPlano(item)}
                 loading={isLoading}
                 searchable
                 searchPlaceholder={t('planosAcao.searchPlaceholder')}
@@ -584,63 +642,15 @@ export default function PlanosAcao() {
               />
             </Card>
           ) : (
-            /* Kanban View */
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-              {kanbanColumns.map((colStatus) => {
-                const cfg = statusConfig[colStatus];
-                const items = filteredPlanos.filter((p: any) => p._displayStatus === colStatus);
-                return (
-                  <div key={colStatus} className="space-y-3">
-                    <div className="flex items-center gap-2 px-2">
-                      <Badge variant={cfg.variant}>{cfg.label}</Badge>
-                      <span className="text-sm text-muted-foreground">({items.length})</span>
-                    </div>
-                    <div className="space-y-2 min-h-[200px]">
-                      {items.map((item: any) => (
-                        <Card
-                          key={`${item.modulo_origem || 'plano'}-${item.id}`}
-                          data-focus-id={item.id}
-                          className="p-3 cursor-pointer hover:shadow-md transition-shadow"
-                          onClick={() => {
-                            if (item._isExternal) {
-                              navigate(item._route);
-                            } else {
-                              setEditingPlano(item);
-                              setDialogOpen(true);
-                            }
-                          }}
-                        >
-                          <p className="font-medium text-sm line-clamp-2">{item.titulo}</p>
-                          <div className="flex items-center gap-2 mt-2 flex-wrap">
-                            <Badge variant={prioridadeConfig[item.prioridade]?.variant || 'default'} className="text-xs">
-                              {prioridadeConfig[item.prioridade]?.label || item.prioridade}
-                            </Badge>
-                            <Badge variant={item._isExternal ? 'default' : 'outline'} className="text-xs">
-                              {moduloLabels[item.modulo_origem] || item.modulo_origem || 'Manual'}
-                            </Badge>
-                          </div>
-                          {item.prazo && (
-                            <p className={`text-xs mt-2 ${item._displayStatus === 'atrasado' ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
-                              {t('planosAcao.deadlinePrefix')}: {formatDateOnly(item.prazo)}
-                            </p>
-                          )}
-                          {item.profiles?.nome && (
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {item.profiles.nome}
-                            </p>
-                          )}
-                        </Card>
-                      ))}
-                      {items.length === 0 && (
-                        <div className="text-center text-muted-foreground text-xs py-8 border-2 border-dashed rounded-lg">
-                          {t('planosAcao.noItems')}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            <PlanosAcaoKanban
+              colunas={kanbanColumns}
+              items={filteredPlanos}
+              onOpen={(item) => setDetailPlano(item)}
+              onStatusChange={handleStatusChange}
+              statusConfig={statusConfig}
+              prioridadeConfig={prioridadeConfig}
+              moduloLabels={moduloLabels}
+            />
           )}
         </TabsContent>
       </Tabs>
@@ -651,6 +661,18 @@ export default function PlanosAcao() {
         onSave={handleSave}
         plano={editingPlano}
         loading={saving}
+      />
+
+      <PlanoAcaoDetailDrawer
+        plano={detailPlano}
+        open={!!detailPlano}
+        onOpenChange={(open) => { if (!open) setDetailPlano(null); }}
+        onEdit={(p) => { setDetailPlano(null); setEditingPlano(p); setDialogOpen(true); }}
+        onStatusChange={handleStatusChange}
+        onOpenOrigin={(p) => { if (p._route) navigate(p._route); }}
+        statusConfig={statusConfig}
+        prioridadeConfig={prioridadeConfig}
+        moduloLabels={moduloLabels}
       />
 
       <ConfirmDialog
