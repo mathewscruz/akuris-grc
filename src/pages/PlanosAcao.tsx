@@ -411,10 +411,10 @@ export default function PlanosAcao() {
       label: t('planosAcao.columnTitle'),
       sortable: true,
       render: (_: any, item: any) => (
-        <div className="max-w-xs">
-          <p className="font-medium truncate">{item.titulo}</p>
+        <div className="min-w-[220px] max-w-[420px]">
+          <p className="font-medium whitespace-normal break-words line-clamp-2">{item.titulo}</p>
           {item.registro_origem_titulo && (
-            <p className="text-xs text-muted-foreground truncate">
+            <p className="text-xs text-muted-foreground whitespace-normal break-words line-clamp-2">
               ↳ {moduloLabels[item.modulo_origem] || item.modulo_origem}: {item.registro_origem_titulo}
             </p>
           )}
