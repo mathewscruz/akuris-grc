@@ -241,7 +241,7 @@ export const gapV2 = {
         summaryPrefix: 'A total of',
         summaryGaps: '{count} gaps',
         summaryGroupedInto: 'grouped into',
-        summaryConsolidatedPlans: '{count} consolidated plans',
+        summaryConsolidatedPlans: { one: '{count} consolidated plan', other: '{count} consolidated plans' },
         summaryCovering: 'covering',
         summaryRequirements: { one: '{count} requirement', other: '{count} requirements' },
         footActivePlans: 'active plans',
