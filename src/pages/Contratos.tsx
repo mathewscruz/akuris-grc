@@ -653,68 +653,69 @@ export default function Contratos() {
             <Card className="rounded-lg border overflow-hidden">
               <CardContent className="p-0">
                 <div className="p-6 pb-4">
-                  <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-                    <div className="relative flex-1 min-w-[200px] max-w-sm">
-                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                      <Input
-                        placeholder={t('fin.fornecedores.buscar')}
-                        value={searchTermFornecedor}
-                        onChange={(e) => setSearchTermFornecedor(e.target.value)}
-                        className="pl-9"
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" onClick={() => { setSelectedFornecedor(null); setFornecedorDialogOpen(true); }}>
-                        <Plus className="h-4 w-4 mr-2" />{t('fin.fornecedores.novo')}</Button>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-4">
-                    <Select value={statusFornecedorFilter} onValueChange={setStatusFornecedorFilter}>
-                      <SelectTrigger className="w-[150px]">
-                        <SelectValue placeholder={t('fin.comum.status')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="todos">{t('campos.filtros.todosStatus')}</SelectItem>
-                        <SelectItem value="ativo">{t('campos.opcoes.ativo')}</SelectItem>
-                        <SelectItem value="inativo">{t('campos.opcoes.inativo')}</SelectItem>
-                        <SelectItem value="suspenso">{t('campos.opcoes.suspenso')}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Select value={categoriaFornecedorFilter} onValueChange={setCategoriaFornecedorFilter}>
-                      <SelectTrigger className="w-[150px]">
-                        <SelectValue placeholder={t('campos.comum.categoria')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="todos">{t('campos.filtros.todasCategorias')}</SelectItem>
-                        {categoriasFornecedor.map(cat => (
-                          <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Select value={riscoFornecedorFilter} onValueChange={setRiscoFornecedorFilter}>
-                      <SelectTrigger className="w-[120px]">
-                        <SelectValue placeholder={t('campos.comum.risco')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="todos">{t('campos.filtros.todosRiscos')}</SelectItem>
-                        <SelectItem value="baixo">{t('campos.opcoes.baixo')}</SelectItem>
-                        <SelectItem value="medio">{t('campos.opcoes.medio')}</SelectItem>
-                        <SelectItem value="alto">{t('campos.opcoes.alto')}</SelectItem>
-                        <SelectItem value="critico">{t('fin.comum.critico')}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Select value={String(itemsPerPage)} onValueChange={(v) => setItemsPerPage(Number(v))}>
-                      <SelectTrigger className="w-[100px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="10">10</SelectItem>
-                        <SelectItem value="20">20</SelectItem>
-                        <SelectItem value="50">50</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <ModuleToolbar
+                    searchValue={searchTermFornecedor}
+                    onSearchChange={setSearchTermFornecedor}
+                    searchPlaceholder={t('fin.fornecedores.buscar')}
+                    filters={
+                      <>
+                        <ToolbarField label={t('fin.comum.status')}>
+                          <Select value={statusFornecedorFilter} onValueChange={setStatusFornecedorFilter}>
+                            <SelectTrigger className="w-[150px]">
+                              <SelectValue placeholder={t('fin.comum.status')} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="todos">{t('campos.filtros.todosStatus')}</SelectItem>
+                              <SelectItem value="ativo">{t('campos.opcoes.ativo')}</SelectItem>
+                              <SelectItem value="inativo">{t('campos.opcoes.inativo')}</SelectItem>
+                              <SelectItem value="suspenso">{t('campos.opcoes.suspenso')}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </ToolbarField>
+                        <ToolbarField label={t('campos.comum.categoria')}>
+                          <Select value={categoriaFornecedorFilter} onValueChange={setCategoriaFornecedorFilter}>
+                            <SelectTrigger className="w-[150px]">
+                              <SelectValue placeholder={t('campos.comum.categoria')} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="todos">{t('campos.filtros.todasCategorias')}</SelectItem>
+                              {categoriasFornecedor.map(cat => (
+                                <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </ToolbarField>
+                        <ToolbarField label={t('campos.comum.risco')}>
+                          <Select value={riscoFornecedorFilter} onValueChange={setRiscoFornecedorFilter}>
+                            <SelectTrigger className="w-[130px]">
+                              <SelectValue placeholder={t('campos.comum.risco')} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="todos">{t('campos.filtros.todosRiscos')}</SelectItem>
+                              <SelectItem value="baixo">{t('campos.opcoes.baixo')}</SelectItem>
+                              <SelectItem value="medio">{t('campos.opcoes.medio')}</SelectItem>
+                              <SelectItem value="alto">{t('campos.opcoes.alto')}</SelectItem>
+                              <SelectItem value="critico">{t('fin.comum.critico')}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </ToolbarField>
+                        <ToolbarField label={t('fin.comum.itensPorPagina')}>
+                          <Select value={String(itemsPerPage)} onValueChange={(v) => setItemsPerPage(Number(v))}>
+                            <SelectTrigger className="w-[100px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="10">10</SelectItem>
+                              <SelectItem value="20">20</SelectItem>
+                              <SelectItem value="50">50</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </ToolbarField>
+                      </>
+                    }
+                  />
                 </div>
+
                 <Table>
                   <TableHeader>
                     <TableRow>
