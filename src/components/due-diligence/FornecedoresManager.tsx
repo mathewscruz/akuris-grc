@@ -479,7 +479,7 @@ export function FornecedoresManager() {
         title={detalheFornecedor?.nome}
         subtitle={detalheFornecedor?.email}
         badges={detalheFornecedor ? (
-          <StatusBadge size="sm" tone={detalheFornecedor.status === 'ativo' ? 'positive' : 'neutral'}>
+          <StatusBadge size="sm" tone={detalheFornecedor.status === 'ativo' ? 'success' : 'neutral'}>
             {formatStatus(detalheFornecedor.status)}
           </StatusBadge>
         ) : undefined}
