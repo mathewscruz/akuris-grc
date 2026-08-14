@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus, Server, Activity, AlertTriangle, TrendingUp, Upload, Shield, CloudCog, MoreHorizontal, Edit, Trash2, Wrench, History } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { StatCard } from '@/components/ui/stat-card';
+import { StatStrip } from '@/components/ui/stat-strip';
 import { PageHeader } from '@/components/ui/page-header';
 import { DataTable, Column } from '@/components/ui/data-table';
 import { Card, CardContent } from '@/components/ui/card';
@@ -499,26 +499,33 @@ const Ativos = () => {
         title={t('modules.ativos.title')}
         description={t('modules.ativos.description')}
         actions={
-          <div className="flex items-center gap-2">
-            {azureIntegration && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="outline" onClick={handleAzureSync} disabled={azureSyncing} className="gap-2">
-                      {azureSyncing ? <AkurisPulse size={16} /> : <CloudCog className="h-4 w-4" />}
-                      Azure Sync
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent><p>{t('residuos.geral.sincronizarIntune')}</p></TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
-            <Button variant="outline" size="sm" onClick={() => setTrilhaDialog({ open: true })}>
-              <History className="h-4 w-4 mr-2" />
-              {t('modules.ativos.auditTrail')}
-            </Button>
-          </div>
+          <Button size="sm" onClick={() => {
+            setEditingAtivo(null);
+            setFormData(initialFormData);
+            setIsDialogOpen(true);
+          }}>
+            <Plus className="h-4 w-4 mr-2" />
+            {t('sweepCore.assets.newAsset')}
+          </Button>
         }
+        secondaryActions={[
+          ...(azureIntegration ? [{
+            label: 'Azure Sync',
+            icon: azureSyncing ? <AkurisPulse size={16} /> : <CloudCog className="h-4 w-4" />,
+            onClick: handleAzureSync,
+            disabled: azureSyncing,
+          }] : []),
+          {
+            label: t('sweepCore.assets.import'),
+            icon: <Upload className="h-4 w-4" />,
+            onClick: () => setImportDialog(true),
+          },
+          {
+            label: t('modules.ativos.auditTrail'),
+            icon: <History className="h-4 w-4" />,
+            onClick: () => setTrilhaDialog({ open: true }),
+          },
+        ]}
       />
 
       <AtivoDialog
@@ -530,67 +537,16 @@ const Ativos = () => {
         isEditing={!!editingAtivo}
       />
 
-      {/* Cards de Indicadores */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          title={t('modules.ativos.total')}
-          value={stats?.total || 0}
-          icon={<Server />}
-          variant={stats?.criticos ? "destructive" : "default"}
-          loading={statsLoading}
-          drillDown="ativos"
-          showAccent
-          segments={[
-            { label: t('fin.comum.criticosLower'), value: stats?.criticos || 0, tone: 'destructive' },
-             { label: t('sweepCore.assets.high'), value: stats?.altos || 0, tone: 'warning' },
-             { label: t('sweepCore.assets.others'), value: Math.max(0, (stats?.total || 0) - (stats?.criticos || 0) - (stats?.altos || 0)), tone: 'neutral' },
-          ]}
-          emptyHint={t('fin.ativos.emptyHint')}
-        />
-        <StatCard
-          title={t('cardsKpi.sweep.ativos.ativos')}
-          value={stats?.ativos || 0}
-          description={t('cardsKpi.sweep.ativos.inativosDescontinuados', { inativos: stats?.inativos || 0, descontinuados: stats?.descontinuados || 0 })}
-          icon={<Activity />}
-          variant="success"
-          loading={statsLoading}
-          drillDown="ativos"
-        />
-        <StatCard
-          title={t('cardsKpi.sweep.ativos.altoValor')}
-          value={stats?.altoValorNegocio || 0}
-          description={t('cardsKpi.sweep.ativos.doTotal', { pct: stats?.percentualAltoValor || 0 })}
-          icon={<TrendingUp />}
-          variant="warning"
-          loading={statsLoading}
-          drillDown="ativos"
-        />
-        <StatCard
-          title={t('cardsKpi.sweep.ativos.criticidadeAlta')}
-          value={(stats?.criticos || 0) + (stats?.altos || 0)}
-          description={t('fin.comum.requeremAtencao')}
-          icon={<Shield />}
-          variant="info"
-          loading={statsLoading}
-          drillDown="ativos"
-        />
-      </div>
-
-      {/* Action Buttons */}
-      <div className="flex justify-end gap-2">
-        <Button onClick={() => setImportDialog(true)} variant="outline" size="sm">
-          <Upload className="h-4 w-4 mr-2" />
-           {t('sweepCore.assets.import')}
-        </Button>
-        <Button size="sm" onClick={() => {
-          setEditingAtivo(null);
-          setFormData(initialFormData);
-          setIsDialogOpen(true);
-        }}>
-          <Plus className="h-4 w-4 mr-2" />
-           {t('sweepCore.assets.newAsset')}
-        </Button>
-      </div>
+      {/* Indicadores */}
+      <StatStrip
+        loading={statsLoading}
+        items={[
+          { key: 'total', label: t('modules.ativos.total'), value: stats?.total || 0, drillDown: 'ativos' },
+          { key: 'ativos', label: t('cardsKpi.sweep.ativos.ativos'), value: stats?.ativos || 0, drillDown: 'ativos' },
+          { key: 'altoValor', label: t('cardsKpi.sweep.ativos.altoValor'), value: stats?.altoValorNegocio || 0, drillDown: 'ativos' },
+          { key: 'criticidadeAlta', label: t('cardsKpi.sweep.ativos.criticidadeAlta'), value: (stats?.criticos || 0) + (stats?.altos || 0), tone: 'destructive', drillDown: 'ativos' },
+        ]}
+      />
 
       {/* DataTable */}
       <Card className="rounded-lg border overflow-hidden">
