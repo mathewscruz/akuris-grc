@@ -61,7 +61,7 @@ const NotificationCenter: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { t, locale } = useLanguage();
   const [readAutomaticIds, setReadAutomaticIds] = useState<Set<string>>(getReadAutomaticNotifications());
 
