@@ -108,6 +108,7 @@ export default function PlanosAcao() {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingPlano, setEditingPlano] = useState<any>(null);
+  const [detailPlano, setDetailPlano] = useState<any>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
