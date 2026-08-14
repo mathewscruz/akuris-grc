@@ -2,6 +2,15 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { logger } from "@/lib/logger";
+import {
+  contarRiscosPorSeveridade,
+  severidadeRiscoEfetiva,
+  isRiscoCritico,
+  isRevisaoVencida,
+  isRevisaoProxima,
+  estadoRisco,
+  type Severidade,
+} from "@/lib/metrics";
 
 export interface RiscosStats {
   total: number;
@@ -25,22 +34,15 @@ export interface RiscosStats {
   aceitos_7d_atras: number | null;
 }
 
-// Função auxiliar para normalizar comparação de nível
-const normalizeNivel = (nivel: string | null | undefined): string => {
-  return (nivel || '').toLowerCase().trim()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+// Score derivado da severidade canónica (camada única de métricas).
+const SCORE_SEVERIDADE: Record<Severidade, number> = {
+  critico: 100,
+  alto: 75,
+  medio: 50,
+  baixo: 25,
+  indefinido: 0,
 };
-
-// Função para calcular score de risco (quanto menor, melhor)
-const calcularScore = (nivel: string): number => {
-  const nivelNorm = normalizeNivel(nivel);
-  if (nivelNorm === 'critico' || nivelNorm === 'muito alto') return 100;
-  if (nivelNorm === 'alto') return 75;
-  if (nivelNorm === 'medio') return 50;
-  if (nivelNorm === 'baixo') return 25;
-  if (nivelNorm === 'muito baixo') return 10;
-  return 0;
-};
+const calcularScore = (r: any): number => SCORE_SEVERIDADE[severidadeRiscoEfetiva(r)];
 
 export const useRiscosStats = () => {
   const { profile } = useAuth();
