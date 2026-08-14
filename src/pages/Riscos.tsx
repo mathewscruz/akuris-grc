@@ -1016,10 +1016,10 @@ export function Riscos() {
                         : t('riscos.page.empty.noneTitle'),
                       description: searchTerm || statusFilter || nivelFilter || aceitoFilter || savedView !== 'todos'
                         ? t('riscos.page.empty.foundDesc')
-                        : t('riscos.page.empty.noneDesc'),
+                        : t('riscosBiblioteca.vazioDesc'),
                       action: !searchTerm && !statusFilter && !nivelFilter && !aceitoFilter && savedView === 'todos' ? {
-                        label: t('riscos.page.empty.cta'),
-                        onClick: openCreateDialog,
+                        label: t('riscosBiblioteca.vazioCta'),
+                        onClick: () => setBibliotecaDialogOpen(true),
                       } : undefined,
                     }}
                   />
