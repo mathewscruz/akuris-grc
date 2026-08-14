@@ -411,9 +411,9 @@ export function Riscos() {
         title: t('riscos.page.toast.successTitle'),
         description: t('riscos.page.toast.deleteSuccess'),
       });
+      await invalidateRiscos();
       setDeleteDialogOpen(false);
       setRiscoToDelete(null);
-      invalidateRiscos();
     } catch (error: any) {
       toast({
         title: t('riscos.page.toast.errorTitle'),
@@ -428,21 +428,22 @@ export function Riscos() {
     setRiscoDialogOpen(true);
   };
 
-  const handleDialogSuccess = () => {
+  const handleDialogSuccess = async () => {
+    // Fecha só depois do refetch: o utilizador vê o risco já na lista.
+    await invalidateRiscos();
     setRiscoDialogOpen(false);
     setEditingRisco(null);
-    invalidateRiscos();
   };
 
-  const handleMatrizDialogSuccess = () => {
+  const handleMatrizDialogSuccess = async () => {
+    await queryClient.invalidateQueries({ queryKey: ['riscos-matriz-config'], refetchType: 'all' });
+    await invalidateRiscos();
     setMatrizDialogOpen(false);
-    invalidateRiscos();
-    queryClient.invalidateQueries({ queryKey: ['riscos-matriz-config'] });
   };
 
-  const handleCategoriasDialogSuccess = () => {
+  const handleCategoriasDialogSuccess = async () => {
+    await invalidateRiscos();
     setCategoriasDialogOpen(false);
-    invalidateRiscos();
   };
 
   const handleSort = (field: string) => {
