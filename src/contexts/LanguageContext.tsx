@@ -99,8 +99,13 @@ function pickPlural(value: any, params?: Record<string, string | number>): any {
 
 function interpolate(str: string, params?: Record<string, string | number>): string {
   if (!params) return str;
-  return str.replace(/\{(\w+)\}/g, (_, k) => (params[k] !== undefined ? String(params[k]) : `{${k}}`));
+  // Aceita {chave} e {{chave}} — evita placeholders crus visíveis ao utilizador.
+  return str.replace(/\{\{(\w+)\}\}|\{(\w+)\}/g, (full, k1, k2) => {
+    const k = k1 ?? k2;
+    return params[k] !== undefined ? String(params[k]) : full;
+  });
 }
+
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(detectInitialLocale);
