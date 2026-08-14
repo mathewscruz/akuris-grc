@@ -23,6 +23,8 @@ import { KpiTiny } from './KpiTiny';
 import { BulkActionBar } from './BulkActionBar';
 import { cn } from '@/lib/utils';
 import { reqTitulo, reqCategoria } from "@/lib/gap-i18n";
+import { useRequisitoRiscos } from '@/hooks/useRiscoRequisitos';
+import { ShieldAlert } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface SoAItem {
@@ -70,6 +72,8 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion }: Props
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
+  // ISO 27001 6.1.3 d) — a justificação de inclusão deriva dos riscos que o controlo trata.
+  const { data: riscosPorRequisito } = useRequisitoRiscos(frameworkId);
 
   useEffect(() => {
     if (!frameworkId || !empresaId) return;
@@ -207,6 +211,28 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion }: Props
     }
   };
 
+  /** Gera a justificação de inclusão a partir dos riscos associados (SoA 6.1.3 d). */
+  const gerarJustificacoes = () => {
+    const alvos = selected.size > 0 ? Array.from(selected) : filteredItems.map(i => i.id);
+    let geradas = 0;
+    const next: Record<string, string> = { ...justificativas };
+    alvos.forEach(id => {
+      const riscos = riscosPorRequisito?.get(id) || [];
+      if (riscos.length === 0) return;
+      next[id] = t('riscosControles.soa.justificacaoTexto', {
+        count: riscos.length,
+        riscos: riscos.map(r => r.nome).join('; '),
+      });
+      geradas++;
+    });
+    if (geradas === 0) {
+      toast.info(t('riscosControles.soa.semRiscosSelecionados'));
+      return;
+    }
+    setJustificativas(next);
+    toast.success(t('riscosControles.soa.justificacaoGerada', { count: geradas }));
+  };
+
   const handleSave = async () => {
     if (!empresaId) return;
     setSaving(true);
@@ -335,6 +361,10 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion }: Props
           />
         </div>
         <div className="flex gap-2 ml-auto">
+          <Button variant="outline" onClick={gerarJustificacoes}>
+            <ShieldAlert className="h-4 w-4 mr-2" strokeWidth={1.5} />
+            {t('riscosControles.soa.gerarJustificacao')}
+          </Button>
           <Button variant="outline" onClick={handleSave} disabled={saving}>
             {saving ? t('gapV2.soa.saving') : t('gapV2.soa.saveButton')}
           </Button>
@@ -372,6 +402,7 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion }: Props
                   <TableHead>{t('gapV2.soa.colRequirement')}</TableHead>
                   <TableHead className="w-28">{t('gapV2.soa.colApplicable')}</TableHead>
                   <TableHead className="w-32">{t('gapV2.soa.colStatus')}</TableHead>
+                  <TableHead className="w-40">{t('riscosControles.soa.colRiscos')}</TableHead>
                   <TableHead className="w-32">{t('gapV2.soa.colResponsible')}</TableHead>
                   <TableHead className="w-20 text-center">{t('gapV2.soa.colEvidence')}</TableHead>
                   <TableHead className="min-w-[200px]">{t('gapV2.soa.colJustification')}</TableHead>
@@ -415,6 +446,24 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion }: Props
                           {t(STATUS_LABEL_KEYS[statusKey]) || statusKey}
                         </StatusBadge>
                       </TableCell>
+                      <TableCell className="text-xs">
+                        {(() => {
+                          const riscos = riscosPorRequisito?.get(item.id) || [];
+                          if (riscos.length === 0) {
+                            return (
+                              <span className="inline-flex items-center gap-1 text-muted-foreground">
+                                <ShieldAlert className="h-3.5 w-3.5" strokeWidth={1.5} />
+                                {t('riscosControles.soa.semRisco')}
+                              </span>
+                            );
+                          }
+                          return (
+                            <span className="text-foreground/85" title={riscos.map(r => r.nome).join(', ')}>
+                              {riscos.length} · {riscos.map(r => r.nome).join(', ')}
+                            </span>
+                          );
+                        })()}
+                      </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
                         {item.responsavel || '—'}
                       </TableCell>
@@ -437,7 +486,7 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion }: Props
                 })}
                 {filteredItems.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                       {t('gapV2.soa.noResults')}
                     </TableCell>
                   </TableRow>
@@ -455,7 +504,7 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion }: Props
         onAssign={() => toast.info(t('gapV2.soa.comingSoonAssign'))}
         onSetDeadline={() => toast.info(t('gapV2.soa.comingSoonDeadline'))}
         onCreatePlan={() => toast.info(t('gapV2.soa.comingSoonPlan'))}
-        onGenerateJustification={() => toast.info(t('gapV2.soa.comingSoonJustification'))}
+        onGenerateJustification={gerarJustificacoes}
       />
     </div>
   );
