@@ -555,6 +555,12 @@ export default function PlanosAcao() {
       />
 
       {/* Stats — todos os itens abrem a mesma vista filtrada (lista + filtro de estado). */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="meus">{t('planosAcao.tabMyItems')}</TabsTrigger>
+          {isAdmin && <TabsTrigger value="todos">{t('planosAcao.tabAll')}</TabsTrigger>}
+        </TabsList>
+
       <StatStrip
         items={[
           { key: 'total', label: t('planosAcao.statTotal'), value: stats.total, onClick: () => { setStatusFilter('todos'); setViewMode('lista'); } },
@@ -566,11 +572,7 @@ export default function PlanosAcao() {
       />
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="meus">{t('planosAcao.tabMyItems')}</TabsTrigger>
-          {isAdmin && <TabsTrigger value="todos">{t('planosAcao.tabAll')}</TabsTrigger>}
-        </TabsList>
+
 
         <TabsContent value={activeTab} className="mt-4 space-y-4">
           <ModuleToolbar

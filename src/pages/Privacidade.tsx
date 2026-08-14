@@ -536,7 +536,42 @@ export default function Privacidade() {
       <PageHeader
         title={t('modules.privacidade.title')}
         description={t('jurisdicao.privacidade.descricao', { lei: jurisdicao.lei })}
+        actions={
+          activeTab === 'catalogo' ? (
+            <Button size="sm" onClick={() => setShowDadosDialog(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              {t('sweepDados.privacidade.novoDado')}
+            </Button>
+          ) : activeTab === 'ropa' ? (
+            <Button size="sm" onClick={() => setShowRopaWizard(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              {t('sweepDados.privacidade.novoRopa')}
+            </Button>
+          ) : activeTab === 'solicitacoes' ? (
+            <Button size="sm" onClick={() => setShowSolicitacaoDialog(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              {t('sweepDados.privacidade.novaSolicitacao')}
+            </Button>
+          ) : undefined
+        }
+        secondaryActions={
+          activeTab === 'catalogo'
+            ? [{
+                label: t('sweepDados.privacidade.mapearDado'),
+                icon: <Link2 className="h-4 w-4" />,
+                onClick: () => setShowMapeamentoDialog(true),
+              }]
+            : undefined
+        }
       />
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="catalogo">{t('cardsKpi.privacidade.abaCatalogo')}</TabsTrigger>
+          <TabsTrigger value="ropa">{t('sweepDados.privacidade.abaRopa')}</TabsTrigger>
+          <TabsTrigger value="solicitacoes">{t('cardsKpi.privacidade.abaSolicitacoes')}</TabsTrigger>
+          <TabsTrigger value="descobertas">{t('sweepDados.privacidade.abaDescobertas')}</TabsTrigger>
+        </TabsList>
 
       <StatStrip
         loading={isLoading}
@@ -550,25 +585,8 @@ export default function Privacidade() {
         ]}
       />
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="catalogo">{t('cardsKpi.privacidade.abaCatalogo')}</TabsTrigger>
-          <TabsTrigger value="ropa">{t('sweepDados.privacidade.abaRopa')}</TabsTrigger>
-          <TabsTrigger value="solicitacoes">{t('cardsKpi.privacidade.abaSolicitacoes')}</TabsTrigger>
-          <TabsTrigger value="descobertas">{t('sweepDados.privacidade.abaDescobertas')}</TabsTrigger>
-        </TabsList>
 
         <TabsContent value="catalogo" className="space-y-4">
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={() => setShowMapeamentoDialog(true)}>
-              <Link2 className="mr-2 h-4 w-4" />
-              {t('sweepDados.privacidade.mapearDado')}
-            </Button>
-            <Button size="sm" onClick={() => setShowDadosDialog(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              {t('sweepDados.privacidade.novoDado')}
-            </Button>
-          </div>
           <Card className="rounded-lg border overflow-hidden">
             <CardContent className="p-0">
               <DataTable
@@ -604,12 +622,6 @@ export default function Privacidade() {
           <p className="text-sm text-muted-foreground">
             {t('jurisdicao.privacidade.ropaSubtitulo', { lei: jurisdicao.lei })}
           </p>
-          <div className="flex justify-end">
-            <Button size="sm" onClick={() => setShowRopaWizard(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              {t('sweepDados.privacidade.novoRopa')}
-            </Button>
-          </div>
           <Card className="rounded-lg border overflow-hidden">
             <CardContent className="p-0">
               <DataTable
@@ -646,12 +658,6 @@ export default function Privacidade() {
         </TabsContent>
 
         <TabsContent value="solicitacoes" className="space-y-4">
-          <div className="flex justify-end">
-            <Button size="sm" onClick={() => setShowSolicitacaoDialog(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              {t('sweepDados.privacidade.novaSolicitacao')}
-            </Button>
-          </div>
           <Card className="rounded-lg border overflow-hidden">
             <CardContent className="p-0">
               <DataTable

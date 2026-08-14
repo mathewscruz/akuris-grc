@@ -444,6 +444,10 @@ export default function Documentos() {
           ]}
         />
 
+        {/* Tabela de documentos com estrutura integrada */}
+        <Card className="rounded-lg border overflow-hidden">
+          <CardContent className="p-0">
+            <div className="p-4 sm:p-6 pb-4">
         <ModuleToolbar
           searchValue={searchTerm}
           onSearchChange={setSearchTerm}
@@ -533,10 +537,7 @@ export default function Documentos() {
             </Badge>
           </div>
         )}
-
-        {/* Tabela de documentos com estrutura integrada */}
-        <Card className="rounded-lg border overflow-hidden">
-          <CardContent className="p-0">
+            </div>
             <DocumentosLista
               documentos={paginatedDocumentos}
               podeRenovar={podeRenovar}

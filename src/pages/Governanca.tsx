@@ -12,6 +12,7 @@ export default function Governanca() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { t } = useLanguage();
+  const [actionsSlot, setActionsSlot] = useState<HTMLDivElement | null>(null);
 
   // Detectar a aba inicial baseado no path ou query param
   const getInitialTab = () => {
@@ -71,6 +72,7 @@ export default function Governanca() {
       <PageHeader
         title={getPageTitle()}
         description={getPageDescription()}
+        actions={<div ref={setActionsSlot} className="flex items-center gap-2" />}
       />
       
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
@@ -86,11 +88,11 @@ export default function Governanca() {
         </TabsList>
         
         <TabsContent value="controles" className="mt-6">
-          <ControlesContent />
+          <ControlesContent actionsSlot={actionsSlot} />
         </TabsContent>
         
         <TabsContent value="auditorias" className="mt-6">
-          <AuditoriasContent />
+          <AuditoriasContent actionsSlot={actionsSlot} />
         </TabsContent>
       </Tabs>
     </div>

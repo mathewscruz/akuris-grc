@@ -198,6 +198,12 @@ export default function Relatorios() {
         }
       />
 
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="meus">{t('fin.relatorios.meus')}</TabsTrigger>
+          <TabsTrigger value="templates">{t('residuos.geral.templatesPredefinidos')}</TabsTrigger>
+        </TabsList>
+
       <StatStrip
         items={[
           { key: 'total', label: t('fin.relatorios.total'), value: stats.total },
@@ -206,11 +212,6 @@ export default function Relatorios() {
         ]}
       />
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="meus">{t('fin.relatorios.meus')}</TabsTrigger>
-          <TabsTrigger value="templates">{t('residuos.geral.templatesPredefinidos')}</TabsTrigger>
-        </TabsList>
 
         <TabsContent value="meus" className="mt-4">
           {isLoading ? (

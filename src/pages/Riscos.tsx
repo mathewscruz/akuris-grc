@@ -968,9 +968,11 @@ export function Riscos() {
 
           const tableNode = (
             <div className="space-y-3">
-              <RiscosViewChips active={savedView} onChange={setSavedView} items={viewItems} />
               <Card className="rounded-lg border overflow-hidden">
                 <CardContent className="p-0">
+                  <div className="px-4 pt-4 sm:px-6 sm:pt-6">
+                    <RiscosViewChips active={savedView} onChange={setSavedView} items={viewItems} />
+                  </div>
                   <DataTable
                     data={viewedRiscos}
                     columns={riscoColumns as Column<Risco>[]}
