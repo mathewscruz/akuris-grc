@@ -110,7 +110,7 @@ function CommandPaletteDialog({ open, onOpenChange }: { open: boolean; onOpenCha
   const semResultados = ativo && !isSearching && groups.length === 0;
 
   return (
-    <CommandDialog open={open} onOpenChange={onOpenChange}>
+    <CommandDialog open={open} onOpenChange={onOpenChange} shouldFilter={false}>
       {/* shouldFilter=false: o filtro real acontece em useGlobalSearch (sem acentos, AND). */}
       <CommandInput
         placeholder={t('buscaGlobal.placeholder')}
