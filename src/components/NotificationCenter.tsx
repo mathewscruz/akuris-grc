@@ -19,6 +19,8 @@ import { cn } from '@/lib/utils';
 import { formatStatus } from '@/lib/text-utils';
 import { logger } from '@/lib/logger';
 import { APROVACOES_PENDENTES_SELECT } from '@/components/documentos/aprovacoes-query';
+import { resolveNotificationTarget } from '@/lib/notification-target';
+import { fetchEntityById, routeForEntity } from '@/lib/entity-search';
 
 interface Notification {
   id: string;
@@ -27,6 +29,7 @@ interface Notification {
   type: string;
   read: boolean;
   link_to: string | null;
+  metadata?: Record<string, unknown> | null;
   created_at: string;
   isAutomatic?: boolean;
 }
@@ -431,7 +434,23 @@ const NotificationCenter: React.FC = () => {
     setIsOpen(false);
   };
 
+  // Registo concreto referido pela notificação (quando existe referência).
+  const detailTarget = resolveNotificationTarget(detail);
+  const { data: targetRow, isLoading: targetLoading } = useQuery({
+    queryKey: ['notification-target', detailTarget?.entityKey, detailTarget?.id, profile?.empresa_id],
+    queryFn: async () =>
+      (await fetchEntityById(detailTarget!.entityKey, detailTarget!.id, profile?.empresa_id)) ?? null,
+    enabled: !!detailTarget,
+    staleTime: 60 * 1000,
+  });
+  const targetMissing = !!detailTarget && !targetLoading && !targetRow;
+
   const handleNavigateFromDetail = () => {
+    if (detailTarget && targetRow) {
+      navigate(routeForEntity(detailTarget.entityKey, targetRow));
+      setDetail(null);
+      return;
+    }
     if (detail?.link_to) {
       navigate(detail.link_to);
       setDetail(null);
@@ -515,13 +534,13 @@ const NotificationCenter: React.FC = () => {
               {moduleLabel}
             </p>
             <p className={cn(
-              'text-[13px] font-semibold leading-tight tracking-tight truncate',
+              'text-[13px] font-semibold leading-snug tracking-tight break-words line-clamp-2',
               !notification.read ? 'text-foreground' : 'text-muted-foreground'
             )}>
               {notification.title}
             </p>
             {notification.message && (
-              <p className="text-xs text-muted-foreground leading-relaxed mt-0.5 line-clamp-2">
+              <p className="text-xs text-muted-foreground leading-relaxed mt-0.5 break-words line-clamp-3">
                 {notification.message}
               </p>
             )}
@@ -715,13 +734,25 @@ const NotificationCenter: React.FC = () => {
                 )}
               </div>
 
+              {targetMissing && (
+                <p className="mt-3 rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                  {t('notifications.recordMissing')}
+                </p>
+              )}
+
               <DialogFooter>
                 <Button variant="outline" onClick={() => setDetail(null)}>
                    {t('common.close')}
                 </Button>
-                {detail.link_to && (
-                  <Button onClick={handleNavigateFromDetail} className="gap-1">
-                     {t('sweepCore.notifications.openModule')}
+                {(detailTarget || detail.link_to) && (
+                  <Button
+                    onClick={handleNavigateFromDetail}
+                    className="gap-1"
+                    disabled={targetMissing || (!!detailTarget && targetLoading)}
+                  >
+                    {detailTarget
+                      ? t('notifications.openRecord')
+                      : t('sweepCore.notifications.openModule')}
                     <ExternalLink className="h-3.5 w-3.5" strokeWidth={1.5} />
                   </Button>
                 )}
