@@ -39,7 +39,7 @@ export function useRiscosBiblioteca(enabled = true) {
     enabled,
     staleTime: 10 * 60 * 1000,
     queryFn: async (): Promise<RiscoBiblioteca[]> => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('riscos_biblioteca')
         .select(
           'id, codigo, titulo, descricao, categoria, causas, consequencias, ' +
