@@ -347,16 +347,42 @@ export function WizardDialog({
                   </Button>
                 ) : null}
                 {onSubmit && (
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={onSubmit}
-                    disabled={submitDisabled || isSubmitting}
-                    className="gap-1"
-                  >
-                    <Save className="h-4 w-4" />
-                    {isSubmitting ? t('common.saving') : _submitLabel}
-                  </Button>
+                  submitDisabled && submitBlockedReason ? (
+                    <TooltipProvider delayDuration={200}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          {/* span wrapper: Tooltip precisa de um alvo focável mesmo com o botão desativado */}
+                          <span tabIndex={0} className="inline-flex">
+                            <Button
+                              type="button"
+                              size="sm"
+                              onClick={onSubmit}
+                              disabled={submitDisabled || isSubmitting}
+                              className="gap-1"
+                              title={typeof submitBlockedReason === 'string' ? submitBlockedReason : undefined}
+                            >
+                              <Save className="h-4 w-4" />
+                              {isSubmitting ? t('common.saving') : _submitLabel}
+                            </Button>
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs text-xs leading-relaxed">
+                          {submitBlockedReason}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  ) : (
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={onSubmit}
+                      disabled={submitDisabled || isSubmitting}
+                      className="gap-1"
+                    >
+                      <Save className="h-4 w-4" />
+                      {isSubmitting ? t('common.saving') : _submitLabel}
+                    </Button>
+                  )
                 )}
               </div>
             </div>
