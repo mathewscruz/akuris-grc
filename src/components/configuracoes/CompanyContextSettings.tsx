@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { DateField } from '@/components/ui/date-field';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Building2, Save } from 'lucide-react';
@@ -185,10 +186,9 @@ export function CompanyContextSettings() {
 
         <div className="space-y-2">
           <Label>{t('configGeral.companyContext.labelDataAlvo')}</Label>
-          <Input
-            type="date"
-            value={dataAlvo}
-            onChange={e => setDataAlvo(e.target.value)}
+          <DateField
+            value={dataAlvo || null}
+            onChange={(v) => setDataAlvo(v || '')}
           />
         </div>
       </div>

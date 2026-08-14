@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import { FlaskConical } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { DateField } from '@/components/ui/date-field';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -115,7 +116,7 @@ export function TesteDialog({ open, onOpenChange, planoId, teste, onSuccess }: T
             </div>
             <div className="space-y-2">
               <Label>{t('modDialogs.continuidade.teste.fieldData')}</Label>
-              <Input type="date" value={form.data_teste} onChange={e => setForm(p => ({ ...p, data_teste: e.target.value }))} />
+              <DateField value={form.data_teste || null} onChange={(v) => setForm(p => ({ ...p, data_teste: v || '' }))} />
             </div>
           </div>
 
