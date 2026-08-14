@@ -5,6 +5,7 @@ import { RiscosStats } from "@/hooks/useRiscosStats";
 import { TrendingUp, TrendingDown, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from '@/contexts/LanguageContext';
+import { CHART_SEVERITY, CHART_GRID, chartSeries } from '@/lib/chart-tokens';
 
 interface RiskScoreCardProps {
   stats: RiscosStats | undefined;
@@ -12,10 +13,12 @@ interface RiskScoreCardProps {
 }
 
 const getColor = (score: number): string => {
-  if (score >= 80) return "hsl(var(--success))";
-  if (score >= 60) return "hsl(var(--primary))";
-  if (score >= 40) return "hsl(var(--warning))";
-  return "hsl(var(--destructive))";
+  // O roxo deixou de ser cor de dados (Envio 9): a escala do score usa a
+  // família de severidade + um neutro para a faixa intermédia.
+  if (score >= 80) return CHART_SEVERITY.low;
+  if (score >= 60) return chartSeries(0);
+  if (score >= 40) return CHART_SEVERITY.medium;
+  return CHART_SEVERITY.critical;
 };
 
 const getLabel = (score: number, t: (k: string) => string): string => {
@@ -110,7 +113,7 @@ export function RiskScoreCard({ stats, loading }: RiskScoreCardProps) {
             <path
               d="M 20 90 A 60 60 0 0 1 140 90"
               fill="none"
-              stroke="hsl(var(--muted))"
+              stroke={CHART_GRID}
               strokeWidth={strokeWidth}
               strokeLinecap="round"
             />

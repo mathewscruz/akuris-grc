@@ -17,6 +17,7 @@ import { loadAkurisLogo, addAkurisHeader, addAkurisFooter, addSectionTitle, draw
 import { exportCSV } from '@/lib/csv-utils';
 import { formatStatus } from '@/lib/text-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { CHART_SERIES, CHART_GRID, CHART_AXIS, CHART_TOOLTIP_STYLE, chartSeries } from '@/lib/chart-tokens';
 
 interface RelatorioData {
   contratos: any[];
@@ -34,7 +35,8 @@ interface FiltrosRelatorio {
   fornecedor?: string;
 }
 
-const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', 'hsl(var(--muted))'];
+// Envio 9: paleta neutra partilhada (o roxo é só ação/navegação).
+const COLORS = CHART_SERIES;
 
 interface RelatoriosContratosProps {
   open?: boolean;
@@ -457,14 +459,14 @@ export default function RelatoriosContratos({ open: openProp, onOpenChange, hide
                           labelLine={false}
                           label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                           outerRadius={80}
-                          fill="#8884d8"
+                          fill={chartSeries(0)}
                           dataKey="value"
                         >
                           {dadosGraficoContratosStatus().map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                           ))}
                         </Pie>
-                        <Tooltip />
+                        <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
                       </PieChart>
                     </ResponsiveContainer>
                   </CardContent>
@@ -477,9 +479,9 @@ export default function RelatoriosContratos({ open: openProp, onOpenChange, hide
                   <CardContent>
                     <ResponsiveContainer width="100%" height={300}>
                       <BarChart data={dadosGraficoValorPorTipo()}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="tipo" />
-                        <YAxis />
+                        <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} />
+                        <XAxis dataKey="tipo" stroke={CHART_AXIS} tick={{ fontSize: 12, fill: CHART_AXIS }} />
+                        <YAxis stroke={CHART_AXIS} tick={{ fontSize: 12, fill: CHART_AXIS }} />
                         <Tooltip 
                           formatter={(value: number) => [
                             new Intl.NumberFormat('pt-BR', {
@@ -489,7 +491,7 @@ export default function RelatoriosContratos({ open: openProp, onOpenChange, hide
                             t('contratosAtivos.relatoriosContratos.tooltipValue')
                           ]}
                         />
-                        <Bar dataKey="valor" fill="hsl(var(--primary))" />
+                        <Bar dataKey="valor" fill={chartSeries(0)} />
                       </BarChart>
                     </ResponsiveContainer>
                   </CardContent>
@@ -502,11 +504,11 @@ export default function RelatoriosContratos({ open: openProp, onOpenChange, hide
                   <CardContent>
                     <ResponsiveContainer width="100%" height={300}>
                       <LineChart data={dadosGraficoMarcosPorMes()}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="mes" />
-                        <YAxis />
-                        <Tooltip />
-                        <Line type="monotone" dataKey="marcos" stroke="hsl(var(--primary))" strokeWidth={2} />
+                        <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} />
+                        <XAxis dataKey="mes" stroke={CHART_AXIS} tick={{ fontSize: 12, fill: CHART_AXIS }} />
+                        <YAxis stroke={CHART_AXIS} tick={{ fontSize: 12, fill: CHART_AXIS }} />
+                        <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
+                        <Line type="monotone" dataKey="marcos" stroke={chartSeries(0)} strokeWidth={2} />
                       </LineChart>
                     </ResponsiveContainer>
                   </CardContent>

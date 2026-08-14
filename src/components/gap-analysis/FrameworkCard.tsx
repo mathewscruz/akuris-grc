@@ -9,6 +9,7 @@ import {
   type FrameworkCategory,
 } from "@/lib/gap-analysis-tokens";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { CHART_SEVERITY, CHART_GRID, chartSeries } from '@/lib/chart-tokens';
 
 interface FrameworkProgress {
   totalRequirements: number;
@@ -100,10 +101,10 @@ export const FrameworkCard: React.FC<FrameworkCardProps> = (props) => {
     const donutC = 2 * Math.PI * donutR;
     const donutOffset = donutC - (normalized / 100) * donutC;
     const donutStroke =
-      normalized >= 80 ? 'hsl(var(--success))' :
-      normalized >= 60 ? 'hsl(var(--primary))' :
-      normalized >= 40 ? 'hsl(var(--warning))' :
-      'hsl(var(--destructive))';
+      normalized >= 80 ? CHART_SEVERITY.low :
+      normalized >= 60 ? chartSeries(0) :
+      normalized >= 40 ? CHART_SEVERITY.medium :
+      CHART_SEVERITY.critical;
 
     return (
       <Card
@@ -122,7 +123,7 @@ export const FrameworkCard: React.FC<FrameworkCardProps> = (props) => {
           </div>
           {progress && (
             <svg width={donutSize} height={donutSize} viewBox={`0 0 ${donutSize} ${donutSize}`} className="shrink-0">
-              <circle cx={donutSize/2} cy={donutSize/2} r={donutR} fill="none" stroke="hsl(var(--muted))" strokeWidth="5" />
+              <circle cx={donutSize/2} cy={donutSize/2} r={donutR} fill="none" stroke={CHART_GRID} strokeWidth="5" />
               <circle
                 cx={donutSize/2} cy={donutSize/2} r={donutR}
                 fill="none"
