@@ -285,6 +285,26 @@ export async function fetchEntityRows(
   return (data as any[]).map((raw) => toRow(def, raw));
 }
 
+/**
+ * Lê um registo específico pelo id. Devolve `null` quando o registo já não
+ * existe (ou a RLS não o expõe ao utilizador atual).
+ */
+export async function fetchEntityById(
+  key: EntityKey,
+  id: string,
+  empresaId?: string | null,
+): Promise<EntityRow | null> {
+  const def = ENTITY_BY_KEY[key];
+  if (!def || !id) return null;
+
+  let query = supabase.from(def.table as any).select(def.select).eq('id', id).limit(1);
+  if (def.empresaScoped && empresaId) query = query.eq('empresa_id', empresaId);
+
+  const { data, error } = await query.maybeSingle();
+  if (error || !data) return null;
+  return toRow(def, data as Record<string, any>);
+}
+
 export function routeForEntity(key: EntityKey, row: EntityRow): string {
   return ENTITY_BY_KEY[key].route(row.raw);
 }
