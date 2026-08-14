@@ -31,6 +31,7 @@ interface RiscoAceito {
   data_aceite?: string;
   aprovador_aceite?: string;
   data_proxima_revisao?: string;
+  aceite_valido_ate?: string;
   responsavel?: string;
   created_at: string;
   created_by?: string;
@@ -38,6 +39,12 @@ interface RiscoAceito {
   aprovador_nome?: string;
   responsavel_nome?: string;
 }
+
+const SELECT_ACEITE = `
+  id, nome, nivel_risco_inicial, nivel_risco_residual,
+  justificativa_aceite, data_aceite, aprovador_aceite, aceite_valido_ate,
+  data_proxima_revisao, responsavel, created_at, created_by, status_aceite
+`;
 
 export default function RiscosAceite({ embedded = false }: { embedded?: boolean } = {}) {
   const { profile } = useAuth();
