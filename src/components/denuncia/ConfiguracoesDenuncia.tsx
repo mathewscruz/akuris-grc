@@ -386,7 +386,7 @@ export function ConfiguracoesDenuncia() {
                   <AlertTitle>{t('p3Denuncia.channel.noSlugTitle')}</AlertTitle>
                   <AlertDescription className="space-y-3">
                     <p>{t('p3Denuncia.channel.noSlugDescription')}</p>
-                    <Button variant="outline" size="sm" onClick={() => navigate('/configuracoes?tab=empresas')}>
+                    <Button variant="outline" size="sm" onClick={() => navigate('/configuracoes?tab=organizacao')}>
                       {t('p3Denuncia.channel.noSlugAction')}
                     </Button>
                   </AlertDescription>
@@ -400,7 +400,7 @@ export function ConfiguracoesDenuncia() {
               <AlertTitle>{t('p3Denuncia.channel.noSlugTitle')}</AlertTitle>
               <AlertDescription className="space-y-3">
                 <p>{t('p3Denuncia.channel.noSlugDescription')}</p>
-                <Button variant="outline" size="sm" onClick={() => navigate('/configuracoes?tab=empresas')}>
+                <Button variant="outline" size="sm" onClick={() => navigate('/configuracoes?tab=organizacao')}>
                   {t('p3Denuncia.channel.noSlugAction')}
                 </Button>
               </AlertDescription>
