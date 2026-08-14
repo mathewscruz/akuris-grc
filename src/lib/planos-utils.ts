@@ -1,4 +1,3 @@
-import { getMoedaAtual } from '@/hooks/useEmpresaMoeda';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface Plano {
@@ -48,9 +47,9 @@ export const MODULOS_DISPONIVEIS = [
 export type ModuloKey = typeof MODULOS_DISPONIVEIS[number]['key'];
 
 export function formatBRL(value: number) {
-  return new Intl.NumberFormat(getMoedaAtual() === 'BRL' ? 'pt-BR' : getMoedaAtual() === 'USD' ? 'en-US' : getMoedaAtual() === 'GBP' ? 'en-GB' : 'pt-PT', {
+  return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
-    currency: getMoedaAtual(),
+    currency: 'BRL',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(value);

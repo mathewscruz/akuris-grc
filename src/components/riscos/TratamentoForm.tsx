@@ -28,6 +28,7 @@ import { severityFromNivel } from './risk-utils';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { AiCostHint } from '@/components/ui/ai-cost-hint';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useEmpresaMoeda } from '@/hooks/useEmpresaMoeda';
 function makeTratamentoSchema(t: (key: string) => string) {
   return z.object({
     tipo_tratamento: z.string().min(1, t('sweepRiscos.riscos.tratForm2.tipoObrigatorio')),
@@ -66,6 +67,7 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
   ref
 ) {
   const { t } = useLanguage();
+  const { simbolo: simboloMoeda } = useEmpresaMoeda();
   const { profile, company } = useAuth();
   const [loading, setLoading] = useState(false);
   const [iaSuggestionLoading, setIaSuggestionLoading] = useState(false);
@@ -322,7 +324,7 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="custo">{t('sweepRiscos.riscos.tratForm2.custoLabel')}</Label>
+          <Label htmlFor="custo">{t('sweepRiscos.riscos.tratForm2.custoLabel', { moeda: simboloMoeda })}</Label>
           <Input
             {...form.register('custo')}
             placeholder="0,00"
