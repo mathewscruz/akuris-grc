@@ -345,9 +345,11 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
         />
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         <StatCard title={t('riscos.aceite.stats.acceptedTitle')} value={totalAceitos} description={t('riscos.aceite.stats.acceptedDesc')} icon={<CheckCircle />} variant="success" drillDown="riscos_aceite" showAccent emptyHint={t('riscos.aceite.stats.acceptedEmptyHint')} />
         <StatCard title={t('riscos.aceite.stats.pendingTitle')} value={totalPendentes} description={t('riscos.aceite.stats.pendingDesc')} icon={<Clock />} variant={totalPendentes > 0 ? "warning" : "default"} drillDown="riscos_aceite" />
+        <StatCard title="Aceites a expirar" value={aceitesAExpirar} description="Nos próximos 30 dias" icon={<CalendarClock />} variant={aceitesAExpirar > 0 ? "warning" : "default"} />
+        <StatCard title="Aceites expirados" value={totalExpirados} description="Riscos reabertos" icon={<CalendarX />} variant={totalExpirados > 0 ? "destructive" : "default"} />
         <StatCard title={t('riscos.aceite.stats.overdueTitle')} value={revisoesVencidas} description={t('riscos.aceite.stats.overdueDesc')} icon={<CalendarX />} variant={revisoesVencidas > 0 ? "destructive" : "default"} drillDown="riscos_aceite" />
         <StatCard title={t('riscos.aceite.stats.upcomingTitle')} value={revisoesProximas} description={t('riscos.aceite.stats.upcomingDesc')} icon={<AlertTriangle />} variant={revisoesProximas > 0 ? "warning" : "default"} />
       </div>
@@ -368,6 +370,12 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
             className="text-xs gap-1.5 px-3 py-2.5 -mb-px rounded-none border-b-2 border-transparent bg-transparent shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:font-semibold text-muted-foreground hover:text-foreground/85 transition-colors"
           >
             {t('riscos.aceite.tabs.accepted')} ({totalAceitos})
+          </TabsTrigger>
+          <TabsTrigger
+            value="expirados"
+            className="text-xs gap-1.5 px-3 py-2.5 -mb-px rounded-none border-b-2 border-transparent bg-transparent shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:font-semibold text-muted-foreground hover:text-foreground/85 transition-colors"
+          >
+            Aceites expirados ({totalExpirados})
           </TabsTrigger>
         </TabsList>
 
