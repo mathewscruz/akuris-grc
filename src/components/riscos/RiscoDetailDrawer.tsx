@@ -47,7 +47,13 @@ import {
   resumirTratamentos,
   STATUS_TRATADO,
 } from '@/components/riscos/risk-status';
-import { VincularControleDialog } from '@/components/riscos/VincularControleDialog';
+import { VincularRequisitoDialog } from '@/components/riscos/VincularRequisitoDialog';
+import { ResidualSugeridoCard } from '@/components/riscos/ResidualSugeridoCard';
+import { useRiscoRequisitos } from '@/hooks/useRiscoRequisitos';
+import { useMatrizConfigEmpresa } from '@/hooks/useMatrizConfigEmpresa';
+import { resolveConformityTone } from '@/lib/status-tone';
+import { Link as RouterLink } from 'react-router-dom';
+import { ExternalLink } from 'lucide-react';
 import { RiscoComentarios } from '@/components/riscos/RiscoComentarios';
 import { ScoreRing, ScoreBlock, StatTile, HeaderMeta, SEV_VAR } from '@/components/riscos/RiscoVisuals';
 import { RiscoPerfilCompleto } from '@/components/riscos/RiscoPerfilCompleto';
@@ -69,6 +75,7 @@ interface Risco {
   causas?: string;
   consequencias?: string;
   controles_existentes?: string;
+  mitigacao_snapshot?: unknown;
   aceito: boolean;
   justificativa_aceite?: string;
   responsavel_nome?: string | null;
@@ -590,7 +597,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
           </div>
         </div>
 
-        <VincularControleDialog
+        <VincularRequisitoDialog
           open={vincularOpen}
           onOpenChange={setVincularOpen}
           riscoId={risco.id}
