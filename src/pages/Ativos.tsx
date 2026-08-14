@@ -544,10 +544,10 @@ const Ativos = () => {
       <StatStrip
         loading={statsLoading}
         items={[
-          { key: 'total', label: t('modules.ativos.total'), value: stats?.total || 0, drillDown: 'ativos' },
-          { key: 'ativos', label: t('cardsKpi.sweep.ativos.ativos'), value: stats?.ativos || 0, drillDown: 'ativos' },
-          { key: 'altoValor', label: t('cardsKpi.sweep.ativos.altoValor'), value: stats?.altoValorNegocio || 0, drillDown: 'ativos' },
-          { key: 'criticidadeAlta', label: t('cardsKpi.sweep.ativos.criticidadeAlta'), value: (stats?.criticos || 0) + (stats?.altos || 0), tone: 'destructive', drillDown: 'ativos' },
+          { key: 'total', label: t('modules.ativos.total'), value: stats?.total || 0, icon: Server, drillDown: 'ativos' },
+          { key: 'ativos', label: t('cardsKpi.sweep.ativos.ativos'), value: stats?.ativos || 0, icon: Activity, drillDown: 'ativos' },
+          { key: 'altoValor', label: t('cardsKpi.sweep.ativos.altoValor'), value: stats?.altoValorNegocio || 0, icon: TrendingUp, drillDown: 'ativos' },
+          { key: 'criticidadeAlta', label: t('cardsKpi.sweep.ativos.criticidadeAlta'), value: (stats?.criticos || 0) + (stats?.altos || 0), icon: AlertTriangle, tone: 'destructive', drillDown: 'ativos' },
         ]}
       />
 
