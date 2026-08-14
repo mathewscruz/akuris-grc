@@ -18,6 +18,9 @@ import { DateField } from "@/components/ui/date-field";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { formatDateForInput, parseDateForDB } from "@/lib/date-utils";
 import { formatStatus } from "@/lib/text-utils";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { resolveControleStatusTone } from "@/lib/status-tone";
+import { useRequisitoControles } from "@/hooks/useControleRequisitos";
 import { PlanoAcaoDialog } from "@/components/planos-acao/PlanoAcaoDialog";
 import { AuditTrailTimeline } from "@/components/gap-analysis/AuditTrailTimeline";
 import { logger } from '@/lib/logger';
@@ -360,6 +363,8 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
   const [saving, setSaving] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [riscos, setRiscos] = useState<Risco[]>([]);
+  const { data: controlosPorRequisito } = useRequisitoControles();
+  const controlosLigados = controlosPorRequisito?.get(requirement?.id) || [];
   const [uploading, setUploading] = useState(false);
   const [planoAcaoDialogOpen, setPlanoAcaoDialogOpen] = useState(false);
   const [planoAcaoVinculado, setPlanoAcaoVinculado] = useState<any>(null);
@@ -890,7 +895,33 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                     </div>
                   ))}
                 </div>
+
+                {/* Controlos internos que implementam este requisito (N para N) */}
+                <div className="px-5 pb-5">
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <Shield className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
+                    <h4 className="text-sm font-bold text-foreground">{t('vinculoReq.controlosLigados')}</h4>
+                  </div>
+                  {controlosLigados.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">{t('vinculoReq.semControlos')}</p>
+                  ) : (
+                    <div className="space-y-1.5">
+                      {controlosLigados.map((c) => (
+                        <div
+                          key={c.id}
+                          className="flex items-center justify-between gap-2 rounded-lg border border-border p-2.5"
+                        >
+                          <span className="text-[13px] font-medium truncate">{c.nome}</span>
+                          <StatusBadge size="sm" {...resolveControleStatusTone(c.status)}>
+                            {c.emFalha ? t('vinculoReq.controloEmFalha') : formatStatus(c.status)}
+                          </StatusBadge>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
+
 
               {/* ============================================ */}
               {/* RIGHT PANEL — Jornada numerada              */}

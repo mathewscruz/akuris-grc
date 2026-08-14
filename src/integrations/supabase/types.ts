@@ -1121,10 +1121,12 @@ export type Database = {
           created_at: string
           created_by: string | null
           descricao: string | null
+          framework_vinculado_id: string | null
           id: string
           observacoes: string | null
           prazo: string | null
           prioridade: string
+          requisito_vinculado_id: string | null
           responsavel_id: string | null
           status: string
           titulo: string
@@ -1138,10 +1140,12 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           descricao?: string | null
+          framework_vinculado_id?: string | null
           id?: string
           observacoes?: string | null
           prazo?: string | null
           prioridade?: string
+          requisito_vinculado_id?: string | null
           responsavel_id?: string | null
           status?: string
           titulo: string
@@ -1155,10 +1159,12 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           descricao?: string | null
+          framework_vinculado_id?: string | null
           id?: string
           observacoes?: string | null
           prazo?: string | null
           prioridade?: string
+          requisito_vinculado_id?: string | null
           responsavel_id?: string | null
           status?: string
           titulo?: string
@@ -1184,6 +1190,20 @@ export type Database = {
             columns: ["controle_vinculado_id"]
             isOneToOne: false
             referencedRelation: "controles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "auditoria_itens_framework_vinculado_id_fkey"
+            columns: ["framework_vinculado_id"]
+            isOneToOne: false
+            referencedRelation: "gap_analysis_frameworks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "auditoria_itens_requisito_vinculado_id_fkey"
+            columns: ["requisito_vinculado_id"]
+            isOneToOne: false
+            referencedRelation: "gap_analysis_requirements"
             referencedColumns: ["id"]
           },
           {
@@ -2556,6 +2576,67 @@ export type Database = {
           versao?: number | null
         }
         Relationships: []
+      }
+      controles_requisitos: {
+        Row: {
+          controle_id: string
+          created_at: string
+          created_by: string | null
+          empresa_id: string
+          framework_id: string
+          id: string
+          notas: string | null
+          requirement_id: string
+          tipo_cobertura: string
+          updated_at: string
+        }
+        Insert: {
+          controle_id: string
+          created_at?: string
+          created_by?: string | null
+          empresa_id: string
+          framework_id: string
+          id?: string
+          notas?: string | null
+          requirement_id: string
+          tipo_cobertura?: string
+          updated_at?: string
+        }
+        Update: {
+          controle_id?: string
+          created_at?: string
+          created_by?: string | null
+          empresa_id?: string
+          framework_id?: string
+          id?: string
+          notas?: string | null
+          requirement_id?: string
+          tipo_cobertura?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "controles_requisitos_controle_id_fkey"
+            columns: ["controle_id"]
+            isOneToOne: false
+            referencedRelation: "controles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "controles_requisitos_framework_id_fkey"
+            columns: ["framework_id"]
+            isOneToOne: false
+            referencedRelation: "gap_analysis_frameworks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "controles_requisitos_requirement_id_fkey"
+            columns: ["requirement_id"]
+            isOneToOne: false
+            referencedRelation: "gap_analysis_requirements"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       controles_riscos: {
         Row: {

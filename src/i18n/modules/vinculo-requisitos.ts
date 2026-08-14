@@ -1,0 +1,56 @@
+/**
+ * Vocabulário único de ligação controlo ↔ requisito e referências de itens de
+ * auditoria. Mantido em pt (pt-PT, derivado automaticamente para pt-BR) e en.
+ */
+export const vinculoRequisitos = {
+  pt: {
+    vinculoReq: {
+      tituloControlo: 'Ligar requisitos ao controlo',
+      salvar: 'Guardar ligações',
+      buscar: 'Pesquisar por código, título ou secção…',
+      selecionados: '{{count}} requisito(s) selecionado(s)',
+      todosFrameworks: 'Todos os frameworks',
+      semFrameworks: 'Ainda não existem frameworks avaliados no Gap Analysis.',
+      semResultados: 'Nenhum requisito corresponde à pesquisa.',
+      sucessoTitulo: 'Ligações atualizadas',
+      sucessoDesc: '{{count}} requisito(s) ligado(s) a este controlo.',
+      erroTitulo: 'Não foi possível guardar',
+      erroDesc: 'Tente novamente dentro de instantes.',
+      tabRequisitos: 'Requisitos ({{count}})',
+      semRequisitosControlo: 'Este controlo ainda não está ligado a nenhum requisito de framework.',
+      gerirLigacoes: 'Gerir requisitos',
+      controlosLigados: 'Controlos internos ligados',
+      semControlos: 'Sem controlos internos ligados a este requisito.',
+      controloEmFalha: 'Controlo em falha',
+      itemRefRequisito: 'Requisito de framework',
+      itemRefRequisitoDesc: 'Ligue o item ao requisito que está a ser testado, em vez de reescrever o texto.',
+      itemRefNenhum: 'Sem requisito ligado',
+      soaJustificacaoControlos: 'Implementado pelos controlos internos: {{controlos}}.',
+    },
+  },
+  en: {
+    vinculoReq: {
+      tituloControlo: 'Link requirements to control',
+      salvar: 'Save links',
+      buscar: 'Search by code, title or section…',
+      selecionados: '{{count}} requirement(s) selected',
+      todosFrameworks: 'All frameworks',
+      semFrameworks: 'There are no assessed frameworks in Gap Analysis yet.',
+      semResultados: 'No requirement matches your search.',
+      sucessoTitulo: 'Links updated',
+      sucessoDesc: '{{count}} requirement(s) linked to this control.',
+      erroTitulo: 'Could not save',
+      erroDesc: 'Please try again in a moment.',
+      tabRequisitos: 'Requirements ({{count}})',
+      semRequisitosControlo: 'This control is not linked to any framework requirement yet.',
+      gerirLigacoes: 'Manage requirements',
+      controlosLigados: 'Linked internal controls',
+      semControlos: 'No internal controls linked to this requirement.',
+      controloEmFalha: 'Control failing',
+      itemRefRequisito: 'Framework requirement',
+      itemRefRequisitoDesc: 'Link the item to the requirement being tested instead of rewriting the text.',
+      itemRefNenhum: 'No requirement linked',
+      soaJustificacaoControlos: 'Implemented by internal controls: {{controlos}}.',
+    },
+  },
+};

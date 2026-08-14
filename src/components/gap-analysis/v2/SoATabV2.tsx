@@ -24,6 +24,7 @@ import { BulkActionBar } from './BulkActionBar';
 import { cn } from '@/lib/utils';
 import { reqTitulo, reqCategoria } from "@/lib/gap-i18n";
 import { useRequisitoRiscos } from '@/hooks/useRiscoRequisitos';
+import { useRequisitoControles } from '@/hooks/useControleRequisitos';
 import { ShieldAlert } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -74,6 +75,8 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion }: Props
   const [exporting, setExporting] = useState(false);
   // ISO 27001 6.1.3 d) — a justificação de inclusão deriva dos riscos que o controlo trata.
   const { data: riscosPorRequisito } = useRequisitoRiscos(frameworkId);
+  // ISO 27001 6.1.3 d) — a SoA cita também os controlos internos reais que implementam o requisito.
+  const { data: controlosPorRequisito } = useRequisitoControles(frameworkId);
 
   useEffect(() => {
     if (!frameworkId || !empresaId) return;
@@ -218,11 +221,21 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion }: Props
     const next: Record<string, string> = { ...justificativas };
     alvos.forEach(id => {
       const riscos = riscosPorRequisito?.get(id) || [];
-      if (riscos.length === 0) return;
-      next[id] = t('riscosControles.soa.justificacaoTexto', {
-        count: riscos.length,
-        riscos: riscos.map(r => r.nome).join('; '),
-      });
+      const controlos = controlosPorRequisito?.get(id) || [];
+      if (riscos.length === 0 && controlos.length === 0) return;
+      const partes: string[] = [];
+      if (riscos.length > 0) {
+        partes.push(t('riscosControles.soa.justificacaoTexto', {
+          count: riscos.length,
+          riscos: riscos.map(r => r.nome).join('; '),
+        }));
+      }
+      if (controlos.length > 0) {
+        partes.push(t('vinculoReq.soaJustificacaoControlos', {
+          controlos: controlos.map(c => c.nome).join('; '),
+        }));
+      }
+      next[id] = partes.join(' ');
       geradas++;
     });
     if (geradas === 0) {

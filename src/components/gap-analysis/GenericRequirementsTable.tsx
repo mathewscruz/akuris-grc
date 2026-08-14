@@ -29,6 +29,7 @@ import { reqTitulo, reqDescricao, reqOrientacao, reqEvidencias } from "@/lib/gap
 import { getAppLocale } from "@/lib/i18n-locale";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useRequisitoRiscos } from "@/hooks/useRiscoRequisitos";
+import { useRequisitoControles } from "@/hooks/useControleRequisitos";
 import { ShieldAlert } from "lucide-react";
 
 
@@ -91,6 +92,8 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
   const [searchParams, setSearchParams] = useSearchParams();
   // Quantos riscos dependem de cada requisito (prioriza remediação).
   const { data: riscosPorRequisito } = useRequisitoRiscos(frameworkId);
+  // Falhas de controlo interno marcam os requisitos que dependem deles.
+  const { data: controlosPorRequisito } = useRequisitoControles(frameworkId);
   const [requirements, setRequirements] = useState<Requirement[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<string>(searchParams.get('cat') || 'all');
@@ -736,6 +739,15 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
                         >
                           <ShieldAlert className="h-3.5 w-3.5" strokeWidth={1.5} />
                           {t('riscosControles.requisito.riscosDependentes', { count: riscosPorRequisito!.get(req.id)!.length })}
+                        </span>
+                      )}
+                      {(controlosPorRequisito?.get(req.id) || []).some(c => c.emFalha) && (
+                        <span
+                          className="mt-1.5 inline-flex items-center gap-1 text-[11px] text-destructive"
+                          title={(controlosPorRequisito?.get(req.id) || []).filter(c => c.emFalha).map(c => c.nome).join(', ')}
+                        >
+                          <ShieldAlert className="h-3.5 w-3.5" strokeWidth={1.5} />
+                          {t('vinculoReq.controloEmFalha')}
                         </span>
                       )}
                     </div>
