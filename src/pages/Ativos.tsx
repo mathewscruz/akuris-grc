@@ -88,6 +88,7 @@ const tiposAtivo = [
   { value: 'equipamento_teste', label: 'fin.ativos.tipos.equipamento_teste' },
   { value: 'equipamento_medico', label: 'fin.ativos.tipos.equipamento_medico' },
   { value: 'equipamento_laboratorio', label: 'fin.ativos.tipos.equipamento_laboratorio' },
+  { value: 'nao_classificado', label: 'fin.ativos.tipos.nao_classificado' },
   { value: 'outros', label: 'fin.ativos.tipos.outros' }
 ];
 

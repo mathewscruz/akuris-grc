@@ -77,6 +77,7 @@ const tiposAtivo = (t: (k: string) => string) => [
   { value: 'equipamento_teste', label: t('contratosAtivos.ativoDialog.typeEquipamentoTeste') },
   { value: 'equipamento_medico', label: t('contratosAtivos.ativoDialog.typeEquipamentoMedico') },
   { value: 'equipamento_laboratorio', label: t('contratosAtivos.ativoDialog.typeEquipamentoLaboratorio') },
+  { value: 'nao_classificado', label: t('contratosAtivos.ativoDialog.typeNaoClassificado') },
   { value: 'outros', label: t('contratosAtivos.ativoDialog.typeOutros') },
 ];
 
