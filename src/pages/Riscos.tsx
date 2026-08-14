@@ -315,10 +315,32 @@ export function Riscos() {
   /** Configuração indisponível: sem linha (ausente) ou consulta com erro. */
   const matrizConfigIndisponivel = !matrizConfigLoading && (matrizConfigError || !matrizConfig);
 
-  const invalidateRiscos = () => {
-    queryClient.invalidateQueries({ queryKey: ['riscos'] });
-    refetchStats();
+  /**
+   * Refaz TODAS as consultas afetadas por criar/editar/apagar risco.
+   * `refetchType: 'all'` garante que abas ainda não montadas (Visão geral,
+   * Matriz) e os KPIs do Dashboard também sejam atualizados, e o `await`
+   * permite fechar o modal só depois de a lista já conter o novo risco.
+   */
+  const invalidateRiscos = async () => {
+    const keys = [
+      ['riscos'],
+      ['riscos-stats'],
+      ['risco-detail'],
+      ['risk-score-trend'],
+      ['riscos-categorias'],
+      ['dashboard-stats'],
+      ['grc-maturity'],
+      ['trend-data'],
+      ['planos-acao-stats'],
+    ];
+    await Promise.all(
+      keys.map((queryKey) =>
+        queryClient.invalidateQueries({ queryKey, refetchType: 'all' }),
+      ),
+    );
+    await Promise.all([refetchRiscos(), refetchStats()]);
   };
+
 
   useEffect(() => {
     const itemId = location.state?.itemId;
