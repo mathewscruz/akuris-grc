@@ -32,6 +32,7 @@ import TemplatesContratos from '@/components/contratos/TemplatesContratos';
 import { useContratosStats } from '@/hooks/useContratosStats';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useEmpresaMoeda } from '@/hooks/useEmpresaMoeda';
 import { formatDateOnly } from '@/lib/date-utils';
 import { formatStatus } from '@/lib/text-utils';
 import { resolveContratoStatusTone, resolveCriticidadeTone } from '@/lib/status-tone';
@@ -83,6 +84,7 @@ interface Fornecedor {
 
 export default function Contratos() {
   const { t } = useLanguage();
+  const { format: formatMoedaEmpresa } = useEmpresaMoeda();
   useFocusRow();
   const { empresaId } = useEmpresaId();
   const queryClient = useQueryClient();
@@ -355,11 +357,7 @@ export default function Contratos() {
 
           <StatCard
             title={t('cardsKpi.contratos.valorTotal')}
-            value={new Intl.NumberFormat(localeMoeda, {
-              style: 'currency',
-              currency: moedaEmpresa,
-              notation: 'compact'
-            }).format(statsContratos?.valorTotal || 0)}
+            value={formatMoedaEmpresa(statsContratos?.valorTotal || 0, true)}
             description={t('cardsKpi.contratos.valorEmAtivos')}
             icon={<DollarSign />}
             variant="success"
