@@ -101,16 +101,16 @@
     --destructive: 0 62% 52%;
     --destructive-foreground: 0 0% 100%;
     
-    /* Success */
-    --success: 152 50% 42%;
+    /* Success — L ajustado p/ WCAG AA (4.5:1 como texto e com fg branco) */
+    --success: 152 55% 33%;
     --success-foreground: 0 0% 100%;
     
-    /* Warning */
-    --warning: 35 78% 52%;
-    --warning-foreground: 30 50% 15%;
+    /* Warning — âmbar escurecido: o anterior falhava AA como cor de texto */
+    --warning: 35 85% 34%;
+    --warning-foreground: 0 0% 100%;
 
     /* Orange — severidade "Alto" (entre Warning e Destructive) */
-    --orange: 24 85% 52%;
+    --orange: 24 85% 40%;
     --orange-foreground: 0 0% 100%;
 
     /* Info */
@@ -239,13 +239,13 @@
     --accent: 252 30% 20%;
     --accent-foreground: 252 100% 75%;
 
-    /* Destructive — saturação reduzida no dark */
-    --destructive: 0 55% 56%;
-    --destructive-foreground: 0 0% 100%;
+    /* Destructive — clareado p/ AA sobre o card navy; fg passa a escuro */
+    --destructive: 0 60% 60%;
+    --destructive-foreground: 0 40% 10%;
     
-    /* Success */
-    --success: 152 45% 48%;
-    --success-foreground: 0 0% 100%;
+    /* Success — mesma ordem perceptual, sem fluorescência */
+    --success: 152 45% 56%;
+    --success-foreground: 152 40% 10%;
     
     /* Warning */
     --warning: 38 70% 56%;
@@ -253,7 +253,7 @@
 
     /* Orange — severidade "Alto" (dark) */
     --orange: 24 80% 58%;
-    --orange-foreground: 0 0% 100%;
+    --orange-foreground: 20 40% 10%;
 
     /* Info */
     --info: 199 65% 56%;
