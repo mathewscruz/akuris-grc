@@ -76,6 +76,7 @@ export const campos = {
       },
       opcoes: {
         ativo: 'Ativo',
+        vencido: 'Vencido',
         inativo: 'Inativo',
         rascunho: 'Rascunho',
         suspenso: 'Suspenso',
@@ -188,6 +189,7 @@ export const campos = {
       },
       opcoes: {
         ativo: 'Active',
+        vencido: 'Expired',
         inativo: 'Inactive',
         rascunho: 'Draft',
         suspenso: 'Suspended',
