@@ -16,7 +16,7 @@ import { formatDateOnly } from '@/lib/date-utils';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { Edit, ShieldCheck, Shield, X, ArrowRight, Wallet, Layers, Tag, User, CalendarClock, Timer, History, Eye, MessageSquare } from 'lucide-react';
 import {
-  initials, scoreFromPI, severityFromNivel, shortRiskId, slaFromRevisao, getSlaLabels, financialExposure, formatBRL, type Severity,
+  initials, scoreFromPI, severityFromNivel, shortRiskId, slaFromRevisao, getSlaLabels, financialExposure, type Severity,
 } from '@/components/riscos/risk-utils';
 
 /** Variável de cor da severidade para o fundo levíssimo do painel. */
@@ -167,7 +167,7 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
             </section>
 
             <section className="grid grid-cols-3 gap-2">
-              <StatTile icon={<Wallet />} label={t('fin.riscos.exposicao')} value={exposicao !== null ? formatBRL(exposicao, true) : '—'} />
+              <StatTile icon={<Wallet />} label={t('fin.riscos.exposicao')} value={exposicao !== null ? formatMoedaEmpresa(exposicao, true) : '—'} />
               <StatTile icon={<Shield />} label={t('cardsKpi.sweep.riscos.tratamAbbr')} value={`${concluidos}/${trat.length}`} />
               <StatTile icon={<Layers />} label={t('cardsKpi.sweep.riscos.controles')} value={String(detail?.controles.length ?? 0)} />
             </section>

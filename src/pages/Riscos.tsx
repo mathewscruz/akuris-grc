@@ -54,7 +54,8 @@ import { AppetiteFooter } from '@/components/riscos/matrix/AppetiteFooter';
 import { RiscosViewChips, type SavedView } from '@/components/riscos/table/RiscosViewChips';
 import { SparklineCell } from '@/components/riscos/table/SparklineCell';
 import { SlaCell } from '@/components/riscos/table/SlaCell';
-import { isAcimaApetite, severityFromNivel, slaFromRevisao, scoreFromPI, shortRiskId, relativeShort, toScaleNumber, formatScaleValue, financialExposure, formatBRL } from '@/components/riscos/risk-utils';
+import { isAcimaApetite, severityFromNivel, slaFromRevisao, scoreFromPI, shortRiskId, relativeShort, toScaleNumber, formatScaleValue, financialExposure } from '@/components/riscos/risk-utils';
+import { useEmpresaMoeda } from '@/hooks/useEmpresaMoeda';
 import { assertTratamentosLookup, deriveRiscoStatus, isTratamentoConcluido, isTratamentoRequerido } from '@/components/riscos/risk-status';
 import {
   apetiteScoreFromNiveis,
@@ -125,6 +126,7 @@ export function Riscos() {
   const { data: trendPoints = [] } = useRiskScoreTrend();
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
+  const { format: formatMoedaEmpresa } = useEmpresaMoeda();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
@@ -571,8 +573,8 @@ export function Riscos() {
         return exp === null ? (
           <span className="text-xs text-muted-foreground">—</span>
         ) : (
-          <span className="font-mono tabular-nums text-xs font-medium text-foreground" title={formatBRL(exp)}>
-            {formatBRL(exp, true)}
+          <span className="font-mono tabular-nums text-xs font-medium text-foreground" title={formatMoedaEmpresa(exp)}>
+            {formatMoedaEmpresa(exp, true)}
           </span>
         );
       },
