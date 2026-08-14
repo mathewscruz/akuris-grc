@@ -20,8 +20,13 @@ const dictionaries: Record<'pt' | 'en', Dictionary> = {
 
 function interpolate(str: string, params?: Record<string, string | number>): string {
   if (!params) return str;
-  return str.replace(/\{(\w+)\}/g, (_, k) => (params[k] !== undefined ? String(params[k]) : `{${k}}`));
+  // Aceita {chave} e {{chave}}.
+  return str.replace(/\{\{(\w+)\}\}|\{(\w+)\}/g, (full, k1, k2) => {
+    const k = k1 ?? k2;
+    return params[k] !== undefined ? String(params[k]) : full;
+  });
 }
+
 
 /** Resolve uma chave de tradução usando o idioma ativo do app. */
 export function tGlobal(key: string, params?: Record<string, string | number>): string {
