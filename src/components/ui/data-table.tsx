@@ -9,6 +9,7 @@ import { AkurisPulse } from "@/components/ui/AkurisPulse"
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
 import { Search, Filter, Download, RefreshCw, ChevronDown, ChevronUp } from "lucide-react"
 import { useLanguage } from "@/contexts/LanguageContext"
+import { countActiveFilters } from "@/lib/filter-active"
 
 export interface Column<T> {
   key: keyof T | string
@@ -136,7 +137,7 @@ export function DataTable<T extends Record<string, any>>({
           <div className="flex gap-2 flex-wrap">
             {filters.length > 0 && (
               (() => {
-                const activeFiltersCount = filters.filter(f => f.value !== 'todos' && f.value !== '').length;
+                const activeFiltersCount = countActiveFilters(filters);
                 return (
                   <Button
                     variant="outline"

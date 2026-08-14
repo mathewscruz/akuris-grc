@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
+import { isGapCritico } from "@/lib/gap-criticality";
 
 interface AlertDetail {
   id: string;
@@ -10,14 +11,32 @@ interface AlertDetail {
 }
 
 interface DashboardStats {
+  /**
+   * Alertas críticos = riscos críticos em aberto + não conformidades críticas
+   * (Gap Analysis) + incidentes críticos abertos + prazos vencidos
+   * (planos de ação e reavaliações de controles).
+   */
   criticalAlerts: number;
+  criticalBreakdown: {
+    riscosCriticos: number;
+    naoConformidadesCriticas: number;
+    incidentesCriticos: number;
+    prazosVencidos: number;
+  };
   riscosAltos: number;
+  riscosCriticos: number;
   denunciasPendentes: number;
   controlesVencendo: number;
+  controlesVencidos: number;
+  planosAtrasados: number;
+  naoConformidadesCriticas: number;
   incidentesCriticos: number;
   alertDetails: AlertDetail[];
   lastUpdated: Date;
 }
+
+const normalizeStr = (s: string) =>
+  (s || '').toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
 export const useDashboardStats = () => {
   const { profile } = useAuth();
@@ -28,11 +47,20 @@ export const useDashboardStats = () => {
     enabled: !!empresaId,
     queryFn: async (): Promise<DashboardStats> => {
       const alertDetails: AlertDetail[] = [];
-      
-      const [riscosResult, denunciasResult, controlesResult, incidentesResult] = await Promise.all([
+      const hojeIso = new Date().toISOString();
+
+      const [
+        riscosResult,
+        denunciasResult,
+        controlesResult,
+        controlesVencidosResult,
+        incidentesResult,
+        planosResult,
+        avaliacoesResult,
+      ] = await Promise.all([
         supabase
           .from('riscos')
-          .select('id, nome, descricao, nivel_risco_inicial')
+          .select('id, nome, descricao, nivel_risco_inicial, nivel_risco_residual')
           .eq('empresa_id', empresaId!),
 
         supabase
@@ -49,53 +77,115 @@ export const useDashboardStats = () => {
             .select('id, nome, descricao, proxima_avaliacao')
             .eq('empresa_id', empresaId!)
             .lte('proxima_avaliacao', dataLimite.toISOString())
-            .gte('proxima_avaliacao', new Date().toISOString());
+            .gte('proxima_avaliacao', hojeIso);
         })(),
+
+        supabase
+          .from('controles')
+          .select('id')
+          .eq('empresa_id', empresaId!)
+          .lt('proxima_avaliacao', hojeIso),
 
         supabase
           .from('incidentes')
           .select('id, titulo, descricao, criticidade, status')
           .eq('empresa_id', empresaId!)
           .eq('criticidade', 'critica')
-          .in('status', ['aberto', 'investigacao'])
+          .in('status', ['aberto', 'investigacao']),
+
+        supabase
+          .from('planos_acao')
+          .select('id')
+          .eq('empresa_id', empresaId!)
+          .not('status', 'in', '("concluido","cancelado")')
+          .lt('prazo', hojeIso.slice(0, 10)),
+
+        supabase
+          .from('gap_analysis_evaluations')
+          .select('requirement_id, conformity_status, prazo_implementacao')
+          .eq('empresa_id', empresaId!)
+          .eq('conformity_status', 'nao_conforme'),
       ]);
 
-      // Processar riscos - filtrar no JS com normalização de acentos
-      const normalizeStr = (s: string) => (s || '').toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-      const riscosAltosCriticos = riscosResult.data?.filter(r => {
-        const nivel = normalizeStr(r.nivel_risco_inicial || '');
+      // Riscos — mantemos "altos" (alto/crítico) para os cartões existentes e
+      // isolamos os realmente críticos para o contador de alertas.
+      const nivelDe = (r: { nivel_risco_residual?: string | null; nivel_risco_inicial?: string | null }) =>
+        normalizeStr(r.nivel_risco_residual || r.nivel_risco_inicial || '');
+
+      const riscosAltosCriticos = (riscosResult.data || []).filter(r => {
+        const nivel = nivelDe(r);
         return nivel === 'alto' || nivel === 'critico' || nivel === 'muito alto';
-      }) || [];
+      });
       const riscosAltos = riscosAltosCriticos.length;
+      const riscosCriticos = riscosAltosCriticos.filter(r => {
+        const nivel = nivelDe(r);
+        return nivel === 'critico' || nivel === 'muito alto';
+      }).length;
       riscosAltosCriticos.forEach(r => {
         alertDetails.push({ id: r.id, title: r.nome, description: r.descricao || undefined, type: 'risco' });
       });
 
-      // Processar denúncias
       const denunciasPendentes = denunciasResult.data?.length || 0;
       denunciasResult.data?.forEach(d => {
         alertDetails.push({ id: d.id, title: d.titulo, description: d.descricao || undefined, type: 'denuncia' });
       });
 
-      // Processar controles
       const controlesVencendo = controlesResult.data?.length || 0;
       controlesResult.data?.forEach(c => {
         alertDetails.push({ id: c.id, title: c.nome, description: c.descricao || undefined, type: 'controle' });
       });
+      const controlesVencidos = controlesVencidosResult.data?.length || 0;
 
-      // Processar incidentes
       const incidentesCriticos = incidentesResult.data?.length || 0;
       incidentesResult.data?.forEach(i => {
         alertDetails.push({ id: i.id, title: i.titulo, description: i.descricao || undefined, type: 'incidente' });
       });
 
-      const criticalAlerts = denunciasPendentes + controlesVencendo + riscosAltos + incidentesCriticos;
+      const planosAtrasados = planosResult.data?.length || 0;
+
+      // Não conformidades críticas — mesma definição usada no Gap Analysis.
+      let naoConformidadesCriticas = 0;
+      const avaliacoes = avaliacoesResult.data || [];
+      if (avaliacoes.length > 0) {
+        const requirementIds = Array.from(
+          new Set(avaliacoes.map(a => a.requirement_id).filter(Boolean) as string[]),
+        );
+        const pesos = new Map<string, number>();
+        if (requirementIds.length > 0) {
+          const { data: reqs } = await supabase
+            .from('gap_analysis_requirements')
+            .select('id, peso')
+            .in('id', requirementIds);
+          (reqs || []).forEach(r => pesos.set(r.id, Number(r.peso ?? 3)));
+        }
+        naoConformidadesCriticas = avaliacoes.filter(a =>
+          isGapCritico({
+            conformity_status: a.conformity_status,
+            peso: a.requirement_id ? pesos.get(a.requirement_id) : undefined,
+            prazo_implementacao: a.prazo_implementacao,
+          }),
+        ).length;
+      }
+
+      const prazosVencidos = planosAtrasados + controlesVencidos;
+      const criticalAlerts =
+        riscosCriticos + naoConformidadesCriticas + incidentesCriticos + prazosVencidos;
 
       return {
         criticalAlerts,
+        criticalBreakdown: {
+          riscosCriticos,
+          naoConformidadesCriticas,
+          incidentesCriticos,
+          prazosVencidos,
+        },
         riscosAltos,
+        riscosCriticos,
         denunciasPendentes,
         controlesVencendo,
+        controlesVencidos,
+        planosAtrasados,
+        naoConformidadesCriticas,
         incidentesCriticos,
         alertDetails,
         lastUpdated: new Date()

@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Search, Filter, X, RotateCcw } from "lucide-react"
 import { useLanguage } from "@/contexts/LanguageContext"
+import { countActiveFilters } from "@/lib/filter-active"
 
 interface FilterOption {
   value: string
@@ -56,9 +57,7 @@ export function FilterBar({
   const getActiveFiltersCount = () => {
     if (activeFiltersCount > 0) return activeFiltersCount
 
-    const activeCount = filters.filter(filter =>
-      filter.value && filter.value !== 'all' && filter.value !== ''
-    ).length
+    const activeCount = countActiveFilters(filters)
 
     if (searchValue) return activeCount + 1
     return activeCount

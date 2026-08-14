@@ -17,6 +17,7 @@ import { AIBadge } from './AIBadge';
 import { SectionHead } from './SectionHead';
 import { reqTitulo } from "@/lib/gap-i18n";
 import { useLanguage } from '@/contexts/LanguageContext';
+import { isGapCritico, isGapAtrasado } from '@/lib/gap-criticality';
 
 interface PriorityRequirement {
   id: string;
@@ -139,8 +140,9 @@ export function PriorityQueueCard({
     };
   }, [frameworkId, empresaId, limit]);
 
+  // Mesma definição de "crítico" usada no cartão Gaps a Tratar e no dashboard.
   const totalCritical = useMemo(
-    () => items.filter(i => i.conformity_status === 'nao_conforme').length,
+    () => items.filter(i => isGapCritico(i)).length,
     [items]
   );
 
@@ -178,9 +180,7 @@ export function PriorityQueueCard({
           <ol className="space-y-2">
             {items.map((item, idx) => {
               const isCritical = item.conformity_status === 'nao_conforme';
-              const isOverdue =
-                item.prazo_implementacao &&
-                differenceInCalendarDays(parseISO(item.prazo_implementacao), new Date()) < 0;
+              const isOverdue = isGapAtrasado(item.prazo_implementacao);
               return (
                 <li key={item.id}>
                   <button

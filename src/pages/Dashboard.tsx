@@ -92,6 +92,7 @@ export default function Dashboard() {
         <HeroScoreBanner
           maturity={maturity}
           criticalAlerts={dashboardData?.criticalAlerts || 0}
+          criticalBreakdown={dashboardData?.criticalBreakdown}
           activeControls={controlesStats.data?.ativos || 0}
           userName={profile?.nome || 'Usuário'}
         />
@@ -105,6 +106,7 @@ export default function Dashboard() {
             contractsExpiring={contratosStats.data?.vencendo30Dias || 0}
             contractsExpired={contratosStats.data?.vencidos || 0}
             activeDocs={documentosStats.data?.ativos || 0}
+            totalDocs={documentosStats.data?.total || 0}
             docsExpiring={documentosStats.data?.vencendo30Dias || 0}
             docsPending={documentosStats.data?.pendentesAprovacao || 0}
             totalRiscos={riscosStats.data?.total || 0}
