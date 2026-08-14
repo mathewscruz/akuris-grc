@@ -49,6 +49,7 @@ import {
 import { capitalizeText, formatStatus } from '@/lib/text-utils';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveCriticidadeTone, resolveControleStatusTone, resolveControleTipoTone } from '@/lib/status-tone';
+import { resumirTestesPorControlo, resultadoTesteLabel, resultadoTesteTone } from '@/lib/controle-testes';
 import { formatDateOnly } from '@/lib/date-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 
