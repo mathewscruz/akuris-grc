@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { useLocation, useSearchParams } from "react-router-dom";
 import { Plus, Shield, AlertTriangle, CheckCircle, Clock, Link, BarChart3, Edit, Trash2, Filter, TestTube, Download, MoreHorizontal } from "lucide-react";
@@ -81,7 +82,7 @@ interface Categoria {
   cor: string;
 }
 
-export default function ControlesContent() {
+export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLElement | null } = {}) {
   const { t } = useLanguage();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -584,8 +585,8 @@ export default function ControlesContent() {
         ]}
       />
 
-      {/* Toolbar */}
-      <div className="flex items-center justify-end gap-2">
+      {actionsSlot && createPortal(
+        <>
         <ActionsMenu>
           <ActionsMenuTrigger asChild>
             <Button variant="outline" size="icon" aria-label={t("layout.moreActions")} title={t("layout.moreActions")}>
@@ -631,7 +632,9 @@ export default function ControlesContent() {
           <Plus className="mr-2 h-4 w-4" strokeWidth={1.5} />
           {t("governancaComp.controles.buttonNovo")}
         </Button>
-      </div>
+        </>,
+        actionsSlot
+      )}
 
       {/* DataTable with sorting */}
       <Card className="rounded-lg border overflow-hidden">
