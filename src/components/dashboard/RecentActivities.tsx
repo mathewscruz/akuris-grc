@@ -154,7 +154,7 @@ export function RecentActivities({ className }: { className?: string }) {
             {activities.map((activity) => (
               <div
                 key={activity.id}
-                className="flex items-start space-x-3 p-3 rounded-lg border bg-card/50 cursor-pointer hover:bg-muted/50 transition-colors"
+                className="flex items-start space-x-3 p-3 rounded-lg border border-border bg-surface-2/60 cursor-pointer hover:bg-muted/50 transition-colors"
                 onClick={() => handleActivityClick(activity)}
                 role="button"
                 tabIndex={0}

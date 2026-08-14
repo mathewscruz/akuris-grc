@@ -16,7 +16,7 @@ import { Hexagon, CheckCircle2, AlertCircle, XCircle, Minus } from 'lucide-react
 import { useRadarChartData } from '@/hooks/useRadarChartData';
 import { useGrcMaturityScore } from '@/hooks/useGrcMaturityScore';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { chartSeries, CHART_GRID, CHART_AXIS } from '@/lib/chart-tokens';
+import { chartSeries, CHART_GRID, CHART_AXIS, CHART_AREA_OPACITY } from '@/lib/chart-tokens';
 
 // Rótulos curtos para os eixos não estourarem nas laterais do radar.
 const STATUS_META = {
@@ -143,7 +143,7 @@ export function GrcHealthRadar() {
                   stroke={chartSeries(0)}
                   strokeWidth={2}
                   fill={chartSeries(0)}
-                  fillOpacity={0.35}
+                  fillOpacity={CHART_AREA_OPACITY}
                   dot={{ r: 3, fill: chartSeries(0), strokeWidth: 0 }}
                   activeDot={{ r: 5, fill: chartSeries(0), stroke: 'hsl(var(--background))', strokeWidth: 2 }}
                   isAnimationActive
