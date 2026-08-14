@@ -411,6 +411,7 @@ export default function AtivosChaves() {
           icon={<CheckCircle />}
           loading={statsLoading}
           variant="success"
+          drillDown="ativos_chaves"
         />
 
         <StatCard

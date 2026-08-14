@@ -362,6 +362,7 @@ export default function Contratos() {
             icon={<DollarSign />}
             variant="success"
             loading={!statsContratos}
+            drillDown="contratos"
           />
 
           <StatCard
@@ -381,6 +382,7 @@ export default function Contratos() {
             icon={<TrendingUp />}
             variant="info"
             loading={!statsContratos}
+            drillDown="contratos"
           />
         </div>
 

@@ -191,7 +191,7 @@ export default function Continuidade() {
         <StatCard title={t('cardsKpi.continuidade.totalPlanos')} value={stats?.total ?? 0} icon={<Shield />} variant="primary" loading={statsLoading} drillDown="continuidade" showAccent emptyHint={t('residuos.empty.continuidade')} />
         <StatCard title={t('cardsKpi.sweep.continuidade.planosAtivos')} value={stats?.ativos ?? 0} icon={<FileCheck />} variant="success" loading={statsLoading} drillDown="continuidade" />
         <StatCard title={t('cardsKpi.continuidade.emRevisao')} value={stats?.emRevisao ?? 0} icon={<Clock />} variant="warning" loading={statsLoading} drillDown="continuidade" />
-        <StatCard title={t('cardsKpi.continuidade.testesRealizados')} value={stats?.testesRealizados ?? 0} icon={<TestTube />} variant="info" loading={statsLoading} />
+        <StatCard title={t('cardsKpi.continuidade.testesRealizados')} value={stats?.testesRealizados ?? 0} icon={<TestTube />} variant="info" loading={statsLoading} drillDown="continuidade" />
         <StatCard title={t('cardsKpi.sweep.continuidade.tarefasPendentes')} value={stats?.tarefasPendentes ?? 0} icon={<ListTodo />} variant="destructive" loading={statsLoading} drillDown="planos" />
       </div>
 

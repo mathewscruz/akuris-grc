@@ -79,6 +79,7 @@ export default function Denuncia() {
           description={t('cardsKpi.denuncias.concluidas')}
           loading={statsLoading}
           variant="success"
+          drillDown="denuncias"
         />
       </div>
 

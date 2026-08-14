@@ -12,7 +12,7 @@
 import { useLocation } from 'react-router-dom';
 import { useMemo, useEffect, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { fetchEntityById, type EntityKey } from '@/lib/entity-search';
 import { logger } from '@/lib/logger';
@@ -109,7 +109,7 @@ function fallbackLabelFor(parent: string | undefined, t: (k: string) => string):
 
 export const useBreadcrumb = () => {
   const location = useLocation();
-  const { t, language } = useLanguage();
+  const { t, locale } = useLanguage();
   const { profile } = useAuth();
   const empresaId = profile?.empresa_id ?? null;
   const [resolved, setResolved] = useState<Record<string, string>>({});
@@ -205,7 +205,7 @@ export const useBreadcrumb = () => {
     });
 
     return items;
-  }, [location.pathname, pathSegments, resolved, t, language]);
+  }, [location.pathname, pathSegments, resolved, t, locale]);
 
   return breadcrumbs;
 };

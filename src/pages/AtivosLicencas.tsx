@@ -394,6 +394,7 @@ export default function AtivosLicencas() {
           icon={<CheckCircle />}
           loading={statsLoading}
           variant="success"
+          drillDown="ativos_licencas"
         />
 
         <StatCard
