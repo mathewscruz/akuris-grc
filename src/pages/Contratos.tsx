@@ -272,6 +272,18 @@ export default function Contratos() {
     );
   };
 
+  /** Estado derivado (camada única de métricas): vencido não fica "ativo". */
+  const getContratoStatusBadge = (contrato: { status: string; data_fim: string | null }) => {
+    const estado = estadoContrato(contrato);
+    const label = estado === 'vigente' ? 'ativo' : estado === 'a_vencer' ? 'ativo' : estado;
+    return (
+      <StatusBadge size="sm" {...resolveContratoStatusTone(label)}>
+        {formatStatus(label)}
+      </StatusBadge>
+    );
+  };
+
+
   const getRiskBadge = (risk: string) => {
     return (
       <StatusBadge size="sm" {...resolveCriticidadeTone(risk)}>
