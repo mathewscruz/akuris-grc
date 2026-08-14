@@ -23,6 +23,8 @@ import { Shield, Search, ChevronDown } from 'lucide-react';
 import { logger } from '@/lib/logger';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { fwDescricao } from "@/lib/gap-i18n";
+import { useJurisdicao } from '@/hooks/useJurisdicao';
+import type { JurisdicaoCodigo } from '@/lib/jurisdicao';
 
 interface Framework {
   id: string;
@@ -48,6 +50,23 @@ interface StatusCounts {
 }
 
 const SUGGESTED_NAMES = ['ISO 27001', 'ISO/IEC 27001', 'LGPD', 'NIST CSF 2.0', 'NIST CSF'];
+
+/**
+ * Ordem de relevância por jurisdição de proteção de dados. Nenhum framework é
+ * removido do catálogo — muda apenas a ordem em "Recomendados para a empresa".
+ */
+const PRIORIDADE_POR_JURISDICAO: Record<JurisdicaoCodigo, string[]> = {
+  BR: ['LGPD', 'ISO 27001', 'ISO/IEC 27001', 'NIST CSF 2.0', 'NIST CSF', 'ISO/IEC 27701'],
+  PT_EU: ['RGPD', 'GDPR', 'NIS2', 'ISO/IEC 27701', 'ISO 27701', 'DORA', 'ISO 27001', 'ISO/IEC 27001', 'LGPD'],
+  INTL: ['GDPR', 'ISO 27001', 'ISO/IEC 27001', 'NIST CSF 2.0', 'NIST CSF', 'SOC 2', 'ISO/IEC 27701'],
+};
+
+function prioridadeJurisdicao(nome: string, codigo: JurisdicaoCodigo): number {
+  const lista = PRIORIDADE_POR_JURISDICAO[codigo];
+  const alvo = (nome || '').toLowerCase();
+  const idx = lista.findIndex((n) => alvo.includes(n.toLowerCase()));
+  return idx === -1 ? 0 : (lista.length - idx) * 100;
+}
 
 const CATEGORY_OPTIONS: { id: string; labelKey: string }[] = [
   { id: 'all', labelKey: 'gapAnalysis.frameworks.category.all' },
@@ -77,6 +96,7 @@ function buildSegments(sc: StatusCounts): StackSegment[] {
 
 export default function GapAnalysisFrameworks() {
   const { t } = useLanguage();
+  const { codigo: jurisdicaoCodigo } = useJurisdicao();
   const navigate = useNavigate();
   const { profile } = useAuth();
   const empresaId = profile?.empresa_id;
@@ -312,7 +332,8 @@ export default function GapAnalysisFrameworks() {
       .map(fw => {
         const cat = getCategory(fw.tipo_framework);
         const overlap = activeTypes.has(cat) ? 55 + Math.round(Math.random() * 30) : 25 + Math.round(Math.random() * 25);
-        const priority = SUGGESTED_NAMES.includes(fw.nome) ? 100 : 0;
+        const priority = prioridadeJurisdicao(fw.nome, jurisdicaoCodigo)
+          + (SUGGESTED_NAMES.includes(fw.nome) ? 50 : 0);
         return { fw, overlap, priority };
       })
       .sort((a, b) => (b.priority - a.priority) || (b.overlap - a.overlap))
@@ -320,7 +341,7 @@ export default function GapAnalysisFrameworks() {
 
     return candidates;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [availableFrameworks, activeFrameworks.length]);
+  }, [availableFrameworks, activeFrameworks.length, jurisdicaoCodigo]);
 
   const suggestedFrameworks = useMemo(() => {
     const found = SUGGESTED_NAMES

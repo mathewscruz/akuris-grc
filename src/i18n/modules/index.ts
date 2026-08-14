@@ -60,6 +60,7 @@ import { sweepDenuncias } from './sweep-denuncias';
 import { sweepRiscos } from './sweep-riscos';
 import { sweepCore } from './sweep-core';
 import { buscaGlobal } from './busca-global';
+import { jurisdicao } from './jurisdicao';
 
 type ModuleDict = { pt: Record<string, unknown>; en: Record<string, unknown> };
 
@@ -141,6 +142,7 @@ const modules: Record<string, ModuleDict> = {
   sweepRiscos,
   sweepCore,
   buscaGlobal,
+  jurisdicao,
 };
 
 
