@@ -360,7 +360,7 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading, or
       <WizardSummaryRow label={t('planosAcao.summaryLabelStatus')} value={<span>{formatStatus(status)}</span>} />
       <WizardSummaryRow
         label={t('planosAcao.summaryLabelDeadline')}
-        value={prazo ? format(prazo, 'dd/MM/yyyy') : <span className="text-muted-foreground italic">{t('planosAcao.summaryNoDeadline')}</span>}
+        value={prazo ? formatDateOnly(prazo) : <span className="text-muted-foreground italic">{t('planosAcao.summaryNoDeadline')}</span>}
       />
       <WizardSummaryRow
         label={t('planosAcao.summaryLabelOrigin')}
