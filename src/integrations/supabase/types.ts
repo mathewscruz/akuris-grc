@@ -4330,6 +4330,7 @@ export type Database = {
           data_inicio_ciclo: string | null
           data_inicio_trial: string | null
           id: string
+          jurisdicao: string | null
           logo_url: string | null
           moeda: string
           nome: string
@@ -4353,6 +4354,7 @@ export type Database = {
           data_inicio_ciclo?: string | null
           data_inicio_trial?: string | null
           id?: string
+          jurisdicao?: string | null
           logo_url?: string | null
           moeda?: string
           nome: string
@@ -4376,6 +4378,7 @@ export type Database = {
           data_inicio_ciclo?: string | null
           data_inicio_trial?: string | null
           id?: string
+          jurisdicao?: string | null
           logo_url?: string | null
           moeda?: string
           nome?: string

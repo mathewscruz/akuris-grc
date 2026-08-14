@@ -27,9 +27,12 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveSensibilidadeTone, resolveItemStatusTone, resolveWorkflowStatusTone } from '@/lib/status-tone';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useJurisdicao } from "@/hooks/useJurisdicao";
+import { prazoResposta } from "@/lib/jurisdicao";
 
 export default function Privacidade() {
   const { t } = useLanguage();
+  const jurisdicao = useJurisdicao();
   const navigate = useNavigate();
   const { empresaId } = useEmpresaId();
   const queryClient = useQueryClient();
@@ -139,7 +142,21 @@ export default function Privacidade() {
   const ropaRegistros = privacidadeData?.ropaRegistros || [];
   const solicitacoes = privacidadeData?.solicitacoes || [];
   const incidentesPrivacidade = privacidadeData?.incidentesPrivacidade || 0;
-  const solicitacoesForaPrazo = privacidadeData?.solicitacoesForaPrazo || 0;
+  // "Fora do prazo" usa o prazo legal da jurisdição configurada (LGPD 15 dias,
+  // RGPD/GDPR 1 mês) e não um valor fixo. Se a solicitação já tem prazo próprio
+  // definido pelo utilizador, esse prevalece.
+  const solicitacoesForaPrazo = (() => {
+    const hoje = new Date();
+    return solicitacoes.filter((s: any) => {
+      if (s.status === 'atendida' || s.status === 'rejeitada') return false;
+      const limite = s.prazo_resposta
+        ? new Date(s.prazo_resposta)
+        : (s.data_solicitacao || s.created_at)
+          ? prazoResposta(s.data_solicitacao || s.created_at, jurisdicao.codigo)
+          : null;
+      return limite ? limite < hoje : false;
+    }).length;
+  })();
   const stats = privacidadeData?.stats || {
     totalDados: 0,
     dadosSensiveis: 0,
@@ -518,7 +535,7 @@ export default function Privacidade() {
     <div className="space-y-6">
       <PageHeader
         title={t('modules.privacidade.title')}
-        description={t('modules.privacidade.description')}
+        description={t('jurisdicao.privacidade.descricao', { lei: jurisdicao.lei })}
       />
 
       {/* KPI Cards */}
@@ -552,9 +569,9 @@ export default function Privacidade() {
           drillDown="privacidade"
         />
         <StatCard
-          title={t('cardsKpi.privacidade.foraPrazoLgpd')}
+          title={t('jurisdicao.privacidade.foraPrazo', { lei: jurisdicao.lei })}
           value={solicitacoesForaPrazo}
-          description={t('cardsKpi.privacidade.excederam15Dias')}
+          description={t('jurisdicao.privacidade.excederamPrazo', { prazo: jurisdicao.prazoTitularLabel })}
           icon={<Clock />}
           variant={solicitacoesForaPrazo > 0 ? "destructive" : "default"}
           drillDown="privacidade"
@@ -620,6 +637,9 @@ export default function Privacidade() {
         </TabsContent>
 
         <TabsContent value="ropa" className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            {t('jurisdicao.privacidade.ropaSubtitulo', { lei: jurisdicao.lei })}
+          </p>
           <div className="flex justify-end">
             <Button size="sm" onClick={() => setShowRopaWizard(true)}>
               <Plus className="mr-2 h-4 w-4" />

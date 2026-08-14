@@ -10,6 +10,7 @@ import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { MOEDAS, SIMBOLO_MOEDA, type MoedaCodigo } from '@/hooks/useEmpresaMoeda';
+import { JURISDICOES, inferirJurisdicao, type JurisdicaoCodigo } from '@/lib/jurisdicao';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
@@ -33,7 +34,7 @@ const SETOR_OPTIONS: { value: string; key: string }[] = [
 const PORTE_KEYS = ['micro', 'pequena', 'media', 'grande', 'enterprise'] as const;
 
 export function CompanyContextSettings() {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const { empresaId } = useEmpresaId();
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
@@ -43,6 +44,7 @@ export function CompanyContextSettings() {
   const [objetivo, setObjetivo] = useState('');
   const [dataAlvo, setDataAlvo] = useState('');
   const [moeda, setMoeda] = useState<MoedaCodigo>('EUR');
+  const [jurisdicao, setJurisdicao] = useState<JurisdicaoCodigo>(() => inferirJurisdicao(locale));
 
   useEffect(() => {
     if (!empresaId) return;
@@ -50,7 +52,7 @@ export function CompanyContextSettings() {
       setFetching(true);
       const { data } = await supabase
         .from('empresas')
-        .select('setor_atuacao, porte_empresa, objetivo_compliance, data_alvo_certificacao, moeda')
+        .select('setor_atuacao, porte_empresa, objetivo_compliance, data_alvo_certificacao, moeda, jurisdicao')
         .eq('id', empresaId)
         .single();
       if (data) {
@@ -59,6 +61,7 @@ export function CompanyContextSettings() {
         setObjetivo((data as any).objetivo_compliance || '');
         setDataAlvo((data as any).data_alvo_certificacao || '');
         setMoeda(((data as any).moeda as MoedaCodigo) || 'EUR');
+        setJurisdicao(((data as any).jurisdicao as JurisdicaoCodigo) || inferirJurisdicao(locale));
       }
       setFetching(false);
     };
@@ -77,10 +80,12 @@ export function CompanyContextSettings() {
           objetivo_compliance: objetivo || null,
           data_alvo_certificacao: dataAlvo || null,
           moeda,
+          jurisdicao,
         } as any)
         .eq('id', empresaId);
       if (error) throw error;
       queryClient.invalidateQueries({ queryKey: ['empresa-moeda'] });
+      queryClient.invalidateQueries({ queryKey: ['empresa-jurisdicao'] });
       toast.success(t('configGeral.companyContext.toastSaved'));
     } catch {
       toast.error(t('configGeral.companyContext.toastError'));
@@ -151,6 +156,21 @@ export function CompanyContextSettings() {
             </SelectContent>
           </Select>
           <p className="text-xs text-muted-foreground">{t('configGeral.companyContext.descricaoMoeda')}</p>
+        </div>
+
+        <div className="space-y-2">
+          <Label>{t('jurisdicao.label')}</Label>
+          <Select value={jurisdicao} onValueChange={(v) => setJurisdicao(v as JurisdicaoCodigo)}>
+            <SelectTrigger>
+              <SelectValue placeholder={t('jurisdicao.placeholder')} />
+            </SelectTrigger>
+            <SelectContent>
+              {JURISDICOES.map(code => (
+                <SelectItem key={code} value={code}>{t(`jurisdicao.opcoes.${code}`)}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">{t('jurisdicao.descricao')}</p>
         </div>
 
         <div className="space-y-2 md:col-span-2">

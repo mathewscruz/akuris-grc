@@ -51,6 +51,28 @@ function hasRecentManualChoice(): boolean {
   }
 }
 
+/**
+ * Salvaguarda de i18n: quando uma chave não existe no dicionário, mostramos um
+ * texto legível de recurso (último segmento da chave "humanizado") em vez da
+ * chave crua, e avisamos na consola em desenvolvimento.
+ */
+const missingKeysWarned = new Set<string>();
+export function fallbackForKey(key: string, locale: Locale): string {
+  if (import.meta.env.DEV && !missingKeysWarned.has(`${locale}:${key}`)) {
+    missingKeysWarned.add(`${locale}:${key}`);
+    // eslint-disable-next-line no-console
+    console.warn(`[i18n] Chave de tradução ausente (${locale}): ${key}`);
+  }
+  const last = key.split('.').pop() || key;
+  const spaced = last
+    .replace(/[_-]+/g, ' ')
+    .replace(/([a-zçãáéíóúâêô])([A-Z])/g, '$1 $2')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!spaced) return key;
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}
+
 function interpolate(str: string, params?: Record<string, string | number>): string {
   if (!params) return str;
   return str.replace(/\{(\w+)\}/g, (_, k) => (params[k] !== undefined ? String(params[k]) : `{${k}}`));
@@ -135,9 +157,9 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     let result: any = dict;
     for (const k of keys) {
       result = result?.[k];
-      if (result === undefined) return key;
+      if (result === undefined) return fallbackForKey(key, locale);
     }
-    if (typeof result !== 'string') return key;
+    if (typeof result !== 'string') return fallbackForKey(key, locale);
     return interpolate(result, params);
   }, [locale]);
 
@@ -156,14 +178,15 @@ const fallbackContext: LanguageContextType = {
   locale: (typeof window !== 'undefined' && (localStorage.getItem(STORAGE_KEY) as Locale)) || 'pt',
   setLocale: () => {},
   t: (key: string, params?: Record<string, string | number>) => {
-    const dict = dictionaries[(typeof window !== 'undefined' && (localStorage.getItem(STORAGE_KEY) as Locale)) || 'pt'];
+    const loc: Locale = (typeof window !== 'undefined' && (localStorage.getItem(STORAGE_KEY) as Locale)) || 'pt';
+    const dict = dictionaries[loc];
     const keys = key.split('.');
     let result: any = dict;
     for (const k of keys) {
       result = result?.[k];
-      if (result === undefined) return key;
+      if (result === undefined) return fallbackForKey(key, loc);
     }
-    if (typeof result !== 'string') return key;
+    if (typeof result !== 'string') return fallbackForKey(key, loc);
     return interpolate(result, params);
   },
   tList: (key: string) =>
