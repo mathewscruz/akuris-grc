@@ -148,11 +148,18 @@ export function ConfiguracoesDenuncia() {
         }
       }
 
-      // Buscar slug da empresa
+      // Buscar slug da empresa do utilizador (isolamento multi-tenant)
+      const { data: perfil } = await supabase
+        .from('profiles')
+        .select('empresa_id')
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id ?? '')
+        .maybeSingle();
+
       const { data: empresaData, error: empresaError } = await supabase
         .from('empresas')
         .select('slug')
-        .single();
+        .eq('id', perfil?.empresa_id ?? '')
+        .maybeSingle();
 
       if (!empresaError && empresaData?.slug) {
         setEmpresaSlug(empresaData.slug);
