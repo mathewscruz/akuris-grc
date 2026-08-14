@@ -63,7 +63,7 @@ export function useRiscosBibliotecaImportados(enabled = true) {
     enabled: enabled && !!empresaId,
     staleTime: 30 * 1000,
     queryFn: async (): Promise<Set<string>> => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('riscos')
         .select('biblioteca_codigo')
         .eq('empresa_id', empresaId!)
@@ -85,7 +85,7 @@ export function useImportarBiblioteca() {
       codigos: string[];
       mapearControlos: boolean;
     }): Promise<ImportarResultado> => {
-      const { data, error } = await supabase.rpc('importar_riscos_biblioteca', {
+      const { data, error } = await (supabase as any).rpc('importar_riscos_biblioteca', {
         codigos,
         mapear_controlos: mapearControlos,
       });
