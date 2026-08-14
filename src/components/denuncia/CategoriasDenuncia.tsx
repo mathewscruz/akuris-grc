@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { Chip } from '@/components/ui/chip';
 import { DataTable, Column } from '@/components/ui/data-table';
 import { 
   Plus, 
@@ -310,9 +311,9 @@ export function CategoriasDenuncia() {
           size="sm"
           onClick={() => toggleAtivo(cat)}
         >
-          <Badge variant={cat.ativo ? "default" : "secondary"} className="whitespace-nowrap">
+          <Chip family="state" tone={cat.ativo ? 'active' : 'rest'}>
             {cat.ativo ? t('denunciasAdmin.categorias.statusActive') : t('denunciasAdmin.categorias.statusInactive')}
-          </Badge>
+          </Chip>
         </Button>
       )
     },

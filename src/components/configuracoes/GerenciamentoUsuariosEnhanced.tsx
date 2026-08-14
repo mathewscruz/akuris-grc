@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Chip } from '@/components/ui/chip';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -566,9 +567,9 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
       label: t('admin.usuarios.columnStatus'),
       sortable: true,
       render: (value) => (
-        <Badge variant={value ? 'default' : 'secondary'}>
+        <Chip family="state" tone={value ? 'active' : 'rest'}>
           {value ? t('admin.usuarios.ativo') : t('admin.usuarios.inativo')}
-        </Badge>
+        </Chip>
       ),
     },
     {

@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import { Chip } from '@/components/ui/chip';
 import {
   Sheet,
   SheetContent,
@@ -449,9 +450,9 @@ export function ConfiguracoesDenuncia() {
             )}
             
             <div className="flex items-center gap-2">
-              <Badge variant={formData.ativo ? "default" : "secondary"}>
+              <Chip family="state" tone={formData.ativo ? 'active' : 'rest'}>
                 {formData.ativo ? t('denunciasAdmin.config.statusActive') : t('denunciasAdmin.config.statusInactive')}
-              </Badge>
+              </Chip>
               {empresaSlug ? (
                 <Badge variant="success">
                   {t('denunciasAdmin.config.friendlyUrls')}
