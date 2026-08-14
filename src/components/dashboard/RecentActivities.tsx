@@ -9,6 +9,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { ptBR, enUS } from 'date-fns/locale';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatStatus } from '@/lib/text-utils';
+import { getEnumLabel } from '@/lib/enum-labels';
 import { useQuery } from '@tanstack/react-query';
 import { CornerAccent } from '@/components/identity/CornerAccent';
 
@@ -21,6 +22,7 @@ interface Activity {
   module: string;
   iconName: string;
   status?: string;
+  isSeverity?: boolean;
 }
 
 const getIcon = (module: string) => {
@@ -66,13 +68,14 @@ const statusVariantMap: Record<string, BadgeVariant> = {
   'arquivada': 'neutral',
 };
 
-const getStatusBadge = (status?: string) => {
+const getStatusBadge = (status: string | undefined, t: (key: string) => string, isSeverity: boolean) => {
   if (!status) return null;
   const normalizedStatus = status.toLowerCase().trim();
   const variant = statusVariantMap[normalizedStatus] || 'outline';
+  const label = isSeverity ? getEnumLabel(t, 'severidade', status) : formatStatus(status);
   return (
     <Badge variant={variant} className="text-[10px] px-1.5 py-0 whitespace-nowrap">
-      {formatStatus(status)}
+      {label}
     </Badge>
   );
 };
@@ -88,7 +91,7 @@ async function fetchActivities(empresaId: string, t: any): Promise<Activity[]> {
     supabase.from('denuncias').select('id, titulo, status, created_at').eq('empresa_id', empresaId).order('created_at', { ascending: false }).limit(2),
   ]);
 
-  riscosRes.data?.forEach(r => activities.push({ id: `risco-${r.id}`, type: 'creation', title: r.nome, description: t('activities.newRisk'), created_at: r.created_at, module: 'riscos', iconName: 'riscos', status: r.nivel_risco_inicial }));
+  riscosRes.data?.forEach(r => activities.push({ id: `risco-${r.id}`, type: 'creation', title: r.nome, description: t('activities.newRisk'), created_at: r.created_at, module: 'riscos', iconName: 'riscos', status: r.nivel_risco_inicial, isSeverity: true }));
   controlesRes.data?.forEach(c => activities.push({ id: `controle-${c.id}`, type: 'creation', title: c.nome, description: t('activities.newControl'), created_at: c.created_at, module: 'controles', iconName: 'controles', status: c.status }));
   documentosRes.data?.forEach(d => activities.push({ id: `documento-${d.id}`, type: 'creation', title: d.nome, description: t('activities.documentAdded'), created_at: d.created_at, module: 'documentos', iconName: 'documentos', status: d.status }));
   auditoriasRes.data?.forEach(a => activities.push({ id: `auditoria-${a.id}`, type: 'creation', title: a.nome, description: t('activities.newAudit'), created_at: a.created_at, module: 'auditorias', iconName: 'auditorias', status: a.status }));
@@ -163,7 +166,7 @@ export function RecentActivities({ className }: { className?: string }) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="text-sm font-medium text-foreground truncate">{activity.title}</p>
-                    {getStatusBadge(activity.status)}
+                    {getStatusBadge(activity.status, t, !!activity.isSeverity)}
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5">{activity.description}</p>
                   <p className="text-xs text-muted-foreground mt-1">
