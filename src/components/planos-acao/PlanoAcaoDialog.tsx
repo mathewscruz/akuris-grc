@@ -19,6 +19,24 @@ import { FieldHelpTooltip } from '@/components/ui/field-help-tooltip';
 import { useWizardDraft } from '@/hooks/useWizardDraft';
 import { formatStatus } from '@/lib/text-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { EntidadeSelect } from '@/components/common/EntidadeSelect';
+import type { EntityKey } from '@/lib/entity-search';
+
+/** Módulo de origem → entidade pesquisável (seletor real, sem UUID à mão). */
+const MODULO_ENTIDADE: Record<string, EntityKey> = {
+  riscos: 'risco',
+  controles: 'controle',
+  frameworks: 'gap_requirement',
+  incidentes: 'incidente',
+  auditorias: 'auditoria',
+  contratos: 'contrato',
+  documentos: 'documento',
+  dados: 'dados_pessoais',
+  'due-diligence': 'due_diligence',
+  denuncia: 'denuncia',
+  ativos: 'ativo',
+  'contas-privilegiadas': 'conta_privilegiada',
+};
 
 interface PlanoAcaoDialogProps {
   open: boolean;
@@ -26,6 +44,8 @@ interface PlanoAcaoDialogProps {
   onSave: (data: any) => void;
   plano?: any;
   loading?: boolean;
+  /** Pré-preenche a origem quando a ação é criada a partir de um registo. */
+  origemInicial?: { modulo: string; registroId: string; registroTitulo: string };
 }
 
 function buildModulosOrigem(t: (key: string) => string) {
@@ -46,7 +66,7 @@ function buildModulosOrigem(t: (key: string) => string) {
   ];
 }
 
-export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading }: PlanoAcaoDialogProps) {
+export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading, origemInicial }: PlanoAcaoDialogProps) {
   const { t } = useLanguage();
   const modulosOrigem = useMemo(() => buildModulosOrigem(t), [t]);
   const [titulo, setTitulo] = useState('');
@@ -57,6 +77,7 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading }: 
   const [prazo, setPrazo] = useState<Date | undefined>();
   const [moduloOrigem, setModuloOrigem] = useState('manual');
   const [registroOrigemTitulo, setRegistroOrigemTitulo] = useState('');
+  const [registroOrigemId, setRegistroOrigemId] = useState('');
   const [observacoes, setObservacoes] = useState('');
   const [activeTab, setActiveTab] = useState('identificacao');
   const [initialSnapshot, setInitialSnapshot] = useState('');
@@ -71,6 +92,7 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading }: 
       setPrazo(plano.prazo ? new Date(plano.prazo) : undefined);
       setModuloOrigem(plano.modulo_origem || 'manual');
       setRegistroOrigemTitulo(plano.registro_origem_titulo || '');
+      setRegistroOrigemId(plano.registro_origem_id || '');
       setObservacoes(plano.observacoes || '');
     } else {
       setTitulo('');
@@ -79,17 +101,18 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading }: 
       setPrioridade('media');
       setResponsavelId('');
       setPrazo(undefined);
-      setModuloOrigem('manual');
-      setRegistroOrigemTitulo('');
+      setModuloOrigem(origemInicial?.modulo ?? 'manual');
+      setRegistroOrigemTitulo(origemInicial?.registroTitulo ?? '');
+      setRegistroOrigemId(origemInicial?.registroId ?? '');
       setObservacoes('');
     }
     setActiveTab('identificacao');
-  }, [plano, open]);
+  }, [plano, open, origemInicial]);
 
   useEffect(() => {
     if (open) {
       setInitialSnapshot(
-        JSON.stringify({ titulo, descricao, status, prioridade, responsavelId, prazo: prazo?.toISOString() ?? null, moduloOrigem, registroOrigemTitulo, observacoes })
+        JSON.stringify({ titulo, descricao, status, prioridade, responsavelId, prazo: prazo?.toISOString() ?? null, moduloOrigem, registroOrigemTitulo, registroOrigemId, observacoes })
       );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -98,7 +121,7 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading }: 
   const currentValues = {
     titulo, descricao, status, prioridade, responsavelId,
     prazo: prazo?.toISOString() ?? null,
-    moduloOrigem, registroOrigemTitulo, observacoes,
+    moduloOrigem, registroOrigemTitulo, registroOrigemId, observacoes,
   };
   const isDirty = JSON.stringify(currentValues) !== initialSnapshot;
 
@@ -121,11 +144,19 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading }: 
         setPrazo(d.prazo ? new Date(d.prazo) : undefined);
         setModuloOrigem(d.moduloOrigem ?? 'manual');
         setRegistroOrigemTitulo(d.registroOrigemTitulo ?? '');
+        setRegistroOrigemId(d.registroOrigemId ?? '');
         setObservacoes(d.observacoes ?? '');
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  /** Trocar de módulo invalida o registo escolhido anteriormente. */
+  const handleModuloOrigemChange = (value: string) => {
+    setModuloOrigem(value);
+    setRegistroOrigemId('');
+    setRegistroOrigemTitulo('');
+  };
 
   const handleSave = () => {
     if (!titulo.trim()) {
@@ -141,6 +172,7 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading }: 
       prazo: prazo ? format(prazo, 'yyyy-MM-dd') : null,
       modulo_origem: moduloOrigem,
       registro_origem_titulo: registroOrigemTitulo.trim() || null,
+      registro_origem_id: registroOrigemId || null,
       observacoes: observacoes.trim() || null,
     });
     clearDraft();
@@ -149,7 +181,7 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading }: 
   // 'complete' apenas quando há dados além dos defaults (status/prioridade/moduloOrigem têm defaults).
   const identState: WizardTabState = titulo.trim() && descricao.trim() ? 'complete' : (titulo.trim() ? 'partial' : 'pending');
   const planejamentoState: WizardTabState = responsavelId && prazo ? 'complete' : (responsavelId || prazo ? 'partial' : 'pending');
-  const origemState: WizardTabState = moduloOrigem !== 'manual' && registroOrigemTitulo.trim() ? 'complete' : (observacoes.trim() ? 'complete' : 'pending');
+  const origemState: WizardTabState = moduloOrigem !== 'manual' && registroOrigemId ? 'complete' : (observacoes.trim() ? 'complete' : 'pending');
 
   const tabs: WizardTab[] = useMemo(
     () => [
@@ -265,7 +297,7 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading }: 
                   {t('planosAcao.fieldOriginModule')}
                   <FieldHelpTooltip content={t('planosAcao.fieldOriginModuleHelp')} />
                 </Label>
-                <Select value={moduloOrigem} onValueChange={setModuloOrigem}>
+                <Select value={moduloOrigem} onValueChange={handleModuloOrigemChange}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -278,13 +310,17 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading }: 
                   </SelectContent>
                 </Select>
               </div>
-              {moduloOrigem !== 'manual' && (
+              {moduloOrigem !== 'manual' && MODULO_ENTIDADE[moduloOrigem] && (
                 <div className="space-y-2">
                   <Label>{t('planosAcao.fieldOriginReference')}</Label>
-                  <Input
-                    value={registroOrigemTitulo}
-                    onChange={(e) => setRegistroOrigemTitulo(e.target.value)}
-                    placeholder={t('planosAcao.fieldOriginReferencePlaceholder')}
+                  {/* Guarda a chave estrangeira do registo — nunca texto livre. */}
+                  <EntidadeSelect
+                    entidade={MODULO_ENTIDADE[moduloOrigem]}
+                    value={registroOrigemId}
+                    onValueChange={(id, row) => {
+                      setRegistroOrigemId(id);
+                      setRegistroOrigemTitulo(row ? `${row.codigo} · ${row.titulo}` : '');
+                    }}
                   />
                 </div>
               )}
@@ -293,7 +329,7 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading }: 
         ),
       },
     ],
-    [titulo, descricao, prioridade, status, responsavelId, prazo, moduloOrigem, registroOrigemTitulo, observacoes, identState, planejamentoState, origemState, t, modulosOrigem]
+    [titulo, descricao, prioridade, status, responsavelId, prazo, moduloOrigem, registroOrigemTitulo, registroOrigemId, observacoes, identState, planejamentoState, origemState, t, modulosOrigem]
   );
 
   const summary = (
@@ -310,7 +346,11 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading }: 
       />
       <WizardSummaryRow
         label={t('planosAcao.summaryLabelOrigin')}
-        value={modulosOrigem.find((m) => m.value === moduloOrigem)?.label}
+        value={
+          registroOrigemTitulo
+            ? `${modulosOrigem.find((m) => m.value === moduloOrigem)?.label} · ${registroOrigemTitulo}`
+            : modulosOrigem.find((m) => m.value === moduloOrigem)?.label
+        }
       />
     </WizardSummaryCard>
   );
