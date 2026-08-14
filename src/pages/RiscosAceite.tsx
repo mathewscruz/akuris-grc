@@ -167,10 +167,29 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
   const totalPendentes = riscosPendentes.length;
   const revisoesVencidas = riscos.filter(r => getRevisaoStatus(r.data_proxima_revisao) === 'vencida').length;
   const revisoesProximas = riscos.filter(r => getRevisaoStatus(r.data_proxima_revisao) === 'proxima').length;
+  const aceitesAExpirar = riscos.filter(r => {
+    if (!r.aceite_valido_ate) return false;
+    const dias = differenceInDays(new Date(r.aceite_valido_ate), new Date());
+    return dias >= 0 && dias <= 30;
+  }).length;
+  const totalExpirados = riscosExpirados.length;
+
+  const filteredExpirados = riscosExpirados.filter(r =>
+    r.nome.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const getValidadeBadge = (validoAte?: string) => {
+    if (!validoAte) return <StatusBadge size="sm" tone="neutral">Sem validade</StatusBadge>;
+    const dias = differenceInDays(new Date(validoAte), new Date());
+    if (dias < 0) return <StatusBadge size="sm" tone="danger">Expirado</StatusBadge>;
+    if (dias <= 30) return <StatusBadge size="sm" tone="warning">{dias}d</StatusBadge>;
+    return <StatusBadge size="sm" tone="success">{dias}d</StatusBadge>;
+  };
 
   const invalidateAll = () => {
     queryClient.invalidateQueries({ queryKey: ['riscos-aceitos'] });
     queryClient.invalidateQueries({ queryKey: ['riscos-aceite-pendentes'] });
+    queryClient.invalidateQueries({ queryKey: ['riscos-aceites-expirados'] });
     queryClient.invalidateQueries({ queryKey: ['riscos'] });
     queryClient.invalidateQueries({ queryKey: ['riscos-stats'] });
   };
