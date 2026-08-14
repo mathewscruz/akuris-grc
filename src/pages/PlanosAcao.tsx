@@ -15,6 +15,8 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { PlanoAcaoDialog } from '@/components/planos-acao/PlanoAcaoDialog';
+import { PlanosAcaoKanban, PLANO_STATUS_EDITAVEIS } from '@/components/planos-acao/PlanosAcaoKanban';
+import { PlanoAcaoDetailDrawer } from '@/components/planos-acao/PlanoAcaoDetailDrawer';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
