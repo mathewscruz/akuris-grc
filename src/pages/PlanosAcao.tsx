@@ -584,63 +584,15 @@ export default function PlanosAcao() {
               />
             </Card>
           ) : (
-            /* Kanban View */
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-              {kanbanColumns.map((colStatus) => {
-                const cfg = statusConfig[colStatus];
-                const items = filteredPlanos.filter((p: any) => p._displayStatus === colStatus);
-                return (
-                  <div key={colStatus} className="space-y-3">
-                    <div className="flex items-center gap-2 px-2">
-                      <Badge variant={cfg.variant}>{cfg.label}</Badge>
-                      <span className="text-sm text-muted-foreground">({items.length})</span>
-                    </div>
-                    <div className="space-y-2 min-h-[200px]">
-                      {items.map((item: any) => (
-                        <Card
-                          key={`${item.modulo_origem || 'plano'}-${item.id}`}
-                          data-focus-id={item.id}
-                          className="p-3 cursor-pointer hover:shadow-md transition-shadow"
-                          onClick={() => {
-                            if (item._isExternal) {
-                              navigate(item._route);
-                            } else {
-                              setEditingPlano(item);
-                              setDialogOpen(true);
-                            }
-                          }}
-                        >
-                          <p className="font-medium text-sm line-clamp-2">{item.titulo}</p>
-                          <div className="flex items-center gap-2 mt-2 flex-wrap">
-                            <Badge variant={prioridadeConfig[item.prioridade]?.variant || 'default'} className="text-xs">
-                              {prioridadeConfig[item.prioridade]?.label || item.prioridade}
-                            </Badge>
-                            <Badge variant={item._isExternal ? 'default' : 'outline'} className="text-xs">
-                              {moduloLabels[item.modulo_origem] || item.modulo_origem || 'Manual'}
-                            </Badge>
-                          </div>
-                          {item.prazo && (
-                            <p className={`text-xs mt-2 ${item._displayStatus === 'atrasado' ? 'text-destructive font-medium' : 'text-muted-foreground'}`}>
-                              {t('planosAcao.deadlinePrefix')}: {formatDateOnly(item.prazo)}
-                            </p>
-                          )}
-                          {item.profiles?.nome && (
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {item.profiles.nome}
-                            </p>
-                          )}
-                        </Card>
-                      ))}
-                      {items.length === 0 && (
-                        <div className="text-center text-muted-foreground text-xs py-8 border-2 border-dashed rounded-lg">
-                          {t('planosAcao.noItems')}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            <PlanosAcaoKanban
+              colunas={kanbanColumns}
+              items={filteredPlanos}
+              onOpen={(item) => setDetailPlano(item)}
+              onStatusChange={handleStatusChange}
+              statusConfig={statusConfig}
+              prioridadeConfig={prioridadeConfig}
+              moduloLabels={moduloLabels}
+            />
           )}
         </TabsContent>
       </Tabs>
