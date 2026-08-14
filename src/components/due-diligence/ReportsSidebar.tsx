@@ -7,6 +7,7 @@ import { useReportsData } from '@/hooks/useReportsData';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { CHART_GRID, CHART_AXIS, CHART_TOOLTIP_STYLE, chartSeries } from '@/lib/chart-tokens';
 
 export function ReportsSidebar() {
   const { t } = useLanguage();
@@ -120,12 +121,12 @@ export function ReportsSidebar() {
               <CardContent>
                 <ResponsiveContainer width="100%" height={250}>
                   <BarChart data={reports.categoryPerformance}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="categoria" />
-                    <YAxis />
-                    <Tooltip />
+                    <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} />
+                    <XAxis dataKey="categoria" stroke={CHART_AXIS} tick={{ fontSize: 12, fill: CHART_AXIS }} />
+                    <YAxis stroke={CHART_AXIS} tick={{ fontSize: 12, fill: CHART_AXIS }} />
+                    <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
                     <Legend />
-                    <Bar dataKey="averageScore" fill="hsl(var(--primary))" name={t('dueDiligence.reportsSidebar.averageScoreLegend')} />
+                    <Bar dataKey="averageScore" fill={chartSeries(0)} name={t('dueDiligence.reportsSidebar.averageScoreLegend')} />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>

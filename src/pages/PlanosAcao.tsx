@@ -12,7 +12,8 @@ import { ModuleToolbar, ToolbarField } from '@/components/ui/module-toolbar';
 import { DataTable, Column } from '@/components/ui/data-table';
 import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { Chip } from '@/components/ui/chip';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -27,22 +28,22 @@ import { Plus, ListTodo, Clock, CheckCircle2, AlertTriangle, XCircle, Pencil, Tr
 import { differenceInDays } from 'date-fns';
 import { useLanguage } from '@/contexts/LanguageContext';
 
-function buildStatusConfig(t: (key: string) => string): Record<string, { label: string; variant: any; icon: any }> {
+function buildStatusConfig(t: (key: string) => string): Record<string, { label: string; tone: any; icon: any }> {
   return {
-    pendente: { label: t('planosAcao.statusPendente'), variant: 'warning', icon: Clock },
-    em_andamento: { label: t('planosAcao.statusEmAndamento'), variant: 'info', icon: Target },
-    concluido: { label: t('planosAcao.statusConcluido'), variant: 'success', icon: CheckCircle2 },
-    cancelado: { label: t('planosAcao.statusCancelado'), variant: 'secondary', icon: XCircle },
-    atrasado: { label: t('planosAcao.statusAtrasado'), variant: 'destructive', icon: AlertTriangle },
+    pendente: { label: t('planosAcao.statusPendente'), tone: 'warning', icon: Clock },
+    em_andamento: { label: t('planosAcao.statusEmAndamento'), tone: 'info', icon: Target },
+    concluido: { label: t('planosAcao.statusConcluido'), tone: 'success', icon: CheckCircle2 },
+    cancelado: { label: t('planosAcao.statusCancelado'), tone: 'neutral', icon: XCircle },
+    atrasado: { label: t('planosAcao.statusAtrasado'), tone: 'destructive', icon: AlertTriangle },
   };
 }
 
-function buildPrioridadeConfig(t: (key: string) => string): Record<string, { label: string; variant: any }> {
+function buildPrioridadeConfig(t: (key: string) => string): Record<string, { label: string; tone: any; mark: string }> {
   return {
-    baixa: { label: t('planosAcao.priorityBaixa'), variant: 'secondary' },
-    media: { label: t('planosAcao.priorityMedia'), variant: 'default' },
-    alta: { label: t('planosAcao.priorityAlta'), variant: 'warning' },
-    critica: { label: t('planosAcao.priorityCritica'), variant: 'destructive' },
+    baixa: { label: t('planosAcao.priorityBaixa'), tone: 'success', mark: 'B' },
+    media: { label: t('planosAcao.priorityMedia'), tone: 'warning', mark: 'M' },
+    alta: { label: t('planosAcao.priorityAlta'), tone: 'orange', mark: 'A' },
+    critica: { label: t('planosAcao.priorityCritica'), tone: 'destructive', mark: 'C' },
   };
 }
 
@@ -429,7 +430,7 @@ export default function PlanosAcao() {
       sortable: true,
       render: (_: any, item: any) => {
         const cfg = statusConfig[item._displayStatus] || statusConfig.pendente;
-        return <Badge variant={cfg.variant}>{cfg.label}</Badge>;
+        return <StatusBadge tone={cfg.tone}>{cfg.label}</StatusBadge>;
       },
     },
     {
@@ -438,7 +439,7 @@ export default function PlanosAcao() {
       sortable: true,
       render: (val: string) => {
         const cfg = prioridadeConfig[val] || prioridadeConfig.media;
-        return <Badge variant={cfg.variant}>{cfg.label}</Badge>;
+        return <StatusBadge tone={cfg.tone} mark={cfg.mark}>{cfg.label}</StatusBadge>;
       },
     },
     {
@@ -466,9 +467,9 @@ export default function PlanosAcao() {
       key: 'modulo_origem',
       label: t('planosAcao.columnOrigin'),
       render: (val: string, item: any) => (
-        <Badge variant={item._isExternal ? 'default' : 'outline'} className="text-xs">
+        <Chip family="category" size="sm" className="text-xs">
           {moduloLabels[val] || val || 'Manual'}
-        </Badge>
+        </Chip>
       ),
     },
     {

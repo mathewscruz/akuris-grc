@@ -6,7 +6,8 @@ import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { Chip } from '@/components/ui/chip';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -33,8 +34,8 @@ interface Props {
   onEdit: (plano: any) => void;
   onStatusChange: (plano: any, status: string) => void;
   onOpenOrigin?: (plano: any) => void;
-  statusConfig: Record<string, { label: string; variant: any; icon: any }>;
-  prioridadeConfig: Record<string, { label: string; variant: any }>;
+  statusConfig: Record<string, { label: string; tone: any; icon: any }>;
+  prioridadeConfig: Record<string, { label: string; tone: any; mark: string }>;
   moduloLabels: Record<string, string>;
 }
 
@@ -146,15 +147,15 @@ export function PlanoAcaoDetailDrawer({
           <div className="space-y-2.5">
             <div className="flex items-center gap-1.5 flex-wrap">
               {isExternal ? (
-                <Badge variant={statusCfg.variant}>{statusCfg.label}</Badge>
+                <StatusBadge tone={statusCfg.tone}>{statusCfg.label}</StatusBadge>
               ) : (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button type="button" className="inline-flex items-center transition-opacity hover:opacity-80">
-                      <Badge variant={statusCfg.variant} className="gap-1">
+                      <StatusBadge tone={statusCfg.tone} className="gap-1">
                         {statusCfg.label}
                         <ChevronDown className="h-3 w-3 opacity-70" />
-                      </Badge>
+                      </StatusBadge>
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start" className="w-48">
@@ -171,8 +172,8 @@ export function PlanoAcaoDetailDrawer({
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}
-              <Badge variant={prioCfg.variant}>{prioCfg.label}</Badge>
-              <Badge variant="outline">{moduloLabels[plano.modulo_origem] || plano.modulo_origem || 'Manual'}</Badge>
+              <StatusBadge tone={prioCfg.tone} mark={prioCfg.mark}>{prioCfg.label}</StatusBadge>
+              <Chip family="category">{moduloLabels[plano.modulo_origem] || plano.modulo_origem || 'Manual'}</Chip>
             </div>
             <SheetTitle className="text-xl leading-tight font-semibold">{plano.titulo}</SheetTitle>
           </div>

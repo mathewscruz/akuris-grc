@@ -33,6 +33,7 @@ import { format, subDays, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { DateRange } from 'react-day-picker';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { chartSeries, CHART_GRID, CHART_AXIS, CHART_TOOLTIP_STYLE, CHART_SEVERITY } from '@/lib/chart-tokens';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 interface RelatorioMetricas {
@@ -46,10 +47,7 @@ interface RelatorioMetricas {
   timeline_denuncias: { data: string; count: number }[];
 }
 
-const CORES_GRAFICOS = [
-  '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', 
-  '#06B6D4', '#84CC16', '#F97316', '#EC4899', '#6B7280'
-];
+
 
 export function RelatoriosDenuncia() {
   const { t } = useLanguage();
@@ -151,7 +149,7 @@ export function RelatoriosDenuncia() {
       // Agrupar por categoria
       const categoriaGroups = denuncias?.reduce((acc, d) => {
         const categoria = d.categoria?.nome || t('denunciasAdmin.relatorios.semCategoria');
-        const cor = d.categoria?.cor || '#6B7280';
+        const cor = d.categoria?.cor || CHART_AXIS;
         if (!acc[categoria]) {
           acc[categoria] = { count: 0, cor };
         }
@@ -371,17 +369,17 @@ export function RelatoriosDenuncia() {
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={metricas.denuncias_por_status}>
-                    <CartesianGrid strokeDasharray="3 3" />
+                    <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} />
                     <XAxis 
                       dataKey="label" 
-                      tick={{ fontSize: 12 }}
+                      tick={{ fontSize: 12, fill: CHART_AXIS }}
                       angle={-45}
                       textAnchor="end"
                       height={80}
                     />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="count" fill="#3B82F6" />
+                    <YAxis tick={{ fill: CHART_AXIS }} />
+                    <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
+                    <Bar dataKey="count" fill={chartSeries(0)} />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -405,7 +403,7 @@ export function RelatoriosDenuncia() {
                       labelLine={false}
                       label={({ categoria, count }) => `${categoria}: ${count}`}
                       outerRadius={80}
-                      fill="#8884d8"
+                      fill={chartSeries(0)}
                       dataKey="count"
                     >
                       {metricas.denuncias_por_categoria.map((entry, index) => (
@@ -433,7 +431,11 @@ export function RelatoriosDenuncia() {
                       <div className="flex items-center gap-2">
                         <div 
                           className="w-4 h-4 rounded"
-                          style={{ backgroundColor: CORES_GRAFICOS[index] }}
+                          style={{ backgroundColor: CHART_SEVERITY[
+                            item.gravidade === 'critica' ? 'critical' :
+                            item.gravidade === 'alta' ? 'high' :
+                            item.gravidade === 'media' ? 'medium' : 'low'
+                          ] }}
                         />
                         <span className="text-sm">{item.label}</span>
                       </div>
@@ -468,9 +470,9 @@ export function RelatoriosDenuncia() {
                     <Line 
                       type="monotone" 
                       dataKey="count" 
-                      stroke="#3B82F6" 
+                      stroke={chartSeries(0)} 
                       strokeWidth={2}
-                      dot={{ fill: '#3B82F6' }}
+                      dot={{ fill: chartSeries(0) }}
                     />
                   </LineChart>
                 </ResponsiveContainer>

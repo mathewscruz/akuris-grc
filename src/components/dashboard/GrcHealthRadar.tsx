@@ -16,6 +16,7 @@ import { Hexagon, CheckCircle2, AlertCircle, XCircle, Minus } from 'lucide-react
 import { useRadarChartData } from '@/hooks/useRadarChartData';
 import { useGrcMaturityScore } from '@/hooks/useGrcMaturityScore';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { chartSeries, CHART_GRID, CHART_AXIS, CHART_AREA_OPACITY } from '@/lib/chart-tokens';
 
 // Rótulos curtos para os eixos não estourarem nas laterais do radar.
 const STATUS_META = {
@@ -41,7 +42,7 @@ const RadarTooltip = ({ active, payload }: any) => {
     <div className="rounded-lg border border-border bg-popover px-3 py-2 shadow-md">
       <div className="flex items-center justify-between gap-4">
         <span className="text-sm font-semibold text-popover-foreground">{p.full}</span>
-        <span className="text-sm font-bold tabular-nums text-primary">
+        <span className="text-sm font-bold tabular-nums text-foreground">
           {p.hasData ? `${p.score}%` : '—'}
         </span>
       </div>
@@ -131,20 +132,20 @@ export function GrcHealthRadar() {
           <div className="relative w-full h-[260px]">
             <ResponsiveContainer width="100%" height="100%">
               <RadarChart data={chartData} outerRadius="70%" margin={{ top: 8, right: 28, bottom: 8, left: 28 }}>
-                <PolarGrid stroke="hsl(var(--border))" strokeOpacity={0.5} />
+                <PolarGrid stroke={CHART_GRID} />
                 <PolarAngleAxis
                   dataKey="subject"
-                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                  tick={{ fill: CHART_AXIS, fontSize: 11 }}
                 />
                 <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
                 <Radar
                   dataKey="score"
-                  stroke="hsl(var(--primary))"
+                  stroke={chartSeries(0)}
                   strokeWidth={2}
-                  fill="hsl(var(--primary))"
-                  fillOpacity={0.22}
-                  dot={{ r: 3, fill: 'hsl(var(--primary))', strokeWidth: 0 }}
-                  activeDot={{ r: 5, fill: 'hsl(var(--primary))', stroke: 'hsl(var(--background))', strokeWidth: 2 }}
+                  fill={chartSeries(0)}
+                  fillOpacity={CHART_AREA_OPACITY}
+                  dot={{ r: 3, fill: chartSeries(0), strokeWidth: 0 }}
+                  activeDot={{ r: 5, fill: chartSeries(0), stroke: 'hsl(var(--background))', strokeWidth: 2 }}
                   isAnimationActive
                 />
                 <Tooltip content={<RadarTooltip />} />

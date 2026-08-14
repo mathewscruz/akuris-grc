@@ -1,6 +1,7 @@
 import React from 'react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Badge } from '@/components/ui/badge';
+import { StatusBadge } from '@/components/ui/status-badge';
 import { Button } from '@/components/ui/button';
 import { ChevronDown, ShieldCheck, RefreshCw } from 'lucide-react';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
@@ -26,11 +27,11 @@ interface Props {
   onRun: () => void;
 }
 
-const STATUS_TONES: Record<string, string> = {
-  forte: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30',
-  parcial: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30',
-  fraco: 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border-rose-500/30',
-  ausente: 'bg-muted text-muted-foreground border-border',
+const STATUS_TONE_MAP: Record<string, { tone: 'success' | 'warning' | 'destructive' | 'neutral'; mark: string }> = {
+  forte: { tone: 'success', mark: 'B' },
+  parcial: { tone: 'warning', mark: 'M' },
+  fraco: { tone: 'destructive', mark: 'C' },
+  ausente: { tone: 'neutral', mark: 'N' },
 };
 
 export const DocGenAdherencePanel: React.FC<Props> = ({ result, loading, frameworkName, onRun }) => {
@@ -75,9 +76,14 @@ export const DocGenAdherencePanel: React.FC<Props> = ({ result, loading, framewo
                 <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{t('docgen.adherence.bySection')}</div>
                 {result.secoes.map((s, i) => (
                   <div key={i} className="flex items-start gap-2 text-xs">
-                    <Badge variant="outline" className={`shrink-0 capitalize ${STATUS_TONES[s.status] || ''}`}>
+                    <StatusBadge
+                      size="sm"
+                      tone={STATUS_TONE_MAP[s.status]?.tone || 'neutral'}
+                      mark={STATUS_TONE_MAP[s.status]?.mark}
+                      className="shrink-0 capitalize"
+                    >
                       {s.status}
-                    </Badge>
+                    </StatusBadge>
                     <div className="min-w-0 flex-1">
                       <div className="font-medium text-foreground">{s.section_name}</div>
                       {s.requisitos_cobertos?.length > 0 && (

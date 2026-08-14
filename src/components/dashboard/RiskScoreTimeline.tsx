@@ -18,6 +18,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getAppLocale } from '@/lib/i18n-locale';
+import { chartSeries, CHART_GRID, CHART_AXIS, CHART_AREA_OPACITY, CHART_TOOLTIP_STYLE } from '@/lib/chart-tokens';
 
 type TimeRange = 'daily' | 'weekly' | 'monthly' | 'yearly';
 
@@ -254,26 +255,25 @@ export function RiskScoreTimeline() {
               <AreaChart data={displayData} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="riskExposureFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="hsl(var(--destructive))" stopOpacity={0.35} />
-                    <stop offset="100%" stopColor="hsl(var(--destructive))" stopOpacity={0.02} />
+                    <stop offset="0%" stopColor={chartSeries(0)} stopOpacity={1} />
+                    <stop offset="100%" stopColor={chartSeries(0)} stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid
                   strokeDasharray="3 3"
-                  stroke="hsl(var(--border))"
-                  strokeOpacity={0.6}
+                  stroke={CHART_GRID}
                   vertical={false}
                 />
                 <XAxis
                   dataKey="date"
-                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
-                  axisLine={{ stroke: 'hsl(var(--border))' }}
+                  tick={{ fill: CHART_AXIS, fontSize: 11 }}
+                  axisLine={{ stroke: CHART_GRID }}
                   tickLine={false}
                 />
                 <YAxis
                   domain={[0, 100]}
                   ticks={[0, 25, 50, 75, 100]}
-                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                  tick={{ fill: CHART_AXIS, fontSize: 11 }}
                   tickFormatter={(v) => `${v}`}
                   axisLine={false}
                   tickLine={false}
@@ -281,25 +281,18 @@ export function RiskScoreTimeline() {
                 />
                 <ReferenceLine
                   y={GOAL_VALUE}
-                  stroke="hsl(var(--success))"
+                  stroke={CHART_AXIS}
                   strokeDasharray="4 4"
-                  strokeOpacity={0.6}
                   label={{
                     value: t('dashWidgets.timeline.goal', { value: GOAL_VALUE }),
                     position: 'right',
-                    fill: 'hsl(var(--success))',
+                    fill: CHART_AXIS,
                     fontSize: 10,
                   }}
                 />
                 <Tooltip
-                  cursor={{ stroke: 'hsl(var(--destructive))', strokeWidth: 1, strokeDasharray: '3 3' }}
-                  contentStyle={{
-                    backgroundColor: 'hsl(var(--popover))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px',
-                    padding: '8px 12px',
-                    boxShadow: '0 4px 12px hsl(var(--foreground) / 0.08)',
-                  }}
+                  cursor={{ stroke: chartSeries(0), strokeWidth: 1, strokeDasharray: '3 3' }}
+                  contentStyle={CHART_TOOLTIP_STYLE}
                   labelStyle={{
                     color: 'hsl(var(--muted-foreground))',
                     fontSize: 11,
@@ -319,14 +312,15 @@ export function RiskScoreTimeline() {
                 <Area
                   type="monotone"
                   dataKey="score"
-                  stroke="hsl(var(--destructive))"
+                  stroke={chartSeries(0)}
                   strokeWidth={2.5}
                   fill="url(#riskExposureFill)"
+                  fillOpacity={CHART_AREA_OPACITY}
                   connectNulls={false}
-                  dot={{ fill: 'hsl(var(--destructive))', r: 3 }}
+                  dot={{ fill: chartSeries(0), r: 3 }}
                   activeDot={{
                     r: 6,
-                    fill: 'hsl(var(--destructive))',
+                    fill: chartSeries(0),
                     stroke: 'hsl(var(--background))',
                     strokeWidth: 2,
                   }}

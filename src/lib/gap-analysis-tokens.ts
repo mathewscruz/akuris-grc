@@ -8,6 +8,7 @@
 
 import type { BadgeProps } from '@/components/ui/badge';
 import { tGlobal } from '@/lib/i18n-global';
+import { CHART_SEVERITY, chartSeries } from '@/lib/chart-tokens';
 
 export type ConformityStatus = 'conforme' | 'parcial' | 'nao_conforme' | 'nao_aplicavel' | 'nao_avaliado';
 
@@ -84,10 +85,12 @@ export function getScoreBadgeVariant(score: number): Variant {
 /** Retorna cor HSL crua via token CSS — para SVG/recharts/inline */
 export function getScoreHsl(score: number): string {
   switch (getScoreVariant(score)) {
-    case 'success': return 'hsl(var(--success))';
-    case 'primary': return 'hsl(var(--primary))';
-    case 'warning': return 'hsl(var(--warning))';
-    case 'destructive': return 'hsl(var(--destructive))';
+    // Envio 9: o roxo não é cor de dados. A faixa intermédia usa o neutro
+    // da paleta de gráficos; as restantes usam a escala de severidade.
+    case 'success': return CHART_SEVERITY.low;
+    case 'primary': return chartSeries(0);
+    case 'warning': return CHART_SEVERITY.medium;
+    case 'destructive': return CHART_SEVERITY.critical;
   }
 }
 

@@ -25,8 +25,8 @@ import { useLanguage } from "@/contexts/LanguageContext"
  *  │ Ver detalhes                          →  │  ← CTA discreta (só se drillDown)
  *  └──────────────────────────────────────────┘
  *
- *  Sem pílula colorida no ícone, sem background colorido por variant
- *  (apenas accent-bar lateral 2px). Loading via AkurisPulse.
+ *  Sem pílula colorida no ícone, sem background colorido por variant,
+ *  sem barra decorativa lateral — hierarquia via superfície/aresta. Loading via AkurisPulse.
  */
 
 type Tone = "destructive" | "warning" | "success" | "info" | "primary" | "neutral"
@@ -57,11 +57,11 @@ const statCardVariants = cva(
     variants: {
       variant: {
         default: "",
-        success: "governaii-accent-bar before:!bg-success/70",
-        warning: "governaii-accent-bar before:!bg-warning/70",
-        destructive: "governaii-accent-bar before:!bg-destructive/70",
-        info: "governaii-accent-bar before:!bg-info/70",
-        primary: "governaii-accent-bar before:!bg-primary/70",
+        success: "",
+        warning: "",
+        destructive: "",
+        info: "",
+        primary: "",
       },
       interactive: {
         true: "cursor-pointer hover:border-primary/40 hover:shadow-elegant focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
@@ -102,7 +102,8 @@ interface StatCardProps
   segments?: StatCardSegment[]
   /** Conecta o card ao KpiDrillDownDrawer global. Torna o card clicável. */
   drillDown?: DrillDownKey
-  /** Assinatura Akuris no canto (use no KPI herói da tela). */
+  /** Assinatura Akuris no canto. USO EXCLUSIVO de superfícies-herói (ex.: score hero, login/MFA, modais de IA).
+   *  Não usar em cartões de lista/módulo — ver CornerAccent. */
   showAccent?: boolean
   actions?: React.ReactNode
   loading?: boolean

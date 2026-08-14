@@ -117,11 +117,44 @@
     --info: 199 70% 50%;
     --info-foreground: 0 0% 100%;
 
-    /* Surface tokens semânticos — micro-elevação por luminosidade */
+    /* Surface tokens semânticos — degraus percetíveis (Envio 9)
+       page → card → elevated (diálogos/popovers). */
     --surface-1: 0 0% 100%;
     --surface-2: 200 18% 97%;
     --surface-3: 200 22% 95%;
+    --surface-page: 210 20% 98%;
+    --surface-card: 0 0% 100%;
+    --surface-elevated: 0 0% 100%;
+    --border-strong: 200 18% 80%;
     --brand-ink: 0 0% 100%;
+
+    /* ── Severidade (Envio 9): exclusiva de risco/criticidade ─────────────
+       Sempre acompanhada da letra C/A/M/B, por isso pode ser discreta. */
+    --severity-critical: 0 62% 52%;
+    --severity-high: 24 85% 40%;
+    --severity-medium: 35 85% 34%;
+    --severity-low: 152 40% 34%;
+    --severity-none: 200 12% 46%;
+
+    /* ── Estado (Envio 9): família neutra, nunca compete com severidade ──
+       Só o estado terminal positivo recebe um acento discreto. */
+    --state-rest: 200 12% 42%;
+    --state-rest-surface: 200 14% 93%;
+    --state-active: 200 16% 30%;
+    --state-active-surface: 200 16% 90%;
+    --state-done: 178 42% 28%;
+    --state-done-surface: 178 34% 92%;
+
+    /* ── Gráficos (Envio 9): paleta neutra/azuis dessaturados ───────────── */
+    --chart-1: 213 32% 42%;
+    --chart-2: 200 20% 56%;
+    --chart-3: 222 26% 30%;
+    --chart-4: 195 24% 66%;
+    --chart-5: 210 12% 48%;
+    --chart-6: 232 22% 58%;
+    --chart-grid: 200 16% 88%;
+    --chart-axis: 200 10% 45%;
+    --chart-area-opacity: 0.22;
     
     /* Neutral */
     --neutral: 200 15% 50%;
@@ -259,11 +292,41 @@
     --info: 199 65% 56%;
     --info-foreground: 0 0% 100%;
 
-    /* Surface tokens — dark */
-    --surface-1: 216 45% 12%;
-    --surface-2: 216 42% 14%;
-    --surface-3: 216 40% 16%;
+    /* Surface tokens — dark (Envio 9: degraus mais percetíveis) */
+    --surface-1: 216 40% 14%;
+    --surface-2: 216 38% 17%;
+    --surface-3: 216 36% 21%;
+    --surface-page: 216 60% 7%;
+    --surface-card: 216 40% 14%;
+    --surface-elevated: 216 36% 18%;
+    --border-strong: 216 20% 34%;
     --brand-ink: 0 0% 100%;
+
+    /* ── Severidade — dark ─────────────────────────────────────────────── */
+    --severity-critical: 0 60% 62%;
+    --severity-high: 24 78% 60%;
+    --severity-medium: 38 70% 58%;
+    --severity-low: 152 40% 58%;
+    --severity-none: 200 12% 62%;
+
+    /* ── Estado — dark ─────────────────────────────────────────────────── */
+    --state-rest: 200 12% 68%;
+    --state-rest-surface: 216 26% 21%;
+    --state-active: 200 14% 82%;
+    --state-active-surface: 216 24% 24%;
+    --state-done: 178 40% 62%;
+    --state-done-surface: 178 26% 20%;
+
+    /* ── Gráficos — dark (mais luminosos p/ não desaparecerem no navy) ─── */
+    --chart-1: 213 44% 66%;
+    --chart-2: 200 26% 74%;
+    --chart-3: 222 38% 78%;
+    --chart-4: 195 30% 60%;
+    --chart-5: 210 14% 68%;
+    --chart-6: 232 34% 72%;
+    --chart-grid: 216 20% 26%;
+    --chart-axis: 200 14% 72%;
+    --chart-area-opacity: 0.34;
     
     /* Neutral */
     --neutral: 200 12% 62%;
@@ -273,15 +336,15 @@
     --input: 216 25% 20%;
     --ring: 252 100% 70%;
     
-    /* Border */
-    --border: 216 20% 22%;
+    /* Border — mais visível: no dark a aresta substitui a sombra */
+    --border: 216 20% 28%;
     
-    /* Card */
-    --card: 216 45% 12%;
+    /* Card — degrau claro acima do fundo da página (216 60% 8%) */
+    --card: 216 40% 14%;
     --card-foreground: 180 10% 95%;
     
-    /* Popover */
-    --popover: 216 45% 12%;
+    /* Popover / diálogo — superfície elevada */
+    --popover: 216 36% 18%;
     --popover-foreground: 180 10% 95%;
 
     /* Gradients - Dark Mode */

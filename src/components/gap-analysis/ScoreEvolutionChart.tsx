@@ -15,6 +15,7 @@ import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { ScoreType } from '@/lib/framework-configs';
 import { TrendingUp, TrendingDown, Minus, LineChart as LineChartIcon } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { chartSeries, CHART_GRID, CHART_AXIS, CHART_AREA_OPACITY, CHART_TOOLTIP_STYLE } from '@/lib/chart-tokens';
 
 interface ScoreEvolutionChartProps {
   frameworkId: string;
@@ -150,26 +151,25 @@ export const ScoreEvolutionChart = ({ frameworkId, scoreType = 'scale_0_5' }: Sc
               <AreaChart data={displayData} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="scoreEvolutionFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.35} />
-                    <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.02} />
+                    <stop offset="0%" stopColor={chartSeries(0)} stopOpacity={1} />
+                    <stop offset="100%" stopColor={chartSeries(0)} stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid
                   strokeDasharray="3 3"
-                  stroke="hsl(var(--border))"
-                  strokeOpacity={0.6}
+                  stroke={CHART_GRID}
                   vertical={false}
                 />
                 <XAxis
                   dataKey="date"
-                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
-                  axisLine={{ stroke: 'hsl(var(--border))' }}
+                  tick={{ fill: CHART_AXIS, fontSize: 11 }}
+                  axisLine={{ stroke: CHART_GRID }}
                   tickLine={false}
                 />
                 <YAxis
                   domain={domain}
                   ticks={ticks}
-                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                  tick={{ fill: CHART_AXIS, fontSize: 11 }}
                   tickFormatter={(v) => (isPercentage ? `${v}%` : v.toString())}
                   axisLine={false}
                   tickLine={false}
@@ -177,25 +177,18 @@ export const ScoreEvolutionChart = ({ frameworkId, scoreType = 'scale_0_5' }: Sc
                 />
                 <ReferenceLine
                   y={goalValue}
-                  stroke="hsl(var(--success))"
+                  stroke={CHART_AXIS}
                   strokeDasharray="4 4"
-                  strokeOpacity={0.5}
                   label={{
                     value: t('sweepRiscos.gap.scoreChart.meta'),
                     position: 'right',
-                    fill: 'hsl(var(--success))',
+                    fill: CHART_AXIS,
                     fontSize: 10,
                   }}
                 />
                 <Tooltip
-                  cursor={{ stroke: 'hsl(var(--primary))', strokeWidth: 1, strokeDasharray: '3 3' }}
-                  contentStyle={{
-                    backgroundColor: 'hsl(var(--popover))',
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px',
-                    padding: '8px 12px',
-                    boxShadow: '0 4px 12px hsl(var(--foreground) / 0.08)',
-                  }}
+                  cursor={{ stroke: chartSeries(0), strokeWidth: 1, strokeDasharray: '3 3' }}
+                  contentStyle={CHART_TOOLTIP_STYLE}
                   labelStyle={{
                     color: 'hsl(var(--muted-foreground))',
                     fontSize: 11,
@@ -207,17 +200,18 @@ export const ScoreEvolutionChart = ({ frameworkId, scoreType = 'scale_0_5' }: Sc
                 <Area
                   type="monotone"
                   dataKey="score"
-                  stroke="hsl(var(--primary))"
+                  stroke={chartSeries(0)}
                   strokeWidth={2.5}
                   fill="url(#scoreEvolutionFill)"
+                  fillOpacity={CHART_AREA_OPACITY}
                   dot={
                     history.length === 1
-                      ? { fill: 'hsl(var(--primary))', stroke: 'hsl(var(--background))', strokeWidth: 2, r: 5 }
-                      : { fill: 'hsl(var(--primary))', r: 3 }
+                      ? { fill: chartSeries(0), stroke: 'hsl(var(--background))', strokeWidth: 2, r: 5 }
+                      : { fill: chartSeries(0), r: 3 }
                   }
                   activeDot={{
                     r: 6,
-                    fill: 'hsl(var(--primary))',
+                    fill: chartSeries(0),
                     stroke: 'hsl(var(--background))',
                     strokeWidth: 2,
                   }}

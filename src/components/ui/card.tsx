@@ -3,16 +3,17 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const cardVariants = cva(
-  "rounded-lg text-card-foreground transition-all duration-300",
+  "rounded-lg border border-border text-card-foreground transition-all duration-300 dark:shadow-none",
   {
     variants: {
       variant: {
-        default: "bg-card border border-border shadow-card",
-        elevated: "bg-card border border-border shadow-elegant",
-        outline: "border border-border bg-transparent",
+        default: "bg-card shadow-card",
+        elevated: "bg-card shadow-elegant",
+        outline: "bg-transparent",
         ghost: "bg-transparent border-none shadow-none",
-        gradient: "bg-gradient-card border border-border/50 shadow-card",
-        accent: "bg-card border border-border shadow-card governaii-accent-bar",
+        gradient: "bg-gradient-card shadow-card",
+        // Sem barra decorativa: hierarquia por superfície/aresta, não por cor lateral.
+        accent: "bg-card shadow-card",
       },
       interactive: {
         true: "cursor-pointer governaii-card-hover hover:border-primary/30",

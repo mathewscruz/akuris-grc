@@ -19,6 +19,7 @@ import {
 } from '@/components/icons';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { chartSeries } from '@/lib/chart-tokens';
 
 // Mapeia as chaves do useRadarChartData para os ícones proprietários Akuris.
 const iconMap: Record<string, React.ComponentType<any>> = {
@@ -32,14 +33,8 @@ const iconMap: Record<string, React.ComponentType<any>> = {
   MessageSquareWarning: DenunciasIcon,
 };
 
-// Paleta sóbria padronizada — variações do primary + destructive atenuado para crítico.
-const getScoreColor = (score: number, hasData: boolean) => {
-  if (!hasData) return 'bg-muted-foreground/20';
-  if (score >= 80) return 'bg-primary';
-  if (score >= 60) return 'bg-primary/70';
-  if (score >= 40) return 'bg-primary/40';
-  return 'bg-destructive/70';
-};
+// Paleta neutra dos gráficos — a mesma cor sóbria em todas as barras, variando a intensidade pelo próprio valor.
+const getScoreBarColor = (hasData: boolean) => (hasData ? chartSeries(0) : 'hsl(var(--muted-foreground) / 0.2)');
 
 const getScoreTextColor = (score: number, hasData: boolean) => {
   if (!hasData) return 'text-muted-foreground';
@@ -49,7 +44,7 @@ const getScoreTextColor = (score: number, hasData: boolean) => {
 
 const MaturityRow = ({ item, navigate, t }: { item: RadarDataPoint; navigate: any; t: any }) => {
   const Icon = iconMap[item.icon] || FileText;
-  const colorClass = getScoreColor(item.score, item.hasData);
+  const barColor = getScoreBarColor(item.hasData);
   const textColor = getScoreTextColor(item.score, item.hasData);
 
   return (
@@ -80,8 +75,8 @@ const MaturityRow = ({ item, navigate, t }: { item: RadarDataPoint; navigate: an
             </div>
             <div className="w-full h-1 bg-muted/60 rounded-full overflow-hidden">
               <div
-                className={`h-full rounded-full transition-all duration-700 ease-out ${colorClass}`}
-                style={{ width: item.hasData ? `${Math.max(item.score, 2)}%` : '0%' }}
+                className="h-full rounded-full transition-all duration-700 ease-out"
+                style={{ width: item.hasData ? `${Math.max(item.score, 2)}%` : '0%', backgroundColor: barColor }}
               />
             </div>
           </div>

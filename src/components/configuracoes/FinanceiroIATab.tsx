@@ -15,6 +15,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { useLanguage } from '@/contexts/LanguageContext';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { CHART_SERIES, CHART_GRID, CHART_AXIS } from '@/lib/chart-tokens';
 // --- Constants: AI models, pricing, and function mapping ---
 
 interface ModelPricing {
@@ -288,12 +289,8 @@ export function FinanceiroIATab() {
     { key: 'status', label: t('configPlanos.financeiroIA.colStatus'), render: (v: string) => statusBadge(v) },
   ];
 
-  const CHART_COLORS = [
-    'hsl(var(--primary))',
-    'hsl(var(--accent))',
-    'hsl(262, 83%, 58%)',
-    'hsl(220, 70%, 50%)',
-  ];
+  // Envio 9: paleta neutra partilhada — nada de roxo nem hex/HSL cru.
+  const CHART_COLORS = CHART_SERIES;
 
   return (
     <div className="space-y-6">
@@ -445,8 +442,8 @@ export function FinanceiroIATab() {
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={modelStats.filter(m => m.reqs > 0)} layout="vertical" margin={{ left: 20, right: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                  <XAxis type="number" className="text-xs fill-muted-foreground" />
+                  <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} />
+                  <XAxis type="number" stroke={CHART_AXIS} tick={{ fontSize: 12, fill: CHART_AXIS }} />
                   <YAxis
                     dataKey="label"
                     type="category"
