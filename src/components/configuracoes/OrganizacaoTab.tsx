@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Mail } from 'lucide-react';
 import { CompanyContextSettings } from './CompanyContextSettings';
+import { CompanySlugSettings } from './CompanySlugSettings';
 import { CompanyLogoUpload } from './CompanyLogoUpload';
 import { EmailTestDialog } from './EmailTestDialog';
 import { useLanguage } from '@/contexts/LanguageContext';
