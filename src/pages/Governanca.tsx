@@ -12,6 +12,7 @@ export default function Governanca() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { t } = useLanguage();
+  const [actionsSlot, setActionsSlot] = useState<HTMLDivElement | null>(null);
 
   // Detectar a aba inicial baseado no path ou query param
   const getInitialTab = () => {
