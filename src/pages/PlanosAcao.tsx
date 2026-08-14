@@ -480,13 +480,31 @@ export default function PlanosAcao() {
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuItem onClick={() => setDetailPlano(item)}>
+              <ExternalLink className="h-4 w-4 mr-2" />{t('planosAcao.actionOpenDetail')}
+            </DropdownMenuItem>
             {item._isExternal ? (
               <DropdownMenuItem onClick={() => navigate(item._route)}>
                 <ExternalLink className="h-4 w-4 mr-2" />{t('planosAcao.actionOpenInModule')}
               </DropdownMenuItem>
             ) : (
               <>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel className="text-xs text-muted-foreground">
+                  {t('planosAcao.quickStatusPrefix')}
+                </DropdownMenuLabel>
+                {PLANO_STATUS_EDITAVEIS.map((s) => (
+                  <DropdownMenuItem
+                    key={s}
+                    onClick={() => handleStatusChange(item, s)}
+                    className={item.status === s ? 'font-semibold' : ''}
+                  >
+                    {statusConfig[s]?.label}
+                    {item.status === s && <span className="ml-auto text-primary">✓</span>}
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => { setEditingPlano(item); setDialogOpen(true); }}>
                   <Pencil className="h-4 w-4 mr-2" />{t('planosAcao.actionEdit')}
                 </DropdownMenuItem>
