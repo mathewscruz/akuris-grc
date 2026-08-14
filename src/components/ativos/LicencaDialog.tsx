@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/select";
 import { UserSelect } from "@/components/riscos/UserSelect";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useEmpresaMoeda } from "@/hooks/useEmpresaMoeda";
 
 interface LicencaDialogProps {
   open: boolean;
