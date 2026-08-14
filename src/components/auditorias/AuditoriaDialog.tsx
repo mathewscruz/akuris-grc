@@ -14,6 +14,16 @@ import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 
 interface AuditoriaDialogProps {
@@ -117,7 +127,7 @@ const AuditoriaDialog = ({ open, onOpenChange, auditoria, onSuccess }: Auditoria
       return;
     }
 
-    if (formData.status === 'concluida' && auditoria?.id && auditoria?.status !== 'concluida') {
+    if (!razaoGate && formData.status === 'concluida' && auditoria?.id && auditoria?.status !== 'concluida') {
       const { data: itens } = await supabase
         .from('auditoria_itens')
         .select('id, status')
@@ -390,6 +400,55 @@ const AuditoriaDialog = ({ open, onOpenChange, auditoria, onSuccess }: Auditoria
           </div>
 
         </form>
+
+        <AlertDialog open={semItens} onOpenChange={setSemItens}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t('t4.gates.auditoriaSemItens')}</AlertDialogTitle>
+              <AlertDialogDescription>{t('t4.gates.auditoriaSemItensDesc')}</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogAction onClick={() => setSemItens(false)}>
+                {t('t4.gates.cancelar')}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog open={!!pendencias} onOpenChange={(o) => !o && setPendencias(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t('t4.gates.auditoriaPendencias')}</AlertDialogTitle>
+              <AlertDialogDescription>
+                {t('t4.gates.auditoriaPendenciasDesc', {
+                  itens: pendencias?.itens ?? 0,
+                  maiores: pendencias?.maiores ?? 0,
+                })}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="space-y-2">
+              <Label>{t('t4.gates.auditoriaRazao')}</Label>
+              <Textarea rows={3} value={razaoConclusao} onChange={(e) => setRazaoConclusao(e.target.value)} />
+            </div>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{t('t4.gates.cancelar')}</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={!razaoConclusao.trim()}
+                onClick={async (e) => {
+                  e.preventDefault();
+                  if (!razaoConclusao.trim()) {
+                    toast.error(t('t4.gates.auditoriaRazaoObrigatoria'));
+                    return;
+                  }
+                  setPendencias(null);
+                  await handleSubmit({ preventDefault: () => {} } as React.FormEvent, razaoConclusao);
+                }}
+              >
+                {t('t4.gates.confirmar')}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </DialogShell>
   );
 };
