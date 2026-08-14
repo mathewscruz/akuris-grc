@@ -246,7 +246,7 @@ export default function AtivosLicencas() {
       sortable: true,
       render: (_: any, licenca: Licenca) => (
         licenca.valor_renovacao 
-          ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(licenca.valor_renovacao)
+          ? formatMoedaEmpresa(licenca.valor_renovacao)
           : '-'
       )
     },

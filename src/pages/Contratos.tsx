@@ -355,9 +355,9 @@ export default function Contratos() {
 
           <StatCard
             title={t('cardsKpi.contratos.valorTotal')}
-            value={new Intl.NumberFormat('pt-BR', {
+            value={new Intl.NumberFormat(localeMoeda, {
               style: 'currency',
-              currency: 'BRL',
+              currency: moedaEmpresa,
               notation: 'compact'
             }).format(statsContratos?.valorTotal || 0)}
             description={t('cardsKpi.contratos.valorEmAtivos')}
@@ -511,7 +511,7 @@ export default function Contratos() {
                           <TableCell><Badge variant="outline" className="capitalize whitespace-nowrap">{formatStatus(contrato.tipo)}</Badge></TableCell>
                           <TableCell>
                             {contrato.valor 
-                              ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(contrato.valor))
+                              ? formatMoedaEmpresa(Number(contrato.valor))
                               : 'N/A'
                             }
                           </TableCell>
