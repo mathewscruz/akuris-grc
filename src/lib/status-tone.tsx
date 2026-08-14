@@ -17,6 +17,8 @@ export interface ToneResult {
   tone: StatusTone;
   intensity?: StatusIntensity;
   icon?: React.ReactNode;
+  /** Letra redundante à cor (WCAG 1.4.1): C/A/M/B na escala de severidade. */
+  mark?: string;
 }
 
 /** Normaliza string (remove acentos + lowercase + trim). */
@@ -255,12 +257,12 @@ export const resolveTipoDocumentoTone = (raw?: string | null): ToneResult => {
 export const resolveSeverityTone = (raw?: string | null): ToneResult => {
   const v = norm(raw);
   if (v === 'critico' || v === 'critica' || v === 'muito alto' || v === 'muito_alto')
-    return { tone: 'destructive', intensity: 'high', icon: <AlertTriangle {...ICON_PROPS} /> };
-  if (v === 'alto' || v === 'alta') return { tone: 'orange' };
-  if (v === 'medio' || v === 'media') return { tone: 'warning' };
+    return { tone: 'destructive', intensity: 'high', mark: 'C' };
+  if (v === 'alto' || v === 'alta') return { tone: 'orange', mark: 'A' };
+  if (v === 'medio' || v === 'media') return { tone: 'warning', mark: 'M' };
   if (v === 'baixo' || v === 'baixa' || v === 'muito baixo' || v === 'muito_baixo')
-    return { tone: 'success' };
-  if (v === 'informativa' || v === 'informativo' || v === 'info') return { tone: 'info' };
+    return { tone: 'success', mark: 'B' };
+  if (v === 'informativa' || v === 'informativo' || v === 'info') return { tone: 'info', mark: 'I' };
   return { tone: 'neutral' };
 };
 

@@ -24,6 +24,11 @@ interface StatusBadgeProps {
   size?: StatusSize;
   /** high: adiciona anel concêntrico no dot — use para níveis altos (Crítico, Alto). */
   intensity?: StatusIntensity;
+  /**
+   * Codificação redundante (WCAG 1.4.1 — não usar só a cor): letra curta
+   * mostrada no lugar do dot (ex.: C/A/M/B na escala de severidade).
+   */
+  mark?: string;
 }
 
 const TONE_CLASSES: Record<
@@ -108,6 +113,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
   variant = 'soft',
   size = 'md',
   intensity = 'normal',
+  mark,
 }) => {
   const styles = TONE_CLASSES[tone];
   const sizing = SIZE_CLASSES[size];
@@ -121,7 +127,18 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
         className
       )}
     >
-      {icon ? (
+      {mark ? (
+        <span
+          aria-hidden="true"
+          className={cn(
+            'inline-flex items-center justify-center rounded-[3px] font-bold leading-none flex-shrink-0',
+            size === 'sm' ? 'h-3.5 w-3.5 text-[9px]' : 'h-4 w-4 text-[10px]',
+            styles.solid,
+          )}
+        >
+          {mark}
+        </span>
+      ) : icon ? (
         <span className="flex items-center [&_svg]:h-3 [&_svg]:w-3">{icon}</span>
       ) : (
         <span
