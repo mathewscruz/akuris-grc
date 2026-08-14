@@ -216,7 +216,7 @@ export function AceiteDetalheDialog({ open, onOpenChange, risco }: Props) {
                         <p className="text-muted-foreground">
                           {formatDateOnly(log.created_at || '')} — {log.action}
                         </p>
-                        <p className="text-xs text-muted-foreground/70">
+                        <p className="text-xs text-muted-foreground">
                           {t('riscosDialogs.aceiteDetalhe.campos', { campos: (log.changed_fields as string[] || []).join(', ') })}
                         </p>
                       </div>

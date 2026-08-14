@@ -235,7 +235,7 @@ export function RequirementDrawer({
                     </span>
                     {requirement.codigo && (
                       <>
-                        <span className="text-muted-foreground/60">·</span>
+                        <span className="text-muted-foreground">·</span>
                         <span className="font-mono text-xs tabular-nums text-foreground/80">
                           {requirement.codigo}
                         </span>
@@ -243,7 +243,7 @@ export function RequirementDrawer({
                     )}
                     {requirement.categoria && (
                       <>
-                        <span className="text-muted-foreground/60">·</span>
+                        <span className="text-muted-foreground">·</span>
                         <span className="text-[10px] font-sans uppercase tracking-wider text-muted-foreground truncate">
                           {requirement.categoria}
                         </span>

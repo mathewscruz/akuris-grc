@@ -79,7 +79,7 @@ function StateIcon({ state }: { state?: WizardTabState }) {
   if (state === 'complete') return <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />;
   if (state === 'error') return <AlertCircle className="h-3.5 w-3.5 text-destructive" />;
   if (state === 'partial') return <Circle className="h-3.5 w-3.5 text-amber-500 fill-amber-500/30" />;
-  return <Circle className="h-3.5 w-3.5 text-muted-foreground/50" />;
+  return <Circle className="h-3.5 w-3.5 text-muted-foreground" />;
 }
 
 /**

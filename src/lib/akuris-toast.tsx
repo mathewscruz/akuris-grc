@@ -115,7 +115,7 @@ export function akurisToast({
             type="button"
             aria-label="Fechar"
             onClick={() => sonnerToast.dismiss(id)}
-            className="shrink-0 -mt-1 -mr-1 p-1 rounded-md text-muted-foreground/70 hover:text-foreground hover:bg-muted/40 transition-colors"
+            className="shrink-0 -mt-1 -mr-1 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
           >
             <X className="h-4 w-4" strokeWidth={1.5} />
           </button>

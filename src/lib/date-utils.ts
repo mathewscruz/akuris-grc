@@ -1,8 +1,23 @@
 import { format } from 'date-fns';
-import { ptBR, enUS } from 'date-fns/locale';
+import { ptBR, pt as ptPT, enUS } from 'date-fns/locale';
 import { getAppLocale } from '@/lib/i18n-locale';
 
-const dateFnsLocale = () => (getAppLocale() === 'en' ? enUS : ptBR);
+const dateFnsLocale = () => (getAppLocale() === 'en' ? enUS : getAppLocale() === 'pt' ? ptPT : ptBR);
+
+/** Locale BCP-47 do idioma ativo, para Intl. */
+export const intlLocale = (): string => {
+  const l = getAppLocale();
+  return l === 'en' ? 'en-US' : l === 'pt' ? 'pt-PT' : 'pt-BR';
+};
+
+/**
+ * Mês + ano conforme o idioma ativo ("agosto de 2026" / "August 2026"),
+ * capitalizando apenas a primeira letra — nunca a preposição.
+ */
+export const formatMonthYearLabel = (date: Date): string => {
+  const text = new Intl.DateTimeFormat(intlLocale(), { month: 'long', year: 'numeric' }).format(date);
+  return text.charAt(0).toUpperCase() + text.slice(1);
+};
 
 /** Padrão de data conforme idioma ativo: dd/MM/yyyy (PT) ou MM/dd/yyyy (EN). */
 export const datePattern = (): string => (getAppLocale() === 'en' ? 'MM/dd/yyyy' : 'dd/MM/yyyy');

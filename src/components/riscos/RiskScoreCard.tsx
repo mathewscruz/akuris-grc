@@ -128,7 +128,7 @@ export function RiskScoreCard({ stats, loading }: RiskScoreCardProps) {
             <span
               className={cn(
                 "text-4xl font-semibold tracking-tight tabular-nums leading-none",
-                displayScore === 0 ? "text-muted-foreground/70" : "text-foreground"
+                displayScore === 0 ? "text-muted-foreground" : "text-foreground"
               )}
             >
               {displayScore}
@@ -142,7 +142,7 @@ export function RiskScoreCard({ stats, loading }: RiskScoreCardProps) {
           {legendItems.map((item) => (
             <span key={item.label} className="inline-flex items-center gap-1">
               <span className={cn("inline-block h-1.5 w-1.5 rounded-full", item.color)} />
-              <span className="text-muted-foreground/80">{item.label}</span>
+              <span className="text-muted-foreground">{item.label}</span>
             </span>
           ))}
         </div>

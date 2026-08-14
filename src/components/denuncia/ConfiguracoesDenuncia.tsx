@@ -6,8 +6,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet';
+import { QRCodeCanvas } from 'qrcode.react';
 import { 
   Save, 
   Link2, 
@@ -19,9 +27,14 @@ import {
   Eye,
   EyeOff,
   Search,
-  RefreshCw
+  RefreshCw,
+  QrCode,
+  Download,
+  AlertTriangle
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { toast as sonnerToast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -40,12 +53,41 @@ interface ConfiguracaoDenuncia {
 
 export function ConfiguracoesDenuncia() {
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const [config, setConfig] = useState<ConfiguracaoDenuncia | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showToken, setShowToken] = useState(false);
   const [empresaSlug, setEmpresaSlug] = useState<string>('');
+  const [previewOpen, setPreviewOpen] = useState(false);
   const { toast } = useToast();
+
+  const publicChannelUrl = empresaSlug
+    ? `${window.location.origin}/${empresaSlug}/denuncia`
+    : '';
+
+  const copiarLinkPublico = () => {
+    if (!publicChannelUrl) return;
+    navigator.clipboard.writeText(publicChannelUrl);
+    sonnerToast.success(t('p3Denuncia.channel.copied'), {
+      description: t('p3Denuncia.channel.copiedDescription'),
+    });
+  };
+
+  const abrirLinkPublico = () => {
+    if (!publicChannelUrl) return;
+    window.open(publicChannelUrl, '_blank', 'noopener,noreferrer');
+  };
+
+  const descarregarQr = () => {
+    const canvas = document.getElementById('denuncia-public-qr') as HTMLCanvasElement | null;
+    if (!canvas) return;
+    const url = canvas.toDataURL('image/png');
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `canal-denuncia-${empresaSlug || 'qr'}.png`;
+    a.click();
+  };
 
   const [formData, setFormData] = useState({
     ativo: true,

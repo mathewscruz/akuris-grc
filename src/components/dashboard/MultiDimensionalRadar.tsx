@@ -73,7 +73,7 @@ const MaturityRow = ({ item, navigate, t }: { item: RadarDataPoint; navigate: an
                   {item.score}%
                 </span>
               ) : (
-                <span className="text-[10px] text-muted-foreground/70 font-normal">
+                <span className="text-[10px] text-muted-foreground font-normal">
                   {t('dashboard.noData') || 'Sem dados'}
                 </span>
               )}
@@ -86,7 +86,7 @@ const MaturityRow = ({ item, navigate, t }: { item: RadarDataPoint; navigate: an
             </div>
           </div>
 
-          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors flex-shrink-0" />
+          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-muted-foreground transition-colors flex-shrink-0" />
         </button>
       </TooltipTrigger>
       <TooltipContent side="left" className="max-w-[220px]">

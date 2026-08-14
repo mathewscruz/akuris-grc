@@ -3,13 +3,22 @@ import { pt } from '@/i18n/pt';
 import { en } from '@/i18n/en';
 import { modulesPt, modulesEn, mergeDictionaries } from '@/i18n/modules';
 import { supabase } from '@/integrations/supabase/client';
-import { setAppLocale, getInitialLocale, persistExplicitLocale } from '@/lib/i18n-locale';
+import { setAppLocale, getInitialLocale, persistExplicitLocale, isSupportedLocale } from '@/lib/i18n-locale';
+import { localizePtDictionary } from '@/lib/pt-variants';
 
-export type Locale = 'pt' | 'en';
+/** `pt` = português de Portugal, `pt-BR` = português do Brasil, `en` = inglês. */
+export type Locale = 'pt' | 'pt-BR' | 'en';
 type Dictionary = Record<string, any>;
 
+/**
+ * O dicionário português base é normalizado para cada variante (ver
+ * `lib/pt-variants.ts`), garantindo que "utilizador/ficheiro/eliminar" e
+ * "usuário/arquivo/excluir" nunca aparecem misturados no mesmo ecrã.
+ */
+const ptBase = mergeDictionaries(pt, modulesPt);
 const dictionaries: Record<Locale, Dictionary> = {
-  pt: mergeDictionaries(pt, modulesPt),
+  pt: localizePtDictionary(ptBase, 'pt'),
+  'pt-BR': localizePtDictionary(ptBase, 'pt-BR'),
   en: mergeDictionaries(en, modulesEn),
 };
 
@@ -73,6 +82,21 @@ export function fallbackForKey(key: string, locale: Locale): string {
   return spaced.charAt(0).toUpperCase() + spaced.slice(1);
 }
 
+/**
+ * Pluralização: quando a chave aponta para `{ zero?, one, other }` e `params.count`
+ * é fornecido, escolhe a forma correta. Evita "1 planos consolidados".
+ */
+function pickPlural(value: any, params?: Record<string, string | number>): any {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
+  const count = params?.count;
+  if (count === undefined) return value;
+  const n = Number(count);
+  if (n === 0 && typeof value.zero === 'string') return value.zero;
+  if (Math.abs(n) === 1 && typeof value.one === 'string') return value.one;
+  if (typeof value.other === 'string') return value.other;
+  return value;
+}
+
 function interpolate(str: string, params?: Record<string, string | number>): string {
   if (!params) return str;
   return str.replace(/\{(\w+)\}/g, (_, k) => (params[k] !== undefined ? String(params[k]) : `{${k}}`));
@@ -98,7 +122,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
           .maybeSingle();
         if (!mounted) return;
         const pref = (data as any)?.preferred_locale;
-        if (pref !== 'pt' && pref !== 'en') return;
+        if (!isSupportedLocale(pref)) return;
 
         // Se o usuário escolheu o idioma manualmente há pouco tempo (ex: na tela de login),
         // respeitamos essa escolha e atualizamos o profile para refletir a preferência.
@@ -152,18 +176,19 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const t = useCallback((key: string, params?: Record<string, string | number>): string => {
-    const dict = dictionaries[locale];
+    const dict = dictionaries[locale] ?? dictionaries.pt;
     const keys = key.split('.');
     let result: any = dict;
     for (const k of keys) {
       result = result?.[k];
       if (result === undefined) return fallbackForKey(key, locale);
     }
+    result = pickPlural(result, params);
     if (typeof result !== 'string') return fallbackForKey(key, locale);
     return interpolate(result, params);
   }, [locale]);
 
-  const tList = useCallback((key: string): string[] => resolveList(dictionaries[locale], key), [locale]);
+  const tList = useCallback((key: string): string[] => resolveList(dictionaries[locale] ?? dictionaries.pt, key), [locale]);
 
   return (
     <LanguageContext.Provider value={{ locale, setLocale, t, tList }}>
@@ -179,18 +204,21 @@ const fallbackContext: LanguageContextType = {
   setLocale: () => {},
   t: (key: string, params?: Record<string, string | number>) => {
     const loc: Locale = (typeof window !== 'undefined' && (localStorage.getItem(STORAGE_KEY) as Locale)) || 'pt';
-    const dict = dictionaries[loc];
+    const dict = dictionaries[loc] ?? dictionaries.pt;
     const keys = key.split('.');
     let result: any = dict;
     for (const k of keys) {
       result = result?.[k];
       if (result === undefined) return fallbackForKey(key, loc);
     }
+    result = pickPlural(result, params);
     if (typeof result !== 'string') return fallbackForKey(key, loc);
     return interpolate(result, params);
   },
-  tList: (key: string) =>
-    resolveList(dictionaries[(typeof window !== 'undefined' && (localStorage.getItem(STORAGE_KEY) as Locale)) || 'pt'], key),
+  tList: (key: string) => {
+    const loc = (typeof window !== 'undefined' && (localStorage.getItem(STORAGE_KEY) as Locale)) || 'pt';
+    return resolveList(dictionaries[loc] ?? dictionaries.pt, key);
+  },
 };
 
 

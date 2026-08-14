@@ -515,7 +515,7 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
         searchPlaceholder={t('documentos.dialogs.buscarAprovador')}
         emptyState={
           <div className="space-y-2">
-            <CheckCircle className="h-8 w-8 mx-auto text-muted-foreground/60" />
+            <CheckCircle className="h-8 w-8 mx-auto text-muted-foreground" />
             <p>{t('documentos.dialogs.nenhumaAprovacao')}</p>
             <p className="text-xs">{t('documentos.dialogs.useNovaSolicitacao')}</p>
           </div>

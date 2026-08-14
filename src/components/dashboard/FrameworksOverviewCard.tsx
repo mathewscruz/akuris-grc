@@ -55,7 +55,7 @@ const FrameworkRow = ({
               <span className="text-xs font-medium text-foreground/90 truncate tracking-tight">
                 {item.nome}
                 {item.versao && (
-                  <span className="text-muted-foreground/70 font-normal ml-1">
+                  <span className="text-muted-foreground font-normal ml-1">
                     {item.versao}
                   </span>
                 )}
@@ -89,7 +89,7 @@ const FrameworkRow = ({
             </div>
           </div>
 
-          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors flex-shrink-0" />
+          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-muted-foreground transition-colors flex-shrink-0" />
         </button>
       </TooltipTrigger>
       <TooltipContent side="left" className="max-w-[240px]">

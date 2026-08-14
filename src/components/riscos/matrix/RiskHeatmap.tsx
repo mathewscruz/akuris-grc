@@ -359,7 +359,7 @@ export function RiskHeatmap({ riscos, selected, onSelectCell, onClearSelection, 
                         <span className="text-[10px] font-semibold tracking-wide text-muted-foreground tabular-nums">{score}</span>
                         <span
                           aria-hidden="true"
-                          className="text-[9px] font-bold text-foreground/60 leading-none"
+                          className="text-[9px] font-bold text-muted-foreground leading-none"
                           title={nivelLabel}
                         >
                           {SEVERITY_LETTER[sev]}
@@ -384,7 +384,7 @@ export function RiskHeatmap({ riscos, selected, onSelectCell, onClearSelection, 
                           >
                             {cellRisks.length}
                           </span>
-                          <span className="text-[9.5px] text-foreground/70 leading-tight">
+                          <span className="text-[9.5px] text-muted-foreground leading-tight">
                             {cellRisks.length === 1 ? shortRiskId(cellRisks[0].id) : riskWord}
                           </span>
                         </div>

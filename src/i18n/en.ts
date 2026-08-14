@@ -1,5 +1,9 @@
 export const en = {
+  language: {
+    selector: 'Language',
+  },
   common: {
+    selectDate: 'Select date',
     save: 'Save',
     saving: 'Saving...',
     cancel: 'Cancel',

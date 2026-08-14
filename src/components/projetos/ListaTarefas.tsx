@@ -140,7 +140,7 @@ export function ListaTarefas({ tarefas, colunas, onSelect }: Props) {
                   {g.label && (
                     <TableRow>
                       <TableCell colSpan={5} className="bg-muted/40 text-xs font-semibold uppercase tracking-wide text-muted-foreground py-1.5">
-                        {g.label} <span className="text-muted-foreground/70">({g.rows.length})</span>
+                        {g.label} <span className="text-muted-foreground">({g.rows.length})</span>
                       </TableCell>
                     </TableRow>
                   )}

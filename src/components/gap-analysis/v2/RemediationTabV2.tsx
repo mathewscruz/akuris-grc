@@ -413,11 +413,11 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
                             </span>
                           )}
                         </div>
-                        <ExternalLink className="h-3 w-3 text-muted-foreground/40 group-hover:text-primary mt-1" strokeWidth={1.5} />
+                        <ExternalLink className="h-3 w-3 text-muted-foreground group-hover:text-primary mt-1" strokeWidth={1.5} />
                       </button>
                     ))}
                     {items.length === 0 && (
-                      <p className="text-[11px] text-muted-foreground/60 italic px-1">—</p>
+                      <p className="text-[11px] text-muted-foreground italic px-1">—</p>
                     )}
                   </div>
                 </div>

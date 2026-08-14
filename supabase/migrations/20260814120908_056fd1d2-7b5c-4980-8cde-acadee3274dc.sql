@@ -1,0 +1,2 @@
+ALTER TABLE public.profiles DROP CONSTRAINT IF EXISTS profiles_preferred_locale_check;
+ALTER TABLE public.profiles ADD CONSTRAINT profiles_preferred_locale_check CHECK (preferred_locale = ANY (ARRAY['pt'::text, 'pt-BR'::text, 'en'::text]));

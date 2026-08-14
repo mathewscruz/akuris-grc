@@ -77,7 +77,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
             "!mt-3 !ml-3 !rounded-none !h-auto !w-auto",
           ].join(" "),
           closeButton: [
-            "!bg-transparent !border-0 !text-muted-foreground/70 hover:!text-foreground",
+            "!bg-transparent !border-0 !text-muted-foreground hover:!text-foreground",
             "!top-3 !right-3 !left-auto !translate-x-0 !translate-y-0",
             "!h-5 !w-5",
           ].join(" "),

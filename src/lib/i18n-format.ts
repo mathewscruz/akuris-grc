@@ -1,14 +1,32 @@
 import type { Locale } from '@/contexts/LanguageContext';
 
 const localeMap: Record<Locale, string> = {
-  pt: 'pt-BR',
+  pt: 'pt-PT',
+  'pt-BR': 'pt-BR',
   en: 'en-US',
 };
 
 const currencyMap: Record<Locale, string> = {
-  pt: 'BRL',
+  pt: 'EUR',
+  'pt-BR': 'BRL',
   en: 'USD',
 };
+
+/**
+ * Mês + ano no formato do idioma ativo — "agosto de 2026" (pt) / "August 2026" (en).
+ * Só a primeira letra é capitalizada, nunca a preposição (evita "Agosto De 2026").
+ */
+export function formatMonthYear(date: Date, locale: Locale): string {
+  try {
+    const text = new Intl.DateTimeFormat(getIntlLocale(locale), {
+      month: 'long',
+      year: 'numeric',
+    }).format(date);
+    return text.charAt(0).toUpperCase() + text.slice(1);
+  } catch {
+    return String(date.getFullYear());
+  }
+}
 
 export function getIntlLocale(locale: Locale): string {
   return localeMap[locale] || 'pt-BR';
@@ -115,7 +133,7 @@ export function formatRelativeTime(
 
 export function formatFileSize(bytes: number | null | undefined, locale: Locale): string {
   if (bytes === null || bytes === undefined || isNaN(bytes)) return '';
-  const units = locale === 'pt' ? ['B', 'KB', 'MB', 'GB', 'TB'] : ['B', 'KB', 'MB', 'GB', 'TB'];
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
   let i = 0;
   let value = bytes;
   while (value >= 1024 && i < units.length - 1) {

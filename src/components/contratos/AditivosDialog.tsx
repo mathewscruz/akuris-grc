@@ -394,7 +394,7 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
         searchPlaceholder={t('contratosAtivos.aditivosDialog.searchPlaceholder')}
         emptyState={
           <div className="space-y-2">
-            <FileText className="h-8 w-8 mx-auto text-muted-foreground/60" />
+            <FileText className="h-8 w-8 mx-auto text-muted-foreground" />
             <p>{t('contratosAtivos.aditivosDialog.emptyStateText')}</p>
             <p className="text-xs">{t('contratosAtivos.aditivosDialog.emptyStateHint')}</p>
           </div>

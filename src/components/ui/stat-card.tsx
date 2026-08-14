@@ -203,7 +203,7 @@ export function StatCard({
               <span key={`${seg.label}-leg-${i}`} className="inline-flex items-center gap-1">
                 <span className={cn("inline-block h-1.5 w-1.5 rounded-full", TONE_BG[seg.tone ?? "neutral"])} />
                 <span className={cn("tabular-nums font-medium", TONE_TEXT[seg.tone ?? "neutral"])}>{seg.value}</span>
-                <span className="text-muted-foreground/80">{seg.label}</span>
+                <span className="text-muted-foreground">{seg.label}</span>
               </span>
             )
           ))}
@@ -268,7 +268,7 @@ export function StatCard({
           <span
             className={cn(
               "text-4xl font-semibold tracking-tight tabular-nums leading-none",
-              isZero ? "text-muted-foreground/70" : "text-foreground"
+              isZero ? "text-muted-foreground" : "text-foreground"
             )}
           >
             {value}
@@ -286,7 +286,7 @@ export function StatCard({
 
           {/* Empty hint */}
           {showEmptyHint && (
-            <div className="flex items-start gap-1.5 text-[11px] text-muted-foreground/80">
+            <div className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
               <Sparkles className="h-3 w-3 mt-0.5 flex-shrink-0 text-primary/60" strokeWidth={1.5} />
               <span>{emptyHint}</span>
             </div>

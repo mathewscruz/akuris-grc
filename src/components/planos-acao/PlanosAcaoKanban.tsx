@@ -232,7 +232,7 @@ function PlanoCard({
           {draggableEnabled && (
             <button
               type="button"
-              className="mt-0.5 -ml-1 text-muted-foreground/60 hover:text-foreground cursor-grab active:cursor-grabbing touch-none"
+              className="mt-0.5 -ml-1 text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing touch-none"
               aria-label={t('planosAcao.kanbanDragHandle')}
               {...attributes}
               {...listeners}
