@@ -521,54 +521,71 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
               )}
             </TabsContent>
 
-            {/* Controles */}
+            {/* Controles = requisitos dos frameworks activos vinculados ao risco */}
             <TabsContent value="controles" className="m-0 space-y-2 data-[state=active]:animate-fade-in">
               <div className="flex items-center justify-between gap-2 mb-1">
                 <span className="text-[10.5px] font-semibold tracking-[1.2px] uppercase text-muted-foreground">
-                  {detail?.controles.length || 0} vinculado{(detail?.controles.length || 0) === 1 ? '' : 's'}
+                  {t('riscosControles.aba.vinculados', { count: requisitos.length })}
                 </span>
                 <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setVincularOpen(true)}>
                   <Plus className="h-3.5 w-3.5 mr-1" strokeWidth={1.5} />
-                  Vincular controle
+                  {t('riscosControles.aba.vincular')}
                 </Button>
               </div>
-              {isLoading ? (
+
+              {reqLoading ? (
                 <div className="flex justify-center py-10"><AkurisPulse size={32} /></div>
-              ) : isError ? (
-                <div className="py-10 text-center text-sm text-destructive">
-                  {detailError instanceof Error ? detailError.message : t('fin.riscos.erroControles')}
-                </div>
-              ) : detail?.controles.length === 0 ? (
+              ) : reqError ? (
+                <div className="py-10 text-center text-sm text-destructive">{t('fin.riscos.erroControles')}</div>
+              ) : requisitos.length === 0 ? (
                 <div className="py-8 text-center space-y-3">
-                  <p className="text-sm text-muted-foreground">{t('fin.riscos.semControles')}</p>
+                  <p className="text-sm text-muted-foreground">{t('riscosControles.aba.vazio')}</p>
                   <Button variant="outline" size="sm" onClick={() => setVincularOpen(true)}>
                     <Plus className="h-3.5 w-3.5 mr-1.5" strokeWidth={1.5} />
-                    Vincular um controle
+                    {t('riscosControles.aba.vincular')}
                   </Button>
                 </div>
               ) : (
-                detail!.controles.map((c) => {
-                  const pct = coberturaPct(c.eficacia_estimada);
-                  const cls = pct >= 80 ? 'text-success' : pct >= 50 ? 'text-warning' : 'text-destructive';
-                  return (
-                    <div key={c.id} className="bg-card border border-border rounded-lg p-3 flex items-center justify-between gap-3">
+                <>
+                  <ResidualSugeridoCard
+                    riscoId={risco.id}
+                    vinculados={requisitos}
+                    probabilidadeInicial={risco.probabilidade_inicial}
+                    impactoInicial={risco.impacto_inicial}
+                    probabilidadeResidual={risco.probabilidade_residual}
+                    impactoResidual={risco.impacto_residual}
+                    snapshot={risco.mitigacao_snapshot}
+                    aceito={risco.aceito}
+                    config={matrizConfig}
+                  />
+
+                  {requisitos.map((r) => (
+                    <div key={r.id} className="bg-card border border-border rounded-lg p-3 flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <div className="text-sm font-medium leading-snug truncate">
-                          {c.controle?.nome || 'Controle'}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {r.codigo && <span className="font-mono text-[11px] text-muted-foreground">{r.codigo}</span>}
+                          <span className="text-sm font-medium leading-snug">{r.titulo}</span>
                         </div>
                         <div className="text-[11px] text-muted-foreground mt-1 flex flex-wrap gap-x-3">
-                          {c.controle?.tipo && <span>Tipo: {formatStatus(c.controle.tipo)}</span>}
-                          <span>Vínculo: {formatStatus(c.tipo_vinculacao)}</span>
-                          {c.eficacia_estimada && <span>{c.eficacia_estimada}</span>}
+                          <span>{r.framework_nome}</span>
+                          {r.categoria && <span>{r.categoria}</span>}
                         </div>
                       </div>
-                      <div className="text-right flex-shrink-0">
-                        <div className={`text-lg font-semibold tabular-nums ${cls}`}>{pct}%</div>
-                        <div className="text-[10px] text-muted-foreground">cobertura</div>
+                      <div className="flex flex-col items-end gap-1.5 shrink-0">
+                        <StatusBadge size="sm" {...resolveConformityTone(r.conformity_status)}>
+                          {formatStatus(r.conformity_status)}
+                        </StatusBadge>
+                        <RouterLink
+                          to={`/gap-analysis/framework/${r.framework_id}?q=${encodeURIComponent(r.codigo || r.titulo)}`}
+                          className="text-[11px] text-primary inline-flex items-center gap-1 hover:underline"
+                        >
+                          {t('riscosControles.aba.abrirNoGap')}
+                          <ExternalLink className="h-3 w-3" strokeWidth={1.5} />
+                        </RouterLink>
                       </div>
                     </div>
-                  );
-                })
+                  ))}
+                </>
               )}
             </TabsContent>
 
