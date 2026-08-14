@@ -33,6 +33,16 @@ import { ControleSelect } from "./ControleSelect";
 import { RequisitoSelect } from "./RequisitoSelect";
 import { AreaSistemaSelect } from "./AreaSistemaSelect";
 import { useIntegrationNotify } from "@/hooks/useIntegrationNotify";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { logger } from "@/lib/logger";
 
 const makeFormSchema = (t: (key: string) => string) => z.object({
@@ -486,6 +496,43 @@ export function ItemAuditoriaFormDialog({
 
           </form>
         </Form>
+
+        <AlertDialog open={!!gateData} onOpenChange={(o) => !o && setGateData(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{t('t4.gates.itemSemEvidenciaTitulo')}</AlertDialogTitle>
+              <AlertDialogDescription>{t('t4.gates.itemSemEvidenciaDesc')}</AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="space-y-2">
+              <FormLabel>{t('t4.gates.itemJustificacao')}</FormLabel>
+              <Textarea
+                rows={3}
+                value={justificativa}
+                onChange={(e) => setJustificativa(e.target.value)}
+                placeholder={t('t4.gates.itemJustificacaoPlaceholder')}
+              />
+            </div>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{t('t4.gates.cancelar')}</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={!justificativa.trim()}
+                onClick={async (e) => {
+                  e.preventDefault();
+                  if (!justificativa.trim() || !gateData) {
+                    toast.error(t('t4.gates.itemJustificacaoObrigatoria'));
+                    return;
+                  }
+                  const dados = gateData;
+                  setGateData(null);
+                  await executarSubmit(dados, justificativa);
+                  toast.info(t('t4.gates.itemJustificacaoRegistada'));
+                }}
+              >
+                {t('t4.gates.confirmar')}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </DialogShell>
   );
 }
