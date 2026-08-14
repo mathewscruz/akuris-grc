@@ -52,28 +52,28 @@ interface Props {
 
 const SEV_BG: Record<Severity, string> = {
   critico: 'bg-destructive/15',
-  alto: 'bg-warning/15',
+  alto: 'bg-orange/15',
   medio: 'bg-warning/8',
   baixo: 'bg-success/12',
 };
 
 const SEV_BORDER: Record<Severity, string> = {
   critico: 'border-destructive/30',
-  alto: 'border-warning/30',
+  alto: 'border-orange/30',
   medio: 'border-warning/20',
   baixo: 'border-success/25',
 };
 
 const SEV_BADGE: Record<Severity, string> = {
   critico: 'bg-destructive text-destructive-foreground',
-  alto: 'bg-warning text-warning-foreground',
+  alto: 'bg-orange text-orange-foreground',
   medio: 'bg-warning/70 text-warning-foreground',
   baixo: 'bg-success text-success-foreground',
 };
 
 const SEV_DOT: Record<Severity, string> = {
   critico: 'bg-destructive',
-  alto: 'bg-warning',
+  alto: 'bg-orange',
   medio: 'bg-warning/60',
   baixo: 'bg-success',
 };
@@ -81,7 +81,7 @@ const SEV_DOT: Record<Severity, string> = {
 /** Cor de traço (SVG) por severidade — tokens semânticos, nunca hex cru. */
 const SEV_STROKE: Record<Severity, string> = {
   critico: 'hsl(var(--destructive))',
-  alto: 'hsl(var(--warning))',
+  alto: 'hsl(var(--orange))',
   medio: 'hsl(var(--warning) / 0.75)',
   baixo: 'hsl(var(--success))',
 };
@@ -276,7 +276,7 @@ export function RiskHeatmap({ riscos, selected, onSelectCell, onClearSelection, 
               <div key={l.key} className="inline-flex items-center gap-1.5">
                 <span
                   aria-hidden="true"
-                  className={cn('h-3.5 w-3.5 rounded-sm inline-flex items-center justify-center text-[9px] font-bold text-background', l.cls)}
+                  className={cn('h-3.5 w-3.5 rounded-sm inline-flex items-center justify-center text-[9px] font-bold', l.cls)}
                 >
                   {l.letter}
                 </span>
