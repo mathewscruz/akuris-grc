@@ -37,6 +37,7 @@ import {
   AlertCircle,
   XCircle,
   Download,
+  Upload,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -49,6 +50,7 @@ import ConfirmDialog from '@/components/ConfirmDialog';
 import { TratamentoDialog } from '@/components/incidentes/TratamentoDialog';
 import { ComunicacaoDialog } from '@/components/incidentes/ComunicacaoDialog';
 import { EvidenciaDialog } from '@/components/incidentes/EvidenciaDialog';
+import ImportIncidentesDialog from '@/components/incidentes/ImportIncidentesDialog';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/components/AuthProvider';
 import { CriarTarefaMenuItem } from '@/components/projetos/CriarTarefaMenuItem';
@@ -86,6 +88,7 @@ export default function Incidentes() {
     incidenteId: ''
   });
   const [showFilters, setShowFilters] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("todos");
   const [tipoFilter, setTipoFilter] = useState<string>("todos");
   const [criticidadeFilter, setCriticidadeFilter] = useState<string>("todos");
@@ -426,13 +429,23 @@ export default function Incidentes() {
       </div>
 
       {/* Botão de ação */}
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
+          <Upload className="h-4 w-4 mr-2" />
+          {t('p3Import.importButtonLabel')}
+        </Button>
         <IncidenteDialog 
           onSuccess={() => {
             invalidateIncidentes();
           }}
         />
       </div>
+
+      <ImportIncidentesDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+        onSuccess={invalidateIncidentes}
+      />
 
       {/* Dialog de Edição - controlado pelo dropdown */}
       {selectedIncidente && editDialogOpen && (

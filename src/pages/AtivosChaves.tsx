@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Plus, Key, AlertTriangle, CheckCircle, Clock, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
+import { Plus, Upload, Key, AlertTriangle, CheckCircle, Clock, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { ChaveDialog } from '@/components/ativos/ChaveDialog';
+import ImportChavesDialog from '@/components/ativos/ImportChavesDialog';
 import { StatCard } from '@/components/ui/stat-card';
 import { PageHeader } from '@/components/ui/page-header';
 import { DataTable } from '@/components/ui/data-table';
@@ -46,6 +47,7 @@ interface ChaveCriptografica {
 export default function AtivosChaves() {
   const { t } = useLanguage();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [selectedChave, setSelectedChave] = useState<ChaveCriptografica | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
@@ -435,7 +437,11 @@ export default function AtivosChaves() {
         />
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
+          <Upload className="h-4 w-4 mr-2" />
+          {t('p3Import.importButtonLabel')}
+        </Button>
         <Button size="sm" onClick={handleNew}>
           <Plus className="h-4 w-4 mr-2" />
           {t('sweepDados.ativos.novaChave')}
@@ -511,6 +517,12 @@ export default function AtivosChaves() {
           }
         }}
         chave={selectedChave}
+      />
+
+      <ImportChavesDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+        onSuccess={refetch}
       />
 
       <ConfirmDialog

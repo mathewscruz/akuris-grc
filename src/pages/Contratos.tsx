@@ -16,7 +16,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { PageSkeleton } from '@/components/ui/page-skeleton';
-import { Plus, Search, FileText, DollarSign, Users, AlertCircle, Edit, TrendingUp, Trash2, Building2, FileStack, Milestone, FilePlus2, Download, MoreHorizontal } from 'lucide-react';
+import { Plus, Search, FileText, DollarSign, Users, AlertCircle, Edit, TrendingUp, Trash2, Building2, FileStack, Milestone, FilePlus2, Download, Upload, MoreHorizontal } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -27,6 +27,7 @@ import { FornecedorDialog } from '@/components/contratos/FornecedorDialog';
 import { MarcosDialog } from '@/components/contratos/MarcosDialog';
 import { DocumentosDialog } from '@/components/contratos/DocumentosDialog';
 import { AditivosDialog } from '@/components/contratos/AditivosDialog';
+import ImportContratosDialog from '@/components/contratos/ImportContratosDialog';
 import RelatoriosContratos from '@/components/contratos/RelatoriosContratos';
 import TemplatesContratos from '@/components/contratos/TemplatesContratos';
 import { useContratosStats } from '@/hooks/useContratosStats';
@@ -103,6 +104,7 @@ export default function Contratos() {
   const [documentosDialogOpen, setDocumentosDialogOpen] = useState(false);
   const [currentTab, setCurrentTab] = useState('contratos');
   const [aditivosDialogOpen, setAditivosDialogOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: string; type: 'contrato' | 'fornecedor' }>({
     open: false,
     id: '',
@@ -424,6 +426,10 @@ export default function Contratos() {
                       </Tooltip>
                       <RelatoriosContratos />
                       <TemplatesContratos />
+                      <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
+                        <Upload className="h-4 w-4 sm:mr-2" />
+                        <span className="hidden sm:inline">{t('p3Import.importButtonLabel')}</span>
+                      </Button>
                       <Button size="sm" onClick={() => { setSelectedContrato(null); setDialogOpen(true); }}>
                         <Plus className="h-4 w-4 sm:mr-2" />
                         <span className="hidden sm:inline">{t('fin.contratos.novo')}</span>
@@ -834,6 +840,12 @@ export default function Contratos() {
           contrato={selectedContrato}
           open={aditivosDialogOpen}
           onOpenChange={setAditivosDialogOpen}
+        />
+
+        <ImportContratosDialog
+          open={importDialogOpen}
+          onOpenChange={setImportDialogOpen}
+          onSuccess={invalidateData}
         />
 
         <ConfirmDialog
