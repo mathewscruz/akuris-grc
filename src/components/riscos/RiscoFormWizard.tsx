@@ -1348,6 +1348,53 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                     )}
                   />
 
+                  <FormField
+                    control={form.control}
+                    name="aceite_valido_ate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Válido até *</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                        <div className="flex flex-wrap gap-2 pt-1">
+                          {[6, 12, 24].map((meses) => (
+                            <Button
+                              key={meses}
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                const d = new Date();
+                                d.setMonth(d.getMonth() + meses);
+                                field.onChange(d.toISOString().split('T')[0]);
+                              }}
+                            >
+                              {meses} meses
+                            </Button>
+                          ))}
+                        </div>
+                        <FormDescription>
+                          O aceite expira nesta data: o risco é reaberto automaticamente para "Em revisão" e o aprovador
+                          e o responsável são notificados 30 dias antes e no próprio dia.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {risco?.aceito && (
+                    <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/5 p-3 text-sm text-warning">
+                      <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" strokeWidth={1.5} />
+                      <span>
+                        Alterar a probabilidade, o impacto ou os controlos invalida o aceite vigente e devolve o risco a
+                        "Em revisão".
+                      </span>
+                    </div>
+                  )}
+
+
+
                   {risco?.id && (
                     <div className="space-y-2">
                       <FormLabel>{t('campos.risco.anexosAceite')}</FormLabel>
