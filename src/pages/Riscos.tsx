@@ -887,22 +887,23 @@ export function Riscos() {
                   setSearchParams(sp);
                 }}
               />
-              <RiskKpiQuad
+              <StatStrip
                 items={[
-                  { label: t('riscos.page.kpi.aboveAppetite'), value: acimaApetite, sub: t('riscos.page.kpi.highOrCritical'), cta: t('riscos.page.kpi.seeInMatrix'), tone: 'destructive', onClick: () => {
+                  { key: 'acimaApetite', label: t('riscos.page.kpi.aboveAppetite'), value: acimaApetite, icon: AlertTriangle, tone: 'destructive', hint: t('riscos.page.kpi.highOrCritical'), onClick: () => {
                     const sp = new URLSearchParams(searchParams); sp.set('view', 'matrix'); setSearchParams(sp);
                   }},
-                  { label: t('riscos.page.kpi.noResponsible'), value: semResponsavel, sub: t('riscos.page.kpi.awaitingAssignment'), cta: t('riscos.page.kpi.assignNow'), tone: 'amber', onClick: () => {
+                  { key: 'semResponsavel', label: t('riscos.page.kpi.noResponsible'), value: semResponsavel, icon: UserX, tone: 'warning', hint: t('riscos.page.kpi.awaitingAssignment'), onClick: () => {
                     const sp = new URLSearchParams(searchParams); sp.set('view', 'table'); setSearchParams(sp);
                   }},
-                  { label: t('riscos.page.kpi.overdueReview'), value: revisaoVencida, sub: t('riscos.page.kpi.slaExpired'), cta: t('riscos.page.kpi.reassess'), tone: 'warning', onClick: () => {
+                  { key: 'revisaoVencida', label: t('riscos.page.kpi.overdueReview'), value: revisaoVencida, icon: CalendarClock, tone: 'warning', hint: t('riscos.page.kpi.slaExpired'), onClick: () => {
                     const sp = new URLSearchParams(searchParams); sp.set('view', 'table'); setSearchParams(sp);
                   }},
-                  { label: t('riscos.page.kpi.inTreatment'), value: emTratamento, sub: t('riscos.page.kpi.planInProgress'), cta: t('riscos.page.kpi.seeTreatments'), tone: 'success', onClick: () => {
+                  { key: 'emTratamento', label: t('riscos.page.kpi.inTreatment'), value: emTratamento, icon: ShieldCheck, hint: t('riscos.page.kpi.planInProgress'), onClick: () => {
                     const sp = new URLSearchParams(searchParams); sp.set('view', 'table'); setSearchParams(sp);
                   }},
                 ]}
               />
+
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 <div className="lg:col-span-2"><RiskTrendChart points={trendPoints} apetite={apetiteScore} /></div>
                 <RiskCategoryBars riscos={riscos as any} />
