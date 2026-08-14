@@ -10,6 +10,8 @@ import Layout from '@/components/Layout';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { RouteFallback } from '@/components/ui/route-fallback';
 import { DocGenProvider } from '@/contexts/DocGenContext';
+import { installStatsInvalidation } from '@/lib/stats-invalidation';
+
 
 
 // Lazy-loaded pages
@@ -76,6 +78,10 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+// Faixas de estatística acompanham qualquer criação/edição/eliminação (Envio 14 · 3).
+installStatsInvalidation(queryClient);
+
 
 function AssessmentLinkRedirect() {
   const { token } = useParams<{ token: string }>();
