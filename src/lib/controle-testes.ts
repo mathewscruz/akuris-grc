@@ -81,14 +81,14 @@ export const resultadoTesteLabel = (valor: string | null | undefined, t: Transla
 
 export const resultadoTesteTone = (
   valor: string | null | undefined,
-): 'success' | 'warning' | 'danger' | 'neutral' => {
+): 'success' | 'warning' | 'destructive' | 'neutral' => {
   switch (normalizarResultadoTeste(valor)) {
     case 'eficaz':
       return 'success';
     case 'parcialmente_eficaz':
       return 'warning';
     case 'ineficaz':
-      return 'danger';
+      return 'destructive';
     default:
       return 'neutral';
   }
