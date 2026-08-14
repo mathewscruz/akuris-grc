@@ -8622,6 +8622,10 @@ export type Database = {
         Args: { assessment_link_token: string }
         Returns: boolean
       }
+      categoria_biblioteca_nome: {
+        Args: { _categoria: string }
+        Returns: string
+      }
       check_company_user_limit: { Args: { _empresa_id: string }; Returns: Json }
       check_trial_expiration: { Args: never; Returns: undefined }
       cleanup_expired_mfa_codes: { Args: never; Returns: undefined }
@@ -8858,6 +8862,10 @@ export type Database = {
       requirement_pertence_empresa: {
         Args: { requirement_id: string }
         Returns: boolean
+      }
+      resolver_categoria_biblioteca: {
+        Args: { _categoria: string; _empresa_id: string }
+        Returns: string
       }
       review_pertence_empresa: {
         Args: { review_id_param: string }
