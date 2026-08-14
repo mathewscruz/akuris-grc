@@ -7295,6 +7295,7 @@ export type Database = {
       }
       riscos: {
         Row: {
+          aceite_valido_ate: string | null
           aceito: boolean | null
           aprovador_aceite: string | null
           aprovador_id: string | null
@@ -7313,6 +7314,7 @@ export type Database = {
           data_proxima_revisao: string | null
           descricao: string | null
           empresa_id: string
+          historico_aceite: Json
           historico_aprovacao: Json | null
           id: string
           impacto_financeiro: number | null
@@ -7332,6 +7334,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          aceite_valido_ate?: string | null
           aceito?: boolean | null
           aprovador_aceite?: string | null
           aprovador_id?: string | null
@@ -7350,6 +7353,7 @@ export type Database = {
           data_proxima_revisao?: string | null
           descricao?: string | null
           empresa_id: string
+          historico_aceite?: Json
           historico_aprovacao?: Json | null
           id?: string
           impacto_financeiro?: number | null
@@ -7369,6 +7373,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          aceite_valido_ate?: string | null
           aceito?: boolean | null
           aprovador_aceite?: string | null
           aprovador_id?: string | null
@@ -7387,6 +7392,7 @@ export type Database = {
           data_proxima_revisao?: string | null
           descricao?: string | null
           empresa_id?: string
+          historico_aceite?: Json
           historico_aprovacao?: Json | null
           id?: string
           impacto_financeiro?: number | null
@@ -8471,6 +8477,7 @@ export type Database = {
         Args: { evaluation_id: string }
         Returns: boolean
       }
+      expirar_aceites_riscos: { Args: never; Returns: Json }
       finalize_denuncia_attachment: {
         Args: {
           p_mime_type: string
