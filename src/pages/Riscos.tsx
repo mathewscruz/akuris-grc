@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useLocation } from 'react-router-dom';
-import { Plus, AlertTriangle, Shield, Settings, Tag, X, Clock, FileText, MoreHorizontal, Edit, Trash2, History, ShieldCheck, Paperclip, Library } from 'lucide-react';
+import { Plus, AlertTriangle, Shield, Settings, Tag, X, Clock, FileText, MoreHorizontal, Edit, Trash2, History, ShieldCheck, Paperclip, Library, UserX, CalendarClock } from 'lucide-react';
+import { StatStrip } from '@/components/ui/stat-strip';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
