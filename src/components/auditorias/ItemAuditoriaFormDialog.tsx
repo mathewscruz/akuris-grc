@@ -127,6 +127,9 @@ export function ItemAuditoriaFormDialog({
     }
   }, [item, open]);
 
+  const [gateData, setGateData] = useState<FormData | null>(null);
+  const [justificativa, setJustificativa] = useState("");
+
   const handleControleChange = (value: string, controle?: any) => {
     form.setValue("controle_vinculado_id", value);
     // Auto-preencher campos se controle selecionado e campos estão vazios
@@ -148,7 +151,31 @@ export function ItemAuditoriaFormDialog({
     }
   };
 
+  /**
+   * T4 · Gate — um item só fica Concluído com evidência anexada ou com uma
+   * justificação escrita para a ausência de prova. A justificação fica gravada.
+   */
   const onSubmit = async (data: FormData) => {
+    if (data.status === "concluido") {
+      const jaJustificado = !!item?.justificativa_sem_evidencia;
+      let temEvidencia = false;
+      if (item?.id) {
+        const { count } = await supabase
+          .from("auditoria_itens_evidencias")
+          .select("id", { count: "exact", head: true })
+          .eq("item_id", item.id);
+        temEvidencia = (count || 0) > 0;
+      }
+      if (!temEvidencia && !jaJustificado) {
+        setGateData(data);
+        setJustificativa("");
+        return;
+      }
+    }
+    await executarSubmit(data);
+  };
+
+  const executarSubmit = async (data: FormData, justificativaGate?: string) => {
     setIsSubmitting(true);
     try {
       const { data: userData } = await supabase.auth.getUser();
@@ -168,6 +195,8 @@ export function ItemAuditoriaFormDialog({
         requisito_vinculado_id: data.requisito_vinculado_id || null,
         framework_vinculado_id: data.framework_vinculado_id || null,
         area_sistema_id: data.area_sistema_id || null,
+        justificativa_sem_evidencia:
+          justificativaGate?.trim() || item?.justificativa_sem_evidencia || null,
         created_by: item ? undefined : userId,
       };
 
