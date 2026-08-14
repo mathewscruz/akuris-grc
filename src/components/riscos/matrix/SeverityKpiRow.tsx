@@ -2,15 +2,24 @@
  * SeverityKpiRow — 4 cards Críticos/Altos/Médios/Baixos com tendência vs mês anterior.
  */
 import { cn } from '@/lib/utils';
+import { SEVERITY_LETTER } from '@/components/riscos/risk-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 type SevKey = 'critico' | 'alto' | 'medio' | 'baixo';
 
 const SEV_BORDER: Record<SevKey, string> = {
   critico: 'border-l-destructive',
-  alto: 'border-l-warning',
+  alto: 'border-l-orange',
   medio: 'border-l-warning/60',
   baixo: 'border-l-success',
+};
+
+/** Chip com a letra da faixa: a severidade nunca depende só da cor (WCAG 1.4.1). */
+const SEV_CHIP: Record<SevKey, string> = {
+  critico: 'bg-destructive text-destructive-foreground',
+  alto: 'bg-orange text-orange-foreground',
+  medio: 'bg-warning text-warning-foreground',
+  baixo: 'bg-success text-success-foreground',
 };
 
 interface ItemTrend {
@@ -44,8 +53,16 @@ export function SeverityKpiRow({ counts, trends }: Props) {
           )}
         >
           <div>
-            <div className="text-[10.5px] font-semibold tracking-[1.2px] uppercase text-muted-foreground">
-              {t(`riscosVisoes.matrix.severityKpiRow.labels.${sev}`)}
+            <div className="flex items-center gap-1.5">
+              <span
+                aria-hidden="true"
+                className={cn('inline-flex h-4 w-4 items-center justify-center rounded-[3px] text-[10px] font-bold', SEV_CHIP[sev])}
+              >
+                {SEVERITY_LETTER[sev]}
+              </span>
+              <span className="text-[10.5px] font-semibold tracking-[1.2px] uppercase text-muted-foreground">
+                {t(`riscosVisoes.matrix.severityKpiRow.labels.${sev}`)}
+              </span>
             </div>
             <div className="text-[28px] font-semibold tabular-nums leading-none mt-1.5">
               {counts[sev] ?? 0}
