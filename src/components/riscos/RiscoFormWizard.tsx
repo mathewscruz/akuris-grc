@@ -25,6 +25,7 @@ import { cn } from '@/lib/utils';
 import { useIntegrationNotify } from '@/hooks/useIntegrationNotify';
 import { motivoBloqueioTratado, podeMarcarTratado, resumirTratamentos, STATUS_TRATADO } from './risk-status';
 import { useLanguage } from '@/contexts/LanguageContext';
+import ConfirmDialog from '@/components/ConfirmDialog';
 
 const makeRiscoSchema = (t: (k: string) => string) => z.object({
   nome: z.string().min(1, t('fin.validacao.nomeObrigatorio')),
