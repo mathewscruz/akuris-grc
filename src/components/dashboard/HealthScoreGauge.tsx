@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { TrendingUp, TrendingDown } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+
 import type { GrcMaturity } from '@/hooks/useGrcMaturityScore';
 import { useMaturityTrend } from '@/hooks/useMaturityTrend';
 import { useLanguage } from '@/contexts/LanguageContext';
