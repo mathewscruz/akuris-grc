@@ -11,7 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { LicencaDialog } from '@/components/ativos/LicencaDialog';
 import ImportLicencasDialog from '@/components/ativos/ImportLicencasDialog';
-import { StatCard } from '@/components/ui/stat-card';
+import { StatStrip } from '@/components/ui/stat-strip';
 import { PageHeader } from '@/components/ui/page-header';
 import { DataTable } from '@/components/ui/data-table';
 import { Card, CardContent } from '@/components/ui/card';
@@ -391,62 +391,30 @@ export default function AtivosLicencas() {
       <PageHeader
         title={t('modules.licencas.title')}
         description={t('modules.licencas.description')}
+        actions={
+          <Button size="sm" onClick={handleNew}>
+            <Plus className="h-4 w-4 mr-2" />
+            {t('sweepDados.ativos.novaLicenca')}
+          </Button>
+        }
+        secondaryActions={[
+          {
+            label: t('p3Import.importButtonLabel'),
+            icon: <Upload className="h-4 w-4" />,
+            onClick: () => setImportDialogOpen(true),
+          },
+        ]}
       />
 
-      {/* StatCards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title={t('cardsKpi.licencas.totalLicencas')}
-          value={stats?.total ?? 0}
-          description={t('cardsKpi.licencas.licencasRegistradas')}
-          icon={<FileCheck />}
-          loading={statsLoading}
-          drillDown="ativos_licencas"
-          showAccent
-          emptyHint={t('residuos.empty.licencas')}
-        />
-
-        <StatCard
-          title={t('cardsKpi.licencas.licencasAtivas')}
-          value={stats?.ativas ?? 0}
-          description={t('residuos.geral.emVigor')}
-          icon={<CheckCircle />}
-          loading={statsLoading}
-          variant="success"
-          drillDown="ativos_licencas"
-        />
-
-        <StatCard
-          title={t('sweepDados.ativos.statusAVencer')}
-          value={stats?.vencendo30dias ?? 0}
-          description={t('fin.comum.proximos30')}
-          icon={<Clock />}
-          loading={statsLoading}
-          variant="warning"
-          drillDown="ativos_licencas"
-        />
-
-        <StatCard
-          title={t('sweepDados.ativos.kpiVencidasTitle')}
-          value={stats?.vencidas ?? 0}
-          description={t('sweepDados.ativos.kpiVencidasDesc')}
-          icon={<AlertTriangle />}
-          loading={statsLoading}
-          variant="destructive"
-          drillDown="ativos_licencas"
-        />
-      </div>
-
-      <div className="flex justify-end gap-2">
-        <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
-          <Upload className="h-4 w-4 mr-2" />
-          {t('p3Import.importButtonLabel')}
-        </Button>
-        <Button size="sm" onClick={handleNew}>
-          <Plus className="h-4 w-4 mr-2" />
-          {t('sweepDados.ativos.novaLicenca')}
-        </Button>
-      </div>
+      <StatStrip
+        loading={statsLoading}
+        items={[
+          { key: 'total', label: t('cardsKpi.licencas.totalLicencas'), value: stats?.total ?? 0, drillDown: 'ativos_licencas' },
+          { key: 'ativas', label: t('cardsKpi.licencas.licencasAtivas'), value: stats?.ativas ?? 0, drillDown: 'ativos_licencas' },
+          { key: 'aVencer', label: t('sweepDados.ativos.statusAVencer'), value: stats?.vencendo30dias ?? 0, tone: 'warning', drillDown: 'ativos_licencas' },
+          { key: 'vencidas', label: t('sweepDados.ativos.kpiVencidasTitle'), value: stats?.vencidas ?? 0, tone: 'destructive', drillDown: 'ativos_licencas' },
+        ]}
+      />
 
       <Card className="rounded-lg border overflow-hidden">
         <CardContent className="p-0">

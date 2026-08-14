@@ -11,7 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { ChaveDialog } from '@/components/ativos/ChaveDialog';
 import ImportChavesDialog from '@/components/ativos/ImportChavesDialog';
-import { StatCard } from '@/components/ui/stat-card';
+import { StatStrip } from '@/components/ui/stat-strip';
 import { PageHeader } from '@/components/ui/page-header';
 import { DataTable } from '@/components/ui/data-table';
 import { Card, CardContent } from '@/components/ui/card';
@@ -408,62 +408,30 @@ export default function AtivosChaves() {
       <PageHeader
         title={t('modules.chaves.title')}
         description={t('modules.chaves.description')}
+        actions={
+          <Button size="sm" onClick={handleNew}>
+            <Plus className="h-4 w-4 mr-2" />
+            {t('sweepDados.ativos.novaChave')}
+          </Button>
+        }
+        secondaryActions={[
+          {
+            label: t('p3Import.importButtonLabel'),
+            icon: <Upload className="h-4 w-4" />,
+            onClick: () => setImportDialogOpen(true),
+          },
+        ]}
       />
 
-      {/* StatCards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title={t('cardsKpi.chaves.totalChaves')}
-          value={stats?.total ?? 0}
-          description={t('sweepDados.ativos.kpiChavesRegistradasDesc')}
-          icon={<Key />}
-          loading={statsLoading}
-          drillDown="ativos_chaves"
-          showAccent
-          emptyHint={t('fin.chaves.emptyHint')}
-        />
-
-        <StatCard
-          title={t('sweepDados.ativos.kpiChavesAtivasTitle')}
-          value={stats?.ativas ?? 0}
-          description={t('residuos.geral.emUso')}
-          icon={<CheckCircle />}
-          loading={statsLoading}
-          variant="success"
-          drillDown="ativos_chaves"
-        />
-
-        <StatCard
-          title={t('fin.chaves.rotacoesPendentes')}
-          value={stats?.rotacao30dias ?? 0}
-          description={t('fin.comum.proximos30')}
-          icon={<Clock />}
-          loading={statsLoading}
-          variant="warning"
-          drillDown="ativos_chaves"
-        />
-
-        <StatCard
-          title={t('fin.comum.criticasF')}
-          value={stats?.criticas ?? 0}
-          description={t('cardsKpi.sweep.ativos.altaPrioridade')}
-          icon={<AlertTriangle />}
-          loading={statsLoading}
-          variant="destructive"
-          drillDown="ativos_chaves"
-        />
-      </div>
-
-      <div className="flex justify-end gap-2">
-        <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
-          <Upload className="h-4 w-4 mr-2" />
-          {t('p3Import.importButtonLabel')}
-        </Button>
-        <Button size="sm" onClick={handleNew}>
-          <Plus className="h-4 w-4 mr-2" />
-          {t('sweepDados.ativos.novaChave')}
-        </Button>
-      </div>
+      <StatStrip
+        loading={statsLoading}
+        items={[
+          { key: 'total', label: t('cardsKpi.chaves.totalChaves'), value: stats?.total ?? 0, drillDown: 'ativos_chaves' },
+          { key: 'ativas', label: t('sweepDados.ativos.kpiChavesAtivasTitle'), value: stats?.ativas ?? 0, drillDown: 'ativos_chaves' },
+          { key: 'rotacoesPendentes', label: t('fin.chaves.rotacoesPendentes'), value: stats?.rotacao30dias ?? 0, tone: 'warning', drillDown: 'ativos_chaves' },
+          { key: 'criticas', label: t('fin.comum.criticasF'), value: stats?.criticas ?? 0, tone: 'destructive', drillDown: 'ativos_chaves' },
+        ]}
+      />
 
       <Card className="rounded-lg border overflow-hidden">
         <CardContent className="p-0">
