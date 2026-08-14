@@ -547,6 +547,7 @@ export default function Privacidade() {
           icon={<Database />}
           showAccent
           emptyHint={t('residuos.privacidade.cadastreCatalogo')}
+          drillDown="privacidade"
         />
         <StatCard
           title={t('cardsKpi.privacidade.dadosSensiveis')}
@@ -554,12 +555,14 @@ export default function Privacidade() {
           description={t('cardsKpi.privacidade.requeremProtecao')}
           icon={<AlertTriangle />}
           variant="warning"
+          drillDown="privacidade"
         />
         <StatCard
           title={t('cardsKpi.privacidade.mapeamentos')}
           value={stats.mapeamentos}
           description={t('cardsKpi.sweep.privacidade.dadosXAtivos')}
           icon={<Database />}
+          drillDown="privacidade"
         />
         <StatCard
           title={t('cardsKpi.privacidade.solicitacoesPendentes')}

@@ -578,6 +578,7 @@ export default function ControlesContent() {
           variant="primary"
           showAccent
           emptyHint={t("governancaComp.controles.statTotalEmptyHint")}
+          drillDown="controles"
         />
         <StatCard
           title={t("governancaComp.controles.statVencidas")}
@@ -586,6 +587,7 @@ export default function ControlesContent() {
           icon={<AlertTriangle />}
           variant="destructive"
           loading={isLoading}
+          drillDown="controles"
         />
         <StatCard
           title={t("governancaComp.controles.statVencendo")}
@@ -594,6 +596,7 @@ export default function ControlesContent() {
           icon={<Clock />}
           variant="warning"
           loading={isLoading}
+          drillDown="controles"
         />
         <StatCard
           title={t("governancaComp.controles.statEfetividade")}
@@ -602,6 +605,7 @@ export default function ControlesContent() {
           icon={<TrendingUp />}
           variant="success"
           loading={isLoading}
+          drillDown="controles"
         />
       </div>
 
