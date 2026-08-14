@@ -51,6 +51,19 @@ export function ControleDetalheDialog({
   // Requisitos de framework ligados a este controlo (N para N)
   const { data: requisitosLigados } = useControleRequisitos(open ? controle?.id ?? null : null);
 
+  const { data: testesControle } = useQuery({
+    queryKey: ['controles_testes', controle?.id],
+    enabled: open && !!controle?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('controles_testes')
+        .select('id')
+        .eq('controle_id', controle.id);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
   // Buscar usuários da empresa para menções
   const { data: usuarios } = useQuery({
     queryKey: ["usuarios-empresa"],
