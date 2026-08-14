@@ -132,13 +132,34 @@ export function ConfiguracoesDenuncia() {
           notificar_administradores: data.notificar_administradores,
           emails_notificacao: data.emails_notificacao?.join(', ') || ''
         });
+      } else {
+        // Sem configuração ainda: cria uma com token público para que o canal
+        // tenha endereço mesmo antes de o identificador da empresa ser definido.
+        const token = await gerarToken();
+        if (token) {
+          const { data: created, error: createError } = await supabase
+            .from('denuncias_configuracoes')
+            .insert([{ token_publico: token }])
+            .select()
+            .single();
+          if (!createError && created) {
+            setConfig(created);
+          }
+        }
       }
 
-      // Buscar slug da empresa
+      // Buscar slug da empresa do utilizador (isolamento multi-tenant)
+      const { data: perfil } = await supabase
+        .from('profiles')
+        .select('empresa_id')
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id ?? '')
+        .maybeSingle();
+
       const { data: empresaData, error: empresaError } = await supabase
         .from('empresas')
         .select('slug')
-        .single();
+        .eq('id', perfil?.empresa_id ?? '')
+        .maybeSingle();
 
       if (!empresaError && empresaData?.slug) {
         setEmpresaSlug(empresaData.slug);
@@ -372,7 +393,7 @@ export function ConfiguracoesDenuncia() {
                   <AlertTitle>{t('p3Denuncia.channel.noSlugTitle')}</AlertTitle>
                   <AlertDescription className="space-y-3">
                     <p>{t('p3Denuncia.channel.noSlugDescription')}</p>
-                    <Button variant="outline" size="sm" onClick={() => navigate('/configuracoes?tab=empresas')}>
+                    <Button variant="outline" size="sm" onClick={() => navigate('/configuracoes?tab=organizacao')}>
                       {t('p3Denuncia.channel.noSlugAction')}
                     </Button>
                   </AlertDescription>
@@ -386,7 +407,7 @@ export function ConfiguracoesDenuncia() {
               <AlertTitle>{t('p3Denuncia.channel.noSlugTitle')}</AlertTitle>
               <AlertDescription className="space-y-3">
                 <p>{t('p3Denuncia.channel.noSlugDescription')}</p>
-                <Button variant="outline" size="sm" onClick={() => navigate('/configuracoes?tab=empresas')}>
+                <Button variant="outline" size="sm" onClick={() => navigate('/configuracoes?tab=organizacao')}>
                   {t('p3Denuncia.channel.noSlugAction')}
                 </Button>
               </AlertDescription>
