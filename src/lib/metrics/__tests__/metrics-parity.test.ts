@@ -78,15 +78,15 @@ describe('paridade cartão × tabela — Contratos', () => {
   it('o estado deriva da data, não do campo estático', () => {
     expect(estadoContrato(contratos[0], HOJE)).toBe('vencido');
     expect(c.vencidos).toBe(contratos.filter(x => isContratoVencido(x, HOJE)).length);
-    expect(c.vencendo30Dias).toBe(contratos.filter(x => isContratoAVencer(x, HOJE)).length);
+    expect(c.aVencer30).toBe(contratos.filter(x => isContratoAVencer(x, HOJE)).length);
   });
 
   it('o valor em contratos ativos exclui os vencidos', () => {
     const esperado = contratos
       .filter(x => isContratoVigente(x, HOJE))
       .reduce((s, x) => s + x.valor, 0);
-    expect(c.valorTotal).toBe(esperado);
-    expect(c.valorTotal).not.toContain?.(500_000);
+    expect(c.valorVigente).toBe(esperado);
+    expect(c.valorVigente).not.toBe(696_000);
     expect(c.valorVencido).toBe(500_000);
   });
 });
@@ -167,20 +167,20 @@ describe('paridade cartão × tabela — Documentos', () => {
 
 describe('paridade cartão × tabela — Gap Analysis', () => {
   const avaliacoes = [
-    { status: 'conforme' },
-    { status: 'parcial' },
-    { status: 'nao_conforme' },
-    { status: 'nao_aplicavel' },
+    { conformity_status: 'conforme' },
+    { conformity_status: 'parcial' },
+    { conformity_status: 'nao_conforme' },
+    { conformity_status: 'nao_aplicavel' },
   ];
   const c = contarRequisitos(avaliacoes);
 
   it('conformes, não conformes e aplicáveis batem com a lista', () => {
     expect(c.conformes).toBe(avaliacoes.filter(isRequisitoConforme).length);
     expect(c.naoConformes).toBe(avaliacoes.filter(isRequisitoNaoConforme).length);
-    expect(c.aplicaveis).toBe(avaliacoes.filter(isRequisitoAplicavel).length);
+    expect(c.total - c.naoAplicaveis).toBe(avaliacoes.filter(isRequisitoAplicavel).length);
   });
 
   it('não aplicável fica fora do denominador', () => {
-    expect(c.aplicaveis).toBe(3);
+    expect(c.total - c.naoAplicaveis).toBe(3);
   });
 });
