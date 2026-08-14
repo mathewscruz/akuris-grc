@@ -390,6 +390,7 @@ export function AppSidebar() {
                               </span>
                               {!isCollapsed && (
                                 <span
+                                  title={item.title}
                                   className={`text-sm font-medium transition-colors duration-200 truncate ${
                                     hasActiveSubItem(item.subItems)
                                       ? 'text-primary font-semibold'
@@ -440,7 +441,7 @@ export function AppSidebar() {
                                           active ? '!text-primary-foreground' : ''
                                         }`}
                                       />
-                                      <span className={`text-sm truncate ${active ? '!text-primary-foreground' : ''}`}>{subItem.title}</span>
+                                      <span title={subItem.title} className={`text-sm truncate ${active ? '!text-primary-foreground' : ''}`}>{subItem.title}</span>
                                     </NavLink>
                                   </SidebarMenuButton>
                                 );
@@ -477,6 +478,7 @@ export function AppSidebar() {
                                 />
                                 {!isCollapsed && (
                                   <span
+                                    title={item.title}
                                     className={`text-sm font-medium transition-colors duration-200 truncate ${
                                       active ? '!text-primary-foreground font-semibold' : ''
                                     }`}
