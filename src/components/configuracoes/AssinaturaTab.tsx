@@ -122,7 +122,7 @@ export function AssinaturaTab() {
 
       {/* Trial banner */}
       {info.status_licenca === 'trial' && (
-        <Card className="border-amber-500/50 bg-amber-500/5">
+        <Card className="border-warning/50">
           <CardContent className="py-4 flex flex-col sm:flex-row items-start sm:items-center gap-4">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-500/20 text-amber-600 shrink-0">
               <AlertTriangle className="h-5 w-5" />

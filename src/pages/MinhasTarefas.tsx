@@ -8,7 +8,8 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { Badge } from '@/components/ui/badge';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { EmptyState } from '@/components/ui/empty-state';
-import { StatCard } from '@/components/ui/stat-card';
+import { PageHeader } from '@/components/ui/page-header';
+import { StatStrip } from '@/components/ui/stat-strip';
 import { ListTodo, AlertTriangle, Clock, CheckCircle2 } from 'lucide-react';
 import { formatStatus } from '@/lib/text-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -174,17 +175,21 @@ export default function MinhasTarefas() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-semibold tracking-tight">{t('minhasTarefas.title')}</h1>
-        <p className="text-sm text-muted-foreground mt-1">{t('minhasTarefas.subtitle')}</p>
-      </div>
+      <PageHeader
+        title={t('minhasTarefas.title')}
+        description={t('minhasTarefas.subtitle')}
+      />
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard title={t('minhasTarefas.stats.overdue')} value={buckets.atrasadas.length} icon={<AlertTriangle />} variant="destructive" />
-        <StatCard title={t('minhasTarefas.stats.today')} value={buckets.hoje.length} icon={<Clock />} variant="warning" />
-        <StatCard title={t('minhasTarefas.stats.thisWeek')} value={buckets.semana.length} icon={<ListTodo />} variant="info" />
-        <StatCard title={t('minhasTarefas.stats.done')} value={buckets.concluidas.length} icon={<CheckCircle2 />} variant="success" />
-      </div>
+      <StatStrip
+        loading={isLoading}
+        items={[
+          { key: 'overdue', label: t('minhasTarefas.stats.overdue'), value: buckets.atrasadas.length, tone: 'destructive' },
+          { key: 'today', label: t('minhasTarefas.stats.today'), value: buckets.hoje.length, tone: 'warning' },
+          { key: 'week', label: t('minhasTarefas.stats.thisWeek'), value: buckets.semana.length },
+          { key: 'done', label: t('minhasTarefas.stats.done'), value: buckets.concluidas.length },
+        ]}
+      />
+
 
       {isLoading ? (
         <div className="flex justify-center py-16"><AkurisPulse size={56} /></div>

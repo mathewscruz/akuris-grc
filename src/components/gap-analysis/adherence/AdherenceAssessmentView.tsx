@@ -198,7 +198,7 @@ export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNo
     <div className="space-y-6">
       {/* Guidance Card — escondido quando embutido (o DocumentsHero já explica) */}
       {!embedded && (
-      <Card className="p-4 border-primary/20 bg-primary/5">
+      <Card className="p-4">
         <div className="flex items-start gap-3">
           <FileCheck className="h-5 w-5 text-primary shrink-0 mt-0.5" strokeWidth={1.5}/>
           <div>
