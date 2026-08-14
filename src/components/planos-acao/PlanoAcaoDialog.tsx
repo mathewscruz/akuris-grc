@@ -290,17 +290,12 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading, or
                   {t('planosAcao.fieldDeadline')}
                   <FieldHelpTooltip content={t('planosAcao.fieldDeadlineHelp')} />
                 </Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className={cn('w-full justify-start text-left font-normal', !prazo && 'text-muted-foreground')}>
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {prazo ? format(prazo, 'dd/MM/yyyy', { locale: ptBR }) : t('planosAcao.fieldDeadlinePlaceholder')}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar mode="single" selected={prazo} onSelect={setPrazo} locale={ptBR} className="pointer-events-auto" />
-                  </PopoverContent>
-                </Popover>
+                <DateField
+                  value={prazo}
+                  onChange={setPrazo}
+                  placeholder={t('planosAcao.fieldDeadlinePlaceholder')}
+                />
+
               </div>
             </div>
           </div>
