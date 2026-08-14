@@ -60,17 +60,23 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
   const [aprovacaoOpen, setAprovacaoOpen] = useState(false);
   const [aprovacaoRisco, setAprovacaoRisco] = useState<any>(null);
 
+  // Rede de segurança: além da rotina diária no servidor, reavalia expirações ao carregar.
+  useEffect(() => {
+    if (!profile?.empresa_id) return;
+    supabase.rpc('expirar_aceites_riscos').then(({ error }) => {
+      if (error) return;
+      queryClient.invalidateQueries({ queryKey: ['riscos-aceitos'] });
+      queryClient.invalidateQueries({ queryKey: ['riscos-aceites-expirados'] });
+    });
+  }, [profile?.empresa_id]);
+
   // Riscos aceitos (aprovados)
   const { data: riscos = [], isLoading } = useQuery({
     queryKey: ['riscos-aceitos', profile?.empresa_id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('riscos')
-        .select(`
-          id, nome, nivel_risco_inicial, nivel_risco_residual,
-          justificativa_aceite, data_aceite, aprovador_aceite,
-          data_proxima_revisao, responsavel, created_at, created_by, status_aceite
-        `)
+        .select(SELECT_ACEITE)
         .eq('empresa_id', profile!.empresa_id)
         .eq('aceito', true)
         .order('data_aceite', { ascending: false });
@@ -87,14 +93,27 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
     queryFn: async () => {
       const { data, error } = await supabase
         .from('riscos')
-        .select(`
-          id, nome, nivel_risco_inicial, nivel_risco_residual,
-          justificativa_aceite, data_aceite, aprovador_aceite,
-          data_proxima_revisao, responsavel, created_at, created_by, status_aceite
-        `)
+        .select(SELECT_ACEITE)
         .eq('empresa_id', profile!.empresa_id)
         .eq('status_aceite', 'pendente')
         .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return await enrichWithNames(data || []);
+    },
+    enabled: !!profile?.empresa_id,
+  });
+
+  // Aceites expirados / invalidados (risco reaberto)
+  const { data: riscosExpirados = [], isLoading: isLoadingExpirados } = useQuery({
+    queryKey: ['riscos-aceites-expirados', profile?.empresa_id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('riscos')
+        .select(SELECT_ACEITE)
+        .eq('empresa_id', profile!.empresa_id)
+        .in('status_aceite', ['expirado', 'invalidado'])
+        .order('aceite_valido_ate', { ascending: false });
 
       if (error) throw error;
       return await enrichWithNames(data || []);
