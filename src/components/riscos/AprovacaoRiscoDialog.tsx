@@ -137,17 +137,50 @@ export function AprovacaoRiscoDialog({ open, onOpenChange, risco, onSuccess }: P
   const handleDecisaoAceite = async (decisao: 'aprovado' | 'rejeitado') => {
     setLoading(true);
     try {
+      const agora = new Date();
+      const historicoAceite: any[] = Array.isArray(risco?.historico_aceite) ? risco.historico_aceite : [];
       const updateData: any = {
         status_aceite: decisao,
         comentarios_aprovacao: comentario || null,
       };
 
       if (decisao === 'aprovado') {
+        // Validade: usa a data pedida; se em falta ou já passada, 12 meses a partir da aprovação.
+        let validoAte: string | null = risco?.aceite_valido_ate || null;
+        if (!validoAte || new Date(validoAte) <= agora) {
+          const d = new Date(agora);
+          d.setMonth(d.getMonth() + 12);
+          validoAte = d.toISOString().split('T')[0];
+        }
         updateData.aceito = true;
-        updateData.data_aceite = new Date().toISOString();
+        updateData.data_aceite = agora.toISOString();
+        updateData.aceite_valido_ate = validoAte;
+        // Histórico empilhado: nunca sobrescrever aceites anteriores.
+        updateData.historico_aceite = [
+          ...historicoAceite,
+          {
+            evento: 'aprovado',
+            em: agora.toISOString(),
+            aprovador: profile?.user_id,
+            aprovador_nome: profile?.nome,
+            valido_ate: validoAte,
+            justificativa: risco?.justificativa_aceite || null,
+            comentario: comentario || null,
+          },
+        ];
       } else {
         updateData.aceito = false;
         updateData.data_aceite = null;
+        updateData.historico_aceite = [
+          ...historicoAceite,
+          {
+            evento: 'rejeitado',
+            em: agora.toISOString(),
+            aprovador: profile?.user_id,
+            aprovador_nome: profile?.nome,
+            comentario: comentario || null,
+          },
+        ];
       }
 
       const { error } = await supabase
