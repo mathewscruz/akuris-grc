@@ -4,6 +4,7 @@
  */
 import { differenceInDays } from 'date-fns';
 import { tGlobal } from '@/lib/i18n-global';
+import type { NivelRisco } from '@/components/riscos/matriz-config';
 
 export type Severity = 'critico' | 'alto' | 'medio' | 'baixo';
 
