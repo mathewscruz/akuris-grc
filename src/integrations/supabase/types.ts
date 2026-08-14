@@ -7299,6 +7299,7 @@ export type Database = {
           aceito: boolean | null
           aprovador_aceite: string | null
           aprovador_id: string | null
+          biblioteca_codigo: string | null
           categoria_id: string | null
           causas: string | null
           comentarios_aprovacao: string | null
@@ -7339,6 +7340,7 @@ export type Database = {
           aceito?: boolean | null
           aprovador_aceite?: string | null
           aprovador_id?: string | null
+          biblioteca_codigo?: string | null
           categoria_id?: string | null
           causas?: string | null
           comentarios_aprovacao?: string | null
@@ -7379,6 +7381,7 @@ export type Database = {
           aceito?: boolean | null
           aprovador_aceite?: string | null
           aprovador_id?: string | null
+          biblioteca_codigo?: string | null
           categoria_id?: string | null
           causas?: string | null
           comentarios_aprovacao?: string | null
@@ -7591,6 +7594,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      riscos_biblioteca: {
+        Row: {
+          categoria: string
+          causas: string[]
+          codigo: string
+          consequencias: string[]
+          controlos_recomendados: string[]
+          created_at: string
+          descricao: string
+          id: string
+          impacto_sugerido: number
+          origem: string
+          probabilidade_sugerida: number
+          tags: string[]
+          tipos_ativo: string[]
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          categoria: string
+          causas?: string[]
+          codigo: string
+          consequencias?: string[]
+          controlos_recomendados?: string[]
+          created_at?: string
+          descricao: string
+          id?: string
+          impacto_sugerido?: number
+          origem?: string
+          probabilidade_sugerida?: number
+          tags?: string[]
+          tipos_ativo?: string[]
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          categoria?: string
+          causas?: string[]
+          codigo?: string
+          consequencias?: string[]
+          controlos_recomendados?: string[]
+          created_at?: string
+          descricao?: string
+          id?: string
+          impacto_sugerido?: number
+          origem?: string
+          probabilidade_sugerida?: number
+          tags?: string[]
+          tipos_ativo?: string[]
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       riscos_categorias: {
         Row: {
@@ -8600,6 +8657,10 @@ export type Database = {
       has_valid_mfa_session:
         | { Args: never; Returns: boolean }
         | { Args: { _user_id: string }; Returns: boolean }
+      importar_riscos_biblioteca: {
+        Args: { codigos: string[]; mapear_controlos?: boolean }
+        Returns: Json
+      }
       incidente_pertence_empresa: {
         Args: { incidente_id: string }
         Returns: boolean
