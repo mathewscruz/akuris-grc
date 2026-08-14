@@ -1,3 +1,4 @@
+import { rowOpenProps } from '@/lib/row-interaction';
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -703,7 +704,13 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
               </TableRow>
             ) : (
               paginated.map(req => (
-                <TableRow key={req.id} className={`cursor-pointer hover:bg-muted/50 ${selectedIds.has(req.id) ? 'bg-primary/5' : ''}`} onClick={() => handleRowClick(req)}>
+                <TableRow
+                  key={req.id}
+                  {...(() => {
+                    const props = rowOpenProps(() => handleRowClick(req), (req as any).codigo || (req as any).titulo);
+                    return { ...props, className: `${props.className} ${selectedIds.has(req.id) ? 'bg-primary/5' : ''}` };
+                  })()}
+                >
                   <TableCell onClick={(e) => e.stopPropagation()}>
                     <Checkbox
                       checked={selectedIds.has(req.id)}
