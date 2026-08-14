@@ -120,7 +120,7 @@ export const gapUi = {
       },
       table: {
         errorLoadRequirements: 'Erro ao carregar requisitos',
-        bulkUpdated: '{count} requisitos atualizados para "{label}"',
+        bulkUpdated: { one: '{count} requisito atualizado para "{label}"', other: '{count} requisitos atualizados para "{label}"' },
         errorBulkUpdate: 'Erro na atualização em lote',
         errorCompanyNotIdentified: 'Erro: Empresa não identificada.',
         priorityMandatory: 'Obrigatório',
@@ -318,7 +318,7 @@ export const gapUi = {
       },
       table: {
         errorLoadRequirements: 'Error loading requirements',
-        bulkUpdated: '{count} requirements updated to "{label}"',
+        bulkUpdated: { one: '{count} requirement updated to "{label}"', other: '{count} requirements updated to "{label}"' },
         errorBulkUpdate: 'Error in bulk update',
         errorCompanyNotIdentified: 'Error: Company not identified.',
         priorityMandatory: 'Mandatory',

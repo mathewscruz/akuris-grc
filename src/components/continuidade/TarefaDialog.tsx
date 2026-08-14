@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import { ListChecks } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { DateField } from '@/components/ui/date-field';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -129,7 +130,7 @@ export function TarefaDialog({ open, onOpenChange, planoId, tarefa, onSuccess }:
             </div>
             <div className="space-y-2">
               <Label>{t('modDialogs.continuidade.tarefa.fieldPrazo')}</Label>
-              <Input type="date" value={form.prazo} onChange={e => setForm(p => ({ ...p, prazo: e.target.value }))} />
+              <DateField value={form.prazo || null} onChange={(v) => setForm(p => ({ ...p, prazo: v || '' }))} />
             </div>
           </div>
         </div>

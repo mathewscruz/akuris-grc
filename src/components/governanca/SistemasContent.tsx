@@ -316,6 +316,7 @@ export default function SistemasContent() {
           variant="primary"
           showAccent
           emptyHint={t("governancaComp.sistemas.statTotalEmptyHint")}
+          drillDown="sistemas"
           segments={[
             { label: t("governancaComp.sistemas.segmentAtivos"), value: sistemasAtivos, tone: 'success' },
             { label: t("governancaComp.sistemas.segmentInativos"), value: Math.max(0, sistemas.length - sistemasAtivos), tone: 'neutral' },
@@ -326,18 +327,21 @@ export default function SistemasContent() {
           value={sistemasAtivos}
           icon={<Monitor />}
           variant="success"
+          drillDown="sistemas"
         />
         <StatCard
           title={t("governancaComp.sistemas.statCriticidadeAlta")}
           value={sistemasCriticos}
           icon={<Shield />}
           variant="warning"
+          drillDown="sistemas"
         />
         <StatCard
           title={t("governancaComp.sistemas.statInativos")}
           value={sistemas.length - sistemasAtivos}
           icon={<Lock />}
           variant="default"
+          drillDown="sistemas"
         />
       </div>
 

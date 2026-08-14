@@ -9,6 +9,8 @@ import { Input } from '@/components/ui/input';
 import type { ProjetoColuna, ProjetoTarefa, ProjetoTarefaPrioridade } from '@/types/projetos';
 import { useMoveTarefa, useUpsertTarefa } from '@/hooks/useProjetoTarefas';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { getPrioridadeLabel } from './enum-labels';
+import { formatDateOnly } from '@/lib/date-utils';
 
 /**
  * Colisão por ponteiro: a coluna de destino é a que está debaixo do cursor.
@@ -184,11 +186,11 @@ function TaskCard({ tarefa, dragging }: { tarefa: ProjetoTarefa; dragging?: bool
       <p className="text-sm font-medium mb-2 line-clamp-2">{tarefa.titulo}</p>
       <div className="flex items-center gap-1.5 flex-wrap">
         <StatusBadge tone={prioridadeTone[tarefa.prioridade]} size="sm">
-          {tarefa.prioridade}
+          {getPrioridadeLabel(t, tarefa.prioridade)}
         </StatusBadge>
         {tarefa.prazo && (
           <StatusBadge tone={atrasada ? 'destructive' : 'neutral'} variant={atrasada ? 'soft' : 'outline'} size="sm" icon={<Calendar className="h-2.5 w-2.5" />}>
-            {new Date(tarefa.prazo).toLocaleDateString('pt-BR')}
+            {formatDateOnly(tarefa.prazo)}
           </StatusBadge>
         )}
         {tarefa.responsavel_id && (

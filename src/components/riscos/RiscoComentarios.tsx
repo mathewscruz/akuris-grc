@@ -202,7 +202,7 @@ export function RiscoComentarios({ riscoId }: { riscoId: string }) {
                       type="button"
                       onClick={() => remove.mutate(c.id)}
                       disabled={remove.isPending && remove.variables === c.id}
-                      className="ml-auto text-muted-foreground/60 hover:text-destructive transition-colors disabled:cursor-wait disabled:opacity-40"
+                      className="ml-auto text-muted-foreground hover:text-destructive transition-colors disabled:cursor-wait disabled:opacity-40"
                       aria-label={remove.isPending && remove.variables === c.id ? t('fin.riscos.comentarios.excluindo') : t('fin.riscos.comentarios.excluir')}
                     >
                       <Trash2 className="h-3.5 w-3.5" strokeWidth={1.5} />

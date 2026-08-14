@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DateField } from '@/components/ui/date-field';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -130,11 +131,11 @@ export function ChangelogEntryDialog({ open, onOpenChange, entry, onSaved }: Pro
             </div>
             <div className="space-y-2">
               <Label htmlFor="release_date">{t('configPlanos.changelogDialog.fieldReleaseDate')}</Label>
-              <Input
+              <DateField
                 id="release_date"
-                type="date"
                 value={releaseDate}
-                onChange={(e) => setReleaseDate(e.target.value)}
+                onChange={(v) => setReleaseDate(v || '')}
+                clearable={false}
               />
             </div>
           </div>

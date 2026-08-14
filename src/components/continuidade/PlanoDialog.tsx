@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import { ShieldCheck } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { DateField } from '@/components/ui/date-field';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -171,7 +172,7 @@ export function PlanoDialog({ open, onOpenChange, plano, onSuccess }: PlanoDialo
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>{t('continuidadeComp.planoDialog.fieldProximaRevisao')}</Label>
-              <Input type="date" value={form.proxima_revisao} onChange={e => setForm(p => ({ ...p, proxima_revisao: e.target.value }))} />
+              <DateField value={form.proxima_revisao || null} onChange={(v) => setForm(p => ({ ...p, proxima_revisao: v || '' }))} />
             </div>
             <div className="space-y-2">
               <Label>{t('continuidadeComp.planoDialog.fieldVersao')}</Label>

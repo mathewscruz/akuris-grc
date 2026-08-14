@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Download, Eye, Edit, Trash2, MoreHorizontal } from "lucide-react";
+import { Plus, Download, Eye, Edit, Trash2, MoreHorizontal, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -385,6 +385,18 @@ export default function RevisaoAcessos() {
                 sortField={sortConfig?.field}
                 sortDirection={sortConfig?.direction}
                 onSort={handleSort}
+                emptyState={{
+                  icon: <UserCheck className="h-8 w-8" />,
+                  title: t('p3Kpis.revisaoAcessos.emptyTitle'),
+                  description: t('p3Kpis.revisaoAcessos.emptyDescription'),
+                  action: {
+                    label: t('p3Kpis.revisaoAcessos.emptyAction'),
+                    onClick: () => {
+                      setSelectedReview(null);
+                      setReviewDialogOpen(true);
+                    },
+                  },
+                }}
               />
             </CardContent>
           </Card>

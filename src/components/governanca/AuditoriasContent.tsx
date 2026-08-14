@@ -272,7 +272,7 @@ export default function AuditoriasContent() {
             description={stat.description}
             icon={<stat.icon />}
             loading={isLoading}
-            drillDown={index === 0 ? "auditorias" : undefined}
+            drillDown="auditorias"
             showAccent={index === 0}
           />
         ))}

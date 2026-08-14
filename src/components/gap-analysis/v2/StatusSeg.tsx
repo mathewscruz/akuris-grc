@@ -93,7 +93,7 @@ export function StatusSeg({
                 'inline-flex h-3.5 min-w-3.5 items-center justify-center rounded-sm border px-1 font-mono text-[9px] leading-none',
                 isActive
                   ? 'border-current/40 text-current/90 bg-transparent'
-                  : 'border-border bg-background text-muted-foreground/70'
+                  : 'border-border bg-background text-muted-foreground'
               )}
             >
               {opt.shortcut}

@@ -97,7 +97,7 @@ export const AuditTrailTimeline: React.FC<AuditTrailTimelineProps> = ({ requirem
   if (entries.length === 0) {
     return (
       <div className="text-center py-4">
-        <History className="h-5 w-5 mx-auto text-muted-foreground/40 mb-1" strokeWidth={1.5}/>
+        <History className="h-5 w-5 mx-auto text-muted-foreground mb-1" strokeWidth={1.5}/>
         <p className="text-xs text-muted-foreground">{t('gapAnalysis.audit.noChanges')}</p>
       </div>
     );

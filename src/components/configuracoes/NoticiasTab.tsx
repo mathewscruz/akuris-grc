@@ -113,7 +113,7 @@ export default function NoticiasTab() {
       ) : campanhas.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground space-y-3">
-            <Mail className="h-10 w-10 mx-auto text-muted-foreground/40" />
+            <Mail className="h-10 w-10 mx-auto text-muted-foreground" />
             <p>{t('configPlanos.noticiasTab.emptyState')}</p>
             <Button onClick={handleNew} variant="outline">
               <Plus className="h-4 w-4" /> {t('configPlanos.noticiasTab.firstCampanha')}

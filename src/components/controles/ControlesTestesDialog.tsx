@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { DialogShell } from "@/components/ui/dialog-shell";
 import { Input } from "@/components/ui/input";
+import { DateField } from "@/components/ui/date-field";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -138,12 +139,11 @@ export default function ControlesTestesDialog({ open, onOpenChange, controle, te
         <div className="grid grid-cols-2 gap-4">
           <div>
             <Label htmlFor="data_teste">{t('controlesAuditorias.ctdFieldDataTeste')}</Label>
-            <Input
+            <DateField
               id="data_teste"
-              type="date"
-              value={formData.data_teste}
-              onChange={(e) => update({ data_teste: e.target.value })}
-              required
+              value={formData.data_teste || null}
+              onChange={(v) => update({ data_teste: v || '' })}
+              clearable={false}
             />
           </div>
 
@@ -175,11 +175,10 @@ export default function ControlesTestesDialog({ open, onOpenChange, controle, te
 
           <div>
             <Label htmlFor="proxima_avaliacao">{t('controlesAuditorias.ctdFieldProximaAvaliacao')}</Label>
-            <Input
+            <DateField
               id="proxima_avaliacao"
-              type="date"
-              value={formData.proxima_avaliacao}
-              onChange={(e) => update({ proxima_avaliacao: e.target.value })}
+              value={formData.proxima_avaliacao || null}
+              onChange={(v) => update({ proxima_avaliacao: v || '' })}
             />
           </div>
         </div>

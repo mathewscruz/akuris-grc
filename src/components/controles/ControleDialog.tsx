@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DateField } from "@/components/ui/date-field";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -296,11 +297,11 @@ export default function ControleDialog({ open, onOpenChange, controle, categoria
             </div>
             <div>
               <Label className="flex items-center gap-1"><CalendarIcon className="h-3.5 w-3.5" /> {t('controlesAuditorias.cdlgFieldImplementacao')}</Label>
-              <Input type="date" value={formData.data_implementacao} onChange={(e) => update({ data_implementacao: e.target.value })} />
+              <DateField value={formData.data_implementacao || null} onChange={(v) => update({ data_implementacao: v || '' })} />
             </div>
             <div>
               <Label className="flex items-center gap-1"><CalendarIcon className="h-3.5 w-3.5" /> {t('controlesAuditorias.cdlgFieldProximaAvaliacao')}</Label>
-              <Input type="date" value={formData.proxima_avaliacao} onChange={(e) => update({ proxima_avaliacao: e.target.value })} />
+              <DateField value={formData.proxima_avaliacao || null} onChange={(v) => update({ proxima_avaliacao: v || '' })} />
             </div>
           </div>
         </div>

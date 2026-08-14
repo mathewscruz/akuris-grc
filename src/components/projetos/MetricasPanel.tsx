@@ -4,6 +4,8 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { TrendingUp, Clock, AlertTriangle, CheckCircle2, Timer } from 'lucide-react';
 import type { ProjetoTarefa, ProjetoColuna } from '@/types/projetos';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { getPrioridadeLabel } from './enum-labels';
+import type { ProjetoTarefaPrioridade } from '@/types/projetos';
 
 export function MetricasPanel({ tarefas, colunas }: { tarefas: ProjetoTarefa[]; colunas: ProjetoColuna[] }) {
   const { t } = useLanguage();
@@ -34,7 +36,7 @@ export function MetricasPanel({ tarefas, colunas }: { tarefas: ProjetoTarefa[]; 
     const cycleMed = ciclos.length === 0 ? 0 : ciclos.reduce((s, n) => s + n, 0) / ciclos.length;
 
     // Distribuição por prioridade
-    const porPrior = ['critica', 'alta', 'media', 'baixa'].map((p) => ({
+    const porPrior = (['critica', 'alta', 'media', 'baixa'] as ProjetoTarefaPrioridade[]).map((p) => ({
       prior: p,
       qtd: tarefas.filter((t) => t.prioridade === p).length,
     }));
@@ -74,7 +76,7 @@ export function MetricasPanel({ tarefas, colunas }: { tarefas: ProjetoTarefa[]; 
         <Card variant="elevated">
           <CardContent className="p-4">
             <div className="text-sm font-semibold mb-3">{t('projetos.metricas.byPriority')}</div>
-            <BarChart data={m.porPrior.map((p) => ({ label: p.prior, valor: p.qtd }))} max={Math.max(1, ...m.porPrior.map((p) => p.qtd))} />
+            <BarChart data={m.porPrior.map((p) => ({ label: getPrioridadeLabel(t, p.prior), valor: p.qtd }))} max={Math.max(1, ...m.porPrior.map((p) => p.qtd))} />
           </CardContent>
         </Card>
         <Card variant="elevated">
@@ -123,8 +125,8 @@ function BarChart({ data, max }: { data: { label: string; valor: number }[]; max
   return (
     <div className="space-y-1.5">
       {data.map((d) => (
-        <div key={d.label} className="flex items-center gap-2 text-xs">
-          <div className="w-20 truncate text-muted-foreground capitalize">{d.label}</div>
+        <div key={d.label} className="flex items-center gap-2 text-xs" title={d.label}>
+          <div className="w-28 flex-shrink-0 truncate text-muted-foreground" title={d.label}>{d.label}</div>
           <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
             <div className="h-full bg-primary transition-all" style={{ width: `${(d.valor / max) * 100}%` }} />
           </div>

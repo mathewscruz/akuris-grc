@@ -3,6 +3,7 @@ import { DialogShell } from '@/components/ui/dialog-shell';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { ListChecks } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { DateField } from '@/components/ui/date-field';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -160,7 +161,7 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>{t('projetos.tarefaDialog.fieldPrazo')}</Label>
-                  <Input type="date" value={form.prazo} onChange={(e) => setForm({ ...form, prazo: e.target.value })} />
+                  <DateField value={form.prazo || null} onChange={(v) => setForm({ ...form, prazo: v ?? '' })} />
                 </div>
                 <div>
                   <Label>{t('projetos.tarefaDialog.fieldEstimativa')}</Label>

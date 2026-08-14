@@ -61,6 +61,13 @@ import { sweepRiscos } from './sweep-riscos';
 import { sweepCore } from './sweep-core';
 import { buscaGlobal } from './busca-global';
 import { jurisdicao } from './jurisdicao';
+import { p3Breadcrumbs } from './p3-breadcrumbs';
+import { p3Projetos } from './p3-projetos';
+import { p3Filtros } from './p3-filtros';
+import { p3Kpis } from './p3-kpis';
+import { p3Denuncia } from './p3-denuncia';
+import { p3Import } from './p3-import';
+import { p3Wizard } from './p3-wizard';
 
 type ModuleDict = { pt: Record<string, unknown>; en: Record<string, unknown> };
 
@@ -143,6 +150,13 @@ const modules: Record<string, ModuleDict> = {
   sweepCore,
   buscaGlobal,
   jurisdicao,
+  p3Breadcrumbs,
+  p3Projetos,
+  p3Filtros,
+  p3Kpis,
+  p3Denuncia,
+  p3Import,
+  p3Wizard,
 };
 
 

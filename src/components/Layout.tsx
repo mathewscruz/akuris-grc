@@ -5,6 +5,7 @@ import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
 import { useAuth } from '@/components/AuthProvider';
 import { useBreadcrumb } from '@/hooks/useBreadcrumb';
+import { LanguageSelector } from '@/components/LanguageSelector';
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import UserProfile from '@/components/UserProfile';
 import NotificationCenter from '@/components/NotificationCenter';
@@ -209,6 +210,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <div className="flex items-center gap-1 sm:gap-2 md:gap-3 flex-shrink-0">
               <div className="hidden sm:flex"><CommandPaletteButton /></div>
               <div className="hidden md:flex"><ChangelogPopover /></div>
+              <LanguageSelector variant="app" />
               <ThemeToggle />
               <NotificationCenter />
               <UserProfile />

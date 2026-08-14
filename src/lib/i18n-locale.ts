@@ -5,7 +5,7 @@
  * que utilitários como `formatStatus` e `formatDateTime` — usados em centenas de
  * tabelas e cards — respeitem o idioma sem precisar de hook em cada componente.
  */
-export type AppLocale = 'pt' | 'en';
+export type AppLocale = 'pt' | 'pt-BR' | 'en';
 
 /** Escolha manual do usuário (toggle) ou preferência do perfil autenticado. */
 export const LOCALE_STORAGE_KEY = 'governaii-locale';
@@ -32,17 +32,31 @@ const PT_TIMEZONES = new Set([
 export function detectLocaleByRegion(): AppLocale {
   try {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
-    if (BR_TIMEZONES.has(tz) || PT_TIMEZONES.has(tz)) return 'pt';
-    if (tz) return 'en';
+    if (BR_TIMEZONES.has(tz)) return 'pt-BR';
+    if (PT_TIMEZONES.has(tz)) return 'pt';
+    if (tz) return localeFromNavigator() ?? 'en';
   } catch {
     // Intl indisponível: cai no idioma do navegador
   }
+  return localeFromNavigator() ?? 'en';
+}
+
+/** Idioma do navegador convertido para as variantes suportadas. */
+function localeFromNavigator(): AppLocale | null {
   try {
-    return (navigator.language || '').toLowerCase().startsWith('pt') ? 'pt' : 'en';
+    const lang = (navigator.language || '').toLowerCase();
+    if (lang.startsWith('pt')) return lang === 'pt-br' || lang.startsWith('pt-br') ? 'pt-BR' : 'pt';
+    return null;
   } catch {
-    return 'en';
+    return null;
   }
 }
+
+/** Todas as variantes suportadas, na ordem em que aparecem no seletor. */
+export const SUPPORTED_LOCALES: AppLocale[] = ['pt', 'pt-BR', 'en'];
+
+export const isSupportedLocale = (value: unknown): value is AppLocale =>
+  value === 'pt' || value === 'pt-BR' || value === 'en';
 
 /**
  * Só respeita o valor gravado quando ele veio de escolha explícita (toggle ou
@@ -53,7 +67,7 @@ function readInitial(): AppLocale {
   try {
     const explicit = localStorage.getItem(LOCALE_EXPLICIT_KEY) === '1';
     const saved = localStorage.getItem(LOCALE_STORAGE_KEY);
-    if (explicit && (saved === 'en' || saved === 'pt')) return saved;
+    if (explicit && isSupportedLocale(saved)) return saved;
     if (!explicit && saved) {
       // Migração única da chave legada gravada por autodetecção.
       localStorage.removeItem(LOCALE_STORAGE_KEY);

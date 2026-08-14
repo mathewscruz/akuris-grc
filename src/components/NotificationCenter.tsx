@@ -530,7 +530,7 @@ const NotificationCenter: React.FC = () => {
           </span>
 
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/80 leading-none mb-1 truncate">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground leading-none mb-1 truncate">
               {moduleLabel}
             </p>
             <p className={cn(
@@ -544,7 +544,7 @@ const NotificationCenter: React.FC = () => {
                 {notification.message}
               </p>
             )}
-            <span className="text-[11px] text-muted-foreground/70 tabular-nums mt-1.5 block">
+            <span className="text-[11px] text-muted-foreground tabular-nums mt-1.5 block">
               {formatRelative(notification.created_at)}
             </span>
           </div>
@@ -664,11 +664,11 @@ const NotificationCenter: React.FC = () => {
                       <header className="flex items-center justify-between px-1">
                         <div className="flex items-center gap-2">
                           <span aria-hidden className={cn('h-1.5 w-1.5 rounded-full', TONE_CLS[tone].accent)} />
-                          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/80">
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                             {label}
                           </p>
                         </div>
-                        <span className="text-[10px] font-semibold text-muted-foreground/60 tabular-nums">
+                        <span className="text-[10px] font-semibold text-muted-foreground tabular-nums">
                           {items.length}
                         </span>
                       </header>
@@ -714,7 +714,7 @@ const NotificationCenter: React.FC = () => {
                       <span className="text-[11px] text-muted-foreground tabular-nums">
                         {format(new Date(detail.created_at), 'PPp', { locale: dateFnsLocale })}
                       </span>
-                      <span className="text-[11px] text-muted-foreground/70">
+                      <span className="text-[11px] text-muted-foreground">
                         · {formatRelative(detail.created_at)}
                       </span>
                     </div>

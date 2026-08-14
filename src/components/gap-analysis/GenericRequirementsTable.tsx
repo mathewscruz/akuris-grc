@@ -417,10 +417,10 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
 
   /** Coluna "Prazo": cor semântica (vermelho atrasado / âmbar em até 7d / neutro) + tooltip. */
   const renderDueDate = (raw: string | null | undefined) => {
-    if (!raw) return <span className="text-xs text-muted-foreground/40">—</span>;
+    if (!raw) return <span className="text-xs text-muted-foreground">—</span>;
     let date: Date;
-    try { date = parseISO(raw); } catch { return <span className="text-xs text-muted-foreground/40">—</span>; }
-    if (isNaN(date.getTime())) return <span className="text-xs text-muted-foreground/40">—</span>;
+    try { date = parseISO(raw); } catch { return <span className="text-xs text-muted-foreground">—</span>; }
+    if (isNaN(date.getTime())) return <span className="text-xs text-muted-foreground">—</span>;
 
     const diff = differenceInCalendarDays(date, new Date());
     let toneClass = "text-foreground";
@@ -459,11 +459,11 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
 
   /** Coluna "Responsável": avatar com iniciais + nome truncado + tooltip com email. */
   const renderOwner = (userId: string | null | undefined) => {
-    if (!userId) return <span className="text-xs text-muted-foreground/40">—</span>;
+    if (!userId) return <span className="text-xs text-muted-foreground">—</span>;
     const user = usersById.get(userId);
     if (!user) {
       // Lookup ainda carregando ou usuário fora da empresa
-      return <span className="text-xs text-muted-foreground/60">•••</span>;
+      return <span className="text-xs text-muted-foreground">•••</span>;
     }
     const initials = user.nome
       .trim()
@@ -743,7 +743,7 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
                         <span>{req.evidence_files!.length}</span>
                       </div>
                     ) : (
-                      <span className="text-xs text-muted-foreground/40">—</span>
+                      <span className="text-xs text-muted-foreground">—</span>
                     )}
                   </TableCell>
                   <TableCell>

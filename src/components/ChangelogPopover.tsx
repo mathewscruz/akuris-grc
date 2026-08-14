@@ -172,7 +172,7 @@ export function ChangelogPopover() {
                           </div>
                         </div>
                         <ChevronRight
-                          className="h-4 w-4 text-muted-foreground/60 group-hover:text-foreground transition-colors mt-0.5 shrink-0"
+                          className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors mt-0.5 shrink-0"
                           strokeWidth={1.5}
                         />
                       </div>

@@ -39,7 +39,7 @@ export function RiscosViewChips({ active, onChange, items }: Props) {
             <span
               className={cn(
                 'tabular-nums text-[10.5px] px-1.5 rounded-full',
-                isActive ? 'bg-muted text-foreground/80' : 'bg-muted/70 text-muted-foreground/80',
+                isActive ? 'bg-muted text-foreground/80' : 'bg-muted/70 text-muted-foreground',
               )}
             >
               {v.count}

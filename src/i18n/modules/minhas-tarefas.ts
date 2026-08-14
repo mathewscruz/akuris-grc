@@ -18,7 +18,7 @@ export const minhasTarefas = {
         done: 'Concluídas',
       },
       itemCount: '{count} item',
-      itemCountPlural: '{count} itens',
+      itemCountPlural: { one: '{count} item', other: '{count} itens' },
       columns: {
         item: 'Item',
         source: 'Origem',
@@ -61,7 +61,7 @@ export const minhasTarefas = {
         done: 'Completed',
       },
       itemCount: '{count} item',
-      itemCountPlural: '{count} items',
+      itemCountPlural: { one: '{count} item', other: '{count} items' },
       columns: {
         item: 'Item',
         source: 'Source',

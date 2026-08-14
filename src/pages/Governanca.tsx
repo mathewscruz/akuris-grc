@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useLocation, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { Shield, FileText } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,6 +9,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function Governanca() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { t } = useLanguage();
 
@@ -41,6 +42,14 @@ export default function Governanca() {
     }
   }, [location.pathname, searchParams]);
 
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    const path = value === 'auditorias' ? '/governanca/auditorias' : '/governanca';
+    if (location.pathname !== path) {
+      navigate(path, { replace: true });
+    }
+  };
+
   const getPageTitle = () => {
     switch (activeTab) {
       case 'controles': return t('modules.governanca.controlsTitle');
@@ -64,7 +73,7 @@ export default function Governanca() {
         description={getPageDescription()}
       />
       
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="max-w-md">
           <TabsTrigger value="controles" className="flex items-center gap-2">
             <Shield className="h-4 w-4" />

@@ -166,7 +166,7 @@ export function RecentActivities({ className }: { className?: string }) {
                     {getStatusBadge(activity.status)}
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5">{activity.description}</p>
-                  <p className="text-xs text-muted-foreground/70 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true, locale: locale === 'pt' ? ptBR : enUS })}
                   </p>
                 </div>

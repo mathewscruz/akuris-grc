@@ -100,7 +100,7 @@ export function RequirementsTableToolbar({ counts }: Props) {
             <button
               type="button"
               disabled
-              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs text-muted-foreground/60 cursor-not-allowed"
+              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs text-muted-foreground cursor-not-allowed"
             >
               <LayoutGrid className="h-3 w-3" strokeWidth={1.5} />
               {t('sweepRiscos.gap.toolbar.quadro')}

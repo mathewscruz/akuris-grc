@@ -231,9 +231,9 @@
     --secondary: 216 30% 15%;
     --secondary-foreground: 180 10% 90%;
     
-    /* Muted */
+    /* Muted — 72% de luminosidade garante >= 7:1 sobre o card navy (WCAG AA/AAA) */
     --muted: 216 25% 18%;
-    --muted-foreground: 200 12% 65%;
+    --muted-foreground: 200 14% 72%;
     
     /* Accent */
     --accent: 252 30% 20%;
@@ -266,7 +266,7 @@
     --brand-ink: 0 0% 100%;
     
     /* Neutral */
-    --neutral: 200 10% 45%;
+    --neutral: 200 12% 62%;
     --neutral-foreground: 0 0% 100%;
     
     /* Form Elements */

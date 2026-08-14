@@ -3,15 +3,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Button } from '@/components/ui/button';
+import { DateField } from '@/components/ui/date-field';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolvePrioridadeTone } from '@/lib/status-tone';
-import { CalendarIcon, ClipboardList, Settings2, Link2, Target } from 'lucide-react';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
+import { ClipboardList, Settings2, Link2, Target } from 'lucide-react';
+import { formatDateOnly } from '@/lib/date-utils';
 import { UserSelect } from '@/components/riscos/UserSelect';
 import { WizardDialog, WizardTab, WizardTabState } from '@/components/ui/wizard-dialog';
 import { WizardSummaryCard, WizardSummaryRow } from '@/components/ui/wizard-summary-card';
@@ -74,7 +70,7 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading, or
   const [status, setStatus] = useState('pendente');
   const [prioridade, setPrioridade] = useState('media');
   const [responsavelId, setResponsavelId] = useState('');
-  const [prazo, setPrazo] = useState<Date | undefined>();
+  const [prazo, setPrazo] = useState<string | null>(null);
   const [moduloOrigem, setModuloOrigem] = useState('manual');
   const [registroOrigemTitulo, setRegistroOrigemTitulo] = useState('');
   const [registroOrigemId, setRegistroOrigemId] = useState('');
@@ -89,7 +85,7 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading, or
       setStatus(plano.status || 'pendente');
       setPrioridade(plano.prioridade || 'media');
       setResponsavelId(plano.responsavel_id || '');
-      setPrazo(plano.prazo ? new Date(plano.prazo) : undefined);
+      setPrazo(plano.prazo || null);
       setModuloOrigem(plano.modulo_origem || 'manual');
       setRegistroOrigemTitulo(plano.registro_origem_titulo || '');
       setRegistroOrigemId(plano.registro_origem_id || '');
@@ -100,7 +96,7 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading, or
       setStatus('pendente');
       setPrioridade('media');
       setResponsavelId('');
-      setPrazo(undefined);
+      setPrazo(null);
       setModuloOrigem(origemInicial?.modulo ?? 'manual');
       setRegistroOrigemTitulo(origemInicial?.registroTitulo ?? '');
       setRegistroOrigemId(origemInicial?.registroId ?? '');
@@ -112,7 +108,7 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading, or
   useEffect(() => {
     if (open) {
       setInitialSnapshot(
-        JSON.stringify({ titulo, descricao, status, prioridade, responsavelId, prazo: prazo?.toISOString() ?? null, moduloOrigem, registroOrigemTitulo, registroOrigemId, observacoes })
+        JSON.stringify({ titulo, descricao, status, prioridade, responsavelId, prazo, moduloOrigem, registroOrigemTitulo, registroOrigemId, observacoes })
       );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -120,7 +116,7 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading, or
 
   const currentValues = {
     titulo, descricao, status, prioridade, responsavelId,
-    prazo: prazo?.toISOString() ?? null,
+    prazo,
     moduloOrigem, registroOrigemTitulo, registroOrigemId, observacoes,
   };
   const isDirty = JSON.stringify(currentValues) !== initialSnapshot;
@@ -141,7 +137,7 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading, or
         setStatus(d.status ?? 'pendente');
         setPrioridade(d.prioridade ?? 'media');
         setResponsavelId(d.responsavelId ?? '');
-        setPrazo(d.prazo ? new Date(d.prazo) : undefined);
+        setPrazo(d.prazo ?? null);
         setModuloOrigem(d.moduloOrigem ?? 'manual');
         setRegistroOrigemTitulo(d.registroOrigemTitulo ?? '');
         setRegistroOrigemId(d.registroOrigemId ?? '');
@@ -158,8 +154,24 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading, or
     setRegistroOrigemTitulo('');
   };
 
+  const [showTitleError, setShowTitleError] = useState(false);
+
+  /** Bloqueia avançar/trocar de aba enquanto a etapa de Identificação tiver
+   * campos obrigatórios por preencher, assinalando o erro inline. */
+  const handleTabChange = (id: string) => {
+    if (activeTab === 'identificacao' && id !== 'identificacao' && !titulo.trim()) {
+      setShowTitleError(true);
+      return;
+    }
+    setActiveTab(id);
+  };
+
+  const missingFields: string[] = [];
+  if (!titulo.trim()) missingFields.push(t('planosAcaoWizard.missingFieldTitle'));
+
   const handleSave = () => {
     if (!titulo.trim()) {
+      setShowTitleError(true);
       setActiveTab('identificacao');
       return;
     }
@@ -169,7 +181,7 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading, or
       status,
       prioridade,
       responsavel_id: responsavelId || null,
-      prazo: prazo ? format(prazo, 'yyyy-MM-dd') : null,
+      prazo: prazo || null,
       modulo_origem: moduloOrigem,
       registro_origem_titulo: registroOrigemTitulo.trim() || null,
       registro_origem_id: registroOrigemId || null,
@@ -179,7 +191,9 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading, or
   };
 
   // 'complete' apenas quando há dados além dos defaults (status/prioridade/moduloOrigem têm defaults).
-  const identState: WizardTabState = titulo.trim() && descricao.trim() ? 'complete' : (titulo.trim() ? 'partial' : 'pending');
+  const identState: WizardTabState = showTitleError && !titulo.trim()
+    ? 'error'
+    : titulo.trim() && descricao.trim() ? 'complete' : (titulo.trim() ? 'partial' : 'pending');
   const planejamentoState: WizardTabState = responsavelId && prazo ? 'complete' : (responsavelId || prazo ? 'partial' : 'pending');
   const origemState: WizardTabState = moduloOrigem !== 'manual' && registroOrigemId ? 'complete' : (observacoes.trim() ? 'complete' : 'pending');
 
@@ -198,7 +212,16 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading, or
                 {t('planosAcao.fieldTitle')} <span className="text-destructive">*</span>
                 <FieldHelpTooltip content={t('planosAcao.fieldTitleHelp')} />
               </Label>
-              <Input value={titulo} onChange={(e) => setTitulo(e.target.value)} placeholder={t('planosAcao.fieldTitlePlaceholder')} />
+              <Input
+                value={titulo}
+                onChange={(e) => { setTitulo(e.target.value); if (e.target.value.trim()) setShowTitleError(false); }}
+                placeholder={t('planosAcao.fieldTitlePlaceholder')}
+                aria-invalid={showTitleError && !titulo.trim()}
+                className={showTitleError && !titulo.trim() ? 'border-destructive focus-visible:ring-destructive' : undefined}
+              />
+              {showTitleError && !titulo.trim() && (
+                <p className="text-xs text-destructive">{t('planosAcaoWizard.titleRequiredError')}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label>{t('planosAcao.fieldDescription')}</Label>

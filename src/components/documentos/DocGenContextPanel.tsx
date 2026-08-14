@@ -104,7 +104,7 @@ export const DocGenContextPanel: React.FC<Props> = ({ context, loading, defaultO
           </Section>
         )}
 
-        <p className="text-[11px] text-muted-foreground/80 pt-1 border-t border-border/50">
+        <p className="text-[11px] text-muted-foreground pt-1 border-t border-border/50">
           {t('docgen.contextPanel.footerNote')}
         </p>
       </CollapsibleContent>

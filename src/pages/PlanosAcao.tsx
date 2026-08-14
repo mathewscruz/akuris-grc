@@ -558,15 +558,15 @@ export default function PlanosAcao() {
         }
       />
 
-      {/* Stats */}
+      {/* Stats — todos os cartões abrem a mesma vista filtrada (lista + filtro de estado). */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <StatCard
           title={t('planosAcao.statTotal')}
           value={stats.total}
           icon={<ListTodo />}
           variant="primary"
-          drillDown="planos"
           showAccent
+          onClick={() => { setStatusFilter('todos'); setViewMode('lista'); }}
           segments={[
             { label: t('planosAcao.segmentPending'), value: stats.pendentes, tone: 'warning' },
             { label: t('planosAcao.segmentInProgress'), value: stats.emAndamento, tone: 'info' },
@@ -574,10 +574,10 @@ export default function PlanosAcao() {
           ]}
           emptyHint={t('planosAcao.emptyHintTotal')}
         />
-        <StatCard title={t('planosAcao.statPending')} value={stats.pendentes} icon={<Clock />} variant="warning" drillDown="planos" />
-        <StatCard title={t('planosAcao.statInProgress')} value={stats.emAndamento} icon={<Target />} variant="info" drillDown="planos" />
-        <StatCard title={t('planosAcao.statCompleted')} value={stats.concluidos} icon={<CheckCircle2 />} variant="success" />
-        <StatCard title={t('planosAcao.statOverdue')} value={stats.atrasados} icon={<AlertTriangle />} variant="destructive" drillDown="planos" />
+        <StatCard title={t('planosAcao.statPending')} value={stats.pendentes} icon={<Clock />} variant="warning" onClick={() => { setStatusFilter('pendente'); setViewMode('lista'); }} />
+        <StatCard title={t('planosAcao.statInProgress')} value={stats.emAndamento} icon={<Target />} variant="info" onClick={() => { setStatusFilter('em_andamento'); setViewMode('lista'); }} />
+        <StatCard title={t('planosAcao.statCompleted')} value={stats.concluidos} icon={<CheckCircle2 />} variant="success" onClick={() => { setStatusFilter('concluido'); setViewMode('lista'); }} />
+        <StatCard title={t('planosAcao.statOverdue')} value={stats.atrasados} icon={<AlertTriangle />} variant="destructive" onClick={() => { setStatusFilter('atrasado'); setViewMode('lista'); }} />
       </div>
 
       {/* Tabs */}
@@ -590,6 +590,45 @@ export default function PlanosAcao() {
         <TabsContent value={activeTab} className="mt-4">
           {viewMode === 'lista' ? (
             <Card>
+              {/* Filtros com rótulo visível — o Select nativo do DataTable só usa o
+                  rótulo como placeholder, que desaparece assim que há um valor selecionado. */}
+              <div className="flex flex-wrap items-end gap-4 px-4 sm:px-6 pt-4 sm:pt-6">
+                <div className="space-y-1.5">
+                  <Label htmlFor="planos-filtro-status" title={t('planosAcaoFiltros.statusLabel')}>
+                    {t('planosAcaoFiltros.statusLabel')}
+                  </Label>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger id="planos-filtro-status" className="w-[220px]" title={t('planosAcaoFiltros.statusLabel')}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">{t('planosAcao.filterStatusAll')}</SelectItem>
+                      <SelectItem value="pendente">{t('planosAcao.statusPendente')}</SelectItem>
+                      <SelectItem value="em_andamento">{t('planosAcao.statusEmAndamento')}</SelectItem>
+                      <SelectItem value="concluido">{t('planosAcao.statusConcluido')}</SelectItem>
+                      <SelectItem value="atrasado">{t('planosAcao.statusAtrasado')}</SelectItem>
+                      <SelectItem value="cancelado">{t('planosAcao.statusCancelado')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="planos-filtro-prioridade" title={t('planosAcaoFiltros.priorityLabel')}>
+                    {t('planosAcaoFiltros.priorityLabel')}
+                  </Label>
+                  <Select value={prioridadeFilter} onValueChange={setPrioridadeFilter}>
+                    <SelectTrigger id="planos-filtro-prioridade" className="w-[220px]" title={t('planosAcaoFiltros.priorityLabel')}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">{t('planosAcao.filterPriorityAll')}</SelectItem>
+                      <SelectItem value="baixa">{t('planosAcao.priorityBaixa')}</SelectItem>
+                      <SelectItem value="media">{t('planosAcao.priorityMedia')}</SelectItem>
+                      <SelectItem value="alta">{t('planosAcao.priorityAlta')}</SelectItem>
+                      <SelectItem value="critica">{t('planosAcao.priorityCritica')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
               <DataTable
                 data={filteredPlanos}
                 columns={columns}
@@ -604,35 +643,6 @@ export default function PlanosAcao() {
                 onSort={handleSort}
                 paginated
                 pageSize={20}
-                filters={[
-                  {
-                    key: 'status',
-                    label: t('planosAcao.filterStatusLabel'),
-                    options: [
-                      { value: 'todos', label: t('planosAcao.filterStatusAll') },
-                      { value: 'pendente', label: t('planosAcao.statusPendente') },
-                      { value: 'em_andamento', label: t('planosAcao.statusEmAndamento') },
-                      { value: 'concluido', label: t('planosAcao.statusConcluido') },
-                      { value: 'atrasado', label: t('planosAcao.statusAtrasado') },
-                      { value: 'cancelado', label: t('planosAcao.statusCancelado') },
-                    ],
-                    value: statusFilter,
-                    onChange: setStatusFilter,
-                  },
-                  {
-                    key: 'prioridade',
-                    label: t('planosAcao.filterPriorityLabel'),
-                    options: [
-                      { value: 'todos', label: t('planosAcao.filterPriorityAll') },
-                      { value: 'baixa', label: t('planosAcao.priorityBaixa') },
-                      { value: 'media', label: t('planosAcao.priorityMedia') },
-                      { value: 'alta', label: t('planosAcao.priorityAlta') },
-                      { value: 'critica', label: t('planosAcao.priorityCritica') },
-                    ],
-                    value: prioridadeFilter,
-                    onChange: setPrioridadeFilter,
-                  },
-                ]}
                 emptyState={{
                   icon: <ListTodo className="h-12 w-12" />,
                   title: t('planosAcao.emptyTitle'),

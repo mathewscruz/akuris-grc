@@ -6,8 +6,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet';
+import { QRCodeCanvas } from 'qrcode.react';
 import { 
   Save, 
   Link2, 
@@ -19,9 +27,14 @@ import {
   Eye,
   EyeOff,
   Search,
-  RefreshCw
+  RefreshCw,
+  QrCode,
+  Download,
+  AlertTriangle
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { toast as sonnerToast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -40,12 +53,41 @@ interface ConfiguracaoDenuncia {
 
 export function ConfiguracoesDenuncia() {
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const [config, setConfig] = useState<ConfiguracaoDenuncia | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showToken, setShowToken] = useState(false);
   const [empresaSlug, setEmpresaSlug] = useState<string>('');
+  const [previewOpen, setPreviewOpen] = useState(false);
   const { toast } = useToast();
+
+  const publicChannelUrl = empresaSlug
+    ? `${window.location.origin}/${empresaSlug}/denuncia`
+    : '';
+
+  const copiarLinkPublico = () => {
+    if (!publicChannelUrl) return;
+    navigator.clipboard.writeText(publicChannelUrl);
+    sonnerToast.success(t('p3Denuncia.channel.copied'), {
+      description: t('p3Denuncia.channel.copiedDescription'),
+    });
+  };
+
+  const abrirLinkPublico = () => {
+    if (!publicChannelUrl) return;
+    window.open(publicChannelUrl, '_blank', 'noopener,noreferrer');
+  };
+
+  const descarregarQr = () => {
+    const canvas = document.getElementById('denuncia-public-qr') as HTMLCanvasElement | null;
+    if (!canvas) return;
+    const url = canvas.toDataURL('image/png');
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `canal-denuncia-${empresaSlug || 'qr'}.png`;
+    a.click();
+  };
 
   const [formData, setFormData] = useState({
     ativo: true,
@@ -262,6 +304,75 @@ export function ConfiguracoesDenuncia() {
           </p>
         </div>
       </div>
+
+      {/* Canal de Denúncia Público - bloco legal obrigatório */}
+      <Card className="border-primary/30">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Shield className="h-5 w-5" />
+            {t('p3Denuncia.channel.title')}
+          </CardTitle>
+          <CardDescription>
+            {t('p3Denuncia.channel.description')}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {empresaSlug ? (
+            <>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">{t('p3Denuncia.channel.urlLabel')}</Label>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                  <div className="flex-1 p-3 bg-muted rounded-lg font-mono text-sm break-all">
+                    {publicChannelUrl}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={copiarLinkPublico}>
+                      <Copy className="h-4 w-4 mr-1" />
+                      {t('p3Denuncia.channel.copy')}
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={abrirLinkPublico}>
+                      <ExternalLink className="h-4 w-4 mr-1" />
+                      {t('p3Denuncia.channel.open')}
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setPreviewOpen(true)}>
+                      <Eye className="h-4 w-4 mr-1" />
+                      {t('p3Denuncia.channel.preview')}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm font-medium flex items-center gap-2">
+                  <QrCode className="h-4 w-4" />
+                  {t('p3Denuncia.channel.qrTitle')}
+                </Label>
+                <p className="text-sm text-muted-foreground">{t('p3Denuncia.channel.qrDescription')}</p>
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-background border rounded-lg inline-block">
+                    <QRCodeCanvas id="denuncia-public-qr" value={publicChannelUrl} size={160} includeMargin />
+                  </div>
+                  <Button variant="outline" size="sm" onClick={descarregarQr}>
+                    <Download className="h-4 w-4 mr-1" />
+                    {t('p3Denuncia.channel.downloadQr')}
+                  </Button>
+                </div>
+              </div>
+            </>
+          ) : (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>{t('p3Denuncia.channel.noSlugTitle')}</AlertTitle>
+              <AlertDescription className="space-y-3">
+                <p>{t('p3Denuncia.channel.noSlugDescription')}</p>
+                <Button variant="outline" size="sm" onClick={() => navigate('/configuracoes?tab=empresas')}>
+                  {t('p3Denuncia.channel.noSlugAction')}
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Link Público */}
       {(config?.token_publico || empresaSlug) && (
@@ -489,6 +600,30 @@ export function ConfiguracoesDenuncia() {
           {saving ? t('denunciasAdmin.config.saving') : t('denunciasAdmin.config.saveButton')}
         </Button>
       </div>
+
+      <Sheet open={previewOpen} onOpenChange={setPreviewOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-2xl p-0 flex flex-col">
+          <SheetHeader className="p-6 pb-2">
+            <SheetTitle>{t('p3Denuncia.channel.previewTitle')}</SheetTitle>
+            <SheetDescription>{t('p3Denuncia.channel.previewDescription')}</SheetDescription>
+          </SheetHeader>
+          <div className="flex-1 overflow-hidden px-6 pb-6">
+            {publicChannelUrl && (
+              <iframe
+                src={publicChannelUrl}
+                title="preview-canal-denuncia"
+                className="w-full h-full min-h-[70vh] rounded-lg border"
+              />
+            )}
+          </div>
+          <div className="p-6 pt-0">
+            <Button variant="outline" onClick={abrirLinkPublico} className="w-full">
+              <ExternalLink className="h-4 w-4 mr-2" />
+              {t('p3Denuncia.channel.openFull')}
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

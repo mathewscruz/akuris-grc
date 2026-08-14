@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import { FolderKanban } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { DateField } from '@/components/ui/date-field';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -106,11 +107,11 @@ export function ProjetoDialog({ open, onOpenChange, projeto }: Props) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>{t('projetos.dialog.fieldInicio')}</Label>
-              <Input type="date" value={form.data_inicio} onChange={(e) => setForm({ ...form, data_inicio: e.target.value })} />
+              <DateField value={form.data_inicio || null} onChange={(v) => setForm({ ...form, data_inicio: v ?? '' })} />
             </div>
             <div>
               <Label>{t('projetos.dialog.fieldFimPrevisto')}</Label>
-              <Input type="date" value={form.data_fim_prevista} onChange={(e) => setForm({ ...form, data_fim_prevista: e.target.value })} />
+              <DateField value={form.data_fim_prevista || null} onChange={(v) => setForm({ ...form, data_fim_prevista: v ?? '' })} />
             </div>
           </div>
         </form>

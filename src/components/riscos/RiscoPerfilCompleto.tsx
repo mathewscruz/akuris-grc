@@ -161,7 +161,7 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
               <div className="flex items-stretch gap-2">
                 <ScoreBlock label={t('sweepRiscos.riscos.detail.inerente')} nivel={risco.nivel_risco_inicial} score={inicialScore} p={risco.probabilidade_inicial} i={risco.impacto_inicial} />
                 <div className="flex flex-col items-center justify-center px-0.5 shrink-0">
-                  <ArrowRight className={reduziu ? 'h-5 w-5 text-success' : 'h-5 w-5 text-muted-foreground/50'} strokeWidth={2} />
+                  <ArrowRight className={reduziu ? 'h-5 w-5 text-success' : 'h-5 w-5 text-muted-foreground'} strokeWidth={2} />
                   {reduziu && <span className="text-[9px] text-success font-semibold tabular-nums mt-0.5">−{inicialScore - residualScore}</span>}
                 </div>
                 <ScoreBlock label={t('sweepRiscos.riscos.detail.residual')} nivel={risco.nivel_risco_residual} score={residualScore} p={risco.probabilidade_residual} i={risco.impacto_residual} emptyLabel={t('fin.riscos.naoAvaliado')} />

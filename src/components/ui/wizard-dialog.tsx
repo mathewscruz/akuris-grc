@@ -66,6 +66,11 @@ interface WizardDialogProps {
   size?: 'md' | 'lg' | 'xl' | '2xl';
   /** Extra footer content on the left */
   footerExtra?: ReactNode;
+  /**
+   * Explicação mostrada quando o botão final está desativado (ex.: lista dos
+   * campos obrigatórios em falta). Evita o botão "morto" sem justificação.
+   */
+  submitBlockedReason?: ReactNode;
 }
 
 const SIZE_CLASSES: Record<NonNullable<WizardDialogProps['size']>, string> = {
@@ -79,7 +84,7 @@ function StateIcon({ state }: { state?: WizardTabState }) {
   if (state === 'complete') return <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />;
   if (state === 'error') return <AlertCircle className="h-3.5 w-3.5 text-destructive" />;
   if (state === 'partial') return <Circle className="h-3.5 w-3.5 text-amber-500 fill-amber-500/30" />;
-  return <Circle className="h-3.5 w-3.5 text-muted-foreground/50" />;
+  return <Circle className="h-3.5 w-3.5 text-muted-foreground" />;
 }
 
 /**
@@ -110,6 +115,7 @@ export function WizardDialog({
   onActiveTabChange,
   size = 'xl',
   footerExtra,
+  submitBlockedReason,
 }: WizardDialogProps) {
   const { t } = useLanguage();
   const _submitLabel = submitLabel ?? t('common.save');
@@ -201,10 +207,16 @@ export function WizardDialog({
                         className={cn(
                           'w-full justify-start gap-3 px-3 py-2.5 h-auto text-left',
                           'data-[state=active]:bg-background data-[state=active]:shadow-sm',
-                          'data-[state=active]:border data-[state=active]:border-border'
+                          'data-[state=active]:border data-[state=active]:border-border',
+                          tab.state === 'error' && 'text-destructive'
                         )}
                       >
-                        <span className="flex items-center justify-center h-6 w-6 rounded-md bg-muted text-xs font-semibold text-muted-foreground shrink-0">
+                        <span className={cn(
+                          'flex items-center justify-center h-6 w-6 rounded-md text-xs font-semibold shrink-0',
+                          tab.state === 'error'
+                            ? 'bg-destructive/10 text-destructive'
+                            : 'bg-muted text-muted-foreground'
+                        )}>
                           {idx + 1}
                         </span>
                         <div className="flex-1 min-w-0">
@@ -236,7 +248,10 @@ export function WizardDialog({
                     <TabsTrigger
                       key={tab.id}
                       value={tab.id}
-                      className="gap-2 px-3 py-1.5 data-[state=active]:bg-background data-[state=active]:shadow-sm"
+                      className={cn(
+                        'gap-2 px-3 py-1.5 data-[state=active]:bg-background data-[state=active]:shadow-sm',
+                        tab.state === 'error' && 'text-destructive'
+                      )}
                     >
                       <span className="text-xs font-semibold">{idx + 1}.</span>
                       <span className="text-xs whitespace-nowrap">{tab.label}</span>
@@ -268,6 +283,12 @@ export function WizardDialog({
 
           {/* Sticky footer */}
           <div className="flex-shrink-0 border-t bg-background/95 backdrop-blur-sm px-6 py-3">
+            {submitDisabled && submitBlockedReason && (
+              <p className="mb-2 flex items-start gap-2 text-xs text-destructive">
+                <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-px" />
+                <span>{submitBlockedReason}</span>
+              </p>
+            )}
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div className="flex items-center gap-3 text-xs text-muted-foreground">
                 <span className="font-medium">

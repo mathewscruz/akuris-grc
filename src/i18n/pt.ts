@@ -1,5 +1,9 @@
 export const pt = {
+  language: {
+    selector: 'Idioma',
+  },
   common: {
+    selectDate: 'Selecionar data',
     save: 'Salvar',
     saving: 'Salvando...',
     cancel: 'Cancelar',

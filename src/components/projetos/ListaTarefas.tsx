@@ -5,8 +5,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Search, CornerDownRight } from 'lucide-react';
 import type { ProjetoTarefa, ProjetoColuna, ProjetoTarefaPrioridade } from '@/types/projetos';
-import { PRIORIDADE_LABEL } from '@/types/projetos';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { getPrioridadeLabel } from './enum-labels';
 
 const prioridadeTone: Record<ProjetoTarefaPrioridade, 'destructive' | 'warning' | 'info' | 'neutral'> = {
   critica: 'destructive', alta: 'warning', media: 'info', baixa: 'neutral',
@@ -65,7 +65,7 @@ export function ListaTarefas({ tarefas, colunas, onSelect }: Props) {
         const c = colunas.find((x) => x.id === row.t.coluna_id);
         key = c?.nome ?? '—';
       } else if (agrupar === 'prioridade') {
-        key = PRIORIDADE_LABEL[row.t.prioridade];
+        key = getPrioridadeLabel(t, row.t.prioridade);
       } else if (agrupar === 'responsavel') {
         key = row.t.responsavel_id ?? t('projetos.lista.notAssigned');
       }
@@ -82,41 +82,53 @@ export function ListaTarefas({ tarefas, colunas, onSelect }: Props) {
           <Search className="h-3.5 w-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input placeholder={t('projetos.lista.searchPlaceholder')} value={busca} onChange={(e) => setBusca(e.target.value)} className="pl-8 h-9" />
         </div>
-        <Select value={fStatus} onValueChange={setFStatus}>
-          <SelectTrigger className="h-9 w-[140px]"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todos">{t('projetos.lista.statusAll')}</SelectItem>
-            <SelectItem value="abertas">{t('projetos.lista.statusOpen')}</SelectItem>
-            <SelectItem value="concluidas">{t('projetos.lista.statusDone')}</SelectItem>
-            <SelectItem value="atrasadas">{t('projetos.lista.statusOverdue')}</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={fPrior} onValueChange={setFPrior}>
-          <SelectTrigger className="h-9 w-[140px]"><SelectValue placeholder={t('projetos.tarefaDialog.fieldPrioridade')} /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todas">{t('projetos.lista.priorityAll')}</SelectItem>
-            <SelectItem value="critica">{PRIORIDADE_LABEL.critica}</SelectItem>
-            <SelectItem value="alta">{PRIORIDADE_LABEL.alta}</SelectItem>
-            <SelectItem value="media">{PRIORIDADE_LABEL.media}</SelectItem>
-            <SelectItem value="baixa">{PRIORIDADE_LABEL.baixa}</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={fColuna} onValueChange={setFColuna}>
-          <SelectTrigger className="h-9 w-[160px]"><SelectValue placeholder={t('projetos.tarefaDialog.fieldColuna')} /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todas">{t('projetos.lista.columnAll')}</SelectItem>
-            {colunas.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <Select value={agrupar} onValueChange={setAgrupar}>
-          <SelectTrigger className="h-9 w-[160px]"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="nenhum">{t('projetos.lista.groupNone')}</SelectItem>
-            <SelectItem value="coluna">{t('projetos.lista.groupColumn')}</SelectItem>
-            <SelectItem value="prioridade">{t('projetos.lista.groupPriority')}</SelectItem>
-            <SelectItem value="responsavel">{t('projetos.lista.groupResponsible')}</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex flex-col gap-1 min-w-[180px]">
+          <span className="text-xs font-medium text-muted-foreground">{t('p3Projetos.lista.filterStatusLabel')}</span>
+          <Select value={fStatus} onValueChange={setFStatus}>
+            <SelectTrigger className="h-9 w-full" title={fStatus}><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">{t('projetos.lista.statusAll')}</SelectItem>
+              <SelectItem value="abertas">{t('projetos.lista.statusOpen')}</SelectItem>
+              <SelectItem value="concluidas">{t('projetos.lista.statusDone')}</SelectItem>
+              <SelectItem value="atrasadas">{t('projetos.lista.statusOverdue')}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex flex-col gap-1 min-w-[180px]">
+          <span className="text-xs font-medium text-muted-foreground">{t('p3Projetos.lista.filterPriorityLabel')}</span>
+          <Select value={fPrior} onValueChange={setFPrior}>
+            <SelectTrigger className="h-9 w-full" title={fPrior}><SelectValue placeholder={t('projetos.tarefaDialog.fieldPrioridade')} /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todas">{t('projetos.lista.priorityAll')}</SelectItem>
+              <SelectItem value="critica">{getPrioridadeLabel(t, 'critica')}</SelectItem>
+              <SelectItem value="alta">{getPrioridadeLabel(t, 'alta')}</SelectItem>
+              <SelectItem value="media">{getPrioridadeLabel(t, 'media')}</SelectItem>
+              <SelectItem value="baixa">{getPrioridadeLabel(t, 'baixa')}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex flex-col gap-1 min-w-[180px]">
+          <span className="text-xs font-medium text-muted-foreground">{t('p3Projetos.lista.filterColumnLabel')}</span>
+          <Select value={fColuna} onValueChange={setFColuna}>
+            <SelectTrigger className="h-9 w-full" title={colunas.find((c) => c.id === fColuna)?.nome ?? fColuna}><SelectValue placeholder={t('projetos.tarefaDialog.fieldColuna')} /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todas">{t('projetos.lista.columnAll')}</SelectItem>
+              {colunas.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="flex flex-col gap-1 min-w-[180px]">
+          <span className="text-xs font-medium text-muted-foreground">{t('p3Projetos.lista.filterGroupLabel')}</span>
+          <Select value={agrupar} onValueChange={setAgrupar}>
+            <SelectTrigger className="h-9 w-full" title={agrupar}><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="nenhum">{t('projetos.lista.groupNone')}</SelectItem>
+              <SelectItem value="coluna">{t('projetos.lista.groupColumn')}</SelectItem>
+              <SelectItem value="prioridade">{t('projetos.lista.groupPriority')}</SelectItem>
+              <SelectItem value="responsavel">{t('projetos.lista.groupResponsible')}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
         <span className="text-xs text-muted-foreground ml-auto">{t('projetos.lista.filteredOf', { filtered: filtradas.length, total: tarefas.length })}</span>
       </div>
 
@@ -140,7 +152,7 @@ export function ListaTarefas({ tarefas, colunas, onSelect }: Props) {
                   {g.label && (
                     <TableRow>
                       <TableCell colSpan={5} className="bg-muted/40 text-xs font-semibold uppercase tracking-wide text-muted-foreground py-1.5">
-                        {g.label} <span className="text-muted-foreground/70">({g.rows.length})</span>
+                        {g.label} <span className="text-muted-foreground">({g.rows.length})</span>
                       </TableCell>
                     </TableRow>
                   )}
@@ -157,7 +169,7 @@ export function ListaTarefas({ tarefas, colunas, onSelect }: Props) {
                         </TableCell>
                         <TableCell>{col?.nome ?? '—'}</TableCell>
                         <TableCell>
-                          <StatusBadge tone={prioridadeTone[task.prioridade]} size="sm">{PRIORIDADE_LABEL[task.prioridade]}</StatusBadge>
+                          <StatusBadge tone={prioridadeTone[task.prioridade]} size="sm">{getPrioridadeLabel(t, task.prioridade)}</StatusBadge>
                         </TableCell>
                         <TableCell className={atrasada ? 'text-destructive font-medium' : ''}>
                           {task.prazo ? new Date(task.prazo).toLocaleDateString('pt-BR') : '—'}

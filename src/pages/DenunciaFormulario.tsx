@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { DateField } from '@/components/ui/date-field';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -465,7 +466,7 @@ export default function DenunciaFormulario() {
                     <FormItem>
                       <FormLabel>{t('publicPortal.denunciaForm.date')}</FormLabel>
                       <FormControl>
-                        <Input {...field} type="date" />
+                        <DateField value={field.value || null} onChange={(v) => field.onChange(v || '')} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
