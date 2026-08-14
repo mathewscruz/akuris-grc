@@ -38,6 +38,15 @@ export function formatMoeda(
   }).format(value);
 }
 
+/**
+ * Última moeda conhecida da empresa. Permite formatar em helpers puros
+ * (ex.: exportações/PDF) que não podem chamar hooks.
+ */
+let moedaAtual: MoedaCodigo = 'EUR';
+export function getMoedaAtual(): MoedaCodigo {
+  return moedaAtual;
+}
+
 /** Moeda configurada para a empresa do utilizador autenticado. */
 export function useEmpresaMoeda() {
   const { profile } = useAuth();
@@ -60,6 +69,7 @@ export function useEmpresaMoeda() {
   });
 
   const moeda: MoedaCodigo = data || 'EUR';
+  moedaAtual = moeda;
 
   return {
     moeda,

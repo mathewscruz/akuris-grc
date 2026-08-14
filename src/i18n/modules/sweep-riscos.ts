@@ -180,7 +180,7 @@ export const sweepRiscos = {
           descricaoLabel: 'Descrição do Tratamento *',
           gerandoSugestao: 'Gerando...',
           sugerirTratamento: 'Sugerir Tratamento',
-          custoLabel: 'Custo Estimado (R$)',
+          custoLabel: 'Custo Estimado ({moeda})',
           selecionarData: 'Selecionar data',
           selecionarPrazo: 'Selecionar prazo',
           gerarPlanoLabel: 'Gerar plano de ação vinculado',
