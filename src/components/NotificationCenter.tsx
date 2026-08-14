@@ -55,6 +55,23 @@ const markAutomaticNotificationAsRead = (notificationId: string) => {
   }
 };
 
+
+const getNotificationDisplay = (
+  notification: Notification,
+  t: (key: string, params?: Record<string, unknown>) => string,
+): { title: string; message: string | null } => {
+  const metadata = notification.metadata;
+  const i18nKey = metadata && typeof metadata === 'object' ? (metadata as Record<string, unknown>).i18n_key : undefined;
+  const i18nMessageKey = metadata && typeof metadata === 'object' ? (metadata as Record<string, unknown>).i18n_message_key : undefined;
+  const i18nParams = metadata && typeof metadata === 'object' ? (metadata as Record<string, unknown>).i18n_params : undefined;
+  const params = (i18nParams && typeof i18nParams === 'object') ? (i18nParams as Record<string, unknown>) : undefined;
+
+  const title = typeof i18nKey === 'string' ? t(i18nKey, params) : notification.title;
+  const message = typeof i18nMessageKey === 'string' ? t(i18nMessageKey, params) : notification.message;
+
+  return { title, message };
+};
+
 const NotificationCenter: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [detail, setDetail] = useState<Notification | null>(null);
@@ -84,7 +101,7 @@ const NotificationCenter: React.FC = () => {
 
   // Buscar todas as notificações automáticas do sistema
   const { data: automaticNotifications = [] } = useQuery({
-    queryKey: ['automatic-notifications', [...readAutomaticIds]],
+    queryKey: ['automatic-notifications', [...readAutomaticIds], locale],
     queryFn: async () => {
       const notificacoes: Notification[] = [];
       const readIds = readAutomaticIds;
@@ -518,6 +535,7 @@ const NotificationCenter: React.FC = () => {
     const moduleMeta = resolveNotificationModule(notification);
     const ModuleIcon = moduleMeta.Icon;
     const moduleLabel = t(moduleMeta.i18nKey);
+    const { title: displayTitle, message: displayMessage } = getNotificationDisplay(notification, t);
 
     return (
       <button
@@ -553,11 +571,11 @@ const NotificationCenter: React.FC = () => {
               'text-[13px] font-semibold leading-snug tracking-tight break-words line-clamp-2',
               !notification.read ? 'text-foreground' : 'text-muted-foreground'
             )}>
-              {notification.title}
+              {displayTitle}
             </p>
-            {notification.message && (
+            {displayMessage && (
               <p className="text-xs text-muted-foreground leading-relaxed mt-0.5 break-words line-clamp-3">
-                {notification.message}
+                {displayMessage}
               </p>
             )}
             <span className="text-[11px] text-muted-foreground tabular-nums mt-1.5 block">
@@ -584,6 +602,7 @@ const NotificationCenter: React.FC = () => {
     : 'neutral';
   const detailToneCls = detail ? TONE_CLS[getTypeTone(detail.type)] : null;
   const DetailIcon = detailModule?.Icon;
+  const detailDisplay = detail ? getNotificationDisplay(detail, t) : null;
   const detailGroupLabel = detail
     ? (detail.type === 'error'
         ? t('notifications.groupUrgent')
@@ -721,7 +740,7 @@ const NotificationCenter: React.FC = () => {
                       {t(detailModule.i18nKey)}
                     </p>
                     <DialogTitle className="mt-1.5 text-base font-semibold leading-tight tracking-tight break-words">
-                      {detail.title}
+                      {detailDisplay?.title ?? detail.title}
                     </DialogTitle>
                     <div className="mt-2 flex flex-wrap items-center gap-2">
                       <StatusBadge size="sm" tone={detailToneKey}>
@@ -739,9 +758,9 @@ const NotificationCenter: React.FC = () => {
               </DialogHeader>
 
               <div className="mt-2 max-h-[50vh] overflow-y-auto">
-                {detail.message ? (
+                {detailDisplay?.message ? (
                   <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap break-words">
-                    {detail.message}
+                    {detailDisplay.message}
                   </p>
                 ) : (
                   <p className="text-sm text-muted-foreground italic">
