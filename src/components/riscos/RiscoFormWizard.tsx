@@ -25,6 +25,7 @@ import { cn } from '@/lib/utils';
 import { useIntegrationNotify } from '@/hooks/useIntegrationNotify';
 import { motivoBloqueioTratado, podeMarcarTratado, resumirTratamentos, STATUS_TRATADO } from './risk-status';
 import { useLanguage } from '@/contexts/LanguageContext';
+import ConfirmDialog from '@/components/ConfirmDialog';
 
 const makeRiscoSchema = (t: (k: string) => string) => z.object({
   nome: z.string().min(1, t('fin.validacao.nomeObrigatorio')),
@@ -44,6 +45,7 @@ const makeRiscoSchema = (t: (k: string) => string) => z.object({
   aceito: z.boolean().default(false),
   justificativa_aceite: z.string().optional(),
   aprovador_aceite: z.string().optional(),
+  aceite_valido_ate: z.string().optional(),
   ativos_vinculados: z.array(z.string()).default([]),
   data_proxima_revisao: z.string().optional()
 });
@@ -89,6 +91,8 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
   const [ativos, setAtivos] = useState<Ativo[]>([]);
   const [selectedMatriz, setSelectedMatriz] = useState<Matriz | null>(null);
   const [anexosAceite, setAnexosAceite] = useState<any[]>([]);
+  const [invalidarAceiteOpen, setInvalidarAceiteOpen] = useState(false);
+  const [pendingData, setPendingData] = useState<RiscoForm | null>(null);
   
   const TABS = ['identificacao', 'avaliacao', 'detalhes', 'residual', 'aceite'] as const;
   type TabKey = typeof TABS[number];
@@ -122,6 +126,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
       aceito: false,
       justificativa_aceite: '',
       aprovador_aceite: '',
+      aceite_valido_ate: '',
       ativos_vinculados: [],
       data_proxima_revisao: ''
     }
@@ -160,6 +165,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
         aceito: risco.aceito || false,
         justificativa_aceite: risco.justificativa_aceite || '',
         aprovador_aceite: risco.aprovador_aceite || '',
+        aceite_valido_ate: (risco as any).aceite_valido_ate || '',
         ativos_vinculados: [],
         data_proxima_revisao: risco.data_proxima_revisao || ''
       });
@@ -304,8 +310,32 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
     (selectedMatriz?.configuracao as any)?.metodo_calculo || 'multiplicacao'
   );
 
-  const onSubmit = async (data: RiscoForm) => {
+  /**
+   * Reavaliar (probabilidade, impacto ou controlos) invalida o aceite vigente.
+   */
+  const reavaliacaoInvalidaAceite = (data: RiscoForm) => {
+    if (!risco) return false;
+    const mudou = (a: any, b: any) => String(a ?? '') !== String(b ?? '');
+    return (
+      mudou(data.probabilidade_inicial, risco.probabilidade_inicial) ||
+      mudou(data.impacto_inicial, risco.impacto_inicial) ||
+      mudou(data.probabilidade_residual, risco.probabilidade_residual) ||
+      mudou(data.impacto_residual, risco.impacto_residual) ||
+      mudou(data.controles_existentes, risco.controles_existentes)
+    );
+  };
+
+
+  const onSubmit = async (data: RiscoForm, confirmadoInvalidar = false) => {
     logger.debug('🚀 onSubmit chamado com dados:', { data: data });
+
+    // (g) Reavaliar um risco com aceite vigente invalida o aceite: avisar antes de guardar.
+    if (!confirmadoInvalidar && risco?.id && risco?.aceito && reavaliacaoInvalidaAceite(data)) {
+      setPendingData(data);
+      setInvalidarAceiteOpen(true);
+      return;
+    }
+    const invalidarAceite = !!(risco?.id && risco?.aceito && reavaliacaoInvalidaAceite(data));
     
     if (!profile?.empresa_id) {
       toast.error(t('fin.riscos.wizard.erroEmpresa'));
@@ -358,6 +388,14 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
       toast.error(t('fin.riscos.wizard.erroDataRevisao'));
       return;
     }
+    if (data.aceito && !data.aceite_valido_ate) {
+      toast.error('Indique até quando o aceite é válido.');
+      return;
+    }
+    if (data.aceito && data.aceite_valido_ate && new Date(data.aceite_valido_ate) <= new Date()) {
+      toast.error('A validade do aceite tem de ser uma data futura.');
+      return;
+    }
 
     setLoading(true);
 
@@ -396,16 +434,33 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
         probabilidade_residual: data.probabilidade_residual || null,
         impacto_residual: data.impacto_residual || null,
         nivel_risco_residual: nivelResidual,
-        status: data.status,
+        status: invalidarAceite ? 'em_revisao' : data.status,
         responsavel: data.responsavel || null,
         controles_existentes: data.controles_existentes || null,
         causas: data.causas || null,
         consequencias: data.consequencias || null,
-        aceito: isNovoAceite ? false : (data.aceito && risco?.status_aceite === 'aprovado'),
+        aceito: invalidarAceite ? false : (isNovoAceite ? false : (data.aceito && risco?.status_aceite === 'aprovado')),
         justificativa_aceite: data.justificativa_aceite || null,
         aprovador_aceite: data.aprovador_aceite || null,
+        aceite_valido_ate: data.aceite_valido_ate || null,
         data_proxima_revisao: data.data_proxima_revisao || null,
-        status_aceite: isNovoAceite ? 'pendente' : (data.aceito ? (risco?.status_aceite || null) : null),
+        status_aceite: invalidarAceite
+          ? 'invalidado'
+          : (isNovoAceite ? 'pendente' : (data.aceito ? (risco?.status_aceite || null) : null)),
+        ...(invalidarAceite
+          ? {
+              historico_aceite: [
+                ...(((risco as any)?.historico_aceite as any[]) || []),
+                {
+                  evento: 'invalidado_por_reavaliacao',
+                  em: new Date().toISOString(),
+                  por: profile.user_id,
+                  valido_ate: (risco as any)?.aceite_valido_ate || null,
+                  justificativa: risco?.justificativa_aceite || null,
+                },
+              ],
+            }
+          : {}),
         ...(risco?.id ? {} : { created_by: profile.user_id }),
       };
 
@@ -620,7 +675,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full">
+      <form onSubmit={form.handleSubmit((d) => onSubmit(d))} className="flex flex-col h-full">
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabKey)} className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0">
           {/* Sidebar — Navegação + Resumo Vivo (desktop) */}
           <aside className="hidden lg:flex flex-col w-72 border-r bg-muted/30 flex-shrink-0">
@@ -1294,6 +1349,53 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                     )}
                   />
 
+                  <FormField
+                    control={form.control}
+                    name="aceite_valido_ate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Válido até *</FormLabel>
+                        <FormControl>
+                          <Input type="date" {...field} />
+                        </FormControl>
+                        <div className="flex flex-wrap gap-2 pt-1">
+                          {[6, 12, 24].map((meses) => (
+                            <Button
+                              key={meses}
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                const d = new Date();
+                                d.setMonth(d.getMonth() + meses);
+                                field.onChange(d.toISOString().split('T')[0]);
+                              }}
+                            >
+                              {meses} meses
+                            </Button>
+                          ))}
+                        </div>
+                        <FormDescription>
+                          O aceite expira nesta data: o risco é reaberto automaticamente para "Em revisão" e o aprovador
+                          e o responsável são notificados 30 dias antes e no próprio dia.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {risco?.aceito && (
+                    <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/5 p-3 text-sm text-warning">
+                      <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" strokeWidth={1.5} />
+                      <span>
+                        Alterar a probabilidade, o impacto ou os controlos invalida o aceite vigente e devolve o risco a
+                        "Em revisão".
+                      </span>
+                    </div>
+                  )}
+
+
+
                   {risco?.id && (
                     <div className="space-y-2">
                       <FormLabel>{t('campos.risco.anexosAceite')}</FormLabel>
@@ -1339,6 +1441,21 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
             </Button>
           </div>
         </div>
+
+        <ConfirmDialog
+          open={invalidarAceiteOpen}
+          onOpenChange={setInvalidarAceiteOpen}
+          title="Reavaliação invalida o aceite"
+          description={'Este risco tem um aceite formal em vigor. Ao guardar esta reavaliação, o aceite é invalidado e o risco volta ao estado "Em revisão". O histórico de aceites é mantido. Deseja continuar?'}
+          confirmText="Guardar e invalidar aceite"
+          cancelText={t('fin.comum.cancelar')}
+          onConfirm={() => {
+            setInvalidarAceiteOpen(false);
+            if (pendingData) onSubmit(pendingData, true);
+            setPendingData(null);
+          }}
+          variant="destructive"
+        />
       </form>
     </Form>
   );

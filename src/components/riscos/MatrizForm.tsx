@@ -17,6 +17,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { MatrizPreviewGrid } from './MatrizPreviewGrid';
 
 const COLOR_PALETTE = ['#22c55e', '#84cc16', '#eab308', '#f97316', '#dc2626', '#6b7280', '#3b82f6', '#7552ff'];
 
@@ -560,6 +561,14 @@ export function MatrizForm({ onSuccess }: Props) {
   return (
     <TooltipProvider delayDuration={150}>
       <div className="space-y-7 pb-2">
+        {/* Pré-visualização ao vivo da matriz em edição */}
+        <MatrizPreviewGrid
+          escalaProbabilidade={escalaProbabilidade}
+          escalaImpacto={escalaImpacto}
+          niveisRisco={niveisRisco}
+          metodoCalculo={metodoCalculo}
+        />
+
         {/* Seção: Identificação */}
         <section className="rounded-lg border border-border bg-card p-5">
           <div className="flex items-center justify-between mb-4">

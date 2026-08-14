@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
@@ -31,6 +31,7 @@ interface RiscoAceito {
   data_aceite?: string;
   aprovador_aceite?: string;
   data_proxima_revisao?: string;
+  aceite_valido_ate?: string;
   responsavel?: string;
   created_at: string;
   created_by?: string;
@@ -38,6 +39,12 @@ interface RiscoAceito {
   aprovador_nome?: string;
   responsavel_nome?: string;
 }
+
+const SELECT_ACEITE = `
+  id, nome, nivel_risco_inicial, nivel_risco_residual,
+  justificativa_aceite, data_aceite, aprovador_aceite, aceite_valido_ate,
+  data_proxima_revisao, responsavel, created_at, created_by, status_aceite
+`;
 
 export default function RiscosAceite({ embedded = false }: { embedded?: boolean } = {}) {
   const { profile } = useAuth();
@@ -53,17 +60,23 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
   const [aprovacaoOpen, setAprovacaoOpen] = useState(false);
   const [aprovacaoRisco, setAprovacaoRisco] = useState<any>(null);
 
+  // Rede de segurança: além da rotina diária no servidor, reavalia expirações ao carregar.
+  useEffect(() => {
+    if (!profile?.empresa_id) return;
+    supabase.rpc('expirar_aceites_riscos').then(({ error }) => {
+      if (error) return;
+      queryClient.invalidateQueries({ queryKey: ['riscos-aceitos'] });
+      queryClient.invalidateQueries({ queryKey: ['riscos-aceites-expirados'] });
+    });
+  }, [profile?.empresa_id]);
+
   // Riscos aceitos (aprovados)
   const { data: riscos = [], isLoading } = useQuery({
     queryKey: ['riscos-aceitos', profile?.empresa_id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('riscos')
-        .select(`
-          id, nome, nivel_risco_inicial, nivel_risco_residual,
-          justificativa_aceite, data_aceite, aprovador_aceite,
-          data_proxima_revisao, responsavel, created_at, created_by, status_aceite
-        `)
+        .select(SELECT_ACEITE)
         .eq('empresa_id', profile!.empresa_id)
         .eq('aceito', true)
         .order('data_aceite', { ascending: false });
@@ -80,14 +93,27 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
     queryFn: async () => {
       const { data, error } = await supabase
         .from('riscos')
-        .select(`
-          id, nome, nivel_risco_inicial, nivel_risco_residual,
-          justificativa_aceite, data_aceite, aprovador_aceite,
-          data_proxima_revisao, responsavel, created_at, created_by, status_aceite
-        `)
+        .select(SELECT_ACEITE)
         .eq('empresa_id', profile!.empresa_id)
         .eq('status_aceite', 'pendente')
         .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return await enrichWithNames(data || []);
+    },
+    enabled: !!profile?.empresa_id,
+  });
+
+  // Aceites expirados / invalidados (risco reaberto)
+  const { data: riscosExpirados = [], isLoading: isLoadingExpirados } = useQuery({
+    queryKey: ['riscos-aceites-expirados', profile?.empresa_id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('riscos')
+        .select(SELECT_ACEITE)
+        .eq('empresa_id', profile!.empresa_id)
+        .in('status_aceite', ['expirado', 'invalidado'])
+        .order('aceite_valido_ate', { ascending: false });
 
       if (error) throw error;
       return await enrichWithNames(data || []);
@@ -141,10 +167,29 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
   const totalPendentes = riscosPendentes.length;
   const revisoesVencidas = riscos.filter(r => getRevisaoStatus(r.data_proxima_revisao) === 'vencida').length;
   const revisoesProximas = riscos.filter(r => getRevisaoStatus(r.data_proxima_revisao) === 'proxima').length;
+  const aceitesAExpirar = riscos.filter(r => {
+    if (!r.aceite_valido_ate) return false;
+    const dias = differenceInDays(new Date(r.aceite_valido_ate), new Date());
+    return dias >= 0 && dias <= 30;
+  }).length;
+  const totalExpirados = riscosExpirados.length;
+
+  const filteredExpirados = riscosExpirados.filter(r =>
+    r.nome.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const getValidadeBadge = (validoAte?: string) => {
+    if (!validoAte) return <StatusBadge size="sm" tone="neutral">Sem validade</StatusBadge>;
+    const dias = differenceInDays(new Date(validoAte), new Date());
+    if (dias < 0) return <StatusBadge size="sm" tone="destructive">Expirado</StatusBadge>;
+    if (dias <= 30) return <StatusBadge size="sm" tone="warning">{dias}d</StatusBadge>;
+    return <StatusBadge size="sm" tone="success">{dias}d</StatusBadge>;
+  };
 
   const invalidateAll = () => {
     queryClient.invalidateQueries({ queryKey: ['riscos-aceitos'] });
     queryClient.invalidateQueries({ queryKey: ['riscos-aceite-pendentes'] });
+    queryClient.invalidateQueries({ queryKey: ['riscos-aceites-expirados'] });
     queryClient.invalidateQueries({ queryKey: ['riscos'] });
     queryClient.invalidateQueries({ queryKey: ['riscos-stats'] });
   };
@@ -207,6 +252,15 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
         <div className="flex flex-col gap-1">
           <span className="text-sm">{value ? formatDateOnly(value) : '-'}</span>
           {getRevisaoBadge(value)}
+        </div>
+      ),
+    },
+    {
+      key: 'aceite_valido_ate', label: 'Válido até', sortable: true,
+      render: (value: string) => (
+        <div className="flex flex-col gap-1">
+          <span className="text-sm">{value ? formatDateOnly(value) : '-'}</span>
+          {getValidadeBadge(value)}
         </div>
       ),
     },
@@ -291,9 +345,11 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
         />
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         <StatCard title={t('riscos.aceite.stats.acceptedTitle')} value={totalAceitos} description={t('riscos.aceite.stats.acceptedDesc')} icon={<CheckCircle />} variant="success" drillDown="riscos_aceite" showAccent emptyHint={t('riscos.aceite.stats.acceptedEmptyHint')} />
         <StatCard title={t('riscos.aceite.stats.pendingTitle')} value={totalPendentes} description={t('riscos.aceite.stats.pendingDesc')} icon={<Clock />} variant={totalPendentes > 0 ? "warning" : "default"} drillDown="riscos_aceite" />
+        <StatCard title="Aceites a expirar" value={aceitesAExpirar} description="Nos próximos 30 dias" icon={<CalendarClock />} variant={aceitesAExpirar > 0 ? "warning" : "default"} />
+        <StatCard title="Aceites expirados" value={totalExpirados} description="Riscos reabertos" icon={<CalendarX />} variant={totalExpirados > 0 ? "destructive" : "default"} />
         <StatCard title={t('riscos.aceite.stats.overdueTitle')} value={revisoesVencidas} description={t('riscos.aceite.stats.overdueDesc')} icon={<CalendarX />} variant={revisoesVencidas > 0 ? "destructive" : "default"} drillDown="riscos_aceite" />
         <StatCard title={t('riscos.aceite.stats.upcomingTitle')} value={revisoesProximas} description={t('riscos.aceite.stats.upcomingDesc')} icon={<AlertTriangle />} variant={revisoesProximas > 0 ? "warning" : "default"} />
       </div>
@@ -314,6 +370,12 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
             className="text-xs gap-1.5 px-3 py-2.5 -mb-px rounded-none border-b-2 border-transparent bg-transparent shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:font-semibold text-muted-foreground hover:text-foreground/85 transition-colors"
           >
             {t('riscos.aceite.tabs.accepted')} ({totalAceitos})
+          </TabsTrigger>
+          <TabsTrigger
+            value="expirados"
+            className="text-xs gap-1.5 px-3 py-2.5 -mb-px rounded-none border-b-2 border-transparent bg-transparent shadow-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:font-semibold text-muted-foreground hover:text-foreground/85 transition-colors"
+          >
+            Aceites expirados ({totalExpirados})
           </TabsTrigger>
         </TabsList>
 
@@ -354,6 +416,27 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
                   icon: <CheckCircle className="h-8 w-8" />,
                   title: t('riscos.aceite.empty.acceptedTitle'),
                   description: t('riscos.aceite.empty.acceptedDesc'),
+                }}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="expirados" className="mt-5 data-[state=active]:animate-fade-in">
+          <Card className="rounded-lg border overflow-hidden">
+            <CardContent className="p-0">
+              <DataTable
+                data={filteredExpirados}
+                columns={columns.filter(c => c.key !== 'actions')}
+                loading={isLoadingExpirados}
+                searchable
+                searchPlaceholder={t('riscos.aceite.searchAccepted')}
+                searchValue={searchTerm}
+                onSearchChange={setSearchTerm}
+                emptyState={{
+                  icon: <CalendarX className="h-8 w-8" />,
+                  title: 'Nenhum aceite expirado',
+                  description: 'Aceites que ultrapassarem a validade aparecem aqui com o risco reaberto.',
                 }}
               />
             </CardContent>
