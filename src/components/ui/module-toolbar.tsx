@@ -46,7 +46,7 @@ export function ModuleToolbar({
       {showSearch ? (
         <div className="w-full md:max-w-sm">
           {hasFilters && (
-            <span aria-hidden className="hidden md:block text-[11px] font-medium leading-none mb-1.5 invisible">
+            <span aria-hidden className="hidden md:block text-[11px] font-medium uppercase tracking-wide leading-4 mb-1 invisible">
               &nbsp;
             </span>
           )}
@@ -86,7 +86,7 @@ export function ToolbarField({
 }) {
   return (
     <div className={cn("flex min-w-[150px] flex-col gap-1", className)}>
-      <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</span>
+      <span className="text-[11px] font-medium uppercase tracking-wide leading-4 text-muted-foreground">{label}</span>
       {children}
     </div>
   )
