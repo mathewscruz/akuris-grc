@@ -18,6 +18,9 @@ import { DateField } from "@/components/ui/date-field";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { formatDateForInput, parseDateForDB } from "@/lib/date-utils";
 import { formatStatus } from "@/lib/text-utils";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { resolveControleStatusTone } from "@/lib/status-tone";
+import { useRequisitoControles } from "@/hooks/useControleRequisitos";
 import { PlanoAcaoDialog } from "@/components/planos-acao/PlanoAcaoDialog";
 import { AuditTrailTimeline } from "@/components/gap-analysis/AuditTrailTimeline";
 import { logger } from '@/lib/logger';
@@ -360,6 +363,8 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
   const [saving, setSaving] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [riscos, setRiscos] = useState<Risco[]>([]);
+  const { data: controlosPorRequisito } = useRequisitoControles();
+  const controlosLigados = controlosPorRequisito?.get(requirement?.id) || [];
   const [uploading, setUploading] = useState(false);
   const [planoAcaoDialogOpen, setPlanoAcaoDialogOpen] = useState(false);
   const [planoAcaoVinculado, setPlanoAcaoVinculado] = useState<any>(null);
