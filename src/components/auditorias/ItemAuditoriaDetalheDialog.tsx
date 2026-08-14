@@ -5,6 +5,8 @@ import { DialogShell } from "@/components/ui/dialog-shell";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ConstatacoesPanel } from "@/components/auditorias/ConstatacoesPanel";
+import { AlertTriangle } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Popover,
@@ -376,6 +378,10 @@ export function ItemAuditoriaDetalheDialog({
                 <Paperclip className="h-4 w-4" />
                 {t("controlesAuditorias.iaddTabEvidencias", { count: evidencias?.length || 0 })}
               </TabsTrigger>
+              <TabsTrigger value="constatacoes" className="flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4" strokeWidth={1.5} />
+                {t('t4.constatacoes.tab', { count: achadosCount })}
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="comentarios" className="flex-1 overflow-hidden flex flex-col mt-4">
@@ -473,6 +479,10 @@ export function ItemAuditoriaDetalheDialog({
                   )}
                 </div>
               </ScrollArea>
+            </TabsContent>
+
+            <TabsContent value="constatacoes" className="flex-1 overflow-y-auto mt-4 pr-1">
+              <ConstatacoesPanel auditoriaId={item.auditoria_id} itemId={item.id} itemTitulo={item.titulo} />
             </TabsContent>
 
             <TabsContent value="evidencias" className="flex-1 overflow-hidden flex flex-col mt-4">
