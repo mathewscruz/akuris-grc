@@ -673,7 +673,44 @@ export function ControleDetalheDialog({
                 </div>
               </ScrollArea>
             </TabsContent>
+
+            <TabsContent value="requisitos" className="flex-1 overflow-hidden mt-4">
+              <div className="flex justify-end mb-3">
+                <Button variant="outline" size="sm" onClick={() => setVincularOpen(true)}>
+                  <Link2 className="h-4 w-4 mr-2" strokeWidth={1.5} />
+                  {t('vinculoReq.gerirLigacoes')}
+                </Button>
+              </div>
+              <ScrollArea className="h-full">
+                <div className="space-y-2 pr-4">
+                  {(requisitosLigados?.length || 0) === 0 ? (
+                    <p className="text-center text-muted-foreground py-8">
+                      {t('vinculoReq.semRequisitosControlo')}
+                    </p>
+                  ) : (
+                    requisitosLigados?.map((r) => (
+                      <div
+                        key={r.id}
+                        className="flex items-center justify-between gap-3 p-3 bg-muted/30 rounded-lg border border-border/50"
+                      >
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {r.codigo && <span className="font-mono text-[11px] text-muted-foreground">{r.codigo}</span>}
+                            <span className="text-sm font-medium truncate">{r.titulo}</span>
+                          </div>
+                          <span className="text-xs text-muted-foreground">{r.framework_nome}</span>
+                        </div>
+                        <StatusBadge size="sm" {...resolveConformityTone(r.conformity_status)}>
+                          {formatStatus(r.conformity_status)}
+                        </StatusBadge>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </ScrollArea>
+            </TabsContent>
           </Tabs>
+
         </div>
       </DialogShell>
 
