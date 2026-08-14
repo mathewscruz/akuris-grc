@@ -113,19 +113,11 @@ export function financialExposure(
   return valor * factor;
 }
 
-/** Formata um valor em Reais (BRL). Abrevia milhares/milhões para caber em células. */
-export function formatBRL(value?: number | null, compact = false): string {
-  if (value === null || value === undefined || !Number.isFinite(value)) return '—';
-  if (compact) {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-      notation: 'compact',
-      maximumFractionDigits: 1,
-    }).format(value);
-  }
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(value);
-}
+/**
+ * A formatação monetária vive em `@/hooks/useEmpresaMoeda` (moeda configurada
+ * por empresa). Não voltar a fixar BRL aqui.
+ */
+
 
 export type SlaStatus = 'no_prazo' | 'atencao' | 'vencido' | 'sem_revisao';
 
