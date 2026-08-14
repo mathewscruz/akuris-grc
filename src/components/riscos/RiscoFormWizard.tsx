@@ -90,6 +90,8 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
   const [ativos, setAtivos] = useState<Ativo[]>([]);
   const [selectedMatriz, setSelectedMatriz] = useState<Matriz | null>(null);
   const [anexosAceite, setAnexosAceite] = useState<any[]>([]);
+  const [invalidarAceiteOpen, setInvalidarAceiteOpen] = useState(false);
+  const [pendingData, setPendingData] = useState<RiscoForm | null>(null);
   
   const TABS = ['identificacao', 'avaliacao', 'detalhes', 'residual', 'aceite'] as const;
   type TabKey = typeof TABS[number];
