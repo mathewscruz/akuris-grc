@@ -10,6 +10,7 @@ import { Pagination, PaginationContent, PaginationItem, PaginationLink, Paginati
 import { Search, Filter, Download, RefreshCw, ChevronDown, ChevronUp } from "lucide-react"
 import { useLanguage } from "@/contexts/LanguageContext"
 import { countActiveFilters } from "@/lib/filter-active"
+import { ModuleToolbar, ToolbarField } from "@/components/ui/module-toolbar"
 
 export interface Column<T> {
   key: keyof T | string
