@@ -16,7 +16,12 @@ interface MaturityHeroProps {
   segments?: StackSegment[];
   totalRequirements: number;
   totalEvaluated: number;
+  /** Requisitos não conformes (gaps em aberto). */
+  openGaps?: number;
+  /** Subconjunto crítico dos gaps (peso alto ou prazo vencido). */
   criticalCount: number;
+  /** Subconjunto de gaps com prazo vencido. */
+  overdueCount?: number;
   activeFrameworksCount: number;
   delta30d?: number;
   nextMilestone?: {
@@ -44,7 +49,9 @@ export function MaturityHero({
   overallScore,
   totalRequirements,
   totalEvaluated,
+  openGaps,
   criticalCount,
+  overdueCount = 0,
   activeFrameworksCount,
   delta30d = 0,
   nextMilestone,
@@ -57,6 +64,7 @@ export function MaturityHero({
     ? Math.round((totalEvaluated / totalRequirements) * 100)
     : 0;
   const deltaPositive = delta30d >= 0;
+  const gapsAbertos = typeof openGaps === 'number' ? openGaps : criticalCount;
 
   // Insight contextual gerado client-side
   const insightCopy = (() => {
@@ -85,7 +93,7 @@ export function MaturityHero({
     };
   })();
 
-  const gapTone = criticalCount > 0 ? 'text-destructive' : 'text-success';
+  const gapTone = gapsAbertos > 0 ? 'text-destructive' : 'text-success';
 
   return (
     <section className="relative overflow-hidden rounded-2xl border border-border bg-card">
@@ -174,22 +182,22 @@ export function MaturityHero({
             {t('gapV2.maturityHero.gapsToTreat')}
           </div>
           <div className={`mt-2 text-5xl font-bold tabular-nums leading-none tracking-tight ${gapTone}`}>
-            {criticalCount}
+            {gapsAbertos}
           </div>
           <p className="mt-2 text-sm text-foreground">
-            {criticalCount > 0 ? t('gapV2.maturityHero.nonCompliantReqs') : t('gapV2.maturityHero.noCriticalGap')}
+            {gapsAbertos > 0 ? t('gapV2.maturityHero.nonCompliantReqs') : t('gapV2.maturityHero.noCriticalGap')}
           </p>
-          {criticalCount > 0 && (
+          {gapsAbertos > 0 && (
             <div className="mt-3 flex items-center gap-3 text-xs">
               <span className="inline-flex items-center gap-1.5">
                 <span className="h-1.5 w-1.5 rounded-full bg-destructive" />
-                <span className="tabular-nums font-medium text-foreground">{Math.min(criticalCount, Math.ceil(criticalCount * 0.4))}</span>
+                <span className="tabular-nums font-medium text-foreground">{criticalCount}</span>
                 <span className="text-muted-foreground">{t('gapV2.maturityHero.critical')}</span>
               </span>
               <span className="text-border">·</span>
               <span className="inline-flex items-center gap-1.5">
                 <span className="h-1.5 w-1.5 rounded-full bg-warning" />
-                <span className="tabular-nums font-medium text-foreground">0</span>
+                <span className="tabular-nums font-medium text-foreground">{overdueCount}</span>
                 <span className="text-muted-foreground">{t('gapV2.maturityHero.overdue')}</span>
               </span>
             </div>
