@@ -30,6 +30,7 @@ import { ListChecks } from "lucide-react";
 import { formatDateForInput, parseDateForDB } from "@/lib/date-utils";
 import { DateField } from "@/components/ui/date-field";
 import { ControleSelect } from "./ControleSelect";
+import { RequisitoSelect } from "./RequisitoSelect";
 import { AreaSistemaSelect } from "./AreaSistemaSelect";
 import { useIntegrationNotify } from "@/hooks/useIntegrationNotify";
 import { logger } from "@/lib/logger";
@@ -44,6 +45,8 @@ const makeFormSchema = (t: (key: string) => string) => z.object({
   status: z.string().default("pendente"),
   observacoes: z.string().optional(),
   controle_vinculado_id: z.string().optional(),
+  requisito_vinculado_id: z.string().optional(),
+  framework_vinculado_id: z.string().optional(),
   area_sistema_id: z.string().optional(),
 });
 
@@ -84,6 +87,8 @@ export function ItemAuditoriaFormDialog({
       status: "pendente",
       observacoes: "",
       controle_vinculado_id: "",
+      requisito_vinculado_id: "",
+      framework_vinculado_id: "",
       area_sistema_id: "",
     },
   });
@@ -100,6 +105,8 @@ export function ItemAuditoriaFormDialog({
         status: item.status || "pendente",
         observacoes: item.observacoes || "",
         controle_vinculado_id: item.controle_vinculado_id || "",
+        requisito_vinculado_id: item.requisito_vinculado_id || "",
+        framework_vinculado_id: item.framework_vinculado_id || "",
         area_sistema_id: item.area_sistema_id || "",
       });
     } else {
@@ -113,6 +120,8 @@ export function ItemAuditoriaFormDialog({
         status: "pendente",
         observacoes: "",
         controle_vinculado_id: "",
+        requisito_vinculado_id: "",
+        framework_vinculado_id: "",
         area_sistema_id: "",
       });
     }
@@ -126,6 +135,16 @@ export function ItemAuditoriaFormDialog({
     }
     if (controle && !form.getValues("descricao") && controle.descricao) {
       form.setValue("descricao", controle.descricao);
+    }
+  };
+
+  /** O item passa a ser uma referência ao requisito: código e título vêm do framework. */
+  const handleRequisitoChange = (value: string, requisito?: any) => {
+    form.setValue("requisito_vinculado_id", value);
+    form.setValue("framework_vinculado_id", requisito?.framework_id || "");
+    if (requisito) {
+      if (!form.getValues("codigo") && requisito.codigo) form.setValue("codigo", requisito.codigo);
+      if (!form.getValues("titulo")) form.setValue("titulo", requisito.titulo);
     }
   };
 
@@ -146,6 +165,8 @@ export function ItemAuditoriaFormDialog({
         status: data.status,
         observacoes: data.observacoes || null,
         controle_vinculado_id: data.controle_vinculado_id || null,
+        requisito_vinculado_id: data.requisito_vinculado_id || null,
+        framework_vinculado_id: data.framework_vinculado_id || null,
         area_sistema_id: data.area_sistema_id || null,
         created_by: item ? undefined : userId,
       };
@@ -243,6 +264,22 @@ export function ItemAuditoriaFormDialog({
                   <FormDescription>
                     {t("govDialogs.itemAuditoriaFormDialog.vincularControleDescription")}
                   </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Referência a requisito de framework */}
+            <FormField
+              control={form.control}
+              name="requisito_vinculado_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("vinculoReq.itemRefRequisito")}</FormLabel>
+                  <FormControl>
+                    <RequisitoSelect value={field.value} onValueChange={handleRequisitoChange} />
+                  </FormControl>
+                  <FormDescription>{t("vinculoReq.itemRefRequisitoDesc")}</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
