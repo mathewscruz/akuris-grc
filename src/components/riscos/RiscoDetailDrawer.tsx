@@ -126,6 +126,9 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
   const { t } = useLanguage();
   const { format: formatMoedaEmpresa } = useEmpresaMoeda();
   const { data: detail, isLoading, isError, error: detailError } = useRiscoDetail(risco?.id ?? null);
+  // Controlos reais = requisitos dos frameworks do Gap Analysis vinculados a este risco.
+  const { data: requisitos = [], isLoading: reqLoading, isError: reqError } = useRiscoRequisitos(risco?.id ?? null);
+  const { data: matrizConfig } = useMatrizConfigEmpresa();
   const [vincularOpen, setVincularOpen] = useState(false);
   const [perfilOpen, setPerfilOpen] = useState(false);
   const { toast } = useToast();
