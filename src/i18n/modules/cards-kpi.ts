@@ -6,13 +6,24 @@
 export const cardsKpi = {
   pt: {
     cardsKpi: {
+      metricas: {
+        semDados: 'Sem dados',
+        efetividadeSemTestes: 'A efetividade só aparece depois do primeiro teste de controlo registado.',
+        efetividadeTestada: 'Média dos últimos testes de {testados} de {total} controlos',
+        preventivosDe: 'Preventivos {preventivos} de {total}',
+      },
       contratos: {
         totalContratos: 'Total de Contratos',
         valorTotal: 'Valor Total',
         valorEmAtivos: 'Valor em contratos ativos',
+        valorVigente: 'Valor Vigente',
+        valorVigenteHint: 'Só contratos ativos dentro do prazo',
+        valorVencido: 'Valor Vencido',
+        valorVencidoHint: 'Contratos ativos com prazo ultrapassado',
         emptyContratos: 'Comece criando contratos para gerenciar suas parcerias.',
         emptyFornecedores: 'Cadastre fornecedores para associar aos contratos.',
       },
+
       privacidade: {
         totalDados: 'Total de Dados',
         dadosSensiveis: 'Dados Sensíveis',
