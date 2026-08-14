@@ -307,8 +307,16 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
     (selectedMatriz?.configuracao as any)?.metodo_calculo || 'multiplicacao'
   );
 
-  const onSubmit = async (data: RiscoForm) => {
+  const onSubmit = async (data: RiscoForm, confirmadoInvalidar = false) => {
     logger.debug('🚀 onSubmit chamado com dados:', { data: data });
+
+    // (g) Reavaliar um risco com aceite vigente invalida o aceite: avisar antes de guardar.
+    if (!confirmadoInvalidar && risco?.id && risco?.aceito && reavaliacaoInvalidaAceite(data)) {
+      setPendingData(data);
+      setInvalidarAceiteOpen(true);
+      return;
+    }
+    const invalidarAceite = !!(risco?.id && risco?.aceito && reavaliacaoInvalidaAceite(data));
     
     if (!profile?.empresa_id) {
       toast.error(t('fin.riscos.wizard.erroEmpresa'));
