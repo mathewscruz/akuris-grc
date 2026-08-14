@@ -5,7 +5,8 @@ import { X } from 'lucide-react';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveNivelRiscoTone, resolveRiscoStatusTone } from '@/lib/status-tone';
 import { formatStatus } from '@/lib/text-utils';
-import { relativeShort, severityFromScore, shortRiskId } from '@/components/riscos/risk-utils';
+import { relativeShort, scoreFromMatriz, severityFromScoreConfig, shortRiskId } from '@/components/riscos/risk-utils';
+import type { MatrizConfiguracao } from '@/components/riscos/matriz-config';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Risco {
@@ -25,12 +26,16 @@ interface Props {
   onOpenRisk: (id: string) => void;
   /** Limpa a seleção (AKURIS QA-060). Sem a prop, a ação não é renderizada. */
   onClearSelection?: () => void;
+  /** Configuração da matriz ativa: método de cálculo e faixas de severidade. */
+  config?: MatrizConfiguracao | null;
 }
 
-export function HeatmapCellPanel({ cell, risks, onOpenRisk, onClearSelection }: Props) {
+export function HeatmapCellPanel({ cell, risks, onOpenRisk, onClearSelection, config }: Props) {
   const { t } = useLanguage();
-  const score = cell.p * cell.i;
-  const sev = severityFromScore(score);
+  const score = scoreFromMatriz(cell.p, cell.i, config?.metodo_calculo);
+  // Severidade derivada das faixas da matriz ativa (AKURIS QA-061).
+  const faixa = config?.niveis_risco?.find((n) => score >= n.min && score <= n.max) ?? null;
+  const sev = severityFromScoreConfig(score, config?.niveis_risco);
   const nivelLabel = {
     medio: t('riscosVisoes.matrix.heatmapCellPanel.nivel.medio'),
     critico: t('riscosVisoes.matrix.heatmapCellPanel.nivel.critico'),
@@ -54,7 +59,7 @@ export function HeatmapCellPanel({ cell, risks, onOpenRisk, onClearSelection }: 
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
             <StatusBadge size="sm" {...resolveNivelRiscoTone(sev === 'medio' ? 'Médio' : sev === 'critico' ? 'Crítico' : sev === 'alto' ? 'Alto' : 'Baixo')}>
-              {nivelLabel}
+              {faixa ? faixa.nivel : nivelLabel}
             </StatusBadge>
             {onClearSelection && (
               <button
