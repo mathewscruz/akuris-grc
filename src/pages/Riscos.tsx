@@ -155,7 +155,7 @@ export function Riscos() {
   // Drawer de detalhe
   const [drawerRiscoId, setDrawerRiscoId] = useState<string | null>(null);
   const [matrixCell, setMatrixCell] = useState<{ p: number; i: number } | undefined>();
-  const [matrixMode, setMatrixMode] = useState<'inerente' | 'residual'>('inerente');
+  const [matrixMode, setMatrixMode] = useState<'inerente' | 'residual' | 'movimento'>('inerente');
 
   // Saved view chips (apenas para a aba Tabela)
   const [savedView, setSavedView] = useState<SavedView>('todos');
