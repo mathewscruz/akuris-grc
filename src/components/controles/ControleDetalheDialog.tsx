@@ -15,6 +15,9 @@ import ConfirmDialog from "@/components/ConfirmDialog";
 import { capitalizeText, formatStatus } from "@/lib/text-utils";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { resolveControleStatusTone, resolveCriticidadeTone, resolveConformityTone } from "@/lib/status-tone";
+import { getStatusLabel } from "@/lib/gap-analysis-tokens";
+import { conformidadeRequisito } from "@/lib/metrics/requisitos";
+
 import { useControleRequisitos } from "@/hooks/useControleRequisitos";
 import { VincularRequisitoControleDialog } from "@/components/controles/VincularRequisitoControleDialog";
 import { openStorageFile } from "@/lib/storage";
