@@ -1,4 +1,5 @@
 import React, { type ReactNode } from 'react';
+import { rowOpenProps } from '@/lib/row-interaction';
 import {
   Activity,
   CheckCircle,
@@ -318,7 +319,7 @@ export function DocumentosLista<T extends DocumentoListaItem>({
               </TableRow>
             ) : (
               documentos.map((documento) => (
-                <TableRow key={documento.id} data-focus-id={documento.id}>
+                <TableRow key={documento.id} data-focus-id={documento.id} {...rowOpenProps(() => onPreview(documento), documento.nome)}>
                   <TableCell>
                     <div className="space-y-1">
                       <div className="font-medium">{documento.nome}</div>

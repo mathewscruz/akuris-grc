@@ -11,6 +11,7 @@ import { Search, Filter, Download, RefreshCw, ChevronDown, ChevronUp } from "luc
 import { useLanguage } from "@/contexts/LanguageContext"
 import { countActiveFilters } from "@/lib/filter-active"
 import { ModuleToolbar, ToolbarField } from "@/components/ui/module-toolbar"
+import { rowOpenProps } from "@/lib/row-interaction"
 
 export interface Column<T> {
   key: keyof T | string
@@ -199,13 +200,11 @@ export function DataTable<T extends Record<string, any>>({
               paginatedData.map((item, index) => (
                 <TableRow
                   key={item.id || index}
-                  className={`hover:bg-muted/50 transition-colors ${onRowClick ? 'cursor-pointer' : ''}`}
-                  onClick={onRowClick ? (e) => {
-                    const target = e.target as HTMLElement;
-                    if (target.closest('button,a,[role="menuitem"],input,[data-no-row-click]')) return;
-                    onRowClick(item);
-                  } : undefined}
+                  {...(onRowClick
+                    ? rowOpenProps(() => onRowClick(item), (item as any).titulo || (item as any).nome || undefined)
+                    : { className: 'transition-colors' })}
                 >
+
                   {columns.map((column) => (
                     <TableCell
                       key={String(column.key)}

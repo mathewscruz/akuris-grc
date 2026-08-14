@@ -658,6 +658,7 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
           <DataTable
             data={sortedControles.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)}
             columns={controlesColumns}
+            onRowClick={(controle) => handleOpenDetail(controle)}
             loading={isLoading}
             searchable={true}
             searchPlaceholder={t("governancaComp.controles.searchPlaceholder")}

@@ -260,6 +260,7 @@ export default function Continuidade() {
           <DataTable
             data={planos}
             columns={columns}
+            onRowClick={(row) => setDetalheDialog({ open: true, plano: row })}
             searchable
             searchPlaceholder={t('fin.continuidade.buscar')}
             loading={isLoading}
