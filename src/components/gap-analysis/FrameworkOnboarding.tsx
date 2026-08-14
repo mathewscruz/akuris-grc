@@ -66,7 +66,7 @@ export function FrameworkOnboarding({ frameworkNome, frameworkVersao, frameworkT
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
-      <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+      <Card>
         <CardContent className="pt-8 pb-6 text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
             {info.icon}

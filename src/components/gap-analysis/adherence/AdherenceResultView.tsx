@@ -255,7 +255,7 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
           </h3>
           <div className="space-y-3">
             {assessment.pontos_fortes.map((ponto: PontoForte, index: number) => (
-              <Card key={index} className="p-4 bg-muted/50">
+              <Card key={index} className="p-4">
                 <h4 className="font-semibold text-foreground mb-2">{ponto.titulo}</h4>
                 <p className="text-sm text-muted-foreground">{ponto.descricao}</p>
               </Card>
@@ -273,7 +273,7 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
           </h3>
           <div className="space-y-3">
             {assessment.pontos_melhoria.map((ponto: PontoMelhoria, index: number) => (
-              <Card key={index} className="p-4 bg-muted/50">
+              <Card key={index} className="p-4">
                 <div className="flex items-start justify-between mb-2">
                   <h4 className="font-semibold text-foreground">{ponto.titulo}</h4>
                   <Badge variant={getPrioridadeBadgeVariant(ponto.prioridade)} className="whitespace-nowrap">{getPrioridadeLabel(ponto.prioridade)}</Badge>

@@ -745,7 +745,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
             {/* Resumo Vivo */}
             <div className="p-4 space-y-3 overflow-y-auto flex-1">
               <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('cardsKpi.sweep.riscos.resumo')}</h3>
-              <Card className="bg-background">
+              <Card>
                 <CardContent className="p-3 space-y-3 text-sm">
                   <div>
                     <div className="text-xs text-muted-foreground mb-0.5">{t('cardsKpi.sweep.riscos.nome')}</div>

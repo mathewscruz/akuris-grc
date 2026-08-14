@@ -167,7 +167,7 @@ export const HistoricoVersoesDialog = ({
           ) : (
             <div className="space-y-4 pr-4">
               {/* Versão Atual */}
-              <Card className="p-4 border-primary bg-primary/5">
+              <Card className="p-4 border-primary/40">
                 <div className="space-y-3">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">

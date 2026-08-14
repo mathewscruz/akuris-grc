@@ -156,7 +156,7 @@ export function ApiKeysManager() {
     <div className="space-y-6">
       {/* New key revealed banner */}
       {newKeyRevealed && (
-        <Card className="border-warning/50 bg-warning/5">
+        <Card className="border-warning/50">
           <CardContent className="py-4">
             <div className="flex items-center justify-between gap-4">
               <div>

@@ -1327,7 +1327,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                 ))}
                 {isLoading && (
                   <div className="flex justify-start">
-                    <Card className="bg-muted">
+                    <Card>
                       <CardContent className="p-3">
                         <div className="flex items-center gap-2">
                           <AkurisPulse size={16} />

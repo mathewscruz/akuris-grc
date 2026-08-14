@@ -417,7 +417,7 @@ export function TemplatesManager() {
       <div>
         {/* Templates Sugeridos */}
         {templates.length < 3 && (
-          <Card className="mb-6 border-dashed border-2 border-primary/20 bg-primary/5">
+          <Card className="mb-6 border-dashed border-2">
             <CardHeader className="pb-3">
               <CardTitle className="text-lg flex items-center gap-2">
                 <AkurisAIIcon className="h-5 w-5 text-primary" />
