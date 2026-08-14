@@ -345,7 +345,7 @@ export default function Contratos() {
       const matchesSearch = contrato.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            contrato.numero_contrato.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            contrato.fornecedores?.nome?.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesStatus = statusFilter === 'todos' || contrato.status === statusFilter;
+      const matchesStatus = statusFilter === 'todos' || estadoContrato(contrato) === statusFilter || (statusFilter === 'ativo' && ['vigente','a_vencer'].includes(estadoContrato(contrato)));
       const matchesTipo = tipoFilter === 'todos' || contrato.tipo === tipoFilter;
       
       return matchesSearch && matchesStatus && matchesTipo;
@@ -558,7 +558,7 @@ export default function Contratos() {
                             </div>
                           </TableCell>
                           <TableCell>{contrato.fornecedores?.nome || '-'}</TableCell>
-                          <TableCell>{getStatusBadge(contrato.status)}</TableCell>
+                          <TableCell>{getContratoStatusBadge(contrato)}</TableCell>
                           <TableCell><Badge variant="outline" className="capitalize whitespace-nowrap">{formatStatus(contrato.tipo)}</Badge></TableCell>
                           <TableCell>
                             {contrato.valor 
