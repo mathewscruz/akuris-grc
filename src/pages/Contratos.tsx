@@ -395,6 +395,18 @@ export default function Contratos() {
           ]}
         />
 
+        <Tabs value={currentTab} onValueChange={setCurrentTab} className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="contratos" className="flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              <span className="hidden sm:inline">{t('cardsKpi.sweep.contratos.contratos')}</span>
+            </TabsTrigger>
+            <TabsTrigger value="fornecedores" className="flex items-center gap-2">
+              <Building2 className="h-4 w-4" />
+              <span className="hidden sm:inline">{t('cardsKpi.sweep.contratos.fornecedores')}</span>
+            </TabsTrigger>
+          </TabsList>
+
         <StatStrip
           loading={!statsContratos}
           items={[
@@ -432,17 +444,7 @@ export default function Contratos() {
 
 
         {/* Tabs */}
-        <Tabs value={currentTab} onValueChange={setCurrentTab} className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="contratos" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              <span className="hidden sm:inline">{t('cardsKpi.sweep.contratos.contratos')}</span>
-            </TabsTrigger>
-            <TabsTrigger value="fornecedores" className="flex items-center gap-2">
-              <Building2 className="h-4 w-4" />
-              <span className="hidden sm:inline">{t('cardsKpi.sweep.contratos.fornecedores')}</span>
-            </TabsTrigger>
-          </TabsList>
+
 
           <TabsContent value="contratos" className="space-y-4">
             <Card className="rounded-lg border overflow-hidden">

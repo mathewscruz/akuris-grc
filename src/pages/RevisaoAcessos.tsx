@@ -322,6 +322,13 @@ export default function RevisaoAcessos() {
         ]}
       />
 
+      <Tabs defaultValue="ativas">
+        <TabsList>
+          <TabsTrigger value="ativas">{t('fin.revisao.ativas')}</TabsTrigger>
+          <TabsTrigger value="historico">{t('fin.comum.historico')}</TabsTrigger>
+          <TabsTrigger value="usuarios">{t('fin.revisao.usuariosSistemas')}</TabsTrigger>
+        </TabsList>
+
       <StatStrip
         loading={statsLoading}
         items={[
@@ -332,12 +339,6 @@ export default function RevisaoAcessos() {
         ]}
       />
 
-      <Tabs defaultValue="ativas">
-        <TabsList>
-          <TabsTrigger value="ativas">{t('fin.revisao.ativas')}</TabsTrigger>
-          <TabsTrigger value="historico">{t('fin.comum.historico')}</TabsTrigger>
-          <TabsTrigger value="usuarios">{t('fin.revisao.usuariosSistemas')}</TabsTrigger>
-        </TabsList>
 
         <TabsContent value="ativas" className="space-y-4 mt-4">
           <Card className="rounded-lg border overflow-hidden">
