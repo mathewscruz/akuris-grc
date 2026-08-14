@@ -434,77 +434,60 @@ export default function Contratos() {
             <Card className="rounded-lg border overflow-hidden">
               <CardContent className="p-0">
                 <div className="p-6 pb-4">
-                  <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-                    <div className="relative flex-1 min-w-[200px] max-w-sm">
-                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                      <Input
-                        placeholder={t('fin.contratos.buscar')}
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-9"
-                      />
-                    </div>
-                     <div className="flex gap-2 flex-wrap">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button variant="outline" size="icon" onClick={handleExportCSV}>
-                            <Download className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>{t('cardsKpi.sweep.contratos.exportarCsv')}</TooltipContent>
-                      </Tooltip>
-                      <RelatoriosContratos />
-                      <TemplatesContratos />
-                      <Button variant="outline" size="sm" onClick={() => setImportDialogOpen(true)}>
-                        <Upload className="h-4 w-4 sm:mr-2" />
-                        <span className="hidden sm:inline">{t('p3Import.importButtonLabel')}</span>
-                      </Button>
-                      <Button size="sm" onClick={() => { setSelectedContrato(null); setDialogOpen(true); }}>
-                        <Plus className="h-4 w-4 sm:mr-2" />
-                        <span className="hidden sm:inline">{t('fin.contratos.novo')}</span>
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-4">
-                    <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger className="w-[150px]">
-                        <SelectValue placeholder={t('fin.comum.status')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="todos">{t('campos.filtros.todos')}</SelectItem>
-                        <SelectItem value="ativo">{t('campos.opcoes.ativo')}</SelectItem>
-                        <SelectItem value="rascunho">{t('campos.opcoes.rascunho')}</SelectItem>
-                        <SelectItem value="negociacao">{t('fin.contratos.negociacao')}</SelectItem>
-                        <SelectItem value="aprovacao">{t('fin.comum.aprovacao')}</SelectItem>
-                        <SelectItem value="suspenso">{t('campos.opcoes.suspenso')}</SelectItem>
-                        <SelectItem value="encerrado">{t('campos.opcoes.encerrado')}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Select value={tipoFilter} onValueChange={setTipoFilter}>
-                      <SelectTrigger className="w-[150px]">
-                        <SelectValue placeholder={t('fin.comum.tipo')} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="todos">{t('campos.filtros.todos')}</SelectItem>
-                        <SelectItem value="servicos">{t('campos.opcoes.servicos')}</SelectItem>
-                        <SelectItem value="licenciamento">{t('campos.opcoes.licenciamento')}</SelectItem>
-                        <SelectItem value="manutencao">{t('fin.comum.manutencao')}</SelectItem>
-                        <SelectItem value="consultoria">{t('campos.opcoes.consultoria')}</SelectItem>
-                        <SelectItem value="produto">{t('campos.opcoes.produto')}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Select value={String(itemsPerPage)} onValueChange={(v) => setItemsPerPage(Number(v))}>
-                      <SelectTrigger className="w-[100px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="10">10</SelectItem>
-                        <SelectItem value="20">20</SelectItem>
-                        <SelectItem value="50">50</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <ModuleToolbar
+                    searchValue={searchTerm}
+                    onSearchChange={setSearchTerm}
+                    searchPlaceholder={t('fin.contratos.buscar')}
+                    filters={
+                      <>
+                        <ToolbarField label={t('fin.comum.status')}>
+                          <Select value={statusFilter} onValueChange={setStatusFilter}>
+                            <SelectTrigger className="w-[150px]">
+                              <SelectValue placeholder={t('fin.comum.status')} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="todos">{t('campos.filtros.todos')}</SelectItem>
+                              <SelectItem value="ativo">{t('campos.opcoes.ativo')}</SelectItem>
+                              <SelectItem value="rascunho">{t('campos.opcoes.rascunho')}</SelectItem>
+                              <SelectItem value="negociacao">{t('fin.contratos.negociacao')}</SelectItem>
+                              <SelectItem value="aprovacao">{t('fin.comum.aprovacao')}</SelectItem>
+                              <SelectItem value="suspenso">{t('campos.opcoes.suspenso')}</SelectItem>
+                              <SelectItem value="encerrado">{t('campos.opcoes.encerrado')}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </ToolbarField>
+                        <ToolbarField label={t('fin.comum.tipo')}>
+                          <Select value={tipoFilter} onValueChange={setTipoFilter}>
+                            <SelectTrigger className="w-[150px]">
+                              <SelectValue placeholder={t('fin.comum.tipo')} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="todos">{t('campos.filtros.todos')}</SelectItem>
+                              <SelectItem value="servicos">{t('campos.opcoes.servicos')}</SelectItem>
+                              <SelectItem value="licenciamento">{t('campos.opcoes.licenciamento')}</SelectItem>
+                              <SelectItem value="manutencao">{t('fin.comum.manutencao')}</SelectItem>
+                              <SelectItem value="consultoria">{t('campos.opcoes.consultoria')}</SelectItem>
+                              <SelectItem value="produto">{t('campos.opcoes.produto')}</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </ToolbarField>
+                        <ToolbarField label={t('fin.comum.itensPorPagina')}>
+                          <Select value={String(itemsPerPage)} onValueChange={(v) => setItemsPerPage(Number(v))}>
+                            <SelectTrigger className="w-[100px]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="10">10</SelectItem>
+                              <SelectItem value="20">20</SelectItem>
+                              <SelectItem value="50">50</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </ToolbarField>
+                      </>
+                    }
+                  />
                 </div>
+
                 <Table>
                   <TableHeader>
                     <TableRow>
