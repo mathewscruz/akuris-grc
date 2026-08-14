@@ -290,17 +290,12 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading, or
                   {t('planosAcao.fieldDeadline')}
                   <FieldHelpTooltip content={t('planosAcao.fieldDeadlineHelp')} />
                 </Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className={cn('w-full justify-start text-left font-normal', !prazo && 'text-muted-foreground')}>
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {prazo ? format(prazo, 'dd/MM/yyyy', { locale: ptBR }) : t('planosAcao.fieldDeadlinePlaceholder')}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar mode="single" selected={prazo} onSelect={setPrazo} locale={ptBR} className="pointer-events-auto" />
-                  </PopoverContent>
-                </Popover>
+                <DateField
+                  value={prazo}
+                  onChange={setPrazo}
+                  placeholder={t('planosAcao.fieldDeadlinePlaceholder')}
+                />
+
               </div>
             </div>
           </div>
@@ -365,7 +360,7 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading, or
       <WizardSummaryRow label={t('planosAcao.summaryLabelStatus')} value={<span>{formatStatus(status)}</span>} />
       <WizardSummaryRow
         label={t('planosAcao.summaryLabelDeadline')}
-        value={prazo ? format(prazo, 'dd/MM/yyyy') : <span className="text-muted-foreground italic">{t('planosAcao.summaryNoDeadline')}</span>}
+        value={prazo ? formatDateOnly(prazo) : <span className="text-muted-foreground italic">{t('planosAcao.summaryNoDeadline')}</span>}
       />
       <WizardSummaryRow
         label={t('planosAcao.summaryLabelOrigin')}
