@@ -13,7 +13,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { PlanoAcaoDialog } from '@/components/planos-acao/PlanoAcaoDialog';
 import { PlanosAcaoKanban, PLANO_STATUS_EDITAVEIS } from '@/components/planos-acao/PlanosAcaoKanban';
 import { PlanoAcaoDetailDrawer } from '@/components/planos-acao/PlanoAcaoDetailDrawer';
@@ -593,6 +593,7 @@ export default function PlanosAcao() {
               <DataTable
                 data={filteredPlanos}
                 columns={columns}
+                onRowClick={(item) => setDetailPlano(item)}
                 loading={isLoading}
                 searchable
                 searchPlaceholder={t('planosAcao.searchPlaceholder')}
@@ -660,6 +661,18 @@ export default function PlanosAcao() {
         onSave={handleSave}
         plano={editingPlano}
         loading={saving}
+      />
+
+      <PlanoAcaoDetailDrawer
+        plano={detailPlano}
+        open={!!detailPlano}
+        onOpenChange={(open) => { if (!open) setDetailPlano(null); }}
+        onEdit={(p) => { setDetailPlano(null); setEditingPlano(p); setDialogOpen(true); }}
+        onStatusChange={handleStatusChange}
+        onOpenOrigin={(p) => { if (p._route) navigate(p._route); }}
+        statusConfig={statusConfig}
+        prioridadeConfig={prioridadeConfig}
+        moduloLabels={moduloLabels}
       />
 
       <ConfirmDialog
