@@ -371,51 +371,62 @@ export default function Contratos() {
         <PageHeader
           title={t('modules.contratos.title')}
           description={t('modules.contratos.description')}
+          actions={
+            currentTab === 'contratos' ? (
+              <Button onClick={() => { setSelectedContrato(null); setDialogOpen(true); }}>
+                <Plus className="h-4 w-4 mr-2" />
+                {t('fin.contratos.novo')}
+              </Button>
+            ) : (
+              <Button onClick={() => { setSelectedFornecedor(null); setFornecedorDialogOpen(true); }}>
+                <Plus className="h-4 w-4 mr-2" />
+                {t('fin.fornecedores.novo')}
+              </Button>
+            )
+          }
+          secondaryActions={[
+            { label: t('cardsKpi.sweep.contratos.exportarCsv'), icon: <Download className="h-4 w-4" />, onClick: handleExportCSV },
+            { label: t('cardsKpi.denuncias.relatorios'), icon: <BarChart3 className="h-4 w-4" />, onClick: () => setRelatoriosOpen(true) },
+            { label: t('modules.dueDiligence.templates'), icon: <FileText className="h-4 w-4" />, onClick: () => setTemplatesOpen(true) },
+            { label: t('p3Import.importButtonLabel'), icon: <Upload className="h-4 w-4" />, onClick: () => setImportDialogOpen(true), separatorBefore: true },
+          ]}
         />
 
-        {/* Cards de KPI */}
-        <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-          <StatCard
-            title={t('cardsKpi.contratos.totalContratos')}
-            value={statsContratos?.total || 0}
-            description={`${statsContratos?.ativos || 0} ativos`}
-            icon={<FileText />}
-            loading={!statsContratos}
-            drillDown="contratos"
-            showAccent
-            emptyHint={t('residuos.empty.contratos')}
-          />
+        <StatStrip
+          loading={!statsContratos}
+          items={[
+            {
+              key: 'total',
+              label: t('cardsKpi.contratos.totalContratos'),
+              value: statsContratos?.total || 0,
+              drillDown: 'contratos',
+            },
+            {
+              key: 'valor',
+              label: t('cardsKpi.contratos.valorTotal'),
+              value: formatMoedaEmpresa(statsContratos?.valorTotal || 0, true),
+              drillDown: 'contratos',
+            },
+            {
+              key: 'vencendo',
+              label: t('cardsKpi.sweep.contratos.vencimentos'),
+              value: statsContratos?.vencendo30Dias || 0,
+              tone: 'warning',
+              hint: t('fin.comum.proximos30'),
+              drillDown: 'contratos',
+            },
+            {
+              key: 'renovacao',
+              label: t('fin.contratos.renovacaoAutomatica'),
+              value: `${statsContratos?.total ? Math.round((statsContratos?.renovacaoAutomatica / statsContratos?.total) * 100) : 0}%`,
+              drillDown: 'contratos',
+            },
+          ]}
+        />
 
-          <StatCard
-            title={t('cardsKpi.contratos.valorTotal')}
-            value={formatMoedaEmpresa(statsContratos?.valorTotal || 0, true)}
-            description={t('cardsKpi.contratos.valorEmAtivos')}
-            icon={<DollarSign />}
-            variant="success"
-            loading={!statsContratos}
-            drillDown="contratos"
-          />
+        <RelatoriosContratos open={relatoriosOpen} onOpenChange={setRelatoriosOpen} hideTrigger />
+        <TemplatesContratos open={templatesOpen} onOpenChange={setTemplatesOpen} hideTrigger />
 
-          <StatCard
-            title={t('cardsKpi.sweep.contratos.vencimentos')}
-            value={statsContratos?.vencendo30Dias || 0}
-            description={t('fin.comum.proximos30')}
-            icon={<AlertCircle />}
-            variant={statsContratos?.vencendo30Dias ? "warning" : "default"}
-            loading={!statsContratos}
-            drillDown="contratos"
-          />
-
-          <StatCard
-            title={t('fin.contratos.renovacaoAutomatica')}
-            value={`${statsContratos?.total ? Math.round((statsContratos?.renovacaoAutomatica / statsContratos?.total) * 100) : 0}%`}
-            description={`${statsContratos?.renovacaoAutomatica || 0} de ${statsContratos?.total || 0}`}
-            icon={<TrendingUp />}
-            variant="info"
-            loading={!statsContratos}
-            drillDown="contratos"
-          />
-        </div>
 
         {/* Tabs */}
         <Tabs value={currentTab} onValueChange={setCurrentTab} className="space-y-4">
