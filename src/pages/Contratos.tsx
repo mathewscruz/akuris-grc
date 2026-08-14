@@ -481,6 +481,7 @@ export default function Contratos() {
                             <SelectContent>
                               <SelectItem value="todos">{t('campos.filtros.todos')}</SelectItem>
                               <SelectItem value="ativo">{t('campos.opcoes.ativo')}</SelectItem>
+                              <SelectItem value="vencido">{t('campos.opcoes.vencido')}</SelectItem>
                               <SelectItem value="rascunho">{t('campos.opcoes.rascunho')}</SelectItem>
                               <SelectItem value="negociacao">{t('fin.contratos.negociacao')}</SelectItem>
                               <SelectItem value="aprovacao">{t('fin.comum.aprovacao')}</SelectItem>
