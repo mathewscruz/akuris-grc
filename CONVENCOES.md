@@ -38,3 +38,15 @@ navegação profunda `?focus=<id>`.
 Dialog, AlertDialog, Sheet e Popover usam os wrappers de `src/components/ui/`,
 que aplicam `useReleaseBodyPointerEvents()` para evitar o bug do primeiro clique
 engolido após fechar overlays empilhados.
+
+## Camada regulatória (proteção de dados)
+
+- Nunca escrever "LGPD", "RGPD" ou "GDPR" fixo na interface. A lei aplicável, a
+  autoridade de controlo, os prazos de resposta ao titular e de notificação de
+  violação e os nomes dos direitos vêm de `useJurisdicao()` / `src/lib/jurisdicao.ts`,
+  alimentados pelo campo `empresas.jurisdicao` (BR, PT_EU, INTL).
+- Quando a empresa ainda não configurou, a jurisdição é inferida do idioma da
+  conta, do fuso horário e do domínio.
+- Chaves em falta no dicionário passam a mostrar texto legível de recurso
+  (`fallbackForKey`) e um aviso na consola em desenvolvimento — isso não dispensa
+  criar a chave em pt e en.
