@@ -589,18 +589,28 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     return current;
   };
 
-  const generateDocument = async () => {
-    if (!userInfo || !conversationId || isGeneratingDoc) return;
+  /**
+   * Gera o documento completo.
+   * `opts.briefingText` é usado no modo "Gerar documento direto": o briefing vai
+   * direto para a geração, sem passar pela etapa conversacional de refinamento.
+   */
+  const generateDocument = async (opts?: { briefingText?: string; docNameHint?: string; conversationId?: string | null }) => {
+    if (!userInfo || isGeneratingDoc) return;
+    const convId = opts?.conversationId !== undefined ? opts.conversationId : conversationId;
+    if (!convId && !opts?.briefingText) return;
 
+    lastGenerationArgsRef.current = opts ?? {};
+    setGenerationError(null);
     setIsGeneratingDoc(true);
 
     try {
       const res = await callDocGen({
-        conversation_id: conversationId,
+        conversation_id: convId,
         user_id: userInfo.user_id,
         empresa_id: userInfo.empresa_id,
         action: 'generate_document',
-        doc_type_hint: currentDocName || currentDocType,
+        ...(opts?.briefingText ? { briefing_text: opts.briefingText } : {}),
+        doc_type_hint: opts?.docNameHint || currentDocName || currentDocType,
         ...(effFrameworkName && { framework_context: { framework_name: effFrameworkName, framework_id: effFrameworkId, framework_ids: fwReqData?.matchedIds } }),
         ...(requirementContext && { requirement_context: requirementContext }),
       });
