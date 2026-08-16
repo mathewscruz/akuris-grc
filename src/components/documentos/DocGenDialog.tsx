@@ -789,18 +789,6 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
   };
 
 
-  const formatMessage = (content: string) => {
-    // Processar markdown básico
-    let formatted = content
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // **texto** -> bold
-      .replace(/\*(.*?)\*/g, '<em>$1</em>') // *texto* -> italic
-      .replace(/\n/g, '<br />'); // quebras de linha
-
-    // Processar listas numeradas
-    formatted = formatted.replace(/(\d+\.\s.*?)(<br \/>|$)/g, '<div class="ml-4 mb-1">$1</div>');
-    
-    return { __html: formatted };
-  };
 
   /**
    * Renderiza a mensagem do assistente com o MESMO parser de markdown do
@@ -830,22 +818,6 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
   };
 
 
-  const escapeHtmlAttr = (s: string) =>
-    s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-  const renderLineWithTooltips = (line: string): string => {
-    let processedLine = line;
-
-    Object.entries(TOOLTIPS).forEach(([term, definition]) => {
-      const regex = new RegExp(`\\b${term}\\b`, 'gi');
-      const safeDef = escapeHtmlAttr(definition);
-      processedLine = processedLine.replace(regex, (match) => {
-        return `<span class="underline decoration-dotted text-primary cursor-help" title="${safeDef}">${match}</span>`;
-      });
-    });
-
-    return processedLine;
-  };
 
   // Estado para tracking de mudanças não salvas
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
