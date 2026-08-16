@@ -1252,7 +1252,19 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
 
         {/* Fase: Galeria de templates */}
         {phase === 'gallery' && (
-          <div className="flex-1 min-h-0">
+          <div className="flex-1 min-h-0 flex flex-col">
+            {draft && (
+              <div className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-border bg-muted/40 px-3 py-2">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-foreground">{t('docgen.dialog.draftBannerTitle')}</p>
+                  <p className="text-xs text-muted-foreground">{t('docgen.dialog.draftBannerDescription')}</p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Button size="sm" variant="ghost" onClick={clearDraft}>{t('docgen.dialog.draftDiscard')}</Button>
+                  <Button size="sm" variant="soft" onClick={resumeDraft}>{t('docgen.dialog.draftResume')}</Button>
+                </div>
+              </div>
+            )}
             <DocGenTemplateGallery
               onPickTemplate={handlePickTemplate}
               onStartBlank={handleStartBlank}
@@ -1360,8 +1372,24 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
               </Button>
             </div>
 
+            {generationError && !generatedDocument && (
+              <div className="mt-4 rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2">
+                <p className="text-sm font-medium text-destructive">{t('docgen.dialog.generationFailedTitle')}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{generationError}</p>
+                <Button
+                  size="sm"
+                  variant="soft"
+                  className="mt-2"
+                  disabled={isGeneratingDoc}
+                  onClick={() => generateDocument(lastGenerationArgsRef.current)}
+                >
+                  {t('docgen.dialog.retryGeneration')}
+                </Button>
+              </div>
+            )}
+
             {/* Action Buttons */}
-            {documentReady && !generatedDocument && (
+            {documentReady && !generatedDocument && !generationError && (
               <div className="mt-4 flex justify-center">
                 <Button
                   onClick={() => generateDocument()}
