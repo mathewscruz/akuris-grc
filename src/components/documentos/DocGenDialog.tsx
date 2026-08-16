@@ -130,16 +130,6 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
 }) => {
   const { toast } = useToast();
   const { t } = useLanguage();
-  const TOOLTIPS: Record<string, string> = {
-    'BIA': t('docgen.tooltips.bia'),
-    'ROPA': t('docgen.tooltips.ropa'),
-    'RTO': t('docgen.tooltips.rto'),
-    'ISO': t('docgen.tooltips.iso'),
-    'LGPD': t('docgen.tooltips.lgpd'),
-    'SLA': t('docgen.tooltips.sla'),
-    'KPI': t('docgen.tooltips.kpi'),
-    'PDCA': t('docgen.tooltips.pdca'),
-  };
   const navigate = useNavigate();
   const { company } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
