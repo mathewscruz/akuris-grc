@@ -203,10 +203,8 @@ export default function Documentos() {
 
     // Filtro de busca simples
     if (searchTerm) {
-      filtered = filtered.filter(documento => 
-        documento.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        documento.descricao?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        documento.tags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+      filtered = filtered.filter(documento =>
+        matchesSearch(searchTerm, documento.nome, documento.descricao, (documento.tags || []).join(' '))
       );
     }
 
