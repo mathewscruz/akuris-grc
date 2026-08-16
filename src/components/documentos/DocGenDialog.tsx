@@ -34,6 +34,7 @@ import { DocGenSectionRefiner } from './DocGenSectionRefiner';
 import { DocGenAdherencePanel, type AdherenceResult } from './DocGenAdherencePanel';
 import {
   buildSeedPrompt,
+  DOCGEN_TEMPLATES,
   type BriefingDefaults,
   type DocGenTemplate,
 } from '@/lib/docgen-templates';
