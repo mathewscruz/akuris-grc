@@ -142,6 +142,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
   const [generatedDocument, setGeneratedDocument] = useState<any>(null);
   const [isGeneratingDoc, setIsGeneratingDoc] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
+  const [draft, setDraft] = useState<{ briefing: BriefingDefaults; templateId?: string; step: number } | null>(null);
   const lastGenerationArgsRef = useRef<{ briefingText?: string; docNameHint?: string; conversationId?: string | null }>({});
   const [isEditingLayout, setIsEditingLayout] = useState(false);
   const [showCreditsDialog, setShowCreditsDialog] = useState(false);
@@ -901,9 +902,49 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     }
   };
 
+  // ---- Rascunho do briefing (recuperação após fecho acidental) ----
+  const draftKey = `docgen:draft:${userInfo?.empresa_id || 'anon'}:${userInfo?.user_id || 'anon'}`;
+
+  const saveDraft = (brief: BriefingDefaults, step: number) => {
+    try {
+      localStorage.setItem(draftKey, JSON.stringify({
+        briefing: brief, templateId: selectedTemplate?.id, step, updatedAt: Date.now(),
+      }));
+      setDraft({ briefing: brief, templateId: selectedTemplate?.id, step });
+    } catch { /* quota — ignorar */ }
+  };
+
+  const clearDraft = () => {
+    try { localStorage.removeItem(draftKey); } catch { /* noop */ }
+    setDraft(null);
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    try {
+      const raw = localStorage.getItem(draftKey);
+      setDraft(raw ? JSON.parse(raw) : null);
+    } catch { setDraft(null); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, draftKey]);
+
+  const resumeDraft = () => {
+    if (!draft) return;
+    const tpl = draft.templateId ? DOCGEN_TEMPLATES.find(x => x.id === draft.templateId) : null;
+    setSelectedTemplate(tpl || null);
+    setBriefingValue(draft.briefing);
+    setPhase('briefing');
+  };
+
+  // Existe trabalho em curso que se perderia ao fechar?
+  const hasWorkInProgress =
+    (hasUnsavedChanges && !isDocumentSaved && !isDocumentExported) ||
+    (phase === 'briefing') ||
+    (phase === 'chat' && messages.length > 0 && !isDocumentSaved && !isDocumentExported);
+
   // Verificar mudanças antes de fechar
   const handleDialogClose = (newOpen: boolean) => {
-    if (!newOpen && hasUnsavedChanges && !isDocumentSaved && !isDocumentExported) {
+    if (!newOpen && hasWorkInProgress) {
       setDiscardDialogOpen(true);
       return;
     }
@@ -913,6 +954,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
   const confirmDiscardAndClose = () => {
     setDiscardDialogOpen(false);
     setHasUnsavedChanges(false);
+    clearDraft();
     onOpenChange(false);
   };
 
@@ -1225,7 +1267,8 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
               templateLabel={selectedTemplate?.label}
               companyContext={companyContext}
               onBack={() => setPhase('gallery')}
-              onConfirm={(brief) => enterChatPhase(brief, selectedTemplate?.seedPromptHint)}
+              onDraftChange={(brief, step) => saveDraft(brief, step)}
+              onConfirm={(brief) => { clearDraft(); enterChatPhase(brief, selectedTemplate?.seedPromptHint); }}
             />
           </div>
         )}
