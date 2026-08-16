@@ -802,16 +802,20 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     return { __html: formatted };
   };
 
+  /**
+   * Renderiza a mensagem do assistente com o MESMO parser de markdown do
+   * preview/exportação (títulos #..####, listas com "-" ou "*", tabelas),
+   * evitando que headings e bullets vazem como texto cru no chat.
+   */
   const renderMessageContent = (content: string) => {
-    // Primeiro, processar as tags de código
     const codeBlocks = content.split(/```([\s\S]*?)```/);
     const parts: React.ReactNode[] = [];
-    
+
     codeBlocks.forEach((block, index) => {
       if (index % 2 === 0) {
-        // Texto normal - processar tooltips e formatação
-        const textParts = renderTextWithFormatting(block);
-        parts.push(...textParts);
+        if (block.trim()) {
+          parts.push(<DocGenMarkdown key={`md-${index}`} content={block} />);
+        }
       } else {
         // Bloco de código
         parts.push(
