@@ -615,12 +615,14 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
         ...(requirementContext && { requirement_context: requirementContext }),
       });
 
-      if (res.credits) { setShowCreditsDialog(true); return; }
+      if (res.credits) { setShowCreditsDialog(true); setGenerationError(t('docgen.dialog.generateDocumentError')); return; }
       if (res.timeout) {
+        setGenerationError(t('docgen.dialog.timeoutDescription'));
         toast({ title: t('docgen.dialog.timeoutTitle'), description: t('docgen.dialog.timeoutDescription'), variant: 'destructive' });
         return;
       }
       if (res.error === 'INVALID_DOCUMENT') {
+        setGenerationError(t('docgen.dialog.invalidDocumentDescription'));
         toast({
           title: t('docgen.dialog.invalidDocumentTitle'),
           description: t('docgen.dialog.invalidDocumentDescription'),
@@ -630,6 +632,14 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
       }
       if (res.error) throw new Error(res.error);
       const data = res.data;
+      if (!data?.document) {
+        setGenerationError(t('docgen.dialog.generateDocumentError'));
+        return;
+      }
+      if (data.conversation_id && data.conversation_id !== conversationId) {
+        setConversationId(data.conversation_id);
+      }
+
 
       // A IA não conhece a data atual (chuta valores errados). Fixamos a data
       // real do usuário na capa/preview/export, independentemente do que veio.
@@ -657,6 +667,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
 
     } catch (error) {
       console.error('Erro ao gerar documento:', error);
+      setGenerationError((error as Error)?.message || t('docgen.dialog.generateDocumentError'));
       toast({
         title: t('docgen.dialog.errorTitle'),
         description: t('docgen.dialog.generateDocumentError'),
