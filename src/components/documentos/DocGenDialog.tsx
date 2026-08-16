@@ -829,42 +829,6 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     return parts;
   };
 
-  const renderTextWithFormatting = (text: string) => {
-    const parts: React.ReactNode[] = [];
-    let processedText = text;
-    
-    // Processar listas numeradas
-    processedText = processedText.replace(/(\d+\.\s+[^\n]+)/g, '<li class="ml-4 mb-1">$1</li>');
-    
-    // Processar negrito
-    processedText = processedText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    
-    // Processar itálico
-    processedText = processedText.replace(/\*(.*?)\*/g, '<em>$1</em>');
-    
-    // Dividir por quebras de linha para processar parágrafo por parágrafo
-    const paragraphs = processedText.split('\n\n');
-    
-    paragraphs.forEach((paragraph, pIndex) => {
-      if (paragraph.trim()) {
-        const lines = paragraph.split('\n');
-        lines.forEach((line, lIndex) => {
-          if (line.trim()) {
-            // Processar tooltips na linha
-            const lineWithTooltips = renderLineWithTooltips(line.trim());
-            parts.push(
-              <div key={`p-${pIndex}-l-${lIndex}`} className="mb-2" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(lineWithTooltips, { ALLOWED_TAGS: ['strong', 'em', 'br', 'span', 'div', 'p', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'table', 'tr', 'td', 'th', 'thead', 'tbody'], ALLOWED_ATTR: ['class', 'style', 'title'] }) }} />
-            );
-          }
-        });
-        if (pIndex < paragraphs.length - 1) {
-          parts.push(<br key={`br-${pIndex}`} />);
-        }
-      }
-    });
-    
-    return parts;
-  };
 
   const escapeHtmlAttr = (s: string) =>
     s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
