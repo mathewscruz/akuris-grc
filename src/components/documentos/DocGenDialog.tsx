@@ -449,8 +449,8 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
         setDocumentReady(true);
         await generateDocument({
           briefingText: seed,
-          docNameHint: templateHint || briefing.tipoDocumento,
-          conversationId: conversationIdRef.current,
+          docNameHint: templateHint || briefing.docType,
+          conversationId: null,
         });
         return;
       }
