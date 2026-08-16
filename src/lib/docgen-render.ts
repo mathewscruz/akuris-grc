@@ -212,7 +212,9 @@ export function parseMarkdown(input: string): MdNode[] {
         items.push({ level: Math.min(2, Math.floor(indent / 2)), runs: parseInline(text.trim()) });
         j += 1;
       }
-      nodes.push({ type: 'list', ordered: isOrdered, items });
+      // Itens em branco (ex.: "- " solto) não viram <li> vazio.
+      const nonEmpty = items.filter((it) => runsToPlain(it.runs).trim() !== '');
+      if (nonEmpty.length) nodes.push({ type: 'list', ordered: isOrdered, items: nonEmpty });
       i = j;
       continue;
     }
