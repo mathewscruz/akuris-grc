@@ -945,6 +945,12 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     (phase === 'briefing') ||
     (phase === 'chat' && messages.length > 0 && !isDocumentSaved && !isDocumentExported);
 
+  // O texto do aviso muda conforme o que realmente está em risco:
+  // briefing em preenchimento, conversa sem documento, ou documento pronto.
+  const discardCopyKey: 'discard' | 'discardBriefing' | 'discardChat' =
+    generatedDocument ? 'discard' : phase === 'briefing' ? 'discardBriefing' : 'discardChat';
+
+
   // Verificar mudanças antes de fechar
   const handleDialogClose = (newOpen: boolean) => {
     if (!newOpen && hasWorkInProgress) {
