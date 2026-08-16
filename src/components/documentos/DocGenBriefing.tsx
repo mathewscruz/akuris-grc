@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -24,6 +24,8 @@ interface DocGenBriefingProps {
   companyContext?: CompanyContext | null;
   onBack: () => void;
   onConfirm: (briefing: BriefingDefaults) => void;
+  /** Persistência incremental do rascunho (recuperação após fecho acidental). */
+  onDraftChange?: (briefing: BriefingDefaults, step: number) => void;
 }
 
 type Step = 1 | 2;
@@ -74,6 +76,7 @@ export const DocGenBriefing: React.FC<DocGenBriefingProps> = ({
   companyContext,
   onBack,
   onConfirm,
+  onDraftChange,
 }) => {
   const { t } = useLanguage();
   const [step, setStep] = useState<Step>(1);
@@ -82,6 +85,12 @@ export const DocGenBriefing: React.FC<DocGenBriefingProps> = ({
     ...initialValue,
   });
   const [frameworkInput, setFrameworkInput] = useState('');
+
+  // Guarda o rascunho a cada alteração, para que nada se perca se o modal fechar.
+  useEffect(() => {
+    onDraftChange?.(briefing, step);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [briefing, step]);
 
   const update = <K extends keyof BriefingDefaults>(
     key: K,
