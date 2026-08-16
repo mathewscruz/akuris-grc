@@ -323,6 +323,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
         user_id: userInfo.user_id,
         empresa_id: userInfo.empresa_id,
         action: 'chat',
+        ...(conversationId ? {} : { conversation_title: `${selectedTemplate?.label || currentDocName || 'DocGen'} — ${new Date().toLocaleString()}` }),
         ...(effFrameworkName && { framework_context: { framework_name: effFrameworkName, framework_id: effFrameworkId } }),
         ...(requirementContext && { requirement_context: requirementContext }),
         ...(companyContext && { company_context: companyContext }),
