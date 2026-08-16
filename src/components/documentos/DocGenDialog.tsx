@@ -141,6 +141,8 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
   const [currentDocName, setCurrentDocName] = useState<string | null>(null);
   const [generatedDocument, setGeneratedDocument] = useState<any>(null);
   const [isGeneratingDoc, setIsGeneratingDoc] = useState(false);
+  const [generationError, setGenerationError] = useState<string | null>(null);
+  const lastGenerationArgsRef = useRef<{ briefingText?: string; docNameHint?: string; conversationId?: string | null }>({});
   const [isEditingLayout, setIsEditingLayout] = useState(false);
   const [showCreditsDialog, setShowCreditsDialog] = useState(false);
   const messagesScrollRef = useRef<HTMLDivElement>(null);
@@ -297,22 +299,6 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
       inputRef.current?.focus();
     }
   }, [isLoading, open]);
-
-  // Auto-gerar documento quando o briefing pediu "Gerar direto" e a IA já respondeu o seed.
-  useEffect(() => {
-    if (!pendingAutoGenerateRef.current) return;
-    if (isLoading || isGeneratingDoc) return;
-    if (!conversationId || !userInfo) return;
-    if (generatedDocument) {
-      pendingAutoGenerateRef.current = false;
-      return;
-    }
-    // Precisa de pelo menos a resposta do seed (assistant + user + assistant).
-    if (messages.length < 2) return;
-    pendingAutoGenerateRef.current = false;
-    generateDocument();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoading, isGeneratingDoc, conversationId, messages.length, generatedDocument, userInfo]);
 
   const sendMessageInternal = async (text: string, displayText?: string) => {
     if (!text.trim() || !userInfo || isLoading) return;
@@ -1322,7 +1308,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
             {documentReady && !generatedDocument && (
               <div className="mt-4 flex justify-center">
                 <Button
-                  onClick={generateDocument}
+                  onClick={() => generateDocument()}
                   disabled={isGeneratingDoc}
                   className="gap-2"
                   title={t('docgen.dialog.generateDocumentTooltip')}
