@@ -793,6 +793,15 @@ IMPORTANTE: Sempre responda em português brasileiro. Responda SOMENTE com uma m
       });
 
     } else if (action === 'generate_document') {
+      // Modo "gerar direto": não houve etapa de chat, então o briefing entra
+      // como a primeira mensagem da conversa (para transcript e restauração).
+      if (briefing_text && messages.length === 0) {
+        messages.push({ role: 'user', content: String(briefing_text) });
+        await supabase
+          .from('docgen_conversations')
+          .update({ mensagens: messages, updated_at: new Date().toISOString() })
+          .eq('id', conversation.id);
+      }
       const { data: templates } = await supabase
         .from('docgen_templates')
         .select('*')
