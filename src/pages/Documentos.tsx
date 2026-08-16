@@ -1,3 +1,4 @@
+import { matchesSearch } from '@/lib/search-utils';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { useFocusRow } from '@/hooks/useFocusRow';

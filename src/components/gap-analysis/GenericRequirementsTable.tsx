@@ -1,3 +1,4 @@
+import { matchesSearch } from '@/lib/search-utils';
 import { rowOpenProps } from '@/lib/row-interaction';
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
