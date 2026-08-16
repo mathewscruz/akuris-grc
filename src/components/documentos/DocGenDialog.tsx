@@ -1605,11 +1605,12 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
       <AlertDialog open={discardDialogOpen} onOpenChange={setDiscardDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('docgen.dialog.discardTitle')}</AlertDialogTitle>
+            <AlertDialogTitle>{t(`docgen.dialog.${discardCopyKey}Title`)}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('docgen.dialog.discardDescription')}
+              {t(`docgen.dialog.${discardCopyKey}Description`)}
             </AlertDialogDescription>
           </AlertDialogHeader>
+
           <AlertDialogFooter>
             <AlertDialogCancel>{t('docgen.dialog.continueEditing')}</AlertDialogCancel>
             <AlertDialogAction
