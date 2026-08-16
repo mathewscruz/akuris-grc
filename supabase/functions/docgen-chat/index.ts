@@ -367,6 +367,7 @@ serve(async (req) => {
       section_index,       // índice da seção a refinar
       instruction,         // instrução do usuário para refinar a seção
       refine_attempt,      // número da tentativa (action auto_refine)
+      conversation_title,  // título legível (modelo + data) definido pelo cliente
       briefing_text,       // briefing completo (modo "gerar documento direto", sem etapa de chat)
 
     } = await req.json();
@@ -566,9 +567,11 @@ serve(async (req) => {
         .insert({
           empresa_id,
           user_id,
-          titulo: framework_context?.framework_name 
-            ? `DocGen — ${framework_context.framework_name}` 
-            : 'Nova Conversa DocGen',
+          titulo: conversation_title
+            || [
+                 doc_type_hint || framework_context?.framework_name || 'Documento',
+                 new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+               ].join(' — '),
           mensagens: [],
           contexto: {
             user_name: profile?.nome || 'Usuário',
