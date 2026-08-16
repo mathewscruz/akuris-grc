@@ -1,3 +1,4 @@
+import { matchesSearch } from '@/lib/search-utils';
 import { rowOpenProps } from '@/lib/row-interaction';
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -519,12 +520,7 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
   const applyFilters = (reqs: Requirement[]) => {
     let filtered = reqs;
     if (searchTerm.trim()) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(r =>
-        r.codigo?.toLowerCase().includes(term) ||
-        r.titulo?.toLowerCase().includes(term) ||
-        r.descricao?.toLowerCase().includes(term)
-      );
+      filtered = filtered.filter(r => matchesSearch(searchTerm, r.codigo, r.titulo, r.descricao));
     }
     if (statusFilter !== 'all') {
       filtered = filtered.filter(r => r.conformity_status === statusFilter);

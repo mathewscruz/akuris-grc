@@ -64,7 +64,7 @@ export type MdNode = HeadingNode | ParagraphNode | QuoteNode | ListNode | TableN
 
 const BULLET_RE = /^(\s*)[-*•]\s+(.*)$/;
 const ORDERED_RE = /^(\s*)(\d+)[.)]\s+(.*)$/;
-const HEADING_RE = /^(#{2,6})\s+(.*)$/;
+const HEADING_RE = /^(#{1,6})\s+(.*)$/;
 const QUOTE_RE = /^>\s?(.*)$/;
 const TABLE_SEP_RE = /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)+\|?\s*$/;
 
@@ -164,8 +164,8 @@ export function parseMarkdown(input: string): MdNode[] {
     const heading = HEADING_RE.exec(trimmed);
     if (heading) {
       flushParagraph();
-      const rawLevel = heading[1].length; // 2..6
-      const level = (rawLevel >= 4 ? 4 : rawLevel) as 2 | 3 | 4;
+      const rawLevel = heading[1].length; // 1..6
+      const level = (rawLevel >= 4 ? 4 : Math.max(2, rawLevel)) as 2 | 3 | 4;
       nodes.push({ type: 'heading', level, runs: parseInline(heading[2].trim()) });
       i += 1;
       continue;
@@ -212,7 +212,9 @@ export function parseMarkdown(input: string): MdNode[] {
         items.push({ level: Math.min(2, Math.floor(indent / 2)), runs: parseInline(text.trim()) });
         j += 1;
       }
-      nodes.push({ type: 'list', ordered: isOrdered, items });
+      // Itens em branco (ex.: "- " solto) não viram <li> vazio.
+      const nonEmpty = items.filter((it) => runsToPlain(it.runs).trim() !== '');
+      if (nonEmpty.length) nodes.push({ type: 'list', ordered: isOrdered, items: nonEmpty });
       i = j;
       continue;
     }

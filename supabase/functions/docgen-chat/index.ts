@@ -367,6 +367,8 @@ serve(async (req) => {
       section_index,       // índice da seção a refinar
       instruction,         // instrução do usuário para refinar a seção
       refine_attempt,      // número da tentativa (action auto_refine)
+      conversation_title,  // título legível (modelo + data) definido pelo cliente
+      briefing_text,       // briefing completo (modo "gerar documento direto", sem etapa de chat)
 
     } = await req.json();
 
@@ -565,9 +567,11 @@ serve(async (req) => {
         .insert({
           empresa_id,
           user_id,
-          titulo: framework_context?.framework_name 
-            ? `DocGen — ${framework_context.framework_name}` 
-            : 'Nova Conversa DocGen',
+          titulo: conversation_title
+            || [
+                 doc_type_hint || framework_context?.framework_name || 'Documento',
+                 new Date().toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+               ].join(' — '),
           mensagens: [],
           contexto: {
             user_name: profile?.nome || 'Usuário',
@@ -792,6 +796,15 @@ IMPORTANTE: Sempre responda em português brasileiro. Responda SOMENTE com uma m
       });
 
     } else if (action === 'generate_document') {
+      // Modo "gerar direto": não houve etapa de chat, então o briefing entra
+      // como a primeira mensagem da conversa (para transcript e restauração).
+      if (briefing_text && messages.length === 0) {
+        messages.push({ role: 'user', content: String(briefing_text) });
+        await supabase
+          .from('docgen_conversations')
+          .update({ mensagens: messages, updated_at: new Date().toISOString() })
+          .eq('id', conversation.id);
+      }
       const { data: templates } = await supabase
         .from('docgen_templates')
         .select('*')
@@ -858,7 +871,10 @@ ${frameworkRequirementsText}`
         .slice(-30)
         .map((m: any) => `[${m.role === 'user' ? 'USUÁRIO' : 'ASSISTENTE'}] ${String(m.content).slice(0, 1500)}`)
         .join('\n\n');
-      const transcriptSection = transcript
+      const briefingBlock = String(briefing_text || '').trim();
+      const transcriptFull = [briefingBlock ? `[USUÁRIO] ${briefingBlock.slice(0, 4000)}` : '', transcript]
+        .filter(Boolean).join('\n\n');
+      const transcriptSection = transcriptFull
         ? `\n\n=== RESPOSTAS DO USUÁRIO NO BRIEFING (FONTE DE VERDADE) ===
 Abaixo está a conversa real entre o assistente e o usuário. INCORPORE LITERALMENTE prazos,
 nomes de sistemas, papéis, valores, exceções, políticas internas, retenções, responsáveis e
@@ -866,7 +882,7 @@ qualquer particularidade citada pelo usuário. Se houver conflito entre o templa
 que o usuário disse, PREVALEÇA A RESPOSTA DO USUÁRIO. Não repita perguntas — use o que já
 foi respondido.
 
-${transcript}
+${transcriptFull}
 === FIM DAS RESPOSTAS DO USUÁRIO ===`
         : '';
 
@@ -944,7 +960,6 @@ Responda APENAS com um JSON na seguinte estrutura (sem markdown, sem comentário
         0.35,
         MODEL_QUALITY,
       );
-      await chargeAiCredit();
 
       let documentContent = parseDocumentJson(docContent);
 
@@ -960,7 +975,6 @@ Responda APENAS com um JSON na seguinte estrutura (sem markdown, sem comentário
           0.3,
           MODEL_QUALITY,
         );
-        await chargeAiCredit();
         const retryParsed = parseDocumentJson(retryContent);
         if (isValidDocument(retryParsed)) {
           documentContent = retryParsed;
@@ -974,6 +988,9 @@ Responda APENAS com um JSON na seguinte estrutura (sem markdown, sem comentário
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
         );
       }
+
+      // Crédito só é debitado quando a geração REALMENTE produziu um documento.
+      await chargeAiCredit();
 
       // A IA não conhece a data atual (chuta valores errados). Sempre sobrescrever
       // com a data do servidor para a capa/versão do documento ficar correta.
@@ -1154,6 +1171,7 @@ ${weak.map(w => `- índice ${w.index} ("${w.nome}") — motivo: ${w.motivo}\n  C
         .single();
 
       return new Response(JSON.stringify({
+        conversation_id: conversation.id,
         document_id: generatedDoc.id,
         document: documentContent,
         initial_score,

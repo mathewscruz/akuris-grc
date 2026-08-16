@@ -34,6 +34,7 @@ import { DocGenSectionRefiner } from './DocGenSectionRefiner';
 import { DocGenAdherencePanel, type AdherenceResult } from './DocGenAdherencePanel';
 import {
   buildSeedPrompt,
+  DOCGEN_TEMPLATES,
   type BriefingDefaults,
   type DocGenTemplate,
 } from '@/lib/docgen-templates';
@@ -130,16 +131,6 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
 }) => {
   const { toast } = useToast();
   const { t } = useLanguage();
-  const TOOLTIPS: Record<string, string> = {
-    'BIA': t('docgen.tooltips.bia'),
-    'ROPA': t('docgen.tooltips.ropa'),
-    'RTO': t('docgen.tooltips.rto'),
-    'ISO': t('docgen.tooltips.iso'),
-    'LGPD': t('docgen.tooltips.lgpd'),
-    'SLA': t('docgen.tooltips.sla'),
-    'KPI': t('docgen.tooltips.kpi'),
-    'PDCA': t('docgen.tooltips.pdca'),
-  };
   const navigate = useNavigate();
   const { company } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -151,6 +142,9 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
   const [currentDocName, setCurrentDocName] = useState<string | null>(null);
   const [generatedDocument, setGeneratedDocument] = useState<any>(null);
   const [isGeneratingDoc, setIsGeneratingDoc] = useState(false);
+  const [generationError, setGenerationError] = useState<string | null>(null);
+  const [draft, setDraft] = useState<{ briefing: BriefingDefaults; templateId?: string; step: number } | null>(null);
+  const lastGenerationArgsRef = useRef<{ briefingText?: string; docNameHint?: string; conversationId?: string | null }>({});
   const [isEditingLayout, setIsEditingLayout] = useState(false);
   const [showCreditsDialog, setShowCreditsDialog] = useState(false);
   const messagesScrollRef = useRef<HTMLDivElement>(null);
@@ -308,22 +302,6 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     }
   }, [isLoading, open]);
 
-  // Auto-gerar documento quando o briefing pediu "Gerar direto" e a IA já respondeu o seed.
-  useEffect(() => {
-    if (!pendingAutoGenerateRef.current) return;
-    if (isLoading || isGeneratingDoc) return;
-    if (!conversationId || !userInfo) return;
-    if (generatedDocument) {
-      pendingAutoGenerateRef.current = false;
-      return;
-    }
-    // Precisa de pelo menos a resposta do seed (assistant + user + assistant).
-    if (messages.length < 2) return;
-    pendingAutoGenerateRef.current = false;
-    generateDocument();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoading, isGeneratingDoc, conversationId, messages.length, generatedDocument, userInfo]);
-
   const sendMessageInternal = async (text: string, displayText?: string) => {
     if (!text.trim() || !userInfo || isLoading) return;
 
@@ -345,6 +323,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
         user_id: userInfo.user_id,
         empresa_id: userInfo.empresa_id,
         action: 'chat',
+        ...(conversationId ? {} : { conversation_title: `${selectedTemplate?.label || currentDocName || 'DocGen'} — ${new Date().toLocaleString()}` }),
         ...(effFrameworkName && { framework_context: { framework_name: effFrameworkName, framework_id: effFrameworkId } }),
         ...(requirementContext && { requirement_context: requirementContext }),
         ...(companyContext && { company_context: companyContext }),
@@ -465,6 +444,18 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
       const deadline = Date.now() + 3000;
       while (companyContextLoading && Date.now() < deadline) {
         await new Promise(r => setTimeout(r, 100));
+      }
+      if (autoGen) {
+        // Modo direto: nada de etapa conversacional — o briefing vai direto
+        // para a geração do documento completo.
+        setMessages(prev => [...prev, { role: 'user', content: briefingSummary, timestamp: new Date() }]);
+        setDocumentReady(true);
+        await generateDocument({
+          briefingText: seed,
+          docNameHint: templateHint || briefing.docType,
+          conversationId: null,
+        });
+        return;
       }
       sendMessageInternal(seed, briefingSummary);
     };
@@ -599,28 +590,41 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     return current;
   };
 
-  const generateDocument = async () => {
-    if (!userInfo || !conversationId || isGeneratingDoc) return;
+  /**
+   * Gera o documento completo.
+   * `opts.briefingText` é usado no modo "Gerar documento direto": o briefing vai
+   * direto para a geração, sem passar pela etapa conversacional de refinamento.
+   */
+  const generateDocument = async (opts?: { briefingText?: string; docNameHint?: string; conversationId?: string | null }) => {
+    if (!userInfo || isGeneratingDoc) return;
+    const convId = opts?.conversationId !== undefined ? opts.conversationId : conversationId;
+    if (!convId && !opts?.briefingText) return;
 
+    lastGenerationArgsRef.current = opts ?? {};
+    setGenerationError(null);
     setIsGeneratingDoc(true);
 
     try {
       const res = await callDocGen({
-        conversation_id: conversationId,
+        conversation_id: convId,
         user_id: userInfo.user_id,
         empresa_id: userInfo.empresa_id,
         action: 'generate_document',
-        doc_type_hint: currentDocName || currentDocType,
+        conversation_title: `${selectedTemplate?.label || opts?.docNameHint || currentDocName || currentDocType || 'DocGen'} — ${new Date().toLocaleString()}`,
+        ...(opts?.briefingText ? { briefing_text: opts.briefingText } : {}),
+        doc_type_hint: opts?.docNameHint || currentDocName || currentDocType,
         ...(effFrameworkName && { framework_context: { framework_name: effFrameworkName, framework_id: effFrameworkId, framework_ids: fwReqData?.matchedIds } }),
         ...(requirementContext && { requirement_context: requirementContext }),
       });
 
-      if (res.credits) { setShowCreditsDialog(true); return; }
+      if (res.credits) { setShowCreditsDialog(true); setGenerationError(t('docgen.dialog.generateDocumentError')); return; }
       if (res.timeout) {
+        setGenerationError(t('docgen.dialog.timeoutDescription'));
         toast({ title: t('docgen.dialog.timeoutTitle'), description: t('docgen.dialog.timeoutDescription'), variant: 'destructive' });
         return;
       }
       if (res.error === 'INVALID_DOCUMENT') {
+        setGenerationError(t('docgen.dialog.invalidDocumentDescription'));
         toast({
           title: t('docgen.dialog.invalidDocumentTitle'),
           description: t('docgen.dialog.invalidDocumentDescription'),
@@ -630,6 +634,14 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
       }
       if (res.error) throw new Error(res.error);
       const data = res.data;
+      if (!data?.document) {
+        setGenerationError(t('docgen.dialog.generateDocumentError'));
+        return;
+      }
+      if (data.conversation_id && data.conversation_id !== conversationId) {
+        setConversationId(data.conversation_id);
+      }
+
 
       // A IA não conhece a data atual (chuta valores errados). Fixamos a data
       // real do usuário na capa/preview/export, independentemente do que veio.
@@ -657,6 +669,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
 
     } catch (error) {
       console.error('Erro ao gerar documento:', error);
+      setGenerationError((error as Error)?.message || t('docgen.dialog.generateDocumentError'));
       toast({
         title: t('docgen.dialog.errorTitle'),
         description: t('docgen.dialog.generateDocumentError'),
@@ -789,29 +802,21 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
   };
 
 
-  const formatMessage = (content: string) => {
-    // Processar markdown básico
-    let formatted = content
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // **texto** -> bold
-      .replace(/\*(.*?)\*/g, '<em>$1</em>') // *texto* -> italic
-      .replace(/\n/g, '<br />'); // quebras de linha
 
-    // Processar listas numeradas
-    formatted = formatted.replace(/(\d+\.\s.*?)(<br \/>|$)/g, '<div class="ml-4 mb-1">$1</div>');
-    
-    return { __html: formatted };
-  };
-
+  /**
+   * Renderiza a mensagem do assistente com o MESMO parser de markdown do
+   * preview/exportação (títulos #..####, listas com "-" ou "*", tabelas),
+   * evitando que headings e bullets vazem como texto cru no chat.
+   */
   const renderMessageContent = (content: string) => {
-    // Primeiro, processar as tags de código
     const codeBlocks = content.split(/```([\s\S]*?)```/);
     const parts: React.ReactNode[] = [];
-    
+
     codeBlocks.forEach((block, index) => {
       if (index % 2 === 0) {
-        // Texto normal - processar tooltips e formatação
-        const textParts = renderTextWithFormatting(block);
-        parts.push(...textParts);
+        if (block.trim()) {
+          parts.push(<DocGenMarkdown key={`md-${index}`} content={block} />);
+        }
       } else {
         // Bloco de código
         parts.push(
@@ -825,59 +830,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     return parts;
   };
 
-  const renderTextWithFormatting = (text: string) => {
-    const parts: React.ReactNode[] = [];
-    let processedText = text;
-    
-    // Processar listas numeradas
-    processedText = processedText.replace(/(\d+\.\s+[^\n]+)/g, '<li class="ml-4 mb-1">$1</li>');
-    
-    // Processar negrito
-    processedText = processedText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    
-    // Processar itálico
-    processedText = processedText.replace(/\*(.*?)\*/g, '<em>$1</em>');
-    
-    // Dividir por quebras de linha para processar parágrafo por parágrafo
-    const paragraphs = processedText.split('\n\n');
-    
-    paragraphs.forEach((paragraph, pIndex) => {
-      if (paragraph.trim()) {
-        const lines = paragraph.split('\n');
-        lines.forEach((line, lIndex) => {
-          if (line.trim()) {
-            // Processar tooltips na linha
-            const lineWithTooltips = renderLineWithTooltips(line.trim());
-            parts.push(
-              <div key={`p-${pIndex}-l-${lIndex}`} className="mb-2" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(lineWithTooltips, { ALLOWED_TAGS: ['strong', 'em', 'br', 'span', 'div', 'p', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'table', 'tr', 'td', 'th', 'thead', 'tbody'], ALLOWED_ATTR: ['class', 'style', 'title'] }) }} />
-            );
-          }
-        });
-        if (pIndex < paragraphs.length - 1) {
-          parts.push(<br key={`br-${pIndex}`} />);
-        }
-      }
-    });
-    
-    return parts;
-  };
 
-  const escapeHtmlAttr = (s: string) =>
-    s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-  const renderLineWithTooltips = (line: string): string => {
-    let processedLine = line;
-
-    Object.entries(TOOLTIPS).forEach(([term, definition]) => {
-      const regex = new RegExp(`\\b${term}\\b`, 'gi');
-      const safeDef = escapeHtmlAttr(definition);
-      processedLine = processedLine.replace(regex, (match) => {
-        return `<span class="underline decoration-dotted text-primary cursor-help" title="${safeDef}">${match}</span>`;
-      });
-    });
-
-    return processedLine;
-  };
 
   // Estado para tracking de mudanças não salvas
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -952,9 +905,49 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     }
   };
 
+  // ---- Rascunho do briefing (recuperação após fecho acidental) ----
+  const draftKey = `docgen:draft:${userInfo?.empresa_id || 'anon'}:${userInfo?.user_id || 'anon'}`;
+
+  const saveDraft = (brief: BriefingDefaults, step: number) => {
+    try {
+      localStorage.setItem(draftKey, JSON.stringify({
+        briefing: brief, templateId: selectedTemplate?.id, step, updatedAt: Date.now(),
+      }));
+      setDraft({ briefing: brief, templateId: selectedTemplate?.id, step });
+    } catch { /* quota — ignorar */ }
+  };
+
+  const clearDraft = () => {
+    try { localStorage.removeItem(draftKey); } catch { /* noop */ }
+    setDraft(null);
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    try {
+      const raw = localStorage.getItem(draftKey);
+      setDraft(raw ? JSON.parse(raw) : null);
+    } catch { setDraft(null); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, draftKey]);
+
+  const resumeDraft = () => {
+    if (!draft) return;
+    const tpl = draft.templateId ? DOCGEN_TEMPLATES.find(x => x.id === draft.templateId) : null;
+    setSelectedTemplate(tpl || null);
+    setBriefingValue(draft.briefing);
+    setPhase('briefing');
+  };
+
+  // Existe trabalho em curso que se perderia ao fechar?
+  const hasWorkInProgress =
+    (hasUnsavedChanges && !isDocumentSaved && !isDocumentExported) ||
+    (phase === 'briefing') ||
+    (phase === 'chat' && messages.length > 0 && !isDocumentSaved && !isDocumentExported);
+
   // Verificar mudanças antes de fechar
   const handleDialogClose = (newOpen: boolean) => {
-    if (!newOpen && hasUnsavedChanges && !isDocumentSaved && !isDocumentExported) {
+    if (!newOpen && hasWorkInProgress) {
       setDiscardDialogOpen(true);
       return;
     }
@@ -964,6 +957,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
   const confirmDiscardAndClose = () => {
     setDiscardDialogOpen(false);
     setHasUnsavedChanges(false);
+    clearDraft();
     onOpenChange(false);
   };
 
@@ -1260,7 +1254,19 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
 
         {/* Fase: Galeria de templates */}
         {phase === 'gallery' && (
-          <div className="flex-1 min-h-0">
+          <div className="flex-1 min-h-0 flex flex-col">
+            {draft && (
+              <div className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-border bg-muted/40 px-3 py-2">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-foreground">{t('docgen.dialog.draftBannerTitle')}</p>
+                  <p className="text-xs text-muted-foreground">{t('docgen.dialog.draftBannerDescription')}</p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Button size="sm" variant="ghost" onClick={clearDraft}>{t('docgen.dialog.draftDiscard')}</Button>
+                  <Button size="sm" variant="soft" onClick={resumeDraft}>{t('docgen.dialog.draftResume')}</Button>
+                </div>
+              </div>
+            )}
             <DocGenTemplateGallery
               onPickTemplate={handlePickTemplate}
               onStartBlank={handleStartBlank}
@@ -1276,7 +1282,8 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
               templateLabel={selectedTemplate?.label}
               companyContext={companyContext}
               onBack={() => setPhase('gallery')}
-              onConfirm={(brief) => enterChatPhase(brief, selectedTemplate?.seedPromptHint)}
+              onDraftChange={(brief, step) => saveDraft(brief, step)}
+              onConfirm={(brief) => { clearDraft(); enterChatPhase(brief, selectedTemplate?.seedPromptHint); }}
             />
           </div>
         )}
@@ -1367,11 +1374,27 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
               </Button>
             </div>
 
+            {generationError && !generatedDocument && (
+              <div className="mt-4 rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2">
+                <p className="text-sm font-medium text-destructive">{t('docgen.dialog.generationFailedTitle')}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{generationError}</p>
+                <Button
+                  size="sm"
+                  variant="soft"
+                  className="mt-2"
+                  disabled={isGeneratingDoc}
+                  onClick={() => generateDocument(lastGenerationArgsRef.current)}
+                >
+                  {t('docgen.dialog.retryGeneration')}
+                </Button>
+              </div>
+            )}
+
             {/* Action Buttons */}
-            {documentReady && !generatedDocument && (
+            {documentReady && !generatedDocument && !generationError && (
               <div className="mt-4 flex justify-center">
                 <Button
-                  onClick={generateDocument}
+                  onClick={() => generateDocument()}
                   disabled={isGeneratingDoc}
                   className="gap-2"
                   title={t('docgen.dialog.generateDocumentTooltip')}

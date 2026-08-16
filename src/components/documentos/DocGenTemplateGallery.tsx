@@ -1,3 +1,4 @@
+import { matchesSearch } from '@/lib/search-utils';
 import React, { useMemo, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -28,18 +29,15 @@ export const DocGenTemplateGallery: React.FC<DocGenTemplateGalleryProps> = ({
   const [activeCategory, setActiveCategory] = useState<string>(ALL_CATEGORY);
 
   const filtered = useMemo(() => {
-    const term = search.trim().toLowerCase();
     return DOCGEN_TEMPLATES.filter((tpl) => {
       const matchesCategory =
         activeCategory === ALL_CATEGORY || tpl.category === activeCategory;
       if (!matchesCategory) return false;
-      if (!term) return true;
-      return (
-        tpl.label.toLowerCase().includes(term) ||
-        tpl.description.toLowerCase().includes(term) ||
-        tpl.briefingDefaults.frameworks.some((f) =>
-          f.toLowerCase().includes(term),
-        )
+      return matchesSearch(
+        search,
+        tpl.label,
+        tpl.description,
+        tpl.briefingDefaults.frameworks.join(' '),
       );
     });
   }, [search, activeCategory]);
