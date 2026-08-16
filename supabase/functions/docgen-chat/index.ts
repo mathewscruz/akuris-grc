@@ -1156,23 +1156,38 @@ ${weak.map(w => `- índice ${w.index} ("${w.nome}") — motivo: ${w.motivo}\n  C
         console.log('Feedback collection failed:', feedbackError);
       }
 
-      const { data: generatedDoc } = await supabase
+      // No modo "gerar direto" não há etapa de chat, logo o tipo pode não ter
+      // sido identificado. A coluna é NOT NULL — usamos fallbacks seguros.
+      const tipoDocumentoFinal =
+        context.tipo_documento_identificado
+        || template.tipo_documento
+        || (doc_type_hint ? String(doc_type_hint) : '')
+        || 'politica';
+
+      const { data: generatedDoc, error: generatedDocError } = await supabase
         .from('docgen_generated_docs')
         .insert({
           empresa_id,
           conversation_id: conversation.id,
           template_id: template.id,
-          nome: documentContent.titulo,
-          tipo_documento: context.tipo_documento_identificado,
+          nome: documentContent.titulo || tipoDocumentoFinal,
+          tipo_documento: tipoDocumentoFinal,
           conteudo: documentContent,
           created_by: user_id
         })
         .select()
-        .single();
+        .maybeSingle();
+
+      if (generatedDocError) {
+        // Persistir o rascunho é acessório: o documento gerado tem de chegar
+        // ao usuário mesmo que o registo auxiliar falhe.
+        console.error('Falha ao persistir docgen_generated_docs:', generatedDocError);
+      }
 
       return new Response(JSON.stringify({
         conversation_id: conversation.id,
-        document_id: generatedDoc.id,
+        document_id: generatedDoc?.id ?? null,
+
         document: documentContent,
         initial_score,
         final_score: finalScore,
