@@ -442,6 +442,18 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
       while (companyContextLoading && Date.now() < deadline) {
         await new Promise(r => setTimeout(r, 100));
       }
+      if (autoGen) {
+        // Modo direto: nada de etapa conversacional — o briefing vai direto
+        // para a geração do documento completo.
+        setMessages(prev => [...prev, { role: 'user', content: briefingSummary, timestamp: new Date() }]);
+        setDocumentReady(true);
+        await generateDocument({
+          briefingText: seed,
+          docNameHint: templateHint || briefing.tipoDocumento,
+          conversationId: conversationIdRef.current,
+        });
+        return;
+      }
       sendMessageInternal(seed, briefingSummary);
     };
     setTimeout(waitForContext, 50);
