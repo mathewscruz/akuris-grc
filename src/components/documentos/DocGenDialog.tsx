@@ -609,6 +609,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
         user_id: userInfo.user_id,
         empresa_id: userInfo.empresa_id,
         action: 'generate_document',
+        conversation_title: `${selectedTemplate?.label || opts?.docNameHint || currentDocName || currentDocType || 'DocGen'} — ${new Date().toLocaleString()}`,
         ...(opts?.briefingText ? { briefing_text: opts.briefingText } : {}),
         doc_type_hint: opts?.docNameHint || currentDocName || currentDocType,
         ...(effFrameworkName && { framework_context: { framework_name: effFrameworkName, framework_id: effFrameworkId, framework_ids: fwReqData?.matchedIds } }),
