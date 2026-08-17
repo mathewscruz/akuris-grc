@@ -209,7 +209,7 @@ export function ChangelogPanel({ entries, loading, onOpenDetail }: ChangelogPane
 
               <DialogFooter>
                 <Button variant="outline" onClick={() => setDetail(null)}>
-                  {t('common.close')}
+                  {t('changelog.close')}
                 </Button>
               </DialogFooter>
             </>

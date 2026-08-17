@@ -20,6 +20,7 @@ import { formatStatus } from '@/lib/text-utils';
 import { logger } from '@/lib/logger';
 import { APROVACOES_PENDENTES_SELECT } from '@/components/documentos/aprovacoes-query';
 import { resolveNotificationTarget } from '@/lib/notification-target';
+import { ChangelogPanel, useChangelogFeed } from '@/components/changelog/ChangelogPanel';
 import { fetchEntityById, routeForEntity } from '@/lib/entity-search';
 
 interface Notification {
@@ -74,7 +75,9 @@ const getNotificationDisplay = (
 
 const NotificationCenter: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [tab, setTab] = useState<'alerts' | 'news'>('alerts');
   const [detail, setDetail] = useState<Notification | null>(null);
+  const changelog = useChangelogFeed();
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -621,7 +624,7 @@ const NotificationCenter: React.FC = () => {
             aria-label={t('notifications.title')}
             className={cn(
               'relative h-9 w-9 p-0 rounded-lg transition-all',
-              unreadCount > 0 && 'ring-1 ring-primary/25 bg-primary/[0.04]'
+              (unreadCount > 0 || changelog.hasNew) && 'ring-1 ring-primary/25 bg-primary/[0.04]'
             )}
           >
             <Bell className="h-[18px] w-[18px]" strokeWidth={1.5} />
@@ -632,6 +635,12 @@ const NotificationCenter: React.FC = () => {
               >
                 {unreadCount > 9 ? '9+' : unreadCount}
               </span>
+            )}
+            {unreadCount === 0 && changelog.hasNew && (
+              <span
+                aria-hidden
+                className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-primary shadow-[0_0_0_3px_hsl(var(--background))]"
+              />
             )}
           </Button>
         </PopoverTrigger>
