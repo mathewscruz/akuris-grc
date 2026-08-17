@@ -402,7 +402,9 @@ export const docgen = {
         retryGenerate: 'Generate again',
         briefingButton: 'Briefing',
         conversationInProgress: 'Conversation in progress',
-        messageCount: '{count} message{plural}',
+        messageCount: '{count} messages',
+        messageCountOne: '1 message',
+
         complianceScore: 'Compliance {score}%',
         complianceTooltip: 'Score computed over the framework requirements that address this document\'s topic.',
         scopeInfo: 'Scope: {scope} topic requirement(s).',
