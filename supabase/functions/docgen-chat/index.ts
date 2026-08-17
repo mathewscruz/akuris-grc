@@ -1426,9 +1426,38 @@ Responda APENAS com um JSON na seguinte estrutura (sem markdown, sem comentário
         console.error('Falha ao persistir docgen_generated_docs:', generatedDocError);
       }
 
+      // P0: crédito só agora — o documento está pronto e vai efetivamente ser
+      // entregue nesta resposta. Se algo acima tivesse falhado, nada seria
+      // debitado; se algo abaixo falhar, o catch estorna.
+      await chargeAiCredit();
+
+      // P1: progresso do refino persistido no SERVIDOR (recuperável após
+      // refresh, aba fechada ou timeout do cliente).
+      try {
+        await supabase
+          .from('docgen_conversations')
+          .update({
+            contexto: {
+              ...context,
+              refino: {
+                status: should_auto_refine ? 'pendente' : 'nao_necessario',
+                attempts_done: 0,
+                max_attempts: MAX_REFINE_ATTEMPTS,
+                score: initial_score,
+                quality_gate: should_quality_gate ? 'pendente' : 'nao_necessario',
+                updated_at: new Date().toISOString(),
+              },
+            },
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', conversation.id);
+      } catch (_e) { /* progresso é acessório */ }
+
+      settleCharge();
       return new Response(JSON.stringify({
         conversation_id: conversation.id,
         document_id: generatedDoc?.id ?? null,
+        idempotency_key: idemKey,
 
         document: documentContent,
         initial_score,
@@ -1438,6 +1467,8 @@ Responda APENAS com um JSON na seguinte estrutura (sem markdown, sem comentário
         coverage_map: finalCoverage,
         residual_gaps: residualGaps,
         catalog_size: catalogCodes.length,
+        should_quality_gate,
+        weak_sections: weakSections.map((w) => w.index),
         should_auto_refine,
         max_refine_attempts: MAX_REFINE_ATTEMPTS,
         audit_threshold: AUDIT_THRESHOLD,
@@ -1446,6 +1477,49 @@ Responda APENAS com um JSON na seguinte estrutura (sem markdown, sem comentário
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    }
+
+    // ============ ACTION: quality_gate (invocação própria, sem novo débito) ============
+    // Reescreve as seções fracas do documento já entregue. Não cobra crédito:
+    // faz parte da mesma entrega que já foi debitada na geração.
+    if (action === 'quality_gate') {
+      if (!document || !Array.isArray(document?.secoes) || !document.secoes.length) {
+        return new Response(JSON.stringify({ error: 'document com seções é obrigatório' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      const doc = document;
+      let applied = 0;
+      try {
+        applied = await rewriteWeakSections(doc, context.empresa_nome || '', LOVABLE_API_KEY, aborter.signal);
+      } catch (e) {
+        if (e instanceof AiGatewayError && e.code === 'GENERATION_ABORTED') throw e;
+        console.log('DocGen quality gate falhou', e);
+      }
+
+      try {
+        await supabase
+          .from('docgen_conversations')
+          .update({
+            contexto: {
+              ...context,
+              refino: {
+                ...((context as any).refino || {}),
+                quality_gate: 'concluido',
+                quality_gate_sections: applied,
+                updated_at: new Date().toISOString(),
+              },
+            },
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', conversation.id);
+      } catch (_e) { /* acessório */ }
+
+      return new Response(JSON.stringify({
+        conversation_id: conversation.id,
+        document: doc,
+        sections_rewritten: applied,
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     // ============ ACTION: auto_refine (1 tentativa gap-driven por chamada) ============
