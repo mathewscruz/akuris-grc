@@ -250,6 +250,7 @@ export const docgen = {
         progressStage5: 'Finalizando o documento',
         progressRefining: 'Refino automático — tentativa {attempt} de {total}',
         progressPercent: '{percent}%',
+        progressDone: 'Documento concluído',
         progressEstimate: 'Progresso estimado — a geração continua mesmo se demorar.',
 
         continueEditing: 'Continuar editando',
@@ -514,6 +515,7 @@ export const docgen = {
         progressStage5: 'Finishing the document',
         progressRefining: 'Automatic refinement — attempt {attempt} of {total}',
         progressPercent: '{percent}%',
+        progressDone: 'Document ready',
         progressEstimate: 'Estimated progress — generation continues even if it takes longer.',
 
         continueEditing: 'Keep editing',
