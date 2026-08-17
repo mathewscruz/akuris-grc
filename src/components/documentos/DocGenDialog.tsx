@@ -451,7 +451,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
         const impact = data?.compliance_impact;
         const tone = impact === 'reduced' ? 'warning' as const : 'success' as const;
         const title = impact === 'reduced' ? t('docgen.dialog.complianceImpacted') : t('docgen.dialog.documentUpdated');
-        akurisToast({ module: 'documentos', tone, title, description: summary });
+        akurisToast({ id: DOCGEN_STATUS_TOAST, module: 'documentos', tone, title, description: summary });
       }
     } catch (err) {
       console.error('Erro ao refinar documento:', err);
@@ -562,7 +562,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
       if (data?.document) {
         setGeneratedDocument(data.document);
         setAdherenceResult(null); // invalida análise prévia
-        akurisToast({ module: 'documentos', tone: 'success', title: t('docgen.dialog.sectionRefinedTitle'), description: t('docgen.dialog.sectionRefinedDescription') });
+        akurisToast({ id: DOCGEN_STATUS_TOAST, module: 'documentos', tone: 'success', title: t('docgen.dialog.sectionRefinedTitle'), description: t('docgen.dialog.sectionRefinedDescription') });
         setRefiningSectionIndex(null);
       }
     } catch (e) {
