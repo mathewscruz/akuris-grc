@@ -1245,65 +1245,6 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                   : t('docgen.dialog.messageCount', { count: messages.length })}
 
               </span>
-              {/* Chip de score ao vivo: aparece assim que o documento é gerado. */}
-              {currentScore !== null && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span
-                        className={`ml-1 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium tabular-nums shrink-0 ${
-                          currentScore >= 80
-                            ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
-                            : currentScore >= 60
-                              ? 'border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300'
-                              : 'border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-300'
-                        }`}
-                      >
-                        {t('docgen.dialog.complianceScore', { score: currentScore })}
-                        {scoreDelta !== null && (
-                          <span
-                            className={`font-mono text-[10px] ${
-                              scoreDelta > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
-                            }`}
-                          >
-                            {scoreDelta > 0 ? '+' : ''}{scoreDelta}
-                          </span>
-                        )}
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs">
-                      {t('docgen.dialog.complianceTooltip')}
-                      {typeof generatedDocument?._scope_size === 'number' && generatedDocument._scope_size > 0
-                        && ' ' + t('docgen.dialog.scopeInfo', { scope: generatedDocument._scope_size })}
-                      {generatedDocument?._framework_coverage?.total
-                        ? t('docgen.dialog.frameworkCoverageInfo', {
-                            covered: generatedDocument._framework_coverage.covered,
-                            total: generatedDocument._framework_coverage.total,
-                          })
-                        : null}
-                      {scoreDelta !== null && t('docgen.dialog.complianceDeltaTooltip', { delta: `${scoreDelta > 0 ? '+' : ''}${scoreDelta}` })}
-                      {/* Base de cálculo explícita, por framework — o score tem de ser auditável. */}
-                      {Array.isArray(generatedDocument?._score_breakdown) && generatedDocument._score_breakdown.length > 0 && (
-                        <span className="mt-2 block space-y-0.5">
-                          <span className="block font-medium">{t('docgen.dialog.scoreBasisTitle')}</span>
-                          {generatedDocument._score_breakdown.map((b: any) => (
-                            <span key={b.framework_id} className="block">
-                              {t('docgen.dialog.scoreBasisLine', {
-                                framework: b.framework_name || '—',
-                                covered: b.covered,
-                                scope: b.scope,
-                              })}
-                              {b.missing?.length ? ` — ${t('docgen.dialog.scoreBasisMissing', { list: b.missing.join(', ') })}` : ''}
-                            </span>
-                          ))}
-                        </span>
-                      )}
-                    </TooltipContent>
-
-
-                  </Tooltip>
-                </TooltipProvider>
-              )}
             </div>
 
             <div className="flex items-center gap-2">
