@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react';
+import React from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import Layout from '@/components/Layout';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
@@ -7,37 +7,50 @@ import { RouteFallback } from '@/components/ui/route-fallback';
 const DenunciaPublicLanding = React.lazy(() => import('@/pages/DenunciaPublicLanding'));
 const Denuncia = React.lazy(() => import('@/pages/Denuncia'));
 
+/** Detecta sessão persistida para decidir o esqueleto certo antes do auth resolver. */
+function hasStoredSession(): boolean {
+  try {
+    return Object.keys(window.localStorage).some(
+      (k) => k.startsWith('sb-') && k.endsWith('-auth-token'),
+    );
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Switcher de `/denuncia`:
  * - Usuário NÃO autenticado → landing pública pedindo o slug da empresa.
  * - Usuário autenticado → módulo interno de gestão de denúncias.
  *
- * Resolve o C1 do QA (acesso público a `/denuncia` caía em 404 / loop de auth).
+ * O caminho autenticado monta o Layout imediatamente (mesmo durante o loading da
+ * sessão), para que o carregamento seja idêntico ao dos demais módulos — sidebar
+ * e header preservados, apenas o conteúdo em Suspense interno do Layout.
  */
 const DenunciaRouter: React.FC = () => {
   const { user, loading } = useAuth();
 
+  const authenticatedShell = (
+    <Layout>
+      <ProtectedRoute moduleName="denuncia" fallbackToRoleCheck={false}>
+        <Denuncia />
+      </ProtectedRoute>
+    </Layout>
+  );
+
   if (loading) {
-    return <RouteFallback />;
+    return hasStoredSession() ? authenticatedShell : <RouteFallback />;
   }
 
   if (!user) {
     return (
-      <Suspense fallback={<RouteFallback />}>
+      <React.Suspense fallback={<RouteFallback />}>
         <DenunciaPublicLanding />
-      </Suspense>
+      </React.Suspense>
     );
   }
 
-  return (
-    <Layout>
-      <ProtectedRoute moduleName="denuncia" fallbackToRoleCheck={false}>
-        <Suspense fallback={<RouteFallback />}>
-          <Denuncia />
-        </Suspense>
-      </ProtectedRoute>
-    </Layout>
-  );
+  return authenticatedShell;
 };
 
 export default DenunciaRouter;

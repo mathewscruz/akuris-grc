@@ -36,7 +36,7 @@ const Assessment = React.lazy(() => import('@/pages/Assessment'));
 const RevisaoAcessos = React.lazy(() => import('@/pages/RevisaoAcessos'));
 const ReviewExterna = React.lazy(() => import('@/pages/ReviewExterna'));
 const Denuncia = React.lazy(() => import('@/pages/Denuncia'));
-const DenunciaRouter = React.lazy(() => import('@/pages/DenunciaRouter'));
+import DenunciaRouter from '@/pages/DenunciaRouter';
 const DenunciaExternaRedirect = React.lazy(() => import('@/pages/DenunciaExternaRedirect'));
 const DenunciaMenu = React.lazy(() => import('@/pages/DenunciaMenu'));
 const DenunciaFormulario = React.lazy(() => import('@/pages/DenunciaFormulario'));
@@ -299,11 +299,7 @@ function App() {
               </Layout>
             } />
             {/* `/denuncia` é dual: público (landing) ou autenticado (módulo). */}
-            <Route path="/denuncia" element={
-              <Suspense fallback={<RouteFallback />}>
-                <DenunciaRouter />
-              </Suspense>
-            } />
+            <Route path="/denuncia" element={<DenunciaRouter />} />
             <Route path="/configuracoes" element={
               <Layout>
                 <ProtectedRoute moduleName="configuracoes" fallbackToRoleCheck={false}>
