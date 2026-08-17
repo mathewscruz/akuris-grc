@@ -129,9 +129,12 @@ export function DataTable<T extends Record<string, any>>({
           searchPlaceholder={_searchPlaceholder}
           filters={filters.map((filter) => (
             <ToolbarField key={filter.key} label={filter.label}>
-              <Select value={filter.value} onValueChange={filter.onChange}>
+              <Select
+                value={filter.value || (filter.options.some((o) => o.value === 'all') ? 'all' : filter.value)}
+                onValueChange={filter.onChange}
+              >
                 <SelectTrigger className="w-full min-w-[160px]">
-                  <SelectValue placeholder={filter.label} />
+                  <SelectValue placeholder={filter.options.find((o) => o.value === 'all')?.label ?? filter.label} />
                 </SelectTrigger>
                 <SelectContent>
                   {filter.options.map((option) => (
