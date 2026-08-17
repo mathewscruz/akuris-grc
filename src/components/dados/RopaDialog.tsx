@@ -45,7 +45,25 @@ export function RopaDialog({ isOpen, onClose, onSave, ropa }: RopaDialogProps) {
     data_inicio: ropa?.data_inicio ? new Date(ropa.data_inicio) : undefined,
     data_fim: ropa?.data_fim ? new Date(ropa.data_fim) : undefined,
     status: ropa?.status || "ativo",
-    observacoes: ropa?.observacoes || ""
+    observacoes: ropa?.observacoes || "",
+    codigo: ropa?.codigo || "",
+    area_responsavel: ropa?.area_responsavel || "",
+    dados_tratados: ropa?.dados_tratados || "",
+    categoria_dados: ropa?.categoria_dados || "",
+    fonte_dados: ropa?.fonte_dados || "",
+    descricao_atividade: ropa?.descricao_atividade || "",
+    operacoes_realizadas: ropa?.operacoes_realizadas || "",
+    decisao_automatizada_detalhes: ropa?.decisao_automatizada_detalhes || "",
+    justificativa_base_legal: ropa?.justificativa_base_legal || "",
+    compartilhamento_interno: ropa?.compartilhamento_interno || "",
+    compartilhamento_externo: ropa?.compartilhamento_externo || "",
+    transferencia_detalhes: ropa?.transferencia_detalhes || "",
+    criterio_descarte: ropa?.criterio_descarte || "",
+    risco_probabilidade: ropa?.risco_probabilidade || "",
+    risco_impacto: ropa?.risco_impacto || "",
+    risco_nivel: ropa?.risco_nivel || "",
+    evidencias_documentos: ropa?.evidencias_documentos || "",
+    versao: ropa?.versao || "v1"
   });
   const [usuarios, setUsuarios] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
