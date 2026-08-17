@@ -3,84 +3,107 @@
 ## O que você já tem
 - App web React + Vite publicado em https://akuris-grc.lovable.app e nos domínios customizados https://www.akuris.com.br, https://akuris.pt, https://akuris.com.br.
 - PWA configurado (manifest + ícones `standalone`).
-- Contas Apple Developer Program e Google Play Console já existentes.
 
-## O que falta
-Para ir às lojas oficiais com um app híbrido simples, a rota mais rápida e barata é **Capacitor** (Ionic): ele empacota o site como um app nativo, usando WebView, sem reescrever a aplicação.
+## O que você NÃO tem ainda (e precisa criar)
+- **Apple Developer Program** — US$ 99/ano (pessoa física/empresa) ou US$ 299/ano (enterprise). Requer CNPJ/empresa verificada para apps empresariais.
+- **Google Play Console** — US$ 25 (taxa única de registro). Pode ser conta pessoal ou organização.
+- **Computador macOS com Xcode** — obrigatório para buildar e submeter o app iOS.
+- **Android Studio** — obrigatório para buildar o Android App Bundle (AAB).
+- **Keystore Android** e certificados de assinatura iOS — criados na sua máquina, não versionados no repo.
 
 ## Caminho técnico recomendado
 
-### 1. Preparar o projeto para Capacitor
-- Adicionar `@capacitor/core`, `@capacitor/cli`, `@capacitor/android` e `@capacitor/ios` como dev dependencies.
-- Criar `capacitor.config.ts` apontando `webDir` para `dist` e `server.url` opcionalmente para o domínio publicado (modo híbrido simples).
-- Garantir que `build` produza um `dist/` válido e que o manifest/icons estejam copiados para lá.
-- Remover/ajustar o service worker do PWA, se ele cachear HTML, porque a Apple e o Google rejeitam apps que se comportam como "navegador em disguise" (App Store guideline 4.2 / Play Store spam policy).
+Usaremos **Capacitor** (Ionic) para empacotar o app web existente como um app nativo híbrido simples, sem reescrever a aplicação.
 
-### 2. Gerar as plataformas nativas
-- `capacitor add android` e `capacitor add ios`.
-- Isso cria as pastas `android/` e `ios/` com projetos Gradle/Xcode prontos.
-- Configurar `bundleId` (ex: `com.akuris.app`) e `appName` (ex: `Akuris GRC`).
+### 1. Instalar e inicializar Capacitor
+- Adicionar as dependências:
+  - `@capacitor/core`
+  - `@capacitor/cli` (dev dependency)
+  - `@capacitor/ios`
+  - `@capacitor/android`
+- Rodar `npx cap init` com:
+  - `appId`: `app.lovable.e64d00f71631421abcc886aa27d8fb2a`
+  - `appName`: `akuris-grc`
+  - `webDir`: `dist`
+- Incluir a configuração de hot-reload para o preview do sandbox:
+```json
+"server": {
+  "url": "https://e64d00f7-1631-421a-bcc8-86aa27d8fb2a.lovableproject.com?forceHideBadge=true",
+  "cleartext": true
+}
+```
 
-### 3. Ajustar UX para app nativo
-- Garantir que a navegação funcione sem reload da página (SPA).
-- Bloquear zoom duplo em inputs mobile (`maximum-scale=1` ou font-size 16px já existentes).
-- Remover links externos que abram no browser nativo sem aviso; usar `CapacitorBrowser` ou `InAppBrowser` se necessário.
-- Verificar teclado virtual em formulários longos (scroll ajustado, safe-area insets).
-- Garantir que toda notificação/toast funcione dentro da WebView (Sonner já deve funcionar, mas testar).
+### 2. Adicionar as plataformas nativas
+- `npx cap add ios`
+- `npx cap add android`
+- Isso cria as pastas `ios/` e `android/` com projetos Xcode e Gradle prontos.
 
-### 4. Build e assinatura
+### 3. Garantir build SPA para `dist/`
+- Verificar que `vite build` produz `dist/` com `index.html`, assets e manifest/icons.
+- Ajustar o service worker do PWA se necessário, pois apps que se comportam como "navegador disfarçado" podem ser rejeitados (Apple guideline 4.2 / Google Play spam policy).
+
+### 4. Ajustar UX para app nativo
+- Manter navegação client-side sem reload.
+- Evitar zoom em inputs mobile (já parcialmente tratado).
+- Garantir safe-area insets para notch/island.
+- Testar teclado virtual em formulários longos.
+- Verificar se toasts Sonner funcionam dentro da WebView.
+
+### 5. Build e assinatura
 #### Android
 - Gerar `keystore` (jks) com chave de upload.
-- Configurar `build.gradle` com `signingConfigs.release`.
-- Buildar AAB (Android App Bundle) via Android Studio ou `gradlew bundleRelease`.
-- Fazer upload na Google Play Console (Internal → Closed → Open/Production).
-- Ativar Play App Signing (obrigatório para novos apps).
+- Configurar `signingConfigs.release` no `build.gradle`.
+- Buildar AAB via `gradlew bundleRelease` ou Android Studio.
+- Fazer upload na Google Play Console.
+- Ativar Play App Signing.
 
 #### iOS
-- Abrir o projeto `ios/App/App.xcworkspace` no Xcode.
-- Configurar Team, Bundle Identifier, Signing & Capabilities.
+- Abrir `ios/App/App.xcworkspace` no Xcode em um Mac.
+- Configurar Apple Team, Bundle ID, Signing & Capabilities.
 - Definir ícones, launch screen, orientação portrait.
-- Buildar Archive e submeter via App Store Connect (TestFlight → App Store).
-- Garantir que o app não use WebView para conteúdo genérico da web sem valor nativo — a Apple pode rejeitar por guideline 4.2. O app deve ter identidade visual, funcionalidade clara e após login, tudo funcional (não pode ser só um site genérico).
+- Buildar Archive e submeter via App Store Connect.
+- A Apple pode rejeitar se o app parecer apenas um site genérico; garantir identidade visual forte e funcionalidade clara.
 
-### 5. Ativos obrigatórios para as lojas
-- Ícone de app: 1024×1024 base, gerando todos os tamanhos via `capacitor-assets` ou Xcode/Android Studio.
-- Splash screen / Launch screen.
-- Screenshots de 5 a 10 telas para cada tamanho de tela (iPhone, iPad, Android phones/tablets).
-- Descrição curta, descrição completa, palavras-chave, política de privacidade URL.
+### 6. Ativos obrigatórios para as lojas
+- Ícone 1024×1024 base e splash screen.
+- Screenshots em vários tamanhos de tela.
+- Descrição curta, descrição completa, palavras-chave, política de privacidade.
 - Categoria: Negócios / Produtividade.
-- Classificação de conteúdo (questionário do Google Play e App Store).
-- Conta de contato e suporte.
+- Classificação de conteúdo (questionários Apple/Google).
+- Conta de contato/suporte.
 
-### 6. Requisitos legais/compliance
-- Política de privacidade acessível (Akuris já tem).
+### 7. Requisitos legais/compliance
+- Política de privacidade acessível.
 - Termos de uso.
-- Se coletar dados sensíveis: declarar no Data Safety (Google) e App Privacy (Apple).
-- LGPD/GDPR: manter o campo `jurisdicao` já existente e respeitar a escolha da empresa.
-- Se usar autenticação, não hardcodear credenciais (já segue o padrão do projeto).
+- Declarar dados coletados no Data Safety (Google) e App Privacy (Apple).
+- Manter LGPD/GDPR via campo `jurisdicao` já existente.
 
 ## Escopo deste plano
-1. Adicionar e configurar Capacitor no projeto.
-2. Criar `capacitor.config.ts` e ajustar o build para produzir artefatos nativos.
-3. Ajustar pequenos pontos de UX para evitar rejeição nas lojas (zoom, links externos, navegação).
-4. Documentar passos de build e assinatura Android/iOS (não executar a publicação final, pois exige certificados e contas reais).
-5. Preparar assets de ícone e splash screen para ambas as lojas.
+1. Instalar e configurar Capacitor no projeto (`capacitor.config.ts`, `package.json`).
+2. Adicionar plataformas iOS e Android (`ios/`, `android/`).
+3. Ajustar build/UX para evitar rejeição nas lojas.
+4. Gerar ícones e splash screens.
+5. Documentar passos de build, assinatura e submissão em `docs/PUBLICACAO_LOJAS.md`.
+6. NÃO executar a publicação final (requer suas contas e certificados).
 
 ## O que NÃO está no escopo
-- Recursos nativos complexos (câmera, push, biometria, background sync, GPS). Se depois quiser, cada um vira um plugin Capacitor separado.
-- Reescrita do app em React Native / Flutter.
-- Backend nativo (o Supabase atual continua servindo tudo).
-- Publicação final nas contas: entregamos o projeto pronto para você assinar e submeter.
+- Recursos nativos complexos (câmera, push, biometria, GPS, background sync).
+- Reescrita em React Native / Flutter.
+- Backend nativo (Supabase continua servindo tudo).
+- Criar as contas de desenvolvedor Apple/Google para você.
+- Assinar e submeter o app final nas lojas.
 
 ## Entregáveis
 - `capacitor.config.ts` configurado.
-- Pastas `android/` e `ios/` geradas.
+- Pastas `ios/` e `android/` geradas.
 - Scripts `build:android` e `build:ios` no `package.json`.
 - Ícones e splash screens gerados.
-- Documento `docs/PUBLICACAO_LOJAS.md` com passos de assinatura, build e submissão.
-- Checklist de validação antes do envio para Apple/Google.
+- Documento `docs/PUBLICACAO_LOJAS.md` com checklist completo.
 
-## Dependências externas
-- Node.js, Android Studio, Xcode (só no Mac para iOS), JDK 17+, CocoaPods.
-- Contas Apple Developer Program e Google Play Console (você já tem).
-- Keystore Android e certificado de distribuição iOS (você precisa criar/gerenciar na sua máquina, não armazenamos no repo).
+## Dependências externas que você precisa resolver
+1. Criar conta Apple Developer Program (US$ 99/ano).
+2. Criar conta Google Play Console (US$ 25 única).
+3. Computador Mac com Xcode para iOS.
+4. Android Studio instalado.
+5. Gerar keystore Android e certificados iOS localmente.
+
