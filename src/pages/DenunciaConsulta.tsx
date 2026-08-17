@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { fetchEmpresaPublicaPorSlug } from '@/lib/denuncia-publica';
 import { logger } from '@/lib/logger';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatDateTime } from '@/lib/date-utils';
@@ -73,14 +74,9 @@ export default function DenunciaConsulta() {
 
   const carregarEmpresa = async () => {
     try {
-      const { data: empresaData, error: empresaError } = await supabase
-        .from('empresas')
-        .select('id, nome, slug, logo_url')
-        .eq('slug', empresaSlug)
-        .eq('ativo', true)
-        .single();
+      const empresaData = await fetchEmpresaPublicaPorSlug(empresaSlug ?? '');
 
-      if (empresaError || !empresaData) {
+      if (!empresaData) {
         toast({
           title: t('publicPortal.denunciaConsulta.error'),
           description: t('publicPortal.denunciaConsulta.companyNotFound'),

@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchEmpresaPublicaPorSlug } from '@/lib/denuncia-publica';
 import { logger } from '@/lib/logger';
 import { getCompanyLogo, AKURIS_DEFAULT_LOGO } from '@/lib/brand-logo';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -104,25 +105,10 @@ export default function DenunciaFormulario() {
       try {
         logger.debug('Carregando configuração para empresa slug', { module: 'DenunciaFormulario', action: empresaSlug });
         
-        // Normalizar slug (lowercase e trim)
-        const normalizedSlug = empresaSlug.toLowerCase().trim();
-        
-        // Buscar empresa pelo slug
-        const { data: empresaData, error: empresaError } = await supabase
-          .from('empresas')
-          .select('id, nome, slug, logo_url')
-          .eq('slug', normalizedSlug)
-          .eq('ativo', true)
-          .single();
-
-        if (empresaError) {
-          logger.error('Erro ao buscar empresa', { module: 'DenunciaFormulario', error: String(empresaError) });
-          setLoading(false);
-          return;
-        }
+        const empresaData = await fetchEmpresaPublicaPorSlug(empresaSlug);
 
         if (!empresaData) {
-          logger.error('Empresa não encontrada para slug', { module: 'DenunciaFormulario', action: normalizedSlug });
+          logger.error('Empresa não encontrada para slug', { module: 'DenunciaFormulario', action: empresaSlug });
           setLoading(false);
           return;
         }

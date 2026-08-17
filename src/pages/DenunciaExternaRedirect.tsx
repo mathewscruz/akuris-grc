@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchEmpresaPublicaPorToken } from '@/lib/denuncia-publica';
 import { logger } from '@/lib/logger';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -22,43 +23,13 @@ export default function DenunciaExternaRedirect() {
       try {
         logger.debug('Buscando empresa por token', { module: 'DenunciaExternaRedirect', action: token });
         
-        // Primeiro buscar configuração para obter empresa_id
-        const { data: config, error: configError } = await supabase
-          .from('denuncias_configuracoes_public' as any)
-          .select('empresa_id')
-          .eq('token_publico', token)
-          .eq('ativo', true)
-          .single() as { data: { empresa_id: string } | null; error: any };
+        const empresa = await fetchEmpresaPublicaPorToken(token);
 
-        if (configError) {
-          logger.error('Erro na consulta de configuração', { module: 'DenunciaExternaRedirect', error: String(configError) });
-          throw configError;
-        }
-
-        if (!config) {
-          logger.error('Configuração não encontrada para token', { module: 'DenunciaExternaRedirect', action: token });
-          navigate('/404', { replace: true });
-          return;
-        }
-
-        // Buscar dados da empresa
-        const { data: empresa, error: empresaError } = await supabase
-          .from('empresas')
-          .select('slug, nome')
-          .eq('id', config.empresa_id)
-          .eq('ativo', true)
-          .single();
-
-        if (empresaError) {
-          logger.error('Erro na consulta de empresa', { module: 'DenunciaExternaRedirect', error: String(empresaError) });
-          throw empresaError;
-        }
-
-        if (empresa) {
+        if (empresa && empresa.canal_ativo) {
           logger.debug('Empresa encontrada, redirecionando', { module: 'DenunciaExternaRedirect', action: empresa.slug });
           navigate(`/${empresa.slug}/denuncia`, { replace: true });
         } else {
-          logger.error('Empresa não encontrada para ID', { module: 'DenunciaExternaRedirect', action: config.empresa_id });
+          logger.error('Canal não encontrado para token', { module: 'DenunciaExternaRedirect' });
           navigate('/404', { replace: true });
         }
       } catch (error) {
