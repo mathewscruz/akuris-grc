@@ -7448,6 +7448,7 @@ export type Database = {
           biblioteca_codigo: string | null
           categoria_id: string | null
           causas: string | null
+          codigo: string | null
           comentarios_aprovacao: string | null
           consequencias: string | null
           controles_existentes: string | null
@@ -7489,6 +7490,7 @@ export type Database = {
           biblioteca_codigo?: string | null
           categoria_id?: string | null
           causas?: string | null
+          codigo?: string | null
           comentarios_aprovacao?: string | null
           consequencias?: string | null
           controles_existentes?: string | null
@@ -7530,6 +7532,7 @@ export type Database = {
           biblioteca_codigo?: string | null
           categoria_id?: string | null
           causas?: string | null
+          codigo?: string | null
           comentarios_aprovacao?: string | null
           consequencias?: string | null
           controles_existentes?: string | null
