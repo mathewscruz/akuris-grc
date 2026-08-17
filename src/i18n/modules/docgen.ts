@@ -302,6 +302,9 @@ export const docgen = {
         approverLabel: 'Approver',
         approverPlaceholder: 'e.g. Operations Director',
         reviewFrequencyLabel: 'Review frequency',
+        freq: { mensal: 'Monthly', trimestral: 'Quarterly', semestral: 'Half-yearly', anual: 'Annual', bienal: 'Every two years' },
+        classif: { publica: 'Public', interna: 'Internal', confidencial: 'Confidential', restrita: 'Restricted' },
+
         classificationLabel: 'Information classification',
         rolesLabel: 'Actual company roles',
         rolesHelp: 'The RACI matrix will only use these roles. If empty, the AI uses generic titles and records them as assumptions to validate.',
