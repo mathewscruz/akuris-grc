@@ -1103,9 +1103,8 @@ ${rolesRule}
 - Seções "Vigência", "Aprovação" e "Controle de Versões" DEVEM citar data real (DATA_ATUAL), o PROPRIETÁRIO_DO_DOCUMENTO, o APROVADOR e a PERIODICIDADE_DE_REVISÃO acima (se algum estiver "A definir", escreva "A definir" e registe a premissa).
 - Onde houver métrica (retenção, RTO/RPO, prazos), traga valores CONCRETOS coerentes com o briefing do usuário. Se o usuário não deu, escolha um valor de mercado defensável e cite "(valor sugerido — validar)".
 - RECOMENDAÇÕES TÉCNICAS ATUAIS: siga a prática vigente (NIST SP 800-63B e equivalentes). NÃO exija rotação periódica obrigatória de senhas sem indício de comprometimento; privilegie frases-passe longas, verificação contra listas de senhas comprometidas, MFA resistente a phishing e bloqueio progressivo. Não recomende controlos obsoletos (troca de senha a cada 30/60/90 dias, complexidade artificial de caracteres, expiração forçada sem risco associado).
-- ${dcInlineRefs
-        ? 'CADA cláusula que satisfaz um requisito do framework deve conter o CÓDIGO do requisito entre colchetes (ex.: "[A.8.13]") na primeira frase da cláusula.'
-        : 'NÃO insira códigos de requisito entre colchetes no corpo do texto — a rastreabilidade fica exclusivamente no coverage_map (anexo). O corpo deve ler-se como um documento corporativo limpo.'}
+- É PROIBIDO inserir códigos, numerações de cláusula ou identificadores de requisito no corpo do texto (nada de "[A.8.13]", "(CC6.1)", "conforme cláusula 5.15"). O corpo deve ler-se como um documento corporativo limpo; a menção aos referenciais fica só na seção "Referências Normativas", em texto corrido.
+
 - Personalização real: reflita as respostas do usuário na conversa acima — não use frases genéricas quando o usuário deu um dado concreto.
 
 FORMATAÇÃO DO CAMPO "conteudo" (markdown restrito — o exportador só entende este subconjunto):
