@@ -16,7 +16,6 @@ import {
   CLASSIFICATION_OPTIONS,
 } from '@/lib/docgen-templates';
 
-import { useFrameworkRequirementCount } from '@/hooks/useFrameworkRequirementCount';
 import type { CompanyContext } from './DocGenContextPanel';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -147,7 +146,6 @@ export const DocGenBriefing: React.FC<DocGenBriefingProps> = ({
     return ordered.slice(0, 10);
   }, [companyContext, briefing.frameworks]);
 
-  const reqCountQuery = useFrameworkRequirementCount(briefing.frameworks);
 
   const canAdvance = step === 1 ? !!briefing.docType : true;
 
