@@ -201,10 +201,8 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
   const [initialGeneratedFile, setInitialGeneratedFile] = useState<File | null>(null);
 
   // Rastreia score anterior para calcular delta após refinos.
-  const [previousScore, setPreviousScore] = useState<number | null>(null);
 
   // Confirmação antes de publicar quando o score está baixo.
-  const [publishConfirmOpen, setPublishConfirmOpen] = useState(false);
 
 
   // Buscar informações do usuário
@@ -889,17 +887,14 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
 
   /**
    * Handler do botão "Salvar em Documentos".
-   * Se o score de compliance estiver abaixo de 80, mostra confirmação antes de
-   * abrir o diálogo de salvar — evita publicar um rascunho capenga por acidente.
-   * O score é derivado do `_initial_score` que o próprio backend calcula.
+   * Já não existe gate de score: o documento é escrito para atender os
+   * referenciais escolhidos e a avaliação formal acontece na Análise de
+   * Aderência, quando o usuário a pedir.
    */
   const handleSaveClick = async () => {
-    if (currentScore !== null && currentScore < 80) {
-      setPublishConfirmOpen(true);
-      return;
-    }
     await handleOpenCreateDialog();
   };
+
 
 
 
@@ -971,30 +966,10 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     }
   }, [generatedDocument]);
 
-  // Score ao vivo + delta: guarda o score anterior antes de aplicar o novo.
-  // Depende só do documento gerado atual — o próprio backend garante que
-  // `_initial_score` é recalculado a cada refino sem consumir crédito extra.
-  const currentScore: number | null =
-    typeof generatedDocument?._initial_score === 'number' ? generatedDocument._initial_score : null;
-  useEffect(() => {
-    if (currentScore === null) {
-      setPreviousScore(null);
-      return;
-    }
-    setPreviousScore((prev) => {
-      // Primeira medição: sem delta. Depois, mantém o valor anterior para calcular delta.
-      if (prev === null) return currentScore;
-      return prev === currentScore ? prev : prev;
-    });
-    // Depois que renderizamos com o delta, o "anterior" precisa passar a ser o atual
-    // para a próxima medição. Fazemos isso via microtask para preservar 1 render de delta.
-    const t = setTimeout(() => setPreviousScore(currentScore), 4000);
-    return () => clearTimeout(t);
-  }, [currentScore]);
-  const scoreDelta =
-    currentScore !== null && previousScore !== null && previousScore !== currentScore
-      ? currentScore - previousScore
-      : null;
+  // Score de compliance deixou de existir no DocGen: o documento é escrito em
+  // conformidade com os referenciais escolhidos e a avaliação formal acontece
+  // na Análise de Aderência.
+
 
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -1245,65 +1220,6 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                   : t('docgen.dialog.messageCount', { count: messages.length })}
 
               </span>
-              {/* Chip de score ao vivo: aparece assim que o documento é gerado. */}
-              {currentScore !== null && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span
-                        className={`ml-1 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium tabular-nums shrink-0 ${
-                          currentScore >= 80
-                            ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
-                            : currentScore >= 60
-                              ? 'border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300'
-                              : 'border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-300'
-                        }`}
-                      >
-                        {t('docgen.dialog.complianceScore', { score: currentScore })}
-                        {scoreDelta !== null && (
-                          <span
-                            className={`font-mono text-[10px] ${
-                              scoreDelta > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
-                            }`}
-                          >
-                            {scoreDelta > 0 ? '+' : ''}{scoreDelta}
-                          </span>
-                        )}
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs">
-                      {t('docgen.dialog.complianceTooltip')}
-                      {typeof generatedDocument?._scope_size === 'number' && generatedDocument._scope_size > 0
-                        && ' ' + t('docgen.dialog.scopeInfo', { scope: generatedDocument._scope_size })}
-                      {generatedDocument?._framework_coverage?.total
-                        ? t('docgen.dialog.frameworkCoverageInfo', {
-                            covered: generatedDocument._framework_coverage.covered,
-                            total: generatedDocument._framework_coverage.total,
-                          })
-                        : null}
-                      {scoreDelta !== null && t('docgen.dialog.complianceDeltaTooltip', { delta: `${scoreDelta > 0 ? '+' : ''}${scoreDelta}` })}
-                      {/* Base de cálculo explícita, por framework — o score tem de ser auditável. */}
-                      {Array.isArray(generatedDocument?._score_breakdown) && generatedDocument._score_breakdown.length > 0 && (
-                        <span className="mt-2 block space-y-0.5">
-                          <span className="block font-medium">{t('docgen.dialog.scoreBasisTitle')}</span>
-                          {generatedDocument._score_breakdown.map((b: any) => (
-                            <span key={b.framework_id} className="block">
-                              {t('docgen.dialog.scoreBasisLine', {
-                                framework: b.framework_name || '—',
-                                covered: b.covered,
-                                scope: b.scope,
-                              })}
-                              {b.missing?.length ? ` — ${t('docgen.dialog.scoreBasisMissing', { list: b.missing.join(', ') })}` : ''}
-                            </span>
-                          ))}
-                        </span>
-                      )}
-                    </TooltipContent>
-
-
-                  </Tooltip>
-                </TooltipProvider>
-              )}
             </div>
 
             <div className="flex items-center gap-2">
@@ -1804,37 +1720,6 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Confirmação antes de publicar quando o score de compliance está baixo. */}
-      <AlertDialog open={publishConfirmOpen} onOpenChange={setPublishConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('docgen.dialog.publishLowComplianceTitle')}</AlertDialogTitle>
-            <AlertDialogDescription
-              dangerouslySetInnerHTML={{
-                __html: DOMPurify.sanitize(
-                  t('docgen.dialog.publishLowComplianceDescription', {
-                    score: String(currentScore ?? 0),
-                    frameworkPart: effFrameworkName
-                      ? t('docgen.dialog.publishLowComplianceFramework', { framework: effFrameworkName })
-                      : '',
-                  })
-                ),
-              }}
-            />
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t('docgen.dialog.continueRefining')}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={async () => {
-                setPublishConfirmOpen(false);
-                await handleOpenCreateDialog();
-              }}
-            >
-              {t('docgen.dialog.publishAnyway')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
     </DialogShell>
   );

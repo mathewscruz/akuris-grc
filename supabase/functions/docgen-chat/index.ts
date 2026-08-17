@@ -988,34 +988,43 @@ IMPORTANTE: Sempre responda em português brasileiro. Responda SOMENTE com uma m
         ? `\n\nIMPORTANTE — O documento deve endereçar os seguintes gaps de conformidade identificados no framework "${framework_context?.framework_name}":\n${frameworkGapsText}\n\nInclua seções, controles ou procedimentos específicos que resolvam cada gap listado.`
         : '';
 
-      // O documento é escrito e avaliado contra TODOS os frameworks escolhidos
-      // para ele (antes truncávamos para o primeiro e o 2.º era ignorado). O
-      // denominador continua honesto porque `resolveDocumentScope` reduz cada
-      // catálogo ao subconjunto temático do documento.
+      // Frameworks escolhidos pelo usuário. O documento é escrito para estar em
+      // conformidade com ELES, a partir do conhecimento normativo do modelo —
+      // já NÃO injetamos o catálogo de requisitos da ferramenta no prompt
+      // (prompt gigante = truncagem de JSON, timeout e score irrelevante).
       const docFwIds: string[] = Array.from(new Set([
         ...(framework_context?.framework_ids || []),
         ...(framework_context?.framework_id ? [framework_context.framework_id] : []),
       ].filter(Boolean))) as string[];
 
-
       const docNome = (context as any).documento_nome_identificado || doc_type_hint || context.tipo_documento_identificado;
-      let frameworkRequirementsText = '';
-      if (docFwIds.length && empresa_id) {
-        frameworkRequirementsText = await fetchFrameworkRequirements(supabase, docFwIds, empresa_id);
-      }
-      const frameworkRequirementsSection = frameworkRequirementsText
-        ? `\n\n=== REQUISITOS DO(S) FRAMEWORK(S) — COBERTURA OBRIGATÓRIA ===
-Abaixo estão os requisitos catalogados, AGRUPADOS POR FRAMEWORK. Antes de escrever o documento:
-1) Identifique, EM CADA BLOCO DE FRAMEWORK, quais requisitos tratam do TEMA deste documento ("${docNome}").
-2) TODOS os frameworks listados têm de ser endereçados. Se houver mais de um bloco, a seção "Referências Normativas" e o coverage_map DEVEM conter requisitos de CADA UM deles (ex.: cláusulas e Anexo A da ISO 27001 E critérios Common Criteria do SOC 2). Nunca escreva o documento contra um só framework quando há vários.
-3) Garanta que o documento CUMPRA EXPLICITAMENTE cada requisito relevante — incorpore o que ele exige (descrição/orientação) nas seções apropriadas, com regras concretas e acionáveis.
-4) Cite o código do requisito entre colchetes onde ele é endereçado (ex.: "[A.8.13]", "[CC6.1]").
-5) Priorize os requisitos marcados como GAP.
-6) Não invente requisitos fora desta lista.
-7) OBRIGATÓRIO: no final devolva um coverage_map explícito ligando cada requisito relevante à(s) seção(ões) que o endereça(m), com o trecho-evidência.
 
-${frameworkRequirementsText}`
+      let frameworkNames: string[] = Array.isArray((context as any).frameworks_relacionados)
+        ? (context as any).frameworks_relacionados.map((f: any) => String(f || '').trim()).filter(Boolean)
+        : [];
+      if (!frameworkNames.length && framework_context?.framework_name) {
+        frameworkNames = [String(framework_context.framework_name)];
+      }
+      if (!frameworkNames.length && docFwIds.length) {
+        try {
+          const { data: fwRows } = await supabase
+            .from('gap_analysis_frameworks')
+            .select('nome')
+            .in('id', docFwIds);
+          frameworkNames = (fwRows || []).map((f: any) => String(f.nome || '').trim()).filter(Boolean);
+        } catch (_e) { /* nomes são acessórios — a geração não pode falhar por isto */ }
+      }
+
+      const frameworkRequirementsSection = frameworkNames.length
+        ? `\n\n=== CONFORMIDADE EXIGIDA ===
+Este documento tem de estar em conformidade com: ${frameworkNames.join(', ')}.
+Use o SEU conhecimento normativo destes referenciais — não existe lista de requisitos anexada e não deve inventar códigos.
+1) Escreva o documento de modo que um auditor destes referenciais o considere conforme no tema "${docNome}": inclua as exigências que estes referenciais impõem sobre este tema, com regras concretas, responsáveis, periodicidades e evidências.
+2) TODOS os referenciais listados têm de ser contemplados — não escreva o documento contra apenas um deles.
+3) NÃO escreva códigos, numerações de cláusula ou identificadores de requisito no corpo do texto (nada de "[A.8.13]", "(CC6.1)", "conforme 5.15"). O corpo deve ler-se como um documento corporativo limpo.
+4) Na seção "Referências Normativas", cite os referenciais em texto corrido (nome e, quando útil, o capítulo temático), sem lista de códigos item a item.`
         : '';
+
 
 
       // Transcrição real do briefing/chat — as respostas do usuário PRECISAM
@@ -1049,7 +1058,9 @@ ${transcriptFull}
       const dcApprover = String(dc.approver || '').trim();
       const dcFrequency = String(dc.review_frequency || '').trim() || 'Anual';
       const dcClassification = String(dc.classification || '').trim() || 'Interna';
-      const dcInlineRefs = dc.inline_refs !== false;
+      // Códigos de requisito NUNCA vão no corpo do documento (decisão de produto).
+      const dcInlineRefs = false;
+
 
       const raciColumns = dcRoles.length
         ? dcRoles.join(' | ')
@@ -1064,7 +1075,7 @@ APROVADOR: ${dcApprover || '(não informado — escreva "A definir" e registe co
 PERIODICIDADE_DE_REVISÃO: ${dcFrequency}
 CLASSIFICAÇÃO: ${dcClassification}
 CARGOS_REAIS_INFORMADOS: ${dcRoles.length ? JSON.stringify(dcRoles) : '[]'}
-REFERÊNCIAS_INLINE: ${dcInlineRefs ? 'sim' : 'não (os códigos vão apenas no coverage_map / anexo de rastreabilidade)'}`;
+REFERÊNCIAS_INLINE: não (é PROIBIDO escrever códigos ou numerações de requisito no corpo do texto)`;
 
       const documentPrompt = `Você é um consultor sênior de GRC de uma firma Big Four com 20+ anos redigindo políticas e procedimentos corporativos auditáveis. Escreva no idioma português (Brasil), tom formal-institucional, voz ativa, frases curtas e verificáveis. NUNCA use jargão vazio ("robusto", "estado da arte", "world class"), NUNCA use placeholders ("preencher", "TBD", "XXX", "lorem ipsum"), NUNCA copie o nome do requisito como se fosse conteúdo. Cada afirmação deve ser AUDITÁVEL (quem faz, o quê, quando, com que evidência).
 
@@ -1092,9 +1103,8 @@ ${rolesRule}
 - Seções "Vigência", "Aprovação" e "Controle de Versões" DEVEM citar data real (DATA_ATUAL), o PROPRIETÁRIO_DO_DOCUMENTO, o APROVADOR e a PERIODICIDADE_DE_REVISÃO acima (se algum estiver "A definir", escreva "A definir" e registe a premissa).
 - Onde houver métrica (retenção, RTO/RPO, prazos), traga valores CONCRETOS coerentes com o briefing do usuário. Se o usuário não deu, escolha um valor de mercado defensável e cite "(valor sugerido — validar)".
 - RECOMENDAÇÕES TÉCNICAS ATUAIS: siga a prática vigente (NIST SP 800-63B e equivalentes). NÃO exija rotação periódica obrigatória de senhas sem indício de comprometimento; privilegie frases-passe longas, verificação contra listas de senhas comprometidas, MFA resistente a phishing e bloqueio progressivo. Não recomende controlos obsoletos (troca de senha a cada 30/60/90 dias, complexidade artificial de caracteres, expiração forçada sem risco associado).
-- ${dcInlineRefs
-        ? 'CADA cláusula que satisfaz um requisito do framework deve conter o CÓDIGO do requisito entre colchetes (ex.: "[A.8.13]") na primeira frase da cláusula.'
-        : 'NÃO insira códigos de requisito entre colchetes no corpo do texto — a rastreabilidade fica exclusivamente no coverage_map (anexo). O corpo deve ler-se como um documento corporativo limpo.'}
+- É PROIBIDO inserir códigos, numerações de cláusula ou identificadores de requisito no corpo do texto (nada de "[A.8.13]", "(CC6.1)", "conforme cláusula 5.15"). O corpo deve ler-se como um documento corporativo limpo; a menção aos referenciais fica só na seção "Referências Normativas", em texto corrido.
+
 - Personalização real: reflita as respostas do usuário na conversa acima — não use frases genéricas quando o usuário deu um dado concreto.
 
 FORMATAÇÃO DO CAMPO "conteudo" (markdown restrito — o exportador só entende este subconjunto):
@@ -1114,7 +1124,7 @@ Estrutura obrigatória do documento:
 - Todas as seções definidas no template acima, em ordem
 - Seção "Papéis e Responsabilidades" com matriz RACI
 - Seção "Premissas a validar" — OBRIGATÓRIA — listando, em tabela GFM (Premissa | Porquê é premissa | Quem valida), tudo o que foi assumido e não confirmado pela empresa (ferramentas, estruturas, cargos, prazos sugeridos)
-- Seção "Referências Normativas" listando TODOS os frameworks selecionados e as cláusulas/controlos relevantes de CADA UM
+- Seção "Referências Normativas" citando, em texto corrido, TODOS os referenciais selecionados e os temas que este documento atende em cada um (sem listar códigos item a item)
 - Seção "Glossário" com termos técnicos usados no documento
 - Seção "Histórico de Versões" com linha inicial (1.0, DATA_ATUAL, autor, "Emissão inicial")
 - Seção "Aprovação" com responsáveis e data
@@ -1140,14 +1150,9 @@ Responda APENAS com um JSON na seguinte estrutura (sem markdown, sem comentário
     { "premissa": "A organização dispõe de MFA no Entra ID", "motivo": "não confirmado no briefing — o documento exige-o como controlo", "validar_com": "Equipa de TI" }
   ],
   "glossario": [ { "termo": "RTO", "definicao": "Recovery Time Objective — tempo máximo tolerável para restaurar um serviço" } ],
-  "historico_versoes": [ { "versao": "1.0", "data": "DATA_ATUAL", "autor": "${context.user_name}", "descricao": "Emissão inicial" } ],
-  "coverage_map": [
-    { "requirement_codigo": "A.8.13", "requirement_titulo": "...", "section_indexes": [2,5], "evidencia": "trecho literal do documento (max 220 chars) que satisfaz o requisito" }
-  ],
-  "requisitos_nao_cobertos_justificativa": [
-    { "codigo": "A.5.30", "motivo": "fora do escopo desta política específica" }
-  ]
+  "historico_versoes": [ { "versao": "1.0", "data": "DATA_ATUAL", "autor": "${context.user_name}", "descricao": "Emissão inicial" } ]
 }`;
+
 
 
       const docContent = await callClaude(
@@ -1238,143 +1243,36 @@ Responda APENAS com um JSON na seguinte estrutura (sem markdown, sem comentário
       const should_quality_gate = weakSections.length > 0 && weakSections.length <= 6;
 
 
-      // === Contrato de cobertura + score determinístico, com ÂMBITO honesto ===
-      // O denominador é o subconjunto do catálogo que trata do TEMA deste
-      // documento (mais tudo o que ele próprio declarou cobrir). A cobertura do
-      // framework inteiro continua a ser reportada, mas só como informação —
-      // uma política isolada nunca cobre um framework completo.
+      // === Compliance por conhecimento do modelo ===
+      // Já NÃO comparamos o documento com o catálogo inteiro do framework: uma
+      // política isolada nunca cobre todos os requisitos, e esse denominador
+      // produzia scores irrelevantes, refinos automáticos e bloqueios de
+      // publicação. O documento é escrito para atender os referenciais
+      // escolhidos; a avaliação formal continua a existir, mas só na Análise de
+      // Aderência, quando o usuário a pedir.
       const coverageMap: any[] = Array.isArray(documentContent?.coverage_map) ? documentContent.coverage_map : [];
-      let naoCobertos: any[] = Array.isArray(documentContent?.requisitos_nao_cobertos_justificativa)
-        ? documentContent.requisitos_nao_cobertos_justificativa : [];
-
-      let catalogCodes: string[] = [];
-      let scopeCodes: string[] = [];
-      let residualGaps: string[] = [];
-      // Base de cálculo por framework — o usuário tem de conseguir auditar o
-      // score: quantos requisitos entraram no âmbito, quais foram cobertos e
-      // quais ficaram de fora, em CADA referencial selecionado.
-      const scoreBreakdown: Array<{ framework_id: string; framework_name: string; scope: number; covered: number; missing: string[] }> = [];
-      if (docFwIds.length) {
-        try {
-          const { data: catalogRows } = await supabase
-            .from('gap_analysis_requirements')
-            .select('framework_id, codigo, titulo, descricao')
-            .in('framework_id', docFwIds)
-            .order('ordem', { ascending: true })
-            .limit(900);
-          const scope = resolveDocumentScope(
-            catalogRows || [],
-            documentContent?.titulo,
-            (documentContent?.secoes || []).map((s: any) => s?.nome),
-            coverageMap,
-          );
-          catalogCodes = scope.catalogCodes;
-          scopeCodes = scope.scopeCodes;
-
-          const { data: fwRows } = await supabase
-            .from('gap_analysis_frameworks')
-            .select('id, nome')
-            .in('id', docFwIds);
-          const nameById = new Map<string, string>((fwRows || []).map((f: any) => [f.id, f.nome]));
-          const declaredCodes = new Set(
-            coverageMap.map((c: any) => String(c?.requirement_codigo || '').trim()).filter(Boolean),
-          );
-          const scopeSet = new Set(scopeCodes);
-          docFwIds.forEach((fid) => {
-            const fwScope = (catalogRows || [])
-              .filter((r: any) => r.framework_id === fid)
-              .map((r: any) => String(r.codigo || '').trim())
-              .filter((c: string) => c && scopeSet.has(c));
-            scoreBreakdown.push({
-              framework_id: fid,
-              framework_name: nameById.get(fid) || '',
-              scope: fwScope.length,
-              covered: fwScope.filter((c) => declaredCodes.has(c)).length,
-              missing: fwScope.filter((c) => !declaredCodes.has(c)).slice(0, 12),
-            });
-          });
-        } catch (catErr) {
-          console.log('DocGen catalog fetch failed (score usará somente o coverage_map declarado)', catErr);
-        }
-        if (scopeCodes.length) {
-          naoCobertos = expandNaoCobertosFromCatalog(scopeCodes, coverageMap, naoCobertos);
-          residualGaps = computeResidualGaps(scopeCodes, coverageMap, naoCobertos, 15);
-          // Reflete o denominador expandido de volta no documento persistido.
-          documentContent.requisitos_nao_cobertos_justificativa = naoCobertos;
-        }
-      }
-
-      const inScopeNaoCobertos = filterInScope(naoCobertos);
-      const initial_score = computeCoverageScore(coverageMap, naoCobertos);
-      const coveredCodes = new Set(
-        coverageMap.map((c: any) => String(c?.requirement_codigo || '').trim()).filter(Boolean),
-      );
-      const frameworkCoverage = {
-        covered: catalogCodes.filter((c) => coveredCodes.has(c)).length,
-        total: catalogCodes.length,
-      };
-      documentContent._initial_score = initial_score;
-      documentContent._score_source = scopeCodes.length ? 'coverage_map+scope' : 'coverage_map';
-      documentContent._catalog_size = catalogCodes.length;
-      documentContent._scope_size = scopeCodes.length;
-      documentContent._framework_coverage = frameworkCoverage;
-      documentContent._residual_gaps = residualGaps;
-      documentContent._score_breakdown = scoreBreakdown;
-
-
-
-      console.log('DocGen generate_document compliance (pré auto-refino)', {
-        framework: framework_context?.framework_name,
-        coverage_items: coverageMap.length,
-        catalog_size: catalogCodes.length,
-        nao_cobertos_in_scope: inScopeNaoCobertos.length,
-        nao_cobertos_out_scope: naoCobertos.length - inScopeNaoCobertos.length,
-        residual_gaps_top: residualGaps.slice(0, 8),
-        initial_score,
-      });
-
-      // === Auto-refino movido para a action `auto_refine` ===
-      // O pipeline em série (geração + quality gate + 2 refinos "pro") estourava
-      // o timeout da plataforma (~150s). Agora a geração retorna assim que tem
-      // o documento + score, e o frontend dispara `auto_refine` por tentativa.
+      const catalogCodes: string[] = [];
+      const residualGaps: string[] = [];
+      const initial_score = 0;
+      const finalScore = 0;
       const auto_refine_attempts = 0;
       const auto_refine_history: Array<{ attempt: number; before: number; after: number; gaps_targeted: string[] }> = [];
-      const finalScore = initial_score;
-      const should_auto_refine =
-        initial_score < AUDIT_THRESHOLD &&
-        residualGaps.length > 0 &&
-        scopeCodes.length > 0 &&
-        Array.isArray(documentContent?.secoes) &&
-        documentContent.secoes.length > 0;
+      const should_auto_refine = false;
+      const finalCoverage: any[] = coverageMap;
+      const warnings: string[] = [];
 
-
+      documentContent._score_source = 'model_knowledge';
       documentContent._auto_refine_attempts = auto_refine_attempts;
       documentContent._auto_refine_history = auto_refine_history;
 
-      // Recompute em cima do estado FINAL (pós auto-refino).
-      const finalCoverage: any[] = Array.isArray(documentContent?.coverage_map) ? documentContent.coverage_map : coverageMap;
-      const finalInScopeNaoCobertos = filterInScope(naoCobertos);
-      const warnings: string[] = [];
-      if (finalCoverage.length === 0 && docFwIds.length > 0) {
-        warnings.push('A IA não devolveu coverage_map — a análise de compliance pode ficar inconsistente.');
-      }
-      if (scopeCodes.length && residualGaps.length > 0 && finalScore < AUDIT_THRESHOLD) {
-        warnings.push(`${residualGaps.length} requisito(s) ainda sem cobertura. Execute o refino automático para incluí-los.`);
-      }
-
-      if (finalScore > 0 && finalScore < AUDIT_THRESHOLD) {
-        warnings.push(`Score final ${finalScore}% — abaixo do gate de ${AUDIT_THRESHOLD}% (${finalInScopeNaoCobertos.length} requisito(s) sem cobertura explícita).`);
-      }
-
-      console.log('DocGen generate_document compliance (final)', {
-        framework: framework_context?.framework_name,
-        coverage_items: finalCoverage.length,
-        catalog_size: catalogCodes.length,
-        initial_score,
-        final_score: finalScore,
-        auto_refine_attempts,
-        residual_gaps_top: residualGaps.slice(0, 8),
+      console.log('DocGen generate_document (compliance por conhecimento do modelo)', {
+        frameworks: frameworkNames,
+        secoes: documentContent?.secoes?.length || 0,
       });
+
+
+
+
 
       try {
         await supabase
