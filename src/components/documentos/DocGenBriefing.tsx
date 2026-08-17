@@ -117,6 +117,19 @@ export const DocGenBriefing: React.FC<DocGenBriefingProps> = ({
     );
   };
 
+  const addRole = (role: string) => {
+    const trimmed = role.trim();
+    if (!trimmed) return;
+    const current = briefing.roles || [];
+    if (current.includes(trimmed)) return;
+    update('roles', [...current, trimmed]);
+    setRoleInput('');
+  };
+
+  const removeRole = (role: string) =>
+    update('roles', (briefing.roles || []).filter((r) => r !== role));
+
+
   // Sugestões enriquecidas: frameworks da empresa primeiro, depois defaults.
   const enrichedSuggestions = useMemo(() => {
     const fromCompany = (companyContext?.frameworks || [])
