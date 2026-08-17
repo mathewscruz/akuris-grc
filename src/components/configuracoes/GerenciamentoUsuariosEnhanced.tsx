@@ -35,9 +35,34 @@ const makeUsuarioSchema = (t: (k: string) => string) => z.object({
 
 type UsuarioForm = z.infer<ReturnType<typeof makeUsuarioSchema>>;
 
+/**
+ * Extrai a mensagem de negócio devolvida por uma edge function em vez de
+ * mostrar o genérico "Edge Function returned a non-2xx status code".
+ */
+async function extrairMensagemEdge(error: any): Promise<string | null> {
+  try {
+    const resposta = error?.context as Response | undefined;
+    if (resposta && typeof resposta.text === 'function') {
+      const texto = await resposta.clone().text();
+      if (texto) {
+        try {
+          const json = JSON.parse(texto);
+          return json?.message || json?.error || texto;
+        } catch {
+          return texto;
+        }
+      }
+    }
+  } catch {
+    /* ignora */
+  }
+  return error?.message || null;
+}
+
 interface PermissionProfile {
   id: string;
   name: string;
+  empresa_id?: string | null;
 }
 
 interface Usuario {
@@ -206,26 +231,43 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
     }
   };
 
-  const fetchPermissionProfiles = async () => {
+  /**
+   * Carrega os perfis de permissão da empresa DE DESTINO (a escolhida no
+   * formulário), não da empresa do utilizador autenticado. Sem isto, um
+   * super-admin a criar um utilizador noutra empresa envia um perfil de outra
+   * empresa e a edge function rejeita ("Perfil de permissão não pertence à
+   * empresa de destino").
+   */
+  const fetchPermissionProfiles = async (empresaIdAlvo?: string | null) => {
     try {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('empresa_id')
-        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
-        .single();
+      let empresaId = empresaIdAlvo || null;
 
-      if (!profile?.empresa_id) return;
+      if (!empresaId) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('empresa_id')
+          .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+          .single();
+        empresaId = profile?.empresa_id || null;
+      }
+
+      if (!empresaId) {
+        setPermissionProfiles([]);
+        return;
+      }
 
       const { data, error } = await supabase
         .from('permission_profiles')
-        .select('id, name')
-        .eq('empresa_id', profile.empresa_id)
+        .select('id, name, empresa_id')
+        // perfis da empresa de destino + perfis globais (empresa_id nulo)
+        .or(`empresa_id.eq.${empresaId},empresa_id.is.null`)
         .order('name');
 
       if (error) throw error;
-      setPermissionProfiles(data || []);
+      setPermissionProfiles((data || []) as PermissionProfile[]);
     } catch (error) {
       console.error('Erro ao buscar perfis de permissão:', error);
+      setPermissionProfiles([]);
     }
   };
 
@@ -238,6 +280,26 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
 
     loadData();
   }, []);
+
+  // Recarrega os perfis sempre que a empresa selecionada no formulário mudar
+  const empresaSelecionada = form.watch('empresa_id');
+  useEffect(() => {
+    if (!dialogOpen) return;
+    fetchPermissionProfiles(empresaSelecionada || null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [empresaSelecionada, dialogOpen]);
+
+  // Se o perfil escolhido deixar de existir na empresa selecionada, limpa-o
+  useEffect(() => {
+    const atual = form.getValues('permission_profile_id');
+    if (!atual) return;
+    if (permissionProfiles.length === 0) return;
+    if (!permissionProfiles.some((p) => p.id === atual)) {
+      form.setValue('permission_profile_id', '');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [permissionProfiles]);
+
 
   useEffect(() => {
     if (usuarios.length > 0) {
@@ -298,7 +360,16 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
 
         toast.success(t('admin.usuarios.toastUserUpdated'));
       } else {
-        const { error } = await supabase.functions.invoke('create-user', {
+        // Validação preventiva: perfil tem de pertencer à empresa de destino
+        const perfilEscolhido = data.permission_profile_id
+          ? permissionProfiles.find((p) => p.id === data.permission_profile_id)
+          : null;
+        if (data.permission_profile_id && !perfilEscolhido) {
+          toast.error(t('admin.usuarios.erroPerfilOutraEmpresa'));
+          return;
+        }
+
+        const { data: resposta, error } = await supabase.functions.invoke('create-user', {
           body: {
             email: data.email,
             nome: data.nome,
@@ -309,14 +380,25 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
         });
 
         if (error) {
-          if (error.message?.includes('DUPLICATE_USER')) {
+          const detalhe = await extrairMensagemEdge(error);
+          if (detalhe?.includes('DUPLICATE_USER') || detalhe?.includes('already been registered')) {
             toast.error(t('admin.usuarios.toastUserExists', { email: data.email }));
             return;
           }
-          throw error;
+          if (detalhe?.includes('não pertence à empresa')) {
+            toast.error(t('admin.usuarios.erroPerfilOutraEmpresa'));
+            return;
+          }
+          toast.error(detalhe || error.message || t('admin.usuarios.toastErrorSave'));
+          return;
+        }
+        if ((resposta as any)?.error) {
+          toast.error((resposta as any).message || (resposta as any).error);
+          return;
         }
         toast.success(t('admin.usuarios.toastUserCreated'));
       }
+
 
       await fetchUsuarios();
       setDialogOpen(false);
@@ -866,12 +948,20 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
                         </FormControl>
                         <SelectContent>
                           <SelectItem value="none">{t('admin.usuarios.semPerfil')}</SelectItem>
+                          {permissionProfiles.length === 0 && (
+                            <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                              {isSuperAdmin && !empresaSelecionada
+                                ? t('admin.usuarios.selecioneEmpresaPrimeiro')
+                                : t('admin.usuarios.perfisVazios')}
+                            </div>
+                          )}
                           {permissionProfiles.map((profile) => (
                             <SelectItem key={profile.id} value={profile.id}>
                               {profile.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
+
                       </Select>
                       <FormMessage />
                     </FormItem>

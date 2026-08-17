@@ -71,6 +71,11 @@ export const admin = {
         fieldPapelPlaceholder: 'Selecione o papel',
         fieldPerfilPermissao: 'Perfil de Permissão',
         fieldPerfilPermissaoPlaceholder: 'Selecione o perfil de permissão',
+        perfisVazios: 'Nenhum perfil nesta empresa',
+        selecioneEmpresaPrimeiro: 'Selecione a empresa primeiro',
+        erroPerfilOutraEmpresa: 'O perfil de permissão selecionado pertence a outra empresa. Escolha um perfil da empresa de destino.',
+        erroEmailJaRegistado: 'Este e-mail já está registado no sistema.',
+
         fieldEmpresa: 'Empresa',
         fieldEmpresaPlaceholder: 'Selecione a empresa',
         nenhumaEmpresa: 'Nenhuma empresa',
@@ -258,6 +263,11 @@ export const admin = {
         fieldPapelPlaceholder: 'Select the role',
         fieldPerfilPermissao: 'Permission Profile',
         fieldPerfilPermissaoPlaceholder: 'Select the permission profile',
+        perfisVazios: 'No profiles for this company',
+        selecioneEmpresaPrimeiro: 'Select the company first',
+        erroPerfilOutraEmpresa: 'The selected permission profile belongs to another company. Choose a profile from the target company.',
+        erroEmailJaRegistado: 'This email is already registered in the system.',
+
         fieldEmpresa: 'Company',
         fieldEmpresaPlaceholder: 'Select the company',
         nenhumaEmpresa: 'No company',
