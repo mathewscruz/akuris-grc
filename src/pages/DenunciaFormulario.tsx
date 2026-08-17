@@ -295,6 +295,14 @@ export default function DenunciaFormulario() {
                 <p className="text-sm text-gray-600 mb-2">{t('publicPortal.denunciaForm.yourProtocol')}</p>
                 <p className="text-2xl font-mono font-bold text-green-700">{protocolo}</p>
               </div>
+
+              {codigoAcompanhamento && (
+                <div className="bg-green-50 p-4 rounded-lg border border-green-200 mb-6">
+                  <p className="text-sm text-gray-600 mb-2">{t('publicPortal.denunciaForm.yourTrackingCode')}</p>
+                  <p className="text-lg font-mono font-bold text-green-700 break-all">{codigoAcompanhamento}</p>
+                  <p className="text-xs text-gray-500 mt-2">{t('publicPortal.denunciaForm.trackingCodeHint')}</p>
+                </div>
+              )}
               
               <p className="text-green-700 mb-6">
                 {t('publicPortal.denunciaForm.successDescription')}
