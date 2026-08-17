@@ -403,9 +403,35 @@ serve(async (req) => {
       conversation_title,  // título legível (modelo + data) definido pelo cliente
       briefing_text,       // briefing completo (modo "gerar documento direto", sem etapa de chat)
       doc_control,         // controlo documental (ISO 27001 7.5) + papéis reais informados no briefing
-
+      idempotency_key,     // P0: chave gerada pelo cliente — impede débito duplo em retries
+      json_retry,          // P1: esta invocação é a re-tentativa dedicada de JSON
+      run_quality_gate,    // P1: quality gate roda em invocação própria
 
     } = await req.json();
+
+    // ===== P0: orçamento de tempo alinhado com abort real =====
+    // A plataforma corta a invocação por volta dos 150s. Trabalhamos com um
+    // orçamento menor e abortamos o fetch de verdade (nada continua a correr
+    // e a ser faturado às escondidas). O abort do cliente também propaga.
+    const INVOCATION_BUDGET_MS = 115_000;
+    const startedAt = Date.now();
+    const aborter = new AbortController();
+    const budgetTimer = setTimeout(() => aborter.abort(), INVOCATION_BUDGET_MS);
+    const onClientAbort = () => aborter.abort();
+    req.signal?.addEventListener('abort', onClientAbort);
+    const remainingMs = () => INVOCATION_BUDGET_MS - (Date.now() - startedAt);
+    const releaseBudget = () => {
+      clearTimeout(budgetTimer);
+      req.signal?.removeEventListener('abort', onClientAbort);
+    };
+    const callClaude = (
+      messages: { role: string; content: string }[],
+      systemPrompt: string,
+      apiKey: string,
+      maxTokens = 2000,
+      temperature = 0.8,
+      model: string = MODEL_FAST,
+    ) => callClaudeRaw(messages, systemPrompt, apiKey, maxTokens, temperature, model, aborter.signal);
 
     console.log('DocGen Chat request:', { message, conversation_id, action, user_id, empresa_id, framework_context });
 
