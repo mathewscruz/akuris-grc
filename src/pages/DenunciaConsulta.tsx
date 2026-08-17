@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { fetchEmpresaPublicaPorSlug } from '@/lib/denuncia-publica';
 import { logger } from '@/lib/logger';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatDateTime } from '@/lib/date-utils';
@@ -61,6 +62,7 @@ export default function DenunciaConsulta() {
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false);
   const [protocolo, setProtocolo] = useState('');
+  const [codigo, setCodigo] = useState('');
   const [denuncia, setDenuncia] = useState<Denuncia | null>(null);
   const [movimentacoes, setMovimentacoes] = useState<Movimentacao[]>([]);
   const [showDetails, setShowDetails] = useState(false);
@@ -73,14 +75,9 @@ export default function DenunciaConsulta() {
 
   const carregarEmpresa = async () => {
     try {
-      const { data: empresaData, error: empresaError } = await supabase
-        .from('empresas')
-        .select('id, nome, slug, logo_url')
-        .eq('slug', empresaSlug)
-        .eq('ativo', true)
-        .single();
+      const empresaData = await fetchEmpresaPublicaPorSlug(empresaSlug ?? '');
 
-      if (empresaError || !empresaData) {
+      if (!empresaData) {
         toast({
           title: t('publicPortal.denunciaConsulta.error'),
           description: t('publicPortal.denunciaConsulta.companyNotFound'),
@@ -107,7 +104,7 @@ export default function DenunciaConsulta() {
   const buscarDenuncia = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!empresa || !protocolo.trim()) {
+    if (!empresa || !protocolo.trim() || !codigo.trim()) {
       toast({
         title: t('publicPortal.denunciaConsulta.error'),
         description: t('publicPortal.denunciaConsulta.typeProtocol'),
@@ -122,29 +119,18 @@ export default function DenunciaConsulta() {
     setShowDetails(false);
 
     try {
-      // Buscar denúncia
-      const { data: denunciaData, error: denunciaError } = await supabase
-        .from('denuncias')
-        .select(`
-          id,
-          protocolo,
-          titulo,
-          status,
-          gravidade,
-          created_at,
-          data_atribuicao,
-          data_inicio_investigacao,
-          data_conclusao,
-          denuncias_categorias:categoria_id (
-            nome,
-            cor
-          )
-        `)
-        .eq('empresa_id', empresa.id)
-        .eq('protocolo', protocolo.trim().toUpperCase())
-        .single();
+      const { data, error } = await supabase.functions.invoke('create-denuncia', {
+        body: {
+          action: 'consult',
+          empresa_slug: empresa.slug,
+          protocolo: protocolo.trim().toUpperCase(),
+          codigo: codigo.trim(),
+        },
+      });
 
-      if (denunciaError || !denunciaData) {
+      const denunciaData: any = data?.denuncia ?? null;
+
+      if (error || !denunciaData) {
         toast({
           title: t('publicPortal.denunciaConsulta.notFoundTitle'),
           description: t('publicPortal.denunciaConsulta.notFoundDescription'),
@@ -153,34 +139,14 @@ export default function DenunciaConsulta() {
         return;
       }
 
-      setDenuncia({
-        ...denunciaData,
-        categoria: denunciaData.denuncias_categorias
-      });
-
-      // Buscar movimentações
-      const { data: movimentacoesData, error: movimentacoesError } = await supabase
-        .from('denuncias_movimentacoes')
-        .select(`
-          id,
-          acao,
-          status_anterior,
-          status_novo,
-          observacoes,
-          created_at,
-          profiles:usuario_id (
-            nome
-          )
-        `)
-        .eq('denuncia_id', denunciaData.id)
-        .order('created_at', { ascending: false });
-
-      if (!movimentacoesError && movimentacoesData) {
-        setMovimentacoes(movimentacoesData.map(mov => ({
+      setDenuncia(denunciaData);
+      setMovimentacoes(
+        (denunciaData.movimentacoes ?? []).map((mov: any) => ({
           ...mov,
-          usuario: mov.profiles
-        })));
-      }
+          observacoes: mov.observacoes ?? null,
+          usuario: null,
+        }))
+      );
 
       setShowDetails(true);
     } catch (error) {
@@ -273,7 +239,7 @@ export default function DenunciaConsulta() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={buscarDenuncia} className="flex gap-4">
+            <form onSubmit={buscarDenuncia} className="flex flex-col gap-4 sm:flex-row">
               <div className="flex-1">
                 <Label htmlFor="protocolo" className="sr-only">
                   {t('publicPortal.denunciaConsulta.protocolLabel')}
@@ -283,6 +249,19 @@ export default function DenunciaConsulta() {
                   value={protocolo}
                   onChange={(e) => setProtocolo(e.target.value.toUpperCase())}
                   placeholder={t('publicPortal.denunciaConsulta.protocolPlaceholder')}
+                  className="font-mono"
+                  required
+                />
+              </div>
+              <div className="flex-1">
+                <Label htmlFor="codigo" className="sr-only">
+                  {t('publicPortal.denunciaConsulta.codeLabel')}
+                </Label>
+                <Input
+                  id="codigo"
+                  value={codigo}
+                  onChange={(e) => setCodigo(e.target.value.trim())}
+                  placeholder={t('publicPortal.denunciaConsulta.codePlaceholder')}
                   className="font-mono"
                   required
                 />

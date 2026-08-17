@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchEmpresaPublicaPorSlug } from '@/lib/denuncia-publica';
 import { logger } from '@/lib/logger';
 import { getCompanyLogo, AKURIS_DEFAULT_LOGO } from '@/lib/brand-logo';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -71,6 +72,7 @@ export default function DenunciaFormulario() {
   const [logoUrl, setLogoUrl] = useState<string>(AKURIS_DEFAULT_LOGO);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [codigoAcompanhamento, setCodigoAcompanhamento] = useState('');
   const [protocolo, setProtocolo] = useState<string>('');
   const [anexos, setAnexos] = useState<File[]>([]);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -104,25 +106,10 @@ export default function DenunciaFormulario() {
       try {
         logger.debug('Carregando configuração para empresa slug', { module: 'DenunciaFormulario', action: empresaSlug });
         
-        // Normalizar slug (lowercase e trim)
-        const normalizedSlug = empresaSlug.toLowerCase().trim();
-        
-        // Buscar empresa pelo slug
-        const { data: empresaData, error: empresaError } = await supabase
-          .from('empresas')
-          .select('id, nome, slug, logo_url')
-          .eq('slug', normalizedSlug)
-          .eq('ativo', true)
-          .single();
-
-        if (empresaError) {
-          logger.error('Erro ao buscar empresa', { module: 'DenunciaFormulario', error: String(empresaError) });
-          setLoading(false);
-          return;
-        }
+        const empresaData = await fetchEmpresaPublicaPorSlug(empresaSlug);
 
         if (!empresaData) {
-          logger.error('Empresa não encontrada para slug', { module: 'DenunciaFormulario', action: normalizedSlug });
+          logger.error('Empresa não encontrada para slug', { module: 'DenunciaFormulario', action: empresaSlug });
           setLoading(false);
           return;
         }
@@ -132,19 +119,21 @@ export default function DenunciaFormulario() {
 
         // Buscar configurações da empresa
         logger.debug('Buscando configurações para empresa', { module: 'DenunciaFormulario' });
-        const { data: configData, error: configError } = await supabase
-          .from('denuncias_configuracoes_public' as any)
-          .select('*')
-          .eq('empresa_id', empresaData.id)
-          .single() as { data: any; error: any };
+        const { data: configRaw, error: configError } = await supabase.rpc(
+          'get_denuncia_config_publica' as never,
+          { p_empresa_id: empresaData.id } as never
+        );
 
-        if (configError) {
+        const configRows = (configRaw ?? null) as unknown;
+        const configData: any = Array.isArray(configRows) ? configRows[0] : configRows;
+
+        if (configError || !configData) {
           logger.error('Erro ao buscar configurações', { module: 'DenunciaFormulario', error: String(configError) });
           setLoading(false);
           return;
         }
 
-        if (!configData?.ativo) {
+        if (!empresaData.canal_ativo) {
           logger.debug('Canal de denúncia desativado', { module: 'DenunciaFormulario' });
           setLoading(false);
           return;
@@ -153,18 +142,13 @@ export default function DenunciaFormulario() {
         logger.debug('Configurações carregadas', { module: 'DenunciaFormulario' });
         setConfig(configData);
 
-        // Buscar categorias ativas da empresa
-        logger.debug('Buscando categorias', { module: 'DenunciaFormulario' });
-        const { data: categoriasData, error: categoriasError } = await supabase
-          .from('denuncias_categorias')
-          .select('*')
-          .eq('empresa_id', empresaData.id)
-          .eq('ativo', true)
-          .order('nome');
+        const { data: categoriasData, error: categoriasError } = await supabase.rpc(
+          'get_denuncias_categorias_publicas' as never,
+          { p_empresa_id: empresaData.id } as never
+        );
 
         if (!categoriasError && categoriasData) {
-          logger.debug('Categorias carregadas', { module: 'DenunciaFormulario' });
-          setCategorias(categoriasData);
+          setCategorias((categoriasData ?? []) as any);
         }
 
         // Usar logo_url da empresa, com fallback automático para o logo Akuris
@@ -211,13 +195,15 @@ export default function DenunciaFormulario() {
       // Criar a denúncia usando Edge Function
       const { data: denunciaData, error: denunciaError } = await supabase.functions.invoke('create-denuncia', {
         body: {
-          empresa_id: empresa.id,
-          categoria_id: data.categoria_id,
+          action: 'create',
+          empresa_slug: empresa.slug,
+          categoria_id: data.categoria_id || null,
           titulo: data.titulo,
           descricao: data.descricao,
           anonima: !data.denunciante_nome,
-          email_denunciante: data.denunciante_email || null,
-          nome_denunciante: data.denunciante_nome || null
+          politica_aceita: true,
+          denunciante_email: data.denunciante_email || null,
+          denunciante_nome: data.denunciante_nome || null
         }
       });
 
@@ -227,7 +213,14 @@ export default function DenunciaFormulario() {
         return;
       }
 
+      if (denunciaData?.error) {
+        logger.error('Erro ao criar denúncia', { module: 'DenunciaFormulario', error: String(denunciaData.error) });
+        toast.error(t('publicPortal.denunciaForm.createError'));
+        return;
+      }
+
       setProtocolo(denunciaData.protocolo);
+      setCodigoAcompanhamento(denunciaData.codigo_acompanhamento ?? '');
 
       // Upload de anexos se houver
       if (anexos.length > 0) {
@@ -302,6 +295,14 @@ export default function DenunciaFormulario() {
                 <p className="text-sm text-gray-600 mb-2">{t('publicPortal.denunciaForm.yourProtocol')}</p>
                 <p className="text-2xl font-mono font-bold text-green-700">{protocolo}</p>
               </div>
+
+              {codigoAcompanhamento && (
+                <div className="bg-green-50 p-4 rounded-lg border border-green-200 mb-6">
+                  <p className="text-sm text-gray-600 mb-2">{t('publicPortal.denunciaForm.yourTrackingCode')}</p>
+                  <p className="text-lg font-mono font-bold text-green-700 break-all">{codigoAcompanhamento}</p>
+                  <p className="text-xs text-gray-500 mt-2">{t('publicPortal.denunciaForm.trackingCodeHint')}</p>
+                </div>
+              )}
               
               <p className="text-green-700 mb-6">
                 {t('publicPortal.denunciaForm.successDescription')}

@@ -1,0 +1,1 @@
+DELETE FROM public.denuncias WHERE titulo IN ('Teste curl canal', 'Teste automatizado de canal');

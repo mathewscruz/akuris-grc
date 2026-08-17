@@ -4,6 +4,7 @@ import { Shield, FileText, Search } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchEmpresaPublicaPorSlug } from '@/lib/denuncia-publica';
 import { logger } from '@/lib/logger';
 import { getCompanyLogo, AKURIS_DEFAULT_LOGO } from '@/lib/brand-logo';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -34,25 +35,10 @@ export default function DenunciaMenu() {
       try {
         logger.debug('Carregando dados para empresa slug', { module: 'DenunciaMenu', action: empresaSlug });
         
-        // Normalizar slug (lowercase e trim)
-        const normalizedSlug = empresaSlug.toLowerCase().trim();
-        
-        // Buscar empresa pelo slug
-        const { data: empresaData, error: empresaError } = await supabase
-          .from('empresas')
-          .select('id, nome, slug, logo_url')
-          .eq('slug', normalizedSlug)
-          .eq('ativo', true)
-          .single();
-
-        if (empresaError) {
-          logger.error('Erro ao buscar empresa', { module: 'DenunciaMenu', error: String(empresaError) });
-          setLoading(false);
-          return;
-        }
+        const empresaData = await fetchEmpresaPublicaPorSlug(empresaSlug);
 
         if (!empresaData) {
-          logger.error('Empresa não encontrada para slug', { module: 'DenunciaMenu', action: normalizedSlug });
+          logger.error('Empresa não encontrada para slug', { module: 'DenunciaMenu', action: empresaSlug });
           setLoading(false);
           return;
         }
