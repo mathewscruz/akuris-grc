@@ -41,6 +41,8 @@ export default function Privacidade() {
   const [showDadosDialog, setShowDadosDialog] = useState(false);
   const [showMapeamentoDialog, setShowMapeamentoDialog] = useState(false);
   const [showRopaWizard, setShowRopaWizard] = useState(false);
+  const [novoExercicioSinal, setNovoExercicioSinal] = useState(0);
+
   const [showRopaDialog, setShowRopaDialog] = useState(false);
   const [showSolicitacaoDialog, setShowSolicitacaoDialog] = useState(false);
   const [selectedDado, setSelectedDado] = useState<any>(null);
