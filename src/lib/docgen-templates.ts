@@ -89,7 +89,14 @@ const baseDefaults = {
   language: 'pt-BR' as DocLanguage,
   length: 'padrao' as DocLength,
   directGenerate: true,
+  roles: [] as string[],
+  owner: '',
+  approver: '',
+  reviewFrequency: 'anual',
+  classification: 'interna',
+  inlineRefs: true,
 };
+
 
 export const DOCGEN_TEMPLATES: DocGenTemplate[] = [
   // Segurança
