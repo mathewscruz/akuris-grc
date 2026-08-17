@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { formatDateForInput, parseDateForDB } from "@/lib/date-utils";
 import { useEmpresaId } from "@/hooks/useEmpresaId";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { RopaCamposDetalhados } from "@/components/dados/RopaCamposDetalhados";
 
 interface RopaDialogProps {
   isOpen: boolean;
