@@ -1722,37 +1722,6 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Confirmação antes de publicar quando o score de compliance está baixo. */}
-      <AlertDialog open={publishConfirmOpen} onOpenChange={setPublishConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('docgen.dialog.publishLowComplianceTitle')}</AlertDialogTitle>
-            <AlertDialogDescription
-              dangerouslySetInnerHTML={{
-                __html: DOMPurify.sanitize(
-                  t('docgen.dialog.publishLowComplianceDescription', {
-                    score: String(currentScore ?? 0),
-                    frameworkPart: effFrameworkName
-                      ? t('docgen.dialog.publishLowComplianceFramework', { framework: effFrameworkName })
-                      : '',
-                  })
-                ),
-              }}
-            />
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t('docgen.dialog.continueRefining')}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={async () => {
-                setPublishConfirmOpen(false);
-                await handleOpenCreateDialog();
-              }}
-            >
-              {t('docgen.dialog.publishAnyway')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
     </DialogShell>
   );
