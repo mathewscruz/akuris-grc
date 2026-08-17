@@ -162,6 +162,10 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion }: Props
     });
   }, [items, search, segment]);
 
+  const { sorted: sortedItems, sort, toggleSort } = useTableSort(filteredItems as any[], {
+    riscos: (item: any) => riscosPorRequisito?.get(item.id)?.length ?? 0,
+  });
+
   const stats = useMemo(() => {
     const total = items.length;
     const aplicavel = items.filter(i => i.aplicavel).length;
