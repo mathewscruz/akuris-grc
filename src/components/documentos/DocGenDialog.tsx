@@ -630,6 +630,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
         setGeneratedDocument(current);
         if (res.data.changed) {
           akurisToast({
+            id: DOCGEN_STATUS_TOAST,
             module: 'documentos',
             tone: 'success',
             title: t('docgen.dialog.autoRefineDoneTitle'),
