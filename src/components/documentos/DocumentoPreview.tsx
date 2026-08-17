@@ -1,10 +1,11 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveItemStatusTone } from '@/lib/status-tone';
 import { X, Download, ExternalLink, FileText, Image as ImageIcon, File } from 'lucide-react';
+import DOMPurify from 'dompurify';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
@@ -39,38 +40,72 @@ interface GeneratedSection {
   conteudo?: string;
 }
 
+type PreviewKind = 'pdf' | 'image' | 'word' | 'text' | 'markdown' | 'external' | 'unknown';
+
+function extensionOf(...candidates: (string | undefined)[]): string {
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    const clean = candidate.split('?')[0].split('#')[0];
+    const match = /\.([a-z0-9]+)$/i.exec(clean);
+    if (match) return match[1].toLowerCase();
+  }
+  return '';
+}
+
+function resolveKind(documento: Documento): PreviewKind {
+  const mime = (documento.arquivo_tipo || '').toLowerCase();
+  const ext = extensionOf(documento.arquivo_nome, documento.arquivo_url, documento.arquivo_url_externa);
+
+  if (mime.startsWith('image/') || ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp'].includes(ext)) return 'image';
+  if (mime === 'application/pdf' || ext === 'pdf') return 'pdf';
+  if (
+    mime.includes('officedocument.wordprocessingml') ||
+    mime === 'application/msword' ||
+    ['docx', 'doc'].includes(ext)
+  ) {
+    return 'word';
+  }
+  if (mime === 'text/markdown' || ['md', 'markdown'].includes(ext)) return 'markdown';
+  if (mime.startsWith('text/') || mime === 'application/json' || ['txt', 'csv', 'json', 'log'].includes(ext)) {
+    return 'text';
+  }
+  if (!documento.arquivo_url && documento.arquivo_url_externa) return 'external';
+  return 'unknown';
+}
+
 export function DocumentoPreview({ open, onOpenChange, documento }: DocumentoPreviewProps) {
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [objectUrl, setObjectUrl] = useState<string | null>(null);
+  const [externalUrl, setExternalUrl] = useState<string | null>(null);
+  const [textContent, setTextContent] = useState<string | null>(null);
+  const [wordHtml, setWordHtml] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [failed, setFailed] = useState(false);
   const [secoes, setSecoes] = useState<GeneratedSection[] | null>(null);
+  const objectUrlRef = useRef<string | null>(null);
   const { toast } = useToast();
   const { t } = useLanguage();
 
   const hasFile = !!documento.arquivo_url || !!documento.arquivo_url_externa;
+  const kind = useMemo(() => resolveKind(documento), [documento]);
 
-  const loadPreview = useCallback(async () => {
-    if (!documento.arquivo_url) return;
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.storage
-        .from('documentos')
-        .createSignedUrl(documento.arquivo_url, 3600);
-      if (error) throw error;
-      setPreviewUrl(data.signedUrl);
-    } catch (error) {
-      logger.error('Erro ao carregar preview', error);
-      toast({
-        title: t('documentosExtras.preview.erroCarregarTitulo'),
-        description: t('documentosExtras.preview.erroCarregarDesc'),
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
+  const releaseObjectUrl = useCallback(() => {
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = null;
     }
-  }, [documento.arquivo_url, t, toast]);
+  }, []);
+
+  const reset = useCallback(() => {
+    releaseObjectUrl();
+    setObjectUrl(null);
+    setExternalUrl(null);
+    setTextContent(null);
+    setWordHtml(null);
+    setSecoes(null);
+    setFailed(false);
+  }, [releaseObjectUrl]);
 
   const loadGenerated = useCallback(async () => {
-    setLoading(true);
     try {
       const { data, error } = await supabase
         .from('docgen_generated_docs')
@@ -85,25 +120,78 @@ export function DocumentoPreview({ open, onOpenChange, documento }: DocumentoPre
     } catch (error) {
       logger.error('Erro ao carregar conteúdo gerado', error);
       setSecoes(null);
-    } finally {
-      setLoading(false);
     }
   }, [documento.id]);
 
+  const loadStoredFile = useCallback(async () => {
+    if (!documento.arquivo_url) return;
+    try {
+      // Download the blob so PDFs/Word render inline regardless of content-disposition.
+      const { data, error } = await supabase.storage.from('documentos').download(documento.arquivo_url);
+      if (error || !data) throw error ?? new Error('empty file');
+
+      if (kind === 'word') {
+        try {
+          const mammoth = await import('mammoth');
+          const buffer = await data.arrayBuffer();
+          const result = await mammoth.convertToHtml({ arrayBuffer: buffer });
+          setWordHtml(DOMPurify.sanitize(result.value || ''));
+          return;
+        } catch (conversionError) {
+          logger.error('Erro ao converter DOCX', conversionError);
+          setFailed(true);
+          return;
+        }
+      }
+
+      if (kind === 'text' || kind === 'markdown') {
+        setTextContent(await data.text());
+        return;
+      }
+
+      const blob = kind === 'pdf' ? new Blob([data], { type: 'application/pdf' }) : data;
+      const url = URL.createObjectURL(blob);
+      objectUrlRef.current = url;
+      setObjectUrl(url);
+    } catch (error) {
+      logger.error('Erro ao carregar preview', error);
+      setFailed(true);
+      toast({
+        title: t('documentosExtras.preview.erroCarregarTitulo'),
+        description: t('documentosExtras.preview.erroCarregarDesc'),
+        variant: 'destructive',
+      });
+    }
+  }, [documento.arquivo_url, kind, t, toast]);
+
   useEffect(() => {
     if (!open) {
-      setPreviewUrl(null);
-      setSecoes(null);
+      reset();
       return;
     }
-    if (documento.arquivo_url) {
-      loadPreview();
-    } else if (documento.arquivo_url_externa) {
-      setPreviewUrl(documento.arquivo_url_externa);
-    } else {
-      loadGenerated();
-    }
-  }, [open, documento.arquivo_url, documento.arquivo_url_externa, loadPreview, loadGenerated]);
+
+    let cancelled = false;
+    reset();
+    setLoading(true);
+
+    (async () => {
+      if (documento.arquivo_url) {
+        await loadStoredFile();
+      } else if (documento.arquivo_url_externa) {
+        setExternalUrl(documento.arquivo_url_externa);
+      } else {
+        await loadGenerated();
+      }
+      if (!cancelled) setLoading(false);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, documento.id, documento.arquivo_url, documento.arquivo_url_externa]);
+
+  useEffect(() => releaseObjectUrl, [releaseObjectUrl]);
 
   const handleDownload = async () => {
     if (documento.arquivo_url_externa && !documento.arquivo_url) {
@@ -153,16 +241,14 @@ export function DocumentoPreview({ open, onOpenChange, documento }: DocumentoPre
     }
   };
 
-  const isExternal = !!documento.arquivo_url_externa && !documento.arquivo_url;
-  const isImage = documento.arquivo_tipo?.startsWith('image/');
-  const isPdf =
-    documento.arquivo_tipo === 'application/pdf' ||
-    (isExternal && /\.pdf($|\?)/i.test(documento.arquivo_url_externa || ''));
-  const canPreview = isImage || isPdf || isExternal;
+  const openInNewTab = () => {
+    const url = objectUrl || externalUrl;
+    if (url) window.open(url, '_blank', 'noopener');
+  };
 
   const getFileIcon = (className = 'h-5 w-5') => {
-    if (isImage) return <ImageIcon className={className} />;
-    if (isPdf || !hasFile) return <FileText className={className} />;
+    if (kind === 'image') return <ImageIcon className={className} />;
+    if (kind === 'pdf' || kind === 'word' || !hasFile) return <FileText className={className} />;
     return <File className={className} />;
   };
 
@@ -181,6 +267,98 @@ export function DocumentoPreview({ open, onOpenChange, documento }: DocumentoPre
   ].filter(Boolean) as string[];
 
   const canDownload = hasFile || !!secoes?.length;
+  const canOpenTab = !!(objectUrl || externalUrl);
+
+  const renderBody = () => {
+    if (loading) {
+      return (
+        <div className="flex h-full items-center justify-center">
+          <AkurisPulse size={48} />
+        </div>
+      );
+    }
+
+    if (kind === 'image' && objectUrl) {
+      return (
+        <div className="h-full overflow-auto p-4">
+          <img src={objectUrl} alt={documento.nome} className="mx-auto h-auto max-w-full rounded-md" />
+        </div>
+      );
+    }
+
+    if (objectUrl && (kind === 'pdf' || kind === 'unknown')) {
+      return (
+        <object data={objectUrl} type="application/pdf" className="h-full w-full">
+          <iframe src={objectUrl} className="h-full w-full border-0" title={documento.nome} />
+        </object>
+      );
+    }
+
+    if (externalUrl) {
+      return <iframe src={externalUrl} className="h-full w-full border-0" title={documento.nome} />;
+    }
+
+    if (wordHtml !== null) {
+      return (
+        <div className="h-full overflow-auto">
+          <article
+            className="prose prose-sm dark:prose-invert mx-auto max-w-3xl bg-card px-8 py-10 my-6 rounded-md border border-border shadow-sm dark:shadow-none"
+            dangerouslySetInnerHTML={{ __html: wordHtml }}
+          />
+        </div>
+      );
+    }
+
+    if (textContent !== null) {
+      return (
+        <div className="h-full overflow-auto">
+          <article className="mx-auto max-w-3xl bg-card px-8 py-10 my-6 rounded-md border border-border shadow-sm dark:shadow-none">
+            {kind === 'markdown' ? (
+              <DocGenMarkdown content={textContent} />
+            ) : (
+              <pre className="whitespace-pre-wrap break-words text-sm text-foreground">{textContent}</pre>
+            )}
+          </article>
+        </div>
+      );
+    }
+
+    if (secoes?.length) {
+      return (
+        <div className="h-full overflow-auto">
+          <article className="mx-auto max-w-3xl space-y-6 bg-card px-8 py-10 my-6 rounded-md border border-border shadow-sm dark:shadow-none">
+            <h1 className="text-2xl font-semibold text-foreground">{documento.nome}</h1>
+            {secoes.map((secao, index) => (
+              <section key={index} className="space-y-2">
+                {(secao.nome || secao.titulo) && (
+                  <h2 className="text-base font-semibold text-foreground">{secao.nome || secao.titulo}</h2>
+                )}
+                <DocGenMarkdown content={secao.conteudo || ''} />
+              </section>
+            ))}
+          </article>
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center text-muted-foreground">
+        {getFileIcon('h-10 w-10 opacity-60')}
+        <p className="text-sm font-medium text-foreground">
+          {hasFile
+            ? failed && kind === 'word'
+              ? t('documentosExtras.preview.erroConverterDocx')
+              : t('documentosExtras.preview.previewIndisponivel')
+            : t('documentosExtras.preview.semConteudo')}
+        </p>
+        <p className="text-xs">
+          {hasFile
+            ? t('documentosExtras.preview.usarDownload')
+            : t('documentosExtras.preview.semConteudoAjuda')}
+        </p>
+      </div>
+    );
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -205,49 +383,7 @@ export function DocumentoPreview({ open, onOpenChange, documento }: DocumentoPre
           </div>
         </DialogHeader>
 
-        <div className="flex-1 min-h-0 bg-muted/30">
-          {loading ? (
-            <div className="flex h-full items-center justify-center">
-              <AkurisPulse size={48} />
-            </div>
-          ) : canPreview && previewUrl ? (
-            isImage ? (
-              <div className="h-full overflow-auto p-4">
-                <img src={previewUrl} alt={documento.nome} className="mx-auto h-auto max-w-full rounded-md" />
-              </div>
-            ) : (
-              <iframe src={previewUrl} className="h-full w-full border-0" title={documento.nome} />
-            )
-          ) : secoes?.length ? (
-            <div className="h-full overflow-auto">
-              <article className="mx-auto max-w-3xl space-y-6 bg-card px-8 py-10 my-6 rounded-md border border-border shadow-sm">
-                <h1 className="text-2xl font-semibold text-foreground">{documento.nome}</h1>
-                {secoes.map((secao, index) => (
-                  <section key={index} className="space-y-2">
-                    {(secao.nome || secao.titulo) && (
-                      <h2 className="text-base font-semibold text-foreground">{secao.nome || secao.titulo}</h2>
-                    )}
-                    <DocGenMarkdown content={secao.conteudo || ''} />
-                  </section>
-                ))}
-              </article>
-            </div>
-          ) : (
-            <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center text-muted-foreground">
-              {getFileIcon('h-10 w-10 opacity-60')}
-              <p className="text-sm font-medium text-foreground">
-                {hasFile
-                  ? t('documentosExtras.preview.previewIndisponivel')
-                  : t('documentosExtras.preview.semConteudo')}
-              </p>
-              <p className="text-xs">
-                {hasFile
-                  ? t('documentosExtras.preview.usarDownload')
-                  : t('documentosExtras.preview.semConteudoAjuda')}
-              </p>
-            </div>
-          )}
-        </div>
+        <div className="flex-1 min-h-0 bg-muted/30">{renderBody()}</div>
 
         <div className="flex items-center justify-between gap-2 border-t border-border px-6 py-4 shrink-0">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
@@ -255,8 +391,8 @@ export function DocumentoPreview({ open, onOpenChange, documento }: DocumentoPre
             {t('documentosExtras.preview.fechar')}
           </Button>
           <div className="flex gap-2">
-            {previewUrl && canPreview && (
-              <Button variant="outline" onClick={() => window.open(previewUrl, '_blank', 'noopener')}>
+            {canOpenTab && (
+              <Button variant="outline" onClick={openInNewTab}>
                 <ExternalLink className="h-4 w-4 mr-2" />
                 {t('documentosExtras.preview.abrirNovaAba')}
               </Button>

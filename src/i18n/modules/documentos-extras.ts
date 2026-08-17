@@ -20,6 +20,8 @@ export const documentosExtras = {
         abrirNovaAba: "Abrir em nova aba",
         download: "Download",
         naoDisponivel: "N/A",
+        convertendoDocx: "A converter o documento Word para visualização...",
+        erroConverterDocx: "Não foi possível converter este ficheiro Word. Faça o download para o abrir.",
       },
       renovar: {
         selecioneArquivo: "Selecione um arquivo para continuar",
@@ -253,6 +255,8 @@ export const documentosExtras = {
         abrirNovaAba: "Open in new tab",
         download: "Download",
         naoDisponivel: "N/A",
+        convertendoDocx: "Converting the Word document for preview...",
+        erroConverterDocx: "This Word file could not be converted. Download it to open the file.",
       },
       renovar: {
         selecioneArquivo: "Select a file to continue",
