@@ -7833,6 +7833,41 @@ export type Database = {
           },
         ]
       }
+      riscos_comentarios: {
+        Row: {
+          comentario: string
+          created_at: string
+          id: string
+          mencoes: string[] | null
+          risco_id: string
+          user_id: string
+        }
+        Insert: {
+          comentario: string
+          created_at?: string
+          id?: string
+          mencoes?: string[] | null
+          risco_id: string
+          user_id: string
+        }
+        Update: {
+          comentario?: string
+          created_at?: string
+          id?: string
+          mencoes?: string[] | null
+          risco_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "riscos_comentarios_risco_id_fkey"
+            columns: ["risco_id"]
+            isOneToOne: false
+            referencedRelation: "riscos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       riscos_historico_avaliacoes: {
         Row: {
           avaliado_por: string | null
