@@ -17,6 +17,8 @@ import { toast } from 'sonner';
 import { Plus, Edit, Trash2, Building2, Upload, MoreHorizontal, RefreshCw, Power, PowerOff } from 'lucide-react';
 import { differenceInDays } from 'date-fns';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import { logger } from '@/lib/logger';
+import EmpresaProvisioningDialog, { type ProvisioningStep } from '@/components/configuracoes/EmpresaProvisioningDialog';
 import { PlanBadge } from '@/components/PlanBadge';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
@@ -776,6 +778,13 @@ const GerenciamentoEmpresasInner = () => {
           title: t('admin.empresas.emptyTitle'),
           description: searchTerm ? t('admin.empresas.emptyDescriptionFiltered') : t('admin.empresas.emptyDescriptionEmpty'),
         }}
+      />
+
+      <EmpresaProvisioningDialog
+        open={provisioningOpen}
+        steps={provisioningSteps}
+        title={t('admin.empresas.provisioning.title')}
+        description={t('admin.empresas.provisioning.description')}
       />
 
       <ConfirmDialog
