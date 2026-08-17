@@ -46,6 +46,9 @@ export const docgen = {
         approverLabel: 'Aprovador',
         approverPlaceholder: 'Ex.: Diretor de Operações',
         reviewFrequencyLabel: 'Periodicidade de revisão',
+        freq: { mensal: 'Mensal', trimestral: 'Trimestral', semestral: 'Semestral', anual: 'Anual', bienal: 'Bienal' },
+        classif: { publica: 'Pública', interna: 'Interna', confidencial: 'Confidencial', restrita: 'Restrita' },
+
         classificationLabel: 'Classificação da informação',
         rolesLabel: 'Cargos reais da empresa',
         rolesHelp: 'A matriz RACI usará apenas estes cargos. Se ficar vazio, a IA usa designações genéricas e regista como premissa a validar.',
