@@ -24,8 +24,9 @@ interface Props {
 }
 
 export function RopaCamposDetalhados({ values, onChange }: Props) {
-  const { language } = useLanguage();
-  const lang = language?.startsWith("en") ? "en" : "pt";
+  const { locale } = useLanguage();
+  const lang = String(locale).startsWith("en") ? "en" : "pt";
+
 
   const renderField = (field: RopaFieldDef) => {
     const value = values[field.key] ?? "";
