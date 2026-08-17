@@ -53,6 +53,7 @@ import { CreditsExhaustedDialog } from '@/components/CreditsExhaustedDialog';
 import { useAuth } from '@/components/AuthProvider';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { AkurisComplete } from '@/components/ui/AkurisComplete';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { logger } from '@/lib/logger';
 
@@ -192,12 +193,19 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
   const [isGeneratingDoc, setIsGeneratingDoc] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
   /**
-   * Progresso da geração. As etapas 1–3 são estimadas pelo tempo decorrido
-   * (a API devolve tudo de uma vez); as etapas de refino automático são reais
-   * — cada tentativa é uma chamada concluída ao servidor.
+   * Progresso da geração. Cada etapa é um marco REAL do fluxo (preparação,
+   * pedido em curso, quality gate, refino) — a percentagem só avança dentro
+   * da faixa da etapa atual e nunca recua, terminando em 100% quando o
+   * documento fica pronto.
    */
   const [genElapsed, setGenElapsed] = useState(0);
+  const [genMilestone, setGenMilestone] = useState<1 | 2 | 3 | 4 | 5>(1);
+  const [genPercent, setGenPercent] = useState(0);
+  const [genComplete, setGenComplete] = useState(false);
+  const genStageStartRef = useRef<number>(Date.now());
+  const genPercentRef = useRef(0);
   const [refineProgress, setRefineProgress] = useState<{ attempt: number; total: number } | null>(null);
+
 
   const [draft, setDraft] = useState<{ briefing: BriefingDefaults; templateId?: string; step: number } | null>(null);
   const lastGenerationArgsRef = useRef<{ briefingText?: string; docNameHint?: string; conversationId?: string | null }>({});
@@ -664,7 +672,14 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
 
     lastGenerationArgsRef.current = opts ?? {};
     setGenerationError(null);
+    // Reinicia o progresso real desta geração.
+    genPercentRef.current = 0;
+    genStageStartRef.current = Date.now();
+    setGenPercent(0);
+    setGenComplete(false);
+    setGenMilestone(1);
     setIsGeneratingDoc(true);
+
 
     // P0: uma chave por tentativa lógica do utilizador. Se a chamada falhar de
     // forma recuperável, reenviamos com a MESMA chave — o servidor não debita
@@ -705,7 +720,12 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     });
 
     try {
+      // Marco real: contexto pronto, pedido de redação em curso.
+      setGenMilestone(2);
+      genStageStartRef.current = Date.now();
+      setTimeout(() => setGenMilestone(3), 400);
       let res = await invokeGenerate(false);
+
 
       // JSON inválido/truncado é recuperável: uma segunda tentativa com prompt
       // estrito, mesma chave de idempotência (sem novo débito).
@@ -763,6 +783,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
       // seções fracas do documento já entregue.
       let workingDoc = doc;
       if (data?.should_quality_gate) {
+        setGenMilestone(4);
         const gate = await callDocGen({
           action: 'quality_gate',
           user_id: userInfo.user_id,
@@ -787,6 +808,12 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
         });
         await runAutoRefine(workingDoc, data.framework_ids, Number(data.max_refine_attempts) || 2);
       }
+
+      // Documento pronto: selo de conclusão a 100% antes de revelar o texto.
+      setGenComplete(true);
+      window.setTimeout(() => setGenComplete(false), 1600);
+
+
 
 
     } catch (error) {
@@ -1044,6 +1071,24 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     setPhase('briefing');
   };
 
+  /**
+   * Faixa de percentagem de cada etapa real + duração típica (s) usada apenas
+   * para animar dentro da faixa. A percentagem nunca ultrapassa o teto da
+   * etapa em curso, por isso reflete o estado real do fluxo.
+   */
+  const GEN_STAGE_BOUNDS: Record<number, [number, number, number]> = {
+    1: [0, 8, 3],
+    2: [8, 16, 5],
+    3: [16, 72, 45],
+    4: [72, 86, 18],
+    5: [86, 98, 22],
+  };
+
+  // Marco novo → reinicia o cronómetro da etapa.
+  useEffect(() => {
+    genStageStartRef.current = Date.now();
+  }, [genMilestone, refineProgress?.attempt]);
+
   // Cronómetro da geração: alimenta as etapas e a percentagem mostradas ao usuário.
   useEffect(() => {
     if (!isGeneratingDoc && !refineProgress) {
@@ -1056,22 +1101,41 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isGeneratingDoc, !!refineProgress]);
 
-  /** Etapa atual (1..5) e percentagem apresentada. */
-  const generationStage = refineProgress
-    ? 5
-    : genElapsed < 6 ? 1
-      : genElapsed < 14 ? 2
-        : genElapsed < 40 ? 3
-          : 4;
-  const generationPercent = refineProgress
-    ? Math.min(96, 70 + Math.round((refineProgress.attempt / Math.max(1, refineProgress.total)) * 26))
-    : Math.min(70, Math.round((genElapsed / 45) * 70));
-  const generationStageLabel = refineProgress
-    ? t('docgen.dialog.progressRefining', {
-        attempt: String(refineProgress.attempt),
-        total: String(refineProgress.total),
-      })
-    : t(`docgen.dialog.progressStage${generationStage}` as any);
+  /** Etapa atual (1..5). */
+  const generationStage: number = refineProgress ? 5 : genMilestone;
+
+  // Percentagem monotónica, limitada pela faixa da etapa real em curso.
+  useEffect(() => {
+    if (genComplete) {
+      genPercentRef.current = 100;
+      setGenPercent(100);
+      return;
+    }
+    if (!isGeneratingDoc && !refineProgress) return;
+    const [lo, hi, expected] = GEN_STAGE_BOUNDS[generationStage] ?? [0, 8, 3];
+    let raw: number;
+    if (refineProgress) {
+      raw = lo + (hi - lo) * (refineProgress.attempt / Math.max(1, refineProgress.total));
+    } else {
+      const stageElapsed = (Date.now() - genStageStartRef.current) / 1000;
+      raw = lo + (hi - lo) * (1 - Math.exp(-stageElapsed / Math.max(1, expected * 0.5)));
+    }
+    const next = Math.max(genPercentRef.current, Math.round(raw));
+    genPercentRef.current = next;
+    setGenPercent(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [genElapsed, generationStage, refineProgress?.attempt, genComplete, isGeneratingDoc]);
+
+  const generationPercent = genComplete ? 100 : genPercent;
+  const generationStageLabel = genComplete
+    ? t('docgen.dialog.progressDone')
+    : refineProgress
+      ? t('docgen.dialog.progressRefining', {
+          attempt: String(refineProgress.attempt),
+          total: String(refineProgress.total),
+        })
+      : t(`docgen.dialog.progressStage${generationStage}` as any);
+
 
 
   // Existe trabalho em curso que se perderia ao fechar?
@@ -1578,10 +1642,12 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                 />
               )}
 
-              {!generatedDocument && isGeneratingDoc ? (
+              {isGeneratingDoc || genComplete ? (
                 <div className="flex-1 min-h-0 overflow-y-auto pr-2">
                   <div className="flex flex-col items-center justify-center gap-4 py-10 text-center">
-                    <AkurisPulse size={44} />
+                    {genComplete
+                      ? <AkurisComplete size={44} label={t('docgen.dialog.progressDone')} />
+                      : <AkurisPulse size={44} />}
                     <div className="w-full max-w-sm space-y-2">
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-foreground font-medium">{generationStageLabel}</span>
@@ -1591,7 +1657,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                       </div>
                       <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
                         <div
-                          className="h-full rounded-full bg-primary transition-all duration-700"
+                          className="h-full rounded-full bg-primary transition-all duration-500"
                           style={{ width: `${Math.max(4, generationPercent)}%` }}
                         />
                       </div>
@@ -1600,7 +1666,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                           <li
                             key={step}
                             className={
-                              step < generationStage
+                              genComplete || step < generationStage
                                 ? 'text-muted-foreground line-through'
                                 : step === generationStage
                                   ? 'text-foreground font-medium'
@@ -1614,6 +1680,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                     </div>
                   </div>
                 </div>
+
 
               ) : isEditingLayout ? (
                 <div className="flex-1 min-h-0 overflow-y-auto">
