@@ -336,7 +336,16 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
 
         toast.success(t('admin.usuarios.toastUserUpdated'));
       } else {
-        const { error } = await supabase.functions.invoke('create-user', {
+        // Validação preventiva: perfil tem de pertencer à empresa de destino
+        const perfilEscolhido = data.permission_profile_id
+          ? permissionProfiles.find((p) => p.id === data.permission_profile_id)
+          : null;
+        if (data.permission_profile_id && !perfilEscolhido) {
+          toast.error(t('admin.usuarios.erroPerfilOutraEmpresa'));
+          return;
+        }
+
+        const { data: resposta, error } = await supabase.functions.invoke('create-user', {
           body: {
             email: data.email,
             nome: data.nome,
@@ -347,14 +356,25 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
         });
 
         if (error) {
-          if (error.message?.includes('DUPLICATE_USER')) {
+          const detalhe = await extrairMensagemEdge(error);
+          if (detalhe?.includes('DUPLICATE_USER') || detalhe?.includes('already been registered')) {
             toast.error(t('admin.usuarios.toastUserExists', { email: data.email }));
             return;
           }
-          throw error;
+          if (detalhe?.includes('não pertence à empresa')) {
+            toast.error(t('admin.usuarios.erroPerfilOutraEmpresa'));
+            return;
+          }
+          toast.error(detalhe || error.message || t('admin.usuarios.toastErrorSave'));
+          return;
+        }
+        if ((resposta as any)?.error) {
+          toast.error((resposta as any).message || (resposta as any).error);
+          return;
         }
         toast.success(t('admin.usuarios.toastUserCreated'));
       }
+
 
       await fetchUsuarios();
       setDialogOpen(false);
