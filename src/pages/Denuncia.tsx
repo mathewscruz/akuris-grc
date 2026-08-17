@@ -9,7 +9,6 @@ import { useDenunciasStats } from '@/hooks/useDenunciasStats';
 import { BarChart3 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useRef } from 'react';
 
 export default function Denuncia() {
   const { t } = useLanguage();
@@ -17,6 +16,7 @@ export default function Denuncia() {
   const location = useLocation();
   const [denunciaIdToOpen, setDenunciaIdToOpen] = useState<string | null>(null);
   const [relatoriosOpen, setRelatoriosOpen] = useState(false);
+  const [dashboardRefreshKey, setDashboardRefreshKey] = useState(0);
   const { data: stats, isLoading: statsLoading } = useDenunciasStats();
 
   // Detectar se veio com itemId do dashboard
@@ -27,11 +27,16 @@ export default function Denuncia() {
     }
   }, [location.state]);
 
+  const handleDenunciaCriada = () => {
+    setDashboardRefreshKey((prev) => prev + 1);
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
         title={t('modules.denuncia.title')}
         description={t('modules.denuncia.description')}
+        actions={<NovaDenunciaDialog onDenunciaCriada={handleDenunciaCriada} />}
         secondaryActions={[
           {
             label: t('cardsKpi.denuncias.abrirRelatorios'),
@@ -51,7 +56,7 @@ export default function Denuncia() {
         ]}
       />
 
-      <DenunciasDashboard itemIdToOpen={denunciaIdToOpen} />
+      <DenunciasDashboard itemIdToOpen={denunciaIdToOpen} refreshKey={dashboardRefreshKey} />
 
       {/* Relatórios Dialog */}
       <Dialog open={relatoriosOpen} onOpenChange={setRelatoriosOpen}>
