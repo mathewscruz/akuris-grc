@@ -8107,81 +8107,138 @@ export type Database = {
       ropa_registros: {
         Row: {
           adequacao_destino: string | null
+          area_responsavel: string | null
           base_legal: string
+          categoria_dados: string | null
           categoria_titulares: string
+          codigo: string | null
           compartilhamento_dados: string | null
+          compartilhamento_externo: string | null
+          compartilhamento_interno: string | null
           controlador_conjunto: string | null
           created_at: string
           created_by: string | null
+          criterio_descarte: string | null
+          dados_tratados: string | null
           data_fim: string | null
           data_inicio: string | null
+          decisao_automatizada: boolean
+          decisao_automatizada_detalhes: string | null
+          descricao_atividade: string | null
           empresa_id: string
           encarregado_dados: string | null
+          evidencias_documentos: string | null
           finalidade: string
+          fonte_dados: string | null
           id: string
+          justificativa_base_legal: string | null
           medidas_seguranca: string | null
           nome_tratamento: string
           observacoes: string | null
+          operacoes_realizadas: string | null
           operador_dados: string | null
           origem_dados: string | null
           pais_destino: string | null
           prazo_retencao: string
           responsavel_tratamento: string | null
+          risco_impacto: string | null
+          risco_nivel: string | null
+          risco_probabilidade: string | null
           status: string
+          transferencia_detalhes: string | null
           transferencia_internacional: boolean | null
           updated_at: string
+          versao: string
         }
         Insert: {
           adequacao_destino?: string | null
+          area_responsavel?: string | null
           base_legal: string
+          categoria_dados?: string | null
           categoria_titulares: string
+          codigo?: string | null
           compartilhamento_dados?: string | null
+          compartilhamento_externo?: string | null
+          compartilhamento_interno?: string | null
           controlador_conjunto?: string | null
           created_at?: string
           created_by?: string | null
+          criterio_descarte?: string | null
+          dados_tratados?: string | null
           data_fim?: string | null
           data_inicio?: string | null
+          decisao_automatizada?: boolean
+          decisao_automatizada_detalhes?: string | null
+          descricao_atividade?: string | null
           empresa_id: string
           encarregado_dados?: string | null
+          evidencias_documentos?: string | null
           finalidade: string
+          fonte_dados?: string | null
           id?: string
+          justificativa_base_legal?: string | null
           medidas_seguranca?: string | null
           nome_tratamento: string
           observacoes?: string | null
+          operacoes_realizadas?: string | null
           operador_dados?: string | null
           origem_dados?: string | null
           pais_destino?: string | null
           prazo_retencao: string
           responsavel_tratamento?: string | null
+          risco_impacto?: string | null
+          risco_nivel?: string | null
+          risco_probabilidade?: string | null
           status?: string
+          transferencia_detalhes?: string | null
           transferencia_internacional?: boolean | null
           updated_at?: string
+          versao?: string
         }
         Update: {
           adequacao_destino?: string | null
+          area_responsavel?: string | null
           base_legal?: string
+          categoria_dados?: string | null
           categoria_titulares?: string
+          codigo?: string | null
           compartilhamento_dados?: string | null
+          compartilhamento_externo?: string | null
+          compartilhamento_interno?: string | null
           controlador_conjunto?: string | null
           created_at?: string
           created_by?: string | null
+          criterio_descarte?: string | null
+          dados_tratados?: string | null
           data_fim?: string | null
           data_inicio?: string | null
+          decisao_automatizada?: boolean
+          decisao_automatizada_detalhes?: string | null
+          descricao_atividade?: string | null
           empresa_id?: string
           encarregado_dados?: string | null
+          evidencias_documentos?: string | null
           finalidade?: string
+          fonte_dados?: string | null
           id?: string
+          justificativa_base_legal?: string | null
           medidas_seguranca?: string | null
           nome_tratamento?: string
           observacoes?: string | null
+          operacoes_realizadas?: string | null
           operador_dados?: string | null
           origem_dados?: string | null
           pais_destino?: string | null
           prazo_retencao?: string
           responsavel_tratamento?: string | null
+          risco_impacto?: string | null
+          risco_nivel?: string | null
+          risco_probabilidade?: string | null
           status?: string
+          transferencia_detalhes?: string | null
           transferencia_internacional?: boolean | null
           updated_at?: string
+          versao?: string
         }
         Relationships: []
       }
