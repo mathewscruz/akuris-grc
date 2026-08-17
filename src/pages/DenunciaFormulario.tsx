@@ -123,7 +123,8 @@ export default function DenunciaFormulario() {
           { p_empresa_id: empresaData.id } as never
         );
 
-        const configData: any = Array.isArray(configRaw) ? configRaw[0] : configRaw;
+        const configRows = (configRaw ?? null) as unknown;
+        const configData: any = Array.isArray(configRows) ? configRows[0] : configRows;
 
         if (configError || !configData) {
           logger.error('Erro ao buscar configurações', { module: 'DenunciaFormulario', error: String(configError) });
@@ -146,7 +147,7 @@ export default function DenunciaFormulario() {
         );
 
         if (!categoriasError && categoriasData) {
-          setCategorias(categoriasData as any);
+          setCategorias((categoriasData ?? []) as any);
         }
 
         // Usar logo_url da empresa, com fallback automático para o logo Akuris
