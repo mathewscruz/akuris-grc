@@ -80,33 +80,45 @@ function extractFrameworks(messageText: string): string[] {
 const MODEL_FAST = 'google/gemini-3-flash-preview';
 const MODEL_QUALITY = 'google/gemini-3.1-pro-preview';
 
-async function callClaude(
+async function callClaudeRaw(
   messages: { role: string; content: string }[],
   systemPrompt: string,
   apiKey: string,
   maxTokens = 2000,
   temperature = 0.8,
   model: string = MODEL_FAST,
+  signal?: AbortSignal,
 ) {
-  const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model,
-      max_tokens: maxTokens,
-      temperature,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        ...messages.filter(m => m.role !== 'system').map(m => ({
-          role: m.role === 'assistant' ? 'assistant' : 'user',
-          content: m.content,
-        })),
-      ],
-    }),
-  });
+  let response: Response;
+  try {
+    response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      signal,
+      body: JSON.stringify({
+        model,
+        max_tokens: maxTokens,
+        temperature,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          ...messages.filter(m => m.role !== 'system').map(m => ({
+            role: m.role === 'assistant' ? 'assistant' : 'user',
+            content: m.content,
+          })),
+        ],
+      }),
+    });
+  } catch (e) {
+    // Abort real: o cliente desistiu ou o orçamento de tempo desta invocação
+    // acabou. Nunca deve virar cobrança nem 500 genérico.
+    if ((e as any)?.name === 'AbortError') {
+      throw new AiGatewayError('Geração abortada antes de concluir.', 'GENERATION_ABORTED', 499);
+    }
+    throw e;
+  }
 
   if (!response.ok) {
     const errorText = await response.text();
