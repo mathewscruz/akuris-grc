@@ -1124,7 +1124,7 @@ Estrutura obrigatória do documento:
 - Todas as seções definidas no template acima, em ordem
 - Seção "Papéis e Responsabilidades" com matriz RACI
 - Seção "Premissas a validar" — OBRIGATÓRIA — listando, em tabela GFM (Premissa | Porquê é premissa | Quem valida), tudo o que foi assumido e não confirmado pela empresa (ferramentas, estruturas, cargos, prazos sugeridos)
-- Seção "Referências Normativas" listando TODOS os frameworks selecionados e as cláusulas/controlos relevantes de CADA UM
+- Seção "Referências Normativas" citando, em texto corrido, TODOS os referenciais selecionados e os temas que este documento atende em cada um (sem listar códigos item a item)
 - Seção "Glossário" com termos técnicos usados no documento
 - Seção "Histórico de Versões" com linha inicial (1.0, DATA_ATUAL, autor, "Emissão inicial")
 - Seção "Aprovação" com responsáveis e data
