@@ -59,6 +59,9 @@ export function TratamentosList({ riscoId, riscoNome, embedded = false, riscoDat
   const [editingTratamento, setEditingTratamento] = useState<Tratamento | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [tratamentoToDelete, setTratamentoToDelete] = useState<Tratamento | null>(null);
+  const { sorted: tratamentosOrdenados, sort, toggleSort } = useTableSort(tratamentos as any[], {
+    responsavel: (item: any) => item.responsavel_profile?.nome ?? item.responsavel ?? '',
+  });
 
   const fetchTratamentos = async () => {
     try {
