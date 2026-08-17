@@ -938,12 +938,38 @@ ${transcriptFull}
 === FIM DAS RESPOSTAS DO USUÁRIO ===`
         : '';
 
+      // === Controlo documental (ISO 27001 7.5) e papéis reais ===
+      // Vem do briefing. Sem isto a IA inventa cargos (RACI) e omite
+      // proprietário/aprovador/periodicidade — o documento não passa auditoria.
+      const dc = (doc_control && typeof doc_control === 'object') ? doc_control : {};
+      const dcRoles: string[] = Array.isArray(dc.roles) ? dc.roles.filter((r: any) => String(r || '').trim()) : [];
+      const dcOwner = String(dc.owner || '').trim();
+      const dcApprover = String(dc.approver || '').trim();
+      const dcFrequency = String(dc.review_frequency || '').trim() || 'Anual';
+      const dcClassification = String(dc.classification || '').trim() || 'Interna';
+      const dcInlineRefs = dc.inline_refs !== false;
+
+      const raciColumns = dcRoles.length
+        ? dcRoles.join(' | ')
+        : 'Responsável pela Segurança da Informação | Gestor da Área | Equipa de TI | Colaborador';
+      const rolesRule = dcRoles.length
+        ? `- A matriz RACI SÓ pode usar estes cargos, informados pela empresa: ${dcRoles.join(', ')}. É PROIBIDO inventar outros cargos, comités ou funções (não escreva CISO, DPO, Comité de Segurança etc. se não estiverem nesta lista).`
+        : `- A empresa NÃO informou os cargos existentes. Use APENAS designações funcionais genéricas ("Responsável pela Segurança da Informação", "Gestor da Área", "Equipa de TI", "Colaborador") e acrescente, na seção "Premissas a validar", a premissa de que estes papéis precisam ser atribuídos a cargos reais. NUNCA afirme que a empresa possui CISO, DPO, Comité de Segurança ou qualquer estrutura que não tenha sido informada.`;
+
+      const docControlSection = `\n\n=== CONTROLO DOCUMENTAL (ISO 27001, cláusula 7.5) ===
+PROPRIETÁRIO_DO_DOCUMENTO: ${dcOwner || '(não informado — escreva "A definir" e registe como premissa a validar)'}
+APROVADOR: ${dcApprover || '(não informado — escreva "A definir" e registe como premissa a validar)'}
+PERIODICIDADE_DE_REVISÃO: ${dcFrequency}
+CLASSIFICAÇÃO: ${dcClassification}
+CARGOS_REAIS_INFORMADOS: ${dcRoles.length ? JSON.stringify(dcRoles) : '[]'}
+REFERÊNCIAS_INLINE: ${dcInlineRefs ? 'sim' : 'não (os códigos vão apenas no coverage_map / anexo de rastreabilidade)'}`;
+
       const documentPrompt = `Você é um consultor sênior de GRC de uma firma Big Four com 20+ anos redigindo políticas e procedimentos corporativos auditáveis. Escreva no idioma português (Brasil), tom formal-institucional, voz ativa, frases curtas e verificáveis. NUNCA use jargão vazio ("robusto", "estado da arte", "world class"), NUNCA use placeholders ("preencher", "TBD", "XXX", "lorem ipsum"), NUNCA copie o nome do requisito como se fosse conteúdo. Cada afirmação deve ser AUDITÁVEL (quem faz, o quê, quando, com que evidência).
 
 DOCUMENTO_EXATO: ${docNome}
 FRAMEWORKS_REQUERIDOS: ${JSON.stringify((context as any).frameworks_relacionados || (framework_context ? [framework_context.framework_name] : []))}
 EMPRESA: ${context.empresa_nome}
-DATA_ATUAL: ${new Date().toISOString().slice(0, 10)} (use EXATAMENTE esta data onde precisar de data; NÃO invente outra)
+DATA_ATUAL: ${new Date().toISOString().slice(0, 10)} (use EXATAMENTE esta data onde precisar de data; NÃO invente outra)${docControlSection}
 ${frameworkRequirementsSection || frameworkGapsSection}${transcriptSection}
 
 Use a estrutura do template abaixo e cubra explicitamente os requisitos do(s) framework(s) citado(s) quando aplicável.
@@ -951,30 +977,42 @@ Use a estrutura do template abaixo e cubra explicitamente os requisitos do(s) fr
 TEMPLATE: ${JSON.stringify(templateEstrutura || template.estrutura)}
 INFORMAÇÕES COLETADAS: ${JSON.stringify(context.informacoes_coletadas)}
 
+REGRA DE OURO — LINGUAGEM NORMATIVA (o documento é PRESCRITIVO, não um relatório):
+- Este documento define o que a organização DEVE fazer. NUNCA afirme, no indicativo presente, que um controlo já existe, já está implementado, já está configurado ou já é executado ("a empresa utiliza MFA", "os acessos são revistos trimestralmente"). Escreva sempre em forma de obrigação: "deve", "é obrigatório", "cabe a", "não é permitido".
+- É PROIBIDO afirmar como facto qualquer ferramenta, sistema, estrutura organizacional, certificação, contrato ou métrica que NÃO tenha sido explicitamente informada pelo usuário no briefing/conversa acima.
+- Quando um controlo for necessário mas a sua existência não tiver sido confirmada, escreva-o como requisito ("deve ser implantado…") e registe-o na seção "Premissas a validar".
+- Valores sugeridos por boa prática devem ser marcados no texto com "(valor sugerido — validar)" e também listados nas premissas.
+
 Regras editoriais (obrigatórias):
 - Cada seção com no mínimo 3 parágrafos SUBSTANTIVOS (300+ caracteres cada) ou uma lista numerada com pelo menos 5 itens acionáveis.
-- Seções "Papéis e Responsabilidades" DEVEM conter uma tabela RACI em MARKDOWN (formato GFM): linhas = atividades; colunas = Atividade | CISO | DPO | Gestor de TI | Colaborador, preenchidas com R/A/C/I.
-- Seções "Vigência", "Aprovação" e "Controle de Versões" DEVEM citar data real (DATA_ATUAL), responsável e frequência de revisão.
+- Seções "Papéis e Responsabilidades" DEVEM conter uma tabela RACI em MARKDOWN (formato GFM): linhas = atividades; colunas = Atividade | ${raciColumns}, preenchidas com R/A/C/I.
+${rolesRule}
+- Seções "Vigência", "Aprovação" e "Controle de Versões" DEVEM citar data real (DATA_ATUAL), o PROPRIETÁRIO_DO_DOCUMENTO, o APROVADOR e a PERIODICIDADE_DE_REVISÃO acima (se algum estiver "A definir", escreva "A definir" e registe a premissa).
 - Onde houver métrica (retenção, RTO/RPO, prazos), traga valores CONCRETOS coerentes com o briefing do usuário. Se o usuário não deu, escolha um valor de mercado defensável e cite "(valor sugerido — validar)".
-- CADA cláusula que satisfaz um requisito do framework deve conter o CÓDIGO do requisito entre colchetes (ex.: "[A.8.13]") na primeira frase da cláusula.
+- RECOMENDAÇÕES TÉCNICAS ATUAIS: siga a prática vigente (NIST SP 800-63B e equivalentes). NÃO exija rotação periódica obrigatória de senhas sem indício de comprometimento; privilegie frases-passe longas, verificação contra listas de senhas comprometidas, MFA resistente a phishing e bloqueio progressivo. Não recomende controlos obsoletos (troca de senha a cada 30/60/90 dias, complexidade artificial de caracteres, expiração forçada sem risco associado).
+- ${dcInlineRefs
+        ? 'CADA cláusula que satisfaz um requisito do framework deve conter o CÓDIGO do requisito entre colchetes (ex.: "[A.8.13]") na primeira frase da cláusula.'
+        : 'NÃO insira códigos de requisito entre colchetes no corpo do texto — a rastreabilidade fica exclusivamente no coverage_map (anexo). O corpo deve ler-se como um documento corporativo limpo.'}
 - Personalização real: reflita as respostas do usuário na conversa acima — não use frases genéricas quando o usuário deu um dado concreto.
 
 FORMATAÇÃO DO CAMPO "conteudo" (markdown restrito — o exportador só entende este subconjunto):
 - Subtítulos com "## " (nível 2) e "### " (nível 3). NUNCA use "# " (o título da seção já é o H1).
 - Listas com marcador usando "- " e listas numeradas usando "1. ", "2. " (uma por linha; indente com 2 espaços para sub-item).
 - Tabelas SEMPRE em markdown GFM com linha separadora, ex.:
-  | Atividade | CISO | DPO |
+  | Atividade | Gestor da Área | Equipa de TI |
   | --- | --- | --- |
   | Aprovar a política | A | C |
 - Ênfase apenas com **negrito** e *itálico*. NUNCA use HTML, NUNCA use asteriscos decorativos, "===", "---" como separador, emojis ou arte ASCII.
 - Parágrafos separados por uma linha em branco. Não use tabulação para alinhar texto.
 
 Estrutura obrigatória do documento:
-- Capa: título=DOCUMENTO_EXATO, versão=1.0, data=DATA_ATUAL, empresa=EMPRESA, classificação
+- Capa: título=DOCUMENTO_EXATO, versão=1.0, data=DATA_ATUAL, empresa=EMPRESA, classificação=CLASSIFICAÇÃO
+- Seção "Controle Documental" (LOGO A SEGUIR AO OBJETIVO ou como 1.ª seção) com uma tabela GFM contendo: Código/identificação, Versão, Data de emissão, Proprietário do documento, Aprovador, Periodicidade de revisão, Próxima revisão (DATA_ATUAL + periodicidade), Classificação da informação, Meio de distribuição
 - Seção "Objetivo" com escopo, aplicabilidade e público-alvo
 - Todas as seções definidas no template acima, em ordem
 - Seção "Papéis e Responsabilidades" com matriz RACI
-- Seção "Referências Normativas" listando os frameworks e artigos relevantes
+- Seção "Premissas a validar" — OBRIGATÓRIA — listando, em tabela GFM (Premissa | Porquê é premissa | Quem valida), tudo o que foi assumido e não confirmado pela empresa (ferramentas, estruturas, cargos, prazos sugeridos)
+- Seção "Referências Normativas" listando TODOS os frameworks selecionados e as cláusulas/controlos relevantes de CADA UM
 - Seção "Glossário" com termos técnicos usados no documento
 - Seção "Histórico de Versões" com linha inicial (1.0, DATA_ATUAL, autor, "Emissão inicial")
 - Seção "Aprovação" com responsáveis e data
@@ -988,12 +1026,17 @@ Responda APENAS com um JSON na seguinte estrutura (sem markdown, sem comentário
     { "nome": "Objetivo", "conteudo": "..." }
   ],
   "metadados": {
-    "classificacao": "Interno",
+    "classificacao": "${dcClassification}",
     "responsavel_elaboracao": "${context.user_name}",
-    "responsavel_aprovacao": "",
-    "frequencia_revisao": "Anual",
+    "proprietario": "${dcOwner || 'A definir'}",
+    "responsavel_aprovacao": "${dcApprover || 'A definir'}",
+    "frequencia_revisao": "${dcFrequency}",
+    "proxima_revisao": "data = DATA_ATUAL + periodicidade (formato AAAA-MM-DD)",
     "publico_alvo": "Todos os colaboradores"
   },
+  "premissas_a_validar": [
+    { "premissa": "A organização dispõe de MFA no Entra ID", "motivo": "não confirmado no briefing — o documento exige-o como controlo", "validar_com": "Equipa de TI" }
+  ],
   "glossario": [ { "termo": "RTO", "definicao": "Recovery Time Objective — tempo máximo tolerável para restaurar um serviço" } ],
   "historico_versoes": [ { "versao": "1.0", "data": "DATA_ATUAL", "autor": "${context.user_name}", "descricao": "Emissão inicial" } ],
   "coverage_map": [
@@ -1003,6 +1046,7 @@ Responda APENAS com um JSON na seguinte estrutura (sem markdown, sem comentário
     { "codigo": "A.5.30", "motivo": "fora do escopo desta política específica" }
   ]
 }`;
+
 
       const docContent = await callClaude(
         [{ role: 'user', content: 'Gere o documento agora, respeitando TODAS as regras editoriais.' }],
