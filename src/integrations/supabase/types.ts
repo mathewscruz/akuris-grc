@@ -8996,6 +8996,10 @@ export type Database = {
         Args: { _projeto_id: string }
         Returns: boolean
       }
+      provisionar_canal_denuncia: {
+        Args: { p_empresa_id: string }
+        Returns: undefined
+      }
       proxima_data_por_frequencia: {
         Args: { _base: string; _freq: string }
         Returns: string
@@ -9014,6 +9018,7 @@ export type Database = {
       }
       risco_pertence_empresa: { Args: { risco_id: string }; Returns: boolean }
       ropa_pertence_empresa: { Args: { ropa_id: string }; Returns: boolean }
+      unaccent_immutable_fallback: { Args: { p_text: string }; Returns: string }
       validate_denuncia_token: { Args: { p_token: string }; Returns: string }
       verify_mfa_code_attempt: {
         Args: { p_code_hash: string; p_user_id: string }
