@@ -167,10 +167,29 @@ serve(async (req) => {
     // penaliza corretamente a cobertura ao invés de inflar o score.
     const MAX_REQS_POR_ANALISE = FRAMEWORK_REQ_CAP;
     const docTextForAnalysis = documentText.substring(0, 30000);
-    const reqsForAnalysis = requirements.slice(0, MAX_REQS_POR_ANALISE);
-    if (requirements.length > MAX_REQS_POR_ANALISE) {
-      console.warn(`Framework com ${requirements.length} requisitos excede o cap ${MAX_REQS_POR_ANALISE}; ${requirements.length - MAX_REQS_POR_ANALISE} não foram analisados nesta rodada (contam como silenciosamente omitidos no score).`);
+
+    // Documento vindo do DocGen: avalia contra o MESMO âmbito temático usado na
+    // geração. Sem isto, uma política isolada é comparada com o catálogo inteiro
+    // e nunca passa do gate, mesmo estando completa no seu tema.
+    let requirementsInScope = requirements;
+    if (isDocgen) {
+      const scope = resolveDocumentScope(
+        requirements,
+        docgenDocument?.titulo,
+        (docgenDocument?.secoes || []).map((s: any) => s?.nome),
+        Array.isArray(docgenDocument?.coverage_map) ? docgenDocument.coverage_map : [],
+      );
+      const scopeSet = new Set(scope.scopeCodes);
+      const filtered = requirements.filter((r: any) => scopeSet.has(String(r?.codigo || '').trim()));
+      if (filtered.length) requirementsInScope = filtered;
+      console.log(`Âmbito do documento: ${requirementsInScope.length}/${requirements.length} requisitos`);
     }
+
+    const reqsForAnalysis = requirementsInScope.slice(0, MAX_REQS_POR_ANALISE);
+    if (requirementsInScope.length > MAX_REQS_POR_ANALISE) {
+      console.warn(`Framework com ${requirementsInScope.length} requisitos excede o cap ${MAX_REQS_POR_ANALISE}; ${requirementsInScope.length - MAX_REQS_POR_ANALISE} não foram analisados nesta rodada (contam como silenciosamente omitidos no score).`);
+    }
+
 
     const reqsText = reqsForAnalysis.map((r: any, i: number) => {
       let entry = `${i+1}. ID:${r.id} | ${r.codigo || 'N/A'}: ${r.titulo}`;
