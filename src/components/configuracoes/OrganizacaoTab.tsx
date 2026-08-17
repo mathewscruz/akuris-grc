@@ -6,6 +6,7 @@ import { CompanyContextSettings } from './CompanyContextSettings';
 import { CompanySlugSettings } from './CompanySlugSettings';
 import { CompanyLogoUpload } from './CompanyLogoUpload';
 import { EmailTestDialog } from './EmailTestDialog';
+import { InstalarAppCard } from './InstalarAppCard';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 export function OrganizacaoTab() {
@@ -19,6 +20,8 @@ export function OrganizacaoTab() {
       <CompanySlugSettings />
 
       <CompanyLogoUpload />
+
+      <InstalarAppCard />
 
       <Card>
         <CardHeader>

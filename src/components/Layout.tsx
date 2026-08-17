@@ -19,6 +19,7 @@ import { OnboardingWizard } from '@/components/onboarding/OnboardingWizard';
 import { PageSkeleton } from '@/components/ui/page-skeleton';
 import { ModuleLoadingSkeleton } from '@/components/ui/module-loading-skeleton';
 import { MobileBottomNav } from '@/components/MobileBottomNav';
+import { InstallAppPrompt } from '@/components/pwa/InstallAppPrompt';
 import { AkurIAChatbot } from '@/components/dashboard/AkurIAChatbot';
 import { AkurIAActionListener } from '@/components/dashboard/akuria/AkurIAActionListener';
 
@@ -236,6 +237,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         
         {/* Bottom Navigation Mobile */}
         {isMobile && <MobileBottomNav />}
+
+        {/* Convite para criar o atalho do Akuris no ecrã inicial */}
+        <InstallAppPrompt />
 
         {/* AkurIA — assistente global em todas as páginas */}
         <AkurIAChatbot />
