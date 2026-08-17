@@ -8925,6 +8925,16 @@ export type Database = {
           slug: string
         }[]
       }
+      get_empresa_publica_por_token: {
+        Args: { p_token: string }
+        Returns: {
+          canal_ativo: boolean
+          id: string
+          logo_url: string
+          nome: string
+          slug: string
+        }[]
+      }
       get_profiles_by_text_ids: {
         Args: { text_ids: string[] }
         Returns: {
