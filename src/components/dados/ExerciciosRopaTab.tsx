@@ -139,9 +139,10 @@ export function ExerciciosRopaTab({ registos, onOpenRegisto, novoSinal }: Props)
       label: t("dadosDashboard.ropaExercicios.colStatus"),
       sortable: true,
       render: (value: string) => (
-        <StatusBadge tone={resolveWorkflowStatusTone(value)}>
+        <StatusBadge {...resolveWorkflowStatusTone(value)}>
           {t(`dadosDashboard.ropaExercicios.status.${value}`)}
         </StatusBadge>
+
       ),
     },
   ];
@@ -225,9 +226,10 @@ export function ExerciciosRopaTab({ registos, onOpenRegisto, novoSinal }: Props)
                     {t("dadosDashboard.ropaExercicios.colStatus")}
                   </dt>
                   <dd className="text-sm">
-                    <StatusBadge tone={resolveWorkflowStatusTone(detalhe.status)}>
+                    <StatusBadge {...resolveWorkflowStatusTone(detalhe.status)}>
                       {t(`dadosDashboard.ropaExercicios.status.${detalhe.status}`)}
                     </StatusBadge>
+
                   </dd>
                 </div>
                 <div>
