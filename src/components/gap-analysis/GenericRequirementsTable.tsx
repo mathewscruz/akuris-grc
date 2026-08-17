@@ -104,6 +104,13 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [itemsPerPage, setItemsPerPage] = useState(Number(searchParams.get('size')) || 10);
   const [currentPage, setCurrentPage] = useState(Number(searchParams.get('page')) || 1);
+  const [sort, setSort] = useState<{ field: string; direction: 'asc' | 'desc' } | null>(null);
+  const toggleSort = (field: string) => {
+    setSort((prev) => (prev?.field === field
+      ? { field, direction: prev.direction === 'asc' ? 'desc' : 'asc' }
+      : { field, direction: 'asc' }));
+    setCurrentPage(1);
+  };
   const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>((searchParams.get('status') as StatusFilter) || 'all');
   const [onlyMandatory, setOnlyMandatory] = useState(searchParams.get('prio') === '1');
