@@ -8142,6 +8142,113 @@ export type Database = {
         }
         Relationships: []
       }
+      ropa_exercicio_anexos: {
+        Row: {
+          caminho: string
+          created_at: string
+          empresa_id: string
+          exercicio_id: string
+          id: string
+          mime_type: string | null
+          nome_arquivo: string
+          tamanho: number | null
+          tipo: string
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          caminho: string
+          created_at?: string
+          empresa_id: string
+          exercicio_id: string
+          id?: string
+          mime_type?: string | null
+          nome_arquivo: string
+          tamanho?: number | null
+          tipo?: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          caminho?: string
+          created_at?: string
+          empresa_id?: string
+          exercicio_id?: string
+          id?: string
+          mime_type?: string | null
+          nome_arquivo?: string
+          tamanho?: number | null
+          tipo?: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ropa_exercicio_anexos_exercicio_id_fkey"
+            columns: ["exercicio_id"]
+            isOneToOne: false
+            referencedRelation: "ropa_exercicios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ropa_exercicios: {
+        Row: {
+          conclusoes: string | null
+          created_at: string
+          created_by: string | null
+          data_realizacao: string
+          dpo_id: string | null
+          empresa_id: string
+          escopo: string | null
+          id: string
+          metodologia: string | null
+          nome: string
+          periodo_fim: string | null
+          periodo_inicio: string | null
+          responsavel_id: string | null
+          status: string
+          updated_at: string
+          versao: string | null
+        }
+        Insert: {
+          conclusoes?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_realizacao?: string
+          dpo_id?: string | null
+          empresa_id: string
+          escopo?: string | null
+          id?: string
+          metodologia?: string | null
+          nome: string
+          periodo_fim?: string | null
+          periodo_inicio?: string | null
+          responsavel_id?: string | null
+          status?: string
+          updated_at?: string
+          versao?: string | null
+        }
+        Update: {
+          conclusoes?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_realizacao?: string
+          dpo_id?: string | null
+          empresa_id?: string
+          escopo?: string | null
+          id?: string
+          metodologia?: string | null
+          nome?: string
+          periodo_fim?: string | null
+          periodo_inicio?: string | null
+          responsavel_id?: string | null
+          status?: string
+          updated_at?: string
+          versao?: string | null
+        }
+        Relationships: []
+      }
       ropa_registros: {
         Row: {
           adequacao_destino: string | null
@@ -8166,6 +8273,7 @@ export type Database = {
           empresa_id: string
           encarregado_dados: string | null
           evidencias_documentos: string | null
+          exercicio_id: string | null
           finalidade: string
           fonte_dados: string | null
           id: string
@@ -8211,6 +8319,7 @@ export type Database = {
           empresa_id: string
           encarregado_dados?: string | null
           evidencias_documentos?: string | null
+          exercicio_id?: string | null
           finalidade: string
           fonte_dados?: string | null
           id?: string
@@ -8256,6 +8365,7 @@ export type Database = {
           empresa_id?: string
           encarregado_dados?: string | null
           evidencias_documentos?: string | null
+          exercicio_id?: string | null
           finalidade?: string
           fonte_dados?: string | null
           id?: string
@@ -8278,7 +8388,15 @@ export type Database = {
           updated_at?: string
           versao?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "ropa_registros_exercicio_id_fkey"
+            columns: ["exercicio_id"]
+            isOneToOne: false
+            referencedRelation: "ropa_exercicios"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sistemas_privilegiados: {
         Row: {
