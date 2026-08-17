@@ -229,6 +229,14 @@ export const dadosDashboard = {
         deleteDialogDescription: 'Tem certeza que deseja excluir esta descoberta? Esta ação não pode ser desfeita.',
         deleteDialogConfirm: 'Excluir',
       },
+      ropaPlanilha: {
+        importar: 'Importar planilha',
+        exportar: 'Exportar planilha',
+        semRegistos: 'Não há registos ROPA para exportar.',
+        nadaEncontrado: 'Não foi possível reconhecer registos ROPA nesta planilha.',
+        importadoSucesso: '{count} registo(s) ROPA importado(s) com sucesso.',
+        erroImportar: 'Erro ao importar a planilha ROPA',
+      },
       ropaDialog: {
         titleEdit: 'Editar Registro ROPA',
         titleNew: 'Novo Registro ROPA',
@@ -742,6 +750,14 @@ export const dadosDashboard = {
         deleteDialogTitle: 'Delete Discovery',
         deleteDialogDescription: 'Are you sure you want to delete this discovery? This action cannot be undone.',
         deleteDialogConfirm: 'Delete',
+      },
+      ropaPlanilha: {
+        importar: 'Import spreadsheet',
+        exportar: 'Export spreadsheet',
+        semRegistos: 'There are no ROPA records to export.',
+        nadaEncontrado: 'No ROPA records could be recognised in this spreadsheet.',
+        importadoSucesso: '{count} ROPA record(s) imported successfully.',
+        erroImportar: 'Failed to import the ROPA spreadsheet',
       },
       ropaDialog: {
         titleEdit: 'Edit ROPA Record',

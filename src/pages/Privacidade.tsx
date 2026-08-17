@@ -16,6 +16,7 @@ import { DadosPessoaisDialog } from "@/components/dados/DadosPessoaisDialog";
 import { MapeamentoDialog } from "@/components/dados/MapeamentoDialog";
 import { RopaWizard } from "@/components/dados/RopaWizard";
 import { RopaDialog } from "@/components/dados/RopaDialog";
+import { RopaImportExport } from "@/components/dados/RopaImportExport";
 import { SolicitacaoTitularDialog } from "@/components/dados/SolicitacaoTitularDialog";
 import { DescoberDadosTab } from "@/components/dados/DescoberDadosTab";
 import { StatStrip } from "@/components/ui/stat-strip";
@@ -620,9 +621,12 @@ export default function Privacidade() {
         </TabsContent>
 
         <TabsContent value="ropa" className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            {t('jurisdicao.privacidade.ropaSubtitulo', { lei: jurisdicao.lei })}
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-muted-foreground">
+              {t('jurisdicao.privacidade.ropaSubtitulo', { lei: jurisdicao.lei })}
+            </p>
+            <RopaImportExport registos={ropaRegistros} onImported={() => queryClient.invalidateQueries({ queryKey: ['privacidade'] })} />
+          </div>
           <Card className="rounded-lg border overflow-hidden">
             <CardContent className="p-0">
               <DataTable

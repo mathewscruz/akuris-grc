@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { formatDateForInput, parseDateForDB } from "@/lib/date-utils";
 import { useEmpresaId } from "@/hooks/useEmpresaId";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { RopaCamposDetalhados } from "@/components/dados/RopaCamposDetalhados";
 
 interface RopaDialogProps {
   isOpen: boolean;
@@ -45,7 +46,25 @@ export function RopaDialog({ isOpen, onClose, onSave, ropa }: RopaDialogProps) {
     data_inicio: ropa?.data_inicio ? new Date(ropa.data_inicio) : undefined,
     data_fim: ropa?.data_fim ? new Date(ropa.data_fim) : undefined,
     status: ropa?.status || "ativo",
-    observacoes: ropa?.observacoes || ""
+    observacoes: ropa?.observacoes || "",
+    codigo: ropa?.codigo || "",
+    area_responsavel: ropa?.area_responsavel || "",
+    dados_tratados: ropa?.dados_tratados || "",
+    categoria_dados: ropa?.categoria_dados || "",
+    fonte_dados: ropa?.fonte_dados || "",
+    descricao_atividade: ropa?.descricao_atividade || "",
+    operacoes_realizadas: ropa?.operacoes_realizadas || "",
+    decisao_automatizada_detalhes: ropa?.decisao_automatizada_detalhes || "",
+    justificativa_base_legal: ropa?.justificativa_base_legal || "",
+    compartilhamento_interno: ropa?.compartilhamento_interno || "",
+    compartilhamento_externo: ropa?.compartilhamento_externo || "",
+    transferencia_detalhes: ropa?.transferencia_detalhes || "",
+    criterio_descarte: ropa?.criterio_descarte || "",
+    risco_probabilidade: ropa?.risco_probabilidade || "",
+    risco_impacto: ropa?.risco_impacto || "",
+    risco_nivel: ropa?.risco_nivel || "",
+    evidencias_documentos: ropa?.evidencias_documentos || "",
+    versao: ropa?.versao || "v1"
   });
   const [usuarios, setUsuarios] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -88,8 +107,13 @@ export function RopaDialog({ isOpen, onClose, onSave, ropa }: RopaDialogProps) {
         throw new Error(t('dadosDashboard.common.errorEmpresaNaoEncontrada'));
       }
 
+      const detalhesDecisao = (formData.decisao_automatizada_detalhes || '').trim().toLowerCase();
       const payload = {
         ...formData,
+        decisao_automatizada: detalhesDecisao.length > 0 && !detalhesDecisao.startsWith('não') && !detalhesDecisao.startsWith('nao') && !detalhesDecisao.startsWith('no'),
+        risco_probabilidade: formData.risco_probabilidade || null,
+        risco_impacto: formData.risco_impacto || null,
+        risco_nivel: formData.risco_nivel || null,
         data_inicio: formData.data_inicio ? parseDateForDB(format(formData.data_inicio, 'yyyy-MM-dd')) : null,
         data_fim: formData.data_fim ? parseDateForDB(format(formData.data_fim, 'yyyy-MM-dd')) : null,
         empresa_id: profile.empresa_id,
@@ -355,6 +379,14 @@ export function RopaDialog({ isOpen, onClose, onSave, ropa }: RopaDialogProps) {
               placeholder={t('dadosDashboard.ropaDialog.placeholderMedidasSeguranca')}
             />
           </div>
+
+          <div className="rounded-lg border border-border/60 p-4">
+            <RopaCamposDetalhados
+              values={formData}
+              onChange={(key, value) => setFormData((prev) => ({ ...prev, [key]: value }))}
+            />
+          </div>
+
 
           <div className="space-y-2">
             <Label htmlFor="observacoes">{t('dadosDashboard.ropaDialog.labelObservacoes')}</Label>
