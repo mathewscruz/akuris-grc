@@ -74,6 +74,7 @@ import { p8Layout } from './p8-layout';
 import { detalheRegisto } from './detalhe-registo';
 import { vinculoRequisitos } from './vinculo-requisitos';
 import { t4Ciclo } from './t4-ciclo';
+import { pwa } from './pwa';
 
 type ModuleDict = { pt: Record<string, unknown>; en: Record<string, unknown> };
 
@@ -169,6 +170,7 @@ const modules: Record<string, ModuleDict> = {
   p7Wizard,
   p7Enum,
   p8Layout,
+  pwa,
 };
 
 
