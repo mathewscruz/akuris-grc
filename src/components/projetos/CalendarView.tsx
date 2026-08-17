@@ -61,6 +61,7 @@ export function CalendarView({ tarefas, onSelectTarefa }: { tarefas: ProjetoTare
         </div>
       </div>
 
+      <div className="overflow-x-auto">
       <div className="grid grid-cols-7 text-xs text-muted-foreground bg-muted/30 min-w-[560px]">
         {WEEK.map((d) => <div key={d} className="px-2 py-1.5 font-medium">{d}</div>)}
       </div>
@@ -97,6 +98,7 @@ export function CalendarView({ tarefas, onSelectTarefa }: { tarefas: ProjetoTare
             </div>
           );
         })}
+      </div>
       </div>
     </div>
   );
