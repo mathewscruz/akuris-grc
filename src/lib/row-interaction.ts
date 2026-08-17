@@ -15,10 +15,17 @@ export const INTERACTIVE_SELECTOR =
   'button,a,input,select,textarea,label,[role="menuitem"],[role="checkbox"],[role="switch"],[role="button"],[data-no-row-click]';
 
 /** True quando o evento nasceu numa zona interativa (não deve abrir o registo). */
-export const isInteractiveTarget = (target: EventTarget | null): boolean => {
+export const isInteractiveTarget = (
+  target: EventTarget | null,
+  boundary?: EventTarget | null,
+): boolean => {
   const el = target as HTMLElement | null;
   if (!el || typeof el.closest !== 'function') return false;
-  return !!el.closest(INTERACTIVE_SELECTOR);
+  const hit = el.closest(INTERACTIVE_SELECTOR);
+  if (!hit) return false;
+  // A própria linha/cartão tem role="button": não pode contar como zona interativa.
+  if (boundary && (hit === boundary || hit.contains(boundary as Node))) return false;
+  return true;
 };
 
 export interface RowOpenProps {
@@ -50,12 +57,12 @@ export const rowOpenProps = (
   'aria-label': label,
   className: `${FOCUS_RING} ${hoverClass}`,
   onClick: (e: MouseEvent) => {
-    if (isInteractiveTarget(e.target)) return;
+    if (isInteractiveTarget(e.target, e.currentTarget)) return;
     onOpen();
   },
   onKeyDown: (e: KeyboardEvent) => {
     if (e.key !== 'Enter' && e.key !== ' ' && e.key !== 'Spacebar') return;
-    if (isInteractiveTarget(e.target)) return;
+    if (isInteractiveTarget(e.target, e.currentTarget)) return;
     e.preventDefault();
     onOpen();
   },
