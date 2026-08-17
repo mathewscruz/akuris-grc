@@ -146,7 +146,7 @@ export function DocumentoDialog({ open, onOpenChange, documento, onSuccess, init
 
     if (formData.requer_aprovacao && !documento && !aprovadorId) {
       setActiveTab('classificacao');
-      toast({ title: t('documentos.dialogs.aprovadorObrigatorio'), variant: 'destructive' });
+      toast({ title: t('documentos.dialogs.aprovadorObrigatorioFluxo'), variant: 'destructive' });
       return;
     }
 
