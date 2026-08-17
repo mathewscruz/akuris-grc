@@ -15,13 +15,13 @@ const PoliticaPrivacidade = () => {
       <header className="fixed top-0 left-0 right-0 z-50 bg-[#0A1628]/90 backdrop-blur-xl border-b border-white/5 py-4">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
-            <Link to="/" className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
-              <ArrowLeft className="h-5 w-5" />
-              <span>{p("voltar")}</span>
+            <Link to="/" className="flex min-h-[44px] min-w-0 items-center gap-2 text-gray-400 hover:text-white transition-colors">
+              <ArrowLeft className="h-5 w-5 shrink-0" />
+              <span className="truncate">{p("voltar")}</span>
             </Link>
-            <div className="flex items-center gap-3">
+            <div className="flex shrink-0 items-center gap-2 sm:gap-3">
               <LanguageSelector variant="dark" />
-              <img src={akurisLogo} alt="Akuris" className="h-10 w-auto" />
+              <img src={akurisLogo} alt="Akuris" className="h-8 w-auto sm:h-10" />
             </div>
           </div>
         </div>
