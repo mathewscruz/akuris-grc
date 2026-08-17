@@ -46,7 +46,7 @@ export default function Projetos() {
   const totalArquivados = projetos.filter((p) => p.status === 'arquivado').length;
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="space-y-6">
       <PageHeader
         title={t('projetos.page.title')}
         description={t('projetos.page.subtitle')}
