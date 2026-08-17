@@ -446,7 +446,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
       const riscoData: any = {
         nome: data.nome,
         // Código: se o utilizador não indicar, o backend gera sequencialmente (R-0001...).
-        ...(codigoManual ? { codigo: codigoManual } : (risco ? {} : {})),
+        ...(codigoManual ? { codigo: codigoManual } : {}),
         descricao: data.descricao,
         empresa_id: profile.empresa_id,
         matriz_id: data.matriz_id || null,
@@ -631,7 +631,12 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
       onSuccess();
     } catch (error: any) {
       logger.error('❌ Erro ao salvar risco:', { data: error });
-      toast.error(t('fin.riscos.wizard.erroSalvar', { mensagem: error.message || t('fin.comum.erroDesconhecido') }));
+      const duplicado = error?.code === '23505' || String(error?.message || '').includes('riscos_empresa_codigo_uidx');
+      toast.error(
+        duplicado
+          ? t('fin.validacao.codigoDuplicado')
+          : t('fin.riscos.wizard.erroSalvar', { mensagem: error.message || t('fin.comum.erroDesconhecido') })
+      );
     } finally {
       setLoading(false);
     }
