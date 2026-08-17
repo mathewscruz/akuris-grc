@@ -1,6 +1,7 @@
 /**
- * RiscosViewChips — barra de visões salvas (chips horizontais com badge de contagem).
- * Padrão visual idêntico ao design Riscos-2: linha de chips + sublinha 2px na visão ativa.
+ * RiscosViewChips — barra de visões salvas.
+ * Usa o padrão único de abas do Akuris: régua com linha de base e
+ * indicador (underline) roxo na visão activa.
  */
 import { cn } from '@/lib/utils';
 
@@ -20,26 +21,33 @@ interface Props {
 
 export function RiscosViewChips({ active, onChange, items }: Props) {
   return (
-    <div className="inline-flex max-w-full items-center gap-0.5 overflow-x-auto rounded-lg bg-muted/60 p-1">
+    <div
+      role="tablist"
+      className="flex w-full items-center gap-6 overflow-x-auto border-b border-border text-muted-foreground [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+    >
       {items.map((v) => {
         const isActive = v.id === active;
         return (
           <button
             key={v.id}
             type="button"
+            role="tab"
+            aria-selected={isActive}
             onClick={() => onChange(v.id)}
             className={cn(
-              'inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-xs transition-all',
+              'group relative inline-flex min-w-0 shrink-0 items-center justify-center gap-2 whitespace-nowrap',
+              'border-b-2 border-transparent bg-transparent px-1 py-3 -mb-px text-sm font-medium leading-tight',
+              'ring-offset-background transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:rounded-sm',
               isActive
-                ? 'bg-card text-foreground font-semibold shadow-sm'
-                : 'text-muted-foreground hover:text-foreground/90 font-medium',
+                ? 'border-primary text-primary font-semibold dark:text-foreground'
+                : 'text-muted-foreground hover:text-foreground hover:border-border',
             )}
           >
             {v.label}
             <span
               className={cn(
-                'tabular-nums text-[10.5px] px-1.5 rounded-full',
-                isActive ? 'bg-muted text-foreground/80' : 'bg-muted/70 text-muted-foreground',
+                'tabular-nums text-[11px] px-1.5 rounded-full',
+                isActive ? 'bg-primary/10 text-primary dark:bg-primary/20 dark:text-foreground' : 'bg-muted text-muted-foreground',
               )}
             >
               {v.count}
@@ -50,3 +58,4 @@ export function RiscosViewChips({ active, onChange, items }: Props) {
     </div>
   );
 }
+
