@@ -4,7 +4,9 @@ import {
   computeAnalyzedScore,
   reconcileReportedScore,
   resolveResultadoGeral,
+  resolveDocumentScope,
   FRAMEWORK_REQ_CAP,
+
 } from "../_shared/compliance-score.ts";
 
 const corsHeaders = {
