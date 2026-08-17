@@ -578,6 +578,8 @@ export default function Privacidade() {
         <TabsList>
           <TabsTrigger value="catalogo">{t('cardsKpi.privacidade.abaCatalogo')}</TabsTrigger>
           <TabsTrigger value="ropa">{t('sweepDados.privacidade.abaRopa')}</TabsTrigger>
+          <TabsTrigger value="exercicios">{t('dadosDashboard.ropaExercicios.tabTitulo')}</TabsTrigger>
+
           <TabsTrigger value="solicitacoes">{t('cardsKpi.privacidade.abaSolicitacoes')}</TabsTrigger>
           <TabsTrigger value="descobertas">{t('sweepDados.privacidade.abaDescobertas')}</TabsTrigger>
         </TabsList>
