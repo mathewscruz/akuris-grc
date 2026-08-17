@@ -18,7 +18,7 @@ export async function fetchEmpresaPublicaPorSlug(slug: string): Promise<EmpresaP
     p_slug: slug.toLowerCase().trim(),
   } as never);
   if (error) throw error;
-  const row = Array.isArray(data) ? data[0] : data;
+  const row = Array.isArray(data) ? data[0] : (data ?? null);
   return (row as EmpresaPublica) ?? null;
 }
 
@@ -27,6 +27,6 @@ export async function fetchEmpresaPublicaPorToken(token: string): Promise<Empres
     p_token: token.trim(),
   } as never);
   if (error) throw error;
-  const row = Array.isArray(data) ? data[0] : data;
+  const row = Array.isArray(data) ? data[0] : (data ?? null);
   return (row as EmpresaPublica) ?? null;
 }
