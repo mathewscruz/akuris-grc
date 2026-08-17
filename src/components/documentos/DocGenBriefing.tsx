@@ -278,26 +278,21 @@ export const DocGenBriefing: React.FC<DocGenBriefingProps> = ({
                 </div>
               )}
 
-              {/* Card de cobertura */}
+              {/* Conformidade pelos referenciais escolhidos */}
               {briefing.frameworks.length > 0 && (
                 <div className="mt-3 rounded-lg border border-border bg-card/50 p-3 flex items-start gap-3">
                   <ShieldCheck className="h-4 w-4 text-primary mt-0.5" strokeWidth={1.5} />
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium">
-                      {reqCountQuery.isLoading
-                        ? t('docgen.briefing.calculatingCoverage')
-                        : reqCountQuery.data?.count
-                        ? t('docgen.briefing.coverageMapped', { count: reqCountQuery.data.count })
-                        : t('docgen.briefing.coverageNone')}
+                      {t('docgen.briefing.complianceNote', { list: briefing.frameworks.join(' · ') })}
                     </div>
-                    {reqCountQuery.data?.matched && reqCountQuery.data.matched.length > 0 && (
-                      <div className="text-xs text-muted-foreground mt-0.5 truncate">
-                        {t('docgen.briefing.matched', { list: reqCountQuery.data.matched.join(' · ') })}
-                      </div>
-                    )}
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      {t('docgen.briefing.complianceNoteHelp')}
+                    </div>
                   </div>
                 </div>
               )}
+
             </div>
 
             {/* Escopo */}
