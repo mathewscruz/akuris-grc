@@ -270,3 +270,105 @@ export function computeResidualGaps(
   gaps.sort((a, b) => a.length - b.length || a.localeCompare(b));
   return gaps.slice(0, Math.max(1, limit));
 }
+
+/* =========================================================================
+ * Âmbito do documento (scope) — evita comparar UM documento com o catálogo
+ * INTEIRO do framework.
+ *
+ * Um documento único (ex.: "Política de Controlo de Acesso") nunca cobre os
+ * 184 requisitos de um framework; usar o catálogo completo como denominador
+ * produzia sempre scores de ~8% e bloqueava a publicação. O denominador passa
+ * a ser o subconjunto TEMATICAMENTE relacionado com o documento; a cobertura
+ * do framework inteiro continua a ser reportada, mas apenas como informação.
+ * ========================================================================= */
+
+export interface CatalogRequirement {
+  codigo?: string | null;
+  titulo?: string | null;
+  descricao?: string | null;
+}
+
+/** Remove acentos, pontuação e minúsculas — base para comparação de termos. */
+export function normalizeTerm(value: string | null | undefined): string {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
+const STOPWORDS = new Set([
+  'de', 'da', 'do', 'das', 'dos', 'e', 'a', 'o', 'as', 'os', 'para', 'com', 'em',
+  'no', 'na', 'nos', 'nas', 'ao', 'aos', 'por', 'um', 'uma', 'the', 'of', 'and',
+  'to', 'for', 'politica', 'procedimento', 'norma', 'manual', 'plano', 'documento',
+  'policy', 'procedure', 'standard', 'plan', 'document', 'seguranca', 'informacao',
+  'objetivo', 'escopo', 'glossario', 'referencias', 'aprovacao', 'historico',
+  'versoes', 'papeis', 'responsabilidades', 'geral', 'gerais',
+]);
+
+/** Extrai termos significativos (>=4 letras, sem stopwords) de um texto. */
+export function extractTerms(...parts: Array<string | null | undefined>): Set<string> {
+  const terms = new Set<string>();
+  for (const part of parts) {
+    for (const raw of normalizeTerm(part).split(/[^a-z0-9]+/)) {
+      if (raw.length < 4) continue;
+      if (STOPWORDS.has(raw)) continue;
+      terms.add(raw);
+    }
+  }
+  return terms;
+}
+
+export interface DocumentScope {
+  /** Códigos que formam o denominador do score deste documento. */
+  scopeCodes: string[];
+  /** Todos os códigos do catálogo (métrica informativa de cobertura). */
+  catalogCodes: string[];
+}
+
+/**
+ * Determina o âmbito de um documento dentro do catálogo do framework.
+ *
+ * Entra no âmbito qualquer requisito que:
+ *  - já esteja declarado no coverage_map do documento, OU
+ *  - partilhe pelo menos um termo significativo com o título do documento ou
+ *    com os nomes das suas secções.
+ *
+ * Se a heurística não encontrar nada (documento genérico, catálogo sem texto),
+ * cai para o catálogo completo — o comportamento antigo, conservador.
+ */
+export function resolveDocumentScope(
+  catalog: CatalogRequirement[] | null | undefined,
+  documentTitle: string | null | undefined,
+  sectionNames: Array<string | null | undefined> = [],
+  coverageMap: CoverageItem[] | null | undefined = [],
+): DocumentScope {
+  const rows = (catalog || []).filter((r) => String(r?.codigo || '').trim());
+  const catalogCodes = rows.map((r) => String(r.codigo).trim());
+
+  const declared = new Set(
+    (coverageMap || [])
+      .map((c) => String(c?.requirement_codigo || '').trim())
+      .filter(Boolean),
+  );
+  const docTerms = extractTerms(documentTitle, ...sectionNames);
+
+  const scope: string[] = [];
+  for (const row of rows) {
+    const code = String(row.codigo).trim();
+    if (declared.has(code)) {
+      scope.push(code);
+      continue;
+    }
+    if (docTerms.size === 0) continue;
+    const reqTerms = extractTerms(row.titulo, row.descricao);
+    let hit = false;
+    for (const term of reqTerms) {
+      if (docTerms.has(term)) { hit = true; break; }
+    }
+    if (hit) scope.push(code);
+  }
+
+  // Sem sinal suficiente: mantém o catálogo completo para não mascarar lacunas.
+  if (scope.length === 0) return { scopeCodes: catalogCodes, catalogCodes };
+  return { scopeCodes: scope, catalogCodes };
+}
