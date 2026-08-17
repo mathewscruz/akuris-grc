@@ -1,6 +1,8 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Download, Upload } from "lucide-react";
+
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useEmpresaId } from "@/hooks/useEmpresaId";
@@ -20,6 +22,20 @@ export function RopaImportExport({ registos, onImported }: Props) {
   const { empresaId } = useEmpresaId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
+  const [exercicioId, setExercicioId] = useState<string>("none");
+  const [exercicios, setExercicios] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!empresaId) return;
+    void (async () => {
+      const { data } = await supabase
+        .from("ropa_exercicios")
+        .select("id, nome, versao")
+        .eq("empresa_id", empresaId)
+        .order("data_realizacao", { ascending: false });
+      setExercicios(data || []);
+    })();
+  }, [empresaId]);
 
   const handleExport = () => {
     if (registos.length === 0) {
@@ -28,6 +44,7 @@ export function RopaImportExport({ registos, onImported }: Props) {
     }
     exportRopaWorkbook(registos, lang as "pt" | "en", `ROPA_${new Date().toISOString().slice(0, 10)}.xlsx`);
   };
+
 
   const handleFile = async (file: File) => {
     if (!empresaId) return;
@@ -62,7 +79,9 @@ export function RopaImportExport({ registos, onImported }: Props) {
         empresa_id: empresaId,
         created_by: user?.id ?? null,
         status: "ativo",
+        exercicio_id: exercicioId === "none" ? null : exercicioId,
       }));
+
 
       const { error } = await supabase.from("ropa_registros").insert(rows as any);
       if (error) throw error;
@@ -80,8 +99,25 @@ export function RopaImportExport({ registos, onImported }: Props) {
 
   return (
     <div className="flex flex-wrap items-center gap-2">
+      {exercicios.length > 0 ? (
+        <Select value={exercicioId} onValueChange={setExercicioId}>
+          <SelectTrigger className="h-9 w-[220px]">
+            <SelectValue placeholder={t("dadosDashboard.ropaPlanilha.semExercicio")} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">{t("dadosDashboard.ropaPlanilha.semExercicio")}</SelectItem>
+            {exercicios.map((ex) => (
+              <SelectItem key={ex.id} value={ex.id}>
+                {ex.nome}
+                {ex.versao ? ` · ${ex.versao}` : ""}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      ) : null}
       <input
         ref={inputRef}
+
         type="file"
         accept=".xlsx,.xls,.csv"
         className="hidden"

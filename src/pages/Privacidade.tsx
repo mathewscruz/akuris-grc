@@ -17,6 +17,8 @@ import { MapeamentoDialog } from "@/components/dados/MapeamentoDialog";
 import { RopaWizard } from "@/components/dados/RopaWizard";
 import { RopaDialog } from "@/components/dados/RopaDialog";
 import { RopaImportExport } from "@/components/dados/RopaImportExport";
+import { ExerciciosRopaTab } from "@/components/dados/ExerciciosRopaTab";
+
 import { SolicitacaoTitularDialog } from "@/components/dados/SolicitacaoTitularDialog";
 import { DescoberDadosTab } from "@/components/dados/DescoberDadosTab";
 import { StatStrip } from "@/components/ui/stat-strip";
@@ -41,6 +43,8 @@ export default function Privacidade() {
   const [showDadosDialog, setShowDadosDialog] = useState(false);
   const [showMapeamentoDialog, setShowMapeamentoDialog] = useState(false);
   const [showRopaWizard, setShowRopaWizard] = useState(false);
+  const [novoExercicioSinal, setNovoExercicioSinal] = useState(0);
+
   const [showRopaDialog, setShowRopaDialog] = useState(false);
   const [showSolicitacaoDialog, setShowSolicitacaoDialog] = useState(false);
   const [selectedDado, setSelectedDado] = useState<any>(null);
@@ -548,7 +552,13 @@ export default function Privacidade() {
               <Plus className="mr-2 h-4 w-4" />
               {t('sweepDados.privacidade.novoRopa')}
             </Button>
+          ) : activeTab === 'exercicios' ? (
+            <Button size="sm" onClick={() => setNovoExercicioSinal((n) => n + 1)}>
+              <Plus className="mr-2 h-4 w-4" />
+              {t('dadosDashboard.ropaExercicios.novo')}
+            </Button>
           ) : activeTab === 'solicitacoes' ? (
+
             <Button size="sm" onClick={() => setShowSolicitacaoDialog(true)}>
               <Plus className="mr-2 h-4 w-4" />
               {t('sweepDados.privacidade.novaSolicitacao')}
@@ -570,6 +580,8 @@ export default function Privacidade() {
         <TabsList>
           <TabsTrigger value="catalogo">{t('cardsKpi.privacidade.abaCatalogo')}</TabsTrigger>
           <TabsTrigger value="ropa">{t('sweepDados.privacidade.abaRopa')}</TabsTrigger>
+          <TabsTrigger value="exercicios">{t('dadosDashboard.ropaExercicios.tabTitulo')}</TabsTrigger>
+
           <TabsTrigger value="solicitacoes">{t('cardsKpi.privacidade.abaSolicitacoes')}</TabsTrigger>
           <TabsTrigger value="descobertas">{t('sweepDados.privacidade.abaDescobertas')}</TabsTrigger>
         </TabsList>
@@ -663,7 +675,19 @@ export default function Privacidade() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="exercicios" className="space-y-4">
+          <ExerciciosRopaTab
+            registos={ropaRegistros}
+            novoSinal={novoExercicioSinal}
+            onOpenRegisto={(registo) => {
+              setSelectedRopa(registo);
+              setShowRopaDialog(true);
+            }}
+          />
+        </TabsContent>
+
         <TabsContent value="solicitacoes" className="space-y-4">
+
           <Card className="rounded-lg border overflow-hidden">
             <CardContent className="p-0">
               <DataTable
