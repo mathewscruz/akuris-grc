@@ -782,6 +782,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
       // seções fracas do documento já entregue.
       let workingDoc = doc;
       if (data?.should_quality_gate) {
+        setGenMilestone(4);
         const gate = await callDocGen({
           action: 'quality_gate',
           user_id: userInfo.user_id,
@@ -806,6 +807,12 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
         });
         await runAutoRefine(workingDoc, data.framework_ids, Number(data.max_refine_attempts) || 2);
       }
+
+      // Documento pronto: selo de conclusão a 100% antes de revelar o texto.
+      setGenComplete(true);
+      window.setTimeout(() => setGenComplete(false), 1600);
+
+
 
 
     } catch (error) {
