@@ -751,7 +751,10 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
       };
       setGeneratedDocument(doc);
       lastGenerationKeyRef.current = null;
-      toast({
+      akurisToast({
+        id: DOCGEN_STATUS_TOAST,
+        module: 'documentos',
+        tone: 'success',
         title: t('docgen.dialog.documentGeneratedTitle'),
         description: t('docgen.dialog.documentGeneratedDescription'),
       });
