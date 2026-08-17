@@ -101,11 +101,9 @@ const getMenuSections = (t: (key: string) => string): MenuSection[] => [
       { title: t('sidebar.riskManagement'), url: '/riscos', icon: RiscosIcon, moduleName: 'riscos' },
       {
         title: t('sidebar.governance'),
+        url: '/governanca',
         icon: FileCheck,
-        subItems: [
-          { title: t('sidebar.internalControls'), url: '/governanca', icon: ControlesIcon, moduleName: 'controles' },
-          { title: t('sidebar.audits'), url: '/governanca/auditorias', icon: ShieldCheck, moduleName: 'controles' },
-        ],
+        moduleName: 'controles',
       },
       { title: t('sidebar.gapAnalysis'), url: '/gap-analysis/frameworks', icon: GapAnalysisIcon, moduleName: 'gap-analysis' },
       {
