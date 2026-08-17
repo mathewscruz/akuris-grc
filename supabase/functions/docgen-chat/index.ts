@@ -1243,133 +1243,33 @@ Responda APENAS com um JSON na seguinte estrutura (sem markdown, sem comentário
       const should_quality_gate = weakSections.length > 0 && weakSections.length <= 6;
 
 
-      // === Contrato de cobertura + score determinístico, com ÂMBITO honesto ===
-      // O denominador é o subconjunto do catálogo que trata do TEMA deste
-      // documento (mais tudo o que ele próprio declarou cobrir). A cobertura do
-      // framework inteiro continua a ser reportada, mas só como informação —
-      // uma política isolada nunca cobre um framework completo.
+      // === Compliance por conhecimento do modelo ===
+      // Já NÃO comparamos o documento com o catálogo inteiro do framework: uma
+      // política isolada nunca cobre todos os requisitos, e esse denominador
+      // produzia scores irrelevantes, refinos automáticos e bloqueios de
+      // publicação. O documento é escrito para atender os referenciais
+      // escolhidos; a avaliação formal continua a existir, mas só na Análise de
+      // Aderência, quando o usuário a pedir.
       const coverageMap: any[] = Array.isArray(documentContent?.coverage_map) ? documentContent.coverage_map : [];
-      let naoCobertos: any[] = Array.isArray(documentContent?.requisitos_nao_cobertos_justificativa)
-        ? documentContent.requisitos_nao_cobertos_justificativa : [];
-
-      let catalogCodes: string[] = [];
-      let scopeCodes: string[] = [];
-      let residualGaps: string[] = [];
-      // Base de cálculo por framework — o usuário tem de conseguir auditar o
-      // score: quantos requisitos entraram no âmbito, quais foram cobertos e
-      // quais ficaram de fora, em CADA referencial selecionado.
-      const scoreBreakdown: Array<{ framework_id: string; framework_name: string; scope: number; covered: number; missing: string[] }> = [];
-      if (docFwIds.length) {
-        try {
-          const { data: catalogRows } = await supabase
-            .from('gap_analysis_requirements')
-            .select('framework_id, codigo, titulo, descricao')
-            .in('framework_id', docFwIds)
-            .order('ordem', { ascending: true })
-            .limit(900);
-          const scope = resolveDocumentScope(
-            catalogRows || [],
-            documentContent?.titulo,
-            (documentContent?.secoes || []).map((s: any) => s?.nome),
-            coverageMap,
-          );
-          catalogCodes = scope.catalogCodes;
-          scopeCodes = scope.scopeCodes;
-
-          const { data: fwRows } = await supabase
-            .from('gap_analysis_frameworks')
-            .select('id, nome')
-            .in('id', docFwIds);
-          const nameById = new Map<string, string>((fwRows || []).map((f: any) => [f.id, f.nome]));
-          const declaredCodes = new Set(
-            coverageMap.map((c: any) => String(c?.requirement_codigo || '').trim()).filter(Boolean),
-          );
-          const scopeSet = new Set(scopeCodes);
-          docFwIds.forEach((fid) => {
-            const fwScope = (catalogRows || [])
-              .filter((r: any) => r.framework_id === fid)
-              .map((r: any) => String(r.codigo || '').trim())
-              .filter((c: string) => c && scopeSet.has(c));
-            scoreBreakdown.push({
-              framework_id: fid,
-              framework_name: nameById.get(fid) || '',
-              scope: fwScope.length,
-              covered: fwScope.filter((c) => declaredCodes.has(c)).length,
-              missing: fwScope.filter((c) => !declaredCodes.has(c)).slice(0, 12),
-            });
-          });
-        } catch (catErr) {
-          console.log('DocGen catalog fetch failed (score usará somente o coverage_map declarado)', catErr);
-        }
-        if (scopeCodes.length) {
-          naoCobertos = expandNaoCobertosFromCatalog(scopeCodes, coverageMap, naoCobertos);
-          residualGaps = computeResidualGaps(scopeCodes, coverageMap, naoCobertos, 15);
-          // Reflete o denominador expandido de volta no documento persistido.
-          documentContent.requisitos_nao_cobertos_justificativa = naoCobertos;
-        }
-      }
-
-      const inScopeNaoCobertos = filterInScope(naoCobertos);
-      const initial_score = computeCoverageScore(coverageMap, naoCobertos);
-      const coveredCodes = new Set(
-        coverageMap.map((c: any) => String(c?.requirement_codigo || '').trim()).filter(Boolean),
-      );
-      const frameworkCoverage = {
-        covered: catalogCodes.filter((c) => coveredCodes.has(c)).length,
-        total: catalogCodes.length,
-      };
-      documentContent._initial_score = initial_score;
-      documentContent._score_source = scopeCodes.length ? 'coverage_map+scope' : 'coverage_map';
-      documentContent._catalog_size = catalogCodes.length;
-      documentContent._scope_size = scopeCodes.length;
-      documentContent._framework_coverage = frameworkCoverage;
-      documentContent._residual_gaps = residualGaps;
-      documentContent._score_breakdown = scoreBreakdown;
-
-
-
-      console.log('DocGen generate_document compliance (pré auto-refino)', {
-        framework: framework_context?.framework_name,
-        coverage_items: coverageMap.length,
-        catalog_size: catalogCodes.length,
-        nao_cobertos_in_scope: inScopeNaoCobertos.length,
-        nao_cobertos_out_scope: naoCobertos.length - inScopeNaoCobertos.length,
-        residual_gaps_top: residualGaps.slice(0, 8),
-        initial_score,
-      });
-
-      // === Auto-refino movido para a action `auto_refine` ===
-      // O pipeline em série (geração + quality gate + 2 refinos "pro") estourava
-      // o timeout da plataforma (~150s). Agora a geração retorna assim que tem
-      // o documento + score, e o frontend dispara `auto_refine` por tentativa.
+      const catalogCodes: string[] = [];
+      const residualGaps: string[] = [];
+      const initial_score = 0;
+      const finalScore = 0;
       const auto_refine_attempts = 0;
       const auto_refine_history: Array<{ attempt: number; before: number; after: number; gaps_targeted: string[] }> = [];
-      const finalScore = initial_score;
-      const should_auto_refine =
-        initial_score < AUDIT_THRESHOLD &&
-        residualGaps.length > 0 &&
-        scopeCodes.length > 0 &&
-        Array.isArray(documentContent?.secoes) &&
-        documentContent.secoes.length > 0;
+      const should_auto_refine = false;
+      const finalCoverage: any[] = coverageMap;
+      const warnings: string[] = [];
 
-
+      documentContent._score_source = 'model_knowledge';
       documentContent._auto_refine_attempts = auto_refine_attempts;
       documentContent._auto_refine_history = auto_refine_history;
 
-      // Recompute em cima do estado FINAL (pós auto-refino).
-      const finalCoverage: any[] = Array.isArray(documentContent?.coverage_map) ? documentContent.coverage_map : coverageMap;
-      const finalInScopeNaoCobertos = filterInScope(naoCobertos);
-      const warnings: string[] = [];
-      if (finalCoverage.length === 0 && docFwIds.length > 0) {
-        warnings.push('A IA não devolveu coverage_map — a análise de compliance pode ficar inconsistente.');
-      }
-      if (scopeCodes.length && residualGaps.length > 0 && finalScore < AUDIT_THRESHOLD) {
-        warnings.push(`${residualGaps.length} requisito(s) ainda sem cobertura. Execute o refino automático para incluí-los.`);
-      }
+      console.log('DocGen generate_document (compliance por conhecimento do modelo)', {
+        frameworks: frameworkNames,
+        secoes: documentContent?.secoes?.length || 0,
+      });
 
-      if (finalScore > 0 && finalScore < AUDIT_THRESHOLD) {
-        warnings.push(`Score final ${finalScore}% — abaixo do gate de ${AUDIT_THRESHOLD}% (${finalInScopeNaoCobertos.length} requisito(s) sem cobertura explícita).`);
-      }
 
       console.log('DocGen generate_document compliance (final)', {
         framework: framework_context?.framework_name,
