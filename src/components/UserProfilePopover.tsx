@@ -316,7 +316,7 @@ export function UserProfilePopover({ onClose }: UserProfilePopoverProps) {
             <h3 className="truncate text-lg font-semibold leading-tight text-foreground">{displayName}</h3>
             <p className="truncate text-sm text-muted-foreground">{user?.email}</p>
             <div className="flex flex-wrap items-center justify-center gap-2 pt-1 sm:justify-start">
-              <Chip family="type" tone="neutral" size="sm" label={roleLabels[role] ?? role} />
+              <Chip family="type" size="sm">{roleLabels[role] ?? role}</Chip>
               <Button
                 type="button"
                 variant="outline"
