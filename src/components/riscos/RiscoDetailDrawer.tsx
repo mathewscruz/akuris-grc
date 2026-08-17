@@ -222,7 +222,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
           {/* Barra de ações */}
           <div className="flex items-center justify-between gap-3 relative">
             <span className="text-[10.5px] font-mono tracking-wider text-muted-foreground">
-              {shortRiskId(risco.id)}
+              {shortRiskId(risco.id, (risco as any).codigo)}
             </span>
             <div className="flex items-center gap-1">
               {nav && (
