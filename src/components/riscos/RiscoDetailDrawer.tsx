@@ -339,7 +339,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
 
           <div className="flex-1 overflow-y-auto px-6 py-5">
             {/* Visão */}
-            <TabsContent value="visao" className="m-0 space-y-5 data-[state=active]:animate-fade-in">
+            <TabsContent value="visao" className="m-0 space-y-5">
               {risco.descricao && (
                 <section>
                   <SectionLabel>{t('campos.risco.descricaoSecao')}</SectionLabel>
@@ -439,7 +439,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
             </TabsContent>
 
             {/* Tratamentos */}
-            <TabsContent value="tratamentos" className="m-0 space-y-3 data-[state=active]:animate-fade-in">
+            <TabsContent value="tratamentos" className="m-0 space-y-3">
               {isLoading ? (
                 <div className="flex justify-center py-10"><AkurisPulse size={32} /></div>
               ) : isError ? (
@@ -498,7 +498,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
             </TabsContent>
 
             {/* Histórico */}
-            <TabsContent value="historico" className="m-0 data-[state=active]:animate-fade-in">
+            <TabsContent value="historico" className="m-0">
               {isLoading ? (
                 <div className="flex justify-center py-10"><AkurisPulse size={32} /></div>
               ) : isError ? (
@@ -532,7 +532,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
             </TabsContent>
 
             {/* Controles = requisitos dos frameworks activos vinculados ao risco */}
-            <TabsContent value="controles" className="m-0 space-y-2 data-[state=active]:animate-fade-in">
+            <TabsContent value="controles" className="m-0 space-y-2">
               <div className="flex items-center justify-between gap-2 mb-1">
                 <span className="text-[10.5px] font-semibold tracking-[1.2px] uppercase text-muted-foreground">
                   {t('riscosControles.aba.vinculados', { count: requisitos.length })}
@@ -600,7 +600,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
             </TabsContent>
 
             {/* Comentários */}
-            <TabsContent value="comentarios" className="m-0 data-[state=active]:animate-fade-in">
+            <TabsContent value="comentarios" className="m-0">
               <RiscoComentarios riscoId={risco.id} />
             </TabsContent>
           </div>

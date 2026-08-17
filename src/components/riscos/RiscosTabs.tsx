@@ -76,10 +76,10 @@ export function RiscosTabs({ overview, matrix, table, aceite }: Props) {
           {t('riscosDetalhe.tabs.aceite')}
         </TabsTrigger>
       </TabsList>
-      <TabsContent value="overview" className="mt-5 data-[state=active]:animate-fade-in">{overview}</TabsContent>
-      <TabsContent value="matrix" className="mt-5 data-[state=active]:animate-fade-in">{matrix}</TabsContent>
-      <TabsContent value="table" className="mt-5 data-[state=active]:animate-fade-in">{table}</TabsContent>
-      <TabsContent value="aceite" className="mt-5 data-[state=active]:animate-fade-in">{aceite}</TabsContent>
+      <TabsContent value="overview" className="mt-5">{overview}</TabsContent>
+      <TabsContent value="matrix" className="mt-5">{matrix}</TabsContent>
+      <TabsContent value="table" className="mt-5">{table}</TabsContent>
+      <TabsContent value="aceite" className="mt-5">{aceite}</TabsContent>
     </Tabs>
   );
 }
