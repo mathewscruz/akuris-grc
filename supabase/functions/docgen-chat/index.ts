@@ -1058,7 +1058,9 @@ ${transcriptFull}
       const dcApprover = String(dc.approver || '').trim();
       const dcFrequency = String(dc.review_frequency || '').trim() || 'Anual';
       const dcClassification = String(dc.classification || '').trim() || 'Interna';
-      const dcInlineRefs = dc.inline_refs !== false;
+      // Códigos de requisito NUNCA vão no corpo do documento (decisão de produto).
+      const dcInlineRefs = false;
+
 
       const raciColumns = dcRoles.length
         ? dcRoles.join(' | ')
