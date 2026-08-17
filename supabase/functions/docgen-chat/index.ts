@@ -304,11 +304,20 @@ async function fetchFrameworkRequirements(supabase: any, frameworkIds: string[],
 
     const { data: reqs } = await supabase
       .from('gap_analysis_requirements')
-      .select('id, codigo, titulo, descricao, orientacao_implementacao, categoria')
+      .select('id, framework_id, codigo, titulo, descricao, orientacao_implementacao, categoria')
       .in('framework_id', ids)
       .order('ordem', { ascending: true })
-      .limit(600);
+      .limit(900);
     if (!reqs || reqs.length === 0) return '';
+
+    // Nome de cada framework — o prompt precisa deixar claro que há MAIS DE UM
+    // referencial e que todos têm de ser endereçados (antes só ia um bloco solto).
+    const { data: fwRows } = await supabase
+      .from('gap_analysis_frameworks')
+      .select('id, nome')
+      .in('id', ids);
+    const fwName = new Map<string, string>();
+    (fwRows || []).forEach((f: any) => fwName.set(f.id, f.nome));
 
     // Status de conformidade da empresa, para marcar os gaps (prioridade).
     const { data: evals } = await supabase
@@ -321,7 +330,7 @@ async function fetchFrameworkRequirements(supabase: any, frameworkIds: string[],
     (evals || []).forEach((e: any) => statusById.set(e.requirement_id, e.conformity_status));
 
     const trunc = (s: string | null, n: number) => (s && s.length > n ? `${s.slice(0, n)}…` : (s || ''));
-    const lines = reqs.map((r: any) => {
+    const renderLine = (r: any) => {
       const st = statusById.get(r.id);
       const gapTag = st === 'nao_conforme' ? ' [GAP: NÃO CONFORME]'
         : st === 'parcialmente_conforme' ? ' [GAP: PARCIAL]' : '';
@@ -330,14 +339,22 @@ async function fetchFrameworkRequirements(supabase: any, frameworkIds: string[],
         r.orientacao_implementacao && `Como cumprir: ${trunc(r.orientacao_implementacao, 320)}`,
       ].filter(Boolean).join(' | ');
       return `- [${r.codigo || 'S/C'}] ${r.titulo}${r.categoria ? ` (${r.categoria})` : ''}${gapTag}${exige ? `\n    ${exige}` : ''}`;
-    });
+    };
 
-    return lines.join('\n');
+    // Agrupado por framework — cada bloco tem de ser coberto no documento.
+    const blocks = ids.map((fid) => {
+      const rows = (reqs as any[]).filter((r) => r.framework_id === fid);
+      if (!rows.length) return '';
+      return `### FRAMEWORK: ${fwName.get(fid) || fid} (${rows.length} requisitos)\n${rows.map(renderLine).join('\n')}`;
+    }).filter(Boolean);
+
+    return blocks.join('\n\n');
   } catch (error) {
     console.error('Error fetching framework requirements:', error);
     return '';
   }
 }
+
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
