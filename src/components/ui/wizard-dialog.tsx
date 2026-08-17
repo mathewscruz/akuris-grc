@@ -218,7 +218,7 @@ export function WizardDialog({
             {/* Sidebar (desktop) */}
             <aside className="hidden lg:flex flex-col w-72 border-r bg-muted/30 shrink-0">
               <ScrollArea className="flex-1">
-                <TabsList className="flex flex-col h-auto w-full bg-transparent gap-1 p-3">
+                <TabsList className="flex flex-col h-auto w-full bg-transparent border-0 gap-1 p-3">
                   {tabs.map((tab, idx) => {
                     const TabIcon = tab.icon;
                     return (
