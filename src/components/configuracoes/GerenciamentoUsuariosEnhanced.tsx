@@ -206,26 +206,43 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
     }
   };
 
-  const fetchPermissionProfiles = async () => {
+  /**
+   * Carrega os perfis de permissão da empresa DE DESTINO (a escolhida no
+   * formulário), não da empresa do utilizador autenticado. Sem isto, um
+   * super-admin a criar um utilizador noutra empresa envia um perfil de outra
+   * empresa e a edge function rejeita ("Perfil de permissão não pertence à
+   * empresa de destino").
+   */
+  const fetchPermissionProfiles = async (empresaIdAlvo?: string | null) => {
     try {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('empresa_id')
-        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
-        .single();
+      let empresaId = empresaIdAlvo || null;
 
-      if (!profile?.empresa_id) return;
+      if (!empresaId) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('empresa_id')
+          .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+          .single();
+        empresaId = profile?.empresa_id || null;
+      }
+
+      if (!empresaId) {
+        setPermissionProfiles([]);
+        return;
+      }
 
       const { data, error } = await supabase
         .from('permission_profiles')
-        .select('id, name')
-        .eq('empresa_id', profile.empresa_id)
+        .select('id, name, empresa_id')
+        // perfis da empresa de destino + perfis globais (empresa_id nulo)
+        .or(`empresa_id.eq.${empresaId},empresa_id.is.null`)
         .order('name');
 
       if (error) throw error;
-      setPermissionProfiles(data || []);
+      setPermissionProfiles((data || []) as PermissionProfile[]);
     } catch (error) {
       console.error('Erro ao buscar perfis de permissão:', error);
+      setPermissionProfiles([]);
     }
   };
 
@@ -238,6 +255,26 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
 
     loadData();
   }, []);
+
+  // Recarrega os perfis sempre que a empresa selecionada no formulário mudar
+  const empresaSelecionada = form.watch('empresa_id');
+  useEffect(() => {
+    if (!dialogOpen) return;
+    fetchPermissionProfiles(empresaSelecionada || null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [empresaSelecionada, dialogOpen]);
+
+  // Se o perfil escolhido deixar de existir na empresa selecionada, limpa-o
+  useEffect(() => {
+    const atual = form.getValues('permission_profile_id');
+    if (!atual) return;
+    if (permissionProfiles.length === 0) return;
+    if (!permissionProfiles.some((p) => p.id === atual)) {
+      form.setValue('permission_profile_id', '');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [permissionProfiles]);
+
 
   useEffect(() => {
     if (usuarios.length > 0) {
