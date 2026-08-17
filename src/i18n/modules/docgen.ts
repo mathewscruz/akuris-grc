@@ -61,6 +61,9 @@ export const docgen = {
         coverageMapped: '{count} requisitos mapeados — o documento será alinhado ao framework (a IA prioriza os gaps)',
         coverageNone: 'Nenhum requisito catalogado para esses frameworks',
         matched: 'Casados: {list}',
+        complianceNote: 'O documento será redigido em conformidade com: {list}',
+        complianceNoteHelp: 'A IA usa o conhecimento normativo destes referenciais. O corpo do documento não terá códigos de requisito.',
+
         scopeLabel: 'Escopo do documento',
         scopePlaceholder: 'Ex.: regras para criação, complexidade e troca de senhas em todos os sistemas corporativos',
         audienceLabel: 'Público-alvo',
