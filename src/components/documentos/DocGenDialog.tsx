@@ -624,7 +624,14 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
         user_id: userInfo.user_id,
         empresa_id: userInfo.empresa_id,
         action: 'generate_document',
-        conversation_title: `${selectedTemplate?.label || opts?.docNameHint || currentDocName || currentDocType || 'DocGen'} — ${new Date().toLocaleString()}`,
+        // Título distinguível: modelo + escopo resumido + data (sem isto o
+        // histórico enche-se de entradas com o mesmo nome).
+        conversation_title: [
+          selectedTemplate?.label || opts?.docNameHint || currentDocName || currentDocType || 'DocGen',
+          briefingValue?.scope?.trim() ? `· ${briefingValue.scope.trim().slice(0, 48)}` : '',
+          `— ${new Date().toLocaleString()}`,
+        ].filter(Boolean).join(' '),
+
         ...(opts?.briefingText ? { briefing_text: opts.briefingText } : {}),
         doc_type_hint: opts?.docNameHint || currentDocName || currentDocType,
         // Controlo documental (ISO 27001 7.5) + cargos reais: sem isto a IA
