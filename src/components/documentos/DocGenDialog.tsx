@@ -48,6 +48,7 @@ import { useAuth } from '@/components/AuthProvider';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { logger } from '@/lib/logger';
 
 /**
  * Tempo máximo (ms) que o frontend espera por uma chamada do docgen-chat.
@@ -65,6 +66,7 @@ type DocGenCallResult = {
   /** Erro recuperável: reenviar com a MESMA idempotency_key não debita duas vezes. */
   retryable?: boolean;
   error?: string;
+  errorCode?: string;
 };
 
 /** Chave de idempotência por tentativa lógica do utilizador. */
@@ -106,7 +108,11 @@ async function callDocGen(
 
     if (payload?.code === 'CREDITS_EXHAUSTED' || payload?.error === 'CREDITS_EXHAUSTED') return { credits: true };
     if (!res.ok) {
-      return { error: payload?.error || `HTTP ${res.status}`, retryable: res.status >= 500 };
+      return {
+        error: payload?.error || `HTTP ${res.status}`,
+        errorCode: payload?.code,
+        retryable: res.status >= 500,
+      };
     }
     if (payload?.error === 'INVALID_DOCUMENT') {
       return { error: 'INVALID_DOCUMENT', retryable: payload?.retryable !== false };
@@ -189,6 +195,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
 
   const [draft, setDraft] = useState<{ briefing: BriefingDefaults; templateId?: string; step: number } | null>(null);
   const lastGenerationArgsRef = useRef<{ briefingText?: string; docNameHint?: string; conversationId?: string | null }>({});
+  const lastGenerationKeyRef = useRef<string | null>(null);
   const [isEditingLayout, setIsEditingLayout] = useState(false);
   const [showCreditsDialog, setShowCreditsDialog] = useState(false);
   const messagesScrollRef = useRef<HTMLDivElement>(null);
@@ -655,7 +662,8 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     // P0: uma chave por tentativa lógica do utilizador. Se a chamada falhar de
     // forma recuperável, reenviamos com a MESMA chave — o servidor não debita
     // crédito duas vezes.
-    const idemKey = newIdempotencyKey();
+    const idemKey = lastGenerationKeyRef.current ?? newIdempotencyKey();
+    lastGenerationKeyRef.current = idemKey;
 
     const invokeGenerate = (strictJson: boolean) => callDocGen({
         conversation_id: convId,
@@ -713,6 +721,10 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
         });
         return;
       }
+      if (res.errorCode === 'AI_UNAVAILABLE') {
+        setGenerationError(t('docgen.dialog.serviceUnavailable'));
+        return;
+      }
       if (res.error) throw new Error(res.error);
       const data = res.data;
       if (!data?.document) {
@@ -731,6 +743,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
         data_criacao: new Date().toISOString().slice(0, 10),
       };
       setGeneratedDocument(doc);
+      lastGenerationKeyRef.current = null;
       toast({
         title: t('docgen.dialog.documentGeneratedTitle'),
         description: t('docgen.dialog.documentGeneratedDescription'),
@@ -766,7 +779,13 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
 
 
     } catch (error) {
-      console.error('Erro ao gerar documento:', error);
+      logger.error('Erro ao gerar documento', {
+        module: 'docgen',
+        action: 'generate_document',
+        userId: userInfo.user_id,
+        empresaId: userInfo.empresa_id,
+        error: error instanceof Error ? error.message : String(error),
+      });
       setGenerationError((error as Error)?.message || t('docgen.dialog.generateDocumentError'));
       toast({
         title: t('docgen.dialog.errorTitle'),

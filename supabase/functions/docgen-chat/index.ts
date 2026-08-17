@@ -13,6 +13,7 @@ import {
   AUDIT_THRESHOLD,
   MAX_REFINE_ATTEMPTS,
 } from '../_shared/compliance-score.ts';
+import { createAttemptSignal, withTransientFallback } from '../_shared/ai-resilience.ts';
 
 
 const corsHeaders = {
@@ -117,7 +118,7 @@ async function callClaudeRaw(
     if ((e as any)?.name === 'AbortError') {
       throw new AiGatewayError('Geração abortada antes de concluir.', 'GENERATION_ABORTED', 499);
     }
-    throw e;
+    throw new AiGatewayError('Serviço de IA temporariamente indisponível.', 'AI_UNAVAILABLE', 503);
   }
 
   if (!response.ok) {
@@ -126,6 +127,9 @@ async function callClaudeRaw(
     if (response.status === 429) throw new AiGatewayError('Limite de requisições excedido. Tente novamente em alguns minutos.', 'RATE_LIMITED', 429);
     if (response.status === 402 || response.status === 403) {
       throw new AiGatewayError('Créditos de IA insuficientes para concluir esta operação.', 'CREDITS_EXHAUSTED', 402);
+    }
+    if (response.status >= 500) {
+      throw new AiGatewayError('Serviço de IA temporariamente indisponível.', 'AI_UNAVAILABLE', 503);
     }
     throw new AiGatewayError(`Erro na IA (${response.status})`, 'AI_ERROR', 502);
   }
@@ -479,6 +483,41 @@ serve(async (req) => {
       temperature = 0.8,
       model: string = MODEL_FAST,
     ) => callClaudeRaw(messages, systemPrompt, apiKey, maxTokens, temperature, model, aborter.signal);
+    const callQualityWithFallback = async (
+      messages: { role: string; content: string }[],
+      systemPrompt: string,
+      maxTokens: number,
+      temperature: number,
+    ) => {
+      const primaryBudgetMs = Math.min(55_000, Math.max(1, remainingMs() - 50_000));
+      const result = await withTransientFallback({
+        primary: () => callClaudeRaw(
+          messages,
+          systemPrompt,
+          LOVABLE_API_KEY,
+          maxTokens,
+          temperature,
+          MODEL_QUALITY,
+          createAttemptSignal(aborter.signal, primaryBudgetMs),
+        ),
+        fallback: () => callClaudeRaw(
+          messages,
+          systemPrompt,
+          LOVABLE_API_KEY,
+          maxTokens,
+          temperature,
+          MODEL_FAST,
+          createAttemptSignal(aborter.signal, Math.max(1, remainingMs() - 5_000)),
+        ),
+        isTransient: (error) => error instanceof AiGatewayError
+          && (error.code === 'AI_UNAVAILABLE' || (error.code === 'GENERATION_ABORTED' && !aborter.signal.aborted)),
+        onFallback: (error) => console.warn('DocGen quality model unavailable; using fallback', {
+          code: error instanceof AiGatewayError ? error.code : 'UNKNOWN',
+          remaining_ms: remainingMs(),
+        }),
+      });
+      return result.value;
+    };
 
     console.log('DocGen Chat request:', { message, conversation_id, action, user_id, empresa_id, framework_context });
 
@@ -1155,7 +1194,7 @@ Responda APENAS com um JSON na seguinte estrutura (sem markdown, sem comentário
 
 
 
-      const docContent = await callClaude(
+      const docContent = await callQualityWithFallback(
         [{
           role: 'user',
           content: json_retry
@@ -1163,10 +1202,8 @@ Responda APENAS com um JSON na seguinte estrutura (sem markdown, sem comentário
             : 'Gere o documento agora, respeitando TODAS as regras editoriais.',
         }],
         documentPrompt,
-        LOVABLE_API_KEY,
         20000,
         json_retry ? 0.3 : 0.35,
-        MODEL_QUALITY,
       );
 
       let documentContent = parseDocumentJson(docContent);
@@ -1971,6 +2008,7 @@ Aplique a instrução conforme as regras do sistema e devolva o JSON completo CO
     return new Response(JSON.stringify({
       error: error instanceof Error ? error.message : 'Internal server error',
       code,
+      retryable: code === 'AI_UNAVAILABLE' || code === 'GENERATION_ABORTED',
     }), {
       status,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
