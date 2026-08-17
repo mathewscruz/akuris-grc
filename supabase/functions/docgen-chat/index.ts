@@ -886,12 +886,15 @@ IMPORTANTE: Sempre responda em português brasileiro. Responda SOMENTE com uma m
         ? `\n\nIMPORTANTE — O documento deve endereçar os seguintes gaps de conformidade identificados no framework "${framework_context?.framework_name}":\n${frameworkGapsText}\n\nInclua seções, controles ou procedimentos específicos que resolvam cada gap listado.`
         : '';
 
-      // O documento é escrito e avaliado contra o framework ESCOLHIDO para ele.
-      // Usar todos os frameworks ativos da empresa inflava o universo (ex.: 184
-      // requisitos de dois frameworks) e tornava qualquer política "não conforme".
-      const docFwIds: string[] = (framework_context?.framework_id
-        ? [framework_context.framework_id]
-        : (framework_context?.framework_ids?.length ? [framework_context.framework_ids[0]] : [])) as string[];
+      // O documento é escrito e avaliado contra TODOS os frameworks escolhidos
+      // para ele (antes truncávamos para o primeiro e o 2.º era ignorado). O
+      // denominador continua honesto porque `resolveDocumentScope` reduz cada
+      // catálogo ao subconjunto temático do documento.
+      const docFwIds: string[] = Array.from(new Set([
+        ...(framework_context?.framework_ids || []),
+        ...(framework_context?.framework_id ? [framework_context.framework_id] : []),
+      ].filter(Boolean))) as string[];
+
 
       const docNome = (context as any).documento_nome_identificado || doc_type_hint || context.tipo_documento_identificado;
       let frameworkRequirementsText = '';
