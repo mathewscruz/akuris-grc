@@ -461,10 +461,28 @@ export function buildSeedPrompt(
   parts.push(`- Tom: ${TONE_LABEL[briefing.tone]}`);
   parts.push(`- Idioma: ${LANGUAGE_LABEL[briefing.language]}`);
   parts.push(`- Extensão alvo: ${LENGTH_LABEL[briefing.length]}`);
+  // Controlo documental (ISO 27001 7.5) — sem isto a IA inventa cargos e omite
+  // proprietário/aprovador/periodicidade, e o documento não sobrevive a auditoria.
+  parts.push(`- Proprietário do documento: ${briefing.owner?.trim() || 'não informado (registar como premissa a validar)'}`);
+  parts.push(`- Aprovador: ${briefing.approver?.trim() || 'não informado (registar como premissa a validar)'}`);
+  parts.push(`- Periodicidade de revisão: ${REVIEW_FREQUENCY_LABEL[briefing.reviewFrequency || 'anual'] || briefing.reviewFrequency}`);
+  parts.push(`- Classificação da informação: ${CLASSIFICATION_LABEL[briefing.classification || 'interna'] || briefing.classification}`);
+  parts.push(
+    briefing.roles && briefing.roles.length
+      ? `- Cargos reais existentes na empresa (usar SOMENTE estes na matriz RACI): ${briefing.roles.join(', ')}`
+      : '- Cargos reais não informados: usar apenas designações funcionais genéricas na RACI e não afirmar a existência de CISO, DPO ou comités.',
+  );
+  parts.push(
+    briefing.inlineRefs === false
+      ? '- Referências normativas: NÃO citar códigos entre colchetes no corpo; manter a rastreabilidade apenas no anexo.'
+      : '- Referências normativas: citar o código do requisito entre colchetes na cláusula correspondente.',
+  );
+  parts.push('- O documento deve ser prescritivo ("deve"), nunca afirmar que controlos já existem, e trazer uma seção "Premissas a validar".');
   parts.push('');
   parts.push(
     'Por favor, proponha a estrutura de seções inicial e confirme se podemos prosseguir para a geração completa do documento.',
   );
+
 
   return parts.join('\n');
 }
