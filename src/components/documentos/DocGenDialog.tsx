@@ -779,6 +779,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
       // Auto-refino em chamadas separadas, para não estourar o timeout.
       if (data?.should_auto_refine) {
         akurisToast({
+          id: DOCGEN_STATUS_TOAST,
           module: 'documentos',
           tone: 'info',
           title: t('docgen.dialog.autoRefineTitle'),
