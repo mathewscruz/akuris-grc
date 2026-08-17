@@ -419,15 +419,10 @@ serve(async (req) => {
     // e a ser faturado às escondidas). O abort do cliente também propaga.
     const INVOCATION_BUDGET_MS = 115_000;
     const startedAt = Date.now();
-    const aborter = new AbortController();
-    const budgetTimer = setTimeout(() => aborter.abort(), INVOCATION_BUDGET_MS);
-    const onClientAbort = () => aborter.abort();
-    req.signal?.addEventListener('abort', onClientAbort);
+    const signals: AbortSignal[] = [AbortSignal.timeout(INVOCATION_BUDGET_MS)];
+    if (req.signal) signals.push(req.signal);
+    const aborter = { signal: signals.length > 1 ? AbortSignal.any(signals) : signals[0] };
     const remainingMs = () => INVOCATION_BUDGET_MS - (Date.now() - startedAt);
-    const releaseBudget = () => {
-      clearTimeout(budgetTimer);
-      req.signal?.removeEventListener('abort', onClientAbort);
-    };
     const callClaude = (
       messages: { role: string; content: string }[],
       systemPrompt: string,
@@ -1108,44 +1103,38 @@ Responda APENAS com um JSON na seguinte estrutura (sem markdown, sem comentário
 
 
       const docContent = await callClaude(
-        [{ role: 'user', content: 'Gere o documento agora, respeitando TODAS as regras editoriais.' }],
+        [{
+          role: 'user',
+          content: json_retry
+            ? 'A tentativa anterior não devolveu um JSON válido e completo. Gere o documento novamente devolvendo APENAS o JSON no formato exigido, sem cercas de código e sem texto fora do JSON. Se necessário, seja mais conciso para caber inteiro na resposta.'
+            : 'Gere o documento agora, respeitando TODAS as regras editoriais.',
+        }],
         documentPrompt,
         LOVABLE_API_KEY,
         20000,
-        0.35,
+        json_retry ? 0.3 : 0.35,
         MODEL_QUALITY,
       );
 
       let documentContent = parseDocumentJson(docContent);
 
-      // Uma única re-tentativa quando o JSON veio truncado/inválido: em vez de
-      // degradar o documento para um bloco de texto cru, pedimos o JSON de novo.
+      // P1: a re-tentativa de JSON é uma INVOCAÇÃO à parte (o cliente repete a
+      // chamada com `json_retry: true` e a MESMA chave de idempotência, por
+      // isso não há débito duplo). Assim nunca somamos duas gerações "pro" na
+      // mesma invocação e o orçamento de tempo continua honesto.
       if (!isValidDocument(documentContent)) {
-        console.log('DocGen — JSON inválido na 1ª tentativa, refazendo geração');
-        const retryContent = await callClaude(
-          [{ role: 'user', content: 'A resposta anterior não era um JSON válido e completo. Gere o documento novamente devolvendo APENAS o JSON no formato exigido, sem cercas de código e sem texto fora do JSON. Se necessário, seja mais conciso para caber inteiro na resposta.' }],
-          documentPrompt,
-          LOVABLE_API_KEY,
-          20000,
-          0.3,
-          MODEL_QUALITY,
-        );
-        const retryParsed = parseDocumentJson(retryContent);
-        if (isValidDocument(retryParsed)) {
-          documentContent = retryParsed;
-        }
-      }
-
-      if (!isValidDocument(documentContent)) {
-        console.error('DocGen — documento inválido após retry');
+        console.error('DocGen — documento inválido', { json_retry: !!json_retry });
         return new Response(
-          JSON.stringify({ error: 'INVALID_DOCUMENT', message: 'A IA não devolveu um documento estruturado válido.' }),
+          JSON.stringify({
+            error: 'INVALID_DOCUMENT',
+            code: 'INVALID_DOCUMENT',
+            retryable: !json_retry,
+            conversation_id: conversation.id,
+            message: 'A IA não devolveu um documento estruturado válido.',
+          }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
         );
       }
-
-      // Crédito só é debitado quando a geração REALMENTE produziu um documento.
-      await chargeAiCredit();
 
       // A IA não conhece a data atual (chuta valores errados). Sempre sobrescrever
       // com a data do servidor para a capa/versão do documento ficar correta.
