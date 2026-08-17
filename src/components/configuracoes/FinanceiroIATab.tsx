@@ -16,45 +16,23 @@ import { useLanguage } from '@/contexts/LanguageContext';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { CHART_SERIES, CHART_GRID, CHART_AXIS } from '@/lib/chart-tokens';
-// --- Constants: AI models, pricing, and function mapping ---
+// --- Catálogo único de funcionalidades/modelos de IA (src/lib/ai-usage-catalog.ts) ---
+import {
+  AI_MODELS,
+  AI_FEATURES,
+  featuresUsingModel,
+  resolveAiFeature,
+  aiFeatureLabel,
+  type AiModelId,
+} from '@/lib/ai-usage-catalog';
 
-interface ModelPricing {
-  label: string;
-  provider: string;
-  inputPer1kTokens: number;  // USD
-  outputPer1kTokens: number; // USD
-  avgCostPerReqBRL: number;  // BRL estimated avg per request
-  functions: string[];       // funcionalidade values that use this model
+const MODEL_PRICING = AI_MODELS;
+
+// funcionalidade (com ou sem sufixo ":acao") → id do modelo
+function getModelForFunc(funcionalidade: string): AiModelId | null {
+  return resolveAiFeature(funcionalidade)?.model ?? null;
 }
 
-const MODEL_PRICING: Record<string, ModelPricing> = {
-  'claude-sonnet-4-20250514': {
-    label: 'Claude Sonnet 4',
-    provider: 'Anthropic',
-    inputPer1kTokens: 0.003,
-    outputPer1kTokens: 0.015,
-    avgCostPerReqBRL: 0.20,
-    functions: ['analyze_document_adherence', 'docgen-chat'],
-  },
-  'google/gemini-3-flash-preview': {
-    label: 'Gemini 3 Flash Preview',
-    provider: 'Google',
-    inputPer1kTokens: 0.00015,
-    outputPer1kTokens: 0.0006,
-    avgCostPerReqBRL: 0.03,
-    functions: ['akuria_chat', 'ai-assistant', 'calculate-assessment-score', 'populate-requirement-guidance', 'populate-requirement-guidance-batch', 'suggest_risk_treatment'],
-  },
-};
-
-// Build reverse map: funcionalidade prefix → model key
-function getModelForFunc(funcionalidade: string): string | null {
-  for (const [modelKey, info] of Object.entries(MODEL_PRICING)) {
-    for (const fn of info.functions) {
-      if (funcionalidade === fn || funcionalidade.startsWith(fn + ':')) return modelKey;
-    }
-  }
-  return null;
-}
 
 // --- Interfaces ---
 
