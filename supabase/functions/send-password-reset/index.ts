@@ -73,14 +73,30 @@ Deno.serve(async (req) => {
       return uniformSuccess()
     }
 
-    const { data: profile } = await supabase
+    // A comparação tem de ignorar maiúsculas: create-user grava o e-mail tal
+    // como foi digitado, sem normalizar, portanto um perfil gravado como
+    // "Joao.Silva@Empresa.com.br" nunca era encontrado por uma busca em minúsculas
+    // e o utilizador ficava permanentemente sem conseguir redefinir a senha —
+    // sem erro visível, porque a resposta é sempre uniforme.
+    const alvo = email.trim().toLowerCase()
+    // Escapa os curingas do LIKE: "_" é carácter legítimo em endereços de e-mail.
+    const padrao = alvo.replace(/([%_\\])/g, '\\$1')
+
+    const { data: candidatos } = await supabase
       .from('profiles')
       .select('user_id, nome, email, empresa:empresas(nome, logo_url)')
-      .eq('email', email.trim().toLowerCase())
-      .maybeSingle()
+      .ilike('email', padrao)
+      .limit(10)
+
+    const profile = (candidatos ?? []).find(
+      (p: any) => (p.email ?? '').trim().toLowerCase() === alvo
+    ) ?? null
 
     if (!profile) {
-      // Não revela se email existe
+      // A resposta ao cliente continua uniforme para não revelar se o e-mail
+      // existe, mas sem este registo uma falha real fica indistinguível de um
+      // pedido para um endereço inexistente.
+      console.warn('send-password-reset: nenhum perfil corresponde ao e-mail pedido')
       return uniformSuccess()
     }
 

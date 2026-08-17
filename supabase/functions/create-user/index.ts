@@ -51,7 +51,13 @@ Deno.serve(async (req) => {
     const user = { id: ctx.userId }
     const currentUserProfile = { role: ctx.role, empresa_id: ctx.empresaId }
 
-    const { nome, email, role, empresa_id, permission_profile_id }: CreateUserRequest = await req.json()
+    const { nome, email: emailBruto, role, empresa_id, permission_profile_id }: CreateUserRequest = await req.json()
+
+    // O endereço é normalizado uma única vez, à entrada, e é esta forma que
+    // segue para auth.users, profiles, convites e auditoria. Gravar o e-mail
+    // tal como foi digitado deixava perfis com maiúsculas que a recuperação de
+    // senha — que procura em minúsculas — nunca encontrava.
+    const email = (emailBruto ?? '').trim().toLowerCase()
 
     // Validação de enum (item Onda 2 #13 antecipado)
     const allowedRoles = ['super_admin', 'admin', 'user', 'readonly']
