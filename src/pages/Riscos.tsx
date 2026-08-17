@@ -610,30 +610,6 @@ export function Riscos() {
       ),
     },
     {
-      key: 'exposicao',
-      label: t('riscos.page.columns.exposure'),
-      sortable: true,
-      className: 'w-[100px]',
-      render: (_v: any, r: Risco) => {
-        const exp = financialExposure(r.impacto_financeiro, r.probabilidade_residual ?? r.probabilidade_inicial);
-        const probUsada = formatScaleValue(r.probabilidade_residual ?? r.probabilidade_inicial);
-        const tooltip = t('riscosVisoes.table.exposicaoTooltip', {
-          impacto: formatMoedaEmpresa(r.impacto_financeiro ?? null),
-          prob: probUsada,
-        });
-        return exp === null ? (
-          <span className="text-xs text-muted-foreground" title={tooltip}>—</span>
-        ) : (
-          <span
-            className="font-mono tabular-nums text-xs font-medium text-foreground"
-            title={`${formatMoedaEmpresa(exp)} · ${tooltip}`}
-          >
-            {formatMoedaEmpresa(exp, true)}
-          </span>
-        );
-      },
-    },
-    {
       key: 'trend',
       label: t('riscos.page.columns.trend'),
       className: 'w-[92px]',
