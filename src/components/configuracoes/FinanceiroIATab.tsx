@@ -394,7 +394,55 @@ export function FinanceiroIATab() {
         </CardContent>
       </Card>
 
+      {/* Consumo por funcionalidade */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BarChart3 className="h-5 w-5" />
+            {t('configPlanos.financeiroIA.funcionalidadesTitle')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {featureStats.length === 0 ? (
+            <p className="text-sm text-muted-foreground">{t('configPlanos.financeiroIA.funcionalidadesVazio')}</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-left">
+                    <th className="pb-2 font-medium text-muted-foreground">{t('configPlanos.financeiroIA.colFuncionalidade')}</th>
+                    <th className="pb-2 font-medium text-muted-foreground">{t('configPlanos.financeiroIA.colFuncionalidadeModelo')}</th>
+                    <th className="pb-2 font-medium text-muted-foreground text-right">{t('configPlanos.financeiroIA.colReqsMes')}</th>
+                    <th className="pb-2 font-medium text-muted-foreground text-right">{t('configPlanos.financeiroIA.colCustoTotal')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {featureStats.map((f) => (
+                    <tr key={f.funcionalidade} className="border-b border-border/50">
+                      <td className="py-2">
+                        <span className="font-medium">{f.label}</span>
+                        {!f.mapped && (
+                          <span className="ml-2 text-[10px] text-muted-foreground">
+                            {t('configPlanos.financeiroIA.funcionalidadeNaoMapeada')}
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-2">
+                        <Badge variant="outline" className="text-xs">{f.modelLabel}</Badge>
+                      </td>
+                      <td className="py-2 text-right font-semibold">{f.reqs}</td>
+                      <td className="py-2 text-right font-semibold">R$ {f.totalCostBRL.toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* KPIs */}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title={t('configPlanos.financeiroIA.statReceitaTotal')}
