@@ -564,7 +564,7 @@ serve(async (req) => {
     }
 
     if (!conversation) {
-      const { data: newConversation } = await supabase
+      const { data: newConversation, error: newConversationError } = await supabase
         .from('docgen_conversations')
         .insert({
           empresa_id,
@@ -584,9 +584,22 @@ serve(async (req) => {
           }
         })
         .select()
-        .single();
+        .maybeSingle();
+      // Falhar aqui é barato; falhar depois da geração custa minutos de IA e um
+      // crédito ao usuário. Por isso abortamos ANTES de chamar o modelo.
+      if (newConversationError || !newConversation) {
+        console.error('Falha ao criar docgen_conversations:', newConversationError);
+        return new Response(
+          JSON.stringify({
+            error: 'CONVERSATION_CREATE_FAILED',
+            message: 'Não foi possível iniciar a sessão do gerador de documentos.',
+          }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        );
+      }
       conversation = newConversation;
     }
+
 
     const context: ConversationContext = conversation?.contexto || {};
     const messages: ChatMessage[] = conversation?.mensagens || [];
