@@ -35,6 +35,30 @@ const makeUsuarioSchema = (t: (k: string) => string) => z.object({
 
 type UsuarioForm = z.infer<ReturnType<typeof makeUsuarioSchema>>;
 
+/**
+ * Extrai a mensagem de negócio devolvida por uma edge function em vez de
+ * mostrar o genérico "Edge Function returned a non-2xx status code".
+ */
+async function extrairMensagemEdge(error: any): Promise<string | null> {
+  try {
+    const resposta = error?.context as Response | undefined;
+    if (resposta && typeof resposta.text === 'function') {
+      const texto = await resposta.clone().text();
+      if (texto) {
+        try {
+          const json = JSON.parse(texto);
+          return json?.message || json?.error || texto;
+        } catch {
+          return texto;
+        }
+      }
+    }
+  } catch {
+    /* ignora */
+  }
+  return error?.message || null;
+}
+
 interface PermissionProfile {
   id: string;
   name: string;
