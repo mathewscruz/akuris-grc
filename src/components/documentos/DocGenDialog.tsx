@@ -1641,10 +1641,12 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                 />
               )}
 
-              {!generatedDocument && isGeneratingDoc ? (
+              {isGeneratingDoc || genComplete ? (
                 <div className="flex-1 min-h-0 overflow-y-auto pr-2">
                   <div className="flex flex-col items-center justify-center gap-4 py-10 text-center">
-                    <AkurisPulse size={44} />
+                    {genComplete
+                      ? <AkurisComplete size={44} label={t('docgen.dialog.progressDone')} />
+                      : <AkurisPulse size={44} />}
                     <div className="w-full max-w-sm space-y-2">
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-foreground font-medium">{generationStageLabel}</span>
@@ -1654,7 +1656,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                       </div>
                       <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
                         <div
-                          className="h-full rounded-full bg-primary transition-all duration-700"
+                          className="h-full rounded-full bg-primary transition-all duration-500"
                           style={{ width: `${Math.max(4, generationPercent)}%` }}
                         />
                       </div>
@@ -1663,7 +1665,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                           <li
                             key={step}
                             className={
-                              step < generationStage
+                              genComplete || step < generationStage
                                 ? 'text-muted-foreground line-through'
                                 : step === generationStage
                                   ? 'text-foreground font-medium'
@@ -1677,6 +1679,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                     </div>
                   </div>
                 </div>
+
 
               ) : isEditingLayout ? (
                 <div className="flex-1 min-h-0 overflow-y-auto">
