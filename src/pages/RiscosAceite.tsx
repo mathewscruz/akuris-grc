@@ -379,7 +379,7 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="pendentes" className="mt-5 data-[state=active]:animate-fade-in">
+        <TabsContent value="pendentes" className="mt-5">
           <Card className="rounded-lg border overflow-hidden">
             <CardContent className="p-0">
               <DataTable
@@ -401,7 +401,7 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
           </Card>
         </TabsContent>
 
-        <TabsContent value="aceitos" className="mt-5 data-[state=active]:animate-fade-in">
+        <TabsContent value="aceitos" className="mt-5">
           <Card className="rounded-lg border overflow-hidden">
             <CardContent className="p-0">
               <DataTable
@@ -424,7 +424,7 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
           </Card>
         </TabsContent>
 
-        <TabsContent value="expirados" className="mt-5 data-[state=active]:animate-fade-in">
+        <TabsContent value="expirados" className="mt-5">
           <Card className="rounded-lg border overflow-hidden">
             <CardContent className="p-0">
               <DataTable

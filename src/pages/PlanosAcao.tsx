@@ -574,7 +574,7 @@ export default function PlanosAcao() {
       {/* Tabs */}
 
 
-        <TabsContent value={activeTab} className="mt-4 space-y-4">
+        <TabsContent key={activeTab} value={activeTab} className="mt-4 space-y-4">
           <Card className="rounded-lg border overflow-hidden">
             <CardContent className="p-0">
               <div className="p-4 sm:p-6 pb-4">
