@@ -1113,7 +1113,31 @@ Responda APENAS com um JSON na seguinte estrutura (sem markdown, sem comentário
       }
 
 
+      // === Premissas a validar como SEÇÃO real ===
+      // A IA devolve-as num campo à parte; os exportadores (PDF/DOCX) só
+      // renderizam `secoes`. Sem isto o auditor não vê o que foi assumido.
+      try {
+        const premissas: any[] = Array.isArray((documentContent as any)?.premissas_a_validar)
+          ? (documentContent as any).premissas_a_validar
+          : [];
+        const secoesArr: any[] = Array.isArray(documentContent?.secoes) ? documentContent.secoes : [];
+        const jaTem = secoesArr.some((s: any) => /premissa/i.test(String(s?.nome || '')));
+        if (premissas.length && !jaTem) {
+          const linhas = premissas
+            .map((p: any) => `| ${String(p?.premissa || '').replace(/\|/g, '/')} | ${String(p?.motivo || '').replace(/\|/g, '/')} | ${String(p?.validar_com || 'A definir').replace(/\|/g, '/')} |`)
+            .join('\n');
+          secoesArr.push({
+            nome: 'Premissas a validar',
+            conteudo: `As afirmações abaixo foram assumidas na elaboração deste documento e ainda não foram confirmadas pela organização. Devem ser validadas antes da aprovação formal.\n\n| Premissa | Porquê é premissa | Quem valida |\n| --- | --- | --- |\n${linhas}`,
+          });
+          documentContent.secoes = secoesArr;
+        }
+      } catch (pErr) {
+        console.log('DocGen premissas section skipped', pErr);
+      }
+
       // === Onda 3: Quality gate — reescreve seções curtas ou com placeholders ===
+
       try {
         const weak = findWeakSections(documentContent?.secoes || []);
         if (weak.length > 0 && weak.length <= 6) {
