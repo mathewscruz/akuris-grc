@@ -671,7 +671,14 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
 
     lastGenerationArgsRef.current = opts ?? {};
     setGenerationError(null);
+    // Reinicia o progresso real desta geração.
+    genPercentRef.current = 0;
+    genStageStartRef.current = Date.now();
+    setGenPercent(0);
+    setGenComplete(false);
+    setGenMilestone(1);
     setIsGeneratingDoc(true);
+
 
     // P0: uma chave por tentativa lógica do utilizador. Se a chamada falhar de
     // forma recuperável, reenviamos com a MESMA chave — o servidor não debita
