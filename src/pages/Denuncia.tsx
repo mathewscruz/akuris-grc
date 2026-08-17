@@ -4,10 +4,12 @@ import { PageHeader } from '@/components/ui/page-header';
 import { StatStrip } from '@/components/ui/stat-strip';
 import { DenunciasDashboard } from '@/components/denuncia/DenunciasDashboard';
 import { RelatoriosDenuncia } from '@/components/denuncia/RelatoriosDenuncia';
+import { NovaDenunciaDialog } from '@/components/denuncia/NovaDenunciaDialog';
 import { useDenunciasStats } from '@/hooks/useDenunciasStats';
 import { BarChart3 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useRef } from 'react';
 
 export default function Denuncia() {
   const { t } = useLanguage();
