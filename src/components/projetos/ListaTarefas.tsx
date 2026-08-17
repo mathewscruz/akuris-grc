@@ -2,7 +2,7 @@ import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { SortableTableHead, useTableSort, compareSortValues } from '@/components/ui/sortable-table-head';
+import { SortableTableHead, compareSortValues } from '@/components/ui/sortable-table-head';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Search, CornerDownRight } from 'lucide-react';
 import type { ProjetoTarefa, ProjetoColuna, ProjetoTarefaPrioridade } from '@/types/projetos';
@@ -42,19 +42,38 @@ export function ListaTarefas({ tarefas, colunas, onSelect }: Props) {
     });
   }, [tarefas, busca, fPrior, fColuna, fStatus]);
 
+  // Ordenação A-Z / Z-A por coluna
+  const [sort, setSort] = React.useState<{ field: string; direction: 'asc' | 'desc' } | null>(null);
+  const toggleSort = React.useCallback((field: string) => {
+    setSort((prev) => (prev?.field === field
+      ? { field, direction: prev.direction === 'asc' ? 'desc' : 'asc' }
+      : { field, direction: 'asc' }));
+  }, []);
+
+  const valorOrdenacao = React.useCallback((task: ProjetoTarefa, field: string): unknown => {
+    if (field === 'coluna') return colunas.find((c) => c.id === task.coluna_id)?.nome ?? '';
+    return (task as any)[field];
+  }, [colunas]);
+
+  const filtradasOrdenadas = React.useMemo(() => {
+    if (!sort) return filtradas;
+    const factor = sort.direction === 'asc' ? 1 : -1;
+    return [...filtradas].sort((a, b) => factor * compareSortValues(valorOrdenacao(a, sort.field), valorOrdenacao(b, sort.field)));
+  }, [filtradas, sort, valorOrdenacao]);
+
   // Construir hierarquia (pais primeiro, depois filhos indentados)
   const ordenadas = React.useMemo(() => {
-    const ids = new Set(filtradas.map((t) => t.id));
-    const pais = filtradas.filter((t) => !t.parent_task_id || !ids.has(t.parent_task_id));
+    const ids = new Set(filtradasOrdenadas.map((t) => t.id));
+    const pais = filtradasOrdenadas.filter((t) => !t.parent_task_id || !ids.has(t.parent_task_id));
     const result: { t: ProjetoTarefa; depth: number }[] = [];
     const pushWithChildren = (t: ProjetoTarefa, depth: number) => {
       result.push({ t, depth });
-      const filhos = filtradas.filter((c) => c.parent_task_id === t.id);
+      const filhos = filtradasOrdenadas.filter((c) => c.parent_task_id === t.id);
       filhos.forEach((c) => pushWithChildren(c, depth + 1));
     };
     pais.forEach((p) => pushWithChildren(p, 0));
     return result;
-  }, [filtradas]);
+  }, [filtradasOrdenadas]);
 
   // Agrupar
   const grupos = React.useMemo(() => {

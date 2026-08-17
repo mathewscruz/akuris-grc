@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { SortableTableHead, useTableSort } from "@/components/ui/sortable-table-head";
+import { SortableTableHead, compareSortValues } from "@/components/ui/sortable-table-head";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -656,6 +656,17 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
         </div>
       </TabsTrigger>
     );
+  };
+
+  const sortRows = (rows: Requirement[]) => {
+    if (!sort) return rows;
+    const factor = sort.direction === 'asc' ? 1 : -1;
+    const valor = (req: any) => {
+      if (sort.field === 'evidencias') return req.evidence_files?.length ?? 0;
+      if (sort.field === 'score') return req.score ?? req.compliance_score ?? null;
+      return req[sort.field];
+    };
+    return [...rows].sort((a, b) => factor * compareSortValues(valor(a), valor(b)));
   };
 
   const renderTableContent = (reqs: Requirement[]) => {
