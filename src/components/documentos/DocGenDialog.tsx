@@ -192,12 +192,19 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
   const [isGeneratingDoc, setIsGeneratingDoc] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
   /**
-   * Progresso da geração. As etapas 1–3 são estimadas pelo tempo decorrido
-   * (a API devolve tudo de uma vez); as etapas de refino automático são reais
-   * — cada tentativa é uma chamada concluída ao servidor.
+   * Progresso da geração. Cada etapa é um marco REAL do fluxo (preparação,
+   * pedido em curso, quality gate, refino) — a percentagem só avança dentro
+   * da faixa da etapa atual e nunca recua, terminando em 100% quando o
+   * documento fica pronto.
    */
   const [genElapsed, setGenElapsed] = useState(0);
+  const [genMilestone, setGenMilestone] = useState<1 | 2 | 3 | 4 | 5>(1);
+  const [genPercent, setGenPercent] = useState(0);
+  const [genComplete, setGenComplete] = useState(false);
+  const genStageStartRef = useRef<number>(Date.now());
+  const genPercentRef = useRef(0);
   const [refineProgress, setRefineProgress] = useState<{ attempt: number; total: number } | null>(null);
+
 
   const [draft, setDraft] = useState<{ briefing: BriefingDefaults; templateId?: string; step: number } | null>(null);
   const lastGenerationArgsRef = useRef<{ briefingText?: string; docNameHint?: string; conversationId?: string | null }>({});
