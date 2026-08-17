@@ -88,6 +88,8 @@ export const DocGenBriefing: React.FC<DocGenBriefingProps> = ({
     ...initialValue,
   });
   const [frameworkInput, setFrameworkInput] = useState('');
+  const [roleInput, setRoleInput] = useState('');
+
 
   // Guarda o rascunho a cada alteração, para que nada se perca se o modal fechar.
   useEffect(() => {
