@@ -1,109 +1,35 @@
-# App do Akuris nas lojas oficiais
+# Corrigir erro ao criar utilizador
 
-## O que você já tem
-- App web React + Vite publicado em https://akuris-grc.lovable.app e nos domínios customizados https://www.akuris.com.br, https://akuris.pt, https://akuris.com.br.
-- PWA configurado (manifest + ícones `standalone`).
+## Diagnóstico (confirmado)
 
-## O que você NÃO tem ainda (e precisa criar)
-- **Apple Developer Program** — US$ 99/ano (pessoa física/empresa) ou US$ 299/ano (enterprise). Requer CNPJ/empresa verificada para apps empresariais.
-- **Google Play Console** — US$ 25 (taxa única de registro). Pode ser conta pessoal ou organização.
-- **Computador macOS com Xcode** — obrigatório para buildar e submeter o app iOS.
-- **Android Studio** — obrigatório para buildar o Android App Bundle (AAB).
-- **Keystore Android** e certificados de assinatura iOS — criados na sua máquina, não versionados no repo.
+Nos logs da edge function `create-user` o erro real é:
 
-## Caminho técnico recomendado
-
-Usaremos **Capacitor** (Ionic) para empacotar o app web existente como um app nativo híbrido simples, sem reescrever a aplicação.
-
-### 1. Instalar e inicializar Capacitor
-- Adicionar as dependências:
-  - `@capacitor/core`
-  - `@capacitor/cli` (dev dependency)
-  - `@capacitor/ios`
-  - `@capacitor/android`
-- Rodar `npx cap init` com:
-  - `appId`: `app.lovable.e64d00f71631421abcc886aa27d8fb2a`
-  - `appName`: `akuris-grc`
-  - `webDir`: `dist`
-- Incluir a configuração de hot-reload para o preview do sandbox:
-```json
-"server": {
-  "url": "https://e64d00f7-1631-421a-bcc8-86aa27d8fb2a.lovableproject.com?forceHideBadge=true",
-  "cleartext": true
-}
+```
+Perfil de permissão não pertence à empresa de destino
 ```
 
-### 2. Adicionar as plataformas nativas
-- `npx cap add ios`
-- `npx cap add android`
-- Isso cria as pastas `ios/` e `android/` com projetos Xcode e Gradle prontos.
+Causa: no diálogo "Novo Utilizador", a lista de **Perfil de Permissão** é carregada sempre a partir da empresa do utilizador autenticado (`fetchPermissionProfiles` filtra por `empresa_id` do próprio perfil). Quando um super-admin escolhe outra empresa no campo "Empresa" (ex.: VITRU BRASIL), o perfil apresentado ("Perfil Geral") pertence a outra empresa, e a edge function rejeita a combinação.
 
-### 3. Garantir build SPA para `dist/`
-- Verificar que `vite build` produz `dist/` com `index.html`, assets e manifest/icons.
-- Ajustar o service worker do PWA se necessário, pois apps que se comportam como "navegador disfarçado" podem ser rejeitados (Apple guideline 4.2 / Google Play spam policy).
+Problema secundário: o toast mostra "Edge Function returned a non-2xx status code" em vez da mensagem de negócio devolvida pela função, o que esconde a causa real do utilizador.
 
-### 4. Ajustar UX para app nativo
-- Manter navegação client-side sem reload.
-- Evitar zoom em inputs mobile (já parcialmente tratado).
-- Garantir safe-area insets para notch/island.
-- Testar teclado virtual em formulários longos.
-- Verificar se toasts Sonner funcionam dentro da WebView.
+## O que será feito
 
-### 5. Build e assinatura
-#### Android
-- Gerar `keystore` (jks) com chave de upload.
-- Configurar `signingConfigs.release` no `build.gradle`.
-- Buildar AAB via `gradlew bundleRelease` ou Android Studio.
-- Fazer upload na Google Play Console.
-- Ativar Play App Signing.
+1. **Perfis de permissão dependentes da empresa escolhida**
+   - Passar a carregar os perfis da empresa selecionada no formulário (e não da empresa do utilizador logado).
+   - Para super-admin: recarregar a lista sempre que o campo "Empresa" mudar; incluir também perfis globais (`empresa_id` nulo), que a edge function já aceita.
+   - Para admin normal: mantém-se apenas a sua própria empresa.
+   - Ao mudar de empresa, limpar a seleção de perfil se esta deixar de ser válida, evitando enviar uma combinação inválida.
+   - Estado vazio no select ("Nenhum perfil nesta empresa") em pt-PT, pt-BR e en.
 
-#### iOS
-- Abrir `ios/App/App.xcworkspace` no Xcode em um Mac.
-- Configurar Apple Team, Bundle ID, Signing & Capabilities.
-- Definir ícones, launch screen, orientação portrait.
-- Buildar Archive e submeter via App Store Connect.
-- A Apple pode rejeitar se o app parecer apenas um site genérico; garantir identidade visual forte e funcionalidade clara.
+2. **Mensagens de erro reais no toast**
+   - Ler o corpo JSON da resposta da edge function e mostrar a mensagem devolvida (perfil inválido, limite de utilizadores atingido, e-mail já registado) em vez do texto genérico de non-2xx.
+   - Traduzir as mensagens conhecidas nos três idiomas.
 
-### 6. Ativos obrigatórios para as lojas
-- Ícone 1024×1024 base e splash screen.
-- Screenshots em vários tamanhos de tela.
-- Descrição curta, descrição completa, palavras-chave, política de privacidade.
-- Categoria: Negócios / Produtividade.
-- Classificação de conteúdo (questionários Apple/Google).
-- Conta de contato/suporte.
+3. **Validação preventiva no cliente**
+   - Bloquear o botão "Criar" com mensagem inline quando um perfil de outra empresa estiver selecionado, para o pedido nem sair.
 
-### 7. Requisitos legais/compliance
-- Política de privacidade acessível.
-- Termos de uso.
-- Declarar dados coletados no Data Safety (Google) e App Privacy (Apple).
-- Manter LGPD/GDPR via campo `jurisdicao` já existente.
+## Notas técnicas
 
-## Escopo deste plano
-1. Instalar e configurar Capacitor no projeto (`capacitor.config.ts`, `package.json`).
-2. Adicionar plataformas iOS e Android (`ios/`, `android/`).
-3. Ajustar build/UX para evitar rejeição nas lojas.
-4. Gerar ícones e splash screens.
-5. Documentar passos de build, assinatura e submissão em `docs/PUBLICACAO_LOJAS.md`.
-6. NÃO executar a publicação final (requer suas contas e certificados).
-
-## O que NÃO está no escopo
-- Recursos nativos complexos (câmera, push, biometria, GPS, background sync).
-- Reescrita em React Native / Flutter.
-- Backend nativo (Supabase continua servindo tudo).
-- Criar as contas de desenvolvedor Apple/Google para você.
-- Assinar e submeter o app final nas lojas.
-
-## Entregáveis
-- `capacitor.config.ts` configurado.
-- Pastas `ios/` e `android/` geradas.
-- Scripts `build:android` e `build:ios` no `package.json`.
-- Ícones e splash screens gerados.
-- Documento `docs/PUBLICACAO_LOJAS.md` com checklist completo.
-
-## Dependências externas que você precisa resolver
-1. Criar conta Apple Developer Program (US$ 99/ano).
-2. Criar conta Google Play Console (US$ 25 única).
-3. Computador Mac com Xcode para iOS.
-4. Android Studio instalado.
-5. Gerar keystore Android e certificados iOS localmente.
-
+- Ficheiro principal: `src/components/configuracoes/GerenciamentoUsuariosEnhanced.tsx`.
+- A edge function `create-user` mantém a validação de segurança atual — não será relaxada; o isolamento multi-tenant fica intacto.
+- Sem migrações de base de dados nem alterações de RLS.
