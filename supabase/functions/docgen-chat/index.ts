@@ -574,8 +574,9 @@ serve(async (req) => {
                ].join(' — '),
           mensagens: [],
           contexto: {
-            user_name: profile?.nome || 'Usuário',
-            empresa_nome: empresa?.nome || 'Empresa',
+            user_name: profile?.nome?.trim() || '',
+            empresa_nome: empresa?.nome?.trim() || '',
+
             etapa_atual: 'inicio',
             ...(framework_context && { framework_context })
           }
