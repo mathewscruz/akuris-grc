@@ -20,6 +20,20 @@ export function RopaImportExport({ registos, onImported }: Props) {
   const { empresaId } = useEmpresaId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
+  const [exercicioId, setExercicioId] = useState<string>("none");
+  const [exercicios, setExercicios] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!empresaId) return;
+    void (async () => {
+      const { data } = await supabase
+        .from("ropa_exercicios")
+        .select("id, nome, versao")
+        .eq("empresa_id", empresaId)
+        .order("data_realizacao", { ascending: false });
+      setExercicios(data || []);
+    })();
+  }, [empresaId]);
 
   const handleExport = () => {
     if (registos.length === 0) {
@@ -28,6 +42,7 @@ export function RopaImportExport({ registos, onImported }: Props) {
     }
     exportRopaWorkbook(registos, lang as "pt" | "en", `ROPA_${new Date().toISOString().slice(0, 10)}.xlsx`);
   };
+
 
   const handleFile = async (file: File) => {
     if (!empresaId) return;
