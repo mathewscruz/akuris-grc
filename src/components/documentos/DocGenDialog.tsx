@@ -565,38 +565,44 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     maxAttempts: number,
   ): Promise<any> => {
     let current = doc;
-    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-      const res = await callDocGen({
-        action: 'auto_refine',
-        user_id: userInfo!.user_id,
-        empresa_id: userInfo!.empresa_id,
-        conversation_id: conversationId,
-        document: current,
-        refine_attempt: attempt,
-        ...(effFrameworkName && {
-          framework_context: {
-            framework_name: effFrameworkName,
-            framework_id: effFrameworkId,
-            framework_ids: frameworkIds,
-          },
-        }),
-      });
-      if (res.credits) { setShowCreditsDialog(true); break; }
-      if (res.timeout || res.error || !res.data?.document) break;
-      current = { ...res.data.document, data_criacao: current.data_criacao };
-      setGeneratedDocument(current);
-      if (res.data.changed) {
-        akurisToast({
-          module: 'documentos',
-          tone: 'success',
-          title: t('docgen.dialog.autoRefineDoneTitle'),
-          description: t('docgen.dialog.autoRefineDoneDescription', { score: String(res.data.after ?? '') }),
+    try {
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        setRefineProgress({ attempt, total: maxAttempts });
+        const res = await callDocGen({
+          action: 'auto_refine',
+          user_id: userInfo!.user_id,
+          empresa_id: userInfo!.empresa_id,
+          conversation_id: conversationId,
+          document: current,
+          refine_attempt: attempt,
+          ...(effFrameworkName && {
+            framework_context: {
+              framework_name: effFrameworkName,
+              framework_id: effFrameworkId,
+              framework_ids: frameworkIds,
+            },
+          }),
         });
+        if (res.credits) { setShowCreditsDialog(true); break; }
+        if (res.timeout || res.error || !res.data?.document) break;
+        current = { ...res.data.document, data_criacao: current.data_criacao };
+        setGeneratedDocument(current);
+        if (res.data.changed) {
+          akurisToast({
+            module: 'documentos',
+            tone: 'success',
+            title: t('docgen.dialog.autoRefineDoneTitle'),
+            description: t('docgen.dialog.autoRefineDoneDescription', { score: String(res.data.after ?? '') }),
+          });
+        }
+        if (!res.data.should_continue) break;
       }
-      if (!res.data.should_continue) break;
+    } finally {
+      setRefineProgress(null);
     }
     return current;
   };
+
 
   /**
    * Gera o documento completo.
