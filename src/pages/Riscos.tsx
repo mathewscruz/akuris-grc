@@ -610,16 +610,6 @@ export function Riscos() {
       ),
     },
     {
-      key: 'pi',
-      label: t('riscos.page.columns.pi'),
-      className: 'w-[70px]',
-      render: (_v: any, r: Risco) => (
-        <span className="font-mono tabular-nums text-xs text-muted-foreground">
-          {formatScaleValue(r.probabilidade_inicial)} × {formatScaleValue(r.impacto_inicial)}
-        </span>
-      ),
-    },
-    {
       key: 'exposicao',
       label: t('riscos.page.columns.exposure'),
       sortable: true,
