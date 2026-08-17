@@ -349,7 +349,7 @@ const Auth = () => {
                 <button
                   type="button"
                   onClick={() => setForgotPasswordDialogOpen(true)}
-                  className="text-xs text-primary hover:text-primary/80 transition-colors"
+                  className="flex min-h-[44px] items-center px-1 text-xs text-primary hover:text-primary/80 transition-colors"
                 >
                   {t('auth.forgotPassword')}
                 </button>
