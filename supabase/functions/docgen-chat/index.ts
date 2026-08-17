@@ -80,33 +80,45 @@ function extractFrameworks(messageText: string): string[] {
 const MODEL_FAST = 'google/gemini-3-flash-preview';
 const MODEL_QUALITY = 'google/gemini-3.1-pro-preview';
 
-async function callClaude(
+async function callClaudeRaw(
   messages: { role: string; content: string }[],
   systemPrompt: string,
   apiKey: string,
   maxTokens = 2000,
   temperature = 0.8,
   model: string = MODEL_FAST,
+  signal?: AbortSignal,
 ) {
-  const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model,
-      max_tokens: maxTokens,
-      temperature,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        ...messages.filter(m => m.role !== 'system').map(m => ({
-          role: m.role === 'assistant' ? 'assistant' : 'user',
-          content: m.content,
-        })),
-      ],
-    }),
-  });
+  let response: Response;
+  try {
+    response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      signal,
+      body: JSON.stringify({
+        model,
+        max_tokens: maxTokens,
+        temperature,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          ...messages.filter(m => m.role !== 'system').map(m => ({
+            role: m.role === 'assistant' ? 'assistant' : 'user',
+            content: m.content,
+          })),
+        ],
+      }),
+    });
+  } catch (e) {
+    // Abort real: o cliente desistiu ou o orçamento de tempo desta invocação
+    // acabou. Nunca deve virar cobrança nem 500 genérico.
+    if ((e as any)?.name === 'AbortError') {
+      throw new AiGatewayError('Geração abortada antes de concluir.', 'GENERATION_ABORTED', 499);
+    }
+    throw e;
+  }
 
   if (!response.ok) {
     const errorText = await response.text();
@@ -146,6 +158,7 @@ async function autoRefineOnce(params: {
   frameworkName?: string;
   apiKey: string;
   attempt: number;
+  signal?: AbortSignal;
 }): Promise<{
   changed: boolean;
   before: number;
@@ -201,13 +214,14 @@ ${instructionAuto}
 
 Devolva o JSON completo com coverage_map atualizado.`;
 
-  const rawR = await callClaude(
+  const rawR = await callClaudeRaw(
     [{ role: 'user', content: userR }],
     sysR,
     apiKey,
     18000,
     0.35,
     MODEL_QUALITY,
+    params.signal,
   );
 
   let parsedR: any = null;
@@ -356,10 +370,62 @@ async function fetchFrameworkRequirements(supabase: any, frameworkIds: string[],
 }
 
 
+// Reescreve seções fracas do documento (quality gate). Extraído para poder
+// correr numa invocação própria — ver action `quality_gate`.
+async function rewriteWeakSections(
+  documentContent: any,
+  empresaNome: string,
+  apiKey: string,
+  signal?: AbortSignal,
+): Promise<number> {
+  const weak = findWeakSections(documentContent?.secoes || []);
+  if (!weak.length || weak.length > 6) return 0;
+  const secoesTitulos = (documentContent.secoes || []).map((s: any, i: number) => `${i + 1}. ${s.nome}`).join('\n');
+  const retryPrompt = `Você é um consultor sênior de GRC Big Four. As seções abaixo saíram fracas (curtas ou com placeholders). Reescreva CADA uma delas com no mínimo 3 parágrafos substantivos ou lista numerada com 5+ itens acionáveis, mantendo códigos de framework [XX.X] onde já existiam, sem placeholders, sem jargão vazio, com regras concretas e linguagem normativa ("deve"). Responda APENAS JSON: { "rewrites": [ { "section_index": N, "conteudo": "..." } ] }
+
+DOCUMENTO: ${documentContent.titulo}
+EMPRESA: ${empresaNome}
+SEÇÕES (índice.nome):
+${secoesTitulos}
+
+SEÇÕES PARA REESCREVER:
+${weak.map((w) => `- índice ${w.index} ("${w.nome}") — motivo: ${w.motivo}\n  CONTEÚDO ATUAL:\n  ${String(documentContent.secoes[w.index]?.conteudo || '').slice(0, 800)}`).join('\n\n')}`;
+
+  const raw = await callClaudeRaw(
+    [{ role: 'user', content: 'Reescreva as seções fracas agora.' }],
+    retryPrompt,
+    apiKey,
+    6000,
+    0.35,
+    MODEL_QUALITY,
+    signal,
+  );
+  let applied = 0;
+  try {
+    const parsed = JSON.parse(raw.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim());
+    const rewrites: any[] = Array.isArray(parsed?.rewrites) ? parsed.rewrites : [];
+    rewrites.forEach((r: any) => {
+      const idx = Number(r?.section_index);
+      const conteudo = String(r?.conteudo || '').trim();
+      if (Number.isInteger(idx) && conteudo.length > 200 && documentContent.secoes?.[idx]) {
+        documentContent.secoes[idx].conteudo = conteudo;
+        applied += 1;
+      }
+    });
+  } catch (e) {
+    console.log('DocGen quality gate parse failed', e);
+  }
+  return applied;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+
+  // P0: se algo falhar DEPOIS do débito, estornamos — o crédito só fica
+  // debitado quando o documento é efetivamente entregue ao usuário.
+  let chargeState: { client: any; empresaId: string; key: string } | null = null;
 
   try {
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
@@ -389,9 +455,30 @@ serve(async (req) => {
       conversation_title,  // título legível (modelo + data) definido pelo cliente
       briefing_text,       // briefing completo (modo "gerar documento direto", sem etapa de chat)
       doc_control,         // controlo documental (ISO 27001 7.5) + papéis reais informados no briefing
-
+      idempotency_key,     // P0: chave gerada pelo cliente — impede débito duplo em retries
+      json_retry,          // P1: esta invocação é a re-tentativa dedicada de JSON
+      run_quality_gate,    // P1: quality gate roda em invocação própria
 
     } = await req.json();
+
+    // ===== P0: orçamento de tempo alinhado com abort real =====
+    // A plataforma corta a invocação por volta dos 150s. Trabalhamos com um
+    // orçamento menor e abortamos o fetch de verdade (nada continua a correr
+    // e a ser faturado às escondidas). O abort do cliente também propaga.
+    const INVOCATION_BUDGET_MS = 115_000;
+    const startedAt = Date.now();
+    const signals: AbortSignal[] = [AbortSignal.timeout(INVOCATION_BUDGET_MS)];
+    if (req.signal) signals.push(req.signal);
+    const aborter = { signal: signals.length > 1 ? AbortSignal.any(signals) : signals[0] };
+    const remainingMs = () => INVOCATION_BUDGET_MS - (Date.now() - startedAt);
+    const callClaude = (
+      messages: { role: string; content: string }[],
+      systemPrompt: string,
+      apiKey: string,
+      maxTokens = 2000,
+      temperature = 0.8,
+      model: string = MODEL_FAST,
+    ) => callClaudeRaw(messages, systemPrompt, apiKey, maxTokens, temperature, model, aborter.signal);
 
     console.log('DocGen Chat request:', { message, conversation_id, action, user_id, empresa_id, framework_context });
 
@@ -530,16 +617,30 @@ serve(async (req) => {
     // Crédito consumido apenas após sucesso da IA — cada handler (generate/refine)
     // chama consume_ai_credit no seu retorno bem-sucedido. Manter um único ponto
     // de consumo por ação evita cobranças em chamadas malformadas ou erros de gateway.
+    // Chave de idempotência: o cliente manda a sua (uma por tentativa de
+    // geração); sem ela derivamos uma estável por ação para nunca cair no
+    // caminho não-idempotente.
+    const idemKey = String(
+      idempotency_key || `${authedUserId}:${action}:${conversation_id || 'new'}:${startedAt}`,
+    ).slice(0, 200);
+
     const chargeAiCredit = async () => {
       try {
-        await supabase.rpc('consume_ai_credit', {
+        const { data, error } = await supabase.rpc('consume_ai_credit_idempotente', {
           p_empresa_id: authedEmpresaId,
           p_user_id: authedUserId,
           p_funcionalidade: `docgen-chat:${action}`,
+          p_idempotency_key: idemKey,
           p_descricao: `DocGen - ${action === 'generate_document' ? 'Geração de documento' : 'Chat conversacional'}`,
         });
-      } catch (e) { console.warn('consume_ai_credit falhou:', e); }
+        if (error) { console.warn('consume_ai_credit_idempotente falhou:', error); return; }
+        if ((data as any)?.charged) {
+          chargeState = { client: supabase, empresaId: authedEmpresaId, key: idemKey };
+        }
+      } catch (e) { console.warn('consume_ai_credit_idempotente falhou:', e); }
     };
+    // Entregue ao usuário => a cobrança é definitiva (não estornar no catch).
+    const settleCharge = () => { chargeState = null; };
     // NOTA: cada handler (generate_document, refine_section, refine_document,
     // quick_adherence, chat) deve chamar `await chargeAiCredit()` após produzir
     // conteúdo com sucesso e antes de retornar a Response 200.
@@ -611,9 +712,10 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({
             error: 'CONVERSATION_CREATE_FAILED',
+            code: 'CONVERSATION_CREATE_FAILED',
             message: 'Não foi possível iniciar a sessão do gerador de documentos.',
           }),
-          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+          { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
         );
       }
       conversation = newConversation;
@@ -1049,44 +1151,38 @@ Responda APENAS com um JSON na seguinte estrutura (sem markdown, sem comentário
 
 
       const docContent = await callClaude(
-        [{ role: 'user', content: 'Gere o documento agora, respeitando TODAS as regras editoriais.' }],
+        [{
+          role: 'user',
+          content: json_retry
+            ? 'A tentativa anterior não devolveu um JSON válido e completo. Gere o documento novamente devolvendo APENAS o JSON no formato exigido, sem cercas de código e sem texto fora do JSON. Se necessário, seja mais conciso para caber inteiro na resposta.'
+            : 'Gere o documento agora, respeitando TODAS as regras editoriais.',
+        }],
         documentPrompt,
         LOVABLE_API_KEY,
         20000,
-        0.35,
+        json_retry ? 0.3 : 0.35,
         MODEL_QUALITY,
       );
 
       let documentContent = parseDocumentJson(docContent);
 
-      // Uma única re-tentativa quando o JSON veio truncado/inválido: em vez de
-      // degradar o documento para um bloco de texto cru, pedimos o JSON de novo.
+      // P1: a re-tentativa de JSON é uma INVOCAÇÃO à parte (o cliente repete a
+      // chamada com `json_retry: true` e a MESMA chave de idempotência, por
+      // isso não há débito duplo). Assim nunca somamos duas gerações "pro" na
+      // mesma invocação e o orçamento de tempo continua honesto.
       if (!isValidDocument(documentContent)) {
-        console.log('DocGen — JSON inválido na 1ª tentativa, refazendo geração');
-        const retryContent = await callClaude(
-          [{ role: 'user', content: 'A resposta anterior não era um JSON válido e completo. Gere o documento novamente devolvendo APENAS o JSON no formato exigido, sem cercas de código e sem texto fora do JSON. Se necessário, seja mais conciso para caber inteiro na resposta.' }],
-          documentPrompt,
-          LOVABLE_API_KEY,
-          20000,
-          0.3,
-          MODEL_QUALITY,
-        );
-        const retryParsed = parseDocumentJson(retryContent);
-        if (isValidDocument(retryParsed)) {
-          documentContent = retryParsed;
-        }
-      }
-
-      if (!isValidDocument(documentContent)) {
-        console.error('DocGen — documento inválido após retry');
+        console.error('DocGen — documento inválido', { json_retry: !!json_retry });
         return new Response(
-          JSON.stringify({ error: 'INVALID_DOCUMENT', message: 'A IA não devolveu um documento estruturado válido.' }),
+          JSON.stringify({
+            error: 'INVALID_DOCUMENT',
+            code: 'INVALID_DOCUMENT',
+            retryable: !json_retry,
+            conversation_id: conversation.id,
+            message: 'A IA não devolveu um documento estruturado válido.',
+          }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
         );
       }
-
-      // Crédito só é debitado quando a geração REALMENTE produziu um documento.
-      await chargeAiCredit();
 
       // A IA não conhece a data atual (chuta valores errados). Sempre sobrescrever
       // com a data do servidor para a capa/versão do documento ficar correta.
@@ -1136,48 +1232,10 @@ Responda APENAS com um JSON na seguinte estrutura (sem markdown, sem comentário
         console.log('DocGen premissas section skipped', pErr);
       }
 
-      // === Onda 3: Quality gate — reescreve seções curtas ou com placeholders ===
-
-      try {
-        const weak = findWeakSections(documentContent?.secoes || []);
-        if (weak.length > 0 && weak.length <= 6) {
-          console.log('DocGen quality gate — retry weak sections', weak);
-          const secoesTitulos = (documentContent.secoes || []).map((s: any, i: number) => `${i + 1}. ${s.nome}`).join('\n');
-          const retryPrompt = `Você é o mesmo consultor sênior de GRC Big Four. As seções abaixo saíram fracas (curtas ou com placeholders). Reescreva CADA uma delas com no mínimo 3 parágrafos substantivos ou lista numerada com 5+ itens acionáveis, mantendo códigos de framework [XX.X] onde já existiam, sem placeholders, sem jargão vazio, com regras concretas. Responda APENAS JSON: { "rewrites": [ { "section_index": N, "conteudo": "..." } ] }
-
-DOCUMENTO: ${documentContent.titulo}
-EMPRESA: ${context.empresa_nome}
-SEÇÕES (índice.nome): 
-${secoesTitulos}
-
-SEÇÕES PARA REESCREVER:
-${weak.map(w => `- índice ${w.index} ("${w.nome}") — motivo: ${w.motivo}\n  CONTEÚDO ATUAL:\n  ${String(documentContent.secoes[w.index]?.conteudo || '').slice(0, 800)}`).join('\n\n')}`;
-          const retryRaw = await callClaude(
-            [{ role: 'user', content: 'Reescreva as seções fracas agora.' }],
-            retryPrompt,
-            LOVABLE_API_KEY,
-            6000,
-            0.35,
-            MODEL_QUALITY,
-          );
-          try {
-            const cleanedRetry = retryRaw.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-            const retryParsed = JSON.parse(cleanedRetry);
-            const rewrites: any[] = Array.isArray(retryParsed?.rewrites) ? retryParsed.rewrites : [];
-            rewrites.forEach((r: any) => {
-              const idx = Number(r?.section_index);
-              const conteudo = String(r?.conteudo || '').trim();
-              if (Number.isInteger(idx) && conteudo.length > 200 && documentContent.secoes[idx]) {
-                documentContent.secoes[idx].conteudo = conteudo;
-              }
-            });
-          } catch (retryParseErr) {
-            console.log('DocGen quality gate parse failed', retryParseErr);
-          }
-        }
-      } catch (qgErr) {
-        console.log('DocGen quality gate skipped', qgErr);
-      }
+      // === P1: quality gate roda em INVOCAÇÃO PRÓPRIA (action `quality_gate`) ===
+      // Antes, geração + gate + refinos corriam em série e estouravam o tempo.
+      const weakSections = findWeakSections(documentContent?.secoes || []);
+      const should_quality_gate = weakSections.length > 0 && weakSections.length <= 6;
 
 
       // === Contrato de cobertura + score determinístico, com ÂMBITO honesto ===
@@ -1368,9 +1426,38 @@ ${weak.map(w => `- índice ${w.index} ("${w.nome}") — motivo: ${w.motivo}\n  C
         console.error('Falha ao persistir docgen_generated_docs:', generatedDocError);
       }
 
+      // P0: crédito só agora — o documento está pronto e vai efetivamente ser
+      // entregue nesta resposta. Se algo acima tivesse falhado, nada seria
+      // debitado; se algo abaixo falhar, o catch estorna.
+      await chargeAiCredit();
+
+      // P1: progresso do refino persistido no SERVIDOR (recuperável após
+      // refresh, aba fechada ou timeout do cliente).
+      try {
+        await supabase
+          .from('docgen_conversations')
+          .update({
+            contexto: {
+              ...context,
+              refino: {
+                status: should_auto_refine ? 'pendente' : 'nao_necessario',
+                attempts_done: 0,
+                max_attempts: MAX_REFINE_ATTEMPTS,
+                score: initial_score,
+                quality_gate: should_quality_gate ? 'pendente' : 'nao_necessario',
+                updated_at: new Date().toISOString(),
+              },
+            },
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', conversation.id);
+      } catch (_e) { /* progresso é acessório */ }
+
+      settleCharge();
       return new Response(JSON.stringify({
         conversation_id: conversation.id,
         document_id: generatedDoc?.id ?? null,
+        idempotency_key: idemKey,
 
         document: documentContent,
         initial_score,
@@ -1380,6 +1467,8 @@ ${weak.map(w => `- índice ${w.index} ("${w.nome}") — motivo: ${w.motivo}\n  C
         coverage_map: finalCoverage,
         residual_gaps: residualGaps,
         catalog_size: catalogCodes.length,
+        should_quality_gate,
+        weak_sections: weakSections.map((w) => w.index),
         should_auto_refine,
         max_refine_attempts: MAX_REFINE_ATTEMPTS,
         audit_threshold: AUDIT_THRESHOLD,
@@ -1388,6 +1477,49 @@ ${weak.map(w => `- índice ${w.index} ("${w.nome}") — motivo: ${w.motivo}\n  C
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    }
+
+    // ============ ACTION: quality_gate (invocação própria, sem novo débito) ============
+    // Reescreve as seções fracas do documento já entregue. Não cobra crédito:
+    // faz parte da mesma entrega que já foi debitada na geração.
+    if (action === 'quality_gate') {
+      if (!document || !Array.isArray(document?.secoes) || !document.secoes.length) {
+        return new Response(JSON.stringify({ error: 'document com seções é obrigatório' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      const doc = document;
+      let applied = 0;
+      try {
+        applied = await rewriteWeakSections(doc, context.empresa_nome || '', LOVABLE_API_KEY, aborter.signal);
+      } catch (e) {
+        if (e instanceof AiGatewayError && e.code === 'GENERATION_ABORTED') throw e;
+        console.log('DocGen quality gate falhou', e);
+      }
+
+      try {
+        await supabase
+          .from('docgen_conversations')
+          .update({
+            contexto: {
+              ...context,
+              refino: {
+                ...((context as any).refino || {}),
+                quality_gate: 'concluido',
+                quality_gate_sections: applied,
+                updated_at: new Date().toISOString(),
+              },
+            },
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', conversation.id);
+      } catch (_e) { /* acessório */ }
+
+      return new Response(JSON.stringify({
+        conversation_id: conversation.id,
+        document: doc,
+        sections_rewritten: applied,
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     // ============ ACTION: auto_refine (1 tentativa gap-driven por chamada) ============
@@ -1434,9 +1566,10 @@ ${weak.map(w => `- índice ${w.index} ("${w.nome}") — motivo: ${w.motivo}\n  C
         frameworkName: framework_context?.framework_name,
         apiKey: LOVABLE_API_KEY,
         attempt,
+        signal: aborter.signal,
       });
 
-      if (result.changed) await chargeAiCredit();
+      if (result.changed) { await chargeAiCredit(); }
 
       const history = Array.isArray(document._auto_refine_history) ? document._auto_refine_history : [];
       if (result.changed) {
@@ -1471,8 +1604,30 @@ ${weak.map(w => `- índice ${w.index} ("${w.nome}") — motivo: ${w.motivo}\n  C
         result.residualGaps.length > 0 &&
         attempt < MAX_REFINE_ATTEMPTS;
 
+      // P1: progresso do refino no servidor — sobrevive a refresh/timeout.
+      try {
+        await supabase
+          .from('docgen_conversations')
+          .update({
+            contexto: {
+              ...context,
+              refino: {
+                ...((context as any).refino || {}),
+                status: should_continue ? 'em_progresso' : (converged ? 'convergido' : 'concluido'),
+                attempts_done: attempt,
+                max_attempts: MAX_REFINE_ATTEMPTS,
+                score: result.after,
+                updated_at: new Date().toISOString(),
+              },
+            },
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', conversation.id);
+      } catch (_e) { /* acessório */ }
+
       console.log('DocGen auto_refine', { attempt, before: result.before, after: result.after, should_continue });
 
+      settleCharge();
       return new Response(JSON.stringify({
         document,
         attempt,
@@ -1902,6 +2057,16 @@ Aplique a instrução conforme as regras do sistema e devolva o JSON completo CO
 
   } catch (error) {
     console.error('Error in docgen-chat function:', error);
+    // Falhou, expirou ou foi abortada => estorna o crédito eventualmente debitado.
+    if (chargeState) {
+      try {
+        await chargeState.client.rpc('estornar_ai_credit', {
+          p_empresa_id: chargeState.empresaId,
+          p_idempotency_key: chargeState.key,
+        });
+      } catch (e) { console.warn('estornar_ai_credit falhou:', e); }
+      chargeState = null;
+    }
     const isGateway = error instanceof AiGatewayError;
     const code = isGateway ? (error as AiGatewayError).code : 'INTERNAL_ERROR';
     const status = isGateway ? (error as AiGatewayError).httpStatus : 500;

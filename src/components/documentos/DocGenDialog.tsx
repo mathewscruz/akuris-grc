@@ -49,8 +49,12 @@ import { useAuth } from '@/components/AuthProvider';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { useLanguage } from '@/contexts/LanguageContext';
 
-/** Tempo máximo (ms) que o frontend espera por uma chamada do docgen-chat. */
-const DOCGEN_TIMEOUT_MS = 120_000;
+/**
+ * Tempo máximo (ms) que o frontend espera por uma chamada do docgen-chat.
+ * Tem de ser MAIOR do que o orçamento do servidor (115s) para que a resposta
+ * do servidor — incluindo o estorno de crédito — chegue antes do abort local.
+ */
+const DOCGEN_TIMEOUT_MS = 130_000;
 
 type DocGenCallResult = {
   data?: any;
@@ -58,38 +62,70 @@ type DocGenCallResult = {
   credits?: boolean;
   /** Estourou o tempo limite do cliente. */
   timeout?: boolean;
+  /** Erro recuperável: reenviar com a MESMA idempotency_key não debita duas vezes. */
+  retryable?: boolean;
   error?: string;
 };
 
+/** Chave de idempotência por tentativa lógica do utilizador. */
+function newIdempotencyKey(): string {
+  try { return crypto.randomUUID(); } catch { return `${Date.now()}-${Math.random().toString(16).slice(2)}`; }
+}
+
 /**
- * Wrapper único das chamadas ao docgen-chat: aplica timeout no cliente
- * (a plataforma corta em ~150s sem resposta útil) e normaliza os erros
- * 402/403 do gateway de IA em `credits`.
+ * Wrapper único das chamadas ao docgen-chat.
+ * Usa fetch direto (o cliente supabase-js não aceita AbortSignal) para que o
+ * timeout do cliente ABORTE mesmo a ligação, em vez de a deixar pendurada.
  */
-async function callDocGen(body: Record<string, unknown>, timeoutMs = DOCGEN_TIMEOUT_MS): Promise<DocGenCallResult> {
-  let timer: ReturnType<typeof setTimeout> | undefined;
+async function callDocGen(
+  body: Record<string, unknown>,
+  timeoutMs = DOCGEN_TIMEOUT_MS,
+  externalSignal?: AbortSignal,
+): Promise<DocGenCallResult> {
+  const aborter = new AbortController();
+  const timer = setTimeout(() => aborter.abort('__DOCGEN_TIMEOUT__'), timeoutMs);
+  const onExternalAbort = () => aborter.abort('__DOCGEN_CANCELLED__');
+  externalSignal?.addEventListener('abort', onExternalAbort);
   try {
-    const invocation = supabase.functions.invoke('docgen-chat', { body });
-    const timeout = new Promise<never>((_, reject) => {
-      timer = setTimeout(() => reject(new Error('__DOCGEN_TIMEOUT__')), timeoutMs);
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData?.session?.access_token;
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/docgen-chat`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string,
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(body),
+      signal: aborter.signal,
     });
-    const { data, error } = (await Promise.race([invocation, timeout])) as any;
-    if (error) {
-      let payload: any = null;
-      try { payload = await (error as any)?.context?.json?.(); } catch { /* corpo não-JSON */ }
-      if (payload?.code === 'CREDITS_EXHAUSTED' || payload?.error === 'CREDITS_EXHAUSTED') return { credits: true };
-      return { error: payload?.error || error.message };
+
+    let payload: any = null;
+    try { payload = await res.json(); } catch { /* corpo não-JSON */ }
+
+    if (payload?.code === 'CREDITS_EXHAUSTED' || payload?.error === 'CREDITS_EXHAUSTED') return { credits: true };
+    if (!res.ok) {
+      return { error: payload?.error || `HTTP ${res.status}`, retryable: res.status >= 500 };
     }
-    if (data?.code === 'CREDITS_EXHAUSTED' || data?.error === 'CREDITS_EXHAUSTED') return { credits: true };
-    if (data?.error === 'INVALID_DOCUMENT') return { error: 'INVALID_DOCUMENT' };
-    return { data };
+    if (payload?.error === 'INVALID_DOCUMENT') {
+      return { error: 'INVALID_DOCUMENT', retryable: payload?.retryable !== false };
+    }
+    if (payload?.error) return { error: payload.error, retryable: !!payload.retryable };
+    return { data: payload };
   } catch (e: any) {
-    if (e?.message === '__DOCGEN_TIMEOUT__') return { timeout: true };
+    if (aborter.signal.aborted) {
+      const reason = (aborter.signal as any).reason;
+      if (reason === '__DOCGEN_CANCELLED__') return { error: '__DOCGEN_CANCELLED__' };
+      return { timeout: true };
+    }
     return { error: e?.message || 'Erro inesperado' };
   } finally {
-    if (timer) clearTimeout(timer);
+    clearTimeout(timer);
+    externalSignal?.removeEventListener('abort', onExternalAbort);
   }
 }
+
 
 interface ChatMessage {
   role: 'user' | 'assistant';
@@ -618,12 +654,18 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     setGenerationError(null);
     setIsGeneratingDoc(true);
 
-    try {
-      const res = await callDocGen({
+    // P0: uma chave por tentativa lógica do utilizador. Se a chamada falhar de
+    // forma recuperável, reenviamos com a MESMA chave — o servidor não debita
+    // crédito duas vezes.
+    const idemKey = newIdempotencyKey();
+
+    const invokeGenerate = (strictJson: boolean) => callDocGen({
         conversation_id: convId,
         user_id: userInfo.user_id,
         empresa_id: userInfo.empresa_id,
         action: 'generate_document',
+        idempotency_key: idemKey,
+        ...(strictJson ? { json_retry: true } : {}),
         // Título distinguível: modelo + escopo resumido + data (sem isto o
         // histórico enche-se de entradas com o mesmo nome).
         conversation_title: [
@@ -647,7 +689,16 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
 
         ...(effFrameworkName && { framework_context: { framework_name: effFrameworkName, framework_id: effFrameworkId, framework_ids: fwReqData?.matchedIds } }),
         ...(requirementContext && { requirement_context: requirementContext }),
-      });
+    });
+
+    try {
+      let res = await invokeGenerate(false);
+
+      // JSON inválido/truncado é recuperável: uma segunda tentativa com prompt
+      // estrito, mesma chave de idempotência (sem novo débito).
+      if (res.retryable && res.error === 'INVALID_DOCUMENT') {
+        res = await invokeGenerate(true);
+      }
 
       if (res.credits) { setShowCreditsDialog(true); setGenerationError(t('docgen.dialog.generateDocumentError')); return; }
       if (res.timeout) {
@@ -687,6 +738,23 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
         description: t('docgen.dialog.documentGeneratedDescription'),
       });
 
+      // Quality gate em invocação própria (não debita crédito): reescreve as
+      // seções fracas do documento já entregue.
+      let workingDoc = doc;
+      if (data?.should_quality_gate) {
+        const gate = await callDocGen({
+          action: 'quality_gate',
+          user_id: userInfo.user_id,
+          empresa_id: userInfo.empresa_id,
+          conversation_id: data.conversation_id || convId,
+          document: doc,
+        });
+        if (gate.data?.document) {
+          workingDoc = { ...gate.data.document, data_criacao: doc.data_criacao };
+          setGeneratedDocument(workingDoc);
+        }
+      }
+
       // Auto-refino em chamadas separadas, para não estourar o timeout.
       if (data?.should_auto_refine) {
         akurisToast({
@@ -695,7 +763,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
           title: t('docgen.dialog.autoRefineTitle'),
           description: t('docgen.dialog.autoRefineDescription'),
         });
-        await runAutoRefine(doc, data.framework_ids, Number(data.max_refine_attempts) || 2);
+        await runAutoRefine(workingDoc, data.framework_ids, Number(data.max_refine_attempts) || 2);
       }
 
 
@@ -1488,7 +1556,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
             )}
 
             {/* Action Buttons */}
-            {documentReady && !generatedDocument && !generationError && (
+            {documentReady && !generatedDocument && !generationError && !isGeneratingDoc && (
               <div className="mt-4 flex justify-center">
                 <Button
                   onClick={() => generateDocument()}
@@ -1597,9 +1665,6 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                           </li>
                         ))}
                       </ol>
-                      <p className="pt-2 text-[11px] text-muted-foreground">
-                        {t('docgen.dialog.progressEstimate')}
-                      </p>
                     </div>
                   </div>
                 </div>
