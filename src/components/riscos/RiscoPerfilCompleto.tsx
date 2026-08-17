@@ -168,7 +168,7 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
               </div>
             </section>
 
-            <section className="grid grid-cols-3 gap-2">
+            <section className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <StatTile icon={<Wallet />} label={t('fin.riscos.exposicao')} value={exposicao !== null ? formatMoedaEmpresa(exposicao, true) : '—'} />
               <StatTile icon={<Shield />} label={t('cardsKpi.sweep.riscos.tratamAbbr')} value={`${concluidos}/${trat.length}`} />
               <StatTile icon={<Layers />} label={t('cardsKpi.sweep.riscos.controles')} value={String(detail?.controles.length ?? 0)} />

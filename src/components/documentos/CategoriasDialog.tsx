@@ -327,7 +327,7 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess, empresaId }: C
 
               <div className="space-y-2">
                 <Label>{t('documentos.dialogs.corLabel')}</Label>
-                <div className="grid grid-cols-5 gap-2">
+                <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
                   {cores.map((cor) => (
                     <Button
                       key={cor}

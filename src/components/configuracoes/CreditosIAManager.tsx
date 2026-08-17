@@ -300,7 +300,7 @@ export function CreditosIAManager() {
       />
 
       <Sheet open={historicoSheet.open} onOpenChange={(open) => setHistoricoSheet(prev => ({ ...prev, open }))}>
-        <SheetContent className="w-[600px] overflow-y-auto">
+        <SheetContent className="w-full sm:max-w-[600px] overflow-y-auto">
           <SheetHeader>
             <SheetTitle>{t('configPlanos.creditosIA.sheetTitle', { nome: historicoSheet.empresaNome })}</SheetTitle>
           </SheetHeader>

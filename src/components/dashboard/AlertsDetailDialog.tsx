@@ -68,7 +68,7 @@ const AlertsDetailDialog = ({
       size="md"
       hideFooter
     >
-        <div className="grid grid-cols-4 gap-3 mb-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
           <div className="bg-destructive/10 rounded-lg p-3 text-center">
             <p className="text-2xl font-bold text-destructive">{riscosAltos}</p>
             <p className="text-xs text-muted-foreground">{t('alertsDialog.highRisks')}</p>

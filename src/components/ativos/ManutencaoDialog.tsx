@@ -439,7 +439,7 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
                     />
                   </div>
 
-                  <div className="grid grid-cols-3 gap-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
                     <div className="space-y-2">
                       <Label htmlFor="data_manutencao">{t('contratosAtivos.manutencaoDialog.labelMaintenanceDate')}</Label>
                       <Input
@@ -492,7 +492,7 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
                     <div className="space-y-2">
                       <Label htmlFor="custo">{t('contratosAtivos.manutencaoDialog.labelCost', { moeda: simboloMoeda })}</Label>
                       <Input

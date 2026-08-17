@@ -52,7 +52,7 @@ export function ReportsSidebar() {
         </Button>
       </SheetTrigger>
       
-      <SheetContent side="right" className="w-[600px] overflow-y-auto">
+      <SheetContent side="right" className="w-full sm:max-w-[600px] overflow-y-auto">
         <SheetHeader>
           <SheetTitle>{t('dueDiligence.reportsSidebar.title')}</SheetTitle>
         </SheetHeader>

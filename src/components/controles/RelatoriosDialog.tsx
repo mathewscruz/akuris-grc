@@ -370,7 +370,7 @@ export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) 
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <Card className="bg-success/10 border-success/20">
                     <CardContent className="p-4 text-center">
                       <p className="text-2xl font-bold text-success">85%</p>
