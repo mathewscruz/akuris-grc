@@ -1566,9 +1566,10 @@ Responda APENAS com um JSON na seguinte estrutura (sem markdown, sem comentário
         frameworkName: framework_context?.framework_name,
         apiKey: LOVABLE_API_KEY,
         attempt,
+        signal: aborter.signal,
       });
 
-      if (result.changed) await chargeAiCredit();
+      if (result.changed) { await chargeAiCredit(); }
 
       const history = Array.isArray(document._auto_refine_history) ? document._auto_refine_history : [];
       if (result.changed) {
@@ -1603,8 +1604,30 @@ Responda APENAS com um JSON na seguinte estrutura (sem markdown, sem comentário
         result.residualGaps.length > 0 &&
         attempt < MAX_REFINE_ATTEMPTS;
 
+      // P1: progresso do refino no servidor — sobrevive a refresh/timeout.
+      try {
+        await supabase
+          .from('docgen_conversations')
+          .update({
+            contexto: {
+              ...context,
+              refino: {
+                ...((context as any).refino || {}),
+                status: should_continue ? 'em_progresso' : (converged ? 'convergido' : 'concluido'),
+                attempts_done: attempt,
+                max_attempts: MAX_REFINE_ATTEMPTS,
+                score: result.after,
+                updated_at: new Date().toISOString(),
+              },
+            },
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', conversation.id);
+      } catch (_e) { /* acessório */ }
+
       console.log('DocGen auto_refine', { attempt, before: result.before, after: result.after, should_continue });
 
+      settleCharge();
       return new Response(JSON.stringify({
         document,
         attempt,
