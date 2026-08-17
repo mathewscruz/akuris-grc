@@ -274,7 +274,8 @@ const GerenciamentoEmpresasInner = () => {
       form.reset();
       fetchEmpresas();
     } catch (error) {
-      console.error('Erro ao salvar empresa:', error);
+      setProvisioningOpen(false);
+      logger.error('Erro ao salvar empresa', error);
       toast.error(t('admin.empresas.toastErrorSave'));
     }
   };
