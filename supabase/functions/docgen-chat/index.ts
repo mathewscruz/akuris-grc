@@ -1254,20 +1254,28 @@ ${weak.map(w => `- índice ${w.index} ("${w.nome}") — motivo: ${w.motivo}\n  C
     // Separada de generate_document para não estourar o timeout da plataforma.
     if (action === 'auto_refine') {
       const attempt = Math.max(1, Math.min(Number(refine_attempt) || 1, MAX_REFINE_ATTEMPTS));
-      const fwIds: string[] = (framework_context?.framework_ids?.length
-        ? framework_context.framework_ids
-        : framework_context?.framework_id ? [framework_context.framework_id] : []).filter(Boolean);
+      const fwIds: string[] = (framework_context?.framework_id
+        ? [framework_context.framework_id]
+        : framework_context?.framework_ids?.length ? [framework_context.framework_ids[0]] : []).filter(Boolean);
 
+      // Mesmo âmbito usado na geração — o refino não pode perseguir requisitos
+      // que não pertencem ao tema do documento.
       let catalogCodes: string[] = [];
       if (fwIds.length) {
         const { data: catalogRows } = await supabase
           .from('gap_analysis_requirements')
-          .select('codigo')
+          .select('codigo, titulo, descricao')
           .in('framework_id', fwIds)
           .order('ordem', { ascending: true })
           .limit(600);
-        catalogCodes = (catalogRows || []).map((r: any) => String(r?.codigo || '').trim()).filter(Boolean);
+        catalogCodes = resolveDocumentScope(
+          catalogRows || [],
+          document?.titulo,
+          (document?.secoes || []).map((s: any) => s?.nome),
+          Array.isArray(document?.coverage_map) ? document.coverage_map : [],
+        ).scopeCodes;
       }
+
 
       const currentCoverage: any[] = Array.isArray(document?.coverage_map) ? document.coverage_map : [];
       const currentNaoCob: any[] = Array.isArray(document?.requisitos_nao_cobertos_justificativa)
