@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { SortableTableHead, compareSortValues } from '@/components/ui/sortable-table-head';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Badge } from '@/components/ui/badge';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
@@ -118,6 +119,18 @@ export default function MinhasTarefas() {
     return { atrasadas, hoje: hojeArr, semana, depois, sem, concluidas };
   }, [itens, hoje, em7]);
 
+  const [sort, setSort] = React.useState<{ field: string; direction: 'asc' | 'desc' } | null>(null);
+  const toggleSort = React.useCallback((field: string) => {
+    setSort((prev) => (prev?.field === field
+      ? { field, direction: prev.direction === 'asc' ? 'desc' : 'asc' }
+      : { field, direction: 'asc' }));
+  }, []);
+  const ordenarLinhas = React.useCallback((rows: Row[]) => {
+    if (!sort) return rows;
+    const factor = sort.direction === 'asc' ? 1 : -1;
+    return [...rows].sort((a, b) => factor * compareSortValues((a as any)[sort.field], (b as any)[sort.field]));
+  }, [sort]);
+
   const renderGrupo = (label: string, rows: Row[], tone: 'destructive' | 'warning' | 'info' | 'neutral' | 'success') => {
     if (rows.length === 0) return null;
     return (
@@ -132,14 +145,14 @@ export default function MinhasTarefas() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{t('minhasTarefas.columns.item')}</TableHead>
-                <TableHead>{t('minhasTarefas.columns.source')}</TableHead>
-                <TableHead>{t('minhasTarefas.columns.priority')}</TableHead>
-                <TableHead>{t('minhasTarefas.columns.dueDate')}</TableHead>
+                <SortableTableHead field="titulo" sort={sort} onSort={toggleSort}>{t('minhasTarefas.columns.item')}</SortableTableHead>
+                <SortableTableHead field="origemRef" sort={sort} onSort={toggleSort}>{t('minhasTarefas.columns.source')}</SortableTableHead>
+                <SortableTableHead field="prioridade" sort={sort} onSort={toggleSort}>{t('minhasTarefas.columns.priority')}</SortableTableHead>
+                <SortableTableHead field="prazo" sort={sort} onSort={toggleSort}>{t('minhasTarefas.columns.dueDate')}</SortableTableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.map((row) => {
+              {ordenarLinhas(rows).map((row) => {
                 const originBadge = row.origem === 'plano'
                   ? t('minhasTarefas.source.actionPlan')
                   : t('minhasTarefas.source.project');
