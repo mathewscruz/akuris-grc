@@ -1150,14 +1150,9 @@ Responda APENAS com um JSON na seguinte estrutura (sem markdown, sem comentário
     { "premissa": "A organização dispõe de MFA no Entra ID", "motivo": "não confirmado no briefing — o documento exige-o como controlo", "validar_com": "Equipa de TI" }
   ],
   "glossario": [ { "termo": "RTO", "definicao": "Recovery Time Objective — tempo máximo tolerável para restaurar um serviço" } ],
-  "historico_versoes": [ { "versao": "1.0", "data": "DATA_ATUAL", "autor": "${context.user_name}", "descricao": "Emissão inicial" } ],
-  "coverage_map": [
-    { "requirement_codigo": "A.8.13", "requirement_titulo": "...", "section_indexes": [2,5], "evidencia": "trecho literal do documento (max 220 chars) que satisfaz o requisito" }
-  ],
-  "requisitos_nao_cobertos_justificativa": [
-    { "codigo": "A.5.30", "motivo": "fora do escopo desta política específica" }
-  ]
+  "historico_versoes": [ { "versao": "1.0", "data": "DATA_ATUAL", "autor": "${context.user_name}", "descricao": "Emissão inicial" } ]
 }`;
+
 
 
       const docContent = await callClaude(
