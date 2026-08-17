@@ -177,7 +177,7 @@ export function Riscos() {
       const { data, error } = await supabase
         .from('riscos')
         .select(`
-          id, nome, descricao, matriz_id, categoria_id,
+          id, codigo, nome, descricao, matriz_id, categoria_id,
           probabilidade_inicial, impacto_inicial,
           probabilidade_residual, impacto_residual,
           nivel_risco_inicial, nivel_risco_residual,
@@ -570,7 +570,7 @@ export function Riscos() {
       label: t('riscos.page.columns.id'),
       className: 'w-[72px]',
       render: (_value: any, risco: Risco) => (
-        <span className="font-mono text-[11px] text-muted-foreground">{shortRiskId(risco.id)}</span>
+        <span className="font-mono text-[11px] text-muted-foreground">{shortRiskId(risco.id, (risco as any).codigo)}</span>
       ),
     },
     {

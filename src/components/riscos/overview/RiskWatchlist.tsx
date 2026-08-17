@@ -104,7 +104,7 @@ export function RiskWatchlist({ riscos, totalCount, onOpenRisk, onSeeAll }: Prop
                 <div className="min-w-0">
                   <div className="text-sm font-medium text-foreground truncate">{r.nome}</div>
                   <div className="text-[11px] text-muted-foreground flex items-center gap-2 mt-0.5">
-                    <span className="font-mono">{shortRiskId(r.id)}</span>
+                    <span className="font-mono">{shortRiskId(r.id, (r as any).codigo)}</span>
                     <span>·</span>
                     <span className="truncate">{r.categoria?.nome || t('riscosVisoes.overview.riskWatchlist.semCategoria')}</span>
                     <span>·</span>

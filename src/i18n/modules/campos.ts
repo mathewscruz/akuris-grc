@@ -8,6 +8,9 @@ export const campos = {
       risco: {
         nome: 'Nome do Risco *',
         nomePlaceholder: 'Ex: Falha de backup de dados',
+        codigo: 'ID do risco',
+        codigoPlaceholder: 'Ex: R-0001',
+        codigoHint: 'Deixe vazio para gerar automaticamente em sequência (R-0001, R-0002...).',
         categoria: 'Categoria',
         descricaoPlaceholder: 'Descreva o risco detalhadamente...',
         matriz: 'Matriz de Risco *',
@@ -121,6 +124,9 @@ export const campos = {
       risco: {
         nome: 'Risk name *',
         nomePlaceholder: 'E.g.: Data backup failure',
+        codigo: 'Risk ID',
+        codigoPlaceholder: 'E.g.: R-0001',
+        codigoHint: 'Leave empty to generate it automatically in sequence (R-0001, R-0002...).',
         categoria: 'Category',
         descricaoPlaceholder: 'Describe the risk in detail...',
         matriz: 'Risk matrix *',

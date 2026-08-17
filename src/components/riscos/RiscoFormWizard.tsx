@@ -30,6 +30,7 @@ import ConfirmDialog from '@/components/ConfirmDialog';
 
 const makeRiscoSchema = (t: (k: string) => string) => z.object({
   nome: z.string().min(1, t('fin.validacao.nomeObrigatorio')),
+  codigo: z.string().trim().max(20).regex(/^$|^[A-Za-z0-9][A-Za-z0-9._-]*$/, t('fin.validacao.codigoInvalido')).optional(),
   categoria_id: z.string().optional(),
   descricao: z.string().optional(),
   matriz_id: z.string().min(1, t('fin.validacao.matrizObrigatoria')),
@@ -127,6 +128,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
     resolver: zodResolver(riscoSchema),
     defaultValues: {
       nome: '',
+      codigo: '',
       descricao: '',
       matriz_id: '',
       categoria_id: '',
@@ -166,6 +168,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
       
       form.reset({
         nome: risco.nome || '',
+        codigo: (risco as any).codigo || '',
         descricao: risco.descricao || '',
         matriz_id: risco.matriz_id || '',
         categoria_id: risco.categoria_id || '',
@@ -439,8 +442,11 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
       // Se aceite marcado: NÃO marcar aceito=true, enviar para aprovação
       const isNovoAceite = data.aceito && (!risco?.status_aceite || risco?.status_aceite === 'rejeitado');
 
+      const codigoManual = (data.codigo || '').trim();
       const riscoData: any = {
         nome: data.nome,
+        // Código: se o utilizador não indicar, o backend gera sequencialmente (R-0001...).
+        ...(codigoManual ? { codigo: codigoManual } : {}),
         descricao: data.descricao,
         empresa_id: profile.empresa_id,
         matriz_id: data.matriz_id || null,
@@ -625,7 +631,12 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
       onSuccess();
     } catch (error: any) {
       logger.error('❌ Erro ao salvar risco:', { data: error });
-      toast.error(t('fin.riscos.wizard.erroSalvar', { mensagem: error.message || t('fin.comum.erroDesconhecido') }));
+      const duplicado = error?.code === '23505' || String(error?.message || '').includes('riscos_empresa_codigo_uidx');
+      toast.error(
+        duplicado
+          ? t('fin.validacao.codigoDuplicado')
+          : t('fin.riscos.wizard.erroSalvar', { mensagem: error.message || t('fin.comum.erroDesconhecido') })
+      );
     } finally {
       setLoading(false);
     }
@@ -840,6 +851,21 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                     <FormControl>
                       <Input placeholder={t('campos.risco.nomePlaceholder')} {...field} />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="codigo"
+                render={({ field }) => (
+                  <FormItem className="max-w-xs">
+                    <FormLabel>{t('campos.risco.codigo')}</FormLabel>
+                    <FormControl>
+                      <Input className="font-mono" placeholder={t('campos.risco.codigoPlaceholder')} {...field} />
+                    </FormControl>
+                    <FormDescription>{t('campos.risco.codigoHint')}</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

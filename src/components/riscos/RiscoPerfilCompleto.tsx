@@ -106,7 +106,7 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
         </DialogDescription>
         <div className="flex items-center justify-between gap-4 px-6 py-4 border-b border-border">
           <div className="flex items-center gap-3 min-w-0">
-            <span className="font-mono text-[11px] text-muted-foreground">{shortRiskId(risco.id)}</span>
+            <span className="font-mono text-[11px] text-muted-foreground">{shortRiskId(risco.id, (risco as any).codigo)}</span>
             <div className="min-w-0">
               <div className="text-[10.5px] font-semibold uppercase tracking-[1.2px] text-muted-foreground">{t('residuos.risco.perfilRisco')}</div>
               <DialogTitle asChild>
