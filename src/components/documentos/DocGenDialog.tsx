@@ -889,17 +889,14 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
 
   /**
    * Handler do botão "Salvar em Documentos".
-   * Se o score de compliance estiver abaixo de 80, mostra confirmação antes de
-   * abrir o diálogo de salvar — evita publicar um rascunho capenga por acidente.
-   * O score é derivado do `_initial_score` que o próprio backend calcula.
+   * Já não existe gate de score: o documento é escrito para atender os
+   * referenciais escolhidos e a avaliação formal acontece na Análise de
+   * Aderência, quando o usuário a pedir.
    */
   const handleSaveClick = async () => {
-    if (currentScore !== null && currentScore < 80) {
-      setPublishConfirmOpen(true);
-      return;
-    }
     await handleOpenCreateDialog();
   };
+
 
 
 
