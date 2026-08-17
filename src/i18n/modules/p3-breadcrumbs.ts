@@ -20,7 +20,7 @@ export const p3Breadcrumbs = {
         revisaoAcessos: 'Revisão de Acessos',
       },
       entities: {
-        registo: 'Registo',
+        registro: 'Registro',
         projeto: 'Projeto',
         risco: 'Risco',
         documento: 'Documento',
@@ -51,7 +51,7 @@ export const p3Breadcrumbs = {
         revisaoAcessos: 'Access Review',
       },
       entities: {
-        registo: 'Record',
+        registro: 'Record',
         projeto: 'Project',
         risco: 'Risk',
         documento: 'Document',

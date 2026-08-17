@@ -57,7 +57,7 @@ export const jurisdicao = {
         foraPrazo: 'Fora do prazo {lei}',
         excederamPrazo: 'Excederam {prazo}',
         prazoLegal: 'Prazo legal de resposta: {prazo} ({artigo})',
-        ropaSubtitulo: 'Registo das atividades de tratamento — {lei}',
+        ropaSubtitulo: 'Registro das atividades de tratamento — {lei}',
         violacaoNota: 'Notificação de violação: {prazo}',
       },
     },

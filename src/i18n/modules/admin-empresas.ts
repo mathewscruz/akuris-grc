@@ -103,7 +103,7 @@ export const admin = {
           title: 'A criar a empresa',
           description: 'Estamos a preparar o ambiente isolado desta empresa.',
           hint: 'Não feche esta janela até a conclusão.',
-          stepRegistro: 'Criando registo da empresa',
+          stepRegistro: 'Criando registro da empresa',
           stepLicenca: 'Configurando licença e plano',
           stepBanco: 'Preparando estrutura de dados isolada',
           stepDenuncia: 'Criando canal de denúncia',

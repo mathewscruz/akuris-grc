@@ -12,10 +12,10 @@ export const riscosControles = {
         todosFrameworks: 'Todos os frameworks',
         semFrameworks: 'Ainda não existe nenhum framework activo no Gap Analysis desta empresa.',
         semResultados: 'Nenhum requisito encontrado para esta pesquisa.',
-        salvar: 'Guardar ligações',
+        salvar: 'Salvar ligações',
         sucessoTitulo: 'Controlos vinculados',
         sucessoDesc: '{count} requisito(s) ligado(s) a este risco.',
-        erroTitulo: 'Não foi possível guardar as ligações',
+        erroTitulo: 'Não foi possível salvar as ligações',
         erroDesc: 'Tente novamente.',
       },
       aba: {

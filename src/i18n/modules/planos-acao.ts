@@ -49,7 +49,7 @@ export const planosAcao = {
       commentsEmpty: 'Ainda sem comentários',
       commentPlaceholder: 'Escreva um comentário...',
       commentSubmit: 'Comentar',
-      commentError: 'Não foi possível guardar o comentário',
+      commentError: 'Não foi possível salvar o comentário',
       auditAction: {
         INSERT: 'Criado',
         UPDATE: 'Atualizado',

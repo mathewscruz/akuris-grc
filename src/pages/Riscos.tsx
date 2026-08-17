@@ -399,7 +399,10 @@ export function Riscos() {
                          risco.responsavel?.toLowerCase().includes(searchTerm.toLowerCase());
     // Filtra pelo status exibido (AKURIS QA-065) para que o resultado bata com o badge.
     const matchesStatus = !statusFilter || statusFilter === 'all' || (risco.status_efetivo ?? risco.status) === statusFilter;
-    const matchesNivel = !nivelFilter || nivelFilter === 'all' || risco.nivel_risco_inicial === nivelFilter;
+    // Mesmo critério do badge: filtrar pela inerente devolvia riscos cuja
+    // severidade apresentada era outra.
+    const matchesNivel = !nivelFilter || nivelFilter === 'all' ||
+      (risco.nivel_risco_residual || risco.nivel_risco_inicial) === nivelFilter;
     const matchesAceito = !aceitoFilter || aceitoFilter === 'all' || 
                          (aceitoFilter === 'aceito' && risco.aceito) ||
                          (aceitoFilter === 'nao_aceito' && !risco.aceito);
@@ -605,9 +608,13 @@ export function Riscos() {
     {
       key: 'nivel_risco_inicial',
       label: t('riscos.page.columns.severity'),
-      render: (value: string) => (
-        <StatusBadge size="sm" {...resolveNivelRiscoTone(value)}>{formatStatus(value)}</StatusBadge>
-      ),
+      // Severidade efectiva (residual quando existe), como o ponto ao lado do
+      // nome, o detalhe do risco, o mapa de calor e o dashboard. Mostrar aqui a
+      // inerente fazia a mesma linha exibir duas severidades diferentes.
+      render: (_value: string, risco: Risco) => {
+        const nivel = risco.nivel_risco_residual || risco.nivel_risco_inicial;
+        return <StatusBadge size="sm" {...resolveNivelRiscoTone(nivel)}>{formatStatus(nivel)}</StatusBadge>;
+      },
     },
     {
       key: 'trend',

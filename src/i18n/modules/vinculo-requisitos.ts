@@ -6,7 +6,7 @@ export const vinculoRequisitos = {
   pt: {
     vinculoReq: {
       tituloControlo: 'Ligar requisitos ao controlo',
-      salvar: 'Guardar ligações',
+      salvar: 'Salvar ligações',
       buscar: 'Pesquisar por código, título ou secção…',
       selecionados: '{{count}} requisito(s) selecionado(s)',
       todosFrameworks: 'Todos os frameworks',
@@ -14,7 +14,7 @@ export const vinculoRequisitos = {
       semResultados: 'Nenhum requisito corresponde à pesquisa.',
       sucessoTitulo: 'Ligações atualizadas',
       sucessoDesc: '{{count}} requisito(s) ligado(s) a este controlo.',
-      erroTitulo: 'Não foi possível guardar',
+      erroTitulo: 'Não foi possível salvar',
       erroDesc: 'Tente novamente dentro de instantes.',
       tabRequisitos: 'Requisitos ({{count}})',
       semRequisitosControlo: 'Este controlo ainda não está ligado a nenhum requisito de framework.',

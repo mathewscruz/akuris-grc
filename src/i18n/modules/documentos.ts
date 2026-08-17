@@ -251,7 +251,7 @@ export const documentos = {
         requerAprovacao: 'Requer Aprovação',
         requerAprovacaoDica: 'Se habilitado, o documento ficará pendente até aprovação.',
         aprovadorLabel: 'Aprovador responsável',
-        aprovadorHint: 'A solicitação de aprovação é criada automaticamente ao guardar.',
+        aprovadorHint: 'A solicitação de aprovação é criada automaticamente ao salvar.',
         aprovadorPlaceholder: 'Selecione o aprovador',
         aprovadorObrigatorioFluxo: 'Selecione um aprovador para o fluxo de aprovação.',
         pendenteAprovacaoStatus: 'Pendente aprovação',

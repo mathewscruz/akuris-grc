@@ -1,5 +1,5 @@
 /**
- * Busca global, seletor genérico de registos e ligações reais (P1 · envio 1).
+ * Busca global, seletor genérico de registros e ligações reais (P1 · envio 1).
  * Regra do projeto: todo texto de interface existe em pt e en (ver CONVENCOES.md).
  */
 export const buscaGlobal = {
@@ -29,23 +29,23 @@ export const buscaGlobal = {
       due_diligence: 'Due Diligence',
     },
     buscaGlobal: {
-      placeholder: 'Buscar registos e módulos…',
-      searching: 'A pesquisar registos…',
+      placeholder: 'Buscar registros e módulos…',
+      searching: 'A pesquisar registros…',
       records: 'Registos',
-      noRecords: 'Nenhum registo encontrado',
-      hint: 'Escreva pelo menos 2 caracteres para pesquisar registos',
+      noRecords: 'Nenhum registro encontrado',
+      hint: 'Escreva pelo menos 2 caracteres para pesquisar registros',
       moreResults: '+{count} resultados adicionais',
     },
     entidadeSelect: {
-      placeholder: 'Selecionar registo…',
+      placeholder: 'Selecionar registro…',
       search: 'Pesquisar por título ou identificador…',
       loading: 'A carregar…',
-      empty: 'Nenhum registo encontrado',
+      empty: 'Nenhum registro encontrado',
       none: 'Nenhum',
-      loadError: 'Não foi possível carregar os registos',
+      loadError: 'Não foi possível carregar os registros',
     },
     vinculosGrc: {
-      hint: 'Selecione o tipo e escolha o registo na lista. Vários vínculos são permitidos.',
+      hint: 'Selecione o tipo e escolha o registro na lista. Vários vínculos são permitidos.',
       linked: 'Vinculado com sucesso',
       removed: 'Vínculo removido',
     },

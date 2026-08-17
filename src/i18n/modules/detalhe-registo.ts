@@ -1,18 +1,18 @@
 /**
- * Painel lateral genérico de detalhe de registo (Envio 11 · T2 — regra do clique).
+ * Painel lateral genérico de detalhe de registro (Envio 11 · T2 — regra do clique).
  * Usado nos módulos que ainda não tinham vista de detalhe própria.
  */
 export const detalheRegisto = {
   pt: {
     detalheRegisto: {
-      titulo: 'Detalhe do registo',
-      abrirRegisto: 'Abrir registo',
+      titulo: 'Detalhe do registro',
+      abrirRegisto: 'Abrir registro',
       visao: 'Visão geral',
       criadoPor: 'Criado por',
       criadoEm: 'Criado em',
       atualizadoEm: 'Atualizado em',
       semValor: '—',
-      semCampos: 'Este registo ainda não tem campos preenchidos.',
+      semCampos: 'Este registro ainda não tem campos preenchidos.',
       fechar: 'Fechar',
       editar: 'Editar',
       algoritmo: 'Algoritmo',

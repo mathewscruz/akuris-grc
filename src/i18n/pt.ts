@@ -615,8 +615,8 @@ export const pt = {
     validationEmailInvalid: 'Email inválido',
   },
   notifications: {
-    openRecord: 'Abrir registo',
-    recordMissing: 'O registo referido já não existe.',
+    openRecord: 'Abrir registro',
+    recordMissing: 'O registro referido já não existe.',
     viewDetails: 'Ver detalhes',
     title: 'Notificações',
     eyebrow: 'NOTIFICAÇÕES',
@@ -730,8 +730,8 @@ export const pt = {
     dueDiligenceActive: 'Due Diligence ativas',
     reportsOpen: 'Denúncias abertas',
     hint: {
-      assets: 'Total de ativos registados',
-      risks: 'Total de riscos registados',
+      assets: 'Total de ativos registrados',
+      risks: 'Total de riscos registrados',
       incidentsOpen: 'Incidentes abertos ou em investigação',
       actionPlansOpen: 'Planos de ação por concluir',
       contractsActive: 'Contratos com estado ativo',
