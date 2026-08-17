@@ -164,7 +164,9 @@ export const docgen = {
         retryGenerate: 'Gerar novamente',
         briefingButton: 'Briefing',
         conversationInProgress: 'Conversa em andamento',
-        messageCount: '{count} mensagem{plural}',
+        messageCount: '{count} mensagens',
+        messageCountOne: '1 mensagem',
+
         complianceScore: 'Compliance {score}%',
         complianceTooltip: 'Score calculado sobre os requisitos do framework que tratam do tema deste documento.',
         scopeInfo: 'Âmbito: {scope} requisito(s) do tema.',
