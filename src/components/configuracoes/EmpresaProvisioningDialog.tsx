@@ -2,7 +2,7 @@ import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { Check, X } from 'lucide-react';
-import { useLanguage } from '@/components/LanguageProvider';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export type ProvisioningStepState = 'pending' | 'running' | 'done' | 'error';
 
