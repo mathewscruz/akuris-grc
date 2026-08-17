@@ -679,7 +679,7 @@ export function Riscos() {
                 {risco.responsavel_nome.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
               </AvatarFallback>
             </Avatar>
-            <span className="text-xs text-foreground/85">{last}</span>
+            <span className="text-xs text-foreground/85" title={risco.responsavel_nome}>{first}</span>
           </div>
         );
       },
