@@ -114,7 +114,7 @@ export const riscosVisoes = {
       },
       table: {
         trend: {
-          semHistorico: 'sem histórico',
+          semHistorico: 'Sem histórico',
           aria: 'Tendência do score: {pontos} avaliações, de {inicio} para {fim}',
           tooltip: 'Histórico real do score ({pontos} avaliações): {inicio} → {fim}',
         },
@@ -243,7 +243,7 @@ export const riscosVisoes = {
       },
       table: {
         trend: {
-          semHistorico: 'no history',
+          semHistorico: 'No history',
           aria: 'Score trend: {pontos} assessments, from {inicio} to {fim}',
           tooltip: 'Real score history ({pontos} assessments): {inicio} → {fim}',
         },
