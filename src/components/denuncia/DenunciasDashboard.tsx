@@ -35,7 +35,12 @@ interface Denuncia {
 }
 
 
-export function DenunciasDashboard({ itemIdToOpen }: { itemIdToOpen?: string | null }) {
+interface DenunciasDashboardProps {
+  itemIdToOpen?: string | null;
+  refreshKey?: number | string;
+}
+
+export function DenunciasDashboard({ itemIdToOpen, refreshKey }: DenunciasDashboardProps) {
   const { t } = useLanguage();
   const [denuncias, setDenuncias] = useState<Denuncia[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,7 +56,7 @@ export function DenunciasDashboard({ itemIdToOpen }: { itemIdToOpen?: string | n
 
   useEffect(() => {
     if (empresaId) carregarDenuncias();
-  }, [empresaId]);
+  }, [empresaId, refreshKey]);
 
   // Detectar se veio com itemIdToOpen
   useEffect(() => {
