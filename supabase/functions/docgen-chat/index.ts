@@ -513,7 +513,8 @@ serve(async (req) => {
           LOVABLE_API_KEY,
           maxTokens,
           temperature,
-          MODEL_FAST,
+          MODEL_FALLBACK,
+
           createAttemptSignal(aborter.signal, Math.max(1, remainingMs() - 5_000)),
         ),
         isTransient: (error) => error instanceof AiGatewayError
