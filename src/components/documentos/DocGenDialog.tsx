@@ -719,7 +719,12 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     });
 
     try {
+      // Marco real: contexto pronto, pedido de redação em curso.
+      setGenMilestone(2);
+      genStageStartRef.current = Date.now();
+      setTimeout(() => setGenMilestone(3), 400);
       let res = await invokeGenerate(false);
+
 
       // JSON inválido/truncado é recuperável: uma segunda tentativa com prompt
       // estrito, mesma chave de idempotência (sem novo débito).
