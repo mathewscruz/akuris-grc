@@ -112,7 +112,10 @@ export function DialogShell({
   const _submitLabel = submitLabel ?? t('common.save');
   const _cancelLabel = cancelLabel ?? t('common.cancel');
   const { showConfirm, confirmCloseIfDirty, confirmDiscard, cancelDiscard } =
-    useUnsavedChangesGuard({ isDirty });
+    // O aviso nativo do browser só faz sentido enquanto o diálogo está aberto;
+    // caso contrário bloqueia recarga e navegação da aplicação inteira.
+    useUnsavedChangesGuard({ isDirty, enabled: open });
+
 
   useWizardShortcuts({
     enabled: open && !disableShortcuts,
