@@ -332,8 +332,8 @@ export function NovaDenunciaDialog({ onDenunciaCriada }: NovaDenunciaDialogProps
                     <FormLabel>{t('publicPortal.denunciaForm.date')}</FormLabel>
                     <FormControl>
                       <DateField
-                        value={field.value ? new Date(field.value) : undefined}
-                        onChange={(date) => field.onChange(date ? date.toISOString().split('T')[0] : '')}
+                        value={field.value || null}
+                        onChange={(value) => field.onChange(value || '')}
                       />
                     </FormControl>
                     <FormMessage />
