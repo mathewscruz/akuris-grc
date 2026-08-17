@@ -289,6 +289,13 @@ export const pt = {
     strengthStrong: 'Forte',
   },
   userProfilePopover: {
+    tabProfile: 'Perfil',
+    tabSecurity: 'Segurança',
+    tabNotifications: 'Notificações',
+    eyebrow: 'Conta',
+    emailLabel: 'E-mail',
+    emailHint: 'O e-mail de acesso não pode ser alterado aqui.',
+    passwordHint: 'Deixe em branco para manter a senha atual.',
     changePhoto: 'Alterar Foto',
     photoFormats: 'JPG, PNG, GIF, SVG, WebP (máx. 5MB)',
     name: 'Nome',

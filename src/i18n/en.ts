@@ -289,6 +289,13 @@ export const en = {
     strengthStrong: 'Strong',
   },
   userProfilePopover: {
+    tabProfile: 'Profile',
+    tabSecurity: 'Security',
+    tabNotifications: 'Notifications',
+    eyebrow: 'Account',
+    emailLabel: 'Email',
+    emailHint: 'The sign-in email cannot be changed here.',
+    passwordHint: 'Leave blank to keep your current password.',
     changePhoto: 'Change Photo',
     photoFormats: 'JPG, PNG, GIF, SVG, WebP (max 5MB)',
     name: 'Name',
