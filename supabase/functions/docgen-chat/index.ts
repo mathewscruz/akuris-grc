@@ -1092,7 +1092,26 @@ Responda APENAS com um JSON na seguinte estrutura (sem markdown, sem comentário
       // com a data do servidor para a capa/versão do documento ficar correta.
       if (documentContent && typeof documentContent === 'object') {
         documentContent.data_criacao = new Date().toISOString().slice(0, 10);
+        // Controlo documental determinístico: o que o usuário informou vence o
+        // que a IA escreveu, e o que ninguém informou fica "A definir" (nunca
+        // um nome inventado).
+        const meses: Record<string, number> = { mensal: 1, trimestral: 3, semestral: 6, anual: 12, bienal: 24 };
+        const freqKey = dcFrequency.toLowerCase();
+        const addMonths = meses[freqKey] ?? 12;
+        const next = new Date();
+        next.setMonth(next.getMonth() + addMonths);
+        documentContent.metadados = {
+          ...(documentContent.metadados || {}),
+          classificacao: dcClassification,
+          proprietario: dcOwner || documentContent.metadados?.proprietario || 'A definir',
+          responsavel_aprovacao: dcApprover || documentContent.metadados?.responsavel_aprovacao || 'A definir',
+          responsavel_elaboracao: documentContent.metadados?.responsavel_elaboracao || context.user_name || '',
+          frequencia_revisao: dcFrequency,
+          proxima_revisao: next.toISOString().slice(0, 10),
+          referencias_inline: dcInlineRefs,
+        };
       }
+
 
       // === Onda 3: Quality gate — reescreve seções curtas ou com placeholders ===
       try {
