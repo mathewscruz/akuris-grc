@@ -1,4 +1,4 @@
-import { matchesSearch } from '@/lib/search-utils';
+import { matchesSearch, normalizeSearch } from '@/lib/search-utils';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { useFocusRow } from '@/hooks/useFocusRow';
@@ -288,7 +288,7 @@ export default function Documentos() {
         const searchTags = filtrosAvancados.tags.split(',').map((tag: string) => tag.trim().toLowerCase());
         filtered = filtered.filter(doc => 
           doc.tags && searchTags.some(searchTag => 
-            doc.tags!.some(docTag => docTag.toLowerCase().includes(searchTag))
+            doc.tags!.some(docTag => normalizeSearch(docTag).includes(normalizeSearch(searchTag)))
           )
         );
       }
