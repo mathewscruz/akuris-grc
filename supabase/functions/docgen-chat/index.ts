@@ -574,8 +574,9 @@ serve(async (req) => {
                ].join(' — '),
           mensagens: [],
           contexto: {
-            user_name: profile?.nome || 'Usuário',
-            empresa_nome: empresa?.nome || 'Empresa',
+            user_name: profile?.nome?.trim() || '',
+            empresa_nome: empresa?.nome?.trim() || '',
+
             etapa_atual: 'inicio',
             ...(framework_context && { framework_context })
           }
@@ -587,6 +588,16 @@ serve(async (req) => {
 
     const context: ConversationContext = conversation?.contexto || {};
     const messages: ChatMessage[] = conversation?.mensagens || [];
+
+    // Nomes reais sempre vencem o que ficou guardado no contexto (conversas
+    // antigas trazem os genéricos "Empresa"/"Usuário", que acabavam no documento).
+    const empresaNomeReal = empresa?.nome?.trim();
+    const profileNomeReal = profile?.nome?.trim();
+    if (empresaNomeReal) context.empresa_nome = empresaNomeReal;
+    else if (context.empresa_nome === 'Empresa') context.empresa_nome = '';
+    if (profileNomeReal) context.user_name = profileNomeReal;
+    else if (context.user_name === 'Usuário') context.user_name = '';
+
 
     if (action === 'chat') {
       messages.push({ role: 'user', content: message });

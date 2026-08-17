@@ -168,7 +168,10 @@ export function WizardDialog({
 
   const { showConfirm, confirmCloseIfDirty, confirmDiscard, cancelDiscard } = useUnsavedChangesGuard({
     isDirty,
+    // Só avisa o browser enquanto o wizard está aberto.
+    enabled: open,
   });
+
 
   useWizardShortcuts({
     enabled: open,

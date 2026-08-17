@@ -143,6 +143,14 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
   const [generatedDocument, setGeneratedDocument] = useState<any>(null);
   const [isGeneratingDoc, setIsGeneratingDoc] = useState(false);
   const [generationError, setGenerationError] = useState<string | null>(null);
+  /**
+   * Progresso da geração. As etapas 1–3 são estimadas pelo tempo decorrido
+   * (a API devolve tudo de uma vez); as etapas de refino automático são reais
+   * — cada tentativa é uma chamada concluída ao servidor.
+   */
+  const [genElapsed, setGenElapsed] = useState(0);
+  const [refineProgress, setRefineProgress] = useState<{ attempt: number; total: number } | null>(null);
+
   const [draft, setDraft] = useState<{ briefing: BriefingDefaults; templateId?: string; step: number } | null>(null);
   const lastGenerationArgsRef = useRef<{ briefingText?: string; docNameHint?: string; conversationId?: string | null }>({});
   const [isEditingLayout, setIsEditingLayout] = useState(false);
@@ -557,38 +565,44 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     maxAttempts: number,
   ): Promise<any> => {
     let current = doc;
-    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-      const res = await callDocGen({
-        action: 'auto_refine',
-        user_id: userInfo!.user_id,
-        empresa_id: userInfo!.empresa_id,
-        conversation_id: conversationId,
-        document: current,
-        refine_attempt: attempt,
-        ...(effFrameworkName && {
-          framework_context: {
-            framework_name: effFrameworkName,
-            framework_id: effFrameworkId,
-            framework_ids: frameworkIds,
-          },
-        }),
-      });
-      if (res.credits) { setShowCreditsDialog(true); break; }
-      if (res.timeout || res.error || !res.data?.document) break;
-      current = { ...res.data.document, data_criacao: current.data_criacao };
-      setGeneratedDocument(current);
-      if (res.data.changed) {
-        akurisToast({
-          module: 'documentos',
-          tone: 'success',
-          title: t('docgen.dialog.autoRefineDoneTitle'),
-          description: t('docgen.dialog.autoRefineDoneDescription', { score: String(res.data.after ?? '') }),
+    try {
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        setRefineProgress({ attempt, total: maxAttempts });
+        const res = await callDocGen({
+          action: 'auto_refine',
+          user_id: userInfo!.user_id,
+          empresa_id: userInfo!.empresa_id,
+          conversation_id: conversationId,
+          document: current,
+          refine_attempt: attempt,
+          ...(effFrameworkName && {
+            framework_context: {
+              framework_name: effFrameworkName,
+              framework_id: effFrameworkId,
+              framework_ids: frameworkIds,
+            },
+          }),
         });
+        if (res.credits) { setShowCreditsDialog(true); break; }
+        if (res.timeout || res.error || !res.data?.document) break;
+        current = { ...res.data.document, data_criacao: current.data_criacao };
+        setGeneratedDocument(current);
+        if (res.data.changed) {
+          akurisToast({
+            module: 'documentos',
+            tone: 'success',
+            title: t('docgen.dialog.autoRefineDoneTitle'),
+            description: t('docgen.dialog.autoRefineDoneDescription', { score: String(res.data.after ?? '') }),
+          });
+        }
+        if (!res.data.should_continue) break;
       }
-      if (!res.data.should_continue) break;
+    } finally {
+      setRefineProgress(null);
     }
     return current;
   };
+
 
   /**
    * Gera o documento completo.
@@ -939,11 +953,47 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     setPhase('briefing');
   };
 
+  // Cronómetro da geração: alimenta as etapas e a percentagem mostradas ao usuário.
+  useEffect(() => {
+    if (!isGeneratingDoc && !refineProgress) {
+      setGenElapsed(0);
+      return;
+    }
+    const started = Date.now() - genElapsed * 1000;
+    const id = setInterval(() => setGenElapsed(Math.round((Date.now() - started) / 1000)), 1000);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isGeneratingDoc, !!refineProgress]);
+
+  /** Etapa atual (1..5) e percentagem apresentada. */
+  const generationStage = refineProgress
+    ? 5
+    : genElapsed < 6 ? 1
+      : genElapsed < 14 ? 2
+        : genElapsed < 40 ? 3
+          : 4;
+  const generationPercent = refineProgress
+    ? Math.min(96, 70 + Math.round((refineProgress.attempt / Math.max(1, refineProgress.total)) * 26))
+    : Math.min(70, Math.round((genElapsed / 45) * 70));
+  const generationStageLabel = refineProgress
+    ? t('docgen.dialog.progressRefining', {
+        attempt: String(refineProgress.attempt),
+        total: String(refineProgress.total),
+      })
+    : t(`docgen.dialog.progressStage${generationStage}` as any);
+
+
   // Existe trabalho em curso que se perderia ao fechar?
   const hasWorkInProgress =
     (hasUnsavedChanges && !isDocumentSaved && !isDocumentExported) ||
     (phase === 'briefing') ||
     (phase === 'chat' && messages.length > 0 && !isDocumentSaved && !isDocumentExported);
+
+  // O texto do aviso muda conforme o que realmente está em risco:
+  // briefing em preenchimento, conversa sem documento, ou documento pronto.
+  const discardCopyKey: 'discard' | 'discardBriefing' | 'discardChat' =
+    generatedDocument ? 'discard' : phase === 'briefing' ? 'discardBriefing' : 'discardChat';
+
 
   // Verificar mudanças antes de fechar
   const handleDialogClose = (newOpen: boolean) => {
@@ -1469,25 +1519,44 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
 
               {!generatedDocument && isGeneratingDoc ? (
                 <div className="flex-1 min-h-0 overflow-y-auto pr-2">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-                    <AkurisAIIcon className="h-4 w-4 animate-pulse text-primary" />
-                    <span>{t('docgen.dialog.composingDocument')}</span>
-                  </div>
-                  <div className="space-y-5 animate-pulse">
-                    <div>
-                      <div className="h-6 w-2/3 bg-muted rounded mb-2" />
-                      <div className="h-3 w-1/3 bg-muted rounded" />
-                    </div>
-                    {[0, 1, 2, 3, 4].map((i) => (
-                      <div key={i} className="space-y-2">
-                        <div className="h-4 w-1/2 bg-muted rounded" />
-                        <div className="h-3 w-full bg-muted rounded" />
-                        <div className="h-3 w-11/12 bg-muted rounded" />
-                        <div className="h-3 w-10/12 bg-muted rounded" />
+                  <div className="flex flex-col items-center justify-center gap-4 py-10 text-center">
+                    <AkurisPulse size={44} />
+                    <div className="w-full max-w-sm space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-foreground font-medium">{generationStageLabel}</span>
+                        <span className="tabular-nums text-muted-foreground">
+                          {t('docgen.dialog.progressPercent', { percent: String(generationPercent) })}
+                        </span>
                       </div>
-                    ))}
+                      <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-primary transition-all duration-700"
+                          style={{ width: `${Math.max(4, generationPercent)}%` }}
+                        />
+                      </div>
+                      <ol className="mt-3 space-y-1 text-left text-xs">
+                        {[1, 2, 3, 4, 5].map((step) => (
+                          <li
+                            key={step}
+                            className={
+                              step < generationStage
+                                ? 'text-muted-foreground line-through'
+                                : step === generationStage
+                                  ? 'text-foreground font-medium'
+                                  : 'text-muted-foreground/60'
+                            }
+                          >
+                            {t(`docgen.dialog.progressStage${step}` as any)}
+                          </li>
+                        ))}
+                      </ol>
+                      <p className="pt-2 text-[11px] text-muted-foreground">
+                        {t('docgen.dialog.progressEstimate')}
+                      </p>
+                    </div>
                   </div>
                 </div>
+
               ) : isEditingLayout ? (
                 <div className="flex-1 min-h-0 overflow-y-auto">
                   <DocLayoutBuilder value={generatedDocument} onChange={setGeneratedDocument} />
@@ -1605,11 +1674,12 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
       <AlertDialog open={discardDialogOpen} onOpenChange={setDiscardDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('docgen.dialog.discardTitle')}</AlertDialogTitle>
+            <AlertDialogTitle>{t(`docgen.dialog.${discardCopyKey}Title`)}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('docgen.dialog.discardDescription')}
+              {t(`docgen.dialog.${discardCopyKey}Description`)}
             </AlertDialogDescription>
           </AlertDialogHeader>
+
           <AlertDialogFooter>
             <AlertDialogCancel>{t('docgen.dialog.continueEditing')}</AlertDialogCancel>
             <AlertDialogAction
