@@ -99,8 +99,25 @@ export function RopaImportExport({ registos, onImported }: Props) {
 
   return (
     <div className="flex flex-wrap items-center gap-2">
+      {exercicios.length > 0 ? (
+        <Select value={exercicioId} onValueChange={setExercicioId}>
+          <SelectTrigger className="h-9 w-[220px]">
+            <SelectValue placeholder={t("dadosDashboard.ropaPlanilha.semExercicio")} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">{t("dadosDashboard.ropaPlanilha.semExercicio")}</SelectItem>
+            {exercicios.map((ex) => (
+              <SelectItem key={ex.id} value={ex.id}>
+                {ex.nome}
+                {ex.versao ? ` · ${ex.versao}` : ""}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      ) : null}
       <input
         ref={inputRef}
+
         type="file"
         accept=".xlsx,.xls,.csv"
         className="hidden"
