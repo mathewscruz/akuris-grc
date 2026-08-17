@@ -22,6 +22,12 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useFrameworkRequirementCount } from '@/hooks/useFrameworkRequirementCount';
 import { akurisToast } from '@/lib/akuris-toast';
+
+/**
+ * Id único do aviso de ciclo de vida do DocGen: geração, refino e conclusão
+ * substituem o mesmo cartão em vez de empilhar vários popups.
+ */
+const DOCGEN_STATUS_TOAST = 'docgen-status';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Send, FileText, Download, Save, Plus, History, ArrowLeft } from 'lucide-react';
