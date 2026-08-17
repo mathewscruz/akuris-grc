@@ -236,6 +236,8 @@ export const dadosDashboard = {
         nadaEncontrado: 'Não foi possível reconhecer registos ROPA nesta planilha.',
         importadoSucesso: '{count} registo(s) ROPA importado(s) com sucesso.',
         erroImportar: 'Erro ao importar a planilha ROPA',
+        semExercicio: 'Sem exercício associado',
+
       },
       ropaExercicios: {
         tabTitulo: 'Exercícios ROPA',
@@ -814,6 +816,8 @@ export const dadosDashboard = {
         nadaEncontrado: 'No ROPA records could be recognised in this spreadsheet.',
         importadoSucesso: '{count} ROPA record(s) imported successfully.',
         erroImportar: 'Failed to import the ROPA spreadsheet',
+        semExercicio: 'No linked exercise',
+
       },
       ropaExercicios: {
         tabTitulo: 'ROPA exercises',
