@@ -1,61 +1,75 @@
-# Estabilização definitiva do DocGen
+# DocGen: estabilidade + qualidade auditável
 
-## Objetivo
-Transformar o DocGen num fluxo crítico previsível: toda geração deve terminar em documento utilizável ou em erro claro e recuperável, sem perder briefing, conversa, crédito ou progresso.
+Premissa: a estrutura, profundidade técnica e mapeamento normativo já alcançados devem ser preservados. Nada aqui pode simplificar o documento gerado.
 
-## Diagnóstico confirmado
-- A geração depende de várias etapas assíncronas entre frontend, Edge Function, gateway de IA e banco; o refino é encadeado pelo navegador.
-- Existem conversas recentes persistidas sem documento gerado, comprovando interrupções parciais do fluxo.
-- O último documento persistido teve score inicial de 14%, embora o catálogo tivesse 121 requisitos; portanto, o gate de qualidade ainda pode exigir refinos demorados e frágeis.
-- Os testes atuais validam principalmente funções matemáticas puras. Não cobrem o fluxo real Galeria → Briefing → Geração → Refino → Restauração → Publicação, nem timeout, JSON truncado, falha de persistência ou isolamento entre empresas.
+## Parte A — Qualidade auditável (Leva 1, prioridade máxima)
 
-## Implementação
+### A1. Linguagem normativa, nunca afirmação de estado atual
+- Reescrever as instruções de geração e refino para separar declaração normativa ("deve ser", "exige aprovação") de descrição de estado atual ("bloqueia", "não possuem").
+- Afirmação sobre o que já existe na empresa só é permitida quando o utilizador informou no briefing ou quando vem do contexto real da organização já disponível no sistema.
+- A IA passa a devolver, junto com o documento, a lista de premissas assumidas: controlo assumido, secção onde aparece e origem (briefing, contexto do sistema ou suposição).
+- Marcar no preview cada trecho baseado em suposição, com aviso para confirmar a existência do controlo antes de publicar.
+- Acrescentar ao final do documento a secção "Premissas a validar", com cada controlo assumido, responsável e prazo a definir. Essa secção acompanha o documento no preview e nas exportações PDF/DOCX.
 
-### 1. Execução durável e recuperável
-- Criar um registo de execução do DocGen por empresa e utilizador, com estados explícitos: `preparing`, `generating`, `generated`, `refining`, `ready`, `failed` e `cancelled`.
-- Persistir briefing, `conversation_id`, documento mais recente, score, etapa, tentativa, erro sanitizado e timestamps a cada checkpoint.
-- Usar uma chave de idempotência por geração para impedir duplo clique, duplicação de documento e cobrança repetida.
-- Aplicar RLS e filtros redundantes por `empresa_id`; conceder somente os acessos necessários a `authenticated` e `service_role`.
+### A2. Elementos de controlo documental (ISO 27001, cláusula 7.5)
+- Adicionar cabeçalho estruturado ao documento gerado: tabela de controlo de versões (versão, data, autor, descrição da alteração), proprietário do documento, aprovador formal com data de aprovação, periodicidade de revisão, classificação da informação, referências normativas e data da próxima revisão.
+- Tornar esses campos preenchíveis no briefing, como campos opcionais adicionais.
+- Quando não preenchidos, renderizar sempre o marcador visível "[A DEFINIR]" — nunca omitir o campo.
+- Refletir o mesmo cabeçalho no preview e nos exportadores.
 
-### 2. Simplificar o caminho crítico
-- Fazer `generate_document` ter uma única obrigação: validar contexto, gerar um documento válido, persistir o primeiro snapshot e devolvê-lo.
-- Tornar análise e auto-refino etapas posteriores, retomáveis e de melhor esforço; uma falha nelas nunca apagará nem bloqueará o documento já gerado.
-- Remover dependências frágeis de objetos opcionais e validar a resposta da IA com schema antes de qualquer acesso ou persistência.
-- Tratar JSON truncado/malformado, timeout, gateway indisponível e persistência falhada com códigos de erro estáveis e mensagens traduzidas.
+### A3. Papéis reais em vez de papéis inventados
+- Novo campo no briefing para listar os cargos/papéis que existem na organização.
+- Restringir a matriz RACI e o corpo do texto a esses papéis.
+- Sem informação do utilizador, usar termos genéricos ("Responsável pela Segurança da Informação", "Gestor da Área") e sinalizar no documento que precisam de mapeamento para cargos reais.
 
-### 3. Score honesto e determinístico
-- Fixar e persistir o escopo temático antes da geração, em vez de recalculá-lo de forma variável depois que a IA responde.
-- Separar claramente: qualidade do documento, aderência ao escopo escolhido e cobertura total do framework.
-- Fazer geração, refino e análise independente usarem exatamente o mesmo escopo e denominador persistidos.
-- Se o gate não convergir, entregar o documento como rascunho com lacunas explícitas, sem simular conformidade e sem transformar isso numa falha de geração.
+### A4. Todos os frameworks selecionados chegam à geração
+- Hoje a geração reduz a seleção a um único framework, o que explica documento com referências ISO e nenhuma referência SOC 2.
+- Passar todos os frameworks escolhidos para o prompt, com os requisitos de cada um identificados pela sua origem.
+- Exigir no contrato de saída que o mapeamento cite explicitamente critérios de cada framework selecionado (por exemplo, controlos do Anexo A da ISO e Common Criteria do SOC 2).
+- Validar a resposta: se um framework selecionado ficar sem nenhuma referência, o refino direcionado passa a cobri-lo antes de entregar o documento.
+- O score volta a considerar cada framework separadamente, evitando que a soma dos catálogos afunde o resultado.
 
-### 4. Recuperação e experiência do utilizador
-- Restaurar automaticamente a execução incompleta ao reabrir o DocGen, inclusive após refresh, timeout ou fecho do modal.
-- Exibir progresso baseado nos estados persistidos, não numa percentagem estimada por temporizador.
-- Oferecer “Tentar novamente” a partir do último checkpoint seguro e “Usar rascunho atual” quando apenas o refino falhar.
-- Manter títulos reais do documento e da empresa; remover fallbacks genéricos do conteúdo final.
+## Parte B — Transparência e leitura (Leva 2)
 
-### 5. Observabilidade e prontidão para demonstração
-- Adicionar `run_id`/correlation ID aos logs e respostas, com duração e resultado de cada etapa, sem conteúdo sensível.
-- Criar uma verificação administrativa de prontidão que valide configuração, template, acesso ao banco e resposta mínima do modelo antes de uma demonstração.
-- Centralizar erros no logger e mostrar ao utilizador um código de suporte pesquisável.
+### B5. Score com base de cálculo explícita
+- Mostrar a composição do score: requisitos cobertos sobre requisitos no âmbito, discriminado por framework.
+- Adicionar "ver requisitos não cobertos", listando o que ficou de fora com ligação para o requisito no Gap Analysis.
 
-### 6. Testes contra regressão
-- Testes de contrato da Edge Function para: sucesso, resposta truncada, schema inválido, timeout, falha de insert/update, retry idempotente e crédito esgotado.
-- Testes de segurança provando que uma empresa não lê, retoma ou altera a execução de outra.
-- E2E autenticado do fluxo completo: gerar direto, gerar via chat, interromper/reabrir, refinar, analisar, publicar e exportar.
-- Validar no PDF/DOCX o conteúdo essencial, não apenas a existência de um Blob.
-- Executar um smoke test real da função implantada e do fluxo no navegador antes de considerar a estabilização concluída.
+### B6. Referências normativas inline opcionais
+- Novo interruptor "Exibir referências normativas no corpo do texto", ligado por defeito.
+- Desligado: texto limpo e mapeamento requisito-a-secção movido para um anexo de rastreabilidade no fim do documento.
+- O anexo acompanha preview, PDF e DOCX.
 
-## Critérios de aceite
-- Nenhuma conversa fica sem estado final ou erro recuperável.
-- Refresh/fecho durante geração permite retomar sem nova cobrança indevida.
-- Documento inicial permanece disponível mesmo se análise/refino falhar.
-- Retry não duplica documento nem consumo de crédito.
-- O mesmo documento apresenta o mesmo escopo e denominador na geração e na análise.
-- O fluxo E2E completo passa em desktop e mobile e o smoke test implantado retorna sucesso.
+### B7. Recomendações técnicas atualizadas
+- Remover orientações superadas, como rotação periódica obrigatória de senha sem indício de comprometimento.
+- Orientar o modelo para controlos compensatórios atuais: MFA, deteção de credencial vazada, monitorização de uso anómalo, cofre de segredos.
+
+### B8. Pendências anteriores
+- Histórico de conversas: nomear pelo modelo escolhido e data, por exemplo "Política de Controle de Acesso — 16/08/2026", em vez do título repetido por framework.
+- Corrigir "mensagems" para "mensagens".
+- Adaptar o diálogo de descarte ao estado real: briefing em preenchimento, conversa sem documento, ou documento gerado não salvo.
+
+## Parte C — Estabilidade do fluxo (mantida do plano anterior)
+
+- Execução durável por empresa e utilizador, com estados explícitos e checkpoints persistidos (briefing, conversa, documento, score, etapa, erro).
+- Idempotência por geração, para que duplo clique ou nova tentativa não dupliquem documento nem consumo de crédito.
+- Caminho crítico simples: gerar, validar por schema, persistir e devolver. Análise e refino tornam-se etapas posteriores e retomáveis; falha nelas nunca apaga o documento já gerado.
+- Restauro automático de execução incompleta ao reabrir o módulo, inclusive após atualização da página ou tempo limite.
+- Erros com códigos estáveis e mensagens traduzidas, distinguindo crédito, falha do modelo e falha de gravação.
+
+## Testes e validação
+
+- Testes de contrato da função para: múltiplos frameworks no prompt, resposta truncada, schema inválido, falha de persistência, retry idempotente e crédito esgotado.
+- Testes de conteúdo: ausência de afirmações de estado atual sem origem no briefing, presença do cabeçalho documental, presença da secção de premissas e presença de referências de cada framework selecionado.
+- Testes de isolamento entre empresas.
+- E2E autenticado do fluxo completo: gerar direto, refinar, alternar o interruptor de referências, exportar e publicar.
+- Roteiro de aceitação: gerar a mesma Política de Controle de Acesso com ISO 27001 e SOC 2 e conferir linguagem normativa, premissas a validar, cabeçalho documental, critérios SOC 2 presentes, base de cálculo do score, texto limpo com anexo de rastreabilidade e títulos distintos no histórico.
 
 ## Detalhes técnicos
-- Migração Supabase para a execução durável, com grants, RLS, índices e idempotência por empresa.
-- Refatoração incremental do `docgen-chat`; sem reescrever a experiência visual nem os exportadores fora do necessário.
-- Manter `invokeEdgeFunction`, Sonner, `AkurisPulse`, i18n PT/EN e todas as regras atuais de isolamento multi-tenant.
+
+- `supabase/functions/docgen-chat/index.ts`: deixar de truncar a lista de frameworks, contrato de saída com premissas e metadados documentais, refino direcionado por framework em falta.
+- `supabase/functions/_shared/compliance-score.ts`: âmbito e score por framework, com composição exposta na resposta.
+- `src/components/documentos/DocGenBriefing.tsx`: campos de controlo documental, papéis existentes e interruptor de referências inline.
+- `src/components/documentos/DocGenDialog.tsx` e exportadores PDF/DOCX: cabeçalho documental, marcação de premissas, anexo de rastreabilidade, detalhe do score, títulos do histórico e mensagens de descarte.
+- `src/i18n/modules/docgen.ts`: todas as novas cadeias em pt-PT, pt-BR e en.
+- Migração Supabase apenas para a execução durável da Parte C, com grants, RLS e isolamento por empresa.
