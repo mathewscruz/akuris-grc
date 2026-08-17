@@ -6,6 +6,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { RiscosIcon } from '@/components/icons';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { SortableTableHead, useTableSort } from '@/components/ui/sortable-table-head';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -58,6 +59,9 @@ export function TratamentosList({ riscoId, riscoNome, embedded = false, riscoDat
   const [editingTratamento, setEditingTratamento] = useState<Tratamento | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [tratamentoToDelete, setTratamentoToDelete] = useState<Tratamento | null>(null);
+  const { sorted: tratamentosOrdenados, sort, toggleSort } = useTableSort(tratamentos as any[], {
+    responsavel: (item: any) => item.responsavel_profile?.nome ?? item.responsavel ?? '',
+  });
 
   const fetchTratamentos = async () => {
     try {
@@ -218,17 +222,17 @@ export function TratamentosList({ riscoId, riscoNome, embedded = false, riscoDat
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{t('fin.comum.tipo')}</TableHead>
-                <TableHead>{t('fin.comum.descricao')}</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>{t('fin.comum.responsavel')}</TableHead>
-                <TableHead>{t('cardsKpi.sweep.riscos.prazo')}</TableHead>
-                <TableHead>{t('cardsKpi.sweep.riscos.custo')}</TableHead>
+                <SortableTableHead field="tipo_tratamento" sort={sort} onSort={toggleSort}>{t('fin.comum.tipo')}</SortableTableHead>
+                <SortableTableHead field="descricao" sort={sort} onSort={toggleSort}>{t('fin.comum.descricao')}</SortableTableHead>
+                <SortableTableHead field="status" sort={sort} onSort={toggleSort}>Status</SortableTableHead>
+                <SortableTableHead field="responsavel" sort={sort} onSort={toggleSort}>{t('fin.comum.responsavel')}</SortableTableHead>
+                <SortableTableHead field="prazo" sort={sort} onSort={toggleSort}>{t('cardsKpi.sweep.riscos.prazo')}</SortableTableHead>
+                <SortableTableHead field="custo" sort={sort} onSort={toggleSort}>{t('cardsKpi.sweep.riscos.custo')}</SortableTableHead>
                 <TableHead className="text-right">{t('fin.comum.acoes')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {tratamentos.map((tratamento) => (
+              {tratamentosOrdenados.map((tratamento) => (
                 <TableRow key={tratamento.id}>
                   <TableCell>
                     <StatusBadge size="sm" {...resolveTratamentoTipoTone(tratamento.tipo_tratamento)}>

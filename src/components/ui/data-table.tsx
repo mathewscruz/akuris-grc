@@ -7,11 +7,33 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { EmptyState } from "@/components/ui/empty-state"
 import { AkurisPulse } from "@/components/ui/AkurisPulse"
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
-import { Search, Filter, Download, RefreshCw, ChevronDown, ChevronUp } from "lucide-react"
+import { Search, Filter, Download, RefreshCw, ChevronDown, ChevronUp, ArrowUpDown } from "lucide-react"
 import { useLanguage } from "@/contexts/LanguageContext"
 import { countActiveFilters } from "@/lib/filter-active"
 import { ModuleToolbar, ToolbarField } from "@/components/ui/module-toolbar"
 import { rowOpenProps } from "@/lib/row-interaction"
+
+
+/** Colunas utilitárias que nunca são ordenáveis. */
+const NON_SORTABLE_KEYS = new Set(['acoes', 'ações', 'actions', 'action', 'menu', 'select', 'seleccao', 'seleção'])
+
+/** Comparação estável e acento-insensível para ordenação A-Z / Z-A. */
+function compareValues(a: unknown, b: unknown): number {
+  const emptyA = a === null || a === undefined || a === ''
+  const emptyB = b === null || b === undefined || b === ''
+  if (emptyA && emptyB) return 0
+  if (emptyA) return 1
+  if (emptyB) return -1
+  if (typeof a === 'number' && typeof b === 'number') return a - b
+  if (typeof a === 'boolean' || typeof b === 'boolean') return Number(a) - Number(b)
+  const sa = String(a)
+  const sb = String(b)
+  const da = Date.parse(sa)
+  const db = Date.parse(sb)
+  const isoLike = /^\d{4}-\d{2}-\d{2}/
+  if (!Number.isNaN(da) && !Number.isNaN(db) && isoLike.test(sa) && isoLike.test(sb)) return da - db
+  return sa.localeCompare(sb, undefined, { numeric: true, sensitivity: 'base' })
+}
 
 export interface Column<T> {
   key: keyof T | string
@@ -87,26 +109,53 @@ export function DataTable<T extends Record<string, any>>({
   const [currentPage, setCurrentPage] = React.useState(1)
   const [pageSize, setPageSize] = React.useState(initialPageSize)
 
+  // Ordenação interna (A-Z / Z-A) quando a página não controla a ordenação.
+  const [internalSort, setInternalSort] = React.useState<{ field: string; direction: 'asc' | 'desc' } | null>(null)
+  const externalSort = typeof onSort === 'function'
+  const activeSortField = externalSort ? sortField : internalSort?.field
+  const activeSortDirection = externalSort ? sortDirection : internalSort?.direction
+
+  const isSortable = (column: Column<T>) =>
+    column.sortable !== false && !NON_SORTABLE_KEYS.has(String(column.key).toLowerCase())
+
+  const sortedData = React.useMemo(() => {
+    if (externalSort || !internalSort) return data
+    const { field, direction } = internalSort
+    const factor = direction === 'asc' ? 1 : -1
+    return [...data].sort((a, b) => factor * compareValues(a?.[field], b?.[field]))
+  }, [data, internalSort, externalSort])
+
   // Reset page when data changes
   React.useEffect(() => {
     setCurrentPage(1)
   }, [data.length, pageSize])
 
   // Calculate pagination
-  const totalPages = Math.ceil(data.length / pageSize)
-  const paginatedData = paginated 
-    ? data.slice((currentPage - 1) * pageSize, currentPage * pageSize)
-    : data
+  const totalPages = Math.ceil(sortedData.length / pageSize)
+  const paginatedData = paginated
+    ? sortedData.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+    : sortedData
 
   const handleSort = (field: string) => {
     if (onSort) {
       onSort(field)
+      return
     }
+    setInternalSort((prev) =>
+      prev?.field === field
+        ? { field, direction: prev.direction === 'asc' ? 'desc' : 'asc' }
+        : { field, direction: 'asc' }
+    )
+    setCurrentPage(1)
   }
 
   const getSortIcon = (field: string) => {
-    if (sortField !== field) return null
-    return sortDirection === 'asc' ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />
+    if (activeSortField !== field) {
+      return <ArrowUpDown className="h-3.5 w-3.5 opacity-0 transition-opacity group-hover/th:opacity-60" strokeWidth={1.5} />
+    }
+    return activeSortDirection === 'asc'
+      ? <ChevronUp className="h-4 w-4 text-foreground" strokeWidth={1.5} />
+      : <ChevronDown className="h-4 w-4 text-foreground" strokeWidth={1.5} />
   }
 
   if (loading) {
@@ -168,21 +217,30 @@ export function DataTable<T extends Record<string, any>>({
         <Table>
           <TableHeader>
             <TableRow>
-              {columns.map((column) => (
-                <TableHead
-                  key={String(column.key)}
-                  className={cn(
-                    column.className,
-                    column.sortable && "cursor-pointer hover:bg-muted/50 transition-colors"
-                  )}
-                  onClick={() => column.sortable && handleSort(String(column.key))}
-                >
-                  <div className="flex items-center gap-2">
-                    {column.label}
-                    {column.sortable && getSortIcon(String(column.key))}
-                  </div>
-                </TableHead>
-              ))}
+              {columns.map((column) => {
+                const sortable = isSortable(column)
+                return (
+                  <TableHead
+                    key={String(column.key)}
+                    aria-sort={
+                      sortable && activeSortField === String(column.key)
+                        ? activeSortDirection === 'asc' ? 'ascending' : 'descending'
+                        : undefined
+                    }
+                    className={cn(
+                      "group/th",
+                      column.className,
+                      sortable && "cursor-pointer select-none hover:bg-muted/50 transition-colors"
+                    )}
+                    onClick={() => sortable && handleSort(String(column.key))}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      {column.label}
+                      {sortable && getSortIcon(String(column.key))}
+                    </div>
+                  </TableHead>
+                )
+              })}
             </TableRow>
           </TableHeader>
           <TableBody>

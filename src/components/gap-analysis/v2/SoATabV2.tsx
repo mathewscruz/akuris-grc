@@ -6,6 +6,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { SortableTableHead, useTableSort } from '@/components/ui/sortable-table-head';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -160,6 +161,10 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion }: Props
       return true;
     });
   }, [items, search, segment]);
+
+  const { sorted: sortedItems, sort, toggleSort } = useTableSort(filteredItems as any[], {
+    riscos: (item: any) => riscosPorRequisito?.get(item.id)?.length ?? 0,
+  });
 
   const stats = useMemo(() => {
     const total = items.length;
@@ -411,18 +416,18 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion }: Props
                       aria-label={t('gapV2.soa.selectAll')}
                     />
                   </TableHead>
-                  <TableHead className="w-24">{t('gapV2.soa.colCode')}</TableHead>
-                  <TableHead>{t('gapV2.soa.colRequirement')}</TableHead>
-                  <TableHead className="w-28">{t('gapV2.soa.colApplicable')}</TableHead>
-                  <TableHead className="w-32">{t('gapV2.soa.colStatus')}</TableHead>
-                  <TableHead className="w-40">{t('riscosControles.soa.colRiscos')}</TableHead>
-                  <TableHead className="w-32">{t('gapV2.soa.colResponsible')}</TableHead>
+                  <SortableTableHead field="codigo" sort={sort} onSort={toggleSort} className="w-24">{t('gapV2.soa.colCode')}</SortableTableHead>
+                  <SortableTableHead field="titulo" sort={sort} onSort={toggleSort}>{t('gapV2.soa.colRequirement')}</SortableTableHead>
+                  <SortableTableHead field="aplicavel" sort={sort} onSort={toggleSort} className="w-28">{t('gapV2.soa.colApplicable')}</SortableTableHead>
+                  <SortableTableHead field="conformity_status" sort={sort} onSort={toggleSort} className="w-32">{t('gapV2.soa.colStatus')}</SortableTableHead>
+                  <SortableTableHead field="riscos" sort={sort} onSort={toggleSort} className="w-40">{t('riscosControles.soa.colRiscos')}</SortableTableHead>
+                  <SortableTableHead field="responsavel_avaliacao" sort={sort} onSort={toggleSort} className="w-32">{t('gapV2.soa.colResponsible')}</SortableTableHead>
                   <TableHead className="w-20 text-center">{t('gapV2.soa.colEvidence')}</TableHead>
                   <TableHead className="min-w-[200px]">{t('gapV2.soa.colJustification')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredItems.map(item => {
+                {sortedItems.map(item => {
                   const statusKey = item.conformity_status || 'nao_avaliado';
                   const isSelected = selected.has(item.id);
                   return (

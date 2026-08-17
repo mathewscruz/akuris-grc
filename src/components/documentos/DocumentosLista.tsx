@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { SortableTableHead, useTableSort } from '@/components/ui/sortable-table-head';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -230,6 +231,7 @@ export function DocumentosLista<T extends DocumentoListaItem>({
 }: DocumentosListaProps<T>) {
   const { t } = useLanguage();
   const vazio = documentos.length === 0;
+  const { sorted: documentosOrdenados, sort, toggleSort } = useTableSort(documentos);
 
   return (
     <>
@@ -308,12 +310,12 @@ export function DocumentosLista<T extends DocumentoListaItem>({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{t('documentos.lista.nome')}</TableHead>
-              <TableHead>{t('documentos.lista.tipo')}</TableHead>
-              <TableHead>{t('documentos.lista.classificacao')}</TableHead>
-              <TableHead>{t('documentos.lista.status')}</TableHead>
-              <TableHead>{t('documentos.lista.versao')}</TableHead>
-              <TableHead>{t('documentos.lista.validade')}</TableHead>
+              <SortableTableHead field="nome" sort={sort} onSort={toggleSort}>{t('documentos.lista.nome')}</SortableTableHead>
+              <SortableTableHead field="tipo" sort={sort} onSort={toggleSort}>{t('documentos.lista.tipo')}</SortableTableHead>
+              <SortableTableHead field="classificacao" sort={sort} onSort={toggleSort}>{t('documentos.lista.classificacao')}</SortableTableHead>
+              <SortableTableHead field="status" sort={sort} onSort={toggleSort}>{t('documentos.lista.status')}</SortableTableHead>
+              <SortableTableHead field="versao" sort={sort} onSort={toggleSort}>{t('documentos.lista.versao')}</SortableTableHead>
+              <SortableTableHead field="data_validade" sort={sort} onSort={toggleSort}>{t('documentos.lista.validade')}</SortableTableHead>
               <TableHead className="text-right">{t('documentos.lista.acoes')}</TableHead>
             </TableRow>
           </TableHeader>
@@ -325,7 +327,7 @@ export function DocumentosLista<T extends DocumentoListaItem>({
                 </TableCell>
               </TableRow>
             ) : (
-              documentos.map((documento) => (
+              documentosOrdenados.map((documento) => (
                 <TableRow key={documento.id} data-focus-id={documento.id} {...rowOpenProps(() => acoes.onPreview(documento), documento.nome)}>
                   <TableCell>
                     <div className="space-y-1">

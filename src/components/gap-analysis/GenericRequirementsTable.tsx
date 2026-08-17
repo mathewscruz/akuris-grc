@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { SortableTableHead, compareSortValues } from "@/components/ui/sortable-table-head";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -103,6 +104,13 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [itemsPerPage, setItemsPerPage] = useState(Number(searchParams.get('size')) || 10);
   const [currentPage, setCurrentPage] = useState(Number(searchParams.get('page')) || 1);
+  const [sort, setSort] = useState<{ field: string; direction: 'asc' | 'desc' } | null>(null);
+  const toggleSort = (field: string) => {
+    setSort((prev) => (prev?.field === field
+      ? { field, direction: prev.direction === 'asc' ? 'desc' : 'asc' }
+      : { field, direction: 'asc' }));
+    setCurrentPage(1);
+  };
   const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>((searchParams.get('status') as StatusFilter) || 'all');
   const [onlyMandatory, setOnlyMandatory] = useState(searchParams.get('prio') === '1');
@@ -657,10 +665,22 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
     );
   };
 
+  const sortRows = (rows: Requirement[]) => {
+    if (!sort) return rows;
+    const factor = sort.direction === 'asc' ? 1 : -1;
+    const valor = (req: any) => {
+      if (sort.field === 'evidencias') return req.evidence_files?.length ?? 0;
+      if (sort.field === 'score') return req.score ?? req.compliance_score ?? null;
+      return req[sort.field];
+    };
+    return [...rows].sort((a, b) => factor * compareSortValues(valor(a), valor(b)));
+  };
+
   const renderTableContent = (reqs: Requirement[]) => {
     const filtered = applyFilters(reqs);
+    const sortedFiltered = sortRows(filtered);
     const pages = Math.ceil(filtered.length / itemsPerPage);
-    const paginated = filtered.slice(startIndex, startIndex + itemsPerPage);
+    const paginated = sortedFiltered.slice(startIndex, startIndex + itemsPerPage);
     const allPageSelected = paginated.length > 0 && paginated.every(r => selectedIds.has(r.id));
 
     return (
@@ -675,23 +695,23 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
                   aria-label={t('gapUi.table.selectAll')}
                 />
               </TableHead>
-              <TableHead className="w-28">{t('gapUi.table.colCode')}</TableHead>
-              <TableHead>{t('gapUi.table.colRequirement')}</TableHead>
-              <TableHead className="w-32">
-                <div className="flex items-center gap-1.5">
+              <SortableTableHead field="codigo" sort={sort} onSort={toggleSort} className="w-28">{t('gapUi.table.colCode')}</SortableTableHead>
+              <SortableTableHead field="titulo" sort={sort} onSort={toggleSort}>{t('gapUi.table.colRequirement')}</SortableTableHead>
+              <SortableTableHead field="prazo_implementacao" sort={sort} onSort={toggleSort} className="w-32">
+                <span className="inline-flex items-center gap-1.5">
                   <CalendarClock className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.5} />
                   {t('gapUi.table.colDeadline')}
-                </div>
-              </TableHead>
-              <TableHead className="w-44">
-                <div className="flex items-center gap-1.5">
+                </span>
+              </SortableTableHead>
+              <SortableTableHead field="responsavel_avaliacao" sort={sort} onSort={toggleSort} className="w-44">
+                <span className="inline-flex items-center gap-1.5">
                   <UserRound className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.5} />
                   {t('gapUi.table.colResponsible')}
-                </div>
-              </TableHead>
-              <TableHead className="w-28">{t('gapUi.table.colStatus')}</TableHead>
-              <TableHead className="w-20">{t('gapUi.table.colEvidence')}</TableHead>
-              <TableHead className="w-48">{t('gapUi.table.colEvaluation')}</TableHead>
+                </span>
+              </SortableTableHead>
+              <SortableTableHead field="conformity_status" sort={sort} onSort={toggleSort} className="w-28">{t('gapUi.table.colStatus')}</SortableTableHead>
+              <SortableTableHead field="evidencias" sort={sort} onSort={toggleSort} className="w-20">{t('gapUi.table.colEvidence')}</SortableTableHead>
+              <SortableTableHead field="score" sort={sort} onSort={toggleSort} className="w-48">{t('gapUi.table.colEvaluation')}</SortableTableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
