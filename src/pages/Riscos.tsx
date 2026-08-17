@@ -670,7 +670,7 @@ export function Riscos() {
       label: t('riscos.page.columns.responsible'),
       render: (_value: string, risco: Risco) => {
         if (!risco.responsavel_nome) return <span className="text-xs text-muted-foreground">—</span>;
-        const last = risco.responsavel_nome.split(' ').slice(-1)[0];
+        const first = risco.responsavel_nome.trim().split(/\s+/)[0];
         return (
           <div className="inline-flex items-center gap-1.5">
             <Avatar className="h-5 w-5">
