@@ -258,6 +258,11 @@ export const admin = {
         fieldPapelPlaceholder: 'Select the role',
         fieldPerfilPermissao: 'Permission Profile',
         fieldPerfilPermissaoPlaceholder: 'Select the permission profile',
+        perfisVazios: 'No profiles for this company',
+        selecioneEmpresaPrimeiro: 'Select the company first',
+        erroPerfilOutraEmpresa: 'The selected permission profile belongs to another company. Choose a profile from the target company.',
+        erroEmailJaRegistado: 'This email is already registered in the system.',
+
         fieldEmpresa: 'Company',
         fieldEmpresaPlaceholder: 'Select the company',
         nenhumaEmpresa: 'No company',
