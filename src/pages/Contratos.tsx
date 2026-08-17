@@ -10,6 +10,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveRevisaoTone } from '@/lib/status-tone';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { SortableTableHead, useTableSort } from '@/components/ui/sortable-table-head';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { StatStrip } from '@/components/ui/stat-strip';
 import { ModuleToolbar, ToolbarField } from '@/components/ui/module-toolbar';
@@ -366,19 +367,30 @@ export default function Contratos() {
     });
   }, [fornecedores, searchTermFornecedor, statusFornecedorFilter, categoriaFornecedorFilter, riscoFornecedorFilter]);
 
+  // Ordenação A-Z / Z-A
+  const contratoAccessors = useMemo(() => ({
+    fornecedor: (c: any) => c.fornecedores?.nome ?? '',
+    valor: (c: any) => (c.valor === null || c.valor === undefined ? null : Number(c.valor)),
+  }), []);
+  const { sorted: sortedContratos, sort: sortContratos, toggleSort: toggleSortContratos } = useTableSort(filteredContratos as any[], contratoAccessors);
+  const fornecedorAccessors = useMemo(() => ({
+    contratos_count: (f: any) => Number(f.contratos_count ?? 0),
+  }), []);
+  const { sorted: sortedFornecedores, sort: sortFornecedores, toggleSort: toggleSortFornecedores } = useTableSort(filteredFornecedores as any[], fornecedorAccessors);
+
   // Paginação
   const totalPagesContratos = Math.ceil(filteredContratos.length / itemsPerPage);
   const totalPagesFornecedores = Math.ceil(filteredFornecedores.length / itemsPerPage);
 
   const paginatedContratos = useMemo(() => {
     const start = (currentPageContratos - 1) * itemsPerPage;
-    return filteredContratos.slice(start, start + itemsPerPage);
-  }, [filteredContratos, currentPageContratos, itemsPerPage]);
+    return sortedContratos.slice(start, start + itemsPerPage);
+  }, [sortedContratos, currentPageContratos, itemsPerPage]);
 
   const paginatedFornecedores = useMemo(() => {
     const start = (currentPageFornecedores - 1) * itemsPerPage;
-    return filteredFornecedores.slice(start, start + itemsPerPage);
-  }, [filteredFornecedores, currentPageFornecedores, itemsPerPage]);
+    return sortedFornecedores.slice(start, start + itemsPerPage);
+  }, [sortedFornecedores, currentPageFornecedores, itemsPerPage]);
 
   if (loading) {
     return <PageSkeleton />;
@@ -528,12 +540,12 @@ export default function Contratos() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>{t('fin.comum.nome')}</TableHead>
-                      <TableHead>{t('fin.comum.fornecedor')}</TableHead>
-                      <TableHead>{t('fin.comum.status')}</TableHead>
-                      <TableHead>{t('fin.comum.tipo')}</TableHead>
-                      <TableHead>{t('fin.comum.valor')}</TableHead>
-                      <TableHead>{t('cardsKpi.sweep.contratos.vencimento')}</TableHead>
+                      <SortableTableHead field="nome" sort={sortContratos} onSort={toggleSortContratos}>{t('fin.comum.nome')}</SortableTableHead>
+                      <SortableTableHead field="fornecedor" sort={sortContratos} onSort={toggleSortContratos}>{t('fin.comum.fornecedor')}</SortableTableHead>
+                      <SortableTableHead field="status" sort={sortContratos} onSort={toggleSortContratos}>{t('fin.comum.status')}</SortableTableHead>
+                      <SortableTableHead field="tipo" sort={sortContratos} onSort={toggleSortContratos}>{t('fin.comum.tipo')}</SortableTableHead>
+                      <SortableTableHead field="valor" sort={sortContratos} onSort={toggleSortContratos}>{t('fin.comum.valor')}</SortableTableHead>
+                      <SortableTableHead field="data_fim" sort={sortContratos} onSort={toggleSortContratos}>{t('cardsKpi.sweep.contratos.vencimento')}</SortableTableHead>
                       <TableHead className="text-right">{t('fin.comum.acoes')}</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -739,12 +751,12 @@ export default function Contratos() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>{t('fin.comum.nome')}</TableHead>
-                      <TableHead>{t('fin.comum.tipo')}</TableHead>
-                      <TableHead>{t('cardsKpi.sweep.contratos.categoria')}</TableHead>
-                      <TableHead>{t('cardsKpi.sweep.contratos.contratos')}</TableHead>
-                      <TableHead>{t('cardsKpi.sweep.contratos.risco')}</TableHead>
-                      <TableHead>{t('fin.comum.status')}</TableHead>
+                      <SortableTableHead field="nome" sort={sortFornecedores} onSort={toggleSortFornecedores}>{t('fin.comum.nome')}</SortableTableHead>
+                      <SortableTableHead field="tipo" sort={sortFornecedores} onSort={toggleSortFornecedores}>{t('fin.comum.tipo')}</SortableTableHead>
+                      <SortableTableHead field="categoria" sort={sortFornecedores} onSort={toggleSortFornecedores}>{t('cardsKpi.sweep.contratos.categoria')}</SortableTableHead>
+                      <SortableTableHead field="contratos_count" sort={sortFornecedores} onSort={toggleSortFornecedores}>{t('cardsKpi.sweep.contratos.contratos')}</SortableTableHead>
+                      <SortableTableHead field="avaliacao_risco" sort={sortFornecedores} onSort={toggleSortFornecedores}>{t('cardsKpi.sweep.contratos.risco')}</SortableTableHead>
+                      <SortableTableHead field="status" sort={sortFornecedores} onSort={toggleSortFornecedores}>{t('fin.comum.status')}</SortableTableHead>
                       <TableHead className="text-right">{t('fin.comum.acoes')}</TableHead>
                     </TableRow>
                   </TableHeader>
