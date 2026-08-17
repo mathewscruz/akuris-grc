@@ -16,45 +16,23 @@ import { useLanguage } from '@/contexts/LanguageContext';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { CHART_SERIES, CHART_GRID, CHART_AXIS } from '@/lib/chart-tokens';
-// --- Constants: AI models, pricing, and function mapping ---
+// --- Catálogo único de funcionalidades/modelos de IA (src/lib/ai-usage-catalog.ts) ---
+import {
+  AI_MODELS,
+  AI_FEATURES,
+  featuresUsingModel,
+  resolveAiFeature,
+  aiFeatureLabel,
+  type AiModelId,
+} from '@/lib/ai-usage-catalog';
 
-interface ModelPricing {
-  label: string;
-  provider: string;
-  inputPer1kTokens: number;  // USD
-  outputPer1kTokens: number; // USD
-  avgCostPerReqBRL: number;  // BRL estimated avg per request
-  functions: string[];       // funcionalidade values that use this model
+const MODEL_PRICING = AI_MODELS;
+
+// funcionalidade (com ou sem sufixo ":acao") → id do modelo
+function getModelForFunc(funcionalidade: string): AiModelId | null {
+  return resolveAiFeature(funcionalidade)?.model ?? null;
 }
 
-const MODEL_PRICING: Record<string, ModelPricing> = {
-  'claude-sonnet-4-20250514': {
-    label: 'Claude Sonnet 4',
-    provider: 'Anthropic',
-    inputPer1kTokens: 0.003,
-    outputPer1kTokens: 0.015,
-    avgCostPerReqBRL: 0.20,
-    functions: ['analyze_document_adherence', 'docgen-chat'],
-  },
-  'google/gemini-3-flash-preview': {
-    label: 'Gemini 3 Flash Preview',
-    provider: 'Google',
-    inputPer1kTokens: 0.00015,
-    outputPer1kTokens: 0.0006,
-    avgCostPerReqBRL: 0.03,
-    functions: ['akuria_chat', 'ai-assistant', 'calculate-assessment-score', 'populate-requirement-guidance', 'populate-requirement-guidance-batch', 'suggest_risk_treatment'],
-  },
-};
-
-// Build reverse map: funcionalidade prefix → model key
-function getModelForFunc(funcionalidade: string): string | null {
-  for (const [modelKey, info] of Object.entries(MODEL_PRICING)) {
-    for (const fn of info.functions) {
-      if (funcionalidade === fn || funcionalidade.startsWith(fn + ':')) return modelKey;
-    }
-  }
-  return null;
-}
 
 // --- Interfaces ---
 
@@ -70,6 +48,15 @@ interface EmpresaFinanceiro {
   status: 'rentavel' | 'limite' | 'deficitario';
 }
 
+interface FeatureStats {
+  funcionalidade: string;
+  label: string;
+  modelLabel: string;
+  reqs: number;
+  totalCostBRL: number;
+  mapped: boolean;
+}
+
 interface ModelStats {
   model: string;
   label: string;
@@ -80,7 +67,7 @@ interface ModelStats {
 }
 
 export function FinanceiroIATab() {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const [empresas, setEmpresas] = useState<EmpresaFinanceiro[]>([]);
   const [modelStats, setModelStats] = useState<ModelStats[]>([]);
   const [loading, setLoading] = useState(true);
@@ -90,6 +77,7 @@ export function FinanceiroIATab() {
   const [aiLoading, setAiLoading] = useState(false);
   const [avgCostPerReq, setAvgCostPerReq] = useState(0);
   const [planPrices, setPlanPrices] = useState<Record<string, number>>({});
+  const [featureStats, setFeatureStats] = useState<FeatureStats[]>([]);
 
   useEffect(() => {
     fetchData();
@@ -159,10 +147,28 @@ export function FinanceiroIATab() {
       });
       setModelStats(stats);
 
+      // Uso por funcionalidade (o que o utilizador vê como "consome IA")
+      const feats: FeatureStats[] = Object.entries(funcCount)
+        .map(([funcionalidade, reqs]) => {
+          const feature = resolveAiFeature(funcionalidade);
+          const model = feature ? MODEL_PRICING[feature.model] : null;
+          const unit = overrideEnabled ? overrideCost : (model?.avgCostPerReqBRL ?? 0.03);
+          return {
+            funcionalidade,
+            label: aiFeatureLabel(funcionalidade, locale),
+            modelLabel: model?.label ?? t('configPlanos.financeiroIA.modeloDesconhecido'),
+            reqs,
+            totalCostBRL: reqs * unit,
+            mapped: !!feature,
+          };
+        })
+        .sort((a, b) => b.reqs - a.reqs);
+      setFeatureStats(feats);
+
       // Empresas
       const mapped: EmpresaFinanceiro[] = (empresasData || []).map((e: any) => {
         const planoNome = e.plano?.nome || 'Free';
-        const receita = planPrices[planoNome] || 0;
+        const receita = pricesMap[planoNome] || 0;
         const empData = reqCountByEmpresa[e.id] || { total: 0, cost: 0 };
         const custo = empData.cost;
         const margem = receita - custo;
@@ -320,9 +326,15 @@ export function FinanceiroIATab() {
               <tbody>
                 {Object.entries(MODEL_PRICING).map(([key, info]) => {
                   const stat = modelStats.find(m => m.model === key);
+                  const feats = featuresUsingModel(key as AiModelId);
                   return (
                     <tr key={key} className="border-b border-border/50">
-                      <td className="py-2 font-medium">{info.label}</td>
+                      <td className="py-2 font-medium">
+                        {info.label}
+                        {info.fallbackOnly && (
+                          <span className="ml-2 text-[10px] uppercase tracking-wide text-muted-foreground">fallback</span>
+                        )}
+                      </td>
                       <td className="py-2">
                         <Badge variant="outline" className="text-xs">{info.provider}</Badge>
                       </td>
@@ -331,8 +343,12 @@ export function FinanceiroIATab() {
                       <td className="py-2 font-mono text-xs">R$ {info.avgCostPerReqBRL.toFixed(3)}</td>
                       <td className="py-2">
                         <div className="flex flex-wrap gap-1">
-                          {info.functions.map(fn => (
-                            <Badge key={fn} variant="secondary" className="text-[10px]">{fn}</Badge>
+                          {feats.length === 0 ? (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          ) : feats.map(f => (
+                            <Badge key={f.key} variant="secondary" className="text-[10px]">
+                              {aiFeatureLabel(f.key, locale)}
+                            </Badge>
                           ))}
                         </div>
                       </td>
@@ -341,6 +357,7 @@ export function FinanceiroIATab() {
                     </tr>
                   );
                 })}
+
               </tbody>
               <tfoot>
                 <tr className="font-semibold">
@@ -377,7 +394,55 @@ export function FinanceiroIATab() {
         </CardContent>
       </Card>
 
+      {/* Consumo por funcionalidade */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BarChart3 className="h-5 w-5" />
+            {t('configPlanos.financeiroIA.funcionalidadesTitle')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {featureStats.length === 0 ? (
+            <p className="text-sm text-muted-foreground">{t('configPlanos.financeiroIA.funcionalidadesVazio')}</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-left">
+                    <th className="pb-2 font-medium text-muted-foreground">{t('configPlanos.financeiroIA.colFuncionalidade')}</th>
+                    <th className="pb-2 font-medium text-muted-foreground">{t('configPlanos.financeiroIA.colFuncionalidadeModelo')}</th>
+                    <th className="pb-2 font-medium text-muted-foreground text-right">{t('configPlanos.financeiroIA.colReqsMes')}</th>
+                    <th className="pb-2 font-medium text-muted-foreground text-right">{t('configPlanos.financeiroIA.colCustoTotal')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {featureStats.map((f) => (
+                    <tr key={f.funcionalidade} className="border-b border-border/50">
+                      <td className="py-2">
+                        <span className="font-medium">{f.label}</span>
+                        {!f.mapped && (
+                          <span className="ml-2 text-[10px] text-muted-foreground">
+                            {t('configPlanos.financeiroIA.funcionalidadeNaoMapeada')}
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-2">
+                        <Badge variant="outline" className="text-xs">{f.modelLabel}</Badge>
+                      </td>
+                      <td className="py-2 text-right font-semibold">{f.reqs}</td>
+                      <td className="py-2 text-right font-semibold">R$ {f.totalCostBRL.toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* KPIs */}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title={t('configPlanos.financeiroIA.statReceitaTotal')}

@@ -14,6 +14,7 @@ import { formatDateOnly } from '@/lib/date-utils';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { aiFeatureLabel, aiFeatureModuleLabel, aiModelForFuncionalidade } from '@/lib/ai-usage-catalog';
 
 interface EmpresaCredito {
   id: string;
@@ -33,7 +34,7 @@ interface ConsumoHistorico {
 }
 
 export function CreditosIAManager() {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const [empresas, setEmpresas] = useState<EmpresaCredito[]>([]);
   const [loading, setLoading] = useState(true);
   const [resetConfirm, setResetConfirm] = useState<{ open: boolean; empresaId: string; empresaNome: string }>({
@@ -215,7 +216,25 @@ export function CreditosIAManager() {
     {
       key: 'funcionalidade',
       label: t('configPlanos.creditosIA.colFuncionalidade'),
-      render: (value: string) => <Badge variant="secondary">{value}</Badge>
+      render: (value: string) => {
+        const modulo = aiFeatureModuleLabel(value, locale);
+        return (
+          <div className="space-y-1">
+            <Badge variant="secondary">{aiFeatureLabel(value, locale)}</Badge>
+            {modulo && <div className="text-[11px] text-muted-foreground">{modulo}</div>}
+          </div>
+        );
+      }
+    },
+    {
+      key: 'modelo',
+      label: t('configPlanos.creditosIA.colModelo'),
+      render: (_: unknown, row: ConsumoHistorico) => {
+        const model = aiModelForFuncionalidade(row.funcionalidade);
+        return model
+          ? <Badge variant="outline" className="text-xs">{model.label}</Badge>
+          : <span className="text-muted-foreground">-</span>;
+      }
     },
     {
       key: 'descricao',
