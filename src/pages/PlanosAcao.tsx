@@ -575,7 +575,13 @@ export default function PlanosAcao() {
 
 
         <TabsContent value={activeTab} className="mt-4 space-y-4">
+          <Card className="rounded-lg border overflow-hidden">
+            <CardContent className="p-0">
+              <div className="p-4 sm:p-6 pb-4">
           <ModuleToolbar
+            searchValue={search}
+            onSearchChange={setSearch}
+            searchPlaceholder={t('planosAcao.searchPlaceholder')}
             filters={
               <>
                 <ToolbarField label={t('planosAcaoFiltros.statusLabel')}>
@@ -618,17 +624,13 @@ export default function PlanosAcao() {
               </Tabs>
             }
           />
+              </div>
           {viewMode === 'lista' ? (
-            <Card>
               <DataTable
                 data={filteredPlanos}
                 columns={columns}
                 onRowClick={(item) => setDetailPlano(item)}
                 loading={isLoading}
-                searchable
-                searchPlaceholder={t('planosAcao.searchPlaceholder')}
-                searchValue={search}
-                onSearchChange={setSearch}
                 sortField={sortField}
                 sortDirection={sortDirection}
                 onSort={handleSort}
@@ -641,18 +643,21 @@ export default function PlanosAcao() {
                   action: { label: t('planosAcao.newAction'), onClick: () => { setEditingPlano(null); setDialogOpen(true); } },
                 }}
               />
-            </Card>
           ) : (
-            <PlanosAcaoKanban
-              colunas={kanbanColumns}
-              items={filteredPlanos}
-              onOpen={(item) => setDetailPlano(item)}
-              onStatusChange={handleStatusChange}
-              statusConfig={statusConfig}
-              prioridadeConfig={prioridadeConfig}
-              moduloLabels={moduloLabels}
-            />
+            <div className="p-4 sm:p-6 pt-0">
+              <PlanosAcaoKanban
+                colunas={kanbanColumns}
+                items={filteredPlanos}
+                onOpen={(item) => setDetailPlano(item)}
+                onStatusChange={handleStatusChange}
+                statusConfig={statusConfig}
+                prioridadeConfig={prioridadeConfig}
+                moduloLabels={moduloLabels}
+              />
+            </div>
           )}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
 
