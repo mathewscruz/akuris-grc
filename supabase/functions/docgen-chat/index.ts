@@ -1271,15 +1271,8 @@ Responda APENAS com um JSON na seguinte estrutura (sem markdown, sem comentário
       });
 
 
-      console.log('DocGen generate_document compliance (final)', {
-        framework: framework_context?.framework_name,
-        coverage_items: finalCoverage.length,
-        catalog_size: catalogCodes.length,
-        initial_score,
-        final_score: finalScore,
-        auto_refine_attempts,
-        residual_gaps_top: residualGaps.slice(0, 8),
-      });
+
+
 
       try {
         await supabase
