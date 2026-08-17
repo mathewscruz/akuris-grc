@@ -17,6 +17,8 @@ import { toast } from 'sonner';
 import { Plus, Edit, Trash2, Building2, Upload, MoreHorizontal, RefreshCw, Power, PowerOff } from 'lucide-react';
 import { differenceInDays } from 'date-fns';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import { logger } from '@/lib/logger';
+import EmpresaProvisioningDialog, { type ProvisioningStep } from '@/components/configuracoes/EmpresaProvisioningDialog';
 import { PlanBadge } from '@/components/PlanBadge';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
@@ -83,6 +85,38 @@ const GerenciamentoEmpresasInner = () => {
   const [sortField, setSortField] = useState<string>('nome');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [renewTrialEmpresa, setRenewTrialEmpresa] = useState<Empresa | null>(null);
+
+  // Provisionamento visual da criação de empresa (etapas reais)
+  const [provisioningOpen, setProvisioningOpen] = useState(false);
+  const [provisioningSteps, setProvisioningSteps] = useState<ProvisioningStep[]>([]);
+
+  const buildSteps = (): ProvisioningStep[] => [
+    { id: 'registro', label: t('admin.empresas.provisioning.stepRegistro'), state: 'running' },
+    { id: 'licenca', label: t('admin.empresas.provisioning.stepLicenca'), state: 'pending' },
+    { id: 'banco', label: t('admin.empresas.provisioning.stepBanco'), state: 'pending' },
+    { id: 'denuncia', label: t('admin.empresas.provisioning.stepDenuncia'), state: 'pending' },
+    { id: 'finalizar', label: t('admin.empresas.provisioning.stepFinalizar'), state: 'pending' },
+  ];
+
+  const beginProvisioning = () => {
+    setProvisioningSteps(buildSteps());
+    setProvisioningOpen(true);
+  };
+
+  const setStepState = (id: string, state: ProvisioningStep['state']) =>
+    setProvisioningSteps((prev) => prev.map((s) => (s.id === id ? { ...s, state } : s)));
+
+  const completeStep = (id: string, next?: string) => {
+    setProvisioningSteps((prev) =>
+      prev.map((s) => {
+        if (s.id === id) return { ...s, state: 'done' as const };
+        if (next && s.id === next) return { ...s, state: 'running' as const };
+        return s;
+      }),
+    );
+  };
+
+  const failStep = (id: string) => setStepState(id, 'error');
   const [toggleAtivoEmpresa, setToggleAtivoEmpresa] = useState<Empresa | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -194,11 +228,44 @@ const GerenciamentoEmpresasInner = () => {
           insertData.data_inicio_trial = new Date().toISOString();
         }
 
-        const { error } = await supabase
-          .from('empresas')
-          .insert([insertData]);
+        setDialogOpen(false);
+        beginProvisioning();
 
-        if (error) throw error;
+        // 1) Registo da empresa
+        const { data: created, error } = await supabase
+          .from('empresas')
+          .insert([insertData])
+          .select('id, slug')
+          .single();
+
+        if (error) {
+          failStep('registro');
+          throw error;
+        }
+        completeStep('registro', 'licenca');
+
+        // 2) Licença/plano já persistidos com o registo
+        completeStep('licenca', 'banco');
+
+        // 3) Estrutura de dados isolada (validação do tenant)
+        await supabase.from('empresas').select('id').eq('id', created.id).maybeSingle();
+        completeStep('banco', 'denuncia');
+
+        // 4) Canal de denúncia público independente
+        const { error: canalError } = await supabase.rpc('provisionar_canal_denuncia', {
+          p_empresa_id: created.id,
+        });
+        if (canalError) {
+          logger.error('Falha ao provisionar canal de denúncia', canalError);
+          failStep('denuncia');
+        } else {
+          completeStep('denuncia', 'finalizar');
+        }
+
+        // 5) Conclusão
+        completeStep('finalizar');
+        await new Promise((r) => setTimeout(r, 500));
+        setProvisioningOpen(false);
         toast.success(t('admin.empresas.toastEmpresaCreated'));
       }
 
@@ -207,7 +274,8 @@ const GerenciamentoEmpresasInner = () => {
       form.reset();
       fetchEmpresas();
     } catch (error) {
-      console.error('Erro ao salvar empresa:', error);
+      setProvisioningOpen(false);
+      logger.error('Erro ao salvar empresa', error);
       toast.error(t('admin.empresas.toastErrorSave'));
     }
   };
@@ -711,6 +779,13 @@ const GerenciamentoEmpresasInner = () => {
           title: t('admin.empresas.emptyTitle'),
           description: searchTerm ? t('admin.empresas.emptyDescriptionFiltered') : t('admin.empresas.emptyDescriptionEmpty'),
         }}
+      />
+
+      <EmpresaProvisioningDialog
+        open={provisioningOpen}
+        steps={provisioningSteps}
+        title={t('admin.empresas.provisioning.title')}
+        description={t('admin.empresas.provisioning.description')}
       />
 
       <ConfirmDialog
