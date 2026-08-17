@@ -386,7 +386,7 @@ export const DocGenBriefing: React.FC<DocGenBriefingProps> = ({
               <div>
                 <Label className="text-xs font-medium mb-1.5 block">{t('docgen.briefing.reviewFrequencyLabel')}</Label>
                 <PillGroup
-                  options={REVIEW_FREQUENCY_OPTIONS}
+                  options={REVIEW_FREQUENCY_OPTIONS.map((o) => ({ value: o.value, label: t(`docgen.briefing.freq.${o.value}`) }))}
                   value={briefing.reviewFrequency || 'anual'}
                   onChange={(v) => update('reviewFrequency', v)}
                 />
