@@ -228,6 +228,10 @@ export default {
 				'notification-enter': {
 					'0%':   { opacity: '0', transform: 'translateX(16px)' },
 					'100%': { opacity: '1', transform: 'translateX(0)' }
+				},
+				'tab-enter': {
+					'0%':   { opacity: '0', transform: 'translateY(6px)' },
+					'100%': { opacity: '1', transform: 'translateY(0)' }
 				}
 			},
 			animation: {
@@ -243,7 +247,8 @@ export default {
 				'page-enter': 'page-enter 0.22s cubic-bezier(0.22, 1, 0.36, 1) both',
 				'toast-enter': 'toast-enter 0.35s cubic-bezier(0.16, 1, 0.3, 1) both',
 				'toast-exit': 'toast-exit 0.22s cubic-bezier(0.4, 0, 1, 1) both',
-				'notification-enter': 'notification-enter 0.3s cubic-bezier(0.16, 1, 0.3, 1) both'
+				'notification-enter': 'notification-enter 0.3s cubic-bezier(0.16, 1, 0.3, 1) both',
+				'tab-enter': 'tab-enter 0.24s cubic-bezier(0.22, 1, 0.36, 1) both'
 			},
 			spacing: {
 				'xs': 'var(--spacing-xs)',
