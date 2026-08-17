@@ -1154,7 +1154,10 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
               <span className="truncate">
                 {currentDocName ? <strong className="text-foreground">{currentDocName}</strong> : t('docgen.dialog.conversationInProgress')}
                 {' · '}
-                {t('docgen.dialog.messageCount', { count: messages.length, plural: messages.length === 1 ? '' : 's' })}
+                {messages.length === 1
+                  ? t('docgen.dialog.messageCountOne')
+                  : t('docgen.dialog.messageCount', { count: messages.length })}
+
               </span>
               {/* Chip de score ao vivo: aparece assim que o documento é gerado. */}
               {currentScore !== null && (
