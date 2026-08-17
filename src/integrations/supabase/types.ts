@@ -8915,6 +8915,16 @@ export type Database = {
         }[]
       }
       get_empresa_by_slug: { Args: { empresa_slug: string }; Returns: string }
+      get_empresa_publica_por_slug: {
+        Args: { p_slug: string }
+        Returns: {
+          canal_ativo: boolean
+          id: string
+          logo_url: string
+          nome: string
+          slug: string
+        }[]
+      }
       get_profiles_by_text_ids: {
         Args: { text_ids: string[] }
         Returns: {
