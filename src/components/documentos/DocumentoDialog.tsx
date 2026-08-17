@@ -5,12 +5,12 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { DateField } from '@/components/ui/date-field';
+import { UserSelect } from '@/components/riscos/UserSelect';
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveClassificacaoTone } from '@/lib/status-tone';
-import { Upload, X, CalendarIcon, File, Link2, FileText, Settings2, Tag, Paperclip } from 'lucide-react';
+import { Upload, X, File, Link2, FileText, Settings2, Tag, Paperclip } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -62,6 +62,7 @@ export function DocumentoDialog({ open, onOpenChange, documento, onSuccess, init
     data_vencimento: undefined as Date | undefined,
   });
   const [newTag, setNewTag] = useState('');
+  const [aprovadorId, setAprovadorId] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -84,6 +85,7 @@ export function DocumentoDialog({ open, onOpenChange, documento, onSuccess, init
     setArquivoUrlExterna(documento?.arquivo_url_externa || '');
     setArquivoModo(documento?.arquivo_url_externa ? 'url' : 'upload');
     setNewTag('');
+    setAprovadorId('');
     setActiveTab('identificacao');
     setInitialSnapshot(JSON.stringify({ ...base, data_vencimento: base.data_vencimento?.toISOString() ?? null }));
   }, [documento, open, initialFile, initialData]);
@@ -91,6 +93,18 @@ export function DocumentoDialog({ open, onOpenChange, documento, onSuccess, init
   const isDirty =
     JSON.stringify({ ...formData, data_vencimento: formData.data_vencimento?.toISOString() ?? null }) !== initialSnapshot;
   const update = (patch: Partial<typeof formData>) => setFormData((p) => ({ ...p, ...patch }));
+
+  const urlInvalida = useMemo(() => {
+    if (arquivoModo !== 'url') return false;
+    const value = arquivoUrlExterna.trim();
+    if (!value) return false;
+    try {
+      const parsed = new URL(value);
+      return !/^https?:$/.test(parsed.protocol);
+    } catch {
+      return true;
+    }
+  }, [arquivoModo, arquivoUrlExterna]);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -128,6 +142,18 @@ export function DocumentoDialog({ open, onOpenChange, documento, onSuccess, init
     if (!formData.nome.trim()) {
       setActiveTab('identificacao');
       toast({ title: t('documentos.dialogs.nomeObrigatorio'), description: t('documentos.dialogs.nomeObrigatorioDescricao'), variant: "destructive" });
+      return;
+    }
+
+    if (formData.requer_aprovacao && !documento && !aprovadorId) {
+      setActiveTab('classificacao');
+      toast({ title: t('documentos.dialogs.aprovadorObrigatorio'), variant: 'destructive' });
+      return;
+    }
+
+    if (urlInvalida) {
+      setActiveTab('anexo');
+      toast({ title: t('documentos.dialogs.urlInvalidaInline'), variant: 'destructive' });
       return;
     }
 
@@ -176,10 +202,54 @@ export function DocumentoDialog({ open, onOpenChange, documento, onSuccess, init
         empresa_id: profileData.empresa_id, created_by: userData.user.id,
       };
 
-      const { error } = documento
-        ? await supabase.from('documentos').update(documentoData).eq('id', documento.id)
-        : await supabase.from('documentos').insert([documentoData]);
-      if (error) throw error;
+      let documentoId = documento?.id;
+      if (documento) {
+        const { error } = await supabase.from('documentos').update(documentoData).eq('id', documento.id);
+        if (error) throw error;
+      } else {
+        const { data: inserted, error } = await supabase
+          .from('documentos')
+          .insert([documentoData])
+          .select('id')
+          .single();
+        if (error) throw error;
+        documentoId = inserted?.id;
+      }
+
+      // Instancia o fluxo de aprovação: o toggle passa a criar mesmo a solicitação.
+      if (formData.requer_aprovacao && aprovadorId && documentoId) {
+        const { data: existente } = await supabase
+          .from('documentos_aprovacoes')
+          .select('id')
+          .eq('documento_id', documentoId)
+          .eq('aprovador_id', aprovadorId)
+          .maybeSingle();
+
+        if (!existente) {
+          const { error: aprovError } = await supabase.from('documentos_aprovacoes').insert([{
+            documento_id: documentoId,
+            aprovador_id: aprovadorId,
+            status: 'pendente',
+            comentarios: null,
+            data_aprovacao: null,
+            tipo_acao: 'solicitacao',
+            solicitado_por: userData.user.id,
+            data_solicitacao: new Date().toISOString(),
+          }]);
+          if (aprovError) {
+            logger.error('Erro ao criar solicitação de aprovação:', aprovError);
+          } else {
+            try {
+              await supabase.functions.invoke('send-approval-notification', {
+                body: { documento_id: documentoId, aprovador_id: aprovadorId, solicitante_id: userData.user.id },
+              });
+            } catch (emailError) {
+              logger.error('Erro ao notificar aprovador:', emailError);
+            }
+            toast({ title: t('documentos.dialogs.solicitacaoAutomatica') });
+          }
+        }
+      }
 
       if (!isDocGenFlow) {
         toast({ title: documento ? t('documentos.dialogs.documentoAtualizado') : t('documentos.dialogs.documentoCriado') });
@@ -204,10 +274,15 @@ export function DocumentoDialog({ open, onOpenChange, documento, onSuccess, init
 
   // 'complete' só com dados preenchidos pelo usuário (tipo/classificacao/status têm defaults).
   const identState: WizardTabState = formData.nome.trim() && formData.descricao.trim() ? 'complete' : (formData.nome.trim() ? 'partial' : 'pending');
-  const classifState: WizardTabState = formData.data_vencimento ? 'complete' : 'pending';
+  const classifState: WizardTabState = formData.requer_aprovacao && !aprovadorId && !documento
+    ? 'partial'
+    : formData.data_vencimento ? 'complete' : 'pending';
   const tagsState: WizardTabState = formData.tags.length > 0 ? 'complete' : 'pending';
-  const anexoState: WizardTabState =
-    selectedFile || arquivoUrlExterna || documento?.arquivo_nome ? 'complete' : 'pending';
+  const anexoState: WizardTabState = urlInvalida
+    ? 'partial'
+    : selectedFile || arquivoUrlExterna || documento?.arquivo_nome
+      ? 'complete'
+      : 'pending';
 
   const tabs: WizardTab[] = useMemo(() => [
     {
@@ -268,29 +343,25 @@ export function DocumentoDialog({ open, onOpenChange, documento, onSuccess, init
             </div>
             <div className="space-y-2">
               <Label>{t('documentos.lista.status')}</Label>
-              <Select value={formData.status} onValueChange={(v) => update({ status: v })}>
+              <Select value={formData.status} onValueChange={(v) => update({ status: v })} disabled={formData.requer_aprovacao}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ativo">{t('documentos.lista.ativo')}</SelectItem>
                   <SelectItem value="inativo">{t('documentos.lista.inativo')}</SelectItem>
                   <SelectItem value="arquivado">{t('documentos.lista.arquivado')}</SelectItem>
+                  <SelectItem value="pendente">{t('documentos.dialogs.pendenteAprovacaoStatus')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
           <div className="space-y-2">
             <Label>{t('documentos.dialogs.dataVencimento')}</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !formData.data_vencimento && "text-muted-foreground")}>
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {formData.data_vencimento ? format(formData.data_vencimento, "dd/MM/yyyy", { locale: ptBR }) : <span>{t('documentos.dialogs.selecioneData')}</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar mode="single" selected={formData.data_vencimento} onSelect={(d) => update({ data_vencimento: d })} initialFocus className="pointer-events-auto" />
-              </PopoverContent>
-            </Popover>
+            <DateField
+              value={formData.data_vencimento ? format(formData.data_vencimento, 'yyyy-MM-dd') : null}
+              onChange={(iso) => update({ data_vencimento: iso ? new Date(`${iso}T00:00:00`) : undefined })}
+              placeholder={t('documentos.dialogs.selecioneData')}
+              fromDate={new Date()}
+            />
           </div>
           <div className="flex items-start justify-between gap-4 rounded-lg border p-4">
             <div className="space-y-1">
@@ -302,9 +373,25 @@ export function DocumentoDialog({ open, onOpenChange, documento, onSuccess, init
             </div>
             <Switch
               checked={formData.requer_aprovacao}
-              onCheckedChange={(c) => update({ requer_aprovacao: c, status: c ? 'pendente' : 'ativo' })}
+              onCheckedChange={(c) => {
+                update({ requer_aprovacao: c, status: c ? 'pendente' : 'ativo' });
+                if (!c) setAprovadorId('');
+              }}
             />
           </div>
+          {formData.requer_aprovacao && (
+            <div className="space-y-2 rounded-lg border border-primary/30 bg-primary/5 p-4">
+              <Label className="flex items-center gap-1">
+                {t('documentos.dialogs.aprovadorLabel')} <span className="text-destructive">*</span>
+              </Label>
+              <UserSelect
+                value={aprovadorId}
+                onValueChange={setAprovadorId}
+                placeholder={t('documentos.dialogs.aprovadorPlaceholder')}
+              />
+              <p className="text-xs text-muted-foreground">{t('documentos.dialogs.aprovadorHint')}</p>
+            </div>
+          )}
         </div>
       ),
     },
@@ -375,16 +462,18 @@ export function DocumentoDialog({ open, onOpenChange, documento, onSuccess, init
             </TabsContent>
             <TabsContent value="url" className="space-y-2 mt-3">
               <Input type="url" value={arquivoUrlExterna} onChange={(e) => setArquivoUrlExterna(e.target.value)}
+                aria-invalid={urlInvalida}
+                className={cn(urlInvalida && 'border-destructive focus-visible:ring-destructive')}
                 placeholder={t('documentos.dialogs.placeholderUrlExterna')} />
-              <p className="text-xs text-muted-foreground">
-                {t('documentos.dialogs.colePublico')}
+              <p className={cn('text-xs', urlInvalida ? 'text-destructive' : 'text-muted-foreground')}>
+                {urlInvalida ? t('documentos.dialogs.urlInvalidaInline') : t('documentos.dialogs.colePublico')}
               </p>
             </TabsContent>
           </Tabs>
         </div>
       ),
     },
-  ], [formData, arquivoModo, arquivoUrlExterna, selectedFile, documento, newTag, identState, classifState, tagsState, anexoState]);
+  ], [formData, aprovadorId, urlInvalida, arquivoModo, arquivoUrlExterna, selectedFile, documento, newTag, identState, classifState, tagsState, anexoState]);
 
   const summary = (
     <WizardSummaryCard title={t('documentos.dialogs.resumoDocumento')}>
@@ -428,7 +517,7 @@ export function DocumentoDialog({ open, onOpenChange, documento, onSuccess, init
           : documento ? t('documentos.dialogs.atualizar') : t('documentos.dialogs.criar')
       }
       isSubmitting={loading || uploading}
-      submitDisabled={!formData.nome.trim() || loading}
+      submitDisabled={!formData.nome.trim() || loading || urlInvalida || (formData.requer_aprovacao && !documento && !aprovadorId)}
       isDirty={isDocGenFlow ? true : isDirty}
       size="xl"
     />
