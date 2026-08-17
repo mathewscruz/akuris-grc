@@ -354,6 +354,9 @@ export const pt = {
     fixed: 'Correção',
     fix: 'Correção',
     noUpdates: 'Nenhuma atualização disponível',
+    close: 'Fechar',
+    tabAlerts: 'Alertas',
+    tabNews: 'Novidades',
   },
   trialBanner: {
     daysLeftSingular: 'Licença Trial - Resta 1 dia de teste.',

@@ -20,6 +20,7 @@ import { formatStatus } from '@/lib/text-utils';
 import { logger } from '@/lib/logger';
 import { APROVACOES_PENDENTES_SELECT } from '@/components/documentos/aprovacoes-query';
 import { resolveNotificationTarget } from '@/lib/notification-target';
+import { ChangelogPanel, useChangelogFeed } from '@/components/changelog/ChangelogPanel';
 import { fetchEntityById, routeForEntity } from '@/lib/entity-search';
 
 interface Notification {
@@ -74,7 +75,9 @@ const getNotificationDisplay = (
 
 const NotificationCenter: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [tab, setTab] = useState<'alerts' | 'news'>('alerts');
   const [detail, setDetail] = useState<Notification | null>(null);
+  const changelog = useChangelogFeed();
   const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -613,7 +616,13 @@ const NotificationCenter: React.FC = () => {
 
   return (
     <>
-      <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <Popover
+        open={isOpen}
+        onOpenChange={(next) => {
+          setIsOpen(next);
+          if (next && tab === 'news') changelog.markSeen();
+        }}
+      >
         <PopoverTrigger asChild>
           <Button
             variant="ghost"
@@ -621,7 +630,7 @@ const NotificationCenter: React.FC = () => {
             aria-label={t('notifications.title')}
             className={cn(
               'relative h-9 w-9 p-0 rounded-lg transition-all',
-              unreadCount > 0 && 'ring-1 ring-primary/25 bg-primary/[0.04]'
+              (unreadCount > 0 || changelog.hasNew) && 'ring-1 ring-primary/25 bg-primary/[0.04]'
             )}
           >
             <Bell className="h-[18px] w-[18px]" strokeWidth={1.5} />
@@ -632,6 +641,12 @@ const NotificationCenter: React.FC = () => {
               >
                 {unreadCount > 9 ? '9+' : unreadCount}
               </span>
+            )}
+            {unreadCount === 0 && changelog.hasNew && (
+              <span
+                aria-hidden
+                className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-primary shadow-[0_0_0_3px_hsl(var(--background))]"
+              />
             )}
           </Button>
         </PopoverTrigger>
@@ -646,15 +661,17 @@ const NotificationCenter: React.FC = () => {
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-primary/70 leading-none">
-                  {t('notifications.eyebrow')}
+                  {tab === 'news' ? t('changelog.title') : t('notifications.eyebrow')}
                 </p>
                 <p className="mt-1.5 text-sm font-semibold text-foreground tracking-tight tabular-nums">
-                  {unreadCount > 0
+                  {tab === 'news'
+                    ? t('changelog.subtitle')
+                    : unreadCount > 0
                     ? `${unreadCount} ${unreadCount === 1 ? t('notifications.unreadOne') : t('notifications.unread')}`
                     : t('notifications.allCaughtUp')}
                 </p>
               </div>
-              {unreadCount > 0 && (
+              {tab === 'alerts' && unreadCount > 0 && (
                 <button
                   type="button"
                   onClick={handleMarkAllAsRead}
@@ -667,6 +684,43 @@ const NotificationCenter: React.FC = () => {
             </div>
           </div>
 
+          <div className="flex items-center gap-1 px-3 py-2 border-b border-border/60 bg-surface-1/40">
+            {([
+              { key: 'alerts' as const, label: t('changelog.tabAlerts'), dot: unreadCount > 0 },
+              { key: 'news' as const, label: t('changelog.tabNews'), dot: changelog.hasNew },
+            ]).map((item) => (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => {
+                  setTab(item.key);
+                  if (item.key === 'news') changelog.markSeen();
+                }}
+                aria-pressed={tab === item.key}
+                className={cn(
+                  'relative inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] transition-colors',
+                  tab === item.key
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                )}
+              >
+                {item.label}
+                {item.dot && tab !== item.key && (
+                  <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-primary" />
+                )}
+              </button>
+            ))}
+          </div>
+
+          {tab === 'news' ? (
+            <ScrollArea className="max-h-[460px]">
+              <ChangelogPanel
+                entries={changelog.entries}
+                loading={changelog.loading}
+                onOpenDetail={() => setIsOpen(false)}
+              />
+            </ScrollArea>
+          ) : (
           <ScrollArea className="max-h-[460px]">
             {!user ? (
               <div className="px-4 py-10 text-center text-sm text-muted-foreground">
@@ -714,6 +768,7 @@ const NotificationCenter: React.FC = () => {
               </div>
             )}
           </ScrollArea>
+          )}
         </PopoverContent>
       </Popover>
 

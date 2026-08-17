@@ -354,6 +354,9 @@ export const en = {
     fixed: 'Fix',
     fix: 'Fix',
     noUpdates: 'No updates available',
+    close: 'Close',
+    tabAlerts: 'Alerts',
+    tabNews: "What's new",
   },
   trialBanner: {
     daysLeftSingular: 'Trial License - 1 day left.',
