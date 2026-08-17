@@ -79,7 +79,9 @@ export function RopaImportExport({ registos, onImported }: Props) {
         empresa_id: empresaId,
         created_by: user?.id ?? null,
         status: "ativo",
+        exercicio_id: exercicioId === "none" ? null : exercicioId,
       }));
+
 
       const { error } = await supabase.from("ropa_registros").insert(rows as any);
       if (error) throw error;
