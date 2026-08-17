@@ -1370,9 +1370,11 @@ ${weak.map(w => `- índice ${w.index} ("${w.nome}") — motivo: ${w.motivo}\n  C
     // Separada de generate_document para não estourar o timeout da plataforma.
     if (action === 'auto_refine') {
       const attempt = Math.max(1, Math.min(Number(refine_attempt) || 1, MAX_REFINE_ATTEMPTS));
-      const fwIds: string[] = (framework_context?.framework_id
-        ? [framework_context.framework_id]
-        : framework_context?.framework_ids?.length ? [framework_context.framework_ids[0]] : []).filter(Boolean);
+      const fwIds: string[] = Array.from(new Set([
+        ...(framework_context?.framework_ids || []),
+        ...(framework_context?.framework_id ? [framework_context.framework_id] : []),
+      ].filter(Boolean))) as string[];
+
 
       // Mesmo âmbito usado na geração — o refino não pode perseguir requisitos
       // que não pertencem ao tema do documento.
