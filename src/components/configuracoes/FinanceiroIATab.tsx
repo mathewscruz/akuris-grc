@@ -48,6 +48,15 @@ interface EmpresaFinanceiro {
   status: 'rentavel' | 'limite' | 'deficitario';
 }
 
+interface FeatureStats {
+  funcionalidade: string;
+  label: string;
+  modelLabel: string;
+  reqs: number;
+  totalCostBRL: number;
+  mapped: boolean;
+}
+
 interface ModelStats {
   model: string;
   label: string;
@@ -68,6 +77,7 @@ export function FinanceiroIATab() {
   const [aiLoading, setAiLoading] = useState(false);
   const [avgCostPerReq, setAvgCostPerReq] = useState(0);
   const [planPrices, setPlanPrices] = useState<Record<string, number>>({});
+  const [featureStats, setFeatureStats] = useState<FeatureStats[]>([]);
 
   useEffect(() => {
     fetchData();
@@ -137,10 +147,28 @@ export function FinanceiroIATab() {
       });
       setModelStats(stats);
 
+      // Uso por funcionalidade (o que o utilizador vê como "consome IA")
+      const feats: FeatureStats[] = Object.entries(funcCount)
+        .map(([funcionalidade, reqs]) => {
+          const feature = resolveAiFeature(funcionalidade);
+          const model = feature ? MODEL_PRICING[feature.model] : null;
+          const unit = overrideEnabled ? overrideCost : (model?.avgCostPerReqBRL ?? 0.03);
+          return {
+            funcionalidade,
+            label: aiFeatureLabel(funcionalidade, locale),
+            modelLabel: model?.label ?? t('configPlanos.financeiroIA.modeloDesconhecido'),
+            reqs,
+            totalCostBRL: reqs * unit,
+            mapped: !!feature,
+          };
+        })
+        .sort((a, b) => b.reqs - a.reqs);
+      setFeatureStats(feats);
+
       // Empresas
       const mapped: EmpresaFinanceiro[] = (empresasData || []).map((e: any) => {
         const planoNome = e.plano?.nome || 'Free';
-        const receita = planPrices[planoNome] || 0;
+        const receita = pricesMap[planoNome] || 0;
         const empData = reqCountByEmpresa[e.id] || { total: 0, cost: 0 };
         const custo = empData.cost;
         const margem = receita - custo;
