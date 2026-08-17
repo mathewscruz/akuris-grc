@@ -3,7 +3,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useForm } from 'react-hook-form';
@@ -12,7 +11,10 @@ import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { toast } from 'sonner';
-import { Upload, Eye, EyeOff, Bell } from 'lucide-react';
+import { Upload, Eye, EyeOff, Bell, Camera, Lock, User } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Chip } from '@/components/ui/chip';
+import { CornerAccent } from '@/components/identity/CornerAccent';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
@@ -223,191 +225,191 @@ export function UserProfilePopover({ onClose }: UserProfilePopoverProps) {
       .slice(0, 2);
   };
 
-  return (
-    <div className="space-y-6">
-      {/* Foto de Perfil */}
-      <div className="flex flex-col items-center gap-4">
-        <div className="relative">
-          <Avatar className="h-24 w-24 cursor-pointer" onClick={handlePhotoClick}>
-            <AvatarImage src={fotoUrl || (profile as any)?.foto_url} alt={user?.email || ''} />
-            <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
-              {getInitials(form.watch('nome') || (profile as any)?.nome || user?.email || '')}
-            </AvatarFallback>
-          </Avatar>
-          {uploading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-background/50 rounded-full">
-              <AkurisPulse size={24} />
+  const roleLabels: Record<string, string> = {
+    super_admin: 'Super Admin',
+    admin: t('cardsKpi.sweep.sistema.roleAdmin'),
+    user: t('cardsKpi.sweep.sistema.roleUser'),
+    readonly: t('cardsKpi.sweep.sistema.roleReadonly'),
+  };
+  const role = (profile as any)?.role || 'user';
+  const displayName = form.watch('nome') || (profile as any)?.nome || user?.email || '';
+
+  const passwordField = (
+    name: 'senha_atual' | 'nova_senha' | 'confirmar_senha',
+    key: 'atual' | 'nova' | 'confirmar',
+    labelKey: string,
+    placeholderKey: string,
+  ) => (
+    <FormField
+      control={form.control}
+      name={name}
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            {t(labelKey)}
+          </FormLabel>
+          <FormControl>
+            <div className="relative">
+              <Input
+                type={showPasswords[key] ? 'text' : 'password'}
+                placeholder={t(placeholderKey)}
+                className="pr-10"
+                {...field}
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                onClick={() => togglePasswordVisibility(key)}
+                aria-label={t(labelKey)}
+              >
+                {showPasswords[key] ? (
+                  <EyeOff className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
+                ) : (
+                  <Eye className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
+                )}
+              </Button>
             </div>
-          )}
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+
+  return (
+    <div className="space-y-5">
+      {/* Cabeçalho editorial da conta */}
+      <div className="relative overflow-hidden rounded-lg border bg-muted/30 p-5 dark:shadow-none">
+        <CornerAccent position="top-right" size={12} className="opacity-60" />
+        <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:items-center sm:text-left">
+          <div className="relative shrink-0">
+            <button
+              type="button"
+              onClick={handlePhotoClick}
+              disabled={uploading}
+              className="group relative block rounded-full ring-2 ring-border transition-shadow hover:ring-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              aria-label={t('userProfilePopover.changePhoto')}
+            >
+              <Avatar className="h-20 w-20">
+                <AvatarImage src={fotoUrl || (profile as any)?.foto_url} alt={displayName} />
+                <AvatarFallback className="bg-primary text-xl text-primary-foreground">
+                  {getInitials(displayName)}
+                </AvatarFallback>
+              </Avatar>
+              <span className="absolute inset-0 flex items-center justify-center rounded-full bg-background/70 opacity-0 transition-opacity group-hover:opacity-100">
+                <Camera className="h-5 w-5 text-foreground" strokeWidth={1.5} />
+              </span>
+              {uploading && (
+                <span className="absolute inset-0 flex items-center justify-center rounded-full bg-background/70">
+                  <AkurisPulse size={24} />
+                </span>
+              )}
+            </button>
+          </div>
+
+          <div className="min-w-0 flex-1 space-y-1.5">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              {t('userProfilePopover.eyebrow')}
+            </p>
+            <h3 className="truncate text-lg font-semibold leading-tight text-foreground">{displayName}</h3>
+            <p className="truncate text-sm text-muted-foreground">{user?.email}</p>
+            <div className="flex flex-wrap items-center justify-center gap-2 pt-1 sm:justify-start">
+              <Chip family="type" size="sm">{roleLabels[role] ?? role}</Chip>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={handlePhotoClick}
+                disabled={uploading}
+              >
+                <Upload className="mr-1.5 h-3.5 w-3.5" strokeWidth={1.5} />
+                {t('userProfilePopover.changePhoto')}
+              </Button>
+            </div>
+            <p className="text-[11px] text-muted-foreground">{t('userProfilePopover.photoFormats')}</p>
+          </div>
         </div>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept={ACCEPTED_IMAGE_TYPES.join(',')}
-          className="hidden"
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) handlePhotoUpload(file);
-          }}
-          disabled={uploading}
-        />
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
-        >
-          <Upload className="h-4 w-4 mr-2" />
-          {t('userProfilePopover.changePhoto')}
-        </Button>
-        <p className="text-xs text-muted-foreground text-center">
-          {t('userProfilePopover.photoFormats')}
-        </p>
       </div>
 
-      {/* Formulário */}
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleProfileSubmit)} className="space-y-5">
-          <FormField
-            control={form.control}
-            name="nome"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('userProfilePopover.name')}</FormLabel>
-                <FormControl>
-                  <Input placeholder={t('userProfilePopover.namePlaceholder')} {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept={ACCEPTED_IMAGE_TYPES.join(',')}
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) handlePhotoUpload(file);
+        }}
+        disabled={uploading}
+      />
 
-          {/* Separador */}
-          <div className="pt-4">
-            <Separator className="my-5" />
-            <h3 className="text-sm font-semibold mb-5">{t('userProfilePopover.changePassword')}</h3>
-          </div>
+      <Tabs defaultValue="perfil">
+        <TabsList>
+          <TabsTrigger value="perfil">
+            <User className="mr-1.5 h-4 w-4" strokeWidth={1.5} />
+            {t('userProfilePopover.tabProfile')}
+          </TabsTrigger>
+          <TabsTrigger value="seguranca">
+            <Lock className="mr-1.5 h-4 w-4" strokeWidth={1.5} />
+            {t('userProfilePopover.tabSecurity')}
+          </TabsTrigger>
+          <TabsTrigger value="notificacoes">
+            <Bell className="mr-1.5 h-4 w-4" strokeWidth={1.5} />
+            {t('userProfilePopover.tabNotifications')}
+          </TabsTrigger>
+        </TabsList>
 
-          <div className="space-y-4">
-            
-            <FormField
-              control={form.control}
-              name="senha_atual"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('userProfilePopover.currentPassword')}</FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <Input
-                        type={showPasswords.atual ? "text" : "password"}
-                        placeholder={t('userProfilePopover.currentPasswordPlaceholder')}
-                        {...field}
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                        onClick={() => togglePasswordVisibility('atual')}
-                      >
-                        {showPasswords.atual ? (
-                          <EyeOff className="h-4 w-4 text-muted-foreground" />
-                        ) : (
-                          <Eye className="h-4 w-4 text-muted-foreground" />
-                        )}
-                      </Button>
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleProfileSubmit)}>
+            <TabsContent value="perfil" className="mt-4 space-y-4">
+              <FormField
+                control={form.control}
+                name="nome"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      {t('userProfilePopover.name')}
+                    </FormLabel>
+                    <FormControl>
+                      <Input placeholder={t('userProfilePopover.namePlaceholder')} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  {t('userProfilePopover.emailLabel')}
+                </Label>
+                <Input value={user?.email ?? ''} disabled readOnly />
+                <p className="text-xs text-muted-foreground">{t('userProfilePopover.emailHint')}</p>
+              </div>
+            </TabsContent>
 
-            <FormField
-              control={form.control}
-              name="nova_senha"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('userProfilePopover.newPassword')}</FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <Input
-                        type={showPasswords.nova ? "text" : "password"}
-                        placeholder={t('userProfilePopover.newPasswordPlaceholder')}
-                        {...field}
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                        onClick={() => togglePasswordVisibility('nova')}
-                      >
-                        {showPasswords.nova ? (
-                          <EyeOff className="h-4 w-4 text-muted-foreground" />
-                        ) : (
-                          <Eye className="h-4 w-4 text-muted-foreground" />
-                        )}
-                      </Button>
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <TabsContent value="seguranca" className="mt-4 space-y-4">
+              <p className="text-xs text-muted-foreground">{t('userProfilePopover.passwordHint')}</p>
+              {passwordField('senha_atual', 'atual', 'userProfilePopover.currentPassword', 'userProfilePopover.currentPasswordPlaceholder')}
+              <div className="grid gap-4 sm:grid-cols-2">
+                {passwordField('nova_senha', 'nova', 'userProfilePopover.newPassword', 'userProfilePopover.newPasswordPlaceholder')}
+                {passwordField('confirmar_senha', 'confirmar', 'userProfilePopover.confirmNewPassword', 'userProfilePopover.confirmNewPasswordPlaceholder')}
+              </div>
+            </TabsContent>
 
-            <FormField
-              control={form.control}
-              name="confirmar_senha"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('userProfilePopover.confirmNewPassword')}</FormLabel>
-                  <FormControl>
-                    <div className="relative">
-                      <Input
-                        type={showPasswords.confirmar ? "text" : "password"}
-                        placeholder={t('userProfilePopover.confirmNewPasswordPlaceholder')}
-                        {...field}
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                        onClick={() => togglePasswordVisibility('confirmar')}
-                      >
-                        {showPasswords.confirmar ? (
-                          <EyeOff className="h-4 w-4 text-muted-foreground" />
-                        ) : (
-                          <Eye className="h-4 w-4 text-muted-foreground" />
-                        )}
-                      </Button>
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
+            <div className="mt-5 flex justify-end border-t pt-4">
+              <Button type="submit" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting
+                  ? t('userProfilePopover.saving')
+                  : t('userProfilePopover.saveChanges')}
+              </Button>
+            </div>
+          </form>
+        </Form>
 
-          {/* Botão Salvar */}
-          <div className="pt-2">
-            <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-              {form.formState.isSubmitting ? t('userProfilePopover.saving') : t('userProfilePopover.saveChanges')}
-            </Button>
-          </div>
-        </form>
-      </Form>
-
-      {/* Preferências de Notificação */}
-      <div className="pt-2">
-        <Separator className="my-5" />
-        <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
-          <Bell className="h-4 w-4" />
-          {t('userProfilePopover.notifications')}
-        </h3>
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
+        <TabsContent value="notificacoes" className="mt-4 space-y-3">
+          <div className="flex items-center justify-between rounded-lg border p-3">
             <div className="space-y-0.5">
               <Label htmlFor="pp-email-notif" className="text-sm">{t('userProfilePopover.emailNotif')}</Label>
               <p className="text-xs text-muted-foreground">{t('userProfilePopover.emailNotifDesc')}</p>
@@ -420,7 +422,7 @@ export function UserProfilePopover({ onClose }: UserProfilePopoverProps) {
               }
             />
           </div>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between rounded-lg border p-3">
             <div className="space-y-0.5">
               <Label htmlFor="pp-inapp-notif" className="text-sm">{t('userProfilePopover.inAppNotif')}</Label>
               <p className="text-xs text-muted-foreground">{t('userProfilePopover.inAppNotifDesc')}</p>
@@ -433,9 +435,9 @@ export function UserProfilePopover({ onClose }: UserProfilePopoverProps) {
               }
             />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2 rounded-lg border p-3">
             <Label className="text-sm">{t('userProfilePopover.frequency')}</Label>
-            <div className="flex gap-1.5">
+            <div className="flex flex-wrap gap-1.5">
               {[
                 { value: 'realtime' as const, label: t('userProfilePopover.realtime') },
                 { value: 'daily' as const, label: t('userProfilePopover.daily') },
@@ -443,9 +445,10 @@ export function UserProfilePopover({ onClose }: UserProfilePopoverProps) {
               ].map((opt) => (
                 <Button
                   key={opt.value}
+                  type="button"
                   variant={notificationPrefs.digest_frequency === opt.value ? 'default' : 'outline'}
                   size="sm"
-                  className="text-xs h-7"
+                  className="h-7 text-xs"
                   onClick={() =>
                     saveNotificationPrefs({ ...notificationPrefs, digest_frequency: opt.value })
                   }
@@ -455,8 +458,8 @@ export function UserProfilePopover({ onClose }: UserProfilePopoverProps) {
               ))}
             </div>
           </div>
-        </div>
-      </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

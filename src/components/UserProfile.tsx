@@ -113,7 +113,7 @@ const UserProfile: React.FC = () => {
           </div>
         </button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{t('residuos.geral.editarPerfil')}</DialogTitle>
         </DialogHeader>
