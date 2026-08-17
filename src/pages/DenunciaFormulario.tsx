@@ -72,6 +72,7 @@ export default function DenunciaFormulario() {
   const [logoUrl, setLogoUrl] = useState<string>(AKURIS_DEFAULT_LOGO);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [codigoAcompanhamento, setCodigoAcompanhamento] = useState('');
   const [protocolo, setProtocolo] = useState<string>('');
   const [anexos, setAnexos] = useState<File[]>([]);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -194,13 +195,15 @@ export default function DenunciaFormulario() {
       // Criar a denúncia usando Edge Function
       const { data: denunciaData, error: denunciaError } = await supabase.functions.invoke('create-denuncia', {
         body: {
-          empresa_id: empresa.id,
-          categoria_id: data.categoria_id,
+          action: 'create',
+          empresa_slug: empresa.slug,
+          categoria_id: data.categoria_id || null,
           titulo: data.titulo,
           descricao: data.descricao,
           anonima: !data.denunciante_nome,
-          email_denunciante: data.denunciante_email || null,
-          nome_denunciante: data.denunciante_nome || null
+          politica_aceita: true,
+          denunciante_email: data.denunciante_email || null,
+          denunciante_nome: data.denunciante_nome || null
         }
       });
 
@@ -210,7 +213,14 @@ export default function DenunciaFormulario() {
         return;
       }
 
+      if (denunciaData?.error) {
+        logger.error('Erro ao criar denúncia', { module: 'DenunciaFormulario', error: String(denunciaData.error) });
+        toast.error(t('publicPortal.denunciaForm.createError'));
+        return;
+      }
+
       setProtocolo(denunciaData.protocolo);
+      setCodigoAcompanhamento(denunciaData.codigo_acompanhamento ?? '');
 
       // Upload de anexos se houver
       if (anexos.length > 0) {

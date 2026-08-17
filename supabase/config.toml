@@ -87,6 +87,9 @@ verify_jwt = false
 [functions.public-assessment]
 verify_jwt = false
 
+[functions.create-denuncia]
+verify_jwt = false
+
 [functions.apply-default-permissions-all-users]
 verify_jwt = true
 
