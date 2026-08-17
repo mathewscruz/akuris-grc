@@ -12,7 +12,10 @@ import {
   DOC_TONE_OPTIONS,
   DOC_LENGTH_OPTIONS,
   DOC_LANGUAGE_OPTIONS,
+  REVIEW_FREQUENCY_OPTIONS,
+  CLASSIFICATION_OPTIONS,
 } from '@/lib/docgen-templates';
+
 import { useFrameworkRequirementCount } from '@/hooks/useFrameworkRequirementCount';
 import type { CompanyContext } from './DocGenContextPanel';
 import { cn } from '@/lib/utils';
