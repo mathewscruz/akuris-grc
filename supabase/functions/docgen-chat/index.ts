@@ -496,7 +496,7 @@ serve(async (req) => {
       maxTokens: number,
       temperature: number,
     ) => {
-      const primaryBudgetMs = Math.min(55_000, Math.max(1, remainingMs() - 50_000));
+      const primaryBudgetMs = Math.min(70_000, Math.max(1, remainingMs() - 35_000));
       const result = await withTransientFallback({
         primary: () => callClaudeRaw(
           messages,
