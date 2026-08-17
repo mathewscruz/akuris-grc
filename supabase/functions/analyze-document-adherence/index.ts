@@ -356,8 +356,8 @@ FORMATO JSON OBRIGATÓRIO (retorne APENAS JSON válido, sem markdown):
         analysisResult._score_fonte = 'deterministic';
       }
       analysisResult.percentual_conformidade = finalPct;
-      if (requirements.length > reqsForAnalysis.length) {
-        analysisResult._requisitos_nao_analisados = requirements.length - reqsForAnalysis.length;
+      if (requirementsInScope.length > reqsForAnalysis.length) {
+        analysisResult._requisitos_nao_analisados = requirementsInScope.length - reqsForAnalysis.length;
       }
       analysisResult.resultado_geral = resolveResultadoGeral(finalPct);
 
@@ -388,10 +388,11 @@ FORMATO JSON OBRIGATÓRIO (retorne APENAS JSON válido, sem markdown):
           modelo_usado: 'google/gemini-3.1-pro-preview',
           provider: 'lovable-ai-gateway',
           tempo_processamento: Date.now(),
-          total_requisitos: requirements?.length || 0,
+          total_requisitos: requirementsInScope?.length || 0,
+          total_requisitos_catalogo: requirements?.length || 0,
           total_requisitos_analisados: reqsForAnalysis.length,
-          total_requisitos_nao_analisados: Math.max((requirements?.length || 0) - reqsForAnalysis.length, 0),
-          truncado: (requirements?.length || 0) > MAX_REQS_POR_ANALISE,
+          total_requisitos_nao_analisados: Math.max((requirementsInScope?.length || 0) - reqsForAnalysis.length, 0),
+          truncado: (requirementsInScope?.length || 0) > MAX_REQS_POR_ANALISE,
           total_requisitos_relevantes: analysisResult.total_requisitos_relevantes || 0,
           documento_tamanho: documentText.length,
           documento_tipo: analysisResult.documento_tipo_identificado || null,
