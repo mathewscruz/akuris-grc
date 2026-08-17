@@ -1075,7 +1075,7 @@ APROVADOR: ${dcApprover || '(não informado — escreva "A definir" e registe co
 PERIODICIDADE_DE_REVISÃO: ${dcFrequency}
 CLASSIFICAÇÃO: ${dcClassification}
 CARGOS_REAIS_INFORMADOS: ${dcRoles.length ? JSON.stringify(dcRoles) : '[]'}
-REFERÊNCIAS_INLINE: ${dcInlineRefs ? 'sim' : 'não (os códigos vão apenas no coverage_map / anexo de rastreabilidade)'}`;
+REFERÊNCIAS_INLINE: não (é PROIBIDO escrever códigos ou numerações de requisito no corpo do texto)`;
 
       const documentPrompt = `Você é um consultor sênior de GRC de uma firma Big Four com 20+ anos redigindo políticas e procedimentos corporativos auditáveis. Escreva no idioma português (Brasil), tom formal-institucional, voz ativa, frases curtas e verificáveis. NUNCA use jargão vazio ("robusto", "estado da arte", "world class"), NUNCA use placeholders ("preencher", "TBD", "XXX", "lorem ipsum"), NUNCA copie o nome do requisito como se fosse conteúdo. Cada afirmação deve ser AUDITÁVEL (quem faz, o quê, quando, com que evidência).
 
