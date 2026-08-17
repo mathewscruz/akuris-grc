@@ -395,7 +395,7 @@ export const DocGenBriefing: React.FC<DocGenBriefingProps> = ({
               <div>
                 <Label className="text-xs font-medium mb-1.5 block">{t('docgen.briefing.classificationLabel')}</Label>
                 <PillGroup
-                  options={CLASSIFICATION_OPTIONS}
+                  options={CLASSIFICATION_OPTIONS.map((o) => ({ value: o.value, label: t(`docgen.briefing.classif.${o.value}`) }))}
                   value={briefing.classification || 'interna'}
                   onChange={(v) => update('classification', v)}
                 />
