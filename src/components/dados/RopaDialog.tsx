@@ -379,6 +379,14 @@ export function RopaDialog({ isOpen, onClose, onSave, ropa }: RopaDialogProps) {
             />
           </div>
 
+          <div className="rounded-lg border border-border/60 p-4">
+            <RopaCamposDetalhados
+              values={formData}
+              onChange={(key, value) => setFormData((prev) => ({ ...prev, [key]: value }))}
+            />
+          </div>
+
+
           <div className="space-y-2">
             <Label htmlFor="observacoes">{t('dadosDashboard.ropaDialog.labelObservacoes')}</Label>
             <Textarea
