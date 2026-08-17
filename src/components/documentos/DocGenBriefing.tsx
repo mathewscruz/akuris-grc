@@ -356,6 +356,113 @@ export const DocGenBriefing: React.FC<DocGenBriefingProps> = ({
               />
             </div>
 
+            {/* Controlo documental (ISO 27001, 7.5) — sem isto a IA inventa
+                cargos e o documento não sobrevive a uma auditoria. */}
+            <div className="rounded-lg border border-border p-3 space-y-3">
+              <div>
+                <div className="text-sm font-medium">{t('docgen.briefing.docControlTitle')}</div>
+                <p className="text-xs text-muted-foreground mt-0.5">{t('docgen.briefing.docControlHelp')}</p>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <Label className="text-xs font-medium mb-1.5 block">{t('docgen.briefing.ownerLabel')}</Label>
+                  <Input
+                    value={briefing.owner || ''}
+                    onChange={(e) => update('owner', e.target.value)}
+                    placeholder={t('docgen.briefing.ownerPlaceholder')}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs font-medium mb-1.5 block">{t('docgen.briefing.approverLabel')}</Label>
+                  <Input
+                    value={briefing.approver || ''}
+                    onChange={(e) => update('approver', e.target.value)}
+                    placeholder={t('docgen.briefing.approverPlaceholder')}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-xs font-medium mb-1.5 block">{t('docgen.briefing.reviewFrequencyLabel')}</Label>
+                <PillGroup
+                  options={REVIEW_FREQUENCY_OPTIONS}
+                  value={briefing.reviewFrequency || 'anual'}
+                  onChange={(v) => update('reviewFrequency', v)}
+                />
+              </div>
+
+              <div>
+                <Label className="text-xs font-medium mb-1.5 block">{t('docgen.briefing.classificationLabel')}</Label>
+                <PillGroup
+                  options={CLASSIFICATION_OPTIONS}
+                  value={briefing.classification || 'interna'}
+                  onChange={(v) => update('classification', v)}
+                />
+              </div>
+
+              <div>
+                <Label className="text-xs font-medium mb-1.5 block">{t('docgen.briefing.rolesLabel')}</Label>
+                <p className="text-xs text-muted-foreground mb-2">{t('docgen.briefing.rolesHelp')}</p>
+                {(briefing.roles || []).length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {(briefing.roles || []).map((role) => (
+                      <Badge key={role} variant="secondary" className="gap-1 pr-1 text-xs">
+                        {role}
+                        <button
+                          type="button"
+                          onClick={() => removeRole(role)}
+                          className="ml-1 hover:bg-muted-foreground/10 rounded p-0.5"
+                          aria-label={t('docgen.briefing.removeRole', { role })}
+                        >
+                          <X className="h-3 w-3" strokeWidth={1.5} />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <Input
+                    value={roleInput}
+                    onChange={(e) => setRoleInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addRole(roleInput);
+                      }
+                    }}
+                    placeholder={t('docgen.briefing.rolesPlaceholder')}
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => addRole(roleInput)}
+                    disabled={!roleInput.trim()}
+                  >
+                    {t('docgen.briefing.add')}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex items-start justify-between gap-3 pt-1">
+                <div className="flex-1 min-w-0">
+                  <Label htmlFor="inline-refs" className="text-xs font-medium cursor-pointer">
+                    {t('docgen.briefing.inlineRefsLabel')}
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">{t('docgen.briefing.inlineRefsHelp')}</p>
+                </div>
+                <Switch
+                  id="inline-refs"
+                  checked={briefing.inlineRefs !== false}
+                  onCheckedChange={(v) => update('inlineRefs', v)}
+                />
+              </div>
+            </div>
+
+
+
             {/* Toggle gerar direto */}
             <div className="rounded-lg border border-border bg-card/50 p-3 flex items-start gap-3">
               <Sparkles className="h-4 w-4 text-primary mt-0.5" strokeWidth={1.5} />
