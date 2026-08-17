@@ -85,11 +85,12 @@ export function ToolbarField({
   className?: string
 }) {
   return (
-    <div className={cn("flex min-w-[150px] flex-col gap-1", className)}>
+    <div className={cn("flex min-w-[168px] shrink-0 flex-col gap-1", "[&_button[role=combobox]]:w-full", className)}>
       <span className="text-[11px] font-medium uppercase tracking-wide leading-4 text-muted-foreground">{label}</span>
       {children}
     </div>
   )
+
 }
 
 export default ModuleToolbar
