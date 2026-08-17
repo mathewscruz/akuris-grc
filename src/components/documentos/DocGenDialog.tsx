@@ -1488,7 +1488,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
             )}
 
             {/* Action Buttons */}
-            {documentReady && !generatedDocument && !generationError && (
+            {documentReady && !generatedDocument && !generationError && !isGeneratingDoc && (
               <div className="mt-4 flex justify-center">
                 <Button
                   onClick={() => generateDocument()}
@@ -1597,9 +1597,6 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                           </li>
                         ))}
                       </ol>
-                      <p className="pt-2 text-[11px] text-muted-foreground">
-                        {t('docgen.dialog.progressEstimate')}
-                      </p>
                     </div>
                   </div>
                 </div>

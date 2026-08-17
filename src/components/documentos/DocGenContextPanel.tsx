@@ -55,9 +55,6 @@ export const DocGenContextPanel: React.FC<Props> = ({ context, loading, defaultO
         <div className="flex items-center gap-2 text-sm">
           <Sparkles className="h-4 w-4 text-primary" strokeWidth={1.5} />
           <span className="font-medium">{t('docgen.contextPanel.title')}</span>
-          <Badge variant="secondary" className="ml-1 text-[10px]">
-            {[emp.nome && t('docgen.contextPanel.companyChip'), fw.length && t('docgen.contextPanel.frameworksChip', { count: fw.length }), ativos.length && t('docgen.contextPanel.assetsChip', { count: ativos.length }), riscos.length && t('docgen.contextPanel.risksChip', { count: riscos.length })].filter(Boolean).join(' · ')}
-          </Badge>
         </div>
         <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" strokeWidth={1.5} />
       </CollapsibleTrigger>
