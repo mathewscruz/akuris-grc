@@ -53,6 +53,7 @@ import { CreditsExhaustedDialog } from '@/components/CreditsExhaustedDialog';
 import { useAuth } from '@/components/AuthProvider';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { AkurisComplete } from '@/components/ui/AkurisComplete';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { logger } from '@/lib/logger';
 
