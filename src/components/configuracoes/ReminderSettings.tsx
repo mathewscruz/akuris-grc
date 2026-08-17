@@ -254,7 +254,7 @@ export function ReminderSettings() {
             <p className="text-sm text-muted-foreground">
               {t('configPerms.reminderSettings.intervalsDesc')}
             </p>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {settings.reminder_intervals.map((interval, index) => (
                 <div key={index} className="space-y-2">
                   <Label className="text-sm">

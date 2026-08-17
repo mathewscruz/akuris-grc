@@ -361,7 +361,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
               </section>
 
               {/* Tiles de contexto */}
-              <section className="grid grid-cols-3 gap-2">
+              <section className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <StatTile icon={<Wallet />} label={t('fin.riscos.exposicao')} value={exposicao !== null ? formatMoedaEmpresa(exposicao, true) : '—'} />
                 <StatTile icon={<Shield />} label={t('cardsKpi.sweep.riscos.tratamentos')} value={`${tratStats.concluidos}/${tratStats.total}`} />
                 <StatTile icon={<Layers />} label={t('cardsKpi.sweep.riscos.controles')} value={String(requisitos.length)} />

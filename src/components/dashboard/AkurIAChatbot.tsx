@@ -225,8 +225,8 @@ export function AkurIAChatbot() {
   // Dimensões por modo
   const panelClass = cn(
     "fixed z-50 rounded-2xl border border-border/60 bg-card/95 backdrop-blur-xl shadow-[0_20px_60px_-15px_hsl(var(--primary)/0.35)] flex overflow-hidden animate-fade-in",
-    mode === "compact" && "inset-x-3 bottom-20 md:bottom-6 md:right-6 md:left-auto md:w-[400px] h-[calc(100vh-9rem)] max-h-[600px]",
-    mode === "expanded" && "inset-x-3 bottom-20 md:bottom-6 md:right-6 md:left-auto md:w-[640px] h-[calc(100vh-7rem)] max-h-[760px]",
+    mode === "compact" && "inset-x-3 bottom-20 md:bottom-6 md:right-6 md:left-auto md:w-[400px] h-[calc(100dvh-9rem)] max-h-[600px]",
+    mode === "expanded" && "inset-x-3 bottom-20 md:bottom-6 md:right-6 md:left-auto md:w-[640px] h-[calc(100dvh-7rem)] max-h-[760px]",
     mode === "fullscreen" && "inset-4 md:inset-10 max-h-none max-w-none"
   );
 

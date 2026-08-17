@@ -170,7 +170,7 @@ export function DialogShell({
           </div>
 
           {!hideFooter && (
-            <div className="flex-shrink-0 border-t bg-background/95 backdrop-blur-sm px-6 py-3">
+            <div className="flex-shrink-0 border-t bg-background/95 backdrop-blur-sm px-4 sm:px-6 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:pb-3">
               {footer ?? (
                 <div className="flex items-center justify-end gap-2">
                   <Button

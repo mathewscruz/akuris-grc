@@ -349,7 +349,7 @@ const Auth = () => {
                 <button
                   type="button"
                   onClick={() => setForgotPasswordDialogOpen(true)}
-                  className="text-xs text-primary hover:text-primary/80 transition-colors"
+                  className="flex min-h-[44px] items-center px-1 text-xs text-primary hover:text-primary/80 transition-colors"
                 >
                   {t('auth.forgotPassword')}
                 </button>
@@ -362,18 +362,18 @@ const Auth = () => {
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10 pr-10 h-11 bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/30 rounded-lg focus:border-primary/50 focus:ring-1 focus:ring-primary/30"
+                  className="pl-10 pr-12 h-11 bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/30 rounded-lg focus:border-primary/50 focus:ring-1 focus:ring-primary/30"
                   disabled={isBusy}
                   autoComplete="current-password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((s) => !s)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70"
+                  className="absolute right-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-md text-white/40 hover:text-white/70"
                   tabIndex={-1}
                   aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
               {errors.password && <p className="text-xs text-destructive mt-1">{errors.password}</p>}

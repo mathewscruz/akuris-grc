@@ -34,7 +34,7 @@ function ColorSwatch({ value, onChange }: { value: string; onChange: (v: string)
         />
       </PopoverTrigger>
       <PopoverContent className="w-auto p-3" align="end">
-        <div className="grid grid-cols-4 gap-2 mb-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
           {COLOR_PALETTE.map(c => (
             <button
               key={c}

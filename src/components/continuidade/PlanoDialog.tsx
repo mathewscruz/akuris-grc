@@ -146,7 +146,7 @@ export function PlanoDialog({ open, onOpenChange, plano, onSuccess }: PlanoDialo
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label>{t('continuidadeComp.planoDialog.fieldStatus')}</Label>
               <Select value={form.status} onValueChange={v => setForm(p => ({ ...p, status: v }))}>

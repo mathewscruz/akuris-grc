@@ -104,7 +104,7 @@ export function TarefaDialog({ open, onOpenChange, planoId, tarefa, onSuccess }:
             <Label>{t('modDialogs.continuidade.tarefa.fieldDescricao')}</Label>
             <Textarea value={form.descricao} onChange={e => setForm(p => ({ ...p, descricao: e.target.value }))} rows={3} />
           </div>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label>{t('modDialogs.continuidade.tarefa.fieldPrioridade')}</Label>
               <Select value={form.prioridade} onValueChange={v => setForm(p => ({ ...p, prioridade: v }))}>

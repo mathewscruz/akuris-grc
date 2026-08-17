@@ -135,7 +135,7 @@ export const GerenciamentoPlanos: React.FC = () => {
                   )}
                 </div>
 
-                <div className="grid grid-cols-3 gap-2 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
                   <div className="space-y-0.5">
                     <p className="text-muted-foreground">{t('configPlanos.gerenciamentoPlanos.usuarios')}</p>
                     <p className="font-medium text-foreground flex items-center gap-1">

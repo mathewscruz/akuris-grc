@@ -742,7 +742,7 @@ export default function Privacidade() {
       />
       
       <Sheet open={showDadoSheet} onOpenChange={setShowDadoSheet}>
-        <SheetContent className="w-[600px] overflow-y-auto">
+        <SheetContent className="w-full sm:max-w-[600px] overflow-y-auto">
           <SheetHeader>
             <SheetTitle>{t('cardsKpi.privacidade.detalhesDado')}</SheetTitle>
           </SheetHeader>
