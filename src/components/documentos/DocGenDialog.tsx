@@ -654,12 +654,18 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     setGenerationError(null);
     setIsGeneratingDoc(true);
 
-    try {
-      const res = await callDocGen({
+    // P0: uma chave por tentativa lógica do utilizador. Se a chamada falhar de
+    // forma recuperável, reenviamos com a MESMA chave — o servidor não debita
+    // crédito duas vezes.
+    const idemKey = newIdempotencyKey();
+
+    const invokeGenerate = (strictJson: boolean) => callDocGen({
         conversation_id: convId,
         user_id: userInfo.user_id,
         empresa_id: userInfo.empresa_id,
         action: 'generate_document',
+        idempotency_key: idemKey,
+        ...(strictJson ? { strict_json: true } : {}),
         // Título distinguível: modelo + escopo resumido + data (sem isto o
         // histórico enche-se de entradas com o mesmo nome).
         conversation_title: [
@@ -683,7 +689,16 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
 
         ...(effFrameworkName && { framework_context: { framework_name: effFrameworkName, framework_id: effFrameworkId, framework_ids: fwReqData?.matchedIds } }),
         ...(requirementContext && { requirement_context: requirementContext }),
-      });
+    });
+
+    try {
+      let res = await invokeGenerate(false);
+
+      // JSON inválido/truncado é recuperável: uma segunda tentativa com prompt
+      // estrito, mesma chave de idempotência (sem novo débito).
+      if (res.retryable && res.error === 'INVALID_DOCUMENT') {
+        res = await invokeGenerate(true);
+      }
 
       if (res.credits) { setShowCreditsDialog(true); setGenerationError(t('docgen.dialog.generateDocumentError')); return; }
       if (res.timeout) {
@@ -723,6 +738,23 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
         description: t('docgen.dialog.documentGeneratedDescription'),
       });
 
+      // Quality gate em invocação própria (não debita crédito): reescreve as
+      // seções fracas do documento já entregue.
+      let workingDoc = doc;
+      if (data?.should_quality_gate) {
+        const gate = await callDocGen({
+          action: 'quality_gate',
+          user_id: userInfo.user_id,
+          empresa_id: userInfo.empresa_id,
+          conversation_id: data.conversation_id || convId,
+          document: doc,
+        });
+        if (gate.data?.document) {
+          workingDoc = { ...gate.data.document, data_criacao: doc.data_criacao };
+          setGeneratedDocument(workingDoc);
+        }
+      }
+
       // Auto-refino em chamadas separadas, para não estourar o timeout.
       if (data?.should_auto_refine) {
         akurisToast({
@@ -731,7 +763,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
           title: t('docgen.dialog.autoRefineTitle'),
           description: t('docgen.dialog.autoRefineDescription'),
         });
-        await runAutoRefine(doc, data.framework_ids, Number(data.max_refine_attempts) || 2);
+        await runAutoRefine(workingDoc, data.framework_ids, Number(data.max_refine_attempts) || 2);
       }
 
 
