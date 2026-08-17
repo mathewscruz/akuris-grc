@@ -388,6 +388,8 @@ serve(async (req) => {
       refine_attempt,      // número da tentativa (action auto_refine)
       conversation_title,  // título legível (modelo + data) definido pelo cliente
       briefing_text,       // briefing completo (modo "gerar documento direto", sem etapa de chat)
+      doc_control,         // controlo documental (ISO 27001 7.5) + papéis reais informados no briefing
+
 
     } = await req.json();
 
