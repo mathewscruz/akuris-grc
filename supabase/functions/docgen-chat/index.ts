@@ -1742,6 +1742,9 @@ Responda EXATAMENTE neste JSON:
 4) Incorpore dados concretos citados pelo usuário e o CONTEXTO REAL DA EMPRESA quando disponível.
 5) NUNCA remova uma cláusula que sustenta um requisito coberto sem substituir por equivalente. Se a instrução obrigar a remoção, sinalize o requisito impactado em removed_coverage.
 6) Devolva o coverage_map ATUALIZADO refletindo onde cada requisito agora é sustentado.
+6.1) LINGUAGEM NORMATIVA: o documento é prescritivo. Escreva obrigações ("deve", "é obrigatório", "cabe a"), NUNCA afirme no indicativo que um controlo, ferramenta, cargo ou estrutura já existe se isso não foi informado. Tudo o que for assumido tem de constar da seção "Premissas a validar" (crie-a se não existir).
+6.2) Não recomende controlos obsoletos (rotação obrigatória de senha a cada 30/60/90 dias, complexidade artificial). Siga NIST SP 800-63B.
+
 7) Responda SOMENTE com JSON válido, sem markdown, no formato:
 {
   "sections_changed": ["Nome da seção 1", ...],
