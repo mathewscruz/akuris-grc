@@ -6,8 +6,8 @@ import { cn } from "@/lib/utils"
 const Tabs = TabsPrimitive.Root
 
 /**
- * TabsList — trilho segmentado (bg-muted) que contém as abas. A aba ativa vira
- * uma pílula branca (bg-card) com sombra sutil. Padrão único de abas do Akuris.
+ * TabsList — padrão único de abas do Akuris: régua com linha de base e
+ * indicador (underline) roxo na aba ativa. Funciona em light e dark.
  */
 const TabsList = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.List>,
@@ -16,7 +16,8 @@ const TabsList = React.forwardRef<
   <TabsPrimitive.List
     ref={ref}
     className={cn(
-      "inline-flex items-center gap-0.5 rounded-lg bg-muted/60 p-1 text-muted-foreground",
+      "flex w-full items-center gap-6 overflow-x-auto border-b border-border text-muted-foreground",
+      "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
       className,
     )}
     {...props}
@@ -31,13 +32,20 @@ const TabsTrigger = React.forwardRef<
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      "inline-flex min-w-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium leading-tight ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 text-muted-foreground hover:text-foreground/90 data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:font-semibold",
+      "group relative inline-flex min-w-0 shrink-0 items-center justify-center gap-2 whitespace-nowrap",
+      "border-b-2 border-transparent bg-transparent px-1 py-3 -mb-px text-sm font-medium leading-tight",
+      "ring-offset-background transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:rounded-sm",
+      "disabled:pointer-events-none disabled:opacity-50",
+      "text-muted-foreground hover:text-foreground hover:border-border",
+      "data-[state=active]:border-primary data-[state=active]:text-primary data-[state=active]:font-semibold",
+      "dark:data-[state=active]:text-foreground [&_svg]:h-[18px] [&_svg]:w-[18px] [&_svg]:shrink-0 dark:data-[state=active]:[&_svg]:text-primary",
       className,
     )}
     {...props}
   />
 ))
 TabsTrigger.displayName = TabsPrimitive.Trigger.displayName
+
 
 const TabsContent = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.Content>,
