@@ -2788,8 +2788,11 @@ export type Database = {
           created_at: string | null
           descricao: string | null
           empresa_id: string
+          estornado: boolean
+          estornado_em: string | null
           funcionalidade: string
           id: string
+          idempotency_key: string | null
           quantidade: number | null
           user_id: string | null
         }
@@ -2797,8 +2800,11 @@ export type Database = {
           created_at?: string | null
           descricao?: string | null
           empresa_id: string
+          estornado?: boolean
+          estornado_em?: string | null
           funcionalidade: string
           id?: string
+          idempotency_key?: string | null
           quantidade?: number | null
           user_id?: string | null
         }
@@ -2806,8 +2812,11 @@ export type Database = {
           created_at?: string | null
           descricao?: string | null
           empresa_id?: string
+          estornado?: boolean
+          estornado_em?: string | null
           funcionalidade?: string
           id?: string
+          idempotency_key?: string | null
           quantidade?: number | null
           user_id?: string | null
         }
@@ -8646,6 +8655,16 @@ export type Database = {
         }
         Returns: boolean
       }
+      consume_ai_credit_idempotente: {
+        Args: {
+          p_descricao?: string
+          p_empresa_id: string
+          p_funcionalidade: string
+          p_idempotency_key: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       consume_contact_form_attempt: {
         Args: { p_fingerprint_hash: string }
         Returns: boolean
@@ -8730,6 +8749,10 @@ export type Database = {
       }
       documento_pertence_empresa: {
         Args: { documento_id: string }
+        Returns: boolean
+      }
+      estornar_ai_credit: {
+        Args: { p_empresa_id: string; p_idempotency_key: string }
         Returns: boolean
       }
       evaluation_pertence_empresa: {
