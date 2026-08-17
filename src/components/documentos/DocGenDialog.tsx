@@ -1051,6 +1051,24 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     setPhase('briefing');
   };
 
+  /**
+   * Faixa de percentagem de cada etapa real + duração típica (s) usada apenas
+   * para animar dentro da faixa. A percentagem nunca ultrapassa o teto da
+   * etapa em curso, por isso reflete o estado real do fluxo.
+   */
+  const GEN_STAGE_BOUNDS: Record<number, [number, number, number]> = {
+    1: [0, 8, 3],
+    2: [8, 16, 5],
+    3: [16, 72, 45],
+    4: [72, 86, 18],
+    5: [86, 98, 22],
+  };
+
+  // Marco novo → reinicia o cronómetro da etapa.
+  useEffect(() => {
+    genStageStartRef.current = Date.now();
+  }, [genMilestone, refineProgress?.attempt]);
+
   // Cronómetro da geração: alimenta as etapas e a percentagem mostradas ao usuário.
   useEffect(() => {
     if (!isGeneratingDoc && !refineProgress) {
@@ -1063,22 +1081,41 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isGeneratingDoc, !!refineProgress]);
 
-  /** Etapa atual (1..5) e percentagem apresentada. */
-  const generationStage = refineProgress
-    ? 5
-    : genElapsed < 6 ? 1
-      : genElapsed < 14 ? 2
-        : genElapsed < 40 ? 3
-          : 4;
-  const generationPercent = refineProgress
-    ? Math.min(96, 70 + Math.round((refineProgress.attempt / Math.max(1, refineProgress.total)) * 26))
-    : Math.min(70, Math.round((genElapsed / 45) * 70));
-  const generationStageLabel = refineProgress
-    ? t('docgen.dialog.progressRefining', {
-        attempt: String(refineProgress.attempt),
-        total: String(refineProgress.total),
-      })
-    : t(`docgen.dialog.progressStage${generationStage}` as any);
+  /** Etapa atual (1..5). */
+  const generationStage: number = refineProgress ? 5 : genMilestone;
+
+  // Percentagem monotónica, limitada pela faixa da etapa real em curso.
+  useEffect(() => {
+    if (genComplete) {
+      genPercentRef.current = 100;
+      setGenPercent(100);
+      return;
+    }
+    if (!isGeneratingDoc && !refineProgress) return;
+    const [lo, hi, expected] = GEN_STAGE_BOUNDS[generationStage] ?? [0, 8, 3];
+    let raw: number;
+    if (refineProgress) {
+      raw = lo + (hi - lo) * (refineProgress.attempt / Math.max(1, refineProgress.total));
+    } else {
+      const stageElapsed = (Date.now() - genStageStartRef.current) / 1000;
+      raw = lo + (hi - lo) * (1 - Math.exp(-stageElapsed / Math.max(1, expected * 0.5)));
+    }
+    const next = Math.max(genPercentRef.current, Math.round(raw));
+    genPercentRef.current = next;
+    setGenPercent(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [genElapsed, generationStage, refineProgress?.attempt, genComplete, isGeneratingDoc]);
+
+  const generationPercent = genComplete ? 100 : genPercent;
+  const generationStageLabel = genComplete
+    ? t('docgen.dialog.progressDone')
+    : refineProgress
+      ? t('docgen.dialog.progressRefining', {
+          attempt: String(refineProgress.attempt),
+          total: String(refineProgress.total),
+        })
+      : t(`docgen.dialog.progressStage${generationStage}` as any);
+
 
 
   // Existe trabalho em curso que se perderia ao fechar?
