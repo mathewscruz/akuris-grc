@@ -8783,6 +8783,29 @@ export type Database = {
           protocolo: string
         }[]
       }
+      criar_denuncia_manual: {
+        Args: {
+          p_anonima?: boolean
+          p_categoria_id?: string
+          p_data_ocorrencia?: string
+          p_denunciante_telefone?: string
+          p_descricao: string
+          p_email_denunciante?: string
+          p_empresa_id: string
+          p_evidencias_descricao?: string
+          p_gravidade?: string
+          p_local_ocorrencia?: string
+          p_nome_denunciante?: string
+          p_status?: string
+          p_testemunhas?: string
+          p_titulo: string
+        }
+        Returns: {
+          id: string
+          protocolo: string
+          token_publico: string
+        }[]
+      }
       criar_matriz_com_configuracao: {
         Args: {
           p_descricao: string
