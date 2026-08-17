@@ -304,11 +304,20 @@ async function fetchFrameworkRequirements(supabase: any, frameworkIds: string[],
 
     const { data: reqs } = await supabase
       .from('gap_analysis_requirements')
-      .select('id, codigo, titulo, descricao, orientacao_implementacao, categoria')
+      .select('id, framework_id, codigo, titulo, descricao, orientacao_implementacao, categoria')
       .in('framework_id', ids)
       .order('ordem', { ascending: true })
-      .limit(600);
+      .limit(900);
     if (!reqs || reqs.length === 0) return '';
+
+    // Nome de cada framework — o prompt precisa deixar claro que há MAIS DE UM
+    // referencial e que todos têm de ser endereçados (antes só ia um bloco solto).
+    const { data: fwRows } = await supabase
+      .from('gap_analysis_frameworks')
+      .select('id, nome')
+      .in('id', ids);
+    const fwName = new Map<string, string>();
+    (fwRows || []).forEach((f: any) => fwName.set(f.id, f.nome));
 
     // Status de conformidade da empresa, para marcar os gaps (prioridade).
     const { data: evals } = await supabase
@@ -321,7 +330,7 @@ async function fetchFrameworkRequirements(supabase: any, frameworkIds: string[],
     (evals || []).forEach((e: any) => statusById.set(e.requirement_id, e.conformity_status));
 
     const trunc = (s: string | null, n: number) => (s && s.length > n ? `${s.slice(0, n)}…` : (s || ''));
-    const lines = reqs.map((r: any) => {
+    const renderLine = (r: any) => {
       const st = statusById.get(r.id);
       const gapTag = st === 'nao_conforme' ? ' [GAP: NÃO CONFORME]'
         : st === 'parcialmente_conforme' ? ' [GAP: PARCIAL]' : '';
@@ -330,14 +339,22 @@ async function fetchFrameworkRequirements(supabase: any, frameworkIds: string[],
         r.orientacao_implementacao && `Como cumprir: ${trunc(r.orientacao_implementacao, 320)}`,
       ].filter(Boolean).join(' | ');
       return `- [${r.codigo || 'S/C'}] ${r.titulo}${r.categoria ? ` (${r.categoria})` : ''}${gapTag}${exige ? `\n    ${exige}` : ''}`;
-    });
+    };
 
-    return lines.join('\n');
+    // Agrupado por framework — cada bloco tem de ser coberto no documento.
+    const blocks = ids.map((fid) => {
+      const rows = (reqs as any[]).filter((r) => r.framework_id === fid);
+      if (!rows.length) return '';
+      return `### FRAMEWORK: ${fwName.get(fid) || fid} (${rows.length} requisitos)\n${rows.map(renderLine).join('\n')}`;
+    }).filter(Boolean);
+
+    return blocks.join('\n\n');
   } catch (error) {
     console.error('Error fetching framework requirements:', error);
     return '';
   }
 }
+
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -371,6 +388,8 @@ serve(async (req) => {
       refine_attempt,      // número da tentativa (action auto_refine)
       conversation_title,  // título legível (modelo + data) definido pelo cliente
       briefing_text,       // briefing completo (modo "gerar documento direto", sem etapa de chat)
+      doc_control,         // controlo documental (ISO 27001 7.5) + papéis reais informados no briefing
+
 
     } = await req.json();
 
@@ -867,12 +886,15 @@ IMPORTANTE: Sempre responda em português brasileiro. Responda SOMENTE com uma m
         ? `\n\nIMPORTANTE — O documento deve endereçar os seguintes gaps de conformidade identificados no framework "${framework_context?.framework_name}":\n${frameworkGapsText}\n\nInclua seções, controles ou procedimentos específicos que resolvam cada gap listado.`
         : '';
 
-      // O documento é escrito e avaliado contra o framework ESCOLHIDO para ele.
-      // Usar todos os frameworks ativos da empresa inflava o universo (ex.: 184
-      // requisitos de dois frameworks) e tornava qualquer política "não conforme".
-      const docFwIds: string[] = (framework_context?.framework_id
-        ? [framework_context.framework_id]
-        : (framework_context?.framework_ids?.length ? [framework_context.framework_ids[0]] : [])) as string[];
+      // O documento é escrito e avaliado contra TODOS os frameworks escolhidos
+      // para ele (antes truncávamos para o primeiro e o 2.º era ignorado). O
+      // denominador continua honesto porque `resolveDocumentScope` reduz cada
+      // catálogo ao subconjunto temático do documento.
+      const docFwIds: string[] = Array.from(new Set([
+        ...(framework_context?.framework_ids || []),
+        ...(framework_context?.framework_id ? [framework_context.framework_id] : []),
+      ].filter(Boolean))) as string[];
+
 
       const docNome = (context as any).documento_nome_identificado || doc_type_hint || context.tipo_documento_identificado;
       let frameworkRequirementsText = '';
@@ -881,16 +903,18 @@ IMPORTANTE: Sempre responda em português brasileiro. Responda SOMENTE com uma m
       }
       const frameworkRequirementsSection = frameworkRequirementsText
         ? `\n\n=== REQUISITOS DO(S) FRAMEWORK(S) — COBERTURA OBRIGATÓRIA ===
-Abaixo estão os requisitos catalogados do(s) framework(s). Antes de escrever o documento:
-1) Identifique quais requisitos tratam do TEMA deste documento ("${docNome}").
-2) Garanta que o documento CUMPRA EXPLICITAMENTE cada requisito relevante — incorpore o que ele exige (descrição/orientação) nas seções apropriadas, com regras concretas e acionáveis.
-3) Cite o código do requisito entre colchetes onde ele é endereçado (ex.: "[A.8.13]").
-4) Priorize os requisitos marcados como GAP.
-5) Não invente requisitos fora desta lista.
-6) OBRIGATÓRIO: no final devolva um coverage_map explícito ligando cada requisito relevante à(s) seção(ões) que o endereça(m), com o trecho-evidência.
+Abaixo estão os requisitos catalogados, AGRUPADOS POR FRAMEWORK. Antes de escrever o documento:
+1) Identifique, EM CADA BLOCO DE FRAMEWORK, quais requisitos tratam do TEMA deste documento ("${docNome}").
+2) TODOS os frameworks listados têm de ser endereçados. Se houver mais de um bloco, a seção "Referências Normativas" e o coverage_map DEVEM conter requisitos de CADA UM deles (ex.: cláusulas e Anexo A da ISO 27001 E critérios Common Criteria do SOC 2). Nunca escreva o documento contra um só framework quando há vários.
+3) Garanta que o documento CUMPRA EXPLICITAMENTE cada requisito relevante — incorpore o que ele exige (descrição/orientação) nas seções apropriadas, com regras concretas e acionáveis.
+4) Cite o código do requisito entre colchetes onde ele é endereçado (ex.: "[A.8.13]", "[CC6.1]").
+5) Priorize os requisitos marcados como GAP.
+6) Não invente requisitos fora desta lista.
+7) OBRIGATÓRIO: no final devolva um coverage_map explícito ligando cada requisito relevante à(s) seção(ões) que o endereça(m), com o trecho-evidência.
 
 ${frameworkRequirementsText}`
         : '';
+
 
       // Transcrição real do briefing/chat — as respostas do usuário PRECISAM
       // chegar ao prompt de geração, senão o documento sai genérico.
@@ -914,12 +938,38 @@ ${transcriptFull}
 === FIM DAS RESPOSTAS DO USUÁRIO ===`
         : '';
 
+      // === Controlo documental (ISO 27001 7.5) e papéis reais ===
+      // Vem do briefing. Sem isto a IA inventa cargos (RACI) e omite
+      // proprietário/aprovador/periodicidade — o documento não passa auditoria.
+      const dc = (doc_control && typeof doc_control === 'object') ? doc_control : {};
+      const dcRoles: string[] = Array.isArray(dc.roles) ? dc.roles.filter((r: any) => String(r || '').trim()) : [];
+      const dcOwner = String(dc.owner || '').trim();
+      const dcApprover = String(dc.approver || '').trim();
+      const dcFrequency = String(dc.review_frequency || '').trim() || 'Anual';
+      const dcClassification = String(dc.classification || '').trim() || 'Interna';
+      const dcInlineRefs = dc.inline_refs !== false;
+
+      const raciColumns = dcRoles.length
+        ? dcRoles.join(' | ')
+        : 'Responsável pela Segurança da Informação | Gestor da Área | Equipa de TI | Colaborador';
+      const rolesRule = dcRoles.length
+        ? `- A matriz RACI SÓ pode usar estes cargos, informados pela empresa: ${dcRoles.join(', ')}. É PROIBIDO inventar outros cargos, comités ou funções (não escreva CISO, DPO, Comité de Segurança etc. se não estiverem nesta lista).`
+        : `- A empresa NÃO informou os cargos existentes. Use APENAS designações funcionais genéricas ("Responsável pela Segurança da Informação", "Gestor da Área", "Equipa de TI", "Colaborador") e acrescente, na seção "Premissas a validar", a premissa de que estes papéis precisam ser atribuídos a cargos reais. NUNCA afirme que a empresa possui CISO, DPO, Comité de Segurança ou qualquer estrutura que não tenha sido informada.`;
+
+      const docControlSection = `\n\n=== CONTROLO DOCUMENTAL (ISO 27001, cláusula 7.5) ===
+PROPRIETÁRIO_DO_DOCUMENTO: ${dcOwner || '(não informado — escreva "A definir" e registe como premissa a validar)'}
+APROVADOR: ${dcApprover || '(não informado — escreva "A definir" e registe como premissa a validar)'}
+PERIODICIDADE_DE_REVISÃO: ${dcFrequency}
+CLASSIFICAÇÃO: ${dcClassification}
+CARGOS_REAIS_INFORMADOS: ${dcRoles.length ? JSON.stringify(dcRoles) : '[]'}
+REFERÊNCIAS_INLINE: ${dcInlineRefs ? 'sim' : 'não (os códigos vão apenas no coverage_map / anexo de rastreabilidade)'}`;
+
       const documentPrompt = `Você é um consultor sênior de GRC de uma firma Big Four com 20+ anos redigindo políticas e procedimentos corporativos auditáveis. Escreva no idioma português (Brasil), tom formal-institucional, voz ativa, frases curtas e verificáveis. NUNCA use jargão vazio ("robusto", "estado da arte", "world class"), NUNCA use placeholders ("preencher", "TBD", "XXX", "lorem ipsum"), NUNCA copie o nome do requisito como se fosse conteúdo. Cada afirmação deve ser AUDITÁVEL (quem faz, o quê, quando, com que evidência).
 
 DOCUMENTO_EXATO: ${docNome}
 FRAMEWORKS_REQUERIDOS: ${JSON.stringify((context as any).frameworks_relacionados || (framework_context ? [framework_context.framework_name] : []))}
 EMPRESA: ${context.empresa_nome}
-DATA_ATUAL: ${new Date().toISOString().slice(0, 10)} (use EXATAMENTE esta data onde precisar de data; NÃO invente outra)
+DATA_ATUAL: ${new Date().toISOString().slice(0, 10)} (use EXATAMENTE esta data onde precisar de data; NÃO invente outra)${docControlSection}
 ${frameworkRequirementsSection || frameworkGapsSection}${transcriptSection}
 
 Use a estrutura do template abaixo e cubra explicitamente os requisitos do(s) framework(s) citado(s) quando aplicável.
@@ -927,30 +977,42 @@ Use a estrutura do template abaixo e cubra explicitamente os requisitos do(s) fr
 TEMPLATE: ${JSON.stringify(templateEstrutura || template.estrutura)}
 INFORMAÇÕES COLETADAS: ${JSON.stringify(context.informacoes_coletadas)}
 
+REGRA DE OURO — LINGUAGEM NORMATIVA (o documento é PRESCRITIVO, não um relatório):
+- Este documento define o que a organização DEVE fazer. NUNCA afirme, no indicativo presente, que um controlo já existe, já está implementado, já está configurado ou já é executado ("a empresa utiliza MFA", "os acessos são revistos trimestralmente"). Escreva sempre em forma de obrigação: "deve", "é obrigatório", "cabe a", "não é permitido".
+- É PROIBIDO afirmar como facto qualquer ferramenta, sistema, estrutura organizacional, certificação, contrato ou métrica que NÃO tenha sido explicitamente informada pelo usuário no briefing/conversa acima.
+- Quando um controlo for necessário mas a sua existência não tiver sido confirmada, escreva-o como requisito ("deve ser implantado…") e registe-o na seção "Premissas a validar".
+- Valores sugeridos por boa prática devem ser marcados no texto com "(valor sugerido — validar)" e também listados nas premissas.
+
 Regras editoriais (obrigatórias):
 - Cada seção com no mínimo 3 parágrafos SUBSTANTIVOS (300+ caracteres cada) ou uma lista numerada com pelo menos 5 itens acionáveis.
-- Seções "Papéis e Responsabilidades" DEVEM conter uma tabela RACI em MARKDOWN (formato GFM): linhas = atividades; colunas = Atividade | CISO | DPO | Gestor de TI | Colaborador, preenchidas com R/A/C/I.
-- Seções "Vigência", "Aprovação" e "Controle de Versões" DEVEM citar data real (DATA_ATUAL), responsável e frequência de revisão.
+- Seções "Papéis e Responsabilidades" DEVEM conter uma tabela RACI em MARKDOWN (formato GFM): linhas = atividades; colunas = Atividade | ${raciColumns}, preenchidas com R/A/C/I.
+${rolesRule}
+- Seções "Vigência", "Aprovação" e "Controle de Versões" DEVEM citar data real (DATA_ATUAL), o PROPRIETÁRIO_DO_DOCUMENTO, o APROVADOR e a PERIODICIDADE_DE_REVISÃO acima (se algum estiver "A definir", escreva "A definir" e registe a premissa).
 - Onde houver métrica (retenção, RTO/RPO, prazos), traga valores CONCRETOS coerentes com o briefing do usuário. Se o usuário não deu, escolha um valor de mercado defensável e cite "(valor sugerido — validar)".
-- CADA cláusula que satisfaz um requisito do framework deve conter o CÓDIGO do requisito entre colchetes (ex.: "[A.8.13]") na primeira frase da cláusula.
+- RECOMENDAÇÕES TÉCNICAS ATUAIS: siga a prática vigente (NIST SP 800-63B e equivalentes). NÃO exija rotação periódica obrigatória de senhas sem indício de comprometimento; privilegie frases-passe longas, verificação contra listas de senhas comprometidas, MFA resistente a phishing e bloqueio progressivo. Não recomende controlos obsoletos (troca de senha a cada 30/60/90 dias, complexidade artificial de caracteres, expiração forçada sem risco associado).
+- ${dcInlineRefs
+        ? 'CADA cláusula que satisfaz um requisito do framework deve conter o CÓDIGO do requisito entre colchetes (ex.: "[A.8.13]") na primeira frase da cláusula.'
+        : 'NÃO insira códigos de requisito entre colchetes no corpo do texto — a rastreabilidade fica exclusivamente no coverage_map (anexo). O corpo deve ler-se como um documento corporativo limpo.'}
 - Personalização real: reflita as respostas do usuário na conversa acima — não use frases genéricas quando o usuário deu um dado concreto.
 
 FORMATAÇÃO DO CAMPO "conteudo" (markdown restrito — o exportador só entende este subconjunto):
 - Subtítulos com "## " (nível 2) e "### " (nível 3). NUNCA use "# " (o título da seção já é o H1).
 - Listas com marcador usando "- " e listas numeradas usando "1. ", "2. " (uma por linha; indente com 2 espaços para sub-item).
 - Tabelas SEMPRE em markdown GFM com linha separadora, ex.:
-  | Atividade | CISO | DPO |
+  | Atividade | Gestor da Área | Equipa de TI |
   | --- | --- | --- |
   | Aprovar a política | A | C |
 - Ênfase apenas com **negrito** e *itálico*. NUNCA use HTML, NUNCA use asteriscos decorativos, "===", "---" como separador, emojis ou arte ASCII.
 - Parágrafos separados por uma linha em branco. Não use tabulação para alinhar texto.
 
 Estrutura obrigatória do documento:
-- Capa: título=DOCUMENTO_EXATO, versão=1.0, data=DATA_ATUAL, empresa=EMPRESA, classificação
+- Capa: título=DOCUMENTO_EXATO, versão=1.0, data=DATA_ATUAL, empresa=EMPRESA, classificação=CLASSIFICAÇÃO
+- Seção "Controle Documental" (LOGO A SEGUIR AO OBJETIVO ou como 1.ª seção) com uma tabela GFM contendo: Código/identificação, Versão, Data de emissão, Proprietário do documento, Aprovador, Periodicidade de revisão, Próxima revisão (DATA_ATUAL + periodicidade), Classificação da informação, Meio de distribuição
 - Seção "Objetivo" com escopo, aplicabilidade e público-alvo
 - Todas as seções definidas no template acima, em ordem
 - Seção "Papéis e Responsabilidades" com matriz RACI
-- Seção "Referências Normativas" listando os frameworks e artigos relevantes
+- Seção "Premissas a validar" — OBRIGATÓRIA — listando, em tabela GFM (Premissa | Porquê é premissa | Quem valida), tudo o que foi assumido e não confirmado pela empresa (ferramentas, estruturas, cargos, prazos sugeridos)
+- Seção "Referências Normativas" listando TODOS os frameworks selecionados e as cláusulas/controlos relevantes de CADA UM
 - Seção "Glossário" com termos técnicos usados no documento
 - Seção "Histórico de Versões" com linha inicial (1.0, DATA_ATUAL, autor, "Emissão inicial")
 - Seção "Aprovação" com responsáveis e data
@@ -964,12 +1026,17 @@ Responda APENAS com um JSON na seguinte estrutura (sem markdown, sem comentário
     { "nome": "Objetivo", "conteudo": "..." }
   ],
   "metadados": {
-    "classificacao": "Interno",
+    "classificacao": "${dcClassification}",
     "responsavel_elaboracao": "${context.user_name}",
-    "responsavel_aprovacao": "",
-    "frequencia_revisao": "Anual",
+    "proprietario": "${dcOwner || 'A definir'}",
+    "responsavel_aprovacao": "${dcApprover || 'A definir'}",
+    "frequencia_revisao": "${dcFrequency}",
+    "proxima_revisao": "data = DATA_ATUAL + periodicidade (formato AAAA-MM-DD)",
     "publico_alvo": "Todos os colaboradores"
   },
+  "premissas_a_validar": [
+    { "premissa": "A organização dispõe de MFA no Entra ID", "motivo": "não confirmado no briefing — o documento exige-o como controlo", "validar_com": "Equipa de TI" }
+  ],
   "glossario": [ { "termo": "RTO", "definicao": "Recovery Time Objective — tempo máximo tolerável para restaurar um serviço" } ],
   "historico_versoes": [ { "versao": "1.0", "data": "DATA_ATUAL", "autor": "${context.user_name}", "descricao": "Emissão inicial" } ],
   "coverage_map": [
@@ -979,6 +1046,7 @@ Responda APENAS com um JSON na seguinte estrutura (sem markdown, sem comentário
     { "codigo": "A.5.30", "motivo": "fora do escopo desta política específica" }
   ]
 }`;
+
 
       const docContent = await callClaude(
         [{ role: 'user', content: 'Gere o documento agora, respeitando TODAS as regras editoriais.' }],
@@ -1024,9 +1092,52 @@ Responda APENAS com um JSON na seguinte estrutura (sem markdown, sem comentário
       // com a data do servidor para a capa/versão do documento ficar correta.
       if (documentContent && typeof documentContent === 'object') {
         documentContent.data_criacao = new Date().toISOString().slice(0, 10);
+        // Controlo documental determinístico: o que o usuário informou vence o
+        // que a IA escreveu, e o que ninguém informou fica "A definir" (nunca
+        // um nome inventado).
+        const meses: Record<string, number> = { mensal: 1, trimestral: 3, semestral: 6, anual: 12, bienal: 24 };
+        const freqKey = dcFrequency.toLowerCase();
+        const addMonths = meses[freqKey] ?? 12;
+        const next = new Date();
+        next.setMonth(next.getMonth() + addMonths);
+        documentContent.metadados = {
+          ...(documentContent.metadados || {}),
+          classificacao: dcClassification,
+          proprietario: dcOwner || documentContent.metadados?.proprietario || 'A definir',
+          responsavel_aprovacao: dcApprover || documentContent.metadados?.responsavel_aprovacao || 'A definir',
+          responsavel_elaboracao: documentContent.metadados?.responsavel_elaboracao || context.user_name || '',
+          frequencia_revisao: dcFrequency,
+          proxima_revisao: next.toISOString().slice(0, 10),
+          referencias_inline: dcInlineRefs,
+        };
+      }
+
+
+      // === Premissas a validar como SEÇÃO real ===
+      // A IA devolve-as num campo à parte; os exportadores (PDF/DOCX) só
+      // renderizam `secoes`. Sem isto o auditor não vê o que foi assumido.
+      try {
+        const premissas: any[] = Array.isArray((documentContent as any)?.premissas_a_validar)
+          ? (documentContent as any).premissas_a_validar
+          : [];
+        const secoesArr: any[] = Array.isArray(documentContent?.secoes) ? documentContent.secoes : [];
+        const jaTem = secoesArr.some((s: any) => /premissa/i.test(String(s?.nome || '')));
+        if (premissas.length && !jaTem) {
+          const linhas = premissas
+            .map((p: any) => `| ${String(p?.premissa || '').replace(/\|/g, '/')} | ${String(p?.motivo || '').replace(/\|/g, '/')} | ${String(p?.validar_com || 'A definir').replace(/\|/g, '/')} |`)
+            .join('\n');
+          secoesArr.push({
+            nome: 'Premissas a validar',
+            conteudo: `As afirmações abaixo foram assumidas na elaboração deste documento e ainda não foram confirmadas pela organização. Devem ser validadas antes da aprovação formal.\n\n| Premissa | Porquê é premissa | Quem valida |\n| --- | --- | --- |\n${linhas}`,
+          });
+          documentContent.secoes = secoesArr;
+        }
+      } catch (pErr) {
+        console.log('DocGen premissas section skipped', pErr);
       }
 
       // === Onda 3: Quality gate — reescreve seções curtas ou com placeholders ===
+
       try {
         const weak = findWeakSections(documentContent?.secoes || []);
         if (weak.length > 0 && weak.length <= 6) {
@@ -1081,14 +1192,18 @@ ${weak.map(w => `- índice ${w.index} ("${w.nome}") — motivo: ${w.motivo}\n  C
       let catalogCodes: string[] = [];
       let scopeCodes: string[] = [];
       let residualGaps: string[] = [];
+      // Base de cálculo por framework — o usuário tem de conseguir auditar o
+      // score: quantos requisitos entraram no âmbito, quais foram cobertos e
+      // quais ficaram de fora, em CADA referencial selecionado.
+      const scoreBreakdown: Array<{ framework_id: string; framework_name: string; scope: number; covered: number; missing: string[] }> = [];
       if (docFwIds.length) {
         try {
           const { data: catalogRows } = await supabase
             .from('gap_analysis_requirements')
-            .select('codigo, titulo, descricao')
+            .select('framework_id, codigo, titulo, descricao')
             .in('framework_id', docFwIds)
             .order('ordem', { ascending: true })
-            .limit(600);
+            .limit(900);
           const scope = resolveDocumentScope(
             catalogRows || [],
             documentContent?.titulo,
@@ -1097,6 +1212,29 @@ ${weak.map(w => `- índice ${w.index} ("${w.nome}") — motivo: ${w.motivo}\n  C
           );
           catalogCodes = scope.catalogCodes;
           scopeCodes = scope.scopeCodes;
+
+          const { data: fwRows } = await supabase
+            .from('gap_analysis_frameworks')
+            .select('id, nome')
+            .in('id', docFwIds);
+          const nameById = new Map<string, string>((fwRows || []).map((f: any) => [f.id, f.nome]));
+          const declaredCodes = new Set(
+            coverageMap.map((c: any) => String(c?.requirement_codigo || '').trim()).filter(Boolean),
+          );
+          const scopeSet = new Set(scopeCodes);
+          docFwIds.forEach((fid) => {
+            const fwScope = (catalogRows || [])
+              .filter((r: any) => r.framework_id === fid)
+              .map((r: any) => String(r.codigo || '').trim())
+              .filter((c: string) => c && scopeSet.has(c));
+            scoreBreakdown.push({
+              framework_id: fid,
+              framework_name: nameById.get(fid) || '',
+              scope: fwScope.length,
+              covered: fwScope.filter((c) => declaredCodes.has(c)).length,
+              missing: fwScope.filter((c) => !declaredCodes.has(c)).slice(0, 12),
+            });
+          });
         } catch (catErr) {
           console.log('DocGen catalog fetch failed (score usará somente o coverage_map declarado)', catErr);
         }
@@ -1123,6 +1261,8 @@ ${weak.map(w => `- índice ${w.index} ("${w.nome}") — motivo: ${w.motivo}\n  C
       documentContent._scope_size = scopeCodes.length;
       documentContent._framework_coverage = frameworkCoverage;
       documentContent._residual_gaps = residualGaps;
+      documentContent._score_breakdown = scoreBreakdown;
+
 
 
       console.log('DocGen generate_document compliance (pré auto-refino)', {
@@ -1254,9 +1394,11 @@ ${weak.map(w => `- índice ${w.index} ("${w.nome}") — motivo: ${w.motivo}\n  C
     // Separada de generate_document para não estourar o timeout da plataforma.
     if (action === 'auto_refine') {
       const attempt = Math.max(1, Math.min(Number(refine_attempt) || 1, MAX_REFINE_ATTEMPTS));
-      const fwIds: string[] = (framework_context?.framework_id
-        ? [framework_context.framework_id]
-        : framework_context?.framework_ids?.length ? [framework_context.framework_ids[0]] : []).filter(Boolean);
+      const fwIds: string[] = Array.from(new Set([
+        ...(framework_context?.framework_ids || []),
+        ...(framework_context?.framework_id ? [framework_context.framework_id] : []),
+      ].filter(Boolean))) as string[];
+
 
       // Mesmo âmbito usado na geração — o refino não pode perseguir requisitos
       // que não pertencem ao tema do documento.
@@ -1624,6 +1766,9 @@ Responda EXATAMENTE neste JSON:
 4) Incorpore dados concretos citados pelo usuário e o CONTEXTO REAL DA EMPRESA quando disponível.
 5) NUNCA remova uma cláusula que sustenta um requisito coberto sem substituir por equivalente. Se a instrução obrigar a remoção, sinalize o requisito impactado em removed_coverage.
 6) Devolva o coverage_map ATUALIZADO refletindo onde cada requisito agora é sustentado.
+6.1) LINGUAGEM NORMATIVA: o documento é prescritivo. Escreva obrigações ("deve", "é obrigatório", "cabe a"), NUNCA afirme no indicativo que um controlo, ferramenta, cargo ou estrutura já existe se isso não foi informado. Tudo o que for assumido tem de constar da seção "Premissas a validar" (crie-a se não existir).
+6.2) Não recomende controlos obsoletos (rotação obrigatória de senha a cada 30/60/90 dias, complexidade artificial). Siga NIST SP 800-63B.
+
 7) Responda SOMENTE com JSON válido, sem markdown, no formato:
 {
   "sections_changed": ["Nome da seção 1", ...],

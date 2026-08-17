@@ -47,7 +47,21 @@ export interface BriefingDefaults {
   length: DocLength;
   /** Quando true, pula o chat conversacional e gera o documento direto após o seed. */
   directGenerate?: boolean;
+  // === Controlo documental (ISO 27001, cláusula 7.5) ===
+  /** Cargos que existem mesmo na empresa — a matriz RACI fica limitada a estes. */
+  roles?: string[];
+  /** Proprietário do documento (cargo). */
+  owner?: string;
+  /** Aprovador do documento (cargo). */
+  approver?: string;
+  /** Periodicidade de revisão: mensal | trimestral | semestral | anual | bienal. */
+  reviewFrequency?: string;
+  /** Classificação da informação: publica | interna | confidencial | restrita. */
+  classification?: string;
+  /** Códigos de requisito no corpo do texto (true) ou apenas no anexo (false). */
+  inlineRefs?: boolean;
 }
+
 
 export interface DocGenTemplate {
   id: string;
@@ -75,7 +89,14 @@ const baseDefaults = {
   language: 'pt-BR' as DocLanguage,
   length: 'padrao' as DocLength,
   directGenerate: true,
+  roles: [] as string[],
+  owner: '',
+  approver: '',
+  reviewFrequency: 'anual',
+  classification: 'interna',
+  inlineRefs: true,
 };
+
 
 export const DOCGEN_TEMPLATES: DocGenTemplate[] = [
   // Segurança
@@ -408,6 +429,30 @@ export const DOC_LANGUAGE_OPTIONS: Array<{ value: DocLanguage; label: string }> 
   Object.entries(LANGUAGE_LABEL) as Array<[DocLanguage, string]>
 ).map(([value, label]) => ({ value, label }));
 
+/** Periodicidade de revisão do documento (ISO 27001 7.5). */
+export const REVIEW_FREQUENCY_LABEL: Record<string, string> = {
+  mensal: 'Mensal',
+  trimestral: 'Trimestral',
+  semestral: 'Semestral',
+  anual: 'Anual',
+  bienal: 'Bienal',
+};
+
+/** Classificação da informação. */
+export const CLASSIFICATION_LABEL: Record<string, string> = {
+  publica: 'Pública',
+  interna: 'Interna',
+  confidencial: 'Confidencial',
+  restrita: 'Restrita',
+};
+
+export const REVIEW_FREQUENCY_OPTIONS = Object.entries(REVIEW_FREQUENCY_LABEL)
+  .map(([value, label]) => ({ value, label }));
+
+export const CLASSIFICATION_OPTIONS = Object.entries(CLASSIFICATION_LABEL)
+  .map(([value, label]) => ({ value, label }));
+
+
 /**
  * Monta o prompt inicial enviado automaticamente para a IA.
  * Concatena o hint do template (se houver) com os parâmetros do briefing.
@@ -440,10 +485,28 @@ export function buildSeedPrompt(
   parts.push(`- Tom: ${TONE_LABEL[briefing.tone]}`);
   parts.push(`- Idioma: ${LANGUAGE_LABEL[briefing.language]}`);
   parts.push(`- Extensão alvo: ${LENGTH_LABEL[briefing.length]}`);
+  // Controlo documental (ISO 27001 7.5) — sem isto a IA inventa cargos e omite
+  // proprietário/aprovador/periodicidade, e o documento não sobrevive a auditoria.
+  parts.push(`- Proprietário do documento: ${briefing.owner?.trim() || 'não informado (registar como premissa a validar)'}`);
+  parts.push(`- Aprovador: ${briefing.approver?.trim() || 'não informado (registar como premissa a validar)'}`);
+  parts.push(`- Periodicidade de revisão: ${REVIEW_FREQUENCY_LABEL[briefing.reviewFrequency || 'anual'] || briefing.reviewFrequency}`);
+  parts.push(`- Classificação da informação: ${CLASSIFICATION_LABEL[briefing.classification || 'interna'] || briefing.classification}`);
+  parts.push(
+    briefing.roles && briefing.roles.length
+      ? `- Cargos reais existentes na empresa (usar SOMENTE estes na matriz RACI): ${briefing.roles.join(', ')}`
+      : '- Cargos reais não informados: usar apenas designações funcionais genéricas na RACI e não afirmar a existência de CISO, DPO ou comités.',
+  );
+  parts.push(
+    briefing.inlineRefs === false
+      ? '- Referências normativas: NÃO citar códigos entre colchetes no corpo; manter a rastreabilidade apenas no anexo.'
+      : '- Referências normativas: citar o código do requisito entre colchetes na cláusula correspondente.',
+  );
+  parts.push('- O documento deve ser prescritivo ("deve"), nunca afirmar que controlos já existem, e trazer uma seção "Premissas a validar".');
   parts.push('');
   parts.push(
     'Por favor, proponha a estrutura de seções inicial e confirme se podemos prosseguir para a geração completa do documento.',
   );
+
 
   return parts.join('\n');
 }

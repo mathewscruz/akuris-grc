@@ -12,7 +12,10 @@ import {
   DOC_TONE_OPTIONS,
   DOC_LENGTH_OPTIONS,
   DOC_LANGUAGE_OPTIONS,
+  REVIEW_FREQUENCY_OPTIONS,
+  CLASSIFICATION_OPTIONS,
 } from '@/lib/docgen-templates';
+
 import { useFrameworkRequirementCount } from '@/hooks/useFrameworkRequirementCount';
 import type { CompanyContext } from './DocGenContextPanel';
 import { cn } from '@/lib/utils';
@@ -85,6 +88,8 @@ export const DocGenBriefing: React.FC<DocGenBriefingProps> = ({
     ...initialValue,
   });
   const [frameworkInput, setFrameworkInput] = useState('');
+  const [roleInput, setRoleInput] = useState('');
+
 
   // Guarda o rascunho a cada alteração, para que nada se perca se o modal fechar.
   useEffect(() => {
@@ -111,6 +116,19 @@ export const DocGenBriefing: React.FC<DocGenBriefingProps> = ({
       briefing.frameworks.filter((f) => f !== fw),
     );
   };
+
+  const addRole = (role: string) => {
+    const trimmed = role.trim();
+    if (!trimmed) return;
+    const current = briefing.roles || [];
+    if (current.includes(trimmed)) return;
+    update('roles', [...current, trimmed]);
+    setRoleInput('');
+  };
+
+  const removeRole = (role: string) =>
+    update('roles', (briefing.roles || []).filter((r) => r !== role));
+
 
   // Sugestões enriquecidas: frameworks da empresa primeiro, depois defaults.
   const enrichedSuggestions = useMemo(() => {
@@ -337,6 +355,113 @@ export const DocGenBriefing: React.FC<DocGenBriefingProps> = ({
                 onChange={(v) => update('length', v)}
               />
             </div>
+
+            {/* Controlo documental (ISO 27001, 7.5) — sem isto a IA inventa
+                cargos e o documento não sobrevive a uma auditoria. */}
+            <div className="rounded-lg border border-border p-3 space-y-3">
+              <div>
+                <div className="text-sm font-medium">{t('docgen.briefing.docControlTitle')}</div>
+                <p className="text-xs text-muted-foreground mt-0.5">{t('docgen.briefing.docControlHelp')}</p>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <Label className="text-xs font-medium mb-1.5 block">{t('docgen.briefing.ownerLabel')}</Label>
+                  <Input
+                    value={briefing.owner || ''}
+                    onChange={(e) => update('owner', e.target.value)}
+                    placeholder={t('docgen.briefing.ownerPlaceholder')}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs font-medium mb-1.5 block">{t('docgen.briefing.approverLabel')}</Label>
+                  <Input
+                    value={briefing.approver || ''}
+                    onChange={(e) => update('approver', e.target.value)}
+                    placeholder={t('docgen.briefing.approverPlaceholder')}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-xs font-medium mb-1.5 block">{t('docgen.briefing.reviewFrequencyLabel')}</Label>
+                <PillGroup
+                  options={REVIEW_FREQUENCY_OPTIONS.map((o) => ({ value: o.value, label: t(`docgen.briefing.freq.${o.value}`) }))}
+                  value={briefing.reviewFrequency || 'anual'}
+                  onChange={(v) => update('reviewFrequency', v)}
+                />
+              </div>
+
+              <div>
+                <Label className="text-xs font-medium mb-1.5 block">{t('docgen.briefing.classificationLabel')}</Label>
+                <PillGroup
+                  options={CLASSIFICATION_OPTIONS.map((o) => ({ value: o.value, label: t(`docgen.briefing.classif.${o.value}`) }))}
+                  value={briefing.classification || 'interna'}
+                  onChange={(v) => update('classification', v)}
+                />
+              </div>
+
+              <div>
+                <Label className="text-xs font-medium mb-1.5 block">{t('docgen.briefing.rolesLabel')}</Label>
+                <p className="text-xs text-muted-foreground mb-2">{t('docgen.briefing.rolesHelp')}</p>
+                {(briefing.roles || []).length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {(briefing.roles || []).map((role) => (
+                      <Badge key={role} variant="secondary" className="gap-1 pr-1 text-xs">
+                        {role}
+                        <button
+                          type="button"
+                          onClick={() => removeRole(role)}
+                          className="ml-1 hover:bg-muted-foreground/10 rounded p-0.5"
+                          aria-label={t('docgen.briefing.removeRole', { role })}
+                        >
+                          <X className="h-3 w-3" strokeWidth={1.5} />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <Input
+                    value={roleInput}
+                    onChange={(e) => setRoleInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addRole(roleInput);
+                      }
+                    }}
+                    placeholder={t('docgen.briefing.rolesPlaceholder')}
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => addRole(roleInput)}
+                    disabled={!roleInput.trim()}
+                  >
+                    {t('docgen.briefing.add')}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex items-start justify-between gap-3 pt-1">
+                <div className="flex-1 min-w-0">
+                  <Label htmlFor="inline-refs" className="text-xs font-medium cursor-pointer">
+                    {t('docgen.briefing.inlineRefsLabel')}
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">{t('docgen.briefing.inlineRefsHelp')}</p>
+                </div>
+                <Switch
+                  id="inline-refs"
+                  checked={briefing.inlineRefs !== false}
+                  onCheckedChange={(v) => update('inlineRefs', v)}
+                />
+              </div>
+            </div>
+
+
 
             {/* Toggle gerar direto */}
             <div className="rounded-lg border border-border bg-card/50 p-3 flex items-start gap-3">

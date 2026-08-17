@@ -624,9 +624,27 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
         user_id: userInfo.user_id,
         empresa_id: userInfo.empresa_id,
         action: 'generate_document',
-        conversation_title: `${selectedTemplate?.label || opts?.docNameHint || currentDocName || currentDocType || 'DocGen'} — ${new Date().toLocaleString()}`,
+        // Título distinguível: modelo + escopo resumido + data (sem isto o
+        // histórico enche-se de entradas com o mesmo nome).
+        conversation_title: [
+          selectedTemplate?.label || opts?.docNameHint || currentDocName || currentDocType || 'DocGen',
+          briefingValue?.scope?.trim() ? `· ${briefingValue.scope.trim().slice(0, 48)}` : '',
+          `— ${new Date().toLocaleString()}`,
+        ].filter(Boolean).join(' '),
+
         ...(opts?.briefingText ? { briefing_text: opts.briefingText } : {}),
         doc_type_hint: opts?.docNameHint || currentDocName || currentDocType,
+        // Controlo documental (ISO 27001 7.5) + cargos reais: sem isto a IA
+        // inventa papéis na RACI e omite proprietário/aprovador/periodicidade.
+        doc_control: {
+          owner: briefingValue?.owner || '',
+          approver: briefingValue?.approver || '',
+          review_frequency: briefingValue?.reviewFrequency || 'anual',
+          classification: briefingValue?.classification || 'interna',
+          roles: briefingValue?.roles || [],
+          inline_refs: briefingValue?.inlineRefs !== false,
+        },
+
         ...(effFrameworkName && { framework_context: { framework_name: effFrameworkName, framework_id: effFrameworkId, framework_ids: fwReqData?.matchedIds } }),
         ...(requirementContext && { requirement_context: requirementContext }),
       });
@@ -1154,7 +1172,10 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
               <span className="truncate">
                 {currentDocName ? <strong className="text-foreground">{currentDocName}</strong> : t('docgen.dialog.conversationInProgress')}
                 {' · '}
-                {t('docgen.dialog.messageCount', { count: messages.length, plural: messages.length === 1 ? '' : 's' })}
+                {messages.length === 1
+                  ? t('docgen.dialog.messageCountOne')
+                  : t('docgen.dialog.messageCount', { count: messages.length })}
+
               </span>
               {/* Chip de score ao vivo: aparece assim que o documento é gerado. */}
               {currentScore !== null && (
@@ -1182,7 +1203,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                         )}
                       </span>
                     </TooltipTrigger>
-                    <TooltipContent>
+                    <TooltipContent className="max-w-xs">
                       {t('docgen.dialog.complianceTooltip')}
                       {typeof generatedDocument?._scope_size === 'number' && generatedDocument._scope_size > 0
                         && ' ' + t('docgen.dialog.scopeInfo', { scope: generatedDocument._scope_size })}
@@ -1193,7 +1214,24 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                           })
                         : null}
                       {scoreDelta !== null && t('docgen.dialog.complianceDeltaTooltip', { delta: `${scoreDelta > 0 ? '+' : ''}${scoreDelta}` })}
+                      {/* Base de cálculo explícita, por framework — o score tem de ser auditável. */}
+                      {Array.isArray(generatedDocument?._score_breakdown) && generatedDocument._score_breakdown.length > 0 && (
+                        <span className="mt-2 block space-y-0.5">
+                          <span className="block font-medium">{t('docgen.dialog.scoreBasisTitle')}</span>
+                          {generatedDocument._score_breakdown.map((b: any) => (
+                            <span key={b.framework_id} className="block">
+                              {t('docgen.dialog.scoreBasisLine', {
+                                framework: b.framework_name || '—',
+                                covered: b.covered,
+                                scope: b.scope,
+                              })}
+                              {b.missing?.length ? ` — ${t('docgen.dialog.scoreBasisMissing', { list: b.missing.join(', ') })}` : ''}
+                            </span>
+                          ))}
+                        </span>
+                      )}
                     </TooltipContent>
+
 
                   </Tooltip>
                 </TooltipProvider>
