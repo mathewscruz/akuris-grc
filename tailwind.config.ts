@@ -230,8 +230,8 @@ export default {
 					'100%': { opacity: '1', transform: 'translateX(0)' }
 				},
 				'tab-enter': {
-					'0%':   { opacity: '0', transform: 'translateY(6px)' },
-					'100%': { opacity: '1', transform: 'translateY(0)' }
+					'0%':   { transform: 'translateY(4px)' },
+					'100%': { transform: 'translateY(0)' }
 				}
 			},
 			animation: {

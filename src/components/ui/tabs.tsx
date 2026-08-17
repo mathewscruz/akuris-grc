@@ -3,11 +3,6 @@ import * as TabsPrimitive from "@radix-ui/react-tabs"
 
 import { cn } from "@/lib/utils"
 
-/**
- * Contexto interno: expõe o valor da aba activa para que o TabsContent possa
- * manter as abas já visitadas montadas (evita o "piscar" ao alternar, pois o
- * conteúdo não é desmontado nem refaz as queries).
- */
 const TabsValueContext = React.createContext<string | undefined>(undefined)
 
 const Tabs = React.forwardRef<
@@ -17,13 +12,10 @@ const Tabs = React.forwardRef<
   const [internalValue, setInternalValue] = React.useState<string | undefined>(defaultValue)
   const currentValue = value !== undefined ? value : internalValue
 
-  const handleValueChange = React.useCallback(
-    (next: string) => {
-      if (value === undefined) setInternalValue(next)
-      onValueChange?.(next)
-    },
-    [value, onValueChange],
-  )
+  const handleValueChange = React.useCallback((next: string) => {
+    if (value === undefined) setInternalValue(next)
+    onValueChange?.(next)
+  }, [value, onValueChange])
 
   return (
     <TabsValueContext.Provider value={currentValue}>
@@ -93,19 +85,15 @@ const TabsContent = React.forwardRef<
     if (activeValue === value) setVisited(true)
   }, [activeValue, value])
 
-  // Mantém montado depois da primeira visita: a troca de abas passa a ser
-  // apenas um fade suave, sem desmontar o conteúdo nem refazer o carregamento.
-  const shouldForceMount = forceMount || (visited && activeValue !== undefined) || undefined
-
   return (
     <TabsPrimitive.Content
       ref={ref}
       value={value}
-      forceMount={shouldForceMount}
+      forceMount={forceMount || visited || undefined}
       className={cn(
-        // Transição de entrada padrão ao alternar abas dentro de um módulo.
         "mt-4 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
         "data-[state=inactive]:hidden",
+        // Sem transição de opacidade: evita o clarão sobre conteúdos pesados.
         "data-[state=active]:animate-tab-enter motion-reduce:animate-none",
         className,
       )}

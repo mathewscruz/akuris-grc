@@ -876,7 +876,7 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
                         <CategoryTabTrigger key={cat} cat={cat} reqs={sectionReqs.filter(r => (r.categoria || 'Outros') === cat)} />
                       ))}
                     </TabsList>
-                    <TabsContent key={activeTab} value={activeTab}>
+                    <TabsContent value={activeTab}>
                       {renderTableContent(activeTab === 'all' ? sectionReqs : sectionReqs.filter(r => (r.categoria || 'Outros') === activeTab))}
                     </TabsContent>
                   </Tabs>
@@ -914,7 +914,7 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
               <CategoryTabTrigger key={cat} cat={cat} reqs={requirements.filter(r => (r.categoria || 'Outros') === cat)} />
             ))}
           </TabsList>
-          <TabsContent key={activeTab} value={activeTab}>
+          <TabsContent value={activeTab}>
             {renderTableContent(activeTab === 'all' ? requirements : requirements.filter(r => (r.categoria || 'Outros') === activeTab))}
           </TabsContent>
         </Tabs>

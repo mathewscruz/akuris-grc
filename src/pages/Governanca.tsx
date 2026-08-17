@@ -45,10 +45,8 @@ export default function Governanca() {
 
   const handleTabChange = (value: string) => {
     setActiveTab(value);
-    const path = value === 'auditorias' ? '/governanca/auditorias' : '/governanca';
-    if (location.pathname !== path) {
-      navigate(path, { replace: true });
-    }
+    const search = value === 'auditorias' ? '?tab=auditorias' : '';
+    navigate(`/governanca${search}`, { replace: true });
   };
 
   const getPageTitle = () => {
