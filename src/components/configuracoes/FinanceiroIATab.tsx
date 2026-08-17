@@ -58,7 +58,7 @@ interface ModelStats {
 }
 
 export function FinanceiroIATab() {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const [empresas, setEmpresas] = useState<EmpresaFinanceiro[]>([]);
   const [modelStats, setModelStats] = useState<ModelStats[]>([]);
   const [loading, setLoading] = useState(true);
