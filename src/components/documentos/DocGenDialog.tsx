@@ -22,6 +22,12 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useFrameworkRequirementCount } from '@/hooks/useFrameworkRequirementCount';
 import { akurisToast } from '@/lib/akuris-toast';
+
+/**
+ * Id único do aviso de ciclo de vida do DocGen: geração, refino e conclusão
+ * substituem o mesmo cartão em vez de empilhar vários popups.
+ */
+const DOCGEN_STATUS_TOAST = 'docgen-status';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Send, FileText, Download, Save, Plus, History, ArrowLeft } from 'lucide-react';
@@ -445,7 +451,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
         const impact = data?.compliance_impact;
         const tone = impact === 'reduced' ? 'warning' as const : 'success' as const;
         const title = impact === 'reduced' ? t('docgen.dialog.complianceImpacted') : t('docgen.dialog.documentUpdated');
-        akurisToast({ module: 'documentos', tone, title, description: summary });
+        akurisToast({ id: DOCGEN_STATUS_TOAST, module: 'documentos', tone, title, description: summary });
       }
     } catch (err) {
       console.error('Erro ao refinar documento:', err);
@@ -556,7 +562,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
       if (data?.document) {
         setGeneratedDocument(data.document);
         setAdherenceResult(null); // invalida análise prévia
-        akurisToast({ module: 'documentos', tone: 'success', title: t('docgen.dialog.sectionRefinedTitle'), description: t('docgen.dialog.sectionRefinedDescription') });
+        akurisToast({ id: DOCGEN_STATUS_TOAST, module: 'documentos', tone: 'success', title: t('docgen.dialog.sectionRefinedTitle'), description: t('docgen.dialog.sectionRefinedDescription') });
         setRefiningSectionIndex(null);
       }
     } catch (e) {
@@ -630,6 +636,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
         setGeneratedDocument(current);
         if (res.data.changed) {
           akurisToast({
+            id: DOCGEN_STATUS_TOAST,
             module: 'documentos',
             tone: 'success',
             title: t('docgen.dialog.autoRefineDoneTitle'),
@@ -744,7 +751,10 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
       };
       setGeneratedDocument(doc);
       lastGenerationKeyRef.current = null;
-      toast({
+      akurisToast({
+        id: DOCGEN_STATUS_TOAST,
+        module: 'documentos',
+        tone: 'success',
         title: t('docgen.dialog.documentGeneratedTitle'),
         description: t('docgen.dialog.documentGeneratedDescription'),
       });
@@ -769,6 +779,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
       // Auto-refino em chamadas separadas, para não estourar o timeout.
       if (data?.should_auto_refine) {
         akurisToast({
+          id: DOCGEN_STATUS_TOAST,
           module: 'documentos',
           tone: 'info',
           title: t('docgen.dialog.autoRefineTitle'),
