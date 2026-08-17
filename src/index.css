@@ -537,6 +537,29 @@ input:-webkit-autofill:focus {
   }
 }
 
+/* ===== AkurisComplete — selo oficial de conclusão ===== */
+@keyframes akuris-complete-pop {
+  0%   { transform: scale(0.4); opacity: 0; }
+  100% { transform: scale(1);   opacity: 1; }
+}
+@keyframes akuris-complete-ring {
+  from { stroke-dashoffset: 100; }
+  to   { stroke-dashoffset: 0; }
+}
+@keyframes akuris-complete-check {
+  from { stroke-dashoffset: 100; }
+  to   { stroke-dashoffset: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [style*="akuris-complete-"] {
+    animation: none !important;
+    stroke-dashoffset: 0 !important;
+    opacity: 1 !important;
+  }
+}
+
+
 /* ====================================================================
    LANDING PAGE (LP) — estilo editorial, escopado em .lp-*
    Inspirado na maquete enviada pelo cliente. Não afeta o resto do app.
