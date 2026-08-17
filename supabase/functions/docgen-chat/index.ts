@@ -1069,34 +1069,40 @@ ${weak.map(w => `- índice ${w.index} ("${w.nome}") — motivo: ${w.motivo}\n  C
       }
 
 
-      // === Onda 1: contrato de cobertura + score inicial determinístico ===
-      // O denominador do score reflete o UNIVERSO REAL do(s) framework(s), não
-      // só os requisitos que a IA lembrou de declarar. Isso alinha o gerador
-      // com o analisador (analyze-document-adherence), eliminando o buraco em
-      // que o DocGen entregava 100% e o Akuris avaliava o mesmo doc como 0%.
+      // === Contrato de cobertura + score determinístico, com ÂMBITO honesto ===
+      // O denominador é o subconjunto do catálogo que trata do TEMA deste
+      // documento (mais tudo o que ele próprio declarou cobrir). A cobertura do
+      // framework inteiro continua a ser reportada, mas só como informação —
+      // uma política isolada nunca cobre um framework completo.
       const coverageMap: any[] = Array.isArray(documentContent?.coverage_map) ? documentContent.coverage_map : [];
       let naoCobertos: any[] = Array.isArray(documentContent?.requisitos_nao_cobertos_justificativa)
         ? documentContent.requisitos_nao_cobertos_justificativa : [];
 
       let catalogCodes: string[] = [];
+      let scopeCodes: string[] = [];
       let residualGaps: string[] = [];
       if (docFwIds.length) {
         try {
           const { data: catalogRows } = await supabase
             .from('gap_analysis_requirements')
-            .select('codigo')
+            .select('codigo, titulo, descricao')
             .in('framework_id', docFwIds)
             .order('ordem', { ascending: true })
             .limit(600);
-          catalogCodes = (catalogRows || [])
-            .map((r: any) => String(r?.codigo || '').trim())
-            .filter(Boolean);
+          const scope = resolveDocumentScope(
+            catalogRows || [],
+            documentContent?.titulo,
+            (documentContent?.secoes || []).map((s: any) => s?.nome),
+            coverageMap,
+          );
+          catalogCodes = scope.catalogCodes;
+          scopeCodes = scope.scopeCodes;
         } catch (catErr) {
           console.log('DocGen catalog fetch failed (score usará somente o coverage_map declarado)', catErr);
         }
-        if (catalogCodes.length) {
-          naoCobertos = expandNaoCobertosFromCatalog(catalogCodes, coverageMap, naoCobertos);
-          residualGaps = computeResidualGaps(catalogCodes, coverageMap, naoCobertos, 15);
+        if (scopeCodes.length) {
+          naoCobertos = expandNaoCobertosFromCatalog(scopeCodes, coverageMap, naoCobertos);
+          residualGaps = computeResidualGaps(scopeCodes, coverageMap, naoCobertos, 15);
           // Reflete o denominador expandido de volta no documento persistido.
           documentContent.requisitos_nao_cobertos_justificativa = naoCobertos;
         }
@@ -1104,10 +1110,20 @@ ${weak.map(w => `- índice ${w.index} ("${w.nome}") — motivo: ${w.motivo}\n  C
 
       const inScopeNaoCobertos = filterInScope(naoCobertos);
       const initial_score = computeCoverageScore(coverageMap, naoCobertos);
+      const coveredCodes = new Set(
+        coverageMap.map((c: any) => String(c?.requirement_codigo || '').trim()).filter(Boolean),
+      );
+      const frameworkCoverage = {
+        covered: catalogCodes.filter((c) => coveredCodes.has(c)).length,
+        total: catalogCodes.length,
+      };
       documentContent._initial_score = initial_score;
-      documentContent._score_source = catalogCodes.length ? 'coverage_map+catalog' : 'coverage_map';
+      documentContent._score_source = scopeCodes.length ? 'coverage_map+scope' : 'coverage_map';
       documentContent._catalog_size = catalogCodes.length;
+      documentContent._scope_size = scopeCodes.length;
+      documentContent._framework_coverage = frameworkCoverage;
       documentContent._residual_gaps = residualGaps;
+
 
       console.log('DocGen generate_document compliance (pré auto-refino)', {
         framework: framework_context?.framework_name,
