@@ -38,6 +38,7 @@ type UsuarioForm = z.infer<ReturnType<typeof makeUsuarioSchema>>;
 interface PermissionProfile {
   id: string;
   name: string;
+  empresa_id?: string | null;
 }
 
 interface Usuario {
