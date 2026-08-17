@@ -455,7 +455,7 @@ export default function Documentos() {
             <>
               <ToolbarField label={t('documentos.lista.classificacao')}>
                 <Select value={selectedCategoria} onValueChange={setSelectedCategoria}>
-                  <SelectTrigger className="w-48">
+                  <SelectTrigger className="w-52">
                     <SelectValue placeholder={t('documentos.lista.classificacao')} />
                   </SelectTrigger>
                   <SelectContent>
