@@ -903,16 +903,18 @@ IMPORTANTE: Sempre responda em português brasileiro. Responda SOMENTE com uma m
       }
       const frameworkRequirementsSection = frameworkRequirementsText
         ? `\n\n=== REQUISITOS DO(S) FRAMEWORK(S) — COBERTURA OBRIGATÓRIA ===
-Abaixo estão os requisitos catalogados do(s) framework(s). Antes de escrever o documento:
-1) Identifique quais requisitos tratam do TEMA deste documento ("${docNome}").
-2) Garanta que o documento CUMPRA EXPLICITAMENTE cada requisito relevante — incorpore o que ele exige (descrição/orientação) nas seções apropriadas, com regras concretas e acionáveis.
-3) Cite o código do requisito entre colchetes onde ele é endereçado (ex.: "[A.8.13]").
-4) Priorize os requisitos marcados como GAP.
-5) Não invente requisitos fora desta lista.
-6) OBRIGATÓRIO: no final devolva um coverage_map explícito ligando cada requisito relevante à(s) seção(ões) que o endereça(m), com o trecho-evidência.
+Abaixo estão os requisitos catalogados, AGRUPADOS POR FRAMEWORK. Antes de escrever o documento:
+1) Identifique, EM CADA BLOCO DE FRAMEWORK, quais requisitos tratam do TEMA deste documento ("${docNome}").
+2) TODOS os frameworks listados têm de ser endereçados. Se houver mais de um bloco, a seção "Referências Normativas" e o coverage_map DEVEM conter requisitos de CADA UM deles (ex.: cláusulas e Anexo A da ISO 27001 E critérios Common Criteria do SOC 2). Nunca escreva o documento contra um só framework quando há vários.
+3) Garanta que o documento CUMPRA EXPLICITAMENTE cada requisito relevante — incorpore o que ele exige (descrição/orientação) nas seções apropriadas, com regras concretas e acionáveis.
+4) Cite o código do requisito entre colchetes onde ele é endereçado (ex.: "[A.8.13]", "[CC6.1]").
+5) Priorize os requisitos marcados como GAP.
+6) Não invente requisitos fora desta lista.
+7) OBRIGATÓRIO: no final devolva um coverage_map explícito ligando cada requisito relevante à(s) seção(ões) que o endereça(m), com o trecho-evidência.
 
 ${frameworkRequirementsText}`
         : '';
+
 
       // Transcrição real do briefing/chat — as respostas do usuário PRECISAM
       // chegar ao prompt de geração, senão o documento sai genérico.
