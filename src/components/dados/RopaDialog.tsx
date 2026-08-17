@@ -106,8 +106,13 @@ export function RopaDialog({ isOpen, onClose, onSave, ropa }: RopaDialogProps) {
         throw new Error(t('dadosDashboard.common.errorEmpresaNaoEncontrada'));
       }
 
+      const detalhesDecisao = (formData.decisao_automatizada_detalhes || '').trim().toLowerCase();
       const payload = {
         ...formData,
+        decisao_automatizada: detalhesDecisao.length > 0 && !detalhesDecisao.startsWith('não') && !detalhesDecisao.startsWith('nao') && !detalhesDecisao.startsWith('no'),
+        risco_probabilidade: formData.risco_probabilidade || null,
+        risco_impacto: formData.risco_impacto || null,
+        risco_nivel: formData.risco_nivel || null,
         data_inicio: formData.data_inicio ? parseDateForDB(format(formData.data_inicio, 'yyyy-MM-dd')) : null,
         data_fim: formData.data_fim ? parseDateForDB(format(formData.data_fim, 'yyyy-MM-dd')) : null,
         empresa_id: profile.empresa_id,
