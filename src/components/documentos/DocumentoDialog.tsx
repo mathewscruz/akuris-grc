@@ -15,7 +15,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { WizardDialog, WizardTab, WizardTabState } from '@/components/ui/wizard-dialog';
 import { WizardSummaryCard, WizardSummaryRow } from '@/components/ui/wizard-summary-card';
