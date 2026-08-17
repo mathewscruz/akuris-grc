@@ -450,6 +450,10 @@ export const docgen = {
         scopeInfo: 'Scope: {scope} topic requirement(s).',
         frameworkCoverageInfo: ' Full framework coverage: {covered}/{total}.',
         complianceDeltaTooltip: ' Delta since last refinement: {delta} points.',
+        scoreBasisTitle: 'Calculation basis:',
+        scoreBasisLine: '{framework}: {covered}/{scope} in-scope requirements covered',
+        scoreBasisMissing: 'missing: {list}',
+
         newConversation: 'New conversation',
         history: 'History',
         restoreConversation: 'Restore conversation',
