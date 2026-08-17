@@ -194,11 +194,44 @@ const GerenciamentoEmpresasInner = () => {
           insertData.data_inicio_trial = new Date().toISOString();
         }
 
-        const { error } = await supabase
-          .from('empresas')
-          .insert([insertData]);
+        setDialogOpen(false);
+        beginProvisioning();
 
-        if (error) throw error;
+        // 1) Registo da empresa
+        const { data: created, error } = await supabase
+          .from('empresas')
+          .insert([insertData])
+          .select('id, slug')
+          .single();
+
+        if (error) {
+          failStep('registro');
+          throw error;
+        }
+        completeStep('registro', 'licenca');
+
+        // 2) Licença/plano já persistidos com o registo
+        completeStep('licenca', 'banco');
+
+        // 3) Estrutura de dados isolada (validação do tenant)
+        await supabase.from('empresas').select('id').eq('id', created.id).maybeSingle();
+        completeStep('banco', 'denuncia');
+
+        // 4) Canal de denúncia público independente
+        const { error: canalError } = await supabase.rpc('provisionar_canal_denuncia', {
+          p_empresa_id: created.id,
+        });
+        if (canalError) {
+          logger.error('Falha ao provisionar canal de denúncia', canalError);
+          failStep('denuncia');
+        } else {
+          completeStep('denuncia', 'finalizar');
+        }
+
+        // 5) Conclusão
+        completeStep('finalizar');
+        await new Promise((r) => setTimeout(r, 500));
+        setProvisioningOpen(false);
         toast.success(t('admin.empresas.toastEmpresaCreated'));
       }
 
