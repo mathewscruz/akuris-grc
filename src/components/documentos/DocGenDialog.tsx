@@ -1184,8 +1184,17 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                     </TooltipTrigger>
                     <TooltipContent>
                       {t('docgen.dialog.complianceTooltip')}
+                      {typeof generatedDocument?._scope_size === 'number' && generatedDocument._scope_size > 0
+                        && ' ' + t('docgen.dialog.scopeInfo', { scope: generatedDocument._scope_size })}
+                      {generatedDocument?._framework_coverage?.total
+                        ? t('docgen.dialog.frameworkCoverageInfo', {
+                            covered: generatedDocument._framework_coverage.covered,
+                            total: generatedDocument._framework_coverage.total,
+                          })
+                        : null}
                       {scoreDelta !== null && t('docgen.dialog.complianceDeltaTooltip', { delta: `${scoreDelta > 0 ? '+' : ''}${scoreDelta}` })}
                     </TooltipContent>
+
                   </Tooltip>
                 </TooltipProvider>
               )}
