@@ -133,7 +133,7 @@ export default function DenunciaFormulario() {
           return;
         }
 
-        if (!configData?.ativo) {
+        if (!empresaData.canal_ativo) {
           logger.debug('Canal de denúncia desativado', { module: 'DenunciaFormulario' });
           setLoading(false);
           return;
