@@ -324,6 +324,9 @@ export const docgen = {
         coverageMapped: '{count} mapped requirements — the document will be aligned to the framework (the AI prioritizes gaps)',
         coverageNone: 'No requirements catalogued for these frameworks',
         matched: 'Matched: {list}',
+        complianceNote: 'The document will be written to comply with: {list}',
+        complianceNoteHelp: 'The AI uses its normative knowledge of these standards. The document body will contain no requirement codes.',
+
         scopeLabel: 'Document scope',
         scopePlaceholder: 'E.g.: rules for creating, complexity and rotation of passwords across all corporate systems',
         audienceLabel: 'Target audience',
