@@ -772,8 +772,8 @@ export const pt = {
     documentAdded: 'Documento adicionado',
     newAudit: 'Nova auditoria iniciada',
     newComplaint: 'Nova denúncia recebida',
-    recordUpdated: 'Registo atualizado',
-    recordDeleted: 'Registo removido',
+    recordUpdated: 'Registro atualizado',
+    recordDeleted: 'Registro removido',
   },
   modules: {
     // Riscos
