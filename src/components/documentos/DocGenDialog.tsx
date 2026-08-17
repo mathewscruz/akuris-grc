@@ -947,6 +947,36 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     setPhase('briefing');
   };
 
+  // Cronómetro da geração: alimenta as etapas e a percentagem mostradas ao usuário.
+  useEffect(() => {
+    if (!isGeneratingDoc && !refineProgress) {
+      setGenElapsed(0);
+      return;
+    }
+    const started = Date.now() - genElapsed * 1000;
+    const id = setInterval(() => setGenElapsed(Math.round((Date.now() - started) / 1000)), 1000);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isGeneratingDoc, !!refineProgress]);
+
+  /** Etapa atual (1..5) e percentagem apresentada. */
+  const generationStage = refineProgress
+    ? 5
+    : genElapsed < 6 ? 1
+      : genElapsed < 14 ? 2
+        : genElapsed < 40 ? 3
+          : 4;
+  const generationPercent = refineProgress
+    ? Math.min(96, 70 + Math.round((refineProgress.attempt / Math.max(1, refineProgress.total)) * 26))
+    : Math.min(70, Math.round((genElapsed / 45) * 70));
+  const generationStageLabel = refineProgress
+    ? t('docgen.dialog.progressRefining', {
+        attempt: String(refineProgress.attempt),
+        total: String(refineProgress.total),
+      })
+    : t(`docgen.dialog.progressStage${generationStage}` as any);
+
+
   // Existe trabalho em curso que se perderia ao fechar?
   const hasWorkInProgress =
     (hasUnsavedChanges && !isDocumentSaved && !isDocumentExported) ||
