@@ -1196,7 +1196,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                         )}
                       </span>
                     </TooltipTrigger>
-                    <TooltipContent>
+                    <TooltipContent className="max-w-xs">
                       {t('docgen.dialog.complianceTooltip')}
                       {typeof generatedDocument?._scope_size === 'number' && generatedDocument._scope_size > 0
                         && ' ' + t('docgen.dialog.scopeInfo', { scope: generatedDocument._scope_size })}
@@ -1207,7 +1207,24 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                           })
                         : null}
                       {scoreDelta !== null && t('docgen.dialog.complianceDeltaTooltip', { delta: `${scoreDelta > 0 ? '+' : ''}${scoreDelta}` })}
+                      {/* Base de cálculo explícita, por framework — o score tem de ser auditável. */}
+                      {Array.isArray(generatedDocument?._score_breakdown) && generatedDocument._score_breakdown.length > 0 && (
+                        <span className="mt-2 block space-y-0.5">
+                          <span className="block font-medium">{t('docgen.dialog.scoreBasisTitle')}</span>
+                          {generatedDocument._score_breakdown.map((b: any) => (
+                            <span key={b.framework_id} className="block">
+                              {t('docgen.dialog.scoreBasisLine', {
+                                framework: b.framework_name || '—',
+                                covered: b.covered,
+                                scope: b.scope,
+                              })}
+                              {b.missing?.length ? ` — ${t('docgen.dialog.scoreBasisMissing', { list: b.missing.join(', ') })}` : ''}
+                            </span>
+                          ))}
+                        </span>
+                      )}
                     </TooltipContent>
+
 
                   </Tooltip>
                 </TooltipProvider>
