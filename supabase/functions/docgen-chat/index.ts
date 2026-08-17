@@ -988,34 +988,43 @@ IMPORTANTE: Sempre responda em português brasileiro. Responda SOMENTE com uma m
         ? `\n\nIMPORTANTE — O documento deve endereçar os seguintes gaps de conformidade identificados no framework "${framework_context?.framework_name}":\n${frameworkGapsText}\n\nInclua seções, controles ou procedimentos específicos que resolvam cada gap listado.`
         : '';
 
-      // O documento é escrito e avaliado contra TODOS os frameworks escolhidos
-      // para ele (antes truncávamos para o primeiro e o 2.º era ignorado). O
-      // denominador continua honesto porque `resolveDocumentScope` reduz cada
-      // catálogo ao subconjunto temático do documento.
+      // Frameworks escolhidos pelo usuário. O documento é escrito para estar em
+      // conformidade com ELES, a partir do conhecimento normativo do modelo —
+      // já NÃO injetamos o catálogo de requisitos da ferramenta no prompt
+      // (prompt gigante = truncagem de JSON, timeout e score irrelevante).
       const docFwIds: string[] = Array.from(new Set([
         ...(framework_context?.framework_ids || []),
         ...(framework_context?.framework_id ? [framework_context.framework_id] : []),
       ].filter(Boolean))) as string[];
 
-
       const docNome = (context as any).documento_nome_identificado || doc_type_hint || context.tipo_documento_identificado;
-      let frameworkRequirementsText = '';
-      if (docFwIds.length && empresa_id) {
-        frameworkRequirementsText = await fetchFrameworkRequirements(supabase, docFwIds, empresa_id);
-      }
-      const frameworkRequirementsSection = frameworkRequirementsText
-        ? `\n\n=== REQUISITOS DO(S) FRAMEWORK(S) — COBERTURA OBRIGATÓRIA ===
-Abaixo estão os requisitos catalogados, AGRUPADOS POR FRAMEWORK. Antes de escrever o documento:
-1) Identifique, EM CADA BLOCO DE FRAMEWORK, quais requisitos tratam do TEMA deste documento ("${docNome}").
-2) TODOS os frameworks listados têm de ser endereçados. Se houver mais de um bloco, a seção "Referências Normativas" e o coverage_map DEVEM conter requisitos de CADA UM deles (ex.: cláusulas e Anexo A da ISO 27001 E critérios Common Criteria do SOC 2). Nunca escreva o documento contra um só framework quando há vários.
-3) Garanta que o documento CUMPRA EXPLICITAMENTE cada requisito relevante — incorpore o que ele exige (descrição/orientação) nas seções apropriadas, com regras concretas e acionáveis.
-4) Cite o código do requisito entre colchetes onde ele é endereçado (ex.: "[A.8.13]", "[CC6.1]").
-5) Priorize os requisitos marcados como GAP.
-6) Não invente requisitos fora desta lista.
-7) OBRIGATÓRIO: no final devolva um coverage_map explícito ligando cada requisito relevante à(s) seção(ões) que o endereça(m), com o trecho-evidência.
 
-${frameworkRequirementsText}`
+      let frameworkNames: string[] = Array.isArray((context as any).frameworks_relacionados)
+        ? (context as any).frameworks_relacionados.map((f: any) => String(f || '').trim()).filter(Boolean)
+        : [];
+      if (!frameworkNames.length && framework_context?.framework_name) {
+        frameworkNames = [String(framework_context.framework_name)];
+      }
+      if (!frameworkNames.length && docFwIds.length) {
+        try {
+          const { data: fwRows } = await supabase
+            .from('gap_analysis_frameworks')
+            .select('nome')
+            .in('id', docFwIds);
+          frameworkNames = (fwRows || []).map((f: any) => String(f.nome || '').trim()).filter(Boolean);
+        } catch (_e) { /* nomes são acessórios — a geração não pode falhar por isto */ }
+      }
+
+      const frameworkRequirementsSection = frameworkNames.length
+        ? `\n\n=== CONFORMIDADE EXIGIDA ===
+Este documento tem de estar em conformidade com: ${frameworkNames.join(', ')}.
+Use o SEU conhecimento normativo destes referenciais — não existe lista de requisitos anexada e não deve inventar códigos.
+1) Escreva o documento de modo que um auditor destes referenciais o considere conforme no tema "${docNome}": inclua as exigências que estes referenciais impõem sobre este tema, com regras concretas, responsáveis, periodicidades e evidências.
+2) TODOS os referenciais listados têm de ser contemplados — não escreva o documento contra apenas um deles.
+3) NÃO escreva códigos, numerações de cláusula ou identificadores de requisito no corpo do texto (nada de "[A.8.13]", "(CC6.1)", "conforme 5.15"). O corpo deve ler-se como um documento corporativo limpo.
+4) Na seção "Referências Normativas", cite os referenciais em texto corrido (nome e, quando útil, o capítulo temático), sem lista de códigos item a item.`
         : '';
+
 
 
       // Transcrição real do briefing/chat — as respostas do usuário PRECISAM
