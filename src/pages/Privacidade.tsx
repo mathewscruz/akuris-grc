@@ -548,7 +548,13 @@ export default function Privacidade() {
               <Plus className="mr-2 h-4 w-4" />
               {t('sweepDados.privacidade.novoRopa')}
             </Button>
+          ) : activeTab === 'exercicios' ? (
+            <Button size="sm" onClick={() => setNovoExercicioSinal((n) => n + 1)}>
+              <Plus className="mr-2 h-4 w-4" />
+              {t('dadosDashboard.ropaExercicios.novo')}
+            </Button>
           ) : activeTab === 'solicitacoes' ? (
+
             <Button size="sm" onClick={() => setShowSolicitacaoDialog(true)}>
               <Plus className="mr-2 h-4 w-4" />
               {t('sweepDados.privacidade.novaSolicitacao')}
