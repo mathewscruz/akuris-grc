@@ -429,6 +429,30 @@ export const DOC_LANGUAGE_OPTIONS: Array<{ value: DocLanguage; label: string }> 
   Object.entries(LANGUAGE_LABEL) as Array<[DocLanguage, string]>
 ).map(([value, label]) => ({ value, label }));
 
+/** Periodicidade de revisão do documento (ISO 27001 7.5). */
+export const REVIEW_FREQUENCY_LABEL: Record<string, string> = {
+  mensal: 'Mensal',
+  trimestral: 'Trimestral',
+  semestral: 'Semestral',
+  anual: 'Anual',
+  bienal: 'Bienal',
+};
+
+/** Classificação da informação. */
+export const CLASSIFICATION_LABEL: Record<string, string> = {
+  publica: 'Pública',
+  interna: 'Interna',
+  confidencial: 'Confidencial',
+  restrita: 'Restrita',
+};
+
+export const REVIEW_FREQUENCY_OPTIONS = Object.entries(REVIEW_FREQUENCY_LABEL)
+  .map(([value, label]) => ({ value, label }));
+
+export const CLASSIFICATION_OPTIONS = Object.entries(CLASSIFICATION_LABEL)
+  .map(([value, label]) => ({ value, label }));
+
+
 /**
  * Monta o prompt inicial enviado automaticamente para a IA.
  * Concatena o hint do template (se houver) com os parâmetros do briefing.
