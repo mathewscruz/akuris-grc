@@ -77,9 +77,11 @@ function extractFrameworks(messageText: string): string[] {
 // funções do projeto. Antes usava a API da Anthropic direto com um modelo
 // que retornava 404 nesta conta.
 // Modelo padrão (chat/quick_adherence): rápido e barato.
-// Modelo de qualidade editorial (generate_document / refine_document / retry): pro.
-const MODEL_FAST = 'google/gemini-3-flash-preview';
-const MODEL_QUALITY = 'google/gemini-3.1-pro-preview';
+// Modelo de qualidade editorial (generate_document / refine_document / retry).
+// Fallback de resiliência: outro fornecedor, para o caso de degradação do Google.
+const MODEL_FAST = 'google/gemini-3.1-flash-lite';
+const MODEL_QUALITY = 'google/gemini-3.6-flash';
+const MODEL_FALLBACK = 'openai/gpt-5.4-mini';
 
 async function callClaudeRaw(
   messages: { role: string; content: string }[],
@@ -90,6 +92,11 @@ async function callClaudeRaw(
   model: string = MODEL_FAST,
   signal?: AbortSignal,
 ) {
+  // A família GPT-5 rejeita `max_tokens` e `temperature` não-padrão.
+  const isGpt5 = model.startsWith('openai/gpt-5');
+  const tuning = isGpt5
+    ? { max_completion_tokens: maxTokens }
+    : { max_tokens: maxTokens, temperature };
   let response: Response;
   try {
     response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -101,8 +108,7 @@ async function callClaudeRaw(
       signal,
       body: JSON.stringify({
         model,
-        max_tokens: maxTokens,
-        temperature,
+        ...tuning,
         messages: [
           { role: 'system', content: systemPrompt },
           ...messages.filter(m => m.role !== 'system').map(m => ({
@@ -112,6 +118,7 @@ async function callClaudeRaw(
         ],
       }),
     });
+
   } catch (e) {
     // Abort real: o cliente desistiu ou o orçamento de tempo desta invocação
     // acabou. Nunca deve virar cobrança nem 500 genérico.
