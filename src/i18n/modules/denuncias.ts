@@ -103,6 +103,7 @@ export const denunciasAdmin = {
         toastSuccess: 'Denúncia registrada com sucesso. Protocolo: {protocolo}',
         toastSuccessGeneric: 'Denúncia registrada com sucesso',
         toastError: 'Erro ao registrar denúncia',
+      },
       config: {
         errorLoad: 'Erro ao carregar configurações',
         errorGenerateToken: 'Erro ao gerar token',
