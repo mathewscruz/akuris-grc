@@ -441,19 +441,6 @@ export const DocGenBriefing: React.FC<DocGenBriefingProps> = ({
                 </div>
               </div>
 
-              <div className="flex items-start justify-between gap-3 pt-1">
-                <div className="flex-1 min-w-0">
-                  <Label htmlFor="inline-refs" className="text-xs font-medium cursor-pointer">
-                    {t('docgen.briefing.inlineRefsLabel')}
-                  </Label>
-                  <p className="text-xs text-muted-foreground mt-0.5">{t('docgen.briefing.inlineRefsHelp')}</p>
-                </div>
-                <Switch
-                  id="inline-refs"
-                  checked={briefing.inlineRefs !== false}
-                  onCheckedChange={(v) => update('inlineRefs', v)}
-                />
-              </div>
             </div>
 
 
