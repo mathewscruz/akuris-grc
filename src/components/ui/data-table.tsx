@@ -213,7 +213,7 @@ export function DataTable<T extends Record<string, any>>({
 
 
       {/* Table - with horizontal scroll for mobile */}
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto [&_table]:min-w-[640px] sm:[&_table]:min-w-0">
         <Table>
           <TableHeader>
             <TableRow>
