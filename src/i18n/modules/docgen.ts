@@ -190,6 +190,10 @@ export const docgen = {
         scopeInfo: 'Âmbito: {scope} requisito(s) do tema.',
         frameworkCoverageInfo: ' Cobertura do framework completo: {covered}/{total}.',
         complianceDeltaTooltip: ' Delta em relação ao último refino: {delta} pontos.',
+        scoreBasisTitle: 'Base de cálculo:',
+        scoreBasisLine: '{framework}: {covered}/{scope} requisitos do tema cobertos',
+        scoreBasisMissing: 'em falta: {list}',
+
         newConversation: 'Nova conversa',
         history: 'Histórico',
         restoreConversation: 'Restaurar conversa',
