@@ -158,6 +158,7 @@ async function autoRefineOnce(params: {
   frameworkName?: string;
   apiKey: string;
   attempt: number;
+  signal?: AbortSignal;
 }): Promise<{
   changed: boolean;
   before: number;
@@ -213,13 +214,14 @@ ${instructionAuto}
 
 Devolva o JSON completo com coverage_map atualizado.`;
 
-  const rawR = await callClaude(
+  const rawR = await callClaudeRaw(
     [{ role: 'user', content: userR }],
     sysR,
     apiKey,
     18000,
     0.35,
     MODEL_QUALITY,
+    params.signal,
   );
 
   let parsedR: any = null;
