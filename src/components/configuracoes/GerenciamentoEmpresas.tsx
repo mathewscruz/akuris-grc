@@ -83,6 +83,38 @@ const GerenciamentoEmpresasInner = () => {
   const [sortField, setSortField] = useState<string>('nome');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [renewTrialEmpresa, setRenewTrialEmpresa] = useState<Empresa | null>(null);
+
+  // Provisionamento visual da criação de empresa (etapas reais)
+  const [provisioningOpen, setProvisioningOpen] = useState(false);
+  const [provisioningSteps, setProvisioningSteps] = useState<ProvisioningStep[]>([]);
+
+  const buildSteps = (): ProvisioningStep[] => [
+    { id: 'registro', label: t('admin.empresas.provisioning.stepRegistro'), state: 'running' },
+    { id: 'licenca', label: t('admin.empresas.provisioning.stepLicenca'), state: 'pending' },
+    { id: 'banco', label: t('admin.empresas.provisioning.stepBanco'), state: 'pending' },
+    { id: 'denuncia', label: t('admin.empresas.provisioning.stepDenuncia'), state: 'pending' },
+    { id: 'finalizar', label: t('admin.empresas.provisioning.stepFinalizar'), state: 'pending' },
+  ];
+
+  const beginProvisioning = () => {
+    setProvisioningSteps(buildSteps());
+    setProvisioningOpen(true);
+  };
+
+  const setStepState = (id: string, state: ProvisioningStep['state']) =>
+    setProvisioningSteps((prev) => prev.map((s) => (s.id === id ? { ...s, state } : s)));
+
+  const completeStep = (id: string, next?: string) => {
+    setProvisioningSteps((prev) =>
+      prev.map((s) => {
+        if (s.id === id) return { ...s, state: 'done' as const };
+        if (next && s.id === next) return { ...s, state: 'running' as const };
+        return s;
+      }),
+    );
+  };
+
+  const failStep = (id: string) => setStepState(id, 'error');
   const [toggleAtivoEmpresa, setToggleAtivoEmpresa] = useState<Empresa | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
