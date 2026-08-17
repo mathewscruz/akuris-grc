@@ -948,12 +948,20 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
                         </FormControl>
                         <SelectContent>
                           <SelectItem value="none">{t('admin.usuarios.semPerfil')}</SelectItem>
+                          {permissionProfiles.length === 0 && (
+                            <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                              {isSuperAdmin && !empresaSelecionada
+                                ? t('admin.usuarios.selecioneEmpresaPrimeiro')
+                                : t('admin.usuarios.perfisVazios')}
+                            </div>
+                          )}
                           {permissionProfiles.map((profile) => (
                             <SelectItem key={profile.id} value={profile.id}>
                               {profile.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
+
                       </Select>
                       <FormMessage />
                     </FormItem>
