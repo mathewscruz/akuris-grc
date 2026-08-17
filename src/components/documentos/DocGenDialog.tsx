@@ -1519,25 +1519,44 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
 
               {!generatedDocument && isGeneratingDoc ? (
                 <div className="flex-1 min-h-0 overflow-y-auto pr-2">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-                    <AkurisAIIcon className="h-4 w-4 animate-pulse text-primary" />
-                    <span>{t('docgen.dialog.composingDocument')}</span>
-                  </div>
-                  <div className="space-y-5 animate-pulse">
-                    <div>
-                      <div className="h-6 w-2/3 bg-muted rounded mb-2" />
-                      <div className="h-3 w-1/3 bg-muted rounded" />
-                    </div>
-                    {[0, 1, 2, 3, 4].map((i) => (
-                      <div key={i} className="space-y-2">
-                        <div className="h-4 w-1/2 bg-muted rounded" />
-                        <div className="h-3 w-full bg-muted rounded" />
-                        <div className="h-3 w-11/12 bg-muted rounded" />
-                        <div className="h-3 w-10/12 bg-muted rounded" />
+                  <div className="flex flex-col items-center justify-center gap-4 py-10 text-center">
+                    <AkurisPulse size={44} />
+                    <div className="w-full max-w-sm space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-foreground font-medium">{generationStageLabel}</span>
+                        <span className="tabular-nums text-muted-foreground">
+                          {t('docgen.dialog.progressPercent', { percent: String(generationPercent) })}
+                        </span>
                       </div>
-                    ))}
+                      <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-primary transition-all duration-700"
+                          style={{ width: `${Math.max(4, generationPercent)}%` }}
+                        />
+                      </div>
+                      <ol className="mt-3 space-y-1 text-left text-xs">
+                        {[1, 2, 3, 4, 5].map((step) => (
+                          <li
+                            key={step}
+                            className={
+                              step < generationStage
+                                ? 'text-muted-foreground line-through'
+                                : step === generationStage
+                                  ? 'text-foreground font-medium'
+                                  : 'text-muted-foreground/60'
+                            }
+                          >
+                            {t(`docgen.dialog.progressStage${step}` as any)}
+                          </li>
+                        ))}
+                      </ol>
+                      <p className="pt-2 text-[11px] text-muted-foreground">
+                        {t('docgen.dialog.progressEstimate')}
+                      </p>
+                    </div>
                   </div>
                 </div>
+
               ) : isEditingLayout ? (
                 <div className="flex-1 min-h-0 overflow-y-auto">
                   <DocLayoutBuilder value={generatedDocument} onChange={setGeneratedDocument} />
