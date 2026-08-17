@@ -47,7 +47,21 @@ export interface BriefingDefaults {
   length: DocLength;
   /** Quando true, pula o chat conversacional e gera o documento direto após o seed. */
   directGenerate?: boolean;
+  // === Controlo documental (ISO 27001, cláusula 7.5) ===
+  /** Cargos que existem mesmo na empresa — a matriz RACI fica limitada a estes. */
+  roles?: string[];
+  /** Proprietário do documento (cargo). */
+  owner?: string;
+  /** Aprovador do documento (cargo). */
+  approver?: string;
+  /** Periodicidade de revisão: mensal | trimestral | semestral | anual | bienal. */
+  reviewFrequency?: string;
+  /** Classificação da informação: publica | interna | confidencial | restrita. */
+  classification?: string;
+  /** Códigos de requisito no corpo do texto (true) ou apenas no anexo (false). */
+  inlineRefs?: boolean;
 }
+
 
 export interface DocGenTemplate {
   id: string;
