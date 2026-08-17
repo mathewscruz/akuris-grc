@@ -370,6 +370,54 @@ async function fetchFrameworkRequirements(supabase: any, frameworkIds: string[],
 }
 
 
+// Reescreve seções fracas do documento (quality gate). Extraído para poder
+// correr numa invocação própria — ver action `quality_gate`.
+async function rewriteWeakSections(
+  documentContent: any,
+  empresaNome: string,
+  apiKey: string,
+  signal?: AbortSignal,
+): Promise<number> {
+  const weak = findWeakSections(documentContent?.secoes || []);
+  if (!weak.length || weak.length > 6) return 0;
+  const secoesTitulos = (documentContent.secoes || []).map((s: any, i: number) => `${i + 1}. ${s.nome}`).join('\n');
+  const retryPrompt = `Você é um consultor sênior de GRC Big Four. As seções abaixo saíram fracas (curtas ou com placeholders). Reescreva CADA uma delas com no mínimo 3 parágrafos substantivos ou lista numerada com 5+ itens acionáveis, mantendo códigos de framework [XX.X] onde já existiam, sem placeholders, sem jargão vazio, com regras concretas e linguagem normativa ("deve"). Responda APENAS JSON: { "rewrites": [ { "section_index": N, "conteudo": "..." } ] }
+
+DOCUMENTO: ${documentContent.titulo}
+EMPRESA: ${empresaNome}
+SEÇÕES (índice.nome):
+${secoesTitulos}
+
+SEÇÕES PARA REESCREVER:
+${weak.map((w) => `- índice ${w.index} ("${w.nome}") — motivo: ${w.motivo}\n  CONTEÚDO ATUAL:\n  ${String(documentContent.secoes[w.index]?.conteudo || '').slice(0, 800)}`).join('\n\n')}`;
+
+  const raw = await callClaudeRaw(
+    [{ role: 'user', content: 'Reescreva as seções fracas agora.' }],
+    retryPrompt,
+    apiKey,
+    6000,
+    0.35,
+    MODEL_QUALITY,
+    signal,
+  );
+  let applied = 0;
+  try {
+    const parsed = JSON.parse(raw.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim());
+    const rewrites: any[] = Array.isArray(parsed?.rewrites) ? parsed.rewrites : [];
+    rewrites.forEach((r: any) => {
+      const idx = Number(r?.section_index);
+      const conteudo = String(r?.conteudo || '').trim();
+      if (Number.isInteger(idx) && conteudo.length > 200 && documentContent.secoes?.[idx]) {
+        documentContent.secoes[idx].conteudo = conteudo;
+        applied += 1;
+      }
+    });
+  } catch (e) {
+    console.log('DocGen quality gate parse failed', e);
+  }
+  return applied;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -1184,48 +1232,10 @@ Responda APENAS com um JSON na seguinte estrutura (sem markdown, sem comentário
         console.log('DocGen premissas section skipped', pErr);
       }
 
-      // === Onda 3: Quality gate — reescreve seções curtas ou com placeholders ===
-
-      try {
-        const weak = findWeakSections(documentContent?.secoes || []);
-        if (weak.length > 0 && weak.length <= 6) {
-          console.log('DocGen quality gate — retry weak sections', weak);
-          const secoesTitulos = (documentContent.secoes || []).map((s: any, i: number) => `${i + 1}. ${s.nome}`).join('\n');
-          const retryPrompt = `Você é o mesmo consultor sênior de GRC Big Four. As seções abaixo saíram fracas (curtas ou com placeholders). Reescreva CADA uma delas com no mínimo 3 parágrafos substantivos ou lista numerada com 5+ itens acionáveis, mantendo códigos de framework [XX.X] onde já existiam, sem placeholders, sem jargão vazio, com regras concretas. Responda APENAS JSON: { "rewrites": [ { "section_index": N, "conteudo": "..." } ] }
-
-DOCUMENTO: ${documentContent.titulo}
-EMPRESA: ${context.empresa_nome}
-SEÇÕES (índice.nome): 
-${secoesTitulos}
-
-SEÇÕES PARA REESCREVER:
-${weak.map(w => `- índice ${w.index} ("${w.nome}") — motivo: ${w.motivo}\n  CONTEÚDO ATUAL:\n  ${String(documentContent.secoes[w.index]?.conteudo || '').slice(0, 800)}`).join('\n\n')}`;
-          const retryRaw = await callClaude(
-            [{ role: 'user', content: 'Reescreva as seções fracas agora.' }],
-            retryPrompt,
-            LOVABLE_API_KEY,
-            6000,
-            0.35,
-            MODEL_QUALITY,
-          );
-          try {
-            const cleanedRetry = retryRaw.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-            const retryParsed = JSON.parse(cleanedRetry);
-            const rewrites: any[] = Array.isArray(retryParsed?.rewrites) ? retryParsed.rewrites : [];
-            rewrites.forEach((r: any) => {
-              const idx = Number(r?.section_index);
-              const conteudo = String(r?.conteudo || '').trim();
-              if (Number.isInteger(idx) && conteudo.length > 200 && documentContent.secoes[idx]) {
-                documentContent.secoes[idx].conteudo = conteudo;
-              }
-            });
-          } catch (retryParseErr) {
-            console.log('DocGen quality gate parse failed', retryParseErr);
-          }
-        }
-      } catch (qgErr) {
-        console.log('DocGen quality gate skipped', qgErr);
-      }
+      // === P1: quality gate roda em INVOCAÇÃO PRÓPRIA (action `quality_gate`) ===
+      // Antes, geração + gate + refinos corriam em série e estouravam o tempo.
+      const weakSections = findWeakSections(documentContent?.secoes || []);
+      const should_quality_gate = weakSections.length > 0 && weakSections.length <= 6;
 
 
       // === Contrato de cobertura + score determinístico, com ÂMBITO honesto ===
