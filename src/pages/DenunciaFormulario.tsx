@@ -118,13 +118,14 @@ export default function DenunciaFormulario() {
 
         // Buscar configurações da empresa
         logger.debug('Buscando configurações para empresa', { module: 'DenunciaFormulario' });
-        const { data: configData, error: configError } = await supabase
-          .from('denuncias_configuracoes_public' as any)
-          .select('*')
-          .eq('empresa_id', empresaData.id)
-          .single() as { data: any; error: any };
+        const { data: configRaw, error: configError } = await supabase.rpc(
+          'get_denuncia_config_publica' as never,
+          { p_empresa_id: empresaData.id } as never
+        );
 
-        if (configError) {
+        const configData: any = Array.isArray(configRaw) ? configRaw[0] : configRaw;
+
+        if (configError || !configData) {
           logger.error('Erro ao buscar configurações', { module: 'DenunciaFormulario', error: String(configError) });
           setLoading(false);
           return;
@@ -139,18 +140,13 @@ export default function DenunciaFormulario() {
         logger.debug('Configurações carregadas', { module: 'DenunciaFormulario' });
         setConfig(configData);
 
-        // Buscar categorias ativas da empresa
-        logger.debug('Buscando categorias', { module: 'DenunciaFormulario' });
-        const { data: categoriasData, error: categoriasError } = await supabase
-          .from('denuncias_categorias')
-          .select('*')
-          .eq('empresa_id', empresaData.id)
-          .eq('ativo', true)
-          .order('nome');
+        const { data: categoriasData, error: categoriasError } = await supabase.rpc(
+          'get_denuncias_categorias_publicas' as never,
+          { p_empresa_id: empresaData.id } as never
+        );
 
         if (!categoriasError && categoriasData) {
-          logger.debug('Categorias carregadas', { module: 'DenunciaFormulario' });
-          setCategorias(categoriasData);
+          setCategorias(categoriasData as any);
         }
 
         // Usar logo_url da empresa, com fallback automático para o logo Akuris
