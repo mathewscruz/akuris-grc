@@ -1145,7 +1145,7 @@ ${weak.map(w => `- índice ${w.index} ("${w.nome}") — motivo: ${w.motivo}\n  C
       const should_auto_refine =
         initial_score < AUDIT_THRESHOLD &&
         residualGaps.length > 0 &&
-        catalogCodes.length > 0 &&
+        scopeCodes.length > 0 &&
         Array.isArray(documentContent?.secoes) &&
         documentContent.secoes.length > 0;
 
@@ -1160,7 +1160,7 @@ ${weak.map(w => `- índice ${w.index} ("${w.nome}") — motivo: ${w.motivo}\n  C
       if (finalCoverage.length === 0 && docFwIds.length > 0) {
         warnings.push('A IA não devolveu coverage_map — a análise de compliance pode ficar inconsistente.');
       }
-      if (catalogCodes.length && residualGaps.length > 0 && finalScore < AUDIT_THRESHOLD) {
+      if (scopeCodes.length && residualGaps.length > 0 && finalScore < AUDIT_THRESHOLD) {
         warnings.push(`${residualGaps.length} requisito(s) ainda sem cobertura. Execute o refino automático para incluí-los.`);
       }
 
