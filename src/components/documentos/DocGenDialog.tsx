@@ -627,6 +627,17 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
         conversation_title: `${selectedTemplate?.label || opts?.docNameHint || currentDocName || currentDocType || 'DocGen'} — ${new Date().toLocaleString()}`,
         ...(opts?.briefingText ? { briefing_text: opts.briefingText } : {}),
         doc_type_hint: opts?.docNameHint || currentDocName || currentDocType,
+        // Controlo documental (ISO 27001 7.5) + cargos reais: sem isto a IA
+        // inventa papéis na RACI e omite proprietário/aprovador/periodicidade.
+        doc_control: {
+          owner: briefingValue?.owner || '',
+          approver: briefingValue?.approver || '',
+          review_frequency: briefingValue?.reviewFrequency || 'anual',
+          classification: briefingValue?.classification || 'interna',
+          roles: briefingValue?.roles || [],
+          inline_refs: briefingValue?.inlineRefs !== false,
+        },
+
         ...(effFrameworkName && { framework_context: { framework_name: effFrameworkName, framework_id: effFrameworkId, framework_ids: fwReqData?.matchedIds } }),
         ...(requirementContext && { requirement_context: requirementContext }),
       });
