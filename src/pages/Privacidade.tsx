@@ -620,9 +620,12 @@ export default function Privacidade() {
         </TabsContent>
 
         <TabsContent value="ropa" className="space-y-4">
-          <p className="text-sm text-muted-foreground">
-            {t('jurisdicao.privacidade.ropaSubtitulo', { lei: jurisdicao.lei })}
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-muted-foreground">
+              {t('jurisdicao.privacidade.ropaSubtitulo', { lei: jurisdicao.lei })}
+            </p>
+            <RopaImportExport registos={ropaRegistros} onImported={() => loadData()} />
+          </div>
           <Card className="rounded-lg border overflow-hidden">
             <CardContent className="p-0">
               <DataTable
