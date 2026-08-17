@@ -380,12 +380,12 @@ export function RiskHeatmap({ riscos, selected, onSelectCell, onClearSelection, 
                               SEV_BADGE[sev],
                               cellRisks.length === 1 && 'cursor-pointer',
                             )}
-                            title={cellRisks.map((r) => shortRiskId(r.id)).join(', ')}
+                            title={cellRisks.map((r) => shortRiskId(r.id, (r as any).codigo)).join(', ')}
                           >
                             {cellRisks.length}
                           </span>
                           <span className="text-[9.5px] text-muted-foreground leading-tight">
-                            {cellRisks.length === 1 ? shortRiskId(cellRisks[0].id) : riskWord}
+                            {cellRisks.length === 1 ? shortRiskId(cellRisks[0].id, (cellRisks[0] as any).codigo) : riskWord}
                           </span>
                         </div>
                       )}

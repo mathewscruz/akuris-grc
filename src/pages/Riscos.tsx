@@ -570,7 +570,7 @@ export function Riscos() {
       label: t('riscos.page.columns.id'),
       className: 'w-[72px]',
       render: (_value: any, risco: Risco) => (
-        <span className="font-mono text-[11px] text-muted-foreground">{shortRiskId(risco.id)}</span>
+        <span className="font-mono text-[11px] text-muted-foreground">{shortRiskId(risco.id, (risco as any).codigo)}</span>
       ),
     },
     {
