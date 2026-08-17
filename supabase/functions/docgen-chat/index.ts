@@ -375,6 +375,10 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // P0: se algo falhar DEPOIS do débito, estornamos — o crédito só fica
+  // debitado quando o documento é efetivamente entregue ao usuário.
+  let chargeState: { client: any; empresaId: string; key: string } | null = null;
+
   try {
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
@@ -570,16 +574,30 @@ serve(async (req) => {
     // Crédito consumido apenas após sucesso da IA — cada handler (generate/refine)
     // chama consume_ai_credit no seu retorno bem-sucedido. Manter um único ponto
     // de consumo por ação evita cobranças em chamadas malformadas ou erros de gateway.
+    // Chave de idempotência: o cliente manda a sua (uma por tentativa de
+    // geração); sem ela derivamos uma estável por ação para nunca cair no
+    // caminho não-idempotente.
+    const idemKey = String(
+      idempotency_key || `${authedUserId}:${action}:${conversation_id || 'new'}:${startedAt}`,
+    ).slice(0, 200);
+
     const chargeAiCredit = async () => {
       try {
-        await supabase.rpc('consume_ai_credit', {
+        const { data, error } = await supabase.rpc('consume_ai_credit_idempotente', {
           p_empresa_id: authedEmpresaId,
           p_user_id: authedUserId,
           p_funcionalidade: `docgen-chat:${action}`,
+          p_idempotency_key: idemKey,
           p_descricao: `DocGen - ${action === 'generate_document' ? 'Geração de documento' : 'Chat conversacional'}`,
         });
-      } catch (e) { console.warn('consume_ai_credit falhou:', e); }
+        if (error) { console.warn('consume_ai_credit_idempotente falhou:', error); return; }
+        if ((data as any)?.charged) {
+          chargeState = { client: supabase, empresaId: authedEmpresaId, key: idemKey };
+        }
+      } catch (e) { console.warn('consume_ai_credit_idempotente falhou:', e); }
     };
+    // Entregue ao usuário => a cobrança é definitiva (não estornar no catch).
+    const settleCharge = () => { chargeState = null; };
     // NOTA: cada handler (generate_document, refine_section, refine_document,
     // quick_adherence, chat) deve chamar `await chargeAiCredit()` após produzir
     // conteúdo com sucesso e antes de retornar a Response 200.
@@ -651,9 +669,10 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({
             error: 'CONVERSATION_CREATE_FAILED',
+            code: 'CONVERSATION_CREATE_FAILED',
             message: 'Não foi possível iniciar a sessão do gerador de documentos.',
           }),
-          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+          { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
         );
       }
       conversation = newConversation;
@@ -1942,6 +1961,16 @@ Aplique a instrução conforme as regras do sistema e devolva o JSON completo CO
 
   } catch (error) {
     console.error('Error in docgen-chat function:', error);
+    // Falhou, expirou ou foi abortada => estorna o crédito eventualmente debitado.
+    if (chargeState) {
+      try {
+        await chargeState.client.rpc('estornar_ai_credit', {
+          p_empresa_id: chargeState.empresaId,
+          p_idempotency_key: chargeState.key,
+        });
+      } catch (e) { console.warn('estornar_ai_credit falhou:', e); }
+      chargeState = null;
+    }
     const isGateway = error instanceof AiGatewayError;
     const code = isGateway ? (error as AiGatewayError).code : 'INTERNAL_ERROR';
     const status = isGateway ? (error as AiGatewayError).httpStatus : 500;
