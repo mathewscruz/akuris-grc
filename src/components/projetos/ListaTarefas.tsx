@@ -2,6 +2,7 @@ import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { SortableTableHead, useTableSort, compareSortValues } from '@/components/ui/sortable-table-head';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Search, CornerDownRight } from 'lucide-react';
 import type { ProjetoTarefa, ProjetoColuna, ProjetoTarefaPrioridade } from '@/types/projetos';
@@ -136,11 +137,11 @@ export function ListaTarefas({ tarefas, colunas, onSelect }: Props) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{t('projetos.lista.colTarefa')}</TableHead>
-              <TableHead>{t('projetos.lista.colColuna')}</TableHead>
-              <TableHead>{t('projetos.lista.colPrioridade')}</TableHead>
-              <TableHead>{t('projetos.lista.colPrazo')}</TableHead>
-              <TableHead>{t('projetos.lista.colStatus')}</TableHead>
+              <SortableTableHead field="titulo" sort={sort} onSort={toggleSort}>{t('projetos.lista.colTarefa')}</SortableTableHead>
+              <SortableTableHead field="coluna" sort={sort} onSort={toggleSort}>{t('projetos.lista.colColuna')}</SortableTableHead>
+              <SortableTableHead field="prioridade" sort={sort} onSort={toggleSort}>{t('projetos.lista.colPrioridade')}</SortableTableHead>
+              <SortableTableHead field="prazo" sort={sort} onSort={toggleSort}>{t('projetos.lista.colPrazo')}</SortableTableHead>
+              <SortableTableHead field="concluida_em" sort={sort} onSort={toggleSort}>{t('projetos.lista.colStatus')}</SortableTableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
