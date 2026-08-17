@@ -80,6 +80,10 @@ Deno.serve(async (req) => {
     const clientIp =
       req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? null;
 
+    const fingerprintHash = await sha256(
+      `${empresa_slug}|${clientIp ?? 'sem-ip'}|${req.headers.get('user-agent') ?? 'sem-ua'}`,
+    );
+
     const { data, error } = await supabase.rpc('create_denuncia_publica', {
       p_empresa_slug: String(empresa_slug),
       p_categoria_id: categoria_id ?? null,
@@ -95,14 +99,14 @@ Deno.serve(async (req) => {
       p_testemunhas: testemunhas ?? null,
       p_evidencias_descricao: evidencias_descricao ?? null,
       p_tracking_hash: trackingHash,
-      p_fingerprint_hash: null,
+      p_fingerprint_hash: fingerprintHash,
       p_client_ip: clientIp,
       p_user_agent: req.headers.get('user-agent') ?? null,
     });
 
     if (error) return json({ error: error.message }, 400);
 
-    const result: any = data ?? {};
+    const result: any = Array.isArray(data) ? (data[0] ?? {}) : (data ?? {});
     return json({
       id: result.id ?? result.denuncia_id ?? null,
       protocolo: result.protocolo ?? result,
