@@ -1168,14 +1168,18 @@ ${weak.map(w => `- índice ${w.index} ("${w.nome}") — motivo: ${w.motivo}\n  C
       let catalogCodes: string[] = [];
       let scopeCodes: string[] = [];
       let residualGaps: string[] = [];
+      // Base de cálculo por framework — o usuário tem de conseguir auditar o
+      // score: quantos requisitos entraram no âmbito, quais foram cobertos e
+      // quais ficaram de fora, em CADA referencial selecionado.
+      const scoreBreakdown: Array<{ framework_id: string; framework_name: string; scope: number; covered: number; missing: string[] }> = [];
       if (docFwIds.length) {
         try {
           const { data: catalogRows } = await supabase
             .from('gap_analysis_requirements')
-            .select('codigo, titulo, descricao')
+            .select('framework_id, codigo, titulo, descricao')
             .in('framework_id', docFwIds)
             .order('ordem', { ascending: true })
-            .limit(600);
+            .limit(900);
           const scope = resolveDocumentScope(
             catalogRows || [],
             documentContent?.titulo,
@@ -1184,6 +1188,29 @@ ${weak.map(w => `- índice ${w.index} ("${w.nome}") — motivo: ${w.motivo}\n  C
           );
           catalogCodes = scope.catalogCodes;
           scopeCodes = scope.scopeCodes;
+
+          const { data: fwRows } = await supabase
+            .from('gap_analysis_frameworks')
+            .select('id, nome')
+            .in('id', docFwIds);
+          const nameById = new Map<string, string>((fwRows || []).map((f: any) => [f.id, f.nome]));
+          const declaredCodes = new Set(
+            coverageMap.map((c: any) => String(c?.requirement_codigo || '').trim()).filter(Boolean),
+          );
+          const scopeSet = new Set(scopeCodes);
+          docFwIds.forEach((fid) => {
+            const fwScope = (catalogRows || [])
+              .filter((r: any) => r.framework_id === fid)
+              .map((r: any) => String(r.codigo || '').trim())
+              .filter((c: string) => c && scopeSet.has(c));
+            scoreBreakdown.push({
+              framework_id: fid,
+              framework_name: nameById.get(fid) || '',
+              scope: fwScope.length,
+              covered: fwScope.filter((c) => declaredCodes.has(c)).length,
+              missing: fwScope.filter((c) => !declaredCodes.has(c)).slice(0, 12),
+            });
+          });
         } catch (catErr) {
           console.log('DocGen catalog fetch failed (score usará somente o coverage_map declarado)', catErr);
         }
@@ -1210,6 +1237,8 @@ ${weak.map(w => `- índice ${w.index} ("${w.nome}") — motivo: ${w.motivo}\n  C
       documentContent._scope_size = scopeCodes.length;
       documentContent._framework_coverage = frameworkCoverage;
       documentContent._residual_gaps = residualGaps;
+      documentContent._score_breakdown = scoreBreakdown;
+
 
 
       console.log('DocGen generate_document compliance (pré auto-refino)', {
