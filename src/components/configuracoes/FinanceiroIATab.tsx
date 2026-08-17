@@ -298,9 +298,15 @@ export function FinanceiroIATab() {
               <tbody>
                 {Object.entries(MODEL_PRICING).map(([key, info]) => {
                   const stat = modelStats.find(m => m.model === key);
+                  const feats = featuresUsingModel(key as AiModelId);
                   return (
                     <tr key={key} className="border-b border-border/50">
-                      <td className="py-2 font-medium">{info.label}</td>
+                      <td className="py-2 font-medium">
+                        {info.label}
+                        {info.fallbackOnly && (
+                          <span className="ml-2 text-[10px] uppercase tracking-wide text-muted-foreground">fallback</span>
+                        )}
+                      </td>
                       <td className="py-2">
                         <Badge variant="outline" className="text-xs">{info.provider}</Badge>
                       </td>
@@ -309,8 +315,12 @@ export function FinanceiroIATab() {
                       <td className="py-2 font-mono text-xs">R$ {info.avgCostPerReqBRL.toFixed(3)}</td>
                       <td className="py-2">
                         <div className="flex flex-wrap gap-1">
-                          {info.functions.map(fn => (
-                            <Badge key={fn} variant="secondary" className="text-[10px]">{fn}</Badge>
+                          {feats.length === 0 ? (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          ) : feats.map(f => (
+                            <Badge key={f.key} variant="secondary" className="text-[10px]">
+                              {aiFeatureLabel(f.key, locale)}
+                            </Badge>
                           ))}
                         </div>
                       </td>
@@ -319,6 +329,7 @@ export function FinanceiroIATab() {
                     </tr>
                   );
                 })}
+
               </tbody>
               <tfoot>
                 <tr className="font-semibold">
