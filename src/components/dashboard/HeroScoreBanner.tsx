@@ -18,6 +18,8 @@ interface HeroScoreBannerProps {
   criticalBreakdown?: CriticalBreakdown;
   activeControls: number;
   userName: string;
+  /** Abre o detalhe dos alertas. Sem isto o cartão fica meramente informativo. */
+  onAlertsClick?: () => void;
 }
 
 export function HeroScoreBanner({
@@ -26,6 +28,7 @@ export function HeroScoreBanner({
   criticalBreakdown,
   activeControls,
   userName,
+  onAlertsClick,
 }: HeroScoreBannerProps) {
   const { t } = useLanguage();
 
@@ -47,6 +50,9 @@ export function HeroScoreBanner({
       color: criticalAlerts > 0 ? 'text-destructive' : 'text-success',
       bgColor: criticalAlerts > 0 ? 'bg-destructive/10' : 'bg-success/10',
       title: alertsTooltip as string | undefined,
+      // Severidade residual: é o que ainda exige decisão depois dos controlos.
+      hint: t('dashboard.criticalAlertsBasis'),
+      onClick: onAlertsClick,
     },
     {
       icon: Shield,
@@ -55,6 +61,8 @@ export function HeroScoreBanner({
       color: 'text-primary',
       bgColor: 'bg-primary/10',
       title: undefined as string | undefined,
+      hint: undefined as string | undefined,
+      onClick: undefined as (() => void) | undefined,
     },
   ];
 
@@ -86,21 +94,34 @@ export function HeroScoreBanner({
 
           {/* Metrics row */}
           <div className="flex flex-wrap justify-center lg:justify-start gap-3">
-            {metrics.map((metric) => (
-              <div
-                key={metric.label}
-                title={metric.title}
-                className="flex items-center gap-2.5 px-4 py-2.5 rounded-lg border bg-card/80 backdrop-blur-sm"
-              >
-                <div className={`p-1.5 rounded-md ${metric.bgColor}`}>
-                  <metric.icon className={`h-3.5 w-3.5 ${metric.color}`} />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground leading-none">{metric.label}</p>
-                  <p className={`text-sm font-bold ${metric.color} leading-tight mt-0.5`}>{metric.value}</p>
-                </div>
-              </div>
-            ))}
+            {metrics.map((metric) => {
+              const Wrapper = metric.onClick ? 'button' : 'div';
+              return (
+                <Wrapper
+                  key={metric.label}
+                  title={metric.title}
+                  type={metric.onClick ? 'button' : undefined}
+                  onClick={metric.onClick}
+                  aria-label={metric.onClick ? `${metric.label}: ${metric.value}` : undefined}
+                  className={`flex items-center gap-2.5 px-4 py-2.5 rounded-lg border bg-card/80 backdrop-blur-sm text-left ${
+                    metric.onClick
+                      ? 'cursor-pointer transition-colors hover:bg-card hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
+                      : ''
+                  }`}
+                >
+                  <div className={`p-1.5 rounded-md ${metric.bgColor}`}>
+                    <metric.icon className={`h-3.5 w-3.5 ${metric.color}`} />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground leading-none">{metric.label}</p>
+                    <p className={`text-sm font-bold ${metric.color} leading-tight mt-0.5`}>{metric.value}</p>
+                    {metric.hint && (
+                      <p className="text-[10px] text-muted-foreground leading-none mt-1">{metric.hint}</p>
+                    )}
+                  </div>
+                </Wrapper>
+              );
+            })}
           </div>
         </div>
       </div>

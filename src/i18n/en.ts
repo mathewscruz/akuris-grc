@@ -656,6 +656,8 @@ export const en = {
   },
   dashboard: {
     criticalAlertsTooltip: 'Critical risks + critical non-conformities + critical incidents + overdue deadlines',
+    criticalAlertsBasis: 'Residual severity',
+    riscosCriticosBasis: 'residual',
     criticalAlertsRisks: 'Critical risks',
     criticalAlertsGaps: 'Critical non-conformities',
     criticalAlertsIncidents: 'Critical incidents',
@@ -770,6 +772,8 @@ export const en = {
     documentAdded: 'Document added',
     newAudit: 'New audit started',
     newComplaint: 'New complaint received',
+    recordUpdated: 'Record updated',
+    recordDeleted: 'Record deleted',
   },
   modules: {
     // Risks

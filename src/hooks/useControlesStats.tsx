@@ -8,6 +8,7 @@ interface ControlesStats {
   ativos: number;
   inativos: number;
   emRevisao: number;
+  descontinuados: number;
   criticos: number;
   altos: number;
   medios: number;

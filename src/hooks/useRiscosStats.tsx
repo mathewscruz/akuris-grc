@@ -14,10 +14,19 @@ import {
 
 export interface RiscosStats {
   total: number;
+  /** Severidade *inerente* (nivel_risco_inicial) — o risco antes dos controlos. */
   criticos: number;
   altos: number;
   medios: number;
   baixos: number;
+  /**
+   * Severidade *residual* — o que sobra depois dos controlos, caindo na
+   * inerente quando ainda não houve avaliação residual. É esta a base do
+   * contador de alertas críticos, por isso o dashboard usa-a para não
+   * apresentar duas definições de "crítico" no mesmo ecrã.
+   */
+  criticosEfetivos: number;
+  altosEfetivos: number;
   tratamentos_pendentes: number;
   tratamentos_andamento: number;
   tratamentos_concluidos: number;
@@ -91,6 +100,8 @@ export const useRiscosStats = () => {
         altos: contagem.altos,
         medios: contagem.medios,
         baixos: contagem.baixos,
+        criticosEfetivos: (riscos || []).filter(r => severidadeRiscoEfetiva(r as any) === 'critico').length,
+        altosEfetivos: (riscos || []).filter(r => severidadeRiscoEfetiva(r as any) === 'alto').length,
         tratamentos_pendentes: 0,
         tratamentos_andamento: 0,
         tratamentos_concluidos: 0,

@@ -80,22 +80,62 @@ const getStatusBadge = (status: string | undefined, t: (key: string) => string, 
   );
 };
 
+/**
+ * Só estas tabelas têm trigger de auditoria hoje. Alargar a cobertura às
+ * restantes (documentos, incidentes, denúncias, contratos, fornecedores)
+ * exige uma migration — enquanto isso, o feed mostra alterações apenas destas.
+ */
+const AUDIT_TABLE_TO_MODULE: Record<string, { module: string; iconName: string }> = {
+  riscos: { module: 'riscos', iconName: 'riscos' },
+  controles: { module: 'controles', iconName: 'controles' },
+  ativos: { module: 'ativos', iconName: 'ativos' },
+  auditorias: { module: 'auditorias', iconName: 'auditorias' },
+};
+
 async function fetchActivities(empresaId: string, t: any): Promise<Activity[]> {
   const activities: Activity[] = [];
 
   const [riscosRes, controlesRes, documentosRes, auditoriasRes, denunciasRes] = await Promise.all([
-    supabase.from('riscos').select('id, nome, nivel_risco_inicial, created_at').eq('empresa_id', empresaId).order('created_at', { ascending: false }).limit(3),
+    supabase.from('riscos').select('id, nome, nivel_risco_inicial, nivel_risco_residual, created_at').eq('empresa_id', empresaId).order('created_at', { ascending: false }).limit(3),
     supabase.from('controles').select('id, nome, status, created_at').eq('empresa_id', empresaId).order('created_at', { ascending: false }).limit(3),
     supabase.from('documentos').select('id, nome, status, created_at').eq('empresa_id', empresaId).order('created_at', { ascending: false }).limit(3),
     supabase.from('auditorias').select('id, nome, status, created_at').eq('empresa_id', empresaId).order('created_at', { ascending: false }).limit(2),
     supabase.from('denuncias').select('id, titulo, status, created_at').eq('empresa_id', empresaId).order('created_at', { ascending: false }).limit(2),
   ]);
 
-  riscosRes.data?.forEach(r => activities.push({ id: `risco-${r.id}`, type: 'creation', title: r.nome, description: t('activities.newRisk'), created_at: r.created_at, module: 'riscos', iconName: 'riscos', status: r.nivel_risco_inicial, isSeverity: true }));
+  riscosRes.data?.forEach(r => activities.push({ id: `risco-${r.id}`, type: 'creation', title: r.nome, description: t('activities.newRisk'), created_at: r.created_at, module: 'riscos', iconName: 'riscos', status: r.nivel_risco_residual || r.nivel_risco_inicial, isSeverity: true }));
   controlesRes.data?.forEach(c => activities.push({ id: `controle-${c.id}`, type: 'creation', title: c.nome, description: t('activities.newControl'), created_at: c.created_at, module: 'controles', iconName: 'controles', status: c.status }));
   documentosRes.data?.forEach(d => activities.push({ id: `documento-${d.id}`, type: 'creation', title: d.nome, description: t('activities.documentAdded'), created_at: d.created_at, module: 'documentos', iconName: 'documentos', status: d.status }));
   auditoriasRes.data?.forEach(a => activities.push({ id: `auditoria-${a.id}`, type: 'creation', title: a.nome, description: t('activities.newAudit'), created_at: a.created_at, module: 'auditorias', iconName: 'auditorias', status: a.status }));
   denunciasRes.data?.forEach(d => activities.push({ id: `denuncia-${d.id}`, type: 'creation', title: d.titulo, description: t('activities.newComplaint'), created_at: d.created_at, module: 'denuncias', iconName: 'denuncias', status: d.status }));
+
+  // Alterações e remoções vêm da trilha de auditoria. As criações continuam a
+  // ser lidas das próprias tabelas porque só 10 tabelas têm trigger de
+  // auditoria — usar apenas audit_logs perderia documentos e denúncias.
+  const { data: auditRes } = await supabase
+    .from('audit_logs')
+    .select('id, table_name, record_id, action, old_values, new_values, created_at')
+    .eq('empresa_id', empresaId)
+    .in('action', ['UPDATE', 'DELETE'])
+    .order('created_at', { ascending: false })
+    .limit(10);
+
+  auditRes?.forEach((log: any) => {
+    const modulo = AUDIT_TABLE_TO_MODULE[log.table_name];
+    if (!modulo) return;
+    const valores = log.action === 'DELETE' ? log.old_values : log.new_values;
+    const titulo = valores?.nome || valores?.titulo;
+    if (!titulo) return;
+    activities.push({
+      id: `audit-${log.id}`,
+      type: log.action === 'DELETE' ? 'deletion' : 'update',
+      title: titulo,
+      description: log.action === 'DELETE' ? t('activities.recordDeleted') : t('activities.recordUpdated'),
+      created_at: log.created_at,
+      module: modulo.module,
+      iconName: modulo.iconName,
+    });
+  });
 
   return activities.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 10);
 }

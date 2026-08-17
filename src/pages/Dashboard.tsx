@@ -53,17 +53,43 @@ export default function Dashboard() {
   const { data: trends } = useTrendData();
   const maturity = useGrcMaturityScore();
 
-  const isLoading = ativosStats.isLoading || controlesStats.isLoading || incidentesStats.isLoading || dashboardLoading;
+  // Todos os indicadores exibidos têm de entrar no estado de carregamento —
+  // caso contrário a página renderiza `|| 0` para os que ainda não chegaram e
+  // o utilizador vê zeros que depois saltam para o valor real.
+  const isLoading =
+    ativosStats.isLoading ||
+    controlesStats.isLoading ||
+    incidentesStats.isLoading ||
+    contratosStats.isLoading ||
+    documentosStats.isLoading ||
+    riscosStats.isLoading ||
+    planosStats.isLoading ||
+    ddStats.isLoading ||
+    denunciasStats.isLoading ||
+    dashboardLoading;
+
+  // Esta lista tem de cobrir *todas* as queries que alimentam o dashboard.
+  // Faltar uma faz o botão "atualizar" mostrar dados antigos sem qualquer aviso.
+  const DASHBOARD_QUERY_KEYS = [
+    'dashboard-stats',
+    'ativos-stats',
+    'controles-stats',
+    'incidentes-stats',
+    'contratos-stats',
+    'documentos-stats',
+    'riscos-stats',
+    'planos-acao-stats',
+    'due-diligence-stats',
+    'denuncias-stats',
+    'gap-analysis-stats',
+    'trend-data',
+    'recent-activities',
+  ] as const;
 
   const handleRefreshAll = () => {
-    queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
-    queryClient.invalidateQueries({ queryKey: ['ativos-stats'] });
-    queryClient.invalidateQueries({ queryKey: ['controles-stats'] });
-    queryClient.invalidateQueries({ queryKey: ['incidentes-stats'] });
-    queryClient.invalidateQueries({ queryKey: ['contratos-stats'] });
-    queryClient.invalidateQueries({ queryKey: ['documentos-stats'] });
-    queryClient.invalidateQueries({ queryKey: ['gap-analysis-stats'] });
-    queryClient.invalidateQueries({ queryKey: ['trend-data'] });
+    DASHBOARD_QUERY_KEYS.forEach((key) => {
+      queryClient.invalidateQueries({ queryKey: [key] });
+    });
   };
 
   if (isLoading) {
@@ -95,6 +121,7 @@ export default function Dashboard() {
           criticalBreakdown={dashboardData?.criticalBreakdown}
           activeControls={controlesStats.data?.ativos || 0}
           userName={profile?.nome || 'Usuário'}
+          onAlertsClick={() => setAlertsDialogOpen(true)}
         />
 
         {/* KPI Pills */}
@@ -110,8 +137,8 @@ export default function Dashboard() {
             docsExpiring={documentosStats.data?.vencendo30Dias || 0}
             docsPending={documentosStats.data?.pendentesAprovacao || 0}
             totalRiscos={riscosStats.data?.total || 0}
-            riscosCriticos={riscosStats.data?.criticos || 0}
-            riscosAltos={riscosStats.data?.altos || 0}
+            riscosCriticos={riscosStats.data?.criticosEfetivos || 0}
+            riscosAltos={riscosStats.data?.altosEfetivos || 0}
             planosPendentes={planosStats.data?.pendentes || 0}
             planosAtrasados={planosStats.data?.atrasados || 0}
             ddAtivos={ddStats.data?.activeAssessments || 0}

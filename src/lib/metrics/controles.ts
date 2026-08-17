@@ -19,6 +19,9 @@ export interface TesteControleLike {
 export const isControleAtivo = (c: ControleLike) => norm(c.status) === 'ativo';
 export const isControleInativo = (c: ControleLike) => norm(c.status) === 'inativo';
 export const isControleEmRevisao = (c: ControleLike) => norm(c.status) === 'em_revisao';
+/** O formulário oferece 4 estados; sem esta contagem os descontinuados entram
+ *  no total mas em nenhuma faixa, e a soma deixa de fechar. */
+export const isControleDescontinuado = (c: ControleLike) => norm(c.status) === 'descontinuado';
 export const criticidadeControle = (c: ControleLike): Severidade =>
   severidadeDeFaixas(c.criticidade);
 
@@ -105,6 +108,7 @@ export const contarControles = (
   ativos: countBy(controles, isControleAtivo),
   inativos: countBy(controles, isControleInativo),
   emRevisao: countBy(controles, isControleEmRevisao),
+  descontinuados: countBy(controles, isControleDescontinuado),
   criticos: countBy(controles, (c) => criticidadeControle(c) === 'critico'),
   altos: countBy(controles, (c) => criticidadeControle(c) === 'alto'),
   medios: countBy(controles, (c) => criticidadeControle(c) === 'medio'),

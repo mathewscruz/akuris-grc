@@ -656,6 +656,8 @@ export const pt = {
   },
   dashboard: {
     criticalAlertsTooltip: 'Riscos críticos + não conformidades críticas + incidentes críticos + prazos vencidos',
+    criticalAlertsBasis: 'Severidade residual',
+    riscosCriticosBasis: 'residual',
     criticalAlertsRisks: 'Riscos críticos',
     criticalAlertsGaps: 'Não conformidades críticas',
     criticalAlertsIncidents: 'Incidentes críticos',
@@ -770,6 +772,8 @@ export const pt = {
     documentAdded: 'Documento adicionado',
     newAudit: 'Nova auditoria iniciada',
     newComplaint: 'Nova denúncia recebida',
+    recordUpdated: 'Registo atualizado',
+    recordDeleted: 'Registo removido',
   },
   modules: {
     // Riscos
