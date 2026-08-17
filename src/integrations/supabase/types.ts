@@ -8914,6 +8914,15 @@ export type Database = {
           texto_apresentacao: string
         }[]
       }
+      get_denuncias_categorias_publicas: {
+        Args: { p_empresa_id: string }
+        Returns: {
+          cor: string
+          descricao: string
+          id: string
+          nome: string
+        }[]
+      }
       get_empresa_by_slug: { Args: { empresa_slug: string }; Returns: string }
       get_empresa_publica_por_slug: {
         Args: { p_slug: string }
