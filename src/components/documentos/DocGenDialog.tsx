@@ -721,6 +721,10 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
         });
         return;
       }
+      if (res.errorCode === 'AI_UNAVAILABLE') {
+        setGenerationError(t('docgen.dialog.serviceUnavailable'));
+        return;
+      }
       if (res.error) throw new Error(res.error);
       const data = res.data;
       if (!data?.document) {

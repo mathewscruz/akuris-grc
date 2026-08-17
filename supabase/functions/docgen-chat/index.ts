@@ -2008,6 +2008,7 @@ Aplique a instrução conforme as regras do sistema e devolva o JSON completo CO
     return new Response(JSON.stringify({
       error: error instanceof Error ? error.message : 'Internal server error',
       code,
+      retryable: code === 'AI_UNAVAILABLE' || code === 'GENERATION_ABORTED',
     }), {
       status,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

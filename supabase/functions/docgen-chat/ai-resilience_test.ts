@@ -38,6 +38,16 @@ Deno.test('429 não executa fallback', async () => {
   assertEquals(fallbackCalls, 0);
 });
 
+Deno.test('cancelamento do utilizador não executa fallback', async () => {
+  let fallbackCalls = 0;
+  await assertRejects(() => withTransientFallback({
+    primary: () => Promise.reject(new TestError('GENERATION_ABORTED')),
+    fallback: async () => { fallbackCalls += 1; return 'documento'; },
+    isTransient: transient,
+  }), TestError, 'GENERATION_ABORTED');
+  assertEquals(fallbackCalls, 0);
+});
+
 Deno.test('duas falhas propagam a falha final', async () => {
   await assertRejects(() => withTransientFallback({
     primary: () => Promise.reject(new TestError('AI_UNAVAILABLE')),
