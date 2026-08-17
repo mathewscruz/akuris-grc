@@ -231,6 +231,7 @@ export function DocumentosLista<T extends DocumentoListaItem>({
 }: DocumentosListaProps<T>) {
   const { t } = useLanguage();
   const vazio = documentos.length === 0;
+  const { sorted: documentosOrdenados, sort, toggleSort } = useTableSort(documentos);
 
   return (
     <>
