@@ -9,9 +9,11 @@ import {
   filterInScope,
   expandNaoCobertosFromCatalog,
   computeResidualGaps,
+  resolveDocumentScope,
   AUDIT_THRESHOLD,
   MAX_REFINE_ATTEMPTS,
 } from '../_shared/compliance-score.ts';
+
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
