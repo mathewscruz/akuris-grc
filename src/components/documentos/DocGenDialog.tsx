@@ -665,7 +665,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
         empresa_id: userInfo.empresa_id,
         action: 'generate_document',
         idempotency_key: idemKey,
-        ...(strictJson ? { strict_json: true } : {}),
+        ...(strictJson ? { json_retry: true } : {}),
         // Título distinguível: modelo + escopo resumido + data (sem isto o
         // histórico enche-se de entradas com o mesmo nome).
         conversation_title: [
