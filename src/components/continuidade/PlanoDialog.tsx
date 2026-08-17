@@ -106,7 +106,7 @@ export function PlanoDialog({ open, onOpenChange, plano, onSuccess }: PlanoDialo
       onOpenChange={onOpenChange}
       icon={ShieldCheck}
       title={plano ? t('continuidadeComp.planoDialog.titleEdit') : t('continuidadeComp.planoDialog.titleNew')}
-      size="md"
+      size="lg"
       onSubmit={handleSubmit}
       submitLabel={plano ? t('continuidadeComp.planoDialog.submitUpdate') : t('continuidadeComp.planoDialog.submitCreate')}
       isSubmitting={loading}

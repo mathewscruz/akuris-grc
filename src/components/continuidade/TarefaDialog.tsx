@@ -90,7 +90,7 @@ export function TarefaDialog({ open, onOpenChange, planoId, tarefa, onSuccess }:
       onOpenChange={onOpenChange}
       icon={ListChecks}
       title={tarefa ? t('modDialogs.continuidade.tarefa.titleEdit') : t('modDialogs.continuidade.tarefa.titleNew')}
-      size="sm"
+      size="lg"
       onSubmit={handleSubmit}
       submitLabel={tarefa ? t('modDialogs.continuidade.tarefa.submitUpdate') : t('modDialogs.continuidade.tarefa.submitCreate')}
       isSubmitting={loading}

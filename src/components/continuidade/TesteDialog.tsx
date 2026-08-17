@@ -102,7 +102,7 @@ export function TesteDialog({ open, onOpenChange, planoId, teste, onSuccess }: T
       onOpenChange={onOpenChange}
       icon={FlaskConical}
       title={teste ? t('modDialogs.continuidade.teste.titleEdit') : t('modDialogs.continuidade.teste.titleNew')}
-      size="sm"
+      size="lg"
       onSubmit={handleSubmit}
       submitLabel={teste ? t('modDialogs.continuidade.teste.submitUpdate') : t('modDialogs.continuidade.teste.submitCreate')}
       isSubmitting={loading}
