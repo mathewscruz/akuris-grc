@@ -315,8 +315,12 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
                          usuario.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesEmpresa = filterEmpresa === 'all' || usuario.empresa_id === filterEmpresa;
     const matchesRole = filterRole === 'all' || usuario.role === filterRole;
-    
-    return matchesSearch && matchesEmpresa && matchesRole;
+    const info = usersAccessInfo.get(usuario.user_id);
+    const matchesAcesso =
+      filterAcesso === 'all' ||
+      (filterAcesso === 'pending' ? !!info?.first_access_pending : !!info?.last_sign_in_at);
+
+    return matchesSearch && matchesEmpresa && matchesRole && matchesAcesso;
   });
 
   // Stats
