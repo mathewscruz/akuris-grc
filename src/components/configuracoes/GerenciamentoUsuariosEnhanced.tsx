@@ -115,6 +115,8 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterEmpresa, setFilterEmpresa] = useState<string>('all');
   const [filterRole, setFilterRole] = useState<string>('all');
+  const [filterAcesso, setFilterAcesso] = useState<string>('all');
+  const [bulkResending, setBulkResending] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingUsuario, setEditingUsuario] = useState<Usuario | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
