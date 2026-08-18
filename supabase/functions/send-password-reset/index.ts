@@ -34,10 +34,15 @@ interface PasswordResetRequest {
   companyLogoUrl?: string
 }
 
-// Resposta uniforme para evitar enumeração
+// Resposta uniforme para evitar enumeração (fluxo público "Esqueci a senha")
 const uniformSuccess = () => new Response(
   JSON.stringify({ success: true, message: 'Se o email existir, um link de redefinição será enviado' }),
   { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+)
+
+const jsonResponse = (body: unknown, status = 200) => new Response(
+  JSON.stringify(body),
+  { status, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
 )
 
 Deno.serve(async (req) => {
@@ -55,10 +60,7 @@ Deno.serve(async (req) => {
       || 'unknown'
     if (!checkRateLimit(clientIp)) {
       console.warn('send-password-reset rate limited', { ip: clientIp })
-      return new Response(JSON.stringify({ error: 'Muitas tentativas. Tente novamente em alguns minutos.' }), {
-        status: 429,
-        headers: { 'Content-Type': 'application/json', ...corsHeaders },
-      })
+      return jsonResponse({ error: 'Muitas tentativas. Tente novamente em alguns minutos.' }, 429)
     }
 
     const supabase = createClient(
@@ -67,38 +69,73 @@ Deno.serve(async (req) => {
     )
 
     const body = await req.json().catch(() => ({}))
-    const { email, companyLogoUrl }: PasswordResetRequest = body
+    const { email, userId, companyLogoUrl }: PasswordResetRequest = body
 
-    if (!email || typeof email !== 'string') {
-      // Resposta uniforme para não vazar sinais
-      return uniformSuccess()
+    // ── Identifica se o pedido vem de um administrador autenticado.
+    // Nesse caso devolvemos o resultado real (enviado/falhou), em vez da
+    // resposta uniforme — o admin precisa de ver o erro quando existe.
+    let adminProfile: { user_id: string; role: string; empresa_id: string | null } | null = null
+    const authHeader = req.headers.get('Authorization') ?? ''
+    if (authHeader.startsWith('Bearer ')) {
+      const token = authHeader.replace('Bearer ', '')
+      const { data: authData } = await supabase.auth.getUser(token)
+      if (authData?.user) {
+        const { data: perfil } = await supabase
+          .from('profiles')
+          .select('user_id, role, empresa_id')
+          .eq('user_id', authData.user.id)
+          .maybeSingle()
+        if (perfil && (perfil.role === 'admin' || perfil.role === 'super_admin')) {
+          adminProfile = perfil as any
+        }
+      }
     }
 
-    // A comparação tem de ignorar maiúsculas: create-user grava o e-mail tal
-    // como foi digitado, sem normalizar, portanto um perfil gravado como
-    // "Joao.Silva@Empresa.com.br" nunca era encontrado por uma busca em minúsculas
-    // e o utilizador ficava permanentemente sem conseguir redefinir a senha —
-    // sem erro visível, porque a resposta é sempre uniforme.
-    const alvo = email.trim().toLowerCase()
-    // Escapa os curingas do LIKE: "_" é carácter legítimo em endereços de e-mail.
-    const padrao = alvo.replace(/([%_\\])/g, '\\$1')
+    const isAdminRequest = !!adminProfile
+    const failure = (mensagem: string, status = 400) =>
+      isAdminRequest ? jsonResponse({ success: false, error: mensagem }, status) : uniformSuccess()
 
-    const { data: candidatos } = await supabase
-      .from('profiles')
-      .select('user_id, nome, email, empresa:empresas(nome, logo_url)')
-      .ilike('email', padrao)
-      .limit(10)
+    if (!email && !userId) {
+      return failure('Informe o e-mail ou o utilizador para redefinir a senha.')
+    }
 
-    const profile = (candidatos ?? []).find(
-      (p: any) => (p.email ?? '').trim().toLowerCase() === alvo
-    ) ?? null
+    let profile: any = null
+
+    if (userId) {
+      // Fluxo administrativo: resolvemos o e-mail a partir do perfil.
+      if (!isAdminRequest) {
+        return failure('Sem permissão para redefinir a senha deste utilizador.', 403)
+      }
+      const { data } = await supabase
+        .from('profiles')
+        .select('user_id, nome, email, empresa_id, empresa:empresas(nome, logo_url)')
+        .eq('user_id', userId)
+        .maybeSingle()
+      profile = data ?? null
+
+      if (profile && adminProfile!.role !== 'super_admin' && profile.empresa_id !== adminProfile!.empresa_id) {
+        return failure('Sem permissão para gerir este utilizador.', 403)
+      }
+    } else {
+      // A comparação tem de ignorar maiúsculas: create-user grava o e-mail tal
+      // como foi digitado, sem normalizar.
+      const alvo = (email as string).trim().toLowerCase()
+      const padrao = alvo.replace(/([%_\\])/g, '\\$1')
+
+      const { data: candidatos } = await supabase
+        .from('profiles')
+        .select('user_id, nome, email, empresa_id, empresa:empresas(nome, logo_url)')
+        .ilike('email', padrao)
+        .limit(10)
+
+      profile = (candidatos ?? []).find(
+        (p: any) => (p.email ?? '').trim().toLowerCase() === alvo
+      ) ?? null
+    }
 
     if (!profile) {
-      // A resposta ao cliente continua uniforme para não revelar se o e-mail
-      // existe, mas sem este registo uma falha real fica indistinguível de um
-      // pedido para um endereço inexistente.
-      console.warn('send-password-reset: nenhum perfil corresponde ao e-mail pedido')
-      return uniformSuccess()
+      console.warn('send-password-reset: nenhum perfil corresponde ao pedido')
+      return failure('Utilizador não encontrado.', 404)
     }
 
     const siteUrl = 'https://akuris.com.br'
@@ -112,8 +149,7 @@ Deno.serve(async (req) => {
 
     if (linkError || !linkData) {
       console.error('Erro ao gerar link de recovery:', linkError)
-      // Ainda assim retorna sucesso genérico
-      return uniformSuccess()
+      return failure('Não foi possível gerar o link de redefinição.', 500)
     }
 
     const resetUrl = `${siteUrl}/definir-senha?token_hash=${linkData.properties.hashed_token}&type=recovery`
@@ -123,8 +159,8 @@ Deno.serve(async (req) => {
         userName: profile.nome,
         userEmail: profile.email,
         resetUrl,
-        companyName: (profile as any).empresa?.nome,
-        companyLogoUrl: companyLogoUrl || (profile as any).empresa?.logo_url
+        companyName: profile.empresa?.nome,
+        companyLogoUrl: companyLogoUrl || profile.empresa?.logo_url
       })
     )
 
@@ -137,12 +173,29 @@ Deno.serve(async (req) => {
 
     if (sendError) {
       console.error('Erro ao enviar e-mail:', sendError)
+      return failure(`Falha no envio do e-mail: ${sendError.message ?? String(sendError)}`, 502)
+    }
+
+    // Regista no histórico quem disparou a redefinição.
+    if (isAdminRequest) {
+      try {
+        await supabase.from('audit_logs').insert({
+          user_id: adminProfile!.user_id,
+          empresa_id: profile.empresa_id,
+          action: 'password_reset_requested',
+          table_name: 'profiles',
+          record_id: profile.user_id,
+          new_values: { email: profile.email },
+        })
+      } catch (e) {
+        console.error('Falha ao registar audit log de reset de senha:', e)
+      }
+      return jsonResponse({ success: true, email: profile.email })
     }
 
     return uniformSuccess()
   } catch (error: any) {
     console.error('Erro na função send-password-reset:', error)
-    // Sempre resposta uniforme
     return uniformSuccess()
   }
 })
