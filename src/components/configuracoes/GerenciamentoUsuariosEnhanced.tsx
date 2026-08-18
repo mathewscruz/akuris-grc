@@ -853,6 +853,17 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
       value: filterRole,
       onChange: setFilterRole,
     },
+    {
+      key: 'acesso',
+      label: t('admin.usuarios.filterAcessoLabel'),
+      options: [
+        { value: 'all', label: t('admin.usuarios.filterAcessoAll') },
+        { value: 'pending', label: t('admin.usuarios.filterAcessoPending') },
+        { value: 'active', label: t('admin.usuarios.filterAcessoActive') },
+      ],
+      value: filterAcesso,
+      onChange: setFilterAcesso,
+    },
   ];
 
   return (
