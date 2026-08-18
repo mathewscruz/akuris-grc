@@ -30,6 +30,7 @@ function checkRateLimit(ip: string): boolean {
 
 interface PasswordResetRequest {
   email?: string
+  userId?: string
   companyLogoUrl?: string
 }
 
