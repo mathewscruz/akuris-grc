@@ -732,10 +732,17 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
         
         if (accessInfo?.first_access_pending) {
           return (
-            <Badge variant="warning" className="whitespace-nowrap">
-              <Clock className="h-3 w-3 mr-1" />
-              {t('admin.usuarios.primeiroAcessoPendente')}
-            </Badge>
+            <div className="space-y-1">
+              <Badge variant="warning" className="whitespace-nowrap">
+                <Clock className="h-3 w-3 mr-1" />
+                {t('admin.usuarios.convitePendente')}
+              </Badge>
+              {usuario.invitation_sent_at && (
+                <div className="text-xs text-muted-foreground">
+                  {t('admin.usuarios.conviteEnviadoEm', { data: formatDateTime(usuario.invitation_sent_at) })}
+                </div>
+              )}
+            </div>
           );
         }
         
