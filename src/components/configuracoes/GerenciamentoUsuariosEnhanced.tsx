@@ -519,12 +519,20 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
   const resetPassword = async (usuario: Usuario) => {
     try {
       setActionLoading(prev => ({ ...prev, [`reset-${usuario.id}`]: true }));
-      
-      const { error } = await supabase.functions.invoke('send-password-reset', {
-        body: { userId: usuario.user_id }
+
+      // A função de envio identifica o destinatário pelo e-mail; enviar apenas
+      // o userId fazia com que ela devolvesse sucesso genérico sem enviar nada.
+      const { data, error } = await supabase.functions.invoke('send-password-reset', {
+        body: { email: usuario.email, userId: usuario.user_id }
       });
 
-      if (error) throw error;
+      if (error) {
+        const mensagem = await extrairMensagemEdge(error);
+        throw new Error(mensagem || t('admin.usuarios.toastErrorResetPassword'));
+      }
+      if (data && (data as any).success === false) {
+        throw new Error((data as any).error || t('admin.usuarios.toastErrorResetPassword'));
+      }
 
       toast.success(t('admin.usuarios.toastPasswordReset', { email: usuario.email }));
       
@@ -536,6 +544,43 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
     } finally {
       setActionLoading(prev => ({ ...prev, [`reset-${usuario.id}`]: false }));
     }
+  };
+
+  /** Reenvia o convite a todos os utilizadores que nunca acederam. */
+  const resendPendingInvites = async () => {
+    const pendentes = filteredUsuarios.filter((u) => shouldShowResendButton(u));
+    if (pendentes.length === 0) {
+      toast.info(t('admin.usuarios.toastNoPendingInvites'));
+      return;
+    }
+
+    setBulkResending(true);
+    let enviados = 0;
+    let falhas = 0;
+
+    for (const usuario of pendentes) {
+      try {
+        const { error } = await supabase.functions.invoke('resend-welcome-email', {
+          body: { userId: usuario.user_id }
+        });
+        if (error) throw error;
+        enviados++;
+      } catch (e) {
+        console.error('Falha ao reenviar convite', usuario.email, e);
+        falhas++;
+      }
+    }
+
+    setBulkResending(false);
+    if (falhas === 0) {
+      toast.success(t('admin.usuarios.toastBulkResendDone', { enviados: String(enviados) }));
+    } else {
+      toast.warning(t('admin.usuarios.toastBulkResendPartial', { enviados: String(enviados), falhas: String(falhas) }));
+    }
+
+    const userIds = usuarios.map(u => u.user_id);
+    await fetchUsersAccessInfo(userIds);
+    await fetchUsuarios();
   };
 
   const getRoleBadge = (role: string) => {
