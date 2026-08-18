@@ -162,11 +162,15 @@ const DefinirSenha = () => {
             <p className="text-white/50 text-sm">
               {t('defineSenhaPage.invalidLinkDesc')}
             </p>
-            <Button onClick={() => navigate('/auth')} variant="gradient" className="w-full">
+            <Button onClick={() => setForgotOpen(true)} variant="gradient" className="w-full">
+              {t('defineSenhaPage.requestNewLink')}
+            </Button>
+            <Button onClick={() => navigate('/auth')} variant="outline" className="w-full">
               {t('defineSenhaPage.goToLogin')}
             </Button>
           </div>
         </div>
+        <ForgotPasswordDialog open={forgotOpen} onOpenChange={setForgotOpen} />
       </div>
     );
   }
