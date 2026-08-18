@@ -38,6 +38,7 @@ const DefinirSenha = () => {
   const [isVerifying, setIsVerifying] = useState(true);
   const [isTokenValid, setIsTokenValid] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [forgotOpen, setForgotOpen] = useState(false);
   const [errors, setErrors] = useState<{ password?: string; confirmPassword?: string }>({});
 
   // Guardamos o token e só o consumimos no submit (evita que scanners de
