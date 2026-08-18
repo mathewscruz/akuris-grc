@@ -907,6 +907,22 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
 
       {/* Actions */}
       <div className="flex flex-wrap gap-3 justify-end">
+        {stats.pending > 0 && (
+          <Button
+            variant="outline"
+            onClick={resendPendingInvites}
+            disabled={bulkResending}
+          >
+            {bulkResending ? (
+              <AkurisPulse size={16} className="mr-2" />
+            ) : (
+              <Mail className="h-4 w-4 mr-2" />
+            )}
+            {t('admin.usuarios.resendPendingInvitesButton', { total: String(stats.pending) })}
+          </Button>
+        )}
+
+
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
