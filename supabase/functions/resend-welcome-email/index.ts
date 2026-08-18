@@ -72,7 +72,7 @@ Deno.serve(async (req) => {
 
     const { data: userProfile, error: userProfileError } = await supabaseAdmin
       .from('profiles')
-      .select('nome, email, user_id, empresa_id, empresa:empresas(nome, logo_url)')
+      .select('nome, email, user_id, empresa_id, invitation_sent_at, empresa:empresas(nome, logo_url)')
       .eq('user_id', userId)
       .single()
 
@@ -82,6 +82,22 @@ Deno.serve(async (req) => {
 
     if (!isSuperAdmin && userProfile.empresa_id !== currentUserProfile.empresa_id) {
       throw new Error('Você não tem permissão para gerenciar este usuário')
+    }
+
+    // Anti-abuso: no máximo um reenvio a cada 5 minutos por utilizador.
+    const REENVIO_INTERVALO_MS = 5 * 60 * 1000
+    if (userProfile.invitation_sent_at) {
+      const ultimo = new Date(userProfile.invitation_sent_at).getTime()
+      if (Number.isFinite(ultimo) && Date.now() - ultimo < REENVIO_INTERVALO_MS) {
+        const faltamMin = Math.max(1, Math.ceil((REENVIO_INTERVALO_MS - (Date.now() - ultimo)) / 60000))
+        return new Response(
+          JSON.stringify({
+            error: `Convite reenviado há pouco. Tente novamente em ${faltamMin} min.`,
+            code: 'rate_limited',
+          }),
+          { status: 429, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
+        )
+      }
     }
 
     // Gerar novo link de recovery
