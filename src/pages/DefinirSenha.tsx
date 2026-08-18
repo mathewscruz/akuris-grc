@@ -10,6 +10,7 @@ import logoImage from '@/assets/akuris-logo.png';
 import { z } from 'zod';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { logger } from '@/lib/logger';
+import { ForgotPasswordDialog } from '@/components/ForgotPasswordDialog';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 const buildPasswordSchema = (t: (k: string) => string) => z.object({
