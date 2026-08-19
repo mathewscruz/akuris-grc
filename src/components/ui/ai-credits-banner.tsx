@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AkurisAIIcon } from '@/components/icons';
+import { IconWarning } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAiCredits } from '@/hooks/useAiCredits';
@@ -27,13 +27,13 @@ export function AiCreditsExhaustedBanner() {
       )}
     >
       <span className="flex h-7 w-7 items-center justify-center rounded-md bg-destructive/15 shrink-0">
-        <AkurisAIIcon className="h-4 w-4" strokeWidth={1.5} />
+        <IconWarning className="h-4 w-4" strokeWidth={1.5} />
       </span>
       <div className="flex-1 min-w-[240px]">
         <p className="text-xs font-semibold leading-tight">
           Créditos de IA esgotados
         </p>
-        <p className="text-[11px] opacity-90 leading-tight mt-0.5">
+        <p className="text-micro opacity-90 leading-tight mt-0.5">
           {isSuperAdmin
             ? 'Os assistentes inteligentes estão indisponíveis até que mais créditos sejam liberados.'
             : 'Para continuar usando os assistentes inteligentes, entre em contato com o administrador da sua conta.'}
@@ -43,7 +43,7 @@ export function AiCreditsExhaustedBanner() {
         <Button
           variant="outline"
           size="sm"
-          className="h-7 px-2.5 text-[11px] border-destructive/40 text-destructive hover:bg-destructive/15"
+          className="h-7 px-2.5 text-micro border-destructive/40 text-destructive hover:bg-destructive/15"
           onClick={() =>
             navigate(isSuperAdmin ? '/configuracoes?tab=creditos-ia' : '/configuracoes?tab=assinatura')
           }

@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { CalendarIcon, X } from 'lucide-react';
+import { IconClose, IconCalendar } from '@/components/icons';
 import { format, parseISO, isValid } from 'date-fns';
 import { ptBR, pt as ptPT, enUS } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { datePattern } from '@/lib/date-utils';
 
 interface DateFieldProps {
   /** Valor em ISO curto (YYYY-MM-DD) — o formato guardado na base de dados. */
@@ -49,7 +50,7 @@ export function DateField({
   const [open, setOpen] = React.useState(false);
 
   const dateFns = locale === 'en' ? enUS : locale === 'pt' ? ptPT : ptBR;
-  const pattern = locale === 'en' ? 'MM/dd/yyyy' : 'dd/MM/yyyy';
+  const pattern = locale === 'en' ? 'MM/dd/yyyy' : datePattern();
 
   const selected = React.useMemo(() => {
     if (!value) return undefined;
@@ -75,14 +76,14 @@ export function DateField({
             className,
           )}
         >
-          <CalendarIcon className="h-4 w-4 flex-shrink-0" strokeWidth={1.5} />
+          <IconCalendar className="h-4 w-4 flex-shrink-0" strokeWidth={1.5} />
           <span className="truncate">{label}</span>
           {clearable && selected && !disabled && (
             <span
               role="button"
               tabIndex={0}
               aria-label={t('common.clear')}
-              className="ml-auto rounded p-0.5 hover:bg-muted"
+              className="ml-auto rounded p-0.5 hover:bg-accent"
               onClick={(e) => {
                 e.stopPropagation();
                 onChange(null);
@@ -95,7 +96,7 @@ export function DateField({
                 }
               }}
             >
-              <X className="h-3.5 w-3.5" strokeWidth={1.5} />
+              <IconClose className="h-3.5 w-3.5" strokeWidth={1.5} />
             </span>
           )}
         </Button>

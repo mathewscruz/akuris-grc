@@ -1,6 +1,6 @@
 import React from 'react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { AkurisAIIcon } from '@/components/icons';
+
 import { cn } from '@/lib/utils';
 import { useAiCredits } from '@/hooks/useAiCredits';
 
@@ -46,7 +46,6 @@ export function AiCostHint({ variant = 'inline', cost = 1, action, className }: 
         )}
         role="note"
       >
-        <AkurisAIIcon className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} />
         <span className="leading-tight">
           <strong className={esgotado ? '' : 'text-foreground font-semibold'}>{label}</strong>
           <span className="mx-1.5 opacity-50">·</span>
@@ -66,14 +65,13 @@ export function AiCostHint({ variant = 'inline', cost = 1, action, className }: 
         <TooltipTrigger asChild>
           <span
             className={cn(
-              'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium select-none cursor-help',
+              'inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-micro font-medium select-none cursor-help',
               esgotado
                 ? 'border-destructive/30 bg-destructive/10 text-destructive'
                 : 'border-border/60 bg-muted/40 text-muted-foreground',
               className,
             )}
           >
-            <AkurisAIIcon className="h-3 w-3" strokeWidth={1.5} />
             {label}
           </span>
         </TooltipTrigger>

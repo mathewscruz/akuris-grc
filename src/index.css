@@ -85,16 +85,28 @@
     /* Accent Vibrant: Violet saturado */
     --accent-vibrant: 252 90% 58%;
     
-    /* Secondary: Slate refinado */
-    --secondary: 200 18% 94%;
+    /* Superfícies recuadas do tema claro.
+     *
+     * O casco (--card e --popover) é branco puro, sem qualquer croma. Uma
+     * superfície com matiz assente sobre ele não é lida como sombra, é lida
+     * como COR: --muted a 200 14% dava rgb(232,236,237), 5 pontos de amplitude
+     * entre o canal mais alto e o mais baixo, e os blocos recuados dos diálogos
+     * apareciam azulados sobre o branco.
+     *
+     * A profundidade passa a vir só da luminosidade. A matiz fica na família
+     * fria da aplicação (210), mas com saturação residual: amplitude <= 2,
+     * abaixo do limiar visível. Regra verificada por
+     * src/__tests__/superficies-neutras.test.ts. */
+    --secondary: 210 5% 94%;
     --secondary-foreground: 0 0% 27%;
-    
-    /* Muted: Tons neutros sofisticados */
-    --muted: 200 14% 92%;
+
+    --muted: 210 4% 92%;
     --muted-foreground: 200 10% 45%;
     
-    /* Accent: Para hover e estados interativos */
-    --accent: 252 30% 95%;
+    /* Realce de interação — o ÚNICO fundo que muda quando o rato passa.
+     * Os planos são todos brancos e separados por fio de borda; o que dá vida
+     * à interface é este roxo muito leve da marca, não caixas cinzentas. */
+    --accent: 252 40% 96%;
     --accent-foreground: 252 80% 50%;
 
     /* Destructive / Error — saturação reduzida p/ harmonia Navy */
@@ -198,11 +210,17 @@
     --spacing-xl: 2rem;
     --spacing-2xl: 3rem;
     
-    /* Border Radius */
-    --radius: 0.625rem;
+    /* Border Radius — um só valor, em px.
+       Estava em rem, portanto acompanhava a raiz tipográfica: dava 9,325px
+       num ecrã e 10,2px noutro, e o `rounded` de fábrica do Tailwind dava
+       3,73px ao lado. Era essa deriva que se via como "uns mais redondos,
+       outros mais quadrados". Em px o raio é o mesmo em qualquer resolução,
+       e todas as classes de raio apontam para aqui. */
+    --radius: 8px;
     
     /* Table hover */
-    --table-row-hover: 252 15% 97%;
+    /* Mesmo realce da linha de tabela e de tudo o resto: um só hover. */
+    --table-row-hover: 252 40% 96%;
 
     /* Sidebar - Light Mode */
     --sidebar-background: 230 25% 7%;
@@ -264,12 +282,16 @@
     --secondary: 216 30% 15%;
     --secondary-foreground: 180 10% 90%;
     
-    /* Muted — 72% de luminosidade garante >= 7:1 sobre o card navy (WCAG AA/AAA) */
-    --muted: 216 25% 18%;
+    /* Muted — no escuro toda a paleta partilha a matiz navy (216), por isso não
+     * há choque de cor; o que faltava era degrau de luminosidade: --muted tinha
+     * exactamente os mesmos 18% de --popover e o painel recuado desaparecia
+     * dentro do diálogo. Sobe para 23% para voltar a ler-se como plano distinto.
+     * O 72% de --muted-foreground continua a garantir >= 7:1 sobre o card navy. */
+    --muted: 216 20% 23%;
     --muted-foreground: 200 14% 72%;
     
-    /* Accent */
-    --accent: 252 30% 20%;
+    /* Realce de interação — no escuro o roxo levanta em vez de escurecer. */
+    --accent: 252 25% 24%;
     --accent-foreground: 252 100% 75%;
 
     /* Destructive — clareado p/ AA sobre o card navy; fg passa a escuro */
@@ -360,7 +382,7 @@
     --shadow-soft: 0 2px 8px -2px hsl(0, 0%, 0%, 0.25);
     
     /* Table hover */
-    --table-row-hover: 216 25% 14%;
+    --table-row-hover: 252 25% 24%;
 
     /* Sidebar - Dark Mode */
     --sidebar-background: 230 25% 5%;
@@ -398,17 +420,50 @@ input:-webkit-autofill:focus {
   * {
     @apply border-border;
   }
-  
+
+  /* A escala inteira segue o ecrã.
+   *
+   * Toda a tipografia e todo o espaçamento do Tailwind estão em `rem`, ou
+   * seja, em múltiplos deste valor. Mexer aqui move o sistema inteiro de uma
+   * vez — texto, alturas, recuos e intervalos — e é por isso que este é o
+   * único sítio onde o tamanho depende da resolução.
+   *
+   * O `clamp` dá uma reta contínua em vez de saltos por breakpoint: num
+   * portátil de 1280 dá ~14,9px, num monitor de 1920 ~15,9px e num 2560
+   * ~16,8px. Quem tem mais ecrã lê maior, quem tem menos ganha densidade, e
+   * ninguém sai dos limites de 14 e 17 — abaixo de 14 o texto de trabalho
+   * cansa, acima de 17 uma tabela deixa de caber.
+   *
+   * Um `font-size` em `rem` aqui seria recursivo; tem de ser `px`. */
+  html {
+    font-size: clamp(14px, 13px + 0.15vw, 17px);
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Uma espessura de traço para os ícones de catálogo.
+   *
+   * Numa só tela do dashboard mediram-se quatro pesos — 2, 1.75, 1.5 e 1px —
+   * porque cada componente decidia o seu. O olho não nomeia a diferença, mas
+   * lê o conjunto como recortado de sítios diferentes. A regra vale sobre o
+   * atributo `stroke-width` do SVG, por isso não é preciso tocar nos 340
+   * arquivos que importam ícones.
+   *
+   * Os ícones próprios de módulo ficam de fora de propósito: usam 1.75 como
+   * peso de marca, definido em `_BaseModuleIcon`. São duas espessuras, e as
+   * duas são decisão. */
+  svg[class*="lucide"] {
+    stroke-width: 1.5;
   }
 
   /* Foco de teclado violeta global — assinatura Akuris */
   :where(button, a, [role="button"], input, select, textarea, [tabindex]):focus-visible {
     outline: 2px solid hsl(var(--primary));
     outline-offset: 2px;
-    border-radius: calc(var(--radius) - 2px);
+    border-radius: var(--radius);
   }
   
   /* Custom Scrollbar */

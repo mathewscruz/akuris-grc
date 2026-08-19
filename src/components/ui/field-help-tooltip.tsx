@@ -1,6 +1,6 @@
-import { HelpCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import { IconHelp } from '@/components/icons';
 
 interface FieldHelpTooltipProps {
   content: React.ReactNode;
@@ -32,7 +32,7 @@ export function FieldHelpTooltip({
             )}
             aria-label="Ajuda"
           >
-            <HelpCircle className={cn('h-3.5 w-3.5', iconClassName)} />
+            <IconHelp className={cn('h-3.5 w-3.5', iconClassName)} />
           </button>
         </TooltipTrigger>
         <TooltipContent side={side} className="max-w-xs text-xs leading-relaxed">

@@ -1,4 +1,5 @@
 import { ReactNode, useEffect, useMemo, useState } from 'react';
+import { IconSuccess, IconInfo, IconChevron, IconChevronLeft, IconSave, IconDot } from '@/components/icons';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -13,15 +14,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-  ChevronLeft,
-  ChevronRight,
-  Save,
-  CheckCircle2,
-  AlertCircle,
-  Circle,
-  type LucideIcon,
-} from 'lucide-react';
+import { type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useWizardShortcuts } from '@/hooks/useWizardShortcuts';
@@ -91,10 +84,10 @@ const SIZE_CLASSES: Record<NonNullable<WizardDialogProps['size']>, string> = {
 };
 
 function StateIcon({ state }: { state?: WizardTabState }) {
-  if (state === 'complete') return <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />;
-  if (state === 'error') return <AlertCircle className="h-3.5 w-3.5 text-destructive" />;
-  if (state === 'partial') return <Circle className="h-3.5 w-3.5 text-amber-500 fill-amber-500/30" />;
-  return <Circle className="h-3.5 w-3.5 text-muted-foreground" />;
+  if (state === 'complete') return <IconSuccess className="h-3.5 w-3.5 text-success" />;
+  if (state === 'error') return <IconInfo className="h-3.5 w-3.5 text-destructive" />;
+  if (state === 'partial') return <IconDot className="h-3.5 w-3.5 text-warning fill-amber-500/30" />;
+  return <IconDot className="h-3.5 w-3.5 text-muted-foreground" />;
 }
 
 /**
@@ -172,7 +165,6 @@ export function WizardDialog({
     enabled: open,
   });
 
-
   useWizardShortcuts({
     enabled: open,
     onSave: onSubmit,
@@ -201,7 +193,7 @@ export function WizardDialog({
           <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b">
             <DialogTitle className="flex items-center gap-3 text-xl">
               {Icon && (
-                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <span className="flex h-9 w-9 items-center justify-center text-primary">
                   <Icon className="h-5 w-5" />
                 </span>
               )}
@@ -216,7 +208,13 @@ export function WizardDialog({
             className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0"
           >
             {/* Sidebar (desktop) */}
-            <aside className="hidden lg:flex flex-col w-72 border-r bg-muted/30 shrink-0">
+            {/* Duas superfícies e só duas dentro do diálogo: o casco é opaco
+                (bg-popover) e toda a moldura — barra lateral, barra móvel e
+                rodapé — usa o MESMO recuo (bg-muted/40) assente directamente
+                nesse casco. Antes eram quatro brancos diferentes com
+                transparências empilhadas (bg-card/50 sobre bg-muted/30), e a
+                cor final dependia do que estivesse por trás. */}
+            <aside className="hidden lg:flex flex-col w-72 border-r bg-card shrink-0">
               <ScrollArea className="flex-1">
                 <TabsList className="flex flex-col h-auto w-full bg-transparent border-0 gap-1 p-3">
                   {tabs.map((tab, idx) => {
@@ -227,7 +225,7 @@ export function WizardDialog({
                         value={tab.id}
                         className={cn(
                           'w-full justify-start gap-3 px-3 py-2.5 h-auto text-left',
-                          'data-[state=active]:bg-background data-[state=active]:shadow-sm',
+                          'data-[state=active]:bg-card data-[state=active]:shadow-sm',
                           'data-[state=active]:border data-[state=active]:border-border',
                           tab.state === 'error' && 'text-destructive'
                         )}
@@ -246,7 +244,7 @@ export function WizardDialog({
                             <span className="text-sm font-medium truncate">{tab.label}</span>
                           </div>
                           {tab.hint && (
-                            <p className="text-[11px] text-muted-foreground truncate mt-0.5">
+                            <p className="text-micro text-muted-foreground truncate mt-0.5">
                               {tab.hint}
                             </p>
                           )}
@@ -262,7 +260,7 @@ export function WizardDialog({
             </aside>
 
             {/* Mobile tab bar */}
-            <div className="lg:hidden border-b bg-muted/30 shrink-0">
+            <div className="lg:hidden border-b bg-card shrink-0">
               <ScrollArea className="w-full">
                 <TabsList className="inline-flex h-auto w-max bg-transparent p-2 gap-1">
                   {tabs.map((tab, idx) => (
@@ -291,7 +289,7 @@ export function WizardDialog({
                     <TabsContent
                       key={tab.id}
                       value={tab.id}
-                      className="mt-0 data-[state=inactive]:hidden focus-visible:outline-none"
+                      className="data-[state=inactive]:hidden focus-visible:outline-none"
                       forceMount
                     >
                       {tab.content}
@@ -302,11 +300,12 @@ export function WizardDialog({
             </div>
           </Tabs>
 
-          {/* Sticky footer */}
-          <div className="flex-shrink-0 border-t bg-background/95 backdrop-blur-sm px-6 py-3">
+          {/* Rodapé fixo (não é sticky: é irmão flex do corpo com scroll, por
+              isso não precisa de desfoque nem de transparência). */}
+          <div className="flex-shrink-0 border-t bg-card px-6 py-3">
             {submitDisabled && submitBlockedReason && (
               <p className="mb-2 flex items-start gap-2 text-xs text-destructive">
-                <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-px" />
+                <IconInfo className="h-3.5 w-3.5 shrink-0 mt-px" />
                 <span>{submitBlockedReason}</span>
               </p>
             )}
@@ -340,13 +339,13 @@ export function WizardDialog({
                   disabled={isFirst}
                   className="gap-1"
                 >
-                  <ChevronLeft className="h-4 w-4" />
+                  <IconChevronLeft className="h-4 w-4" />
                   {t('common.previous')}
                 </Button>
                 {!isLast ? (
                   <Button type="button" size="sm" onClick={goNext} className="gap-1">
                     {t('common.next')}
-                    <ChevronRight className="h-4 w-4" />
+                    <IconChevron className="h-4 w-4" />
                   </Button>
                 ) : null}
                 {onSubmit && (
@@ -364,7 +363,7 @@ export function WizardDialog({
                               className="gap-1"
                               title={typeof submitBlockedReason === 'string' ? submitBlockedReason : undefined}
                             >
-                              <Save className="h-4 w-4" />
+                              <IconSave className="h-4 w-4" />
                               {isSubmitting ? t('common.saving') : _submitLabel}
                             </Button>
                           </span>
@@ -382,7 +381,7 @@ export function WizardDialog({
                       disabled={submitDisabled || isSubmitting}
                       className="gap-1"
                     >
-                      <Save className="h-4 w-4" />
+                      <IconSave className="h-4 w-4" />
                       {isSubmitting ? t('common.saving') : _submitLabel}
                     </Button>
                   )

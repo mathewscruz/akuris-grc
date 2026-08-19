@@ -1,5 +1,5 @@
 import { Toaster as Sonner, toast } from "sonner"
-import { CheckCircle2, XCircle, AlertTriangle, Info } from "lucide-react"
+import { IconSuccess, IconWarning, IconError, IconInfo } from '@/components/icons';
 
 type ToasterProps = React.ComponentProps<typeof Sonner>
 
@@ -27,10 +27,10 @@ const Toaster = ({ ...props }: ToasterProps) => {
       gap={12}
       offset={16}
       icons={{
-        success: <CheckCircle2 className="h-4 w-4 text-white" strokeWidth={2.25} />,
-        error: <XCircle className="h-4 w-4 text-white" strokeWidth={2.25} />,
-        warning: <AlertTriangle className="h-4 w-4 text-white" strokeWidth={2.25} />,
-        info: <Info className="h-4 w-4 text-white" strokeWidth={2.25} />,
+        success: <IconSuccess className="h-4 w-4 text-white" strokeWidth={2.25} />,
+        error: <IconError className="h-4 w-4 text-white" strokeWidth={2.25} />,
+        warning: <IconWarning className="h-4 w-4 text-white" strokeWidth={2.25} />,
+        info: <IconInfo className="h-4 w-4 text-white" strokeWidth={2.25} />,
       }}
       toastOptions={{
         classNames: {
@@ -62,18 +62,18 @@ const Toaster = ({ ...props }: ToasterProps) => {
             "group-data-[type=info]:!bg-info",
           ].join(" "),
           content: "min-w-0 flex-1 pt-0.5",
-          title: "text-[14px] font-semibold leading-tight text-foreground",
-          description: "text-[13px] text-muted-foreground leading-relaxed mt-1 break-words",
+          title: "text-sm font-semibold leading-tight text-foreground",
+          description: "text-sm text-muted-foreground leading-relaxed mt-1 break-words",
           // Action como link inline (sem pill)
           actionButton: [
             "!bg-transparent !text-primary hover:!text-primary/80",
-            "!font-medium !text-[12px] !px-0 !py-0 !border-0 !shadow-none",
+            "!font-medium !text-xs !px-0 !py-0 !border-0 !shadow-none",
             "!mt-3 !ml-0 !mr-0 !rounded-none",
             "!h-auto !w-auto",
           ].join(" "),
           cancelButton: [
             "!bg-transparent !text-muted-foreground hover:!text-foreground",
-            "!font-medium !text-[12px] !px-0 !py-0 !border-0 !shadow-none",
+            "!font-medium !text-xs !px-0 !py-0 !border-0 !shadow-none",
             "!mt-3 !ml-3 !rounded-none !h-auto !w-auto",
           ].join(" "),
           closeButton: [
@@ -89,3 +89,4 @@ const Toaster = ({ ...props }: ToasterProps) => {
 }
 
 export { Toaster, toast }
+

@@ -18,11 +18,12 @@ import {
 } from '@/components/ui/alert-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import { Save, type LucideIcon } from 'lucide-react';
+import { type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useWizardShortcuts } from '@/hooks/useWizardShortcuts';
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { IconSave } from '@/components/icons';
 
 export type DialogShellSize = 'sm' | 'md' | 'lg' | 'xl' | '2xl';
 
@@ -38,7 +39,7 @@ interface DialogShellProps {
   children: ReactNode;
   /** Optional custom footer (replaces default Cancel/Save) */
   footer?: ReactNode;
-  /** Default footer: Save handler */
+  /** Default footer: IconSave handler */
   onSubmit?: () => void;
   submitLabel?: string;
   cancelLabel?: string;
@@ -116,7 +117,6 @@ export function DialogShell({
     // caso contrário bloqueia recarga e navegação da aplicação inteira.
     useUnsavedChangesGuard({ isDirty, enabled: open });
 
-
   useWizardShortcuts({
     enabled: open && !disableShortcuts,
     onSave: onSubmit,
@@ -144,7 +144,7 @@ export function DialogShell({
           <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b">
             <DialogTitle className="flex items-center gap-3 text-xl">
               {Icon && (
-                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <span className="flex h-9 w-9 items-center justify-center text-primary">
                   <Icon className="h-5 w-5" />
                 </span>
               )}
@@ -159,18 +159,28 @@ export function DialogShell({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex-1 min-h-0 overflow-hidden">
+          {/* `flex flex-col` aqui e `flex-1 min-h-0` no filho, em vez de
+              `h-full`. A altura deste contentor vem do flex do diálogo, e
+              altura vinda do flex não conta como definida para resolver
+              percentagem — o `height:100%` do filho caía para `auto` e crescia
+              com o conteúdo, empurrando o rodapé para fora da moldura. Como
+              item de flex o filho é medido, não estimado. */}
+          {/* Tudo medido por flex, nada por percentagem — ver a nota no
+              `scroll-area.tsx`, que é onde estava a raiz do rodapé cortado. */}
+          <div className="flex flex-1 min-h-0 flex-col overflow-hidden">
             {noScroll ? (
-              <div className="h-full flex flex-col min-h-0">{children}</div>
+              <div className="flex flex-1 min-h-0 flex-col">{children}</div>
             ) : (
-              <ScrollArea className="h-full">
+              <ScrollArea className="flex-1 min-h-0">
                 <div className="px-6 py-6">{children}</div>
               </ScrollArea>
             )}
           </div>
 
+          {/* A moldura do diálogo usa o recuo do sistema: `--background` é a tela
+              da aplicação e dentro de um diálogo entrava como um quarto branco. */}
           {!hideFooter && (
-            <div className="flex-shrink-0 border-t bg-background/95 backdrop-blur-sm px-4 sm:px-6 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:pb-3">
+            <div className="flex-shrink-0 border-t bg-card px-4 sm:px-6 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:pb-3">
               {footer ?? (
                 <div className="flex items-center justify-end gap-2">
                   <Button
@@ -189,7 +199,7 @@ export function DialogShell({
                       disabled={submitDisabled || isSubmitting}
                       className="gap-1"
                     >
-                      <Save className="h-4 w-4" />
+                      <IconSave className="h-4 w-4" />
                       {isSubmitting ? t('common.saving') : _submitLabel}
                     </Button>
                   )}

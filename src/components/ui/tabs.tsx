@@ -8,7 +8,7 @@ const TabsValueContext = React.createContext<string | undefined>(undefined)
 const Tabs = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof TabsPrimitive.Root>
->(({ value, defaultValue, onValueChange, ...props }, ref) => {
+>(({ value, defaultValue, onValueChange, className, ...props }, ref) => {
   const [internalValue, setInternalValue] = React.useState<string | undefined>(defaultValue)
   const currentValue = value !== undefined ? value : internalValue
 
@@ -24,6 +24,17 @@ const Tabs = React.forwardRef<
         value={value}
         defaultValue={defaultValue}
         onValueChange={handleValueChange}
+        /**
+         * O ritmo vertical é de TODO o bloco de abas, não só da barra.
+         *
+         * Cinco páginas põem uma faixa de indicadores entre a barra e o
+         * painel. Com a folga só na barra, a faixa respirava em cima e
+         * encostava no painel em baixo — trocou-se um encosto por outro.
+         * `space-y` aqui separa cada par de irmãos, seja qual for a ordem em
+         * que a página os monte, e colapsa com a margem da barra em vez de
+         * somar, portanto a distância é a mesma em todos os pares.
+         */
+        className={cn("space-y-4", className)}
         {...props}
       />
     </TabsValueContext.Provider>
@@ -45,6 +56,13 @@ const TabsList = React.forwardRef<
     className={cn(
       "flex w-full items-center gap-6 overflow-x-auto border-b border-border text-muted-foreground",
       "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+      /* A folga por baixo da barra de abas vive AQUI, e não em cada painel.
+         Estava no `TabsContent`, o que só dava espaço a quem fosse um painel:
+         uma faixa de indicadores posta entre a barra e o painel — cinco
+         páginas fazem isso — encostava na barra, porque não herdava margem
+         nenhuma. Pondo a margem na barra, tudo o que vier a seguir respira,
+         seja painel, cartão ou filtro. */
+      "mb-4",
       className,
     )}
     {...props}
@@ -91,7 +109,10 @@ const TabsContent = React.forwardRef<
       value={value}
       forceMount={forceMount || visited || undefined}
       className={cn(
-        "mt-4 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+        /* Sem margem própria: a folga vem do `mb-4` da `TabsList`. Ter as duas
+           somava 30px, e cada página corrigia isso à sua maneira — havia
+           `mt-0`, `mt-3`, `mt-5` e `mt-6` escritos à mão em 48 sítios. */
+        "ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
         "data-[state=inactive]:hidden",
         // Sem transição de opacidade: evita o clarão sobre conteúdos pesados.
         "data-[state=active]:animate-tab-enter motion-reduce:animate-none",

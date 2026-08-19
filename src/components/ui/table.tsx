@@ -36,7 +36,12 @@ const TableHeader = React.forwardRef<
   HTMLTableSectionElement,
   React.HTMLAttributes<HTMLTableSectionElement>
 >(({ className, ...props }, ref) => (
-  <thead ref={ref} className={cn("[&_tr]:border-b", className)} {...props} />
+  /* O realce do cabeçalho é por COLUNA, não pela linha.
+     O `hover` do `TableRow` valia também aqui, e passar o rato em cima do
+     cabeçalho pintava as dez colunas de uma vez — o que não diz nada, porque
+     não há uma "linha de cabeçalho" para escolher. Fica desligado aqui e é o
+     `TableHead` que trata do seu próprio realce. */
+  <thead ref={ref} className={cn("[&_tr]:border-b [&_tr]:hover:bg-transparent", className)} {...props} />
 ))
 TableHeader.displayName = "TableHeader"
 
@@ -74,7 +79,7 @@ const TableRow = React.forwardRef<
   <tr
     ref={ref}
     className={cn(
-      "border-b transition-colors hover:bg-[hsl(var(--table-row-hover))] data-[state=selected]:bg-muted/30",
+      "border-b transition-colors hover:bg-[hsl(var(--table-row-hover))] data-[state=selected]:bg-accent",
       className
     )}
     {...props}
@@ -97,6 +102,8 @@ const TableHead = React.forwardRef<
       className={cn(
         sizing,
         "text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0",
+        /* Cada coluna realça-se a si própria, incluindo a de Ações. */
+        "transition-colors hover:bg-accent",
         className
       )}
       {...props}

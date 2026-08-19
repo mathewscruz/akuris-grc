@@ -15,11 +15,14 @@ export function WizardSummaryCard({ title = 'Resumo', children, className }: Wiz
   return (
     <Card
       className={cn(
-        'p-4 space-y-3 bg-card/50 backdrop-blur-sm border-border/60',
+        // Opaco de propósito: é a superfície elevada sobre a barra lateral
+        // recuada. Com bg-card/50 a cor dependia do fundo e criava um quarto
+        // branco no mesmo diálogo.
+        'p-4 space-y-3 bg-card border-border/60',
         className
       )}
     >
-      <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+      <div className="text-xs font-semibold text-muted-foreground">
         {title}
       </div>
       <div className="space-y-2 text-sm">{children}</div>

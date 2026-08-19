@@ -30,4 +30,3 @@ export function LoadingOverlay({ size = 80, fullScreen = true }: LoadingOverlayP
   );
 }
 
-export default LoadingOverlay;

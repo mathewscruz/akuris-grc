@@ -34,7 +34,7 @@ export const AkurisSidebarIcon = React.forwardRef<
       strokeWidth={1.75}
       strokeLinecap="round"
       strokeLinejoin="round"
-      className={cn("transition-all duration-200", className)}
+      className={cn("transition-ui duration-200", className)}
       aria-hidden="true"
       {...props}
     >

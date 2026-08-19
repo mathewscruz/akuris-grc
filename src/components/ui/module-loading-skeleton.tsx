@@ -17,7 +17,7 @@ export function ModuleLoadingSkeleton(_props: ModuleLoadingSkeletonProps = {}) {
   const { t } = useLanguage();
   return (
     <div
-      className="flex items-center justify-center w-full min-h-[60vh] animate-in fade-in-0 duration-300"
+      className="flex items-center justify-center w-full min-h-[60vh] animate-in fade-in-0 duration-200"
       role="status"
       aria-label={t('residuos.geral.carregandoModulo')}
     >

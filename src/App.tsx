@@ -232,6 +232,13 @@ function App() {
                 </ProtectedRoute>
               </Layout>
             } />
+            <Route path="/governanca/controles" element={
+              <Layout>
+                <ProtectedRoute moduleName="controles" fallbackToRoleCheck={false}>
+                  <Governanca />
+                </ProtectedRoute>
+              </Layout>
+            } />
             <Route path="/governanca/auditorias" element={
               <Layout>
                 <ProtectedRoute moduleName="controles" fallbackToRoleCheck={false}>
@@ -246,8 +253,8 @@ function App() {
                 </ProtectedRoute>
               </Layout>
             } />
-            <Route path="/controles" element={<Navigate to="/governanca?tab=controles" replace />} />
-            <Route path="/auditorias" element={<Navigate to="/governanca?tab=auditorias" replace />} />
+            <Route path="/controles" element={<Navigate to="/governanca/controles" replace />} />
+            <Route path="/auditorias" element={<Navigate to="/governanca/auditorias" replace />} />
             <Route path="/contratos" element={
               <Layout>
                 <ProtectedRoute moduleName="contratos" fallbackToRoleCheck={false}>

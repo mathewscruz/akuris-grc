@@ -27,7 +27,6 @@ export type StateLevel = 'rest' | 'active' | 'done' | 'attention' | 'blocked';
 
 export type ChipTone = SeverityLevel | StateLevel | 'neutral';
 
-export type ChipSize = 'sm' | 'md';
 
 const SEVERITY_CLASSES: Record<SeverityLevel, { chip: string; mark: string }> = {
   critical: {
@@ -77,17 +76,28 @@ const STATE_CLASSES: Record<StateLevel, { chip: string; dot: string }> = {
 
 const NEUTRAL_CHIP = 'bg-muted text-muted-foreground border-border';
 
-/** Altura, raio e letra são iguais em TODAS as famílias. */
-const SIZE_CLASSES: Record<ChipSize, { wrapper: string; dot: string; mark: string }> = {
-  sm: { wrapper: 'h-5 px-2 text-[11px] gap-1.5', dot: 'h-1.5 w-1.5', mark: 'h-3.5 w-3.5 text-[9px]' },
-  md: { wrapper: 'h-6 px-2.5 text-xs gap-1.5', dot: 'h-2 w-2', mark: 'h-4 w-4 text-[10px]' },
-};
+/**
+ * Um chip, um tamanho.
+ *
+ * Havia `sm` e `md`, com pontos de 6px e de 8px. Como 238 dos 246 usos já
+ * pediam `sm` e os restantes não pediam nada — logo caíam no `md` por
+ * omissão — a mesma tela mostrava as duas bolinhas lado a lado sem que
+ * ninguém o tivesse decidido. Um chip de estado não precisa de escala: ou
+ * cabe numa célula de tabela, ou não é um chip.
+ *
+ * A sigla usa o mesmo corpo do rótulo (`text-micro`) para que nenhuma das
+ * duas metades do chip domine a outra.
+ */
+const CHIP_SIZING = {
+  wrapper: 'h-5 px-2 text-micro gap-1.5',
+  dot: 'h-1.5 w-1.5',
+  mark: 'h-3.5 w-3.5 text-micro',
+} as const;
 
 export interface ChipProps extends Omit<React.HTMLAttributes<HTMLSpanElement>, 'children'> {
   family?: ChipFamily;
   /** Nível dentro da família. Ignorado nas famílias type/category. */
   tone?: ChipTone;
-  size?: ChipSize;
   /** Letra redundante à cor (WCAG 1.4.1): C/A/M/B na escala de severidade. */
   mark?: string;
   icon?: React.ReactNode;
@@ -103,14 +113,12 @@ const isState = (tone: ChipTone): tone is StateLevel =>
 export const Chip: React.FC<ChipProps> = ({
   family = 'state',
   tone = 'neutral',
-  size = 'md',
   mark,
   icon,
   children,
   className,
   ...props
 }) => {
-  const sizing = SIZE_CLASSES[size];
 
   let chipClass = NEUTRAL_CHIP;
   let leading: React.ReactNode = null;
@@ -121,28 +129,32 @@ export const Chip: React.FC<ChipProps> = ({
     leading = mark ? (
       <span
         aria-hidden="true"
+        /* `font-semibold` e não `font-bold`: a letra tem o mesmo corpo do
+           rótulo, mas a 700 contra os 500 dele, dentro de uma caixa cheia,
+           lia-se maior do que o nome que devia acompanhar. O peso é que
+           desequilibrava, não o tamanho. */
         className={cn(
-          'inline-flex items-center justify-center rounded-[3px] font-bold leading-none flex-shrink-0',
-          sizing.mark,
+          'inline-flex items-center justify-center rounded-md font-semibold leading-none flex-shrink-0',
+          CHIP_SIZING.mark,
           s.mark,
         )}
       >
         {mark}
       </span>
     ) : (
-      <span aria-hidden="true" className={cn('rounded-full flex-shrink-0', sizing.dot, s.mark)} />
+      <span aria-hidden="true" className={cn('rounded-full flex-shrink-0', CHIP_SIZING.dot, s.mark)} />
     );
   } else if (family === 'state') {
     const s = STATE_CLASSES[isState(tone) ? tone : 'rest'];
     chipClass = s.chip;
-    leading = <span aria-hidden="true" className={cn('rounded-full flex-shrink-0', sizing.dot, s.dot)} />;
+    leading = <span aria-hidden="true" className={cn('rounded-full flex-shrink-0', CHIP_SIZING.dot, s.dot)} />;
   }
 
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full border font-medium leading-none whitespace-nowrap',
-        sizing.wrapper,
+        'inline-flex items-center rounded-md border font-medium leading-none whitespace-nowrap',
+        CHIP_SIZING.wrapper,
         chipClass,
         className,
       )}
@@ -154,4 +166,3 @@ export const Chip: React.FC<ChipProps> = ({
   );
 };
 
-export default Chip;

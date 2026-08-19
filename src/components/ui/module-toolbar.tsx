@@ -1,8 +1,9 @@
 import * as React from "react"
-import { Search } from "lucide-react"
+
 import { cn } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
 import { useLanguage } from "@/contexts/LanguageContext"
+import { IconSearch } from '@/components/icons';
 
 /**
  * Toolbar partilhada dos módulos de lista (Envio 8).
@@ -46,12 +47,12 @@ export function ModuleToolbar({
       {showSearch ? (
         <div className="w-full md:max-w-sm">
           {hasFilters && (
-            <span aria-hidden className="hidden md:block text-[11px] font-medium uppercase tracking-wide leading-4 mb-1 invisible">
+            <span aria-hidden className="hidden md:block text-xs font-medium leading-4 mb-1 invisible">
               &nbsp;
             </span>
           )}
           <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" strokeWidth={1.5} />
+            <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" strokeWidth={1.5} />
             <Input
               value={searchValue ?? ""}
               onChange={(e) => onSearchChange?.(e.target.value)}
@@ -84,13 +85,19 @@ export function ToolbarField({
   children: React.ReactNode
   className?: string
 }) {
+  // O rótulo é um <span> solto: sem o grupo, o leitor de ecrã anunciava só
+  // "caixa de combinação" e o utilizador não sabia que filtro estava a mexer.
+  const labelId = React.useId()
   return (
-    <div className={cn("flex min-w-[168px] shrink-0 flex-col gap-1", "[&_button[role=combobox]]:w-full", className)}>
-      <span className="text-[11px] font-medium uppercase tracking-wide leading-4 text-muted-foreground">{label}</span>
+    <div
+      role="group"
+      aria-labelledby={labelId}
+      className={cn("flex min-w-[168px] shrink-0 flex-col gap-1", "[&_button[role=combobox]]:w-full", className)}
+    >
+      <span id={labelId} className="text-xs font-medium leading-4 text-muted-foreground">{label}</span>
       {children}
     </div>
   )
 
 }
 
-export default ModuleToolbar

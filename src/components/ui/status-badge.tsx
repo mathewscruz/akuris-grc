@@ -35,7 +35,6 @@ interface StatusBadgeProps {
   className?: string;
   /** Aceite por compatibilidade — o chip tem agora um só peso visual. */
   variant?: StatusVariant;
-  size?: StatusSize;
   /** Aceite por compatibilidade — a distinção é feita pela escala de severidade. */
   intensity?: StatusIntensity;
   /** Letra curta redundante à cor (WCAG 1.4.1): C/A/M/B na severidade. */
@@ -67,17 +66,15 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
   children,
   icon,
   className,
-  size = 'md',
   mark,
 }) => {
   const family: ChipFamily = mark ? 'severity' : 'state';
   const chipTone: ChipTone = mark ? SEVERITY_FROM_TONE[tone] : STATE_FROM_TONE[tone];
 
   return (
-    <Chip family={family} tone={chipTone} size={size} mark={mark} icon={icon} className={className}>
+    <Chip family={family} tone={chipTone} mark={mark} icon={icon} className={className}>
       {children}
     </Chip>
   );
 };
 
-export default StatusBadge;

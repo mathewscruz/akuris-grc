@@ -1,12 +1,13 @@
 import * as React from "react";
-import { CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
+import { ptBR, pt as ptPT, enUS } from "date-fns/locale";
 import { DateRange } from "react-day-picker";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { formatDateForInput, formatDateOnly } from "@/lib/date-utils";
+import { IconCalendar } from '@/components/icons';
 
 interface DatePickerWithRangeProps {
   date?: DateRange;
@@ -19,7 +20,11 @@ export function DatePickerWithRange({
   onDateChange,
   className,
 }: DatePickerWithRangeProps) {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
+  // O intervalo saía sempre em inglês ("Jul 18, 2026") porque `format` corria
+  // sem locale; agora segue o formato do idioma activo, como o resto das datas.
+  const rotulo = (d: Date) => formatDateOnly(formatDateForInput(d.toISOString()));
+  const dateFns = locale === 'en' ? enUS : locale === 'pt' ? ptPT : ptBR;
   return (
     <div className={cn("grid gap-2", className)}>
       <Popover>
@@ -32,15 +37,14 @@ export function DatePickerWithRange({
               !date && "text-muted-foreground"
             )}
           >
-            <CalendarIcon className="mr-2 h-4 w-4" />
+            <IconCalendar className="mr-2 h-4 w-4" />
             {date?.from ? (
               date.to ? (
                 <>
-                  {format(date.from, "LLL dd, y")} -{" "}
-                  {format(date.to, "LLL dd, y")}
+                  {rotulo(date.from)} – {rotulo(date.to)}
                 </>
               ) : (
-                format(date.from, "LLL dd, y")
+                rotulo(date.from)
               )
             ) : (
               <span>{t('residuos.geral.selecionePeriodo')}</span>
@@ -55,6 +59,7 @@ export function DatePickerWithRange({
             selected={date}
             onSelect={onDateChange}
             numberOfMonths={2}
+            locale={dateFns}
           />
         </PopoverContent>
       </Popover>

@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { ChevronRight, MoreHorizontal } from "lucide-react"
+
 import { useLanguage } from "@/contexts/LanguageContext"
+import { IconChevron, IconMore } from '@/components/icons';
 
 interface BreadcrumbItemType {
   label: string
@@ -36,7 +37,6 @@ interface PageHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
   secondaryActions?: SecondaryAction[]
   children?: React.ReactNode
 }
-
 
 export function PageHeader({
   className,
@@ -73,7 +73,7 @@ export function PageHeader({
                 </BreadcrumbItem>
                 {index < breadcrumbs.length - 1 && (
                   <BreadcrumbSeparator>
-                    <ChevronRight className="h-4 w-4" />
+                    <IconChevron className="h-4 w-4" />
                   </BreadcrumbSeparator>
                 )}
               </React.Fragment>
@@ -105,7 +105,7 @@ export function PageHeader({
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="icon" aria-label={t("layout.moreActions")} title={t("layout.moreActions")}>
-                    <MoreHorizontal className="h-4 w-4" strokeWidth={1.5} />
+                    <IconMore className="h-4 w-4" strokeWidth={1.5} />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
@@ -126,11 +126,8 @@ export function PageHeader({
         )}
       </div>
 
-
       {/* Additional content */}
       {children}
     </div>
   )
 }
-
-export default PageHeader

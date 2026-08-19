@@ -60,4 +60,3 @@ export function AkurisPulse({ size = 80, className }: AkurisPulseProps) {
   );
 }
 
-export default AkurisPulse;

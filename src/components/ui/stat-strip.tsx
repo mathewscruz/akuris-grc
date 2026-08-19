@@ -91,13 +91,13 @@ export function StatStrip({ items, loading = false, className, ...props }: StatS
           <>
             <span
               className={cn(
-                "block text-[24px] font-semibold leading-none tabular-nums",
+                "block text-2xl font-semibold leading-none tabular-nums",
                 TONE_TEXT[tone]
               )}
             >
               {item.value}
             </span>
-            <span className="mt-1.5 flex min-w-0 items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            <span className="mt-1.5 flex min-w-0 items-center gap-1.5 text-xs font-medium text-muted-foreground">
               {Icon && <Icon className="h-3.5 w-3.5 shrink-0 opacity-70" strokeWidth={1.5} aria-hidden />}
               <span className="truncate">{item.label}</span>
             </span>
@@ -131,7 +131,7 @@ export function StatStrip({ items, loading = false, className, ...props }: StatS
                 onClick={activate}
                 title={item.hint ?? item.label}
                 aria-label={`${item.label}: ${item.value}`}
-                className="h-full w-full cursor-pointer px-5 py-3.5 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
+                className="h-full w-full cursor-pointer px-5 py-3.5 text-left transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
               >
                 {content}
               </button>
@@ -147,4 +147,3 @@ export function StatStrip({ items, loading = false, className, ...props }: StatS
   )
 }
 
-export default StatStrip

@@ -7,15 +7,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { EmptyState } from "@/components/ui/empty-state"
 import { AkurisPulse } from "@/components/ui/AkurisPulse"
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from "@/components/ui/pagination"
-import { Search, Filter, Download, RefreshCw, ChevronDown, ChevronUp, ArrowUpDown } from "lucide-react"
 import { useLanguage } from "@/contexts/LanguageContext"
 import { countActiveFilters } from "@/lib/filter-active"
 import { ModuleToolbar, ToolbarField } from "@/components/ui/module-toolbar"
 import { rowOpenProps } from "@/lib/row-interaction"
-
+import { IconSearch, IconFilter, IconDownload, IconRefresh, IconChevronDown, IconChevronUp, IconSort } from '@/components/icons';
 
 /** Colunas utilitárias que nunca são ordenáveis. */
 const NON_SORTABLE_KEYS = new Set(['acoes', 'ações', 'actions', 'action', 'menu', 'select', 'seleccao', 'seleção'])
+
+/** Colunas que servem de título do cartão em telemóvel, por ordem de preferência. */
+const TITLE_KEYS = new Set(['nome', 'name', 'titulo', 'título', 'title'])
 
 /** Comparação estável e acento-insensível para ordenação A-Z / Z-A. */
 function compareValues(a: unknown, b: unknown): number {
@@ -118,6 +120,16 @@ export function DataTable<T extends Record<string, any>>({
   const isSortable = (column: Column<T>) =>
     column.sortable !== false && !NON_SORTABLE_KEYS.has(String(column.key).toLowerCase())
 
+  /**
+   * A coluna de ações fica colada à direita. Com 10 colunas a tabela passa dos
+   * 1190px e, num ecrã de 1384px, o menu de três pontos de cada linha ficava
+   * fora da área visível — sem barra de rolagem aparente e ainda por baixo do
+   * botão flutuante do assistente.
+   */
+  const isActionsColumn = (column: Column<T>) =>
+    NON_SORTABLE_KEYS.has(String(column.key).toLowerCase())
+  const STICKY_CELL = 'sticky right-0 z-10 bg-inherit'
+
   const sortedData = React.useMemo(() => {
     if (externalSort || !internalSort) return data
     const { field, direction } = internalSort
@@ -151,11 +163,11 @@ export function DataTable<T extends Record<string, any>>({
 
   const getSortIcon = (field: string) => {
     if (activeSortField !== field) {
-      return <ArrowUpDown className="h-3.5 w-3.5 opacity-0 transition-opacity group-hover/th:opacity-60" strokeWidth={1.5} />
+      return <IconSort className="h-3.5 w-3.5 opacity-0 transition-opacity group-hover/th:opacity-60" strokeWidth={1.5} />
     }
     return activeSortDirection === 'asc'
-      ? <ChevronUp className="h-4 w-4 text-foreground" strokeWidth={1.5} />
-      : <ChevronDown className="h-4 w-4 text-foreground" strokeWidth={1.5} />
+      ? <IconChevronUp className="h-4 w-4 text-foreground" strokeWidth={1.5} />
+      : <IconChevronDown className="h-4 w-4 text-foreground" strokeWidth={1.5} />
   }
 
   if (loading) {
@@ -182,7 +194,7 @@ export function DataTable<T extends Record<string, any>>({
                 value={filter.value || (filter.options.some((o) => o.value === 'all') ? 'all' : filter.value)}
                 onValueChange={filter.onChange}
               >
-                <SelectTrigger className="w-full min-w-[160px]">
+                <SelectTrigger aria-label={filter.label} className="w-full min-w-[160px]">
                   <SelectValue placeholder={filter.options.find((o) => o.value === 'all')?.label ?? filter.label} />
                 </SelectTrigger>
                 <SelectContent>
@@ -198,22 +210,73 @@ export function DataTable<T extends Record<string, any>>({
         >
           {onRefresh && (
             <Button variant="outline" size="sm" onClick={onRefresh}>
-              <RefreshCw className="h-4 w-4 sm:mr-2" />
+              <IconRefresh className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">{t('common.refresh')}</span>
             </Button>
           )}
           {onExport && (
             <Button variant="outline" size="sm" onClick={onExport}>
-              <Download className="h-4 w-4 sm:mr-2" />
+              <IconDownload className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">{t('common.export')}</span>
             </Button>
           )}
         </ModuleToolbar>
       </div>
 
+      {/* Telemóvel: cartão por registo.
+          A tabela tem até dez colunas e ~1190px; espremida em 375px, os
+          cabeçalhos e os nomes partiam letra a letra ("Có/di/go"). O cartão
+          empilha rótulo e valor e mantém as ações no canto. */}
+      <div className="md:hidden">
+        {!loading && data.length === 0 ? (
+          emptyState && (
+            <EmptyState
+              icon={emptyState.icon}
+              title={emptyState.title}
+              description={emptyState.description}
+              action={emptyState.action}
+            />
+          )
+        ) : (
+          <div className="divide-y border-t">
+            {paginatedData.map((item, index) => {
+              const acoes = columns.find(isActionsColumn)
+              const semAcoes = columns.filter((c) => !isActionsColumn(c))
+              // O cartão é encabeçado pelo nome do registo, não pela primeira
+              // coluna — que costuma ser o código e não identifica nada a quem lê.
+              const principal =
+                semAcoes.find((c) => TITLE_KEYS.has(String(c.key).toLowerCase())) ?? semAcoes[0]
+              const resto = semAcoes.filter((c) => c !== principal)
+              const abrir = onRowClick
+                ? rowOpenProps(() => onRowClick(item), (item as any).titulo || (item as any).nome || undefined)
+                : null
+              const valor = (column: Column<T>) =>
+                column.render
+                  ? column.render(item[column.key as keyof T], item)
+                  : String(item[column.key as keyof T] ?? '-')
+              return (
+                <div key={item.id || index} {...(abrir ?? {})} className={cn('p-4 space-y-3', abrir?.className)}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 font-medium">{principal && valor(principal)}</div>
+                    {acoes && <div className="shrink-0">{valor(acoes)}</div>}
+                  </div>
+                  <dl className="grid grid-cols-2 gap-x-4 gap-y-2">
+                    {resto.map((column) => (
+                      <div key={String(column.key)} className="min-w-0">
+                        <dt className="text-xs text-muted-foreground">{column.label}</dt>
+                        <dd className="text-sm">{valor(column)}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
 
-      {/* Table - with horizontal scroll for mobile */}
-      <div className="overflow-x-auto [&_table]:min-w-[640px] sm:[&_table]:min-w-0">
+      {/* Ecrã largo: a tabela densa, que continua a ser a melhor leitura. */}
+      <div className="hidden md:block overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -230,7 +293,13 @@ export function DataTable<T extends Record<string, any>>({
                     className={cn(
                       "group/th",
                       column.className,
-                      sortable && "cursor-pointer select-none hover:bg-muted/50 transition-colors"
+                      /* A coluna de Ações é fixa, portanto precisa de fundo
+                         opaco para tapar o que passa por baixo — e é por isso
+                         que ficava de fora do realce, com o branco a cobrir a
+                         tinta da linha. O realce dela vem do `hover:bg-accent`
+                         do `TableHead`, que é igualmente opaco. */
+                      isActionsColumn(column) && `${STICKY_CELL} bg-card`,
+                      sortable && "cursor-pointer select-none"
                     )}
                     onClick={() => sortable && handleSort(String(column.key))}
                   >
@@ -261,15 +330,20 @@ export function DataTable<T extends Record<string, any>>({
               paginatedData.map((item, index) => (
                 <TableRow
                   key={item.id || index}
-                  {...(onRowClick
-                    ? rowOpenProps(() => onRowClick(item), (item as any).titulo || (item as any).nome || undefined)
-                    : { className: 'transition-colors' })}
+                  {...(() => {
+                    const base = onRowClick
+                      ? rowOpenProps(() => onRowClick(item), (item as any).titulo || (item as any).nome || undefined)
+                      : { className: 'transition-colors' };
+                    // A célula fixa herda o fundo da linha (incluindo o realce
+                    // do rato), por isso a linha precisa de um fundo próprio.
+                    return { ...base, className: `bg-card ${base.className ?? ''}` };
+                  })()}
                 >
 
                   {columns.map((column) => (
                     <TableCell
                       key={String(column.key)}
-                      className={column.className}
+                      className={cn(column.className, isActionsColumn(column) && STICKY_CELL)}
                     >
                       {column.render
                         ? column.render(item[column.key as keyof T], item)

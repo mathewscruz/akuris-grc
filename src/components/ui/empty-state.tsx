@@ -27,7 +27,7 @@ const EmptyState = React.forwardRef<HTMLDivElement, EmptyStateProps>(
         <div
           ref={ref}
           className={cn(
-            "relative flex flex-col items-center justify-center py-16 px-4 text-center overflow-hidden rounded-xl border border-border/60 bg-gradient-to-b from-surface-1 to-surface-2",
+            "relative flex flex-col items-center justify-center py-16 px-4 text-center overflow-hidden rounded-lg border border-border/60 bg-gradient-to-b from-surface-1 to-surface-2",
             className
           )}
           {...props}
@@ -38,9 +38,9 @@ const EmptyState = React.forwardRef<HTMLDivElement, EmptyStateProps>(
           {/* Moldura do ícone — anel duplo violeta */}
           {icon && (
             <div className="relative mb-5">
-              <div className="absolute inset-0 rounded-2xl bg-primary/5 blur-2xl" aria-hidden="true" />
-              <div className="relative flex h-20 w-20 items-center justify-center rounded-2xl bg-primary/10 ring-1 ring-primary/20">
-                <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-background text-primary">
+              <div className="absolute inset-0 rounded-lg bg-primary/5 blur-2xl" aria-hidden="true" />
+              <div className="relative flex h-20 w-20 items-center justify-center rounded-lg bg-primary/10 ring-1 ring-primary/20">
+                <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-background text-primary">
                   {icon}
                 </div>
               </div>
@@ -78,7 +78,7 @@ const EmptyState = React.forwardRef<HTMLDivElement, EmptyStateProps>(
         {...props}
       >
         {icon && (
-          <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-muted text-muted-foreground">
+          <div className="mb-4 text-muted-foreground">
             {icon}
           </div>
         )}

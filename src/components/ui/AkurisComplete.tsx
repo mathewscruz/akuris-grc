@@ -77,4 +77,3 @@ export function AkurisComplete({ size = 44, className, label }: AkurisCompletePr
   );
 }
 
-export default AkurisComplete;

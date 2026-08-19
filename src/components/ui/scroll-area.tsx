@@ -7,12 +7,26 @@ const ScrollArea = React.forwardRef<
   React.ElementRef<typeof ScrollAreaPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root>
 >(({ className, children, ...props }, ref) => (
+  /**
+   * A área de rolagem é medida por flex, não por percentagem.
+   *
+   * A receita original do Radix punha `h-full` no viewport. Altura em
+   * percentagem só resolve contra um pai de altura definida, e dentro de um
+   * diálogo a altura vem do flex — que não conta como definida. O `h-full`
+   * caía para `auto`, o viewport crescia com o conteúdo e o rodapé do diálogo
+   * saía pela borda. Era o corte do botão Salvar.
+   *
+   * Com o Root em `flex flex-col` e o viewport em `flex-1 min-h-0`, a medida
+   * passa a vir do flex nos dois níveis e nunca há percentagem a resolver.
+   * Onde o Root tem altura automática — um menu, uma lista curta — o `flex-1`
+   * sobre o único filho continua a dar a altura do conteúdo.
+   */
   <ScrollAreaPrimitive.Root
     ref={ref}
-    className={cn("relative overflow-hidden", className)}
+    className={cn("relative flex flex-col overflow-hidden", className)}
     {...props}
   >
-    <ScrollAreaPrimitive.Viewport className="h-full w-full rounded-[inherit]">
+    <ScrollAreaPrimitive.Viewport className="min-h-0 flex-1 w-full rounded-[inherit]">
       {children}
     </ScrollAreaPrimitive.Viewport>
     <ScrollBar />

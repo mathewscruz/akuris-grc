@@ -1,9 +1,10 @@
 import { ReactNode, useState } from 'react';
+import { IconAdd, IconSearch } from '@/components/icons';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Plus, type LucideIcon } from 'lucide-react';
+import { type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface MasterDetailItem {
@@ -96,7 +97,7 @@ export function MasterDetailDialog<T extends MasterDetailItem>({
         <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b">
           <DialogTitle className="flex items-center gap-3 text-xl">
             {Icon && (
-              <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <span className="flex h-9 w-9 items-center justify-center text-primary">
                 <Icon className="h-5 w-5" />
               </span>
             )}
@@ -107,11 +108,11 @@ export function MasterDetailDialog<T extends MasterDetailItem>({
 
         <div className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0">
           {/* Master (list) */}
-          <aside className="w-full lg:w-80 border-b lg:border-b-0 lg:border-r bg-muted/20 flex flex-col shrink-0 max-h-64 lg:max-h-none">
-            <div className="p-3 space-y-2 border-b bg-background/80">
+          <aside className="w-full lg:w-80 border-b lg:border-b-0 lg:border-r bg-card flex flex-col shrink-0 max-h-64 lg:max-h-none">
+            <div className="p-3 space-y-2 border-b bg-card">
               {searchable && (
                 <div className="relative">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <IconSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                   <Input
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
@@ -122,7 +123,7 @@ export function MasterDetailDialog<T extends MasterDetailItem>({
               )}
               {onCreate && (
                 <Button onClick={onCreate} size="sm" className="w-full gap-2">
-                  <Plus className="h-4 w-4" />
+                  <IconAdd className="h-4 w-4" />
                   {createLabel}
                 </Button>
               )}
@@ -196,7 +197,7 @@ export function MasterDetailDialog<T extends MasterDetailItem>({
         </div>
 
         {footer && (
-          <div className="flex-shrink-0 border-t bg-background/95 backdrop-blur-sm px-6 py-3">
+          <div className="flex-shrink-0 border-t bg-card px-6 py-3">
             <div className="flex items-center justify-end gap-2">{footer}</div>
           </div>
         )}

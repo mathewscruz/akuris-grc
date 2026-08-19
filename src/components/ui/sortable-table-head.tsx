@@ -1,7 +1,7 @@
 import * as React from 'react';
-import { ArrowUpDown, ChevronDown, ChevronUp } from 'lucide-react';
 import { TableHead } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
+import { IconSort, IconChevronDown, IconChevronUp } from '@/components/icons';
 
 export type SortDirection = 'asc' | 'desc';
 export interface SortState {
@@ -70,18 +70,18 @@ export function SortableTableHead({ field, sort, onSort, className, children, ..
       {...props}
       aria-sort={active ? (sort?.direction === 'asc' ? 'ascending' : 'descending') : undefined}
       onClick={() => onSort(field)}
-      className={cn('group/th cursor-pointer select-none transition-colors hover:bg-muted/50', className)}
+      className={cn('group/th cursor-pointer select-none transition-colors hover:bg-accent', className)}
     >
       <div className="flex items-center gap-1.5">
         {children}
         {active ? (
           sort?.direction === 'asc' ? (
-            <ChevronUp className="h-4 w-4 text-foreground" strokeWidth={1.5} />
+            <IconChevronUp className="h-4 w-4 text-foreground" strokeWidth={1.5} />
           ) : (
-            <ChevronDown className="h-4 w-4 text-foreground" strokeWidth={1.5} />
+            <IconChevronDown className="h-4 w-4 text-foreground" strokeWidth={1.5} />
           )
         ) : (
-          <ArrowUpDown className="h-3.5 w-3.5 opacity-0 transition-opacity group-hover/th:opacity-60" strokeWidth={1.5} />
+          <IconSort className="h-3.5 w-3.5 opacity-0 transition-opacity group-hover/th:opacity-60" strokeWidth={1.5} />
         )}
       </div>
     </TableHead>
