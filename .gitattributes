@@ -1,0 +1,20 @@
+# Fins de linha normalizados no repositório.
+#
+# Sem isto, uma ferramenta que reescreva um ficheiro em Windows grava CRLF, e
+# o Git passa a ver o ficheiro INTEIRO como alterado. O efeito não é cosmético:
+# um merge com uma alteração real de três linhas vira um conflito de duas mil,
+# e não há como distinguir o que mudou de facto.
+* text=auto eol=lf
+
+# Binários, para o Git nunca lhes tocar.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.xlsx binary
+*.lockb binary
