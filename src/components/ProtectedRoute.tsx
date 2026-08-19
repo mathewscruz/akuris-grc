@@ -1,12 +1,14 @@
 import React from 'react';
+import { IconWarning, IconLock } from '@/components/icons';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useAuth } from '@/components/AuthProvider';
 import { Card, CardContent } from '@/components/ui/card';
-import { AlertTriangle, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { decidirAcesso } from '@/lib/autorizacao';
 interface ProtectedRouteProps {
   children: React.ReactNode;
   moduleName: string;
@@ -21,7 +23,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   fallbackToRoleCheck = true,
 }) => {
   const { profile } = useAuth();
-  const { canAccess, canCreate, canRead, canUpdate, canDelete, loading } = usePermissions();
+  const { permissions, loading } = usePermissions();
+  const { t } = useLanguage();
   const navigate = useNavigate();
 
   if (loading) {
@@ -32,51 +35,17 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
 
-  // Super-admin sempre tem acesso total
-  if (profile?.role === 'super_admin') {
-    return <>{children}</>;
-  }
-
-  // Verificar permissões baseadas no novo sistema
-  const hasPermission = () => {
-    switch (action) {
-      case 'access':
-        return canAccess(moduleName);
-      case 'create':
-        return canCreate(moduleName);
-      case 'read':
-        return canRead(moduleName);
-      case 'update':
-        return canUpdate(moduleName);
-      case 'delete':
-        return canDelete(moduleName);
-      default:
-        return false;
-    }
-  };
-
-  // Fallback para sistema de roles atual (retrocompatibilidade)
-  const hasRoleAccess = () => {
-    if (!profile || !fallbackToRoleCheck) return false;
-    
-    const { role } = profile;
-    
-    switch (role) {
-      case 'super_admin':
-        return true;
-      case 'admin':
-        return moduleName !== 'configuracoes' || action !== 'delete';
-      case 'user':
-        return moduleName !== 'configuracoes' && 
-               !(moduleName === 'auditorias' && ['create', 'update', 'delete'].includes(action));
-      case 'readonly':
-        return action === 'read' && moduleName !== 'configuracoes';
-      default:
-        return false;
-    }
-  };
-
-  const allowed = hasPermission() || hasRoleAccess();
+  // A decisao vive em `lib/autorizacao` para poder ser testada, e porque a
+  // regra mudou: havendo registo de permissao para o modulo, e ele que decide.
+  // Antes era `hasPermission() || hasRoleAccess()`, e o `||` fazia o papel
+  // reconceder o que o administrador tinha revogado explicitamente.
+  const allowed = decidirAcesso({
+    papel: profile?.role,
+    modulo: moduleName,
+    acao: action,
+    permissao: permissions.find((p) => p.module_name === moduleName),
+    usarPapelComoReserva: fallbackToRoleCheck,
+  });
 
   if (!allowed) {
     return (
@@ -84,21 +53,19 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         <Card className="w-full max-w-md">
           <CardContent className="pt-6">
             <div className="text-center space-y-4">
-              <div className="mx-auto w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center">
-                <Lock className="h-8 w-8 text-destructive" />
-              </div>
+              <IconLock className="mx-auto h-8 w-8 text-destructive" />
               
               <div className="space-y-2">
-                <h3 className="text-lg font-semibold">Acesso Negado</h3>
+                <h3 className="text-lg font-semibold">{t('protectedRoute.deniedTitle')}</h3>
                 <p className="text-sm text-muted-foreground">
-                  Você não tem permissão para acessar este módulo ou realizar esta ação.
+                  {t('protectedRoute.deniedBody')}
                 </p>
               </div>
 
-              <div className="flex items-center gap-2 p-3 bg-amber-50 dark:bg-amber-950/20 rounded-lg">
-                <AlertTriangle className="h-4 w-4 text-amber-600" />
-                <p className="text-sm text-amber-800 dark:text-amber-200">
-                  Entre em contato com o administrador para solicitar acesso.
+              <div className="flex items-center gap-2 p-3 bg-warning/10 rounded-lg">
+                <IconWarning className="h-4 w-4 text-warning" />
+                <p className="text-sm text-warning dark:text-warning">
+                  {t('protectedRoute.deniedHint')}
                 </p>
               </div>
 
@@ -107,7 +74,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
                 onClick={() => navigate('/dashboard')}
                 className="w-full"
               >
-                Voltar ao Dashboard
+                {t('protectedRoute.backToDashboard')}
               </Button>
             </div>
           </CardContent>

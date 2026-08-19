@@ -1,5 +1,6 @@
 import React from 'react';
-import { AlertCircle } from 'lucide-react';
+import { IconInfo } from '@/components/icons';
+;
 import { useAuth } from '@/components/AuthProvider';
 import { differenceInDays } from 'date-fns';
 import { Link } from 'react-router-dom';
@@ -27,7 +28,7 @@ const TrialBanner: React.FC = () => {
   return (
     <div className={`border-b ${corAlerta} px-4 py-2`}>
       <div className="max-w-7xl mx-auto flex items-center justify-center gap-2">
-        <AlertCircle className="h-4 w-4 flex-shrink-0" />
+        <IconInfo className="h-4 w-4 flex-shrink-0" />
         <p className="text-sm font-medium">
           {diasRestantes === 1
             ? t('trialBanner.daysLeftSingular')

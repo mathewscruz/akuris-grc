@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
+import { IconUpload, IconView, IconHide, IconBell, IconImage, IconLock, IconPerson } from '@/components/icons';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,13 +12,13 @@ import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { toast } from 'sonner';
-import { Upload, Eye, EyeOff, Bell, Camera, Lock, User } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Chip } from '@/components/ui/chip';
 import { CornerAccent } from '@/components/identity/CornerAccent';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { senhaValida } from '@/lib/politica-senha';
 const buildPerfilSchema = (t: (k: string) => string) => z.object({
   nome: z.string().min(1, t('userProfilePopover.nameRequired')),
   senha_atual: z.string().optional(),
@@ -31,13 +32,11 @@ const buildPerfilSchema = (t: (k: string) => string) => z.object({
 }, {
   message: t('userProfilePopover.passwordsAndCurrent'),
   path: ["confirmar_senha"],
-}).refine((data) => {
-  if (data.nova_senha && data.nova_senha.length > 0 && data.nova_senha.length < 6) {
-    return false;
-  }
-  return true;
-}, {
-  message: t('userProfilePopover.newPasswordMin'),
+}).refine((data) => !data.nova_senha || senhaValida(data.nova_senha), {
+  // Era o quarto sitio do produto a definir a sua propria regra de senha, e o
+  // mais permissivo de todos: seis caracteres, sem classes. A politica esta em
+  // `lib/politica-senha` e e a mesma em todos os caminhos.
+  message: t('politicaSenha.resumo'),
   path: ["nova_senha"],
 });
 
@@ -245,7 +244,7 @@ export function UserProfilePopover({ onClose }: UserProfilePopoverProps) {
       name={name}
       render={({ field }) => (
         <FormItem>
-          <FormLabel className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          <FormLabel className="text-xs font-medium text-muted-foreground">
             {t(labelKey)}
           </FormLabel>
           <FormControl>
@@ -265,9 +264,9 @@ export function UserProfilePopover({ onClose }: UserProfilePopoverProps) {
                 aria-label={t(labelKey)}
               >
                 {showPasswords[key] ? (
-                  <EyeOff className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
+                  <IconHide className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
                 ) : (
-                  <Eye className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
+                  <IconView className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
                 )}
               </Button>
             </div>
@@ -299,7 +298,7 @@ export function UserProfilePopover({ onClose }: UserProfilePopoverProps) {
                 </AvatarFallback>
               </Avatar>
               <span className="absolute inset-0 flex items-center justify-center rounded-full bg-background/70 opacity-0 transition-opacity group-hover:opacity-100">
-                <Camera className="h-5 w-5 text-foreground" strokeWidth={1.5} />
+                <IconImage className="h-5 w-5 text-foreground" strokeWidth={1.5} />
               </span>
               {uploading && (
                 <span className="absolute inset-0 flex items-center justify-center rounded-full bg-background/70">
@@ -310,13 +309,13 @@ export function UserProfilePopover({ onClose }: UserProfilePopoverProps) {
           </div>
 
           <div className="min-w-0 flex-1 space-y-1.5">
-            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            <p className="text-xs font-medium text-muted-foreground">
               {t('userProfilePopover.eyebrow')}
             </p>
             <h3 className="truncate text-lg font-semibold leading-tight text-foreground">{displayName}</h3>
             <p className="truncate text-sm text-muted-foreground">{user?.email}</p>
             <div className="flex flex-wrap items-center justify-center gap-2 pt-1 sm:justify-start">
-              <Chip family="type" size="sm">{roleLabels[role] ?? role}</Chip>
+              <Chip family="type">{roleLabels[role] ?? role}</Chip>
               <Button
                 type="button"
                 variant="outline"
@@ -325,11 +324,11 @@ export function UserProfilePopover({ onClose }: UserProfilePopoverProps) {
                 onClick={handlePhotoClick}
                 disabled={uploading}
               >
-                <Upload className="mr-1.5 h-3.5 w-3.5" strokeWidth={1.5} />
+                <IconUpload className="mr-1.5 h-3.5 w-3.5" strokeWidth={1.5} />
                 {t('userProfilePopover.changePhoto')}
               </Button>
             </div>
-            <p className="text-[11px] text-muted-foreground">{t('userProfilePopover.photoFormats')}</p>
+            <p className="text-micro text-muted-foreground">{t('userProfilePopover.photoFormats')}</p>
           </div>
         </div>
       </div>
@@ -349,28 +348,28 @@ export function UserProfilePopover({ onClose }: UserProfilePopoverProps) {
       <Tabs defaultValue="perfil">
         <TabsList>
           <TabsTrigger value="perfil">
-            <User className="mr-1.5 h-4 w-4" strokeWidth={1.5} />
+            <IconPerson className="mr-1.5 h-4 w-4" strokeWidth={1.5} />
             {t('userProfilePopover.tabProfile')}
           </TabsTrigger>
           <TabsTrigger value="seguranca">
-            <Lock className="mr-1.5 h-4 w-4" strokeWidth={1.5} />
+            <IconLock className="mr-1.5 h-4 w-4" strokeWidth={1.5} />
             {t('userProfilePopover.tabSecurity')}
           </TabsTrigger>
           <TabsTrigger value="notificacoes">
-            <Bell className="mr-1.5 h-4 w-4" strokeWidth={1.5} />
+            <IconBell className="mr-1.5 h-4 w-4" strokeWidth={1.5} />
             {t('userProfilePopover.tabNotifications')}
           </TabsTrigger>
         </TabsList>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleProfileSubmit)}>
-            <TabsContent value="perfil" className="mt-4 space-y-4">
+            <TabsContent value="perfil" className="space-y-4">
               <FormField
                 control={form.control}
                 name="nome"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    <FormLabel className="text-xs font-medium text-muted-foreground">
                       {t('userProfilePopover.name')}
                     </FormLabel>
                     <FormControl>
@@ -381,7 +380,7 @@ export function UserProfilePopover({ onClose }: UserProfilePopoverProps) {
                 )}
               />
               <div className="space-y-1.5">
-                <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                <Label className="text-xs font-medium text-muted-foreground">
                   {t('userProfilePopover.emailLabel')}
                 </Label>
                 <Input value={user?.email ?? ''} disabled readOnly />
@@ -389,7 +388,7 @@ export function UserProfilePopover({ onClose }: UserProfilePopoverProps) {
               </div>
             </TabsContent>
 
-            <TabsContent value="seguranca" className="mt-4 space-y-4">
+            <TabsContent value="seguranca" className="space-y-4">
               <p className="text-xs text-muted-foreground">{t('userProfilePopover.passwordHint')}</p>
               {passwordField('senha_atual', 'atual', 'userProfilePopover.currentPassword', 'userProfilePopover.currentPasswordPlaceholder')}
               <div className="grid gap-4 sm:grid-cols-2">
@@ -408,7 +407,7 @@ export function UserProfilePopover({ onClose }: UserProfilePopoverProps) {
           </form>
         </Form>
 
-        <TabsContent value="notificacoes" className="mt-4 space-y-3">
+        <TabsContent value="notificacoes" className="space-y-3">
           <div className="flex items-center justify-between rounded-lg border p-3">
             <div className="space-y-0.5">
               <Label htmlFor="pp-email-notif" className="text-sm">{t('userProfilePopover.emailNotif')}</Label>

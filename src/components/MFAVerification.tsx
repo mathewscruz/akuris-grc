@@ -138,7 +138,7 @@ export const MFAVerification: React.FC<MFAVerificationProps> = ({
               <AkurisMark size={28} />
             </div>
             <div className="space-y-2">
-              <span className="block text-primary/70 text-[10px] tracking-[0.22em] font-medium uppercase">
+              <span className="block text-primary/70 text-xs font-medium">
                 {t('mfaScreen.eyebrow')}
               </span>
               <h2 className="text-2xl font-semibold text-white tracking-tight">
@@ -170,7 +170,7 @@ export const MFAVerification: React.FC<MFAVerificationProps> = ({
                     )}
                     <InputOTPSlot
                       index={index}
-                      className="w-11 h-14 text-lg font-semibold bg-[hsl(230,25%,9%)] border-white/[0.10] text-white rounded-lg transition-all data-[active=true]:border-primary data-[active=true]:ring-2 data-[active=true]:ring-primary/20"
+                      className="w-11 h-14 text-lg font-semibold bg-[hsl(230,25%,9%)] border-white/[0.10] text-white rounded-lg transition-ui data-[active=true]:border-primary data-[active=true]:ring-2 data-[active=true]:ring-primary/20"
                     />
                   </div>
                 ))}
@@ -180,7 +180,7 @@ export const MFAVerification: React.FC<MFAVerificationProps> = ({
 
           <Button
             onClick={handleVerify}
-            className="w-full h-12 font-semibold text-sm bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_8px_24px_-8px_hsl(var(--primary)/0.5)] hover:shadow-[0_10px_30px_-8px_hsl(var(--primary)/0.6)] transition-all rounded-lg"
+            className="w-full h-12 font-semibold text-sm bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_8px_24px_-8px_hsl(var(--primary)/0.5)] hover:shadow-[0_10px_30px_-8px_hsl(var(--primary)/0.6)] transition-ui rounded-lg"
             disabled={isVerifying || code.length !== 6}
           >
             {isVerifying ? (
@@ -193,7 +193,7 @@ export const MFAVerification: React.FC<MFAVerificationProps> = ({
           {/* Selo de segurança */}
           <div>
             <div className="h-px bg-gradient-to-r from-transparent via-white/8 to-transparent mb-3" />
-            <p className="flex items-center justify-center gap-1.5 text-white/35 text-[11px]">
+            <p className="flex items-center justify-center gap-1.5 text-white/35 text-micro">
               <Lock className="w-3 h-3" />
               {t('mfaScreen.securityFootnote')}
             </p>

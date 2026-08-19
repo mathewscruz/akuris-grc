@@ -1,4 +1,5 @@
 import React from 'react';
+import { IconWarning, IconLock } from '@/components/icons';
 import { Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
@@ -27,7 +28,6 @@ import { useInactivityTimeout } from '@/hooks/useInactivityTimeout';
 import { prefetchAllRoutes } from '@/lib/route-prefetch';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { differenceInDays, parseISO } from 'date-fns';
-import { AlertTriangle, Lock } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
 import akurisLogo from '@/assets/akuris-logo.png';
@@ -84,9 +84,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       <div className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-[hsl(216,60%,8%)] via-[hsl(216,45%,12%)] to-[hsl(216,60%,8%)] p-4 overflow-hidden">
         <AkurisMarkPattern opacity={0.06} />
         <div className="relative max-w-md w-full text-center space-y-6">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
-            <Lock className="h-8 w-8 text-destructive" />
-          </div>
+          <IconLock className="mx-auto h-8 w-8 text-destructive" />
           <div className="space-y-2">
             <h1 className="text-2xl font-bold text-white">{t('layout.blockedTitle')}</h1>
             <p className="text-muted-foreground">
@@ -119,9 +117,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       <div className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-[hsl(216,60%,8%)] via-[hsl(216,45%,12%)] to-[hsl(216,60%,8%)] p-4 overflow-hidden">
         <AkurisMarkPattern opacity={0.06} />
         <div className="relative max-w-md w-full text-center space-y-6">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-warning/10">
-            <AlertTriangle className="h-8 w-8 text-warning" />
-          </div>
+          <IconWarning className="mx-auto h-8 w-8 text-warning" />
           <div className="space-y-2">
             <h1 className="text-2xl font-bold text-white">{t('layout.trialExpiredTitle')}</h1>
             <p className="text-muted-foreground">
@@ -162,7 +158,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           }}
         />
         
-        <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-background rounded-2xl m-2 border border-[hsl(230,20%,20%)]/30">
+        <div className="flex-1 min-h-0 flex flex-col min-w-0 overflow-hidden bg-background rounded-lg m-2 border border-[hsl(230,20%,20%)]/30">
           {/* Banner de Trial */}
           <TrialBanner />
           {/* Banner global — créditos de IA esgotados */}

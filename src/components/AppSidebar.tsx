@@ -1,48 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
-import { 
-  Shield, 
-  AlertTriangle, 
-  FileCheck, 
-  Lock, 
-  Settings,
-  ChevronDown,
-  Database,
-  FileText,
-  Handshake,
-  BookOpen,
-  AlertCircle,
-  HardDrive,
-  MessageSquare,
-  
-  LogOut,
-  LayoutDashboard,
-  BarChart3,
-  Server,
-  FileKey,
-  KeyRound,
-  Key,
-  ListTodo,
-  KanbanSquare,
-  FileBarChart,
-  GraduationCap,
-  ShieldCheck,
-  UserCheck,
-  UserCog,
-  BadgeCheck,
-  LifeBuoy
-} from 'lucide-react';
-import {
-  RiscosIcon,
-  ControlesIcon,
-  AtivosIcon,
-  IncidentesIcon,
-  GapAnalysisIcon,
-  DueDiligenceIcon,
-  DocumentosIcon,
-  DenunciasIcon,
-} from '@/components/icons';
+import { AtivosIcon, IconSuccess, IconSettings, IconChevronDown, IconLogout, IconKey } from '@/components/icons';
 import logoMini from '@/assets/akuris-logo.png';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { toast } from 'sonner';
@@ -69,6 +28,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { prefetchRoute } from '@/lib/route-prefetch';
 import { useAutoFit } from '@/hooks/useSidebarFit';
+import { MODULE_ICON } from '@/lib/module-icons';
 
 type MenuItem = {
   title: string;
@@ -89,30 +49,29 @@ const getMenuSections = (t: (key: string) => string): MenuSection[] => [
     id: 'operation',
     label: t('sidebar.sectionOperation'),
     items: [
-      { title: t('sidebar.dashboard'), url: '/dashboard', icon: LayoutDashboard, moduleName: 'dashboard' },
-      { title: t('sidebar.actionPlans'), url: '/planos-acao', icon: ListTodo, moduleName: 'planos-acao' },
-      { title: t('sidebar.projects'), url: '/projetos', icon: KanbanSquare, moduleName: 'projetos' },
+      { title: t('sidebar.dashboard'), url: '/dashboard', icon: MODULE_ICON['/dashboard'], moduleName: 'dashboard' },
+      { title: t('sidebar.actionPlans'), url: '/planos-acao', icon: MODULE_ICON['/planos-acao'], moduleName: 'planos-acao' },
+      { title: t('sidebar.projects'), url: '/projetos', icon: MODULE_ICON['/projetos'], moduleName: 'projetos' },
     ],
   },
   {
     id: 'grc-core',
     label: t('sidebar.sectionGrcCore'),
     items: [
-      { title: t('sidebar.riskManagement'), url: '/riscos', icon: RiscosIcon, moduleName: 'riscos' },
+      { title: t('sidebar.riskManagement'), url: '/riscos', icon: MODULE_ICON['/riscos'], moduleName: 'riscos' },
       {
         title: t('sidebar.governance'),
-        url: '/governanca',
-        icon: FileCheck,
+        url: '/governanca', icon: MODULE_ICON['/governanca'],
         moduleName: 'controles',
       },
-      { title: t('sidebar.gapAnalysis'), url: '/gap-analysis/frameworks', icon: GapAnalysisIcon, moduleName: 'gap-analysis' },
+      { title: t('sidebar.gapAnalysis'), url: '/gap-analysis/frameworks', icon: MODULE_ICON['/gap-analysis'], moduleName: 'gap-analysis' },
       {
         title: t('sidebar.assetManagement'),
         icon: AtivosIcon,
         subItems: [
-          { title: t('sidebar.assets'), url: '/ativos', icon: HardDrive, moduleName: 'ativos' },
-          { title: t('sidebar.licenses'), url: '/ativos/licencas', icon: FileKey, moduleName: 'ativos' },
-          { title: t('sidebar.keys'), url: '/ativos/chaves', icon: Key, moduleName: 'ativos' },
+          { title: t('sidebar.assets'), url: '/ativos', icon: MODULE_ICON['/ativos'], moduleName: 'ativos' },
+          { title: t('sidebar.licenses'), url: '/ativos/licencas', icon: MODULE_ICON['/ativos/licencas'], moduleName: 'ativos' },
+          { title: t('sidebar.keys'), url: '/ativos/chaves', icon: MODULE_ICON['/ativos/chaves'], moduleName: 'ativos' },
         ],
       },
     ],
@@ -121,35 +80,35 @@ const getMenuSections = (t: (key: string) => string): MenuSection[] => [
     id: 'compliance',
     label: t('sidebar.sectionCompliance'),
     items: [
-      { title: t('sidebar.contracts'), url: '/contratos', icon: Handshake, moduleName: 'contratos' },
-      { title: t('sidebar.documents'), url: '/documentos', icon: DocumentosIcon, moduleName: 'documentos' },
-      { title: t('sidebar.privacy'), url: '/privacidade', icon: Shield, moduleName: 'dados' },
+      { title: t('sidebar.contracts'), url: '/contratos', icon: MODULE_ICON['/contratos'], moduleName: 'contratos' },
+      { title: t('sidebar.documents'), url: '/documentos', icon: MODULE_ICON['/documentos'], moduleName: 'documentos' },
+      { title: t('sidebar.privacy'), url: '/privacidade', icon: MODULE_ICON['/privacidade'], moduleName: 'dados' },
       {
         title: t('sidebar.accessManagement'),
-        icon: KeyRound,
+        icon: IconKey,
         subItems: [
-          { title: t('sidebar.systems'), url: '/sistemas', icon: Server, moduleName: 'controles' },
-          { title: t('sidebar.privilegedAccounts'), url: '/contas-privilegiadas', icon: UserCog, moduleName: 'contas-privilegiadas' },
-          { title: t('sidebar.accessReview'), url: '/revisao-acessos', icon: UserCheck, moduleName: 'contas-privilegiadas' },
+          { title: t('sidebar.systems'), url: '/sistemas', icon: MODULE_ICON['/sistemas'], moduleName: 'controles' },
+          { title: t('sidebar.privilegedAccounts'), url: '/contas-privilegiadas', icon: MODULE_ICON['/contas-privilegiadas'], moduleName: 'contas-privilegiadas' },
+          { title: t('sidebar.accessReview'), url: '/revisao-acessos', icon: MODULE_ICON['/revisao-acessos'], moduleName: 'contas-privilegiadas' },
         ],
       },
-      { title: t('sidebar.incidents'), url: '/incidentes', icon: IncidentesIcon, moduleName: 'incidentes' },
+      { title: t('sidebar.incidents'), url: '/incidentes', icon: MODULE_ICON['/incidentes'], moduleName: 'incidentes' },
       {
         title: t('sidebar.compliance'),
-        icon: BadgeCheck,
+        icon: IconSuccess,
         subItems: [
-          { title: t('sidebar.dueDiligence'), url: '/due-diligence', icon: DueDiligenceIcon, moduleName: 'due-diligence' },
-          { title: t('sidebar.whistleblowing'), url: '/denuncia', icon: DenunciasIcon, moduleName: 'denuncia' },
+          { title: t('sidebar.dueDiligence'), url: '/due-diligence', icon: MODULE_ICON['/due-diligence'], moduleName: 'due-diligence' },
+          { title: t('sidebar.whistleblowing'), url: '/denuncia', icon: MODULE_ICON['/denuncia'], moduleName: 'denuncia' },
         ],
       },
-      { title: t('sidebar.businessContinuity'), url: '/continuidade', icon: LifeBuoy, moduleName: 'continuidade' },
+      { title: t('sidebar.businessContinuity'), url: '/continuidade', icon: MODULE_ICON['/continuidade'], moduleName: 'continuidade' },
     ],
   },
   {
     id: 'insights',
     label: t('sidebar.sectionInsights'),
     items: [
-      { title: t('sidebar.reports'), url: '/relatorios', icon: FileBarChart, moduleName: 'relatorios' },
+      { title: t('sidebar.reports'), url: '/relatorios', icon: MODULE_ICON['/relatorios'], moduleName: 'relatorios' },
     ],
   },
 ];
@@ -195,10 +154,10 @@ export function AppSidebar() {
   const iconSize = isDense ? 'h-3.5 w-3.5' : 'h-4 w-4';
   const itemSpace = isDense ? 'space-y-0' : isCompact ? 'space-y-0.5' : 'space-y-1';
   const groupLabelCls = isDense
-    ? 'text-[9px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/40 px-3 mb-0'
+    ? 'text-xs font-semibold text-sidebar-foreground/40 px-3 mb-0'
     : isCompact
-    ? 'text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/40 px-3 mb-0.5'
-    : 'text-[10px] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground/40 px-3 mb-1';
+    ? 'text-xs font-semibold text-sidebar-foreground/40 px-3 mb-0.5'
+    : 'text-xs font-semibold text-sidebar-foreground/40 px-3 mb-1';
   const contentPad = isCompact ? 'py-1' : 'py-2';
   const subWrapperCls = isDense ? 'space-y-0 mt-0.5 ml-4 pl-1.5' : 'space-y-1 mt-1 ml-6 pl-2';
 
@@ -324,7 +283,7 @@ export function AppSidebar() {
       </div>
     )}
     <Sidebar
-      className="transition-all duration-300 ease-out sidebar-gradient"
+      className="transition-ui duration-200 ease-out sidebar-gradient"
       collapsible="icon"
     >
       <SidebarHeader className={`border-b border-sidebar-border ${isDense ? 'h-12' : 'h-14'} overflow-hidden`}>
@@ -333,7 +292,7 @@ export function AppSidebar() {
             key={`sidebar-logo-${logoUpdateKey}-${Date.now()}`}
             src={getLogoSrc()} 
             alt={getLogoAlt()} 
-            className={`object-contain transition-all duration-300 ease-out ${
+            className={`object-contain transition-ui duration-200 ease-out ${
               isCollapsed ? 'h-10 w-10' : 'h-[52px] w-auto max-w-full'
             }`}
             onError={(e) => {
@@ -346,7 +305,7 @@ export function AppSidebar() {
 
       <SidebarContent
         ref={contentRef as any}
-        className={`${contentPad} ${isCompact ? 'overflow-hidden gap-0' : ''} transition-all duration-300 ease-out`}
+        className={`${contentPad} ${isCompact ? 'overflow-hidden gap-0' : ''} transition-ui duration-200 ease-out`}
       >
         {getVisibleSections().map((section) => (
           <SidebarGroup key={section.id} className={isDense ? 'py-0' : isCompact ? 'py-1' : ''}>
@@ -366,7 +325,7 @@ export function AppSidebar() {
                       >
                         <CollapsibleTrigger asChild>
                           <SidebarMenuButton
-                            className={`w-full justify-between transition-colors duration-200 ${itemH} px-2.5 rounded-md group ${
+                            className={`w-full justify-between transition-colors duration-200 ${itemH} px-3 rounded-md group ${
                               hasActiveSubItem(item.subItems)
                                 ? 'bg-primary/10 text-primary'
                                 : 'hover:bg-sidebar-accent/60'
@@ -402,7 +361,7 @@ export function AppSidebar() {
                               )}
                             </div>
                             {!isCollapsed && (
-                              <ChevronDown
+                              <IconChevronDown
                                 className={`${iconSize} transition-transform duration-200 flex-shrink-0 ${
                                   openGroups.includes(item.title) ? 'rotate-180 text-primary' : ''
                                 }`}
@@ -508,7 +467,7 @@ export function AppSidebar() {
                       onClick={handleNavClick}
                       className={({ isActive }) => `flex items-center w-full px-3 ${getNavCls({ isActive })}`}
                     >
-                      <Settings
+                      <IconSettings
                         className={`${iconSize} mr-3 flex-shrink-0 transition-colors duration-200 ${
                           isActive('/configuracoes') ? 'text-primary-foreground' : ''
                         }`}
@@ -541,7 +500,7 @@ export function AppSidebar() {
               isCollapsed ? 'justify-center' : 'justify-start'
             }`}
           >
-            <LogOut className={`${iconSize} flex-shrink-0 ${!isCollapsed ? 'mr-3' : ''}`} />
+            <IconLogout className={`${iconSize} flex-shrink-0 ${!isCollapsed ? 'mr-3' : ''}`} />
             {!isCollapsed && (
               <span className="text-sm font-medium truncate">
                 {t('sidebar.logout')}

@@ -1,8 +1,8 @@
 import React from 'react';
+import { IconWarning, IconHelp } from '@/components/icons';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
-import { AlertTriangle, HelpCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ConfirmDialogProps {
@@ -33,7 +33,7 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
 }) => {
   const { t } = useLanguage();
   const isDestructive = variant === 'destructive';
-  const iconNode = icon ?? (isDestructive ? <AlertTriangle strokeWidth={1.5} /> : <HelpCircle strokeWidth={1.5} />);
+  const iconNode = icon ?? (isDestructive ? <IconWarning strokeWidth={1.5} /> : <IconHelp strokeWidth={1.5} />);
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>

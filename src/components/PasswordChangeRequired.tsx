@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { IconClose, IconView, IconCheck, IconWarning, IconHide } from '@/components/icons';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,10 +7,11 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { AlertTriangle, Eye, EyeOff, Check, X } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { logger } from '@/lib/logger';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { exigirEscrita } from '@/lib/supabase-write';
+import { REGRAS_SENHA, avaliarSenha, primeiraFalha, senhaValida } from '@/lib/politica-senha';
 
 interface PasswordChangeRequiredProps {
   open: boolean;
@@ -27,11 +29,11 @@ const calculatePasswordStrength = (password: string, t: (k: string) => string): 
   if (/[0-9]/.test(password)) score += 15;
   if (/[^a-zA-Z0-9]/.test(password)) score += 15;
 
-  if (score <= 20) return { score, label: t('passwordChange.strengthVeryWeak'), color: 'bg-red-500' };
-  if (score <= 40) return { score, label: t('passwordChange.strengthWeak'), color: 'bg-orange-500' };
-  if (score <= 60) return { score, label: t('passwordChange.strengthFair'), color: 'bg-yellow-500' };
-  if (score <= 80) return { score, label: t('passwordChange.strengthGood'), color: 'bg-blue-500' };
-  return { score, label: t('passwordChange.strengthStrong'), color: 'bg-green-500' };
+  if (score <= 20) return { score, label: t('passwordChange.strengthVeryWeak'), color: 'bg-destructive' };
+  if (score <= 40) return { score, label: t('passwordChange.strengthWeak'), color: 'bg-warning' };
+  if (score <= 60) return { score, label: t('passwordChange.strengthFair'), color: 'bg-warning' };
+  if (score <= 80) return { score, label: t('passwordChange.strengthGood'), color: 'bg-info' };
+  return { score, label: t('passwordChange.strengthStrong'), color: 'bg-success' };
 };
 
 const PasswordChangeRequired: React.FC<PasswordChangeRequiredProps> = ({ open, onPasswordChanged }) => {
@@ -47,14 +49,19 @@ const PasswordChangeRequired: React.FC<PasswordChangeRequiredProps> = ({ open, o
   // Cálculo de força da senha
   const passwordStrength = useMemo(() => calculatePasswordStrength(newPassword, t), [newPassword, t]);
 
-  // Requisitos da senha
+  // Requisitos da senha. As quatro primeiras vêm da política única do produto
+  // (`lib/politica-senha`): este ecrã pedia só 6 caracteres, enquanto a
+  // redefinição por link pedia 8 com maiúscula, minúscula e número — mesma
+  // senha, mesma conta, duas exigências diferentes conforme o caminho.
+  const daPolitica = useMemo(() => avaliarSenha(newPassword), [newPassword]);
   const requirements = useMemo(() => ({
-    minLength: newPassword.length >= 6,
+    ...daPolitica,
     differentFromCurrent: newPassword !== currentPassword && currentPassword.length > 0,
     passwordsMatch: newPassword === confirmPassword && confirmPassword.length > 0,
-  }), [newPassword, confirmPassword, currentPassword]);
+  }), [daPolitica, newPassword, confirmPassword, currentPassword]);
 
-  const allRequirementsMet = requirements.minLength && requirements.differentFromCurrent && requirements.passwordsMatch;
+  const allRequirementsMet =
+    senhaValida(newPassword) && requirements.differentFromCurrent && requirements.passwordsMatch;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,8 +76,9 @@ const PasswordChangeRequired: React.FC<PasswordChangeRequiredProps> = ({ open, o
       return;
     }
 
-    if (newPassword.length < 6) {
-      toast.error(t('passwordChange.minLengthError'));
+    const falha = primeiraFalha(newPassword, t);
+    if (falha) {
+      toast.error(falha);
       return;
     }
 
@@ -106,10 +114,10 @@ const PasswordChangeRequired: React.FC<PasswordChangeRequiredProps> = ({ open, o
       // Atualizar status da senha temporária
       const user = await supabase.auth.getUser();
       if (user.data.user) {
-        await supabase
+        await exigirEscrita(supabase
           .from('temporary_passwords')
           .update({ is_temporary: false })
-          .eq('user_id', user.data.user.id);
+          .eq('user_id', user.data.user.id));
       }
 
       toast.success(t('passwordChange.success'));
@@ -130,9 +138,7 @@ const PasswordChangeRequired: React.FC<PasswordChangeRequiredProps> = ({ open, o
         onInteractOutside={(e) => e.preventDefault()}
       >
         <DialogHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-amber-100">
-            <AlertTriangle className="h-6 w-6 text-amber-600" />
-          </div>
+          <IconWarning className="mx-auto mb-4 h-7 w-7 text-warning" />
           <DialogTitle className="text-xl">{t('passwordChange.title')}</DialogTitle>
           <DialogDescription>
             {t('passwordChange.description')}
@@ -141,7 +147,7 @@ const PasswordChangeRequired: React.FC<PasswordChangeRequiredProps> = ({ open, o
         
         <div className="space-y-4 pt-4">
           <Alert>
-            <AlertTriangle className="h-4 w-4" />
+            <IconWarning className="h-4 w-4" />
             <AlertDescription>
               {t('passwordChange.alertMessage')}
             </AlertDescription>
@@ -165,9 +171,9 @@ const PasswordChangeRequired: React.FC<PasswordChangeRequiredProps> = ({ open, o
                   onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                 >
                   {showCurrentPassword ? (
-                    <EyeOff className="h-4 w-4 text-muted-foreground" />
+                    <IconHide className="h-4 w-4 text-muted-foreground" />
                   ) : (
-                    <Eye className="h-4 w-4 text-muted-foreground" />
+                    <IconView className="h-4 w-4 text-muted-foreground" />
                   )}
                 </button>
               </div>
@@ -190,9 +196,9 @@ const PasswordChangeRequired: React.FC<PasswordChangeRequiredProps> = ({ open, o
                   onClick={() => setShowNewPassword(!showNewPassword)}
                 >
                   {showNewPassword ? (
-                    <EyeOff className="h-4 w-4 text-muted-foreground" />
+                    <IconHide className="h-4 w-4 text-muted-foreground" />
                   ) : (
-                    <Eye className="h-4 w-4 text-muted-foreground" />
+                    <IconView className="h-4 w-4 text-muted-foreground" />
                   )}
                 </button>
               </div>
@@ -203,9 +209,9 @@ const PasswordChangeRequired: React.FC<PasswordChangeRequiredProps> = ({ open, o
                   <div className="flex items-center gap-2">
                     <Progress value={passwordStrength.score} className="h-2 flex-1" />
                     <span className={`text-xs font-medium ${
-                      passwordStrength.score <= 40 ? 'text-red-600' :
-                      passwordStrength.score <= 60 ? 'text-yellow-600' :
-                      passwordStrength.score <= 80 ? 'text-blue-600' : 'text-green-600'
+                      passwordStrength.score <= 40 ? 'text-destructive' :
+                      passwordStrength.score <= 60 ? 'text-warning' :
+                      passwordStrength.score <= 80 ? 'text-info' : 'text-success'
                     }`}>
                       {passwordStrength.label}
                     </span>
@@ -231,9 +237,9 @@ const PasswordChangeRequired: React.FC<PasswordChangeRequiredProps> = ({ open, o
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 >
                   {showConfirmPassword ? (
-                    <EyeOff className="h-4 w-4 text-muted-foreground" />
+                    <IconHide className="h-4 w-4 text-muted-foreground" />
                   ) : (
-                    <Eye className="h-4 w-4 text-muted-foreground" />
+                    <IconView className="h-4 w-4 text-muted-foreground" />
                   )}
                 </button>
               </div>
@@ -243,33 +249,35 @@ const PasswordChangeRequired: React.FC<PasswordChangeRequiredProps> = ({ open, o
             <div className="bg-muted/50 rounded-lg p-3 space-y-2">
               <p className="text-sm font-medium text-muted-foreground">{t('passwordChange.requirements')}</p>
               <ul className="space-y-1">
-                <li className="flex items-center gap-2 text-sm">
-                  {requirements.minLength ? (
-                    <Check className="h-4 w-4 text-green-600" />
-                  ) : (
-                    <X className="h-4 w-4 text-muted-foreground" />
-                  )}
-                  <span className={requirements.minLength ? 'text-green-700' : 'text-muted-foreground'}>
-                    {t('passwordChange.reqMinLength')}
-                  </span>
-                </li>
+                {REGRAS_SENHA.map((regra) => (
+                  <li key={regra.chave} className="flex items-center gap-2 text-sm">
+                    {daPolitica[regra.chave] ? (
+                      <IconCheck className="h-4 w-4 text-success" />
+                    ) : (
+                      <IconClose className="h-4 w-4 text-muted-foreground" />
+                    )}
+                    <span className={daPolitica[regra.chave] ? 'text-success' : 'text-muted-foreground'}>
+                      {t(`politicaSenha.${regra.chave}`)}
+                    </span>
+                  </li>
+                ))}
                 <li className="flex items-center gap-2 text-sm">
                   {requirements.differentFromCurrent ? (
-                    <Check className="h-4 w-4 text-green-600" />
+                    <IconCheck className="h-4 w-4 text-success" />
                   ) : (
-                    <X className="h-4 w-4 text-muted-foreground" />
+                    <IconClose className="h-4 w-4 text-muted-foreground" />
                   )}
-                  <span className={requirements.differentFromCurrent ? 'text-green-700' : 'text-muted-foreground'}>
+                  <span className={requirements.differentFromCurrent ? 'text-success' : 'text-muted-foreground'}>
                     {t('passwordChange.reqDifferent')}
                   </span>
                 </li>
                 <li className="flex items-center gap-2 text-sm">
                   {requirements.passwordsMatch ? (
-                    <Check className="h-4 w-4 text-green-600" />
+                    <IconCheck className="h-4 w-4 text-success" />
                   ) : (
-                    <X className="h-4 w-4 text-muted-foreground" />
+                    <IconClose className="h-4 w-4 text-muted-foreground" />
                   )}
-                  <span className={requirements.passwordsMatch ? 'text-green-700' : 'text-muted-foreground'}>
+                  <span className={requirements.passwordsMatch ? 'text-success' : 'text-muted-foreground'}>
                     {t('passwordChange.reqMatch')}
                   </span>
                 </li>

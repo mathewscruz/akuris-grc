@@ -1,4 +1,5 @@
 import { useLanguage, type Locale } from '@/contexts/LanguageContext';
+import { IconCheck, IconGlobe } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -8,7 +9,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Check, Languages } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface LanguageSelectorProps {
@@ -41,7 +41,7 @@ export function LanguageSelector({ variant = 'default' }: LanguageSelectorProps)
             onDark && 'text-white hover:bg-white/10',
           )}
         >
-          <Languages className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
+          <IconGlobe className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
           <span>{current.short}</span>
         </Button>
       </DropdownMenuTrigger>
@@ -56,7 +56,7 @@ export function LanguageSelector({ variant = 'default' }: LanguageSelectorProps)
           >
             <span className="w-7 text-xs font-semibold text-muted-foreground">{option.short}</span>
             <span className="flex-1">{option.label}</span>
-            {option.value === locale && <Check className="h-4 w-4 text-primary" strokeWidth={1.5} />}
+            {option.value === locale && <IconCheck className="h-4 w-4 text-primary" strokeWidth={1.5} />}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

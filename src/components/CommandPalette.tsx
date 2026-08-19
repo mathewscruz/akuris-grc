@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useDeferredValue } from 'react';
+import { IconSearch, IconGrid } from '@/components/icons';
 import { useNavigate } from 'react-router-dom';
 import {
   CommandDialog,
@@ -12,51 +13,32 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
-import {
-  LayoutDashboard,
-  HardDrive,
-  AlertTriangle,
-  Shield,
-  FileText,
-  Bug,
-  Eye,
-  Users,
-  FileCheck,
-  Scale,
-  Target,
-  BarChart3,
-  Settings,
-  Megaphone,
-  ClipboardList,
-  Key,
-  Search,
-  Keyboard,
-} from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useGlobalSearch } from '@/hooks/useGlobalSearch';
 import { routeForEntity, type EntityRow, type EntityKey } from '@/lib/entity-search';
 import { formatStatus } from '@/lib/text-utils';
+import { MODULE_ICON } from '@/lib/module-icons';
 
 const MODULES = [
-  { key: 'moduleDashboard', path: '/dashboard', icon: LayoutDashboard, keywords: ['inicio', 'home', 'painel'] },
-  { key: 'moduleRisks', path: '/riscos', icon: AlertTriangle, keywords: ['risco', 'ameaca', 'vulnerabilidade'] },
-  { key: 'moduleGovernance', path: '/governanca', icon: Shield, keywords: ['controle', 'auditoria', 'compliance'] },
-  { key: 'moduleGapAnalysis', path: '/gap-analysis', icon: Target, keywords: ['framework', 'conformidade', 'iso', 'nist', 'lgpd'] },
-  { key: 'moduleFrameworks', path: '/gap-analysis/frameworks', icon: Target, keywords: ['iso 27001', 'nist', 'lgpd', 'sox'] },
-  { key: 'moduleAssets', path: '/ativos', icon: HardDrive, keywords: ['ativo', 'dispositivo', 'hardware', 'software'] },
-  { key: 'moduleLicenses', path: '/ativos/licencas', icon: Key, keywords: ['licenca', 'software', 'renovacao'] },
-  { key: 'moduleCryptoKeys', path: '/ativos/chaves', icon: Key, keywords: ['chave', 'criptografia', 'certificado'] },
-  { key: 'moduleDocuments', path: '/documentos', icon: FileText, keywords: ['documento', 'politica', 'procedimento'] },
-  { key: 'moduleContracts', path: '/contratos', icon: Scale, keywords: ['contrato', 'fornecedor', 'sla'] },
-  { key: 'moduleIncidents', path: '/incidentes', icon: Bug, keywords: ['incidente', 'seguranca', 'breach'] },
-  { key: 'modulePrivacy', path: '/privacidade', icon: Eye, keywords: ['lgpd', 'dados', 'ropa', 'titular'] },
-  { key: 'modulePrivilegedAccounts', path: '/contas-privilegiadas', icon: Users, keywords: ['conta', 'privilegio', 'admin', 'acesso'] },
-  { key: 'moduleAccessReviews', path: '/revisao-acessos', icon: FileCheck, keywords: ['revisao', 'acesso', 'review'] },
-  { key: 'moduleDueDiligence', path: '/due-diligence', icon: ClipboardList, keywords: ['due diligence', 'fornecedor', 'terceiro'] },
-  { key: 'moduleWhistleblowing', path: '/denuncia', icon: Megaphone, keywords: ['denuncia', 'canal', 'ouvidoria'] },
-  { key: 'moduleActionPlans', path: '/planos-acao', icon: ClipboardList, keywords: ['plano', 'acao', 'tarefa'] },
-  { key: 'moduleReports', path: '/relatorios', icon: BarChart3, keywords: ['relatorio', 'report', 'exportar'] },
-  { key: 'moduleSettings', path: '/configuracoes', icon: Settings, keywords: ['config', 'empresa', 'usuario', 'integracao'] },
+  { key: 'moduleDashboard', path: '/dashboard', icon: MODULE_ICON['/dashboard'], keywords: ['inicio', 'home', 'painel'] },
+  { key: 'moduleRisks', path: '/riscos', icon: MODULE_ICON['/riscos'], keywords: ['risco', 'ameaca', 'vulnerabilidade'] },
+  { key: 'moduleGovernance', path: '/governanca', icon: MODULE_ICON['/governanca'], keywords: ['controle', 'auditoria', 'compliance'] },
+  { key: 'moduleGapAnalysis', path: '/gap-analysis', icon: MODULE_ICON['/gap-analysis'], keywords: ['framework', 'conformidade', 'iso', 'nist', 'lgpd'] },
+  { key: 'moduleFrameworks', path: '/gap-analysis/frameworks', icon: MODULE_ICON['/gap-analysis/frameworks'], keywords: ['iso 27001', 'nist', 'lgpd', 'sox'] },
+  { key: 'moduleAssets', path: '/ativos', icon: MODULE_ICON['/ativos'], keywords: ['ativo', 'dispositivo', 'hardware', 'software'] },
+  { key: 'moduleLicenses', path: '/ativos/licencas', icon: MODULE_ICON['/ativos/licencas'], keywords: ['licenca', 'software', 'renovacao'] },
+  { key: 'moduleCryptoKeys', path: '/ativos/chaves', icon: MODULE_ICON['/ativos/chaves'], keywords: ['chave', 'criptografia', 'certificado'] },
+  { key: 'moduleDocuments', path: '/documentos', icon: MODULE_ICON['/documentos'], keywords: ['documento', 'politica', 'procedimento'] },
+  { key: 'moduleContracts', path: '/contratos', icon: MODULE_ICON['/contratos'], keywords: ['contrato', 'fornecedor', 'sla'] },
+  { key: 'moduleIncidents', path: '/incidentes', icon: MODULE_ICON['/incidentes'], keywords: ['incidente', 'seguranca', 'breach'] },
+  { key: 'modulePrivacy', path: '/privacidade', icon: MODULE_ICON['/privacidade'], keywords: ['lgpd', 'dados', 'ropa', 'titular'] },
+  { key: 'modulePrivilegedAccounts', path: '/contas-privilegiadas', icon: MODULE_ICON['/contas-privilegiadas'], keywords: ['conta', 'privilegio', 'admin', 'acesso'] },
+  { key: 'moduleAccessReviews', path: '/revisao-acessos', icon: MODULE_ICON['/revisao-acessos'], keywords: ['revisao', 'acesso', 'review'] },
+  { key: 'moduleDueDiligence', path: '/due-diligence', icon: MODULE_ICON['/due-diligence'], keywords: ['due diligence', 'fornecedor', 'terceiro'] },
+  { key: 'moduleWhistleblowing', path: '/denuncia', icon: MODULE_ICON['/denuncia'], keywords: ['denuncia', 'canal', 'ouvidoria'] },
+  { key: 'moduleActionPlans', path: '/planos-acao', icon: MODULE_ICON['/planos-acao'], keywords: ['plano', 'acao', 'tarefa'] },
+  { key: 'moduleReports', path: '/relatorios', icon: MODULE_ICON['/relatorios'], keywords: ['relatorio', 'report', 'exportar'] },
+  { key: 'moduleSettings', path: '/configuracoes', icon: MODULE_ICON['/configuracoes'], keywords: ['config', 'empresa', 'usuario', 'integracao'] },
 ];
 
 export function CommandPaletteButton() {
@@ -71,7 +53,7 @@ export function CommandPaletteButton() {
         className="hidden sm:flex items-center gap-2 text-muted-foreground h-8 px-3 w-48 justify-start"
         onClick={() => setOpen(true)}
       >
-        <Search className="h-3.5 w-3.5" />
+        <IconSearch className="h-3.5 w-3.5" />
         <span className="text-xs">{t('commandPalette.searchButton')}</span>
       </Button>
       <Button
@@ -80,7 +62,7 @@ export function CommandPaletteButton() {
         className="sm:hidden h-8 w-8"
         onClick={() => setOpen(true)}
       >
-        <Search className="h-4 w-4" />
+        <IconSearch className="h-4 w-4" />
       </Button>
       <CommandPaletteDialog open={open} onOpenChange={setOpen} />
     </>
@@ -134,7 +116,7 @@ function CommandPaletteDialog({ open, onOpenChange }: { open: boolean; onOpenCha
                 onSelect={() => handleRecord(group.key, row)}
                 className="flex items-start gap-3 cursor-pointer"
               >
-                <Badge variant="outline" className="font-mono text-[10px] mt-0.5">{row.codigo}</Badge>
+                <Badge variant="outline" className="font-mono text-micro mt-0.5">{row.codigo}</Badge>
                 <span className="min-w-0 flex-1 line-clamp-2 break-words">{row.titulo}</span>
                 {row.subtitulo && (
                   <span className="text-xs text-muted-foreground shrink-0 mt-0.5">{formatStatus(row.subtitulo)}</span>
@@ -184,17 +166,17 @@ function CommandPaletteDialog({ open, onOpenChange }: { open: boolean; onOpenCha
             <CommandGroup heading={t('commandPalette.keyboardShortcuts')}>
               <CommandItem className="flex items-center justify-between cursor-default" value="atalho-busca">
                 <div className="flex items-center gap-3">
-                  <Keyboard className="h-4 w-4 text-muted-foreground" />
+                  <IconGrid className="h-4 w-4 text-muted-foreground" />
                   <span>{t('commandPalette.quickSearch')}</span>
                 </div>
-                <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">⌘K</kbd>
+                <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-micro font-medium text-muted-foreground">⌘K</kbd>
               </CommandItem>
               <CommandItem className="flex items-center justify-between cursor-default" value="atalho-sidebar">
                 <div className="flex items-center gap-3">
-                  <Keyboard className="h-4 w-4 text-muted-foreground" />
+                  <IconGrid className="h-4 w-4 text-muted-foreground" />
                   <span>{t('commandPalette.toggleMenu')}</span>
                 </div>
-                <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">Ctrl+B</kbd>
+                <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-micro font-medium text-muted-foreground">Ctrl+B</kbd>
               </CommandItem>
             </CommandGroup>
           </>

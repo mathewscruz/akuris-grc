@@ -1,4 +1,4 @@
-import { Shield, ShieldCheck, Crown, Sparkles, Star } from 'lucide-react';
+import { IconPackage, IconShield, IconShieldCheck, IconAward, IconStar } from '@/components/icons';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
@@ -12,20 +12,20 @@ interface PlanBadgeProps {
 // Maps a plan code or ordering hint to a visual configuration. Falls back gracefully
 // for custom plans created by super-admins.
 const ICON_MAP: Record<string, React.ElementType> = {
-  free: Sparkles,
-  trial: Sparkles,
-  compliance_start: Shield,
-  starter: Shield,
-  basic: Shield,
-  grc_manager: ShieldCheck,
-  professional: ShieldCheck,
-  pro: ShieldCheck,
-  governaii_enterprise: Crown,
-  enterprise: Crown,
+  free: IconPackage,
+  trial: IconPackage,
+  compliance_start: IconShield,
+  starter: IconShield,
+  basic: IconShield,
+  grc_manager: IconShieldCheck,
+  professional: IconShieldCheck,
+  pro: IconShieldCheck,
+  governaii_enterprise: IconAward,
+  enterprise: IconAward,
 };
 
 export function PlanBadge({ planCode = '', planName, size = 'md', showName = true }: PlanBadgeProps) {
-  const Icon = ICON_MAP[planCode.toLowerCase()] || Star;
+  const Icon = ICON_MAP[planCode.toLowerCase()] || IconStar;
 
   const sizeClasses = {
     sm: 'h-3.5 w-3.5',
@@ -41,9 +41,7 @@ export function PlanBadge({ planCode = '', planName, size = 'md', showName = tru
 
   if (!showName) {
     return (
-      <div className="inline-flex items-center justify-center rounded-full p-2 bg-primary/10 text-primary">
-        <Icon className={sizeClasses[size]} />
-      </div>
+      <Icon className={`${sizeClasses[size]} shrink-0 text-primary`} />
     );
   }
 

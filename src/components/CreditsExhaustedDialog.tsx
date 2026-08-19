@@ -1,5 +1,5 @@
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction } from '@/components/ui/alert-dialog';
-import { AlertTriangle, Mail, Phone } from 'lucide-react';
+import { IconWarning, IconMail, IconPhone } from '@/components/icons';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface CreditsExhaustedDialogProps {
@@ -23,9 +23,7 @@ export function CreditsExhaustedDialog({
       <AlertDialogContent className="max-w-md">
         <AlertDialogHeader>
           <div className="flex items-center gap-3 mb-2">
-            <div className="rounded-full bg-amber-100 p-3">
-              <AlertTriangle className="h-6 w-6 text-amber-600" />
-            </div>
+            <IconWarning className="h-6 w-6 shrink-0 text-warning" />
             <AlertDialogTitle className="text-xl">
               {t('creditsExhausted.title')}
             </AlertDialogTitle>
@@ -47,13 +45,13 @@ export function CreditsExhaustedDialog({
 
             <div className="space-y-2 pt-2">
               <div className="flex items-center gap-2 text-sm">
-                <Mail className="h-4 w-4 text-muted-foreground" />
+                <IconMail className="h-4 w-4 text-muted-foreground" />
                 <a href="mailto:contato@akuris.com.br" className="text-primary hover:underline">
                   contato@akuris.com.br
                 </a>
               </div>
               <div className="flex items-center gap-2 text-sm">
-                <Phone className="h-4 w-4 text-muted-foreground" />
+                <IconPhone className="h-4 w-4 text-muted-foreground" />
                 <a href="tel:+5511999999999" className="text-primary hover:underline">
                   (11) 99999-9999
                 </a>

@@ -1,7 +1,8 @@
 import React, { Component, ReactNode } from 'react';
+import { IconWarning, IconRefresh } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, RefreshCw } from 'lucide-react';
+;
 import { logger } from '@/lib/logger';
 
 interface Props {
@@ -67,7 +68,7 @@ export class ErrorBoundary extends Component<Props, State> {
         <div className="flex items-center justify-center min-h-[400px] p-4">
           <div className="max-w-md w-full space-y-4">
             <Alert variant="destructive">
-              <AlertTriangle className="h-4 w-4" />
+              <IconWarning className="h-4 w-4" />
               <AlertTitle>Algo deu errado</AlertTitle>
               <AlertDescription>
                 Ocorreu um erro inesperado. Tente novamente ou recarregue a página.
@@ -76,7 +77,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
             <div className="flex space-x-2">
               <Button onClick={this.handleRetry} className="flex-1">
-                <RefreshCw className="h-4 w-4 mr-2" />
+                <IconRefresh className="h-4 w-4 mr-2" />
                 Tentar Novamente
               </Button>
               <Button onClick={this.handleReload} variant="outline" className="flex-1">

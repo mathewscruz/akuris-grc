@@ -1,13 +1,10 @@
 import { NavLink, useLocation } from 'react-router-dom';
-import { LayoutDashboard, AlertTriangle, FileCheck, FileText, Settings, MoreHorizontal } from 'lucide-react';
+import { IconMore } from '@/components/icons';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { 
-  Database, BarChart3, Lock, CheckSquare, AlertCircle, 
-  FileBarChart, GraduationCap, BookOpen, ListTodo, Handshake, Eye
-} from 'lucide-react';
+import { MODULE_ICON } from '@/lib/module-icons';
 
 export function MobileBottomNav() {
   const isMobile = useIsMobile();
@@ -20,25 +17,25 @@ export function MobileBottomNav() {
   const isActive = (url: string) => location.pathname === url || location.pathname.startsWith(url + '/');
 
   const mainNavItems = [
-    { title: t('sidebar.dashboard'), url: '/dashboard', icon: LayoutDashboard },
-    { title: t('sidebar.risks'), url: '/riscos', icon: AlertTriangle },
-    { title: t('sidebar.internalControls'), url: '/governanca', icon: FileCheck },
-    { title: t('sidebar.documents'), url: '/documentos', icon: FileText },
+    { title: t('sidebar.dashboard'), url: '/dashboard', icon: MODULE_ICON['/dashboard'] },
+    { title: t('sidebar.risks'), url: '/riscos', icon: MODULE_ICON['/riscos'] },
+    { title: t('sidebar.internalControls'), url: '/governanca', icon: MODULE_ICON['/governanca'] },
+    { title: t('sidebar.documents'), url: '/documentos', icon: MODULE_ICON['/documentos'] },
   ];
 
   const moreNavItems = [
-    { title: t('sidebar.actionPlans'), url: '/planos-acao', icon: ListTodo },
-    { title: t('sidebar.contracts'), url: '/contratos', icon: Handshake },
-    { title: t('sidebar.assets'), url: '/ativos', icon: Database },
-    { title: t('sidebar.gapAnalysis'), url: '/gap-analysis/frameworks', icon: BarChart3 },
-    { title: t('sidebar.security'), url: '/contas-privilegiadas', icon: Lock },
-    { title: t('sidebar.incidents'), url: '/incidentes', icon: AlertCircle },
-    { title: t('sidebar.privacy'), url: '/privacidade', icon: Eye },
-    { title: t('sidebar.dueDiligence'), url: '/due-diligence', icon: BookOpen },
-    { title: t('sidebar.compliance'), url: '/denuncia', icon: CheckSquare },
+    { title: t('sidebar.actionPlans'), url: '/planos-acao', icon: MODULE_ICON['/planos-acao'] },
+    { title: t('sidebar.contracts'), url: '/contratos', icon: MODULE_ICON['/contratos'] },
+    { title: t('sidebar.assets'), url: '/ativos', icon: MODULE_ICON['/ativos'] },
+    { title: t('sidebar.gapAnalysis'), url: '/gap-analysis/frameworks', icon: MODULE_ICON['/gap-analysis'] },
+    { title: t('sidebar.security'), url: '/contas-privilegiadas', icon: MODULE_ICON['/contas-privilegiadas'] },
+    { title: t('sidebar.incidents'), url: '/incidentes', icon: MODULE_ICON['/incidentes'] },
+    { title: t('sidebar.privacy'), url: '/privacidade', icon: MODULE_ICON['/privacidade'] },
+    { title: t('sidebar.dueDiligence'), url: '/due-diligence', icon: MODULE_ICON['/due-diligence'] },
+    { title: t('sidebar.compliance'), url: '/denuncia', icon: MODULE_ICON['/denuncia'] },
     
-    { title: t('sidebar.reports'), url: '/relatorios', icon: FileBarChart },
-    { title: t('sidebar.settings'), url: '/configuracoes', icon: Settings },
+    { title: t('sidebar.reports'), url: '/relatorios', icon: MODULE_ICON['/relatorios'] },
+    { title: t('sidebar.settings'), url: '/configuracoes', icon: MODULE_ICON['/configuracoes'] },
   ];
 
   return (
@@ -52,7 +49,7 @@ export function MobileBottomNav() {
               className="flex flex-col items-center justify-center gap-0.5 flex-1 h-full"
             >
               <item.icon className={`h-5 w-5 transition-colors ${isActive(item.url) ? 'text-primary' : 'text-muted-foreground'}`} />
-              <span className={`text-[10px] font-medium ${isActive(item.url) ? 'text-primary' : 'text-muted-foreground'}`}>
+              <span className={`text-micro font-medium ${isActive(item.url) ? 'text-primary' : 'text-muted-foreground'}`}>
                 {item.title}
               </span>
             </NavLink>
@@ -61,8 +58,8 @@ export function MobileBottomNav() {
           <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
             <SheetTrigger asChild>
               <button className="flex flex-col items-center justify-center gap-0.5 flex-1 h-full">
-                <MoreHorizontal className="h-5 w-5 text-muted-foreground" />
-                <span className="text-[10px] font-medium text-muted-foreground">{t('notifications.more')}</span>
+                <IconMore className="h-5 w-5 text-muted-foreground" />
+                <span className="text-micro font-medium text-muted-foreground">{t('notifications.more')}</span>
               </button>
             </SheetTrigger>
             <SheetContent side="bottom" className="pb-safe">
@@ -76,7 +73,7 @@ export function MobileBottomNav() {
                     to={item.url}
                     onClick={() => setMoreOpen(false)}
                     className={`flex flex-col items-center gap-2 p-3 rounded-lg transition-colors ${
-                      isActive(item.url) ? 'bg-primary/10 text-primary' : 'hover:bg-muted text-muted-foreground'
+                      isActive(item.url) ? 'bg-primary/10 text-primary' : 'hover:bg-accent text-muted-foreground'
                     }`}
                   >
                     <item.icon className="h-6 w-6" />

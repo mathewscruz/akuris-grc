@@ -5,10 +5,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Mail } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { z } from 'zod';
 import { logger } from '@/lib/logger';
+import { IconMail } from '@/components/icons';
 
 interface ForgotPasswordDialogProps {
   open: boolean;
@@ -72,7 +72,7 @@ export function ForgotPasswordDialog({ open, onOpenChange }: ForgotPasswordDialo
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Mail className="h-5 w-5" />
+            <IconMail className="h-5 w-5" />
             {t('forgotPassword.title')}
           </DialogTitle>
           <DialogDescription>

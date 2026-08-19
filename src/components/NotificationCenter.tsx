@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bell, Check, ArrowRight, CheckCircle2, ExternalLink } from 'lucide-react';
+import { IconExternal, IconCheck, IconSuccess, IconBell, IconArrowRight } from '@/components/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -22,6 +22,7 @@ import { APROVACOES_PENDENTES_SELECT } from '@/components/documentos/aprovacoes-
 import { resolveNotificationTarget } from '@/lib/notification-target';
 import { ChangelogPanel, useChangelogFeed } from '@/components/changelog/ChangelogPanel';
 import { fetchEntityById, routeForEntity } from '@/lib/entity-search';
+import { parseDataLocal, dateFnsLocale } from '@/lib/date-utils';
 
 interface Notification {
   id: string;
@@ -55,7 +56,6 @@ const markAutomaticNotificationAsRead = (notificationId: string) => {
     logger.error('Erro ao salvar notificação como lida', { error: (error as Error)?.message, module: 'notifications' });
   }
 };
-
 
 const getNotificationDisplay = (
   notification: Notification,
@@ -156,7 +156,7 @@ const NotificationCenter: React.FC = () => {
 
       // Processar documentos
       (documentos || []).forEach(doc => {
-        const diasParaVencimento = differenceInDays(new Date(doc.data_vencimento!), hoje);
+        const diasParaVencimento = differenceInDays(parseDataLocal(doc.data_vencimento!), hoje);
         
         if (diasParaVencimento < 0) {
           notificacoes.push({
@@ -190,7 +190,7 @@ const NotificationCenter: React.FC = () => {
 
       // Processar contratos
       (contratos || []).forEach(contrato => {
-        const diasParaVencimento = differenceInDays(new Date(contrato.data_fim!), hoje);
+        const diasParaVencimento = differenceInDays(parseDataLocal(contrato.data_fim!), hoje);
         
         if (diasParaVencimento < 0) {
           notificacoes.push({
@@ -216,7 +216,7 @@ const NotificationCenter: React.FC = () => {
 
       // Processar controles
       (controles || []).forEach(controle => {
-        const diasParaAvaliacao = differenceInDays(new Date(controle.proxima_avaliacao!), hoje);
+        const diasParaAvaliacao = differenceInDays(parseDataLocal(controle.proxima_avaliacao!), hoje);
         
         if (diasParaAvaliacao <= 15 && diasParaAvaliacao >= 0) {
           notificacoes.push({
@@ -269,7 +269,7 @@ const NotificationCenter: React.FC = () => {
         .not('data_vencimento', 'is', null);
 
       (licencas || []).forEach(licenca => {
-        const diasParaVencimento = differenceInDays(new Date(licenca.data_vencimento), hoje);
+        const diasParaVencimento = differenceInDays(parseDataLocal(licenca.data_vencimento), hoje);
         
         if (diasParaVencimento < 0) {
           notificacoes.push({
@@ -300,7 +300,7 @@ const NotificationCenter: React.FC = () => {
         .not('data_proxima_rotacao', 'is', null);
 
       (chaves || []).forEach(chave => {
-        const diasParaRotacao = differenceInDays(new Date(chave.data_proxima_rotacao), hoje);
+        const diasParaRotacao = differenceInDays(parseDataLocal(chave.data_proxima_rotacao), hoje);
         
         if (diasParaRotacao < 0) {
           notificacoes.push({
@@ -324,7 +324,7 @@ const NotificationCenter: React.FC = () => {
       });
 
       (manutencoesPendentes || []).forEach(manutencao => {
-        const diasParaManutencao = differenceInDays(new Date(manutencao.data_manutencao!), hoje);
+        const diasParaManutencao = differenceInDays(parseDataLocal(manutencao.data_manutencao!), hoje);
         
         if (diasParaManutencao <= 7 && diasParaManutencao >= 0) {
           notificacoes.push({
@@ -340,18 +340,18 @@ const NotificationCenter: React.FC = () => {
 
       const { data: riscosRevisao } = await supabase
         .from('riscos')
-        .select('id, nome, data_proxima_revisao, nivel_risco_inicial')
+        .select('id, nome, data_proxima_revisao, nivel_risco_inicial, nivel_risco_residual')
         .eq('empresa_id', userEmpresaId || '')
         .not('data_proxima_revisao', 'is', null);
 
       (riscosRevisao || []).forEach(risco => {
-        const diasParaRevisao = differenceInDays(new Date(risco.data_proxima_revisao!), hoje);
+        const diasParaRevisao = differenceInDays(parseDataLocal(risco.data_proxima_revisao!), hoje);
         
         if (diasParaRevisao < 0) {
           notificacoes.push({
             id: `risco-revisao-vencida-${risco.id}`,
             title: t('fin.notif.riscoRevisaoVencida'),
-            message: t('fin.notif.riscoRevisaoVencidaMsg', { nome: risco.nome, nivel: risco.nivel_risco_inicial || 'N/A', dias: Math.abs(diasParaRevisao) }),
+            message: t('fin.notif.riscoRevisaoVencidaMsg', { nome: risco.nome, nivel: risco.nivel_risco_residual || risco.nivel_risco_inicial || 'N/A', dias: Math.abs(diasParaRevisao) }),
             type: 'error', read: false, link_to: '/riscos',
             metadata: { risco_id: risco.id },
             created_at: new Date().toISOString(), isAutomatic: true
@@ -510,12 +510,12 @@ const NotificationCenter: React.FC = () => {
     info:        { accent: 'bg-info',        chipBg: 'bg-info/10',        chipRing: 'ring-info/25',        iconText: 'text-info',        chipSolid: 'bg-info',        stripes: 'akuris-stripes-info' },
   };
 
-  const dateFnsLocale = locale === 'pt' ? ptBR : enUS;
+  const localeDeData = dateFnsLocale();
   const formatRelative = (iso: string) => {
     const d = new Date(iso);
     const diffSec = (Date.now() - d.getTime()) / 1000;
     if (diffSec < 45) return t('notifications.justNow');
-    return formatDistanceToNow(d, { addSuffix: true, locale: dateFnsLocale });
+    return formatDistanceToNow(d, { addSuffix: true, locale: localeDeData });
   };
 
   // Agrupamento por prioridade visual (urgente / atenção / informativo)
@@ -546,8 +546,8 @@ const NotificationCenter: React.FC = () => {
         key={notification.id}
         onClick={() => handleNotificationClick(notification)}
         className={cn(
-          'group relative w-full text-left rounded-2xl border border-border/50 overflow-hidden',
-          'transition-all hover:shadow-[0_8px_22px_-12px_hsl(var(--foreground)/0.18)]',
+          'group relative w-full text-left rounded-lg border border-border/50 overflow-hidden',
+          'transition-ui hover:shadow-[0_8px_22px_-12px_hsl(var(--foreground)/0.18)]',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
           'animate-notification-enter',
           toneCls.stripes,
@@ -567,11 +567,11 @@ const NotificationCenter: React.FC = () => {
           </span>
 
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground leading-none mb-1 truncate">
+            <p className="text-xs font-semibold text-muted-foreground leading-none mb-1 truncate">
               {moduleLabel}
             </p>
             <p className={cn(
-              'text-[13px] font-semibold leading-snug tracking-tight break-words line-clamp-2',
+              'text-sm font-semibold leading-snug tracking-tight break-words line-clamp-2',
               !notification.read ? 'text-foreground' : 'text-muted-foreground'
             )}>
               {displayTitle}
@@ -581,7 +581,7 @@ const NotificationCenter: React.FC = () => {
                 {displayMessage}
               </p>
             )}
-            <span className="text-[11px] text-muted-foreground tabular-nums mt-1.5 block">
+            <span className="text-micro text-muted-foreground tabular-nums mt-1.5 block">
               {formatRelative(notification.created_at)}
             </span>
           </div>
@@ -629,14 +629,14 @@ const NotificationCenter: React.FC = () => {
             size="sm"
             aria-label={t('notifications.title')}
             className={cn(
-              'relative h-9 w-9 p-0 rounded-lg transition-all',
+              'relative h-9 w-9 p-0 rounded-lg transition-ui',
               (unreadCount > 0 || changelog.hasNew) && 'ring-1 ring-primary/25 bg-primary/[0.04]'
             )}
           >
-            <Bell className="h-[18px] w-[18px]" strokeWidth={1.5} />
+            <IconBell className="h-[18px] w-[18px]" strokeWidth={1.5} />
             {unreadCount > 0 && (
               <span
-                className="absolute -top-0.5 -right-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold leading-none text-destructive-foreground tabular-nums shadow-[0_2px_6px_-1px_hsl(var(--destructive)/0.5)]"
+                className="absolute -top-0.5 -right-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-md bg-destructive px-1 text-micro font-semibold leading-none text-destructive-foreground tabular-nums shadow-[0_2px_6px_-1px_hsl(var(--destructive)/0.5)]"
                 aria-label={`${unreadCount} ${t('notifications.unread')}`}
               >
                 {unreadCount > 9 ? '9+' : unreadCount}
@@ -660,7 +660,7 @@ const NotificationCenter: React.FC = () => {
           <div className="px-4 pt-4 pb-3 border-b border-border/60 bg-gradient-to-b from-surface-1 to-surface-2">
             <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-primary/70 leading-none">
+                <p className="text-xs font-semibold text-primary/70 leading-none">
                   {tab === 'news' ? t('changelog.title') : t('notifications.eyebrow')}
                 </p>
                 <p className="mt-1.5 text-sm font-semibold text-foreground tracking-tight tabular-nums">
@@ -675,10 +675,10 @@ const NotificationCenter: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleMarkAllAsRead}
-                  className="shrink-0 inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:text-primary/80 transition-colors whitespace-nowrap"
+                  className="shrink-0 inline-flex items-center gap-1 text-micro font-semibold text-primary hover:text-primary/80 transition-colors whitespace-nowrap"
                 >
                   {t('notifications.markAllRead')}
-                  <ArrowRight className="h-3 w-3" strokeWidth={1.5} />
+                  <IconArrowRight className="h-3 w-3" strokeWidth={1.5} />
                 </button>
               )}
             </div>
@@ -698,10 +698,10 @@ const NotificationCenter: React.FC = () => {
                 }}
                 aria-pressed={tab === item.key}
                 className={cn(
-                  'relative inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] transition-colors',
+                  'relative inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors',
                   tab === item.key
                     ? 'bg-primary/10 text-primary'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent'
                 )}
               >
                 {item.label}
@@ -733,9 +733,7 @@ const NotificationCenter: React.FC = () => {
               </div>
             ) : allNotifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center px-6 py-10 text-center">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-success/10 ring-1 ring-success/20 text-success mb-3">
-                  <CheckCircle2 className="h-6 w-6" strokeWidth={1.5} />
-                </div>
+                <IconSuccess className="h-7 w-7 text-success mb-3" strokeWidth={1.5} />
                 <p className="text-sm font-semibold text-foreground tracking-tight">
                   {t('notifications.allCaughtUp')}
                 </p>
@@ -753,11 +751,11 @@ const NotificationCenter: React.FC = () => {
                       <header className="flex items-center justify-between px-1">
                         <div className="flex items-center gap-2">
                           <span aria-hidden className={cn('h-1.5 w-1.5 rounded-full', TONE_CLS[tone].accent)} />
-                          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                          <p className="text-xs font-semibold text-muted-foreground">
                             {label}
                           </p>
                         </div>
-                        <span className="text-[10px] font-semibold text-muted-foreground tabular-nums">
+                        <span className="text-micro font-semibold text-muted-foreground tabular-nums">
                           {items.length}
                         </span>
                       </header>
@@ -782,7 +780,7 @@ const NotificationCenter: React.FC = () => {
                   <span
                     aria-hidden
                     className={cn(
-                      'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ring-1',
+                      'flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ring-1',
                       detailToneCls.chipBg,
                       detailToneCls.chipRing,
                       detailToneCls.iconText
@@ -791,20 +789,20 @@ const NotificationCenter: React.FC = () => {
                     <DetailIcon className="h-5 w-5" strokeWidth={1.5} />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-primary/70 leading-none">
+                    <p className="text-xs font-semibold text-primary/70 leading-none">
                       {t(detailModule.i18nKey)}
                     </p>
                     <DialogTitle className="mt-1.5 text-base font-semibold leading-tight tracking-tight break-words">
                       {detailDisplay?.title ?? detail.title}
                     </DialogTitle>
                     <div className="mt-2 flex flex-wrap items-center gap-2">
-                      <StatusBadge size="sm" tone={detailToneKey}>
+                      <StatusBadge tone={detailToneKey}>
                         {detailGroupLabel}
                       </StatusBadge>
-                      <span className="text-[11px] text-muted-foreground tabular-nums">
-                        {format(new Date(detail.created_at), 'PPp', { locale: dateFnsLocale })}
+                      <span className="text-micro text-muted-foreground tabular-nums">
+                        {format(new Date(detail.created_at), 'PPp', { locale: localeDeData })}
                       </span>
-                      <span className="text-[11px] text-muted-foreground">
+                      <span className="text-micro text-muted-foreground">
                         · {formatRelative(detail.created_at)}
                       </span>
                     </div>
@@ -825,7 +823,7 @@ const NotificationCenter: React.FC = () => {
               </div>
 
               {targetMissing && (
-                <p className="mt-3 rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                <p className="mt-3 rounded-lg border border-border bg-card px-3 py-2 text-xs text-muted-foreground">
                   {t('notifications.recordMissing')}
                 </p>
               )}
@@ -843,7 +841,7 @@ const NotificationCenter: React.FC = () => {
                     {detailTarget
                       ? t('notifications.openRecord')
                       : t('sweepCore.notifications.openModule')}
-                    <ExternalLink className="h-3.5 w-3.5" strokeWidth={1.5} />
+                    <IconExternal className="h-3.5 w-3.5" strokeWidth={1.5} />
                   </Button>
                 )}
               </DialogFooter>

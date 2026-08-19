@@ -1,5 +1,6 @@
 import { Helmet } from 'react-helmet-async';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { intlLocale } from '@/lib/date-utils';
 
 interface SEOProps {
   title: string;
@@ -28,8 +29,15 @@ export function SEO({
     : BASE_URL;
 
   const { locale } = useLanguage();
-  const htmlLang = locale === 'pt' ? 'pt-BR' : 'en';
-  const ogLocale = locale === 'pt' ? 'pt_BR' : 'en_US';
+  /*
+    Eram dois testes de duas variantes num produto de três. O português de
+    PORTUGAL era anunciado como `pt-BR`, e o do BRASIL — o público principal —
+    como `en`: cada página brasileira declarava-se inglesa no `<html lang>` e
+    no Open Graph. Afeta leitor de ecrã, oferta de tradução do browser e
+    indexação.
+  */
+  const htmlLang = intlLocale();
+  const ogLocale = htmlLang.replace('-', '_');
 
   const schemas = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
 
