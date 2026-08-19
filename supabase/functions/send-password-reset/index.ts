@@ -11,21 +11,22 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Rate limit: máx 5 requisições por IP a cada 10 minutos
-const RATE_LIMIT_MAX = 5
-const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
+// O limite vive na base, em `consume_password_reset_attempt`: bloqueio de
+// advisory, janela de uma hora e limpeza das linhas com mais de 24 horas.
+//
+// O que estava aqui era um `Map` em memoria. Nao funciona neste ambiente: as
+// Edge Functions correm em isolados do Deno, criados e destruidos a vontade e
+// em paralelo, portanto cada um tinha o seu proprio contador. O teto efetivo
+// era 5 vezes o numero de isolados vivos, e recomecava a cada arranque a frio.
+// A funcao da base ja existia, pronta, e nunca tinha sido chamada.
+const MAX_POR_HORA = 5
 
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now()
-  const entry = rateLimitMap.get(ip)
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS })
-    return true
-  }
-  if (entry.count >= RATE_LIMIT_MAX) return false
-  entry.count++
-  return true
+/** SHA-256 em hexadecimal — formato exigido por `consume_password_reset_attempt`. */
+async function sha256Hex(valor: string): Promise<string> {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(valor))
+  return Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
 }
 
 interface PasswordResetRequest {
@@ -49,21 +50,35 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    )
+
     const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
       || req.headers.get('x-real-ip')
       || 'unknown'
-    if (!checkRateLimit(clientIp)) {
+
+    const { data: podeSeguir, error: limiteError } = await supabase.rpc(
+      'consume_password_reset_attempt',
+      { p_fingerprint_hash: await sha256Hex(clientIp), p_max_attempts: MAX_POR_HORA },
+    )
+    if (limiteError) {
+      // Fail-closed: sem conseguir contar, nao se envia. O contrario deixava o
+      // envio de e-mail sem tecto sempre que a base tivesse um soluco.
+      console.error('send-password-reset: falha ao consultar limite', limiteError)
+      return new Response(JSON.stringify({ error: 'Servico indisponivel. Tente novamente.' }), {
+        status: 503,
+        headers: { 'Content-Type': 'application/json', ...corsHeaders },
+      })
+    }
+    if (podeSeguir !== true) {
       console.warn('send-password-reset rate limited', { ip: clientIp })
       return new Response(JSON.stringify({ error: 'Muitas tentativas. Tente novamente em alguns minutos.' }), {
         status: 429,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
       })
     }
-
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
 
     const body = await req.json().catch(() => ({}))
     const { email, companyLogoUrl }: PasswordResetRequest = body

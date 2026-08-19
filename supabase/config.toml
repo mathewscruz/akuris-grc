@@ -37,6 +37,19 @@ enabled = true
 
 [auth]
 enabled = true
+# Politica de senha imposta pelo servidor.
+#
+# Sem estas duas linhas o GoTrue aceita 6 caracteres sem exigencia de classes
+# (GOTRUE_PASSWORD_MIN_LENGTH=6, PASSWORD_REQUIRED_CHARACTERS vazio) — e era
+# esse o piso real do produto, apesar de o ecra de redefinicao anunciar
+# "minimo 8, maiuscula, minuscula e numero". A validacao existia so no cliente,
+# portanto um POST direto ao /auth/v1 passava por cima.
+#
+# ATENCAO: em projeto hospedado isto NAO se aplica sozinho. E preciso
+# `supabase config push`, ou definir o mesmo em Authentication > Policies no
+# painel. Enquanto isso nao for feito, produção continua a aceitar 6 caracteres.
+password_min_length = 8
+password_required_characters = "abcdefghijklmnopqrstuvwxyz:ABCDEFGHIJKLMNOPQRSTUVWXYZ:0123456789"
 site_url = "http://127.0.0.1:3000"
 additional_redirect_urls = ["https://lnlkahtugwmkznasapfd.supabase.co/auth/v1/callback"]
 jwt_expiry = 3600

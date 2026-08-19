@@ -12,21 +12,18 @@ const logStep = (step: string, details?: any) => {
   console.log(`[PROVISION] ${step}${detailsStr}`);
 };
 
-// Rate limiting: max 5 requests per IP per 10 minutes
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-const RATE_LIMIT_MAX = 5;
-const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
+// O limite vive na base, em `consume_public_registration_attempt`. O que estava
+// aqui era um `Map` em memoria, que nao serve: as Edge Functions correm em
+// isolados do Deno criados e destruidos a vontade, cada um com o seu contador,
+// portanto o teto real era 5 vezes o numero de isolados vivos. Este e o unico
+// caminho para criar conta a partir do site, por isso o teto tem de valer.
 
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const entry = rateLimitMap.get(ip);
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-    return true;
-  }
-  if (entry.count >= RATE_LIMIT_MAX) return false;
-  entry.count++;
-  return true;
+/** SHA-256 em hexadecimal — formato exigido pelo limitador da base. */
+async function sha256Hex(valor: string): Promise<string> {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(valor));
+  return Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 }
 
 function slugify(text: string): string {
@@ -46,13 +43,6 @@ serve(async (req) => {
 
   const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
                    req.headers.get("x-real-ip") || "unknown";
-  if (!checkRateLimit(clientIp)) {
-    logStep("Rate limited", { ip: clientIp });
-    return new Response(JSON.stringify({ error: "Muitas tentativas. Tente novamente em alguns minutos." }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 429,
-    });
-  }
 
   const supabaseAdmin = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
@@ -60,12 +50,48 @@ serve(async (req) => {
     { auth: { persistSession: false } }
   );
 
+  const { data: podeSeguir, error: limiteError } = await supabaseAdmin.rpc(
+    "consume_public_registration_attempt",
+    { p_fingerprint_hash: await sha256Hex(clientIp) },
+  );
+  if (limiteError) {
+    // Fail-closed: sem conseguir contar, nao se cria conta.
+    logStep("Falha ao consultar limite de registo", { erro: String(limiteError.message ?? limiteError) });
+    return new Response(JSON.stringify({ error: "Servico indisponivel. Tente novamente." }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 503,
+    });
+  }
+  if (podeSeguir !== true) {
+    logStep("Rate limited", { ip: clientIp });
+    return new Response(JSON.stringify({ error: "Muitas tentativas. Tente novamente em alguns minutos." }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 429,
+    });
+  }
+
   try {
     const { nome, email, senha, empresa_nome, cnpj } = await req.json();
     logStep("Request received", { email, empresa_nome });
 
     if (!nome || !email || !senha || !empresa_nome) {
       throw new Error("Campos obrigatórios: nome, email, senha, empresa_nome");
+    }
+
+    // A politica de senha do produto, imposta tambem aqui. O GoTrue so garante
+    // 6 caracteres sem classes, e este caminho nao validava nada do lado do
+    // servidor: o que o cliente enviasse virava senha da conta nova.
+    // Espelha `src/lib/politica-senha.ts`; se uma mudar, a outra tem de mudar.
+    const senhaFraca =
+      typeof senha !== "string" ||
+      senha.length < 8 ||
+      !/[A-Z]/.test(senha) ||
+      !/[a-z]/.test(senha) ||
+      !/[0-9]/.test(senha);
+    if (senhaFraca) {
+      throw new Error(
+        "A senha precisa de pelo menos 8 caracteres, com maiúscula, minúscula e número",
+      );
     }
 
     // Validate CNPJ uniqueness when provided

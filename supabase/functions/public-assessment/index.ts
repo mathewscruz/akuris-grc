@@ -106,7 +106,7 @@ Deno.serve(async (req) => {
       const [{ data: company }, { data: template }, { data: questions, error: questionsError }, { data: responses, error: responsesError }] = await Promise.all([
         admin.from('empresas').select('nome,logo_url').eq('id', current.empresa_id).single(),
         admin.from('due_diligence_templates').select('nome,descricao').eq('id', current.template_id).single(),
-        admin.from('due_diligence_questions').select('id,titulo,descricao,tipo,opcoes,obrigatoria,peso,ordem,configuracoes').eq('template_id', current.template_id).order('ordem'),
+        admin.from('due_diligence_questions').select('id,titulo,descricao,tipo,opcoes,obrigatoria,peso,ordem,secao,configuracoes').eq('template_id', current.template_id).order('ordem'),
         admin.from('due_diligence_responses').select('question_id,resposta,pontuacao,evidencia,justificativa,arquivo_url,resposta_arquivo_nome').eq('assessment_id', current.id),
       ]);
       if (questionsError || responsesError) throw questionsError || responsesError;
