@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
+import { IconAdd, IconClose, IconEdit, IconDelete, IconMore, IconWarning, IconTime, IconFile, IconShield, IconSettings, IconTag, IconHistory, IconShieldCheck, IconAttach, IconBook, IconUserOff, IconCalendarClock } from '@/components/icons';
 import { useSearchParams, useLocation } from 'react-router-dom';
-import { Plus, AlertTriangle, Shield, Settings, Tag, X, Clock, FileText, MoreHorizontal, Edit, Trash2, History, ShieldCheck, Paperclip, Library, UserX, CalendarClock } from 'lucide-react';
 import { StatStrip } from '@/components/ui/stat-strip';
 
 import { Button } from '@/components/ui/button';
@@ -66,7 +66,6 @@ import {
 } from '@/components/riscos/matriz-config';
 import { filterUuids, splitResponsavel } from '@/lib/uuid';
 
-
 import { TrilhaAuditoriaRiscos } from '@/components/riscos/TrilhaAuditoriaRiscos';
 import { HistoricoAvaliacoesDialog } from '@/components/riscos/HistoricoAvaliacoesDialog';
 import { AprovacaoRiscoDialog } from '@/components/riscos/AprovacaoRiscoDialog';
@@ -116,7 +115,6 @@ interface Risco {
   historico_aprovacao?: any;
   created_by?: string;
 }
-
 
 interface MatrizConfig {
   niveis_risco: NivelRisco[];
@@ -374,7 +372,6 @@ export function Riscos() {
     await Promise.all([refetchRiscos(), refetchStats()]);
   };
 
-
   useEffect(() => {
     const itemId = location.state?.itemId;
     if (itemId && riscos.length > 0) {
@@ -522,20 +519,18 @@ export function Riscos() {
     if (!dataRevisao) return null;
     const dias = differenceInDays(new Date(dataRevisao), new Date());
     if (dias < 0) {
-      return <StatusBadge size="sm" {...resolveRevisaoTone(dias)}>{t('riscos.page.overdue')}</StatusBadge>;
+      return <StatusBadge {...resolveRevisaoTone(dias)}>{t('riscos.page.overdue')}</StatusBadge>;
     }
     if (dias <= 7) {
-      return <StatusBadge size="sm" {...resolveRevisaoTone(dias)}>{dias}d</StatusBadge>;
+      return <StatusBadge {...resolveRevisaoTone(dias)}>{dias}d</StatusBadge>;
     }
     return null;
   };
 
-  const getAprovacaoBadge = (status?: string) => {
-    if (!status || status === 'nao_requerido') return null;
-    const labels: Record<string, string> = { aprovado: t('riscos.page.approval.approved'), rejeitado: t('riscos.page.approval.rejected'), pendente: t('riscos.page.approval.pending') };
-    if (!labels[status]) return null;
-    return <StatusBadge size="sm" {...resolveAprovacaoTone(status)}>{labels[status]}</StatusBadge>;
-  };
+  // `getAprovacaoBadge` vivia aqui e nunca foi chamado — código morto que
+  // ainda carregava o vocabulário antigo (`pendente` em vez de
+  // `pendente_aprovacao`). Removido: o estado de aprovação mostra-se no
+  // diálogo de Aprovação, que é onde se decide.
 
   // (calcTrend e MiniSparkline removidos com os KPI cards antigos)
 
@@ -551,7 +546,7 @@ export function Riscos() {
   if (riscosError) {
     return (
       <Alert variant="destructive" role="alert" className="my-6">
-        <AlertTriangle className="h-4 w-4" />
+        <IconWarning className="h-4 w-4" />
         <AlertTitle>{t('riscos.page.loadError.title')}</AlertTitle>
         <AlertDescription className="space-y-3">
           <p>{(riscosQueryError as Error)?.message || t('riscos.page.loadError.fallback')}</p>
@@ -573,7 +568,7 @@ export function Riscos() {
       label: t('riscos.page.columns.id'),
       className: 'w-[72px]',
       render: (_value: any, risco: Risco) => (
-        <span className="font-mono text-[11px] text-muted-foreground">{shortRiskId(risco.id, (risco as any).codigo)}</span>
+        <span className="font-mono text-micro text-muted-foreground">{shortRiskId(risco.id, (risco as any).codigo)}</span>
       ),
     },
     {
@@ -613,7 +608,7 @@ export function Riscos() {
       // inerente fazia a mesma linha exibir duas severidades diferentes.
       render: (_value: string, risco: Risco) => {
         const nivel = risco.nivel_risco_residual || risco.nivel_risco_inicial;
-        return <StatusBadge size="sm" {...resolveNivelRiscoTone(nivel)}>{formatStatus(nivel)}</StatusBadge>;
+        return <StatusBadge {...resolveNivelRiscoTone(nivel)}>{formatStatus(nivel)}</StatusBadge>;
       },
     },
     {
@@ -633,7 +628,7 @@ export function Riscos() {
         const efetivo = risco.status_efetivo ?? value;
         return (
           <span title={risco.status_ajuste_motivo ?? undefined}>
-            <StatusBadge size="sm" {...resolveRiscoStatusTone(efetivo)}>{formatStatus(efetivo)}</StatusBadge>
+            <StatusBadge {...resolveRiscoStatusTone(efetivo)}>{formatStatus(efetivo)}</StatusBadge>
           </span>
         );
       },
@@ -648,7 +643,7 @@ export function Riscos() {
           <div className="inline-flex items-center gap-1.5">
             <Avatar className="h-5 w-5">
               {risco.responsavel_foto && <AvatarImage src={risco.responsavel_foto} alt={risco.responsavel_nome} />}
-              <AvatarFallback className="bg-primary/10 text-primary text-[9px]">
+              <AvatarFallback className="bg-primary/10 text-primary text-micro">
                 {risco.responsavel_nome.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
               </AvatarFallback>
             </Avatar>
@@ -662,7 +657,7 @@ export function Riscos() {
       label: t('riscos.page.columns.updated'),
       className: 'w-[96px]',
       render: (_v: any, r: Risco) => (
-        <span className="text-[11px] text-muted-foreground">{relativeShort((r as any).updated_at || r.created_at)}</span>
+        <span className="text-micro text-muted-foreground">{relativeShort((r as any).updated_at || r.created_at)}</span>
       ),
     },
     {
@@ -678,25 +673,30 @@ export function Riscos() {
       render: (value: any, risco: Risco) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-              <MoreHorizontal className="h-4 w-4" strokeWidth={1.5} />
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-label={`${t('p8Layout.layout.moreActions')}: ${risco.nome}`}
+              className="h-8 w-8 p-0"
+            >
+              <IconMore className="h-4 w-4" strokeWidth={1.5} />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => handleEdit(risco)}>
-              <Edit className="mr-2 h-4 w-4" strokeWidth={1.5} /> {t('riscos.page.actions.edit')}
+              <IconEdit className="mr-2 h-4 w-4" strokeWidth={1.5} /> {t('riscos.page.actions.edit')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => openTratamentosDialog(risco)}>
-              <Shield className="mr-2 h-4 w-4" strokeWidth={1.5} /> {t('riscos.page.actions.treatments')} ({risco.tratamentos_count || 0})
+              <IconShield className="mr-2 h-4 w-4" strokeWidth={1.5} /> {t('riscos.page.actions.treatments')} ({risco.tratamentos_count || 0})
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setAprovacaoRisco(risco)}>
-              <ShieldCheck className="mr-2 h-4 w-4" strokeWidth={1.5} /> {t('riscos.page.actions.approval')}
+              <IconShieldCheck className="mr-2 h-4 w-4" strokeWidth={1.5} /> {t('riscos.page.actions.approval')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setHistoricoRisco(risco)}>
-              <Clock className="mr-2 h-4 w-4" strokeWidth={1.5} /> {t('riscos.page.actions.evaluationHistory')}
+              <IconTime className="mr-2 h-4 w-4" strokeWidth={1.5} /> {t('riscos.page.actions.evaluationHistory')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setAuditRisco(risco)}>
-              <History className="mr-2 h-4 w-4" strokeWidth={1.5} /> {t('riscos.page.actions.auditTrail')}
+              <IconHistory className="mr-2 h-4 w-4" strokeWidth={1.5} /> {t('riscos.page.actions.auditTrail')}
             </DropdownMenuItem>
             <CriarTarefaMenuItem
               entidadeTipo="risco"
@@ -704,7 +704,7 @@ export function Riscos() {
               tituloSugerido={`${t('riscos.page.actions.treatRiskPrefix')} ${risco.nome ?? ''}`}
             />
             <DropdownMenuItem onClick={() => openDeleteDialog(risco)} className="text-destructive focus:text-destructive">
-              <Trash2 className="mr-2 h-4 w-4" strokeWidth={1.5} /> {t('riscos.page.actions.delete')}
+              <IconDelete className="mr-2 h-4 w-4" strokeWidth={1.5} /> {t('riscos.page.actions.delete')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -767,16 +767,16 @@ export function Riscos() {
           description={t('modules.riscos.description')}
           actions={
             <Button size="sm" onClick={openCreateDialog} aria-label={t('riscos.page.newRiskAria')}>
-              <Plus className="h-4 w-4 sm:mr-2" strokeWidth={1.5} />
+              <IconAdd className="h-4 w-4 sm:mr-2" strokeWidth={1.5} />
               <span className="hidden sm:inline">{t('riscos.page.newRisk')}</span>
             </Button>
           }
           secondaryActions={[
-            { label: t('riscos.page.export.csv'), icon: <FileText className="h-4 w-4" strokeWidth={1.5} />, onClick: () => exportRiscosCSV(sortedRiscos) },
-            { label: t('riscos.page.export.pdf'), icon: <FileText className="h-4 w-4" strokeWidth={1.5} />, onClick: () => exportRiscosPDF(sortedRiscos, stats) },
-            { label: t('riscosBiblioteca.botao'), icon: <Library className="h-4 w-4" strokeWidth={1.5} />, onClick: () => setBibliotecaDialogOpen(true), separatorBefore: true },
-            { label: t('riscos.page.categories'), icon: <Tag className="h-4 w-4" strokeWidth={1.5} />, onClick: () => setCategoriasDialogOpen(true) },
-            { label: t('riscos.page.configMatrix'), icon: <Settings className="h-4 w-4" strokeWidth={1.5} />, onClick: () => setMatrizDialogOpen(true) },
+            { label: t('riscos.page.export.csv'), icon: <IconFile className="h-4 w-4" strokeWidth={1.5} />, onClick: () => exportRiscosCSV(sortedRiscos) },
+            { label: t('riscos.page.export.pdf'), icon: <IconFile className="h-4 w-4" strokeWidth={1.5} />, onClick: () => exportRiscosPDF(sortedRiscos, stats) },
+            { label: t('riscosBiblioteca.botao'), icon: <IconBook className="h-4 w-4" strokeWidth={1.5} />, onClick: () => setBibliotecaDialogOpen(true), separatorBefore: true },
+            { label: t('riscos.page.categories'), icon: <IconTag className="h-4 w-4" strokeWidth={1.5} />, onClick: () => setCategoriasDialogOpen(true) },
+            { label: t('riscos.page.configMatrix'), icon: <IconSettings className="h-4 w-4" strokeWidth={1.5} />, onClick: () => setMatrizDialogOpen(true) },
           ]}
         />
 
@@ -786,13 +786,13 @@ export function Riscos() {
             calculável. Antes o erro era silencioso; agora é explícito e acionável. */}
         {matrizConfigIndisponivel && (
           <Alert variant="destructive" data-testid="matriz-config-indisponivel">
-            <AlertTriangle className="h-4 w-4" strokeWidth={1.5} />
+            <IconWarning className="h-4 w-4" strokeWidth={1.5} />
             <AlertTitle>{t('riscos.page.matrizErroTitulo')}</AlertTitle>
             <AlertDescription className="space-y-3">
               <p>{t('riscos.page.matrizErroDescricao')}</p>
               <div className="flex flex-wrap gap-2">
                 <Button size="sm" variant="outline" onClick={() => setMatrizDialogOpen(true)}>
-                  <Settings className="h-4 w-4 mr-2" strokeWidth={1.5} />
+                  <IconSettings className="h-4 w-4 mr-2" strokeWidth={1.5} />
                   {t('riscos.page.configMatrix')}
                 </Button>
                 {matrizConfigError && (
@@ -810,7 +810,7 @@ export function Riscos() {
             <Badge variant="secondary" className="flex items-center gap-1 whitespace-nowrap">
               {t('riscos.page.matrixFilter')} ({idsFilter.length})
               <Button variant="ghost" size="sm" className="h-4 w-4 p-0 hover:bg-transparent" onClick={clearIdsFilter}>
-                <X className="h-3 w-3" />
+                <IconClose className="h-3 w-3" />
               </Button>
             </Badge>
           </div>
@@ -863,16 +863,16 @@ export function Riscos() {
               />
               <StatStrip
                 items={[
-                  { key: 'acimaApetite', label: t('riscos.page.kpi.aboveAppetite'), value: acimaApetite, icon: AlertTriangle, tone: 'destructive', hint: t('riscos.page.kpi.highOrCritical'), onClick: () => {
+                  { key: 'acimaApetite', label: t('riscos.page.kpi.aboveAppetite'), value: acimaApetite, icon: IconWarning, tone: 'destructive', hint: t('riscos.page.kpi.highOrCritical'), onClick: () => {
                     const sp = new URLSearchParams(searchParams); sp.set('view', 'matrix'); setSearchParams(sp);
                   }},
-                  { key: 'semResponsavel', label: t('riscos.page.kpi.noResponsible'), value: semResponsavel, icon: UserX, tone: 'warning', hint: t('riscos.page.kpi.awaitingAssignment'), onClick: () => {
+                  { key: 'semResponsavel', label: t('riscos.page.kpi.noResponsible'), value: semResponsavel, icon: IconUserOff, tone: 'warning', hint: t('riscos.page.kpi.awaitingAssignment'), onClick: () => {
                     const sp = new URLSearchParams(searchParams); sp.set('view', 'table'); setSearchParams(sp);
                   }},
-                  { key: 'revisaoVencida', label: t('riscos.page.kpi.overdueReview'), value: revisaoVencida, icon: CalendarClock, tone: 'warning', hint: t('riscos.page.kpi.slaExpired'), onClick: () => {
+                  { key: 'revisaoVencida', label: t('riscos.page.kpi.overdueReview'), value: revisaoVencida, icon: IconCalendarClock, tone: 'warning', hint: t('riscos.page.kpi.slaExpired'), onClick: () => {
                     const sp = new URLSearchParams(searchParams); sp.set('view', 'table'); setSearchParams(sp);
                   }},
-                  { key: 'emTratamento', label: t('riscos.page.kpi.inTreatment'), value: emTratamento, icon: ShieldCheck, hint: t('riscos.page.kpi.planInProgress'), onClick: () => {
+                  { key: 'emTratamento', label: t('riscos.page.kpi.inTreatment'), value: emTratamento, icon: IconShieldCheck, hint: t('riscos.page.kpi.planInProgress'), onClick: () => {
                     const sp = new URLSearchParams(searchParams); sp.set('view', 'table'); setSearchParams(sp);
                   }},
                 ]}
@@ -962,7 +962,7 @@ export function Riscos() {
                     sortDirection={sortDirection}
                     onSort={handleSort}
                     emptyState={{
-                      icon: <AlertTriangle className="h-8 w-8" />,
+                      icon: <IconWarning className="h-8 w-8" />,
                       title: searchTerm || statusFilter || nivelFilter || aceitoFilter || savedView !== 'todos'
                         ? t('riscos.page.empty.foundTitle')
                         : t('riscos.page.empty.noneTitle'),

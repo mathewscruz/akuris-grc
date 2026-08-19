@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { SEO } from '@/components/SEO';
 import { PublicShell } from '@/components/public/PublicShell';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { dateFnsLocale } from '@/lib/date-utils';
 
 interface PostFull {
   id: string;
@@ -110,19 +110,19 @@ export default function BlogPost() {
         </nav>
 
         {post.tags?.[0] && (
-          <span className="text-xs text-[hsl(252,100%,75%)] uppercase tracking-wide">{post.tags[0]}</span>
+          <span className="text-xs text-[hsl(252,100%,75%)]">{post.tags[0]}</span>
         )}
         <h1 className="text-4xl sm:text-5xl font-semibold tracking-tight mb-5 mt-2 leading-tight">{post.titulo}</h1>
         <div className="text-sm text-white/55 mb-8 flex items-center gap-3">
           <span>{post.autor}</span>
           <span>•</span>
           {post.published_at && (
-            <time dateTime={post.published_at}>{format(new Date(post.published_at), "d 'de' MMMM 'de' yyyy", { locale: ptBR })}</time>
+            <time dateTime={post.published_at}>{format(new Date(post.published_at), "d 'de' MMMM 'de' yyyy", { locale: dateFnsLocale() })}</time>
           )}
         </div>
 
         {post.capa_url && (
-          <img src={post.capa_url} alt={post.titulo} className="w-full rounded-2xl mb-10 border border-white/10" />
+          <img src={post.capa_url} alt={post.titulo} className="w-full rounded-lg mb-10 border border-white/10" />
         )}
 
         <div className="prose prose-invert prose-lg max-w-none prose-headings:font-semibold prose-headings:tracking-tight prose-a:text-[hsl(252,100%,75%)] prose-strong:text-white prose-code:text-[hsl(252,100%,80%)]">

@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { IconAdd, IconEdit, IconDelete, IconDownload, IconExternal, IconMore, IconSuccess, IconWarning, IconError, IconTime, IconChecklist, IconGrid, IconList, IconTarget } from '@/components/icons';
 import { useIntegrationNotify } from '@/hooks/useIntegrationNotify';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
@@ -23,18 +24,17 @@ import { PlanoAcaoDetailDrawer } from '@/components/planos-acao/PlanoAcaoDetailD
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
-import { formatDateOnly } from '@/lib/date-utils';
-import { Plus, ListTodo, Clock, CheckCircle2, AlertTriangle, XCircle, Pencil, Trash2, LayoutGrid, List, Target, ExternalLink, MoreHorizontal, Download } from 'lucide-react';
+import { formatDateOnly, intlLocale, parseDataLocal } from '@/lib/date-utils';
 import { differenceInDays } from 'date-fns';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 function buildStatusConfig(t: (key: string) => string): Record<string, { label: string; tone: any; icon: any }> {
   return {
-    pendente: { label: t('planosAcao.statusPendente'), tone: 'warning', icon: Clock },
-    em_andamento: { label: t('planosAcao.statusEmAndamento'), tone: 'info', icon: Target },
-    concluido: { label: t('planosAcao.statusConcluido'), tone: 'success', icon: CheckCircle2 },
-    cancelado: { label: t('planosAcao.statusCancelado'), tone: 'neutral', icon: XCircle },
-    atrasado: { label: t('planosAcao.statusAtrasado'), tone: 'destructive', icon: AlertTriangle },
+    pendente: { label: t('planosAcao.statusPendente'), tone: 'warning', icon: IconTime },
+    em_andamento: { label: t('planosAcao.statusEmAndamento'), tone: 'info', icon: IconTarget },
+    concluido: { label: t('planosAcao.statusConcluido'), tone: 'success', icon: IconSuccess },
+    cancelado: { label: t('planosAcao.statusCancelado'), tone: 'neutral', icon: IconError },
+    atrasado: { label: t('planosAcao.statusAtrasado'), tone: 'destructive', icon: IconWarning },
   };
 }
 
@@ -68,7 +68,7 @@ function buildModuloLabels(t: (key: string) => string): Record<string, string> {
 // Map external module statuses to plano de acao statuses
 function mapExternalStatus(modulo: string, status: string, prazo?: string | null): string {
   if (prazo) {
-    const diff = differenceInDays(new Date(prazo), new Date());
+    const diff = differenceInDays(parseDataLocal(prazo), new Date());
     if (diff < 0) return 'atrasado';
   }
 
@@ -90,8 +90,8 @@ function mapExternalStatus(modulo: string, status: string, prazo?: string | null
 }
 
 function getRouteForModule(modulo: string): string {
-  if (modulo === 'controles') return '/governanca?tab=controles';
-  if (modulo === 'auditorias') return '/governanca?tab=auditorias';
+  if (modulo === 'controles') return '/governanca/controles';
+  if (modulo === 'auditorias') return '/governanca/auditorias';
   if (modulo === 'incidentes') return '/incidentes';
   return '/planos-acao';
 }
@@ -250,7 +250,7 @@ export default function PlanosAcao() {
   const processedPlanos = useMemo(() => {
     return planos.map((p: any) => {
       if (p.prazo && ['pendente', 'em_andamento'].includes(p.status)) {
-        const diff = differenceInDays(new Date(p.prazo), new Date());
+        const diff = differenceInDays(parseDataLocal(p.prazo), new Date());
         if (diff < 0) return { ...p, _displayStatus: 'atrasado', _isExternal: false };
       }
       return { ...p, _displayStatus: p.status, _isExternal: false };
@@ -467,7 +467,7 @@ export default function PlanosAcao() {
       key: 'modulo_origem',
       label: t('planosAcao.columnOrigin'),
       render: (val: string, item: any) => (
-        <Chip family="category" size="sm" className="text-xs">
+        <Chip family="category">
           {moduloLabels[val] || val || 'Manual'}
         </Chip>
       ),
@@ -480,16 +480,16 @@ export default function PlanosAcao() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="h-8 w-8">
-              <MoreHorizontal className="h-4 w-4" />
+              <IconMore className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuItem onClick={() => setDetailPlano(item)}>
-              <ExternalLink className="h-4 w-4 mr-2" />{t('planosAcao.actionOpenDetail')}
+              <IconExternal className="h-4 w-4 mr-2" />{t('planosAcao.actionOpenDetail')}
             </DropdownMenuItem>
             {item._isExternal ? (
               <DropdownMenuItem onClick={() => navigate(item._route)}>
-                <ExternalLink className="h-4 w-4 mr-2" />{t('planosAcao.actionOpenInModule')}
+                <IconExternal className="h-4 w-4 mr-2" />{t('planosAcao.actionOpenInModule')}
               </DropdownMenuItem>
             ) : (
               <>
@@ -509,10 +509,10 @@ export default function PlanosAcao() {
                 ))}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => { setEditingPlano(item); setDialogOpen(true); }}>
-                  <Pencil className="h-4 w-4 mr-2" />{t('planosAcao.actionEdit')}
+                  <IconEdit className="h-4 w-4 mr-2" />{t('planosAcao.actionEdit')}
                 </DropdownMenuItem>
                 <DropdownMenuItem className="text-destructive" onClick={() => setDeleteId(item.id)}>
-                  <Trash2 className="h-4 w-4 mr-2" />{t('planosAcao.actionDelete')}
+                  <IconDelete className="h-4 w-4 mr-2" />{t('planosAcao.actionDelete')}
                 </DropdownMenuItem>
               </>
             )}
@@ -531,21 +531,21 @@ export default function PlanosAcao() {
         description={t('modules.planosAcao.description')}
         actions={
           <Button onClick={() => { setEditingPlano(null); setDialogOpen(true); }}>
-            <Plus className="h-4 w-4 mr-2" />
+            <IconAdd className="h-4 w-4 mr-2" />
             {t('planosAcao.newAction')}
           </Button>
         }
         secondaryActions={[
           {
             label: t('planosAcao.csv'),
-            icon: <Download className="h-4 w-4" />,
+            icon: <IconDownload className="h-4 w-4" />,
             onClick: () => {
               if (planos.length === 0) return;
               exportCSV(
                 [t('planosAcao.csvHeaderTitle'), t('planosAcao.csvHeaderStatus'), t('planosAcao.csvHeaderPriority'), t('planosAcao.csvHeaderModule'), t('planosAcao.csvHeaderDeadline'), t('planosAcao.csvHeaderCreatedAt')],
                 planos.map((p: any) => [
                   p.titulo || p.nome || '', p.status || '', p.prioridade || '',
-                  p.modulo_origem || 'manual', p.prazo || '', p.created_at ? new Date(p.created_at).toLocaleDateString('pt-BR') : ''
+                  p.modulo_origem || 'manual', p.prazo || '', p.created_at ? new Date(p.created_at).toLocaleDateString(intlLocale()) : ''
                 ]),
                 'planos_acao'
               );
@@ -573,8 +573,7 @@ export default function PlanosAcao() {
 
       {/* Tabs */}
 
-
-        <TabsContent value={activeTab} className="mt-4 space-y-4">
+        <TabsContent value={activeTab} className="space-y-4">
           <Card className="rounded-lg border overflow-hidden">
             <CardContent className="p-0">
               <div className="p-4 sm:p-6 pb-4">
@@ -618,8 +617,8 @@ export default function PlanosAcao() {
             viewSwitcher={
               <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'lista' | 'kanban')}>
                 <TabsList>
-                  <TabsTrigger value="lista"><List className="h-4 w-4 mr-1.5" />{t('planosAcao.viewList')}</TabsTrigger>
-                  <TabsTrigger value="kanban"><LayoutGrid className="h-4 w-4 mr-1.5" />{t('planosAcao.viewKanban')}</TabsTrigger>
+                  <TabsTrigger value="lista"><IconList className="h-4 w-4 mr-1.5" />{t('planosAcao.viewList')}</TabsTrigger>
+                  <TabsTrigger value="kanban"><IconGrid className="h-4 w-4 mr-1.5" />{t('planosAcao.viewKanban')}</TabsTrigger>
                 </TabsList>
               </Tabs>
             }
@@ -629,6 +628,10 @@ export default function PlanosAcao() {
               <DataTable
                 data={filteredPlanos}
                 columns={columns}
+                // A página já tem a sua busca no `ModuleToolbar`; o `DataTable`
+                // traz uma por omissão e o ecrã ficava com dois campos
+                // empilhados, o de baixo sem rótulo nenhum.
+                searchable={false}
                 onRowClick={(item) => setDetailPlano(item)}
                 loading={isLoading}
                 sortField={sortField}
@@ -637,7 +640,7 @@ export default function PlanosAcao() {
                 paginated
                 pageSize={20}
                 emptyState={{
-                  icon: <ListTodo className="h-12 w-12" />,
+                  icon: <IconChecklist className="h-12 w-12" />,
                   title: t('planosAcao.emptyTitle'),
                   description: activeTab === 'meus' ? t('planosAcao.emptyDescriptionMyItems') : t('planosAcao.emptyDescriptionAll'),
                   action: { label: t('planosAcao.newAction'), onClick: () => { setEditingPlano(null); setDialogOpen(true); } },

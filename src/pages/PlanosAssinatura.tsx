@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { IconCheck, IconArrowLeft } from '@/components/icons';
 import { Link } from 'react-router-dom';
-import { Check, Sparkles, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -37,7 +37,7 @@ export default function PlanosAssinatura() {
     <div className="container mx-auto px-4 py-12 space-y-8">
       <div className="flex justify-start">
         <Button asChild variant="ghost" size="sm">
-          <Link to="/"><ArrowLeft className="h-4 w-4 mr-2" /> {t('cardsKpi.sweep.sistema.voltar')}</Link>
+          <Link to="/"><IconArrowLeft className="h-4 w-4 mr-2" /> {t('cardsKpi.sweep.sistema.voltar')}</Link>
         </Button>
       </div>
       <div className="text-center space-y-4">
@@ -75,14 +75,14 @@ export default function PlanosAssinatura() {
             <Card
               key={plano.id}
               className={cn(
-                'relative flex flex-col transition-all duration-200 hover:shadow-lg',
-                isPopular && 'border-primary shadow-md scale-[1.02]'
+                'relative flex flex-col transition-ui duration-200 hover:shadow-lg',
+                isPopular && 'border-primary shadow-sm scale-[1.02]'
               )}
             >
               {isPopular && (
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                   <Badge className="bg-primary text-primary-foreground px-4 py-1">
-                    <Sparkles className="h-3 w-3 mr-1" /> {t('sweepCore.planosAssinatura.maisPopular')}
+                    {t('sweepCore.planosAssinatura.maisPopular')}
                   </Badge>
                 </div>
               )}
@@ -121,7 +121,7 @@ export default function PlanosAssinatura() {
                 <div className="space-y-2.5 pt-2">
                   {plano.recursos_destacados.map((feature, i) => (
                     <div key={i} className="flex items-start gap-2">
-                      <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                      <IconCheck className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                       <span className="text-sm text-foreground">{feature}</span>
                     </div>
                   ))}

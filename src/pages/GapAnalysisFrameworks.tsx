@@ -1,4 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
+import { calcularScoreFramework } from '@/lib/gap-score';
+import { useReusoFrameworks } from '@/hooks/useReusoFramework';
+import { useMaturityTrend } from '@/hooks/useMaturityTrend';
+import { useProximoMarcoDaEmpresa } from '@/hooks/useMarcoCertificacao';
 import { useNavigate } from 'react-router-dom';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { PageHeader } from '@/components/ui/page-header';
@@ -19,13 +23,13 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { useDebounce } from '@/hooks/useDebounce';
-import { Shield, ChevronDown } from 'lucide-react';
 import { logger } from '@/lib/logger';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { fwDescricao } from "@/lib/gap-i18n";
 import { useJurisdicao } from '@/hooks/useJurisdicao';
 import type { JurisdicaoCodigo } from '@/lib/jurisdicao';
 import { summarizeGaps, EMPTY_GAP_SUMMARY, type GapSummary } from '@/lib/gap-criticality';
+import { IconShield, IconChevronDown } from '@/components/icons';
 
 interface Framework {
   id: string;
@@ -191,6 +195,21 @@ export default function GapAnalysisFrameworks() {
                 .eq('empresa_id', empresaId) as any,
             );
 
+            // Declaração de Aplicabilidade: o que a empresa tirou do escopo não
+            // é lacuna. Sem isto a lista contava como gap um requisito que a
+            // própria aba do SoA já mostrava como fora do escopo.
+            const { data: soaRows } = await fetchAllPaginated<{ requirement_id: string; aplicavel: boolean }>(
+              () =>
+                supabase
+                  .from('gap_analysis_soa')
+                  .select('requirement_id, aplicavel')
+                  .in('framework_id', frameworkIds)
+                  .eq('empresa_id', empresaId) as any,
+            );
+            const foraDoEscopo = new Set(
+              (soaRows || []).filter(s => s.aplicavel === false).map(s => s.requirement_id),
+            );
+
             if (!evalError && allEvaluations) {
               const evalsByFramework = new Map<string, typeof allEvaluations>();
               allEvaluations.forEach(ev => {
@@ -199,24 +218,39 @@ export default function GapAnalysisFrameworks() {
                 evalsByFramework.set(ev.framework_id, existing);
               });
 
+              const reqsPorFramework = new Map<string, typeof allRequirements>();
+              allRequirements.forEach(r => {
+                const lista = reqsPorFramework.get(r.framework_id) || [];
+                lista.push(r);
+                reqsPorFramework.set(r.framework_id, lista);
+              });
+
               frameworkIds.forEach(fwId => {
                 const evals = evalsByFramework.get(fwId) || [];
-                const evaluated = evals.filter(e =>
-                  e.conformity_status && e.conformity_status !== 'nao_avaliado'
+                const statusPorRequisito = new Map(
+                  evals.map(e => [e.requirement_id, e.conformity_status]),
                 );
-                const conforme = evals.filter(e => e.conformity_status === 'conforme').length;
-                const parcial = evals.filter(e => e.conformity_status === 'parcial').length;
-                const nao_conforme = evals.filter(e => e.conformity_status === 'nao_conforme').length;
-                const nao_aplicavel = evals.filter(e => e.conformity_status === 'nao_aplicavel').length;
+
+                // Uma conta só, a de `lib/gap-score` — a mesma que o detalhe do
+                // framework usa. Antes esta tela somava sem peso e mostrava 50%
+                // onde o detalhe mostrava 53% para os mesmos dados.
+                const resumo = calcularScoreFramework(
+                  (reqsPorFramework.get(fwId) || []).map(r => ({
+                    id: r.id,
+                    peso: r.peso,
+                    conformityStatus: statusPorRequisito.get(r.id),
+                    aplicavel: !foraDoEscopo.has(r.id),
+                  })),
+                );
+
                 const totalReqs = counts[fwId] || 0;
-                const nao_avaliado = totalReqs - conforme - parcial - nao_conforme - nao_aplicavel;
 
                 statusCountsMap[fwId] = {
-                  conforme,
-                  parcial,
-                  nao_conforme,
-                  nao_aplicavel,
-                  nao_avaliado: Math.max(0, nao_avaliado),
+                  conforme: resumo.conforme,
+                  parcial: resumo.parcial,
+                  nao_conforme: resumo.naoConforme,
+                  nao_aplicavel: resumo.naoAplicaveis,
+                  nao_avaliado: resumo.naoAvaliado,
                 };
 
                 gapSummaryMap[fwId] = summarizeGaps(
@@ -227,24 +261,11 @@ export default function GapAnalysisFrameworks() {
                   })),
                 );
 
-                let avgScore = 0;
-                if (totalReqs > 0) {
-                  const applicableCount = totalReqs - nao_aplicavel;
-                  if (applicableCount > 0) {
-                    const totalScore = evals.reduce((acc, e) => {
-                      if (e.conformity_status === 'conforme') return acc + 100;
-                      if (e.conformity_status === 'parcial') return acc + 50;
-                      return acc;
-                    }, 0);
-                    avgScore = Math.round(totalScore / applicableCount);
-                  }
-                }
-
                 progress[fwId] = {
                   totalRequirements: totalReqs,
-                  evaluatedRequirements: evaluated.length,
-                  conformeCount: conforme,
-                  averageScore: avgScore,
+                  evaluatedRequirements: resumo.avaliados,
+                  conformeCount: resumo.conforme,
+                  averageScore: resumo.score,
                 };
               });
             }
@@ -350,25 +371,49 @@ export default function GapAnalysisFrameworks() {
     };
   }, [activeFrameworks, frameworkProgress, frameworkStatusCounts, frameworkGapSummary, hasActiveFrameworks]);
 
-  // Recomendados pela IA — usa SUGGESTED_NAMES, e calcula overlap heurístico baseado
-  // em tipo_framework idêntico aos ativos (placeholder do que será semântico em Wave futura).
+  // Δ 30 dias e marco de certificação — ambos existiam na tela sem origem.
+  //
+  // O "Δ 30D" era literalmente `delta30d = 0` por omissão, pintado de verde com
+  // seta para cima; o "Próximo marco" era um convite com botão sem ação. Agora
+  // o delta vem do histórico de score (que passou a ser escrito por trigger) e
+  // o marco vem de `gap_analysis_marcos`. Sem histórico, o hook devolve `null`
+  // e a linha simplesmente não aparece — que é a leitura honesta.
+  const { data: tendencia } = useMaturityTrend(heroData?.overallScore ?? 0);
+  // O marco pertence ao framework. Aqui mostra-se só o mais próximo entre os
+  // frameworks ativos, dizendo de qual é — definir acontece lá dentro.
+  const { data: marco } = useProximoMarcoDaEmpresa(empresaId ?? undefined);
+
+  // Recomendados: ordenados por jurisdição e por adequação ao negócio.
+  //
+  // Havia aqui um "reuso estimado" que era Math.random() — um número diferente a
+  // cada render, exibido sob o rótulo "baseado em sobreposição de evidências".
+  // Num produto de GRC isso é pior que não ter: o cliente escolhe qual framework
+  // adotar olhando esse número. Só volta quando existir mapeamento cruzado real
+  // entre requisitos de frameworks diferentes, que o esquema hoje não tem.
   const aiRecommended = useMemo(() => {
     const activeTypes = new Set(activeFrameworks.map(fw => getCategory(fw.tipo_framework)));
 
     const candidates = availableFrameworks
       .map(fw => {
         const cat = getCategory(fw.tipo_framework);
-        const overlap = activeTypes.has(cat) ? 55 + Math.round(Math.random() * 30) : 25 + Math.round(Math.random() * 25);
         const priority = prioridadeJurisdicao(fw.nome, jurisdicaoCodigo)
           + (SUGGESTED_NAMES.includes(fw.nome) ? 50 : 0);
-        return { fw, overlap, priority };
+        return { fw, priority };
       })
-      .sort((a, b) => (b.priority - a.priority) || (b.overlap - a.overlap))
+      .sort((a, b) => (b.priority - a.priority) || a.fw.nome.localeCompare(b.fw.nome))
       .slice(0, 3);
 
     return candidates;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [availableFrameworks, activeFrameworks.length, jurisdicaoCodigo]);
+
+  // Quanto de cada candidato a empresa já tem pronto, pela equivalência entre
+  // requisitos. É a resposta real à pergunta que o "reuso estimado" aleatório
+  // fingia responder: "vale a pena começar este agora?".
+  const { reuso: reusoPorFramework } = useReusoFrameworks(
+    aiRecommended.map(({ fw }) => fw.id),
+    empresaId,
+  );
 
   const suggestedFrameworks = useMemo(() => {
     const found = SUGGESTED_NAMES
@@ -455,6 +500,25 @@ export default function GapAnalysisFrameworks() {
                 criticalCount={heroData.criticalCount}
                 overdueCount={heroData.overdueCount}
                 activeFrameworksCount={activeFrameworks.length}
+                delta30d={tendencia?.delta ?? null}
+                nextMilestone={
+                  marco
+                    ? {
+                        label: marco.rotulo,
+                        date: marco.data_alvo,
+                        targetScore: marco.score_alvo,
+                        frameworkName: marco.framework_nome,
+                        frameworkScore: frameworkProgress[marco.framework_id]?.averageScore ?? 0,
+                      }
+                    : undefined
+                }
+                onOpenMilestone={() =>
+                  marco
+                    ? navigate(`/gap-analysis/framework/${marco.framework_id}`)
+                    : document
+                        .getElementById('frameworks-ativos')
+                        ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                }
               />
             )}
 
@@ -465,20 +529,20 @@ export default function GapAnalysisFrameworks() {
                   title={t('gapAnalysis.frameworks.recommended.title')}
                   count={aiRecommended.length}
                   right={
-                    <span className="text-[10px] font-sans uppercase tracking-wider text-muted-foreground">
+                    <span className="text-xs text-muted-foreground">
                       {t('gapAnalysis.frameworks.recommended.basedOn')}
                     </span>
                   }
                 />
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {aiRecommended.map(({ fw, overlap }) => (
+                  {aiRecommended.map(({ fw }) => (
                     <AIRecommendedTile
                       key={fw.id}
                       nome={fw.nome}
                       versao={fw.versao}
                       tipo_framework={fw.tipo_framework}
                       descricao={fwDescricao(fw as any) || fw.descricao}
-                      overlapPercent={overlap}
+                      reuso={reusoPorFramework[fw.id]}
                       requirementCount={requirementCounts[fw.id] || 0}
                       onClick={() => handleFrameworkClick(fw)}
                     />
@@ -491,7 +555,7 @@ export default function GapAnalysisFrameworks() {
             {FilterBar}
 
             {/* Frameworks ativos — linhas editoriais */}
-            <section>
+            <section id="frameworks-ativos">
               <SectionHead
                 title={t('gapAnalysis.frameworks.active.title')}
                 count={hasFilters ? `${filteredActiveFrameworks.length}/${activeFrameworks.length}` : activeFrameworks.length}
@@ -531,13 +595,13 @@ export default function GapAnalysisFrameworks() {
             <Collapsible open={catalogOpen} onOpenChange={setCatalogOpen}>
               <CollapsibleTrigger asChild>
                 <button type="button" className="flex items-center gap-2 group w-full text-left">
-                  <ChevronDown
+                  <IconChevronDown
                     className={`h-4 w-4 text-muted-foreground transition-transform ${catalogOpen ? 'rotate-0' : '-rotate-90'}`}
                   />
-                  <span className="text-xs font-semibold uppercase tracking-wider text-foreground/80 group-hover:text-primary transition-colors">
+                  <span className="text-xs font-semibold text-foreground/80 group-hover:text-primary transition-colors">
                     {t('gapAnalysis.frameworks.otherAvailable')}
                   </span>
-                  <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
+                  <span className="font-mono text-micro tabular-nums text-muted-foreground">
                     {hasFilters && catalogOpen
                       ? `${filteredAvailableFrameworks.length}/${availableFrameworks.length}`
                       : String(availableFrameworks.length).padStart(2, '0')}
@@ -570,7 +634,7 @@ export default function GapAnalysisFrameworks() {
 
         {frameworks.length === 0 && (
           <EmptyState
-            icon={<Shield className="h-8 w-8" />}
+            icon={<IconShield className="h-8 w-8" />}
             title={t('gapAnalysis.frameworks.empty.title')}
             description={t('gapAnalysis.frameworks.empty.description')}
           />

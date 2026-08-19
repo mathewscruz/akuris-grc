@@ -1,4 +1,5 @@
 import React from 'react';
+import { IconSuccess, IconWarning, IconTime, IconChecklist } from '@/components/icons';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,10 +12,10 @@ import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { EmptyState } from '@/components/ui/empty-state';
 import { PageHeader } from '@/components/ui/page-header';
 import { StatStrip } from '@/components/ui/stat-strip';
-import { ListTodo, AlertTriangle, Clock, CheckCircle2 } from 'lucide-react';
 import { formatStatus } from '@/lib/text-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatDate } from '@/lib/i18n-format';
+import { parseDataLocal } from '@/lib/date-utils';
 
 type Prioridade = 'critica' | 'alta' | 'media' | 'baixa';
 
@@ -40,7 +41,6 @@ type Row = {
   concluida: boolean;
   href: string;
 };
-
 
 export default function MinhasTarefas() {
   const navigate = useNavigate();
@@ -110,7 +110,7 @@ export default function MinhasTarefas() {
     itens.forEach((t) => {
       if (t.concluida) { concluidas.push(t); return; }
       if (!t.prazo) { sem.push(t); return; }
-      const d = new Date(t.prazo); d.setHours(0, 0, 0, 0);
+      const d = parseDataLocal(t.prazo); d.setHours(0, 0, 0, 0);
       if (d < hoje) atrasadas.push(t);
       else if (d.getTime() === hoje.getTime()) hojeArr.push(t);
       else if (d < em7) semana.push(t);
@@ -136,7 +136,7 @@ export default function MinhasTarefas() {
     return (
       <div className="space-y-2">
         <div className="flex items-center gap-2">
-          <StatusBadge tone={tone} size="sm">{label}</StatusBadge>
+          <StatusBadge tone={tone}>{label}</StatusBadge>
           <span className="text-xs text-muted-foreground">
             {t(rows.length === 1 ? 'minhasTarefas.itemCount' : 'minhasTarefas.itemCountPlural', { count: rows.length })}
           </span>
@@ -171,7 +171,7 @@ export default function MinhasTarefas() {
                     </TableCell>
                     <TableCell className="text-muted-foreground">{originRef}</TableCell>
                     <TableCell>
-                      <StatusBadge tone={prioridadeTone[row.prioridade]} size="sm">
+                      <StatusBadge tone={prioridadeTone[row.prioridade]}>
                         {t(`minhasTarefas.priority.${row.prioridade}`)}
                       </StatusBadge>
                     </TableCell>
@@ -203,13 +203,12 @@ export default function MinhasTarefas() {
         ]}
       />
 
-
       {isLoading ? (
         <div className="flex justify-center py-16"><AkurisPulse size={56} /></div>
       ) : itens.length === 0 ? (
         <EmptyState
           variant="illustrated"
-          icon={<ListTodo className="h-8 w-8" />}
+          icon={<IconChecklist className="h-8 w-8" />}
           title={t('minhasTarefas.empty.title')}
           description={t('minhasTarefas.empty.description')}
         />

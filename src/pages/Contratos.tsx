@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { IconHistory, IconAdd, IconSearch, IconEdit, IconDelete, IconDownload, IconUpload, IconMore, IconInfo, IconFile, IconMoney, IconUsers, IconTrendUp, IconOrg, IconChart, IconFlag } from '@/components/icons';
 import { useSearchParams } from 'react-router-dom';
 import { useFocusRow } from '@/hooks/useFocusRow';
 import { Button } from '@/components/ui/button';
@@ -19,7 +20,6 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { PageSkeleton } from '@/components/ui/page-skeleton';
-import { Plus, Search, FileText, DollarSign, Users, AlertCircle, Edit, TrendingUp, Trash2, Building2, FileStack, Milestone, FilePlus2, Download, Upload, MoreHorizontal, BarChart3 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -43,6 +43,7 @@ import { resolveContratoStatusTone, resolveCriticidadeTone } from '@/lib/status-
 import { estadoContrato } from '@/lib/metrics';
 import { rowOpenProps } from '@/lib/row-interaction';
 import { RecordDetailDrawer } from '@/components/common/RecordDetailDrawer';
+import { TrilhaAuditoria } from '@/components/common/TrilhaAuditoria';
 
 interface Contrato {
   id: string;
@@ -112,6 +113,7 @@ export default function Contratos() {
   const [documentosDialogOpen, setDocumentosDialogOpen] = useState(false);
   const [currentTab, setCurrentTab] = useState('contratos');
   const [aditivosDialogOpen, setAditivosDialogOpen] = useState(false);
+  const [trilhaDialogOpen, setTrilhaDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [relatoriosOpen, setRelatoriosOpen] = useState(false);
   const [templatesOpen, setTemplatesOpen] = useState(false);
@@ -161,6 +163,26 @@ export default function Contratos() {
   });
 
   // React Query para fornecedores
+  // "Responsável" na gaveta de detalhe mostrava o UUID cru de
+  // `gestor_contrato`. O mesmo campo, na tabela do Gap Analysis, resolve para
+  // nome — aqui faltava o lookup.
+  const { data: perfis = [] } = useQuery({
+    queryKey: ['contratos-perfis', empresaId],
+    enabled: !!empresaId,
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('user_id, nome, email')
+        .eq('empresa_id', empresaId!);
+      return data || [];
+    },
+  });
+  const nomePorUsuario = useMemo(
+    () => new Map(perfis.map((p) => [p.user_id, p.nome || p.email || ''])),
+    [perfis],
+  );
+
   const { data: fornecedores = [], isLoading: loadingFornecedores } = useQuery({
     queryKey: ['fornecedores', empresaId],
     queryFn: async () => {
@@ -270,7 +292,7 @@ export default function Contratos() {
 
   const getStatusBadge = (status: string) => {
     return (
-      <StatusBadge size="sm" {...resolveContratoStatusTone(status)}>
+      <StatusBadge {...resolveContratoStatusTone(status)}>
         {formatStatus(status)}
       </StatusBadge>
     );
@@ -281,17 +303,16 @@ export default function Contratos() {
     const estado = estadoContrato(contrato);
     const label = estado === 'vigente' ? 'ativo' : estado === 'a_vencer' ? 'ativo' : estado;
     return (
-      <StatusBadge size="sm" {...resolveContratoStatusTone(label)}>
+      <StatusBadge {...resolveContratoStatusTone(label)}>
         {formatStatus(label)}
       </StatusBadge>
     );
   };
 
-
-  const getRiskBadge = (risk: string) => {
+  const getRiskBadge = (risk: string, prefixo?: string) => {
     return (
-      <StatusBadge size="sm" {...resolveCriticidadeTone(risk)}>
-        {formatStatus(risk)}
+      <StatusBadge {...resolveCriticidadeTone(risk)}>
+        {prefixo ? `${prefixo}: ${formatStatus(risk)}` : formatStatus(risk)}
       </StatusBadge>
     );
   };
@@ -305,9 +326,9 @@ export default function Contratos() {
     const diffDays = Math.ceil((dataVenc.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
     
     if (diffDays < 0) {
-      return <StatusBadge size="sm" {...resolveRevisaoTone(diffDays)} className="ml-2">{formatStatus('vencido')}</StatusBadge>;
+      return <StatusBadge {...resolveRevisaoTone(diffDays)} className="ml-2">{formatStatus('vencido')}</StatusBadge>;
     } else if (diffDays <= 30) {
-      return <StatusBadge size="sm" {...resolveRevisaoTone(diffDays)} className="ml-2">{diffDays}d</StatusBadge>;
+      return <StatusBadge {...resolveRevisaoTone(diffDays)} className="ml-2">{diffDays}d</StatusBadge>;
     }
     return null;
   };
@@ -405,32 +426,32 @@ export default function Contratos() {
           actions={
             currentTab === 'contratos' ? (
               <Button onClick={() => { setSelectedContrato(null); setDialogOpen(true); }}>
-                <Plus className="h-4 w-4 mr-2" />
+                <IconAdd className="h-4 w-4 mr-2" />
                 {t('fin.contratos.novo')}
               </Button>
             ) : (
               <Button onClick={() => { setSelectedFornecedor(null); setFornecedorDialogOpen(true); }}>
-                <Plus className="h-4 w-4 mr-2" />
+                <IconAdd className="h-4 w-4 mr-2" />
                 {t('fin.fornecedores.novo')}
               </Button>
             )
           }
           secondaryActions={[
-            { label: t('cardsKpi.sweep.contratos.exportarCsv'), icon: <Download className="h-4 w-4" />, onClick: handleExportCSV },
-            { label: t('cardsKpi.denuncias.relatorios'), icon: <BarChart3 className="h-4 w-4" />, onClick: () => setRelatoriosOpen(true) },
-            { label: t('modules.dueDiligence.templates'), icon: <FileText className="h-4 w-4" />, onClick: () => setTemplatesOpen(true) },
-            { label: t('p3Import.importButtonLabel'), icon: <Upload className="h-4 w-4" />, onClick: () => setImportDialogOpen(true), separatorBefore: true },
+            { label: t('cardsKpi.sweep.contratos.exportarCsv'), icon: <IconDownload className="h-4 w-4" />, onClick: handleExportCSV },
+            { label: t('cardsKpi.denuncias.relatorios'), icon: <IconChart className="h-4 w-4" />, onClick: () => setRelatoriosOpen(true) },
+            { label: t('modules.dueDiligence.templates'), icon: <IconFile className="h-4 w-4" />, onClick: () => setTemplatesOpen(true) },
+            { label: t('p3Import.importButtonLabel'), icon: <IconUpload className="h-4 w-4" />, onClick: () => setImportDialogOpen(true), separatorBefore: true },
           ]}
         />
 
-        <Tabs value={currentTab} onValueChange={setCurrentTab} className="space-y-4">
+        <Tabs value={currentTab} onValueChange={setCurrentTab}>
           <TabsList>
             <TabsTrigger value="contratos" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
+              <IconFile className="h-4 w-4" />
               <span className="hidden sm:inline">{t('cardsKpi.sweep.contratos.contratos')}</span>
             </TabsTrigger>
             <TabsTrigger value="fornecedores" className="flex items-center gap-2">
-              <Building2 className="h-4 w-4" />
+              <IconOrg className="h-4 w-4" />
               <span className="hidden sm:inline">{t('cardsKpi.sweep.contratos.fornecedores')}</span>
             </TabsTrigger>
           </TabsList>
@@ -457,7 +478,7 @@ export default function Contratos() {
               value: formatMoedaEmpresa(statsContratos?.valorVencido || 0, true),
               tone: (statsContratos?.valorVencido || 0) > 0 ? 'destructive' : undefined,
               hint: t('cardsKpi.contratos.valorVencidoHint'),
-              drillDown: 'contratos',
+              drillDown: 'contratos-vencidos',
             },
             {
               key: 'vencendo',
@@ -465,18 +486,21 @@ export default function Contratos() {
               value: statsContratos?.vencendo30Dias || 0,
               tone: 'warning',
               hint: t('fin.comum.proximos30'),
+              drillDown: 'contratos-vencendo',
+            },
+            {
+              key: 'renovacao',
+              label: t('fin.contratos.renovacaoAutomatica'),
+              value: statsContratos?.renovacaoAutomatica || 0,
               drillDown: 'contratos',
             },
           ]}
         />
 
-
         <RelatoriosContratos open={relatoriosOpen} onOpenChange={setRelatoriosOpen} hideTrigger />
         <TemplatesContratos open={templatesOpen} onOpenChange={setTemplatesOpen} hideTrigger />
 
-
         {/* Tabs */}
-
 
           <TabsContent value="contratos" className="space-y-4">
             <Card className="rounded-lg border overflow-hidden">
@@ -496,6 +520,7 @@ export default function Contratos() {
                             <SelectContent>
                               <SelectItem value="todos">{t('campos.filtros.todos')}</SelectItem>
                               <SelectItem value="ativo">{t('campos.opcoes.ativo')}</SelectItem>
+                              <SelectItem value="a_vencer">{t('fin.contratos.aVencer')}</SelectItem>
                               <SelectItem value="vencido">{t('campos.opcoes.vencido')}</SelectItem>
                               <SelectItem value="rascunho">{t('campos.opcoes.rascunho')}</SelectItem>
                               <SelectItem value="negociacao">{t('fin.contratos.negociacao')}</SelectItem>
@@ -554,7 +579,7 @@ export default function Contratos() {
                       <TableRow>
                         <TableCell colSpan={7} className="p-0">
                           <EmptyState
-                            icon={<FileText className="h-8 w-8" />}
+                            icon={<IconFile className="h-8 w-8" />}
                             title={t('fin.contratos.nenhum')}
                             description={t('cardsKpi.contratos.emptyContratos')}
                             action={{
@@ -593,33 +618,36 @@ export default function Contratos() {
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button variant="ghost" className="h-8 w-8 p-0">
-                                    <MoreHorizontal className="h-4 w-4" />
+                                    <IconMore className="h-4 w-4" />
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                   <DropdownMenuItem onClick={() => handleEdit(contrato, 'contrato')}>
-                                    <Edit className="mr-2 h-4 w-4" />
+                                    <IconEdit className="mr-2 h-4 w-4" />
                                     {t('sweepDados.contratos.editar')}
                                   </DropdownMenuItem>
                                   <DropdownMenuSeparator />
                                   <DropdownMenuItem onClick={() => { setSelectedContrato(contrato); setDocumentosDialogOpen(true); }}>
-                                    <FileStack className="mr-2 h-4 w-4" />
+                                    <IconFile className="mr-2 h-4 w-4" />
                                     {t('sweepDados.contratos.documentos')}
                                   </DropdownMenuItem>
                                   <DropdownMenuItem onClick={() => { setSelectedContrato(contrato); setMarcosDialogOpen(true); }}>
-                                    <Milestone className="mr-2 h-4 w-4" />
+                                    <IconFlag className="mr-2 h-4 w-4" />
                                     {t('sweepDados.contratos.marcos')}
                                   </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => { setSelectedContrato(contrato); setTrilhaDialogOpen(true); }}>
+                                    <IconHistory className="mr-2 h-4 w-4" />{t('fin.contratos.trilhaAuditoria')}
+                                  </DropdownMenuItem>
                                   <DropdownMenuItem onClick={() => { setSelectedContrato(contrato); setAditivosDialogOpen(true); }}>
-                                    <FilePlus2 className="mr-2 h-4 w-4" />
+                                    <IconAdd className="mr-2 h-4 w-4" />
                                     {t('sweepDados.contratos.aditivos')}
                                   </DropdownMenuItem>
                                   <DropdownMenuSeparator />
                                   <DropdownMenuItem
                                     onClick={() => handleDelete(contrato.id, 'contrato')}
-                                    className="text-red-600"
+                                    className="text-destructive"
                                   >
-                                    <Trash2 className="mr-2 h-4 w-4" />{t('fin.comum.excluir')}</DropdownMenuItem>
+                                    <IconDelete className="mr-2 h-4 w-4" />{t('fin.comum.excluir')}</DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </div>
@@ -765,7 +793,7 @@ export default function Contratos() {
                       <TableRow>
                         <TableCell colSpan={7} className="p-0">
                           <EmptyState
-                            icon={<Users className="h-8 w-8" />}
+                            icon={<IconUsers className="h-8 w-8" />}
                             title={t('fin.fornecedores.nenhum')}
                             description={t('cardsKpi.contratos.emptyFornecedores')}
                             action={{
@@ -795,12 +823,12 @@ export default function Contratos() {
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon">
-                                  <MoreHorizontal className="h-4 w-4" />
+                                  <IconMore className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
                                 <DropdownMenuItem onClick={() => handleEdit(fornecedor, 'fornecedor')}>
-                                  <Edit className="h-4 w-4 mr-2" />
+                                  <IconEdit className="h-4 w-4 mr-2" />
                                   {t('sweepDados.contratos.editar')}
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
@@ -808,7 +836,7 @@ export default function Contratos() {
                                   className="text-destructive"
                                   onClick={() => handleDelete(fornecedor.id, 'fornecedor')}
                                 >
-                                  <Trash2 className="h-4 w-4 mr-2" />{t('fin.comum.excluir')}</DropdownMenuItem>
+                                  <IconDelete className="h-4 w-4 mr-2" />{t('fin.comum.excluir')}</DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </TableCell>
@@ -910,6 +938,16 @@ export default function Contratos() {
           onSuccess={invalidateData}
         />
 
+        {selectedContrato && (
+          <TrilhaAuditoria
+            open={trilhaDialogOpen}
+            onOpenChange={setTrilhaDialogOpen}
+            registroId={selectedContrato.id}
+            registroNome={selectedContrato.nome}
+            tabela="contratos"
+          />
+        )}
+
         <ConfirmDialog
           open={deleteConfirm.open}
           onOpenChange={(open) => setDeleteConfirm(prev => ({ ...prev, open }))}
@@ -927,7 +965,11 @@ export default function Contratos() {
           badges={detalheContrato ? (
             <>
               {getContratoStatusBadge(detalheContrato)}
-              {detalheContrato.fornecedores?.avaliacao_risco ? getRiskBadge(detalheContrato.fornecedores.avaliacao_risco) : null}
+              {/* O risco é do FORNECEDOR, não do contrato — sem o prefixo, um
+                  "Baixo" ao lado do nome do contrato lia-se como risco dele. */}
+              {detalheContrato.fornecedores?.avaliacao_risco
+                ? getRiskBadge(detalheContrato.fornecedores.avaliacao_risco, t('fin.contratos.riscoFornecedor'))
+                : null}
             </>
           ) : undefined}
           actions={detalheContrato ? (
@@ -941,8 +983,9 @@ export default function Contratos() {
             { label: t('fin.comum.valor'), value: detalheContrato.valor != null ? formatMoedaEmpresa(detalheContrato.valor) : null },
             { label: t('fin.comum.dataInicio'), value: detalheContrato.data_inicio ? formatDateOnly(detalheContrato.data_inicio) : null },
             { label: t('detalheRegisto.dataFim'), value: detalheContrato.data_fim ? formatDateOnly(detalheContrato.data_fim) : null },
-            { label: t('detalheRegisto.responsavel'), value: detalheContrato.gestor_contrato },
-            { label: t('detalheRegisto.observacoes'), value: detalheContrato.objeto || detalheContrato.observacoes, full: true },
+            { label: t('detalheRegisto.responsavel'), value: detalheContrato.gestor_contrato ? (nomePorUsuario.get(detalheContrato.gestor_contrato) || detalheContrato.gestor_contrato) : null },
+            { label: t('fin.contratos.objeto'), value: detalheContrato.objeto, full: true },
+            { label: t('detalheRegisto.observacoes'), value: detalheContrato.observacoes, full: true },
           ] : []}
         />
 

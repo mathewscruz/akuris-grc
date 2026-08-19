@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
-import { Eye, EyeOff, Mail, Lock, ArrowRight, ArrowLeft } from 'lucide-react';
 import logoImage from '@/assets/akuris-logo.png';
 import { ForgotPasswordDialog } from '@/components/ForgotPasswordDialog';
 import { LanguageSelector } from '@/components/LanguageSelector';
@@ -20,7 +19,7 @@ import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { LoadingOverlay } from '@/components/ui/LoadingOverlay';
 import { AkurisMarkPattern } from '@/components/identity/AkurisMarkPattern';
 import { CornerAccent } from '@/components/identity/CornerAccent';
-import { RiscosIcon, ControlesIcon, GapAnalysisIcon } from '@/components/icons';
+import { RiscosIcon, ControlesIcon, GapAnalysisIcon, IconView, IconHide, IconMail, IconLock, IconArrowRight, IconArrowLeft } from '@/components/icons';
 
 const Auth = () => {
   const { user, loading, markMfaVerified } = useAuth();
@@ -284,7 +283,7 @@ const Auth = () => {
           <ul className="space-y-5 landing-fade-in-3">
             {pillars.map((p, i) => (
               <li key={i} className="flex items-start gap-4">
-                <span className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10 border border-primary/20 text-primary shrink-0">
+                <span className="flex items-center justify-center w-10 h-10 text-primary shrink-0">
                   <p.Icon size={18} />
                 </span>
                 <div className="pt-1">
@@ -298,7 +297,7 @@ const Auth = () => {
 
         <div className="relative z-10 landing-fade-in-4">
           <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mb-5" />
-          <p className="text-white/35 text-[11px] tracking-[0.18em] uppercase font-medium">
+          <p className="text-white/35 text-xs font-medium">
             {t('auth.complianceBadges')}
           </p>
         </div>
@@ -314,7 +313,7 @@ const Auth = () => {
 
         <div className="w-full max-w-sm space-y-7 landing-fade-in-2">
           <div className="space-y-2 text-center lg:text-left">
-            <h1 className="text-2xl lg:text-[28px] font-semibold text-white tracking-tight">
+            <h1 className="text-2xl lg:text-3xl font-semibold text-white tracking-tight">
               {t('auth.welcomeBack')}
             </h1>
             <p className="text-sm text-white/55">{t('auth.signInToContinue')}</p>
@@ -326,7 +325,7 @@ const Auth = () => {
                 {t('auth.emailLabel')}
               </Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/35" />
+                <IconMail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/35" />
                 <Input
                   id="email"
                   type="email"
@@ -355,7 +354,7 @@ const Auth = () => {
                 </button>
               </div>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/35" />
+                <IconLock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/35" />
                 <Input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
@@ -373,7 +372,7 @@ const Auth = () => {
                   tabIndex={-1}
                   aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
                 >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {showPassword ? <IconHide className="w-5 h-5" /> : <IconView className="w-5 h-5" />}
                 </button>
               </div>
               {errors.password && <p className="text-xs text-destructive mt-1">{errors.password}</p>}
@@ -393,20 +392,20 @@ const Auth = () => {
 
             <Button
               type="submit"
-              className="w-full h-11 font-semibold text-sm bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg shadow-[0_8px_24px_-8px_hsl(var(--primary)/0.5)] hover:shadow-[0_10px_30px_-8px_hsl(var(--primary)/0.6)] transition-all"
+              className="w-full h-11 font-semibold text-sm bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg shadow-[0_8px_24px_-8px_hsl(var(--primary)/0.5)] hover:shadow-[0_10px_30px_-8px_hsl(var(--primary)/0.6)] transition-ui"
               disabled={isBusy}
             >
               {isBusy ? (
                 <><AkurisPulse size={16} className="mr-2" />{t('auth.signingIn')}</>
               ) : (
-                <>{t('auth.signIn')} <ArrowRight className="w-4 h-4 ml-1.5" /></>
+                <>{t('auth.signIn')} <IconArrowRight className="w-4 h-4 ml-1.5" /></>
               )}
             </Button>
           </form>
 
         </div>
 
-        <div className="absolute bottom-6 left-0 right-0 text-center text-[11px] text-white/25">
+        <div className="absolute bottom-6 left-0 right-0 text-center text-micro text-white/25">
           © {new Date().getFullYear()} Akuris
         </div>
       </div>

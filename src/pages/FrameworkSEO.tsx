@@ -1,5 +1,5 @@
 import { useParams, Navigate, Link } from 'react-router-dom';
-import { ArrowRight, CheckCircle2 } from 'lucide-react';
+import { IconSuccess, IconArrowRight } from '@/components/icons';
 import { SEO } from '@/components/SEO';
 import { PublicShell } from '@/components/public/PublicShell';
 import { frameworksSeoMap, frameworksSeo } from '@/data/frameworks-seo';
@@ -63,7 +63,7 @@ export default function FrameworkSEO() {
           <span className="text-white/80">{fw.nome}</span>
         </nav>
 
-        <div className="inline-flex items-center px-3 py-1 rounded-full bg-[hsl(252,100%,66%)]/15 border border-[hsl(252,100%,66%)]/30 text-xs text-[hsl(252,100%,80%)] mb-4">
+        <div className="inline-flex items-center px-3 py-1 rounded-md bg-[hsl(252,100%,66%)]/15 border border-[hsl(252,100%,66%)]/30 text-xs text-[hsl(252,100%,80%)] mb-4">
           {fw.categoria}
         </div>
 
@@ -83,7 +83,7 @@ export default function FrameworkSEO() {
           <ul className="space-y-3">
             {fw.porQueImporta.map((p, i) => (
               <li key={i} className="flex gap-3 text-white/80">
-                <CheckCircle2 className="w-5 h-5 text-[hsl(252,100%,70%)] flex-shrink-0 mt-0.5" />
+                <IconSuccess className="w-5 h-5 text-[hsl(252,100%,70%)] flex-shrink-0 mt-0.5" />
                 <span>{p}</span>
               </li>
             ))}
@@ -94,7 +94,7 @@ export default function FrameworkSEO() {
           <h2 className="text-2xl font-semibold mb-6">Requisitos principais</h2>
           <div className="grid sm:grid-cols-2 gap-4">
             {fw.requisitosPrincipais.map((r, i) => (
-              <div key={i} className="rounded-xl border border-white/10 bg-white/[0.03] p-5">
+              <div key={i} className="rounded-lg border border-white/10 bg-white/[0.03] p-5">
                 <h3 className="font-semibold mb-2">{r.titulo}</h3>
                 <p className="text-sm text-white/65 leading-relaxed">{r.desc}</p>
               </div>
@@ -102,7 +102,7 @@ export default function FrameworkSEO() {
           </div>
         </section>
 
-        <section className="mb-12 rounded-2xl border border-[hsl(252,100%,66%)]/30 bg-gradient-to-br from-[hsl(252,100%,66%)]/10 to-transparent p-8">
+        <section className="mb-12 rounded-lg border border-[hsl(252,100%,66%)]/30 bg-gradient-to-br from-[hsl(252,100%,66%)]/10 to-transparent p-8">
           <h2 className="text-2xl font-semibold mb-4">Como o Akuris ajuda na {fw.nome}</h2>
           <ul className="space-y-2 mb-6">
             {fw.comoAkurisAjuda.map((c, i) => (
@@ -116,7 +116,7 @@ export default function FrameworkSEO() {
             to="/"
             className="inline-flex items-center gap-2 px-5 py-3 rounded-lg bg-[hsl(252,100%,66%)] hover:bg-[hsl(252,100%,60%)] text-white font-medium transition"
           >
-            Solicitar demonstração <ArrowRight className="w-4 h-4" />
+            Solicitar demonstração <IconArrowRight className="w-4 h-4" />
           </Link>
         </section>
 
@@ -124,7 +124,7 @@ export default function FrameworkSEO() {
           <h2 className="text-2xl font-semibold mb-6">Perguntas frequentes</h2>
           <div className="space-y-4">
             {fw.faq.map((f, i) => (
-              <details key={i} className="rounded-xl border border-white/10 bg-white/[0.03] p-5 group">
+              <details key={i} className="rounded-lg border border-white/10 bg-white/[0.03] p-5 group">
                 <summary className="font-medium cursor-pointer list-none flex items-center justify-between">
                   <span>{f.pergunta}</span>
                   <span className="text-white/40 group-open:rotate-45 transition">+</span>

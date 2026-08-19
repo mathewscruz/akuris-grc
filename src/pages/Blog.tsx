@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { ArrowRight } from 'lucide-react';
 import { SEO } from '@/components/SEO';
 import { PublicShell } from '@/components/public/PublicShell';
 import { supabase } from '@/integrations/supabase/client';
 import { frameworksSeo } from '@/data/frameworks-seo';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { IconArrowRight } from '@/components/icons';
+import { dateFnsLocale } from '@/lib/date-utils';
 
 interface Post {
   id: string;
@@ -88,7 +88,7 @@ export default function Blog() {
               <Link
                 key={post.id}
                 to={`/blog/${post.slug}`}
-                className="group rounded-2xl border border-white/10 bg-white/[0.03] hover:border-white/30 transition overflow-hidden flex flex-col"
+                className="group rounded-lg border border-white/10 bg-white/[0.03] hover:border-white/30 transition overflow-hidden flex flex-col"
               >
                 {post.capa_url && (
                   <div className="aspect-[16/9] bg-white/5 overflow-hidden">
@@ -97,14 +97,14 @@ export default function Blog() {
                 )}
                 <div className="p-5 flex-1 flex flex-col">
                   {post.tags?.[0] && (
-                    <span className="text-xs text-[hsl(252,100%,75%)] uppercase tracking-wide mb-2">{post.tags[0]}</span>
+                    <span className="text-xs text-[hsl(252,100%,75%)] mb-2">{post.tags[0]}</span>
                   )}
                   <h2 className="text-lg font-semibold mb-2 group-hover:text-[hsl(252,100%,80%)] transition">{post.titulo}</h2>
                   <p className="text-sm text-white/65 mb-4 flex-1 line-clamp-3">{post.resumo}</p>
                   <div className="flex items-center justify-between text-xs text-white/45">
                     <span>{post.autor}</span>
                     {post.published_at && (
-                      <time dateTime={post.published_at}>{format(new Date(post.published_at), locale === 'en' ? 'MMM d, yyyy' : "d 'de' MMM yyyy", locale === 'en' ? undefined : { locale: ptBR })}</time>
+                      <time dateTime={post.published_at}>{format(new Date(post.published_at), locale === 'en' ? 'MMM d, yyyy' : "d 'de' MMM yyyy", locale === 'en' ? undefined : { locale: dateFnsLocale() })}</time>
                     )}
                   </div>
                 </div>
@@ -115,7 +115,7 @@ export default function Blog() {
       </section>
 
       <section className="max-w-5xl mx-auto px-6 pb-20">
-        <div className="rounded-2xl border border-[hsl(252,100%,66%)]/30 bg-gradient-to-br from-[hsl(252,100%,66%)]/10 to-transparent p-8 text-center">
+        <div className="rounded-lg border border-[hsl(252,100%,66%)]/30 bg-gradient-to-br from-[hsl(252,100%,66%)]/10 to-transparent p-8 text-center">
           <h2 className="text-2xl font-semibold mb-2">{t('publico.blog.ctaTitulo')}</h2>
           <p className="text-white/70 mb-6 max-w-xl mx-auto">
             {t('publico.blog.ctaSub')}
@@ -124,7 +124,7 @@ export default function Blog() {
             to="/"
             className="inline-flex items-center gap-2 px-5 py-3 rounded-lg bg-[hsl(252,100%,66%)] hover:bg-[hsl(252,100%,60%)] text-white font-medium transition"
           >
-            {t('publico.blog.ctaBotao')} <ArrowRight className="w-4 h-4" />
+            {t('publico.blog.ctaBotao')} <IconArrowRight className="w-4 h-4" />
           </Link>
         </div>
       </section>

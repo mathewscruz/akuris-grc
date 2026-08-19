@@ -137,8 +137,8 @@ export default function Dashboard() {
             docsExpiring={documentosStats.data?.vencendo30Dias || 0}
             docsPending={documentosStats.data?.pendentesAprovacao || 0}
             totalRiscos={riscosStats.data?.total || 0}
-            riscosCriticos={riscosStats.data?.criticosEfetivos || 0}
-            riscosAltos={riscosStats.data?.altosEfetivos || 0}
+            riscosCriticos={riscosStats.data?.criticos || 0}
+            riscosAltos={riscosStats.data?.altos || 0}
             planosPendentes={planosStats.data?.pendentes || 0}
             planosAtrasados={planosStats.data?.atrasados || 0}
             ddAtivos={ddStats.data?.activeAssessments || 0}

@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
+import { IconAdd, IconEdit, IconDelete, IconUpload, IconMore, IconSuccess, IconWarning, IconTime, IconFileCheck, IconRefresh, IconBan } from '@/components/icons';
 import { useSearchParams } from 'react-router-dom';
-import { Plus, Upload, FileCheck, AlertTriangle, CheckCircle, Clock, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -171,18 +171,17 @@ export default function AtivosLicencas() {
 
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { icon: React.ComponentType<any>, label: string }> = {
-      'ativa': { icon: CheckCircle, label: t('sweepDados.ativos.statusAtiva') },
-      'vencida': { icon: AlertTriangle, label: t('sweepDados.ativos.statusVencida') },
-      'a_vencer': { icon: Clock, label: t('sweepDados.ativos.statusAVencer') },
-      'em_renovacao': { icon: Clock, label: t('fin.licencas.emRenovacao') },
-      'cancelada': { icon: Clock, label: t('sweepDados.ativos.statusCancelada') },
+      'ativa': { icon: IconSuccess, label: t('sweepDados.ativos.statusAtiva') },
+      'vencida': { icon: IconWarning, label: t('sweepDados.ativos.statusVencida') },
+      'a_vencer': { icon: IconTime, label: t('sweepDados.ativos.statusAVencer') },
+      'em_renovacao': { icon: IconRefresh, label: t('fin.licencas.emRenovacao') },
+      'cancelada': { icon: IconBan, label: t('sweepDados.ativos.statusCancelada') },
     };
 
     const config = statusConfig[status] || statusConfig.ativa;
-    const Icon = config.icon;
 
     return (
-      <StatusBadge size="sm" {...resolveItemStatusTone(status)} icon={<Icon className="h-3 w-3" strokeWidth={1.5} />}>
+      <StatusBadge {...resolveItemStatusTone(status)}>
         {config.label}
       </StatusBadge>
     );
@@ -190,12 +189,11 @@ export default function AtivosLicencas() {
 
   const getCriticidadeBadge = (criticidade: string) => {
     return (
-      <StatusBadge size="sm" {...resolveCriticidadeTone(criticidade)}>
+      <StatusBadge {...resolveCriticidadeTone(criticidade)}>
         {formatStatus(criticidade)}
       </StatusBadge>
     );
   };
-
 
   // Filtrar e ordenar licenças
   const filteredAndSortedLicencas = useMemo(() => {
@@ -324,12 +322,12 @@ export default function AtivosLicencas() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm">
-              <MoreHorizontal className="h-4 w-4" />
+              <IconMore className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => handleEdit(licenca)}>
-              <Edit className="h-4 w-4 mr-2" />
+              <IconEdit className="h-4 w-4 mr-2" />
               {t('sweepDados.ativos.editar')}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
@@ -337,7 +335,7 @@ export default function AtivosLicencas() {
               onClick={() => handleDelete(licenca.id, licenca.nome)}
               className="text-destructive focus:text-destructive"
             >
-              <Trash2 className="h-4 w-4 mr-2" />{t('fin.comum.excluir')}</DropdownMenuItem>
+              <IconDelete className="h-4 w-4 mr-2" />{t('fin.comum.excluir')}</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       )
@@ -395,14 +393,14 @@ export default function AtivosLicencas() {
         description={t('modules.licencas.description')}
         actions={
           <Button size="sm" onClick={handleNew}>
-            <Plus className="h-4 w-4 mr-2" />
+            <IconAdd className="h-4 w-4 mr-2" />
             {t('sweepDados.ativos.novaLicenca')}
           </Button>
         }
         secondaryActions={[
           {
             label: t('p3Import.importButtonLabel'),
-            icon: <Upload className="h-4 w-4" />,
+            icon: <IconUpload className="h-4 w-4" />,
             onClick: () => setImportDialogOpen(true),
           },
         ]}
@@ -462,7 +460,7 @@ export default function AtivosLicencas() {
               link.click();
             }}
             emptyState={{
-              icon: <FileCheck className="h-8 w-8" />,
+              icon: <IconFileCheck className="h-8 w-8" />,
               title: searchTerm ? t('fin.licencas.nenhumaEncontrada') : t('fin.licencas.nenhumaCadastrada'),
               description: searchTerm 
                 ? t('sweepDados.ativos.buscaSemResultadosDesc')
@@ -513,8 +511,8 @@ export default function AtivosLicencas() {
         subtitle={detalheLicenca ? formatStatus(detalheLicenca.tipo_licenca) : undefined}
         badges={detalheLicenca ? (
           <>
-            <StatusBadge size="sm" {...resolveItemStatusTone(detalheLicenca.status)}>{formatStatus(detalheLicenca.status)}</StatusBadge>
-            <StatusBadge size="sm" {...resolveCriticidadeTone(detalheLicenca.criticidade)}>{formatStatus(detalheLicenca.criticidade)}</StatusBadge>
+            <StatusBadge {...resolveItemStatusTone(detalheLicenca.status)}>{formatStatus(detalheLicenca.status)}</StatusBadge>
+            <StatusBadge {...resolveCriticidadeTone(detalheLicenca.criticidade)}>{formatStatus(detalheLicenca.criticidade)}</StatusBadge>
           </>
         ) : undefined}
         actions={detalheLicenca ? (

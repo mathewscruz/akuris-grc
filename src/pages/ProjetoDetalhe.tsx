@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
+import { IconAdd, IconDownload, IconFile, IconArrowLeft, IconSettings } from '@/components/icons';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { ArrowLeft, Plus, Settings, Sparkles, FileText, Download } from 'lucide-react';
 import { useProjeto } from '@/hooks/useProjetos';
 import { useProjetoColunas, useProjetoTarefas } from '@/hooks/useProjetoTarefas';
 import { KanbanBoard } from '@/components/projetos/KanbanBoard';
@@ -22,6 +22,7 @@ import { AutomacoesPanel } from '@/components/projetos/AutomacoesPanel';
 import { exportTarefasCSV } from '@/components/projetos/exportProjeto';
 import type { ProjetoTarefa } from '@/types/projetos';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { formatStatus } from '@/lib/text-utils';
 
 export default function ProjetoDetalhe() {
   const { id } = useParams<{ id: string }>();
@@ -64,29 +65,29 @@ export default function ProjetoDetalhe() {
     <div className="space-y-6">
       <div className="flex items-center gap-3 flex-wrap">
         <Button variant="ghost" size="icon" onClick={() => navigate('/projetos')}>
-          <ArrowLeft className="h-4 w-4" />
+          <IconArrowLeft className="h-4 w-4" />
         </Button>
         <div className="h-6 w-1 rounded" style={{ backgroundColor: projeto.cor ?? '#7552FF' }} />
         <div className="flex-1 min-w-0">
           <h1 className="text-2xl font-semibold truncate">{projeto.nome}</h1>
           {projeto.descricao && <p className="text-sm text-muted-foreground line-clamp-1">{projeto.descricao}</p>}
         </div>
-        <StatusBadge tone="primary" size="md">{STATUS_LABEL[projeto.status]}</StatusBadge>
+        <StatusBadge tone="primary">{STATUS_LABEL[projeto.status] ?? formatStatus(projeto.status)}</StatusBadge>
         <Button variant="outline" size="sm" onClick={() => setReportDialog(true)}>
-          <FileText className="h-4 w-4" /> {t('projetos.detalhe.statusReportIa')}
+          <IconFile className="h-4 w-4" /> {t('projetos.detalhe.statusReportIa')}
         </Button>
         <Button variant="outline" size="sm" onClick={() => setSuggestDialog(true)}>
-          <Sparkles className="h-4 w-4" /> {t('projetos.detalhe.breakWithAi')}
+          {t('projetos.detalhe.breakWithAi')}
         </Button>
         <Button variant="outline" size="sm" onClick={() => exportTarefasCSV(projeto.nome, tarefas, colunas)}>
-          <Download className="h-4 w-4" /> {t('projetos.detalhe.exportCsv')}
+          <IconDownload className="h-4 w-4" /> {t('projetos.detalhe.exportCsv')}
         </Button>
         <Button variant="outline" size="sm" onClick={() => setProjetoDialog(true)}>
-          <Settings className="h-4 w-4" /> {t('projetos.detalhe.edit')}
+          <IconSettings className="h-4 w-4" /> {t('projetos.detalhe.edit')}
         </Button>
         <ProjetoActionsMenu projeto={projeto} onEdit={() => setProjetoDialog(true)} variant="button" />
         <Button size="sm" onClick={() => openNovaTarefa()}>
-          <Plus className="h-4 w-4" /> {t('projetos.detalhe.newTask')}
+          <IconAdd className="h-4 w-4" /> {t('projetos.detalhe.newTask')}
         </Button>
       </div>
 
@@ -101,25 +102,25 @@ export default function ProjetoDetalhe() {
           <TabsTrigger value="automacoes">{t('projetos.detalhe.tabAutomacoes')}</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="kanban" className="mt-4">
+        <TabsContent value="kanban">
           <KanbanBoard projetoId={projeto.id} colunas={colunas} tarefas={tarefas} onAddTarefa={(cid) => openNovaTarefa(cid)} onEditTarefa={openEditarTarefa} />
         </TabsContent>
-        <TabsContent value="lista" className="mt-4">
+        <TabsContent value="lista">
           <ListaTarefas tarefas={tarefas} colunas={colunas} onSelect={openEditarTarefa} />
         </TabsContent>
-        <TabsContent value="calendario" className="mt-4">
+        <TabsContent value="calendario">
           <CalendarView tarefas={tarefas} onSelectTarefa={openEditarTarefa} />
         </TabsContent>
-        <TabsContent value="gantt" className="mt-4">
+        <TabsContent value="gantt">
           <GanttChart tarefas={tarefas} onSelectTarefa={openEditarTarefa} />
         </TabsContent>
-        <TabsContent value="sprints" className="mt-4">
+        <TabsContent value="sprints">
           <SprintsPanel projetoId={projeto.id} tarefas={tarefas} onSelectTarefa={openEditarTarefa} />
         </TabsContent>
-        <TabsContent value="metricas" className="mt-4">
+        <TabsContent value="metricas">
           <MetricasPanel tarefas={tarefas} colunas={colunas} />
         </TabsContent>
-        <TabsContent value="automacoes" className="mt-4">
+        <TabsContent value="automacoes">
           <AutomacoesPanel projetoId={projeto.id} colunas={colunas} />
         </TabsContent>
       </Tabs>

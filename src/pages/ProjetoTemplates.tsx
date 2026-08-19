@@ -1,4 +1,5 @@
 import React from 'react';
+import { IconAdd, IconEdit, IconDelete, IconArrowLeft, IconLayers } from '@/components/icons';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -10,7 +11,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { StatusBadge } from '@/components/ui/status-badge';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { EmptyState } from '@/components/ui/empty-state';
-import { ArrowLeft, Layers, Plus, Trash2, Pencil, Sparkles } from 'lucide-react';
 import { useTemplates, useUpsertTemplate, useDeleteTemplate, useAplicarTemplate, type Template } from '@/hooks/useProjetoExtras';
 import { useAuth } from '@/components/AuthProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -42,9 +42,9 @@ export default function ProjetoTemplates() {
             <div className="flex items-center gap-2 flex-wrap">
               <h3 className="font-semibold">{tpl.nome}</h3>
               {tpl.is_global
-                ? <StatusBadge tone="primary" size="sm">{t('projetos.templates.global')}</StatusBadge>
-                : <StatusBadge tone="neutral" size="sm">{t('projetos.templates.empresa')}</StatusBadge>}
-              {tpl.categoria && <StatusBadge tone="info" size="sm">{tpl.categoria}</StatusBadge>}
+                ? <StatusBadge tone="primary">{t('projetos.templates.global')}</StatusBadge>
+                : <StatusBadge tone="neutral">{t('projetos.templates.empresa')}</StatusBadge>}
+              {tpl.categoria && <StatusBadge tone="info">{tpl.categoria}</StatusBadge>}
             </div>
             {tpl.descricao && <p className="text-xs text-muted-foreground mt-1">{tpl.descricao}</p>}
           </div>
@@ -56,15 +56,15 @@ export default function ProjetoTemplates() {
         </div>
         <div className="flex gap-2 pt-1">
           <Button size="sm" className="flex-1" onClick={() => { setAplicando(tpl); setNomeProjeto(tpl.nome); setApplyOpen(true); }}>
-            <Sparkles className="h-3.5 w-3.5" /> {t('projetos.templates.apply')}
+            {t('projetos.templates.apply')}
           </Button>
           {(isAdmin || (isSuperAdmin && tpl.is_global)) && (
             <>
               <Button size="icon" variant="outline" className="h-9 w-9" onClick={() => { setEditing(tpl); setEditOpen(true); }}>
-                <Pencil className="h-3.5 w-3.5" />
+                <IconEdit className="h-3.5 w-3.5" />
               </Button>
               <Button size="icon" variant="ghost" className="h-9 w-9" onClick={() => { if (confirm(t('projetos.templates.removeConfirm', { nome: tpl.nome }))) del.mutate(tpl.id); }}>
-                <Trash2 className="h-3.5 w-3.5" />
+                <IconDelete className="h-3.5 w-3.5" />
               </Button>
             </>
           )}
@@ -76,14 +76,14 @@ export default function ProjetoTemplates() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/projetos')}><ArrowLeft className="h-4 w-4" /></Button>
+        <Button variant="ghost" size="icon" onClick={() => navigate('/projetos')}><IconArrowLeft className="h-4 w-4" /></Button>
         <div className="flex-1">
-          <h1 className="text-3xl font-semibold tracking-tight flex items-center gap-2"><Layers className="h-7 w-7 text-primary" strokeWidth={1.5} /> {t('projetos.templates.title')}</h1>
+          <h1 className="text-3xl font-semibold tracking-tight flex items-center gap-2"><IconLayers className="h-7 w-7 text-primary" strokeWidth={1.5} /> {t('projetos.templates.title')}</h1>
           <p className="text-sm text-muted-foreground mt-1">{t('projetos.templates.subtitle')}</p>
         </div>
         {isAdmin && (
           <Button onClick={() => { setEditing(null); setEditOpen(true); }}>
-            <Plus className="h-4 w-4" /> {t('projetos.templates.newTemplate')}
+            <IconAdd className="h-4 w-4" /> {t('projetos.templates.newTemplate')}
           </Button>
         )}
       </div>
@@ -91,18 +91,18 @@ export default function ProjetoTemplates() {
       {isLoading ? (
         <div className="flex justify-center py-16"><AkurisPulse size={56} /></div>
       ) : templates.length === 0 ? (
-        <EmptyState variant="illustrated" icon={<Layers className="h-8 w-8" />} title={t('projetos.templates.emptyTitle')} description={t('projetos.templates.emptyDesc')} />
+        <EmptyState variant="illustrated" icon={<IconLayers className="h-8 w-8" />} title={t('projetos.templates.emptyTitle')} description={t('projetos.templates.emptyDesc')} />
       ) : (
         <>
           {globais.length > 0 && (
             <section className="space-y-3">
-              <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('projetos.templates.sectionGlobals')}</h2>
+              <h2 className="text-xs font-semibold text-muted-foreground">{t('projetos.templates.sectionGlobals')}</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{globais.map(renderTpl)}</div>
             </section>
           )}
           {empresa.length > 0 && (
             <section className="space-y-3">
-              <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{t('projetos.templates.sectionCompany')}</h2>
+              <h2 className="text-xs font-semibold text-muted-foreground">{t('projetos.templates.sectionCompany')}</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{empresa.map(renderTpl)}</div>
             </section>
           )}
@@ -132,7 +132,7 @@ export default function ProjetoTemplates() {
                 navigate(`/projetos/${id}`);
               }}
             >
-              <Sparkles className="h-4 w-4" /> {t('projetos.templates.createProject')}
+              {t('projetos.templates.createProject')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -197,7 +197,7 @@ function TemplateEditor({ open, onOpenChange, template, isSuperAdmin }: { open: 
           </div>
           <div><Label>{t('projetos.templates.fieldDescricao')}</Label><Textarea rows={2} value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} /></div>
           {isSuperAdmin && (
-            <div>
+            <div className="space-y-2">
               <Label>{t('projetos.templates.fieldVisibilidade')}</Label>
               <Select value={form.is_global ? 'global' : 'empresa'} onValueChange={(v) => setForm({ ...form, is_global: v === 'global' })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -208,11 +208,11 @@ function TemplateEditor({ open, onOpenChange, template, isSuperAdmin }: { open: 
               </Select>
             </div>
           )}
-          <div>
+          <div className="space-y-2">
             <Label>{t('projetos.templates.fieldColunas')}</Label>
             <Textarea rows={4} value={form.colunas} onChange={(e) => setForm({ ...form, colunas: e.target.value })} />
           </div>
-          <div>
+          <div className="space-y-2">
             <Label>{t('projetos.templates.fieldTarefas')}</Label>
             <Textarea rows={6} value={form.tarefas} onChange={(e) => setForm({ ...form, tarefas: e.target.value })} placeholder={t('projetos.templates.tarefasPlaceholder')} />
           </div>

@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Plus, Shield, FileCheck, Clock, TestTube, ListTodo, Edit, Trash2, Eye, MoreHorizontal, Download, AlertTriangle, CalendarClock } from 'lucide-react';
+import { IconAdd, IconEdit, IconDelete, IconDownload, IconView, IconMore, IconWarning, IconTime, IconShield, IconFileCheck, IconTest, IconChecklist, IconCalendarClock } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { PageHeader } from '@/components/ui/page-header';
@@ -13,7 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { useContinuidadeStats } from '@/hooks/useContinuidadeStats';
 import { useToast } from '@/hooks/use-toast';
-import { formatDateOnly } from '@/lib/date-utils';
+import { formatDateOnly, intlLocale, parseDataLocal } from '@/lib/date-utils';
 import { exportCSV } from '@/lib/csv-utils';
 import { PlanoDialog } from '@/components/continuidade/PlanoDialog';
 import { PlanoDetalheDialog } from '@/components/continuidade/PlanoDetalheDialog';
@@ -70,8 +70,8 @@ export default function Continuidade() {
     const hoje = new Date();
     const em30dias = new Date(hoje.getTime() + 30 * 86400000);
     const proximasRevisoes = planos
-      .filter((p: any) => p.proxima_revisao && new Date(p.proxima_revisao) <= em30dias)
-      .sort((a: any, b: any) => new Date(a.proxima_revisao).getTime() - new Date(b.proxima_revisao).getTime())
+      .filter((p: any) => p.proxima_revisao && parseDataLocal(p.proxima_revisao) <= em30dias)
+      .sort((a: any, b: any) => parseDataLocal(a.proxima_revisao).getTime() - parseDataLocal(b.proxima_revisao).getTime())
       .slice(0, 5);
     const semResponsavel = planos.filter((p: any) => !p.responsavel_id).length;
     const semRTO = planos.filter((p: any) => p.rto_horas == null).length;
@@ -136,18 +136,18 @@ export default function Continuidade() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="h-8 w-8">
-              <MoreHorizontal className="h-4 w-4" />
+              <IconMore className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => setDetalheDialog({ open: true, plano: row })}>
-               <Eye className="h-4 w-4 mr-2" /> {t('sweepDados.continuidade.visualizar')}
+               <IconView className="h-4 w-4 mr-2" /> {t('sweepDados.continuidade.visualizar')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setPlanoDialog({ open: true, plano: row })}>
-               <Edit className="h-4 w-4 mr-2" /> {t('sweepDados.continuidade.editar')}
+               <IconEdit className="h-4 w-4 mr-2" /> {t('sweepDados.continuidade.editar')}
             </DropdownMenuItem>
             <DropdownMenuItem className="text-destructive" onClick={() => setDeleteConfirm({ open: true, id: row.id })}>
-              <Trash2 className="h-4 w-4 mr-2" />{t('fin.comum.excluir')}</DropdownMenuItem>
+              <IconDelete className="h-4 w-4 mr-2" />{t('fin.comum.excluir')}</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       ),
@@ -161,13 +161,13 @@ export default function Continuidade() {
         description={t('fin.continuidade.desc')}
         actions={
           <Button onClick={() => setPlanoDialog({ open: true })}>
-            <Plus className="h-4 w-4 mr-2" /> {t('sweepDados.continuidade.novoPlano')}
+            <IconAdd className="h-4 w-4 mr-2" /> {t('sweepDados.continuidade.novoPlano')}
           </Button>
         }
         secondaryActions={[
           {
             label: t('sweepDenuncias.contas.exportCsv'),
-            icon: <Download className="h-4 w-4" />,
+            icon: <IconDownload className="h-4 w-4" />,
             disabled: planos.length === 0,
             onClick: () => {
               exportCSV(
@@ -177,9 +177,9 @@ export default function Continuidade() {
                   statusMap[p.status]?.label || p.status || '',
                   p.rto_horas != null ? String(p.rto_horas) : '',
                   p.rpo_horas != null ? String(p.rpo_horas) : '',
-                  p.proxima_revisao ? new Date(p.proxima_revisao).toLocaleDateString('pt-BR') : '',
+                  p.proxima_revisao ? parseDataLocal(p.proxima_revisao).toLocaleDateString(intlLocale()) : '',
                   p.versao || '',
-                  p.created_at ? new Date(p.created_at).toLocaleDateString('pt-BR') : ''
+                  p.created_at ? new Date(p.created_at).toLocaleDateString(intlLocale()) : ''
                 ]),
                 'continuidade_planos'
               );
@@ -205,7 +205,7 @@ export default function Continuidade() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
-                <CalendarClock className="h-4 w-4 text-warning" />
+                <IconCalendarClock className="h-4 w-4 text-warning" />
                  {t('sweepDados.continuidade.proximasRevisoesTitle')}
               </CardTitle>
             </CardHeader>
@@ -230,7 +230,7 @@ export default function Continuidade() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-destructive" />
+                <IconWarning className="h-4 w-4 text-destructive" />
                  {t('sweepDados.continuidade.itensAtencaoTitle')}
               </CardTitle>
             </CardHeader>
@@ -270,7 +270,7 @@ export default function Continuidade() {
             searchPlaceholder={t('fin.continuidade.buscar')}
             loading={isLoading}
             emptyState={{
-              icon: <Shield className="h-8 w-8" />,
+              icon: <IconShield className="h-8 w-8" />,
               title: t('fin.continuidade.nenhum'),
               description: t('fin.continuidade.vazioDesc'),
               action: { label: 'Criar Plano', onClick: () => setPlanoDialog({ open: true }) },

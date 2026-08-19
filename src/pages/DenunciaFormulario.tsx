@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
+import { IconClose, IconUpload, IconExternal, IconShield, IconArrowLeft } from '@/components/icons';
 import { useParams, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Shield, Upload, X, ArrowLeft, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -12,6 +12,7 @@ import { DateField } from '@/components/ui/date-field';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { fetchEmpresaPublicaPorSlug } from '@/lib/denuncia-publica';
@@ -48,17 +49,41 @@ interface Categoria {
   ativo: boolean;
 }
 
-const buildDenunciaSchema = (t: (key: string) => string) => z.object({
+/**
+ * `permitirAnonimas` decide se identificar-se é opcional ou obrigatório.
+ *
+ * Antes o bloco de identificação inteiro só existia quando a empresa PERMITIA
+ * denúncias anónimas — o inverso da intenção. Desligar "Permitir Denúncias
+ * Anónimas" escondia nome, e-mail e telefone, `anonima` passava a ser sempre
+ * true (era inferido do nome vazio) e o RPC recusava tudo: o canal público
+ * ficava inutilizável, com um toast genérico e nada a explicar porquê.
+ */
+const buildDenunciaSchema = (
+  t: (key: string) => string,
+  permitirAnonimas: boolean,
+  exigirPolitica: boolean,
+) => z.object({
   categoria_id: z.string().min(1, t('publicPortal.denunciaForm.validation.category')),
   titulo: z.string().min(5, t('publicPortal.denunciaForm.validation.title')),
   descricao: z.string().min(20, t('publicPortal.denunciaForm.validation.description')),
   local_ocorrencia: z.string().optional(),
   data_ocorrencia: z.string().optional(),
-  denunciante_nome: z.string().optional(),
+  denunciante_nome: permitirAnonimas
+    ? z.string().optional()
+    : z.string().trim().min(3, t('publicPortal.denunciaForm.validation.nameRequired')),
   denunciante_email: z.string().email(t('publicPortal.denunciaForm.validation.email')).optional().or(z.literal('')),
   denunciante_telefone: z.string().optional(),
   testemunhas: z.string().optional(),
   evidencias_descricao: z.string().optional(),
+  /**
+   * O consentimento era literal: `politica_aceita: true` ia no envio sem que
+   * o denunciante visse o texto — a política só aparecia DEPOIS, na tela de
+   * sucesso. O sistema registava um consentimento que nunca foi dado, num
+   * canal onde esse registo é justamente a prova legal.
+   */
+  politica_aceita: exigirPolitica
+    ? z.literal(true, { errorMap: () => ({ message: t('publicPortal.denunciaForm.validation.policyRequired') }) })
+    : z.boolean().optional(),
 });
 
 type DenunciaFormData = z.infer<ReturnType<typeof buildDenunciaSchema>>;
@@ -77,7 +102,13 @@ export default function DenunciaFormulario() {
   const [anexos, setAnexos] = useState<File[]>([]);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  const denunciaSchema = useMemo(() => buildDenunciaSchema(t), [t]);
+  /** Com denúncias anónimas desligadas, identificar-se deixa de ser opcional. */
+  const identificacaoObrigatoria = config ? !config.permitir_anonimas : false;
+
+  const denunciaSchema = useMemo(
+    () => buildDenunciaSchema(t, config?.permitir_anonimas ?? true, !!config?.politica_privacidade),
+    [t, config?.permitir_anonimas, config?.politica_privacidade],
+  );
 
   const form = useForm<DenunciaFormData>({
     resolver: zodResolver(denunciaSchema),
@@ -201,7 +232,7 @@ export default function DenunciaFormulario() {
           titulo: data.titulo,
           descricao: data.descricao,
           anonima: !data.denunciante_nome,
-          politica_aceita: true,
+          politica_aceita: data.politica_aceita === true,
           denunciante_email: data.denunciante_email || null,
           denunciante_nome: data.denunciante_nome || null
         }
@@ -266,7 +297,7 @@ export default function DenunciaFormulario() {
       <div className="min-h-screen bg-[hsl(215,35%,12%)] flex items-center justify-center">
         <Card className="max-w-md mx-auto bg-white">
           <CardContent className="text-center py-8">
-            <Shield className="w-12 h-12 text-destructive mx-auto mb-4" />
+            <IconShield className="w-12 h-12 text-destructive mx-auto mb-4" />
             <h2 className="text-xl font-semibold mb-2">{t('publicPortal.denunciaForm.unavailableTitle')}</h2>
             <p className="text-muted-foreground">
               {t('publicPortal.denunciaForm.unavailableDescription')}
@@ -281,52 +312,50 @@ export default function DenunciaFormulario() {
     return (
       <div className="min-h-screen bg-[hsl(215,35%,12%)] py-8">
         <div className="container max-w-2xl mx-auto px-4">
-          <Card className="bg-white border-green-200">
+          <Card className="bg-white border-success/30">
             <CardContent className="text-center py-12">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Shield className="w-8 h-8 text-green-600" />
-              </div>
+              <IconShield className="w-8 h-8 text-success mx-auto mb-6" />
               
-              <h2 className="text-2xl font-bold text-green-800 mb-4">
+              <h2 className="text-2xl font-bold text-success mb-4">
                 {t('publicPortal.denunciaForm.successTitle')}
               </h2>
               
-              <div className="bg-green-50 p-4 rounded-lg border border-green-200 mb-6">
-                <p className="text-sm text-gray-600 mb-2">{t('publicPortal.denunciaForm.yourProtocol')}</p>
-                <p className="text-2xl font-mono font-bold text-green-700">{protocolo}</p>
+              <div className="bg-success/10 p-4 rounded-lg border border-success/30 mb-6">
+                <p className="text-sm text-muted-foreground mb-2">{t('publicPortal.denunciaForm.yourProtocol')}</p>
+                <p className="text-2xl font-mono font-bold text-success">{protocolo}</p>
               </div>
 
               {codigoAcompanhamento && (
-                <div className="bg-green-50 p-4 rounded-lg border border-green-200 mb-6">
-                  <p className="text-sm text-gray-600 mb-2">{t('publicPortal.denunciaForm.yourTrackingCode')}</p>
-                  <p className="text-lg font-mono font-bold text-green-700 break-all">{codigoAcompanhamento}</p>
-                  <p className="text-xs text-gray-500 mt-2">{t('publicPortal.denunciaForm.trackingCodeHint')}</p>
+                <div className="bg-success/10 p-4 rounded-lg border border-success/30 mb-6">
+                  <p className="text-sm text-muted-foreground mb-2">{t('publicPortal.denunciaForm.yourTrackingCode')}</p>
+                  <p className="text-lg font-mono font-bold text-success break-all">{codigoAcompanhamento}</p>
+                  <p className="text-xs text-muted-foreground mt-2">{t('publicPortal.denunciaForm.trackingCodeHint')}</p>
                 </div>
               )}
               
-              <p className="text-green-700 mb-6">
+              <p className="text-success mb-6">
                 {t('publicPortal.denunciaForm.successDescription')}
               </p>
               
               <div className="space-y-3">
                 <Link to={`/${empresaSlug}/denuncia/consulta`}>
                   <Button className="w-full">
-                    <ExternalLink className="w-4 h-4 mr-2" />
+                    <IconExternal className="w-4 h-4 mr-2" />
                     {t('publicPortal.denunciaForm.checkStatus')}
                   </Button>
                 </Link>
                 
                 <Link to={`/${empresaSlug}/denuncia`}>
                   <Button variant="outline" className="w-full">
-                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    <IconArrowLeft className="w-4 h-4 mr-2" />
                     {t('publicPortal.denunciaForm.backHome')}
                   </Button>
                 </Link>
               </div>
               
               {config.politica_privacidade && (
-                <div className="mt-6 p-4 bg-green-50 rounded-lg border border-green-200">
-                  <p className="text-sm text-gray-600">{config.politica_privacidade}</p>
+                <div className="mt-6 p-4 bg-success/10 rounded-lg border border-success/30">
+                  <p className="text-sm text-muted-foreground">{config.politica_privacidade}</p>
                 </div>
               )}
             </CardContent>
@@ -345,7 +374,7 @@ export default function DenunciaFormulario() {
             to={`/${empresaSlug}/denuncia`}
             className="inline-flex items-center text-sm text-sidebar-foreground hover:text-primary transition-colors"
           >
-            <ArrowLeft className="w-4 h-4 mr-1" />
+            <IconArrowLeft className="w-4 h-4 mr-1" />
             {t('publicPortal.denunciaForm.backToMenu')}
           </Link>
         </div>
@@ -363,7 +392,7 @@ export default function DenunciaFormulario() {
           </div>
           
           <div className="flex items-center justify-center gap-2 mb-4">
-            <Shield className="w-6 h-6 text-primary" />
+            <IconShield className="w-6 h-6 text-primary" />
             <h2 className="text-xl text-sidebar-foreground">{t('publicPortal.denunciaForm.headerTitle')}</h2>
           </div>
         </div>
@@ -371,7 +400,7 @@ export default function DenunciaFormulario() {
         {/* Texto de apresentação */}
         {config.texto_apresentacao && (
           <Alert className="mb-6 bg-white">
-            <Shield className="h-4 w-4" />
+            <IconShield className="h-4 w-4" />
             <AlertDescription>{config.texto_apresentacao}</AlertDescription>
           </Alert>
         )}
@@ -474,17 +503,20 @@ export default function DenunciaFormulario() {
                   )}
                 />
 
-                {/* Dados do Denunciante (se não for obrigatório email) */}
-                {config.permitir_anonimas && (
+                {/* Identificação: sempre visível. Quando a empresa permite
+                    denúncias anónimas os campos são opcionais e deixá-los em
+                    branco envia a denúncia como anónima; quando não permite, o
+                    nome é obrigatório. */}
+                {(
                   <div className="space-y-4">
-                    <h3 className="text-lg font-semibold">{t('publicPortal.denunciaForm.identification')}</h3>
+                    <h3 className="text-lg font-semibold">{t(identificacaoObrigatoria ? 'publicPortal.denunciaForm.identificationRequired' : 'publicPortal.denunciaForm.identification')}</h3>
                     
                     <FormField
                       control={form.control}
                       name="denunciante_nome"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{t('publicPortal.denunciaForm.name')}</FormLabel>
+                          <FormLabel>{t('publicPortal.denunciaForm.name')}{identificacaoObrigatoria ? ' *' : ''}</FormLabel>
                           <FormControl>
                             <Input {...field} placeholder={t('publicPortal.denunciaForm.namePlaceholder')} />
                           </FormControl>
@@ -570,9 +602,9 @@ export default function DenunciaFormulario() {
                     </div>
                     
                     <div className="flex items-center justify-center w-full">
-                      <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-muted-foreground/25 rounded-lg cursor-pointer hover:bg-muted/50">
+                      <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-muted-foreground/25 rounded-lg cursor-pointer hover:bg-accent">
                         <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                          <Upload className="w-8 h-8 mb-2 text-muted-foreground" />
+                          <IconUpload className="w-8 h-8 mb-2 text-muted-foreground" />
                           <p className="text-sm text-muted-foreground">
                             {t('publicPortal.denunciaForm.attachCta')}
                           </p>
@@ -599,13 +631,40 @@ export default function DenunciaFormulario() {
                               size="sm"
                               onClick={() => removeFile(index)}
                             >
-                              <X className="w-4 h-4" />
+                              <IconClose className="w-4 h-4" />
                             </Button>
                           </div>
                         ))}
                       </div>
                     )}
                   </div>
+                )}
+
+                {config.politica_privacidade && (
+                  <FormField
+                    control={form.control}
+                    name="politica_aceita"
+                    render={({ field }) => (
+                      <FormItem className="space-y-3 rounded-lg border border-border p-4">
+                        <p className="text-sm text-muted-foreground whitespace-pre-line">
+                          {config.politica_privacidade}
+                        </p>
+                        <div className="flex items-start gap-2">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value === true}
+                              onCheckedChange={(v) => field.onChange(v === true)}
+                              className="mt-0.5"
+                            />
+                          </FormControl>
+                          <FormLabel className="text-sm font-normal leading-snug">
+                            {t('publicPortal.denunciaForm.policyAccept')}
+                          </FormLabel>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 )}
 
                 {/* Botões de ação */}

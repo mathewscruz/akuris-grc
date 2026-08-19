@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
+import { IconSearch, IconFile, IconShield } from '@/components/icons';
 import { useParams, Link } from 'react-router-dom';
-import { Shield, FileText, Search } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
@@ -74,7 +74,7 @@ export default function DenunciaMenu() {
       <div className="min-h-screen bg-muted/20 flex items-center justify-center">
         <Card className="max-w-md mx-auto">
           <CardContent className="text-center py-8">
-            <Shield className="w-12 h-12 text-destructive mx-auto mb-4" />
+            <IconShield className="w-12 h-12 text-destructive mx-auto mb-4" />
             <h2 className="text-xl font-semibold mb-2">{t('publicPortal.denunciaMenu.companyNotFound')}</h2>
             <p className="text-muted-foreground">
               {t('publicPortal.denunciaMenu.companyNotFoundDescription')}
@@ -101,7 +101,7 @@ export default function DenunciaMenu() {
           </div>
           
           <div className="flex items-center justify-center gap-2 mb-4">
-            <Shield className="w-6 h-6 text-primary" />
+            <IconShield className="w-6 h-6 text-primary" />
             <h2 className="text-xl text-sidebar-foreground">{t('publicPortal.denunciaMenu.channel')}</h2>
           </div>
         </div>
@@ -124,7 +124,7 @@ export default function DenunciaMenu() {
                   className="w-full h-auto p-6 border-2 hover:border-primary transition-colors"
                 >
                   <div className="text-center">
-                    <FileText className="w-12 h-12 mx-auto mb-3 text-primary" />
+                    <IconFile className="w-12 h-12 mx-auto mb-3 text-primary" />
                     <h4 className="text-lg font-semibold mb-2">{t('publicPortal.denunciaMenu.registerTitle')}</h4>
                     <p className="text-sm text-muted-foreground">
                       {t('publicPortal.denunciaMenu.registerDescription')}
@@ -140,7 +140,7 @@ export default function DenunciaMenu() {
                   className="w-full h-auto p-6 border-2 hover:border-primary transition-colors"
                 >
                   <div className="text-center">
-                    <Search className="w-12 h-12 mx-auto mb-3 text-primary" />
+                    <IconSearch className="w-12 h-12 mx-auto mb-3 text-primary" />
                     <h4 className="text-lg font-semibold mb-2">{t('publicPortal.denunciaMenu.consultTitle')}</h4>
                     <p className="text-sm text-muted-foreground">
                       {t('publicPortal.denunciaMenu.consultDescription')}
@@ -156,7 +156,7 @@ export default function DenunciaMenu() {
         <Card className="bg-white border-primary/20">
           <CardContent className="p-6">
             <div className="text-center">
-              <Shield className="w-8 h-8 text-primary mx-auto mb-3" />
+              <IconShield className="w-8 h-8 text-primary mx-auto mb-3" />
               <h4 className="font-semibold mb-2">{t('publicPortal.denunciaMenu.confidentialityTitle')}</h4>
               <p className="text-sm text-muted-foreground">
                 {t('publicPortal.denunciaMenu.confidentialityDescription')}

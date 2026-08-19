@@ -2,10 +2,9 @@ import { matchesSearch, normalizeSearch } from '@/lib/search-utils';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { useFocusRow } from '@/hooks/useFocusRow';
-import { Plus, Search, Filter, Upload, FileText, FolderOpen, Download, CheckCircle, Clock, Shield, TrendingUp } from 'lucide-react';
 import { StatStrip } from '@/components/ui/stat-strip';
 import { ModuleToolbar, ToolbarField } from '@/components/ui/module-toolbar';
-import { AkurisAIIcon } from '@/components/icons';
+import { IconAdd, IconSearch, IconFilter, IconDownload, IconUpload, IconSuccess, IconTime, IconFile, IconFolder, IconShield, IconTrendUp } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -23,7 +22,7 @@ import { DocumentosRelatorios } from '@/components/documentos/DocumentosRelatori
 import { BuscaAvancadaDocumentos } from '@/components/documentos/BuscaAvancadaDocumentos';
 import { UploadMultiplosDialog } from '@/components/documentos/UploadMultiplosDialog';
 import { DocumentoPreview } from '@/components/documentos/DocumentoPreview';
-import { TrilhaAuditoriaDocumentos } from '@/components/documentos/TrilhaAuditoriaDocumentos';
+import { TrilhaAuditoria } from '@/components/common/TrilhaAuditoria';
 import { useDocGen } from '@/contexts/DocGenContext';
 import { RenovarDocumentoDialog } from '@/components/documentos/RenovarDocumentoDialog';
 import { DocumentosLista } from '@/components/documentos/DocumentosLista';
@@ -35,9 +34,10 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/components/AuthProvider';
 import { logger } from '@/lib/logger';
 import { useDocumentosStats } from '@/hooks/useDocumentosStats';
+import { isDocumentoVencido } from '@/lib/metrics';
 import { PageSkeleton } from '@/components/ui/page-skeleton';
 import ConfirmDialog from '@/components/ConfirmDialog';
-import { formatDateOnly } from '@/lib/date-utils';
+import { formatDateOnly, parseDataLocal } from '@/lib/date-utils';
 
 interface Documento {
   id: string;
@@ -54,6 +54,8 @@ interface Documento {
   versao: number;
   is_current_version: boolean;
   requer_aprovacao?: boolean;
+  categoria_id?: string | null;
+  responsavel_id?: string | null;
   status: string;
   data_vencimento?: string;
   data_aprovacao?: string;
@@ -132,6 +134,25 @@ export default function Documentos() {
     queryClient.invalidateQueries({ queryKey: ['documentos'] });
     queryClient.invalidateQueries({ queryKey: ['documentos-stats'] });
   };
+
+  // Nomes da empresa, para a coluna "Responsável" — um prazo sem dono não é
+  // processo, é só uma data.
+  const { data: perfis = [] } = useQuery({
+    queryKey: ['documentos-perfis', empresaId],
+    enabled: !!empresaId,
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('user_id, nome, email')
+        .eq('empresa_id', empresaId!);
+      return data || [];
+    },
+  });
+  const nomePorUsuario = useMemo(
+    () => new Map(perfis.map((p) => [p.user_id, p.nome || p.email || ''])),
+    [perfis],
+  );
 
   // Fetch categorias via React Query
   const { data: categoriasData = [] } = useQuery({
@@ -216,11 +237,8 @@ export default function Documentos() {
 
     if (selectedStatus !== 'all') {
       if (selectedStatus === 'vencido') {
-        const hoje = new Date();
-        filtered = filtered.filter(doc => {
-          if (!doc.data_vencimento) return false;
-          return new Date(doc.data_vencimento) < hoje;
-        });
+        // Mesma régua da faixa: rascunho e arquivado não vencem.
+        filtered = filtered.filter(doc => isDocumentoVencido(doc));
       } else {
         filtered = filtered.filter(doc => doc.status === selectedStatus);
       }
@@ -232,6 +250,19 @@ export default function Documentos() {
 
     // Filtros avançados
     if (filtrosAvancados) {
+      if (filtrosAvancados.nome) {
+        const alvo = normalizeSearch(filtrosAvancados.nome);
+        filtered = filtered.filter(doc => normalizeSearch(doc.nome).includes(alvo));
+      }
+      if (filtrosAvancados.tipo && filtrosAvancados.tipo !== 'all') {
+        filtered = filtered.filter(doc => doc.tipo === filtrosAvancados.tipo);
+      }
+      if (filtrosAvancados.categoria && filtrosAvancados.categoria !== 'all') {
+        filtered = filtered.filter(doc => doc.categoria_id === filtrosAvancados.categoria);
+      }
+      if (filtrosAvancados.status && filtrosAvancados.status !== 'all') {
+        filtered = filtered.filter(doc => doc.status === filtrosAvancados.status);
+      }
       if (filtrosAvancados.dataInicio) {
         filtered = filtered.filter(doc => 
           new Date(doc.created_at) >= filtrosAvancados.dataInicio
@@ -247,14 +278,14 @@ export default function Documentos() {
       if (filtrosAvancados.dataVencimentoInicio && filtrosAvancados.dataVencimentoInicio) {
         filtered = filtered.filter(doc => 
           doc.data_vencimento && 
-          new Date(doc.data_vencimento) >= filtrosAvancados.dataVencimentoInicio
+          parseDataLocal(doc.data_vencimento) >= filtrosAvancados.dataVencimentoInicio
         );
       }
 
       if (filtrosAvancados.dataVencimentoFim) {
         filtered = filtered.filter(doc => 
           doc.data_vencimento && 
-          new Date(doc.data_vencimento) <= filtrosAvancados.dataVencimentoFim
+          parseDataLocal(doc.data_vencimento) <= filtrosAvancados.dataVencimentoFim
         );
       }
 
@@ -305,7 +336,7 @@ export default function Documentos() {
     if (!documento.data_vencimento) return false;
     
     const hoje = new Date();
-    const vencimento = new Date(documento.data_vencimento);
+    const vencimento = parseDataLocal(documento.data_vencimento);
     const diasParaVencer = Math.ceil((vencimento.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
     
     return diasParaVencer <= 30;
@@ -401,6 +432,15 @@ export default function Documentos() {
     return documentosFiltrados.slice(start, start + itemsPerPage);
   }, [documentosFiltrados, currentPage, itemsPerPage]);
 
+  const paginadosComResponsavel = useMemo(
+    () => paginatedDocumentos.map((d) => ({
+      ...d,
+      responsavel_nome: d.responsavel_id ? nomePorUsuario.get(d.responsavel_id) || null : null,
+    })),
+    [paginatedDocumentos, nomePorUsuario],
+  );
+
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -420,16 +460,16 @@ export default function Documentos() {
           description={t('modules.documentos.description')}
           actions={
             <Button size="sm" onClick={() => setDocumentoDialog({ open: true })}>
-              <Plus className="h-4 w-4 mr-2" />
+              <IconAdd className="h-4 w-4 mr-2" />
               {t('documentos.lista.novo')}
             </Button>
           }
           secondaryActions={[
-            { label: t('documentos.lista.geradorIA'), icon: <AkurisAIIcon className="h-4 w-4" />, onClick: () => openDocGen({ onDone: invalidateDocumentos }) },
-            { label: t('documentos.lista.upload'), icon: <Upload className="h-4 w-4" />, onClick: () => setUploadMultiplos(true) },
-            { label: t('documentos.lista.categorias'), icon: <FolderOpen className="h-4 w-4" />, onClick: () => setCategoriasDialog(true) },
-            { label: t('documentos.lista.relatorios'), icon: <TrendingUp className="h-4 w-4" />, onClick: () => setRelatoriosDialog(true) },
-            { label: t('documentos.lista.exportarCSV'), icon: <Download className="h-4 w-4" />, onClick: handleExportCSV, separatorBefore: true },
+            { label: t('documentos.lista.geradorIA'), icon: <IconFile className="h-4 w-4" />, onClick: () => openDocGen({ onDone: invalidateDocumentos }) },
+            { label: t('documentos.lista.upload'), icon: <IconUpload className="h-4 w-4" />, onClick: () => setUploadMultiplos(true) },
+            { label: t('documentos.lista.categorias'), icon: <IconFolder className="h-4 w-4" />, onClick: () => setCategoriasDialog(true) },
+            { label: t('documentos.lista.relatorios'), icon: <IconTrendUp className="h-4 w-4" />, onClick: () => setRelatoriosDialog(true) },
+            { label: t('documentos.lista.exportarCSV'), icon: <IconDownload className="h-4 w-4" />, onClick: handleExportCSV, separatorBefore: true },
           ]}
         />
 
@@ -437,9 +477,9 @@ export default function Documentos() {
           loading={!statsDocumentos}
           items={[
             { key: 'total', label: t('documentos.lista.totalDocumentos'), value: statsDocumentos?.total || 0, drillDown: 'documentos' },
-            { key: 'aprovados', label: t('documentos.lista.aprovados'), value: statsDocumentos?.aprovados || 0, drillDown: 'documentos' },
+            { key: 'vencidos', label: t('documentos.lista.vencidosKpi'), value: statsDocumentos?.vencidos || 0, tone: (statsDocumentos?.vencidos || 0) > 0 ? 'destructive' : undefined, drillDown: 'documentos' },
             { key: 'vencendo30', label: t('documentos.lista.vencendo30'), value: statsDocumentos?.vencendo30Dias || 0, tone: 'warning', drillDown: 'documentos' },
-            { key: 'confidenciais', label: t('documentos.lista.confidenciais'), value: statsDocumentos?.confidenciais || 0, drillDown: 'documentos' },
+            { key: 'pendentes', label: t('documentos.lista.pendentesAprovacaoKpi'), value: statsDocumentos?.pendentesAprovacao || 0, tone: (statsDocumentos?.pendentesAprovacao || 0) > 0 ? 'warning' : undefined, drillDown: 'documentos' },
           ]}
         />
 
@@ -516,7 +556,7 @@ export default function Documentos() {
           }
         >
           <Button variant="ghost" size="sm" onClick={() => setBuscaAvancada(true)}>
-            <Search className="h-3 w-3 mr-1" />
+            <IconSearch className="h-3 w-3 mr-1" />
             {t('documentos.lista.buscaAvancada')}
           </Button>
           {temFiltrosAtivos && (
@@ -529,7 +569,7 @@ export default function Documentos() {
         {/* Indicador de filtros aplicados */}
         {filtrosAvancados && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Filter className="h-4 w-4" />
+            <IconFilter className="h-4 w-4" />
             {t('documentos.lista.filtrosAplicados')}
             <Badge variant="secondary">
               {t('documentos.lista.filtrosCount', { count: Object.keys(filtrosAvancados).length })}
@@ -538,11 +578,11 @@ export default function Documentos() {
         )}
             </div>
             <DocumentosLista
-              documentos={paginatedDocumentos}
+              documentos={paginadosComResponsavel}
               podeRenovar={podeRenovar}
               emptyState={
                 <EmptyState
-                  icon={<FileText className="h-8 w-8" />}
+                  icon={<IconFile className="h-8 w-8" />}
                   title={temFiltrosAtivos
                     ? t('documentos.lista.nenhumEncontrado')
                     : t('documentos.lista.nenhumCadastrado')}
@@ -618,6 +658,7 @@ export default function Documentos() {
         {/* Dialogs */}
         <DocumentoDialog
           open={documentoDialog.open}
+          categorias={categorias}
           onOpenChange={(open) => setDocumentoDialog({ open })}
           documento={documentoDialog.documento}
           onSuccess={() => {
@@ -669,11 +710,12 @@ export default function Documentos() {
         )}
 
         {auditoriaDialog.documento && (
-          <TrilhaAuditoriaDocumentos
+          <TrilhaAuditoria
             open={auditoriaDialog.open}
             onOpenChange={(open) => setAuditoriaDialog({ open })}
-            documentoId={auditoriaDialog.documento.id}
-            documentoNome={auditoriaDialog.documento.nome}
+            registroId={auditoriaDialog.documento.id}
+            registroNome={auditoriaDialog.documento.nome}
+            tabela="documentos"
           />
         )}
 
@@ -681,6 +723,7 @@ export default function Documentos() {
           open={buscaAvancada}
           onOpenChange={setBuscaAvancada}
           onSearch={handleBuscaAvancada}
+          filtrosAtuais={filtrosAvancados}
           categorias={categorias}
         />
 

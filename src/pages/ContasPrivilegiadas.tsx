@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Shield, AlertTriangle, CheckCircle, Clock, Edit, Trash2, MoreHorizontal, Download } from 'lucide-react';
+import { IconAdd, IconEdit, IconDelete, IconDownload, IconMore, IconSuccess, IconWarning, IconTime, IconShield } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -168,17 +168,16 @@ export default function ContasPrivilegiadas() {
 
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { icon: React.ComponentType<any>, label: string }> = {
-      'ativo': { icon: CheckCircle, label: t('sweepDenuncias.contas.statusAtivo') },
-      'expirado': { icon: AlertTriangle, label: t('sweepDenuncias.contas.statusExpirado') },
-      'pendente_aprovacao': { icon: Clock, label: t('fin.contas.pendenteAprovacao') },
-      'revogado': { icon: Shield, label: t('sweepDenuncias.contas.statusRevogado') },
+      'ativo': { icon: IconSuccess, label: t('sweepDenuncias.contas.statusAtivo') },
+      'expirado': { icon: IconWarning, label: t('sweepDenuncias.contas.statusExpirado') },
+      'pendente_aprovacao': { icon: IconTime, label: t('fin.contas.pendenteAprovacao') },
+      'revogado': { icon: IconShield, label: t('sweepDenuncias.contas.statusRevogado') },
     };
 
     const config = statusConfig[status] || statusConfig.pendente_aprovacao;
-    const Icon = config.icon;
 
     return (
-      <StatusBadge size="sm" {...resolveItemStatusTone(status)} icon={<Icon className="h-3 w-3" strokeWidth={1.5} />}>
+      <StatusBadge {...resolveItemStatusTone(status)}>
         {config.label}
       </StatusBadge>
     );
@@ -282,14 +281,14 @@ export default function ContasPrivilegiadas() {
           return (
             <div className="flex items-center gap-2">
               <span>{formatDateOnly(conta.data_expiracao)}</span>
-              <StatusBadge size="sm" {...resolveRevisaoTone(-1)}>{t('sweepDenuncias.contas.badgeExpirada')}</StatusBadge>
+              <StatusBadge {...resolveRevisaoTone(-1)}>{t('sweepDenuncias.contas.badgeExpirada')}</StatusBadge>
             </div>
           );
         } else if (diffDays <= 30 && diffDays >= 0 && conta.status === 'ativo') {
           return (
             <div className="flex items-center gap-2">
               <span>{formatDateOnly(conta.data_expiracao)}</span>
-              <StatusBadge size="sm" {...resolveRevisaoTone(diffDays)}>{t('sweepDenuncias.contas.badgeVenceEm', { dias: diffDays })}</StatusBadge>
+              <StatusBadge {...resolveRevisaoTone(diffDays)}>{t('sweepDenuncias.contas.badgeVenceEm', { dias: diffDays })}</StatusBadge>
             </div>
           );
         }
@@ -310,19 +309,19 @@ export default function ContasPrivilegiadas() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="h-8 w-8">
-              <MoreHorizontal className="h-4 w-4" />
+              <IconMore className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => handleEditConta(conta)}>
-              <Edit className="h-4 w-4 mr-2" />
+              <IconEdit className="h-4 w-4 mr-2" />
               {t('sweepDenuncias.contas.actionEditar')}
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => handleDeleteConta(conta.id, conta.usuario_beneficiario)}
               className="text-destructive focus:text-destructive"
             >
-              <Trash2 className="h-4 w-4 mr-2" />
+              <IconDelete className="h-4 w-4 mr-2" />
               {t('sweepDenuncias.contas.actionExcluir')}
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -376,14 +375,14 @@ export default function ContasPrivilegiadas() {
         description={t('modules.contasPrivilegiadas.description')}
         actions={
           <Button onClick={() => setShowContaDialog(true)}>
-            <Plus className="mr-2 h-4 w-4" />
+            <IconAdd className="mr-2 h-4 w-4" />
             {t('sweepDenuncias.contas.novaConta')}
           </Button>
         }
         secondaryActions={[
           {
             label: t('sweepDenuncias.contas.exportCsv'),
-            icon: <Download className="h-4 w-4" />,
+            icon: <IconDownload className="h-4 w-4" />,
             disabled: contas.length === 0,
             onClick: () => {
               exportCSV(

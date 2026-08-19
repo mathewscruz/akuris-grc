@@ -1,11 +1,20 @@
 import { useState, useEffect } from "react";
+import { IconFile, IconShield } from '@/components/icons';
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { Shield, FileText } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ControlesContent from "@/components/governanca/ControlesContent";
 import AuditoriasContent from "@/components/governanca/AuditoriasContent";
 import { useLanguage } from "@/contexts/LanguageContext";
+
+type GovernancaTab = 'controles' | 'auditorias';
+
+/** Cada aba é um segmento real do URL: assim a migalha de pão mostra
+ *  "Governança › Controles Internos" e o H1 deixa de contradizer o breadcrumb. */
+const TAB_PATH: Record<GovernancaTab, string> = {
+  controles: '/governanca/controles',
+  auditorias: '/governanca/auditorias',
+};
 
 export default function Governanca() {
   const location = useLocation();
@@ -14,39 +23,42 @@ export default function Governanca() {
   const { t } = useLanguage();
   const [actionsSlot, setActionsSlot] = useState<HTMLDivElement | null>(null);
 
-  // Detectar a aba inicial baseado no path ou query param
-  const getInitialTab = () => {
+  // Detectar a aba inicial pelo caminho; `?tab=` fica suportado para os
+  // endereços antigos que já circulam.
+  const getInitialTab = (): GovernancaTab => {
     const tabParam = searchParams.get('tab');
     if (tabParam === 'auditorias') return 'auditorias';
-    
+    if (tabParam === 'controles') return 'controles';
+
     const path = location.pathname;
     if (path.includes('/auditorias') || location.state?.tab === 'auditorias') {
       return 'auditorias';
     }
     return 'controles';
   };
-  
-  const [activeTab, setActiveTab] = useState(getInitialTab);
-  
-  // Atualizar aba quando a rota muda
+
+  const [activeTab, setActiveTab] = useState<GovernancaTab>(getInitialTab);
+
+  // Atualizar aba quando a rota muda e normalizar o endereço para o caminho
+  // canónico da aba (sem `?tab=` e sem `/governanca` "nu").
   useEffect(() => {
-    const tabParam = searchParams.get('tab');
-    if (tabParam === 'auditorias') {
-      setActiveTab('auditorias');
-    } else {
-      const path = location.pathname;
-      if (path === '/governanca/auditorias') {
-        setActiveTab('auditorias');
-      } else if (path === '/governanca/controles' || path === '/governanca') {
-        setActiveTab('controles');
-      }
+    const tab = getInitialTab();
+    setActiveTab(tab);
+    if (location.pathname !== TAB_PATH[tab] || searchParams.has('tab')) {
+      // `tab` deixa de existir no endereço, mas `controle=`/`focus=` são
+      // deep-links para um registo: têm de sobreviver à normalização.
+      const resto = new URLSearchParams(searchParams);
+      resto.delete('tab');
+      const query = resto.toString();
+      navigate(`${TAB_PATH[tab]}${query ? `?${query}` : ''}`, { replace: true });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname, searchParams]);
 
   const handleTabChange = (value: string) => {
-    setActiveTab(value);
-    const search = value === 'auditorias' ? '?tab=auditorias' : '';
-    navigate(`/governanca${search}`, { replace: true });
+    const tab = value === 'auditorias' ? 'auditorias' : 'controles';
+    setActiveTab(tab);
+    navigate(TAB_PATH[tab], { replace: true });
   };
 
   const getPageTitle = () => {
@@ -64,7 +76,7 @@ export default function Governanca() {
       default: return '';
     }
   };
-  
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -72,25 +84,29 @@ export default function Governanca() {
         description={getPageDescription()}
         actions={<div ref={setActionsSlot} className="flex items-center gap-2" />}
       />
-      
+
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="max-w-md">
           <TabsTrigger value="controles" className="flex items-center gap-2">
-            <Shield className="h-4 w-4" />
+            <IconShield className="h-4 w-4" />
             {t('modules.governanca.controls')}
           </TabsTrigger>
           <TabsTrigger value="auditorias" className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
+            <IconFile className="h-4 w-4" />
             {t('modules.governanca.audits')}
           </TabsTrigger>
         </TabsList>
-        
-        <TabsContent value="controles" className="mt-6">
-          <ControlesContent actionsSlot={actionsSlot} />
+
+        {/* As abas visitadas ficam montadas (TabsContent usa forceMount para
+            preservar estado), mas a barra de ações é portalizada para fora do
+            painel escondido. Só a aba ativa recebe o slot, senão o cabeçalho
+            acumula os botões das duas abas. */}
+        <TabsContent value="controles">
+          <ControlesContent actionsSlot={activeTab === 'controles' ? actionsSlot : null} />
         </TabsContent>
-        
-        <TabsContent value="auditorias" className="mt-6">
-          <AuditoriasContent actionsSlot={actionsSlot} />
+
+        <TabsContent value="auditorias">
+          <AuditoriasContent actionsSlot={activeTab === 'auditorias' ? actionsSlot : null} />
         </TabsContent>
       </Tabs>
     </div>

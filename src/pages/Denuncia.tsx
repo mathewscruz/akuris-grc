@@ -6,9 +6,9 @@ import { DenunciasDashboard } from '@/components/denuncia/DenunciasDashboard';
 import { RelatoriosDenuncia } from '@/components/denuncia/RelatoriosDenuncia';
 import { NovaDenunciaDialog } from '@/components/denuncia/NovaDenunciaDialog';
 import { useDenunciasStats } from '@/hooks/useDenunciasStats';
-import { BarChart3 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { IconChart } from '@/components/icons';
 
 export default function Denuncia() {
   const { t } = useLanguage();
@@ -40,7 +40,7 @@ export default function Denuncia() {
         secondaryActions={[
           {
             label: t('cardsKpi.denuncias.abrirRelatorios'),
-            icon: <BarChart3 className="h-4 w-4" />,
+            icon: <IconChart className="h-4 w-4" />,
             onClick: () => setRelatoriosOpen(true),
           },
         ]}

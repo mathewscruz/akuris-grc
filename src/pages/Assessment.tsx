@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -10,8 +11,8 @@ import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { AlertDialog, AlertDialogAction, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { CheckCircle, FileText, ArrowRight, ArrowLeft, AlertCircle, Upload, Building2, Check, Clock, Calendar, ListChecks, ShieldCheck, Save, ChevronRight, FileQuestion, AlertTriangle } from 'lucide-react';
-import { AkurisAIIcon } from '@/components/icons';
+import { CheckCircle2, FileText, ArrowRight, ArrowLeft, AlertCircle, Upload, Building2, Check, Clock, Calendar, ListChecks, ShieldCheck, Save, ChevronRight, FileQuestion, AlertTriangle } from 'lucide-react';
+
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
@@ -33,12 +34,45 @@ const assessmentLogger = {
   }
 };
 
+/**
+ * Tipo de campo — o formulário e o banco falavam vocabulários diferentes.
+ *
+ * O CHECK de `due_diligence_questions.tipo` admite
+ * `text | textarea | select | checkbox | radio | file | score | date`, e é
+ * isso que o editor de perguntas oferece. Este formulário — o que o terceiro
+ * abre e preenche — só sabia desenhar `texto | radio | numerico | booleano |
+ * select | arquivo`. A interseção eram DUAS: `radio` e `select`.
+ *
+ * Na prática: o administrador montava um questionário com perguntas de texto
+ * ou de anexo, o fornecedor abria o link e via o enunciado sem nenhum campo
+ * para responder — obrigatórias, portanto sem conseguir submeter.
+ *
+ * O vocabulário do banco é o contrato. Aqui traduz-se para os desenhos que
+ * este ecrã tem, mantendo os nomes antigos a funcionar.
+ */
+const tipoDeCampo = (tipo?: string): string => {
+  switch (tipo) {
+    case 'text':
+    case 'textarea':
+      return 'texto';
+    case 'file':
+      return 'arquivo';
+    case 'score':
+      return 'numerico';
+    case 'multipla_escolha':
+      return 'checkbox';
+    default:
+      return tipo ?? 'texto';
+  }
+};
+
 interface QuestionData {
   id: string;
   titulo: string;
   descricao?: string;
   pergunta: string;
-  tipo: 'texto' | 'multipla_escolha' | 'radio' | 'arquivo' | 'numerico' | 'booleano' | 'select';
+  tipo: string;
+  secao?: string;
   opcoes?: string[];
   obrigatoria: boolean;
   peso?: number;
@@ -150,7 +184,7 @@ const TopBar = ({
             <img
               src={logoError ? getCompanyLogo(null) : getCompanyLogo(assessment.empresa.logo_url)}
               alt={`Logo ${assessment.empresa.nome}`}
-              className={cn('h-8 w-8 object-contain rounded', logoLoading && assessment.empresa.logo_url ? 'opacity-0' : 'opacity-100', 'transition-opacity duration-300')}
+              className={cn('h-8 w-8 object-contain rounded', logoLoading && assessment.empresa.logo_url ? 'opacity-0' : 'opacity-100', 'transition-opacity duration-200')}
               onLoad={onLogoLoad}
               onError={onLogoError}
             />
@@ -195,8 +229,7 @@ const WelcomeScreen = ({
         <Card className="bg-white border-slate-200 shadow-xl overflow-hidden">
           <div className="bg-gradient-to-br from-[hsl(250,80%,60%)]/10 via-transparent to-[hsl(250,80%,60%)]/5 p-8 sm:p-10">
             <div className="flex items-center gap-2 mb-4">
-              <AkurisAIIcon className="h-4 w-4 text-[hsl(250,80%,55%)]" />
-              <span className="text-xs font-medium uppercase tracking-wider text-[hsl(250,80%,55%)]">
+              <span className="text-xs font-medium text-[hsl(250,80%,55%)]">
                 {t('publicPortal.assessment.eyebrow')}
               </span>
             </div>
@@ -212,7 +245,7 @@ const WelcomeScreen = ({
           <CardContent className="p-6 sm:p-8 border-t border-slate-200">
             {/* Stats grid */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-              <div className="flex items-center gap-3 p-4 bg-slate-50 border border-slate-200 rounded-xl">
+              <div className="flex items-center gap-3 p-4 bg-card border border-slate-200 rounded-xl">
                 <div className="h-10 w-10 rounded-lg bg-[hsl(250,80%,60%)]/15 flex items-center justify-center shrink-0">
                   <ListChecks className="h-5 w-5 text-[hsl(250,80%,55%)]" />
                 </div>
@@ -220,23 +253,23 @@ const WelcomeScreen = ({
                   <p className="text-xs text-slate-500">{t('publicPortal.assessment.questions')}</p>
                   <p className="text-base font-semibold text-slate-900">{t('publicPortal.assessment.totalQuestions', { count: totalQuestions })}</p>
                   {totalRequired > 0 && (
-                    <p className="text-[11px] text-slate-500">{t('publicPortal.assessment.requiredCount', { count: totalRequired })}</p>
+                    <p className="text-micro text-slate-500">{t('publicPortal.assessment.requiredCount', { count: totalRequired })}</p>
                   )}
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 p-4 bg-slate-50 border border-slate-200 rounded-xl">
+              <div className="flex items-center gap-3 p-4 bg-card border border-slate-200 rounded-xl">
                 <div className="h-10 w-10 rounded-lg bg-[hsl(250,80%,60%)]/15 flex items-center justify-center shrink-0">
                   <Clock className="h-5 w-5 text-[hsl(250,80%,55%)]" />
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs text-slate-500">{t('publicPortal.assessment.estimatedTime')}</p>
                   <p className="text-base font-semibold text-slate-900">~{estimatedMinutes} min</p>
-                  <p className="text-[11px] text-slate-500">{t('publicPortal.assessment.canPause')}</p>
+                  <p className="text-micro text-slate-500">{t('publicPortal.assessment.canPause')}</p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 p-4 bg-slate-50 border border-slate-200 rounded-xl">
+              <div className="flex items-center gap-3 p-4 bg-card border border-slate-200 rounded-xl">
                 <div className={cn(
                   "h-10 w-10 rounded-lg flex items-center justify-center shrink-0",
                   "bg-[hsl(250,80%,60%)]/15"
@@ -252,7 +285,7 @@ const WelcomeScreen = ({
                     {deadline ? deadline.toLocaleDateString(localeTag(), { day: '2-digit', month: 'short' }) : t('publicPortal.assessment.noDeadline')}
                   </p>
                   <p className={cn(
-                    "text-[11px]",
+                    "text-micro",
                     overdue ? "text-[hsl(250,80%,45%)] font-medium" : "text-slate-500"
                   )}>
                     {!deadline ? t('publicPortal.assessment.noDeadlineSet') : overdue ? t('publicPortal.assessment.overdue') : daysLeft === 0 ? t('publicPortal.assessment.dueToday') : t('publicPortal.assessment.daysLeft', { days: daysLeft })}
@@ -319,11 +352,47 @@ export default function Assessment() {
   const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const questionsPerPage = 5;
-  const totalPages = Math.ceil(questions.length / questionsPerPage);
-  const currentQuestions = questions.slice(
-    currentPage * questionsPerPage,
-    (currentPage + 1) * questionsPerPage
-  );
+
+  /**
+   * Páginas por SEÇÃO do template.
+   *
+   * A barra lateral chama-se "Seções", mas as páginas eram fatias fixas de
+   * cinco perguntas e o rótulo de cada uma era o título da primeira pergunta
+   * que ali calhasse. A coluna `secao` — que o editor preenche e que os
+   * modelos sugeridos usam com nomes como Governança, Controle de Acesso ou
+   * Continuidade — nem sequer era pedida ao servidor. A estrutura que o
+   * questionário tem era descartada na tela de quem o responde.
+   *
+   * Um template sem seções (tudo em 'Geral') volta ao corte de cinco, para
+   * não transformar cinquenta perguntas numa página única.
+   */
+  const paginas = useMemo(() => {
+    // Por NOME de seção, não por sequência: as perguntas de uma mesma seção
+    // não são necessariamente contíguas na ordem do template — "Segurança
+    // Técnica" aparece na 3.ª e na 7.ª — e agrupar por corrida partia a mesma
+    // seção em duas páginas com o mesmo título. A ordem das seções é a da
+    // primeira pergunta de cada uma.
+    const porNome = new Map<string, QuestionData[]>();
+    for (const q of questions) {
+      const nome = (q.secao || '').trim();
+      const atual = porNome.get(nome);
+      if (atual) atual.push(q);
+      else porNome.set(nome, [q]);
+    }
+    const grupos = [...porNome.entries()].map(([titulo, perguntas]) => ({ titulo, perguntas }));
+
+    const temSecoes = grupos.length > 1 || (grupos[0]?.titulo && grupos[0].titulo !== 'Geral');
+    if (temSecoes) return grupos;
+
+    const fatias: { titulo: string; perguntas: QuestionData[] }[] = [];
+    for (let i = 0; i < questions.length; i += questionsPerPage) {
+      fatias.push({ titulo: '', perguntas: questions.slice(i, i + questionsPerPage) });
+    }
+    return fatias;
+  }, [questions]);
+
+  const totalPages = paginas.length;
+  const currentQuestions = paginas[currentPage]?.perguntas ?? [];
 
   const isAnswered = useCallback((qId: string) => {
     const v = responses[qId];
@@ -342,7 +411,7 @@ export default function Assessment() {
   const pageStatuses = useMemo(() => {
     const statuses: { answered: number; total: number; required: number; missingRequired: number }[] = [];
     for (let p = 0; p < totalPages; p++) {
-      const slice = questions.slice(p * questionsPerPage, (p + 1) * questionsPerPage);
+      const slice = paginas[p]?.perguntas ?? [];
       const answered = slice.filter(q => isAnswered(q.id)).length;
       const required = slice.filter(q => q.obrigatoria).length;
       const missingRequired = slice.filter(q => q.obrigatoria && !isAnswered(q.id)).length;
@@ -424,6 +493,7 @@ export default function Assessment() {
         descricao: q.descricao,
         pergunta: q.titulo || q.pergunta,
         tipo: q.tipo,
+        secao: q.secao,
         opcoes: q.opcoes,
         obrigatoria: q.obrigatoria,
         peso: q.peso,
@@ -464,7 +534,7 @@ export default function Assessment() {
         questionId.replace(/_evidencia|_justificativa|_arquivo$/, '') : questionId;
 
       const question = questions.find(q => q.id === baseQuestionId);
-      const field = isEvidencia ? 'evidencia' : isJustificativa ? 'justificativa' : isArquivo ? 'arquivo_url' : question?.tipo === 'numerico' ? 'pontuacao' : 'resposta';
+      const field = isEvidencia ? 'evidencia' : isJustificativa ? 'justificativa' : isArquivo ? 'arquivo_url' : tipoDeCampo(question?.tipo) === 'numerico' ? 'pontuacao' : 'resposta';
       const normalizedValue = field === 'pontuacao' ? (parseFloat(value) || 0) : value;
       await invokePublicAssessment({ action: 'save', token, questionId: baseQuestionId, field, value: normalizedValue });
       setSavedAt(new Date());
@@ -577,7 +647,7 @@ export default function Assessment() {
           <div className="text-center max-w-lg mx-auto">
             <div className="relative mb-8 animate-scale-in">
               <div className="w-24 h-24 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg shadow-emerald-500/30">
-                <CheckCircle className="w-12 h-12 text-white animate-fade-in" />
+                <CheckCircle2 className="w-12 h-12 text-white animate-fade-in" />
               </div>
               <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-r from-[hsl(250,80%,60%)] to-[hsl(250,80%,50%)] rounded-full animate-pulse"></div>
             </div>
@@ -590,7 +660,7 @@ export default function Assessment() {
               
               <div className="mt-8 p-6 bg-white border border-slate-200 rounded-xl shadow-sm">
                 <div className="flex items-center justify-center space-x-3 text-emerald-600 mb-3">
-                  <CheckCircle className="w-5 h-5" />
+                  <CheckCircle2 className="w-5 h-5" />
                   <span className="font-medium">{t('publicPortal.assessment.completedSuccess')}</span>
                 </div>
                 {assessment.data_conclusao && (
@@ -656,12 +726,12 @@ export default function Assessment() {
               <Card className="bg-white border-slate-200 shadow-sm">
                 <CardContent className="p-5">
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">{t('publicPortal.assessment.progress')}</span>
+                    <span className="text-xs font-medium text-slate-500">{t('publicPortal.assessment.progress')}</span>
                     <span className="text-xs font-semibold text-slate-900">{Math.round(progress)}%</span>
                   </div>
                   <Progress
                     value={progress}
-                    className="h-2 bg-slate-100 [&>div]:bg-gradient-to-r [&>div]:from-[hsl(250,80%,60%)] [&>div]:to-[hsl(250,80%,50%)] mb-3"
+                    className="h-2 bg-muted [&>div]:bg-gradient-to-r [&>div]:from-[hsl(250,80%,60%)] [&>div]:to-[hsl(250,80%,50%)] mb-3"
                   />
                   <div className="flex items-center justify-between text-xs text-slate-500">
                     <span>{t('publicPortal.assessment.ofTotal', { answered: answeredCount, total: questions.length })}</span>
@@ -678,7 +748,7 @@ export default function Assessment() {
               {/* Summary card — replaces "Páginas" header */}
               <Card className="bg-white border-slate-200 shadow-sm">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  <CardTitle className="text-xs font-medium text-slate-500">
                     {t('publicPortal.assessment.summary')}
                   </CardTitle>
                 </CardHeader>
@@ -742,7 +812,7 @@ export default function Assessment() {
               {/* Sections (was "Páginas") */}
               <Card className="bg-white border-slate-200 shadow-sm">
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                  <CardTitle className="text-xs font-medium text-slate-500">
                     {t('publicPortal.assessment.sections')}
                   </CardTitle>
                 </CardHeader>
@@ -755,32 +825,33 @@ export default function Assessment() {
                         const isComplete = status && status.answered === status.total && status.missingRequired === 0;
                         const hasContent = status && status.answered > 0;
 
-                        // Use first question title as section label
-                        const firstQuestion = questions[idx * questionsPerPage];
-                        const sectionLabel = firstQuestion?.titulo || firstQuestion?.pergunta || t('publicPortal.assessment.section', { number: idx + 1 });
+                        // O nome da seção do template; sem seções, a numeração.
+                        const sectionLabel =
+                          paginas[idx]?.titulo ||
+                          t('publicPortal.assessment.section', { number: idx + 1 });
 
                         return (
                           <button
                             key={idx}
                             onClick={() => setCurrentPage(idx)}
                             className={cn(
-                              'w-full text-left px-3 py-2.5 rounded-lg transition-all duration-200 group',
+                              'w-full text-left px-3 py-2.5 rounded-lg transition-ui duration-200 group',
                               'flex items-center gap-3',
                               isCurrent
                                 ? 'bg-[hsl(250,80%,60%)]/10 border border-[hsl(250,80%,60%)]/30'
-                                : 'hover:bg-slate-50 border border-transparent'
+                                : 'hover:bg-accent border border-transparent'
                             )}
                           >
                             {/* Status icon */}
                             <div className={cn(
-                              'h-7 w-7 rounded-full flex items-center justify-center text-[11px] font-semibold shrink-0 transition-colors',
+                              'h-7 w-7 rounded-full flex items-center justify-center text-micro font-semibold shrink-0 transition-colors',
                               isComplete
                                 ? 'bg-slate-900 text-white'
                                 : isCurrent
                                   ? 'bg-[hsl(250,80%,60%)]/20 text-[hsl(250,80%,40%)]'
                                   : hasContent
                                     ? 'bg-slate-200 text-slate-700'
-                                    : 'bg-slate-100 text-slate-500'
+                                    : 'bg-muted text-slate-500'
                             )}>
                               {isComplete ? <Check className="h-3.5 w-3.5" /> : idx + 1}
                             </div>
@@ -792,7 +863,7 @@ export default function Assessment() {
                               )} title={sectionLabel}>
                                 {sectionLabel}
                               </p>
-                              <p className="text-[11px] text-slate-500">
+                              <p className="text-micro text-slate-500">
                                 {t('publicPortal.assessment.answeredOf', { answered: status?.answered || 0, total: status?.total || 0 })}
                                 {status && status.missingRequired > 0 && (
                                   <span className="text-slate-600"> · {t('publicPortal.assessment.requiredShort', { count: status.missingRequired })}</span>
@@ -813,10 +884,10 @@ export default function Assessment() {
               {missingRequiredList.length > 0 && (
                 <Card className="bg-white border-slate-200 shadow-sm">
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-xs font-medium text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                    <CardTitle className="text-xs font-medium text-slate-500 flex items-center gap-1.5">
                       <AlertTriangle className="h-3.5 w-3.5 text-[hsl(250,80%,55%)]" />
                       {t('publicPortal.assessment.pendingRequired')}
-                      <span className="ml-auto text-[10px] font-semibold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded">
+                      <span className="ml-auto text-micro font-semibold text-slate-700 bg-muted px-1.5 py-0.5 rounded">
                         {missingRequiredList.length}
                       </span>
                     </CardTitle>
@@ -831,13 +902,13 @@ export default function Assessment() {
                             <li key={q.id}>
                               <button
                                 onClick={() => setCurrentPage(pageOfQ)}
-                                className="w-full text-left flex items-center gap-2 text-xs text-slate-700 hover:text-slate-900 p-2 rounded hover:bg-slate-50 transition-colors"
+                                className="w-full text-left flex items-center gap-2 text-xs text-slate-700 hover:text-slate-900 p-2 rounded hover:bg-accent transition-colors"
                               >
                                 <ChevronRight className="h-3 w-3 text-slate-400 shrink-0" />
                                 <span className="flex-1 truncate" title={q.titulo || q.pergunta}>
                                   {q.titulo || q.pergunta}
                                 </span>
-                                <span className="text-[10px] text-slate-500 shrink-0">{t('publicPortal.assessment.pageShort', { page: pageOfQ + 1 })}</span>
+                                <span className="text-micro text-slate-500 shrink-0">{t('publicPortal.assessment.pageShort', { page: pageOfQ + 1 })}</span>
                               </button>
                             </li>
                           );
@@ -863,7 +934,7 @@ export default function Assessment() {
                 </div>
                 <Progress
                   value={progress}
-                  className="h-2 bg-slate-100 [&>div]:bg-gradient-to-r [&>div]:from-[hsl(250,80%,60%)] [&>div]:to-[hsl(250,80%,50%)]"
+                  className="h-2 bg-muted [&>div]:bg-gradient-to-r [&>div]:from-[hsl(250,80%,60%)] [&>div]:to-[hsl(250,80%,50%)]"
                 />
               </CardContent>
             </Card>
@@ -871,7 +942,7 @@ export default function Assessment() {
             {/* Page header */}
             <div className="mb-5 flex items-center justify-between">
               <div>
-                <p className="text-xs uppercase tracking-wider text-slate-500 font-medium mb-1">
+                <p className="text-xs text-slate-500 font-medium mb-1">
                   {assessment.template.nome}
                 </p>
                 <h2 className="text-xl sm:text-2xl font-bold text-slate-900">
@@ -891,7 +962,7 @@ export default function Assessment() {
                   <Card
                     key={question.id}
                     className={cn(
-                      'border bg-white transition-all duration-300 overflow-hidden animate-fade-in shadow-sm',
+                      'border bg-white transition-ui duration-200 overflow-hidden animate-fade-in shadow-sm',
                       answered
                         ? 'border-slate-300 shadow-[0_0_0_1px_hsl(250,80%,60%,0.08),0_8px_24px_-12px_hsl(250,80%,60%,0.18)]'
                         : 'border-slate-200 hover:border-slate-300'
@@ -906,7 +977,7 @@ export default function Assessment() {
                           'h-9 w-9 rounded-lg flex items-center justify-center text-sm font-bold shrink-0 transition-colors',
                           answered
                             ? 'bg-slate-900 text-white border border-slate-900'
-                            : 'bg-slate-100 text-slate-600 border border-slate-200'
+                            : 'bg-muted text-slate-600 border border-slate-200'
                         )}>
                           {answered ? <Check className="h-4 w-4" /> : questionNumber}
                         </div>
@@ -917,7 +988,7 @@ export default function Assessment() {
                               {question.titulo || question.pergunta}
                             </h3>
                             {question.obrigatoria && (
-                              <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200 mt-1">
+                              <span className="text-xs font-semibold px-1.5 py-0.5 rounded bg-muted text-slate-600 border border-slate-200 mt-1">
                                 {t('publicPortal.assessment.requiredBadge')}
                               </span>
                             )}
@@ -932,16 +1003,16 @@ export default function Assessment() {
 
                       {/* Input controls */}
                       <div className="pl-0 sm:pl-[52px]">
-                        {question.tipo === 'texto' && (
+                        {tipoDeCampo(question.tipo) === 'texto' && (
                           <Textarea
                             value={responses[question.id] || ''}
                             onChange={(e) => handleResponseChange(question.id, e.target.value)}
                             placeholder={t('publicPortal.assessment.textPlaceholder')}
-                            className="min-h-[120px] bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-[hsl(250,80%,60%)]/60 focus:ring-2 focus:ring-[hsl(250,80%,60%)]/20 transition-all duration-200"
+                            className="min-h-[120px] bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-[hsl(250,80%,60%)]/60 focus:ring-2 focus:ring-[hsl(250,80%,60%)]/20 transition-ui duration-200"
                           />
                         )}
 
-                        {question.tipo === 'radio' && question.opcoes && (
+                        {tipoDeCampo(question.tipo) === 'radio' && question.opcoes && (
                           <RadioGroup
                             value={responses[question.id] || ''}
                             onValueChange={(value) => handleResponseChange(question.id, value)}
@@ -953,10 +1024,10 @@ export default function Assessment() {
                                 <div
                                   key={idx}
                                   className={cn(
-                                    'flex items-center space-x-3 p-3 rounded-lg border transition-all duration-200 cursor-pointer',
+                                    'flex items-center space-x-3 p-3 rounded-lg border transition-ui duration-200 cursor-pointer',
                                     selected
                                       ? 'bg-[hsl(250,80%,60%)]/10 border-[hsl(250,80%,60%)]/40'
-                                      : 'bg-white border-slate-200 hover:bg-slate-50 hover:border-slate-300'
+                                      : 'bg-white border-slate-200 hover:bg-accent hover:border-slate-300'
                                   )}
                                   onClick={() => handleResponseChange(question.id, opcao)}
                                 >
@@ -968,17 +1039,17 @@ export default function Assessment() {
                           </RadioGroup>
                         )}
 
-                        {question.tipo === 'numerico' && (
+                        {tipoDeCampo(question.tipo) === 'numerico' && (
                           <Input
                             type="number"
                             value={responses[question.id] || ''}
                             onChange={(e) => handleResponseChange(question.id, e.target.value)}
                             placeholder={t('publicPortal.assessment.numberPlaceholder')}
-                            className="bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-[hsl(250,80%,60%)]/60 focus:ring-2 focus:ring-[hsl(250,80%,60%)]/20 transition-all duration-200"
+                            className="bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-[hsl(250,80%,60%)]/60 focus:ring-2 focus:ring-[hsl(250,80%,60%)]/20 transition-ui duration-200"
                           />
                         )}
 
-                        {question.tipo === 'booleano' && (
+                        {tipoDeCampo(question.tipo) === 'booleano' && (
                           <RadioGroup
                             value={responses[question.id] || ''}
                             onValueChange={(value) => handleResponseChange(question.id, value)}
@@ -993,10 +1064,10 @@ export default function Assessment() {
                                 <div
                                   key={opt.value}
                                   className={cn(
-                                    'flex items-center justify-center space-x-3 p-4 rounded-lg border transition-all duration-200 cursor-pointer',
+                                    'flex items-center justify-center space-x-3 p-4 rounded-lg border transition-ui duration-200 cursor-pointer',
                                     selected
                                       ? 'bg-[hsl(250,80%,60%)]/10 border-[hsl(250,80%,60%)]/40'
-                                      : 'bg-white border-slate-200 hover:bg-slate-50 hover:border-slate-300'
+                                      : 'bg-white border-slate-200 hover:bg-accent hover:border-slate-300'
                                   )}
                                   onClick={() => handleResponseChange(question.id, opt.value)}
                                 >
@@ -1008,12 +1079,12 @@ export default function Assessment() {
                           </RadioGroup>
                         )}
 
-                        {question.tipo === 'select' && question.opcoes && (
+                        {tipoDeCampo(question.tipo) === 'select' && question.opcoes && (
                           <Select
                             value={responses[question.id] || ''}
                             onValueChange={(value) => handleResponseChange(question.id, value)}
                           >
-                            <SelectTrigger className="bg-white border-slate-200 text-slate-900 focus:border-[hsl(250,80%,60%)]/60 focus:ring-2 focus:ring-[hsl(250,80%,60%)]/20 transition-all duration-200">
+                            <SelectTrigger className="bg-white border-slate-200 text-slate-900 focus:border-[hsl(250,80%,60%)]/60 focus:ring-2 focus:ring-[hsl(250,80%,60%)]/20 transition-ui duration-200">
                               <SelectValue placeholder={t('publicPortal.assessment.selectPlaceholder')} />
                             </SelectTrigger>
                             <SelectContent>
@@ -1026,9 +1097,50 @@ export default function Assessment() {
                           </Select>
                         )}
 
-                        {question.tipo === 'arquivo' && (
+                        {/* Seleção múltipla: as escolhas ficam numa string
+                            separada por ponto e vírgula, que é o formato que
+                            `respostas.resposta` já guarda. */}
+                        {tipoDeCampo(question.tipo) === 'checkbox' && question.opcoes && (
+                          <div className="space-y-2">
+                            {question.opcoes.map((opcao, idx) => {
+                              const marcadas = (responses[question.id] || '').split('; ').filter(Boolean);
+                              const marcada = marcadas.includes(opcao);
+                              return (
+                                <div
+                                  key={idx}
+                                  className={cn(
+                                    'flex items-center space-x-3 p-3 rounded-lg border transition-ui duration-200 cursor-pointer',
+                                    marcada
+                                      ? 'bg-[hsl(250,80%,60%)]/10 border-[hsl(250,80%,60%)]/40'
+                                      : 'bg-white border-slate-200 hover:bg-accent hover:border-slate-300'
+                                  )}
+                                  onClick={() => {
+                                    const proximas = marcada
+                                      ? marcadas.filter((m) => m !== opcao)
+                                      : [...marcadas, opcao];
+                                    handleResponseChange(question.id, proximas.join('; '));
+                                  }}
+                                >
+                                  <Checkbox checked={marcada} className="border-slate-300" />
+                                  <Label className="text-sm font-medium cursor-pointer flex-1 text-slate-800">{opcao}</Label>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {tipoDeCampo(question.tipo) === 'date' && (
+                          <Input
+                            type="date"
+                            value={responses[question.id] || ''}
+                            onChange={(e) => handleResponseChange(question.id, e.target.value)}
+                            className="bg-white border-slate-200 text-slate-900 focus:border-[hsl(250,80%,60%)]/60 focus:ring-2 focus:ring-[hsl(250,80%,60%)]/20 transition-ui duration-200"
+                          />
+                        )}
+
+                        {tipoDeCampo(question.tipo) === 'arquivo' && (
                           <div className="space-y-3">
-                            <div className="border-2 border-dashed border-slate-200 hover:border-[hsl(250,80%,60%)]/40 rounded-xl p-6 text-center transition-colors duration-200 bg-slate-50/50">
+                            <div className="border-2 border-dashed border-slate-200 hover:border-[hsl(250,80%,60%)]/40 rounded-xl p-6 text-center transition-colors duration-200 bg-muted/20">
                               <Upload className="h-8 w-8 text-slate-400 mx-auto mb-2" />
                               <p className="text-sm text-slate-500 mb-3">
                                 {t('publicPortal.assessment.dropFile')}
@@ -1062,7 +1174,7 @@ export default function Assessment() {
                               />
                             </div>
                             {responses[question.id] && (
-                              <div className="flex items-center space-x-3 text-sm text-slate-700 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                              <div className="flex items-center space-x-3 text-sm text-slate-700 p-3 bg-card rounded-lg border border-slate-200">
                                 <FileText className="h-4 w-4 text-slate-500" />
                                 <span className="font-medium">{responses[question.id]}</span>
                                 {responses[`${question.id}_arquivo_url`] && (
@@ -1080,7 +1192,7 @@ export default function Assessment() {
                           <>
                             {question.configuracoes.mostrar_evidencia_quando &&
                              question.configuracoes.mostrar_evidencia_quando.split(',').includes(responses[question.id]) && (
-                              <div className="mt-4 p-4 bg-slate-50 border border-slate-200 rounded-lg animate-fade-in">
+                              <div className="mt-4 p-4 bg-card border border-slate-200 rounded-lg animate-fade-in">
                                 <Label className="text-sm font-medium text-slate-700 mb-3 block">
                                   {question.configuracoes.label_evidencia || t('publicPortal.assessment.evidenceLabel')}
                                 </Label>
@@ -1088,7 +1200,7 @@ export default function Assessment() {
                                   value={responses[`${question.id}_evidencia`] || ''}
                                   onChange={(e) => handleResponseChange(`${question.id}_evidencia`, e.target.value)}
                                   placeholder={t('publicPortal.assessment.evidencePlaceholder')}
-                                  className="min-h-[100px] bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-[hsl(250,80%,60%)]/60 focus:ring-2 focus:ring-[hsl(250,80%,60%)]/20 transition-all duration-200 mb-4"
+                                  className="min-h-[100px] bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-[hsl(250,80%,60%)]/60 focus:ring-2 focus:ring-[hsl(250,80%,60%)]/20 transition-ui duration-200 mb-4"
                                 />
                                 <div className="space-y-3">
                                   <Label className="text-sm font-medium text-slate-700 block">
@@ -1101,7 +1213,7 @@ export default function Assessment() {
                                     </p>
                                     <Input
                                       type="file"
-                                      className="text-xs bg-white border-slate-200 text-slate-700 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-slate-100 file:text-slate-700"
+                                      className="text-xs bg-white border-slate-200 text-slate-700 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-muted file:text-slate-700"
                                       accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                                       onChange={async (e) => {
                                         const file = e.target.files?.[0];
@@ -1141,7 +1253,7 @@ export default function Assessment() {
 
                             {question.configuracoes.mostrar_justificativa_quando &&
                              question.configuracoes.mostrar_justificativa_quando.split(',').includes(responses[question.id]) && (
-                              <div className="mt-4 p-4 bg-slate-50 border border-slate-200 rounded-lg animate-fade-in">
+                              <div className="mt-4 p-4 bg-card border border-slate-200 rounded-lg animate-fade-in">
                                 <Label className="text-sm font-medium text-slate-700 mb-2 block">
                                   {question.configuracoes.label_justificativa || t('publicPortal.assessment.justificationLabel')}
                                 </Label>
@@ -1149,7 +1261,7 @@ export default function Assessment() {
                                   value={responses[`${question.id}_justificativa`] || ''}
                                   onChange={(e) => handleResponseChange(`${question.id}_justificativa`, e.target.value)}
                                   placeholder={t('publicPortal.assessment.justificationPlaceholder')}
-                                  className="min-h-[100px] bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-[hsl(250,80%,60%)]/60 focus:ring-2 focus:ring-[hsl(250,80%,60%)]/20 transition-all duration-200"
+                                  className="min-h-[100px] bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-[hsl(250,80%,60%)]/60 focus:ring-2 focus:ring-[hsl(250,80%,60%)]/20 transition-ui duration-200"
                                 />
                               </div>
                             )}
@@ -1169,7 +1281,7 @@ export default function Assessment() {
                 onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
                 disabled={currentPage === 0}
                 size="lg"
-                className="shadow-sm border-slate-200 bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+                className="shadow-sm border-slate-200 bg-white text-slate-700 hover:bg-accent hover:text-slate-900"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 {t('publicPortal.assessment.previous')}
@@ -1222,7 +1334,7 @@ export default function Assessment() {
               {missingRequiredList.length > 0 ? (
                 <AlertTriangle className="w-6 h-6 text-amber-600" />
               ) : (
-                <CheckCircle className="w-6 h-6 text-[hsl(250,80%,55%)]" />
+                <CheckCircle2 className="w-6 h-6 text-[hsl(250,80%,55%)]" />
               )}
             </div>
             <AlertDialogTitle className="text-center text-xl text-slate-900">
@@ -1234,19 +1346,19 @@ export default function Assessment() {
               <div className="text-center text-slate-600 leading-relaxed space-y-4">
                 {/* Summary */}
                 <div className="grid grid-cols-3 gap-2 pt-2">
-                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                  <div className="p-3 bg-card border border-slate-200 rounded-lg">
                     <p className="text-2xl font-bold text-slate-900">{questions.length}</p>
-                    <p className="text-[11px] text-slate-500 uppercase tracking-wider mt-0.5">{t('publicPortal.assessment.total')}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">{t('publicPortal.assessment.total')}</p>
                   </div>
                   <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
                     <p className="text-2xl font-bold text-emerald-700">{answeredCount}</p>
-                    <p className="text-[11px] text-emerald-700/80 uppercase tracking-wider mt-0.5">{t('publicPortal.assessment.answered')}</p>
+                    <p className="text-xs text-emerald-700/80 mt-0.5">{t('publicPortal.assessment.answered')}</p>
                   </div>
                   <div className={cn(
                     'p-3 border rounded-lg',
                     missingRequiredList.length > 0
                       ? 'bg-amber-50 border-amber-200'
-                      : 'bg-slate-50 border-slate-200'
+                      : 'bg-muted/40 border-slate-200'
                   )}>
                     <p className={cn(
                       'text-2xl font-bold',
@@ -1255,7 +1367,7 @@ export default function Assessment() {
                       {missingRequiredList.length}
                     </p>
                     <p className={cn(
-                      'text-[11px] uppercase tracking-wider mt-0.5',
+                      'text-xs mt-0.5',
                       missingRequiredList.length > 0 ? 'text-amber-700/80' : 'text-slate-500'
                     )}>
                       {t('publicPortal.assessment.pending')}
@@ -1282,11 +1394,11 @@ export default function Assessment() {
                                   setShowConfirmDialog(false);
                                   setCurrentPage(pageOfQ);
                                 }}
-                                className="w-full text-left flex items-center gap-2 text-sm text-slate-700 hover:text-slate-900 p-2 rounded hover:bg-slate-50 transition-colors"
+                                className="w-full text-left flex items-center gap-2 text-sm text-slate-700 hover:text-slate-900 p-2 rounded hover:bg-accent transition-colors"
                               >
                                 <ChevronRight className="h-3 w-3 text-amber-600 shrink-0" />
                                 <span className="flex-1 truncate">{q.titulo || q.pergunta}</span>
-                                <span className="text-[10px] text-slate-500 shrink-0">{t('publicPortal.assessment.pageShort', { page: pageOfQ + 1 })}</span>
+                                <span className="text-micro text-slate-500 shrink-0">{t('publicPortal.assessment.pageShort', { page: pageOfQ + 1 })}</span>
                               </button>
                             </li>
                           );
@@ -1314,7 +1426,7 @@ export default function Assessment() {
               variant="outline" 
               onClick={() => setShowConfirmDialog(false)}
               disabled={submitting}
-              className="flex-1 bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+              className="flex-1 bg-white border-slate-200 text-slate-700 hover:bg-accent hover:text-slate-900"
             >
               {missingRequiredList.length > 0 ? t('publicPortal.assessment.backAndAnswer') : t('publicPortal.assessment.cancel')}
             </Button>

@@ -1,4 +1,5 @@
 import { rowOpenProps, CARD_HOVER } from '@/lib/row-interaction';
+import { IconAdd, IconSearch, IconEdit, IconDelete, IconDownload, IconView, IconMore, IconWarning, IconTime, IconFile, IconChart, IconShield, IconBook, IconOrg, IconPackage, IconUsers, IconFileCheck, IconMessage, IconError, IconFramework, IconLifebuoy } from '@/components/icons';
 import { useState, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -17,26 +18,25 @@ import { generateTemplatePDF } from '@/components/relatorios/generateTemplatePDF
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
-import { formatDateOnly } from '@/lib/date-utils';
-import { Plus, FileText, Download, Pencil, Trash2, Eye, MoreHorizontal, FileBarChart, BarChart3, Shield, AlertTriangle, BookOpen, Clock, Briefcase, Package, Search, Users, FileCheck, MessageSquare } from 'lucide-react';
+import { formatDateOnly, intlLocale } from '@/lib/date-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { formatStatus } from '@/lib/text-utils';
 const templateConfigs: Record<string, { nome: string; descricao: string; icon: any; cor: string }> = {
-  executivo_trimestral: { nome: 'fin.relatorios.tpl.executivo_trimestral.nome', descricao: 'fin.relatorios.tpl.executivo_trimestral.desc', icon: BarChart3, cor: 'text-primary' },
-  compliance_geral: { nome: 'fin.relatorios.tpl.compliance_geral.nome', descricao: 'fin.relatorios.tpl.compliance_geral.desc', icon: BookOpen, cor: 'text-violet-600' },
-  riscos_geral: { nome: 'fin.relatorios.tpl.riscos_geral.nome', descricao: 'fin.relatorios.tpl.riscos_geral.desc', icon: AlertTriangle, cor: 'text-amber-600' },
-  incidentes_periodo: { nome: 'fin.relatorios.tpl.incidentes_periodo.nome', descricao: 'fin.relatorios.tpl.incidentes_periodo.desc', icon: AlertTriangle, cor: 'text-destructive' },
-  lgpd_anpd: { nome: 'fin.relatorios.tpl.lgpd_anpd.nome', descricao: 'fin.relatorios.tpl.lgpd_anpd.desc', icon: Shield, cor: 'text-emerald-600' },
-  iso27001_auditoria: { nome: 'fin.relatorios.tpl.iso27001_auditoria.nome', descricao: 'fin.relatorios.tpl.iso27001_auditoria.desc', icon: FileBarChart, cor: 'text-blue-600' },
-  continuidade_bcp: { nome: 'fin.relatorios.tpl.continuidade_bcp.nome', descricao: 'fin.relatorios.tpl.continuidade_bcp.desc', icon: Shield, cor: 'text-cyan-600' },
-  contratos_geral: { nome: 'fin.relatorios.tpl.contratos_geral.nome', descricao: 'fin.relatorios.tpl.contratos_geral.desc', icon: Briefcase, cor: 'text-indigo-600' },
-  ativos_inventario: { nome: 'fin.relatorios.tpl.ativos_inventario.nome', descricao: 'fin.relatorios.tpl.ativos_inventario.desc', icon: Package, cor: 'text-orange-600' },
-  auditoria_interna: { nome: 'fin.relatorios.tpl.auditoria_interna.nome', descricao: 'fin.relatorios.tpl.auditoria_interna.desc', icon: Search, cor: 'text-rose-600' },
-  due_diligence_fornecedores: { nome: 'fin.relatorios.tpl.due_diligence_fornecedores.nome', descricao: 'fin.relatorios.tpl.due_diligence_fornecedores.desc', icon: Users, cor: 'text-teal-600' },
-  documentos_governanca: { nome: 'fin.relatorios.tpl.documentos_governanca.nome', descricao: 'fin.relatorios.tpl.documentos_governanca.desc', icon: FileCheck, cor: 'text-sky-600' },
-  denuncias_canal_etica: { nome: 'fin.relatorios.tpl.denuncias_canal_etica.nome', descricao: 'fin.relatorios.tpl.denuncias_canal_etica.desc', icon: MessageSquare, cor: 'text-fuchsia-600' },
+  executivo_trimestral: { nome: 'fin.relatorios.tpl.executivo_trimestral.nome', descricao: 'fin.relatorios.tpl.executivo_trimestral.desc', icon: IconChart, cor: 'text-primary' },
+  compliance_geral: { nome: 'fin.relatorios.tpl.compliance_geral.nome', descricao: 'fin.relatorios.tpl.compliance_geral.desc', icon: IconBook, cor: 'text-primary' },
+  riscos_geral: { nome: 'fin.relatorios.tpl.riscos_geral.nome', descricao: 'fin.relatorios.tpl.riscos_geral.desc', icon: IconWarning, cor: 'text-warning' },
+  incidentes_periodo: { nome: 'fin.relatorios.tpl.incidentes_periodo.nome', descricao: 'fin.relatorios.tpl.incidentes_periodo.desc', icon: IconError, cor: 'text-destructive' },
+  lgpd_anpd: { nome: 'fin.relatorios.tpl.lgpd_anpd.nome', descricao: 'fin.relatorios.tpl.lgpd_anpd.desc', icon: IconShield, cor: 'text-success' },
+  iso27001_auditoria: { nome: 'fin.relatorios.tpl.iso27001_auditoria.nome', descricao: 'fin.relatorios.tpl.iso27001_auditoria.desc', icon: IconFramework, cor: 'text-info' },
+  continuidade_bcp: { nome: 'fin.relatorios.tpl.continuidade_bcp.nome', descricao: 'fin.relatorios.tpl.continuidade_bcp.desc', icon: IconLifebuoy, cor: 'text-info' },
+  contratos_geral: { nome: 'fin.relatorios.tpl.contratos_geral.nome', descricao: 'fin.relatorios.tpl.contratos_geral.desc', icon: IconOrg, cor: 'text-primary' },
+  ativos_inventario: { nome: 'fin.relatorios.tpl.ativos_inventario.nome', descricao: 'fin.relatorios.tpl.ativos_inventario.desc', icon: IconPackage, cor: 'text-warning' },
+  auditoria_interna: { nome: 'fin.relatorios.tpl.auditoria_interna.nome', descricao: 'fin.relatorios.tpl.auditoria_interna.desc', icon: IconSearch, cor: 'text-destructive' },
+  due_diligence_fornecedores: { nome: 'fin.relatorios.tpl.due_diligence_fornecedores.nome', descricao: 'fin.relatorios.tpl.due_diligence_fornecedores.desc', icon: IconUsers, cor: 'text-success' },
+  documentos_governanca: { nome: 'fin.relatorios.tpl.documentos_governanca.nome', descricao: 'fin.relatorios.tpl.documentos_governanca.desc', icon: IconFileCheck, cor: 'text-info' },
+  denuncias_canal_etica: { nome: 'fin.relatorios.tpl.denuncias_canal_etica.nome', descricao: 'fin.relatorios.tpl.denuncias_canal_etica.desc', icon: IconMessage, cor: 'text-primary' },
 };
 
 export default function Relatorios() {
@@ -126,7 +126,7 @@ export default function Relatorios() {
         doc.setTextColor(100);
         doc.text(relatorio.descricao || t('fin.comum.semDescricao'), 20, 45);
         doc.setFontSize(10);
-        doc.text(t('sweepCore.reports.generatedOn', { date: new Date().toLocaleDateString(locale === 'pt' ? 'pt-BR' : 'en-US') }), 20, 60);
+        doc.text(t('sweepCore.reports.generatedOn', { date: new Date().toLocaleDateString(intlLocale()) }), 20, 60);
         doc.text(t('sweepCore.reports.status', { status: formatStatus(relatorio.status) }), 20, 70);
         doc.save(`${relatorio.nome.replace(/\s+/g, '_')}.pdf`);
       }
@@ -193,7 +193,7 @@ export default function Relatorios() {
         description={t('modules.relatorios.description')}
         actions={
           <Button onClick={() => setDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
+            <IconAdd className="h-4 w-4 mr-2" />
             {t('sweepCore.reports.newReport')}
           </Button>
         }
@@ -213,8 +213,7 @@ export default function Relatorios() {
         ]}
       />
 
-
-        <TabsContent value="meus" className="mt-4">
+        <TabsContent value="meus">
           {isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {[1,2,3].map(i => (
@@ -226,11 +225,11 @@ export default function Relatorios() {
           ) : relatorios.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
-                <FileText className="h-12 w-12 text-muted-foreground mb-4" />
+                <IconFile className="h-12 w-12 text-muted-foreground mb-4" />
                 <h3 className="text-lg font-semibold">{t('fin.relatorios.nenhum')}</h3>
                 <p className="text-muted-foreground text-sm mt-1 mb-4">{t('fin.relatorios.vazioDesc')}</p>
                 <Button onClick={() => setDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />{t('sweepCore.reports.newReport')}
+                  <IconAdd className="h-4 w-4 mr-2" />{t('sweepCore.reports.newReport')}
                 </Button>
               </CardContent>
             </Card>
@@ -267,24 +266,24 @@ export default function Relatorios() {
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreHorizontal className="h-4 w-4" />
+                          <IconMore className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         {rel.template_base && templateConfigs[rel.template_base] && (
                           <DropdownMenuItem onClick={() => setPreviewRelatorio(rel)}>
-                            <Eye className="h-4 w-4 mr-2" />{t('sweepCore.reports.view')}
+                            <IconView className="h-4 w-4 mr-2" />{t('sweepCore.reports.view')}
                           </DropdownMenuItem>
                         )}
                         <DropdownMenuItem onClick={() => handleExportPDF(rel)} disabled={exporting === rel.id}>
-                          {exporting === rel.id ? <AkurisPulse size={16} className="mr-2" /> : <Download className="h-4 w-4 mr-2" />}
+                          {exporting === rel.id ? <AkurisPulse size={16} className="mr-2" /> : <IconDownload className="h-4 w-4 mr-2" />}
                           {t('sweepCore.reports.exportPdf')}
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => setEditRelatorio(rel)}>
-                          <Pencil className="h-4 w-4 mr-2" />{t('sweepCore.reports.edit')}
+                          <IconEdit className="h-4 w-4 mr-2" />{t('sweepCore.reports.edit')}
                         </DropdownMenuItem>
                         <DropdownMenuItem className="text-destructive" onClick={() => setDeleteId(rel.id)}>
-                          <Trash2 className="h-4 w-4 mr-2" />{t('fin.comum.excluir')}</DropdownMenuItem>
+                          <IconDelete className="h-4 w-4 mr-2" />{t('fin.comum.excluir')}</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </CardContent>
@@ -294,12 +293,12 @@ export default function Relatorios() {
           )}
         </TabsContent>
 
-        <TabsContent value="templates" className="mt-4">
+        <TabsContent value="templates">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {Object.entries(templateConfigs).map(([key, config]) => {
               const Icon = config.icon;
               return (
-                <Card key={key} className="hover:shadow-md transition-shadow cursor-pointer group" onClick={() => handleCreateFromTemplate(key)}>
+                <Card key={key} className="hover:shadow-sm transition-shadow cursor-pointer group" onClick={() => handleCreateFromTemplate(key)}>
                   <CardContent className="p-6">
                     <div className="flex items-start gap-4">
                       <div className={`p-3 rounded-lg bg-primary/10 ${config.cor}`}>

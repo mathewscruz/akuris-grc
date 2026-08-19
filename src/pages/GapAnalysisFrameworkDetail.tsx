@@ -1,7 +1,11 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { buscarForaDoEscopo } from '@/lib/gap-soa';
+import { calcularScoreFramework, type RequisitoParaScore } from '@/lib/gap-score';
+import { DefinirMarcoDialog } from '@/components/gap-analysis/v2/DefinirMarcoDialog';
+import { useMarcoCertificacao } from '@/hooks/useMarcoCertificacao';
+import { HerancaCrossFramework } from '@/components/gap-analysis/v2/HerancaCrossFramework';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { ChevronLeft, Download, FileBarChart, FileDown, HelpCircle, MoreHorizontal, FileText } from 'lucide-react';
-import { AkurisAIIcon } from '@/components/icons';
+import { IconDownload, IconMore, IconFile, IconChevronLeft, IconChart, IconHelp } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/ui/page-header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -18,9 +22,7 @@ import { EvidenceLibraryHub } from '@/components/gap-analysis/EvidenceLibraryHub
 import {
   SectionHeatmap,
   PriorityQueueCard,
-  ConformityCard,
-  CertificationReadinessCard,
-  RequirementsTableToolbar,
+  FrameworkHeader,
   RequirementDrawerProvider,
   useRequirementDrawer,
   CommandPalette,
@@ -64,7 +66,7 @@ function GapAnalysisFrameworkDetailInner() {
   const { t, locale } = useLanguage();
   const { frameworkId } = useParams<{ frameworkId: string }>();
   const navigate = useNavigate();
-  const [, setSearchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { profile } = useAuth();
   const empresaId = profile?.empresa_id;
   const { openRequirement } = useRequirementDrawer();
@@ -79,6 +81,7 @@ function GapAnalysisFrameworkDetailInner() {
   const [selectedAdherenceAssessment, setSelectedAdherenceAssessment] = useState<any>(null);
   const [adherenceView, setAdherenceView] = useState<'list' | 'result'>('list');
   const [docUploadSignal, setDocUploadSignal] = useState(0);
+  const [marcoDialogAberto, setMarcoDialogAberto] = useState(false);
   const { openDocGen } = useDocGen();
 
   useEffect(() => {
@@ -107,13 +110,19 @@ function GapAnalysisFrameworkDetailInner() {
     if (!frameworkId || !empresaId) return;
     try {
       const [reqsRes, evalsRes] = await Promise.all([
-        supabase.from('gap_analysis_requirements').select('id, categoria, categoria_en').eq('framework_id', frameworkId),
+        supabase.from('gap_analysis_requirements').select('id, categoria, categoria_en, peso').eq('framework_id', frameworkId),
         supabase.from('gap_analysis_evaluations').select('requirement_id, conformity_status').eq('framework_id', frameworkId).eq('empresa_id', empresaId),
       ]);
       const reqs = reqsRes.data || [];
       const evals = evalsRes.data || [];
       const evalMap = new Map(evals.map(e => [e.requirement_id, e.conformity_status || 'nao_avaliado']));
+      // Fora do escopo pelo SoA conta como não aplicável, não como lacuna.
+      const foraDoEscopo = await buscarForaDoEscopo(frameworkId, empresaId);
+      foraDoEscopo.forEach(id => evalMap.set(id, 'nao_aplicavel'));
       const catMap: Record<string, { conforme: number; parcial: number; nao_conforme: number; nao_aplicavel: number; nao_avaliado: number; total: number }> = {};
+      // Guarda os requisitos de cada categoria para a conta de score sair de
+      // `calcularScoreFramework`, e não de uma fórmula local.
+      const reqsPorCategoria: Record<string, RequisitoParaScore[]> = {};
       reqs.forEach(r => {
         const cat = reqCategoria(r as any) || 'Outros';
         if (!catMap[cat]) catMap[cat] = { conforme: 0, parcial: 0, nao_conforme: 0, nao_aplicavel: 0, nao_avaliado: 0, total: 0 };
@@ -121,8 +130,27 @@ function GapAnalysisFrameworkDetailInner() {
         const st = evalMap.get(r.id) || 'nao_avaliado';
         if (st in catMap[cat]) (catMap[cat] as any)[st]++;
         else catMap[cat].nao_avaliado++;
+        (reqsPorCategoria[cat] ||= []).push({
+          id: r.id,
+          peso: (r as any).peso,
+          conformityStatus: st,
+        });
       });
-      setCategoryData(Object.entries(catMap).map(([categoria, data]) => ({ categoria, ...data })).sort((a, b) => a.categoria.localeCompare(b.categoria)));
+      setCategoryData(
+        Object.entries(catMap)
+          .map(([categoria, data]) => ({
+            categoria,
+            ...data,
+            // Aderência da categoria pela mesma conta do score do framework:
+            // ponderada pelo peso e restrita ao escopo do SoA. O cartão do
+            // heatmap tinha aqui `(conforme*100 + parcial*50)/aplicáveis` e a
+            // barra da aba logo abaixo tinha `conforme/aplicáveis` — dois
+            // números diferentes para a mesma categoria, a quarenta pixels um
+            // do outro.
+            ...calcularScoreFramework(reqsPorCategoria[categoria] || []),
+          }))
+          .sort((a, b) => a.categoria.localeCompare(b.categoria)),
+      );
     } catch (e: any) {
       // Antes silenciávamos qualquer falha aqui, o que mascarava problemas de
       // permissão/RLS. Loga com contexto para diagnóstico sem quebrar a UI.
@@ -142,12 +170,16 @@ function GapAnalysisFrameworkDetailInner() {
 
   const defaultConfig = useMemo(() => getFrameworkConfig('default')!, []);
 
-  // SoA (Statement of Applicability) só é exigida pela ISO 27001 e ISO 27701.
-  const supportsSoA = useMemo(() => {
-    if (!framework) return false;
-    const n = framework.nome.toLowerCase();
-    return n.includes('27001') || n.includes('27701');
-  }, [framework]);
+  // Declarar o que está fora do escopo vale para qualquer framework.
+  //
+  // Esta aba estava atrás de `nome.includes('27001') || nome.includes('27701')`,
+  // porque a Declaração de Aplicabilidade é vocabulário ISO. Só que a coisa que
+  // ela faz — registrar por escrito que um requisito não se aplica, com
+  // justificativa — é universal: a LGPD tem tratamento que a empresa não
+  // realiza, o PCI DSS tem requisito coberto por controlo compensatório, o NIST
+  // CSF é explicitamente um perfil que se recorta. Quem escolhesse qualquer
+  // outro framework perdia a funcionalidade **e** via o score calculado sobre
+  // requisitos que não lhe dizem respeito, sem forma de os excluir.
 
   const {
     overallScore, pillarScores, domainScores, areaScores, sectionScores,
@@ -163,10 +195,13 @@ function GapAnalysisFrameworkDetailInner() {
     }
   }, [scoreLoading, evaluatedRequirements, totalRequirements, autoOnboardingShown]);
 
-  // Se o usuário está na aba SoA mas o framework não a suporta, voltar para avaliação
+  // "Edição completa" no painel de triagem grava `?req=<id>`. O diálogo que
+  // abre esse requisito vive dentro da tabela, e a tabela só existe na aba de
+  // avaliação — quem pediu a edição a partir do ⌘K noutra aba ficaria a olhar
+  // para nada.
   useEffect(() => {
-    if (!supportsSoA && activeTab === 'soa') setActiveTab('avaliacao');
-  }, [supportsSoA, activeTab]);
+    if (searchParams.get('req')) setActiveTab('avaliacao');
+  }, [searchParams]);
 
   const getExportData = async () => {
     const { data: reqs } = await supabase
@@ -182,6 +217,10 @@ function GapAnalysisFrameworkDetailInner() {
       .eq('empresa_id', empresaId);
 
     const evalMap = new Map(evals?.map(e => [e.requirement_id, e.conformity_status]) || []);
+    // O PDF vai para o auditor: ele não pode listar como lacuna um requisito que
+    // a própria Declaração de Aplicabilidade excluiu.
+    const foraDoEscopo = await buscarForaDoEscopo(frameworkId, empresaId);
+    foraDoEscopo.forEach(id => evalMap.set(id, 'nao_aplicavel'));
     const requirements = (reqs || []).map(r => ({
       codigo: r.codigo || '', titulo: reqTitulo(r as any), categoria: reqCategoria(r as any) || '',
       conformity_status: evalMap.get(r.id) || 'nao_avaliado', peso: r.peso, area_responsavel: r.area_responsavel,
@@ -194,8 +233,7 @@ function GapAnalysisFrameworkDetailInner() {
       frameworkType: framework!.tipo_framework, overallScore, totalRequirements,
       evaluatedRequirements, pillarScores, categoryScores, requirements,
       empresaNome: empresa?.nome || 'Empresa',
-      scoreType: config!.scoreType as 'decimal' | 'percentage',
-      maxScore: config!.scoreType === 'percentage' ? 100 : 5,
+      maxScore: 100,
     };
   };
 
@@ -229,6 +267,27 @@ function GapAnalysisFrameworkDetailInner() {
     }
   };
 
+  // As contagens eram recalculadas com `categoryData.reduce(...)` oito vezes no
+  // JSX, duas vezes por cartão. Uma vez só, e os cartões passam a receber.
+  const contagem = useMemo(() => ({
+    conforme: categoryData.reduce((s, c) => s + c.conforme, 0),
+    parcial: categoryData.reduce((s, c) => s + c.parcial, 0),
+    naoConforme: categoryData.reduce((s, c) => s + c.nao_conforme, 0),
+    naoAplicavel: categoryData.reduce((s, c) => s + c.nao_aplicavel, 0),
+    naoAvaliado: categoryData.reduce((s, c) => s + c.nao_avaliado, 0),
+  }), [categoryData]);
+
+  const { data: marco } = useMarcoCertificacao(empresaId ?? undefined, frameworkId);
+
+  /** Filtra a tabela por estado e leva o utilizador até ela. */
+  const filtrarPorEstado = useCallback((estado: string) => {
+    const sp = new URLSearchParams(window.location.search);
+    sp.set('status', estado);
+    sp.delete('prio');
+    setSearchParams(sp, { replace: true });
+    document.getElementById('reqs-table')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [setSearchParams]);
+
   const handleScoreChange = useCallback(() => {
     setScoreRefreshKey(k => k + 1);
     loadCategoryData();
@@ -250,7 +309,7 @@ function GapAnalysisFrameworkDetailInner() {
       <div className="space-y-6">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={() => navigate('/gap-analysis/frameworks')}>
-            <ChevronLeft className="h-4 w-4 mr-2" strokeWidth={1.5} />{t('gapAnalysis.detail.back')}
+            <IconChevronLeft className="h-4 w-4 mr-2" strokeWidth={1.5} />{t('gapAnalysis.detail.back')}
           </Button>
         </div>
 
@@ -268,7 +327,6 @@ function GapAnalysisFrameworkDetailInner() {
                   overallScore={overallScore}
                   totalRequirements={totalRequirements}
                   evaluatedRequirements={evaluatedRequirements}
-                  scoreType={config.scoreType}
                   onGoToRemediation={() => setActiveTab('remediacao')}
                 />
               )}
@@ -277,17 +335,17 @@ function GapAnalysisFrameworkDetailInner() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm" disabled={exporting}>
-                    <FileDown className="h-4 w-4 mr-2" strokeWidth={1.5} />
+                    <IconDownload className="h-4 w-4 mr-2" strokeWidth={1.5} />
                     {exporting ? t('gapAnalysis.detail.exporting') : t('gapAnalysis.detail.export')}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={handleExportPDF} disabled={exporting}>
-                    <Download className="h-4 w-4 mr-2" strokeWidth={1.5} />
+                    <IconDownload className="h-4 w-4 mr-2" strokeWidth={1.5} />
                     {t('gapAnalysis.detail.exportTechnical')}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleExportBoard} disabled={exporting}>
-                    <FileBarChart className="h-4 w-4 mr-2" strokeWidth={1.5} />
+                    <IconChart className="h-4 w-4 mr-2" strokeWidth={1.5} />
                     {t('gapAnalysis.detail.exportBoard')}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -297,12 +355,11 @@ function GapAnalysisFrameworkDetailInner() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" aria-label={t('gapAnalysis.detail.moreActions')}>
-                    <MoreHorizontal className="h-4 w-4" strokeWidth={1.5} />
+                    <IconMore className="h-4 w-4" strokeWidth={1.5} />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuItem onClick={() => openDocGen({ frameworkId, frameworkName: framework.nome })}>
-                    <AkurisAIIcon className="h-4 w-4 mr-2" />
                     {t('gapAnalysis.detail.documentGenerator')}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
@@ -314,7 +371,7 @@ function GapAnalysisFrameworkDetailInner() {
                   />
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => { setActiveTab('avaliacao'); setShowOnboarding(true); }}>
-                    <HelpCircle className="h-4 w-4 mr-2" strokeWidth={1.5} />
+                    <IconHelp className="h-4 w-4 mr-2" strokeWidth={1.5} />
                     {t('gapAnalysis.detail.revisitTour')}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -328,12 +385,31 @@ function GapAnalysisFrameworkDetailInner() {
             <TabsTrigger value="avaliacao">{t('gapAnalysis.detail.tabs.evaluation')}</TabsTrigger>
             <TabsTrigger value="documentos">{t('gapAnalysis.detail.tabs.documents')}</TabsTrigger>
             <TabsTrigger value="remediacao">{t('gapAnalysis.detail.tabs.remediation')}</TabsTrigger>
-            {supportsSoA && <TabsTrigger value="soa">{t('gapAnalysis.detail.tabs.soa')}</TabsTrigger>}
+            <TabsTrigger value="soa">{t('gapAnalysis.detail.tabs.soa')}</TabsTrigger>
             <TabsTrigger value="biblioteca">{t('gapAnalysis.detail.tabs.evidenceLibrary')}</TabsTrigger>
             <TabsTrigger value="historico">{t('gapAnalysis.detail.tabs.history')}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="avaliacao" className="space-y-5">
+            {/* Fica FORA do condicional de onboarding de propósito.
+
+                O momento de maior valor desta secção é exatamente antes de
+                começar: quem abre um framework novo e vê "doze destes trinta
+                requisitos já estão respondidos noutro que você avaliou" decide
+                de outra maneira. Escondê-la atrás do onboarding era mostrar a
+                boa notícia só depois de a pessoa aceitar o trabalho todo. */}
+            {empresaId && (
+              <HerancaCrossFramework
+                frameworkId={frameworkId!}
+                empresaId={empresaId}
+                onAplicado={() => {
+                  loadCategoryData();
+                  setScoreRefreshKey(k => k + 1);
+                  setShowOnboarding(false);
+                }}
+              />
+            )}
+
             {showOnboarding ? (
               <FrameworkOnboarding
                 frameworkNome={framework.nome}
@@ -344,73 +420,51 @@ function GapAnalysisFrameworkDetailInner() {
               />
             ) : (
               <>
-                {/* Manchete do módulo: "estou pronto para certificar?" */}
-                <CertificationReadinessCard
-                  certifiable={supportsSoA}
-                  total={totalRequirements}
-                  conforme={categoryData.reduce((s, c) => s + c.conforme, 0)}
-                  parcial={categoryData.reduce((s, c) => s + c.parcial, 0)}
-                  naoConforme={categoryData.reduce((s, c) => s + c.nao_conforme, 0)}
-                  naoAplicavel={categoryData.reduce((s, c) => s + c.nao_aplicavel, 0)}
-                  naoAvaliado={categoryData.reduce((s, c) => s + c.nao_avaliado, 0)}
-                  onViewBlockers={() => {
-                    const sp = new URLSearchParams(window.location.search);
-                    sp.set('status', 'nao_conforme');
-                    sp.set('prio', '1');
-                    setSearchParams(sp, { replace: true });
-                    document.getElementById('reqs-table')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                  }}
+                {/* Um cabeçalho, três perguntas: quanto está de pé, dá para ir
+                    à auditoria, e até quando. Eram dois cartões empilhados que
+                    respondiam à mesma coisa com os mesmos números — 556px e
+                    quatro botões formando dois pares idênticos. */}
+                <FrameworkHeader
+                  frameworkName={framework.nome}
+                  overallScore={overallScore}
+                  totalRequirements={totalRequirements}
+                  conforme={contagem.conforme}
+                  parcial={contagem.parcial}
+                  naoConforme={contagem.naoConforme}
+                  naoAplicavel={contagem.naoAplicavel}
+                  naoAvaliado={contagem.naoAvaliado}
+                  marco={marco ? {
+                    rotulo: marco.rotulo,
+                    dataAlvo: marco.data_alvo,
+                    scoreAlvo: marco.score_alvo,
+                  } : null}
+                  onFiltrarPorEstado={filtrarPorEstado}
                   onGoToRemediation={() => setActiveTab('remediacao')}
+                  onAbrirMarco={empresaId ? () => setMarcoDialogAberto(true) : undefined}
                 />
 
-                {/* Conformidade + Fila de Prioridade lado a lado.
-                    A antiga faixa de 3 tiles foi removida — os mesmos números
-                    (cobertura, não-conformes, parciais) já vivem no ConformityCard,
-                    que agora carrega também os CTAs contextuais. */}
-                <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.6fr] gap-4">
-                  <ConformityCard
-                    overallScore={overallScore}
-                    totalRequirements={totalRequirements}
-                    evaluatedRequirements={evaluatedRequirements}
-                    conforme={categoryData.reduce((s, c) => s + c.conforme, 0)}
-                    parcial={categoryData.reduce((s, c) => s + c.parcial, 0)}
-                    naoConforme={categoryData.reduce((s, c) => s + c.nao_conforme, 0)}
-                    naoAplicavel={categoryData.reduce((s, c) => s + c.nao_aplicavel, 0)}
-                    onContinue={
-                      evaluatedRequirements < totalRequirements
-                        ? () => document.getElementById('reqs-table')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-                        : undefined
-                    }
-                    onGoToRemediation={
-                      categoryData.reduce((s, c) => s + c.nao_conforme, 0) > 0
-                        ? () => setActiveTab('remediacao')
-                        : undefined
-                    }
+                {/* A fila é o "o que eu faço agora" e estava espremida em um
+                    terço de uma linha, debaixo de um cartão que dizia quase o
+                    mesmo. Passa a largura inteira, logo abaixo do cabeçalho. */}
+                {empresaId && evaluatedRequirements > 0 && (
+                  <PriorityQueueCard
+                    frameworkId={frameworkId!}
+                    empresaId={empresaId}
+                    limit={6}
+                    onRequirementClick={(req) => {
+                      openRequirement({
+                        requirementId: req.id,
+                        empresaId,
+                        onSaved: handleScoreChange,
+                      });
+                    }}
+                    onSeeAll={() => {
+                      document.getElementById('reqs-table')?.scrollIntoView({
+                        behavior: 'smooth', block: 'start',
+                      });
+                    }}
                   />
-                  {empresaId && evaluatedRequirements > 0 ? (
-                    <PriorityQueueCard
-                      frameworkId={frameworkId!}
-                      empresaId={empresaId}
-                      limit={5}
-                      onRequirementClick={(req) => {
-                        openRequirement({
-                          requirementId: req.id,
-                          empresaId,
-                          onSaved: handleScoreChange,
-                        });
-                      }}
-                      onSeeAll={() => {
-                        document.getElementById('reqs-table')?.scrollIntoView({
-                          behavior: 'smooth', block: 'start',
-                        });
-                      }}
-                    />
-                  ) : (
-                    <div className="rounded-2xl border border-dashed border-border bg-card p-6 flex items-center justify-center text-sm text-muted-foreground">
-                      {t('gapAnalysis.detail.priorityQueueEmpty')}
-                    </div>
-                  )}
-                </div>
+                )}
 
                 {/* Heatmap de aderência por categoria */}
                 {categoryData.length > 0 && (
@@ -419,11 +473,9 @@ function GapAnalysisFrameworkDetailInner() {
                       id: c.categoria,
                       label: c.categoria,
                       total: c.total,
-                      conforme: c.conforme,
-                      parcial: c.parcial,
-                      nao_conforme: c.nao_conforme,
-                      nao_aplicavel: c.nao_aplicavel,
-                      nao_avaliado: c.nao_avaliado,
+                      score: c.score,
+                      aplicaveis: c.aplicaveis,
+                      avaliados: c.avaliados,
                     }))}
                     activeId={activeCategoryFilter}
                     onCellClick={(id) =>
@@ -432,21 +484,26 @@ function GapAnalysisFrameworkDetailInner() {
                   />
                 )}
 
+                {/* A barra de chips saiu daqui.
+
+                    Eram quatro atalhos de estado ("Todos / Sem evidência /
+                    Críticos / Parciais") a duplicar o filtro que já existe na
+                    tabela e a legenda que já existe no cabeçalho — três
+                    controlos para a mesma coisa, um deles com rótulo errado
+                    ("sem evidência" filtrava por `nao_avaliado`, que é outra
+                    coisa). Ao lado vinha um seletor Tabela/Quadro em que o
+                    Quadro estava permanentemente desativado com "em breve".
+
+                    Hoje a distribuição do cabeçalho é o atalho, e cobre os
+                    cinco estados em vez de três. */}
                 <div id="reqs-table">
-                  <RequirementsTableToolbar
-                    counts={{
-                      total: totalRequirements,
-                      semEvidencia: Math.max(0, totalRequirements - evaluatedRequirements),
-                      criticos: categoryData.reduce((s, c) => s + c.nao_conforme, 0),
-                      parciais: categoryData.reduce((s, c) => s + c.parcial, 0),
-                    }}
-                  />
                   <GenericRequirementsTable
                     frameworkId={frameworkId!}
                     frameworkName={framework.nome}
                     config={config}
                     onStatusChange={handleScoreChange}
                     initialCategoryFilter={activeCategoryFilter}
+                    onCategoryFilterChange={setActiveCategoryFilter}
                   />
                 </div>
               </>
@@ -493,7 +550,6 @@ function GapAnalysisFrameworkDetailInner() {
               frameworkName={framework.nome}
               frameworkVersion={framework.versao}
               frameworkType={framework.tipo_framework}
-              scoreType={config.scoreType}
               currentScore={overallScore}
               totalRequirements={totalRequirements}
               evaluatedRequirements={evaluatedRequirements}
@@ -504,12 +560,24 @@ function GapAnalysisFrameworkDetailInner() {
               frameworkId={frameworkId!}
               frameworkName={framework.nome}
               frameworkVersion={framework.versao}
+              sections={config.sections}
             />
           </TabsContent>
           <TabsContent value="biblioteca">
             <EvidenceLibraryHub />
           </TabsContent>
         </Tabs>
+
+        {empresaId && frameworkId && (
+          <DefinirMarcoDialog
+            open={marcoDialogAberto}
+            onOpenChange={setMarcoDialogAberto}
+            empresaId={empresaId}
+            frameworkId={frameworkId}
+            marco={marco}
+            scoreAtual={overallScore}
+          />
+        )}
 
         {/* Onda 4 — Command Palette (⌘K) */}
         {empresaId && frameworkId && (

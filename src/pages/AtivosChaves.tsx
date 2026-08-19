@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
+import { IconAdd, IconEdit, IconDelete, IconUpload, IconMore, IconSuccess, IconWarning, IconTime, IconKey, IconBan } from '@/components/icons';
 import { useSearchParams } from 'react-router-dom';
-import { Plus, Upload, Key, AlertTriangle, CheckCircle, Clock, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -173,17 +173,16 @@ export default function AtivosChaves() {
 
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { icon: React.ComponentType<any>, label: string }> = {
-      'ativa': { icon: CheckCircle, label: t('sweepDados.ativos.statusAtiva') },
-      'expirada': { icon: AlertTriangle, label: t('sweepDados.ativos.statusExpirada') },
-      'revogada': { icon: AlertTriangle, label: t('sweepDados.ativos.statusRevogada') },
-      'em_rotacao': { icon: Clock, label: t('fin.chaves.emRotacao') },
+      'ativa': { icon: IconSuccess, label: t('sweepDados.ativos.statusAtiva') },
+      'expirada': { icon: IconWarning, label: t('sweepDados.ativos.statusExpirada') },
+      'revogada': { icon: IconBan, label: t('sweepDados.ativos.statusRevogada') },
+      'em_rotacao': { icon: IconTime, label: t('fin.chaves.emRotacao') },
     };
 
     const config = statusConfig[status] || statusConfig.ativa;
-    const Icon = config.icon;
 
     return (
-      <StatusBadge size="sm" {...resolveItemStatusTone(status)} icon={<Icon className="h-3 w-3" strokeWidth={1.5} />}>
+      <StatusBadge {...resolveItemStatusTone(status)}>
         {config.label}
       </StatusBadge>
     );
@@ -191,12 +190,11 @@ export default function AtivosChaves() {
 
   const getCriticidadeBadge = (criticidade: string) => {
     return (
-      <StatusBadge size="sm" {...resolveCriticidadeTone(criticidade)}>
+      <StatusBadge {...resolveCriticidadeTone(criticidade)}>
         {formatStatus(criticidade)}
       </StatusBadge>
     );
   };
-
 
   // Filtrar e ordenar chaves
   const filteredAndSortedChaves = useMemo(() => {
@@ -327,12 +325,12 @@ export default function AtivosChaves() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm">
-              <MoreHorizontal className="h-4 w-4" />
+              <IconMore className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => handleEdit(chave)}>
-              <Edit className="h-4 w-4 mr-2" />
+              <IconEdit className="h-4 w-4 mr-2" />
               {t('sweepDados.ativos.editar')}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
@@ -340,7 +338,7 @@ export default function AtivosChaves() {
               onClick={() => handleDelete(chave.id, chave.nome)}
               className="text-destructive focus:text-destructive"
             >
-              <Trash2 className="h-4 w-4 mr-2" />{t('fin.comum.excluir')}</DropdownMenuItem>
+              <IconDelete className="h-4 w-4 mr-2" />{t('fin.comum.excluir')}</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       )
@@ -412,14 +410,14 @@ export default function AtivosChaves() {
         description={t('modules.chaves.description')}
         actions={
           <Button size="sm" onClick={handleNew}>
-            <Plus className="h-4 w-4 mr-2" />
+            <IconAdd className="h-4 w-4 mr-2" />
             {t('sweepDados.ativos.novaChave')}
           </Button>
         }
         secondaryActions={[
           {
             label: t('p3Import.importButtonLabel'),
-            icon: <Upload className="h-4 w-4" />,
+            icon: <IconUpload className="h-4 w-4" />,
             onClick: () => setImportDialogOpen(true),
           },
         ]}
@@ -479,7 +477,7 @@ export default function AtivosChaves() {
               link.click();
             }}
             emptyState={{
-              icon: <Key className="h-8 w-8" />,
+              icon: <IconKey className="h-8 w-8" />,
               title: searchTerm ? t('fin.chaves.nenhumaEncontrada') : t('fin.chaves.nenhumaCadastrada'),
               description: searchTerm 
                 ? t('sweepDados.ativos.buscaSemResultadosDesc')
@@ -530,8 +528,8 @@ export default function AtivosChaves() {
         subtitle={detalheChave ? formatStatus(detalheChave.tipo_chave) : undefined}
         badges={detalheChave ? (
           <>
-            <StatusBadge size="sm" {...resolveItemStatusTone(detalheChave.status)}>{formatStatus(detalheChave.status)}</StatusBadge>
-            <StatusBadge size="sm" {...resolveCriticidadeTone(detalheChave.criticidade)}>{formatStatus(detalheChave.criticidade)}</StatusBadge>
+            <StatusBadge {...resolveItemStatusTone(detalheChave.status)}>{formatStatus(detalheChave.status)}</StatusBadge>
+            <StatusBadge {...resolveCriticidadeTone(detalheChave.criticidade)}>{formatStatus(detalheChave.criticidade)}</StatusBadge>
           </>
         ) : undefined}
         actions={detalheChave ? (

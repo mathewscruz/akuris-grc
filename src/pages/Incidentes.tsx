@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { IconFilter, IconEdit, IconDelete, IconDownload, IconUpload, IconMore, IconSuccess, IconWarning, IconInfo, IconError, IconTime, IconCalendar, IconFile, IconShield, IconMessage } from '@/components/icons';
 import { logger } from '@/lib/logger';
 import { exportCSV } from '@/lib/csv-utils';
 import { useIncidentesStats } from '@/hooks/useIncidentesStats';
@@ -22,23 +23,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  AlertTriangle,
-  Shield,
-  Calendar,
-  Clock,
-  MoreHorizontal,
-  Edit,
-  Trash2,
-  Filter,
-  MessageSquare,
-  FileText,
-  CheckCircle,
-  AlertCircle,
-  XCircle,
-  Download,
-  Upload,
-} from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { formatStatus } from '@/lib/text-utils';
@@ -209,14 +193,14 @@ export default function Incidentes() {
 
   const getStatusIcon = (status: string) => {
     const icons = {
-      aberto: XCircle,
-      investigacao: AlertCircle,
-      contido: Clock,
-      resolvido: CheckCircle,
-      fechado: CheckCircle,
+      aberto: IconError,
+      investigacao: IconInfo,
+      contido: IconTime,
+      resolvido: IconSuccess,
+      fechado: IconSuccess,
     };
     
-    return icons[status as keyof typeof icons] || AlertCircle;
+    return icons[status as keyof typeof icons] || IconInfo;
   };
 
   const handleSort = (field: string) => {
@@ -250,7 +234,7 @@ export default function Incidentes() {
       label: t('sweepRiscos.incidentes.colCriticidade'),
       sortable: true,
       render: (_v: any, item: Incidente) => (
-        <StatusBadge size="sm" {...resolveCriticidadeTone(item.criticidade)}>
+        <StatusBadge {...resolveCriticidadeTone(item.criticidade)}>
           {formatStatus(item.criticidade)}
         </StatusBadge>
       )
@@ -260,10 +244,9 @@ export default function Incidentes() {
       label: t('sweepRiscos.incidentes.colStatus'),
       sortable: true,
       render: (_v: any, item: Incidente) => {
-        const StatusIcon = getStatusIcon(item.status);
         return (
           <div className="flex items-center gap-2">
-            <StatusBadge size="sm" {...resolveWorkflowStatusTone(item.status)} icon={<StatusIcon className="h-3 w-3" strokeWidth={1.5} />}>
+            <StatusBadge {...resolveWorkflowStatusTone(item.status)}>
               {formatStatus(item.status)}
             </StatusBadge>
           </div>
@@ -284,24 +267,24 @@ export default function Incidentes() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-8 w-8 p-0">
-                <MoreHorizontal className="h-4 w-4" />
+                <IconMore className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => handleEdit(item)}>
-                <Edit className="mr-2 h-4 w-4" />
+                <IconEdit className="mr-2 h-4 w-4" />
                 {t('sweepRiscos.incidentes.actionEditar')}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleComunicacao(item)}>
-                <MessageSquare className="mr-2 h-4 w-4" />
+                <IconMessage className="mr-2 h-4 w-4" />
                 {t('sweepRiscos.incidentes.actionComunicacao')}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleEvidencias(item)}>
-                <FileText className="mr-2 h-4 w-4" />
+                <IconFile className="mr-2 h-4 w-4" />
                 {t('sweepRiscos.incidentes.actionEvidencias')}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleTratamentos(item)}>
-                <Shield className="mr-2 h-4 w-4" />
+                <IconShield className="mr-2 h-4 w-4" />
                 {t('sweepRiscos.incidentes.actionTratamentos')}
               </DropdownMenuItem>
               <CriarTarefaMenuItem
@@ -310,7 +293,7 @@ export default function Incidentes() {
                 tituloSugerido={t('sweepRiscos.incidentes.tarefaTituloSugerido', { titulo: item.titulo ?? '' })}
               />
               <DropdownMenuItem onClick={() => handleDelete(item.id)} className="text-destructive">
-                <Trash2 className="mr-2 h-4 w-4" />{t('fin.comum.excluir')}</DropdownMenuItem>
+                <IconDelete className="mr-2 h-4 w-4" />{t('fin.comum.excluir')}</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </TooltipProvider>
@@ -323,7 +306,7 @@ export default function Incidentes() {
       title: t('sweepRiscos.incidentes.statTotalTitulo'),
       value: statsIncidentes?.total || 0,
       description: t('sweepRiscos.incidentes.statAbertosDesc', { count: statsIncidentes?.abertos || 0 }),
-      icon: <AlertTriangle />,
+      icon: <IconWarning />,
       drillDown: 'incidentes' as const,
       segments: [
         { label: t('fin.comum.criticosLower'), value: statsIncidentes?.criticos || 0, tone: 'destructive' as const },
@@ -336,7 +319,7 @@ export default function Incidentes() {
       title: t('fin.incidentes.criticosAltos'),
       value: (statsIncidentes?.criticos || 0) + (statsIncidentes?.altos || 0),
       description: t('fin.incidentes.atencaoImediata'),
-      icon: <Shield />,
+      icon: <IconShield />,
       variant: 'destructive' as const,
       drillDown: 'incidentes' as const,
     },
@@ -344,7 +327,7 @@ export default function Incidentes() {
       title: t('fin.incidentes.emInvestigacao'),
       value: statsIncidentes?.investigacao || 0,
       description: t('sweepRiscos.incidentes.statInvestigacaoDesc'),
-      icon: <Clock />,
+      icon: <IconTime />,
       variant: 'info' as const,
       drillDown: 'incidentes' as const,
     },
@@ -352,7 +335,7 @@ export default function Incidentes() {
       title: t('fin.comum.esteMes'),
       value: statsIncidentes?.mes || 0,
       description: t('fin.incidentes.novos'),
-      icon: <Calendar />,
+      icon: <IconCalendar />,
     }
   ];
 
@@ -413,12 +396,12 @@ export default function Incidentes() {
         secondaryActions={[
           {
             label: t('p3Import.importButtonLabel'),
-            icon: <Upload className="h-4 w-4" />,
+            icon: <IconUpload className="h-4 w-4" />,
             onClick: () => setImportDialogOpen(true),
           },
           {
             label: t('sweepRiscos.incidentes.exportBtnLabel'),
-            icon: <Download className="h-4 w-4" />,
+            icon: <IconDownload className="h-4 w-4" />,
             disabled: incidentes.length === 0,
             onClick: () => {
               exportCSV(
@@ -483,7 +466,7 @@ export default function Incidentes() {
             sortDirection={sortDirection}
             onSort={handleSort}
             emptyState={{
-              icon: <AlertTriangle className="h-8 w-8" />,
+              icon: <IconWarning className="h-8 w-8" />,
               title: t('fin.incidentes.nenhum'),
               description: t('sweepRiscos.incidentes.emptyStateDesc')
             }}
@@ -498,17 +481,17 @@ export default function Incidentes() {
         subtitle={detalheIncidente ? formatStatus(detalheIncidente.tipo_incidente) : undefined}
         badges={detalheIncidente ? (
           <>
-            <StatusBadge size="sm" {...resolveWorkflowStatusTone(detalheIncidente.status)}>
+            <StatusBadge {...resolveWorkflowStatusTone(detalheIncidente.status)}>
               {formatStatus(detalheIncidente.status)}
             </StatusBadge>
-            <StatusBadge size="sm" {...resolveCriticidadeTone(detalheIncidente.criticidade)}>
+            <StatusBadge {...resolveCriticidadeTone(detalheIncidente.criticidade)}>
               {formatStatus(detalheIncidente.criticidade)}
             </StatusBadge>
           </>
         ) : undefined}
         actions={detalheIncidente ? (
           <Button variant="outline" size="sm" onClick={() => { const i = detalheIncidente; setDetalheIncidente(null); handleEdit(i); }}>
-            <Edit className="h-4 w-4 mr-2" />{t('sweepRiscos.incidentes.actionEditar')}
+            <IconEdit className="h-4 w-4 mr-2" />{t('sweepRiscos.incidentes.actionEditar')}
           </Button>
         ) : undefined}
         fields={detalheIncidente ? [

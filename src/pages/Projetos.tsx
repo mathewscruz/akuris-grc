@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { IconAdd, IconSuccess, IconWarning, IconChecklist, IconMail, IconGrid, IconRows } from '@/components/icons';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -6,7 +7,6 @@ import { PageHeader } from '@/components/ui/page-header';
 import { StatStrip } from '@/components/ui/stat-strip';
 import { EmptyState } from '@/components/ui/empty-state';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
-import { Plus, Kanban, ListTodo, CheckCircle2, AlertTriangle, Inbox, LayoutTemplate } from 'lucide-react';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { useProjetos } from '@/hooks/useProjetos';
 import { useProjetoStats } from '@/hooks/useProjetoStats';
@@ -15,6 +15,7 @@ import { ProjetoActionsMenu } from '@/components/projetos/ProjetoActionsMenu';
 import type { Projeto } from '@/types/projetos';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { formatDate } from '@/lib/i18n-format';
+import { formatStatus } from '@/lib/text-utils';
 
 const statusTone: Record<string, 'success' | 'warning' | 'neutral' | 'info'> = {
   ativo: 'success',
@@ -51,11 +52,11 @@ export default function Projetos() {
         title={t('projetos.page.title')}
         description={t('projetos.page.subtitle')}
         actions={
-          <Button onClick={openNovo}><Plus className="h-4 w-4" /> {t('projetos.page.newProject')}</Button>
+          <Button onClick={openNovo}><IconAdd className="h-4 w-4" /> {t('projetos.page.newProject')}</Button>
         }
         secondaryActions={[
-          { label: t('projetos.page.templates'), icon: <LayoutTemplate className="h-4 w-4" />, onClick: () => navigate('/projetos/templates') },
-          { label: t('projetos.page.myTasks'), icon: <Inbox className="h-4 w-4" />, onClick: () => navigate('/projetos/minhas-tarefas') },
+          { label: t('projetos.page.templates'), icon: <IconRows className="h-4 w-4" />, onClick: () => navigate('/projetos/templates') },
+          { label: t('projetos.page.myTasks'), icon: <IconMail className="h-4 w-4" />, onClick: () => navigate('/projetos/minhas-tarefas') },
         ]}
       />
 
@@ -81,7 +82,7 @@ export default function Projetos() {
       ) : visiveis.length === 0 ? (
         <EmptyState
           variant="illustrated"
-          icon={<Kanban className="h-8 w-8" />}
+          icon={<IconGrid className="h-8 w-8" />}
           title={mostrarArquivados ? t('projetos.page.emptyArchivedTitle') : t('projetos.page.emptyTitle')}
           description={mostrarArquivados
             ? t('projetos.page.emptyArchivedDesc')
@@ -103,7 +104,7 @@ export default function Projetos() {
                 <div className="flex items-start justify-between gap-2">
                   <h3 className="font-semibold leading-tight flex-1 min-w-0">{p.nome}</h3>
                   <div className="flex items-center gap-1 shrink-0">
-                    <StatusBadge tone={statusTone[p.status] ?? 'neutral'} size="sm">{STATUS_LABEL[p.status]}</StatusBadge>
+                    <StatusBadge tone={statusTone[p.status] ?? 'neutral'}>{STATUS_LABEL[p.status] ?? formatStatus(p.status)}</StatusBadge>
                     <ProjetoActionsMenu projeto={p} onEdit={() => openEditar(p)} />
                   </div>
                 </div>

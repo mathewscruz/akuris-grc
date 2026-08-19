@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Download, Eye, Edit, Trash2, MoreHorizontal, UserCheck } from "lucide-react";
+import { IconAdd, IconEdit, IconDelete, IconDownload, IconView, IconMore, IconUserCheck } from '@/components/icons';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -131,7 +131,7 @@ export default function RevisaoAcessos() {
 
   const getStatusBadge = (status: string) => {
     return (
-      <StatusBadge size="sm" {...resolveWorkflowStatusTone(status)}>
+      <StatusBadge {...resolveWorkflowStatusTone(status)}>
         {formatStatus(status)}
       </StatusBadge>
     );
@@ -151,14 +151,14 @@ export default function RevisaoAcessos() {
       return (
         <div className="flex items-center gap-2">
           <span>{formatDateOnly(dataLimite)}</span>
-          <StatusBadge size="sm" {...resolveRevisaoTone(-1)}>{t('sweepDenuncias.revisao.badgeVencida')}</StatusBadge>
+          <StatusBadge {...resolveRevisaoTone(-1)}>{t('sweepDenuncias.revisao.badgeVencida')}</StatusBadge>
         </div>
       );
     } else if (diffDays <= 7) {
       return (
         <div className="flex items-center gap-2">
           <span>{formatDateOnly(dataLimite)}</span>
-          <StatusBadge size="sm" {...resolveRevisaoTone(diffDays)}>{t('sweepDenuncias.revisao.badgeVenceEm', { dias: diffDays })}</StatusBadge>
+          <StatusBadge {...resolveRevisaoTone(diffDays)}>{t('sweepDenuncias.revisao.badgeVenceEm', { dias: diffDays })}</StatusBadge>
         </div>
       );
     }
@@ -229,16 +229,16 @@ export default function RevisaoAcessos() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="h-8 w-8">
-              <MoreHorizontal className="h-4 w-4" />
+              <IconMore className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => handleViewItems(review)}>
-              <Eye className="h-4 w-4 mr-2" />
+              <IconView className="h-4 w-4 mr-2" />
               {t('sweepDenuncias.revisao.actionVerItens')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => handleEdit(review)}>
-              <Edit className="h-4 w-4 mr-2" />
+              <IconEdit className="h-4 w-4 mr-2" />
               {t('sweepDenuncias.revisao.actionEditar')}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
@@ -246,7 +246,7 @@ export default function RevisaoAcessos() {
               onClick={() => setDeleteConfirm(review.id)}
               className="text-destructive focus:text-destructive"
             >
-              <Trash2 className="h-4 w-4 mr-2" />
+              <IconDelete className="h-4 w-4 mr-2" />
               {t('sweepDenuncias.revisao.actionExcluir')}
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -309,14 +309,14 @@ export default function RevisaoAcessos() {
             setSelectedReview(null);
             setReviewDialogOpen(true);
           }}>
-            <Plus className="mr-2 h-4 w-4" />
+            <IconAdd className="mr-2 h-4 w-4" />
             {t('sweepDenuncias.revisao.novaRevisao')}
           </Button>
         }
         secondaryActions={[
           {
             label: t('sweepDenuncias.revisao.exportar'),
-            icon: <Download className="h-4 w-4" />,
+            icon: <IconDownload className="h-4 w-4" />,
             onClick: () => {},
           },
         ]}
@@ -339,8 +339,7 @@ export default function RevisaoAcessos() {
         ]}
       />
 
-
-        <TabsContent value="ativas" className="space-y-4 mt-4">
+        <TabsContent value="ativas" className="space-y-4">
           <Card className="rounded-lg border overflow-hidden">
             <CardContent className="p-0">
               <DataTable
@@ -370,7 +369,7 @@ export default function RevisaoAcessos() {
                 sortDirection={sortConfig?.direction}
                 onSort={handleSort}
                 emptyState={{
-                  icon: <UserCheck className="h-8 w-8" />,
+                  icon: <IconUserCheck className="h-8 w-8" />,
                   title: t('p3Kpis.revisaoAcessos.emptyTitle'),
                   description: t('p3Kpis.revisaoAcessos.emptyDescription'),
                   action: {
@@ -386,7 +385,7 @@ export default function RevisaoAcessos() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="historico" className="space-y-4 mt-4">
+        <TabsContent value="historico" className="space-y-4">
           <Card className="rounded-lg border overflow-hidden">
             <CardContent className="p-0">
               <DataTable
@@ -403,7 +402,7 @@ export default function RevisaoAcessos() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="usuarios" className="space-y-4 mt-4">
+        <TabsContent value="usuarios" className="space-y-4">
           <Card className="rounded-lg border overflow-hidden">
             <CardContent className="p-6">
               <SistemaUsuariosList />

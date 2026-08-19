@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { IconSearch, IconView, IconSuccess, IconInfo, IconTime, IconFile, IconShield, IconArrowLeft } from '@/components/icons';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { fetchEmpresaPublicaPorSlug } from '@/lib/denuncia-publica';
 import { logger } from '@/lib/logger';
@@ -9,7 +10,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Search, Shield, FileText, Clock, CheckCircle, AlertCircle, Eye, ArrowLeft } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveDenunciaStatusTone, resolveGravidadeTone } from '@/lib/status-tone';
@@ -164,15 +164,15 @@ export default function DenunciaConsulta() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'nova':
-        return <FileText className="w-4 h-4" />;
+        return <IconFile className="w-4 h-4" />;
       case 'em_analise':
-        return <Clock className="w-4 h-4" />;
+        return <IconTime className="w-4 h-4" />;
       case 'em_investigacao':
-        return <AlertCircle className="w-4 h-4" />;
+        return <IconInfo className="w-4 h-4" />;
       case 'concluida':
-        return <CheckCircle className="w-4 h-4" />;
+        return <IconSuccess className="w-4 h-4" />;
       default:
-        return <FileText className="w-4 h-4" />;
+        return <IconFile className="w-4 h-4" />;
     }
   };
 
@@ -206,7 +206,7 @@ export default function DenunciaConsulta() {
             to={`/${empresaSlug}/denuncia`}
             className="inline-flex items-center text-sm text-sidebar-foreground hover:text-primary transition-colors"
           >
-            <ArrowLeft className="w-4 h-4 mr-1" />
+            <IconArrowLeft className="w-4 h-4 mr-1" />
             {t('publicPortal.denunciaConsulta.backToMenu')}
           </Link>
         </div>
@@ -222,7 +222,7 @@ export default function DenunciaConsulta() {
           </div>
           
           <div className="flex items-center justify-center gap-2 mb-4">
-            <Shield className="w-6 h-6 text-primary" />
+            <IconShield className="w-6 h-6 text-primary" />
             <h2 className="text-xl text-sidebar-foreground">{t('publicPortal.denunciaConsulta.headerTitle')}</h2>
           </div>
         </div>
@@ -231,7 +231,7 @@ export default function DenunciaConsulta() {
         <Card className="mb-6 bg-white">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Search className="w-5 h-5" />
+              <IconSearch className="w-5 h-5" />
               {t('publicPortal.denunciaConsulta.searchTitle')}
             </CardTitle>
             <CardDescription>
@@ -267,7 +267,7 @@ export default function DenunciaConsulta() {
                 />
               </div>
               <Button type="submit" disabled={searching}>
-                <Search className="w-4 h-4 mr-2" />
+                <IconSearch className="w-4 h-4 mr-2" />
                 {searching ? t('publicPortal.denunciaConsulta.searching') : t('publicPortal.denunciaConsulta.search')}
               </Button>
             </form>
@@ -283,7 +283,7 @@ export default function DenunciaConsulta() {
                 <div className="flex items-start justify-between">
                   <div>
                     <CardTitle className="flex items-center gap-2 mb-2">
-                      <FileText className="w-5 h-5" />
+                      <IconFile className="w-5 h-5" />
                       {t('publicPortal.denunciaConsulta.protocol')} {denuncia.protocolo}
                     </CardTitle>
                     <CardDescription className="text-base">
@@ -302,14 +302,14 @@ export default function DenunciaConsulta() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
+                  <div className="space-y-2">
                     <Label className="text-sm font-medium text-muted-foreground">
                       {t('publicPortal.denunciaConsulta.reportDate')}
                     </Label>
                     <p className="text-sm">{formatDate(denuncia.created_at)}</p>
                   </div>
                   {denuncia.categoria && (
-                    <div>
+                    <div className="space-y-2">
                       <Label className="text-sm font-medium text-muted-foreground">
                         {t('publicPortal.denunciaConsulta.category')}
                       </Label>
@@ -317,7 +317,7 @@ export default function DenunciaConsulta() {
                     </div>
                   )}
                   {denuncia.data_atribuicao && (
-                    <div>
+                    <div className="space-y-2">
                       <Label className="text-sm font-medium text-muted-foreground">
                         {t('publicPortal.denunciaConsulta.assignmentDate')}
                       </Label>
@@ -325,7 +325,7 @@ export default function DenunciaConsulta() {
                     </div>
                   )}
                   {denuncia.data_inicio_investigacao && (
-                    <div>
+                    <div className="space-y-2">
                       <Label className="text-sm font-medium text-muted-foreground">
                         {t('publicPortal.denunciaConsulta.investigationStart')}
                       </Label>
@@ -336,7 +336,7 @@ export default function DenunciaConsulta() {
 
                 {denuncia.data_conclusao && (
                   <Alert>
-                    <CheckCircle className="h-4 w-4" />
+                    <IconSuccess className="h-4 w-4" />
                     <AlertDescription>
                       <strong>{t('publicPortal.denunciaConsulta.concludedAt')}</strong> {formatDate(denuncia.data_conclusao)}
                     </AlertDescription>
@@ -349,7 +349,7 @@ export default function DenunciaConsulta() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Clock className="w-5 h-5" />
+                  <IconTime className="w-5 h-5" />
                   {t('publicPortal.denunciaConsulta.historyTitle')}
                 </CardTitle>
                 <CardDescription>
@@ -403,7 +403,7 @@ export default function DenunciaConsulta() {
 
             {/* Informações importantes */}
             <Alert>
-              <Eye className="h-4 w-4" />
+              <IconView className="h-4 w-4" />
               <AlertDescription>
                 <strong>{t('publicPortal.denunciaConsulta.importantLabel')}</strong>{' '}
                 {t('publicPortal.denunciaConsulta.importantText')}

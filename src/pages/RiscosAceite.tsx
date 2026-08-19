@@ -1,19 +1,18 @@
 import { useEffect, useState } from 'react';
+import { IconView, IconMore, IconSuccess, IconWarning, IconError, IconTime, IconCalendarClock, IconTimer, IconBan } from '@/components/icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
 import { PageHeader } from '@/components/ui/page-header';
-import { StatCard } from '@/components/ui/stat-card';
+import { StatStrip } from '@/components/ui/stat-strip';
 import { DataTable, Column } from '@/components/ui/data-table';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { CheckCircle, AlertTriangle, Clock, CalendarX, MoreHorizontal, Eye, CalendarClock, XCircle } from 'lucide-react';
-import { formatDateOnly } from '@/lib/date-utils';
+import { formatDateOnly, formatarDiaParaDB, parseDataLocal } from '@/lib/date-utils';
 import { formatStatus } from '@/lib/text-utils';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveNivelRiscoTone, resolveRevisaoTone } from '@/lib/status-tone';
@@ -146,7 +145,7 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
 
   const getRevisaoStatus = (dataRevisao?: string): 'vencida' | 'proxima' | 'ok' | 'sem_data' => {
     if (!dataRevisao) return 'sem_data';
-    const dias = differenceInDays(new Date(dataRevisao), new Date());
+    const dias = differenceInDays(parseDataLocal(dataRevisao), new Date());
     if (dias < 0) return 'vencida';
     if (dias <= 7) return 'proxima';
     return 'ok';
@@ -154,7 +153,7 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
 
   const filteredRiscos = riscos.filter(r => {
     const matchesSearch = r.nome.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesNivel = !nivelFilter || nivelFilter === 'all' || r.nivel_risco_inicial === nivelFilter;
+    const matchesNivel = !nivelFilter || nivelFilter === 'all' || r.nivel_risco_residual || r.nivel_risco_inicial === nivelFilter;
     const matchesRevisao = !revisaoFilter || revisaoFilter === 'all' || getRevisaoStatus(r.data_proxima_revisao) === revisaoFilter;
     return matchesSearch && matchesNivel && matchesRevisao;
   });
@@ -169,7 +168,7 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
   const revisoesProximas = riscos.filter(r => getRevisaoStatus(r.data_proxima_revisao) === 'proxima').length;
   const aceitesAExpirar = riscos.filter(r => {
     if (!r.aceite_valido_ate) return false;
-    const dias = differenceInDays(new Date(r.aceite_valido_ate), new Date());
+    const dias = differenceInDays(parseDataLocal(r.aceite_valido_ate), new Date());
     return dias >= 0 && dias <= 30;
   }).length;
   const totalExpirados = riscosExpirados.length;
@@ -179,11 +178,11 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
   );
 
   const getValidadeBadge = (validoAte?: string) => {
-    if (!validoAte) return <StatusBadge size="sm" tone="neutral">Sem validade</StatusBadge>;
-    const dias = differenceInDays(new Date(validoAte), new Date());
-    if (dias < 0) return <StatusBadge size="sm" tone="destructive">Expirado</StatusBadge>;
-    if (dias <= 30) return <StatusBadge size="sm" tone="warning">{dias}d</StatusBadge>;
-    return <StatusBadge size="sm" tone="success">{dias}d</StatusBadge>;
+    if (!validoAte) return <StatusBadge tone="neutral">{t('riscos.aceite.validity.none')}</StatusBadge>;
+    const dias = differenceInDays(parseDataLocal(validoAte), new Date());
+    if (dias < 0) return <StatusBadge tone="destructive">{t('riscos.aceite.validity.expired')}</StatusBadge>;
+    if (dias <= 30) return <StatusBadge tone="warning">{dias}d</StatusBadge>;
+    return <StatusBadge tone="success">{dias}d</StatusBadge>;
   };
 
   const invalidateAll = () => {
@@ -216,7 +215,7 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
     try {
       const { error } = await supabase
         .from('riscos')
-        .update({ data_proxima_revisao: novaData.toISOString().split('T')[0] })
+        .update({ data_proxima_revisao: formatarDiaParaDB(novaData) })
         .eq('id', risco.id)
         .eq('empresa_id', profile!.empresa_id);
 
@@ -230,19 +229,21 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
 
   const getRevisaoBadge = (dataRevisao?: string) => {
     const status = getRevisaoStatus(dataRevisao);
-    if (status === 'sem_data') return <StatusBadge size="sm" tone="neutral">{t('riscos.aceite.review.noDate')}</StatusBadge>;
+    if (status === 'sem_data') return <StatusBadge tone="neutral">{t('riscos.aceite.review.noDate')}</StatusBadge>;
     if (!dataRevisao) return null;
-    const dias = differenceInDays(new Date(dataRevisao), new Date());
+    const dias = differenceInDays(parseDataLocal(dataRevisao), new Date());
     switch (status) {
-      case 'vencida': return <StatusBadge size="sm" {...resolveRevisaoTone(dias)}>{t('riscos.aceite.review.overdue')}</StatusBadge>;
-      case 'proxima': return <StatusBadge size="sm" {...resolveRevisaoTone(dias)}>{dias}{t('riscos.aceite.review.daysLeftSuffix')}</StatusBadge>;
-      case 'ok': return <StatusBadge size="sm" {...resolveRevisaoTone(dias)}>{t('riscos.aceite.review.onTrack')}</StatusBadge>;
+      case 'vencida': return <StatusBadge {...resolveRevisaoTone(dias)}>{t('riscos.aceite.review.overdue')}</StatusBadge>;
+      case 'proxima': return <StatusBadge {...resolveRevisaoTone(dias)}>{dias}{t('riscos.aceite.review.daysLeftSuffix')}</StatusBadge>;
+      case 'ok': return <StatusBadge {...resolveRevisaoTone(dias)}>{t('riscos.aceite.review.onTrack')}</StatusBadge>;
     }
   };
 
   const columns: Array<Column<RiscoAceito>> = [
     { key: 'nome', label: t('riscos.aceite.columns.risk'), sortable: true, render: (value: any) => <span className="font-medium">{value}</span> },
-    { key: 'nivel_risco_inicial', label: t('riscos.aceite.columns.level'), render: (value: string) => <StatusBadge size="sm" {...resolveNivelRiscoTone(value)}>{formatStatus(value)}</StatusBadge> },
+    // Severidade efectiva, como na tabela de Riscos. Mostrar aqui a inerente
+    // punha o mesmo risco com dois níveis diferentes em dois ecrãs.
+    { key: 'nivel_risco_inicial', label: t('riscos.aceite.columns.level'), render: (_v: string, r: any) => { const n = r.nivel_risco_residual || r.nivel_risco_inicial; return <StatusBadge {...resolveNivelRiscoTone(n)}>{formatStatus(n)}</StatusBadge>; } },
     { key: 'justificativa_aceite', label: t('riscos.aceite.columns.justification'), render: (value: string) => value ? <span className="text-sm text-muted-foreground line-clamp-2 max-w-[200px]">{value}</span> : '-' },
     { key: 'data_aceite', label: t('riscos.aceite.columns.acceptDate'), sortable: true, render: (value: string) => value ? formatDateOnly(value) : '-' },
     { key: 'aprovador_nome', label: t('riscos.aceite.columns.approver'), render: (value: string) => value || '-' },
@@ -269,20 +270,20 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
       render: (_: any, risco: RiscoAceito) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" strokeWidth={1.5} /></Button>
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0"><IconMore className="h-4 w-4" strokeWidth={1.5} /></Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => { setSelectedRisco(risco); setDetalheOpen(true); }}>
-              <Eye className="mr-2 h-4 w-4" strokeWidth={1.5} /> {t('riscos.aceite.actions.viewDetails')}
+              <IconView className="mr-2 h-4 w-4" strokeWidth={1.5} /> {t('riscos.aceite.actions.viewDetails')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => handleAgendarRevisao(risco, 30)}>
-              <CalendarClock className="mr-2 h-4 w-4" strokeWidth={1.5} /> {t('riscos.aceite.actions.scheduleReview30')}
+              <IconCalendarClock className="mr-2 h-4 w-4" strokeWidth={1.5} /> {t('riscos.aceite.actions.scheduleReview30')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => handleAgendarRevisao(risco, 90)}>
-              <CalendarClock className="mr-2 h-4 w-4" strokeWidth={1.5} /> {t('riscos.aceite.actions.scheduleReview90')}
+              <IconCalendarClock className="mr-2 h-4 w-4" strokeWidth={1.5} /> {t('riscos.aceite.actions.scheduleReview90')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => handleRevogarAceite(risco)} className="text-destructive focus:text-destructive">
-              <XCircle className="mr-2 h-4 w-4" strokeWidth={1.5} /> {t('riscos.aceite.actions.revoke')}
+              <IconError className="mr-2 h-4 w-4" strokeWidth={1.5} /> {t('riscos.aceite.actions.revoke')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -292,7 +293,9 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
 
   const pendentesColumns: Array<Column<RiscoAceito>> = [
     { key: 'nome', label: t('riscos.aceite.columns.risk'), sortable: true, render: (value: any) => <span className="font-medium">{value}</span> },
-    { key: 'nivel_risco_inicial', label: t('riscos.aceite.columns.level'), render: (value: string) => <StatusBadge size="sm" {...resolveNivelRiscoTone(value)}>{formatStatus(value)}</StatusBadge> },
+    // Severidade efectiva, como na tabela de Riscos. Mostrar aqui a inerente
+    // punha o mesmo risco com dois níveis diferentes em dois ecrãs.
+    { key: 'nivel_risco_inicial', label: t('riscos.aceite.columns.level'), render: (_v: string, r: any) => { const n = r.nivel_risco_residual || r.nivel_risco_inicial; return <StatusBadge {...resolveNivelRiscoTone(n)}>{formatStatus(n)}</StatusBadge>; } },
     { key: 'justificativa_aceite', label: t('riscos.aceite.columns.justification'), render: (value: string) => value ? <span className="text-sm text-muted-foreground line-clamp-2 max-w-[200px]">{value}</span> : '-' },
     { key: 'aprovador_nome', label: t('riscos.aceite.columns.approver'), render: (value: string) => value || '-' },
     { key: 'data_proxima_revisao', label: t('riscos.aceite.columns.reviewDate'), render: (value: string) => value ? formatDateOnly(value) : '-' },
@@ -300,7 +303,7 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
       key: 'actions', label: t('riscos.aceite.columns.actions'), className: 'w-[60px]',
       render: (_: any, risco: RiscoAceito) => (
         <Button variant="outline" size="sm" onClick={() => { setAprovacaoRisco(risco); setAprovacaoOpen(true); }}>
-          <Eye className="mr-2 h-4 w-4" strokeWidth={1.5} /> {t('riscos.aceite.actions.review')}
+          <IconView className="mr-2 h-4 w-4" strokeWidth={1.5} /> {t('riscos.aceite.actions.review')}
         </Button>
       ),
     },
@@ -345,14 +348,16 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
         />
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        <StatCard title={t('riscos.aceite.stats.acceptedTitle')} value={totalAceitos} description={t('riscos.aceite.stats.acceptedDesc')} icon={<CheckCircle />} variant="success" drillDown="riscos_aceite" emptyHint={t('riscos.aceite.stats.acceptedEmptyHint')} />
-        <StatCard title={t('riscos.aceite.stats.pendingTitle')} value={totalPendentes} description={t('riscos.aceite.stats.pendingDesc')} icon={<Clock />} variant={totalPendentes > 0 ? "warning" : "default"} drillDown="riscos_aceite" />
-        <StatCard title="Aceites a expirar" value={aceitesAExpirar} description="Nos próximos 30 dias" icon={<CalendarClock />} variant={aceitesAExpirar > 0 ? "warning" : "default"} />
-        <StatCard title="Aceites expirados" value={totalExpirados} description="Riscos reabertos" icon={<CalendarX />} variant={totalExpirados > 0 ? "destructive" : "default"} />
-        <StatCard title={t('riscos.aceite.stats.overdueTitle')} value={revisoesVencidas} description={t('riscos.aceite.stats.overdueDesc')} icon={<CalendarX />} variant={revisoesVencidas > 0 ? "destructive" : "default"} drillDown="riscos_aceite" />
-        <StatCard title={t('riscos.aceite.stats.upcomingTitle')} value={revisoesProximas} description={t('riscos.aceite.stats.upcomingDesc')} icon={<AlertTriangle />} variant={revisoesProximas > 0 ? "warning" : "default"} />
-      </div>
+      <StatStrip
+        items={[
+          { key: 'aceitos', label: t('riscos.aceite.stats.acceptedTitle'), value: totalAceitos, icon: IconSuccess, hint: t('riscos.aceite.stats.acceptedDesc'), drillDown: 'riscos_aceite' },
+          { key: 'pendentes', label: t('riscos.aceite.stats.pendingTitle'), value: totalPendentes, icon: IconTime, tone: 'warning', hint: t('riscos.aceite.stats.pendingDesc'), drillDown: 'riscos_aceite' },
+          { key: 'aExpirar', label: t('riscos.aceite.stats.expiringTitle'), value: aceitesAExpirar, icon: IconTimer, tone: 'warning', hint: t('riscos.aceite.stats.expiringDesc') },
+          { key: 'expirados', label: t('riscos.aceite.stats.expiredTitle'), value: totalExpirados, icon: IconBan, tone: 'destructive', hint: t('riscos.aceite.stats.expiredDesc') },
+          { key: 'revisoesVencidas', label: t('riscos.aceite.stats.overdueTitle'), value: revisoesVencidas, icon: IconCalendarClock, tone: 'destructive', hint: t('riscos.aceite.stats.overdueDesc'), drillDown: 'riscos_aceite' },
+          { key: 'revisoesProximas', label: t('riscos.aceite.stats.upcomingTitle'), value: revisoesProximas, icon: IconWarning, tone: 'warning', hint: t('riscos.aceite.stats.upcomingDesc') },
+        ]}
+      />
 
       <Tabs defaultValue={totalPendentes > 0 ? "pendentes" : "aceitos"} className="space-y-4">
         <TabsList className="h-auto bg-transparent p-0 gap-1 rounded-none border-b border-border w-full justify-start">
@@ -362,7 +367,7 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
           >
             {t('riscos.aceite.tabs.pending')}
             {totalPendentes > 0 && (
-              <StatusBadge size="sm" tone="warning" className="ml-2">{totalPendentes}</StatusBadge>
+              <StatusBadge tone="warning" className="ml-2">{totalPendentes}</StatusBadge>
             )}
           </TabsTrigger>
           <TabsTrigger
@@ -379,7 +384,7 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="pendentes" className="mt-5">
+        <TabsContent value="pendentes">
           <Card className="rounded-lg border overflow-hidden">
             <CardContent className="p-0">
               <DataTable
@@ -392,7 +397,7 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
                 searchValue={searchTermPendente}
                 onSearchChange={setSearchTermPendente}
                 emptyState={{
-                  icon: <Clock className="h-8 w-8" />,
+                  icon: <IconTime className="h-8 w-8" />,
                   title: t('riscos.aceite.empty.pendingTitle'),
                   description: t('riscos.aceite.empty.pendingDesc'),
                 }}
@@ -401,7 +406,7 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
           </Card>
         </TabsContent>
 
-        <TabsContent value="aceitos" className="mt-5">
+        <TabsContent value="aceitos">
           <Card className="rounded-lg border overflow-hidden">
             <CardContent className="p-0">
               <DataTable
@@ -415,7 +420,7 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
                 onSearchChange={setSearchTerm}
                 filters={filters}
                 emptyState={{
-                  icon: <CheckCircle className="h-8 w-8" />,
+                  icon: <IconSuccess className="h-8 w-8" />,
                   title: t('riscos.aceite.empty.acceptedTitle'),
                   description: t('riscos.aceite.empty.acceptedDesc'),
                 }}
@@ -424,7 +429,7 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
           </Card>
         </TabsContent>
 
-        <TabsContent value="expirados" className="mt-5">
+        <TabsContent value="expirados">
           <Card className="rounded-lg border overflow-hidden">
             <CardContent className="p-0">
               <DataTable
@@ -437,7 +442,7 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
                 searchValue={searchTerm}
                 onSearchChange={setSearchTerm}
                 emptyState={{
-                  icon: <CalendarX className="h-8 w-8" />,
+                  icon: <IconCalendarClock className="h-8 w-8" />,
                   title: 'Nenhum aceite expirado',
                   description: 'Aceites que ultrapassarem a validade aparecem aqui com o risco reaberto.',
                 }}

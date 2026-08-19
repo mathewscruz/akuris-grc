@@ -1,8 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { IconAdd, IconEdit, IconDelete, IconUpload, IconMore, IconWarning, IconServer, IconActivity, IconTrendUp, IconShield, IconSettings, IconHistory, IconCloud } from '@/components/icons';
 import { useSearchParams } from 'react-router-dom';
 import { useIntegrationNotify } from '@/hooks/useIntegrationNotify';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Server, Activity, AlertTriangle, TrendingUp, Upload, Shield, CloudCog, MoreHorizontal, Edit, Trash2, Wrench, History } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { StatStrip } from '@/components/ui/stat-strip';
@@ -26,6 +26,7 @@ import { formatDateOnly } from '@/lib/date-utils';
 import { formatStatus } from '@/lib/text-utils';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveCriticidadeTone, resolveItemStatusTone } from '@/lib/status-tone';
+import { criticidadeAtivo } from '@/lib/metrics/ativos';
 import { logger } from '@/lib/logger';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -337,7 +338,9 @@ const Ativos = () => {
         ativo.imei?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         ativo.tags?.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()));
       const matchesStatus = statusFilter === 'todos' || ativo.status === statusFilter;
-      const matchesCriticidade = criticidadeFilter === 'todos' || ativo.criticidade === criticidadeFilter;
+      // O banco guarda 'alta'/'media' (feminino); o combo usa a escala canónica
+      // ('alto'/'medio'). Normalizar antes de comparar, senão o filtro devolve zero.
+      const matchesCriticidade = criticidadeFilter === 'todos' || criticidadeAtivo(ativo) === criticidadeFilter;
       const matchesTipo = tipoFilter === 'todos' || ativo.tipo === tipoFilter;
       const matchesValorNegocio = valorNegocioFilter === 'todos' || ativo.valor_negocio === valorNegocioFilter;
       return matchesSearch && matchesStatus && matchesCriticidade && matchesTipo && matchesValorNegocio;
@@ -363,7 +366,7 @@ const Ativos = () => {
         ativo.nome,
         getTipoLabel(ativo.tipo),
         (() => { const o = statusOptions.find(s => s.value === ativo.status); return o ? t(o.label) : ativo.status; })(),
-        (() => { const o = criticidades.find(c => c.value === ativo.criticidade); return o ? t(o.label) : ativo.criticidade; })(),
+        (() => { const o = criticidades.find(c => c.value === criticidadeAtivo(ativo)); return o ? t(o.label) : ativo.criticidade; })(),
         ativo.proprietario_nome || '',
         ativo.localizacao || '',
         ativo.data_aquisicao ? formatDateOnly(ativo.data_aquisicao) : ''
@@ -397,8 +400,8 @@ const Ativos = () => {
       label: t('fin.comum.criticidade'),
       sortable: true,
       render: (_: any, ativo: Ativo) => (
-        <StatusBadge size="sm" {...resolveCriticidadeTone(ativo.criticidade)}>
-          {(() => { const o = criticidades.find(c => c.value === ativo.criticidade); return o ? t(o.label) : ativo.criticidade; })()}
+        <StatusBadge {...resolveCriticidadeTone(ativo.criticidade)}>
+          {(() => { const o = criticidades.find(c => c.value === criticidadeAtivo(ativo)); return o ? t(o.label) : ativo.criticidade; })()}
         </StatusBadge>
       )
     },
@@ -407,7 +410,7 @@ const Ativos = () => {
       label: t('fin.comum.status'),
       sortable: true,
       render: (_: any, ativo: Ativo) => (
-        <StatusBadge size="sm" {...resolveItemStatusTone(ativo.status)}>
+        <StatusBadge {...resolveItemStatusTone(ativo.status)}>
           {formatStatus(ativo.status)}
         </StatusBadge>
       )
@@ -447,20 +450,20 @@ const Ativos = () => {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-              <MoreHorizontal className="h-4 w-4" />
+              <IconMore className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="bg-popover">
             <DropdownMenuItem onClick={() => handleEdit(ativo)}>
-              <Edit className="h-4 w-4 mr-2" />
+              <IconEdit className="h-4 w-4 mr-2" />
                {t('sweepCore.assets.edit')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setManutencaoDialog({ open: true, ativoId: ativo.id, ativoNome: ativo.nome })}>
-              <Wrench className="h-4 w-4 mr-2" />
+              <IconSettings className="h-4 w-4 mr-2" />
                {t('sweepCore.assets.maintenance')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setTrilhaDialog({ open: true, ativoId: ativo.id })}>
-              <History className="h-4 w-4 mr-2" />
+              <IconHistory className="h-4 w-4 mr-2" />
                {t('sweepCore.assets.auditTrail')}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
@@ -468,7 +471,7 @@ const Ativos = () => {
               className="text-destructive focus:text-destructive"
               onClick={() => setDeleteConfirm({ open: true, ativoId: ativo.id })}
             >
-              <Trash2 className="h-4 w-4 mr-2" />
+              <IconDelete className="h-4 w-4 mr-2" />
                {t('sweepCore.assets.delete')}
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -507,25 +510,25 @@ const Ativos = () => {
             setFormData(initialFormData);
             setIsDialogOpen(true);
           }}>
-            <Plus className="h-4 w-4 mr-2" />
+            <IconAdd className="h-4 w-4 mr-2" />
             {t('sweepCore.assets.newAsset')}
           </Button>
         }
         secondaryActions={[
           ...(azureIntegration ? [{
             label: 'Azure Sync',
-            icon: azureSyncing ? <AkurisPulse size={16} /> : <CloudCog className="h-4 w-4" />,
+            icon: azureSyncing ? <AkurisPulse size={16} /> : <IconCloud className="h-4 w-4" />,
             onClick: handleAzureSync,
             disabled: azureSyncing,
           }] : []),
           {
             label: t('sweepCore.assets.import'),
-            icon: <Upload className="h-4 w-4" />,
+            icon: <IconUpload className="h-4 w-4" />,
             onClick: () => setImportDialog(true),
           },
           {
             label: t('modules.ativos.auditTrail'),
-            icon: <History className="h-4 w-4" />,
+            icon: <IconHistory className="h-4 w-4" />,
             onClick: () => setTrilhaDialog({ open: true }),
           },
         ]}
@@ -544,10 +547,10 @@ const Ativos = () => {
       <StatStrip
         loading={statsLoading}
         items={[
-          { key: 'total', label: t('modules.ativos.total'), value: stats?.total || 0, icon: Server, drillDown: 'ativos' },
-          { key: 'ativos', label: t('cardsKpi.sweep.ativos.ativos'), value: stats?.ativos || 0, icon: Activity, drillDown: 'ativos' },
-          { key: 'altoValor', label: t('cardsKpi.sweep.ativos.altoValor'), value: stats?.altoValorNegocio || 0, icon: TrendingUp, drillDown: 'ativos' },
-          { key: 'criticidadeAlta', label: t('cardsKpi.sweep.ativos.criticidadeAlta'), value: (stats?.criticos || 0) + (stats?.altos || 0), icon: AlertTriangle, tone: 'destructive', drillDown: 'ativos' },
+          { key: 'total', label: t('modules.ativos.total'), value: stats?.total || 0, icon: IconServer, drillDown: 'ativos' },
+          { key: 'ativos', label: t('cardsKpi.sweep.ativos.ativos'), value: stats?.ativos || 0, icon: IconActivity, drillDown: 'ativos' },
+          { key: 'altoValor', label: t('cardsKpi.sweep.ativos.altoValor'), value: stats?.altoValorNegocio || 0, icon: IconTrendUp, drillDown: 'ativos' },
+          { key: 'criticidadeAlta', label: t('cardsKpi.sweep.ativos.criticidadeAlta'), value: (stats?.criticos || 0) + (stats?.altos || 0), icon: IconWarning, tone: 'destructive', drillDown: 'ativos' },
         ]}
       />
 
@@ -576,7 +579,7 @@ const Ativos = () => {
             }}
             onExport={exportData}
             emptyState={{
-              icon: <Server className="h-8 w-8" />,
+              icon: <IconServer className="h-8 w-8" />,
               title: searchTerm ? t('fin.ativos.nenhumEncontrado') : t('fin.ativos.nenhumCadastrado'),
               description: searchTerm 
                 ? "Tente ajustar os termos de busca ou limpe os filtros."
@@ -597,17 +600,17 @@ const Ativos = () => {
         subtitle={detalheAtivo ? getTipoLabel(detalheAtivo.tipo) : undefined}
         badges={detalheAtivo ? (
           <>
-            <StatusBadge size="sm" {...resolveItemStatusTone(detalheAtivo.status)}>
+            <StatusBadge {...resolveItemStatusTone(detalheAtivo.status)}>
               {formatStatus(detalheAtivo.status)}
             </StatusBadge>
-            <StatusBadge size="sm" {...resolveCriticidadeTone(detalheAtivo.criticidade)}>
-              {(() => { const o = criticidades.find(c => c.value === detalheAtivo.criticidade); return o ? t(o.label) : detalheAtivo.criticidade; })()}
+            <StatusBadge {...resolveCriticidadeTone(detalheAtivo.criticidade)}>
+              {(() => { const o = criticidades.find(c => c.value === criticidadeAtivo(detalheAtivo)); return o ? t(o.label) : detalheAtivo.criticidade; })()}
             </StatusBadge>
           </>
         ) : undefined}
         actions={detalheAtivo ? (
           <Button variant="outline" size="sm" onClick={() => { const a = detalheAtivo; setDetalheAtivo(null); handleEdit(a); }}>
-            <Edit className="h-4 w-4 mr-2" />{t('sweepCore.assets.edit')}
+            <IconEdit className="h-4 w-4 mr-2" />{t('sweepCore.assets.edit')}
           </Button>
         ) : undefined}
         fields={detalheAtivo ? [

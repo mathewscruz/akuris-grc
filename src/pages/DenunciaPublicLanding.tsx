@@ -3,11 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowRight, ShieldCheck } from 'lucide-react';
 import { CornerAccent } from '@/components/identity/CornerAccent';
 import { AkurisMarkPattern } from '@/components/identity/AkurisMarkPattern';
 import logoImage from '@/assets/akuris-logo.png';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { IconArrowRight, IconShieldCheck } from '@/components/icons';
 
 /**
  * Landing pública para a rota `/denuncia` (sem slug).
@@ -39,8 +39,8 @@ const DenunciaPublicLanding: React.FC = () => {
       <div className="relative z-10 w-full max-w-md space-y-8">
         <div className="text-center">
           <img src={logoImage} alt="Akuris" className="h-9 mx-auto object-contain mb-8" />
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 mb-5">
-            <ShieldCheck className="w-6 h-6 text-primary" strokeWidth={1.5} />
+          <div className="inline-flex items-center justify-center w-12 h-12 mb-5">
+            <IconShieldCheck className="w-6 h-6 text-primary" strokeWidth={1.5} />
           </div>
           <h1 className="text-2xl font-semibold text-white tracking-tight">
             {t('publicPortal.denunciaLanding.title')}
@@ -73,7 +73,7 @@ const DenunciaPublicLanding: React.FC = () => {
             type="submit"
             className="w-full h-11 font-semibold text-sm bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg"
           >
-            {t('publicPortal.denunciaLanding.accessChannel')} <ArrowRight className="w-4 h-4 ml-1.5" />
+            {t('publicPortal.denunciaLanding.accessChannel')} <IconArrowRight className="w-4 h-4 ml-1.5" />
           </Button>
         </form>
 

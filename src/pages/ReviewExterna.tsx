@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
+import { IconSuccess, IconInfo } from '@/components/icons';
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertCircle, CheckCircle } from 'lucide-react';
+;
 import { ReviewExternalForm } from "@/components/revisao-acessos/ReviewExternalForm";
 import { logger } from '@/lib/logger';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { formatDateOnly } from '@/lib/date-utils';
+import { formatDateOnly, parseDataLocal } from '@/lib/date-utils';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 export default function ReviewExterna() {
@@ -54,7 +55,7 @@ export default function ReviewExterna() {
         }
 
         // Verificar se está vencida
-        const dataLimite = new Date(data.data_limite);
+        const dataLimite = parseDataLocal(data.data_limite);
         if (dataLimite < new Date()) {
           setError(t('publicPortal.reviewExterna.expired'));
           setLoading(false);
@@ -89,7 +90,7 @@ export default function ReviewExterna() {
       <div className="flex items-center justify-center min-h-screen p-4">
         <Card className="max-w-md w-full p-6">
           <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
+            <IconInfo className="h-4 w-4" />
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         </Card>
@@ -102,7 +103,7 @@ export default function ReviewExterna() {
       <div className="flex items-center justify-center min-h-screen p-4">
         <Card className="max-w-md w-full p-6">
           <div className="text-center space-y-4">
-            <CheckCircle className="h-12 w-12 text-green-600 mx-auto" />
+            <IconSuccess className="h-12 w-12 text-success mx-auto" />
             <h2 className="text-2xl font-bold">{t('publicPortal.reviewExterna.completedTitle')}</h2>
             <p className="text-muted-foreground">
               {t('publicPortal.reviewExterna.completedDescription')}
