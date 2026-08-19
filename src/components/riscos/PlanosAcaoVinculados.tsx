@@ -7,7 +7,7 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Plus, ExternalLink } from 'lucide-react';
+;
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -19,6 +19,7 @@ import { formatStatus } from '@/lib/text-utils';
 import { PlanoAcaoDialog } from '@/components/planos-acao/PlanoAcaoDialog';
 import { logger } from '@/lib/logger';
 import { toast } from 'sonner';
+import { IconAdd, IconExternal } from '@/components/icons';
 
 interface Props {
   /** Módulo de origem tal como gravado em `planos_acao.modulo_origem`. */
@@ -82,12 +83,12 @@ export function PlanosAcaoVinculados({ modulo, registroId, registroTitulo, titul
   return (
     <section className="space-y-2">
       <div className="flex items-center justify-between">
-        <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        <h4 className="text-xs font-semibold text-muted-foreground">
           {t('planosVinculados.title')}
           {planos.length > 0 && <span className="ml-1.5 text-foreground">({planos.length})</span>}
         </h4>
         <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setDialogOpen(true)}>
-          <Plus className="h-3 w-3" /> {t('planosVinculados.create')}
+          <IconAdd className="h-3 w-3" /> {t('planosVinculados.create')}
         </Button>
       </div>
 
@@ -104,8 +105,8 @@ export function PlanosAcaoVinculados({ modulo, registroId, registroTitulo, titul
               onClick={() => navigate(`/planos-acao?focus=${p.id}`)}
             >
               <span className="min-w-0 flex-1 truncate">{p.titulo}</span>
-              <StatusBadge size="sm" {...resolvePrioridadeTone(p.prioridade)}>{formatStatus(p.status)}</StatusBadge>
-              <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground" />
+              <StatusBadge {...resolvePrioridadeTone(p.prioridade)}>{formatStatus(p.status)}</StatusBadge>
+              <IconExternal className="h-3 w-3 shrink-0 text-muted-foreground" />
             </li>
           ))}
         </ul>

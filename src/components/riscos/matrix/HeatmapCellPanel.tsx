@@ -1,13 +1,14 @@
 /**
  * HeatmapCellPanel — painel lateral sticky exibindo riscos da célula selecionada.
  */
-import { X } from 'lucide-react';
+;
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveNivelRiscoTone, resolveRiscoStatusTone } from '@/lib/status-tone';
 import { formatStatus } from '@/lib/text-utils';
 import { relativeShort, scoreFromMatriz, severityFromScoreConfig, shortRiskId } from '@/components/riscos/risk-utils';
 import type { MatrizConfiguracao } from '@/components/riscos/matriz-config';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { IconClose } from '@/components/icons';
 
 interface Risco {
   id: string;
@@ -43,11 +44,11 @@ export function HeatmapCellPanel({ cell, risks, onOpenRisk, onClearSelection, co
     baixo: t('riscosVisoes.matrix.heatmapCellPanel.nivel.baixo'),
   }[sev];
   return (
-    <div className="bg-card border border-border rounded-xl overflow-hidden lg:sticky lg:top-5">
+    <div className="bg-card border border-border rounded-lg overflow-hidden lg:sticky lg:top-5">
       <div className="px-5 py-4 border-b border-border bg-muted/20">
         <div className="flex justify-between items-start gap-3">
           <div>
-            <div className="text-[10.5px] font-semibold tracking-[1.2px] uppercase text-muted-foreground mb-1">
+            <div className="text-xs font-semibold text-muted-foreground mb-1">
               {t('riscosVisoes.matrix.heatmapCellPanel.celulaSelecionada')}
             </div>
             <div className="text-xl font-semibold tracking-tight">
@@ -58,7 +59,7 @@ export function HeatmapCellPanel({ cell, risks, onOpenRisk, onClearSelection, co
             </div>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
-            <StatusBadge size="sm" {...resolveNivelRiscoTone(sev === 'medio' ? 'Médio' : sev === 'critico' ? 'Crítico' : sev === 'alto' ? 'Alto' : 'Baixo')}>
+            <StatusBadge {...resolveNivelRiscoTone(sev === 'medio' ? 'Médio' : sev === 'critico' ? 'Crítico' : sev === 'alto' ? 'Alto' : 'Baixo')}>
               {faixa ? faixa.nivel : nivelLabel}
             </StatusBadge>
             {onClearSelection && (
@@ -67,9 +68,9 @@ export function HeatmapCellPanel({ cell, risks, onOpenRisk, onClearSelection, co
                 onClick={onClearSelection}
                 aria-label={t('riscosVisoes.matrix.heatmapCellPanel.limparSelecao')}
                 title={t('riscosVisoes.matrix.heatmapCellPanel.limparSelecao')}
-                className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+                className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
               >
-                <X className="h-3.5 w-3.5" strokeWidth={2} />
+                <IconClose className="h-3.5 w-3.5" strokeWidth={2} />
               </button>
             )}
           </div>
@@ -87,16 +88,16 @@ export function HeatmapCellPanel({ cell, risks, onOpenRisk, onClearSelection, co
               key={r.id}
               type="button"
               onClick={() => onOpenRisk(r.id)}
-              className="text-left p-3 rounded-lg border border-border hover:bg-muted/40 transition-colors flex flex-col gap-1.5"
+              className="text-left p-3 rounded-lg border border-border hover:bg-accent transition-colors flex flex-col gap-1.5"
             >
               <div className="flex justify-between items-center">
-                <span className="text-[10.5px] text-muted-foreground font-mono">{shortRiskId(r.id, (r as any).codigo)}</span>
-                <StatusBadge size="sm" {...resolveRiscoStatusTone(r.status)}>
+                <span className="text-micro text-muted-foreground font-mono">{shortRiskId(r.id, (r as any).codigo)}</span>
+                <StatusBadge {...resolveRiscoStatusTone(r.status)}>
                   {formatStatus(r.status)}
                 </StatusBadge>
               </div>
               <div className="text-sm font-medium text-foreground leading-snug">{r.nome}</div>
-              <div className="flex justify-between text-[11px] text-muted-foreground">
+              <div className="flex justify-between text-micro text-muted-foreground">
                 <span className="truncate">{r.categoria?.nome || t('riscosVisoes.matrix.heatmapCellPanel.semCategoria')} · {r.responsavel_nome || '—'}</span>
                 <span className="flex-shrink-0 ml-2">{relativeShort(r.updated_at || r.created_at)}</span>
               </div>

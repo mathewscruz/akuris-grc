@@ -1,13 +1,14 @@
 import { logger } from '@/lib/logger';
+import { IconDelete, IconDownload, IconUpload, IconView, IconFile } from '@/components/icons';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Upload, File, Download, Trash2, Eye } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { openStorageFile } from '@/lib/storage';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { intlLocale } from '@/lib/date-utils';
 
 interface AnexoFile {
   id?: string;
@@ -213,7 +214,7 @@ export function RiscoAnexosUpload({
           disabled={uploading || disabled}
           className="flex items-center gap-2"
         >
-          <Upload className="h-4 w-4" />
+          <IconUpload className="h-4 w-4" />
           {uploading ? t('fin.anexos.enviando') : t('fin.anexos.adicionar')}
         </Button>
         <div className="text-sm text-muted-foreground">{t('fin.anexos.formatos')}</div>
@@ -229,7 +230,7 @@ export function RiscoAnexosUpload({
                 <CardContent className="p-0">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <File className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      <IconFile className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">
                           {anexo.nome_arquivo}
@@ -245,7 +246,7 @@ export function RiscoAnexosUpload({
                           </span>
                           {anexo.created_at && (
                             <span className="text-xs text-muted-foreground">
-                              {new Date(anexo.created_at).toLocaleDateString('pt-BR')}
+                              {new Date(anexo.created_at).toLocaleDateString(intlLocale())}
                             </span>
                           )}
                         </div>
@@ -259,7 +260,7 @@ export function RiscoAnexosUpload({
                         onClick={() => handleFileDownload(anexo)}
                         className="h-8 w-8 p-0"
                       >
-                        <Eye className="h-4 w-4" />
+                        <IconView className="h-4 w-4" />
                       </Button>
                       <Button
                         type="button"
@@ -268,7 +269,7 @@ export function RiscoAnexosUpload({
                         onClick={() => handleFileDownload(anexo)}
                         className="h-8 w-8 p-0"
                       >
-                        <Download className="h-4 w-4" />
+                        <IconDownload className="h-4 w-4" />
                       </Button>
                       {!disabled && (
                         <Button
@@ -278,7 +279,7 @@ export function RiscoAnexosUpload({
                           onClick={() => handleFileDelete(anexo, index)}
                           className="h-8 w-8 p-0 text-destructive hover:text-destructive"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <IconDelete className="h-4 w-4" />
                         </Button>
                       )}
                     </div>

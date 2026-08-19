@@ -1,8 +1,8 @@
 import { useRef, useState } from 'react';
-import { Shield } from 'lucide-react';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import { TratamentoForm, type TratamentoFormHandle } from './TratamentoForm';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { IconShield } from '@/components/icons';
 
 interface TratamentoDialogProps {
   open: boolean;
@@ -46,7 +46,7 @@ export function TratamentoDialog({
           ? t('riscosDetalhe.tratamentoDialog.descEdit')
           : t('riscosDetalhe.tratamentoDialog.descNew')
       }
-      icon={Shield}
+      icon={IconShield}
       size="lg"
       isSubmitting={isSubmitting}
       isDirty={isDirty}

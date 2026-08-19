@@ -4,14 +4,14 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import { Badge } from '@/components/ui/badge';
-import { TrendingDown, TrendingUp, Minus, Clock, User } from 'lucide-react';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveNivelRiscoTone } from '@/lib/status-tone';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { IconTime, IconTrendDown, IconTrendUp, IconMinus, IconPerson } from '@/components/icons';
+import { dateFnsLocale } from '@/lib/date-utils';
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -57,16 +57,16 @@ export function HistoricoAvaliacoesDialog({ open, onOpenChange, riscoId, riscoNo
     const nivelOrder: Record<string, number> = { 'muito baixo': 1, 'baixo': 2, 'médio': 3, 'alto': 4, 'muito alto': 5, 'crítico': 6 };
     const curr = nivelOrder[current.toLowerCase()] || 0;
     const prev = nivelOrder[previous.toLowerCase()] || 0;
-    if (curr < prev) return <TrendingDown className="h-4 w-4 text-emerald-500" strokeWidth={1.5} />;
-    if (curr > prev) return <TrendingUp className="h-4 w-4 text-destructive" strokeWidth={1.5} />;
-    return <Minus className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />;
+    if (curr < prev) return <IconTrendDown className="h-4 w-4 text-success" strokeWidth={1.5} />;
+    if (curr > prev) return <IconTrendUp className="h-4 w-4 text-destructive" strokeWidth={1.5} />;
+    return <IconMinus className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />;
   };
 
   return (
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      icon={Clock}
+      icon={IconTime}
       title={t('fin.riscos.historicoAval.title')}
       description={riscoNome}
       size="md"
@@ -78,7 +78,7 @@ export function HistoricoAvaliacoesDialog({ open, onOpenChange, riscoId, riscoNo
           </div>
         ) : !historico || historico.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
-            <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" strokeWidth={1.5} />{t('fin.riscos.historicoAval.vazio')}</div>
+            <IconTime className="h-12 w-12 mx-auto mb-4 opacity-50" strokeWidth={1.5} />{t('fin.riscos.historicoAval.vazio')}</div>
         ) : (
             <div className="relative pl-6">
               {/* Timeline line */}
@@ -98,13 +98,13 @@ export function HistoricoAvaliacoesDialog({ open, onOpenChange, riscoId, riscoNo
                             <Badge variant="outline" className="text-xs">
                               {item.tipo === 'inicial' ? 'Inicial' : 'Residual'}
                             </Badge>
-                            <StatusBadge size="sm" {...resolveNivelRiscoTone(item.nivel_risco)}>
+                            <StatusBadge {...resolveNivelRiscoTone(item.nivel_risco)}>
                               {item.nivel_risco}
                             </StatusBadge>
                             {getTrendIcon(item.nivel_risco, previousItem?.nivel_risco)}
                           </div>
                           <span className="text-xs text-muted-foreground">
-                            {format(new Date(item.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                            {format(new Date(item.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: dateFnsLocale() })}
                           </span>
                         </div>
 
@@ -121,7 +121,7 @@ export function HistoricoAvaliacoesDialog({ open, onOpenChange, riscoId, riscoNo
 
                         {item.profiles?.nome && (
                           <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <User className="h-3 w-3" />
+                            <IconPerson className="h-3 w-3" />
                             {item.profiles.nome}
                           </div>
                         )}

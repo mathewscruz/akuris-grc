@@ -19,7 +19,7 @@ export function SparklineCell({ points = [] }: Props) {
     return (
       <span className="inline-flex items-center gap-1.5 text-muted-foreground">
         <span aria-hidden="true" className="h-px w-4 bg-border" />
-        <span className="text-[10px]">{t('riscosVisoes.table.trend.semHistorico')}</span>
+        <span className="text-micro">{t('riscosVisoes.table.trend.semHistorico')}</span>
       </span>
     );
   }

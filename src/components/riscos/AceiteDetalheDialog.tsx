@@ -1,13 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
+import { IconSuccess, IconWarning, IconTime, IconCalendar, IconFile, IconPerson } from '@/components/icons';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import { Separator } from '@/components/ui/separator';
-import { formatDateOnly } from '@/lib/date-utils';
+import { formatDateOnly, parseDataLocal } from '@/lib/date-utils';
 import { formatStatus } from '@/lib/text-utils';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveNivelRiscoTone } from '@/lib/status-tone';
-import { CheckCircle, User, Calendar, FileText, Clock, AlertTriangle } from 'lucide-react';
 import { differenceInDays } from 'date-fns';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -79,7 +79,7 @@ export function AceiteDetalheDialog({ open, onOpenChange, risco }: Props) {
 
   const getRevisaoStatus = () => {
     if (!risco.data_proxima_revisao) return null;
-    const dias = differenceInDays(new Date(risco.data_proxima_revisao), new Date());
+    const dias = differenceInDays(parseDataLocal(risco.data_proxima_revisao), new Date());
     if (dias < 0) return { label: t('riscosDialogs.aceiteDetalhe.vencida'), tone: 'destructive' as const, dias: Math.abs(dias) };
     if (dias <= 7) return { label: t('riscosDialogs.aceiteDetalhe.diasRestantes', { dias }), tone: 'warning' as const, dias };
     return { label: t('riscosDialogs.aceiteDetalhe.diasRestantes', { dias }), tone: 'success' as const, dias };
@@ -91,7 +91,7 @@ export function AceiteDetalheDialog({ open, onOpenChange, risco }: Props) {
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      icon={CheckCircle}
+      icon={IconSuccess}
       title={t('riscosDialogs.aceiteDetalhe.title')}
       description={t('riscosDialogs.aceiteDetalhe.description')}
       size="md"
@@ -103,7 +103,7 @@ export function AceiteDetalheDialog({ open, onOpenChange, risco }: Props) {
             <h3 className="font-semibold text-lg">{risco.nome}</h3>
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground">{t('riscosDialogs.aceiteDetalhe.nivelInicial')}</span>
-              <StatusBadge {...resolveNivelRiscoTone(risco.nivel_risco_inicial)}>{formatStatus(risco.nivel_risco_inicial)}</StatusBadge>
+              <StatusBadge {...resolveNivelRiscoTone(risco.nivel_risco_residual || risco.nivel_risco_inicial)}>{formatStatus(risco.nivel_risco_residual || risco.nivel_risco_inicial)}</StatusBadge>
               {risco.nivel_risco_residual && (
                 <>
                   <span className="text-sm text-muted-foreground ml-2">{t('riscosDialogs.aceiteDetalhe.residual')}</span>
@@ -119,7 +119,7 @@ export function AceiteDetalheDialog({ open, onOpenChange, risco }: Props) {
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                <Calendar className="h-3.5 w-3.5" />
+                <IconCalendar className="h-3.5 w-3.5" />
                 {t('riscosDialogs.aceiteDetalhe.dataAceite')}
               </div>
               <p className="text-sm font-medium">
@@ -128,7 +128,7 @@ export function AceiteDetalheDialog({ open, onOpenChange, risco }: Props) {
             </div>
             <div className="space-y-1">
               <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                <User className="h-3.5 w-3.5" />
+                <IconPerson className="h-3.5 w-3.5" />
                 {t('riscosDialogs.aceiteDetalhe.aprovador')}
               </div>
               <p className="text-sm font-medium">
@@ -137,7 +137,7 @@ export function AceiteDetalheDialog({ open, onOpenChange, risco }: Props) {
             </div>
             <div className="space-y-1">
               <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                <User className="h-3.5 w-3.5" />
+                <IconPerson className="h-3.5 w-3.5" />
                 {t('riscosDialogs.aceiteDetalhe.responsavel')}
               </div>
               <p className="text-sm font-medium">
@@ -146,7 +146,7 @@ export function AceiteDetalheDialog({ open, onOpenChange, risco }: Props) {
             </div>
             <div className="space-y-1">
               <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                <Clock className="h-3.5 w-3.5" />
+                <IconTime className="h-3.5 w-3.5" />
                 {t('riscosDialogs.aceiteDetalhe.proximaRevisao')}
               </div>
               <div className="flex items-center gap-2">
@@ -154,7 +154,7 @@ export function AceiteDetalheDialog({ open, onOpenChange, risco }: Props) {
                   {risco.data_proxima_revisao ? formatDateOnly(risco.data_proxima_revisao) : t('riscosDialogs.aceiteDetalhe.naoAgendada')}
                 </p>
                 {revisaoStatus && (
-                  <StatusBadge size="sm" tone={revisaoStatus.tone}>{revisaoStatus.label}</StatusBadge>
+                  <StatusBadge tone={revisaoStatus.tone}>{revisaoStatus.label}</StatusBadge>
                 )}
               </div>
             </div>
@@ -165,10 +165,10 @@ export function AceiteDetalheDialog({ open, onOpenChange, risco }: Props) {
           {/* Justificativa */}
           <div className="space-y-2">
             <h4 className="text-sm font-semibold flex items-center gap-1.5">
-              <FileText className="h-4 w-4" />
+              <IconFile className="h-4 w-4" />
               {t('riscosDialogs.aceiteDetalhe.justificativaAceite')}
             </h4>
-            <p className="text-sm text-muted-foreground bg-muted/50 rounded-md p-3">
+            <p className="text-sm text-muted-foreground bg-card rounded-md p-3 border border-border">
               {risco.justificativa_aceite || t('riscosDialogs.aceiteDetalhe.nenhumaJustificativa')}
             </p>
           </div>
@@ -188,9 +188,9 @@ export function AceiteDetalheDialog({ open, onOpenChange, risco }: Props) {
                         const { openStorageFile } = await import('@/lib/storage');
                         await openStorageFile('riscos-anexos', anexo.url_arquivo);
                       }}
-                      className="flex items-center gap-2 text-sm text-primary hover:underline p-2 rounded-md hover:bg-muted/50 w-full text-left"
+                      className="flex items-center gap-2 text-sm text-primary hover:underline p-2 rounded-md hover:bg-accent w-full text-left"
                     >
-                      <FileText className="h-4 w-4" />
+                      <IconFile className="h-4 w-4" />
                       {anexo.nome_arquivo}
                     </button>
                   ))}
@@ -205,7 +205,7 @@ export function AceiteDetalheDialog({ open, onOpenChange, risco }: Props) {
               <Separator />
               <div className="space-y-3">
                 <h4 className="text-sm font-semibold flex items-center gap-1.5">
-                  <AlertTriangle className="h-4 w-4" />
+                  <IconWarning className="h-4 w-4" />
                   {t('riscosDialogs.aceiteDetalhe.historicoAlteracoes')}
                 </h4>
                 <div className="space-y-3">

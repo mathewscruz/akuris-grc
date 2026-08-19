@@ -5,8 +5,8 @@
 import { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { LayoutGrid, Grid3x3, Table as TableIcon, ShieldCheck } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { IconGrid, IconShieldCheck, IconTable } from '@/components/icons';
 
 export type RiscosView = 'overview' | 'matrix' | 'table' | 'aceite';
 const STORAGE_KEY = 'akuris.riscos.view';
@@ -51,35 +51,35 @@ export function RiscosTabs({ overview, matrix, table, aceite }: Props) {
           value="overview"
           className="text-xs gap-1.5"
         >
-          <LayoutGrid className="h-3.5 w-3.5" strokeWidth={1.5} />
+          <IconGrid className="h-3.5 w-3.5" strokeWidth={1.5} />
           {t('riscosDetalhe.tabs.overview')}
         </TabsTrigger>
         <TabsTrigger
           value="matrix"
           className="text-xs gap-1.5"
         >
-          <Grid3x3 className="h-3.5 w-3.5" strokeWidth={1.5} />
+          <IconGrid className="h-3.5 w-3.5" strokeWidth={1.5} />
           {t('riscosDetalhe.tabs.matrix')}
         </TabsTrigger>
         <TabsTrigger
           value="table"
           className="text-xs gap-1.5"
         >
-          <TableIcon className="h-3.5 w-3.5" strokeWidth={1.5} />
+          <IconTable className="h-3.5 w-3.5" strokeWidth={1.5} />
           {t('riscosDetalhe.tabs.table')}
         </TabsTrigger>
         <TabsTrigger
           value="aceite"
           className="text-xs gap-1.5"
         >
-          <ShieldCheck className="h-3.5 w-3.5" strokeWidth={1.5} />
+          <IconShieldCheck className="h-3.5 w-3.5" strokeWidth={1.5} />
           {t('riscosDetalhe.tabs.aceite')}
         </TabsTrigger>
       </TabsList>
-      <TabsContent value="overview" className="mt-5">{overview}</TabsContent>
-      <TabsContent value="matrix" className="mt-5">{matrix}</TabsContent>
-      <TabsContent value="table" className="mt-5">{table}</TabsContent>
-      <TabsContent value="aceite" className="mt-5">{aceite}</TabsContent>
+      <TabsContent value="overview">{overview}</TabsContent>
+      <TabsContent value="matrix">{matrix}</TabsContent>
+      <TabsContent value="table">{table}</TabsContent>
+      <TabsContent value="aceite">{aceite}</TabsContent>
     </Tabs>
   );
 }

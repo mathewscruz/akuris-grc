@@ -6,12 +6,11 @@ import { DialogShell } from '@/components/ui/dialog-shell';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { History, User, Calendar, Edit, Plus, Trash, Eye } from 'lucide-react';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { IconAdd, IconEdit, IconDelete, IconView, IconCalendar, IconHistory, IconPerson } from '@/components/icons';
+import { dateFnsLocale, datePattern } from '@/lib/date-utils';
 interface TrilhaAuditoriaRiscosProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -56,19 +55,19 @@ export function TrilhaAuditoriaRiscos({ open, onOpenChange, riscoId, riscoNome }
 
   const getActionIcon = (action: string) => {
     switch (action) {
-      case 'INSERT': return <Plus className="h-4 w-4 text-success" />;
-      case 'UPDATE': return <Edit className="h-4 w-4 text-info" />;
-      case 'DELETE': return <Trash className="h-4 w-4 text-destructive" />;
-      default: return <Eye className="h-4 w-4 text-muted-foreground" />;
+      case 'INSERT': return <IconAdd className="h-4 w-4 text-success" />;
+      case 'UPDATE': return <IconEdit className="h-4 w-4 text-info" />;
+      case 'DELETE': return <IconDelete className="h-4 w-4 text-destructive" />;
+      default: return <IconView className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
   const getActionBadge = (action: string) => {
     switch (action) {
-      case 'INSERT': return <StatusBadge size="sm" tone="success">Criado</StatusBadge>;
-      case 'UPDATE': return <StatusBadge size="sm" tone="info">Atualizado</StatusBadge>;
-      case 'DELETE': return <StatusBadge size="sm" tone="destructive">{t('fin.comum.excluido')}</StatusBadge>;
-      default: return <StatusBadge size="sm" tone="neutral" variant="outline">{action}</StatusBadge>;
+      case 'INSERT': return <StatusBadge tone="success">Criado</StatusBadge>;
+      case 'UPDATE': return <StatusBadge tone="info">Atualizado</StatusBadge>;
+      case 'DELETE': return <StatusBadge tone="destructive">{t('fin.comum.excluido')}</StatusBadge>;
+      default: return <StatusBadge tone="neutral" variant="outline">{action}</StatusBadge>;
     }
   };
 
@@ -104,7 +103,7 @@ export function TrilhaAuditoriaRiscos({ open, onOpenChange, riscoId, riscoNome }
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      icon={History}
+      icon={IconHistory}
       title={t('residuos.risco.trilhaAuditoria')}
       description={riscoNome}
       size="lg"
@@ -116,7 +115,7 @@ export function TrilhaAuditoriaRiscos({ open, onOpenChange, riscoId, riscoNome }
             </div>
           ) : !auditLogs || auditLogs.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
-              <History className="h-12 w-12 mx-auto mb-4 opacity-50" strokeWidth={1.5} />{t('fin.riscos.trilha.vazio')}</div>
+              <IconHistory className="h-12 w-12 mx-auto mb-4 opacity-50" strokeWidth={1.5} />{t('fin.riscos.trilha.vazio')}</div>
           ) : (
               <div className="space-y-4">
                 {auditLogs.map((log) => (
@@ -133,12 +132,12 @@ export function TrilhaAuditoriaRiscos({ open, onOpenChange, riscoId, riscoNome }
                           </div>
                           <div className="flex items-center gap-4 text-sm text-muted-foreground">
                             <div className="flex items-center gap-1">
-                              <User className="h-4 w-4" />
+                              <IconPerson className="h-4 w-4" />
                               {log.profiles?.nome || 'Sistema'}
                             </div>
                             <div className="flex items-center gap-1">
-                              <Calendar className="h-4 w-4" />
-                              {format(new Date(log.created_at), 'dd/MM/yyyy HH:mm:ss', { locale: ptBR })}
+                              <IconCalendar className="h-4 w-4" />
+                              {format(new Date(log.created_at), `${datePattern()} HH:mm:ss`, { locale: dateFnsLocale() })}
                             </div>
                           </div>
                         </div>

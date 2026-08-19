@@ -6,9 +6,9 @@ import { useAuth } from '@/components/AuthProvider';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Grid3X3 } from 'lucide-react';
 import { toScaleNumber } from '@/components/riscos/risk-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { IconGrid } from '@/components/icons';
 
 interface Matriz {
   id: string;
@@ -82,7 +82,6 @@ export function MatrizVisualizacao({ onNavigate, onConfigure }: Props) {
         });
       }
 
-
       const { data: riscosData } = await supabase
         .from('riscos')
         .select('id, nome, probabilidade_inicial, impacto_inicial, nivel_risco_inicial')
@@ -140,7 +139,7 @@ export function MatrizVisualizacao({ onNavigate, onConfigure }: Props) {
   if (!matriz) {
     return (
       <EmptyState
-        icon={<Grid3X3 className="h-10 w-10" strokeWidth={1.5} />}
+        icon={<IconGrid className="h-10 w-10" strokeWidth={1.5} />}
         title={t('fin.riscos.matrizVis.vazioTitle')}
         description={t('fin.riscos.matrizVis.vazioDesc')}
         action={onConfigure ? { label: 'Configurar agora', onClick: onConfigure } : undefined}
@@ -163,7 +162,7 @@ export function MatrizVisualizacao({ onNavigate, onConfigure }: Props) {
         {/* Header editorial */}
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="flex flex-col gap-1">
-            <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
+            <span className="text-xs text-muted-foreground font-medium">
               {t('sweepRiscos.riscos.matrizVis.matrizVisual')}
             </span>
             <h3 className="text-base font-semibold text-foreground">
@@ -171,10 +170,10 @@ export function MatrizVisualizacao({ onNavigate, onConfigure }: Props) {
             </h3>
           </div>
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-3 py-1 text-xs font-medium text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5 rounded-md border border-border bg-muted/40 px-3 py-1 text-xs font-medium text-muted-foreground">
               {t('sweepRiscos.riscos.matrizVis.calculo')} <span className="text-foreground">{metodoLabel}</span>
             </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-3 py-1 text-xs font-medium text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5 rounded-md border border-border bg-muted/40 px-3 py-1 text-xs font-medium text-muted-foreground">
               {t(totalPlotados === 1 ? 'sweepRiscos.riscos.matrizVis.plotadosUm' : 'sweepRiscos.riscos.matrizVis.plotadosVarios', { n: totalPlotados })}
             </span>
           </div>
@@ -185,7 +184,7 @@ export function MatrizVisualizacao({ onNavigate, onConfigure }: Props) {
           <div className="flex gap-3 max-w-3xl mx-auto">
             {/* Eixo Y label */}
             <div className="flex items-center justify-center">
-              <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium [writing-mode:vertical-rl] rotate-180">
+              <span className="text-xs text-muted-foreground font-medium [writing-mode:vertical-rl] rotate-180">
                 {t('sweepRiscos.riscos.matrizVis.probabilidadeEixo')}
               </span>
             </div>
@@ -234,16 +233,16 @@ export function MatrizVisualizacao({ onNavigate, onConfigure }: Props) {
                     const cellInner = (
                       <div
                         onClick={() => handleCellClick(riscosNaCelula)}
-                        className={`relative p-1.5 border border-border/60 rounded min-h-[64px] flex flex-col items-center justify-center gap-1 aspect-square transition-all ${
+                        className={`relative p-1.5 border border-border/60 rounded min-h-[64px] flex flex-col items-center justify-center gap-1 aspect-square transition-ui ${
                           riscosNaCelula.length > 0
-                            ? 'cursor-pointer hover:scale-[1.04] hover:shadow-md hover:border-foreground/20'
+                            ? 'cursor-pointer hover:scale-[1.04] hover:shadow-sm hover:border-foreground/20'
                             : ''
                         }`}
                         style={{ backgroundColor: cor + '22' }}
                       >
                         {nivelRisco && (
                           <div
-                            className="px-2 py-0.5 rounded-full text-[10px] font-bold leading-none text-white shadow-sm"
+                            className="px-2 py-0.5 rounded-md text-micro font-bold leading-none text-white shadow-sm"
                             style={{ backgroundColor: cor }}
                           >
                             {nivelRisco.nivel.charAt(0).toUpperCase()}
@@ -251,7 +250,7 @@ export function MatrizVisualizacao({ onNavigate, onConfigure }: Props) {
                         )}
                         {riscosNaCelula.length > 0 && (
                           <div
-                            className="min-w-5 h-5 px-1.5 rounded-full flex items-center justify-center text-[10px] font-bold text-white"
+                            className="min-w-5 h-5 px-1.5 rounded-md flex items-center justify-center text-micro font-bold text-white"
                             style={{ backgroundColor: cor }}
                           >
                             {riscosNaCelula.length}
@@ -303,7 +302,7 @@ export function MatrizVisualizacao({ onNavigate, onConfigure }: Props) {
 
               {/* Eixo X label */}
               <div className="text-center mt-3">
-                <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
+                <span className="text-xs text-muted-foreground font-medium">
                   {t('sweepRiscos.riscos.matrizVis.impactoEixo')}
                 </span>
               </div>
@@ -314,13 +313,13 @@ export function MatrizVisualizacao({ onNavigate, onConfigure }: Props) {
         {/* Legenda dos níveis */}
         {niveis.length > 0 && (
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium mr-1">
+            <span className="text-xs text-muted-foreground font-medium mr-1">
               {t('sweepRiscos.riscos.matrizVis.niveis')}
             </span>
             {niveis.map((n, i) => (
               <span
                 key={i}
-                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/30 px-3 py-1 text-xs font-medium"
+                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-muted/30 px-3 py-1 text-xs font-medium"
               >
                 <span
                   className="inline-block w-2.5 h-2.5 rounded-full"

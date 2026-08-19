@@ -3,6 +3,7 @@ import { RiscosStats } from '@/hooks/useRiscosStats';
 import { loadAkurisLogo, addAkurisHeader, addAkurisFooter, addSectionTitle, drawProgressBar, drawTableHeader, formatLabel, AKURIS_COLORS } from '@/lib/pdf-utils';
 import { riscosDialogs } from '@/i18n/modules/riscos-dialogs';
 import type { Locale } from '@/contexts/LanguageContext';
+import { intlLocale } from '@/lib/date-utils';
 
 interface RiscoExport {
   nome: string;
@@ -34,7 +35,7 @@ export async function exportRiscosPDF(riscos: RiscoExport[], stats: RiscosStats 
   doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(AKURIS_COLORS.textLight);
-  doc.text(t.geradoEm.replace('{data}', new Date().toLocaleDateString('pt-BR')).replace('{hora}', new Date().toLocaleTimeString('pt-BR')), pageWidth / 2, y, { align: 'center' });
+  doc.text(t.geradoEm.replace('{data}', new Date().toLocaleDateString(intlLocale())).replace('{hora}', new Date().toLocaleTimeString('pt-BR')), pageWidth / 2, y, { align: 'center' });
   y += 12;
 
   // KPIs
@@ -90,7 +91,7 @@ export async function exportRiscosPDF(riscos: RiscoExport[], stats: RiscosStats 
     doc.setTextColor(AKURIS_COLORS.text);
     doc.text(risco.nome.substring(0, 30), margin + 2, y);
     doc.text(risco.categoria?.nome?.substring(0, 20) || '-', margin + 62, y);
-    doc.text(formatLabel(risco.nivel_risco_inicial) || '-', margin + 102, y);
+    doc.text(formatLabel(risco.nivel_risco_residual || risco.nivel_risco_inicial) || '-', margin + 102, y);
     doc.text(formatLabel(risco.nivel_risco_residual || '') || '-', margin + 125, y);
     doc.text(formatLabel(risco.status) || '-', margin + 150, y);
     y += 5.5;
@@ -106,7 +107,7 @@ export function exportRiscosCSV(riscos: RiscoExport[], locale: Locale = 'pt') {
   const rows = riscos.map(r => [
     r.nome,
     r.categoria?.nome || '',
-    formatLabel(r.nivel_risco_inicial),
+    formatLabel(r.nivel_risco_residual || r.nivel_risco_inicial),
     formatLabel(r.nivel_risco_residual || ''),
     formatLabel(r.status),
     r.responsavel_nome || '',

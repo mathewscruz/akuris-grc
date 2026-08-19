@@ -11,10 +11,8 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CalendarIcon, Copy, Shield, AlertTriangle, Lightbulb } from 'lucide-react';
-import { AkurisAIIcon } from '@/components/icons';
+import { IconWarning, IconCalendar, IconCopy, IconShield, IconIdea, IconChecklist } from '@/components/icons';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
@@ -22,13 +20,13 @@ import { toast } from 'sonner';
 import { CreditsExhaustedDialog } from '@/components/CreditsExhaustedDialog';
 import { UserSelect } from './UserSelect';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ClipboardList } from 'lucide-react';
 import { severityFromNivel } from './risk-utils';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { AiCostHint } from '@/components/ui/ai-cost-hint';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useEmpresaMoeda } from '@/hooks/useEmpresaMoeda';
+import { dateFnsLocale, formatarDiaParaDB, parseDataLocal } from '@/lib/date-utils';
 function makeTratamentoSchema(t: (key: string) => string) {
   return z.object({
     tipo_tratamento: z.string().min(1, t('sweepRiscos.riscos.tratForm2.tipoObrigatorio')),
@@ -55,6 +53,7 @@ interface TratamentoFormProps {
     descricao: string;
     categoria?: string;
     nivel_risco_inicial?: string;
+    nivel_risco_residual?: string | null;
   };
 }
 
@@ -85,8 +84,11 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
       descricao: tratamento?.descricao || '',
       responsavel: tratamento?.responsavel || '',
       custo: tratamento?.custo?.toString() || '',
-      prazo: tratamento?.prazo ? new Date(tratamento.prazo) : undefined,
-      data_inicio: tratamento?.data_inicio ? new Date(tratamento.data_inicio) : undefined,
+      // `prazo` e `data_inicio` sao colunas `date`. Com `new Date('2026-08-20')`
+      // o valor vira meia-noite UTC, que em Brasilia e o dia 19 — o calendario
+      // abria sempre no dia anterior ao que a lista mostrava, ao lado.
+      prazo: tratamento?.prazo ? parseDataLocal(tratamento.prazo) : undefined,
+      data_inicio: tratamento?.data_inicio ? parseDataLocal(tratamento.data_inicio) : undefined,
       status: tratamento?.status || 'pendente',
       eficacia: tratamento?.eficacia || ''
     }
@@ -115,8 +117,8 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
         descricao: data.descricao,
         responsavel: data.responsavel || null,
         custo: data.custo ? parseFloat(data.custo) : null,
-        prazo: data.prazo ? data.prazo.toISOString() : null,
-        data_inicio: data.data_inicio ? data.data_inicio.toISOString() : null,
+        prazo: data.prazo ? formatarDiaParaDB(data.prazo) : null,
+        data_inicio: data.data_inicio ? formatarDiaParaDB(data.data_inicio) : null,
         status: data.status,
         eficacia: data.eficacia || null
       };
@@ -140,7 +142,7 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
         // Gera plano de ação vinculado (rastreabilidade risco → tratamento → ação)
         if (gerarPlano && profile.empresa_id) {
           try {
-            const sev = severityFromNivel(riscoData?.nivel_risco_inicial);
+            const sev = severityFromNivel(riscoData?.nivel_risco_residual || riscoData?.nivel_risco_inicial);
             const prioridade = sev === 'critico' ? 'alta' : sev === 'alto' ? 'alta' : sev === 'medio' ? 'media' : 'baixa';
             const tituloRisco = riscoData?.nome || 'Risco';
             const { error: planoError } = await supabase.from('planos_acao').insert({
@@ -151,7 +153,7 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
               registro_origem_id: riscoId,
               registro_origem_titulo: tituloRisco,
               responsavel_id: data.responsavel || null,
-              prazo: data.prazo ? data.prazo.toISOString() : null,
+              prazo: data.prazo ? formatarDiaParaDB(data.prazo) : null,
               prioridade,
               status: 'pendente',
               created_by: profile.user_id,
@@ -186,7 +188,7 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
           nome: riscoData.nome,
           descricao: riscoData.descricao,
           categoria: riscoData.categoria,
-          nivel_risco: riscoData.nivel_risco_inicial,
+          nivel_risco: riscoData.nivel_risco_residual || riscoData.nivel_risco_inicial,
           empresa_id: profile?.empresa_id,
           user_id: profile?.user_id
         }
@@ -273,7 +275,7 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
         </div>
       </div>
 
-      <div className="space-y-3 rounded-lg border border-border/60 bg-muted/20 p-4">
+      <div className="space-y-3 rounded-lg border border-border/60 bg-card p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <Label htmlFor="descricao" className="text-base font-semibold">
             {t('sweepRiscos.riscos.tratForm2.descricaoLabel')}
@@ -295,7 +297,6 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
                   </>
                 ) : (
                   <>
-                    <AkurisAIIcon className="mr-2 h-4 w-4" />
                     {t('sweepRiscos.riscos.tratForm2.sugerirTratamento')}
                   </>
                 )}
@@ -346,8 +347,8 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
                   !form.watch('data_inicio') && "text-muted-foreground"
                 )}
               >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {form.watch('data_inicio') ? format(form.watch('data_inicio')!, "PPP", { locale: ptBR }) : t('sweepRiscos.riscos.tratForm2.selecionarData')}
+                <IconCalendar className="mr-2 h-4 w-4" />
+                {form.watch('data_inicio') ? format(form.watch('data_inicio')!, "PPP", { locale: dateFnsLocale() }) : t('sweepRiscos.riscos.tratForm2.selecionarData')}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
@@ -373,8 +374,8 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
                   !form.watch('prazo') && "text-muted-foreground"
                 )}
               >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {form.watch('prazo') ? format(form.watch('prazo')!, "PPP", { locale: ptBR }) : t('sweepRiscos.riscos.tratForm2.selecionarPrazo')}
+                <IconCalendar className="mr-2 h-4 w-4" />
+                {form.watch('prazo') ? format(form.watch('prazo')!, "PPP", { locale: dateFnsLocale() }) : t('sweepRiscos.riscos.tratForm2.selecionarPrazo')}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
@@ -410,7 +411,7 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
 
       {/* Gerar plano de ação vinculado — só ao criar um tratamento novo */}
       {!tratamento && (
-        <label className="flex items-start gap-3 rounded-lg border border-border/60 bg-muted/20 p-4 cursor-pointer">
+        <label className="flex items-start gap-3 rounded-lg border border-border/60 bg-card p-4 cursor-pointer">
           <Checkbox
             checked={gerarPlano}
             onCheckedChange={(c) => setGerarPlano(!!c)}
@@ -418,7 +419,7 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
           />
           <div className="space-y-0.5">
             <div className="flex items-center gap-2 text-sm font-medium">
-              <ClipboardList className="h-4 w-4 text-primary" strokeWidth={1.5} />
+              <IconChecklist className="h-4 w-4 text-primary" strokeWidth={1.5} />
               {t('sweepRiscos.riscos.tratForm2.gerarPlanoLabel')}
             </div>
             <p className="text-xs text-muted-foreground">
@@ -430,13 +431,11 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
 
       <p className="text-xs text-muted-foreground">{t('fin.comum.camposObrigatorios')}</p>
 
-
       {/* Modal de Sugestões da IA */}
       <Dialog open={suggestionDialogOpen} onOpenChange={setSuggestionDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <AkurisAIIcon className="h-5 w-5" />
               {t('sweepRiscos.riscos.tratForm2.sugestoesTitulo')}
             </DialogTitle>
             <DialogDescription>
@@ -451,7 +450,7 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
                   <CardHeader>
                     <CardTitle className="text-lg flex items-center justify-between gap-3">
                       <span className="flex items-center gap-2">
-                        <Shield className="h-4 w-4 text-primary" strokeWidth={1.5} />
+                        <IconShield className="h-4 w-4 text-primary" strokeWidth={1.5} />
                         {t('sweepRiscos.riscos.tratForm2.planoMitigacao')}
                       </span>
                       <div className="flex gap-2">
@@ -460,7 +459,7 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
                           size="sm"
                           onClick={() => copyToClipboard(iaSuggestions.mitigacao)}
                         >
-                          <Copy className="h-3 w-3 mr-1" />
+                          <IconCopy className="h-3 w-3 mr-1" />
                           {t('sweepRiscos.riscos.tratForm2.copiar')}
                         </Button>
                         <Button
@@ -486,7 +485,7 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
                   <CardHeader>
                     <CardTitle className="text-lg flex items-center justify-between gap-3">
                       <span className="flex items-center gap-2">
-                        <AlertTriangle className="h-4 w-4 text-amber-500" strokeWidth={1.5} />
+                        <IconWarning className="h-4 w-4 text-warning" strokeWidth={1.5} />
                         {t('sweepRiscos.riscos.tratForm2.planoContingenciamento')}
                       </span>
                       <div className="flex gap-2">
@@ -495,7 +494,7 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
                           size="sm"
                           onClick={() => copyToClipboard(iaSuggestions.contingenciamento)}
                         >
-                          <Copy className="h-3 w-3 mr-1" />
+                          <IconCopy className="h-3 w-3 mr-1" />
                           {t('sweepRiscos.riscos.tratForm2.copiar')}
                         </Button>
                         <Button
@@ -517,7 +516,7 @@ export const TratamentoForm = forwardRef<TratamentoFormHandle, TratamentoFormPro
               )}
 
               <div className="mt-6 p-4 bg-muted rounded-lg flex gap-3">
-                <Lightbulb className="h-4 w-4 text-primary shrink-0 mt-0.5" strokeWidth={1.5} />
+                <IconIdea className="h-4 w-4 text-primary shrink-0 mt-0.5" strokeWidth={1.5} />
                 <p className="text-sm text-muted-foreground">
                   <strong className="text-foreground">{t('sweepRiscos.riscos.tratForm2.dicaTitulo')}</strong> {t('sweepRiscos.riscos.tratForm2.dicaTexto')}
                 </p>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { IconAdd, IconEdit, IconDelete, IconWarning, IconGrid, IconClose, IconCalculator } from '@/components/icons';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -6,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Plus, Trash2, Edit, Grid3X3, AlertTriangle, X as XIcon, Calculator } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { toast } from 'sonner';
@@ -41,7 +41,7 @@ function ColorSwatch({ value, onChange }: { value: string; onChange: (v: string)
               type="button"
               onClick={() => onChange(c)}
               className={cn(
-                'h-7 w-7 rounded-md border transition-all hover:scale-110',
+                'h-7 w-7 rounded-md border transition-ui hover:scale-110',
                 value === c ? 'border-foreground ring-2 ring-foreground/20' : 'border-border'
               )}
               style={{ backgroundColor: c }}
@@ -100,7 +100,6 @@ interface Matriz {
     metodo_calculo?: string;
   };
 }
-
 
 interface Categoria {
   id: string;
@@ -182,7 +181,6 @@ export function MatrizForm({ onSuccess }: Props) {
   useEffect(() => {
     fetchData(true);
   }, [profile?.empresa_id]);
-
 
   // Validar faixas sempre que niveisRisco mudar
   useEffect(() => {
@@ -270,7 +268,6 @@ export function MatrizForm({ onSuccess }: Props) {
       : t('sweepRiscos.riscos.matrizForm.resumoSemApetite', params);
   };
 
-
   const limparFormularioMatriz = () => {
     setEditingMatriz(null);
     setModoNovo(false);
@@ -316,8 +313,6 @@ export function MatrizForm({ onSuccess }: Props) {
     const ativa = matrizes.find(m => m.configuracao) || matrizes[0];
     if (ativa) carregarMatrizParaEdicao(ativa);
   };
-
-
 
   // Validação de sobreposição e gaps nas faixas de níveis de risco
   const validarFaixasNiveisRisco = (): string | null => {
@@ -551,7 +546,7 @@ export function MatrizForm({ onSuccess }: Props) {
   const SectionHeader = ({ eyebrow, title, action }: { eyebrow: string; title: string; action?: React.ReactNode }) => (
     <div className="flex items-end justify-between gap-4 mb-4">
       <div className="flex flex-col gap-0.5">
-        <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">{eyebrow}</span>
+        <span className="text-xs text-muted-foreground font-medium">{eyebrow}</span>
         <h4 className="text-sm font-semibold text-foreground">{title}</h4>
       </div>
       {action}
@@ -573,7 +568,7 @@ export function MatrizForm({ onSuccess }: Props) {
         <section className="rounded-lg border border-border bg-card p-5">
           <div className="flex items-center justify-between mb-4">
             <div className="flex flex-col gap-0.5">
-              <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
+              <span className="text-xs text-muted-foreground font-medium">
                 {editingMatriz ? t('fin.comum.editando') : t('fin.riscos.matrizForm.novaMatriz')}
               </span>
               <h4 className="text-sm font-semibold text-foreground">
@@ -583,13 +578,13 @@ export function MatrizForm({ onSuccess }: Props) {
             <div className="flex items-center gap-1.5">
               {editingMatriz && (
                 <Button type="button" variant="ghost" size="sm" onClick={cancelarEdicao} className="gap-1.5">
-                  <XIcon className="h-3.5 w-3.5" strokeWidth={1.5} />
+                  <IconClose className="h-3.5 w-3.5" strokeWidth={1.5} />
                   {t('sweepRiscos.riscos.matrizForm.cancelarEdicao')}
                 </Button>
               )}
               {!modoNovo && (
                 <Button type="button" variant="outline" size="sm" onClick={iniciarNovaMatriz} className="gap-1.5">
-                  <Plus className="h-3.5 w-3.5" strokeWidth={1.5} />
+                  <IconAdd className="h-3.5 w-3.5" strokeWidth={1.5} />
                   {t('sweepRiscos.riscos.matrizForm.novaMatriz')}
                 </Button>
               )}
@@ -653,14 +648,14 @@ export function MatrizForm({ onSuccess }: Props) {
                         type="button"
                         onClick={() => setMetodoCalculo(opt.value as 'multiplicacao' | 'soma')}
                         className={cn(
-                          'text-left rounded-lg border p-4 transition-all',
+                          'text-left rounded-lg border p-4 transition-ui',
                           active
                             ? 'border-primary bg-primary/5 ring-1 ring-primary/30'
-                            : 'border-border bg-card hover:bg-muted/40'
+                            : 'border-border bg-card hover:bg-accent'
                         )}
                       >
                         <div className="flex items-center gap-2 mb-1">
-                          <Calculator
+                          <IconCalculator
                             className={cn('h-4 w-4', active ? 'text-primary' : 'text-muted-foreground')}
                             strokeWidth={1.5}
                           />
@@ -688,7 +683,7 @@ export function MatrizForm({ onSuccess }: Props) {
                       {escalaProbabilidade.map((item, index) => (
                         <div
                           key={index}
-                          className="flex gap-2 items-center bg-muted/30 hover:bg-muted/50 rounded-md p-2 transition-colors"
+                          className="flex gap-2 items-center bg-muted/30 hover:bg-accent rounded-md p-2 transition-colors"
                         >
                           <Input
                             value={item.valor}
@@ -714,7 +709,7 @@ export function MatrizForm({ onSuccess }: Props) {
                                   className="shrink-0 h-9 w-9 text-muted-foreground hover:text-destructive"
                                   onClick={() => removerEscalaProbabilidade(index)}
                                 >
-                                  <Trash2 className="h-4 w-4" strokeWidth={1.5} />
+                                  <IconDelete className="h-4 w-4" strokeWidth={1.5} />
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>{t('sweepRiscos.comum.remover')}</TooltipContent>
@@ -729,7 +724,7 @@ export function MatrizForm({ onSuccess }: Props) {
                         onClick={adicionarEscalaProbabilidade}
                         className="w-full gap-1.5 border-dashed"
                       >
-                        <Plus className="h-4 w-4" strokeWidth={1.5} />
+                        <IconAdd className="h-4 w-4" strokeWidth={1.5} />
                         {t('sweepRiscos.riscos.matrizForm.adicionarNivel')}
                       </Button>
                     </div>
@@ -742,7 +737,7 @@ export function MatrizForm({ onSuccess }: Props) {
                       {escalaImpacto.map((item, index) => (
                         <div
                           key={index}
-                          className="flex gap-2 items-center bg-muted/30 hover:bg-muted/50 rounded-md p-2 transition-colors"
+                          className="flex gap-2 items-center bg-muted/30 hover:bg-accent rounded-md p-2 transition-colors"
                         >
                           <Input
                             value={item.valor}
@@ -768,7 +763,7 @@ export function MatrizForm({ onSuccess }: Props) {
                                   className="shrink-0 h-9 w-9 text-muted-foreground hover:text-destructive"
                                   onClick={() => removerEscalaImpacto(index)}
                                 >
-                                  <Trash2 className="h-4 w-4" strokeWidth={1.5} />
+                                  <IconDelete className="h-4 w-4" strokeWidth={1.5} />
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>{t('sweepRiscos.comum.remover')}</TooltipContent>
@@ -783,7 +778,7 @@ export function MatrizForm({ onSuccess }: Props) {
                         onClick={adicionarEscalaImpacto}
                         className="w-full gap-1.5 border-dashed"
                       >
-                        <Plus className="h-4 w-4" strokeWidth={1.5} />
+                        <IconAdd className="h-4 w-4" strokeWidth={1.5} />
                         {t('sweepRiscos.riscos.matrizForm.adicionarNivel')}
                       </Button>
                     </div>
@@ -798,7 +793,7 @@ export function MatrizForm({ onSuccess }: Props) {
                 />
                 {faixasError && (
                   <Alert variant="destructive" className="mb-3">
-                    <AlertTriangle className="h-4 w-4" strokeWidth={1.5} />
+                    <IconWarning className="h-4 w-4" strokeWidth={1.5} />
                     <AlertDescription>{faixasError}</AlertDescription>
                   </Alert>
                 )}
@@ -806,7 +801,7 @@ export function MatrizForm({ onSuccess }: Props) {
                   {niveisRisco.map((nivel, index) => (
                     <div
                       key={index}
-                      className="flex gap-2 items-center bg-muted/30 hover:bg-muted/50 rounded-md p-2 transition-colors"
+                      className="flex gap-2 items-center bg-muted/30 hover:bg-accent rounded-md p-2 transition-colors"
                     >
                       <div className="flex items-center gap-1 shrink-0">
                         <Input
@@ -848,7 +843,7 @@ export function MatrizForm({ onSuccess }: Props) {
                               className="shrink-0 h-9 w-9 text-muted-foreground hover:text-destructive"
                               onClick={() => removerNivelRisco(index)}
                             >
-                              <Trash2 className="h-4 w-4" strokeWidth={1.5} />
+                              <IconDelete className="h-4 w-4" strokeWidth={1.5} />
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>{t('sweepRiscos.comum.remover')}</TooltipContent>
@@ -863,7 +858,7 @@ export function MatrizForm({ onSuccess }: Props) {
                     onClick={adicionarNivelRisco}
                     className="w-full gap-1.5 border-dashed"
                   >
-                    <Plus className="h-4 w-4" strokeWidth={1.5} />
+                    <IconAdd className="h-4 w-4" strokeWidth={1.5} />
                     {t('sweepRiscos.riscos.matrizForm.adicionarNivelRisco')}
                   </Button>
                 </div>
@@ -893,7 +888,7 @@ export function MatrizForm({ onSuccess }: Props) {
                           className="gap-1.5"
                         >
                           {t('sweepRiscos.riscos.matrizForm.ateNivel', { nivel: nivel.nivel || t('sweepRiscos.riscos.matrizForm.nivelN', { n: realIndex + 1 }) })}
-                          <span className="text-[10px] opacity-70 tabular-nums">(≤{nivel.max})</span>
+                          <span className="text-micro opacity-70 tabular-nums">(≤{nivel.max})</span>
                         </Button>
                       );
                       });
@@ -910,7 +905,7 @@ export function MatrizForm({ onSuccess }: Props) {
           <SectionHeader eyebrow={t('fin.riscos.matrizForm.persistencia')} title={t('fin.riscos.matrizForm.matrizesSalvas')} />
           {matrizes.length === 0 ? (
             <EmptyState
-              icon={<Grid3X3 className="h-10 w-10" strokeWidth={1.5} />}
+              icon={<IconGrid className="h-10 w-10" strokeWidth={1.5} />}
               title={t('fin.riscos.matrizForm.vazioTitle')}
               description={t('fin.riscos.matrizForm.vazioDesc')}
             />
@@ -925,14 +920,14 @@ export function MatrizForm({ onSuccess }: Props) {
                       'flex items-center justify-between gap-3 p-3 border rounded-md transition-colors',
                       isEditing
                         ? 'border-primary/40 bg-primary/5'
-                        : 'border-border hover:bg-muted/40'
+                        : 'border-border hover:bg-accent'
                     )}
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 min-w-0">
                         <h5 className="font-medium text-sm truncate">{matriz.nome}</h5>
                         <span className={cn(
-                          'shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium',
+                          'shrink-0 rounded-md border px-2 py-0.5 text-micro font-medium',
                           matriz.configuracao
                             ? 'border-border bg-muted/40 text-muted-foreground'
                             : 'border-destructive/40 bg-destructive/10 text-destructive'
@@ -944,7 +939,6 @@ export function MatrizForm({ onSuccess }: Props) {
                         <p className="text-xs text-muted-foreground truncate">{matriz.descricao}</p>
                       )}
 
-
                     </div>
                     <div className="flex gap-1 shrink-0">
                       <Tooltip>
@@ -955,7 +949,7 @@ export function MatrizForm({ onSuccess }: Props) {
                             className="h-8 w-8"
                             onClick={() => carregarMatrizParaEdicao(matriz)}
                           >
-                            <Edit className="h-4 w-4" strokeWidth={1.5} />
+                            <IconEdit className="h-4 w-4" strokeWidth={1.5} />
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>{t('fin.comum.editar')}</TooltipContent>
@@ -968,7 +962,7 @@ export function MatrizForm({ onSuccess }: Props) {
                             className="h-8 w-8 text-muted-foreground hover:text-destructive"
                             onClick={() => handleDeleteClick(matriz.id)}
                           >
-                            <Trash2 className="h-4 w-4" strokeWidth={1.5} />
+                            <IconDelete className="h-4 w-4" strokeWidth={1.5} />
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>{t('fin.comum.excluir')}</TooltipContent>

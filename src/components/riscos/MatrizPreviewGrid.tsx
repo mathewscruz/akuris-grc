@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
-import { ChevronDown, ChevronUp, Grid3X3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { IconChevronDown, IconChevronUp, IconGrid } from '@/components/icons';
 
 export interface PreviewEscalaItem {
   valor: string;
@@ -74,11 +74,9 @@ export function MatrizPreviewGrid({
       <div className="rounded-lg border border-border bg-card/95 backdrop-blur-sm p-4 shadow-sm">
         <div className="flex items-center justify-between gap-3 mb-3">
           <div className="flex items-center gap-2 min-w-0">
-            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary shrink-0">
-              <Grid3X3 className="h-4 w-4" strokeWidth={1.5} />
-            </div>
+            <IconGrid className="h-4 w-4 shrink-0 text-primary" strokeWidth={1.5} />
             <div className="flex flex-col gap-0.5 min-w-0">
-              <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
+              <span className="text-xs text-muted-foreground font-medium">
                 {titulo}
               </span>
               <span className="text-xs text-muted-foreground truncate">
@@ -95,16 +93,16 @@ export function MatrizPreviewGrid({
             onClick={() => setAberto((v) => !v)}
             aria-expanded={aberto}
           >
-            {aberto ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            {aberto ? <IconChevronUp className="h-4 w-4" /> : <IconChevronDown className="h-4 w-4" />}
           </Button>
         </div>
 
         {aberto && (
           <div className="overflow-x-auto">
-            <table className="w-full border-separate border-spacing-1 text-[11px]">
+            <table className="w-full border-separate border-spacing-1 text-micro">
               <thead>
                 <tr>
-                  <th className="w-24 text-left align-bottom pb-1 text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
+                  <th className="w-24 text-left align-bottom pb-1 text-xs text-muted-foreground font-medium">
                     {eixoProbabilidade}
                   </th>
                   {colunas.map((c) => (
@@ -153,7 +151,7 @@ export function MatrizPreviewGrid({
                 .map((n, idx) => (
                   <span
                     key={`${n.nivel}-${idx}`}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-border px-2 py-0.5 text-[10px] text-muted-foreground"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-0.5 text-micro text-muted-foreground"
                   >
                     <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: n.cor }} />
                     {n.nivel || `Nível ${idx + 1}`}
@@ -163,12 +161,12 @@ export function MatrizPreviewGrid({
                   </span>
                 ))}
               {apetiteMax != null && (
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-foreground/40 px-2 py-0.5 text-[10px] text-foreground">
+                <span className="inline-flex items-center gap-1.5 rounded-md border border-foreground/40 px-2 py-0.5 text-micro text-foreground">
                   <span className="h-2.5 w-2.5 rounded-sm ring-1 ring-foreground/60" />
                   {legendaApetite} ≤ {apetiteMax}
                 </span>
               )}
-              <span className="text-[10px] text-muted-foreground">{eixoImpacto} →</span>
+              <span className="text-micro text-muted-foreground">{eixoImpacto} →</span>
             </div>
           </div>
         )}

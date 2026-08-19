@@ -20,7 +20,7 @@ export function SlaCell({ dataProximaRevisao }: { dataProximaRevisao?: string | 
     return <span className="text-xs text-muted-foreground">—</span>;
   }
   return (
-    <StatusBadge size="sm" tone={cfg.tone}>
+    <StatusBadge tone={cfg.tone}>
       {t(cfg.key)}
     </StatusBadge>
   );

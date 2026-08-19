@@ -30,7 +30,7 @@ export function ScoreRing({ score, sev, size = 68 }: { score: number; sev: Sever
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span className="font-bold tabular-nums leading-none" style={{ color, fontSize: size * 0.29 }}>{score || '—'}</span>
-        <span className="text-[8px] uppercase tracking-[1px] text-muted-foreground mt-0.5">{t('riscosDetalhe.visuals.score')}</span>
+        <span className="text-xs text-muted-foreground mt-0.5">{t('riscosDetalhe.visuals.score')}</span>
       </div>
     </div>
   );
@@ -40,16 +40,16 @@ export function ScoreRing({ score, sev, size = 68 }: { score: number; sev: Sever
 export function ScoreBlock({ label, nivel, score, p, i, emptyLabel }: { label: string; nivel?: string | null; score: number; p?: string; i?: string; emptyLabel?: string }) {
   return (
     <div className="flex-1 min-w-0 bg-card border border-border rounded-lg p-3">
-      <div className="text-[10px] font-semibold uppercase tracking-[0.6px] text-muted-foreground">{label}</div>
+      <div className="text-xs font-semibold text-muted-foreground">{label}</div>
       <div className="mt-1.5 flex items-center justify-between gap-2">
         {nivel ? (
-          <StatusBadge size="sm" {...resolveNivelRiscoTone(nivel)}>{formatStatus(nivel)}</StatusBadge>
+          <StatusBadge {...resolveNivelRiscoTone(nivel)}>{formatStatus(nivel)}</StatusBadge>
         ) : (
-          <StatusBadge size="sm" tone="neutral">{emptyLabel || '—'}</StatusBadge>
+          <StatusBadge tone="neutral">{emptyLabel || '—'}</StatusBadge>
         )}
         <span className="text-lg font-semibold tabular-nums">{score || '—'}</span>
       </div>
-      <div className="text-[11px] text-muted-foreground mt-1">P {p || '—'} × I {i || '—'}</div>
+      <div className="text-micro text-muted-foreground mt-1">P {p || '—'} × I {i || '—'}</div>
     </div>
   );
 }
@@ -58,7 +58,7 @@ export function ScoreBlock({ label, nivel, score, p, i, emptyLabel }: { label: s
 export function StatTile({ icon, label, value }: { icon: React.ReactNode; label: string; value: React.ReactNode }) {
   return (
     <div className="bg-card border border-border rounded-lg p-3 flex flex-col gap-1">
-      <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.5px] text-muted-foreground [&_svg]:h-3 [&_svg]:w-3">
+      <span className="inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground [&_svg]:h-3 [&_svg]:w-3">
         {icon}{label}
       </span>
       <span className="text-base font-semibold tabular-nums truncate">{value}</span>
@@ -70,7 +70,7 @@ export function StatTile({ icon, label, value }: { icon: React.ReactNode; label:
 export function HeaderMeta({ icon, label, value }: { icon: React.ReactNode; label: string; value: React.ReactNode }) {
   return (
     <div className="min-w-0">
-      <div className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.6px] text-muted-foreground [&_svg]:h-3 [&_svg]:w-3">
+      <div className="inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground [&_svg]:h-3 [&_svg]:w-3">
         {icon}{label}
       </div>
       <div className="text-xs text-foreground mt-1 truncate">{value}</div>

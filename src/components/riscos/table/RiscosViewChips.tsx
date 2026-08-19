@@ -46,7 +46,7 @@ export function RiscosViewChips({ active, onChange, items }: Props) {
             {v.label}
             <span
               className={cn(
-                'tabular-nums text-[11px] px-1.5 rounded-full',
+                'tabular-nums text-micro px-1.5 rounded-md',
                 isActive ? 'bg-primary/10 text-primary dark:bg-primary/20 dark:text-foreground' : 'bg-muted text-muted-foreground',
               )}
             >

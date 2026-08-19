@@ -1,4 +1,5 @@
 import { logger } from '@/lib/logger';
+import { IconSuccess, IconWarning, IconInfo, IconFile, IconChevron, IconSave, IconGauge, IconSettings, IconLink, IconShieldCheck, IconChevronLeft } from '@/components/icons';
 import { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -16,7 +17,6 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
-import { Save, AlertCircle, FileText, Gauge, Settings2, Link2, ShieldCheck, ChevronLeft, ChevronRight, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { toast } from 'sonner';
@@ -27,6 +27,9 @@ import { useIntegrationNotify } from '@/hooks/useIntegrationNotify';
 import { motivoBloqueioTratado, podeMarcarTratado, resumirTratamentos, STATUS_TRATADO } from './risk-status';
 import { useLanguage } from '@/contexts/LanguageContext';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import { formatarDiaParaDB, parseDataLocal } from '@/lib/date-utils';
+import { notificar } from '@/lib/notificar';
+import { exigirEscrita } from '@/lib/supabase-write';
 
 const makeRiscoSchema = (t: (k: string) => string) => z.object({
   nome: z.string().min(1, t('fin.validacao.nomeObrigatorio')),
@@ -345,7 +348,6 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
     );
   };
 
-
   const onSubmit = async (data: RiscoForm, confirmadoInvalidar = false) => {
     logger.debug('🚀 onSubmit chamado com dados:', { data: data });
 
@@ -412,7 +414,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
       toast.error('Indique até quando o aceite é válido.');
       return;
     }
-    if (data.aceito && data.aceite_valido_ate && new Date(data.aceite_valido_ate) <= new Date()) {
+    if (data.aceito && data.aceite_valido_ate && parseDataLocal(data.aceite_valido_ate) <= new Date()) {
       toast.error('A validade do aceite tem de ser uma data futura.');
       return;
     }
@@ -526,7 +528,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
         for (const anexo of anexosAceite) {
           if (!anexo.id && riscoId) {
             try {
-              await supabase.from('riscos_anexos').insert({
+              await exigirEscrita(supabase.from('riscos_anexos').insert({
                 risco_id: riscoId,
                 nome_arquivo: anexo.nome_arquivo,
                 url_arquivo: anexo.url_arquivo,
@@ -535,7 +537,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                 tipo_anexo: 'aceite',
                 empresa_id: profile.empresa_id,
                 created_by: profile.user_id
-              });
+              }));
             } catch (anexoError) {
               logger.error('Erro ao salvar anexo:', { data: anexoError });
             }
@@ -556,7 +558,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
       }
 
       // Atualizar vínculos com ativos
-      await supabase.from('riscos_ativos').delete().eq('risco_id', riscoId);
+      await exigirEscrita(supabase.from('riscos_ativos').delete().eq('risco_id', riscoId));
       
       if (data.ativos_vinculados.length > 0) {
         const vinculos = data.ativos_vinculados.map(ativoId => ({
@@ -564,12 +566,12 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
           ativo_id: ativoId
         }));
 
-        await supabase.from('riscos_ativos').insert(vinculos);
+        await exigirEscrita(supabase.from('riscos_ativos').insert(vinculos));
       }
 
       // Registrar histórico de avaliação automaticamente
       try {
-        await supabase.from('riscos_historico_avaliacoes').insert([
+        await exigirEscrita(supabase.from('riscos_historico_avaliacoes').insert([
           {
             risco_id: riscoId,
             empresa_id: profile.empresa_id,
@@ -590,7 +592,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
             avaliado_por: profile.user_id,
             observacoes: risco?.id ? t('fin.riscos.wizard.reavaliacaoResidual') : t('fin.riscos.wizard.avaliacaoResidualInicial')
           }] : [])
-        ]);
+        ]));
       } catch (histError) {
         logger.warn('Erro ao registrar histórico de avaliação:', { data: histError });
       }
@@ -599,12 +601,11 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
       if (isNovoAceite && data.aprovador_aceite) {
         try {
           // Notificação in-app
-          await supabase.from('notifications').insert({
-            user_id: data.aprovador_aceite,
-            title: t('fin.riscos.wizard.notifTitle'),
-            message: t('sweepRiscos.riscos.wizard.notifMessage', { nome: data.nome }),
-            type: 'info',
-            link_to: '/riscos'
+          await notificar({
+            destinatario: data.aprovador_aceite,
+            titulo: t('fin.riscos.wizard.notifTitle'),
+            mensagem: t('sweepRiscos.riscos.wizard.notifMessage', { nome: data.nome }),
+            linkPara: '/riscos',
           });
 
           // E-mail via edge function
@@ -684,16 +685,16 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
   };
 
   const tabsMeta: Array<{ key: TabKey; label: string; icon: any; description: string }> = [
-    { key: 'identificacao', label: t('fin.riscos.wizard.stepIdentificacao'), icon: FileText, description: t('fin.riscos.wizard.stepIdentificacaoDesc') },
-    { key: 'avaliacao', label: t('fin.riscos.wizard.stepAvaliacao'), icon: Gauge, description: t('campos.risco.avaliacaoInicialDescShort') },
-    { key: 'detalhes', label: 'Detalhes', icon: Settings2, description: 'Status, controles, ativos' },
-    { key: 'residual', label: t('fin.riscos.wizard.stepResidual'), icon: Link2, description: t('fin.riscos.wizard.stepResidualDesc') },
-    { key: 'aceite', label: t('fin.riscos.wizard.stepAceite'), icon: ShieldCheck, description: t('fin.riscos.wizard.stepAceiteDesc') },
+    { key: 'identificacao', label: t('fin.riscos.wizard.stepIdentificacao'), icon: IconFile, description: t('fin.riscos.wizard.stepIdentificacaoDesc') },
+    { key: 'avaliacao', label: t('fin.riscos.wizard.stepAvaliacao'), icon: IconGauge, description: t('campos.risco.avaliacaoInicialDescShort') },
+    { key: 'detalhes', label: 'Detalhes', icon: IconSettings, description: 'Status, controles, ativos' },
+    { key: 'residual', label: t('fin.riscos.wizard.stepResidual'), icon: IconLink, description: t('fin.riscos.wizard.stepResidualDesc') },
+    { key: 'aceite', label: t('fin.riscos.wizard.stepAceite'), icon: IconShieldCheck, description: t('fin.riscos.wizard.stepAceiteDesc') },
   ];
 
   const TabIndicator = ({ state }: { state: 'completed' | 'error' | 'pending' }) => {
-    if (state === 'completed') return <CheckCircle2 className="h-4 w-4 text-emerald-500" />;
-    if (state === 'error') return <AlertTriangle className="h-4 w-4 text-destructive" />;
+    if (state === 'completed') return <IconSuccess className="h-4 w-4 text-success" />;
+    if (state === 'error') return <IconWarning className="h-4 w-4 text-destructive" />;
     return <div className="h-2 w-2 rounded-full bg-muted-foreground/30" />;
   };
 
@@ -703,7 +704,10 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit((d) => onSubmit(d))} className="flex flex-col h-full">
+      {/* `flex-1 min-h-0` e não `h-full`: um item de flex tem `min-height:auto`,
+          que recusa encolher abaixo do conteúdo e ganha ao `height:100%`. Era
+          por aí que o rodapé com o Salvar saía pela borda num ecrã de 768. */}
+      <form onSubmit={form.handleSubmit((d) => onSubmit(d))} className="flex flex-1 min-h-0 flex-col">
         <Tabs
           value={activeTab}
           onValueChange={(v) => {
@@ -723,9 +727,9 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
           className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0"
         >
           {/* Sidebar — Navegação + Resumo Vivo (desktop) */}
-          <aside className="hidden lg:flex flex-col w-72 border-r bg-muted/30 flex-shrink-0">
+          <aside className="hidden lg:flex flex-col w-72 border-r bg-card flex-shrink-0">
             <div className="p-4 border-b">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Etapas</h3>
+              <h3 className="text-xs font-semibold text-muted-foreground mb-3">Etapas</h3>
               <TabsList className="flex flex-col h-auto w-full bg-transparent border-0 gap-1 p-0">
                 {tabsMeta.map((t) => {
                   const state = tabState(t.key);
@@ -735,8 +739,8 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                       value={t.key}
                       className={cn(
                         "w-full justify-start px-3 py-2.5 h-auto rounded-md border border-transparent",
-                        "data-[state=active]:bg-background data-[state=active]:border-border data-[state=active]:shadow-sm",
-                        "data-[state=active]:after:hidden hover:bg-background/60"
+                        "data-[state=active]:bg-card data-[state=active]:border-border data-[state=active]:shadow-sm",
+                        "data-[state=active]:after:hidden hover:bg-card/60"
                       )}
                     >
                       <div className="flex items-center gap-3 w-full">
@@ -754,8 +758,8 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
             </div>
 
             {/* Resumo Vivo */}
-            <div className="p-4 space-y-3 overflow-y-auto flex-1">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t('cardsKpi.sweep.riscos.resumo')}</h3>
+            <div className="p-4 space-y-3 overflow-y-auto flex-1 min-h-0">
+              <h3 className="text-xs font-semibold text-muted-foreground">{t('cardsKpi.sweep.riscos.resumo')}</h3>
               <Card>
                 <CardContent className="p-3 space-y-3 text-sm">
                   <div>
@@ -797,8 +801,8 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                         variant="outline"
                         className={cn(
                           "capitalize",
-                          risco.status_aceite === 'pendente' && "border-yellow-500 text-yellow-700 dark:text-yellow-400",
-                          risco.status_aceite === 'aprovado' && "border-emerald-500 text-emerald-700 dark:text-emerald-400",
+                          risco.status_aceite === 'pendente' && "border-warning text-warning dark:text-warning",
+                          risco.status_aceite === 'aprovado' && "border-success text-success dark:text-success",
                           risco.status_aceite === 'rejeitado' && "border-destructive text-destructive"
                         )}
                       >
@@ -820,7 +824,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                   <TabsTrigger
                     key={t.key}
                     value={t.key}
-                    className="px-3 py-1.5 data-[state=active]:after:hidden data-[state=active]:bg-background data-[state=active]:border data-[state=active]:border-border rounded-md"
+                    className="px-3 py-1.5 data-[state=active]:after:hidden data-[state=active]:bg-card data-[state=active]:border data-[state=active]:border-border rounded-md"
                   >
                     <span className="flex items-center gap-2">
                       <t.icon className="h-4 w-4" />
@@ -836,9 +840,9 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
           {/* Conteúdo principal */}
           <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 min-h-0">
             {/* IDENTIFICAÇÃO */}
-            <TabsContent value="identificacao" className="mt-0 space-y-4 max-w-3xl mx-auto">
+            <TabsContent value="identificacao" className="space-y-4 max-w-3xl mx-auto">
               <div>
-                <h2 className="text-lg font-semibold flex items-center gap-2"><FileText className="h-5 w-5" />{t('fin.riscos.wizard.identificacaoRisco')}</h2>
+                <h2 className="text-lg font-semibold flex items-center gap-2"><IconFile className="h-5 w-5" />{t('fin.riscos.wizard.identificacaoRisco')}</h2>
                 <p className="text-sm text-muted-foreground">{t('fin.riscos.wizard.identificacaoRiscoDesc')}</p>
               </div>
 
@@ -987,9 +991,9 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
             </TabsContent>
 
             {/* AVALIAÇÃO INICIAL */}
-            <TabsContent value="avaliacao" className="mt-0 space-y-4 max-w-3xl mx-auto">
+            <TabsContent value="avaliacao" className="space-y-4 max-w-3xl mx-auto">
               <div>
-                <h2 className="text-lg font-semibold flex items-center gap-2"><Gauge className="h-5 w-5" />{t('fin.riscos.wizard.stepAvaliacao')}</h2>
+                <h2 className="text-lg font-semibold flex items-center gap-2"><IconGauge className="h-5 w-5" />{t('fin.riscos.wizard.stepAvaliacao')}</h2>
                 <p className="text-sm text-muted-foreground">{t('campos.risco.avaliacaoInicialDesc')}</p>
               </div>
 
@@ -1061,7 +1065,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                 <Card className={cn("border-2", nivelCorClass(nivelInicialCalculado).split(' ').filter(c => c.startsWith('border-')).join(' '))}>
                   <CardContent className="p-4 flex items-center justify-between">
                     <div>
-                      <div className="text-xs uppercase tracking-wider text-muted-foreground">{t('fin.riscos.wizard.nivelCalculado')}</div>
+                      <div className="text-xs text-muted-foreground">{t('fin.riscos.wizard.nivelCalculado')}</div>
                       <div className="text-2xl font-bold mt-1">{nivelInicialCalculado}</div>
                     </div>
                     <Badge className={cn("text-base px-3 py-1.5 border", nivelCorClass(nivelInicialCalculado))}>
@@ -1134,9 +1138,9 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
             </TabsContent>
 
             {/* DETALHES */}
-            <TabsContent value="detalhes" className="mt-0 space-y-4 max-w-3xl mx-auto">
+            <TabsContent value="detalhes" className="space-y-4 max-w-3xl mx-auto">
               <div>
-                <h2 className="text-lg font-semibold flex items-center gap-2"><Settings2 className="h-5 w-5" /> {t('cardsKpi.sweep.riscos.detalhesAdicionais')}</h2>
+                <h2 className="text-lg font-semibold flex items-center gap-2"><IconSettings className="h-5 w-5" /> {t('cardsKpi.sweep.riscos.detalhesAdicionais')}</h2>
                 <p className="text-sm text-muted-foreground">{t('cardsKpi.sweep.riscos.detalhesAdicionaisDesc')}</p>
               </div>
 
@@ -1230,9 +1234,9 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
             </TabsContent>
 
             {/* RESIDUAL */}
-            <TabsContent value="residual" className="mt-0 space-y-4 max-w-3xl mx-auto">
+            <TabsContent value="residual" className="space-y-4 max-w-3xl mx-auto">
               <div>
-                <h2 className="text-lg font-semibold flex items-center gap-2"><Link2 className="h-5 w-5" />{t('fin.riscos.wizard.avaliacaoResidualTitle')}</h2>
+                <h2 className="text-lg font-semibold flex items-center gap-2"><IconLink className="h-5 w-5" />{t('fin.riscos.wizard.avaliacaoResidualTitle')}</h2>
                 <p className="text-sm text-muted-foreground">{t('fin.riscos.wizard.avaliacaoResidualDesc')}</p>
               </div>
 
@@ -1304,7 +1308,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                 <Card className={cn("border-2", nivelCorClass(nivelResidualCalculado).split(' ').filter(c => c.startsWith('border-')).join(' '))}>
                   <CardContent className="p-4 flex items-center justify-between">
                     <div>
-                      <div className="text-xs uppercase tracking-wider text-muted-foreground">{t('fin.riscos.wizard.nivelResidualCalculado')}</div>
+                      <div className="text-xs text-muted-foreground">{t('fin.riscos.wizard.nivelResidualCalculado')}</div>
                       <div className="text-2xl font-bold mt-1">{nivelResidualCalculado}</div>
                     </div>
                     <Badge className={cn("text-base px-3 py-1.5 border", nivelCorClass(nivelResidualCalculado))}>
@@ -1316,9 +1320,9 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
             </TabsContent>
 
             {/* ACEITE */}
-            <TabsContent value="aceite" className="mt-0 space-y-4 max-w-3xl mx-auto">
+            <TabsContent value="aceite" className="space-y-4 max-w-3xl mx-auto">
               <div>
-                <h2 className="text-lg font-semibold flex items-center gap-2"><ShieldCheck className="h-5 w-5" />{t('residuos.risco.aceiteRisco')}</h2>
+                <h2 className="text-lg font-semibold flex items-center gap-2"><IconShieldCheck className="h-5 w-5" />{t('residuos.risco.aceiteRisco')}</h2>
                 <p className="text-sm text-muted-foreground">{t('fin.riscos.wizard.aceiteDesc')}</p>
               </div>
 
@@ -1428,7 +1432,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                               onClick={() => {
                                 const d = new Date();
                                 d.setMonth(d.getMonth() + meses);
-                                field.onChange(d.toISOString().split('T')[0]);
+                                field.onChange(formatarDiaParaDB(d));
                               }}
                             >
                               {meses} meses
@@ -1446,15 +1450,13 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
 
                   {risco?.aceito && (
                     <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/5 p-3 text-sm text-warning">
-                      <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" strokeWidth={1.5} />
+                      <IconWarning className="h-4 w-4 mt-0.5 shrink-0" strokeWidth={1.5} />
                       <span>
                         Alterar a probabilidade, o impacto ou os controlos invalida o aceite vigente e devolve o risco a
                         "Em revisão".
                       </span>
                     </div>
                   )}
-
-
 
                   {risco?.id && (
                     <div className="space-y-2">
@@ -1474,7 +1476,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
         </Tabs>
 
         {/* Footer sticky */}
-        <div className="flex-shrink-0 border-t bg-background px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
+        <div className="flex-shrink-0 border-t bg-card px-4 sm:px-6 py-3 flex items-center justify-between gap-3">
           <Button
             type="button"
             variant="outline"
@@ -1482,7 +1484,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
             disabled={isFirstTab}
             size="sm"
           >
-            <ChevronLeft className="h-4 w-4 mr-1" /> Anterior
+            <IconChevronLeft className="h-4 w-4 mr-1" /> Anterior
           </Button>
 
           <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -1492,7 +1494,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
           <div className="flex items-center gap-2">
             {!isLastTab && (
               <Button type="button" variant="outline" onClick={() => goToTab('next')} size="sm">
-                {t('sweepRiscos.riscos.wizard.proxima')} <ChevronRight className="h-4 w-4 ml-1" />
+                {t('sweepRiscos.riscos.wizard.proxima')} <IconChevron className="h-4 w-4 ml-1" />
               </Button>
             )}
             {(() => {
@@ -1505,11 +1507,11 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
               return (
                 <span title={reason} className="inline-flex flex-col items-end gap-1">
                   <Button type="submit" disabled={loading} size="sm">
-                    <Save className="h-4 w-4 mr-1.5" />
+                    <IconSave className="h-4 w-4 mr-1.5" />
                     {loading ? t('fin.comum.salvando') : risco ? t('fin.comum.atualizar') : t('fin.comum.salvar')}
                   </Button>
                   {reason && (
-                    <span className="text-[11px] text-destructive">{reason}</span>
+                    <span className="text-micro text-destructive">{reason}</span>
                   )}
                 </span>
               );

@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Calendar, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
-import { RiscosIcon } from '@/components/icons';
+import { RiscosIcon, IconAdd, IconEdit, IconDelete, IconCalendar, IconMoney } from '@/components/icons';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { SortableTableHead, useTableSort } from '@/components/ui/sortable-table-head';
@@ -199,7 +198,7 @@ export function TratamentosList({ riscoId, riscoNome, embedded = false, riscoDat
         </span>
       </div>
       <Button onClick={openCreateDialog} size="sm">
-        <Plus className="mr-2 h-4 w-4" strokeWidth={1.5} />{t('fin.riscos.tratamentos.novo')}</Button>
+        <IconAdd className="mr-2 h-4 w-4" strokeWidth={1.5} />{t('fin.riscos.tratamentos.novo')}</Button>
     </div>
   );
 
@@ -235,7 +234,7 @@ export function TratamentosList({ riscoId, riscoNome, embedded = false, riscoDat
               {tratamentosOrdenados.map((tratamento) => (
                 <TableRow key={tratamento.id}>
                   <TableCell>
-                    <StatusBadge size="sm" {...resolveTratamentoTipoTone(tratamento.tipo_tratamento)}>
+                    <StatusBadge {...resolveTratamentoTipoTone(tratamento.tipo_tratamento)}>
                       {formatStatus(tratamento.tipo_tratamento)}
                     </StatusBadge>
                   </TableCell>
@@ -245,7 +244,7 @@ export function TratamentosList({ riscoId, riscoNome, embedded = false, riscoDat
                     </div>
                   </TableCell>
                   <TableCell>
-                    <StatusBadge size="sm" {...resolveTratamentoStatusTone(tratamento.status)}>
+                    <StatusBadge {...resolveTratamentoStatusTone(tratamento.status)}>
                       {formatStatus(tratamento.status)}
                     </StatusBadge>
                   </TableCell>
@@ -269,7 +268,7 @@ export function TratamentosList({ riscoId, riscoNome, embedded = false, riscoDat
                   <TableCell>
                     {tratamento.prazo ? (
                       <div className="flex items-center gap-1.5 text-sm">
-                        <Calendar className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.5} />
+                        <IconCalendar className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.5} />
                         {formatDateOnly(tratamento.prazo)}
                       </div>
                     ) : (
@@ -279,7 +278,7 @@ export function TratamentosList({ riscoId, riscoNome, embedded = false, riscoDat
                   <TableCell>
                     {tratamento.custo ? (
                       <div className="flex items-center gap-1.5 text-sm">
-                        <DollarSign className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.5} />
+                        <IconMoney className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.5} />
                         {new Intl.NumberFormat('pt-BR', {
                           style: 'currency',
                           currency: 'BRL',
@@ -292,7 +291,7 @@ export function TratamentosList({ riscoId, riscoNome, embedded = false, riscoDat
                   <TableCell>
                     <div className="flex gap-2 justify-end">
                       <Button variant="ghost" size="icon" onClick={() => handleEdit(tratamento)}>
-                        <Edit className="h-3.5 w-3.5" strokeWidth={1.5} />
+                        <IconEdit className="h-3.5 w-3.5" strokeWidth={1.5} />
                       </Button>
                       <Button
                         variant="ghost"
@@ -300,7 +299,7 @@ export function TratamentosList({ riscoId, riscoNome, embedded = false, riscoDat
                         onClick={() => openDeleteDialog(tratamento)}
                         className="text-destructive hover:text-destructive"
                       >
-                        <Trash2 className="h-3.5 w-3.5" strokeWidth={1.5} />
+                        <IconDelete className="h-3.5 w-3.5" strokeWidth={1.5} />
                       </Button>
                     </div>
                   </TableCell>

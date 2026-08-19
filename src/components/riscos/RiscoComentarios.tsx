@@ -16,12 +16,12 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
-import { Send, MessageSquare, Trash2, AlertTriangle, RotateCcw } from 'lucide-react';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { initials } from '@/components/riscos/risk-utils';
 import { filterUuids } from '@/lib/uuid';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { IconSend, IconWarning, IconDelete, IconMessage, IconUndo } from '@/components/icons';
+import { dateFnsLocale } from '@/lib/date-utils';
 
 interface Comentario {
   id: string;
@@ -147,9 +147,9 @@ export function RiscoComentarios({ riscoId }: { riscoId: string }) {
           }}
         />
         <div className="flex items-center justify-between pt-1">
-          <span className="text-[10.5px] text-muted-foreground">{t('residuos.risco.ctrlEnter')}</span>
+          <span className="text-micro text-muted-foreground">{t('residuos.risco.ctrlEnter')}</span>
           <Button size="sm" className="h-7 px-3 text-xs" onClick={submit} disabled={!texto.trim() || add.isPending || isError}>
-            <Send className="h-3.5 w-3.5 mr-1" strokeWidth={1.5} />
+            <IconSend className="h-3.5 w-3.5 mr-1" strokeWidth={1.5} />
             {add.isPending ? t('sweepRiscos.riscos.comentarios.enviando') : t('sweepRiscos.riscos.comentarios.comentar')}
           </Button>
         </div>
@@ -167,12 +167,12 @@ export function RiscoComentarios({ riscoId }: { riscoId: string }) {
           className="rounded-lg border border-destructive/40 bg-destructive/5 p-4 text-sm"
         >
           <div className="flex items-start gap-2.5">
-            <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0 text-destructive" strokeWidth={1.5} />
+            <IconWarning className="h-4 w-4 mt-0.5 shrink-0 text-destructive" strokeWidth={1.5} />
             <div className="min-w-0 space-y-2">
               <p className="font-medium text-destructive">{t('fin.riscos.comentarios.erroCarregar')}</p>
               <p className="text-muted-foreground">{mensagemErroComentarios(error, t)}</p>
               <Button size="sm" variant="outline" className="h-7 px-3 text-xs" onClick={() => refetch()} disabled={isFetching}>
-                <RotateCcw className="h-3.5 w-3.5 mr-1" strokeWidth={1.5} />
+                <IconUndo className="h-3.5 w-3.5 mr-1" strokeWidth={1.5} />
                 {isFetching ? t('sweepRiscos.riscos.comentarios.tentando') : t('sweepRiscos.riscos.comentarios.tentarNovamente')}
               </Button>
             </div>
@@ -180,7 +180,7 @@ export function RiscoComentarios({ riscoId }: { riscoId: string }) {
         </div>
       ) : comentarios.length === 0 ? (
         <div className="py-8 text-center text-sm text-muted-foreground" data-testid="comentarios-vazio">
-          <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-40" strokeWidth={1.5} />
+          <IconMessage className="h-8 w-8 mx-auto mb-2 opacity-40" strokeWidth={1.5} />
           {t('sweepRiscos.riscos.comentarios.vazio')}
         </div>
       ) : (
@@ -189,13 +189,13 @@ export function RiscoComentarios({ riscoId }: { riscoId: string }) {
             <li key={c.id} className="flex gap-2.5">
               <Avatar className="h-7 w-7 shrink-0 mt-0.5">
                 {c.autor?.foto_url && <AvatarImage src={c.autor.foto_url} alt={c.autor?.nome || ''} />}
-                <AvatarFallback className="text-[10px] bg-primary/10 text-primary">{initials(c.autor?.nome)}</AvatarFallback>
+                <AvatarFallback className="text-micro bg-primary/10 text-primary">{initials(c.autor?.nome)}</AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium truncate">{c.autor?.nome || t('fin.comum.usuario')}</span>
-                  <span className="text-[11px] text-muted-foreground shrink-0">
-                    {format(new Date(c.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                  <span className="text-micro text-muted-foreground shrink-0">
+                    {format(new Date(c.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: dateFnsLocale() })}
                   </span>
                   {currentUserId === c.user_id && (
                     <button
@@ -205,7 +205,7 @@ export function RiscoComentarios({ riscoId }: { riscoId: string }) {
                       className="ml-auto text-muted-foreground hover:text-destructive transition-colors disabled:cursor-wait disabled:opacity-40"
                       aria-label={remove.isPending && remove.variables === c.id ? t('fin.riscos.comentarios.excluindo') : t('fin.riscos.comentarios.excluir')}
                     >
-                      <Trash2 className="h-3.5 w-3.5" strokeWidth={1.5} />
+                      <IconDelete className="h-3.5 w-3.5" strokeWidth={1.5} />
                     </button>
                   )}
                 </div>

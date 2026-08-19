@@ -10,7 +10,6 @@
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { AlertTriangle, ArrowRight, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
@@ -24,6 +23,7 @@ import {
   sugerirResidual,
 } from '@/lib/riscos-controles';
 import type { RequisitoVinculado } from '@/hooks/useRiscoRequisitos';
+import { IconWarning, IconArrowRight } from '@/components/icons';
 
 interface Props {
   riscoId: string;
@@ -130,8 +130,7 @@ export function ResidualSugeridoCard({
 
   return (
     <section className="rounded-lg border border-border bg-card p-3 space-y-2.5">
-      <div className="flex items-center gap-1.5 text-[10.5px] font-semibold tracking-[1.2px] uppercase text-muted-foreground">
-        <Sparkles className="h-3.5 w-3.5" strokeWidth={1.5} />
+      <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
         {t('riscosControles.residual.titulo')}
       </div>
 
@@ -149,25 +148,25 @@ export function ResidualSugeridoCard({
 
       <div className="flex items-center gap-2 text-sm">
         <span className="tabular-nums font-semibold">{sugestao.scoreInerente}</span>
-        <ArrowRight className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
+        <IconArrowRight className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
         <span className="tabular-nums font-semibold text-primary">{sugestao.score}</span>
-        <span className="text-[11px] text-muted-foreground">
+        <span className="text-micro text-muted-foreground">
           (P{sugestao.probabilidade} × I{sugestao.impacto})
         </span>
         {nivelSugerido && (
-          <StatusBadge size="sm" tone="neutral">{nivelSugerido}</StatusBadge>
+          <StatusBadge tone="neutral">{nivelSugerido}</StatusBadge>
         )}
       </div>
 
       {residualAtualScore !== null && (
-        <p className="text-[11px] text-muted-foreground">
+        <p className="text-micro text-muted-foreground">
           {t('riscosControles.residual.avaliado', { score: residualAtualScore })}
         </p>
       )}
 
       {desactualizado && (
-        <div className="flex items-start gap-2 rounded-md border border-warning/40 bg-warning/5 p-2 text-[11px] text-warning">
-          <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" strokeWidth={1.5} />
+        <div className="flex items-start gap-2 rounded-md border border-warning/40 bg-warning/5 p-2 text-micro text-warning">
+          <IconWarning className="h-3.5 w-3.5 mt-0.5 shrink-0" strokeWidth={1.5} />
           <div className="space-y-1">
             <p className="font-semibold">{t('riscosControles.residual.desactualizado')}</p>
             {aceito && subiuDeFaixa && <p>{t('riscosControles.residual.aceiteReavaliar')}</p>}
@@ -179,7 +178,7 @@ export function ResidualSugeridoCard({
         <Button size="sm" variant="outline" className="h-7 text-xs" onClick={aplicar} disabled={saving}>
           {t('riscosControles.residual.aplicar')}
         </Button>
-        <span className="text-[10.5px] text-muted-foreground">
+        <span className="text-micro text-muted-foreground">
           {t('riscosControles.residual.naoImposto')}
         </span>
       </div>

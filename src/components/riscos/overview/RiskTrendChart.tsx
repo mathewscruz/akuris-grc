@@ -19,7 +19,7 @@ import {
 import { cn } from '@/lib/utils';
 import type { TrendPoint } from '@/hooks/useRiskScoreTrend';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { chartSeries, CHART_GRID, CHART_AXIS, CHART_AREA_OPACITY } from '@/lib/chart-tokens';
+import { chartSeries, CHART_GRID, CHART_AXIS, CHART_AREA_OPACITY, CHART_FONT } from '@/lib/chart-tokens';
 
 interface Props {
   /** 12 pontos mensais (mais antigo → atual) vindos de useRiskScoreTrend. */
@@ -43,10 +43,10 @@ export function RiskTrendChart({ points, apetite }: Props) {
   const currentScore = data.length ? data[data.length - 1].score : 0;
 
   return (
-    <div className="bg-card border border-border rounded-xl p-5">
+    <div className="bg-card border border-border rounded-lg p-5">
       <div className="flex items-start justify-between gap-3 mb-3">
         <div>
-          <div className="text-[10.5px] font-semibold tracking-[1.2px] uppercase text-muted-foreground">
+          <div className="text-xs font-semibold text-muted-foreground">
             {t('riscosVisoes.overview.riskTrendChart.titulo')}
           </div>
           <div className="text-xl font-semibold tabular-nums tracking-tight mt-1">
@@ -56,7 +56,7 @@ export function RiskTrendChart({ points, apetite }: Props) {
             ) : null}
           </div>
         </div>
-        <div className="inline-flex p-0.5 bg-muted/60 rounded-md text-[11px]">
+        <div className="inline-flex p-0.5 bg-muted/60 rounded-md text-micro">
           {(['3M', '6M', '12M'] as Range[]).map((r) => (
             <button
               key={r}
@@ -87,7 +87,7 @@ export function RiskTrendChart({ points, apetite }: Props) {
               dataKey="label"
               axisLine={false}
               tickLine={false}
-              tick={{ fontSize: 10, fill: CHART_AXIS }}
+              tick={{ fontSize: CHART_FONT.axis, fill: CHART_AXIS }}
             />
             <YAxis hide />
             {apetite ? (
@@ -98,7 +98,7 @@ export function RiskTrendChart({ points, apetite }: Props) {
                 strokeWidth={1.2}
                 label={{
                   value: t('riscosVisoes.overview.riskTrendChart.apetite'),
-                  fontSize: 10,
+                  fontSize: CHART_FONT.axis,
                   fill: CHART_AXIS,
                   position: 'right',
                 }}
@@ -109,7 +109,7 @@ export function RiskTrendChart({ points, apetite }: Props) {
                 background: 'hsl(var(--card))',
                 border: '1px solid hsl(var(--border))',
                 borderRadius: 8,
-                fontSize: 12,
+                fontSize: CHART_FONT.label,
               }}
               labelStyle={{ color: 'hsl(var(--foreground))' }}
               formatter={(v: number) => [v, t('riscosVisoes.overview.riskTrendChart.scoreTooltip')]}

@@ -24,16 +24,40 @@ function createPolicy(sql: string, name: string) {
 }
 
 describe('regressões do módulo de riscos', () => {
-  it('mantém nomes acessíveis nas ações que viram apenas ícones no mobile', () => {
+  /**
+   * A regra é "quem esconde o rótulo tem de dizer o nome de outra forma" — e
+   * não "estes três botões têm aria-label".
+   *
+   * A versão anterior exigia `aria-label` em exportar e em categorias. Essas
+   * duas ações passaram a viver em `PageHeader.secondaryActions`, um menu onde
+   * cada item mostra o rótulo em texto: o nome acessível já vem do próprio
+   * rótulo e um `aria-label` ali seria redundante. O teste ficou a guardar um
+   * desenho que já não existe, e ficou vermelho por ter razão sobre o passado.
+   *
+   * Guardamos agora a invariante que continua a valer: o botão que encolhe
+   * para só-ícone (`hidden sm:inline` à volta do texto) precisa de nome.
+   */
+  it('todo botão que esconde o rótulo no mobile mantém nome acessível', () => {
     const riscosPage = source('src/pages/Riscos.tsx');
-    // Após a internacionalização, os rótulos vêm do dicionário via t().
-    expect(riscosPage).toContain("aria-label={t('riscos.page.export.aria')}");
-    expect(riscosPage).toContain("aria-label={t('riscos.page.categoriesAria')}");
-    expect(riscosPage).toContain("aria-label={t('riscos.page.newRiskAria')}");
+
+    const botoes = riscosPage.match(/<Button\b[\s\S]*?<\/Button>/g) ?? [];
+    const soIcone = botoes.filter((b) => /hidden sm:inline/.test(b));
+
+    expect(soIcone.length, 'Riscos deixou de ter botões que encolhem para ícone — reveja esta guarda.').toBeGreaterThan(0);
+
+    const semNome = soIcone.filter((b) => !/aria-label=/.test(b));
+    expect(semNome, 'No mobile este botão fica só com o ícone: sem aria-label, o leitor de ecrã anuncia "botão".').toEqual([]);
+  });
+
+  it('as ações secundárias trazem rótulo de texto do dicionário', () => {
+    const riscosPage = source('src/pages/Riscos.tsx');
+    const bloco = riscosPage.slice(riscosPage.indexOf('secondaryActions={['));
+
+    // Sem rótulo visível, o item do menu fica sem nome nenhum — nem texto, nem aria.
+    const semRotulo = (bloco.match(/\{\s*label:[^}]*\}/g) ?? []).filter((item) => !/label:\s*t\(/.test(item));
+    expect(semRotulo, 'Cada ação secundária tem de tirar o rótulo do dicionário via t().').toEqual([]);
 
     const dict = source('src/i18n/modules/riscos.ts');
-    expect(dict).toContain('Exportar riscos');
-    expect(dict).toContain('Categorias de riscos');
     expect(dict).toContain('Novo risco');
   });
 

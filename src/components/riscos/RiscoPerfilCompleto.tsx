@@ -14,7 +14,6 @@ import { resolveNivelRiscoTone, resolveRiscoStatusTone } from '@/lib/status-tone
 import { formatStatus } from '@/lib/text-utils';
 import { formatDateOnly } from '@/lib/date-utils';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
-import { Edit, ShieldCheck, Shield, X, ArrowRight, Wallet, Layers, Tag, User, CalendarClock, Timer, History, Eye, MessageSquare } from 'lucide-react';
 import {
   initials, scoreFromPI, severityFromNivel, shortRiskId, slaFromRevisao, getSlaLabels, financialExposure, type Severity,
 } from '@/components/riscos/risk-utils';
@@ -32,6 +31,7 @@ import { useRiscoDetail } from '@/hooks/useRiscoDetail';
 import { deriveRiscoStatus, isTratamentoConcluido, resumirTratamentos } from '@/components/riscos/risk-status';
 import { RiscoComentarios } from '@/components/riscos/RiscoComentarios';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { IconEdit, IconClose, IconShieldCheck, IconShield, IconArrowRight, IconMoney, IconLayers, IconTag, IconPerson, IconCalendarClock, IconTimer, IconHistory, IconMessage } from '@/components/icons';
 
 interface Risco {
   id: string; nome: string; descricao?: string; status: string;
@@ -55,7 +55,7 @@ interface Props {
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
-  return <div className="text-[10.5px] font-semibold tracking-[1.2px] uppercase text-muted-foreground mb-1.5">{children}</div>;
+  return <div className="text-xs font-semibold text-muted-foreground mb-1.5">{children}</div>;
 }
 function splitLines(text?: string): string[] {
   if (!text) return [];
@@ -106,9 +106,9 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
         </DialogDescription>
         <div className="flex items-center justify-between gap-4 px-6 py-4 border-b border-border">
           <div className="flex items-center gap-3 min-w-0">
-            <span className="font-mono text-[11px] text-muted-foreground">{shortRiskId(risco.id, (risco as any).codigo)}</span>
+            <span className="font-mono text-micro text-muted-foreground">{shortRiskId(risco.id, (risco as any).codigo)}</span>
             <div className="min-w-0">
-              <div className="text-[10.5px] font-semibold uppercase tracking-[1.2px] text-muted-foreground">{t('residuos.risco.perfilRisco')}</div>
+              <div className="text-xs font-semibold text-muted-foreground">{t('residuos.risco.perfilRisco')}</div>
               <DialogTitle asChild>
                 <div className="text-base font-semibold truncate">{risco.nome}</div>
               </DialogTitle>
@@ -116,16 +116,16 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <Button variant="outline" size="sm" onClick={() => onAccept(risco)}>
-              <ShieldCheck className="h-3.5 w-3.5 mr-1.5" strokeWidth={1.5} />Aceitar
+              <IconShieldCheck className="h-3.5 w-3.5 mr-1.5" strokeWidth={1.5} />Aceitar
             </Button>
             <Button variant="outline" size="sm" onClick={() => onEdit(risco)}>
-              <Edit className="h-3.5 w-3.5 mr-1.5" strokeWidth={1.5} />Editar
+              <IconEdit className="h-3.5 w-3.5 mr-1.5" strokeWidth={1.5} />Editar
             </Button>
             <Button size="sm" onClick={() => onOpenTratamentos(risco)}>
-              <Shield className="h-3.5 w-3.5 mr-1.5" strokeWidth={1.5} />Novo tratamento
+              <IconShield className="h-3.5 w-3.5 mr-1.5" strokeWidth={1.5} />Novo tratamento
             </Button>
             <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground" onClick={() => onOpenChange(false)} aria-label={t('fin.comum.fechar')}>
-              <X className="h-4 w-4" strokeWidth={1.5} />
+              <IconClose className="h-4 w-4" strokeWidth={1.5} />
             </Button>
           </div>
         </div>
@@ -138,11 +138,11 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
             <div className="flex items-center gap-4">
               <ScoreRing score={scoreAtual} sev={sevAtual} size={84} />
               <div className="min-w-0 flex flex-col items-start gap-1.5">
-                <StatusBadge size="sm" {...resolveNivelRiscoTone(risco.nivel_risco_residual || risco.nivel_risco_inicial)}>
+                <StatusBadge {...resolveNivelRiscoTone(risco.nivel_risco_residual || risco.nivel_risco_inicial)}>
                   {formatStatus(risco.nivel_risco_residual || risco.nivel_risco_inicial)}
                 </StatusBadge>
                 <span title={isError ? (detailError instanceof Error ? detailError.message : t('sweepRiscos.riscos.detail.falhaCarregarDetalhes')) : statusCoerente.motivo ?? undefined}>
-                  <StatusBadge size="sm" {...(isError ? { tone: 'neutral' as const } : resolveRiscoStatusTone(statusCoerente.status))}>
+                  <StatusBadge {...(isError ? { tone: 'neutral' as const } : resolveRiscoStatusTone(statusCoerente.status))}>
                     {isError ? t('fin.riscos.statusIndisponivel') : formatStatus(statusCoerente.status)}
                   </StatusBadge>
                 </span>
@@ -159,38 +159,38 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
             <section>
               <SectionLabel>{t('campos.risco.inerenteResidual')}</SectionLabel>
               <div className="flex items-stretch gap-2">
-                <ScoreBlock label={t('sweepRiscos.riscos.detail.inerente')} nivel={risco.nivel_risco_inicial} score={inicialScore} p={risco.probabilidade_inicial} i={risco.impacto_inicial} />
+                <ScoreBlock label={t('sweepRiscos.riscos.detail.inerente')} nivel={risco.nivel_risco_residual || risco.nivel_risco_inicial} score={inicialScore} p={risco.probabilidade_inicial} i={risco.impacto_inicial} />
                 <div className="flex flex-col items-center justify-center px-0.5 shrink-0">
-                  <ArrowRight className={reduziu ? 'h-5 w-5 text-success' : 'h-5 w-5 text-muted-foreground'} strokeWidth={2} />
-                  {reduziu && <span className="text-[9px] text-success font-semibold tabular-nums mt-0.5">−{inicialScore - residualScore}</span>}
+                  <IconArrowRight className={reduziu ? 'h-5 w-5 text-success' : 'h-5 w-5 text-muted-foreground'} strokeWidth={2} />
+                  {reduziu && <span className="text-micro text-success font-semibold tabular-nums mt-0.5">−{inicialScore - residualScore}</span>}
                 </div>
                 <ScoreBlock label={t('sweepRiscos.riscos.detail.residual')} nivel={risco.nivel_risco_residual} score={residualScore} p={risco.probabilidade_residual} i={risco.impacto_residual} emptyLabel={t('fin.riscos.naoAvaliado')} />
               </div>
             </section>
 
             <section className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              <StatTile icon={<Wallet />} label={t('fin.riscos.exposicao')} value={exposicao !== null ? formatMoedaEmpresa(exposicao, true) : '—'} />
-              <StatTile icon={<Shield />} label={t('cardsKpi.sweep.riscos.tratamAbbr')} value={`${concluidos}/${trat.length}`} />
-              <StatTile icon={<Layers />} label={t('cardsKpi.sweep.riscos.controles')} value={String(detail?.controles.length ?? 0)} />
+              <StatTile icon={<IconMoney />} label={t('fin.riscos.exposicao')} value={exposicao !== null ? formatMoedaEmpresa(exposicao, true) : '—'} />
+              <StatTile icon={<IconShield />} label={t('cardsKpi.sweep.riscos.tratamAbbr')} value={`${concluidos}/${trat.length}`} />
+              <StatTile icon={<IconLayers />} label={t('cardsKpi.sweep.riscos.controles')} value={String(detail?.controles.length ?? 0)} />
             </section>
 
             <section className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4">
-              <HeaderMeta icon={<Tag />} label={t('cardsKpi.sweep.riscos.categoria')} value={risco.categoria?.nome || '—'} />
-              <HeaderMeta icon={<User />} label={t('residuos.risco.responsavel')} value={
+              <HeaderMeta icon={<IconTag />} label={t('cardsKpi.sweep.riscos.categoria')} value={risco.categoria?.nome || '—'} />
+              <HeaderMeta icon={<IconPerson />} label={t('residuos.risco.responsavel')} value={
                 risco.responsavel_nome ? (
                   <span className="inline-flex items-center gap-1.5">
                     <Avatar className="h-4 w-4">
                       {risco.responsavel_foto && <AvatarImage src={risco.responsavel_foto} alt={risco.responsavel_nome} />}
-                      <AvatarFallback className="text-[8px] bg-primary/10 text-primary">{initials(risco.responsavel_nome)}</AvatarFallback>
+                      <AvatarFallback className="text-micro bg-primary/10 text-primary">{initials(risco.responsavel_nome)}</AvatarFallback>
                     </Avatar>
                     <span className="truncate">{risco.responsavel_nome}</span>
                   </span>
                 ) : '—'
               } />
-              <HeaderMeta icon={<Timer />} label="SLA" value={<StatusBadge size="sm" {...(sla === 'vencido' ? { tone: 'destructive' as const } : sla === 'atencao' ? { tone: 'warning' as const } : sla === 'no_prazo' ? { tone: 'success' as const } : { tone: 'neutral' as const })}>{getSlaLabels()[sla]}</StatusBadge>} />
-              <HeaderMeta icon={<CalendarClock />} label={t('fin.riscos.proxRevisao')} value={risco.data_proxima_revisao ? formatDateOnly(risco.data_proxima_revisao) : '—'} />
-              <HeaderMeta icon={<CalendarClock />} label={t('residuos.risco.criadoEm')} value={risco.created_at ? formatDateOnly(risco.created_at) : '—'} />
-              <HeaderMeta icon={<History />} label={t('fin.riscos.avaliacoes')} value={String(detail?.historico.length ?? 0)} />
+              <HeaderMeta icon={<IconTimer />} label="SLA" value={<StatusBadge {...(sla === 'vencido' ? { tone: 'destructive' as const } : sla === 'atencao' ? { tone: 'warning' as const } : sla === 'no_prazo' ? { tone: 'success' as const } : { tone: 'neutral' as const })}>{getSlaLabels()[sla]}</StatusBadge>} />
+              <HeaderMeta icon={<IconCalendarClock />} label={t('fin.riscos.proxRevisao')} value={risco.data_proxima_revisao ? formatDateOnly(risco.data_proxima_revisao) : '—'} />
+              <HeaderMeta icon={<IconCalendarClock />} label={t('residuos.risco.criadoEm')} value={risco.created_at ? formatDateOnly(risco.created_at) : '—'} />
+              <HeaderMeta icon={<IconHistory />} label={t('fin.riscos.avaliacoes')} value={String(detail?.historico.length ?? 0)} />
             </section>
 
             {(risco.causas || risco.consequencias) && (
@@ -198,14 +198,14 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
                 <SectionLabel>{t('fin.riscos.causasConsequencias')}</SectionLabel>
                 <div className="flex flex-col gap-1.5">
                   {splitLines(risco.causas).map((l, i) => (
-                    <div key={`c-${i}`} className="flex gap-2.5 px-3 py-2 bg-muted/40 rounded-md text-xs">
-                      <span className="text-[10px] font-semibold uppercase tracking-[0.5px] text-muted-foreground pt-0.5 min-w-[52px] shrink-0">CAUSA</span>
+                    <div key={`c-${i}`} className="flex gap-2.5 px-3 py-2 bg-card rounded-md text-xs border border-border">
+                      <span className="text-xs font-semibold text-muted-foreground pt-0.5 min-w-[52px] shrink-0">CAUSA</span>
                       <span className="text-foreground/85">{l}</span>
                     </div>
                   ))}
                   {splitLines(risco.consequencias).map((l, i) => (
-                    <div key={`q-${i}`} className="flex gap-2.5 px-3 py-2 bg-muted/40 rounded-md text-xs">
-                      <span className="text-[10px] font-semibold uppercase tracking-[0.5px] text-muted-foreground pt-0.5 min-w-[52px] shrink-0">CONSEQ.</span>
+                    <div key={`q-${i}`} className="flex gap-2.5 px-3 py-2 bg-card rounded-md text-xs border border-border">
+                      <span className="text-xs font-semibold text-muted-foreground pt-0.5 min-w-[52px] shrink-0">CONSEQ.</span>
                       <span className="text-foreground/85">{l}</span>
                     </div>
                   ))}
@@ -219,13 +219,13 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
           <Tabs defaultValue="tratamentos" className="min-h-0 flex flex-col">
             <div className="px-4 pt-4">
               <TabsList className="w-full">
-                <TabsTrigger value="tratamentos" className="flex-1 min-w-0 gap-1 px-1.5 text-[11px]"><Shield className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} /><span className="truncate">{t('cardsKpi.sweep.riscos.tratamAbbr')}</span></TabsTrigger>
-                <TabsTrigger value="historico" className="flex-1 min-w-0 gap-1 px-1.5 text-[11px]"><History className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} /><span className="truncate">{t('fin.comum.historico')}</span></TabsTrigger>
-                <TabsTrigger value="controles" className="flex-1 min-w-0 gap-1 px-1.5 text-[11px]"><ShieldCheck className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} /><span className="truncate">{t('cardsKpi.sweep.riscos.controles')}</span></TabsTrigger>
-                <TabsTrigger value="comentarios" className="flex-1 min-w-0 gap-1 px-1.5 text-[11px]"><MessageSquare className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} /><span className="truncate">{t('cardsKpi.sweep.riscos.comentAbbr')}</span></TabsTrigger>
+                <TabsTrigger value="tratamentos" className="flex-1 min-w-0 gap-1 px-1.5 text-micro"><IconShield className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} /><span className="truncate">{t('cardsKpi.sweep.riscos.tratamAbbr')}</span></TabsTrigger>
+                <TabsTrigger value="historico" className="flex-1 min-w-0 gap-1 px-1.5 text-micro"><IconHistory className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} /><span className="truncate">{t('fin.comum.historico')}</span></TabsTrigger>
+                <TabsTrigger value="controles" className="flex-1 min-w-0 gap-1 px-1.5 text-micro"><IconShieldCheck className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} /><span className="truncate">{t('cardsKpi.sweep.riscos.controles')}</span></TabsTrigger>
+                <TabsTrigger value="comentarios" className="flex-1 min-w-0 gap-1 px-1.5 text-micro"><IconMessage className="h-3.5 w-3.5 shrink-0" strokeWidth={1.5} /><span className="truncate">{t('cardsKpi.sweep.riscos.comentAbbr')}</span></TabsTrigger>
               </TabsList>
             </div>
-            <div className="flex-1 overflow-y-auto px-4 py-5">
+            <div className="flex-1 min-h-0 overflow-y-auto px-4 py-5">
               <TabsContent value="tratamentos" className="m-0 space-y-2.5">
                 {isLoading ? <div className="flex justify-center py-10"><AkurisPulse size={32} /></div>
                   : isError ? <div className="py-10 text-center text-sm text-destructive">{detailError instanceof Error ? detailError.message : t('fin.riscos.erroTratamentos')}</div>
@@ -236,10 +236,10 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
                       <div key={t.id} className="bg-card border border-border rounded-lg p-3 space-y-2">
                         <div className="flex items-start justify-between gap-2">
                           <div className="text-sm font-medium leading-snug">{t.descricao}</div>
-                          <StatusBadge size="sm" {...resolveRiscoStatusTone(t.status)}>{formatStatus(t.status)}</StatusBadge>
+                          <StatusBadge {...resolveRiscoStatusTone(t.status)}>{formatStatus(t.status)}</StatusBadge>
                         </div>
-                        <div className="h-1 bg-muted/60 rounded-full overflow-hidden"><div className={pct === 100 ? 'h-full bg-success' : pct > 0 ? 'h-full bg-primary' : 'h-full bg-muted-foreground/30'} style={{ width: `${pct}%` }} /></div>
-                        <div className="text-[11px] text-muted-foreground flex flex-wrap gap-x-3">
+                        <div className="h-1 bg-card rounded-full overflow-hidden border border-border"><div className={pct === 100 ? 'h-full bg-success' : pct > 0 ? 'h-full bg-primary' : 'h-full bg-muted-foreground/30'} style={{ width: `${pct}%` }} /></div>
+                        <div className="text-micro text-muted-foreground flex flex-wrap gap-x-3">
                           <span>Tipo: {formatStatus(t.tipo_tratamento)}</span>
                           {t.prazo && <span>Prazo: {formatDateOnly(t.prazo)}</span>}
                           {t.eficacia && <span>Eficácia: {t.eficacia}</span>}
@@ -260,11 +260,11 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
                           <span className="absolute -left-1.5 h-3 w-3 rounded-full bg-primary border-2 border-card" />
                           <div className="flex items-center justify-between gap-2">
                             <span className="text-xs font-semibold">{formatStatus(h.tipo)}</span>
-                            <span className="text-[11px] text-muted-foreground">{formatDateOnly(h.created_at)}</span>
+                            <span className="text-micro text-muted-foreground">{formatDateOnly(h.created_at)}</span>
                           </div>
                           <div className="mt-1 text-xs text-muted-foreground">
                             P {h.probabilidade} × I {h.impacto} ·{' '}
-                            <StatusBadge size="sm" {...resolveNivelRiscoTone(h.nivel_risco)}>{formatStatus(h.nivel_risco)}</StatusBadge>
+                            <StatusBadge {...resolveNivelRiscoTone(h.nivel_risco)}>{formatStatus(h.nivel_risco)}</StatusBadge>
                           </div>
                           {h.observacoes && <p className="text-xs text-foreground/80 mt-1.5">{h.observacoes}</p>}
                         </li>
@@ -280,7 +280,7 @@ export function RiscoPerfilCompleto({ risco, open, onOpenChange, onEdit, onAccep
                   : detail!.controles.map((c) => (
                     <div key={c.id} className="bg-card border border-border rounded-lg p-3">
                       <div className="text-sm font-medium leading-snug truncate">{c.controle?.nome || 'Controle'}</div>
-                      <div className="text-[11px] text-muted-foreground mt-1 flex flex-wrap gap-x-3">
+                      <div className="text-micro text-muted-foreground mt-1 flex flex-wrap gap-x-3">
                         {c.controle?.tipo && <span>Tipo: {formatStatus(c.controle.tipo)}</span>}
                         <span>Vínculo: {formatStatus(c.tipo_vinculacao)}</span>
                         {c.eficacia_estimada && <span>{c.eficacia_estimada}</span>}

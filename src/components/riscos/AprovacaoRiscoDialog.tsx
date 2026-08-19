@@ -7,16 +7,16 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveAprovacaoTone } from '@/lib/status-tone';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { CheckCircle, XCircle, Send, Clock, User, MessageSquare, ShieldCheck } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { toast } from 'sonner';
 import { UserSelect } from './UserSelect';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { formatStatus } from '@/lib/text-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
-
+import { IconSuccess, IconError, IconTime, IconSend, IconPerson, IconMessage, IconShieldCheck } from '@/components/icons';
+import { notificar } from '@/lib/notificar';
+import { dateFnsLocale, datePattern, formatarDiaParaDB } from '@/lib/date-utils';
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -60,7 +60,7 @@ export function AprovacaoRiscoDialog({ open, onOpenChange, risco, onSuccess }: P
       const { error } = await supabase
         .from('riscos')
         .update({
-          status_aprovacao: 'pendente',
+          status_aprovacao: 'pendente_aprovacao',
           aprovador_id: aprovadorId,
           historico_aprovacao: novoHistorico
         })
@@ -69,12 +69,11 @@ export function AprovacaoRiscoDialog({ open, onOpenChange, risco, onSuccess }: P
 
       if (error) throw error;
 
-      await supabase.from('notifications').insert({
-        user_id: aprovadorId,
-        title: t('riscosDialogs.aprovacao.notificacaoTitle'),
-        message: t('riscosDialogs.aprovacao.notificacaoMessage', { nome: risco.nome }),
-        type: 'info',
-        link_to: '/riscos'
+      await notificar({
+        destinatario: aprovadorId,
+        titulo: t('riscosDialogs.aprovacao.notificacaoTitle'),
+        mensagem: t('riscosDialogs.aprovacao.notificacaoMessage', { nome: risco.nome }),
+        linkPara: '/riscos',
       });
 
       toast.success(t('riscosDialogs.aprovacao.riscoEnviado'));
@@ -115,12 +114,12 @@ export function AprovacaoRiscoDialog({ open, onOpenChange, risco, onSuccess }: P
       if (error) throw error;
 
       if (risco.created_by) {
-        await supabase.from('notifications').insert({
-          user_id: risco.created_by,
-          title: decisao === 'aprovado' ? t('riscosDialogs.aprovacao.decisaoTituloAprovado') : t('riscosDialogs.aprovacao.decisaoTituloRejeitado'),
-          message: t('riscosDialogs.aprovacao.decisaoMessage', { nome: risco.nome, decisao, comentario: comentario ? t('riscosDialogs.aprovacao.comentarioSufixo', { comentario }) : '' }),
-          type: decisao === 'aprovado' ? 'success' : 'warning',
-          link_to: '/riscos'
+        await notificar({
+          destinatario: risco.created_by,
+          titulo: decisao === 'aprovado' ? t('riscosDialogs.aprovacao.decisaoTituloAprovado') : t('riscosDialogs.aprovacao.decisaoTituloRejeitado'),
+          mensagem: t('riscosDialogs.aprovacao.decisaoMessage', { nome: risco.nome, decisao, comentario: comentario ? t('riscosDialogs.aprovacao.comentarioSufixo', { comentario }) : '' }),
+          tipo: decisao === 'aprovado' ? 'success' : 'warning',
+          linkPara: '/riscos',
         });
       }
 
@@ -150,7 +149,7 @@ export function AprovacaoRiscoDialog({ open, onOpenChange, risco, onSuccess }: P
         if (!validoAte || new Date(validoAte) <= agora) {
           const d = new Date(agora);
           d.setMonth(d.getMonth() + 12);
-          validoAte = d.toISOString().split('T')[0];
+          validoAte = formatarDiaParaDB(d);
         }
         updateData.aceito = true;
         updateData.data_aceite = agora.toISOString();
@@ -193,12 +192,12 @@ export function AprovacaoRiscoDialog({ open, onOpenChange, risco, onSuccess }: P
 
       // Notificar o criador do risco
       if (risco.created_by) {
-        await supabase.from('notifications').insert({
-          user_id: risco.created_by,
-          title: decisao === 'aprovado' ? t('riscosDialogs.aprovacao.aceiteAprovadoTitulo') : t('riscosDialogs.aprovacao.aceiteRejeitadoTitulo'),
-          message: t('riscosDialogs.aprovacao.aceiteDecisaoMessage', { nome: risco.nome, decisao, comentario: comentario ? t('riscosDialogs.aprovacao.comentarioSufixo', { comentario }) : '' }),
-          type: decisao === 'aprovado' ? 'success' : 'warning',
-          link_to: decisao === 'aprovado' ? '/riscos/aceite' : '/riscos'
+        await notificar({
+          destinatario: risco.created_by,
+          titulo: decisao === 'aprovado' ? t('riscosDialogs.aprovacao.aceiteAprovadoTitulo') : t('riscosDialogs.aprovacao.aceiteRejeitadoTitulo'),
+          mensagem: t('riscosDialogs.aprovacao.aceiteDecisaoMessage', { nome: risco.nome, decisao, comentario: comentario ? t('riscosDialogs.aprovacao.comentarioSufixo', { comentario }) : '' }),
+          tipo: decisao === 'aprovado' ? 'success' : 'warning',
+          linkPara: decisao === 'aprovado' ? '/riscos/aceite' : '/riscos',
         });
       }
 
@@ -230,8 +229,8 @@ export function AprovacaoRiscoDialog({ open, onOpenChange, risco, onSuccess }: P
   };
 
   const getStatusBadge = (status: string) => {
-    if (status === 'aprovado' || status === 'rejeitado' || status === 'pendente') {
-      const labels: Record<string, string> = { aprovado: t('riscosDialogs.aprovacao.aprovado'), rejeitado: t('riscosDialogs.aprovacao.rejeitado'), pendente: t('riscosDialogs.aprovacao.pendente') };
+    if (status === 'aprovado' || status === 'rejeitado' || status === 'pendente_aprovacao') {
+      const labels: Record<string, string> = { aprovado: t('riscosDialogs.aprovacao.aprovado'), rejeitado: t('riscosDialogs.aprovacao.rejeitado'), pendente_aprovacao: t('riscosDialogs.aprovacao.pendente') };
       return <StatusBadge {...resolveAprovacaoTone(status)}>{labels[status]}</StatusBadge>;
     }
     return <StatusBadge tone="neutral">{t('riscosDialogs.aprovacao.rascunho')}</StatusBadge>;
@@ -241,7 +240,7 @@ export function AprovacaoRiscoDialog({ open, onOpenChange, risco, onSuccess }: P
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      icon={CheckCircle}
+      icon={IconSuccess}
       title={t('riscosDialogs.aprovacao.title')}
       description={risco?.nome}
       size="md"
@@ -252,7 +251,7 @@ export function AprovacaoRiscoDialog({ open, onOpenChange, risco, onSuccess }: P
             {statusAceite === 'pendente' && (
               <div className="space-y-3 rounded-lg border border-warning/30 bg-warning/5 p-4">
                 <div className="flex items-center gap-2">
-                  <ShieldCheck className="h-5 w-5 text-warning" strokeWidth={1.5} />
+                  <IconShieldCheck className="h-5 w-5 text-warning" strokeWidth={1.5} />
                   <Label className="text-base font-semibold">{t('riscosDialogs.aprovacao.aceitePendenteTitulo')}</Label>
                 </div>
                 <p className="text-sm text-muted-foreground">
@@ -271,18 +270,18 @@ export function AprovacaoRiscoDialog({ open, onOpenChange, risco, onSuccess }: P
                     />
                     <div className="flex gap-2">
                       <Button onClick={() => handleDecisaoAceite('aprovado')} disabled={loading} className="flex-1" variant="default">
-                        <CheckCircle className="mr-2 h-4 w-4" />
+                        <IconSuccess className="mr-2 h-4 w-4" />
                         {t('riscosDialogs.aprovacao.aprovarAceite')}
                       </Button>
                       <Button onClick={() => handleDecisaoAceite('rejeitado')} disabled={loading} className="flex-1" variant="destructive">
-                        <XCircle className="mr-2 h-4 w-4" />
+                        <IconError className="mr-2 h-4 w-4" />
                         {t('riscosDialogs.aprovacao.rejeitarAceite')}
                       </Button>
                     </div>
                   </>
                 ) : (
                   <div className="text-sm text-muted-foreground text-center py-2 bg-muted rounded-lg">
-                    <Clock className="h-5 w-5 mx-auto mb-1 opacity-50" />
+                    <IconTime className="h-5 w-5 mx-auto mb-1 opacity-50" />
                     {t('riscosDialogs.aprovacao.aguardandoDecisaoAprovador')}
                   </div>
                 )}
@@ -291,13 +290,13 @@ export function AprovacaoRiscoDialog({ open, onOpenChange, risco, onSuccess }: P
 
             {statusAceite === 'aprovado' && (
               <div className="flex items-center gap-2 p-3 rounded-lg bg-success/10 border border-success/30 text-success text-sm">
-                <CheckCircle className="h-4 w-4" strokeWidth={1.5} /> {t('riscosDialogs.aprovacao.aceiteAprovadoEm', { data: risco?.data_aceite ? format(new Date(risco.data_aceite), "dd/MM/yyyy", { locale: ptBR }) : '-' })}
+                <IconSuccess className="h-4 w-4" strokeWidth={1.5} /> {t('riscosDialogs.aprovacao.aceiteAprovadoEm', { data: risco?.data_aceite ? format(new Date(risco.data_aceite), datePattern(), { locale: dateFnsLocale() }) : '-' })}
               </div>
             )}
 
             {statusAceite === 'rejeitado' && (
               <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-sm">
-                <XCircle className="h-4 w-4" strokeWidth={1.5} /> {t('riscosDialogs.aprovacao.aceiteRejeitadoMsg')}
+                <IconError className="h-4 w-4" strokeWidth={1.5} /> {t('riscosDialogs.aprovacao.aceiteRejeitadoMsg')}
               </div>
             )}
 
@@ -322,13 +321,13 @@ export function AprovacaoRiscoDialog({ open, onOpenChange, risco, onSuccess }: P
                   className="min-h-[60px]"
                 />
                 <Button onClick={handleEnviarAprovacao} disabled={loading} className="w-full">
-                  <Send className="mr-2 h-4 w-4" />
+                  <IconSend className="mr-2 h-4 w-4" />
                   {t('riscosDialogs.aprovacao.enviarParaAprovacao')}
                 </Button>
               </div>
             )}
 
-            {statusAprovacao === 'pendente' && isAprovador && (
+            {statusAprovacao === 'pendente_aprovacao' && isAprovador && (
               <div className="space-y-3 border rounded-lg p-4">
                 <Label>{t('riscosDialogs.aprovacao.suaDecisao')}</Label>
                 <Textarea
@@ -339,20 +338,20 @@ export function AprovacaoRiscoDialog({ open, onOpenChange, risco, onSuccess }: P
                 />
                 <div className="flex gap-2">
                   <Button onClick={() => handleDecisao('aprovado')} disabled={loading} className="flex-1" variant="default">
-                    <CheckCircle className="mr-2 h-4 w-4" />
+                    <IconSuccess className="mr-2 h-4 w-4" />
                     {t('riscosDialogs.aprovacao.aprovar')}
                   </Button>
                   <Button onClick={() => handleDecisao('rejeitado')} disabled={loading} className="flex-1" variant="destructive">
-                    <XCircle className="mr-2 h-4 w-4" />
+                    <IconError className="mr-2 h-4 w-4" />
                     {t('riscosDialogs.aprovacao.rejeitar')}
                   </Button>
                 </div>
               </div>
             )}
 
-            {statusAprovacao === 'pendente' && !isAprovador && (
+            {statusAprovacao === 'pendente_aprovacao' && !isAprovador && (
               <div className="text-sm text-muted-foreground text-center py-4 bg-muted rounded-lg">
-                <Clock className="h-6 w-6 mx-auto mb-2 opacity-50" />
+                <IconTime className="h-6 w-6 mx-auto mb-2 opacity-50" />
                 {t('riscosDialogs.aprovacao.aguardandoDecisaoAprovador')}
               </div>
             )}
@@ -366,18 +365,18 @@ export function AprovacaoRiscoDialog({ open, onOpenChange, risco, onSuccess }: P
                     <div key={i} className="border rounded p-3 text-sm space-y-1">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <User className="h-3 w-3" />
+                          <IconPerson className="h-3 w-3" />
                           <span className="font-medium">{item.usuario_nome || t('riscosDialogs.aprovacao.sistema')}</span>
                         </div>
                         <span className="text-xs text-muted-foreground">
-                          {item.data ? format(new Date(item.data), "dd/MM/yyyy HH:mm", { locale: ptBR }) : '-'}
+                          {item.data ? format(new Date(item.data), `${datePattern()} HH:mm`, { locale: dateFnsLocale() }) : '-'}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <StatusBadge size="sm" tone="neutral" variant="outline">{formatStatus(item.acao)}</StatusBadge>
+                        <StatusBadge tone="neutral" variant="outline">{formatStatus(item.acao)}</StatusBadge>
                         {item.comentario && (
                           <span className="text-muted-foreground flex items-center gap-1">
-                            <MessageSquare className="h-3 w-3" />
+                            <IconMessage className="h-3 w-3" />
                             {item.comentario}
                           </span>
                         )}

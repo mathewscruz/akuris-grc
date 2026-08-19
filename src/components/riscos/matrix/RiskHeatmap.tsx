@@ -8,7 +8,7 @@
  *   aria-label descritivo por célula e foco visível para navegação por teclado.
  */
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { X } from 'lucide-react';
+;
 import { cn } from '@/lib/utils';
 import {
   severityFromScoreConfig,
@@ -22,6 +22,7 @@ import {
 } from '@/components/riscos/risk-utils';
 import type { MatrizConfiguracao, EscalaItem } from '@/components/riscos/matriz-config';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { IconClose } from '@/components/icons';
 
 export type HeatmapMode = 'inerente' | 'residual' | 'movimento';
 
@@ -210,10 +211,10 @@ export function RiskHeatmap({ riscos, selected, onSelectCell, onClearSelection, 
   const modes: HeatmapMode[] = onModeChange ? ['inerente', 'residual', 'movimento'] : [];
 
   return (
-    <div className="bg-card border border-border rounded-xl p-5 sm:p-6">
+    <div className="bg-card border border-border rounded-lg p-5 sm:p-6">
       <div className="flex items-start justify-between gap-4 mb-5">
         <div>
-          <div className="text-[10.5px] font-semibold tracking-[1.2px] uppercase text-muted-foreground">
+          <div className="text-xs font-semibold text-muted-foreground">
             {t('riscosVisoes.matrix.riskHeatmap.eyebrow')}
           </div>
           <div className="text-base font-semibold mt-1">
@@ -240,19 +241,19 @@ export function RiskHeatmap({ riscos, selected, onSelectCell, onClearSelection, 
                 aria-label={t('riscosVisoes.matrix.riskHeatmap.limparSelecao')}
                 title={selected ? t('riscosVisoes.matrix.riskHeatmap.limparSelecao') : t('riscosVisoes.matrix.riskHeatmap.nenhumaCelulaSelecionada')}
                 className={cn(
-                  'inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors',
-                  'text-muted-foreground hover:text-foreground hover:bg-muted/60',
+                  'inline-flex items-center gap-1 rounded-md px-2 py-1 text-micro font-medium transition-colors',
+                  'text-muted-foreground hover:text-foreground hover:bg-accent',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                   'disabled:opacity-40 disabled:pointer-events-none',
                 )}
               >
-                <X className="h-3 w-3" strokeWidth={2} />
+                <IconClose className="h-3 w-3" strokeWidth={2} />
                 {t('riscosVisoes.matrix.riskHeatmap.limparSelecao')}
               </button>
             )}
             {/* Toggle Inerente / Residual / Movimento */}
             {onModeChange && (
-              <div className="inline-flex p-0.5 bg-muted/60 rounded-md text-[11px]" role="group">
+              <div className="inline-flex p-0.5 bg-muted/60 rounded-md text-micro" role="group">
                 {modes.map((m) => (
                   <button
                     key={m}
@@ -271,12 +272,12 @@ export function RiskHeatmap({ riscos, selected, onSelectCell, onClearSelection, 
               </div>
             )}
           </div>
-          <div className="flex flex-wrap gap-x-3.5 gap-y-1 items-center text-[11px] text-muted-foreground">
+          <div className="flex flex-wrap gap-x-3.5 gap-y-1 items-center text-micro text-muted-foreground">
             {legend.map((l) => (
               <div key={l.key} className="inline-flex items-center gap-1.5">
                 <span
                   aria-hidden="true"
-                  className={cn('h-3.5 w-3.5 rounded-sm inline-flex items-center justify-center text-[9px] font-bold', l.cls)}
+                  className={cn('h-3.5 w-3.5 rounded-sm inline-flex items-center justify-center text-micro font-bold', l.cls)}
                 >
                   {l.letter}
                 </span>
@@ -288,7 +289,7 @@ export function RiskHeatmap({ riscos, selected, onSelectCell, onClearSelection, 
       </div>
 
       {mode !== 'inerente' && semResidual > 0 && (
-        <div className="-mt-2 mb-4 text-[11px] text-muted-foreground">
+        <div className="-mt-2 mb-4 text-micro text-muted-foreground">
           {semResidual}{' '}
           {semResidual === 1
             ? t('riscosVisoes.matrix.riskHeatmap.semAvaliacaoResidual')
@@ -300,7 +301,7 @@ export function RiskHeatmap({ riscos, selected, onSelectCell, onClearSelection, 
       <div className="overflow-x-auto">
         <div className="min-w-[560px] grid" style={{ gridTemplateColumns: 'auto 1fr', gap: 8 }}>
           <div
-            className="self-center justify-self-center text-[10px] font-semibold uppercase tracking-[1.5px] text-muted-foreground"
+            className="self-center justify-self-center text-xs font-semibold text-muted-foreground"
             style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
           >
             {t('riscosVisoes.matrix.riskHeatmap.probabilidadeVertical')}
@@ -316,9 +317,9 @@ export function RiskHeatmap({ riscos, selected, onSelectCell, onClearSelection, 
           >
             {probs.map((p) => (
               <div key={`row-${p}`} className="contents">
-                <div className="flex flex-col justify-center items-end pr-3 text-[11px] text-muted-foreground">
-                  <span className="font-semibold text-foreground/85 text-[13px] leading-none">{p}</span>
-                  <span className="text-[10px] mt-1">{PROB_LABELS[p - 1]}</span>
+                <div className="flex flex-col justify-center items-end pr-3 text-micro text-muted-foreground">
+                  <span className="font-semibold text-foreground/85 text-sm leading-none">{p}</span>
+                  <span className="text-micro mt-1">{PROB_LABELS[p - 1]}</span>
                 </div>
                 {imps.map((i) => {
                   const score = scoreFromMatriz(p, i, metodo);
@@ -356,10 +357,10 @@ export function RiskHeatmap({ riscos, selected, onSelectCell, onClearSelection, 
                       )}
                     >
                       <div className="flex items-center justify-between gap-1">
-                        <span className="text-[10px] font-semibold tracking-wide text-muted-foreground tabular-nums">{score}</span>
+                        <span className="text-micro font-semibold tracking-wide text-muted-foreground tabular-nums">{score}</span>
                         <span
                           aria-hidden="true"
-                          className="text-[9px] font-bold text-muted-foreground leading-none"
+                          className="text-micro font-bold text-muted-foreground leading-none"
                           title={nivelLabel}
                         >
                           {SEVERITY_LETTER[sev]}
@@ -376,7 +377,7 @@ export function RiskHeatmap({ riscos, selected, onSelectCell, onClearSelection, 
                             }}
                             style={{ height: bubble, width: bubble }}
                             className={cn(
-                              'inline-flex items-center justify-center rounded-full font-semibold border-2 border-card tabular-nums text-[11px]',
+                              'inline-flex items-center justify-center rounded-full font-semibold border-2 border-card tabular-nums text-micro',
                               SEV_BADGE[sev],
                               cellRisks.length === 1 && 'cursor-pointer',
                             )}
@@ -384,7 +385,7 @@ export function RiskHeatmap({ riscos, selected, onSelectCell, onClearSelection, 
                           >
                             {cellRisks.length}
                           </span>
-                          <span className="text-[9.5px] text-muted-foreground leading-tight">
+                          <span className="text-micro text-muted-foreground leading-tight">
                             {cellRisks.length === 1 ? shortRiskId(cellRisks[0].id, (cellRisks[0] as any).codigo) : riskWord}
                           </span>
                         </div>
@@ -396,9 +397,9 @@ export function RiskHeatmap({ riscos, selected, onSelectCell, onClearSelection, 
             ))}
             <div />
             {imps.map((i) => (
-              <div key={`col-${i}`} className="text-center pt-2 text-[11px] text-muted-foreground">
-                <div className="font-semibold text-foreground/85 text-[13px]">{i}</div>
-                <div className="text-[10px]">{IMP_LABELS[i - 1]}</div>
+              <div key={`col-${i}`} className="text-center pt-2 text-micro text-muted-foreground">
+                <div className="font-semibold text-foreground/85 text-sm">{i}</div>
+                <div className="text-micro">{IMP_LABELS[i - 1]}</div>
               </div>
             ))}
 
@@ -499,7 +500,7 @@ export function RiskHeatmap({ riscos, selected, onSelectCell, onClearSelection, 
       </div>
 
       {mode === 'movimento' && (
-        <div className="mt-4 pt-3 border-t border-border text-[11px] text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
+        <div className="mt-4 pt-3 border-t border-border text-micro text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
           <span>
             <strong className="text-foreground tabular-nums">{resumo.desceram}</strong>{' '}
             {resumo.desceram === 1

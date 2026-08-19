@@ -39,8 +39,8 @@ export function RiskCategoryBars({ riscos }: Props) {
   }, [riscos, semCategoriaLabel]);
 
   return (
-    <div className="bg-card border border-border rounded-xl p-5">
-      <div className="text-[10.5px] font-semibold tracking-[1.2px] uppercase text-muted-foreground">
+    <div className="bg-card border border-border rounded-lg p-5">
+      <div className="text-xs font-semibold text-muted-foreground">
         {t('riscosVisoes.overview.riskCategoryBars.titulo')}
       </div>
       {rows.length === 0 ? (

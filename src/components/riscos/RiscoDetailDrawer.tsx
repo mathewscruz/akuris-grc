@@ -26,7 +26,6 @@ import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
-import { Edit, ShieldCheck, Clock, AlertTriangle, Shield, History, Eye, X, Plus, ArrowRight, ChevronLeft, ChevronRight, Wallet, Layers, Tag, User, CalendarClock, Timer, ChevronDown } from 'lucide-react';
 import {
   initials,
   scoreFromPI,
@@ -54,12 +53,12 @@ import { useRiscoRequisitos } from '@/hooks/useRiscoRequisitos';
 import { useMatrizConfigEmpresa } from '@/hooks/useMatrizConfigEmpresa';
 import { resolveConformityTone } from '@/lib/status-tone';
 import { Link as RouterLink } from 'react-router-dom';
-import { ExternalLink } from 'lucide-react';
+;
 import { RiscoComentarios } from '@/components/riscos/RiscoComentarios';
 import { ScoreRing, ScoreBlock, StatTile, HeaderMeta, SEV_VAR } from '@/components/riscos/RiscoVisuals';
 import { RiscoPerfilCompleto } from '@/components/riscos/RiscoPerfilCompleto';
-import { MessageSquare, Maximize2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { IconChevron, IconEdit, IconClose, IconView, IconWarning, IconAdd, IconExternal, IconShieldCheck, IconShield, IconHistory, IconArrowRight, IconChevronLeft, IconMoney, IconLayers, IconTag, IconPerson, IconCalendarClock, IconTimer, IconChevronDown, IconMessage, IconExpand } from '@/components/icons';
 
 interface Risco {
   id: string;
@@ -118,7 +117,7 @@ export function TratadoBlockedOption({ motivo, onActivate }: { motivo: string; o
       className="flex-col items-start gap-0.5 text-muted-foreground"
     >
       <span>{t('fin.riscos.tratadoIndisponivel')}</span>
-      <span className="text-[10px] leading-tight">{motivo}</span>
+      <span className="text-micro leading-tight">{motivo}</span>
     </DropdownMenuItem>
   );
 }
@@ -221,32 +220,32 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
 
           {/* Barra de ações */}
           <div className="flex items-center justify-between gap-3 relative">
-            <span className="text-[10.5px] font-mono tracking-wider text-muted-foreground">
+            <span className="text-micro font-mono tracking-wider text-muted-foreground">
               {shortRiskId(risco.id, (risco as any).codigo)}
             </span>
             <div className="flex items-center gap-1">
               {nav && (
-                <div className="flex items-center gap-0.5 mr-1 text-[11px] text-muted-foreground">
+                <div className="flex items-center gap-0.5 mr-1 text-micro text-muted-foreground">
                   <Button variant="ghost" size="icon" className="h-7 w-7" onClick={nav.onPrev} disabled={!nav.onPrev || nav.current <= 1} aria-label={t('cardsKpi.sweep.riscos.riscoAnterior')}>
-                    <ChevronLeft className="h-4 w-4" strokeWidth={1.5} />
+                    <IconChevronLeft className="h-4 w-4" strokeWidth={1.5} />
                   </Button>
                   <span className="tabular-nums whitespace-nowrap">{nav.current}<span className="opacity-60"> de </span>{nav.total}</span>
                   <Button variant="ghost" size="icon" className="h-7 w-7" onClick={nav.onNext} disabled={!nav.onNext || nav.current >= nav.total} aria-label={t('fin.riscos.proximoRisco')}>
-                    <ChevronRight className="h-4 w-4" strokeWidth={1.5} />
+                    <IconChevron className="h-4 w-4" strokeWidth={1.5} />
                   </Button>
                 </div>
               )}
               <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setPerfilOpen(true)}>
-                <Maximize2 className="h-3.5 w-3.5 mr-1" strokeWidth={1.5} />
+                <IconExpand className="h-3.5 w-3.5 mr-1" strokeWidth={1.5} />
                 Perfil
               </Button>
               <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => onEdit(risco)}>
-                <Edit className="h-3.5 w-3.5 mr-1" strokeWidth={1.5} />
+                <IconEdit className="h-3.5 w-3.5 mr-1" strokeWidth={1.5} />
                 Editar
               </Button>
               <SheetClose asChild>
                 <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" aria-label={t('fin.comum.fechar')}>
-                  <X className="h-4 w-4" strokeWidth={1.5} />
+                  <IconClose className="h-4 w-4" strokeWidth={1.5} />
                 </Button>
               </SheetClose>
             </div>
@@ -256,16 +255,16 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
           <div className="flex items-start justify-between gap-4 relative">
             <div className="min-w-0 space-y-2.5">
               <div className="flex items-center gap-1.5 flex-wrap">
-                <StatusBadge size="sm" {...resolveNivelRiscoTone(risco.nivel_risco_residual || risco.nivel_risco_inicial)}>
+                <StatusBadge {...resolveNivelRiscoTone(risco.nivel_risco_residual || risco.nivel_risco_inicial)}>
                   {formatStatus(risco.nivel_risco_residual || risco.nivel_risco_inicial)}
                 </StatusBadge>
                 {/* Status editável */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button type="button" className="inline-flex items-center gap-0.5 rounded-full transition-opacity hover:opacity-80 disabled:opacity-50" disabled={statusSaving || isError}>
-                      <StatusBadge size="sm" {...(isError ? { tone: 'neutral' as const } : resolveRiscoStatusTone(statusCoerente.status))}>
+                      <StatusBadge {...(isError ? { tone: 'neutral' as const } : resolveRiscoStatusTone(statusCoerente.status))}>
                         {statusSaving ? '…' : isError ? t('fin.riscos.statusIndisponivel') : formatStatus(statusCoerente.status)}
-                        <ChevronDown className="h-3 w-3 ml-0.5 -mr-0.5 opacity-70" strokeWidth={2} />
+                        <IconChevronDown className="h-3 w-3 ml-0.5 -mr-0.5 opacity-70" strokeWidth={2} />
                       </StatusBadge>
                     </button>
                   </DropdownMenuTrigger>
@@ -290,7 +289,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
                 </DropdownMenu>
                 {statusCoerente.ajustado && <span className="sr-only" role="status">{statusCoerente.motivo}</span>}
                 {risco.aceito && (
-                  <StatusBadge size="sm" tone="info" variant="outline">{t('sweepRiscos.riscos.detail.aceito')}</StatusBadge>
+                  <StatusBadge tone="info" variant="outline">{t('sweepRiscos.riscos.detail.aceito')}</StatusBadge>
                 )}
               </div>
               <SheetTitle className="text-xl leading-tight font-semibold">{risco.nome}</SheetTitle>
@@ -300,27 +299,27 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
 
           {/* Metadados em linhas com ícone */}
           <div className="grid grid-cols-2 gap-x-6 gap-y-2.5 pt-1 relative">
-            <HeaderMeta icon={<Tag />} label={t('sweepRiscos.riscos.detail.categoria')} value={risco.categoria?.nome || '—'} />
+            <HeaderMeta icon={<IconTag />} label={t('sweepRiscos.riscos.detail.categoria')} value={risco.categoria?.nome || '—'} />
             <HeaderMeta
-              icon={<User />}
+              icon={<IconPerson />}
               label={t('residuos.risco.responsavel')}
               value={
                 risco.responsavel_nome ? (
                   <span className="inline-flex items-center gap-1.5">
                     <Avatar className="h-4 w-4">
                       {risco.responsavel_foto && <AvatarImage src={risco.responsavel_foto} alt={risco.responsavel_nome} />}
-                      <AvatarFallback className="text-[8px] bg-primary/10 text-primary">{initials(risco.responsavel_nome)}</AvatarFallback>
+                      <AvatarFallback className="text-micro bg-primary/10 text-primary">{initials(risco.responsavel_nome)}</AvatarFallback>
                     </Avatar>
                     <span className="truncate">{risco.responsavel_nome}</span>
                   </span>
                 ) : '—'
               }
             />
-            <HeaderMeta icon={<CalendarClock />} label={t('fin.riscos.proxRevisao')} value={risco.data_proxima_revisao ? formatDateOnly(risco.data_proxima_revisao) : '—'} />
+            <HeaderMeta icon={<IconCalendarClock />} label={t('fin.riscos.proxRevisao')} value={risco.data_proxima_revisao ? formatDateOnly(risco.data_proxima_revisao) : '—'} />
             <HeaderMeta
-              icon={<Timer />}
+              icon={<IconTimer />}
               label="SLA"
-              value={<StatusBadge size="sm" {...(sla === 'vencido' ? { tone: 'destructive' as const } : sla === 'atencao' ? { tone: 'warning' as const } : sla === 'no_prazo' ? { tone: 'success' as const } : { tone: 'neutral' as const })}>{getSlaLabels()[sla]}</StatusBadge>}
+              value={<StatusBadge {...(sla === 'vencido' ? { tone: 'destructive' as const } : sla === 'atencao' ? { tone: 'warning' as const } : sla === 'no_prazo' ? { tone: 'success' as const } : { tone: 'neutral' as const })}>{getSlaLabels()[sla]}</StatusBadge>}
             />
           </div>
         </SheetHeader>
@@ -329,15 +328,15 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
         <Tabs defaultValue="visao" className="flex-1 flex flex-col min-h-0">
           <div className="px-6 pt-4">
             <TabsList className="w-full">
-              <TabsTrigger value="visao" className="flex-1 text-[11px] px-2 gap-1.5 min-w-0 whitespace-nowrap"><Eye className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>{t('residuos.risco.visao')}</span></TabsTrigger>
-              <TabsTrigger value="tratamentos" className="flex-1 text-[11px] px-2 gap-1.5 min-w-0 whitespace-nowrap"><Shield className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>{t('cardsKpi.sweep.riscos.tratamento')}</span></TabsTrigger>
-              <TabsTrigger value="historico" className="flex-1 text-[11px] px-2 gap-1.5 min-w-0 whitespace-nowrap"><History className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>{t('fin.comum.historico')}</span></TabsTrigger>
-              <TabsTrigger value="controles" className="flex-1 text-[11px] px-2 gap-1.5 min-w-0 whitespace-nowrap"><ShieldCheck className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>{t('cardsKpi.sweep.riscos.controles')}</span></TabsTrigger>
-              <TabsTrigger value="comentarios" className="flex-1 text-[11px] px-2 gap-1.5 min-w-0 whitespace-nowrap"><MessageSquare className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>{t('cardsKpi.sweep.riscos.comentAbbr')}</span></TabsTrigger>
+              <TabsTrigger value="visao" className="flex-1 text-micro px-2 gap-1.5 min-w-0 whitespace-nowrap"><IconView className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>{t('residuos.risco.visao')}</span></TabsTrigger>
+              <TabsTrigger value="tratamentos" className="flex-1 text-micro px-2 gap-1.5 min-w-0 whitespace-nowrap"><IconShield className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>{t('cardsKpi.sweep.riscos.tratamento')}</span></TabsTrigger>
+              <TabsTrigger value="historico" className="flex-1 text-micro px-2 gap-1.5 min-w-0 whitespace-nowrap"><IconHistory className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>{t('fin.comum.historico')}</span></TabsTrigger>
+              <TabsTrigger value="controles" className="flex-1 text-micro px-2 gap-1.5 min-w-0 whitespace-nowrap"><IconShieldCheck className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>{t('cardsKpi.sweep.riscos.controles')}</span></TabsTrigger>
+              <TabsTrigger value="comentarios" className="flex-1 text-micro px-2 gap-1.5 min-w-0 whitespace-nowrap"><IconMessage className="h-3 w-3 shrink-0" strokeWidth={1.5} /><span>{t('cardsKpi.sweep.riscos.comentAbbr')}</span></TabsTrigger>
             </TabsList>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-6 py-5">
+          <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5">
             {/* Visão */}
             <TabsContent value="visao" className="m-0 space-y-5">
               {risco.descricao && (
@@ -351,10 +350,10 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
               <section>
                 <SectionLabel>{t('campos.risco.inerenteResidual')}</SectionLabel>
                 <div className="flex items-stretch gap-2 mt-0.5">
-                  <ScoreBlock label={t('sweepRiscos.riscos.detail.inerente')} nivel={risco.nivel_risco_inicial} score={inicialScore} p={risco.probabilidade_inicial} i={risco.impacto_inicial} />
+                  <ScoreBlock label={t('sweepRiscos.riscos.detail.inerente')} nivel={risco.nivel_risco_residual || risco.nivel_risco_inicial} score={inicialScore} p={risco.probabilidade_inicial} i={risco.impacto_inicial} />
                   <div className="flex flex-col items-center justify-center px-0.5 shrink-0">
-                    <ArrowRight className={reduziu ? 'h-5 w-5 text-success' : 'h-5 w-5 text-muted-foreground'} strokeWidth={2} />
-                    {reduziu && <span className="text-[9px] text-success font-semibold tabular-nums mt-0.5">−{inicialScore - residualScore}</span>}
+                    <IconArrowRight className={reduziu ? 'h-5 w-5 text-success' : 'h-5 w-5 text-muted-foreground'} strokeWidth={2} />
+                    {reduziu && <span className="text-micro text-success font-semibold tabular-nums mt-0.5">−{inicialScore - residualScore}</span>}
                   </div>
                   <ScoreBlock label={t('sweepRiscos.riscos.detail.residual')} nivel={risco.nivel_risco_residual} score={residualScore} p={risco.probabilidade_residual} i={risco.impacto_residual} emptyLabel={t('fin.riscos.naoAvaliado')} />
                 </div>
@@ -362,9 +361,9 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
 
               {/* Tiles de contexto */}
               <section className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                <StatTile icon={<Wallet />} label={t('fin.riscos.exposicao')} value={exposicao !== null ? formatMoedaEmpresa(exposicao, true) : '—'} />
-                <StatTile icon={<Shield />} label={t('cardsKpi.sweep.riscos.tratamentos')} value={`${tratStats.concluidos}/${tratStats.total}`} />
-                <StatTile icon={<Layers />} label={t('cardsKpi.sweep.riscos.controles')} value={String(requisitos.length)} />
+                <StatTile icon={<IconMoney />} label={t('fin.riscos.exposicao')} value={exposicao !== null ? formatMoedaEmpresa(exposicao, true) : '—'} />
+                <StatTile icon={<IconShield />} label={t('cardsKpi.sweep.riscos.tratamentos')} value={`${tratStats.concluidos}/${tratStats.total}`} />
+                <StatTile icon={<IconLayers />} label={t('cardsKpi.sweep.riscos.controles')} value={String(requisitos.length)} />
               </section>
 
               {/* Exposição financeira + evolução do risco */}
@@ -386,7 +385,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
                         <div className="mt-1.5 text-lg font-semibold tabular-nums" title={formatMoedaEmpresa(exp)}>
                           {formatMoedaEmpresa(exp)}
                         </div>
-                        <div className="text-[11px] text-muted-foreground mt-1">
+                        <div className="text-micro text-muted-foreground mt-1">
                           impacto {formatMoedaEmpresa(risco.impacto_financeiro ?? null, true)} × probabilidade
                         </div>
                       </div>
@@ -397,7 +396,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
                         <div className="mt-2">
                           <RiskSparkline scores={evo} />
                         </div>
-                        <div className="text-[11px] text-muted-foreground mt-1">
+                        <div className="text-micro text-muted-foreground mt-1">
                           {evo.length} avaliações · score {evo[0]} → {evo[evo.length - 1]}
                         </div>
                       </div>
@@ -423,13 +422,13 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
                 <section>
                   <SectionLabel>{t('campos.risco.controlesExistentesSecao')}</SectionLabel>
                   <p className="text-sm text-foreground/85 leading-relaxed whitespace-pre-line">{risco.controles_existentes}</p>
-                  <p className="text-[11px] text-muted-foreground mt-1.5">{t('riscosControles.aba.notaTexto')}</p>
+                  <p className="text-micro text-muted-foreground mt-1.5">{t('riscosControles.aba.notaTexto')}</p>
                 </section>
               )}
               {risco.aceito && (
                 <section className="border border-warning/40 bg-warning/5 rounded-lg p-3">
                   <div className="flex items-center gap-2 text-xs font-semibold text-warning">
-                    <AlertTriangle className="h-3.5 w-3.5" strokeWidth={1.5} /> Risco aceito formalmente
+                    <IconWarning className="h-3.5 w-3.5" strokeWidth={1.5} /> Risco aceito formalmente
                   </div>
                   {risco.justificativa_aceite && (
                     <p className="text-xs text-foreground/80 mt-1.5">{risco.justificativa_aceite}</p>
@@ -456,7 +455,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
                         {tratStats.concluidos} concluídos · {tratStats.andamento} em andamento · {tratStats.pendentes} pendentes
                       </span>
                     </div>
-                    <div className="flex h-1.5 gap-0.5 rounded-full overflow-hidden bg-muted/60">
+                    <div className="flex h-1.5 gap-0.5 rounded-full overflow-hidden bg-card border border-border">
                       {tratStats.concluidos > 0 && <div className="bg-success" style={{ flex: tratStats.concluidos }} />}
                       {tratStats.andamento > 0 && <div className="bg-primary" style={{ flex: tratStats.andamento }} />}
                       {tratStats.pendentes > 0 && <div className="bg-muted-foreground/40" style={{ flex: tratStats.pendentes }} />}
@@ -470,14 +469,14 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
                       <div key={t.id} className="bg-card border border-border rounded-lg p-3 space-y-2">
                         <div className="flex items-start justify-between gap-2">
                           <div className="text-sm font-medium leading-snug">{t.descricao}</div>
-                          <StatusBadge size="sm" {...resolveRiscoStatusTone(t.status)}>
+                          <StatusBadge {...resolveRiscoStatusTone(t.status)}>
                             {formatStatus(t.status)}
                           </StatusBadge>
                         </div>
-                        <div className="h-1 bg-muted/60 rounded-full overflow-hidden">
+                        <div className="h-1 bg-card rounded-full overflow-hidden border border-border">
                           <div className={`h-full ${barCls}`} style={{ width: `${pct}%` }} />
                         </div>
-                        <div className="text-[11px] text-muted-foreground flex flex-wrap gap-x-3 gap-y-0.5">
+                        <div className="text-micro text-muted-foreground flex flex-wrap gap-x-3 gap-y-0.5">
                           <span>Tipo: {formatStatus(t.tipo_tratamento)}</span>
                           {t.prazo && <span>Prazo: {formatDateOnly(t.prazo)}</span>}
                           {t.eficacia && <span>Eficácia: {t.eficacia}</span>}
@@ -514,11 +513,11 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
                       <span className="absolute -left-1.5 h-3 w-3 rounded-full bg-primary border-2 border-card" />
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-xs font-semibold">{formatStatus(h.tipo)}</span>
-                        <span className="text-[11px] text-muted-foreground">{formatDateOnly(h.created_at)}</span>
+                        <span className="text-micro text-muted-foreground">{formatDateOnly(h.created_at)}</span>
                       </div>
                       <div className="mt-1 text-xs text-muted-foreground">
                         P {h.probabilidade} × I {h.impacto} ·{' '}
-                        <StatusBadge size="sm" {...resolveNivelRiscoTone(h.nivel_risco)}>
+                        <StatusBadge {...resolveNivelRiscoTone(h.nivel_risco)}>
                           {formatStatus(h.nivel_risco)}
                         </StatusBadge>
                       </div>
@@ -534,11 +533,11 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
             {/* Controles = requisitos dos frameworks activos vinculados ao risco */}
             <TabsContent value="controles" className="m-0 space-y-2">
               <div className="flex items-center justify-between gap-2 mb-1">
-                <span className="text-[10.5px] font-semibold tracking-[1.2px] uppercase text-muted-foreground">
+                <span className="text-xs font-semibold text-muted-foreground">
                   {t('riscosControles.aba.vinculados', { count: requisitos.length })}
                 </span>
                 <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setVincularOpen(true)}>
-                  <Plus className="h-3.5 w-3.5 mr-1" strokeWidth={1.5} />
+                  <IconAdd className="h-3.5 w-3.5 mr-1" strokeWidth={1.5} />
                   {t('riscosControles.aba.vincular')}
                 </Button>
               </div>
@@ -551,7 +550,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
                 <div className="py-8 text-center space-y-3">
                   <p className="text-sm text-muted-foreground">{t('riscosControles.aba.vazio')}</p>
                   <Button variant="outline" size="sm" onClick={() => setVincularOpen(true)}>
-                    <Plus className="h-3.5 w-3.5 mr-1.5" strokeWidth={1.5} />
+                    <IconAdd className="h-3.5 w-3.5 mr-1.5" strokeWidth={1.5} />
                     {t('riscosControles.aba.vincular')}
                   </Button>
                 </div>
@@ -573,24 +572,24 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
                     <div key={r.id} className="bg-card border border-border rounded-lg p-3 flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          {r.codigo && <span className="font-mono text-[11px] text-muted-foreground">{r.codigo}</span>}
+                          {r.codigo && <span className="font-mono text-micro text-muted-foreground">{r.codigo}</span>}
                           <span className="text-sm font-medium leading-snug">{r.titulo}</span>
                         </div>
-                        <div className="text-[11px] text-muted-foreground mt-1 flex flex-wrap gap-x-3">
+                        <div className="text-micro text-muted-foreground mt-1 flex flex-wrap gap-x-3">
                           <span>{r.framework_nome}</span>
                           {r.categoria && <span>{r.categoria}</span>}
                         </div>
                       </div>
                       <div className="flex flex-col items-end gap-1.5 shrink-0">
-                        <StatusBadge size="sm" {...resolveConformityTone(r.conformity_status)}>
+                        <StatusBadge {...resolveConformityTone(r.conformity_status)}>
                           {formatStatus(r.conformity_status)}
                         </StatusBadge>
                         <RouterLink
                           to={`/gap-analysis/framework/${r.framework_id}?q=${encodeURIComponent(r.codigo || r.titulo)}`}
-                          className="text-[11px] text-primary inline-flex items-center gap-1 hover:underline"
+                          className="text-micro text-primary inline-flex items-center gap-1 hover:underline"
                         >
                           {t('riscosControles.aba.abrirNoGap')}
-                          <ExternalLink className="h-3 w-3" strokeWidth={1.5} />
+                          <IconExternal className="h-3 w-3" strokeWidth={1.5} />
                         </RouterLink>
                       </div>
                     </div>
@@ -608,7 +607,7 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
 
         {/* Footer fixo */}
         <div className="border-t border-border px-6 py-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-card">
-          <div className="text-[11px] text-muted-foreground min-w-0 leading-snug">
+          <div className="text-micro text-muted-foreground min-w-0 leading-snug">
             {detail?.historico?.[0]
               ? <>{t('residuos.risco.ultimaRevisao')}<span className="text-foreground/85">{formatStatus(detail.historico[0].tipo)}</span> · {formatDateOnly(detail.historico[0].created_at)}</>
               : risco.responsavel_nome
@@ -617,11 +616,11 @@ export function RiscoDetailDrawer({ risco, open, onOpenChange, onEdit, onAccept,
           </div>
           <div className="flex items-center gap-3 sm:ml-auto">
             <Button variant="outline" size="sm" onClick={() => onAccept(risco)}>
-              <ShieldCheck className="h-3.5 w-3.5 mr-1.5" strokeWidth={1.5} />
+              <IconShieldCheck className="h-3.5 w-3.5 mr-1.5" strokeWidth={1.5} />
               Aceitar formalmente
             </Button>
             <Button size="sm" onClick={() => onOpenTratamentos(risco)}>
-              <Shield className="h-3.5 w-3.5 mr-1.5" strokeWidth={1.5} />
+              <IconShield className="h-3.5 w-3.5 mr-1.5" strokeWidth={1.5} />
               Novo tratamento
             </Button>
           </div>
@@ -674,7 +673,7 @@ function RiskSparkline({ scores }: { scores: number[] }) {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="text-[10.5px] font-semibold tracking-[1.2px] uppercase text-muted-foreground mb-1.5">
+    <div className="text-xs font-semibold text-muted-foreground mb-1.5">
       {children}
     </div>
   );
@@ -694,8 +693,8 @@ function splitLines(text?: string): string[] {
 
 function CauseChip({ kind, text }: { kind: 'CAUSA' | 'CONSEQ.'; text: string }) {
   return (
-    <div className="flex gap-2.5 px-3 py-2 bg-muted/40 rounded-md text-xs">
-      <span className="text-[10px] font-semibold uppercase tracking-[0.5px] text-muted-foreground pt-0.5 min-w-[52px] flex-shrink-0">
+    <div className="flex gap-2.5 px-3 py-2 bg-card rounded-md text-xs border border-border">
+      <span className="text-xs font-semibold text-muted-foreground pt-0.5 min-w-[52px] flex-shrink-0">
         {kind}
       </span>
       <span className="text-foreground/85">{text}</span>

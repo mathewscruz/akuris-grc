@@ -1,7 +1,6 @@
 
 import { logger } from '@/lib/logger';
 import { useState, useEffect } from 'react';
-import { Check, ChevronsUpDown, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
@@ -10,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { IconSort, IconPerson, IconCheck } from '@/components/icons';
 
 interface Usuario {
   user_id: string;
@@ -21,9 +21,12 @@ interface UserSelectProps {
   value?: string;
   onValueChange: (value: string) => void;
   placeholder?: string;
+  /** Liga o gatilho ao <Label htmlFor> do campo — sem isto o leitor de ecrã
+   *  anuncia só o valor, sem dizer de que campo se trata. */
+  id?: string;
 }
 
-export function UserSelect({ value, onValueChange, placeholder }: UserSelectProps) {
+export function UserSelect({ value, onValueChange, placeholder, id }: UserSelectProps) {
   const { t } = useLanguage();
   const resolvedPlaceholder = placeholder ?? t('riscosDetalhe.userSelect.placeholder');
   const { profile } = useAuth();
@@ -63,6 +66,7 @@ export function UserSelect({ value, onValueChange, placeholder }: UserSelectProp
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
+          id={id}
           variant="outline"
           role="combobox"
           aria-expanded={open}
@@ -70,13 +74,13 @@ export function UserSelect({ value, onValueChange, placeholder }: UserSelectProp
         >
           {selectedUser ? (
             <div className="flex items-center gap-2 truncate">
-              <User className="h-4 w-4 flex-shrink-0" />
+              <IconPerson className="h-4 w-4 flex-shrink-0" />
               <span className="truncate">{selectedUser.nome}</span>
             </div>
           ) : (
             <span className="text-muted-foreground">{resolvedPlaceholder}</span>
           )}
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          <IconSort className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-full p-0" align="start">
@@ -98,14 +102,14 @@ export function UserSelect({ value, onValueChange, placeholder }: UserSelectProp
                       setOpen(false);
                     }}
                   >
-                    <Check
+                    <IconCheck
                       className={cn(
                         "mr-2 h-4 w-4",
                         value === usuario.user_id ? "opacity-100" : "opacity-0"
                       )}
                     />
                     <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <User className="h-4 w-4 flex-shrink-0" />
+                      <IconPerson className="h-4 w-4 flex-shrink-0" />
                       <div className="flex flex-col min-w-0">
                         <span className="font-medium truncate">{usuario.nome}</span>
                         <span className="text-xs text-muted-foreground truncate">{usuario.email}</span>

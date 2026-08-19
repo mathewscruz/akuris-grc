@@ -19,11 +19,11 @@ export function TratamentosDialog({ open, onOpenChange, risco, onSuccess }: Trat
         <DialogHeader className="relative flex-shrink-0 px-8 pt-7 pb-5 border-b">
           <CornerAccent position="top-left" />
           <DialogTitle className="flex items-center gap-3 text-xl">
-            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <span className="flex h-10 w-10 items-center justify-center text-primary">
               <RiscosIcon className="h-5 w-5" />
             </span>
             <span className="flex flex-col">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+              <span className="text-xs font-semibold text-muted-foreground">
                 {t('riscosDetalhe.tratamentosDialog.eyebrow')}
               </span>
               <span className="text-lg font-semibold leading-tight">{risco?.nome}</span>
@@ -34,7 +34,7 @@ export function TratamentosDialog({ open, onOpenChange, risco, onSuccess }: Trat
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto px-8 py-6">
+        <div className="flex-1 min-h-0 overflow-y-auto px-8 py-6">
           <TratamentosList
             embedded
             riscoId={risco?.id}

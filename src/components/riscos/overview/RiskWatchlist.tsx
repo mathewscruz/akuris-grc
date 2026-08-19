@@ -2,7 +2,6 @@
  * RiskWatchlist — top 5 riscos prioritários (acima do apetite, ordenados por score desc).
  * Clique abre o RiscoDetailDrawer.
  */
-import { ArrowRight, ChevronRight, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -11,6 +10,7 @@ import { resolveNivelRiscoTone, resolveRiscoStatusTone } from '@/lib/status-tone
 import { formatStatus } from '@/lib/text-utils';
 import { severityFromNivel } from '@/components/riscos/risk-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { IconTime, IconChevron, IconArrowRight } from '@/components/icons';
 import {
   initials,
   isAcimaApetite,
@@ -55,10 +55,10 @@ export function RiskWatchlist({ riscos, totalCount, onOpenRisk, onSeeAll }: Prop
     .slice(0, 5);
 
   return (
-    <div className="bg-card border border-border rounded-xl">
+    <div className="bg-card border border-border rounded-lg">
       <div className="px-5 py-4 border-b border-border flex items-center justify-between gap-3">
         <div>
-          <div className="text-[10.5px] font-semibold tracking-[1.2px] uppercase text-muted-foreground">
+          <div className="text-xs font-semibold text-muted-foreground">
             {t('riscosVisoes.overview.riskWatchlist.eyebrow')}
           </div>
           <div className="text-base font-semibold mt-0.5">
@@ -68,7 +68,7 @@ export function RiskWatchlist({ riscos, totalCount, onOpenRisk, onSeeAll }: Prop
         {onSeeAll && (
           <Button variant="ghost" size="sm" onClick={onSeeAll}>
             {t('riscosVisoes.overview.riskWatchlist.verTodos', { count: totalCount })}
-            <ArrowRight className="h-3.5 w-3.5 ml-1" strokeWidth={1.5} />
+            <IconArrowRight className="h-3.5 w-3.5 ml-1" strokeWidth={1.5} />
           </Button>
         )}
       </div>
@@ -98,32 +98,32 @@ export function RiskWatchlist({ riscos, totalCount, onOpenRisk, onSeeAll }: Prop
               <li
                 key={r.id}
                 onClick={() => onOpenRisk(r.id)}
-                className={`grid grid-cols-[auto_1fr_auto_auto_auto_auto] items-center gap-4 px-5 py-3.5 cursor-pointer hover:bg-muted/40 transition-colors ${idx > 0 ? 'border-t border-border' : ''}`}
+                className={`grid grid-cols-[auto_1fr_auto_auto_auto_auto] items-center gap-4 px-5 py-3.5 cursor-pointer hover:bg-accent transition-colors ${idx > 0 ? 'border-t border-border' : ''}`}
               >
                 <span className={cn('h-2 w-2 rounded-full flex-shrink-0 ring-[3px]', sevDot, sevHalo)} />
                 <div className="min-w-0">
                   <div className="text-sm font-medium text-foreground truncate">{r.nome}</div>
-                  <div className="text-[11px] text-muted-foreground flex items-center gap-2 mt-0.5">
+                  <div className="text-micro text-muted-foreground flex items-center gap-2 mt-0.5">
                     <span className="font-mono">{shortRiskId(r.id, (r as any).codigo)}</span>
                     <span>·</span>
                     <span className="truncate">{r.categoria?.nome || t('riscosVisoes.overview.riskWatchlist.semCategoria')}</span>
                     <span>·</span>
                     <span className="inline-flex items-center gap-1">
-                      <Clock className="h-3 w-3" strokeWidth={1.5} />
+                      <IconTime className="h-3 w-3" strokeWidth={1.5} />
                       {relativeShort(r.updated_at || r.created_at)}
                     </span>
                   </div>
                 </div>
-                <StatusBadge size="sm" {...resolveNivelRiscoTone(nivel)}>
+                <StatusBadge {...resolveNivelRiscoTone(nivel)}>
                   {formatStatus(nivel)} · {score}
                 </StatusBadge>
-                <StatusBadge size="sm" {...resolveRiscoStatusTone(r.status)}>
+                <StatusBadge {...resolveRiscoStatusTone(r.status)}>
                   {formatStatus(r.status)}
                 </StatusBadge>
                 <div className="inline-flex items-center gap-2 text-xs text-foreground/85">
                   <Avatar className="h-6 w-6">
                     {r.responsavel_foto && <AvatarImage src={r.responsavel_foto} alt={r.responsavel_nome || ''} />}
-                    <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
+                    <AvatarFallback className="text-micro bg-primary/10 text-primary">
                       {initials(r.responsavel_nome)}
                     </AvatarFallback>
                   </Avatar>
@@ -131,7 +131,7 @@ export function RiskWatchlist({ riscos, totalCount, onOpenRisk, onSeeAll }: Prop
                     {r.responsavel_nome?.split(' ').slice(-1)[0] || '—'}
                   </span>
                 </div>
-                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.5} />
+                <IconChevron className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.5} />
               </li>
             );
           })}

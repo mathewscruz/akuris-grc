@@ -6,12 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Pencil, Trash2, Tag } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { toast } from 'sonner';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { IconAdd, IconEdit, IconDelete, IconTag } from '@/components/icons';
+import { exigirEscrita } from '@/lib/supabase-write';
 
 interface Categoria {
   id: string;
@@ -173,12 +174,12 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess }: CategoriasDi
     try {
       setLoading(true);
       for (const categoria of defaultCategories) {
-        await supabase
+        await exigirEscrita(supabase
           .from('riscos_categorias')
           .insert({
             empresa_id: profile?.empresa_id,
             ...categoria
-          });
+          }));
       }
       toast.success(t('riscosDialogs.categorias.categoriasPadraoCriadas'));
       fetchCategorias();
@@ -195,7 +196,7 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess }: CategoriasDi
       <DialogShell
         open={open}
         onOpenChange={onOpenChange}
-        icon={Tag}
+        icon={IconTag}
         title={t('riscosDialogs.categorias.title')}
         description={t('riscosDialogs.categorias.description')}
         size="lg"
@@ -206,7 +207,7 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess }: CategoriasDi
               <div className="flex justify-between items-center">
                 <div className="flex gap-2">
                   <Button onClick={handleNewCategoria} size="sm">
-                    <Plus className="mr-2 h-4 w-4" />
+                    <IconAdd className="mr-2 h-4 w-4" />
                     {t('riscosDialogs.categorias.novaCategoria')}
                   </Button>
                   {categorias.length === 0 && (
@@ -221,7 +222,7 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess }: CategoriasDi
             {showForm && (
               <form onSubmit={handleSubmit} className="space-y-4 p-4 border rounded-lg">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
+                  <div className="space-y-2">
                     <Label htmlFor="nome">{t('riscosDialogs.categorias.nomeCategoria')}</Label>
                     <Input
                       id="nome"
@@ -230,7 +231,7 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess }: CategoriasDi
                       required
                     />
                   </div>
-                  <div>
+                  <div className="space-y-2">
                     <Label htmlFor="cor">{t('riscosDialogs.categorias.cor')}</Label>
                     <div className="flex gap-2 items-center">
                       <Input
@@ -247,7 +248,7 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess }: CategoriasDi
                     </div>
                   </div>
                 </div>
-                <div>
+                <div className="space-y-2">
                   <Label htmlFor="descricao">{t('riscosDialogs.categorias.descricaoOpcional')}</Label>
                   <Textarea
                     id="descricao"
@@ -313,14 +314,14 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess }: CategoriasDi
                               size="sm"
                               onClick={() => handleEdit(categoria)}
                             >
-                              <Pencil className="h-4 w-4" />
+                              <IconEdit className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() => openDeleteDialog(categoria)}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <IconDelete className="h-4 w-4" />
                             </Button>
                           </div>
                         </TableCell>

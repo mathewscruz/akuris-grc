@@ -28,10 +28,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
-import { Library, Search, Check } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { akurisToast } from '@/lib/akuris-toast';
 import { logger } from '@/lib/logger';
+import { IconCheck, IconBook, IconSearch } from '@/components/icons';
 import {
   useRiscosBiblioteca,
   useRiscosBibliotecaImportados,
@@ -214,41 +214,41 @@ export function BibliotecaRiscosDialog({
           />
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+              <span className="text-xs font-semibold text-muted-foreground">
                 {c.codigo}
               </span>
-              <Badge variant="outline" className="text-[11px]">
+              <Badge variant="outline" className="text-micro">
                 {CATEGORIA_LABEL[c.categoria]?.[lang] ?? c.categoria}
               </Badge>
               {c.origem && (
-                <Badge variant="secondary" className="text-[11px]">
+                <Badge variant="secondary" className="text-micro">
                   {c.origem}
                 </Badge>
               )}
-              <span className="text-[11px] text-muted-foreground">
+              <span className="text-micro text-muted-foreground">
                 {t('riscosBiblioteca.sugestao', {
                   p: c.probabilidade_sugerida,
                   i: c.impacto_sugerido,
                 })}
               </span>
               {jaImportado && (
-                <span className="inline-flex items-center gap-1 text-[11px] text-success">
-                  <Check className="h-3 w-3" strokeWidth={2} />
+                <span className="inline-flex items-center gap-1 text-micro text-success">
+                  <IconCheck className="h-3 w-3" strokeWidth={2} />
                   {t('riscosBiblioteca.jaImportado')}
                 </span>
               )}
             </div>
 
             <p className="mt-1 text-sm font-semibold leading-tight text-foreground">{c.titulo}</p>
-            <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">{c.descricao}</p>
+            <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{c.descricao}</p>
 
             <div className="mt-3 grid gap-3 sm:grid-cols-2">
               {!!c.causas?.length && (
                 <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                  <p className="text-xs font-semibold text-muted-foreground">
                     {t('riscosBiblioteca.causas')}
                   </p>
-                  <ul className="mt-1 list-disc pl-4 text-[12px] text-muted-foreground">
+                  <ul className="mt-1 list-disc pl-4 text-xs text-muted-foreground">
                     {c.causas.map((x) => (
                       <li key={x}>{x}</li>
                     ))}
@@ -257,10 +257,10 @@ export function BibliotecaRiscosDialog({
               )}
               {!!c.consequencias?.length && (
                 <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                  <p className="text-xs font-semibold text-muted-foreground">
                     {t('riscosBiblioteca.consequencias')}
                   </p>
-                  <ul className="mt-1 list-disc pl-4 text-[12px] text-muted-foreground">
+                  <ul className="mt-1 list-disc pl-4 text-xs text-muted-foreground">
                     {c.consequencias.map((x) => (
                       <li key={x}>{x}</li>
                     ))}
@@ -271,11 +271,11 @@ export function BibliotecaRiscosDialog({
 
             {!!c.tipos_ativo?.length && (
               <div className="mt-3 flex flex-wrap items-center gap-1.5">
-                <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                <span className="text-xs font-semibold text-muted-foreground">
                   {t('riscosBiblioteca.tiposAtivo')}
                 </span>
                 {c.tipos_ativo.map((tipo) => (
-                  <Badge key={tipo} variant="secondary" className="text-[11px]">
+                  <Badge key={tipo} variant="secondary" className="text-micro">
                     {TIPO_ATIVO_I18N[tipo]
                       ? t(`contratosAtivos.ativoDialog.${TIPO_ATIVO_I18N[tipo]}`)
                       : tipo}
@@ -286,11 +286,11 @@ export function BibliotecaRiscosDialog({
 
             {!!c.controlos_recomendados?.length && (
               <div className="mt-3 flex flex-wrap items-center gap-1.5">
-                <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                <span className="text-xs font-semibold text-muted-foreground">
                   {t('riscosBiblioteca.controlos')}
                 </span>
                 {c.controlos_recomendados.map((code) => (
-                  <Badge key={code} variant="outline" className="text-[11px]">
+                  <Badge key={code} variant="outline" className="text-micro">
                     {code}
                   </Badge>
                 ))}
@@ -307,11 +307,11 @@ export function BibliotecaRiscosDialog({
       <DialogContent className="max-w-full sm:max-w-5xl max-h-[100dvh] sm:max-h-[92vh] overflow-hidden flex flex-col p-0 gap-0">
         <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b">
           <DialogTitle className="flex items-center gap-3">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
-              <Library className="h-[18px] w-[18px]" strokeWidth={1.5} />
+            <span className="flex h-9 w-9 items-center justify-center text-primary shrink-0">
+              <IconBook className="h-[18px] w-[18px]" strokeWidth={1.5} />
             </span>
             <span className="flex flex-col">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+              <span className="text-xs font-semibold text-muted-foreground">
                 {t('riscos.page.newRiskAria')}
               </span>
               <span className="text-base font-semibold leading-tight">
@@ -327,7 +327,7 @@ export function BibliotecaRiscosDialog({
         <div className="flex-shrink-0 border-b px-6 py-3 space-y-3">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <div className="relative flex-1">
-              <Search
+              <IconSearch
                 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
                 strokeWidth={1.5}
               />
@@ -373,7 +373,7 @@ export function BibliotecaRiscosDialog({
                 checked={ocultarImportados}
                 onCheckedChange={setOcultarImportados}
               />
-              <Label htmlFor="ocultar-importados" className="text-[13px] font-normal">
+              <Label htmlFor="ocultar-importados" className="text-sm font-normal">
                 {t('riscosBiblioteca.apenasNaoImportados')}
               </Label>
             </div>
@@ -385,7 +385,7 @@ export function BibliotecaRiscosDialog({
               />
               <Label
                 htmlFor="mapear-controlos"
-                className="text-[13px] font-normal"
+                className="text-sm font-normal"
                 title={t('riscosBiblioteca.mapearControlosAjuda')}
               >
                 {t('riscosBiblioteca.mapearControlos')}
@@ -402,7 +402,7 @@ export function BibliotecaRiscosDialog({
           </div>
         </div>
 
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
           {isLoading ? (
             <div className="flex h-full items-center justify-center py-16">
               <AkurisPulse />
@@ -412,14 +412,14 @@ export function BibliotecaRiscosDialog({
               {t('riscosBiblioteca.semResultados')}
             </div>
           ) : (
-            <ScrollArea className="h-full">
+            <ScrollArea className="flex-1 min-h-0">
               <ul className="space-y-3 px-6 py-4">{filtrados.map(renderCard)}</ul>
             </ScrollArea>
           )}
         </div>
 
         <div className="flex-shrink-0 flex flex-col gap-3 border-t px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-[12px] text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             {t('riscosBiblioteca.selecionados', { count: selecionados.size })} ·{' '}
             {t('riscosBiblioteca.revisao')}
           </p>

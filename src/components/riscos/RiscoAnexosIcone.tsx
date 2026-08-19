@@ -1,8 +1,8 @@
 import { logger } from '@/lib/logger';
+import { IconDownload, IconView, IconAttach } from '@/components/icons';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Paperclip, Download, Eye } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { openStorageFile } from '@/lib/storage';
 import {
@@ -11,6 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { intlLocale } from '@/lib/date-utils';
 
 interface RiscoAnexosIconeProps {
   riscoId: string;
@@ -81,7 +82,7 @@ export function RiscoAnexosIcone({ riscoId }: RiscoAnexosIconeProps) {
                 className="h-8 w-8 p-0 text-primary hover:text-primary"
                 disabled={loading}
               >
-                <Paperclip className="h-4 w-4" />
+                <IconAttach className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>
@@ -103,7 +104,7 @@ export function RiscoAnexosIcone({ riscoId }: RiscoAnexosIconeProps) {
                       <span>{anexo.tipo_arquivo.split('/')[1]?.toUpperCase()}</span>
                     )}
                     <span>{formatFileSize(anexo.tamanho_arquivo)}</span>
-                    <span>{new Date(anexo.created_at).toLocaleDateString('pt-BR')}</span>
+                    <span>{new Date(anexo.created_at).toLocaleDateString(intlLocale())}</span>
                   </div>
                 </div>
                 <div className="flex gap-1 ml-2">
@@ -113,7 +114,7 @@ export function RiscoAnexosIcone({ riscoId }: RiscoAnexosIconeProps) {
                     onClick={() => handleDownload(anexo)}
                     className="h-6 w-6 p-0"
                   >
-                    <Eye className="h-3 w-3" />
+                    <IconView className="h-3 w-3" />
                   </Button>
                   <Button
                     variant="ghost"
@@ -121,7 +122,7 @@ export function RiscoAnexosIcone({ riscoId }: RiscoAnexosIconeProps) {
                     onClick={() => handleDownload(anexo)}
                     className="h-6 w-6 p-0"
                   >
-                    <Download className="h-3 w-3" />
+                    <IconDownload className="h-3 w-3" />
                   </Button>
                 </div>
               </div>
