@@ -77,9 +77,11 @@ export const useDueDiligenceStats = () => {
           new Date(a.created_at) >= inicioMes
         ).length || 0;
 
+        // `> 0` excluía os zeros da média — e zero é o pior score possível,
+        // não a sua ausência. Um fornecedor reprovado saía da conta e a média
+        // da carteira subia justamente por causa dele.
         const completedWithScores = assessments?.filter(a =>
-          ['concluido', 'finalizado'].includes(a.status) &&
-          a.score_final != null && a.score_final > 0
+          ['concluido', 'finalizado'].includes(a.status) && a.score_final != null
         ) || [];
 
         const averageScore = completedWithScores.length > 0

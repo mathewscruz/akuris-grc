@@ -267,6 +267,11 @@ export default function AuditoriasContent({ actionsSlot }: { actionsSlot?: HTMLE
     });
   };
 
+  /** Filtro ou pesquisa activos: o estado vazio tem de dizer "nada encontrado",
+   *  e não "comece por criar" — a base pode estar cheia. */
+  const filtrosAtivos =
+    statusFilter !== 'todos' || tipoFilter !== 'todos' || searchTerm.trim() !== '';
+
   // Calcular estatísticas
   const totalItens = Object.values(auditoriasCounts || {}).reduce((acc, c) => acc + c.itens, 0);
   const totalConcluidos = Object.values(auditoriasCounts || {}).reduce((acc, c) => acc + c.itensConcluidos, 0);
@@ -366,11 +371,14 @@ export default function AuditoriasContent({ actionsSlot }: { actionsSlot?: HTMLE
               ))}
             </div>
           ) : !auditorias || auditorias.length === 0 ? (
+            /* Filtrar até zero dizia "ainda não há auditorias cadastradas" —
+               convidando a criar uma numa base com três. É o mesmo padrão de
+               `filtrosAtivos` que `ControlesContent` já usa. */
             <EmptyState
               icon={<IconFile className="h-8 w-8" />}
-              title={t("governancaComp.auditorias.emptyTitle")}
-              description={t("governancaComp.auditorias.emptyDescription")}
-              action={{
+              title={filtrosAtivos ? t('common.noResults') : t("governancaComp.auditorias.emptyTitle")}
+              description={filtrosAtivos ? t('common.noResultsHint') : t("governancaComp.auditorias.emptyDescription")}
+              action={filtrosAtivos ? undefined : {
                 label: t("governancaComp.auditorias.emptyAction"),
                 onClick: () => {
                   setSelectedAuditoria(null);

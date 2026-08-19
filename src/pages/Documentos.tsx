@@ -513,10 +513,14 @@ export default function Documentos() {
                     <SelectValue placeholder={t('documentos.lista.status')} />
                   </SelectTrigger>
                   <SelectContent>
+                    {/* `pendente` é o segundo estado mais comum do produto e
+                        não era oferecido; `arquivado` tem zero registos e
+                        `vencido` não é estado gravado — vencimento é uma data.
+                        "Vencidos" fica como recorte derivado. */}
                     <SelectItem value="all">{t('documentos.lista.todos')}</SelectItem>
                     <SelectItem value="ativo">{t('documentos.lista.ativo')}</SelectItem>
+                    <SelectItem value="pendente">{t('documentos.lista.pendente')}</SelectItem>
                     <SelectItem value="inativo">{t('documentos.lista.inativo')}</SelectItem>
-                    <SelectItem value="arquivado">{t('documentos.lista.arquivado')}</SelectItem>
                     <SelectItem value="vencido">{t('documentos.lista.vencido')}</SelectItem>
                   </SelectContent>
                 </Select>

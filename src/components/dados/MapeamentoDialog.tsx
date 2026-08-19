@@ -81,7 +81,10 @@ export function MapeamentoDialog({ isOpen, onClose, onSave, mapeamento }: Mapeam
     try {
       setIsLoading(true);
 
-      const payload = { ...formData, empresa_id: empresaId };
+      // `dados_mapeamento` NÃO tem coluna `empresa_id` — mandá-la fazia o
+      // PostgREST recusar com PGRST204, e criar um mapeamento era impossível.
+      // O isolamento por empresa vem da RLS através de `dados_pessoais_id`.
+      const payload = { ...formData };
 
       if (mapeamento?.id) {
         const { error } = await supabase

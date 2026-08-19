@@ -4,6 +4,7 @@ export const documentos = {
       lista: {
         totalDocumentos: 'Total de Documentos',
         vencidosKpi: 'Vencidos',
+        pendente: 'Pendente de aprovação',
         pendentesAprovacaoKpi: 'Pendentes de aprovação',
         responsavel: 'Responsável',
         categoria: 'Categoria',
@@ -449,6 +450,7 @@ export const documentos = {
       lista: {
         totalDocumentos: 'Total Documents',
         vencidosKpi: 'Expired',
+        pendente: 'Pending approval',
         pendentesAprovacaoKpi: 'Pending approval',
         responsavel: 'Owner',
         categoria: 'Category',

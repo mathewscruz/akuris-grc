@@ -82,7 +82,13 @@ export default function Dashboard() {
     'due-diligence-stats',
     'denuncias-stats',
     'gap-analysis-stats',
-    'trend-data',
+    // Era 'trend-data', chave que não existe — o `TrendIndicators` usa
+    // 'trend-indicators'. E faltavam as dos cartões de frameworks e
+    // maturidade: o botão "atualizar" mostrava dados antigos sem aviso.
+    // (o radar deriva destes hooks, não tem chave própria.)
+    'trend-indicators',
+    'frameworks-overview',
+    'maturity-trend',
     'recent-activities',
   ] as const;
 

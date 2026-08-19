@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { filterUuids } from '@/lib/uuid';
 import { IconView, IconMore, IconSuccess, IconWarning, IconError, IconTime, IconCalendarClock, IconTimer, IconBan } from '@/components/icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -128,11 +129,16 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
     });
 
     let profileMap = new Map<string, string>();
-    if (userIds.size > 0) {
-      const { data: profiles } = await supabase
+    // `responsavel` guarda UUID OU texto livre. Mandar "TI" num `.in()` sobre
+    // coluna `uuid` faz o Postgres recusar a consulta inteira — e o `error`
+    // era descartado, portanto TODOS os nomes da aba desapareciam de uma vez.
+    const idsValidos = filterUuids(Array.from(userIds));
+    if (idsValidos.length > 0) {
+      const { data: profiles, error } = await supabase
         .from('profiles')
         .select('user_id, nome')
-        .in('user_id', Array.from(userIds));
+        .in('user_id', idsValidos);
+      if (error) throw error;
       profiles?.forEach(p => profileMap.set(p.user_id, p.nome));
     }
 
@@ -153,7 +159,11 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
 
   const filteredRiscos = riscos.filter(r => {
     const matchesSearch = r.nome.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesNivel = !nivelFilter || nivelFilter === 'all' || r.nivel_risco_residual || r.nivel_risco_inicial === nivelFilter;
+    // `a || b || c === x` avalia como `a || b || (c === x)`: bastava ter nível
+    // residual para a expressão dar verdadeiro, e o filtro nunca filtrava nada.
+    const matchesNivel =
+      !nivelFilter || nivelFilter === 'all' ||
+      (r.nivel_risco_residual || r.nivel_risco_inicial) === nivelFilter;
     const matchesRevisao = !revisaoFilter || revisaoFilter === 'all' || getRevisaoStatus(r.data_proxima_revisao) === revisaoFilter;
     return matchesSearch && matchesNivel && matchesRevisao;
   });

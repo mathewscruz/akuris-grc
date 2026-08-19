@@ -372,8 +372,11 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
     return <StatusBadge {...resolveDueDiligenceStatusTone(status)}>{formatStatus(status)}</StatusBadge>;
   };
 
-  const getScoreColor = (score?: number) => {
-    if (!score || score === 0) return 'text-muted-foreground';
+  const getScoreColor = (score?: number | null) => {
+    // Zero É um score — e é o pior deles. Tratá-lo como "sem score" fazia um
+    // fornecedor reprovado aparecer como "Aguardando", em cinzento, e sair da
+    // média: o pior resultado possível era o mais discreto do ecrã.
+    if (score == null) return 'text-muted-foreground';
     // Escala de percentagem, como o valor gravado.
     if (score >= 80) return 'text-success font-semibold';
     if (score >= 60) return 'text-info font-semibold';
@@ -388,8 +391,8 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
    * comparar com um `score_final` de 0 a 100. Qualquer avaliação acima de 8%
    * era classificada "Excelente", inclusive um fornecedor com 12.
    */
-  const getScoreBadge = (score?: number): { text: string; tone: StatusTone } => {
-    if (!score || score === 0) return { text: t('dueDiligence.assessmentsManagerEnhanced.scoreAwaiting'), tone: "neutral" };
+  const getScoreBadge = (score?: number | null): { text: string; tone: StatusTone } => {
+    if (score == null) return { text: t('dueDiligence.assessmentsManagerEnhanced.scoreAwaiting'), tone: "neutral" };
     if (score >= 80) return { text: t('dueDiligence.assessmentsManagerEnhanced.scoreExcellent'), tone: "success" };
     if (score >= 60) return { text: t('dueDiligence.assessmentsManagerEnhanced.scoreGood'), tone: "info" };
     if (score >= 40) return { text: t('dueDiligence.assessmentsManagerEnhanced.scoreRegular'), tone: "warning" };
@@ -699,7 +702,7 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
                       <div>
                         <span className="text-muted-foreground">{t('dueDiligence.assessmentsManagerEnhanced.score')}</span>
                         <div className="flex items-center gap-2">
-                          {assessment.score_final && assessment.score_final > 0 ? (
+                          {assessment.score_final != null ? (
                             <button
                               onClick={() => handleScoreClick(assessment)}
                               className="hover:underline cursor-pointer flex items-center gap-2"
@@ -770,7 +773,7 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
                             <TooltipContent>{t('dueDiligence.assessmentsManagerEnhanced.moreActions')}</TooltipContent>
                           </Tooltip>
                           <DropdownMenuContent align="end">
-                            {assessment.score_final && assessment.score_final > 0 && (
+                            {assessment.score_final != null && (
                               <DropdownMenuItem onClick={() => setScoreDialog({ open: true, assessment, scoreData: null })}>
                                 <IconAward className="h-4 w-4 mr-2" />
                                 {t('dueDiligence.assessmentsManagerEnhanced.viewScore')}

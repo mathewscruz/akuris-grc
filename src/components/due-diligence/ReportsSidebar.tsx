@@ -122,11 +122,14 @@ export function ReportsSidebar() {
                 <ResponsiveContainer width="100%" height={250}>
                   <BarChart data={reports.categoryPerformance}>
                     <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} />
-                    <XAxis dataKey="categoria" stroke={CHART_AXIS} tick={{ fontSize: CHART_FONT.label, fill: CHART_AXIS }} />
+                    {/* Os dados vêm como `{ category, score }`; o gráfico lia
+                        `categoria` e `averageScore` — renderizava sem uma única
+                        barra e sem um único rótulo no eixo. */}
+                    <XAxis dataKey="category" stroke={CHART_AXIS} tick={{ fontSize: CHART_FONT.label, fill: CHART_AXIS }} />
                     <YAxis stroke={CHART_AXIS} tick={{ fontSize: CHART_FONT.label, fill: CHART_AXIS }} />
                     <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
                     <Legend />
-                    <Bar dataKey="averageScore" fill={chartSeries(0)} name={t('dueDiligence.reportsSidebar.averageScoreLegend')} />
+                    <Bar dataKey="score" fill={chartSeries(0)} name={t('dueDiligence.reportsSidebar.averageScoreLegend')} />
                   </BarChart>
                 </ResponsiveContainer>
               </CardContent>

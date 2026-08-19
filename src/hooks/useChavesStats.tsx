@@ -37,10 +37,17 @@ export const useChavesStats = () => {
         return differenceInDays(parseDataLocal(c.data_proxima_rotacao), hoje) < 0;
       }).length || 0;
 
+      /**
+       * "Rotações pendentes" — o que precisa de acção agora.
+       *
+       * O `dias >= 0` excluía exactamente as chaves EM ATRASO: uma chave que
+       * devia ter rodado há um mês não contava como pendente, e `expiradas`
+       * não era mostrada em lado nenhum. O KPI ficava a zero justamente quando
+       * havia mais trabalho por fazer.
+       */
       const rotacao30dias = chaves?.filter(c => {
         if (!c.data_proxima_rotacao) return false;
-        const dias = differenceInDays(parseDataLocal(c.data_proxima_rotacao), hoje);
-        return dias >= 0 && dias <= 30;
+        return differenceInDays(parseDataLocal(c.data_proxima_rotacao), hoje) <= 30;
       }).length || 0;
 
       const criticas = chaves?.filter(c => c.criticidade === 'critica' && c.status === 'ativa').length || 0;

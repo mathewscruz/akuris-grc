@@ -140,7 +140,10 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             .from('incidentes')
             .select('id, titulo, status, criticidade, created_at')
             .eq('empresa_id', empresaId)
-            .in('status', ['aberto', 'em_analise', 'em_tratamento', 'investigacao'])
+            // O produto grava `aberto`, `em_investigacao`, `contido` e
+            // `resolvido`. Desta lista, só `aberto` existe: a gaveta abria
+            // vazia com dois incidentes em curso no banco.
+            .in('status', ['aberto', 'em_investigacao', 'contido'])
             .order('created_at', { ascending: false })
             .limit(5);
           if (error) throw error;
@@ -281,7 +284,9 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             .from('documentos')
             .select('id, nome, status, data_vencimento')
             .eq('empresa_id', empresaId)
-            .or(`status.eq.pendente_aprovacao,and(status.eq.ativo,data_vencimento.lte.${emJanela(30)})`)
+            // O estado gravado é `pendente`; `pendente_aprovacao` não existe
+            // numa única linha — três linhas abaixo o mesmo bloco já o tratava.
+            .or(`status.eq.pendente,and(status.eq.ativo,data_vencimento.lte.${emJanela(30)})`)
             .order('data_vencimento', { ascending: true, nullsFirst: false })
             .limit(5);
           if (error) throw error;
@@ -446,12 +451,14 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
         icon: IconChecklist,
         route: '/governanca/auditorias',
         fetcher: async (empresaId) => {
-          // Junta auditorias da empresa via auditoria_id → auditorias.empresa_id
+          // `auditoria_trabalhos` tem ZERO linhas em todo o produto — a gaveta
+          // dos quatro KPIs de Auditorias abria sempre vazia. O que os KPIs
+          // contam são as auditorias em si.
           const { data, error } = await supabase
-            .from('auditoria_trabalhos')
-            .select('id, nome, tipo, status, data_inicio, auditorias!inner(empresa_id)')
-            .eq('auditorias.empresa_id', empresaId)
-            .neq('status', 'concluido')
+            .from('auditorias')
+            .select('id, nome, tipo, status, data_inicio')
+            .eq('empresa_id', empresaId)
+            .neq('status', 'concluida')
             .order('data_inicio', { ascending: true, nullsFirst: false })
             .limit(5);
           if (error) throw error;

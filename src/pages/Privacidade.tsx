@@ -91,10 +91,17 @@ export default function Privacidade() {
       if (!empresaId) return null;
       
       const dadosRes = await supabase.from('dados_pessoais').select('*').eq('empresa_id', empresaId).order('nome');
-      const mapeamentosRes = await (supabase.from('dados_mapeamento' as any).select('id, dados_pessoais_id') as any).eq('empresa_id', empresaId);
       const ropaRes = await supabase.from('ropa_registros').select('*').eq('empresa_id', empresaId).order('nome_tratamento');
       const solicitacoesRes = await supabase.from('dados_solicitacoes_titular').select('*').eq('empresa_id', empresaId).order('data_solicitacao', { ascending: false });
       const dadosIds = (dadosRes.data || []).map((d: any) => d.id);
+      // `dados_mapeamento` não tem `empresa_id`: a consulta devolvia HTTP 400 e
+      // o duplo `as any` escondia o erro de tipos que o teria apanhado. O KPI
+      // "Mapeamentos" e a coluna da tabela nunca contaram nada. O recorte por
+      // empresa é feito pelos dados pessoais, que já vêm filtrados.
+      const mapeamentosRes = dadosIds.length > 0
+        ? await supabase.from('dados_mapeamento').select('id, dados_pessoais_id').in('dados_pessoais_id', dadosIds)
+        : { data: [], error: null };
+      if (mapeamentosRes.error) throw mapeamentosRes.error;
       const ropaDadosRes = dadosIds.length > 0
         ? await supabase.from('ropa_dados_vinculados').select('id, ropa_id, dados_pessoais_id').in('dados_pessoais_id', dadosIds)
         : { data: [] };
@@ -458,10 +465,12 @@ export default function Privacidade() {
       // "Moderado" e `muito_sensivel` como "Sensível". Filtrar por "Sensível"
       // devolvia zero linhas ao lado de uma tabela com dois crachás "Sensível".
       // `moderado` nem era oferecido, apesar de o crachá o saber mostrar.
+      // `moderado` nunca existiu numa única linha do produto, e `normal` — que
+      // existia — não era oferecido. A migration `20260819270000` normaliza
+      // `normal` para `comum` e fixa os três valores com um CHECK.
       options: [
         { value: 'todos', label: t('sweepDados.privacidade.filtroTodas.sensibilidades') },
         { value: 'comum', label: t('sweepDados.privacidade.sensibilidade.comum') },
-        { value: 'moderado', label: t('sweepDados.privacidade.sensibilidade.moderado') },
         { value: 'sensivel', label: t('sweepDados.privacidade.sensibilidade.sensivel') },
         { value: 'muito_sensivel', label: t('sweepDados.privacidade.sensibilidade.muitoSensivel') }
       ],
