@@ -926,6 +926,8 @@ export function Riscos() {
               <RiskWatchlist
                 riscos={riscos as any}
                 totalCount={riscos.length}
+                apetiteScore={apetiteScore}
+                faixas={matrizConfig?.niveis_risco}
                 onOpenRisk={(id) => setDrawerRiscoId(id)}
                 onSeeAll={() => {
                   const sp = new URLSearchParams(searchParams); sp.set('view', 'table'); setSearchParams(sp);

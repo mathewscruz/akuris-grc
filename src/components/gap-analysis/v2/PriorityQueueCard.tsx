@@ -8,6 +8,7 @@
  * Mantém identidade Akuris — sem cores cruas, DM Sans, tokens semânticos.
  */
 import { useEffect, useMemo, useState } from 'react';
+import { GAP_CRITICAL_WEIGHT } from '@/lib/gap-criticality';
 import { buscarForaDoEscopo } from '@/lib/gap-soa';
 import { supabase } from '@/integrations/supabase/client';
 import { differenceInCalendarDays, parseISO } from 'date-fns';
@@ -114,7 +115,9 @@ export function PriorityQueueCard({
           if (!ev?.conformity_status || ev.conformity_status === 'nao_avaliado') {
             reasonParts.push(t('gapV2.priorityQueue.notEvaluated'));
           }
-          if (peso >= 4) reasonParts.push(t('gapV2.priorityQueue.highWeight'));
+          // Mesmo limiar de `gap-criticality.ts`, e não um 4 solto: o peso
+          // máximo que existe no produto é 3.
+          if (peso >= GAP_CRITICAL_WEIGHT) reasonParts.push(t('gapV2.priorityQueue.highWeight'));
           if (dl.factor >= 0.85) reasonParts.push(dl.reason);
           return {
             id: r.id,

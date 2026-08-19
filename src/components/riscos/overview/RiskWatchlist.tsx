@@ -9,6 +9,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveNivelRiscoTone, resolveRiscoStatusTone } from '@/lib/status-tone';
 import { formatStatus } from '@/lib/text-utils';
 import { severityFromNivel } from '@/components/riscos/risk-utils';
+import type { FaixaMatriz } from '@/lib/metrics/riscos';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { IconTime, IconChevron, IconArrowRight } from '@/components/icons';
 import {
@@ -39,14 +40,22 @@ interface Risco {
 interface Props {
   riscos: Risco[];
   totalCount: number;
+  /** Score máximo aceitável, das faixas da matriz da empresa. */
+  apetiteScore?: number | null;
+  /** Faixas da matriz activa, para o rótulo de severidade. */
+  faixas?: FaixaMatriz[] | null;
   onOpenRisk: (id: string) => void;
   onSeeAll?: () => void;
 }
 
-export function RiskWatchlist({ riscos, totalCount, onOpenRisk, onSeeAll }: Props) {
+export function RiskWatchlist({ riscos, totalCount, apetiteScore, faixas, onOpenRisk, onSeeAll }: Props) {
   const { t } = useLanguage();
   const watchlist = [...riscos]
-    .filter(isAcimaApetite)
+    // `.filter(isAcimaApetite)` passava o ÍNDICE do array como segundo
+    // argumento, e a função lê o segundo argumento como limite de apetite. A
+    // regra virava "score > posição na lista": um risco Crítico de score 20 na
+    // posição 30 desaparecia da lista de prioridades.
+    .filter((r) => isAcimaApetite(r, apetiteScore))
     .sort((a, b) => {
       const sa = scoreFromPI(a.probabilidade_residual || a.probabilidade_inicial, a.impacto_residual || a.impacto_inicial);
       const sb = scoreFromPI(b.probabilidade_residual || b.probabilidade_inicial, b.impacto_residual || b.impacto_inicial);
@@ -81,7 +90,7 @@ export function RiskWatchlist({ riscos, totalCount, onOpenRisk, onSeeAll }: Prop
         <ul>
           {watchlist.map((r, idx) => {
             const nivel = r.nivel_risco_residual || r.nivel_risco_inicial;
-            const sev = severityFromNivel(nivel);
+            const sev = severityFromNivel(nivel, faixas);
             const sevDot =
               sev === 'critico' ? 'bg-destructive' :
               sev === 'alto' ? 'bg-warning' :

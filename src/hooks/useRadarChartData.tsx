@@ -70,19 +70,38 @@ export const useRadarChartData = () => {
         ) * 100))
       : 0;
 
+    // `vencendoAvaliacao` conta o que vence nos próximos 30 dias; `vencidos`
+    // conta o que já passou do prazo. O eixo lia o primeiro e ignorava o
+    // segundo: 75 pontos ("Bom") numa empresa com 88 de 116 reavaliações em
+    // atraso e zero a vencer.
     const scoreControles = controlesData.total > 0
       ? (
           (controlesData.ativos / controlesData.total) * 50 +
-          ((controlesData.total - controlesData.vencendoAvaliacao) / controlesData.total) * 50
+          ((controlesData.total - controlesData.vencidos) / controlesData.total) * 50
         )
       : 0;
 
+    /**
+     * Ativos: 80 pontos ("Excelente") numa carteira de 3 ativos todos de
+     * criticidade ALTA, porque só `critico` penalizava — e os 20 pontos do
+     * valor de negócio evaporavam em silêncio quando ninguém o classificou.
+     *
+     * Agora `alto` pesa metade de `critico`, e quando não há um único ativo com
+     * valor informado os 20 pontos são redistribuídos pelos dois primeiros
+     * termos em vez de virarem zero: um dado em falta não é uma nota baixa.
+     */
     const scoreAtivos = ativosData.total > 0
-      ? (
-          (ativosData.ativos / ativosData.total) * 50 +
-          (1 - (ativosData.criticos / ativosData.total)) * 30 +
-          (ativosData.altoValorNegocio / ativosData.total) * 20
-        )
+      ? (() => {
+          const exposicao = (ativosData.criticos + ativosData.altos * 0.5) / ativosData.total;
+          const temValor = ativosData.altoValorNegocio > 0;
+          const pesoEstado = temValor ? 50 : 62.5;
+          const pesoExposicao = temValor ? 30 : 37.5;
+          return (
+            (ativosData.ativos / ativosData.total) * pesoEstado +
+            Math.max(0, 1 - exposicao) * pesoExposicao +
+            (temValor ? (ativosData.altoValorNegocio / ativosData.total) * 20 : 0)
+          );
+        })()
       : 0;
 
     // Incidentes: mesma lógica de exposição ponderada (crítico=4, alto=3, médio=2, baixo=1).
@@ -103,11 +122,18 @@ export const useRadarChartData = () => {
         )
       : 0;
 
+    /**
+     * Documentos: o terceiro termo lia `data_aprovacao`, que está por preencher
+     * em TODOS os 49 documentos do produto — era estruturalmente zero. A Órigo
+     * aparecia a 40/100 ("crítico") sem um único documento vencido.
+     *
+     * O que mede aprovação de facto é não estar pendente de aprovação.
+     */
     const scoreDocumentos = documentosData.total > 0
       ? (
           (documentosData.ativos / documentosData.total) * 30 +
           ((documentosData.total - documentosData.vencidos) / documentosData.total) * 40 +
-          (documentosData.aprovados / documentosData.total) * 30
+          ((documentosData.total - documentosData.pendentesAprovacao) / documentosData.total) * 30
         )
       : 0;
 

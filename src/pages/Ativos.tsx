@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { corteAltoValor, isAtivoAltoValor, valorNegocioNumerico } from '@/lib/metrics/ativos';
 import { IconAdd, IconEdit, IconDelete, IconUpload, IconMore, IconWarning, IconServer, IconActivity, IconTrendUp, IconShield, IconSettings, IconHistory, IconCloud } from '@/components/icons';
 import { useSearchParams } from 'react-router-dom';
 import { useIntegrationNotify } from '@/hooks/useIntegrationNotify';
@@ -108,7 +109,7 @@ const statusOptions = [
   { value: 'descontinuado', label: 'fin.ativos.status.descontinuado', color: 'destructive' },
 ];
 
-const valoresNegocio = ['alto', 'medio', 'baixo'];
+const valoresNegocio = ['alto', 'outros', 'sem_valor'] as const;
 
 const initialFormData = {
   nome: '',
@@ -330,6 +331,9 @@ const Ativos = () => {
   const getTipoLabel = (value: string) => { const o = tiposAtivo.find(x => x.value === value); return o ? t(o.label) : value; };
 
   const filteredAndSortedAtivos = useMemo(() => {
+    // O corte é da carteira INTEIRA, não do resultado do filtro: senão
+    // filtrar por "alto valor" recalcularia o quartil sobre si próprio.
+    const corte = corteAltoValor(ativos);
     let filtered = ativos.filter(ativo => {
       const matchesSearch = searchTerm === '' || 
         ativo.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -343,7 +347,15 @@ const Ativos = () => {
       // ('alto'/'medio'). Normalizar antes de comparar, senão o filtro devolve zero.
       const matchesCriticidade = criticidadeFilter === 'todos' || criticidadeAtivo(ativo) === criticidadeFilter;
       const matchesTipo = tipoFilter === 'todos' || ativo.tipo === tipoFilter;
-      const matchesValorNegocio = valorNegocioFilter === 'todos' || ativo.valor_negocio === valorNegocioFilter;
+      // O campo guarda montante, não escala: comparar com 'alto' devolvia
+      // sempre zero. O filtro passa a ser "acima do quartil superior da
+      // carteira" / "abaixo" / "sem valor informado".
+      const valor = valorNegocioNumerico(ativo);
+      const matchesValorNegocio =
+        valorNegocioFilter === 'todos' ||
+        (valorNegocioFilter === 'alto' && isAtivoAltoValor(ativo, corte)) ||
+        (valorNegocioFilter === 'outros' && valor != null && !isAtivoAltoValor(ativo, corte)) ||
+        (valorNegocioFilter === 'sem_valor' && valor == null);
       return matchesSearch && matchesStatus && matchesCriticidade && matchesTipo && matchesValorNegocio;
     });
 
@@ -492,7 +504,7 @@ const Ativos = () => {
     },
     {
       key: 'valor_negocio', label: t('fin.ativos.valorNegocio'), value: valorNegocioFilter, onChange: setValorNegocioFilter,
-       options: [{ value: 'todos', label: t('sweepCore.assets.all') }, ...valoresNegocio.map(v => ({ value: v, label: v.charAt(0).toUpperCase() + v.slice(1) }))]
+       options: [{ value: 'todos', label: t('sweepCore.assets.all') }, ...valoresNegocio.map(v => ({ value: v, label: t(`fin.ativos.valorFiltro.${v}`) }))]
     }
   ];
 

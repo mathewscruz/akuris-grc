@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { severidadeRiscoEfetiva } from '@/lib/metrics/riscos';
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { isGapCritico } from "@/lib/gap-criticality";
@@ -67,7 +68,10 @@ export const useDashboardStats = () => {
           .from('denuncias')
           .select('id, titulo, descricao, status')
           .eq('empresa_id', empresaId!)
-          .in('status', ['nova', 'em_investigacao']),
+          // `em_analise` é o estado mais comum de uma denúncia em curso e
+          // ficava de fora: a pílula dizia 2 e o diálogo que a explica dizia 1.
+          // `nova` não existe numa única linha do produto.
+          .in('status', ['nova', 'em_analise', 'em_investigacao']),
 
         (() => {
           const dataLimite = new Date();
@@ -82,8 +86,11 @@ export const useDashboardStats = () => {
 
         supabase
           .from('controles')
-          .select('id')
+          .select('id, nome, descricao')
           .eq('empresa_id', empresaId!)
+          // Um controlo inactivo ou em revisão não tem reavaliação em atraso:
+          // dos 88 "prazos vencidos" do banner, 36 eram desses.
+          .eq('status', 'ativo')
           .lt('proxima_avaliacao', hojeIso),
 
         supabase
@@ -91,7 +98,10 @@ export const useDashboardStats = () => {
           .select('id, titulo, descricao, criticidade, status')
           .eq('empresa_id', empresaId!)
           .eq('criticidade', 'critica')
-          .in('status', ['aberto', 'investigacao']),
+          // O produto grava `em_investigacao`; `investigacao` não existe numa
+          // única linha. A tooltip dizia "Incidentes críticos 0" com um crítico
+          // em investigação em cada empresa.
+          .in('status', ['aberto', 'em_investigacao', 'contido']),
 
         supabase
           .from('planos_acao')
@@ -112,15 +122,18 @@ export const useDashboardStats = () => {
       const nivelDe = (r: { nivel_risco_residual?: string | null; nivel_risco_inicial?: string | null }) =>
         normalizeStr(r.nivel_risco_residual || r.nivel_risco_inicial || '');
 
-      const riscosAltosCriticos = (riscosResult.data || []).filter(r => {
-        const nivel = nivelDe(r);
-        return nivel === 'alto' || nivel === 'critico' || nivel === 'muito alto';
+      // `severidadeRiscoEfetiva` é o vocabulário canónico do produto. A lista
+      // à mão aqui conhecia três palavras e não convertia separadores: uma
+      // empresa com faixas "Extremo"/"Elevado" — e há uma nos dados reais, com
+      // 9 e 6 riscos — não tinha um único risco alto ou crítico no dashboard.
+      const riscosAltosCriticos = (riscosResult.data || []).filter((r) => {
+        const sev = severidadeRiscoEfetiva(r);
+        return sev === 'alto' || sev === 'critico';
       });
       const riscosAltos = riscosAltosCriticos.length;
-      const riscosCriticos = riscosAltosCriticos.filter(r => {
-        const nivel = nivelDe(r);
-        return nivel === 'critico' || nivel === 'muito alto';
-      }).length;
+      const riscosCriticos = riscosAltosCriticos.filter(
+        (r) => severidadeRiscoEfetiva(r) === 'critico',
+      ).length;
       riscosAltosCriticos.forEach(r => {
         alertDetails.push({ id: r.id, title: r.nome, description: r.descricao || undefined, type: 'risco' });
       });
@@ -135,6 +148,11 @@ export const useDashboardStats = () => {
         alertDetails.push({ id: c.id, title: c.nome, description: c.descricao || undefined, type: 'controle' });
       });
       const controlesVencidos = controlesVencidosResult.data?.length || 0;
+      // Entram no total do banner (93) mas não entravam em `alertDetails`: o
+      // diálogo que explica o banner listava 13 e ficava a dever 80.
+      controlesVencidosResult.data?.forEach((c: any) => {
+        alertDetails.push({ id: c.id, title: c.nome, description: c.descricao || undefined, type: 'controle' });
+      });
 
       const incidentesCriticos = incidentesResult.data?.length || 0;
       incidentesResult.data?.forEach(i => {

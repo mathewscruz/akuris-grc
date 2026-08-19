@@ -93,12 +93,34 @@ export default function AuditoriasContent({ actionsSlot }: { actionsSlot?: HTMLE
     enabled: !!empresaId,
   });
 
+  /**
+   * KPIs do módulo — consulta própria, SEM os filtros da lista.
+   *
+   * Derivavam do mesmo array que a tabela, e a tabela é filtrada no servidor:
+   * escolher Status="Concluída" fazia o cartão "Auditorias cadastradas" cair de
+   * 3 para 1. Um KPI que muda quando se filtra a lista não é um KPI, é uma
+   * segunda contagem da lista com o rótulo errado.
+   */
+  const { data: todasAsAuditorias } = useQuery({
+    queryKey: ['auditorias-kpi', empresaId],
+    enabled: !!empresaId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('auditorias')
+        .select('id, status')
+        .eq('empresa_id', empresaId!);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   // Buscar contagens de itens para todas as auditorias (inclui auditoria_itens + controles_auditorias)
   const { data: auditoriasCounts } = useQuery({
-    queryKey: ['auditorias-counts', auditorias?.map(a => a.id)],
+    queryKey: ['auditorias-counts', todasAsAuditorias?.map(a => a.id)],
     queryFn: async () => {
+      const auditorias = todasAsAuditorias;
       if (!auditorias || auditorias.length === 0) return {};
-      
+
       const counts: Record<string, { itens: number; itensConcluidos: number }> = {};
       const auditoriaIds = auditorias.map(a => a.id);
       
@@ -264,10 +286,10 @@ export default function AuditoriasContent({ actionsSlot }: { actionsSlot?: HTMLE
       <StatStrip
         loading={isLoading}
         items={[
-          { key: 'total', label: t("governancaComp.auditorias.statTotal"), value: auditorias?.length || 0, drillDown: 'auditorias' },
-          { key: 'em_andamento', label: t("governancaComp.auditorias.statEmAndamento"), value: auditorias?.filter(a => a.status === 'em_andamento' || a.status === 'em_execucao').length || 0, drillDown: 'auditorias' },
+          { key: 'total', label: t("governancaComp.auditorias.statTotal"), value: todasAsAuditorias?.length || 0, drillDown: 'auditorias' },
+          { key: 'em_andamento', label: t("governancaComp.auditorias.statEmAndamento"), value: todasAsAuditorias?.filter(a => a.status === 'em_andamento').length || 0, drillDown: 'auditorias' },
           { key: 'controles', label: t("governancaComp.auditorias.statControles"), value: `${totalConcluidos}/${totalItens}`, drillDown: 'auditorias' },
-          { key: 'pendentes', label: t("governancaComp.auditorias.statPendentes"), value: auditorias?.filter(a => a.status === 'planejamento').length || 0, tone: 'warning', drillDown: 'auditorias' },
+          { key: 'pendentes', label: t("governancaComp.auditorias.statPendentes"), value: todasAsAuditorias?.filter(a => a.status === 'planejamento').length || 0, tone: 'warning', drillDown: 'auditorias' },
         ]}
       />
 

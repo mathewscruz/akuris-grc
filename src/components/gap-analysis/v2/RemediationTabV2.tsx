@@ -5,6 +5,7 @@
  * Mantém identidade Navy/Purple, tokens semânticos, AkurisPulse.
  */
 import { useEffect, useMemo, useState } from 'react';
+import { GAP_CRITICAL_WEIGHT } from '@/lib/gap-criticality';
 import { ganhoPotencial, type RequisitoParaScore } from '@/lib/gap-score';
 import { buscarForaDoEscopo } from '@/lib/gap-soa';
 import { useNavigate } from 'react-router-dom';
@@ -199,10 +200,12 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
         { key: 'medio', label: t('sweepRiscos.gap.effortLevel.bucketMedio'), items: [] },
         { key: 'alto', label: t('sweepRiscos.gap.effortLevel.bucketAlto'), items: [] },
       ];
+      // Os baldes eram 1 / 2-3 / 4+, e o peso máximo do produto é 3: o balde
+      // "esforço alto" estava estruturalmente vazio em todos os frameworks.
       naoConformes.forEach(r => {
         const peso = Number(r.peso) || 1;
         if (peso <= 1) buckets[0].items.push(r);
-        else if (peso <= 3) buckets[1].items.push(r);
+        else if (peso < GAP_CRITICAL_WEIGHT) buckets[1].items.push(r);
         else buckets[2].items.push(r);
       });
       return buckets

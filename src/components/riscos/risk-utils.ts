@@ -5,6 +5,7 @@
 import { differenceInDays } from 'date-fns';
 import { tGlobal } from '@/lib/i18n-global';
 import type { NivelRisco } from '@/components/riscos/matriz-config';
+import { severidadeDeFaixas, type FaixaMatriz } from '@/lib/metrics/riscos';
 
 export type Severity = 'critico' | 'alto' | 'medio' | 'baixo';
 
@@ -18,13 +19,23 @@ export const NIVEL_LABELS: Record<Severity, string> = {
 const norm = (s?: string | null) =>
   (s ?? '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 
-/** Converte qualquer label de nível (com acento, MAIÚSCULA, snake_case) para chave canônica. */
-export function severityFromNivel(raw?: string | null): Severity {
-  const v = norm(raw);
-  if (v === 'critico' || v === 'muito alto') return 'critico';
-  if (v === 'alto') return 'alto';
-  if (v === 'medio') return 'medio';
-  return 'baixo';
+/**
+ * Converte qualquer rótulo de nível para a chave canónica.
+ *
+ * Delega em `severidadeDeFaixas`, que é o vocabulário único do produto — antes
+ * conhecia quatro palavras e devolvia "baixo" para todo o resto. Numa empresa
+ * que renomeou as faixas da sua matriz (Baixo/Moderado/Elevado/Extremo, como a
+ * Fast2Mine), a carteira inteira lia-se **Baixos 15 · Críticos 0** e o mapa de
+ * calor pintava tudo de verde, enquanto o PDF — que já usava o mapa canónico —
+ * contava 13 médios sobre os mesmos riscos.
+ *
+ * Passando as `faixas` da matriz activa, quem manda é a POSIÇÃO da faixa; sem
+ * elas, o mapa de rótulos conhecidos. `indefinido` continua a colapsar para
+ * "baixo" porque `Severity` aqui não tem esse estado.
+ */
+export function severityFromNivel(raw?: string | null, faixas?: FaixaMatriz[] | null): Severity {
+  const s = severidadeDeFaixas(raw, faixas);
+  return s === 'indefinido' ? 'baixo' : s;
 }
 
 /**

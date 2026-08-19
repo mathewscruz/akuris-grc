@@ -80,6 +80,11 @@ export const finalI18n = {
           veiculo_terrestre: 'Veículo Terrestre',
         },
         valorNegocio: 'Valor de Negócio',
+        valorFiltro: {
+          alto: 'Alto valor',
+          outros: 'Demais valores',
+          sem_valor: 'Sem valor informado',
+        },
         vazioDesc: 'Comece cadastrando os ativos da sua organização.',
       },
       chaves: {
@@ -684,6 +689,11 @@ export const finalI18n = {
           veiculo_terrestre: 'Ground vehicle',
         },
         valorNegocio: 'Business value',
+        valorFiltro: {
+          alto: 'High value',
+          outros: 'Other values',
+          sem_valor: 'No value recorded',
+        },
         vazioDesc: 'Start by registering your organisation assets.',
       },
       chaves: {

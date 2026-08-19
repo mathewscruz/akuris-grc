@@ -98,15 +98,32 @@ export default function Privacidade() {
       const ropaDadosRes = dadosIds.length > 0
         ? await supabase.from('ropa_dados_vinculados').select('id, ropa_id, dados_pessoais_id').in('dados_pessoais_id', dadosIds)
         : { data: [] };
-      const incidentesRes = await (supabase.from('incidentes').select('id') as any).eq('tipo', 'privacidade').eq('empresa_id', empresaId).in('status', ['aberto', 'investigacao', 'contido']);
+      // A coluna é `tipo_incidente` (não `tipo`) e o produto grava
+      // `em_investigacao` (não `investigacao`): o cartão marcava 0 em todas as
+      // empresas, cada uma com um incidente de privacidade contido no banco.
+      const incidentesRes = await supabase
+        .from('incidentes')
+        .select('id')
+        .eq('tipo_incidente', 'privacidade')
+        .eq('empresa_id', empresaId)
+        .in('status', ['aberto', 'em_investigacao', 'contido']);
+      if (incidentesRes.error) throw incidentesRes.error;
 
       const mapeamentosCounts: Record<string, number> = {};
       (mapeamentosRes.data || []).forEach((m: any) => {
         mapeamentosCounts[m.dados_pessoais_id] = (mapeamentosCounts[m.dados_pessoais_id] || 0) + 1;
       });
       
+      /**
+       * `ropa_dados_vinculados` não tem chave estrangeira nenhuma: apagar um
+       * ROPA deixa as ligações para trás. Um dado da Akuris declarava 9 ROPAs
+       * numa empresa com zero registos ROPA — as 9 ligações apontavam a
+       * identificadores que já não existem. Só conta o que existe.
+       */
+      const ropasExistentes = new Set((ropaRes.data || []).map((r: any) => r.id));
       const ropasCounts: Record<string, number> = {};
       (ropaDadosRes.data || []).forEach((r: any) => {
+        if (!ropasExistentes.has(r.ropa_id)) return;
         ropasCounts[r.dados_pessoais_id] = (ropasCounts[r.dados_pessoais_id] || 0) + 1;
       });
 

@@ -10,8 +10,17 @@
  *  - Gap atrasado   = gap em aberto com prazo de implementação no passado.
  */
 
-/** Peso mínimo (1-5) a partir do qual um requisito não conforme é crítico. */
-export const GAP_CRITICAL_WEIGHT = 4;
+/**
+ * Peso mínimo a partir do qual um requisito não conforme é crítico.
+ *
+ * Era 4, e o maior peso que existe no produto é 3 — os três frameworks com
+ * requisitos pesados (390, 407 e 776 linhas) topam em 3. O resultado: "Gaps a
+ * tratar 49 · críticos 0" com 30 gaps de peso máximo na Nexure, a fila de
+ * prioridades nunca a imprimir "alta criticidade", e o balde de esforço alto
+ * sempre vazio. `prazo_implementacao` é nulo em todas as 157 avaliações, por
+ * isso o segundo critério de `isGapCritico` também nunca dispara.
+ */
+export const GAP_CRITICAL_WEIGHT = 3;
 
 export interface GapLike {
   conformity_status?: string | null;
