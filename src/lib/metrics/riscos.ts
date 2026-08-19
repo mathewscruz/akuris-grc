@@ -69,13 +69,36 @@ export interface RiscoLike {
   data_proxima_revisao?: string | null;
 }
 
-/** Severidade inerente (nível inicial) — é a usada nos cartões e nas listas. */
+/**
+ * Severidade do risco: **residual quando existe, senão inerente**.
+ *
+ * O comentario antigo aqui dizia "inerente — é a usada nos cartões e nas
+ * listas", e ja nao era verdade: a tabela de Riscos, o filtro de nível, o
+ * pontinho da linha e as contagens do topo passaram todos a usar
+ * `residual || inicial`. O que ficou para tras foi tudo o resto — as
+ * estatísticas, o radar do painel e os DOIS geradores de PDF.
+ *
+ * O efeito era mensuravel e mau: com os seis riscos da base local, o ecra
+ * dizia 0 críticos e 1 alto, e o PDF exportado desse mesmo ecra dizia 1
+ * crítico e 4 altos. O utilizador exporta o relatorio do que acabou de ver e
+ * recebe numeros contrarios.
+ *
+ * A decisão de produto já estava tomada no ecra; aqui é só o resto a seguir.
+ * Residual é também o que um registo de riscos deve reportar para decisão:
+ * o que sobra depois dos controlos.
+ */
 export const severidadeRisco = (r: RiscoLike, faixas?: FaixaMatriz[] | null): Severidade =>
-  severidadeDeFaixas(r.nivel_risco_inicial, faixas);
-
-/** Severidade efectiva: residual quando existe, senão inerente. */
-export const severidadeRiscoEfetiva = (r: RiscoLike, faixas?: FaixaMatriz[] | null): Severidade =>
   severidadeDeFaixas(r.nivel_risco_residual || r.nivel_risco_inicial, faixas);
+
+/** Nome antigo, mantido porque dois ecrãs o chamam explicitamente. */
+export const severidadeRiscoEfetiva = severidadeRisco;
+
+/**
+ * Severidade INERENTE, antes dos controlos. Só para quem mostra o antes e o
+ * depois lado a lado — a matriz e o detalhe do risco. Nunca para contagem.
+ */
+export const severidadeRiscoInerente = (r: RiscoLike, faixas?: FaixaMatriz[] | null): Severidade =>
+  severidadeDeFaixas(r.nivel_risco_inicial, faixas);
 
 export const isRiscoCritico = (r: RiscoLike, faixas?: FaixaMatriz[] | null) =>
   severidadeRisco(r, faixas) === 'critico';

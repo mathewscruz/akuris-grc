@@ -70,6 +70,100 @@ export const DIREITOS_TITULAR: Record<JurisdicaoCodigo, string[]> = {
 };
 
 /**
+ * Bases legais do tratamento, por jurisdição — e separadas por sensibilidade.
+ *
+ * Esta separação não é cosmética: é a diferença entre um registo lícito e um
+ * ilícito. A LGPD trata dado comum no Art. 7 (dez hipóteses) e dado sensível
+ * no Art. 11, que é uma lista DIFERENTE e mais curta — legítimo interesse,
+ * execução de contrato e proteção ao crédito **não** servem para dado
+ * sensível, e a prevenção à fraude só existe lá. O RGPD faz o mesmo corte
+ * entre o Art. 6 e o Art. 9.
+ *
+ * Os formulários ofereciam uma lista única de sete opções, igual para tudo:
+ * era possível gravar "Biometria — Legítimo Interesse" e o produto imprimia
+ * isso na ROPA que vai para a autoridade.
+ */
+export const BASES_LEGAIS: Record<JurisdicaoCodigo, { comuns: string[]; sensiveis: string[] }> = {
+  // LGPD: Art. 7 (dados pessoais) e Art. 11 (dados pessoais sensíveis).
+  BR: {
+    comuns: [
+      'consentimento', 'cumprimento_obrigacao', 'politicas_publicas', 'estudo_pesquisa',
+      'execucao_contrato', 'exercicio_direitos', 'protecao_vida', 'tutela_saude',
+      'legitimo_interesse', 'protecao_credito',
+    ],
+    sensiveis: [
+      'consentimento', 'cumprimento_obrigacao', 'politicas_publicas', 'estudo_pesquisa',
+      'exercicio_direitos', 'protecao_vida', 'tutela_saude', 'prevencao_fraude',
+    ],
+  },
+  // RGPD/GDPR: Art. 6 (licitude) e Art. 9.2 (categorias especiais).
+  PT_EU: {
+    comuns: [
+      'consentimento', 'execucao_contrato', 'cumprimento_obrigacao',
+      'protecao_vida', 'interesse_publico', 'legitimo_interesse',
+    ],
+    sensiveis: [
+      'consentimento_explicito', 'obrigacao_trabalho', 'protecao_vida',
+      'dados_publicos_titular', 'exercicio_direitos', 'interesse_publico_relevante',
+      'tutela_saude', 'saude_publica', 'arquivo_investigacao',
+    ],
+  },
+  INTL: {
+    comuns: [
+      'consentimento', 'execucao_contrato', 'cumprimento_obrigacao',
+      'protecao_vida', 'interesse_publico', 'legitimo_interesse',
+    ],
+    sensiveis: [
+      'consentimento_explicito', 'obrigacao_trabalho', 'protecao_vida',
+      'dados_publicos_titular', 'exercicio_direitos', 'interesse_publico_relevante',
+      'tutela_saude', 'saude_publica', 'arquivo_investigacao',
+    ],
+  },
+};
+
+/** Sensibilidades que o catálogo classifica como dado sensível. */
+const SENSIBILIDADES_SENSIVEIS = new Set(['sensivel', 'muito_sensivel']);
+
+export const ehDadoSensivel = (sensibilidade?: string | null): boolean =>
+  SENSIBILIDADES_SENSIVEIS.has(String(sensibilidade ?? '').toLowerCase());
+
+/**
+ * Bases aplicáveis a um registo. Sem sensibilidade conhecida devolve as
+ * comuns — nunca a união das duas listas, que voltaria a permitir a
+ * combinação ilícita.
+ */
+export function basesLegaisAplicaveis(
+  codigo: JurisdicaoCodigo,
+  sensibilidade?: string | null,
+): string[] {
+  const conjunto = BASES_LEGAIS[codigo] ?? BASES_LEGAIS.BR;
+  return ehDadoSensivel(sensibilidade) ? conjunto.sensiveis : conjunto.comuns;
+}
+
+/**
+ * `incompativel` é o caso que interessa: a base existe na lei, mas não para
+ * aquele grau de sensibilidade — é o "biometria com base em legítimo
+ * interesse" que os formulários deixavam gravar. `desconhecida` é um valor
+ * que a lei aplicável não prevê de todo (dado antigo, importação, mudança de
+ * jurisdição). Nos dois casos o registo continua visível: esconder um dado
+ * estranho num produto de conformidade é pior do que mostrá-lo marcado.
+ */
+export type EstadoBaseLegal = 'ok' | 'incompativel' | 'desconhecida';
+
+export function avaliarBaseLegal(
+  codigo: JurisdicaoCodigo,
+  valor?: string | null,
+  sensibilidade?: string | null,
+): EstadoBaseLegal {
+  if (!valor) return 'desconhecida';
+  const conjunto = BASES_LEGAIS[codigo] ?? BASES_LEGAIS.BR;
+  if (basesLegaisAplicaveis(codigo, sensibilidade).includes(valor)) return 'ok';
+  const conhecidaNaJurisdicao =
+    conjunto.comuns.includes(valor) || conjunto.sensiveis.includes(valor);
+  return conhecidaNaJurisdicao ? 'incompativel' : 'desconhecida';
+}
+
+/**
  * Inferência por omissão a partir do idioma da conta, do idioma do browser e
  * do fuso horário/domínio. Só é usada quando a empresa ainda não configurou.
  */

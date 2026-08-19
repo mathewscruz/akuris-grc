@@ -1,4 +1,5 @@
 import * as XLSX from 'xlsx';
+import { textoDaVariante } from '@/lib/pt-variants';
 import {
   ROPA_FIELDS,
   ROPA_SECTIONS,
@@ -147,9 +148,16 @@ const valueForExport = (registo: Record<string, any>, key: string): string => {
 /** Gera a planilha ROPA no mesmo formato usado pelos clientes (uma aba por processo + consolidado). */
 export function exportRopaWorkbook(
   registos: Record<string, any>[],
-  lang: 'pt' | 'en',
+  /**
+   * Locale completo, não `'pt' | 'en'`: o ecrã mostrava "Compartilhamento" em
+   * pt-BR e a planilha exportada dizia "Partilha" no mesmo campo, porque aqui
+   * as duas variantes do português eram a mesma coisa.
+   */
+  locale: string,
   fileName = 'ROPA.xlsx',
 ) {
+  const lang: 'pt' | 'en' = String(locale).startsWith('en') ? 'en' : 'pt';
+  const rotulo = (par: { pt: string; en: string }) => textoDaVariante(locale, par);
   const workbook = XLSX.utils.book_new();
   const titulo = lang === 'pt'
     ? 'ROPA: REGISTO DE OPERAÇÕES DE TRATAMENTO DE DADOS PESSOAIS'
@@ -168,12 +176,12 @@ export function exportRopaWorkbook(
   ]);
 
   for (const section of ROPA_SECTIONS) {
-    consolidado.push([section.label[lang].toUpperCase()]);
+    consolidado.push([rotulo(section.label).toUpperCase()]);
     for (const field of ropaFieldsBySection(section.key)) {
       consolidado.push([
-        section.label[lang],
-        field.label[lang],
-        field.hint[lang],
+        rotulo(section.label),
+        rotulo(field.label),
+        rotulo(field.hint),
         ...registos.map((r) => valueForExport(r, field.key)),
       ]);
     }
@@ -187,9 +195,9 @@ export function exportRopaWorkbook(
   registos.forEach((registo, index) => {
     const aoa: string[][] = [[titulo], [registo.nome_tratamento || ''], headers];
     for (const section of ROPA_SECTIONS) {
-      aoa.push([section.label[lang].toUpperCase()]);
+      aoa.push([rotulo(section.label).toUpperCase()]);
       for (const field of ropaFieldsBySection(section.key)) {
-        aoa.push([section.label[lang], field.label[lang], field.hint[lang], valueForExport(registo, field.key)]);
+        aoa.push([rotulo(section.label), rotulo(field.label), rotulo(field.hint), valueForExport(registo, field.key)]);
       }
     }
     const sheetName = `${lang === 'pt' ? 'Processo' : 'Process'} ${index + 1}`.slice(0, 31);

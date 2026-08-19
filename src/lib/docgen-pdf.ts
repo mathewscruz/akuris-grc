@@ -132,9 +132,14 @@ function renderNodes(ctx: Ctx, nodes: MdNode[], sectionNumber: number) {
   });
 }
 
+/** Mesmo prazo do DOCX: logo é decorativo, não pode pendurar a exportação. */
+const LOGO_TIMEOUT_MS = 3000;
+
 async function logoDataUrl(url: string): Promise<{ dataUrl: string; format: 'PNG' | 'JPEG' } | null> {
+  const abortar = new AbortController();
+  const prazo = setTimeout(() => abortar.abort(), LOGO_TIMEOUT_MS);
   try {
-    const resp = await fetch(url);
+    const resp = await fetch(url, { signal: abortar.signal });
     if (!resp.ok) return null;
     const blob = await resp.blob();
     const reader = new FileReader();
@@ -146,6 +151,8 @@ async function logoDataUrl(url: string): Promise<{ dataUrl: string; format: 'PNG
     return { dataUrl, format: blob.type.includes('png') ? 'PNG' : 'JPEG' };
   } catch {
     return null;
+  } finally {
+    clearTimeout(prazo);
   }
 }
 

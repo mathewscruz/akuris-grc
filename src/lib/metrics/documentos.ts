@@ -33,10 +33,13 @@ export const estadoDocumento = (d: DocumentoLike): EstadoDocumento =>
 export const isDocumentoAtivo = (d: DocumentoLike) => estadoDocumento(d) === 'ativo';
 export const isDocumentoPendenteAprovacao = (d: DocumentoLike) =>
   estadoDocumento(d) === 'pendente_aprovacao';
+// Só documento ATIVO vence. Um rascunho nunca foi publicado e um arquivado já
+// saiu de circulação — nenhum dos dois tem vigência para expirar. A faixa
+// dizia "vencendo em 30 dias: 2" e um dos dois era um rascunho.
 export const isDocumentoVencido = (d: DocumentoLike, ref: Date = new Date()) =>
-  isVencido(d.data_vencimento, ref);
+  isDocumentoAtivo(d) && isVencido(d.data_vencimento, ref);
 export const isDocumentoAVencer = (d: DocumentoLike, ref: Date = new Date(), dias = 30) =>
-  isAVencer(d.data_vencimento, ref, dias);
+  isDocumentoAtivo(d) && isAVencer(d.data_vencimento, ref, dias);
 
 export const contarDocumentos = (
   documentos: DocumentoLike[] | null | undefined,

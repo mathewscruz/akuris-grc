@@ -50,6 +50,22 @@ const WORD_PAIRS: Array<[string, string]> = [
   ['registradas', 'registadas'],
   ['registro', 'registo'],
   ['registros', 'registos'],
+  // "controlo/controlos" é a forma de Portugal e escapava ao normalizador:
+  // em pt-BR aparecia "frequência do controlo" no diálogo de testes.
+  ['controle', 'controlo'],
+  ['controles', 'controlos'],
+  ['seção', 'secção'],
+  ['seções', 'secções'],
+  // O esquema do ROPA está escrito em pt-PT ("Partilha externa",
+  // "Justificação da base legal") e não passava por aqui: o mesmo ecrã dizia
+  // "Compartilhamento" no diálogo e "Partilha" no dossiê.
+  ['compartilhamento', 'partilha'],
+  ['compartilhamentos', 'partilhas'],
+  ['compartilhar', 'partilhar'],
+  ['compartilhados', 'partilhados'],
+  ['compartilhadas', 'partilhadas'],
+  ['justificativa', 'justificação'],
+  ['justificativas', 'justificações'],
   ['salvar', 'guardar'],
   ['salvas', 'guardadas'],
   ['salvos', 'guardados'],
@@ -60,6 +76,10 @@ const WORD_PAIRS: Array<[string, string]> = [
  * "Gerencie os riscos" ⇄ "Faça a gestão dos riscos".
  */
 const PHRASE_PAIRS: Array<[string, string]> = [
+  // "Partilha interna" é feminino e "Compartilhamento interno" é masculino:
+  // trocar só a palavra dava "Compartilhamento interna".
+  ['compartilhamento interno', 'partilha interna'],
+  ['compartilhamento externo', 'partilha externa'],
   ['gerencie os ', 'faça a gestão dos '],
   ['gerencie as ', 'faça a gestão das '],
   ['gerencie o ', 'faça a gestão do '],
@@ -114,13 +134,26 @@ export const toPtBrText = (text: string): string => applyRules(text, RULES_BR);
 /** Normaliza uma string para português de Portugal. */
 export const toPtPtText = (text: string): string => applyRules(text, RULES_PT);
 
-function transformDeep(value: unknown, fn: (s: string) => string): unknown {
+/**
+ * Ramos que citam a lei e por isso NÃO são normalizados.
+ *
+ * O normalizador troca palavra a palavra, sem saber o sentido. O par
+ * `busca ⇄ pesquisa` está certo para onze das doze ocorrências — todas no
+ * sentido de procurar — e errado justamente na décima segunda: "estudo por
+ * órgão de pesquisa" é a letra do Art. 7.º, IV da LGPD, e virava "órgão de
+ * busca". Terminologia legal não tem variante regional a normalizar: o texto
+ * da lei é o que é.
+ */
+const RAMOS_LITERAIS = ['jurisdicao.basesLegais', 'jurisdicao.direitos', 'jurisdicao.artigos'];
+
+function transformDeep(value: unknown, fn: (s: string) => string, caminho = ''): unknown {
+  if (RAMOS_LITERAIS.some((r) => caminho === r || caminho.startsWith(`${r}.`))) return value;
   if (typeof value === 'string') return fn(value);
-  if (Array.isArray(value)) return value.map((v) => transformDeep(v, fn));
+  if (Array.isArray(value)) return value.map((v) => transformDeep(v, fn, caminho));
   if (value && typeof value === 'object') {
     const out: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-      out[k] = transformDeep(v, fn);
+      out[k] = transformDeep(v, fn, caminho ? `${caminho}.${k}` : k);
     }
     return out;
   }
@@ -135,3 +168,19 @@ export function localizePtDictionary(
   const fn = variant === 'pt-BR' ? toPtBrText : toPtPtText;
   return transformDeep(dict, fn) as Record<string, unknown>;
 }
+
+/**
+ * Rótulo bilingue de esquema, já na variante activa.
+ *
+ * `ropa-schema.ts` e `ropa-percurso.ts` guardam `{ pt, en }` e são estruturas
+ * de dados, não dicionários — não passavam por `localizePtDictionary`. O
+ * resultado era um ecrã em pt-BR a dizer "Partilha externa" no dossiê e
+ * "Compartilhamento" no diálogo ao lado, sobre o mesmo campo.
+ */
+export const textoDaVariante = (
+  locale: string,
+  par: { pt: string; en: string },
+): string => {
+  if (String(locale).startsWith('en')) return par.en;
+  return locale === 'pt' ? toPtPtText(par.pt) : toPtBrText(par.pt);
+};

@@ -29,11 +29,11 @@ export const isInteractiveTarget = (
 };
 
 export interface RowOpenProps {
-  role: 'button';
   tabIndex: 0;
   className: string;
   onClick: (e: MouseEvent) => void;
   onKeyDown: (e: KeyboardEvent) => void;
+  'data-row-open': '';
 }
 
 const FOCUS_RING =
@@ -43,18 +43,23 @@ const FOCUS_RING =
  * Props a espalhar numa linha de tabela ou num cartão que abre um registo.
  * Clique, Enter e barra de espaço abrem; o foco fica visível para teclado.
  *
+ * NÃO leva `role="button"`: a linha/cartão contém sempre controlos próprios
+ * (o botão do nome, o menu de três pontos) e um `button` não pode conter
+ * descendentes focáveis. Com o role, o leitor de ecrã anunciava o registo duas
+ * vezes — uma pela linha, outra pelo botão do nome — e o HTML ficava inválido.
+ * Sem ele, a linha mantém a semântica nativa e continua focável e acionável.
+ *
  * @param onOpen   ação de abertura (drawer, diálogo ou navegação)
- * @param label    nome acessível do registo (aparece no leitor de ecrã)
+ * @param label    reservado; ignorado desde a remoção do role="button"
  * @param hoverClass realce ao passar o rato (varia entre tabela e cartão)
  */
 export const rowOpenProps = (
   onOpen: () => void,
   label?: string,
-  hoverClass = 'hover:bg-muted/50',
-): RowOpenProps & { 'aria-label'?: string } => ({
-  role: 'button',
+  hoverClass = 'hover:bg-accent',
+): RowOpenProps => ({
   tabIndex: 0,
-  'aria-label': label,
+  'data-row-open': '',
   className: `${FOCUS_RING} ${hoverClass}`,
   onClick: (e: MouseEvent) => {
     if (isInteractiveTarget(e.target, e.currentTarget)) return;
@@ -70,4 +75,4 @@ export const rowOpenProps = (
 
 /** Realce de cartão (usa sombra/aresta em vez de fundo). */
 export const CARD_HOVER =
-  'hover:border-primary/40 hover:bg-muted/30 dark:hover:border-primary/50';
+  'hover:border-primary/40 hover:bg-accent dark:hover:border-primary/50';

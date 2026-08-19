@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import { formatStatus } from '@/lib/text-utils';
+import { intlLocale } from '@/lib/date-utils';
 
 // Akuris brand colors
 export const AKURIS_COLORS = {
@@ -110,7 +111,7 @@ export function addAkurisFooter(doc: jsPDF) {
     doc.text('Akuris - Plataforma GRC', 14, pageHeight - 10);
     doc.text(`Página ${i} de ${totalPages}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
     doc.text(
-      new Date().toLocaleDateString('pt-BR') + ' às ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      new Date().toLocaleDateString(intlLocale()) + ' às ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
       pageWidth - 14, pageHeight - 10, { align: 'right' }
     );
   }
@@ -172,7 +173,7 @@ export function addAkurisCover(doc: jsPDF, logoBase64: string | null, title: str
   if (meta?.empresa) {
     doc.text(`Empresa: ${meta.empresa}`, 30, metaY);
   }
-  doc.text(`Gerado em: ${meta?.data || new Date().toLocaleDateString('pt-BR')}`, 30, metaY + 8);
+  doc.text(`Gerado em: ${meta?.data || new Date().toLocaleDateString(intlLocale())}`, 30, metaY + 8);
 
   // Bottom gradient line
   doc.setFillColor(AKURIS_COLORS.primary);

@@ -59,8 +59,15 @@ interface EntityDef {
   codigoField?: string;
   /** Prefixo usado quando não há identificador amigável persistido. */
   prefixo: string;
-  /** Campo usado como subtítulo (estado/severidade). */
-  subtituloField?: string;
+  /**
+   * Campo usado como subtítulo (estado/severidade).
+   *
+   * Aceita uma lista: o primeiro com valor ganha. É o que permite ao risco
+   * mostrar a severidade EFETIVA (residual quando existe), como faz a tabela
+   * de Riscos — com um campo só, a busca global mostrava o nível inerente e
+   * contradizia o ecrã para onde levava.
+   */
+  subtituloField?: string | string[];
   /** A tabela tem coluna `empresa_id`? (senão, confia apenas na RLS). */
   empresaScoped: boolean;
   /** Coluna de ordenação decrescente para o recorte de candidatos. */
@@ -75,8 +82,8 @@ const focus = (base: string, id: string) =>
 export const ENTITY_DEFS: EntityDef[] = [
   {
     key: 'risco', table: 'riscos', labelKey: 'entidades.risco',
-    select: 'id, nome, status, nivel_risco_inicial, biblioteca_codigo, created_at',
-    tituloFields: ['nome'], prefixo: 'R', subtituloField: 'nivel_risco_inicial',
+    select: 'id, nome, status, nivel_risco_inicial, nivel_risco_residual, biblioteca_codigo, created_at',
+    tituloFields: ['nome'], prefixo: 'R', subtituloField: ['nivel_risco_residual', 'nivel_risco_inicial'],
     empresaScoped: true, orderBy: 'created_at',
     route: (r) => focus('/riscos', r.id),
   },
@@ -85,7 +92,7 @@ export const ENTITY_DEFS: EntityDef[] = [
     select: 'id, nome, codigo, status, criticidade, created_at',
     tituloFields: ['nome'], codigoField: 'codigo', prefixo: 'C', subtituloField: 'status',
     empresaScoped: true, orderBy: 'created_at',
-    route: (r) => focus('/governanca?tab=controles', r.id),
+    route: (r) => focus('/governanca/controles', r.id),
   },
   {
     key: 'gap_requirement', table: 'gap_analysis_requirements', labelKey: 'entidades.gap_requirement',
@@ -257,7 +264,11 @@ function toRow(def: EntityDef, raw: Record<string, any>): EntityRow {
     id: raw.id,
     titulo: String(titulo),
     codigo: codigoPersistido ? String(codigoPersistido) : shortEntityId(def.prefixo, raw.id),
-    subtitulo: def.subtituloField ? (raw[def.subtituloField] ?? null) : null,
+    subtitulo: def.subtituloField
+      ? ((Array.isArray(def.subtituloField) ? def.subtituloField : [def.subtituloField])
+          .map((campo) => raw[campo])
+          .find((v) => v !== null && v !== undefined && v !== '') ?? null)
+      : null,
     raw,
   };
 }

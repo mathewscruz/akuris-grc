@@ -78,7 +78,7 @@ function readInitial(): AppLocale {
   return detectLocaleByRegion();
 }
 
-let current: AppLocale = typeof window !== 'undefined' ? readInitial() : 'pt';
+let current: AppLocale = typeof window !== 'undefined' ? readInitial() : 'pt-BR';
 
 export const getAppLocale = (): AppLocale => current;
 
@@ -88,7 +88,7 @@ export const setAppLocale = (locale: AppLocale): void => {
 
 /** Idioma inicial da aplicação (autodetecção + escolha explícita persistida). */
 export const getInitialLocale = (): AppLocale =>
-  typeof window === 'undefined' ? 'pt' : readInitial();
+  typeof window === 'undefined' ? 'pt-BR' : readInitial();
 
 /** Persiste uma escolha explícita de idioma (toggle manual ou perfil). */
 export const persistExplicitLocale = (locale: AppLocale): void => {

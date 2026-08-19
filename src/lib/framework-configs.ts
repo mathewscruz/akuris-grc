@@ -1,4 +1,20 @@
-export type ScoreType = 'scale_0_5' | 'percentage';
+/**
+ * Uma escala só, para todos os frameworks.
+ *
+ * O NIST CSF era o único avaliado numa escala 0–5 (`conforme: 5.0`,
+ * `parcial: 2.5`), enquanto os outros vinte e um usavam percentagem. O
+ * resultado, medido na tela: a lista de frameworks mostrava **44** para o NIST
+ * e o detalhe do mesmo framework mostrava **2%** — porque a lista já usava a
+ * conta única em percentagem e o detalhe ainda usava a escala do config. Pior:
+ * o histórico gravado por trigger no banco também é percentagem, portanto o
+ * gráfico de evolução contradizia o número no topo da própria página.
+ *
+ * As duas escalas eram, aliás, o mesmo número: 5.0/2.5 é exatamente 100/50
+ * dividido por vinte. Não se perde informação ao unificar — perde-se a
+ * divergência. E o produto passa a oferecer a mesma leitura seja qual for o
+ * framework escolhido.
+ */
+export type ScoreType = 'percentage';
 export type ConformityStatus = 'conforme' | 'parcial' | 'nao_conforme' | 'nao_aplicavel' | 'nao_avaliado';
 
 export const NIST_PILLAR_NAMES: Record<string, string> = {
@@ -42,11 +58,11 @@ export interface FrameworkConfig {
 
 // === Shared score label presets ===
 const PERCENTAGE_SCORE_LABELS = {
-  excellent: { label: 'Conforme', min: 80, max: 100, color: 'text-green-600' },
-  good: { label: 'Parcialmente Conforme', min: 60, max: 79, color: 'text-blue-600' },
-  regular: { label: 'Em Implementação', min: 40, max: 59, color: 'text-yellow-600' },
-  insufficient: { label: 'Não Conforme', min: 20, max: 39, color: 'text-orange-600' },
-  critical: { label: 'Crítico', min: 0, max: 19, color: 'text-red-600' },
+  excellent: { label: 'Conforme', min: 80, max: 100, color: 'text-success' },
+  good: { label: 'Parcialmente Conforme', min: 60, max: 79, color: 'text-info' },
+  regular: { label: 'Em Implementação', min: 40, max: 59, color: 'text-warning' },
+  insufficient: { label: 'Não Conforme', min: 20, max: 39, color: 'text-warning' },
+  critical: { label: 'Crítico', min: 0, max: 19, color: 'text-destructive' },
 };
 
 const PERCENTAGE_STATUS_SCORES: Record<ConformityStatus, number> = {
@@ -57,32 +73,16 @@ const PERCENTAGE_STATUS_SCORES: Record<ConformityStatus, number> = {
   nao_avaliado: 0,
 };
 
-const NIST_SCORE_LABELS = {
-  excellent: { label: 'Excelente', min: 4.5, max: 5.0, color: 'text-green-600' },
-  good: { label: 'Bom', min: 3.5, max: 4.4, color: 'text-blue-600' },
-  regular: { label: 'Regular', min: 2.5, max: 3.4, color: 'text-yellow-600' },
-  insufficient: { label: 'Insuficiente', min: 1.5, max: 2.4, color: 'text-orange-600' },
-  critical: { label: 'Crítico', min: 0.0, max: 1.4, color: 'text-red-600' },
-};
-
-const NIST_STATUS_SCORES: Record<ConformityStatus, number> = {
-  conforme: 5.0,
-  parcial: 2.5,
-  nao_conforme: 0.0,
-  nao_aplicavel: 0.0,
-  nao_avaliado: 0.0,
-};
-
 // === Framework Configs ===
 export const FRAMEWORK_CONFIGS: Record<string, FrameworkConfig> = {
   'nist-csf-2.0': {
     id: 'nist-csf-2.0',
     name: 'NIST CSF 2.0',
-    scoreType: 'scale_0_5',
+    scoreType: 'percentage',
     chartType: 'treemap',
     pillarField: 'categoria',
-    scoreLabels: NIST_SCORE_LABELS,
-    statusScores: NIST_STATUS_SCORES,
+    scoreLabels: PERCENTAGE_SCORE_LABELS,
+    statusScores: PERCENTAGE_STATUS_SCORES,
     domainLabel: 'Aderência por Pilar',
   },
   'iso-27001': {
@@ -398,11 +398,11 @@ export interface MaturityLevel {
 }
 
 const MATURITY_LEVELS: MaturityLevel[] = [
-  { level: 1, name: 'Inicial', description: 'Processos ad-hoc, sem controles formais', color: 'text-red-600', bgColor: 'bg-red-100 dark:bg-red-900/30', icon: '🔴' },
-  { level: 2, name: 'Gerenciado', description: 'Controles básicos implementados, mas reativos', color: 'text-orange-600', bgColor: 'bg-orange-100 dark:bg-orange-900/30', icon: '🟠' },
-  { level: 3, name: 'Definido', description: 'Processos documentados e padronizados', color: 'text-yellow-600', bgColor: 'bg-yellow-100 dark:bg-yellow-900/30', icon: '🟡' },
-  { level: 4, name: 'Otimizado', description: 'Processos medidos e controlados proativamente', color: 'text-blue-600', bgColor: 'bg-blue-100 dark:bg-blue-900/30', icon: '🔵' },
-  { level: 5, name: 'Excelência', description: 'Melhoria contínua com inovação e benchmark', color: 'text-green-600', bgColor: 'bg-green-100 dark:bg-green-900/30', icon: '🟢' },
+  { level: 1, name: 'Inicial', description: 'Processos ad-hoc, sem controles formais', color: 'text-destructive', bgColor: 'bg-destructive/15 dark:bg-destructive/30', icon: '🔴' },
+  { level: 2, name: 'Gerenciado', description: 'Controles básicos implementados, mas reativos', color: 'text-warning', bgColor: 'bg-warning/15 dark:bg-warning/30', icon: '🟠' },
+  { level: 3, name: 'Definido', description: 'Processos documentados e padronizados', color: 'text-warning', bgColor: 'bg-warning/15 dark:bg-warning/30', icon: '🟡' },
+  { level: 4, name: 'Otimizado', description: 'Processos medidos e controlados proativamente', color: 'text-info', bgColor: 'bg-info/15 dark:bg-info/30', icon: '🔵' },
+  { level: 5, name: 'Excelência', description: 'Melhoria contínua com inovação e benchmark', color: 'text-success', bgColor: 'bg-success/15 dark:bg-success/30', icon: '🟢' },
 ];
 
 export function getMaturityLevel(score: number, config: FrameworkConfig): MaturityLevel {

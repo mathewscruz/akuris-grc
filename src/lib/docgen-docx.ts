@@ -204,13 +204,25 @@ function renderNodes(nodes: MdNode[], sectionNumber: number): Array<Paragraph | 
   return out;
 }
 
+/**
+ * O logo é decorativo: se a URL não responder, o documento sai sem ele.
+ * Sem este prazo, um `fetch` pendurado (bucket fora do ar, DNS que não
+ * responde) trava a exportação para sempre — o utilizador clica em exportar
+ * e fica com o spinner na tela indefinidamente.
+ */
+const LOGO_TIMEOUT_MS = 3000;
+
 async function fetchLogo(url: string): Promise<ArrayBuffer | null> {
+  const abortar = new AbortController();
+  const prazo = setTimeout(() => abortar.abort(), LOGO_TIMEOUT_MS);
   try {
-    const resp = await fetch(url);
+    const resp = await fetch(url, { signal: abortar.signal });
     if (!resp.ok) return null;
     return await resp.arrayBuffer();
   } catch {
     return null;
+  } finally {
+    clearTimeout(prazo);
   }
 }
 

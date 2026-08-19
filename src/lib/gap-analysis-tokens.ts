@@ -3,7 +3,7 @@
  * --------------------------------------------------------------------------
  * Fonte única de verdade para cores, classes e variantes do módulo.
  * Sempre usar tokens semânticos (success/warning/destructive/info/muted/primary).
- * Nunca usar cores cruas Tailwind (bg-emerald-500, text-blue-600, etc).
+ * Nunca usar cores cruas Tailwind (bg-success, text-info, etc).
  */
 
 import type { BadgeProps } from '@/components/ui/badge';
@@ -112,12 +112,6 @@ export function getScoreBgClass(score: number): string {
     case 'warning': return 'bg-warning';
     case 'destructive': return 'bg-destructive';
   }
-}
-
-/** Normaliza um score arbitrário (0-5 ou 0-100) para escala 0-100 */
-export function normalizeScore(score: number, scoreType: 'percentage' | 'decimal' | 'scale_0_5'): number {
-  if (scoreType === 'percentage') return score;
-  return (score / 5) * 100;
 }
 
 // ---------------------------------------------------------------------------

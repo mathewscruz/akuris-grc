@@ -53,3 +53,21 @@ export const CHART_TOOLTIP_STYLE = {
   fontSize: '12px',
   color: 'hsl(var(--popover-foreground))',
 } as const;
+
+/**
+ * Corpo de letra dos gráficos, na mesma escala do resto.
+ *
+ * Os rótulos de eixo estavam escritos como números — 10, 11, 12 e 13 px
+ * espalhados por oito gráficos. Número em `fontSize` vira pixel fixo no SVG,
+ * portanto era o único texto do produto que NÃO acompanhava a resolução: num
+ * monitor de 1920 todo o resto crescia e o eixo do gráfico ficava para trás.
+ *
+ * Em `rem` o SVG resolve contra a raiz, tal como o CSS, e os gráficos passam
+ * a seguir o `clamp()` de `index.css` como tudo o mais.
+ */
+export const CHART_FONT = {
+  /** Eixos e legendas — equivale a `text-micro`. */
+  axis: '0.6875rem',
+  /** Valores dentro do gráfico — equivale a `text-xs`. */
+  label: '0.75rem',
+} as const;

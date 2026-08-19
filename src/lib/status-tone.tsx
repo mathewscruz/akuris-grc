@@ -1,22 +1,21 @@
 import React from 'react';
-import {
-  AlertTriangle,
-  CheckCircle2,
-  Clock,
-  PauseCircle,
-  XCircle,
-  Eye,
-  ShieldCheck,
-  FileSearch,
-  Activity,
-  CircleDot,
-} from 'lucide-react';
 import type { StatusTone, StatusIntensity } from '@/components/ui/status-badge';
 
+/**
+ * O estado é ponto e cor, nunca ícone.
+ *
+ * Havia 59 estados a devolver um ícone próprio e 98 a devolver nada, o que
+ * punha a MESMA coluna a alternar entre um ponto cheio de 6px e um ícone de
+ * contorno de 11px conforme a linha. Era isso que se lia como "bolinha
+ * diferente": não eram dois pontos distintos, era um ponto e um ícone.
+ *
+ * Além de inconsistente, um glifo de contorno dentro de um chip de 19px lê-se
+ * mal, e uma coluna com doze desenhos diferentes não se lê de todo. O peso da
+ * distinção fica onde funciona: na cor e no rótulo.
+ */
 export interface ToneResult {
   tone: StatusTone;
   intensity?: StatusIntensity;
-  icon?: React.ReactNode;
   /** Letra redundante à cor (WCAG 1.4.1): C/A/M/B na escala de severidade. */
   mark?: string;
 }
@@ -30,8 +29,6 @@ const norm = (raw?: string | null): string =>
     .toLowerCase()
     .trim();
 
-const ICON_PROPS = { strokeWidth: 1.5, className: 'h-3 w-3' };
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Item Status (ativo, inativo, vencido, expirado, a_vencer, em_renovacao,
 // em_rotacao, arquivado, descontinuado, revogado) — Ativos, Licenças, Chaves,
@@ -42,7 +39,7 @@ export const resolveItemStatusTone = (raw?: string | null): ToneResult => {
   switch (v) {
     case 'ativo':
     case 'ativa':
-      return { tone: 'success', icon: <CheckCircle2 {...ICON_PROPS} /> };
+      return { tone: 'success' };
     case 'inativo':
     case 'inativa':
     case 'arquivado':
@@ -56,14 +53,14 @@ export const resolveItemStatusTone = (raw?: string | null): ToneResult => {
     case 'vencida':
     case 'expirado':
     case 'expirada':
-      return { tone: 'destructive', intensity: 'high', icon: <AlertTriangle {...ICON_PROPS} /> };
+      return { tone: 'destructive', intensity: 'high' };
     case 'a vencer':
     case 'a_vencer':
     case 'em renovacao':
     case 'em_renovacao':
     case 'em rotacao':
     case 'em_rotacao':
-      return { tone: 'warning', icon: <Clock {...ICON_PROPS} /> };
+      return { tone: 'warning' };
     default:
       return { tone: 'neutral' };
   }
@@ -77,19 +74,19 @@ export const resolveContratoStatusTone = (raw?: string | null): ToneResult => {
   const v = norm(raw);
   switch (v) {
     case 'ativo':
-      return { tone: 'success', icon: <CheckCircle2 {...ICON_PROPS} /> };
+      return { tone: 'success' };
     case 'negociacao':
-      return { tone: 'warning', icon: <FileSearch {...ICON_PROPS} /> };
+      return { tone: 'warning' };
     case 'aprovacao':
-      return { tone: 'info', icon: <ShieldCheck {...ICON_PROPS} /> };
+      return { tone: 'info' };
     case 'suspenso':
-      return { tone: 'warning', icon: <PauseCircle {...ICON_PROPS} /> };
+      return { tone: 'warning' };
     case 'encerrado':
     case 'cancelado':
-      return { tone: 'destructive', icon: <XCircle {...ICON_PROPS} /> };
+      return { tone: 'destructive' };
     case 'rascunho':
     case 'inativo':
-      return { tone: 'neutral', icon: <CircleDot {...ICON_PROPS} /> };
+      return { tone: 'neutral' };
     default:
       return { tone: 'neutral' };
   }
@@ -119,9 +116,9 @@ export const resolveClassificacaoTone = (raw?: string | null): ToneResult => {
   const v = norm(raw);
   switch (v) {
     case 'confidencial':
-      return { tone: 'destructive', intensity: 'high', icon: <AlertTriangle {...ICON_PROPS} /> };
+      return { tone: 'destructive', intensity: 'high' };
     case 'restrita':
-      return { tone: 'warning', icon: <ShieldCheck {...ICON_PROPS} /> };
+      return { tone: 'warning' };
     case 'interna':
       return { tone: 'info' };
     case 'publica':
@@ -138,16 +135,16 @@ export const resolveDenunciaStatusTone = (raw?: string | null): ToneResult => {
   const v = norm(raw);
   switch (v) {
     case 'nova':
-      return { tone: 'info', icon: <CircleDot {...ICON_PROPS} /> };
+      return { tone: 'info' };
     case 'em analise':
     case 'em_analise':
-      return { tone: 'warning', icon: <FileSearch {...ICON_PROPS} /> };
+      return { tone: 'warning' };
     case 'em investigacao':
     case 'em_investigacao':
-      return { tone: 'warning', intensity: 'high', icon: <Eye {...ICON_PROPS} /> };
+      return { tone: 'warning', intensity: 'high' };
     case 'resolvida':
     case 'resolvido':
-      return { tone: 'success', icon: <CheckCircle2 {...ICON_PROPS} /> };
+      return { tone: 'success' };
     case 'arquivada':
     case 'arquivado':
       return { tone: 'neutral' };
@@ -164,7 +161,7 @@ export const resolveSensibilidadeTone = (raw?: string | null): ToneResult => {
   switch (v) {
     case 'muito sensivel':
     case 'muito_sensivel':
-      return { tone: 'destructive', intensity: 'high', icon: <AlertTriangle {...ICON_PROPS} /> };
+      return { tone: 'destructive', intensity: 'high' };
     case 'sensivel':
       return { tone: 'destructive' };
     case 'moderado':
@@ -191,27 +188,27 @@ export const resolveWorkflowStatusTone = (raw?: string | null): ToneResult => {
     case 'aberta':
     case 'novo':
     case 'nova':
-      return { tone: 'info', icon: <CircleDot {...ICON_PROPS} /> };
+      return { tone: 'info' };
     case 'em andamento':
     case 'em_andamento':
     case 'em analise':
     case 'em_analise':
-      return { tone: 'info', icon: <Activity {...ICON_PROPS} /> };
+      return { tone: 'info' };
     case 'aguardando aprovacao':
     case 'aguardando_aprovacao':
     case 'pendente':
     case 'pendente_aprovacao':
-      return { tone: 'warning', icon: <Clock {...ICON_PROPS} /> };
+      return { tone: 'warning' };
     case 'concluido':
     case 'concluida':
     case 'resolvido':
     case 'resolvida':
     case 'fechado':
     case 'fechada':
-      return { tone: 'success', icon: <CheckCircle2 {...ICON_PROPS} /> };
+      return { tone: 'success' };
     case 'cancelado':
     case 'cancelada':
-      return { tone: 'destructive', icon: <XCircle {...ICON_PROPS} /> };
+      return { tone: 'destructive' };
     default:
       return { tone: 'neutral' };
   }
@@ -273,16 +270,16 @@ export const resolveAuditoriaStatusTone = (raw?: string | null): ToneResult => {
   switch (v) {
     case 'planejamento':
     case 'planejada':
-      return { tone: 'warning', icon: <FileSearch {...ICON_PROPS} /> };
+      return { tone: 'warning' };
     case 'em andamento':
     case 'em_andamento':
-      return { tone: 'info', icon: <Activity {...ICON_PROPS} /> };
+      return { tone: 'info' };
     case 'concluida':
     case 'concluido':
-      return { tone: 'success', icon: <CheckCircle2 {...ICON_PROPS} /> };
+      return { tone: 'success' };
     case 'cancelada':
     case 'cancelado':
-      return { tone: 'destructive', icon: <XCircle {...ICON_PROPS} /> };
+      return { tone: 'destructive' };
     default:
       return { tone: 'neutral' };
   }
@@ -313,17 +310,17 @@ export const resolveRiscoStatusTone = (raw?: string | null): ToneResult => {
   const v = norm(raw);
   switch (v) {
     case 'identificado':
-      return { tone: 'neutral', icon: <CircleDot {...ICON_PROPS} /> };
+      return { tone: 'neutral' };
     case 'analisado':
     case 'em analise':
     case 'em_analise':
-      return { tone: 'info', icon: <FileSearch {...ICON_PROPS} /> };
+      return { tone: 'info' };
     case 'tratado':
-      return { tone: 'success', icon: <CheckCircle2 {...ICON_PROPS} /> };
+      return { tone: 'success' };
     case 'monitorado':
-      return { tone: 'success', icon: <Eye {...ICON_PROPS} /> };
+      return { tone: 'success' };
     case 'aceito':
-      return { tone: 'warning', icon: <ShieldCheck {...ICON_PROPS} /> };
+      return { tone: 'warning' };
     default:
       return { tone: 'neutral' };
   }
@@ -360,14 +357,14 @@ export const resolveTratamentoStatusTone = (raw?: string | null): ToneResult => 
   const v = norm(raw);
   switch (v) {
     case 'pendente':
-      return { tone: 'neutral', icon: <Clock {...ICON_PROPS} /> };
+      return { tone: 'neutral' };
     case 'em andamento':
     case 'em_andamento':
-      return { tone: 'info', icon: <Activity {...ICON_PROPS} /> };
+      return { tone: 'info' };
     case 'concluido':
-      return { tone: 'success', icon: <CheckCircle2 {...ICON_PROPS} /> };
+      return { tone: 'success' };
     case 'cancelado':
-      return { tone: 'destructive', icon: <XCircle {...ICON_PROPS} /> };
+      return { tone: 'destructive' };
     default:
       return { tone: 'neutral' };
   }
@@ -380,17 +377,17 @@ export const resolveDueDiligenceStatusTone = (raw?: string | null): ToneResult =
   const v = norm(raw);
   switch (v) {
     case 'pendente':
-      return { tone: 'neutral', icon: <Clock {...ICON_PROPS} /> };
+      return { tone: 'neutral' };
     case 'ativo':
     case 'em andamento':
     case 'em_andamento':
-      return { tone: 'info', icon: <Activity {...ICON_PROPS} /> };
+      return { tone: 'info' };
     case 'concluido':
-      return { tone: 'success', icon: <CheckCircle2 {...ICON_PROPS} /> };
+      return { tone: 'success' };
     case 'expirado':
-      return { tone: 'destructive', icon: <XCircle {...ICON_PROPS} /> };
+      return { tone: 'destructive' };
     case 'pausado':
-      return { tone: 'warning', icon: <PauseCircle {...ICON_PROPS} /> };
+      return { tone: 'warning' };
     default:
       return { tone: 'neutral' };
   }
@@ -403,11 +400,15 @@ export const resolveAprovacaoTone = (raw?: string | null): ToneResult => {
   const v = norm(raw);
   switch (v) {
     case 'aprovado':
-      return { tone: 'success', icon: <CheckCircle2 {...ICON_PROPS} /> };
+      return { tone: 'success' };
     case 'rejeitado':
-      return { tone: 'destructive', icon: <XCircle {...ICON_PROPS} /> };
+      return { tone: 'destructive' };
     case 'pendente':
-      return { tone: 'warning', icon: <Clock {...ICON_PROPS} /> };
+    // O vocabulario do produto para "a aguardar aprovacao" e
+    // `pendente_aprovacao` — e o que a restricao CHECK de `riscos` aceita e o
+    // que Documentos e Contas Privilegiadas gravam.
+    case 'pendente_aprovacao':
+      return { tone: 'warning' };
     default:
       return { tone: 'neutral' };
   }
@@ -417,8 +418,8 @@ export const resolveAprovacaoTone = (raw?: string | null): ToneResult => {
 // Revisão por dias (vencida, próxima, ok)
 // ─────────────────────────────────────────────────────────────────────────────
 export const resolveRevisaoTone = (diasParaRevisao: number): ToneResult => {
-  if (diasParaRevisao < 0) return { tone: 'destructive', icon: <AlertTriangle {...ICON_PROPS} /> };
-  if (diasParaRevisao <= 7) return { tone: 'warning', icon: <Clock {...ICON_PROPS} /> };
+  if (diasParaRevisao < 0) return { tone: 'destructive' };
+  if (diasParaRevisao <= 7) return { tone: 'warning' };
   if (diasParaRevisao <= 30) return { tone: 'info' };
   return { tone: 'success' };
 };
@@ -435,14 +436,14 @@ export const resolveControleStatusTone = (raw?: string | null): ToneResult => {
   const v = norm(raw);
   switch (v) {
     case 'ativo':
-      return { tone: 'success', icon: <CheckCircle2 {...ICON_PROPS} /> };
+      return { tone: 'success' };
     case 'inativo':
       return { tone: 'neutral' };
     case 'em revisao':
     case 'em_revisao':
-      return { tone: 'warning', icon: <FileSearch {...ICON_PROPS} /> };
+      return { tone: 'warning' };
     case 'descontinuado':
-      return { tone: 'destructive', icon: <XCircle {...ICON_PROPS} /> };
+      return { tone: 'destructive' };
     default:
       return { tone: 'neutral' };
   }
@@ -460,12 +461,12 @@ export const resolveItemAuditoriaStatusTone = (raw?: string | null): ToneResult 
   const v = norm(raw);
   switch (v) {
     case 'pendente':
-      return { tone: 'neutral', icon: <Clock {...ICON_PROPS} /> };
+      return { tone: 'neutral' };
     case 'em andamento':
     case 'em_andamento':
-      return { tone: 'info', icon: <Activity {...ICON_PROPS} /> };
+      return { tone: 'info' };
     case 'concluido':
-      return { tone: 'success', icon: <CheckCircle2 {...ICON_PROPS} /> };
+      return { tone: 'success' };
     case 'nao aplicavel':
     case 'nao_aplicavel':
       return { tone: 'neutral' };
@@ -549,13 +550,13 @@ export const resolveMarcoStatusTone = (raw?: string | null): ToneResult => {
   const v = norm(raw);
   switch (v) {
     case 'pendente':
-      return { tone: 'warning', icon: <Clock {...ICON_PROPS} /> };
+      return { tone: 'warning' };
     case 'concluido':
-      return { tone: 'success', icon: <CheckCircle2 {...ICON_PROPS} /> };
+      return { tone: 'success' };
     case 'atrasado':
-      return { tone: 'destructive', intensity: 'high', icon: <AlertTriangle {...ICON_PROPS} /> };
+      return { tone: 'destructive', intensity: 'high' };
     case 'cancelado':
-      return { tone: 'neutral', icon: <XCircle {...ICON_PROPS} /> };
+      return { tone: 'neutral' };
     default:
       return { tone: 'neutral' };
   }
@@ -589,12 +590,12 @@ export const resolveConformityTone = (raw?: string | null): ToneResult => {
   const v = norm(raw);
   switch (v) {
     case 'conforme':
-      return { tone: 'success', icon: <CheckCircle2 {...ICON_PROPS} /> };
+      return { tone: 'success' };
     case 'parcial':
       return { tone: 'warning' };
     case 'nao conforme':
     case 'nao_conforme':
-      return { tone: 'destructive', icon: <XCircle {...ICON_PROPS} /> };
+      return { tone: 'destructive' };
     case 'nao aplicavel':
     case 'nao_aplicavel':
       return { tone: 'neutral' };
@@ -610,7 +611,7 @@ export const resolveConformityTone = (raw?: string | null): ToneResult => {
 // Estado ativo/inativo (boolean)
 // ─────────────────────────────────────────────────────────────────────────────
 export const resolveAtivoTone = (ativo?: boolean | null): ToneResult => {
-  if (ativo) return { tone: 'success', icon: <CheckCircle2 {...ICON_PROPS} /> };
+  if (ativo) return { tone: 'success' };
   return { tone: 'neutral' };
 };
 
@@ -625,9 +626,9 @@ export const resolveTipoAcessoTone = (raw?: string | null): ToneResult => {
     case 'escrita':
       return { tone: 'success' };
     case 'admin':
-      return { tone: 'warning', icon: <ShieldCheck {...ICON_PROPS} /> };
+      return { tone: 'warning' };
     case 'completo':
-      return { tone: 'destructive', intensity: 'high', icon: <AlertTriangle {...ICON_PROPS} /> };
+      return { tone: 'destructive', intensity: 'high' };
     default:
       return { tone: 'neutral' };
   }

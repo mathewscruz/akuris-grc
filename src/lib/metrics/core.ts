@@ -1,3 +1,4 @@
+import { parseDataLocal } from '@/lib/date-utils';
 /**
  * Camada única de métricas do domínio — núcleo.
  *
@@ -20,7 +21,7 @@ export const norm = (raw?: string | null): string =>
 
 /** Início do dia (evita falsos "vencidos" por diferença de horas). */
 export const startOfDay = (d: Date | string): Date => {
-  const date = typeof d === 'string' ? new Date(d) : new Date(d.getTime());
+  const date = typeof d === 'string' ? parseDataLocal(d) : new Date(d.getTime());
   date.setHours(0, 0, 0, 0);
   return date;
 };
@@ -28,7 +29,11 @@ export const startOfDay = (d: Date | string): Date => {
 /** Converte data (string/Date/null) em Date normalizada ou null. */
 export const toDate = (value?: string | Date | null): Date | null => {
   if (!value) return null;
-  const d = typeof value === 'string' ? new Date(value) : value;
+  // Data pura ('YYYY-MM-DD') por `new Date` é meia-noite UTC — a oeste de
+  // Greenwich isso recua para o dia anterior, e TODA métrica de prazo saía um
+  // dia deslocada: um contrato que vence HOJE contava como vencido. Mesmo
+  // remédio de `parseDataLocal` em date-utils: ancorar ao meio-dia local.
+  const d = typeof value === 'string' ? parseDataLocal(value) : value;
   if (Number.isNaN(d.getTime())) return null;
   return startOfDay(d);
 };

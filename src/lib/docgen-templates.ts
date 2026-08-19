@@ -5,26 +5,7 @@
  */
 
 import type { LucideIcon } from 'lucide-react';
-import {
-  Shield,
-  Lock,
-  KeyRound,
-  Database,
-  AlertTriangle,
-  ScrollText,
-  Cookie,
-  UserCheck,
-  Archive,
-  LifeBuoy,
-  Activity,
-  Siren,
-  Scale,
-  Handshake,
-  Briefcase,
-  UserPlus,
-  Home,
-  MonitorSmartphone,
-} from 'lucide-react';
+import { Shield, Lock, KeyRound, Database, AlertTriangle, ScrollText, Cookie, UserCheck, Archive, LifeBuoy, Activity, Siren, Scale, Handshake, Briefcase, UserPlus, Home, MonitorSmartphone } from 'lucide-react';
 
 export type DocTone = 'formal' | 'tecnico' | 'didatico';
 export type DocLanguage = 'pt-BR' | 'en';
