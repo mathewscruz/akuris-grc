@@ -1,0 +1,86 @@
+import { readFileSync, existsSync } from 'node:fs';
+import { execSync } from 'node:child_process';
+
+/**
+ * Listagem e leitura das fontes, feitas uma vez por processo.
+ *
+ * Os testes de guarda leem a base inteira à procura de padrões. Feito à
+ * bruta, cada um deles lança o seu `git ls-files` e relê os mesmos ~500
+ * arquivos várias vezes — e isso mediu-se: ao acrescentar seis testes destes,
+ * o teste de exportação de PDF passou a estourar o limite de 5s por falta de
+ * CPU, sem ter mudado uma linha. Um teste lento não é só lento: faz falhar
+ * os do lado.
+ *
+ * O índice do git ainda lista arquivos apagados e por confirmar, daí o
+ * `existsSync` — sem ele o teste rebenta com ENOENT em vez de acusar a regra.
+ */
+
+let cacheLista: string[] | null = null;
+const cacheConteudo = new Map<string, string>();
+
+/**
+ * Todas as fontes de `src` — versionadas E por versionar.
+ *
+ * O `-o --exclude-standard` não é detalhe: sem ele o `git ls-files` devolve só
+ * o que já está no índice, e **todo o código novo escapa às guardas**. Foi o
+ * que aconteceu: ficheiros criados durante a revisão (as próprias guardas
+ * incluídas) ficaram fora de todas elas, e um componente novo do Gap Analysis
+ * passou meses com `toLocaleDateString('pt-BR')` sem ninguém acusar — porque a
+ * guarda que proíbe exatamente isso não o estava sequer a ler.
+ *
+ * Uma guarda que não vê o código novo é pior do que não ter guarda: dá a
+ * sensação de estar coberto.
+ */
+export function fontes(): string[] {
+  if (cacheLista) return cacheLista;
+  const versionadas = execSync('git ls-files "src/*.ts" "src/*.tsx"', { encoding: 'utf8' });
+  const novas = execSync('git ls-files -o --exclude-standard "src/*.ts" "src/*.tsx"', {
+    encoding: 'utf8',
+  });
+  cacheLista = [...new Set(`${versionadas}\n${novas}`.split('\n'))]
+    .filter(Boolean)
+    // As próprias guardas ficam de fora: cada uma cita, como texto, o padrão
+    // que proíbe — é assim que provam que mordem. Ao passarem a ver ficheiros
+    // por versionar, começaram a acusar-se umas às outras.
+    .filter((f) => !f.includes('__tests__'))
+    .filter((f) => existsSync(f));
+  return cacheLista;
+}
+
+/**
+ * Superfícies públicas com identidade própria, fora do tema da aplicação.
+ * Ficam de fora das regras visuais de propósito, decidido no início da
+ * varredura — não são páginas do produto autenticado.
+ */
+export const FORA_DO_TEMA = ['pages/Assessment.tsx', 'MFAVerification'];
+
+/** Só os `.tsx`, e só os que seguem o tema da aplicação. */
+export function fontesTsx(): string[] {
+  return fontes()
+    .filter((f) => f.endsWith('.tsx'))
+    .filter((f) => !FORA_DO_TEMA.some((x) => f.includes(x)));
+}
+
+/** Conteúdo do arquivo, lido do disco no máximo uma vez. */
+export function ler(f: string): string {
+  const emCache = cacheConteudo.get(f);
+  if (emCache !== undefined) return emCache;
+  const texto = readFileSync(f, 'utf8');
+  cacheConteudo.set(f, texto);
+  return texto;
+}
+
+/** Linhas do arquivo, a partir do conteúdo em cache. */
+export function linhas(f: string): string[] {
+  return ler(f).split('\n');
+}
+
+/** `arquivo:linha` de cada arquivo onde o padrão aparece pela primeira vez. */
+export function ocorrencias(lista: string[], re: RegExp): string[] {
+  const achados: string[] = [];
+  for (const f of lista) {
+    const i = linhas(f).findIndex((l) => re.test(l));
+    if (i >= 0) achados.push(`${f}:${i + 1}`);
+  }
+  return achados;
+}
