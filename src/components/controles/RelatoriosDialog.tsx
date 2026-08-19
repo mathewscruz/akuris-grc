@@ -59,6 +59,23 @@ export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) 
     }
   });
 
+  /** Nomes dos responsáveis: a coluna guarda `profiles.user_id`. */
+  const { data: perfis } = useQuery({
+    queryKey: ['controles-relatorios-perfis'],
+    enabled: open,
+    queryFn: async () => {
+      const { data, error } = await supabase.from('profiles').select('user_id, nome');
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const nomePorUtilizador = useMemo(() => {
+    const mapa: Record<string, string> = {};
+    (perfis ?? []).forEach((p: any) => { mapa[p.user_id] = p.nome; });
+    return mapa;
+  }, [perfis]);
+
   const { data: stats } = useQuery({
     queryKey: ['controles-stats-relatorio'],
     enabled: open,
@@ -134,15 +151,27 @@ export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) 
       .sort((a, b) => ordem.indexOf(a.severidade) - ordem.indexOf(b.severidade));
   }, [riscosCobertura]);
 
-  /** Eficácia média por mês, a partir dos testes realmente registados. */
+  /**
+   * Eficácia média por mês, a partir dos testes realmente registados.
+   *
+   * O seletor de período existia e nunca chegava a lado nenhum: só era
+   * serializado no JSON do relatório guardado. Um PDF assinado como "últimos 30
+   * dias" trazia o histórico completo. Agora recorta os TESTES, que são o que
+   * tem data — recortar o inventário de controlos por `created_at` esconderia
+   * controlos vigentes, que é o defeito que o relatório de Contratos tem.
+   */
   const tendencia = useMemo(() => {
     const PESO: Record<string, number> = { eficaz: 100, parcial: 50, ineficaz: 0 };
     const porMes = new Map<string, { soma: number; n: number; data: Date }>();
+    const desde = dateRange?.from ? new Date(dateRange.from.setHours(0, 0, 0, 0)) : null;
+    const ate = dateRange?.to ? new Date(dateRange.to.setHours(23, 59, 59, 999)) : null;
     (controles ?? []).forEach((c: any) => {
       (c.testes ?? []).forEach((teste: any) => {
         const r = resultadoTeste(teste);
         if (r === 'indefinido' || !teste.data_teste) return;
         const d = parseDataLocal(teste.data_teste);
+        if (desde && d < desde) return;
+        if (ate && d > ate) return;
         const chave = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
         const atual = porMes.get(chave) ?? { soma: 0, n: 0, data: new Date(d.getFullYear(), d.getMonth(), 1) };
         atual.soma += PESO[r];
@@ -153,7 +182,7 @@ export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) 
     return [...porMes.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([, v]) => ({ mes: formatMonthYearLabel(v.data), eficacia: Math.round(v.soma / v.n), testes: v.n }));
-  }, [controles]);
+  }, [controles, dateRange]);
 
   const { toast } = useToast();
   const { t } = useLanguage();
@@ -172,8 +201,10 @@ export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) 
           formatLabel(c.tipo || ''),
           formatLabel(c.criticidade || ''),
           formatLabel(c.status || ''),
-          formatLabel(c.frequencia_teste || ''),
-          c.responsavel || '',
+          // As colunas sao `frequencia` e `responsavel_id`. Com os nomes
+          // errados, as duas saiam vazias nas 116 linhas do CSV.
+          formatLabel(c.frequencia || ''),
+          nomePorUtilizador[c.responsavel_id] || '',
         ]),
         'relatorio_controles'
       );

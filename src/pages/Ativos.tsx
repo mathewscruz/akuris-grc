@@ -22,6 +22,7 @@ import AtivoDialog from '@/components/ativos/AtivoDialog';
 import { RecordDetailDrawer } from '@/components/common/RecordDetailDrawer';
 import ManutencaoDialog from '@/components/ativos/ManutencaoDialog';
 import TrilhaAuditoriaAtivos from '@/components/ativos/TrilhaAuditoriaAtivos';
+import { exportCSV } from '@/lib/csv-utils';
 import { formatDateOnly } from '@/lib/date-utils';
 import { formatStatus } from '@/lib/text-utils';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -360,9 +361,12 @@ const Ativos = () => {
   }, [ativos, searchTerm, statusFilter, criticidadeFilter, tipoFilter, valorNegocioFilter, sortField, sortDirection]);
 
   const exportData = () => {
-    const csvContent = [
-      [t('fin.comum.nome'), t('fin.comum.tipo'), t('fin.comum.status'), t('fin.comum.criticidade'), t('fin.comum.proprietario'), t('fin.comum.localizacao'), t('fin.ativos.dataAquisicao')].join(','),
-      ...filteredAndSortedAtivos.map(ativo => [
+    // `exportCSV` faz separador `;`, BOM e escape. As três exportações de
+    // Ativos juntavam com vírgula e sem escape: um nome com vírgula partia a
+    // linha em colunas erradas no Excel.
+    exportCSV(
+      [t('fin.comum.nome'), t('fin.comum.tipo'), t('fin.comum.status'), t('fin.comum.criticidade'), t('fin.comum.proprietario'), t('fin.comum.localizacao'), t('fin.ativos.dataAquisicao')],
+      filteredAndSortedAtivos.map(ativo => [
         ativo.nome,
         getTipoLabel(ativo.tipo),
         (() => { const o = statusOptions.find(s => s.value === ativo.status); return o ? t(o.label) : ativo.status; })(),
@@ -370,16 +374,9 @@ const Ativos = () => {
         ativo.proprietario_nome || '',
         ativo.localizacao || '',
         ativo.data_aquisicao ? formatDateOnly(ativo.data_aquisicao) : ''
-      ].join(','))
-    ].join('\n');
-    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.setAttribute('href', URL.createObjectURL(blob));
-    link.setAttribute('download', `ativos-${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      ]),
+      `ativos-${new Date().toISOString().split('T')[0]}.csv`,
+    );
   };
 
   const columns: Column<Ativo>[] = [

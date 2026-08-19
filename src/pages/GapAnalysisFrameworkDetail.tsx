@@ -203,18 +203,30 @@ function GapAnalysisFrameworkDetailInner() {
     if (searchParams.get('req')) setActiveTab('avaliacao');
   }, [searchParams]);
 
+  /**
+   * Dados do PDF/CSV do framework.
+   *
+   * As duas consultas descartavam `error`: uma falha de rede ou de RLS gerava
+   * um relatório de "0% de conformidade, 0 requisitos avaliados" — assinado,
+   * datado e indistinguível de um framework realmente por avaliar. Um auditor
+   * arquiva isso como evidência.
+   */
   const getExportData = async () => {
-    const { data: reqs } = await supabase
+    const { data: reqs, error: erroReqs } = await supabase
       .from('gap_analysis_requirements')
       .select('id, codigo, titulo, categoria, peso, area_responsavel, titulo_en, categoria_en')
       .eq('framework_id', frameworkId)
       .order('ordem', { ascending: true });
 
-    const { data: evals } = await supabase
+    if (erroReqs) throw erroReqs;
+
+    const { data: evals, error: erroEvals } = await supabase
       .from('gap_analysis_evaluations')
       .select('requirement_id, conformity_status')
       .eq('framework_id', frameworkId)
       .eq('empresa_id', empresaId);
+
+    if (erroEvals) throw erroEvals;
 
     const evalMap = new Map(evals?.map(e => [e.requirement_id, e.conformity_status]) || []);
     // O PDF vai para o auditor: ele não pode listar como lacuna um requisito que

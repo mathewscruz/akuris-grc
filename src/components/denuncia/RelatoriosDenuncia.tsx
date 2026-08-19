@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { exportCSV } from '@/lib/csv-utils';
 import { IconDownload, IconSuccess, IconWarning, IconTime, IconCalendar, IconTrendUp, IconChart, IconChartPie } from '@/components/icons';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -104,16 +105,26 @@ export function RelatoriosDenuncia() {
       const total_denuncias = totalGeral || 0;
       const denuncias_periodo = denuncias?.length || 0;
       
-      // Calcular tempo médio de resolução
-      const denunciasResolvidas = denuncias?.filter(d => 
-        ['resolvida', 'arquivada'].includes(d.status) && d.data_conclusao
+      /**
+       * Resolvidas: quem está em estado terminal, com ou sem `data_conclusao`.
+       *
+       * Exigir `data_conclusao` fazia a taxa sair 0,0% ao lado de um gráfico que
+       * conta as mesmas denúncias como resolvidas — o RPC de criação nunca
+       * escreve essa data, e o diálogo só a escreve na TRANSIÇÃO de estado,
+       * portanto uma denúncia que nasce resolvida nunca a tem. Para o tempo
+       * médio, `updated_at` é a melhor aproximação disponível.
+       */
+      const denunciasResolvidas = denuncias?.filter(d =>
+        ['resolvida', 'arquivada'].includes(d.status)
       ) || [];
-      
+
+      const fimDe = (d: any) =>
+        d.data_conclusao ? parseDataLocal(d.data_conclusao) : new Date(d.updated_at ?? d.created_at);
+
       const tempo_medio_resolucao = denunciasResolvidas.length > 0
         ? denunciasResolvidas.reduce((acc, d) => {
             const inicio = new Date(d.created_at);
-            const fim = parseDataLocal(d.data_conclusao);
-            return acc + (fim.getTime() - inicio.getTime());
+            return acc + Math.max(0, fimDe(d).getTime() - inicio.getTime());
           }, 0) / denunciasResolvidas.length / (1000 * 60 * 60 * 24) // em dias
         : 0;
 
@@ -215,12 +226,15 @@ export function RelatoriosDenuncia() {
       ...metricas.denuncias_por_gravidade.map(item => [item.label, item.count])
     ];
 
-    const csvContent = dadosCSV.map(row => row.join(',')).join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `relatorio-denuncias-${format(new Date(), 'yyyy-MM-dd')}.csv`;
-    link.click();
+    // Sem BOM e sem escape: acentos ilegíveis no Excel e qualquer categoria
+    // com vírgula a partir a linha. `exportCSV` é o caminho único do produto.
+    // A primeira linha é o cabeçalho; o resto vai como corpo.
+    const [cabecalho, ...corpo] = dadosCSV;
+    exportCSV(
+      cabecalho.map((c) => String(c)),
+      corpo,
+      `relatorio-denuncias-${format(new Date(), 'yyyy-MM-dd')}.csv`,
+    );
   };
 
   if (loading) {

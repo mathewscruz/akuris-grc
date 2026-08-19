@@ -17,7 +17,8 @@ import { exportCSV } from '@/lib/csv-utils';
 import { formatStatus } from '@/lib/text-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { CHART_SERIES, CHART_GRID, CHART_AXIS, CHART_TOOLTIP_STYLE, chartSeries, CHART_FONT } from '@/lib/chart-tokens';
-import { dateFnsLocale, datePattern, formatDateOnly, intlLocale, parseDataLocal } from '@/lib/date-utils';
+import { dateFnsLocale, datePattern, formatarDiaParaDB, formatDateOnly, intlLocale, parseDataLocal } from '@/lib/date-utils';
+import { isContratoVigente, valorContratosVigentes } from '@/lib/metrics/contratos';
 interface RelatorioData {
   contratos: any[];
   fornecedores: any[];
@@ -26,7 +27,7 @@ interface RelatorioData {
 }
 
 interface FiltrosRelatorio {
-  periodo: 'mes' | 'trimestre' | 'ano' | 'personalizado';
+  periodo: 'todos' | 'mes' | 'trimestre' | 'ano' | 'personalizado';
   dataInicio?: Date;
   dataFim?: Date;
   status?: string;
@@ -55,7 +56,11 @@ export default function RelatoriosContratos({ open: openProp, onOpenChange, hide
     aditivos: []
   });
   const [filtros, setFiltros] = useState<FiltrosRelatorio>({
-    periodo: 'mes'
+    // "Este mês" recortava por `created_at`: um contrato de cinco anos assinado
+    // no ano passado ficava de fora do relatório de hoje. Três das quatro
+    // empresas abriam o painel em "0 contratos · R$ 0,00" com contratos
+    // vigentes no banco.
+    periodo: 'todos'
   });
   const [empresaId, setEmpresaId] = useState<string | null>(null);
   const { toast } = useToast();
@@ -95,8 +100,13 @@ export default function RelatoriosContratos({ open: openProp, onOpenChange, hide
           fornecedores!inner(nome, avaliacao_risco)
         `)
         .eq('empresa_id', empresaId)
-        .gte('created_at', dataInicio.toISOString())
-        .lte('created_at', dataFim.toISOString());
+        // O período é de VIGÊNCIA: entra quem esteve em vigor durante o
+        // intervalo, não quem foi cadastrado nele. Um contrato sem data de fim
+        // é aberto e conta sempre.
+        // `formatarDiaParaDB` e nao `toISOString`: as colunas sao `date` e o
+        // UTC adianta o dia a quem esta a oeste de Greenwich.
+        .lte('data_inicio', formatarDiaParaDB(dataFim))
+        .or(`data_fim.is.null,data_fim.gte.${formatarDiaParaDB(dataInicio)}`);
 
       // Carregar marcos
       const { data: marcos } = await supabase
@@ -150,6 +160,12 @@ export default function RelatoriosContratos({ open: openProp, onOpenChange, hide
     let dataFim: Date;
 
     switch (filtros.periodo) {
+      // "Todos" não é ausência de filtro: é uma janela larga o suficiente para
+      // apanhar qualquer vigência, mantendo uma só forma de consulta.
+      case 'todos':
+        dataInicio = new Date(1970, 0, 1);
+        dataFim = new Date(hoje.getFullYear() + 50, 11, 31);
+        break;
       case 'mes':
         dataInicio = startOfMonth(hoje);
         dataFim = endOfMonth(hoje);
@@ -188,7 +204,10 @@ export default function RelatoriosContratos({ open: openProp, onOpenChange, hide
           c.nome || '',
           formatLabel(c.tipo || ''),
           formatLabel(c.status || ''),
-          c.valor_total ? Number(c.valor_total).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '',
+          // A coluna e `valor`. `valor_total` nao existe em `contratos`, por
+          // isso esta coluna saia vazia em 100% das linhas do CSV enquanto o
+          // cabecalho do mesmo ficheiro imprimia o total somado.
+          c.valor ? Number(c.valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '',
           c.data_inicio ? formatDateOnly(c.data_inicio) : '',
           c.data_fim ? formatDateOnly(c.data_fim) : '',
         ]),
@@ -251,7 +270,7 @@ export default function RelatoriosContratos({ open: openProp, onOpenChange, hide
         doc.text((c.nome || '-').substring(0, 34), margin + 32, y);
         doc.text(formatLabel(c.tipo || ''), margin + 95, y);
         doc.text(formatLabel(c.status || ''), margin + 125, y);
-        doc.text(c.valor_total ? Number(c.valor_total).toLocaleString('pt-BR') : '-', margin + 150, y);
+        doc.text(c.valor ? Number(c.valor).toLocaleString('pt-BR') : '-', margin + 150, y);
         y += 5.5;
       });
 
@@ -304,8 +323,11 @@ export default function RelatoriosContratos({ open: openProp, onOpenChange, hide
 
   const estatisticasGerais = {
     totalContratos: dados.contratos.length,
-    valorTotal: dados.contratos.reduce((sum, c) => sum + (parseFloat(c.valor) || 0), 0),
-    contratosAtivos: dados.contratos.filter(c => c.status === 'ativo').length,
+    // `status` é o que alguém escreveu; `estadoContrato` é o que a data diz.
+    // Somar tudo e chamar-lhe activo anunciava R$ 696.000 na Nexure incluindo
+    // um contrato AWS de R$ 420.000 vencido há 20 dias — 60% do total.
+    valorTotal: valorContratosVigentes(dados.contratos),
+    contratosAtivos: dados.contratos.filter((c) => isContratoVigente(c)).length,
     marcosVencendo: dados.marcos.filter(m => {
       const diasRestantes = Math.ceil((parseDataLocal(m.data_prevista).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
       return diasRestantes <= 30 && diasRestantes >= 0;
@@ -343,6 +365,7 @@ export default function RelatoriosContratos({ open: openProp, onOpenChange, hide
                     <SelectValue placeholder={t('contratosAtivos.relatoriosContratos.periodPlaceholder')} />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="todos">{t('contratosAtivos.relatoriosContratos.periodAll')}</SelectItem>
                     <SelectItem value="mes">{t('contratosAtivos.relatoriosContratos.periodMonth')}</SelectItem>
                     <SelectItem value="trimestre">{t('contratosAtivos.relatoriosContratos.periodQuarter')}</SelectItem>
                     <SelectItem value="ano">{t('contratosAtivos.relatoriosContratos.periodYear')}</SelectItem>

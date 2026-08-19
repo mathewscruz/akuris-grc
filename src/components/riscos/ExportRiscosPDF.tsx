@@ -11,6 +11,8 @@ interface RiscoExport {
   nivel_risco_inicial: string;
   nivel_risco_residual?: string;
   status: string;
+  /** Estado derivado dos tratamentos — o mesmo que a tabela mostra. */
+  status_efetivo?: string;
   responsavel_nome?: string;
   data_proxima_revisao?: string;
 }
@@ -91,9 +93,13 @@ export async function exportRiscosPDF(riscos: RiscoExport[], stats: RiscosStats 
     doc.setTextColor(AKURIS_COLORS.text);
     doc.text(risco.nome.substring(0, 30), margin + 2, y);
     doc.text(risco.categoria?.nome?.substring(0, 20) || '-', margin + 62, y);
-    doc.text(formatLabel(risco.nivel_risco_residual || risco.nivel_risco_inicial) || '-', margin + 102, y);
+    // A coluna "Nível Inicial" recebia o residual: as duas colunas de nível
+    // saíam iguais e a severidade inerente perdia-se no ficheiro.
+    doc.text(formatLabel(risco.nivel_risco_inicial) || '-', margin + 102, y);
     doc.text(formatLabel(risco.nivel_risco_residual || '') || '-', margin + 125, y);
-    doc.text(formatLabel(risco.status) || '-', margin + 150, y);
+    // `status` é o que alguém escreveu; `status_efetivo` é o que os tratamentos
+    // dizem. O ecrã mostra o segundo e o ficheiro imprimia o primeiro.
+    doc.text(formatLabel(risco.status_efetivo ?? risco.status) || '-', margin + 150, y);
     y += 5.5;
   });
 
@@ -107,9 +113,9 @@ export function exportRiscosCSV(riscos: RiscoExport[], locale: Locale = 'pt') {
   const rows = riscos.map(r => [
     r.nome,
     r.categoria?.nome || '',
-    formatLabel(r.nivel_risco_residual || r.nivel_risco_inicial),
+    formatLabel(r.nivel_risco_inicial),
     formatLabel(r.nivel_risco_residual || ''),
-    formatLabel(r.status),
+    formatLabel(r.status_efetivo ?? r.status),
     r.responsavel_nome || '',
     r.data_proxima_revisao || ''
   ]);

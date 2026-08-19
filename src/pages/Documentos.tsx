@@ -734,10 +734,12 @@ export default function Documentos() {
           categorias={categorias}
         />
 
+        {/* O CSV ao lado usa `documentosFiltrados`: com o filtro
+            "Confidencial" activo, o CSV trazia 5 linhas e o PDF trazia 25. */}
         <DocumentosRelatorios
           open={relatoriosDialog}
           onOpenChange={setRelatoriosDialog}
-          documentos={documentos}
+          documentos={documentosFiltrados}
           categorias={categorias}
         />
 

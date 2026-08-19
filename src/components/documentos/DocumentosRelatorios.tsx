@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { estadoDocumento, isDocumentoVencido } from '@/lib/metrics/documentos';
 import { IconFilter, IconDownload, IconChart } from '@/components/icons';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -98,18 +99,22 @@ export function DocumentosRelatorios({ documentos, categorias, open, onOpenChang
       );
       y += 12;
 
-      const ativos = documentos.filter(d => d.status === 'ativo').length;
-      const inativos = documentos.filter(d => d.status === 'inativo').length;
-      const vencidos = documentos.filter(d => {
-        if (!d.data_vencimento) return false;
-        return parseDataLocal(d.data_vencimento) < new Date();
-      }).length;
+      // Derivado de `estadoDocumento`, não de `status` cru: assim o resumo
+      // soma o total. Faltava a linha dos pendentes, e um documento vencido só
+      // conta se estiver activo — um rascunho nunca teve vigência para expirar.
+      const ativos = documentos.filter((d) => estadoDocumento(d) === 'ativo').length;
+      const inativos = documentos.filter((d) => estadoDocumento(d) === 'arquivado').length;
+      const pendentes = documentos.filter((d) => estadoDocumento(d) === 'pendente_aprovacao').length;
+      const rascunhos = documentos.filter((d) => estadoDocumento(d) === 'rascunho').length;
+      const vencidos = documentos.filter((d) => isDocumentoVencido(d)).length;
 
       y = addSectionTitle(doc, t('documentosExtras.relatorios.pdfResumoStatus'), y, margin);
       doc.setFontSize(10);
       doc.setTextColor(AKURIS_COLORS.text);
       doc.text(t('documentosExtras.relatorios.pdfAtivos', { qtd: String(ativos) }), margin + 8, y); y += 6;
       doc.text(t('documentosExtras.relatorios.pdfInativos', { qtd: String(inativos) }), margin + 8, y); y += 6;
+      doc.text(t('documentosExtras.relatorios.pdfPendentes', { qtd: String(pendentes) }), margin + 8, y); y += 6;
+      doc.text(t('documentosExtras.relatorios.pdfRascunhos', { qtd: String(rascunhos) }), margin + 8, y); y += 6;
       doc.text(t('documentosExtras.relatorios.pdfVencidos', { qtd: String(vencidos) }), margin + 8, y); y += 10;
 
       y = addSectionTitle(doc, t('documentosExtras.relatorios.pdfListaDocumentos'), y, margin);

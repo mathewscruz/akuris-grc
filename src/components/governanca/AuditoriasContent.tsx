@@ -106,7 +106,9 @@ export default function AuditoriasContent({ actionsSlot }: { actionsSlot?: HTMLE
       const [itensRes, controlesRes] = await Promise.all([
         supabase
           .from('auditoria_itens')
-          .select('id, status, auditoria_id')
+          // `controle_vinculado_id` e o que permite deduplicar contra
+          // `controles_auditorias`, que e espelhada por gatilho a partir daqui.
+          .select('id, status, auditoria_id, controle_vinculado_id')
           .in('auditoria_id', auditoriaIds),
         supabase
           .from('controles_auditorias')
@@ -114,18 +116,32 @@ export default function AuditoriasContent({ actionsSlot }: { actionsSlot?: HTMLE
           .in('auditoria_id', auditoriaIds)
       ]);
       
-      // Agrupar por auditoria
+      /**
+       * Progresso da auditoria — a MESMA derivação de `ItensAuditoriaDialog`.
+       *
+       * Havia duas contas para o mesmo número, e esta estava errada nos dois
+       * lados. Somava `auditoria_itens + controles_auditorias` sem deduplicar,
+       * e desde que a segunda passou a ser espelhada por gatilho a partir da
+       * primeira, cada controlo importado entrava duas vezes. E contava o
+       * controlo `ativo` como item concluído — estar no âmbito não é estar
+       * auditado. A Deloitte-2025 saía "50/50 · 100% concluído" no cartão e no
+       * CSV com zero itens de trabalho concluídos e zero testes.
+       */
       for (const auditoria of auditorias) {
         const itens = itensRes.data?.filter(i => i.auditoria_id === auditoria.id) || [];
         const controles = controlesRes.data?.filter((c: any) => c.auditoria_id === auditoria.id) || [];
-        
-        const itensTotal = itens.length + controles.length;
-        const itensManuaisConcluidos = itens.filter(i => i.status === 'concluido').length;
-        const controlesAtivos = controles.filter((c: any) => c.controle?.status === 'ativo').length;
-        
+
+        const comItemProprio = new Set(
+          itens.map((i: any) => i.controle_vinculado_id).filter(Boolean),
+        );
+        const controlesSemItem = controles.filter(
+          (c: any) => c.controle?.id && !comItemProprio.has(c.controle.id),
+        );
+
         counts[auditoria.id] = {
-          itens: itensTotal,
-          itensConcluidos: itensManuaisConcluidos + controlesAtivos,
+          itens: itens.length + controlesSemItem.length,
+          // Só o trabalho de auditoria realmente concluído conta.
+          itensConcluidos: itens.filter(i => i.status === 'concluido').length,
         };
       }
       

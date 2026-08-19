@@ -23,6 +23,10 @@ const MAP_ESTADO: Record<string, EstadoDocumento> = {
   pendente_aprovacao: 'pendente_aprovacao',
   em_aprovacao: 'pendente_aprovacao',
   aguardando_aprovacao: 'pendente_aprovacao',
+  // O valor que o produto realmente grava. Sem ele, os documentos `pendente`
+  // caíam em `indefinido` e sumiam de todos os resumos: a Órigo tinha um PDF
+  // com "total: 4" e "Ativos 0 · Inativos 0 · Vencidos 0".
+  pendente: 'pendente_aprovacao',
   arquivado: 'arquivado',
   obsoleto: 'arquivado',
   inativo: 'arquivado',

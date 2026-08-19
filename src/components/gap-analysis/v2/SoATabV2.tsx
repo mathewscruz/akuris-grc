@@ -104,7 +104,7 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion, section
           .order('ordem', { ascending: true }),
         supabase
           .from('gap_analysis_evaluations')
-          .select('requirement_id, conformity_status, observacoes')
+          .select('requirement_id, conformity_status, observacoes, evidence_files')
           .eq('framework_id', frameworkId)
           .eq('empresa_id', empresaId),
       ]);
@@ -139,7 +139,12 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion, section
           justificativa: soaEntry?.justificativa || (isNA ? (evalData?.observacoes || '') : ''),
           conformity_status: status,
           responsavel: r.area_responsavel,
-          evidencias_count: 0,
+          // Era um literal `0`: a SoA exportada declarava zero evidências em
+          // todas as linhas, mesmo nas que têm ficheiro anexado. Numa
+          // Declaração de Aplicabilidade isso lê-se como "nada comprovado".
+          evidencias_count: Array.isArray((evalData as any)?.evidence_files)
+            ? (evalData as any).evidence_files.length
+            : 0,
         };
       });
 

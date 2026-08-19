@@ -100,7 +100,10 @@ export const useReportsData = () => {
 
       const categoryPerformance = Object.entries(categoryGroups).map(([category, scores]) => ({
         category,
-        score: (scores.reduce((sum, s) => sum + s, 0) / scores.length) * 10
+        // `score_final` ja vem em 0-100. O `* 10` sobrou da escala antiga e
+        // so foi removido de `averageScore`: aqui uma categoria de media 75
+        // saia como 750 no relatorio exportado.
+        score: scores.reduce((sum, s) => sum + s, 0) / scores.length
       }));
 
       // Top fornecedores - converter score para 0-100%

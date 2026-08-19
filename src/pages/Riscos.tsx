@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { IconAdd, IconClose, IconEdit, IconDelete, IconMore, IconWarning, IconTime, IconFile, IconShield, IconSettings, IconTag, IconHistory, IconShieldCheck, IconAttach, IconBook, IconUserOff, IconCalendarClock } from '@/components/icons';
 import { useSearchParams, useLocation } from 'react-router-dom';
 import { StatStrip } from '@/components/ui/stat-strip';
@@ -29,7 +29,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { logger } from '@/lib/logger';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
-import { useRiscosStats } from '@/hooks/useRiscosStats';
+import { useRiscosStats, type RiscosStats } from '@/hooks/useRiscosStats';
+import { severidadeRiscoEfetiva, type Severidade } from '@/lib/metrics/riscos';
 import { useRiskScoreTrend } from '@/hooks/useRiskScoreTrend';
 import { useToast } from '@/hooks/use-toast';
 import { formatDateOnly } from '@/lib/date-utils';
@@ -515,6 +516,47 @@ export function Riscos() {
     return 0;
   });
 
+  /**
+   * A lista que a tabela realmente mostra — `sortedRiscos` já filtrada pela
+   * pílula activa (Acima do apetite, Sem responsável, ...).
+   *
+   * Vive aqui em cima e não dentro do JSX porque a exportação, que está no
+   * cabeçalho da página, precisa dela: exportava `sortedRiscos` enquanto o
+   * ecrã mostrava 13 linhas, e o ficheiro saía com 31.
+   */
+  const apetiteScore: number | null = apetiteScoreFromNiveis(matrizConfig?.niveis_risco);
+  const viewFilters: Record<SavedView, (r: Risco) => boolean> = useMemo(() => ({
+    todos: () => true,
+    acima_apetite: (r) => isAcimaApetite(r, apetiteScore),
+    sem_responsavel: (r) => !r.responsavel_nome,
+    revisao_vencida: (r) => slaFromRevisao(r.data_proxima_revisao) === 'vencido',
+    meus_riscos: (r) => !!profile?.user_id && r.responsavel === profile.user_id,
+  }), [apetiteScore, profile?.user_id]);
+  const viewedRiscos = sortedRiscos.filter(viewFilters[savedView]);
+
+  /**
+   * Resumo executivo do que vai no ficheiro, não da empresa inteira.
+   *
+   * `useRiscosStats` consulta toda a base: o PDF abria com "31 riscos" por
+   * cima de uma tabela de 13. E `tratados` contava `status='tratado'` cru —
+   * três riscos sem um único tratamento entravam como tratados.
+   */
+  const statsDaExportacao = useMemo(() => {
+    const porSeveridade = (nivel: Severidade) =>
+      viewedRiscos.filter((r) => severidadeRiscoEfetiva(r, matrizConfig?.niveis_risco) === nivel).length;
+    const efetivo = (r: Risco) => r.status_efetivo ?? r.status;
+    return {
+      ...(stats ?? ({} as RiscosStats)),
+      total: viewedRiscos.length,
+      criticos: porSeveridade('critico'),
+      altos: porSeveridade('alto'),
+      medios: porSeveridade('medio'),
+      baixos: porSeveridade('baixo'),
+      aceitos: viewedRiscos.filter((r) => efetivo(r) === 'aceito').length,
+      tratados: viewedRiscos.filter((r) => efetivo(r) === 'tratado').length,
+    } as RiscosStats;
+  }, [viewedRiscos, stats, matrizConfig]);
+
   const getRevisaoBadge = (dataRevisao?: string) => {
     if (!dataRevisao) return null;
     const dias = differenceInDays(new Date(dataRevisao), new Date());
@@ -772,8 +814,8 @@ export function Riscos() {
             </Button>
           }
           secondaryActions={[
-            { label: t('riscos.page.export.csv'), icon: <IconFile className="h-4 w-4" strokeWidth={1.5} />, onClick: () => exportRiscosCSV(sortedRiscos) },
-            { label: t('riscos.page.export.pdf'), icon: <IconFile className="h-4 w-4" strokeWidth={1.5} />, onClick: () => exportRiscosPDF(sortedRiscos, stats) },
+            { label: t('riscos.page.export.csv'), icon: <IconFile className="h-4 w-4" strokeWidth={1.5} />, onClick: () => exportRiscosCSV(viewedRiscos) },
+            { label: t('riscos.page.export.pdf'), icon: <IconFile className="h-4 w-4" strokeWidth={1.5} />, onClick: () => exportRiscosPDF(viewedRiscos, statsDaExportacao) },
             { label: t('riscosBiblioteca.botao'), icon: <IconBook className="h-4 w-4" strokeWidth={1.5} />, onClick: () => setBibliotecaDialogOpen(true), separatorBefore: true },
             { label: t('riscos.page.categories'), icon: <IconTag className="h-4 w-4" strokeWidth={1.5} />, onClick: () => setCategoriasDialogOpen(true) },
             { label: t('riscos.page.configMatrix'), icon: <IconSettings className="h-4 w-4" strokeWidth={1.5} />, onClick: () => setMatrizDialogOpen(true) },
@@ -820,7 +862,6 @@ export function Riscos() {
           // Derivações compartilhadas para Visão geral e Matriz
           // Apetite score = max do nível marcado como limite de apetite na config da
           // matriz (fallback: nível "médio", para matrizes sem a marcação).
-          const apetiteScore: number | null = apetiteScoreFromNiveis(matrizConfig?.niveis_risco);
           const acimaApetite = riscos.filter((r) => isAcimaApetite(r, apetiteScore)).length;
           // Alinhado à coluna Resp. da tabela: conta riscos sem nome de responsável
           // resolvido (um ID que não resolve para um perfil também aparece como "—").
@@ -923,16 +964,7 @@ export function Riscos() {
             </div>
           );
 
-          // Saved-view virtual filter para a tabela
-          const meId = profile?.user_id;
-          const viewFilters: Record<SavedView, (r: Risco) => boolean> = {
-            todos: () => true,
-            acima_apetite: (r) => isAcimaApetite(r, apetiteScore),
-            sem_responsavel: (r) => !r.responsavel_nome,
-            revisao_vencida: (r) => slaFromRevisao(r.data_proxima_revisao) === 'vencido',
-            meus_riscos: (r) => !!meId && r.responsavel === meId,
-          };
-          const viewedRiscos = sortedRiscos.filter(viewFilters[savedView]);
+          // `viewFilters` e `viewedRiscos` vivem no escopo do componente.
           const viewItems = [
             { id: 'todos' as SavedView, label: t('riscos.page.filters.all'), count: sortedRiscos.length },
             { id: 'acima_apetite' as SavedView, label: t('riscos.page.kpi.aboveAppetite'), count: sortedRiscos.filter(viewFilters.acima_apetite).length },

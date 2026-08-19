@@ -18,6 +18,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { useLicencasStats } from '@/hooks/useLicencasStats';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
+import { exportCSV } from '@/lib/csv-utils';
 import { formatDateOnly } from '@/lib/date-utils';
 import { formatStatus } from '@/lib/text-utils';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -439,9 +440,12 @@ export default function AtivosLicencas() {
               }
             }}
             onExport={() => {
-              const csvContent = [
-                [t('fin.comum.nome'), t('fin.comum.tipo'), t('fin.comum.fornecedor'), t('fin.comum.vencimento'), t('fin.licencas.valorRenovacao'), t('sweepDados.ativos.colCriticidade'), t('sweepDados.ativos.colStatus'), t('fin.comum.responsavel')].join(','),
-                ...filteredAndSortedLicencas.map(l => [
+              // Sem BOM o Excel lia "ÁÇÁÇ" em vez dos acentos, e sem escape um
+              // valor com vírgula partia a linha em colunas erradas.
+              // `exportCSV` trata os dois — é o mesmo caminho do resto do produto.
+              exportCSV(
+                [t('fin.comum.nome'), t('fin.comum.tipo'), t('fin.comum.fornecedor'), t('fin.comum.vencimento'), t('fin.licencas.valorRenovacao'), t('sweepDados.ativos.colCriticidade'), t('sweepDados.ativos.colStatus'), t('fin.comum.responsavel')],
+                filteredAndSortedLicencas.map(l => [
                   l.nome,
                   l.tipo_licenca,
                   l.fornecedor,
@@ -450,14 +454,9 @@ export default function AtivosLicencas() {
                   l.criticidade,
                   l.status,
                   l.responsavel_nome || ''
-                ].join(','))
-              ].join('\n');
-
-              const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-              const link = document.createElement('a');
-              link.href = URL.createObjectURL(blob);
-              link.download = `licencas-${new Date().toISOString().split('T')[0]}.csv`;
-              link.click();
+                ]),
+                `licencas-${new Date().toISOString().split('T')[0]}.csv`,
+              );
             }}
             emptyState={{
               icon: <IconFileCheck className="h-8 w-8" />,

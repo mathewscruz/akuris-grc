@@ -186,11 +186,13 @@ export function useFrameworkScore(frameworkId: string, config: FrameworkConfig, 
               const score = config.statusScores[status as keyof typeof config.statusScores] || 0;
               totalWeightedScore += score * weight;
               totalWeight += weight;
-            }
-            
-            // N/A counts as evaluated (user made a decision)
-            if (status !== 'nao_avaliado') {
-              evaluated++;
+              // Dentro da guarda, como nos outros três laços deste ficheiro.
+              // Fora dela, os "não aplicável" entravam na conta de avaliados só
+              // aqui: a lista dizia 114/121 e o PDF dizia 117/121 sobre os
+              // mesmos dados, porque o PDF soma este contador.
+              if (status !== 'nao_avaliado') {
+                evaluated++;
+              }
             }
           });
 

@@ -406,8 +406,11 @@ export default function Incidentes() {
             onClick: () => {
               exportCSV(
                 [t('sweepRiscos.incidentes.exportColTitulo'), t('fin.comum.tipo'), t('sweepRiscos.incidentes.exportColCategoria'), t('sweepRiscos.incidentes.exportColCriticidade'), t('sweepRiscos.incidentes.exportColStatus'), t('sweepRiscos.incidentes.exportColDataDeteccao'), t('sweepRiscos.incidentes.exportColDataResolucao')],
-                incidentes.map((inc: any) => [
-                  inc.titulo, inc.tipo || '', inc.categoria || '', inc.criticidade || '',
+                // Exportar o que esta na tabela: iterava `incidentes` (a base
+                // inteira) enquanto o ecra mostrava `sortedIncidentes`. E a
+                // coluna e `tipo_incidente`, nao `tipo`.
+                sortedIncidentes.map((inc: any) => [
+                  inc.titulo, inc.tipo_incidente || '', inc.categoria || '', inc.criticidade || '',
                   inc.status || '', inc.data_deteccao || '', inc.data_resolucao || ''
                 ]),
                 'incidentes'
