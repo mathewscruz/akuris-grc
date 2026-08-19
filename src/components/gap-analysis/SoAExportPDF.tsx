@@ -1,8 +1,8 @@
 import jsPDF from 'jspdf';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { loadAkurisLogo, addAkurisCover, addAkurisHeader, addAkurisFooter, AKURIS_COLORS } from '@/lib/pdf-utils';
 import { tGlobal } from '@/lib/i18n-global';
+import { dateFnsLocale } from '@/lib/date-utils';
 
 interface SoAItem {
   codigo: string;
@@ -57,7 +57,7 @@ export async function exportSoAPDF(params: ExportSoAPDFParams) {
     logo,
     tGlobal('sweepRiscos.gap.pdf.soaDeclaracao'),
     `${frameworkName} ${frameworkVersion}`,
-    { empresa: empresaNome, data: format(new Date(), "dd 'de' MMMM 'de' yyyy", { locale: ptBR }) }
+    { empresa: empresaNome, data: format(new Date(), "dd 'de' MMMM 'de' yyyy", { locale: dateFnsLocale() }) }
   );
 
   // Summary page

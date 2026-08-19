@@ -12,17 +12,15 @@ import {
 } from 'recharts';
 import { useScoreHistory, ScoreHistoryPeriod } from '@/hooks/useScoreHistory';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
-import { ScoreType } from '@/lib/framework-configs';
-import { TrendingUp, TrendingDown, Minus, LineChart as LineChartIcon } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { chartSeries, CHART_GRID, CHART_AXIS, CHART_AREA_OPACITY, CHART_TOOLTIP_STYLE } from '@/lib/chart-tokens';
+import { chartSeries, CHART_GRID, CHART_AXIS, CHART_AREA_OPACITY, CHART_TOOLTIP_STYLE, CHART_FONT } from '@/lib/chart-tokens';
+import { IconTrendUp, IconTrendDown, IconMinus, IconChartLine } from '@/components/icons';
 
 interface ScoreEvolutionChartProps {
   frameworkId: string;
-  scoreType?: ScoreType;
 }
 
-export const ScoreEvolutionChart = ({ frameworkId, scoreType = 'scale_0_5' }: ScoreEvolutionChartProps) => {
+export const ScoreEvolutionChart = ({ frameworkId }: ScoreEvolutionChartProps) => {
   const { t } = useLanguage();
   const [period, setPeriod] = useState<ScoreHistoryPeriod>('monthly');
   const { history, loading } = useScoreHistory(frameworkId, period);
@@ -34,13 +32,13 @@ export const ScoreEvolutionChart = ({ frameworkId, scoreType = 'scale_0_5' }: Sc
     { value: 'yearly', label: t('sweepRiscos.gap.scoreChart.ano') },
   ];
 
-  const isPercentage = scoreType === 'percentage';
-  const domain: [number, number] = isPercentage ? [0, 100] : [0, 5];
-  const ticks = isPercentage ? [0, 25, 50, 75, 100] : [0, 1, 2, 3, 4, 5];
-  const goalValue = isPercentage ? 80 : 4;
+  // O histórico é gravado em percentagem pelo gatilho do banco; era o eixo
+  // deste gráfico que às vezes se desenhava de 0 a 5, para o NIST.
+  const domain: [number, number] = [0, 100];
+  const ticks = [0, 25, 50, 75, 100];
+  const goalValue = 80;
 
-  const formatValue = (value: number) =>
-    isPercentage ? `${value.toFixed(0)}%` : value.toFixed(2);
+  const formatValue = (value: number) => `${value.toFixed(0)}%`;
 
   // Delta + extensão dos dados para suportar 1-ponto sem ficar branco
   const { displayData, delta, latestScore } = useMemo(() => {
@@ -100,15 +98,15 @@ export const ScoreEvolutionChart = ({ frameworkId, scoreType = 'scale_0_5' }: Sc
                     'text-muted-foreground'
                   }`}
                 >
-                  {delta.dir === 'up' && <TrendingUp className="h-3 w-3" strokeWidth={1.5} />}
-                  {delta.dir === 'down' && <TrendingDown className="h-3 w-3" strokeWidth={1.5} />}
-                  {delta.dir === 'flat' && <Minus className="h-3 w-3" strokeWidth={1.5} />}
-                  {delta.value > 0 ? '+' : ''}{delta.value.toFixed(1)}{isPercentage ? '%' : ''}
+                  {delta.dir === 'up' && <IconTrendUp className="h-3 w-3" strokeWidth={1.5} />}
+                  {delta.dir === 'down' && <IconTrendDown className="h-3 w-3" strokeWidth={1.5} />}
+                  {delta.dir === 'flat' && <IconMinus className="h-3 w-3" strokeWidth={1.5} />}
+                  {delta.value > 0 ? '+' : ''}{delta.value.toFixed(1)}%
                   <span className="text-muted-foreground font-normal">{t('cardsKpi.sweep.gap.vsAnterior')}</span>
                 </span>
               )}
               {!delta && history.length === 1 && (
-                <span className="inline-flex items-center text-[11px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                <span className="inline-flex items-center text-micro px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
                   {t('sweepRiscos.gap.scoreChart.primeiroRegistro')}
                 </span>
               )}
@@ -135,9 +133,7 @@ export const ScoreEvolutionChart = ({ frameworkId, scoreType = 'scale_0_5' }: Sc
       <CardContent className="pt-3">
         {history.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-[260px] gap-3 rounded-lg border border-dashed border-border bg-muted/20">
-            <div className="flex items-center justify-center h-10 w-10 rounded-full bg-muted">
-              <LineChartIcon className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
-            </div>
+            <IconChartLine className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
             <div className="text-center space-y-1 max-w-[280px]">
               <p className="text-sm font-medium text-foreground">{t('residuos.score.semHistorico')}</p>
               <p className="text-xs text-muted-foreground">
@@ -162,15 +158,15 @@ export const ScoreEvolutionChart = ({ frameworkId, scoreType = 'scale_0_5' }: Sc
                 />
                 <XAxis
                   dataKey="date"
-                  tick={{ fill: CHART_AXIS, fontSize: 11 }}
+                  tick={{ fill: CHART_AXIS, fontSize: CHART_FONT.axis }}
                   axisLine={{ stroke: CHART_GRID }}
                   tickLine={false}
                 />
                 <YAxis
                   domain={domain}
                   ticks={ticks}
-                  tick={{ fill: CHART_AXIS, fontSize: 11 }}
-                  tickFormatter={(v) => (isPercentage ? `${v}%` : v.toString())}
+                  tick={{ fill: CHART_AXIS, fontSize: CHART_FONT.axis }}
+                  tickFormatter={(v) => `${v}%`}
                   axisLine={false}
                   tickLine={false}
                   width={42}
@@ -183,7 +179,7 @@ export const ScoreEvolutionChart = ({ frameworkId, scoreType = 'scale_0_5' }: Sc
                     value: t('sweepRiscos.gap.scoreChart.meta'),
                     position: 'right',
                     fill: CHART_AXIS,
-                    fontSize: 10,
+                    fontSize: CHART_FONT.axis,
                   }}
                 />
                 <Tooltip
@@ -191,10 +187,10 @@ export const ScoreEvolutionChart = ({ frameworkId, scoreType = 'scale_0_5' }: Sc
                   contentStyle={CHART_TOOLTIP_STYLE}
                   labelStyle={{
                     color: 'hsl(var(--muted-foreground))',
-                    fontSize: 11,
+                    fontSize: CHART_FONT.axis,
                     marginBottom: 4,
                   }}
-                  itemStyle={{ color: 'hsl(var(--popover-foreground))', fontSize: 13 }}
+                  itemStyle={{ color: 'hsl(var(--popover-foreground))', fontSize: CHART_FONT.label }}
                   formatter={(value: number) => [formatValue(value), t('sweepRiscos.gap.scoreChart.score')]}
                 />
                 <Area
@@ -220,7 +216,7 @@ export const ScoreEvolutionChart = ({ frameworkId, scoreType = 'scale_0_5' }: Sc
             </ResponsiveContainer>
 
             {history.length === 1 && (
-              <div className="absolute top-2 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-md bg-muted/80 backdrop-blur-sm border border-border text-[11px] text-muted-foreground pointer-events-none">
+              <div className="absolute top-2 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-md bg-muted/80 backdrop-blur-sm border border-border text-micro text-muted-foreground pointer-events-none">
                 {t('sweepRiscos.gap.scoreChart.registreMais')}
               </div>
             )}

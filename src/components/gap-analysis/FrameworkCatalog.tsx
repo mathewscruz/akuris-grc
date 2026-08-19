@@ -2,9 +2,9 @@ import { useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronDown, Shield, Lock, Scale, Building2 } from 'lucide-react';
 import { FrameworkCard } from './FrameworkCard';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { IconChevronDown, IconShield, IconLock, IconScale, IconOrg } from '@/components/icons';
 
 interface Framework {
   id: string;
@@ -21,10 +21,10 @@ interface FrameworkCatalogProps {
 }
 
 const CATEGORY_CONFIG: Record<string, { labelKey: string; icon: React.ElementType; color: string }> = {
-  seguranca: { labelKey: 'gapAnalysis.catalog.category.seguranca', icon: Shield, color: 'text-blue-600 bg-blue-100 border-blue-200' },
-  privacidade: { labelKey: 'gapAnalysis.catalog.category.privacidade', icon: Lock, color: 'text-emerald-600 bg-emerald-100 border-emerald-200' },
-  qualidade: { labelKey: 'gapAnalysis.catalog.category.qualidade', icon: Scale, color: 'text-amber-600 bg-amber-100 border-amber-200' },
-  governanca: { labelKey: 'gapAnalysis.catalog.category.governanca', icon: Building2, color: 'text-purple-600 bg-purple-100 border-purple-200' },
+  seguranca: { labelKey: 'gapAnalysis.catalog.category.seguranca', icon: IconShield, color: 'text-info' },
+  privacidade: { labelKey: 'gapAnalysis.catalog.category.privacidade', icon: IconLock, color: 'text-success' },
+  qualidade: { labelKey: 'gapAnalysis.catalog.category.qualidade', icon: IconScale, color: 'text-warning' },
+  governanca: { labelKey: 'gapAnalysis.catalog.category.governanca', icon: IconOrg, color: 'text-primary' },
 };
 
 function getCategory(tipo: string): string {
@@ -75,13 +75,11 @@ export function FrameworkCatalog({ frameworks, requirementCounts, onFrameworkCli
                   className="w-full justify-between h-auto py-3 px-4 hover:bg-accent/50 rounded-none"
                 >
                   <div className="flex items-center gap-3">
-                    <div className={`p-1.5 rounded-md border ${cfg.color}`}>
-                      <Icon className="h-4 w-4" strokeWidth={1.5}/>
-                    </div>
+                    <Icon className={`h-4 w-4 shrink-0 ${cfg.color}`} strokeWidth={1.5} />
                     <span className="font-semibold text-sm">{t(cfg.labelKey)}</span>
                     <Badge variant="secondary" className="text-xs">{fws.length}</Badge>
                   </div>
-                  <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                  <IconChevronDown className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
                 </Button>
               </CollapsibleTrigger>
               <CollapsibleContent>
@@ -96,7 +94,6 @@ export function FrameworkCatalog({ frameworks, requirementCounts, onFrameworkCli
                         tipo_framework={fw.tipo_framework}
                         descricao={fw.descricao}
                         requirementCount={requirementCounts[fw.id] || 0}
-                        variant="available"
                         onClick={() => onFrameworkClick(fw)}
                       />
                     ))}

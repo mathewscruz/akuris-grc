@@ -4,13 +4,11 @@
  * gaps e justificativa pronta para colar.
  * Sem cores cruas — apenas tokens.
  */
-import { AkurisAIIcon } from '@/components/icons';
-import { Check, X, AlertTriangle, Copy } from 'lucide-react';
+import { IconClose, IconCheck, IconWarning, IconCopy } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { AIBadge } from './AIBadge';
 
 export interface AIDiagnosticResult {
   suggested_status: 'conforme' | 'parcial' | 'nao_conforme' | 'nao_aplicavel' | string;
@@ -37,9 +35,9 @@ const STATUS_TONE: Record<string, string> = {
 };
 
 const POINT_ICON = {
-  ok: { icon: Check, cls: 'text-success' },
-  partial: { icon: AlertTriangle, cls: 'text-warning' },
-  missing: { icon: X, cls: 'text-destructive' },
+  ok: { icon: IconCheck, cls: 'text-success' },
+  partial: { icon: IconWarning, cls: 'text-warning' },
+  missing: { icon: IconClose, cls: 'text-destructive' },
 };
 
 export function AIDiagnosticCard({
@@ -68,20 +66,17 @@ export function AIDiagnosticCard({
   };
 
   return (
-    <div className={cn('relative overflow-hidden rounded-xl border border-primary/30 bg-primary/[0.04] p-5', className)}>
+    <div className={cn('relative overflow-hidden rounded-lg border border-primary/30 bg-primary/[0.04] p-5', className)}>
       <span className="absolute left-0 top-3 bottom-3 w-[2px] rounded-r bg-primary" />
 
       {/* Header */}
       <div className="flex items-start gap-3 mb-4">
-        <div className="h-9 w-9 shrink-0 rounded-md border border-primary/30 bg-primary/10 flex items-center justify-center">
-          <AkurisAIIcon className="h-5 w-5 text-primary" />
-        </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[10px] font-sans uppercase tracking-wider text-primary">
+            <span className="text-xs text-primary">
               {t('gapAnalysis.v2.aiDiagnostic.diagnosisLabel')}
             </span>
-            <span className="text-[10px] font-sans uppercase tracking-wider text-muted-foreground">
+            <span className="text-xs text-muted-foreground">
               {t('gapAnalysis.v2.aiDiagnostic.confidenceLabel', { pct: result.confidence })}
             </span>
           </div>
@@ -105,7 +100,7 @@ export function AIDiagnosticCard({
       {/* Pontos avaliados */}
       {result.evaluated_points.length > 0 && (
         <div className="mb-4">
-          <div className="text-[10px] font-sans uppercase tracking-wider text-muted-foreground mb-2">
+          <div className="text-xs text-muted-foreground mb-2">
             {t('gapAnalysis.v2.aiDiagnostic.evaluatedPoints')}
           </div>
           <ul className="space-y-1.5">
@@ -126,7 +121,7 @@ export function AIDiagnosticCard({
       {/* Gaps */}
       {result.gaps.length > 0 && (
         <div className="mb-4">
-          <div className="text-[10px] font-sans uppercase tracking-wider text-muted-foreground mb-2">
+          <div className="text-xs text-muted-foreground mb-2">
             {t('gapAnalysis.v2.aiDiagnostic.gapsIdentified')}
           </div>
           <ul className="space-y-1 list-disc list-inside text-xs text-foreground/80">
@@ -139,24 +134,24 @@ export function AIDiagnosticCard({
       {result.justification && (
         <div className="border-t border-primary/20 pt-3 mt-3">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-sans uppercase tracking-wider text-muted-foreground">
+            <span className="text-xs text-muted-foreground">
               {t('gapAnalysis.v2.aiDiagnostic.suggestedJustification')}
             </span>
             <div className="flex items-center gap-1">
               <Button
                 size="sm"
                 variant="ghost"
-                className="h-6 px-2 text-[11px]"
+                className="h-6 px-2 text-micro"
                 onClick={copyJustification}
               >
-                <Copy className="h-3 w-3 mr-1" strokeWidth={1.5} />
+                <IconCopy className="h-3 w-3 mr-1" strokeWidth={1.5} />
                 {t('gapAnalysis.v2.aiDiagnostic.copy')}
               </Button>
               {onApplyJustification && (
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-6 px-2 text-[11px] text-primary"
+                  className="h-6 px-2 text-micro text-primary"
                   onClick={() => onApplyJustification(result.justification)}
                 >
                   {t('gapAnalysis.v2.aiDiagnostic.use')}

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { IconClose, IconUpload, IconExternal, IconCheck, IconSuccess, IconWarning, IconCalendar, IconRefresh, IconFile, IconIdea, IconChecklist, IconChevronDown, IconHistory, IconBook, IconHelp, IconOrg, IconSettings, IconFileCheck, IconCheckbox, IconShield, IconTarget } from '@/components/icons';
 import DOMPurify from 'dompurify';
 import { DialogShell } from "@/components/ui/dialog-shell";
 import { Button } from "@/components/ui/button";
@@ -11,8 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useEmpresaId } from "@/hooks/useEmpresaId";
-import { Upload, X, FileText, Calendar, Lightbulb, ClipboardList, CheckCircle2, ExternalLink, AlertTriangle, ChevronDown, History, BookOpen, RefreshCw, HelpCircle, Building2, Settings, FileCheck, CheckSquare, Shield, Target, Check, type LucideIcon } from 'lucide-react';
-import { AkurisAIIcon } from "@/components/icons";
+import { type LucideIcon } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { DateField } from "@/components/ui/date-field";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -35,6 +35,8 @@ import { localizeRequirement } from "@/lib/gap-i18n";
 import { getAppLocale } from "@/lib/i18n-locale";
 import { useAuth } from "@/components/AuthProvider";
 import { useLanguage } from '@/contexts/LanguageContext';
+import { intlLocale, parseDataLocal } from '@/lib/date-utils';
+import { exigirEscrita } from '@/lib/supabase-write';
 interface RequirementDetail {
   id: string;
   codigo: string;
@@ -61,7 +63,7 @@ interface RequirementDetailDialogProps {
 }
 
 interface User { user_id: string; nome: string; email: string; }
-interface Risco { id: string; nome: string; nivel_risco_inicial: string; }
+interface Risco { id: string; nome: string; nivel_risco_inicial: string; nivel_risco_residual?: string | null; }
 interface EvaluationData {
   id?: string;
   responsavel_avaliacao: string;
@@ -91,7 +93,7 @@ const StatusSegmentedControl: React.FC<{
   const { t } = useLanguage();
   const STATUS_OPTIONS = getStatusOptions(t);
   return (
-  <div className="inline-flex flex-wrap gap-1.5 rounded-lg bg-muted/40 p-1 border">
+  <div className="inline-flex flex-wrap gap-1.5 rounded-lg bg-card p-1 border">
     {STATUS_OPTIONS.map(opt => {
       const isActive = value === opt.value;
       return (
@@ -101,7 +103,7 @@ const StatusSegmentedControl: React.FC<{
           disabled={disabled}
           onClick={() => onChange(opt.value)}
           className={cn(
-            'h-8 px-3 text-xs font-medium rounded-md border transition-all',
+            'h-8 px-3 text-xs font-medium rounded-md border transition-ui',
             'disabled:opacity-50 disabled:cursor-not-allowed',
             isActive
               ? opt.activeClass + ' shadow-sm'
@@ -140,17 +142,17 @@ const JourneyStep: React.FC<{
   const headerContent = (
     <div className="flex items-start gap-3 w-full">
       <div className={cn('flex h-7 w-7 items-center justify-center rounded-full border text-xs font-semibold shrink-0 mt-0.5', numberClass)}>
-        {state === 'complete' ? <Check className="h-3.5 w-3.5" strokeWidth={2.5} /> : number}
+        {state === 'complete' ? <IconCheck className="h-3.5 w-3.5" strokeWidth={2.5} /> : number}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <h3 className="text-sm font-semibold text-foreground leading-tight">{title}</h3>
           {badge && <div className="shrink-0">{badge}</div>}
         </div>
-        {description && <p className="text-[11px] text-muted-foreground mt-0.5">{description}</p>}
+        {description && <p className="text-micro text-muted-foreground mt-0.5">{description}</p>}
       </div>
       {collapsible && (
-        <ChevronDown className={cn('h-4 w-4 text-muted-foreground shrink-0 transition-transform mt-1', open ? 'rotate-180' : '')} strokeWidth={1.5} />
+        <IconChevronDown className={cn('h-4 w-4 text-muted-foreground shrink-0 transition-transform mt-1', open ? 'rotate-180' : '')} strokeWidth={1.5} />
       )}
     </div>
   );
@@ -160,7 +162,7 @@ const JourneyStep: React.FC<{
       {collapsible ? (
         <Collapsible open={open} onOpenChange={setOpen}>
           <CollapsibleTrigger asChild>
-            <button type="button" className="w-full text-left p-3 hover:bg-muted/30 transition-colors">
+            <button type="button" className="w-full text-left p-3 hover:bg-accent transition-colors">
               {headerContent}
             </button>
           </CollapsibleTrigger>
@@ -185,14 +187,14 @@ const JourneyStep: React.FC<{
 /** Icon mapping for section titles based on keywords */
 const getSectionIcon = (title: string): { icon: LucideIcon; color: string } => {
   const t = title.toLowerCase();
-  if (t.includes('significa') || t.includes('conceito') || t.includes('what')) return { icon: Target, color: 'text-primary' };
-  if (t.includes('importa') || t.includes('relevância') || t.includes('why') || t.includes('negócio')) return { icon: Building2, color: 'text-warning' };
-  if (t.includes('implementar') || t.includes('como') || t.includes('how') || t.includes('passo')) return { icon: Settings, color: 'text-info' };
-  if (t.includes('resumo') || t.includes('conclus') || t.includes('prático') || t.includes('summary')) return { icon: CheckSquare, color: 'text-success' };
-  if (t.includes('evidência') || t.includes('comprova') || t.includes('evidence') || t.includes('documento')) return { icon: FileCheck, color: 'text-primary' };
-  if (t.includes('risco') || t.includes('atenção') || t.includes('risk') || t.includes('cuidado')) return { icon: AlertTriangle, color: 'text-destructive' };
-  if (t.includes('controle') || t.includes('medida') || t.includes('proteção')) return { icon: Shield, color: 'text-info' };
-  return { icon: BookOpen, color: 'text-muted-foreground' };
+  if (t.includes('significa') || t.includes('conceito') || t.includes('what')) return { icon: IconTarget, color: 'text-primary' };
+  if (t.includes('importa') || t.includes('relevância') || t.includes('why') || t.includes('negócio')) return { icon: IconOrg, color: 'text-warning' };
+  if (t.includes('implementar') || t.includes('como') || t.includes('how') || t.includes('passo')) return { icon: IconSettings, color: 'text-info' };
+  if (t.includes('resumo') || t.includes('conclus') || t.includes('prático') || t.includes('summary')) return { icon: IconCheckbox, color: 'text-success' };
+  if (t.includes('evidência') || t.includes('comprova') || t.includes('evidence') || t.includes('documento')) return { icon: IconFileCheck, color: 'text-primary' };
+  if (t.includes('risco') || t.includes('atenção') || t.includes('risk') || t.includes('cuidado')) return { icon: IconWarning, color: 'text-destructive' };
+  if (t.includes('controle') || t.includes('medida') || t.includes('proteção')) return { icon: IconShield, color: 'text-info' };
+  return { icon: IconBook, color: 'text-muted-foreground' };
 };
 
 const inlineMd = (text: string): string => {
@@ -214,7 +216,7 @@ const renderContentLines = (lines: string[]): React.ReactNode[] => {
       elements.push(
         <ol key={`ol-${elements.length}`} className="list-decimal list-inside space-y-1.5 ml-1">
           {listItems.map((item, i) => (
-            <li key={i} className="text-[13px] text-muted-foreground leading-7">
+            <li key={i} className="text-sm text-muted-foreground leading-7">
               <span dangerouslySetInnerHTML={{ __html: inlineMd(item) }} />
             </li>
           ))}
@@ -224,8 +226,8 @@ const renderContentLines = (lines: string[]): React.ReactNode[] => {
       elements.push(
         <ul key={`ul-${elements.length}`} className="space-y-1.5 ml-1">
           {listItems.map((item, i) => (
-            <li key={i} className="flex items-start gap-2 text-[13px] text-muted-foreground leading-7">
-              <span className="text-primary mt-2 text-[6px]">●</span>
+            <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground leading-7">
+              <span className="text-primary mt-2 text-micro">●</span>
               <span dangerouslySetInnerHTML={{ __html: inlineMd(item) }} />
             </li>
           ))}
@@ -267,7 +269,7 @@ const renderContentLines = (lines: string[]): React.ReactNode[] => {
 
     flushList();
     elements.push(
-      <p key={`p-${i}`} className="text-[13px] text-muted-foreground leading-7" dangerouslySetInnerHTML={{ __html: inlineMd(trimmed) }} />
+      <p key={`p-${i}`} className="text-sm text-muted-foreground leading-7" dangerouslySetInnerHTML={{ __html: inlineMd(trimmed) }} />
     );
   }
   flushList();
@@ -313,7 +315,7 @@ const MarkdownContent = ({ content }: { content: string }) => {
           const contentElements = renderContentLines(section.lines);
           if (contentElements.length === 0) return null;
           return (
-            <div key={idx} className="text-[13px] text-foreground/80 italic leading-7 space-y-2">
+            <div key={idx} className="text-sm text-foreground/80 italic leading-7 space-y-2">
               {contentElements}
             </div>
           );
@@ -321,7 +323,7 @@ const MarkdownContent = ({ content }: { content: string }) => {
 
         const { icon: SectionIcon, color } = getSectionIcon(section.title);
         return (
-          <div key={idx} className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
+          <div key={idx} className="rounded-lg border border-border bg-card p-4 space-y-3">
             <div className="flex items-center gap-2.5">
               <div className={cn('flex items-center justify-center h-7 w-7 rounded-md bg-background border border-border', color)}>
                 <SectionIcon className="h-4 w-4" strokeWidth={1.5} />
@@ -440,7 +442,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
     try {
       const [usersRes, riscosRes, reqDetailsRes] = await Promise.all([
         supabase.from('profiles').select('user_id, nome, email').eq('empresa_id', empresaId).order('nome'),
-        supabase.from('riscos').select('id, nome, nivel_risco_inicial').eq('empresa_id', empresaId).order('nome'),
+        supabase.from('riscos').select('id, nome, nivel_risco_inicial, nivel_risco_residual').eq('empresa_id', empresaId).order('nome'),
         supabase.from('gap_analysis_requirements').select('orientacao_implementacao, exemplos_evidencias, perguntas_diagnostico, orientacao_implementacao_en, exemplos_evidencias_en, perguntas_diagnostico_en').eq('id', requirement.id).single()
       ]);
       if (usersRes.error) throw usersRes.error;
@@ -472,7 +474,6 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
       if (!(rawDetails[localeCol] || '').trim()) {
         triggerGuidanceGeneration();
       }
-
 
       if (requirement.evaluation_id) {
         const { data: evalData, error: evalError } = await supabase
@@ -719,7 +720,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
         evaluationId = newEval.id;
       }
 
-      await supabase.from('gap_evaluation_risks').delete().eq('evaluation_id', evaluationId);
+      await exigirEscrita(supabase.from('gap_evaluation_risks').delete().eq('evaluation_id', evaluationId));
       if (formData.riscos_vinculados.length > 0) {
         const { error } = await supabase.from('gap_evaluation_risks')
           .insert(formData.riscos_vinculados.map(riscoId => ({ evaluation_id: evaluationId, risco_id: riscoId })));
@@ -762,7 +763,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
       pendente: { label: t('gapUi.detail.planoStatus.pendente'), variant: 'destructive' },
       cancelado: { label: t('gapUi.detail.planoStatus.cancelado'), variant: 'outline' },
     };
-    const s = map[status] || { label: status, variant: 'outline' as const };
+    const s = map[status] || { label: formatStatus(status), variant: 'outline' as const };
     return <Badge variant={s.variant}>{s.label}</Badge>;
   };
 
@@ -810,7 +811,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
         open={open}
         onOpenChange={onOpenChange}
         title={`${requirement.codigo} — ${requirement.titulo}`}
-        icon={Shield}
+        icon={IconShield}
         size="2xl"
         noScroll
         onSubmit={handleSave}
@@ -831,7 +832,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
               {/* ============================================ */}
               {/* LEFT PANEL — Apenas leitura/educação        */}
               {/* ============================================ */}
-              <div className="h-full md:w-[42%] border-r bg-muted/20 flex-1 md:flex-none min-h-0 overflow-y-auto">
+              <div className="h-full md:w-[42%] border-r bg-card flex-1 md:flex-none min-h-0 overflow-y-auto">
                 <div className="p-5 space-y-4">
                   <div className="flex items-center justify-between">
                     <button
@@ -840,9 +841,9 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                       className="flex items-center gap-1.5 hover:opacity-80 transition-opacity"
                       aria-expanded={guidanceOpen}
                     >
-                      <BookOpen className="h-4 w-4 text-primary" strokeWidth={1.5} />
+                      <IconBook className="h-4 w-4 text-primary" strokeWidth={1.5} />
                       <h4 className="text-sm font-semibold text-foreground">{t('gapUi.detail.guidanceTitle')}</h4>
-                      <ChevronDown className={cn('h-3.5 w-3.5 text-muted-foreground transition-transform', guidanceOpen ? '' : '-rotate-90')} strokeWidth={1.5} />
+                      <IconChevronDown className={cn('h-3.5 w-3.5 text-muted-foreground transition-transform', guidanceOpen ? '' : '-rotate-90')} strokeWidth={1.5} />
                     </button>
                     {isSuperAdmin && (
                       <Button
@@ -852,7 +853,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                         onClick={() => triggerGuidanceGeneration(true)}
                         disabled={generatingGuidance}
                       >
-                        {generatingGuidance ? <AkurisPulse size={12} className="mr-1" /> : <RefreshCw className="h-3 w-3 mr-1" strokeWidth={1.5} />}
+                        {generatingGuidance ? <AkurisPulse size={12} className="mr-1" /> : <IconRefresh className="h-3 w-3 mr-1" strokeWidth={1.5} />}
                         {generatingGuidance ? t('gapUi.detail.generating') : t('gapUi.detail.regenerate')}
                       </Button>
                     )}
@@ -867,13 +868,13 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                       {evidenciasText && (
                         <div className="mt-5 pt-5 border-t border-border/50">
                           <div className="flex items-center gap-1.5 mb-3">
-                            <CheckCircle2 className="h-4 w-4 text-success" strokeWidth={1.5} />
+                            <IconSuccess className="h-4 w-4 text-success" strokeWidth={1.5} />
                             <h4 className="text-sm font-bold text-foreground">{t('gapUi.detail.acceptedEvidenceExamples')}</h4>
                           </div>
                           <ul className="space-y-2">
                             {evidenciasText.split('\n').filter(l => l.trim()).map((ex, i) => (
-                              <li key={i} className="flex items-start gap-2 text-[13px] text-muted-foreground leading-6">
-                                <CheckCircle2 className="h-3.5 w-3.5 text-success shrink-0 mt-0.5" strokeWidth={1.5} />
+                              <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground leading-6">
+                                <IconSuccess className="h-3.5 w-3.5 text-success shrink-0 mt-0.5" strokeWidth={1.5} />
                                 <span>{ex.replace(/^[-•*]\s*/, '').trim()}</span>
                               </li>
                             ))}
@@ -884,10 +885,10 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                   ) : (
                     <div className="space-y-3">
                       {requirement.descricao && (
-                        <p className="text-[13px] text-muted-foreground leading-7">{requirement.descricao}</p>
+                        <p className="text-sm text-muted-foreground leading-7">{requirement.descricao}</p>
                       )}
-                      <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/50 border border-dashed">
-                        <Lightbulb className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" strokeWidth={1.5} />
+                      <div className="flex items-start gap-2 p-3 rounded-lg bg-card border border-dashed">
+                        <IconIdea className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" strokeWidth={1.5} />
                         <p className="text-xs text-muted-foreground">
                           {t('gapUi.detail.clickRegenerateHint')}
                         </p>
@@ -899,7 +900,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                 {/* Controlos internos que implementam este requisito (N para N) */}
                 <div className="px-5 pb-5">
                   <div className="flex items-center gap-1.5 mb-2">
-                    <Shield className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
+                    <IconShield className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
                     <h4 className="text-sm font-bold text-foreground">{t('vinculoReq.controlosLigados')}</h4>
                   </div>
                   {controlosLigados.length === 0 ? (
@@ -911,8 +912,8 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                           key={c.id}
                           className="flex items-center justify-between gap-2 rounded-lg border border-border p-2.5"
                         >
-                          <span className="text-[13px] font-medium truncate">{c.nome}</span>
-                          <StatusBadge size="sm" {...resolveControleStatusTone(c.status)}>
+                          <span className="text-sm font-medium truncate">{c.nome}</span>
+                          <StatusBadge {...resolveControleStatusTone(c.status)}>
                             {c.emFalha ? t('vinculoReq.controloEmFalha') : formatStatus(c.status)}
                           </StatusBadge>
                         </div>
@@ -921,7 +922,6 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                   )}
                 </div>
               </div>
-
 
               {/* ============================================ */}
               {/* RIGHT PANEL — Jornada numerada              */}
@@ -937,8 +937,8 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                     state={isStatusDefined ? 'complete' : 'active'}
                     badge={
                       isStatusDefined
-                        ? <Badge variant="success" className="text-[10px]">{t('gapUi.detail.defined')}</Badge>
-                        : <Badge variant="outline" className="text-[10px]">{t('gapUi.detail.pending')}</Badge>
+                        ? <Badge variant="success" className="text-micro">{t('gapUi.detail.defined')}</Badge>
+                        : <Badge variant="outline" className="text-micro">{t('gapUi.detail.pending')}</Badge>
                     }
                   >
                     <div className="space-y-3">
@@ -953,19 +953,19 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                       {diagnosticQuestions.length > 0 && (
                         <div className="space-y-3 pt-3 border-t border-border/50">
                         <div className="flex items-center gap-1.5">
-                          <HelpCircle className="h-3.5 w-3.5 text-primary" strokeWidth={1.5} />
+                          <IconHelp className="h-3.5 w-3.5 text-primary" strokeWidth={1.5} />
                           <p className="text-xs font-medium text-foreground">{t('gapUi.detail.guidedDiagnostic')}</p>
                         </div>
-                        <p className="text-[11px] text-muted-foreground">
+                        <p className="text-micro text-muted-foreground">
                           {t('gapUi.detail.guidedDiagnosticHint')}
                         </p>
                         <div className="space-y-2.5">
                           {diagnosticQuestions.map((q, idx) => {
                             const answer = diagnosticAnswers[idx] || null;
                             return (
-                              <div key={idx} className="p-3 rounded-md bg-muted/40 border space-y-2">
-                                <p className="text-[13px] text-foreground leading-relaxed">
-                                  {q.peso >= 2 && <Badge variant="outline" className="text-[10px] mr-1.5">{t('gapUi.detail.weight', { peso: q.peso })}</Badge>}
+                              <div key={idx} className="p-3 rounded-md bg-card border space-y-2">
+                                <p className="text-sm text-foreground leading-relaxed">
+                                  {q.peso >= 2 && <Badge variant="outline" className="text-micro mr-1.5">{t('gapUi.detail.weight', { peso: q.peso })}</Badge>}
                                   {q.pergunta}
                                 </p>
                                 <div className="flex gap-1.5">
@@ -994,11 +994,11 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                         {diagnosticSuggestion && (
                           <div className="flex items-center justify-between gap-3 p-3 rounded-md bg-primary/5 border border-primary/20">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-[11px] text-muted-foreground">{t('gapUi.detail.recommendation')}</span>
+                              <span className="text-micro text-muted-foreground">{t('gapUi.detail.recommendation')}</span>
                               <Badge variant="outline" className={cn('font-semibold', diagnosticSuggestion.color)}>
                                 {diagnosticSuggestion.label}
                               </Badge>
-                              <span className="text-[11px] text-muted-foreground">{t('gapUi.detail.adherencePct', { pct: diagnosticSuggestion.pct })}</span>
+                              <span className="text-micro text-muted-foreground">{t('gapUi.detail.adherencePct', { pct: diagnosticSuggestion.pct })}</span>
                             </div>
                             <Button
                               size="sm"
@@ -1007,7 +1007,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                               disabled={savingStatus || currentStatus === diagnosticSuggestion.suggested}
                               onClick={() => handleStatusChange(diagnosticSuggestion.suggested)}
                             >
-                              <Check className="h-3 w-3 mr-1" strokeWidth={2} />
+                              <IconCheck className="h-3 w-3 mr-1" strokeWidth={2} />
                               {t('gapUi.common.apply')}
                             </Button>
                           </div>
@@ -1025,8 +1025,8 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                     state={evidenciasCount > 0 ? 'complete' : (isStatusDefined ? 'active' : 'pending')}
                     badge={
                       evidenciasCount > 0
-                        ? <Badge variant="secondary" className="text-[10px]">{evidenciasCount} {evidenciasCount === 1 ? t('gapUi.detail.item') : t('gapUi.detail.items')}</Badge>
-                        : <Badge variant="outline" className="text-[10px]">{t('gapUi.detail.empty')}</Badge>
+                        ? <Badge variant="secondary" className="text-micro">{evidenciasCount} {evidenciasCount === 1 ? t('gapUi.detail.item') : t('gapUi.detail.items')}</Badge>
+                        : <Badge variant="outline" className="text-micro">{t('gapUi.detail.empty')}</Badge>
                     }
                   >
                     <div className="space-y-3">
@@ -1046,10 +1046,9 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                             },
                           })}
                         >
-                          <AkurisAIIcon size={16} className="mr-2 text-primary shrink-0" />
                           <div className="text-left leading-tight">
                             <div className="text-xs font-semibold">{t('gapUi.detail.generateWithAi')}</div>
-                            <div className="text-[10px] text-muted-foreground">{t('gapUi.detail.customDocument')}</div>
+                            <div className="text-micro text-muted-foreground">{t('gapUi.detail.customDocument')}</div>
                           </div>
                         </Button>
                         <Button
@@ -1059,10 +1058,10 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                           className="justify-start h-auto py-2"
                           onClick={() => document.getElementById('file-upload')?.click()}
                         >
-                          <Upload className="h-4 w-4 mr-2 shrink-0" strokeWidth={1.5} />
+                          <IconUpload className="h-4 w-4 mr-2 shrink-0" strokeWidth={1.5} />
                           <div className="text-left leading-tight">
                             <div className="text-xs font-semibold">{t('gapUi.detail.attachFile')}</div>
-                            <div className="text-[10px] text-muted-foreground">{t('gapUi.detail.fileTypesHint')}</div>
+                            <div className="text-micro text-muted-foreground">{t('gapUi.detail.fileTypesHint')}</div>
                           </div>
                         </Button>
                         <Button
@@ -1072,16 +1071,15 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                           className="justify-start h-auto py-2"
                           onClick={() => { setLinkUrl(''); setLinkName(''); setLinkDialogOpen(true); }}
                         >
-                          <ExternalLink className="h-4 w-4 mr-2 shrink-0" strokeWidth={1.5} />
+                          <IconExternal className="h-4 w-4 mr-2 shrink-0" strokeWidth={1.5} />
                           <div className="text-left leading-tight">
                             <div className="text-xs font-semibold">{t('gapUi.detail.addLink')}</div>
-                            <div className="text-[10px] text-muted-foreground">{t('gapUi.detail.externalUrl')}</div>
+                            <div className="text-micro text-muted-foreground">{t('gapUi.detail.externalUrl')}</div>
                           </div>
                         </Button>
                       </div>
 
-                      <p className="text-[11px] text-muted-foreground flex items-start gap-1.5">
-                        <AkurisAIIcon size={12} className="mt-0.5 text-primary shrink-0" />
+                      <p className="text-micro text-muted-foreground flex items-start gap-1.5">
                         {t('gapUi.detail.afterAttachHint').split('Validar com IA')[0]}<strong className="mx-0.5 text-foreground">{t('gapUi.detail.validateWithAi')}</strong>{t('gapUi.detail.afterAttachHint').split('Validar com IA')[1]}
                       </p>
 
@@ -1101,7 +1099,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                         }}
                         onClick={() => document.getElementById('file-upload')?.click()}
                       >
-                        <p className="text-[11px] text-muted-foreground">{uploading ? t('gapUi.detail.sending') : t('gapUi.detail.dragFilesHere')}</p>
+                        <p className="text-micro text-muted-foreground">{uploading ? t('gapUi.detail.sending') : t('gapUi.detail.dragFilesHere')}</p>
                       </div>
                       <input id="file-upload" type="file" multiple className="hidden" onChange={handleFileUpload} accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.txt" />
 
@@ -1121,10 +1119,10 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                               validation?.verdict === 'nao_conforme' ? t('gapUi.verdict.naoConforme') :
                               validation?.verdict === 'indeterminado' ? t('gapUi.verdict.indeterminado') : '';
                             return (
-                              <div key={index} className="rounded bg-muted/50 p-2 space-y-1.5">
+                              <div key={index} className="rounded bg-card p-2 space-y-1.5 border border-border">
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center gap-2 flex-1 min-w-0">
-                                    {file.type === 'link' ? <ExternalLink className="h-3.5 w-3.5 text-info shrink-0" strokeWidth={1.5} /> : <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" strokeWidth={1.5} />}
+                                    {file.type === 'link' ? <IconExternal className="h-3.5 w-3.5 text-info shrink-0" strokeWidth={1.5} /> : <IconFile className="h-3.5 w-3.5 text-muted-foreground shrink-0" strokeWidth={1.5} />}
                                     {file.type === 'link' ? (
                                       <a href={file.url} target="_blank" rel="noopener noreferrer" className="text-info hover:underline truncate text-xs">{file.name}</a>
                                     ) : (
@@ -1140,15 +1138,11 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                                               type="button"
                                               variant="ghost"
                                               size="sm"
-                                              className="h-7 px-2 text-[11px]"
+                                              className="h-7 px-2 text-micro"
                                               disabled={isValidating}
                                               onClick={() => handleValidateEvidence(file)}
                                             >
-                                              {isValidating ? (
-                                                <AkurisPulse size={12} />
-                                              ) : (
-                                                <AkurisAIIcon size={12} className="mr-1 text-primary" />
-                                              )}
+                                              {isValidating && <AkurisPulse size={12} />}
                                               {isValidating ? t('gapUi.detail.analyzing') : t('gapUi.detail.validateWithAi')}
                                             </Button>
                                           </TooltipTrigger>
@@ -1157,12 +1151,12 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                                       </TooltipProvider>
                                     )}
                                     <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleRemoveFile(index)}>
-                                      <X className="h-3 w-3" strokeWidth={1.5} />
+                                      <IconClose className="h-3 w-3" strokeWidth={1.5} />
                                     </Button>
                                   </div>
                                 </div>
                                 {validation && (
-                                  <div className={cn('rounded border px-2 py-1.5 text-[11px]', verdictColor)}>
+                                  <div className={cn('rounded border px-2 py-1.5 text-micro', verdictColor)}>
                                     <div className="flex items-center justify-between mb-0.5">
                                       <span className="font-semibold">{t('gapUi.detail.aiLabel', { label: verdictLabel })}</span>
                                       <span className="font-mono">{validation.score}%</span>
@@ -1202,31 +1196,31 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                       badge={
                         planoAcaoVinculado
                           ? getPlanoStatusBadge(planoAcaoVinculado.status)
-                          : <Badge variant="warning" className="text-[10px]">{t('gapUi.detail.noPlano')}</Badge>
+                          : <Badge variant="warning" className="text-micro">{t('gapUi.detail.noPlano')}</Badge>
                       }
                     >
                       {planoAcaoVinculado ? (
-                        <div className="flex items-center justify-between p-3 bg-muted/50 rounded-md">
+                        <div className="flex items-center justify-between p-3 bg-card rounded-md border border-border">
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium truncate">{planoAcaoVinculado.titulo}</p>
                             {planoAcaoVinculado.prazo && (
-                              <span className="text-xs text-muted-foreground">{t('gapUi.detail.deadlinePrefix')}{new Date(planoAcaoVinculado.prazo).toLocaleDateString('pt-BR')}</span>
+                              <span className="text-xs text-muted-foreground">{t('gapUi.detail.deadlinePrefix')}{parseDataLocal(planoAcaoVinculado.prazo).toLocaleDateString(intlLocale())}</span>
                             )}
                           </div>
                           <Button size="sm" variant="ghost" onClick={() => window.open('/planos-acao', '_blank')}>
-                            <ExternalLink className="h-4 w-4" strokeWidth={1.5} />
+                            <IconExternal className="h-4 w-4" strokeWidth={1.5} />
                           </Button>
                         </div>
                       ) : (
                         <div className="space-y-3">
                           <div className="flex items-start gap-2 p-3 rounded-md bg-warning/10 border border-warning/30">
-                            <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" strokeWidth={1.5} />
+                            <IconWarning className="h-4 w-4 text-warning shrink-0 mt-0.5" strokeWidth={1.5} />
                             <p className="text-xs text-foreground">
                               {t('gapUi.detail.nonCompliantWarning')}
                             </p>
                           </div>
                           <Button size="sm" variant="outline" onClick={() => setPlanoAcaoDialogOpen(true)}>
-                            <ClipboardList className="h-4 w-4 mr-1.5" strokeWidth={1.5} />
+                            <IconChecklist className="h-4 w-4 mr-1.5" strokeWidth={1.5} />
                             {t('gapUi.detail.createActionPlan')}
                           </Button>
                         </div>
@@ -1249,7 +1243,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                     title={t('gapUi.detail.step4Title')}
                     description={t('gapUi.detail.step4Description')}
                     state={detalhesDone ? 'complete' : 'pending'}
-                    badge={detalhesDone ? <Badge variant="success" className="text-[10px]">{t('gapUi.detail.complete')}</Badge> : <Badge variant="outline" className="text-[10px]">{t('gapUi.detail.optional')}</Badge>}
+                    badge={detalhesDone ? <Badge variant="success" className="text-micro">{t('gapUi.detail.complete')}</Badge> : <Badge variant="outline" className="text-micro">{t('gapUi.detail.optional')}</Badge>}
                   >
                     <div className="space-y-3">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -1269,7 +1263,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                         </div>
                         <div className="space-y-1.5">
                           <Label htmlFor="prazo" className="text-xs flex items-center gap-1">
-                            <Calendar className="h-3.5 w-3.5" strokeWidth={1.5} />{t('gapUi.detail.deadlineLabel')}
+                            <IconCalendar className="h-3.5 w-3.5" strokeWidth={1.5} />{t('gapUi.detail.deadlineLabel')}
                           </Label>
                           <DateField
                             id="prazo"
@@ -1296,14 +1290,14 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                     title={t('gapUi.detail.step5Title')}
                     description={t('gapUi.detail.step5Description')}
                     state="pending"
-                    badge={formData.riscos_vinculados.length > 0 ? <Badge variant="secondary" className="text-[10px]">{t('gapUi.detail.risksCount', { count: formData.riscos_vinculados.length })}</Badge> : undefined}
+                    badge={formData.riscos_vinculados.length > 0 ? <Badge variant="secondary" className="text-micro">{t('gapUi.detail.risksCount', { count: formData.riscos_vinculados.length })}</Badge> : undefined}
                     defaultOpen={false}
                     collapsible
                   >
                     <div className="space-y-4">
                       <div>
                         <div className="flex items-center gap-1.5 mb-2">
-                          <AlertTriangle className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.5} />
+                          <IconWarning className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.5} />
                           <p className="text-xs font-medium text-foreground">{t('gapUi.detail.linkedRisks')}</p>
                         </div>
                         <div className="max-h-40 overflow-y-auto space-y-1 border rounded-md p-2">
@@ -1311,10 +1305,10 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                             <p className="text-xs text-muted-foreground text-center py-3">{t('gapUi.detail.noRisksRegistered')}</p>
                           ) : (
                             riscos.map(risco => (
-                              <label key={risco.id} className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 p-1.5 rounded text-sm">
+                              <label key={risco.id} className="flex items-center gap-2 cursor-pointer hover:bg-accent p-1.5 rounded text-sm">
                                 <input type="checkbox" checked={formData.riscos_vinculados.includes(risco.id)} onChange={() => handleToggleRisco(risco.id)} className="rounded" />
                                 <span className="font-medium text-xs">{risco.nome}</span>
-                                <Badge variant="outline" className="ml-auto text-[10px]">{formatStatus(risco.nivel_risco_inicial)}</Badge>
+                                <Badge variant="outline" className="ml-auto text-micro">{formatStatus(risco.nivel_risco_residual || risco.nivel_risco_inicial)}</Badge>
                               </label>
                             ))
                           )}
@@ -1323,7 +1317,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
 
                       <div>
                         <div className="flex items-center gap-1.5 mb-2">
-                          <History className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.5} />
+                          <IconHistory className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.5} />
                           <p className="text-xs font-medium text-foreground">{t('gapUi.detail.changeHistory')}</p>
                         </div>
                         <div className="max-h-48 overflow-y-auto border rounded-md">
@@ -1357,7 +1351,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
       <DialogShell
         open={linkDialogOpen}
         onOpenChange={setLinkDialogOpen}
-        icon={ExternalLink}
+        icon={IconExternal}
         title={t('gapUi.detail.addLinkDialogTitle')}
         size="sm"
         footer={
@@ -1405,7 +1399,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                 value={linkName}
                 onChange={(e) => setLinkName(e.target.value)}
               />
-              <p className="text-[11px] text-muted-foreground">{t('gapUi.detail.linkNameHint')}</p>
+              <p className="text-micro text-muted-foreground">{t('gapUi.detail.linkNameHint')}</p>
             </div>
           </div>
       </DialogShell>

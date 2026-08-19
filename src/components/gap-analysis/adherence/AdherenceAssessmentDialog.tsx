@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { IconClose, IconUpload, IconFile, IconShield, IconSearch } from '@/components/icons';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
-import { FileText, Shield, Upload, X, FileSearch } from 'lucide-react';
 import { useOptimizedQuery } from '@/hooks/useOptimizedQuery';
 import * as pdfjsLib from 'pdfjs-dist';
 import mammoth from 'mammoth';
@@ -423,7 +423,7 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
         }
         onOpenChange(newOpen);
       }}
-      icon={FileSearch}
+      icon={IconSearch}
       title={analysisState.isAnalyzing ? t('gapAnalysis.adherenceUi.dialog.analyzingTitle') : t('gapAnalysis.adherenceUi.dialog.newAssessmentTitle')}
       description={analysisState.isAnalyzing
         ? t('gapAnalysis.adherenceUi.dialog.analyzingDescription')
@@ -465,7 +465,7 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
+          <div className="space-y-2">
             <Label htmlFor="nome_analise">{t('gapAnalysis.adherenceUi.dialog.nameLabel')}</Label>
             <Input
               id="nome_analise"
@@ -476,7 +476,7 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
             />
           </div>
 
-          <div>
+          <div className="space-y-2">
             <Label htmlFor="descricao">{t('gapAnalysis.adherenceUi.dialog.descriptionLabel')}</Label>
             <Textarea
               id="descricao"
@@ -487,7 +487,7 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
             />
           </div>
 
-          <div>
+          <div className="space-y-2">
             <Label htmlFor="framework_id">{t('gapAnalysis.adherenceUi.dialog.frameworkLabel')}</Label>
             <Select
               value={formData.framework_id}
@@ -503,7 +503,7 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
                   frameworks.map((framework: any) => (
                     <SelectItem key={framework.id} value={framework.id}>
                       <div className="flex items-center gap-2">
-                        <Shield className="h-4 w-4" strokeWidth={1.5}/>
+                        <IconShield className="h-4 w-4" strokeWidth={1.5}/>
                         {framework.nome} {framework.versao && `(${framework.versao})`}
                       </div>
                     </SelectItem>
@@ -515,7 +515,7 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
             </Select>
           </div>
 
-          <div>
+          <div className="space-y-2">
             <Label htmlFor="documento">{t('gapAnalysis.adherenceUi.dialog.documentLabel')}</Label>
             <div className="mt-2">
               {!uploadedFile ? (
@@ -528,7 +528,7 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
                     className="hidden"
                   />
                   <label htmlFor="documento" className="cursor-pointer">
-                    <Upload className="h-10 w-10 mx-auto text-muted-foreground mb-2" strokeWidth={1.5}/>
+                    <IconUpload className="h-10 w-10 mx-auto text-muted-foreground mb-2" strokeWidth={1.5}/>
                     <p className="text-sm font-medium">{t('gapAnalysis.adherenceUi.dialog.clickToUpload')}</p>
                     <p className="text-xs text-muted-foreground mt-1">
                       {t('gapAnalysis.adherenceUi.dialog.allowedTypesHint')}
@@ -536,9 +536,9 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
                   </label>
                 </div>
               ) : (
-                <div className="border rounded-lg p-4 flex items-center justify-between bg-muted/50">
+                <div className="border rounded-lg p-4 flex items-center justify-between bg-card">
                   <div className="flex items-center gap-3">
-                    <FileText className="h-8 w-8 text-primary" strokeWidth={1.5}/>
+                    <IconFile className="h-8 w-8 text-primary" strokeWidth={1.5}/>
                     <div>
                       <p className="text-sm font-medium">{uploadedFile.name}</p>
                       <p className="text-xs text-muted-foreground">
@@ -552,7 +552,7 @@ export function AdherenceAssessmentDialog({ open, onOpenChange, onSuccess, preSe
                     size="sm"
                     onClick={removeFile}
                   >
-                    <X className="h-4 w-4" />
+                    <IconClose className="h-4 w-4" />
                   </Button>
                 </div>
               )}

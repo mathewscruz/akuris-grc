@@ -58,7 +58,7 @@ export function StackBar({ segments, height = 8, showLegend = false, className }
             <Tooltip key={`${s.kind}-${i}`}>
               <TooltipTrigger asChild>
                 <div
-                  className={cn('h-full transition-all duration-500', SEG_COLOR[s.kind])}
+                  className={cn('h-full transition-ui duration-500', SEG_COLOR[s.kind])}
                   style={{ width: `${pct}%` }}
                   aria-label={`${SEG_LABEL[s.kind]}: ${s.count}`}
                 />
@@ -73,7 +73,7 @@ export function StackBar({ segments, height = 8, showLegend = false, className }
         })}
       </div>
       {showLegend && (
-        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-muted-foreground">
+        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-micro text-muted-foreground">
           {segments.map((s, i) => (
             <span key={`${s.kind}-leg-${i}`} className="inline-flex items-center gap-1.5">
               <span className={cn('h-2 w-2 rounded-sm', SEG_COLOR[s.kind])} />

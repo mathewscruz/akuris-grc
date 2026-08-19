@@ -1,8 +1,8 @@
 import jsPDF from 'jspdf';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { loadAkurisLogo, addAkurisCover, addAkurisHeader, addAkurisFooter, addSectionTitle, drawProgressBar, AKURIS_COLORS } from '@/lib/pdf-utils';
 import { getFrameworkConfig, getMaturityLevel } from '@/lib/framework-configs';
+import { dateFnsLocale } from '@/lib/date-utils';
 
 interface BoardPDFParams {
   frameworkName: string;
@@ -15,7 +15,6 @@ interface BoardPDFParams {
   categoryScores: Array<{ category: string; score: number; total: number; evaluated: number }>;
   requirements: Array<{ codigo: string; titulo: string; categoria: string; conformity_status: string; peso: number | null; area_responsavel: string | null }>;
   empresaNome?: string;
-  scoreType: 'decimal' | 'percentage';
   maxScore: number;
   t: (key: string, params?: Record<string, string | number>) => string;
   locale?: string;
@@ -34,7 +33,7 @@ export async function exportBoardPDF(params: BoardPDFParams) {
     frameworkName, frameworkVersion, frameworkType,
     overallScore, totalRequirements, evaluatedRequirements,
     pillarScores, requirements, empresaNome = '',
-    scoreType, maxScore, t, locale
+    maxScore, t, locale
   } = params;
 
   const doc = new jsPDF('p', 'mm', 'a4');
@@ -44,13 +43,13 @@ export async function exportBoardPDF(params: BoardPDFParams) {
   const contentWidth = pageWidth - margin * 2;
 
   const logo = await loadAkurisLogo();
-  const formatScore = (s: number) => scoreType === 'percentage' ? `${s.toFixed(0)}%` : s.toFixed(1);
+  const formatScore = (s: number) => `${s.toFixed(0)}%`;
   const fwConfig = getFrameworkConfig(frameworkName, frameworkType);
 
   // ========== PAGE 1: COVER ==========
   addAkurisCover(doc, logo, t('fin.pdfBoard.coverTitle', { framework: `${frameworkName} ${frameworkVersion}` }), t('fin.pdfBoard.coverSubtitle'), {
     empresa: empresaNome,
-    data: format(new Date(), locale === 'en' ? 'MMMM d, yyyy' : "dd 'de' MMMM 'de' yyyy", locale === 'en' ? undefined : { locale: ptBR })
+    data: format(new Date(), locale === 'en' ? 'MMMM d, yyyy' : "dd 'de' MMMM 'de' yyyy", locale === 'en' ? undefined : { locale: dateFnsLocale() })
   });
 
   // ========== PAGE 2: EXECUTIVE SUMMARY ==========

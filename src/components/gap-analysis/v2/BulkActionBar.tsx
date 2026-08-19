@@ -4,10 +4,9 @@
  * definir prazo, criar plano em lote, gerar justificativa IA, limpar.
  */
 import { useState } from 'react';
-import { CheckSquare, X, Calendar, UserCircle2, Sparkles, ClipboardList, ChevronDown } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { AIBadge } from './AIBadge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { IconCalendar, IconClose, IconCheckbox, IconPerson, IconChecklist, IconChevronDown } from '@/components/icons';
 
 interface Props {
   selectedCount: number;
@@ -40,8 +39,8 @@ export function BulkActionBar({
 
   return (
     <div className="sticky bottom-4 z-30 mx-auto max-w-4xl">
-      <div className="flex items-center gap-2 rounded-xl border border-foreground/20 bg-foreground text-background shadow-2xl px-4 py-2.5">
-        <CheckSquare className="h-4 w-4 text-primary" strokeWidth={1.5} />
+      <div className="flex items-center gap-2 rounded-lg border border-foreground/20 bg-foreground text-background shadow-lg px-4 py-2.5">
+        <IconCheckbox className="h-4 w-4 text-primary" strokeWidth={1.5} />
         <span className="text-sm font-medium">
           {selectedCount > 1
             ? t('gapAnalysis.v2.bulkActionBar.selectedPlural', { count: selectedCount })
@@ -52,7 +51,7 @@ export function BulkActionBar({
         <DropdownMenu>
           <DropdownMenuTrigger className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-md hover:bg-background/10 transition-colors">
             {t('gapAnalysis.v2.bulkActionBar.changeStatus')}
-            <ChevronDown className="h-3 w-3" strokeWidth={1.5} />
+            <IconChevronDown className="h-3 w-3" strokeWidth={1.5} />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start">
             {STATUS_OPTIONS.map(o => (
@@ -69,7 +68,7 @@ export function BulkActionBar({
             onClick={onAssign}
             className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-md hover:bg-background/10 transition-colors"
           >
-            <UserCircle2 className="h-3.5 w-3.5" strokeWidth={1.5} /> {t('gapAnalysis.v2.bulkActionBar.assign')}
+            <IconPerson className="h-3.5 w-3.5" strokeWidth={1.5} /> {t('gapAnalysis.v2.bulkActionBar.assign')}
           </button>
         )}
         {onSetDeadline && (
@@ -78,7 +77,7 @@ export function BulkActionBar({
             onClick={onSetDeadline}
             className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-md hover:bg-background/10 transition-colors"
           >
-            <Calendar className="h-3.5 w-3.5" strokeWidth={1.5} /> {t('gapAnalysis.v2.bulkActionBar.deadline')}
+            <IconCalendar className="h-3.5 w-3.5" strokeWidth={1.5} /> {t('gapAnalysis.v2.bulkActionBar.deadline')}
           </button>
         )}
         {onCreatePlan && (
@@ -87,7 +86,7 @@ export function BulkActionBar({
             onClick={onCreatePlan}
             className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-md hover:bg-background/10 transition-colors"
           >
-            <ClipboardList className="h-3.5 w-3.5" strokeWidth={1.5} /> {t('gapAnalysis.v2.bulkActionBar.bulkPlan')}
+            <IconChecklist className="h-3.5 w-3.5" strokeWidth={1.5} /> {t('gapAnalysis.v2.bulkActionBar.bulkPlan')}
           </button>
         )}
         {onGenerateJustification && (
@@ -96,7 +95,6 @@ export function BulkActionBar({
             onClick={onGenerateJustification}
             className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-md bg-primary/20 hover:bg-primary/30 text-primary transition-colors"
           >
-            <Sparkles className="h-3.5 w-3.5" strokeWidth={1.5} />
             {t('gapAnalysis.v2.bulkActionBar.justification')}
           </button>
         )}
@@ -108,7 +106,7 @@ export function BulkActionBar({
           aria-label={t('gapAnalysis.v2.bulkActionBar.clearSelectionAria')}
           className="inline-flex items-center justify-center h-7 w-7 rounded-md hover:bg-background/10 transition-colors"
         >
-          <X className="h-3.5 w-3.5" strokeWidth={1.5} />
+          <IconClose className="h-3.5 w-3.5" strokeWidth={1.5} />
         </button>
       </div>
     </div>

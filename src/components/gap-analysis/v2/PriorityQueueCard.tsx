@@ -8,16 +8,16 @@
  * Mantém identidade Akuris — sem cores cruas, DM Sans, tokens semânticos.
  */
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowRight, CalendarClock, AlertTriangle } from 'lucide-react';
+import { buscarForaDoEscopo } from '@/lib/gap-soa';
 import { supabase } from '@/integrations/supabase/client';
 import { differenceInCalendarDays, parseISO } from 'date-fns';
 import { logger } from '@/lib/logger';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
-import { AIBadge } from './AIBadge';
 import { SectionHead } from './SectionHead';
 import { reqTitulo } from "@/lib/gap-i18n";
 import { useLanguage } from '@/contexts/LanguageContext';
 import { isGapCritico, isGapAtrasado } from '@/lib/gap-criticality';
+import { IconWarning, IconArrowRight, IconCalendarClock } from '@/components/icons';
 
 interface PriorityRequirement {
   id: string;
@@ -99,7 +99,11 @@ export function PriorityQueueCard({
         const evalMap = new Map(
           (evalsRes.data || []).map(e => [e.requirement_id, e])
         );
-        const scored = (reqsRes.data || []).map(r => {
+        // Fila de trabalho: o que a empresa tirou do escopo no SoA não entra.
+        // Aparecia aqui como prioridade 02, cobrando ação sobre um requisito
+        // que a diretoria já tinha dispensado por escrito.
+        const foraDoEscopo = await buscarForaDoEscopo(frameworkId, empresaId);
+        const scored = (reqsRes.data || []).filter(r => !foraDoEscopo.has(r.id)).map(r => {
           const ev = evalMap.get(r.id);
           const peso = Number(r.peso || 3);
           const sPen = statusPenalty(ev?.conformity_status);
@@ -147,8 +151,11 @@ export function PriorityQueueCard({
   );
 
   return (
-    <section className="relative overflow-hidden rounded-xl border border-border bg-card">
+    <section className="relative overflow-hidden rounded-lg border border-border bg-card">
       <div className="p-5">
+        {/* Cada requisito numa linha só. Empilhado — código, título, motivo —
+            a fila gastava 366px para quatro itens, mais do que o cabeçalho
+            inteiro da página. À largura toda não há razão para empilhar. */}
         <SectionHead
           title={t('gapV2.priorityQueue.title')}
           count={items.length}
@@ -161,7 +168,7 @@ export function PriorityQueueCard({
                   className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
                 >
                   {t('gapV2.priorityQueue.seeAll')}
-                  <ArrowRight className="h-3 w-3" strokeWidth={1.5} />
+                  <IconArrowRight className="h-3 w-3" strokeWidth={1.5} />
                 </button>
               )}
             </div>
@@ -177,7 +184,7 @@ export function PriorityQueueCard({
             {t('gapV2.priorityQueue.emptyState')}
           </p>
         ) : (
-          <ol className="space-y-2">
+          <ol className="space-y-1.5">
             {items.map((item, idx) => {
               const isCritical = item.conformity_status === 'nao_conforme';
               const isOverdue = isGapAtrasado(item.prazo_implementacao);
@@ -188,48 +195,49 @@ export function PriorityQueueCard({
                     onClick={() =>
                       onRequirementClick({ id: item.id, codigo: item.codigo, titulo: item.titulo })
                     }
-                    className="group w-full text-left flex items-center gap-3 rounded-lg border border-border bg-background hover:border-primary/40 hover:bg-accent/40 transition-all px-3 py-2.5"
+                    className="group w-full text-left flex items-center gap-3 rounded-lg border border-border bg-background hover:border-primary/40 hover:bg-accent/40 transition-ui px-3 py-2"
                   >
-                    <span className="font-mono text-[11px] tabular-nums text-muted-foreground w-5 text-center">
+                    <span className="font-mono text-xs tabular-nums text-muted-foreground w-6 text-center shrink-0">
                       {String(idx + 1).padStart(2, '0')}
                     </span>
 
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        {item.codigo && (
-                          <span className="font-mono text-[11px] tabular-nums text-foreground/80">
-                            {item.codigo}
-                          </span>
-                        )}
-                        {item.categoria && (
-                          <span className="text-[10px] font-sans uppercase tracking-wider text-muted-foreground truncate">
-                            · {item.categoria}
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-sm text-foreground truncate group-hover:text-primary transition-colors">
-                        {item.titulo}
-                      </div>
-                      <div className="flex items-center gap-2 mt-1 flex-wrap">
-                        {isCritical && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-sans uppercase tracking-wider text-destructive">
-                            <AlertTriangle className="h-3 w-3" strokeWidth={1.5} />
-                            {t('gapV2.priorityQueue.nonCompliant')}
-                          </span>
-                        )}
-                        {isOverdue && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-sans uppercase tracking-wider text-destructive">
-                            <CalendarClock className="h-3 w-3" strokeWidth={1.5} />
-                            {t('gapV2.priorityQueue.overdue')}
-                          </span>
-                        )}
-                        <span className="text-[10px] text-muted-foreground italic">{item.reason}</span>
-                      </div>
-                    </div>
+                    {item.codigo && (
+                      <span className="font-mono text-xs tabular-nums text-foreground/80 w-20 shrink-0">
+                        {item.codigo}
+                      </span>
+                    )}
 
-                    <span className="inline-flex items-center gap-1 text-xs font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                    <span className="text-sm text-foreground truncate flex-1 min-w-0 group-hover:text-primary transition-colors">
+                      {item.titulo}
+                    </span>
+
+                    {item.categoria && (
+                      <span className="hidden xl:block text-xs text-muted-foreground truncate w-48 shrink-0">
+                        {item.categoria}
+                      </span>
+                    )}
+
+                    <span className="flex items-center gap-2 shrink-0 w-56 justify-end">
+                      {isCritical && (
+                        <span className="inline-flex items-center gap-1 text-xs text-destructive">
+                          <IconWarning className="h-3.5 w-3.5" strokeWidth={1.5} />
+                          {t('gapV2.priorityQueue.nonCompliant')}
+                        </span>
+                      )}
+                      {isOverdue && (
+                        <span className="inline-flex items-center gap-1 text-xs text-destructive">
+                          <IconCalendarClock className="h-3.5 w-3.5" strokeWidth={1.5} />
+                          {t('gapV2.priorityQueue.overdue')}
+                        </span>
+                      )}
+                      {!isCritical && !isOverdue && (
+                        <span className="text-xs text-muted-foreground truncate">{item.reason}</span>
+                      )}
+                    </span>
+
+                    <span className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground group-hover:text-primary transition-colors shrink-0">
                       {t('gapV2.priorityQueue.triage')}
-                      <ArrowRight className="h-3 w-3" strokeWidth={1.5} />
+                      <IconArrowRight className="h-3.5 w-3.5" strokeWidth={1.5} />
                     </span>
                   </button>
                 </li>
@@ -239,7 +247,7 @@ export function PriorityQueueCard({
         )}
 
         {totalCritical > 0 && (
-          <div className="mt-3 pt-3 border-t border-border/60 text-[11px] text-muted-foreground">
+          <div className="mt-3 pt-3 border-t border-border/60 text-micro text-muted-foreground">
             <span className="font-semibold text-destructive tabular-nums">{totalCritical}</span> {t('gapV2.priorityQueue.footerSummary', { total: items.length })}
           </div>
         )}

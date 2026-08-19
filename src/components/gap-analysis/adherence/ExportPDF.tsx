@@ -3,6 +3,7 @@ import type { AdherenceAssessment, PontoForte, PontoMelhoria } from './types';
 import { format } from 'date-fns';
 import { ptBR, type Locale } from 'date-fns/locale';
 import { logger } from '@/lib/logger';
+import { datePattern } from '@/lib/date-utils';
 
 export async function exportAssessmentToPDF(
   assessment: AdherenceAssessment, 
@@ -447,7 +448,7 @@ export async function exportAssessmentToPDF(
     pdf.setTextColor(colors.light[0], colors.light[1], colors.light[2]);
     pdf.text(t('gapAnalysis.adherenceUi.exportPdf.pageFooter', { current: i, total: totalPages }), marginX, pageHeight - 20);
     pdf.text(
-      t('gapAnalysis.adherenceUi.exportPdf.generatedOn', { date: format(new Date(), 'dd/MM/yyyy HH:mm', { locale: dateLocale }) }),
+      t('gapAnalysis.adherenceUi.exportPdf.generatedOn', { date: format(new Date(), `${datePattern()} HH:mm`, { locale: dateLocale }) }),
       pageWidth - marginX,
       pageHeight - 20,
       { align: 'right' }

@@ -122,7 +122,7 @@ export function CommandPalette({ frameworkId, empresaId, onSaved }: CommandPalet
               >
                 <span className={`mr-2 inline-block h-2 w-2 shrink-0 rounded-full ${statusDot(evalMap[r.id])}`} />
                 {r.codigo && (
-                  <span className="font-mono text-[11px] tabular-nums text-muted-foreground mr-2 shrink-0">
+                  <span className="font-mono text-micro tabular-nums text-muted-foreground mr-2 shrink-0">
                     {r.codigo}
                   </span>
                 )}

@@ -81,7 +81,7 @@ export function StatusSeg({
             aria-checked={isActive}
             onClick={() => onChange(opt.id)}
             className={cn(
-              'relative inline-flex h-7 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium transition-all',
+              'relative inline-flex h-7 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium transition-ui',
               isActive
                 ? opt.activeBg
                 : 'text-muted-foreground hover:text-foreground hover:bg-background'
@@ -90,7 +90,7 @@ export function StatusSeg({
             <span>{opt.label}</span>
             <span
               className={cn(
-                'inline-flex h-3.5 min-w-3.5 items-center justify-center rounded-sm border px-1 font-mono text-[9px] leading-none',
+                'inline-flex h-3.5 min-w-3.5 items-center justify-center rounded-sm border px-1 font-mono text-micro leading-none',
                 isActive
                   ? 'border-current/40 text-current/90 bg-transparent'
                   : 'border-border bg-background text-muted-foreground'

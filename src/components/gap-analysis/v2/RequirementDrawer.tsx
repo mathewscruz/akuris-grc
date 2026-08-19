@@ -9,6 +9,7 @@
  * Acionado via RequirementDrawerProvider em qualquer ponto da app.
  */
 import { useEffect, useState, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -17,8 +18,8 @@ import { DateField } from '@/components/ui/date-field';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeSanitize from 'rehype-sanitize';
-import { ExternalLink } from 'lucide-react';
-import { AkurisAIIcon } from '@/components/icons';
+import { IconExternal } from '@/components/icons';
+;
 import { supabase } from '@/integrations/supabase/client';
 import { invokeEdgeFunction } from '@/lib/edge-function-utils';
 import { logger } from '@/lib/logger';
@@ -37,7 +38,6 @@ interface RequirementDrawerProps {
   requirementId: string | null;
   empresaId: string;
   onSaved?: () => void;
-  onOpenFullDialog?: (requirementId: string) => void;
 }
 
 interface RequirementCore {
@@ -68,7 +68,6 @@ export function RequirementDrawer({
   requirementId,
   empresaId,
   onSaved,
-  onOpenFullDialog,
 }: RequirementDrawerProps) {
   const [loading, setLoading] = useState(false);
   const [requirement, setRequirement] = useState<RequirementCore | null>(null);
@@ -79,6 +78,21 @@ export function RequirementDrawer({
   const [diagnosing, setDiagnosing] = useState(false);
   const [diagnostic, setDiagnostic] = useState<AIDiagnosticResult | null>(null);
   const { t } = useLanguage();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // "Edição completa": fecha a triagem e pede à tabela da página que abra o
+  // diálogo do mesmo requisito. Passa pela URL de propósito — o diálogo vive
+  // dentro da tabela e este painel é global, portanto não há como lhe entregar
+  // uma função sem arrastar propriedades por três telas. Foi o que se tentou
+  // antes, com `onOpenFullDialog`: a propriedade existia, ninguém a passava, e
+  // o botão nunca chegou a ser desenhado.
+  const abrirEdicaoCompleta = useCallback(() => {
+    if (!requirementId) return;
+    const sp = new URLSearchParams(searchParams);
+    sp.set('req', requirementId);
+    setSearchParams(sp, { replace: true });
+    onOpenChange(false);
+  }, [requirementId, searchParams, setSearchParams, onOpenChange]);
 
   useEffect(() => {
     if (!open || !requirementId || !empresaId) return;
@@ -210,12 +224,11 @@ export function RequirementDrawer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, requirement, evaluation.conformity_status, saving]);
 
-
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="w-full sm:w-[640px] lg:w-[820px] sm:max-w-[820px] p-0 overflow-hidden flex flex-col bg-background"
+        className="w-full sm:w-[640px] lg:w-[820px] sm:max-w-[820px] p-0 overflow-hidden flex flex-col bg-popover"
       >
         <SheetTitle className="sr-only">{t('gapUi.drawer.title')}</SheetTitle>
 
@@ -231,7 +244,7 @@ export function RequirementDrawer({
               <div className="flex items-start gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[10px] font-sans uppercase tracking-wider text-muted-foreground">
+                    <span className="text-xs text-muted-foreground">
                       {t('gapUi.drawer.quickTriage')}
                     </span>
                     {requirement.codigo && (
@@ -245,7 +258,7 @@ export function RequirementDrawer({
                     {requirement.categoria && (
                       <>
                         <span className="text-muted-foreground">·</span>
-                        <span className="text-[10px] font-sans uppercase tracking-wider text-muted-foreground truncate">
+                        <span className="text-xs text-muted-foreground truncate">
                           {requirement.categoria}
                         </span>
                       </>
@@ -255,27 +268,25 @@ export function RequirementDrawer({
                     {requirement.titulo}
                   </h2>
                 </div>
-                {onOpenFullDialog && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-xs shrink-0"
-                    onClick={() => onOpenFullDialog(requirement.id)}
-                  >
-                    <ExternalLink className="h-3.5 w-3.5 mr-1.5" strokeWidth={1.5} />
-                    {t('gapUi.drawer.fullEdit')}
-                  </Button>
-                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs shrink-0"
+                  onClick={abrirEdicaoCompleta}
+                >
+                  <IconExternal className="h-3.5 w-3.5 mr-1.5" strokeWidth={1.5} />
+                  {t('gapUi.drawer.fullEdit')}
+                </Button>
               </div>
             </header>
 
             {/* Body */}
-            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+            <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-5">
               {/* Texto oficial / orientação (renderizado como Markdown) */}
               {(requirement.descricao || requirement.orientacao_implementacao) && (
                 <section>
                   <SectionHead title={t('gapUi.drawer.whatStandardRequires')} />
-                  <div className={`rounded-lg border border-border bg-muted/30 p-4 text-sm text-foreground/85 leading-relaxed ${PROSE_CLASS}`}>
+                  <div className={`rounded-lg border border-border bg-card p-4 text-sm text-foreground/85 leading-relaxed ${PROSE_CLASS}`}>
                     <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSanitize]}>
                       {requirement.orientacao_implementacao || requirement.descricao || ''}
                     </ReactMarkdown>
@@ -287,7 +298,7 @@ export function RequirementDrawer({
               {requirement.exemplos_evidencias && (
                 <section>
                   <SectionHead title={t('gapUi.drawer.expectedEvidence')} />
-                  <div className={`rounded-lg border border-border bg-muted/30 p-4 text-sm text-foreground/85 leading-relaxed ${PROSE_CLASS}`}>
+                  <div className={`rounded-lg border border-border bg-card p-4 text-sm text-foreground/85 leading-relaxed ${PROSE_CLASS}`}>
                     <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSanitize]}>
                       {requirement.exemplos_evidencias}
                     </ReactMarkdown>
@@ -317,7 +328,6 @@ export function RequirementDrawer({
                         disabled={diagnosing}
                         onClick={runDiagnostic}
                       >
-                        <AkurisAIIcon className="h-3.5 w-3.5 mr-1.5" />
                         {diagnosing ? t('gapUi.drawer.analyzing') : t('gapUi.drawer.generateDiagnostic')}
                       </Button>
                     )
@@ -370,13 +380,13 @@ export function RequirementDrawer({
 
             {/* Footer */}
             <footer className="border-t border-border bg-card px-6 py-4 shrink-0 flex items-center justify-between gap-3">
-              <span className="text-[11px] text-muted-foreground hidden sm:inline-flex items-center gap-2">
+              <span className="text-micro text-muted-foreground hidden sm:inline-flex items-center gap-2">
                 {t('gapUi.drawer.shortcuts')}
-                <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted font-mono text-[10px]">1</kbd>{t('gapUi.drawer.shortcutConforme')}
-                <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted font-mono text-[10px]">2</kbd>{t('gapUi.drawer.shortcutParcial')}
-                <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted font-mono text-[10px]">3</kbd>{t('gapUi.drawer.shortcutNaoConforme')}
-                <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted font-mono text-[10px]">4</kbd>{t('gapUi.status.na')}
-                <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted font-mono text-[10px]">⌘↵</kbd>{t('gapUi.drawer.shortcutSave')}
+                <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted font-mono text-micro">1</kbd>{t('gapUi.drawer.shortcutConforme')}
+                <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted font-mono text-micro">2</kbd>{t('gapUi.drawer.shortcutParcial')}
+                <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted font-mono text-micro">3</kbd>{t('gapUi.drawer.shortcutNaoConforme')}
+                <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted font-mono text-micro">4</kbd>{t('gapUi.status.na')}
+                <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted font-mono text-micro">⌘↵</kbd>{t('gapUi.drawer.shortcutSave')}
               </span>
 
               <div className="flex items-center gap-2">

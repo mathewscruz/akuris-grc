@@ -13,9 +13,9 @@ interface FrameworkBadgeProps {
 }
 
 const SIZE_MAP: Record<Size, { box: string; text: string; img: string }> = {
-  sm: { box: 'h-7 w-7 rounded-md', text: 'text-[9px]', img: 'h-5 w-5' },
-  md: { box: 'h-10 w-10 rounded-lg', text: 'text-[11px]', img: 'h-7 w-7' },
-  lg: { box: 'h-16 w-16 rounded-xl', text: 'text-base', img: 'h-12 w-12' },
+  sm: { box: 'h-7 w-7 rounded-md', text: 'text-micro', img: 'h-5 w-5' },
+  md: { box: 'h-10 w-10 rounded-lg', text: 'text-micro', img: 'h-7 w-7' },
+  lg: { box: 'h-16 w-16 rounded-lg', text: 'text-base', img: 'h-12 w-12' },
 };
 
 /**

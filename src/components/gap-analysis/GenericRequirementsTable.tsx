@@ -1,6 +1,8 @@
 import { matchesSearch } from '@/lib/search-utils';
+import { buscarForaDoEscopo } from '@/lib/gap-soa';
+import { IconClose, IconSearch, IconWarning, IconChevron, IconChevronLeft, IconAttach, IconCheckbox, IconHelp, IconCalendarClock, IconPerson, IconShieldAlert } from '@/components/icons';
 import { rowOpenProps } from '@/lib/row-interaction';
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -10,11 +12,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ChevronLeft, ChevronRight, Search, X, AlertTriangle, Paperclip, CheckSquare, HelpCircle, CalendarClock, UserRound } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format, differenceInCalendarDays, parseISO } from "date-fns";
@@ -32,9 +32,7 @@ import { getAppLocale } from "@/lib/i18n-locale";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useRequisitoRiscos } from "@/hooks/useRiscoRequisitos";
 import { useRequisitoControles } from "@/hooks/useControleRequisitos";
-import { ShieldAlert } from "lucide-react";
-
-
+import { datePattern } from '@/lib/date-utils';
 
 interface Requirement {
   id: string;
@@ -55,6 +53,8 @@ interface Requirement {
   orientacao_implementacao?: string | null;
   exemplos_evidencias?: string | null;
   plano_acao_id?: string | null;
+  /** `true` quando a Declaração de Aplicabilidade dispensou o requisito. */
+  fora_do_escopo?: boolean;
 }
 
 interface UserLite {
@@ -67,20 +67,13 @@ interface GenericRequirementsTableProps {
   frameworkName: string;
   config: FrameworkConfig;
   onStatusChange?: () => void;
+  /** Categoria escolhida no mapa de calor, que é o seletor único. */
   initialCategoryFilter?: string;
+  /** Avisa o mapa de calor quando a categoria é limpa a partir da tabela. */
+  onCategoryFilterChange?: (categoria: string | undefined) => void;
 }
 
 type StatusFilter = 'all' | 'conforme' | 'parcial' | 'nao_conforme' | 'nao_avaliado' | 'nao_aplicavel';
-
-interface CategoryStats {
-  total: number;
-  conforme: number;
-  parcial: number;
-  nao_conforme: number;
-  nao_avaliado: number;
-  nao_aplicavel: number;
-  percentage: number;
-}
 
 export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> = ({
   frameworkId,
@@ -88,6 +81,7 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
   config,
   onStatusChange,
   initialCategoryFilter,
+  onCategoryFilterChange,
 }) => {
   const { empresaId, loading: loadingEmpresa } = useEmpresaId();
   const { t } = useLanguage();
@@ -98,7 +92,10 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
   const { data: controlosPorRequisito } = useRequisitoControles(frameworkId);
   const [requirements, setRequirements] = useState<Requirement[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<string>(searchParams.get('cat') || 'all');
+  // Categoria em foco. Chamava-se `activeTab` de quando havia uma fileira de
+  // abas por categoria dentro da tabela — a mesma lista que o mapa de calor já
+  // mostrava logo acima, com o mesmo número. Ficou o estado, saíram as abas.
+  const [categoriaAtiva, setCategoriaAtiva] = useState<string>(searchParams.get('cat') || 'all');
   const [activeSection, setActiveSection] = useState<string>(searchParams.get('sec') || config.sections?.[0]?.id || '');
   const [selectedRequirement, setSelectedRequirement] = useState<Requirement | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
@@ -118,6 +115,30 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
   const [bulkUpdating, setBulkUpdating] = useState(false);
   const [usersById, setUsersById] = useState<Map<string, UserLite>>(new Map());
 
+  // A URL manda quando muda por fora — é ela que os chips escrevem.
+  //
+  // Estes filtros só eram lidos no `useState` inicial, e o efeito seguinte
+  // escreve estado→URL a cada alteração. Resultado: quando um chip da barra
+  // ("Críticos") ou o botão "Ver bloqueadores" gravavam `?status=…&prio=1`, o
+  // estado continuava em `all` e o efeito de escrita apagava o parâmetro no
+  // render seguinte. O chip acendia, a URL mudava, e a legenda continuava a
+  // dizer "8 de 8 requisitos". Aqui o ciclo fecha-se: quando a URL traz algo
+  // diferente do estado, o estado adota-o; quando é o estado que muda, as
+  // comparações batem e este efeito não faz nada.
+  useEffect(() => {
+    const urlStatus = (searchParams.get('status') as StatusFilter) || 'all';
+    const urlPrio = searchParams.get('prio') === '1';
+    const urlCat = searchParams.get('cat') || 'all';
+    const urlSec = searchParams.get('sec') || config.sections?.[0]?.id || '';
+    const urlQ = searchParams.get('q') || '';
+    if (urlStatus !== statusFilter) setStatusFilter(urlStatus);
+    if (urlPrio !== onlyMandatory) setOnlyMandatory(urlPrio);
+    if (urlCat !== categoriaAtiva) setCategoriaAtiva(urlCat);
+    if (urlSec !== activeSection) setActiveSection(urlSec);
+    if (urlQ !== searchTerm) setSearchTerm(urlQ);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
   // Sync filters → URL (replace, no history pollution)
   useEffect(() => {
     const params = new URLSearchParams(searchParams);
@@ -128,13 +149,13 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
     setOrDelete('q', searchTerm, '');
     setOrDelete('status', statusFilter, 'all');
     setOrDelete('prio', onlyMandatory ? '1' : '', '');
-    setOrDelete('cat', activeTab, 'all');
+    setOrDelete('cat', categoriaAtiva, 'all');
     setOrDelete('sec', activeSection, config.sections?.[0]?.id || '');
     setOrDelete('size', String(itemsPerPage), '10');
     setOrDelete('page', String(currentPage), '1');
     setSearchParams(params, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchTerm, statusFilter, onlyMandatory, activeTab, activeSection, itemsPerPage, currentPage]);
+  }, [searchTerm, statusFilter, onlyMandatory, categoriaAtiva, activeSection, itemsPerPage, currentPage]);
 
   const loadRequirements = async () => {
     if (!empresaId) return;
@@ -175,6 +196,16 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
         }]) || []
       );
 
+      // A Declaração de Aplicabilidade também vale aqui.
+      //
+      // A exclusão pelo SoA já era respeitada no score, na contagem por
+      // categoria, na fila de prioridades, na remediação e no PDF do auditor —
+      // mas não nesta tabela, que é onde o utilizador passa a maior parte do
+      // tempo. O efeito era visível: o cartão da categoria dizia 56 e a barra
+      // da aba, quarenta pixels abaixo, dizia 45, porque uma contava o
+      // requisito dispensado e a outra não.
+      const foraDoEscopo = await buscarForaDoEscopo(frameworkId, empresaId);
+
       const merged = (reqs || []).map((req: any) => {
         const evaluation = evalMap.get(req.id);
         return {
@@ -187,7 +218,10 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
           orientacao_implementacao: reqOrientacao(req) || null,
           exemplos_evidencias: reqEvidencias(req) || null,
           categoria: req.categoria || 'Outros',
-          conformity_status: evaluation?.conformity_status || 'nao_avaliado',
+          conformity_status: foraDoEscopo.has(req.id)
+            ? 'nao_aplicavel'
+            : evaluation?.conformity_status || 'nao_avaliado',
+          fora_do_escopo: foraDoEscopo.has(req.id),
           evaluation_id: evaluation?.id || null,
           evaluation_updated_at: evaluation?.updated_at || null,
           plano_acao_id: evaluation?.plano_acao_id || null,
@@ -196,7 +230,6 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
           responsavel_avaliacao: evaluation?.responsavel_avaliacao || null,
         };
       });
-
 
       setRequirements(merged);
     } catch (error: any) {
@@ -210,6 +243,27 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
   useEffect(() => {
     loadRequirements();
   }, [frameworkId, empresaId]);
+
+  // Não abrir numa secção vazia.
+  //
+  // A secção inicial é a primeira do ficheiro de configuração, não a primeira
+  // que tem requisitos. Numa ISO 27001 avaliada só no Anexo A, o utilizador
+  // rolava um ecrã inteiro de resumo para chegar a uma tabela a dizer "nenhum
+  // requisito disponível" — com a legenda a dizer "8 de 8 requisitos" quatro
+  // linhas acima. Corre uma vez, e nunca por cima de uma escolha explícita
+  // (`?sec=` na URL).
+  const secaoJaAjustada = useRef(false);
+  useEffect(() => {
+    if (secaoJaAjustada.current) return;
+    if (!config.sections?.length || requirements.length === 0) return;
+    secaoJaAjustada.current = true;
+    if (searchParams.get('sec')) return;
+    const atual = config.sections.find(sec => sec.id === activeSection);
+    if (atual && requirements.some(r => atual.filter(r.codigo))) return;
+    const comConteudo = config.sections.find(sec => requirements.some(r => sec.filter(r.codigo)));
+    if (comConteudo) setActiveSection(comConteudo.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requirements, config.sections]);
 
   // Carrega usuários da empresa para resolver UUID → nome na coluna "Responsável".
   // Multi-tenant: filtro obrigatório por empresa_id.
@@ -236,11 +290,14 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
     return () => { cancelled = true; };
   }, [empresaId]);
 
-  // Sync with external category filter from CategoryStatusCards
+  // Categoria escolhida no heatmap. Clicar de novo na mesma célula desliga o
+  // anel de seleção lá em cima; sem o `else` a tabela ficava presa ao filtro
+  // que a tela já não indicava.
+  const heatmapJaMontou = useRef(false);
   useEffect(() => {
-    if (initialCategoryFilter) {
-      setActiveTab(initialCategoryFilter);
-    }
+    // No primeiro render quem manda é a URL (`?cat=`), não o heatmap.
+    if (!heatmapJaMontou.current) { heatmapJaMontou.current = true; return; }
+    setCategoriaAtiva(initialCategoryFilter || 'all');
   }, [initialCategoryFilter]);
 
   const handleStatusChange = async (requirementId: string, newStatus: string) => {
@@ -323,20 +380,59 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
   }, [requirements]);
 
   const translateCategory = (cat: string) => {
-    if (frameworkName.toLowerCase().includes('nist')) return NIST_PILLAR_NAMES[cat] || cat;
+    // Pelo conteúdo da categoria, não pelo nome do framework: qualquer
+    // framework que use os pilares GOVERN/IDENTIFY/... recebe o mesmo rótulo,
+    // e nenhum outro é afetado porque as chaves não colidem.
+    if (NIST_PILLAR_NAMES[cat]) return NIST_PILLAR_NAMES[cat];
     if (getAppLocale() === 'en') return categoriaEnMap[cat] || cat;
     return cat;
   };
-
 
   const handleRowClick = (requirement: Requirement) => {
     setSelectedRequirement(requirement);
     setDetailDialogOpen(true);
   };
 
+  // Ponte entre a triagem rápida e a edição completa.
+  //
+  // O painel lateral tinha um botão "Edição completa" que dependia da
+  // propriedade `onOpenFullDialog` — e nenhuma tela alguma vez a passava, pelo
+  // que o botão nunca chegou a ser desenhado. Quem chegava pela fila de
+  // prioridades ou pelo ⌘K ficava sem saída: tinha de fechar o painel,
+  // procurar o mesmo requisito na tabela e abri-lo outra vez. Agora o painel
+  // grava `?req=<id>` e é a tabela — que já está na página — que abre o
+  // diálogo, sem prop drilling entre telas.
+  useEffect(() => {
+    const reqId = searchParams.get('req');
+    if (!reqId || requirements.length === 0) return;
+    if (detailDialogOpen && selectedRequirement?.id === reqId) return;
+    const alvo = requirements.find(r => r.id === reqId);
+    if (!alvo) return;
+    setSelectedRequirement(alvo);
+    setDetailDialogOpen(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, requirements]);
+
+  /** Tira `?req=` da URL para o diálogo não voltar a abrir sozinho. */
+  const limparReqDaUrl = useCallback(() => {
+    if (!searchParams.get('req')) return;
+    const sp = new URLSearchParams(searchParams);
+    sp.delete('req');
+    setSearchParams(sp, { replace: true });
+  }, [searchParams, setSearchParams]);
+
+  // Fechar pelo X ou pelo Cancelar passa só por aqui — `onClose` é chamado no
+  // gravar. Sem limpar a URL nos dois caminhos, o parâmetro ficava para trás e
+  // o diálogo reabria à primeira mudança de filtro.
+  const handleDetailDialogOpenChange = (aberto: boolean) => {
+    setDetailDialogOpen(aberto);
+    if (!aberto) limparReqDaUrl();
+  };
+
   const handleDetailDialogClose = () => {
     setDetailDialogOpen(false);
     setSelectedRequirement(null);
+    limparReqDaUrl();
     loadRequirements();
     onStatusChange?.();
   };
@@ -384,6 +480,62 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
     } catch (error: any) {
       setRequirements(previous);
       logger.error('Erro na atualização em lote de requisitos', { error: error instanceof Error ? error.message : String(error) });
+      toast.error(t('gapUi.table.errorBulkUpdate'));
+    } finally {
+      setBulkUpdating(false);
+    }
+  };
+
+  /**
+   * Atribuir responsável e prazo em lote.
+   *
+   * As colunas "Responsável" e "Prazo" existem na tabela desde sempre, mas a
+   * barra de seleção só sabia mudar estado. Dava para marcar quarenta
+   * requisitos como não conformes de uma vez e depois era preciso abrir os
+   * quarenta, um a um, para dizer de quem eram e para quando. É o passo que
+   * transforma uma avaliação num plano — e era o mais caro do módulo.
+   */
+  const handleBulkCampo = async (
+    campo: 'responsavel_avaliacao' | 'prazo_implementacao',
+    valor: string | null,
+    rotulo: string,
+  ) => {
+    if (!empresaId || selectedIds.size === 0) return;
+    setBulkUpdating(true);
+    const ids = Array.from(selectedIds);
+    const anterior = [...requirements];
+
+    setRequirements(prev =>
+      prev.map(r => (selectedIds.has(r.id) ? { ...r, [campo]: valor } : r)),
+    );
+
+    try {
+      // O upsert precisa de `conformity_status`, que é NOT NULL: para um
+      // requisito ainda sem avaliação, atribuir dono não pode inventar estado.
+      const estadoAtual = new Map(anterior.map(r => [r.id, r.conformity_status || 'nao_avaliado']));
+      const linhas = ids.map(reqId => ({
+        framework_id: frameworkId,
+        requirement_id: reqId,
+        empresa_id: empresaId,
+        conformity_status: estadoAtual.get(reqId) || 'nao_avaliado',
+        [campo]: valor,
+        updated_at: new Date().toISOString(),
+      }));
+
+      const { error } = await supabase
+        .from('gap_analysis_evaluations')
+        .upsert(linhas, { onConflict: 'framework_id,requirement_id,empresa_id' });
+      if (error) throw error;
+
+      setSelectedIds(new Set());
+      onStatusChange?.();
+      toast.success(t('gapUi.table.bulkUpdated', { count: ids.length, label: rotulo }));
+    } catch (error: unknown) {
+      setRequirements(anterior);
+      logger.error('Erro na atribuição em lote', {
+        error: error instanceof Error ? error.message : String(error),
+        campo,
+      });
       toast.error(t('gapUi.table.errorBulkUpdate'));
     } finally {
       setBulkUpdating(false);
@@ -444,15 +596,15 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
     if (diff < 0) {
       toneClass = "text-destructive font-medium";
       tooltipText = t('gapUi.table.overdueDays', { diff: Math.abs(diff), unit: dayUnit(Math.abs(diff)) });
-      icon = <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0" strokeWidth={1.5} />;
+      icon = <IconWarning className="h-3.5 w-3.5 text-destructive shrink-0" strokeWidth={1.5} />;
     } else if (diff === 0) {
       toneClass = "text-destructive font-medium";
       tooltipText = t('gapUi.table.dueToday');
-      icon = <CalendarClock className="h-3.5 w-3.5 text-destructive shrink-0" strokeWidth={1.5} />;
+      icon = <IconCalendarClock className="h-3.5 w-3.5 text-destructive shrink-0" strokeWidth={1.5} />;
     } else if (diff <= 7) {
       toneClass = "text-warning font-medium";
       tooltipText = t('gapUi.table.dueSoon', { diff, unit: dayUnit(diff) });
-      icon = <CalendarClock className="h-3.5 w-3.5 text-warning shrink-0" strokeWidth={1.5} />;
+      icon = <IconCalendarClock className="h-3.5 w-3.5 text-warning shrink-0" strokeWidth={1.5} />;
     }
 
     return (
@@ -461,7 +613,7 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
           <TooltipTrigger asChild>
             <div className={`flex items-center gap-1.5 text-sm ${toneClass}`}>
               {icon}
-              <span>{format(date, 'dd/MM/yyyy')}</span>
+              <span>{format(date, datePattern())}</span>
             </div>
           </TooltipTrigger>
           <TooltipContent side="top">{tooltipText}</TooltipContent>
@@ -491,7 +643,7 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
           <TooltipTrigger asChild>
             <div className="flex items-center gap-2 min-w-0">
               <Avatar className="h-6 w-6 shrink-0">
-                <AvatarFallback className="text-[10px] bg-primary/10 text-primary font-medium">
+                <AvatarFallback className="text-micro bg-primary/10 text-primary font-medium">
                   {initials}
                 </AvatarFallback>
               </Avatar>
@@ -506,23 +658,6 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
       </TooltipProvider>
     );
   };
-
-  // Compute category stats
-  const categoryStatsMap = useMemo(() => {
-    const map: Record<string, CategoryStats> = {};
-    requirements.forEach(r => {
-      const cat = r.categoria || 'Outros';
-      if (!map[cat]) map[cat] = { total: 0, conforme: 0, parcial: 0, nao_conforme: 0, nao_avaliado: 0, nao_aplicavel: 0, percentage: 0 };
-      map[cat].total++;
-      const st = r.conformity_status || 'nao_avaliado';
-      if (st in map[cat]) (map[cat] as any)[st]++;
-    });
-    Object.values(map).forEach(s => {
-      const applicable = s.total - s.nao_aplicavel;
-      s.percentage = applicable > 0 ? Math.round((s.conforme / applicable) * 100) : 0;
-    });
-    return map;
-  }, [requirements]);
 
   // Filters
   const applyFilters = (reqs: Requirement[]) => {
@@ -539,12 +674,11 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
     return filtered;
   };
 
-  const categories = [...new Set(requirements.map(r => r.categoria || 'Outros'))].sort();
 
   const getFilteredRequirements = (baseReqs: Requirement[]) => {
-    let filtered = activeTab === 'all'
+    let filtered = categoriaAtiva === 'all'
       ? baseReqs
-      : baseReqs.filter(r => (r.categoria || 'Outros') === activeTab);
+      : baseReqs.filter(r => (r.categoria || 'Outros') === categoriaAtiva);
     return applyFilters(filtered);
   };
 
@@ -555,21 +689,28 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [activeTab, activeSection, itemsPerPage, searchTerm, statusFilter, onlyMandatory]);
+  }, [categoriaAtiva, activeSection, itemsPerPage, searchTerm, statusFilter, onlyMandatory]);
 
-  const clearFilters = () => { setSearchTerm(''); setStatusFilter('all'); setOnlyMandatory(false); };
-  const hasActiveFilters = searchTerm.trim() !== '' || statusFilter !== 'all' || onlyMandatory;
+  const clearFilters = () => {
+    setSearchTerm('');
+    setStatusFilter('all');
+    setOnlyMandatory(false);
+    setCategoriaAtiva('all');
+    onCategoryFilterChange?.(undefined);
+  };
+  const hasActiveFilters =
+    searchTerm.trim() !== '' || statusFilter !== 'all' || onlyMandatory || categoriaAtiva !== 'all';
 
   // Legenda de ícones agora unificada dentro do popover "?" da SearchAndFilterBar.
 
   const SearchAndFilterBar = () => (
     <div className="flex flex-wrap items-center gap-3 mb-4">
       <div className="relative flex-1 min-w-[200px] max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" strokeWidth={1.5}/>
+        <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" strokeWidth={1.5}/>
         <Input placeholder={t('gapUi.table.searchPlaceholder')} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9 pr-9" />
         {searchTerm && (
           <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7" onClick={() => setSearchTerm('')}>
-            <X className="h-4 w-4" />
+            <IconClose className="h-4 w-4" />
           </Button>
         )}
       </div>
@@ -591,29 +732,43 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
       <Popover>
         <PopoverTrigger asChild>
           <Button variant="ghost" size="icon" className="h-8 w-8" aria-label={t('gapUi.table.viewLegend')}>
-            <HelpCircle className="h-4 w-4 text-muted-foreground" strokeWidth={1.5}/>
+            <IconHelp className="h-4 w-4 text-muted-foreground" strokeWidth={1.5}/>
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-80 text-xs space-y-3">
           <div className="space-y-1.5">
             <p className="font-medium text-foreground">{t('gapUi.table.complianceStatusTitle')}</p>
-            <div className="flex items-center gap-1.5"><Badge variant="success" className="text-[10px] px-1.5 py-0">{t('gapUi.status.conforme')}</Badge><span className="text-muted-foreground">{t('gapUi.table.legendConforme')}</span></div>
-            <div className="flex items-center gap-1.5"><Badge variant="warning" className="text-[10px] px-1.5 py-0">{t('gapUi.status.parcial')}</Badge><span className="text-muted-foreground">{t('gapUi.table.legendParcial')}</span></div>
-            <div className="flex items-center gap-1.5"><Badge variant="destructive" className="text-[10px] px-1.5 py-0">{t('gapUi.status.naoConforme')}</Badge><span className="text-muted-foreground">{t('gapUi.table.legendNaoConforme')}</span></div>
-            <div className="flex items-center gap-1.5"><Badge variant="outline" className="text-[10px] px-1.5 py-0">{t('gapUi.status.na')}</Badge><span className="text-muted-foreground">{t('gapUi.table.legendNa')}</span></div>
+            <div className="flex items-center gap-1.5"><Badge variant="success" className="text-micro px-1.5 py-0">{t('gapUi.status.conforme')}</Badge><span className="text-muted-foreground">{t('gapUi.table.legendConforme')}</span></div>
+            <div className="flex items-center gap-1.5"><Badge variant="warning" className="text-micro px-1.5 py-0">{t('gapUi.status.parcial')}</Badge><span className="text-muted-foreground">{t('gapUi.table.legendParcial')}</span></div>
+            <div className="flex items-center gap-1.5"><Badge variant="destructive" className="text-micro px-1.5 py-0">{t('gapUi.status.naoConforme')}</Badge><span className="text-muted-foreground">{t('gapUi.table.legendNaoConforme')}</span></div>
+            <div className="flex items-center gap-1.5"><Badge variant="outline" className="text-micro px-1.5 py-0">{t('gapUi.status.na')}</Badge><span className="text-muted-foreground">{t('gapUi.table.legendNa')}</span></div>
           </div>
           <div className="space-y-1.5 border-t pt-2">
             <p className="font-medium text-foreground">{t('gapUi.table.iconsAndFlagsTitle')}</p>
-            <div className="flex items-center gap-1.5"><AlertTriangle className="h-3.5 w-3.5 text-destructive" strokeWidth={1.5}/><span className="text-muted-foreground">{t('gapUi.table.legendHighPriorityNonCompliant')}</span></div>
-            <div className="flex items-center gap-1.5"><Paperclip className="h-3.5 w-3.5" strokeWidth={1.5}/><span className="text-muted-foreground">{t('gapUi.table.legendHasEvidence')}</span></div>
-            <div className="flex items-center gap-1.5"><CalendarClock className="h-3.5 w-3.5 text-destructive" strokeWidth={1.5}/><span className="text-muted-foreground">{t('gapUi.table.legendOverdueOrToday')}</span></div>
-            <div className="flex items-center gap-1.5"><CalendarClock className="h-3.5 w-3.5 text-warning" strokeWidth={1.5}/><span className="text-muted-foreground">{t('gapUi.table.legendDueSoon')}</span></div>
+            <div className="flex items-center gap-1.5"><IconWarning className="h-3.5 w-3.5 text-destructive" strokeWidth={1.5}/><span className="text-muted-foreground">{t('gapUi.table.legendHighPriorityNonCompliant')}</span></div>
+            <div className="flex items-center gap-1.5"><IconAttach className="h-3.5 w-3.5" strokeWidth={1.5}/><span className="text-muted-foreground">{t('gapUi.table.legendHasEvidence')}</span></div>
+            <div className="flex items-center gap-1.5"><IconCalendarClock className="h-3.5 w-3.5 text-destructive" strokeWidth={1.5}/><span className="text-muted-foreground">{t('gapUi.table.legendOverdueOrToday')}</span></div>
+            <div className="flex items-center gap-1.5"><IconCalendarClock className="h-3.5 w-3.5 text-warning" strokeWidth={1.5}/><span className="text-muted-foreground">{t('gapUi.table.legendDueSoon')}</span></div>
           </div>
         </PopoverContent>
       </Popover>
+      {/* O filtro de categoria vem do mapa de calor, que fica bem acima. Sem
+          isto o utilizador via a tabela encolher sem nada na própria tabela a
+          dizer porquê. */}
+      {categoriaAtiva !== 'all' && (
+        <button
+          type="button"
+          onClick={() => { setCategoriaAtiva('all'); onCategoryFilterChange?.(undefined); }}
+          className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1 text-sm text-foreground hover:bg-accent transition-colors"
+        >
+          <span className="text-muted-foreground">{t('gapUi.table.categoryLabel')}</span>
+          <span className="font-medium">{translateCategory(categoriaAtiva)}</span>
+          <IconClose className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.5} />
+        </button>
+      )}
       {hasActiveFilters && (
         <Button variant="outline" size="sm" onClick={clearFilters}>
-          <X className="h-4 w-4 mr-1" />{t('gapUi.common.clear')}
+          <IconClose className="h-4 w-4 mr-1" />{t('gapUi.common.clear')}
         </Button>
       )}
       <span className="text-sm text-muted-foreground ml-auto">{t('gapUi.table.showingXOfY', { filtered: filteredRequirements.length, total: requirements.length })}</span>
@@ -640,28 +795,14 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
           <span className="text-sm text-muted-foreground">{t('gapUi.table.pageXOfY', { current: currentPage, total: pages || 1, filtered })}</span>
           <div className="flex gap-1">
             <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>
-              <ChevronLeft className="h-4 w-4" strokeWidth={1.5}/>
+              <IconChevronLeft className="h-4 w-4" strokeWidth={1.5}/>
             </Button>
             <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(pages || 1, p + 1))} disabled={currentPage === (pages || 1)}>
-              <ChevronRight className="h-4 w-4" strokeWidth={1.5}/>
+              <IconChevron className="h-4 w-4" strokeWidth={1.5}/>
             </Button>
           </div>
         </div>
       </div>
-    );
-  };
-
-  const CategoryTabTrigger = ({ cat, reqs }: { cat: string; reqs: Requirement[] }) => {
-    const stats = categoryStatsMap[cat];
-    if (!stats) return <TabsTrigger value={cat}>{translateCategory(cat)}</TabsTrigger>;
-    return (
-      <TabsTrigger value={cat} className="flex flex-col items-start gap-0.5 py-2 px-3 h-auto">
-        <span className="text-xs font-medium">{translateCategory(cat)}</span>
-        <div className="flex items-center gap-1.5 w-full">
-          <Progress value={stats.percentage} className="h-1.5 flex-1 min-w-[40px]" />
-          <span className="text-[10px] text-muted-foreground whitespace-nowrap">{stats.conforme}/{stats.total - stats.nao_aplicavel}</span>
-        </div>
-      </TabsTrigger>
     );
   };
 
@@ -699,13 +840,13 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
               <SortableTableHead field="titulo" sort={sort} onSort={toggleSort}>{t('gapUi.table.colRequirement')}</SortableTableHead>
               <SortableTableHead field="prazo_implementacao" sort={sort} onSort={toggleSort} className="w-32">
                 <span className="inline-flex items-center gap-1.5">
-                  <CalendarClock className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.5} />
+                  <IconCalendarClock className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.5} />
                   {t('gapUi.table.colDeadline')}
                 </span>
               </SortableTableHead>
               <SortableTableHead field="responsavel_avaliacao" sort={sort} onSort={toggleSort} className="w-44">
                 <span className="inline-flex items-center gap-1.5">
-                  <UserRound className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.5} />
+                  <IconPerson className="h-3.5 w-3.5 text-muted-foreground" strokeWidth={1.5} />
                   {t('gapUi.table.colResponsible')}
                 </span>
               </SortableTableHead>
@@ -739,7 +880,7 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
                   <TableCell className="font-mono text-sm">
                     <div className="flex items-center gap-1">
                       {(req.peso || 0) >= 3 && req.conformity_status === 'nao_conforme' && (
-                        <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0" strokeWidth={1.5}/>
+                        <IconWarning className="h-3.5 w-3.5 text-destructive shrink-0" strokeWidth={1.5}/>
                       )}
                       {req.codigo}
                     </div>
@@ -750,19 +891,19 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
                       {req.descricao && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{req.descricao}</p>}
                       {(riscosPorRequisito?.get(req.id)?.length || 0) > 0 && (
                         <span
-                          className="mt-1.5 inline-flex items-center gap-1 text-[11px] text-warning"
+                          className="mt-1.5 inline-flex items-center gap-1 text-micro text-warning"
                           title={(riscosPorRequisito?.get(req.id) || []).map(r => r.nome).join(', ')}
                         >
-                          <ShieldAlert className="h-3.5 w-3.5" strokeWidth={1.5} />
+                          <IconShieldAlert className="h-3.5 w-3.5" strokeWidth={1.5} />
                           {t('riscosControles.requisito.riscosDependentes', { count: riscosPorRequisito!.get(req.id)!.length })}
                         </span>
                       )}
                       {(controlosPorRequisito?.get(req.id) || []).some(c => c.emFalha) && (
                         <span
-                          className="mt-1.5 inline-flex items-center gap-1 text-[11px] text-destructive"
+                          className="mt-1.5 inline-flex items-center gap-1 text-micro text-destructive"
                           title={(controlosPorRequisito?.get(req.id) || []).filter(c => c.emFalha).map(c => c.nome).join(', ')}
                         >
-                          <ShieldAlert className="h-3.5 w-3.5" strokeWidth={1.5} />
+                          <IconShieldAlert className="h-3.5 w-3.5" strokeWidth={1.5} />
                           {t('vinculoReq.controloEmFalha')}
                         </span>
                       )}
@@ -774,7 +915,7 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
                   <TableCell>
                     {(req.evidence_files?.length || 0) > 0 ? (
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Paperclip className="h-3.5 w-3.5" strokeWidth={1.5}/>
+                        <IconAttach className="h-3.5 w-3.5" strokeWidth={1.5}/>
                         <span>{req.evidence_files!.length}</span>
                       </div>
                     ) : (
@@ -807,9 +948,9 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
 
         {/* Floating Bulk Action Bar */}
         {selectedIds.size > 0 && (
-          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 border shadow-lg rounded-xl px-4 py-2.5 flex items-center gap-3 animate-in slide-in-from-bottom-4">
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 border shadow-lg rounded-lg px-4 py-2.5 flex items-center gap-3 animate-in slide-in-from-bottom-4">
             <div className="flex items-center gap-2">
-              <CheckSquare className="h-4 w-4 text-primary" strokeWidth={1.5}/>
+              <IconCheckbox className="h-4 w-4 text-primary" strokeWidth={1.5}/>
               <span className="text-sm font-medium">{t('gapUi.table.selectedCount', { count: selectedIds.size })}</span>
             </div>
             <div className="h-6 w-px bg-border" />
@@ -828,8 +969,74 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
               </Button>
             </div>
             <div className="h-6 w-px bg-border" />
+            <div className="flex items-center gap-1.5">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button size="sm" variant="outline" disabled={bulkUpdating} className="text-xs h-7 gap-1.5">
+                    <IconPerson className="h-3.5 w-3.5" strokeWidth={1.5} />
+                    {t('gapUi.table.bulkAssign')}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="center" className="w-64 p-1">
+                  <div className="max-h-64 overflow-y-auto">
+                    {[...usersById.entries()].map(([id, u]) => (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => handleBulkCampo('responsavel_avaliacao', id, u.nome)}
+                        className="w-full text-left rounded-md px-2 py-1.5 text-sm hover:bg-accent transition-colors truncate"
+                      >
+                        {u.nome}
+                      </button>
+                    ))}
+                    {usersById.size === 0 && (
+                      <p className="px-2 py-1.5 text-sm text-muted-foreground">
+                        {t('gapUi.table.bulkNoUsers')}
+                      </p>
+                    )}
+                  </div>
+                  <div className="border-t mt-1 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => handleBulkCampo('responsavel_avaliacao', null, t('gapUi.table.bulkClearOwner'))}
+                      className="w-full text-left rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-accent transition-colors"
+                    >
+                      {t('gapUi.table.bulkClearOwner')}
+                    </button>
+                  </div>
+                </PopoverContent>
+              </Popover>
+
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button size="sm" variant="outline" disabled={bulkUpdating} className="text-xs h-7 gap-1.5">
+                    <IconCalendarClock className="h-3.5 w-3.5" strokeWidth={1.5} />
+                    {t('gapUi.table.bulkDeadline')}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="center" className="w-60 p-3 space-y-2">
+                  <Label htmlFor="bulk-prazo" className="text-sm">{t('gapUi.table.bulkDeadline')}</Label>
+                  <Input
+                    id="bulk-prazo"
+                    type="date"
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      if (v) handleBulkCampo('prazo_implementacao', v, v);
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleBulkCampo('prazo_implementacao', null, t('gapUi.table.bulkClearDeadline'))}
+                    className="w-full text-left rounded-md px-1 py-1 text-sm text-muted-foreground hover:bg-accent transition-colors"
+                  >
+                    {t('gapUi.table.bulkClearDeadline')}
+                  </button>
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div className="h-6 w-px bg-border" />
             <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())} className="text-xs h-7">
-              <X className="h-3.5 w-3.5 mr-1" />{t('gapUi.common.clear')}
+              <IconClose className="h-3.5 w-3.5 mr-1" />{t('gapUi.common.clear')}
             </Button>
           </div>
         )}
@@ -856,7 +1063,7 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
         <CardContent>
           <SearchAndFilterBar />
 
-          <Tabs value={activeSection} onValueChange={(v) => { setActiveSection(v); setActiveTab('all'); setCurrentPage(1); }}>
+          <Tabs value={activeSection} onValueChange={(v) => { setActiveSection(v); setCategoriaAtiva('all'); setCurrentPage(1); }}>
             <TabsList className="mb-4">
               {config.sections.map(section => (
                 <TabsTrigger key={section.id} value={section.id}>{section.title}</TabsTrigger>
@@ -865,21 +1072,13 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
 
             {config.sections.map(section => {
               const sectionReqs = requirements.filter(r => section.filter(r.codigo));
-              const sectionCategories = [...new Set(sectionReqs.map(r => r.categoria || 'Outros'))].sort();
-
               return (
                 <TabsContent key={section.id} value={section.id}>
-                  <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); setCurrentPage(1); }}>
-                    <TabsList className="mb-4 flex-wrap h-auto gap-1">
-                      <TabsTrigger value="all">{t('gapUi.table.all')}</TabsTrigger>
-                      {sectionCategories.map(cat => (
-                        <CategoryTabTrigger key={cat} cat={cat} reqs={sectionReqs.filter(r => (r.categoria || 'Outros') === cat)} />
-                      ))}
-                    </TabsList>
-                    <TabsContent value={activeTab}>
-                      {renderTableContent(activeTab === 'all' ? sectionReqs : sectionReqs.filter(r => (r.categoria || 'Outros') === activeTab))}
-                    </TabsContent>
-                  </Tabs>
+                  {renderTableContent(
+                    categoriaAtiva === 'all'
+                      ? sectionReqs
+                      : sectionReqs.filter(r => (r.categoria || 'Outros') === categoriaAtiva),
+                  )}
                 </TabsContent>
               );
             })}
@@ -888,7 +1087,7 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
           {selectedRequirement && (
             <RequirementDetailDialog
               open={detailDialogOpen}
-              onOpenChange={setDetailDialogOpen}
+              onOpenChange={handleDetailDialogOpenChange}
               requirement={selectedRequirement}
               frameworkId={frameworkId}
               onClose={handleDetailDialogClose}
@@ -906,23 +1105,16 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
       <CardContent>
         <SearchAndFilterBar />
 
-
-        <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); setCurrentPage(1); }}>
-          <TabsList className="mb-4 flex-wrap h-auto gap-1">
-            <TabsTrigger value="all">{t('gapUi.table.allWithCount', { count: requirements.length })}</TabsTrigger>
-            {categories.map(cat => (
-              <CategoryTabTrigger key={cat} cat={cat} reqs={requirements.filter(r => (r.categoria || 'Outros') === cat)} />
-            ))}
-          </TabsList>
-          <TabsContent value={activeTab}>
-            {renderTableContent(activeTab === 'all' ? requirements : requirements.filter(r => (r.categoria || 'Outros') === activeTab))}
-          </TabsContent>
-        </Tabs>
+        {renderTableContent(
+          categoriaAtiva === 'all'
+            ? requirements
+            : requirements.filter(r => (r.categoria || 'Outros') === categoriaAtiva),
+        )}
 
         {selectedRequirement && (
           <RequirementDetailDialog
             open={detailDialogOpen}
-            onOpenChange={setDetailDialogOpen}
+            onOpenChange={handleDetailDialogOpenChange}
             requirement={selectedRequirement}
             frameworkId={frameworkId}
             onClose={handleDetailDialogClose}

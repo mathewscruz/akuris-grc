@@ -1,15 +1,14 @@
 import { useMemo } from 'react';
+import { IconDownload, IconCalendar, IconTrendUp, IconTrendDown, IconMinus } from '@/components/icons';
+import { StatStrip } from '@/components/ui/stat-strip';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScoreEvolutionChart } from './ScoreEvolutionChart';
 import { useScoreHistory } from '@/hooks/useScoreHistory';
-import { Download, TrendingUp, TrendingDown, Minus, Calendar } from 'lucide-react';
 import { exportFrameworkPDF } from './ExportFrameworkPDF';
 import { supabase } from '@/integrations/supabase/client';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { toast } from 'sonner';
-import type { ScoreType } from '@/lib/framework-configs';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface FrameworkHistoryTabProps {
@@ -17,7 +16,6 @@ interface FrameworkHistoryTabProps {
   frameworkName: string;
   frameworkVersion: string;
   frameworkType: string;
-  scoreType: ScoreType;
   currentScore: number;
   totalRequirements: number;
   evaluatedRequirements: number;
@@ -28,7 +26,6 @@ export function FrameworkHistoryTab({
   frameworkName,
   frameworkVersion,
   frameworkType,
-  scoreType,
   currentScore,
   totalRequirements,
   evaluatedRequirements,
@@ -47,11 +44,7 @@ export function FrameworkHistoryTab({
 
   // Delta calculado contra o "Score Atual" exibido (ao vivo), não contra o
   // último snapshot — evita mostrar 49% com um "+22%" que na verdade era 47%−25%.
-  const liveDiff = stats
-    ? (scoreType === 'percentage'
-        ? Math.round(currentScore) - Math.round(stats.initialScore)
-        : currentScore - stats.initialScore)
-    : 0;
+  const liveDiff = stats ? Math.round(currentScore) - Math.round(stats.initialScore) : 0;
   const trend: 'up' | 'down' | 'neutral' = liveDiff > 0 ? 'up' : liveDiff < 0 ? 'down' : 'neutral';
 
   const handleExportEvolution = async () => {
@@ -96,8 +89,7 @@ export function FrameworkHistoryTab({
         categoryScores: [],
         requirements,
         empresaNome: empresa?.nome || 'Empresa',
-        scoreType: scoreType === 'percentage' ? 'percentage' : 'decimal',
-        maxScore: scoreType === 'percentage' ? 100 : 5,
+        maxScore: 100,
       });
 
       toast.success(t('cardsKpi.sweep.gap.relatorioEvolucaoExportado'));
@@ -106,55 +98,44 @@ export function FrameworkHistoryTab({
     }
   };
 
-  const isPercentage = scoreType === 'percentage';
-  const formatScore = (s: number) => isPercentage ? `${Math.round(s)}%` : s.toFixed(2);
+  const formatScore = (s: number) => `${Math.round(s)}%`;
 
   return (
     <div className="space-y-6">
-      {/* Score comparison */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="pt-6 text-center">
-            <p className="text-sm text-muted-foreground mb-1">{t('sweepRiscos.gap.history.scoreInicial')}</p>
-            <p className="text-3xl font-bold">{stats ? formatScore(stats.initialScore) : '—'}</p>
-          </CardContent>
-        </Card>
-        <Card className="border-primary/30">
-          <CardContent className="pt-6 text-center">
-            <p className="text-sm text-muted-foreground mb-1">{t('sweepRiscos.gap.history.scoreAtual')}</p>
-            <p className="text-3xl font-bold text-primary">{formatScore(currentScore)}</p>
-            {stats && (
-              <div className="flex items-center justify-center gap-1 mt-1">
-                {trend === 'up' && <TrendingUp className="h-4 w-4 text-emerald-500" strokeWidth={1.5}/>}
-                {trend === 'down' && <TrendingDown className="h-4 w-4 text-destructive" strokeWidth={1.5}/>}
-                {trend === 'neutral' && <Minus className="h-4 w-4 text-muted-foreground" strokeWidth={1.5}/>}
-                <span className={`text-sm font-medium ${
-                  trend === 'up' ? 'text-emerald-500' : trend === 'down' ? 'text-destructive' : 'text-muted-foreground'
-                }`}>
-                  {liveDiff > 0 ? '+' : ''}{formatScore(liveDiff)}
-                </span>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6 text-center">
-            <p className="text-sm text-muted-foreground mb-1">{t('sweepRiscos.gap.history.progresso')}</p>
-            <p className="text-3xl font-bold">
-              {totalRequirements > 0 ? Math.round((evaluatedRequirements / totalRequirements) * 100) : 0}%
-            </p>
-            <p className="text-xs text-muted-foreground">{t('sweepRiscos.gap.history.requisitosAvaliados', { evaluated: evaluatedRequirements, total: totalRequirements })}</p>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Faixa de indicadores no padrão do sistema. Eram três cartões soltos,
+          cada um com borda e vão próprios — o padrão antigo, que já saiu do
+          resto do produto. */}
+      <StatStrip
+        items={[
+          {
+            key: 'inicial',
+            label: t('sweepRiscos.gap.history.scoreInicial'),
+            value: stats ? formatScore(stats.initialScore) : '—',
+          },
+          {
+            key: 'atual',
+            label: t('sweepRiscos.gap.history.scoreAtual'),
+            value: formatScore(currentScore),
+            icon: trend === 'up' ? IconTrendUp : trend === 'down' ? IconTrendDown : IconMinus,
+            hint: stats ? `${liveDiff > 0 ? '+' : ''}${formatScore(liveDiff)}` : undefined,
+            tone: trend === 'down' ? 'destructive' : undefined,
+          },
+          {
+            key: 'progresso',
+            label: t('sweepRiscos.gap.history.progresso'),
+            value: `${totalRequirements > 0 ? Math.round((evaluatedRequirements / totalRequirements) * 100) : 0}%`,
+            hint: t('sweepRiscos.gap.history.requisitosAvaliados', { evaluated: evaluatedRequirements, total: totalRequirements }),
+          },
+        ]}
+      />
 
       {/* Evolution chart */}
-      <ScoreEvolutionChart frameworkId={frameworkId} scoreType={scoreType} />
+      <ScoreEvolutionChart frameworkId={frameworkId} />
 
       {/* Export button */}
       <div className="flex justify-end">
         <Button variant="outline" onClick={handleExportEvolution}>
-          <Download className="h-4 w-4 mr-2" strokeWidth={1.5}/>
+          <IconDownload className="h-4 w-4 mr-2" strokeWidth={1.5}/>
           {t('sweepRiscos.gap.history.exportarRelatorio')}
         </Button>
       </div>
@@ -173,7 +154,7 @@ export function FrameworkHistoryTab({
               {history.slice(-10).reverse().map((point, i) => (
                 <div key={i} className="flex items-center gap-3 text-sm">
                   <div className="flex items-center gap-2 text-muted-foreground w-24 shrink-0">
-                    <Calendar className="h-3.5 w-3.5" strokeWidth={1.5}/>
+                    <IconCalendar className="h-3.5 w-3.5" strokeWidth={1.5}/>
                     <span>{point.date}</span>
                   </div>
                   <div className="h-2 w-2 rounded-full bg-primary shrink-0" />

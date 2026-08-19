@@ -3,12 +3,13 @@
  * 4 colunas: Maturidade · Próximo Marco · Gaps a Tratar · Insight da IA.
  * Identidade Akuris (DM Sans, tokens semânticos, sem cores cruas).
  */
-import { ArrowUpRight, Sparkles } from 'lucide-react';
 import { CornerAccent } from '@/components/identity/CornerAccent';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { MaturityScale, getMaturityLevel } from './MaturityScale';
 import type { StackSegment } from './StackBar';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { IconArrowUpRight } from '@/components/icons';
+import { intlLocale } from '@/lib/date-utils';
 
 interface MaturityHeroProps {
   overallScore: number;
@@ -23,26 +24,44 @@ interface MaturityHeroProps {
   /** Subconjunto de gaps com prazo vencido. */
   overdueCount?: number;
   activeFrameworksCount: number;
-  delta30d?: number;
+  /**
+   * Variação do índice nos últimos 30 dias. `null`/omitido = ainda não há
+   * histórico com que comparar, e nesse caso a linha não é desenhada.
+   */
+  delta30d?: number | null;
+  /**
+   * Marco em aberto mais próximo — **de um framework**, nunca da empresa.
+   *
+   * A empresa escolhe quantos frameworks quiser, e "faltam 35 pontos para a
+   * meta" não quer dizer nada contra a média ponderada de ISO 27001, LGPD e
+   * NIST CSF. Por isso o marco vem identificado pelo framework, e a barra
+   * compara o score **daquele** framework, não o índice da carteira. Definir e
+   * editar acontece dentro do framework.
+   */
   nextMilestone?: {
     label: string;
     date: string;
-    targetScore?: number;
+    targetScore: number;
+    frameworkName: string;
+    frameworkScore: number;
   };
   onSeePlan?: () => void;
+  /** Abre o framework do marco, ou a lista quando ainda não há nenhum. */
+  onOpenMilestone?: () => void;
 }
 
 function formatDateBR(iso: string) {
   try {
-    return new Date(iso).toLocaleDateString('pt-BR', {
+    return new Date(iso).toLocaleDateString(intlLocale(), {
       day: '2-digit', month: 'short', year: 'numeric',
     });
   } catch { return iso; }
 }
 
+/** Dias até a data; negativo quando o prazo já passou. */
 function daysUntil(iso: string): number {
   const d = new Date(iso).getTime();
-  return Math.max(0, Math.ceil((d - Date.now()) / 86400000));
+  return Math.ceil((d - Date.now()) / 86400000);
 }
 
 export function MaturityHero({
@@ -53,9 +72,10 @@ export function MaturityHero({
   criticalCount,
   overdueCount = 0,
   activeFrameworksCount,
-  delta30d = 0,
+  delta30d = null,
   nextMilestone,
   onSeePlan,
+  onOpenMilestone,
 }: MaturityHeroProps) {
   const { t } = useLanguage();
   const score = Math.round(Number(overallScore) || 0);
@@ -63,7 +83,16 @@ export function MaturityHero({
   const coverage = totalRequirements > 0
     ? Math.round((totalEvaluated / totalRequirements) * 100)
     : 0;
-  const deltaPositive = delta30d >= 0;
+  // Zero não é ganho, e ausência de histórico não é zero.
+  //
+  // A propriedade nunca era passada, portanto `delta30d` valia sempre 0; como o
+  // teste era `>= 0`, todo inquilino via **"+0,0 pts" a verde com seta para
+  // cima** — o produto a comemorar que nada mudou. Agora há três estados: sem
+  // base de comparação a linha não existe, zero é neutro, e só variação real
+  // ganha cor.
+  const temDelta = typeof delta30d === 'number';
+  const delta = delta30d ?? 0;
+  const deltaTom = delta > 0 ? 'text-success' : delta < 0 ? 'text-destructive' : 'text-muted-foreground';
   const gapsAbertos = typeof openGaps === 'number' ? openGaps : criticalCount;
 
   // Insight contextual gerado client-side
@@ -74,8 +103,8 @@ export function MaturityHero({
         cta: t('gapV2.maturityHero.insightStartCta'),
       };
     }
-    if (delta30d > 0 && nextMilestone?.targetScore) {
-      const projected = Math.min(100, Math.round(score + delta30d));
+    if (delta > 0 && nextMilestone) {
+      const projected = Math.min(100, Math.round(nextMilestone.frameworkScore + delta));
       return {
         body: <>{t('gapV2.maturityHero.insightProjectedPrefix')} <strong className="text-foreground">{projected}%</strong> {t('gapV2.maturityHero.insightProjectedUntil')} {formatDateBR(nextMilestone.date)}, {projected >= nextMilestone.targetScore ? <>{t('gapV2.maturityHero.insightHitsTarget')}</> : <>{t('gapV2.maturityHero.insightBelowTarget', { target: nextMilestone.targetScore })}</>}.</>,
         cta: t('gapV2.maturityHero.insightSeePlanCta'),
@@ -94,14 +123,15 @@ export function MaturityHero({
   })();
 
   const gapTone = gapsAbertos > 0 ? 'text-destructive' : 'text-success';
+  const diasAteAoMarco = nextMilestone ? daysUntil(nextMilestone.date) : 0;
 
   return (
-    <section className="relative overflow-hidden rounded-2xl border border-border bg-card">
+    <section className="relative overflow-hidden rounded-lg border border-border bg-card">
       <CornerAccent position="top-left" />
       <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr_0.9fr_1.2fr]">
         {/* Coluna 1 — Maturidade */}
         <div className="p-6 lg:pr-7">
-          <div className="text-[10px] font-sans uppercase tracking-wider text-muted-foreground">
+          <div className="text-xs text-muted-foreground">
             {t('gapV2.maturityHero.maturityIndex')} · {activeFrameworksCount} {activeFrameworksCount === 1 ? t('gapV2.maturityHero.activeFrameworkSingular') : t('gapV2.maturityHero.activeFrameworkPlural')}
           </div>
           <div className="mt-2 flex items-end gap-3 flex-wrap">
@@ -111,17 +141,24 @@ export function MaturityHero({
               </span>
               <span className="text-2xl text-muted-foreground ml-0.5">%</span>
             </div>
-            <StatusBadge tone="info" size="sm">
+            <StatusBadge tone="info">
               {t('gapV2.maturityHero.level', { id: maturity.id, label: maturity.label })}
             </StatusBadge>
           </div>
-          <div className={`mt-2 inline-flex items-center gap-1.5 text-xs ${deltaPositive ? 'text-success' : 'text-destructive'}`}>
-            <ArrowUpRight className={`h-3.5 w-3.5 ${deltaPositive ? '' : 'rotate-90'}`} strokeWidth={2} />
-            <span className="font-medium tabular-nums">
-              {deltaPositive ? '+' : ''}{delta30d.toFixed(1)} pts
-            </span>
-            <span className="text-muted-foreground">{t('gapV2.maturityHero.days30')}</span>
-          </div>
+          {temDelta && (
+            <div className={`mt-2 inline-flex items-center gap-1.5 text-xs ${deltaTom}`}>
+              {delta !== 0 && (
+                <IconArrowUpRight
+                  className={`h-3.5 w-3.5 ${delta > 0 ? '' : 'rotate-90'}`}
+                  strokeWidth={2}
+                />
+              )}
+              <span className="font-medium tabular-nums">
+                {delta > 0 ? '+' : ''}{delta.toFixed(1)} pts
+              </span>
+              <span className="text-muted-foreground">{t('gapV2.maturityHero.days30')}</span>
+            </div>
+          )}
           <div className="mt-4">
             <MaturityScale score={score} />
           </div>
@@ -129,56 +166,84 @@ export function MaturityHero({
 
         {/* Coluna 2 — Próximo Marco */}
         <div className="p-6 border-t lg:border-t-0 lg:border-l border-border/60">
-          <div className="text-[10px] font-sans uppercase tracking-wider text-muted-foreground">
+          <div className="text-xs text-muted-foreground">
             {t('gapV2.maturityHero.nextMilestone')}
           </div>
           {nextMilestone ? (
             <>
-              <h3 className="mt-2 text-base font-semibold leading-snug text-foreground">
+              <div className="mt-2 text-xs text-primary truncate">
+                {nextMilestone.frameworkName}
+              </div>
+              <h3 className="mt-0.5 text-base font-semibold leading-snug text-foreground">
                 {nextMilestone.label}
               </h3>
               <div className="mt-1 text-xs text-muted-foreground tabular-nums">
-                {formatDateBR(nextMilestone.date)} · {t('gapV2.maturityHero.inDays', { days: daysUntil(nextMilestone.date) })}
+                {formatDateBR(nextMilestone.date)} ·{' '}
+                {diasAteAoMarco < 0 ? (
+                  <span className="text-destructive">{t('gapV2.marco.atrasado')}</span>
+                ) : (
+                  t('gapV2.maturityHero.inDays', { days: diasAteAoMarco })
+                )}
               </div>
-              {nextMilestone.targetScore && (
-                <div className="mt-4">
-                  <div className="relative h-1.5 rounded-full bg-muted overflow-hidden">
-                    <div
-                      className="absolute inset-y-0 left-0 bg-primary"
-                      style={{ width: `${score}%` }}
-                    />
-                    <div
-                      className="absolute inset-y-0 w-0.5 bg-foreground/40"
-                      style={{ left: `${nextMilestone.targetScore}%` }}
-                    />
-                  </div>
-                  <div className="mt-1.5 flex items-center justify-between text-[10px] font-sans uppercase tracking-wider text-muted-foreground tabular-nums">
-                    <span>{score}%</span>
-                    <span>{t('gapV2.maturityHero.target', { target: nextMilestone.targetScore })}</span>
-                    <span>100%</span>
-                  </div>
+              <div className="mt-4">
+                <div className="relative h-1.5 rounded-full bg-muted overflow-hidden">
+                  <div
+                    className="absolute inset-y-0 left-0 bg-primary"
+                    style={{ width: `${nextMilestone.frameworkScore}%` }}
+                  />
+                  <div
+                    className="absolute inset-y-0 w-0.5 bg-foreground/40"
+                    style={{ left: `${nextMilestone.targetScore}%` }}
+                  />
                 </div>
+                <div className="mt-1.5 flex items-center justify-between text-xs text-muted-foreground tabular-nums">
+                  <span>{nextMilestone.frameworkScore}%</span>
+                  <span>{t('gapV2.maturityHero.target', { target: nextMilestone.targetScore })}</span>
+                  <span>100%</span>
+                </div>
+                <div className="mt-1.5 text-xs tabular-nums">
+                  {nextMilestone.frameworkScore >= nextMilestone.targetScore ? (
+                    <span className="text-success">{t('gapV2.marco.metaAtingida')}</span>
+                  ) : (
+                    <span className="text-muted-foreground">
+                      {t('gapV2.marco.faltam', {
+                        pts: nextMilestone.targetScore - nextMilestone.frameworkScore,
+                      })}
+                    </span>
+                  )}
+                </div>
+              </div>
+              {onOpenMilestone && (
+                <button
+                  type="button"
+                  className="mt-3 text-xs font-medium text-primary hover:underline"
+                  onClick={onOpenMilestone}
+                >
+                  {t('gapV2.marco.abrirFramework')}
+                </button>
               )}
             </>
           ) : (
             <>
               <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-                {t('gapV2.maturityHero.defineMilestoneBody')}
+                {t('gapV2.marco.semMarcoNaLista')}
               </p>
-              <button
-                type="button"
-                className="mt-3 text-xs font-medium text-primary hover:underline"
-                onClick={() => { /* TODO: abrir dialog quando schema existir */ }}
-              >
-                {t('gapV2.maturityHero.defineMilestoneCta')}
-              </button>
+              {onOpenMilestone && (
+                <button
+                  type="button"
+                  className="mt-3 text-xs font-medium text-primary hover:underline"
+                  onClick={onOpenMilestone}
+                >
+                  {t('gapV2.marco.escolherFramework')}
+                </button>
+              )}
             </>
           )}
         </div>
 
         {/* Coluna 3 — Gaps a Tratar */}
         <div className="p-6 border-t lg:border-t-0 lg:border-l border-border/60">
-          <div className="text-[10px] font-sans uppercase tracking-wider text-muted-foreground">
+          <div className="text-xs text-muted-foreground">
             {t('gapV2.maturityHero.gapsToTreat')}
           </div>
           <div className={`mt-2 text-5xl font-bold tabular-nums leading-none tracking-tight ${gapTone}`}>
@@ -206,8 +271,7 @@ export function MaturityHero({
 
         {/* Coluna 4 — Insight contextual */}
         <div className="p-6 border-t lg:border-t-0 lg:border-l border-border/60 bg-primary/[0.02]">
-          <div className="inline-flex items-center gap-1.5 text-[10px] font-sans uppercase tracking-wider text-primary">
-            <Sparkles className="h-3 w-3" strokeWidth={1.5} />
+          <div className="text-xs text-muted-foreground">
             {t('gapV2.maturityHero.insight')}
           </div>
           <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
@@ -217,7 +281,7 @@ export function MaturityHero({
             <button
               type="button"
               onClick={onSeePlan}
-              className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-primary hover:gap-1.5 transition-all"
+              className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-primary hover:gap-1.5 transition-ui"
             >
               {insightCopy.cta} →
             </button>

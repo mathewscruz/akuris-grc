@@ -5,7 +5,8 @@
  * Mantém identidade Navy/Purple, tokens semânticos, AkurisPulse.
  */
 import { useEffect, useMemo, useState } from 'react';
-import { ExternalLink, ArrowRight, ClipboardList, Sparkles, LayoutGrid, List, GitBranch } from 'lucide-react';
+import { ganhoPotencial, type RequisitoParaScore } from '@/lib/gap-score';
+import { buscarForaDoEscopo } from '@/lib/gap-soa';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
@@ -16,12 +17,12 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { resolvePrioridadeTone } from '@/lib/status-tone';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { KpiTiny } from './KpiTiny';
-import { AIBadge } from './AIBadge';
 import { SectionHead } from './SectionHead';
 import { CornerAccent } from '@/components/identity/CornerAccent';
 import { reqTitulo } from "@/lib/gap-i18n";
 import { useLanguage } from '@/contexts/LanguageContext';
-
+import { IconExternal, IconArrowRight, IconChecklist, IconGrid, IconList, IconBranch } from '@/components/icons';
+import { intlLocale, parseDataLocal } from '@/lib/date-utils';
 interface Props {
   frameworkId: string;
   frameworkName: string;
@@ -64,6 +65,8 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
   const { t } = useLanguage();
   const [planos, setPlanos] = useState<PlanoAcao[]>([]);
   const [naoConformes, setNaoConformes] = useState<NaoConformeReq[]>([]);
+  /** Universo do framework: sem ele não dá para converter peso em pontos de score. */
+  const [todosRequisitos, setTodosRequisitos] = useState<RequisitoParaScore[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -129,8 +132,13 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
         }
 
         const planRequirementIds = new Set(planosOut.map(p => p.requirement_id));
+        // Requisito fora do escopo pelo SoA não entra na fila de remediação:
+        // pedir plano de ação para algo que a empresa dispensou é ruído.
+        const foraDoEscopo = await buscarForaDoEscopo(frameworkId, empresaId);
         const ncReqs: NaoConformeReq[] = evals
-          .filter(e => e.conformity_status === 'nao_conforme' && !planRequirementIds.has(e.requirement_id))
+          .filter(e => e.conformity_status === 'nao_conforme'
+            && !planRequirementIds.has(e.requirement_id)
+            && !foraDoEscopo.has(e.requirement_id))
           .map(e => reqMap.get(e.requirement_id))
           .filter(Boolean)
           .map((r: any) => ({
@@ -141,9 +149,17 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
             peso: r.peso,
           }));
 
+        const statusPorReq = new Map(evals.map(e => [e.requirement_id, e.conformity_status]));
+
         if (alive) {
           setPlanos(planosOut);
           setNaoConformes(ncReqs);
+          setTodosRequisitos(reqs.map(r => ({
+            id: r.id,
+            peso: r.peso,
+            conformityStatus: statusPorReq.get(r.id),
+            aplicavel: !foraDoEscopo.has(r.id),
+          })));
         }
       } catch (e) {
         logger.error('RemediationTabV2 load', { error: e instanceof Error ? e.message : String(e) });
@@ -160,9 +176,17 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
     const gapsAbertos = naoConformes.length;
     const sugeridosIA = new Set(naoConformes.map(r => r.categoria)).size;
     const emExecucao = planos.filter(p => p.status === 'em_andamento' || p.status === 'em_revisao').length;
-    const impactoPotencial = naoConformes.reduce((s, r) => s + (Number(r.peso) || 1), 0);
+
+    // Isto era a soma dos PESOS dos requisitos em aberto, exibida como "+Npts".
+    // Peso não é ponto de score: com dois gaps de peso 2 e 3 num framework de
+    // peso total 20, a tela dizia "+5pts" quando o ganho real é 25 — e é
+    // justamente este número que serve para convencer alguém a agir.
+    const impactoPotencial = ganhoPotencial(
+      todosRequisitos,
+      naoConformes.map(r => ({ id: r.id, peso: r.peso, conformityStatus: 'nao_conforme' })),
+    );
     return { gapsAbertos, sugeridosIA, emExecucao, impactoPotencial };
-  }, [planos, naoConformes]);
+  }, [planos, naoConformes, todosRequisitos]);
 
   const [grouping, setGrouping] = useState<'causa' | 'secao' | 'esforco'>('causa');
   const [boardView, setBoardView] = useState<'quadro' | 'lista' | 'timeline'>('quadro');
@@ -272,7 +296,6 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
           </div>
 
           <p className="text-xs text-muted-foreground">
-            <Sparkles className="inline h-3 w-3 mr-1 text-primary" strokeWidth={1.5} />
             {t('gapV2.remediation.summaryPrefix')} <strong className="text-foreground">{t('gapV2.remediation.summaryGaps', { count: naoConformes.length })}</strong> {t('gapV2.remediation.summaryGroupedInto')}{' '}
             <strong className="text-foreground">{t('gapV2.remediation.summaryConsolidatedPlans', { count: aiClusters.length })}</strong>{' '}
             {t('gapV2.remediation.summaryCovering')} <strong className="text-foreground">{t('gapV2.remediation.summaryRequirements', { count: aiClusters.reduce((s, c) => s + c.items.length, 0) })}</strong>.
@@ -282,11 +305,11 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
             {aiClusters.map(c => (
               <article
                 key={c.categoria}
-                className="relative overflow-hidden rounded-xl border border-primary/30 bg-card p-4"
+                className="relative overflow-hidden rounded-lg border border-primary/30 bg-card p-4"
               >
                 <CornerAccent position="top-right" size={10} />
                 <span className="absolute left-0 top-3 bottom-3 w-[2px] rounded-r bg-primary" />
-                <div className="flex items-center gap-1.5 text-[10px] font-sans uppercase tracking-wider text-primary">
+                <div className="flex items-center gap-1.5 text-xs text-primary">
                   {t('gapV2.remediation.covers', { count: c.items.length })}
                 </div>
                 <h4 className="mt-1 text-sm font-semibold leading-snug">
@@ -303,19 +326,19 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
                   {c.items.slice(0, 5).map(r => (
                     <span
                       key={r.id}
-                      className="inline-flex items-center rounded border border-destructive/30 bg-destructive/5 px-1.5 py-0.5 text-[10px] font-mono text-destructive"
+                      className="inline-flex items-center rounded border border-destructive/30 bg-destructive/5 px-1.5 py-0.5 text-micro font-mono text-destructive"
                     >
                       {r.codigo || '—'}
                     </span>
                   ))}
                   {c.items.length > 5 && (
-                    <span className="inline-flex items-center rounded border border-border px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground">
+                    <span className="inline-flex items-center rounded border border-border px-1.5 py-0.5 text-micro font-mono text-muted-foreground">
                       +{c.items.length - 5}
                     </span>
                   )}
                 </div>
 
-                <div className="mt-3 flex items-center gap-2 text-[11px] text-muted-foreground">
+                <div className="mt-3 flex items-center gap-2 text-micro text-muted-foreground">
                   <span><strong className="text-foreground">{c.esforco === 'L' ? t('gapV2.remediation.effortLow') : c.esforco === 'M' ? t('gapV2.remediation.effortMedium') : t('gapV2.remediation.effortHigh')}</strong> {t('gapV2.remediation.effortSuffix')}</span>
                   <span>·</span>
                   <span><strong className="text-foreground">{c.dias}d</strong> {t('gapV2.remediation.estimated')}</span>
@@ -329,7 +352,7 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
                   className="mt-3 inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
                 >
                   {t('gapV2.remediation.createPlan')}
-                  <ArrowRight className="h-3 w-3" strokeWidth={1.5} />
+                  <IconArrowRight className="h-3 w-3" strokeWidth={1.5} />
                 </button>
               </article>
             ))}
@@ -344,22 +367,22 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
             title={t('gapV2.remediation.actionPlansTitle')}
             count={planos.length}
           />
-          <div className="inline-flex items-center rounded-full border border-border bg-card p-0.5">
-            <ViewBtn icon={LayoutGrid} active={boardView === 'quadro'} onClick={() => setBoardView('quadro')}>
+          <div className="inline-flex items-center rounded-md border border-border bg-card p-0.5">
+            <ViewBtn icon={IconGrid} active={boardView === 'quadro'} onClick={() => setBoardView('quadro')}>
               {t('gapV2.remediation.viewBoard')}
             </ViewBtn>
-            <ViewBtn icon={List} active={boardView === 'lista'} onClick={() => setBoardView('lista')} disabled>
+            <ViewBtn icon={IconList} active={boardView === 'lista'} onClick={() => setBoardView('lista')} disabled>
               {t('gapV2.remediation.viewList')}
             </ViewBtn>
-            <ViewBtn icon={GitBranch} active={boardView === 'timeline'} onClick={() => setBoardView('timeline')} disabled>
+            <ViewBtn icon={IconBranch} active={boardView === 'timeline'} onClick={() => setBoardView('timeline')} disabled>
               {t('gapV2.remediation.viewTimeline')}
             </ViewBtn>
           </div>
         </div>
 
         {planos.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-border bg-card py-12 text-center">
-            <ClipboardList className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" strokeWidth={1.5} />
+          <div className="rounded-lg border border-dashed border-border bg-card py-12 text-center">
+            <IconChecklist className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" strokeWidth={1.5} />
             <p className="text-sm font-medium">{t('gapV2.remediation.emptyCreatePlan')}</p>
             <p className="text-xs text-muted-foreground mt-1 max-w-md mx-auto">
               {t('gapV2.remediation.emptyCreatePlanDesc')}
@@ -370,9 +393,9 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
             {COLUMNS.map(col => {
               const items = planos.filter(p => col.match(p.status));
               return (
-                <div key={col.key} className="rounded-xl border border-border bg-muted/20 p-3 flex flex-col">
+                <div key={col.key} className="rounded-lg border border-border bg-muted/20 p-3 flex flex-col">
                   <div className="flex items-center justify-between mb-3 px-1">
-                    <span className="inline-flex items-center gap-2 text-[11px] font-sans uppercase tracking-wider text-muted-foreground">
+                    <span className="inline-flex items-center gap-2 text-xs text-muted-foreground">
                       <span className={cn('h-1.5 w-1.5 rounded-full', COL_DOT[col.key])} />
                       {t(col.labelKey)}
                     </span>
@@ -389,35 +412,35 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
                         className="w-full text-left rounded-lg border border-border bg-card p-3 hover:border-primary/40 transition-colors group"
                       >
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="font-mono text-[10px] text-muted-foreground">
+                          <span className="font-mono text-micro text-muted-foreground">
                             {p.requirement_codigo}
                           </span>
-                          <StatusBadge size="sm" {...resolvePrioridadeTone(p.prioridade)}>
+                          <StatusBadge {...resolvePrioridadeTone(p.prioridade)}>
                             {p.prioridade}
                           </StatusBadge>
                         </div>
                         <p className="text-xs font-medium leading-snug line-clamp-2">{p.titulo}</p>
-                        <div className="mt-2 flex items-center justify-between text-[10px] text-muted-foreground">
+                        <div className="mt-2 flex items-center justify-between text-micro text-muted-foreground">
                           <span className="truncate">
                             {p.responsavel_nome || t('gapV2.remediation.noResponsible')}
                           </span>
                           {p.prazo && (
                             <span
                               className={
-                                new Date(p.prazo) < new Date() && p.status !== 'concluido'
+                                parseDataLocal(p.prazo) < new Date() && p.status !== 'concluido'
                                   ? 'text-destructive font-medium'
                                   : ''
                               }
                             >
-                              {new Date(p.prazo).toLocaleDateString('pt-BR')}
+                              {parseDataLocal(p.prazo).toLocaleDateString(intlLocale())}
                             </span>
                           )}
                         </div>
-                        <ExternalLink className="h-3 w-3 text-muted-foreground group-hover:text-primary mt-1" strokeWidth={1.5} />
+                        <IconExternal className="h-3 w-3 text-muted-foreground group-hover:text-primary mt-1" strokeWidth={1.5} />
                       </button>
                     ))}
                     {items.length === 0 && (
-                      <p className="text-[11px] text-muted-foreground italic px-1">—</p>
+                      <p className="text-micro text-muted-foreground italic px-1">—</p>
                     )}
                   </div>
                 </div>
@@ -447,14 +470,14 @@ function SegmentToggle<T extends string>({
   options: Array<{ value: T; label: string }>;
 }) {
   return (
-    <div className="inline-flex items-center rounded-full border border-border bg-card p-0.5">
+    <div className="inline-flex items-center rounded-md border border-border bg-card p-0.5">
       {options.map(opt => (
         <button
           key={opt.value}
           type="button"
           onClick={() => onChange(opt.value)}
           className={cn(
-            'rounded-full px-3 py-1 text-xs transition-colors',
+            'rounded-md px-3 py-1 text-xs transition-colors',
             value === opt.value
               ? 'bg-foreground text-background font-medium'
               : 'text-muted-foreground hover:text-foreground'
@@ -474,7 +497,7 @@ function ViewBtn({
   disabled,
   children,
 }: {
-  icon: typeof LayoutGrid;
+  icon: React.ElementType;
   active: boolean;
   onClick: () => void;
   disabled?: boolean;
@@ -487,7 +510,7 @@ function ViewBtn({
       onClick={disabled ? undefined : onClick}
       disabled={disabled}
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs transition-colors',
+        'inline-flex items-center gap-1.5 rounded-md px-3 py-1 text-xs transition-colors',
         active ? 'bg-foreground text-background font-medium' : 'text-muted-foreground hover:text-foreground',
         disabled && 'opacity-50 cursor-not-allowed hover:text-muted-foreground'
       )}

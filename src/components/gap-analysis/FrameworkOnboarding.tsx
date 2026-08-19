@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { IconTime, IconBook, IconTarget, IconIdea, IconArrowRight, IconShield, IconScale, IconLock, IconUsers, IconAward, IconDatabase, IconFileCheck, IconGlobe, IconServer, IconOrg, IconSettings, IconLayers } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, Clock, Target, Lightbulb, ArrowRight, Shield, Scale, Lock, Users, Award, Database, FileCheck, Globe, Server, Landmark, Settings, Layers } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface FrameworkOnboardingProps {
@@ -16,32 +16,32 @@ function getOnboardingKey(nome: string): { key: string; icon: React.ReactNode } 
   const lower = nome.toLowerCase();
   const icon = (Comp: any) => <Comp className="h-8 w-8 text-primary" strokeWidth={1.5} />;
 
-  if (lower.includes('iso') && nome.includes('27001')) return { key: 'iso27001', icon: icon(Shield) };
-  if (lower.includes('nist') && !lower.includes('800') && !lower.includes('sp 800')) return { key: 'nist', icon: icon(Target) };
-  if (lower.includes('lgpd')) return { key: 'lgpd', icon: icon(Scale) };
+  if (lower.includes('iso') && nome.includes('27001')) return { key: 'iso27001', icon: icon(IconShield) };
+  if (lower.includes('nist') && !lower.includes('800') && !lower.includes('sp 800')) return { key: 'nist', icon: icon(IconTarget) };
+  if (lower.includes('lgpd')) return { key: 'lgpd', icon: icon(IconScale) };
   if (lower.includes('pci')) return { key: 'pciDss', icon: icon(Lock) };
-  if (lower.includes('soc')) return { key: 'soc2', icon: icon(FileCheck) };
-  if (lower.includes('gdpr')) return { key: 'gdpr', icon: icon(Globe) };
-  if (lower.includes('hipaa')) return { key: 'hipaa', icon: icon(Database) };
-  if (lower.includes('cis')) return { key: 'cis', icon: icon(Shield) };
-  if (lower.includes('cobit')) return { key: 'cobit', icon: icon(Layers) };
-  if (lower.includes('sox')) return { key: 'sox', icon: icon(Landmark) };
-  if (lower.includes('nis2') || lower.includes('nis 2')) return { key: 'nis2', icon: icon(Globe) };
-  if (lower.includes('27701')) return { key: 'iso27701', icon: icon(Shield) };
-  if (lower.includes('9001')) return { key: 'iso9001', icon: icon(Award) };
-  if (lower.includes('14001')) return { key: 'iso14001', icon: icon(Settings) };
-  if (lower.includes('37301')) return { key: 'iso37301', icon: icon(Scale) };
-  if (lower.includes('20000')) return { key: 'iso20000', icon: icon(Server) };
-  if (lower.includes('31000')) return { key: 'iso31000', icon: icon(Target) };
-  if (lower.includes('itil')) return { key: 'itil', icon: icon(Settings) };
-  if (lower.includes('ccpa')) return { key: 'ccpa', icon: icon(Scale) };
-  if (lower.includes('coso') && lower.includes('erm')) return { key: 'cosoErm', icon: icon(Target) };
-  if (lower.includes('coso') && (lower.includes('ic') || lower.includes('interno') || lower.includes('internal'))) return { key: 'cosoIc', icon: icon(Landmark) };
-  if (lower.includes('800-82') || lower.includes('800.82') || lower.includes('sp 800')) return { key: 'nistSp80082', icon: icon(Settings) };
-  if (lower.includes('dora')) return { key: 'dora', icon: icon(Landmark) };
-  if (lower.includes('62443')) return { key: 'iso62443', icon: icon(Layers) };
+  if (lower.includes('soc')) return { key: 'soc2', icon: icon(IconFileCheck) };
+  if (lower.includes('gdpr')) return { key: 'gdpr', icon: icon(IconGlobe) };
+  if (lower.includes('hipaa')) return { key: 'hipaa', icon: icon(IconDatabase) };
+  if (lower.includes('cis')) return { key: 'cis', icon: icon(IconShield) };
+  if (lower.includes('cobit')) return { key: 'cobit', icon: icon(IconLayers) };
+  if (lower.includes('sox')) return { key: 'sox', icon: icon(IconOrg) };
+  if (lower.includes('nis2') || lower.includes('nis 2')) return { key: 'nis2', icon: icon(IconGlobe) };
+  if (lower.includes('27701')) return { key: 'iso27701', icon: icon(IconShield) };
+  if (lower.includes('9001')) return { key: 'iso9001', icon: icon(IconAward) };
+  if (lower.includes('14001')) return { key: 'iso14001', icon: icon(IconSettings) };
+  if (lower.includes('37301')) return { key: 'iso37301', icon: icon(IconScale) };
+  if (lower.includes('20000')) return { key: 'iso20000', icon: icon(IconServer) };
+  if (lower.includes('31000')) return { key: 'iso31000', icon: icon(IconTarget) };
+  if (lower.includes('itil')) return { key: 'itil', icon: icon(IconSettings) };
+  if (lower.includes('ccpa')) return { key: 'ccpa', icon: icon(IconScale) };
+  if (lower.includes('coso') && lower.includes('erm')) return { key: 'cosoErm', icon: icon(IconTarget) };
+  if (lower.includes('coso') && (lower.includes('ic') || lower.includes('interno') || lower.includes('internal'))) return { key: 'cosoIc', icon: icon(IconOrg) };
+  if (lower.includes('800-82') || lower.includes('800.82') || lower.includes('sp 800')) return { key: 'nistSp80082', icon: icon(IconSettings) };
+  if (lower.includes('dora')) return { key: 'dora', icon: icon(IconOrg) };
+  if (lower.includes('62443')) return { key: 'iso62443', icon: icon(IconLayers) };
 
-  return { key: 'generic', icon: icon(BookOpen) };
+  return { key: 'generic', icon: icon(IconBook) };
 }
 
 export function FrameworkOnboarding({ frameworkNome, frameworkVersao, frameworkTipo, totalRequirements, onStart }: FrameworkOnboardingProps) {
@@ -68,17 +68,17 @@ export function FrameworkOnboarding({ frameworkNome, frameworkVersao, frameworkT
     <div className="space-y-6 max-w-3xl mx-auto">
       <Card>
         <CardContent className="pt-8 pb-6 text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
+          <div className="inline-flex items-center justify-center w-16 h-16 mb-4">
             {info.icon}
           </div>
           <h2 className="text-2xl font-bold mb-2">{frameworkNome} {frameworkVersao}</h2>
           <p className="text-muted-foreground max-w-xl mx-auto">{info.description}</p>
           <div className="flex items-center justify-center gap-4 mt-4">
             <Badge variant="outline" className="gap-1">
-              <BookOpen className="h-3 w-3" strokeWidth={1.5}/> {t('gapExports.onboardingUi.requirementsBadge', { count: String(totalRequirements) })}
+              <IconBook className="h-3 w-3" strokeWidth={1.5}/> {t('gapExports.onboardingUi.requirementsBadge', { count: String(totalRequirements) })}
             </Badge>
             <Badge variant="outline" className="gap-1">
-              <Clock className="h-3 w-3" strokeWidth={1.5}/> {info.timeEstimate}
+              <IconTime className="h-3 w-3" strokeWidth={1.5}/> {info.timeEstimate}
             </Badge>
           </div>
         </CardContent>
@@ -88,7 +88,7 @@ export function FrameworkOnboarding({ frameworkNome, frameworkVersao, frameworkT
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
-              <Users className="h-5 w-5 text-primary" strokeWidth={1.5}/>
+              <IconUsers className="h-5 w-5 text-primary" strokeWidth={1.5}/>
               {t('gapExports.onboardingUi.audienceTitle')}
             </CardTitle>
           </CardHeader>
@@ -99,7 +99,7 @@ export function FrameworkOnboarding({ frameworkNome, frameworkVersao, frameworkT
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
-              <Award className="h-5 w-5 text-primary" strokeWidth={1.5}/>
+              <IconAward className="h-5 w-5 text-primary" strokeWidth={1.5}/>
               {t('gapExports.onboardingUi.benefitsTitle')}
             </CardTitle>
           </CardHeader>
@@ -119,7 +119,7 @@ export function FrameworkOnboarding({ frameworkNome, frameworkVersao, frameworkT
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <Target className="h-5 w-5 text-primary" strokeWidth={1.5}/>
+            <IconTarget className="h-5 w-5 text-primary" strokeWidth={1.5}/>
             {t('gapExports.onboardingUi.roadmapTitle')}
           </CardTitle>
         </CardHeader>
@@ -140,7 +140,7 @@ export function FrameworkOnboarding({ frameworkNome, frameworkVersao, frameworkT
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <Lightbulb className="h-5 w-5 text-amber-500" strokeWidth={1.5}/>
+            <IconIdea className="h-5 w-5 text-warning" strokeWidth={1.5}/>
             {t('gapExports.onboardingUi.tipsTitle')}
           </CardTitle>
         </CardHeader>
@@ -148,7 +148,7 @@ export function FrameworkOnboarding({ frameworkNome, frameworkVersao, frameworkT
           <ul className="space-y-2">
             {info.quickTips.map((tip, i) => (
               <li key={i} className="flex items-start gap-2 text-sm">
-                <span className="text-amber-500 mt-0.5">💡</span>
+                <span className="text-warning mt-0.5">💡</span>
                 <span>{tip}</span>
               </li>
             ))}
@@ -158,7 +158,7 @@ export function FrameworkOnboarding({ frameworkNome, frameworkVersao, frameworkT
 
       <div className="text-center pb-4">
         <Button size="lg" onClick={onStart} className="gap-2">
-          {t('gapExports.onboardingUi.startButton')} <ArrowRight className="h-4 w-4" strokeWidth={1.5}/>
+          {t('gapExports.onboardingUi.startButton')} <IconArrowRight className="h-4 w-4" strokeWidth={1.5}/>
         </Button>
         <p className="text-xs text-muted-foreground mt-2">
           {t('gapExports.onboardingUi.aiHint')}

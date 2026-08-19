@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Download, Search, FileText } from 'lucide-react';
+;
 import { supabase } from '@/integrations/supabase/client';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { toast } from 'sonner';
@@ -26,8 +26,8 @@ import { cn } from '@/lib/utils';
 import { reqTitulo, reqCategoria } from "@/lib/gap-i18n";
 import { useRequisitoRiscos } from '@/hooks/useRiscoRequisitos';
 import { useRequisitoControles } from '@/hooks/useControleRequisitos';
-import { ShieldAlert } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { IconSearch, IconDownload, IconFile, IconShieldAlert } from '@/components/icons';
 
 interface SoAItem {
   id: string;
@@ -45,6 +45,16 @@ interface Props {
   frameworkId: string;
   frameworkName: string;
   frameworkVersion: string;
+  /**
+   * Secções do framework, vindas de `getFrameworkConfig`.
+   *
+   * Os segmentos desta barra eram três valores fixos — Todos / Cláusulas /
+   * Anexo A —, que só descrevem a ISO 27001. Em qualquer outro framework o
+   * segundo botão devolvia a lista inteira e o terceiro devolvia nada, porque
+   * o teste era "o código começa por A.". Agora vêm do mesmo sítio que a
+   * tabela de requisitos já usa; quem não tem secções fica só com "Todos".
+   */
+  sections?: { id: string; title: string; filter: (codigo: string | null) => boolean }[];
 }
 
 const STATUS_LABEL_KEYS: Record<string, string> = {
@@ -55,21 +65,18 @@ const STATUS_LABEL_KEYS: Record<string, string> = {
   nao_avaliado: 'gapV2.soa.statusNaoAvaliado',
 };
 
-type Segment = 'todos' | 'clausulas' | 'anexo_a';
+/** `todos`, ou o id de uma secção do framework. */
+type Segment = string;
 
-const SEGMENT_KEYS: Array<{ key: Segment; labelKey: string }> = [
-  { key: 'todos', labelKey: 'gapV2.soa.segAll' },
-  { key: 'clausulas', labelKey: 'gapV2.soa.segClauses' },
-  { key: 'anexo_a', labelKey: 'gapV2.soa.segAnnexA' },
-];
 
-export function SoATabV2({ frameworkId, frameworkName, frameworkVersion }: Props) {
+export function SoATabV2({ frameworkId, frameworkName, frameworkVersion, sections }: Props) {
   const { t } = useLanguage();
   const { empresaId } = useEmpresaId();
   const [items, setItems] = useState<SoAItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [segment, setSegment] = useState<Segment>('todos');
+  const segmentos = [{ id: 'todos', title: t('gapV2.soa.segAll') }, ...(sections || [])];
   const [justificativas, setJustificativas] = useState<Record<string, string>>({});
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
@@ -148,7 +155,6 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion }: Props
   };
 
   // Em ISO 27001: códigos "4-10" são cláusulas, "A.x.y" são Anexo A.
-  const isAnexoA = (codigo: string) => /^a\.?\s?\d/i.test(codigo);
 
   const filteredItems = useMemo(() => {
     return items.filter(item => {
@@ -156,8 +162,10 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion }: Props
         const s = search.toLowerCase();
         if (!item.codigo.toLowerCase().includes(s) && !item.titulo.toLowerCase().includes(s)) return false;
       }
-      if (segment === 'clausulas' && isAnexoA(item.codigo)) return false;
-      if (segment === 'anexo_a' && !isAnexoA(item.codigo)) return false;
+      if (segment !== 'todos') {
+        const seccao = sections?.find(sec => sec.id === segment);
+        if (seccao && !seccao.filter(item.codigo)) return false;
+      }
       return true;
     });
   }, [items, search, segment]);
@@ -353,24 +361,24 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion }: Props
       {/* Toolbar com segmentos */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
         <div className="inline-flex items-center rounded-lg border border-border bg-card p-0.5">
-          {SEGMENT_KEYS.map(seg => (
+          {segmentos.map(seg => (
             <button
-              key={seg.key}
+              key={seg.id}
               type="button"
-              onClick={() => setSegment(seg.key)}
+              onClick={() => setSegment(seg.id)}
               className={cn(
-                'px-3 py-1.5 text-xs font-medium rounded-md transition-colors',
-                segment === seg.key
+                'px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
+                segment === seg.id
                   ? 'bg-primary text-primary-foreground'
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
-              {t(seg.labelKey)}
+              {seg.title}
             </button>
           ))}
         </div>
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
+          <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
           <Input
             placeholder={t('gapV2.soa.searchPlaceholder')}
             value={search}
@@ -380,14 +388,14 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion }: Props
         </div>
         <div className="flex gap-2 ml-auto">
           <Button variant="outline" onClick={gerarJustificacoes}>
-            <ShieldAlert className="h-4 w-4 mr-2" strokeWidth={1.5} />
+            <IconShieldAlert className="h-4 w-4 mr-2" strokeWidth={1.5} />
             {t('riscosControles.soa.gerarJustificacao')}
           </Button>
           <Button variant="outline" onClick={handleSave} disabled={saving}>
             {saving ? t('gapV2.soa.saving') : t('gapV2.soa.saveButton')}
           </Button>
           <Button onClick={handleExportPDF} disabled={exporting}>
-            <Download className="h-4 w-4 mr-2" strokeWidth={1.5} />
+            <IconDownload className="h-4 w-4 mr-2" strokeWidth={1.5} />
             {exporting ? t('gapV2.soa.exporting') : t('gapV2.soa.exportButton')}
           </Button>
         </div>
@@ -397,7 +405,7 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion }: Props
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
-            <FileText className="h-5 w-5 text-primary" strokeWidth={1.5} />
+            <IconFile className="h-5 w-5 text-primary" strokeWidth={1.5} />
             {t('gapV2.soa.title')}
           </CardTitle>
           <p className="text-xs text-muted-foreground">
@@ -460,7 +468,7 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion }: Props
                         </Button>
                       </TableCell>
                       <TableCell>
-                        <StatusBadge size="sm" {...resolveConformityTone(statusKey)}>
+                        <StatusBadge {...resolveConformityTone(statusKey)}>
                           {t(STATUS_LABEL_KEYS[statusKey]) || statusKey}
                         </StatusBadge>
                       </TableCell>
@@ -470,7 +478,7 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion }: Props
                           if (riscos.length === 0) {
                             return (
                               <span className="inline-flex items-center gap-1 text-muted-foreground">
-                                <ShieldAlert className="h-3.5 w-3.5" strokeWidth={1.5} />
+                                <IconShieldAlert className="h-3.5 w-3.5" strokeWidth={1.5} />
                                 {t('riscosControles.soa.semRisco')}
                               </span>
                             );

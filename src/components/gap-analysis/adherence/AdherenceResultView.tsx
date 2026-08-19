@@ -1,10 +1,10 @@
 import { useState } from 'react';
+import { IconDownload, IconSuccess, IconWarning, IconRefresh, IconFile, IconIdea, IconArrowLeft, IconTrendUp } from '@/components/icons';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { CheckCircle2, AlertTriangle, Lightbulb, ArrowLeft, Download, TrendingUp, FileText, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR, enUS } from 'date-fns/locale';
 import type { AdherenceAssessment, PontoForte, PontoMelhoria } from './types';
@@ -17,6 +17,7 @@ import { logger } from '@/lib/logger';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { exigirEscrita } from '@/lib/supabase-write';
 interface AdherenceResultViewProps {
   assessment: AdherenceAssessment;
   onBack: () => void;
@@ -161,13 +162,13 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
           const currentPriority = priority[existing.conformity_status || 'nao_avaliado'] || 0;
           const newPriority = priority[conformityStatus] || 0;
           if (newPriority > currentPriority) {
-            await supabase.from('gap_analysis_evaluations')
+            await exigirEscrita(supabase.from('gap_analysis_evaluations')
               .update({ conformity_status: conformityStatus, updated_at: new Date().toISOString() })
-              .eq('id', existing.id);
+              .eq('id', existing.id));
             applied++;
           }
         } else {
-          await supabase.from('gap_analysis_evaluations')
+          await exigirEscrita(supabase.from('gap_analysis_evaluations')
             .insert({
               framework_id: frameworkId,
               requirement_id: detail.requirement_id,
@@ -176,7 +177,7 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
               evidence_status: 'pendente',
               status: 'em_andamento',
               observacoes: t('gapAnalysis.adherenceUi.result.autoEvaluatedNote', { doc: assessment.documento_nome }),
-            });
+            }));
           applied++;
         }
       }
@@ -199,7 +200,7 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
       {/* Header */}
       <div className="flex items-center justify-between">
         <Button variant="outline" onClick={onBack}>
-          <ArrowLeft className="mr-2 h-4 w-4" strokeWidth={1.5}/>
+          <IconArrowLeft className="mr-2 h-4 w-4" strokeWidth={1.5}/>
           {t('gapAnalysis.adherenceUi.result.back')}
         </Button>
         <div className="flex gap-2">
@@ -208,12 +209,12 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
               {applying ? (
                 <><AkurisPulse size={16} className="mr-2" />{t('gapAnalysis.adherenceUi.result.applying')}</>
               ) : (
-                <><RefreshCw className="mr-2 h-4 w-4" strokeWidth={1.5}/>{t('gapAnalysis.adherenceUi.result.applyToManualEvaluation')}</>
+                <><IconRefresh className="mr-2 h-4 w-4" strokeWidth={1.5}/>{t('gapAnalysis.adherenceUi.result.applyToManualEvaluation')}</>
               )}
             </Button>
           )}
           <Button variant="outline" onClick={handleExportPDF}>
-            <Download className="mr-2 h-4 w-4" strokeWidth={1.5}/>
+            <IconDownload className="mr-2 h-4 w-4" strokeWidth={1.5}/>
             {t('gapAnalysis.adherenceUi.result.exportPdf')}
           </Button>
         </div>
@@ -222,11 +223,11 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
       {/* Resultado Geral */}
       <Card className="p-8 border">
         <div className="text-center">
-          <div className={`inline-flex items-center justify-center w-12 h-12 rounded-full ${getResultIconColor(assessment.resultado_geral).bg} mb-3`}>
+          <div className="inline-flex items-center justify-center mb-3">
             {assessment.resultado_geral === 'conforme' ? (
-              <CheckCircle2 className={`h-6 w-6 ${getResultIconColor(assessment.resultado_geral).icon}`} />
+              <IconSuccess className={`h-6 w-6 ${getResultIconColor(assessment.resultado_geral).icon}`} />
             ) : (
-              <AlertTriangle className={`h-6 w-6 ${getResultIconColor(assessment.resultado_geral).icon}`} />
+              <IconWarning className={`h-6 w-6 ${getResultIconColor(assessment.resultado_geral).icon}`} />
             )}
           </div>
           <h2 className="text-2xl font-bold mb-2 text-foreground">{getResultLabel(assessment.resultado_geral)}</h2>
@@ -250,7 +251,7 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
       {assessment.pontos_fortes && assessment.pontos_fortes.length > 0 && (
         <Card className="p-6">
           <h3 className="text-xl font-semibold mb-4 flex items-center gap-2 text-foreground">
-            <CheckCircle2 className="h-5 w-5 text-muted-foreground" strokeWidth={1.5}/>
+            <IconSuccess className="h-5 w-5 text-muted-foreground" strokeWidth={1.5}/>
             {t('gapAnalysis.adherenceUi.result.strongPointsTitle', { count: assessment.pontos_fortes.length })}
           </h3>
           <div className="space-y-3">
@@ -268,7 +269,7 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
       {assessment.pontos_melhoria && assessment.pontos_melhoria.length > 0 && (
         <Card className="p-6">
           <h3 className="text-xl font-semibold mb-4 flex items-center gap-2 text-foreground">
-            <AlertTriangle className="h-5 w-5 text-muted-foreground" strokeWidth={1.5}/>
+            <IconWarning className="h-5 w-5 text-muted-foreground" strokeWidth={1.5}/>
             {t('gapAnalysis.adherenceUi.result.improvementPointsTitle', { count: assessment.pontos_melhoria.length })}
           </h3>
           <div className="space-y-3">
@@ -289,7 +290,7 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
       {assessment.recomendacoes && assessment.recomendacoes.length > 0 && (
         <Card className="p-6">
           <h3 className="text-xl font-semibold mb-4 flex items-center gap-2 text-foreground">
-            <Lightbulb className="h-5 w-5 text-muted-foreground" strokeWidth={1.5}/>
+            <IconIdea className="h-5 w-5 text-muted-foreground" strokeWidth={1.5}/>
             {t('gapAnalysis.adherenceUi.result.recommendationsTitle')}
           </h3>
           <ol className="list-decimal list-inside space-y-2 text-foreground">
@@ -304,7 +305,7 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
       {details && details.length > 0 && (
         <Card className="p-6">
           <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <FileText className="h-5 w-5" strokeWidth={1.5}/>
+            <IconFile className="h-5 w-5" strokeWidth={1.5}/>
             {t('gapAnalysis.adherenceUi.result.detailedAnalysisTitle')}
           </h3>
           <Accordion type="single" collapsible className="w-full">

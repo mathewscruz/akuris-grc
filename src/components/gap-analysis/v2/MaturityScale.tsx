@@ -52,7 +52,7 @@ export function MaturityScale({ score, className, showLabels = true }: MaturityS
               {showLabels && (
                 <div
                   className={cn(
-                    'text-[10px] font-mono tabular-nums',
+                    'text-micro font-mono tabular-nums',
                     reached ? 'text-foreground/80' : 'text-muted-foreground'
                   )}
                 >

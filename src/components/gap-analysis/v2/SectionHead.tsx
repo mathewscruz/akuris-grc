@@ -14,11 +14,11 @@ interface SectionHeadProps {
 export function SectionHead({ title, count, right, className }: SectionHeadProps) {
   return (
     <div className={cn('flex items-center gap-3 mb-3', className)}>
-      <span className="text-xs font-semibold uppercase tracking-wider text-foreground/80">
+      <span className="text-xs font-semibold text-foreground/80">
         {title}
       </span>
       {count !== undefined && (
-        <span className="font-mono text-[11px] tabular-nums text-muted-foreground">
+        <span className="font-mono text-micro tabular-nums text-muted-foreground">
           {typeof count === 'number' ? String(count).padStart(2, '0') : count}
         </span>
       )}

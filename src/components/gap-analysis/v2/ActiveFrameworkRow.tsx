@@ -3,13 +3,15 @@
  * Substitui o card grid para frameworks ativos: foco em densidade e progressão.
  * Identidade Akuris (DM Sans, tokens semânticos).
  */
-import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { rowOpenProps, CARD_HOVER } from '@/lib/row-interaction';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { FwMono } from './FwMono';
 import { StackBar, type StackSegment } from './StackBar';
 import { getMaturityLevel } from './MaturityScale';
 import { deriveFwMono, getFwCategory } from './fw-utils';
+import { IconArrowRight } from '@/components/icons';
 
 interface ActiveFrameworkRowProps {
   nome: string;
@@ -58,18 +60,28 @@ export function ActiveFrameworkRow({
     averageScore >= 40 ? 'text-warning' :
     'text-destructive';
 
+  // A linha inteira era um `<button>` com o botão "Abrir" lá dentro: HTML
+  // inválido (o React acusava no console) e, para quem usa leitor de ecrã, um
+  // único controlo cujo nome é o conteúdo todo da linha — selo, score, barra de
+  // distribuição e tudo o mais lido de enfiada. `rowOpenProps` é a regra já
+  // usada nas tabelas do produto: a linha abre ao clique e ao Enter, e os
+  // controlos próprios continuam a ser controlos.
+  const abrir = rowOpenProps(onClick, undefined, CARD_HOVER);
+
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="group w-full text-left rounded-xl border border-border bg-card hover:border-primary/30 hover:shadow-elegant transition-all duration-300 p-5"
+    <div
+      {...abrir}
+      className={cn(
+        'group w-full text-left rounded-lg border border-border bg-card hover:shadow-elegant transition-ui duration-200 p-5',
+        abrir.className,
+      )}
     >
       <div className="grid grid-cols-1 md:grid-cols-[auto_1.4fr_1.6fr_auto] gap-5 items-center">
         {/* Selo + identidade */}
         <div className="flex items-center gap-3 min-w-0">
           <FwMono l1={mono.l1} l2={mono.l2} size="lg" />
           <div className="min-w-0">
-            <div className="text-[10px] font-sans uppercase tracking-wider text-muted-foreground">
+            <div className="text-xs text-muted-foreground">
               {FW_CATEGORY_LABEL[cat]}
             </div>
             <div className="font-semibold text-base text-foreground group-hover:text-primary transition-colors truncate">
@@ -88,7 +100,7 @@ export function ActiveFrameworkRow({
           </span>
           <div className="flex flex-col">
             <span className="text-xs text-muted-foreground tabular-nums">/ 100</span>
-            <span className="text-[10px] font-sans uppercase tracking-wider text-muted-foreground mt-1">
+            <span className="text-xs text-muted-foreground mt-1">
               {t('gapAnalysis.v2.activeFrameworkRow.level', { id: maturity.id, label: maturity.label })}
             </span>
           </div>
@@ -96,7 +108,7 @@ export function ActiveFrameworkRow({
 
         {/* Distribuição */}
         <div className="space-y-2 min-w-0">
-          <div className="flex items-center justify-between text-[11px] font-sans uppercase tracking-wider text-muted-foreground">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>{t('gapAnalysis.v2.activeFrameworkRow.distribution')}</span>
             <span className="tabular-nums">
               {evaluatedRequirements}/{totalRequirements} · {coverage}%
@@ -107,7 +119,7 @@ export function ActiveFrameworkRow({
             {segments
               .filter(s => s.count > 0)
               .map((s, i) => (
-                <span key={i} className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                <span key={i} className="inline-flex items-center gap-1.5 text-micro text-muted-foreground">
                   <span className={`h-1.5 w-1.5 rounded-full ${SEG_DOT[s.kind]}`} />
                   <span className="text-foreground font-medium tabular-nums">{s.count}</span>
                   {SEG_LABEL_SHORT[s.kind]}
@@ -122,14 +134,14 @@ export function ActiveFrameworkRow({
             variant="ghost"
             size="sm"
             className="text-xs group-hover:text-primary group-hover:bg-primary/5"
-            onClick={(e) => { e.stopPropagation(); onClick(); }}
+            onClick={onClick}
           >
             {t('gapAnalysis.v2.activeFrameworkRow.open')}
-            <ArrowRight className="h-3.5 w-3.5 ml-1" strokeWidth={1.5} />
+            <IconArrowRight className="h-3.5 w-3.5 ml-1" strokeWidth={1.5} />
           </Button>
         </div>
       </div>
-    </button>
+    </div>
   );
 }
 
@@ -140,5 +152,4 @@ const SEG_DOT: Record<string, string> = {
   nao_aplicavel: 'bg-info',
   nao_avaliado: 'bg-muted-foreground/40',
 };
-
 

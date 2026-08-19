@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
+import { IconAdd, IconDelete, IconView, IconWarning, IconFileCheck, IconTrendUp, IconTarget } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { StatCard } from '@/components/ui/stat-card';
+import { StatStrip } from '@/components/ui/stat-strip';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Plus, Eye, FileCheck, AlertTriangle, TrendingUp, Target, Trash2 } from 'lucide-react';
 import { useAdherenceStats } from '@/hooks/useAdherenceStats';
 import { useOptimizedQuery } from '@/hooks/useOptimizedQuery';
 import { supabase } from '@/integrations/supabase/client';
@@ -153,28 +153,33 @@ export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNo
 
   const statsCards = [
     {
-      title: t('gapAnalysis.adherenceUi.view.totalAssessments'),
+      key: 'total',
+      label: t('gapAnalysis.adherenceUi.view.totalAssessments'),
       value: stats?.totalAvaliacoes || 0,
-      icon: <Target className="h-4 w-4" strokeWidth={1.5}/>,
-      description: t('gapAnalysis.adherenceUi.view.totalAssessmentsDescription')
+      icon: IconTarget,
+      hint: t('gapAnalysis.adherenceUi.view.totalAssessmentsDescription'),
     },
     {
-      title: t('gapAnalysis.adherenceUi.view.compliantAssessments'),
+      key: 'conformes',
+      label: t('gapAnalysis.adherenceUi.view.compliantAssessments'),
       value: stats?.avaliacoesConformes || 0,
-      icon: <FileCheck className="h-4 w-4" strokeWidth={1.5}/>,
-      description: t('gapAnalysis.adherenceUi.view.compliantAssessmentsDescription')
+      icon: IconFileCheck,
+      hint: t('gapAnalysis.adherenceUi.view.compliantAssessmentsDescription'),
     },
     {
-      title: t('gapAnalysis.adherenceUi.view.nonCompliantAssessments'),
+      key: 'naoConformes',
+      label: t('gapAnalysis.adherenceUi.view.nonCompliantAssessments'),
       value: stats?.avaliacoesNaoConformes || 0,
-      icon: <AlertTriangle className="h-4 w-4" strokeWidth={1.5}/>,
-      description: t('gapAnalysis.adherenceUi.view.nonCompliantAssessmentsDescription')
+      icon: IconWarning,
+      tone: 'destructive' as const,
+      hint: t('gapAnalysis.adherenceUi.view.nonCompliantAssessmentsDescription'),
     },
     {
-      title: t('gapAnalysis.adherenceUi.view.averageCompliance'),
+      key: 'media',
+      label: t('gapAnalysis.adherenceUi.view.averageCompliance'),
       value: `${stats?.mediaConformidade || 0}%`,
-      icon: <TrendingUp className="h-4 w-4" strokeWidth={1.5}/>,
-      description: t('gapAnalysis.adherenceUi.view.averageComplianceDescription')
+      icon: IconTrendUp,
+      hint: t('gapAnalysis.adherenceUi.view.averageComplianceDescription'),
     }
   ];
 
@@ -200,7 +205,7 @@ export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNo
       {!embedded && (
       <Card className="p-4">
         <div className="flex items-start gap-3">
-          <FileCheck className="h-5 w-5 text-primary shrink-0 mt-0.5" strokeWidth={1.5}/>
+          <IconFileCheck className="h-5 w-5 text-primary shrink-0 mt-0.5" strokeWidth={1.5}/>
           <div>
             <p className="text-sm font-medium mb-1">{t('gapAnalysis.adherenceUi.view.howItWorksTitle')}</p>
             <p className="text-xs text-muted-foreground mb-2">
@@ -209,7 +214,7 @@ export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNo
             <div className="flex flex-wrap gap-1.5">
               <span className="text-xs text-muted-foreground">{t('gapAnalysis.adherenceUi.view.examplesLabel')}</span>
               {getDocExamples().map((doc, i) => (
-                <Badge key={i} variant="outline" className="text-[10px]">{doc}</Badge>
+                <Badge key={i} variant="outline" className="text-micro">{doc}</Badge>
               ))}
             </div>
           </div>
@@ -221,7 +226,7 @@ export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNo
       {!embedded && (
       <div className="flex justify-end">
         <Button onClick={() => setIsDialogOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" strokeWidth={1.5}/>
+          <IconAdd className="mr-2 h-4 w-4" strokeWidth={1.5}/>
           {t('gapAnalysis.adherenceUi.view.newAssessment')}
         </Button>
       </div>
@@ -229,11 +234,7 @@ export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNo
 
       {/* Stats — escondido quando embutido (o DocumentsHero já traz os KPIs) */}
       {!embedded && (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {statsCards.map((stat) => (
-          <StatCard key={stat.title} {...stat} />
-        ))}
-      </div>
+      <StatStrip items={statsCards} />
       )}
 
       {/* Lista de Avaliações */}
@@ -248,7 +249,7 @@ export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNo
         ) : assessments && assessments.length > 0 ? (
           <div className="space-y-4">
             {(assessments as any[]).map((assessment: any) => (
-              <Card key={assessment.id} className="p-4 hover:shadow-md transition-shadow">
+              <Card key={assessment.id} className="p-4 hover:shadow-sm transition-shadow">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
@@ -297,7 +298,7 @@ export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNo
                       onClick={() => onViewResult(assessment)}
                       disabled={assessment.status !== 'concluido'}
                     >
-                      <Eye className="mr-2 h-4 w-4" strokeWidth={1.5}/>
+                      <IconView className="mr-2 h-4 w-4" strokeWidth={1.5}/>
                       {t('gapAnalysis.adherenceUi.view.viewDetails')}
                     </Button>
                     <Button
@@ -306,7 +307,7 @@ export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNo
                       onClick={() => setAssessmentToDelete(assessment.id)}
                       className="text-destructive hover:text-destructive hover:bg-destructive/10"
                     >
-                      <Trash2 className="h-4 w-4" strokeWidth={1.5}/>
+                      <IconDelete className="h-4 w-4" strokeWidth={1.5}/>
                     </Button>
                   </div>
                 </div>
@@ -315,10 +316,10 @@ export function AdherenceAssessmentView({ onViewResult, frameworkId, frameworkNo
           </div>
         ) : (
           <div className="text-center py-12">
-            <FileCheck className="h-12 w-12 mx-auto text-muted-foreground mb-4" strokeWidth={1.5}/>
+            <IconFileCheck className="h-12 w-12 mx-auto text-muted-foreground mb-4" strokeWidth={1.5}/>
             <p className="text-muted-foreground mb-4">{t('gapAnalysis.adherenceUi.view.noAssessmentsYet')}</p>
             <Button onClick={() => setIsDialogOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" strokeWidth={1.5}/>
+              <IconAdd className="mr-2 h-4 w-4" strokeWidth={1.5}/>
               {t('gapAnalysis.adherenceUi.view.createFirstAssessment')}
             </Button>
           </div>

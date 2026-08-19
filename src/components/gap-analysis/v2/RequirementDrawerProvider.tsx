@@ -9,7 +9,6 @@ interface DrawerState {
   requirementId: string | null;
   empresaId: string | null;
   onSaved?: () => void;
-  onOpenFullDialog?: (requirementId: string) => void;
 }
 
 interface ContextValue {
@@ -17,7 +16,6 @@ interface ContextValue {
     requirementId: string;
     empresaId: string;
     onSaved?: () => void;
-    onOpenFullDialog?: (requirementId: string) => void;
   }) => void;
   closeRequirement: () => void;
 }
@@ -41,7 +39,6 @@ export function RequirementDrawerProvider({ children }: { children: ReactNode })
       requirementId: params.requirementId,
       empresaId: params.empresaId,
       onSaved: params.onSaved,
-      onOpenFullDialog: params.onOpenFullDialog,
     });
     setOpen(true);
   }, []);
@@ -60,7 +57,6 @@ export function RequirementDrawerProvider({ children }: { children: ReactNode })
         requirementId={state.requirementId}
         empresaId={state.empresaId || ''}
         onSaved={state.onSaved}
-        onOpenFullDialog={state.onOpenFullDialog}
       />
     </RequirementDrawerContext.Provider>
   );

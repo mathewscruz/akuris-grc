@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
-import { History } from 'lucide-react';
 import { supabase } from "@/integrations/supabase/client";
 import { useEmpresaId } from "@/hooks/useEmpresaId";
 import { logger } from '@/lib/logger';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { IconHistory } from '@/components/icons';
 interface AuditEntry {
   id: string;
   campo_alterado: string;
@@ -83,7 +83,7 @@ export const AuditTrailTimeline: React.FC<AuditTrailTimelineProps> = ({ requirem
     const variants: Record<string, 'success' | 'warning' | 'destructive' | 'outline' | 'secondary'> = {
       conforme: 'success', parcial: 'warning', nao_conforme: 'destructive', nao_aplicavel: 'outline', nao_avaliado: 'secondary',
     };
-    return <Badge variant={variants[status] || 'outline'} className="text-[10px]">{statusLabelKeys[status] ? t(`gapAnalysis.audit.status.${statusLabelKeys[status]}`) : status}</Badge>;
+    return <Badge variant={variants[status] || 'outline'} className="text-micro">{statusLabelKeys[status] ? t(`gapAnalysis.audit.status.${statusLabelKeys[status]}`) : status}</Badge>;
   };
 
   if (loading) {
@@ -97,7 +97,7 @@ export const AuditTrailTimeline: React.FC<AuditTrailTimelineProps> = ({ requirem
   if (entries.length === 0) {
     return (
       <div className="text-center py-4">
-        <History className="h-5 w-5 mx-auto text-muted-foreground mb-1" strokeWidth={1.5}/>
+        <IconHistory className="h-5 w-5 mx-auto text-muted-foreground mb-1" strokeWidth={1.5}/>
         <p className="text-xs text-muted-foreground">{t('gapAnalysis.audit.noChanges')}</p>
       </div>
     );

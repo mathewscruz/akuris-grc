@@ -15,9 +15,9 @@ interface FwMonoProps {
 }
 
 const SIZE = {
-  sm: { box: 'h-8 w-8', l1: 'text-[7px]', l2: 'text-[10px]' },
-  md: { box: 'h-10 w-10', l1: 'text-[8px]', l2: 'text-[11px]' },
-  lg: { box: 'h-12 w-12', l1: 'text-[9px]', l2: 'text-[13px]' },
+  sm: { box: 'h-8 w-8', l1: 'text-micro', l2: 'text-micro' },
+  md: { box: 'h-10 w-10', l1: 'text-micro', l2: 'text-micro' },
+  lg: { box: 'h-12 w-12', l1: 'text-micro', l2: 'text-sm' },
 };
 
 export function FwMono({ l1, l2, size = 'md', className }: FwMonoProps) {

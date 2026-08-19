@@ -4,12 +4,12 @@
  * 4 KPIs com listra esquerda abaixo. Identidade Akuris.
  */
 import { useEffect, useState } from 'react';
-import { Sparkles, Upload, Link as LinkIcon, FileText } from 'lucide-react';
 import { CornerAccent } from '@/components/identity/CornerAccent';
 import { KpiTiny } from './KpiTiny';
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { IconUpload, IconLink } from '@/components/icons';
 
 interface Props {
   frameworkId: string;
@@ -32,6 +32,7 @@ export function DocumentsHero({ frameworkId, empresaId, onUploadClick, onLinkCli
     avgConformity: 0,
     coveredClauses: 0,
     uncoveredClauses: 0,
+    expiredClauses: 0,
     totalReqs: 0,
   });
   const [suggested, setSuggested] = useState<SuggestedType[]>([]);
@@ -52,7 +53,7 @@ export function DocumentsHero({ frameworkId, empresaId, onUploadClick, onLinkCli
             .eq('framework_id', frameworkId),
           supabase
             .from('gap_analysis_evaluations')
-            .select('requirement_id, conformity_status')
+            .select('id, requirement_id, conformity_status, evidence_files')
             .eq('framework_id', frameworkId)
             .eq('empresa_id', empresaId),
         ]);
@@ -60,12 +61,70 @@ export function DocumentsHero({ frameworkId, empresaId, onUploadClick, onLinkCli
         const asmts = asmtRes.data || [];
         const reqs = reqsRes.data || [];
         const evals = evalsRes.data || [];
-        const evalMap = new Map(evals.map(e => [e.requirement_id, e.conformity_status]));
-        const covered = reqs.filter(r => {
-          const s = evalMap.get(r.id);
-          return s === 'conforme' || s === 'parcial';
-        }).length;
+        // Cobertura DOCUMENTAL é ter documento, não estar conforme.
+        //
+        // Isto contava requisitos com status `conforme` ou `parcial` e chamava o
+        // resultado de "cláusulas cobertas", numa aba onde o indicador ao lado
+        // dizia "documentos analisados: 0". Um requisito conforme sem nenhum
+        // anexo aparecia como coberto, e a tela mandava fazer upload justamente
+        // para os que não eram conformes — que é outra pergunta.
+        //
+        // Agora conta o que a palavra diz: requisitos com pelo menos uma
+        // evidência ligada, seja da biblioteca reutilizável, seja anexada na
+        // própria avaliação.
+        const evalIds = evals.map(e => (e as { id?: string }).id).filter(Boolean) as string[];
+        const [linksRes, evidRes] = await Promise.all([
+          supabase
+            .from('evidence_library_links')
+            // A validade vem junto: prova caducada não cobre requisito nenhum.
+            .select('requirement_id, evidence_library(valido_ate)')
+            .eq('empresa_id', empresaId)
+            .eq('framework_id', frameworkId),
+          evalIds.length
+            ? supabase
+                .from('gap_analysis_evidences')
+                .select('evaluation_id')
+                .in('evaluation_id', evalIds)
+            : Promise.resolve({ data: [] as { evaluation_id: string }[] }),
+        ]);
+
+        const reqPorAvaliacao = new Map(
+          evals.map(e => [(e as { id?: string }).id, e.requirement_id]),
+        );
+        const comEvidencia = new Set<string>();
+        // Requisitos cuja única prova da biblioteca já caducou. É a diferença
+        // entre "tem documento" e "tem documento que ainda vale" — numa
+        // auditoria de manutenção é exatamente essa a pergunta.
+        const soComEvidenciaVencida = new Set<string>();
+        const hoje = new Date().toISOString().slice(0, 10);
+        (linksRes.data || []).forEach(l => {
+          if (!l.requirement_id) return;
+          const validade = (l as { evidence_library?: { valido_ate?: string | null } | null })
+            .evidence_library?.valido_ate;
+          if (validade && validade < hoje) {
+            soComEvidenciaVencida.add(l.requirement_id);
+            return;
+          }
+          comEvidencia.add(l.requirement_id);
+        });
+        (evidRes.data || []).forEach(ev => {
+          const reqId = reqPorAvaliacao.get(ev.evaluation_id);
+          if (reqId) comEvidencia.add(reqId);
+        });
+        // Terceira origem, e a mais usada de todas: o anexo feito no próprio
+        // diálogo de triagem, que fica em `evidence_files` na avaliação e não
+        // passa pela biblioteca. Contar só as duas primeiras deixaria de fora
+        // justamente o caminho mais curto que o produto oferece.
+        evals.forEach(e => {
+          const arquivos = (e as { evidence_files?: unknown }).evidence_files;
+          if (Array.isArray(arquivos) && arquivos.length > 0) comEvidencia.add(e.requirement_id);
+        });
+
+        const covered = reqs.filter(r => comEvidencia.has(r.id)).length;
         const uncovered = Math.max(0, reqs.length - covered);
+        const vencidos = reqs.filter(
+          r => !comEvidencia.has(r.id) && soComEvidenciaVencida.has(r.id),
+        ).length;
 
         const scores = asmts
           .map((a: any) => Number(a.score_aderencia))
@@ -74,11 +133,11 @@ export function DocumentsHero({ frameworkId, empresaId, onUploadClick, onLinkCli
           ? Math.round(scores.reduce((s, n) => s + n, 0) / scores.length)
           : 0;
 
-        // Tipos sugeridos: agrupa requisitos sem cobertura por categoria
+        // Tipos sugeridos: agrupa por categoria os requisitos que estão mesmo
+        // sem documento — antes agrupava os que não estavam conformes.
         const uncoveredByCat = new Map<string, string[]>();
         reqs.forEach(r => {
-          const s = evalMap.get(r.id);
-          if (s === 'conforme' || s === 'parcial') return;
+          if (comEvidencia.has(r.id)) return;
           const cat = r.categoria || 'Outros';
           const arr = uncoveredByCat.get(cat) || [];
           if (r.codigo) arr.push(r.codigo);
@@ -102,6 +161,7 @@ export function DocumentsHero({ frameworkId, empresaId, onUploadClick, onLinkCli
             avgConformity: avg,
             coveredClauses: covered,
             uncoveredClauses: uncovered,
+            expiredClauses: vencidos,
             totalReqs: reqs.length,
           });
           setSuggested(top);
@@ -117,15 +177,11 @@ export function DocumentsHero({ frameworkId, empresaId, onUploadClick, onLinkCli
 
   return (
     <div className="space-y-4">
-      <article className="relative overflow-hidden rounded-xl border border-border bg-card">
+      <article className="relative overflow-hidden rounded-lg border border-border bg-card">
         <CornerAccent position="top-right" size={14} />
         <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr]">
           {/* Convite */}
           <div className="p-6">
-            <div className="inline-flex items-center gap-1.5 text-[10px] font-sans uppercase tracking-wider text-primary">
-              <Sparkles className="h-3 w-3" strokeWidth={1.5} />
-              {t('gapAnalysis.v2.documentsHero.badge')}
-            </div>
             <h3 className="mt-2 text-xl font-semibold tracking-tight leading-snug text-foreground">
               {t('gapAnalysis.v2.documentsHero.heroTitle')}
             </h3>
@@ -139,7 +195,7 @@ export function DocumentsHero({ frameworkId, empresaId, onUploadClick, onLinkCli
                 onClick={onUploadClick}
                 className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
               >
-                <Upload className="h-4 w-4" strokeWidth={1.5} />
+                <IconUpload className="h-4 w-4" strokeWidth={1.5} />
                 {t('gapAnalysis.v2.documentsHero.attachFiles')}
               </button>
               <button
@@ -147,7 +203,7 @@ export function DocumentsHero({ frameworkId, empresaId, onUploadClick, onLinkCli
                 onClick={onLinkClick}
                 className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3.5 py-2 text-sm text-foreground hover:border-primary/40 transition-colors"
               >
-                <LinkIcon className="h-4 w-4" strokeWidth={1.5} />
+                <IconLink className="h-4 w-4" strokeWidth={1.5} />
                 {t('gapAnalysis.v2.documentsHero.addLink')}
               </button>
               <button
@@ -155,7 +211,6 @@ export function DocumentsHero({ frameworkId, empresaId, onUploadClick, onLinkCli
                 onClick={onAIGenerate}
                 className="inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm text-primary hover:bg-primary/5 transition-colors"
               >
-                <Sparkles className="h-4 w-4" strokeWidth={1.5} />
                 {t('gapAnalysis.v2.documentsHero.generateWithAi')}
               </button>
             </div>
@@ -163,7 +218,7 @@ export function DocumentsHero({ frameworkId, empresaId, onUploadClick, onLinkCli
 
           {/* Lacunas documentais detectadas */}
           <aside className="p-6 border-t lg:border-t-0 lg:border-l border-border/60 bg-muted/20">
-            <div className="text-[10px] font-sans uppercase tracking-wider text-muted-foreground">
+            <div className="text-xs text-muted-foreground">
               {t('gapAnalysis.v2.documentsHero.gapsDetectedTitle')}
             </div>
             <ul className="mt-3 space-y-2.5">
@@ -180,11 +235,11 @@ export function DocumentsHero({ frameworkId, empresaId, onUploadClick, onLinkCli
                         <span className="text-sm font-medium text-foreground truncate">
                           {s.label}
                         </span>
-                        <span className="text-[10px] font-sans uppercase tracking-wider text-destructive shrink-0">
+                        <span className="text-xs text-destructive shrink-0">
                           {s.status}
                         </span>
                       </div>
-                      <div className="text-[11px] text-muted-foreground truncate">
+                      <div className="text-micro text-muted-foreground truncate">
                         {t('gapAnalysis.v2.documentsHero.covers', { items: s.covers })}
                       </div>
                     </div>
@@ -221,7 +276,13 @@ export function DocumentsHero({ frameworkId, empresaId, onUploadClick, onLinkCli
         <KpiTiny
           eyebrow={t('gapAnalysis.v2.documentsHero.kpiUncovered')}
           value={stats.uncoveredClauses}
-          foot={stats.uncoveredClauses > 0 ? t('gapAnalysis.v2.documentsHero.kpiUncoveredFootPending') : t('gapAnalysis.v2.documentsHero.kpiUncoveredFootDone')}
+          foot={
+            stats.expiredClauses > 0
+              ? t('gapAnalysis.v2.documentsHero.kpiUncoveredFootExpired', { count: stats.expiredClauses })
+              : stats.uncoveredClauses > 0
+                ? t('gapAnalysis.v2.documentsHero.kpiUncoveredFootPending')
+                : t('gapAnalysis.v2.documentsHero.kpiUncoveredFootDone')
+          }
           tone={stats.uncoveredClauses > 0 ? 'destructive' : 'success'}
         />
       </div>

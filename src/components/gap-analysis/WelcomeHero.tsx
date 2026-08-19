@@ -2,8 +2,8 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { FrameworkLogo } from './FrameworkLogos';
-import { ArrowRight } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { IconArrowRight } from '@/components/icons';
 
 interface SuggestedFramework {
   id: string;
@@ -37,7 +37,7 @@ export function WelcomeHero({ onFrameworkClick, onShowCatalog, suggestedFramewor
     <Card className="relative overflow-hidden border-primary/20 bg-gradient-to-br from-primary/5 via-background to-accent/5">
       <div className="p-6 md:p-8">
         <div className="flex items-center gap-2 mb-3">
-          <Badge variant="secondary" className="text-[10px] uppercase tracking-wide">{t('gapAnalysis.welcome.badge')}</Badge>
+          <Badge variant="secondary" className="text-xs">{t('gapAnalysis.welcome.badge')}</Badge>
         </div>
         <h2 className="text-xl md:text-2xl font-bold mb-2">
           {t('gapAnalysis.welcome.title')}
@@ -51,7 +51,7 @@ export function WelcomeHero({ onFrameworkClick, onShowCatalog, suggestedFramewor
           {suggestedFrameworks.slice(0, 3).map((fw) => (
             <Card
               key={fw.id}
-              className="group p-4 cursor-pointer hover:shadow-md hover:border-primary/40 transition-all bg-background"
+              className="group p-4 cursor-pointer hover:shadow-sm hover:border-primary/40 transition-ui bg-background"
               onClick={() => onFrameworkClick(fw.id)}
             >
               <div className="flex items-start gap-3">
@@ -65,7 +65,7 @@ export function WelcomeHero({ onFrameworkClick, onShowCatalog, suggestedFramewor
                     {(FRAMEWORK_AUDIENCE_KEYS[fw.nome] && t(`gapAnalysis.frameworkAudience.${FRAMEWORK_AUDIENCE_KEYS[fw.nome]}`)) || fw.descricao || t('gapAnalysis.genericComplianceFramework')}
                   </p>
                 </div>
-                <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0 mt-1" strokeWidth={1.5}/>
+                <IconArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0 mt-1" strokeWidth={1.5}/>
               </div>
             </Card>
           ))}
@@ -73,7 +73,7 @@ export function WelcomeHero({ onFrameworkClick, onShowCatalog, suggestedFramewor
 
         <Button variant="outline" size="sm" onClick={onShowCatalog}>
           {t('gapAnalysis.welcome.viewAll')}
-          <ArrowRight className="h-4 w-4 ml-1" strokeWidth={1.5}/>
+          <IconArrowRight className="h-4 w-4 ml-1" strokeWidth={1.5}/>
         </Button>
       </div>
     </Card>

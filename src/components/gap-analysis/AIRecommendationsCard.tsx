@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { DialogShell } from '@/components/ui/dialog-shell';
-import { Target, Zap, TrendingUp, ArrowRight } from 'lucide-react';
-import { AkurisAIIcon } from '@/components/icons';
+import { IconTarget, IconBolt, IconTrendUp, IconArrowRight } from '@/components/icons';
 import { supabase } from '@/integrations/supabase/client';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
@@ -19,7 +18,6 @@ interface AIRecommendationsDialogProps {
   overallScore: number;
   totalRequirements: number;
   evaluatedRequirements: number;
-  scoreType: string;
   onGoToRemediation?: () => void;
 }
 
@@ -112,9 +110,9 @@ export function AIRecommendationsButton(props: AIRecommendationsDialogProps) {
 
   const getEffortBadge = (esforco: string) => {
     switch (esforco) {
-      case 'baixo': return <StatusBadge size="sm" tone="success">{t('gapAnalysis.ai.effort.low')}</StatusBadge>;
-      case 'medio': return <StatusBadge size="sm" tone="warning">{t('gapAnalysis.ai.effort.medium')}</StatusBadge>;
-      case 'alto': return <StatusBadge size="sm" tone="destructive">{t('gapAnalysis.ai.effort.high')}</StatusBadge>;
+      case 'baixo': return <StatusBadge tone="success">{t('gapAnalysis.ai.effort.low')}</StatusBadge>;
+      case 'medio': return <StatusBadge tone="warning">{t('gapAnalysis.ai.effort.medium')}</StatusBadge>;
+      case 'alto': return <StatusBadge tone="destructive">{t('gapAnalysis.ai.effort.high')}</StatusBadge>;
       default: return null;
     }
   };
@@ -138,7 +136,7 @@ export function AIRecommendationsButton(props: AIRecommendationsDialogProps) {
                 {loading ? (
                   <AkurisPulse size={16} />
                 ) : (
-                  <AkurisAIIcon className="h-4 w-4"/>
+                  <IconTarget className="h-4 w-4" strokeWidth={1.5} />
                 )}
               </Button>
             </span>
@@ -150,7 +148,7 @@ export function AIRecommendationsButton(props: AIRecommendationsDialogProps) {
       <DialogShell
         open={open}
         onOpenChange={setOpen}
-        icon={AkurisAIIcon as any}
+        icon={IconTarget as any}
         title={t('gapAnalysis.ai.dialogTitle')}
         size="lg"
         hideFooter
@@ -163,18 +161,18 @@ export function AIRecommendationsButton(props: AIRecommendationsDialogProps) {
             </div>
           ) : recommendations ? (
             <div className="space-y-5">
-              <div className="p-3 rounded-lg bg-muted/50">
+              <div className="p-3 rounded-lg bg-card border border-border">
                 <p className="text-sm text-foreground">{recommendations.analise_situacional}</p>
               </div>
 
               <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/10">
-                <TrendingUp className="h-5 w-5 text-primary shrink-0" strokeWidth={1.5}/>
+                <IconTrendUp className="h-5 w-5 text-primary shrink-0" strokeWidth={1.5}/>
                 <div>
                   <p className="text-sm font-medium">
                     {t('gapAnalysis.ai.projectedScore')}: <span className="text-primary font-bold">
-                      {Number(recommendations.score_estimado_apos_acoes).toFixed(1)}{props.scoreType === 'percentage' ? '%' : '/5'}
+                      {Number(recommendations.score_estimado_apos_acoes).toFixed(0)}%
                     </span>
-                    <span className="text-muted-foreground ml-1">({t('gapAnalysis.ai.currentScore')}: {Number(props.overallScore).toFixed(1)}{props.scoreType === 'percentage' ? '%' : '/5'})</span>
+                    <span className="text-muted-foreground ml-1">({t('gapAnalysis.ai.currentScore')}: {Number(props.overallScore).toFixed(0)}%)</span>
                   </p>
                   <p className="text-xs text-muted-foreground">{recommendations.proximo_marco}</p>
                 </div>
@@ -183,7 +181,7 @@ export function AIRecommendationsButton(props: AIRecommendationsDialogProps) {
               {recommendations.top_5_prioridades?.length > 0 && (
                 <div>
                   <h4 className="text-sm font-semibold flex items-center gap-1.5 mb-2">
-                    <Target className="h-4 w-4 text-destructive" strokeWidth={1.5}/>
+                    <IconTarget className="h-4 w-4 text-destructive" strokeWidth={1.5}/>
                     {t('gapAnalysis.ai.priorityRequirements')}
                   </h4>
                   <div className="space-y-2">
@@ -204,7 +202,7 @@ export function AIRecommendationsButton(props: AIRecommendationsDialogProps) {
               {recommendations.quick_wins?.length > 0 && (
                 <div>
                   <h4 className="text-sm font-semibold flex items-center gap-1.5 mb-2">
-                    <Zap className="h-4 w-4 text-warning" strokeWidth={1.5}/>
+                    <IconBolt className="h-4 w-4 text-warning" strokeWidth={1.5}/>
                     {t('gapAnalysis.ai.quickWins')}
                   </h4>
                   <div className="space-y-2">
@@ -218,13 +216,13 @@ export function AIRecommendationsButton(props: AIRecommendationsDialogProps) {
                 </div>
               )}
 
-              <div className="p-3 rounded-lg border bg-muted/30">
+              <div className="p-3 rounded-lg border bg-card">
                 <p className="text-sm text-foreground">{recommendations.recomendacao_geral}</p>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-2">
                 <Button variant="outline" size="sm" onClick={handleAnalyze} disabled={loading} className="flex-1">
-                  {loading ? <AkurisPulse size={16} className="mr-2" /> : <AkurisAIIcon className="h-4 w-4 mr-2"/>}
+                  {loading && <AkurisPulse size={16} className="mr-2" />}
                   {t('gapAnalysis.ai.updateAnalysis')}
                 </Button>
                 {props.onGoToRemediation && (
@@ -234,7 +232,7 @@ export function AIRecommendationsButton(props: AIRecommendationsDialogProps) {
                     className="flex-1"
                   >
                     {t('gapAnalysis.ai.goToRemediation')}
-                    <ArrowRight className="h-4 w-4 ml-2" strokeWidth={1.5}/>
+                    <IconArrowRight className="h-4 w-4 ml-2" strokeWidth={1.5}/>
                   </Button>
                 )}
               </div>
@@ -243,7 +241,7 @@ export function AIRecommendationsButton(props: AIRecommendationsDialogProps) {
             <div className="text-center py-8">
               <p className="text-sm text-muted-foreground">{t('gapAnalysis.ai.loadError')}</p>
               <Button onClick={handleAnalyze} className="mt-3">
-                <AkurisAIIcon className="h-4 w-4 mr-2"/>{t('gapAnalysis.ai.retry')}
+                {t('gapAnalysis.ai.retry')}
               </Button>
             </div>
           )}

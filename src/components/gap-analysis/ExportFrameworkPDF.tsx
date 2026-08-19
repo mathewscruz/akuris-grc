@@ -1,9 +1,9 @@
 import jsPDF from 'jspdf';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { loadAkurisLogo, addAkurisCover, addAkurisHeader, addAkurisFooter, addSectionTitle, drawProgressBar, drawTableHeader, formatLabel, AKURIS_COLORS } from '@/lib/pdf-utils';
 import { getFrameworkConfig, getMaturityLevel } from '@/lib/framework-configs';
 import { tGlobal } from '@/lib/i18n-global';
+import { dateFnsLocale } from '@/lib/date-utils';
 
 interface PillarScore {
   pillar: string;
@@ -41,7 +41,6 @@ interface ExportFrameworkPDFParams {
   categoryScores: CategoryScore[];
   requirements: RequirementExport[];
   empresaNome?: string;
-  scoreType: 'decimal' | 'percentage';
   maxScore: number;
 }
 
@@ -69,7 +68,7 @@ export async function exportFrameworkPDF(params: ExportFrameworkPDFParams) {
     frameworkName, frameworkVersion, frameworkType,
     overallScore, totalRequirements, evaluatedRequirements,
     pillarScores, categoryScores, requirements,
-    empresaNome = tGlobal('sweepRiscos.gap.pdf.empresaPadrao'), scoreType, maxScore
+    empresaNome = tGlobal('sweepRiscos.gap.pdf.empresaPadrao'), maxScore
   } = params;
 
   const doc = new jsPDF('p', 'mm', 'a4');
@@ -88,13 +87,13 @@ export async function exportFrameworkPDF(params: ExportFrameworkPDFParams) {
     }
   };
 
-  const formatScore = (s: number) => scoreType === 'percentage' ? `${s.toFixed(0)}%` : s.toFixed(1);
+  const formatScore = (s: number) => `${s.toFixed(0)}%`;
   const formattedType = formatLabel(frameworkType);
 
   // === COVER PAGE ===
   addAkurisCover(doc, logo, `${tGlobal('sweepRiscos.gap.pdf.relatorioConformidade')}\n${frameworkName} ${frameworkVersion}`, tGlobal('sweepRiscos.gap.pdf.tipoLabel', { tipo: formattedType }), {
     empresa: empresaNome,
-    data: format(new Date(), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
+    data: format(new Date(), "dd 'de' MMMM 'de' yyyy", { locale: dateFnsLocale() })
   });
 
   // === PAGE 2: Score Overview ===

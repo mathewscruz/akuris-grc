@@ -51,7 +51,7 @@ export function KpiTiny({
         className
       )}
     >
-      <div className="text-[10px] font-sans uppercase tracking-wider text-muted-foreground">
+      <div className="text-xs text-muted-foreground">
         {eyebrow}
       </div>
       <div className={cn('mt-1 flex items-baseline gap-1', VALUE_COLOR[tone])}>
@@ -59,7 +59,7 @@ export function KpiTiny({
         {unit && <span className="text-sm text-muted-foreground">{unit}</span>}
       </div>
       {foot && (
-        <div className="mt-1.5 text-[11px] text-muted-foreground">{foot}</div>
+        <div className="mt-1.5 text-micro text-muted-foreground">{foot}</div>
       )}
     </div>
   );

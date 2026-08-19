@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
+import { IconSuccess, IconInfo, IconDot } from '@/components/icons';
 import { Progress } from '@/components/ui/progress';
-import { CheckCircle2, Circle, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
@@ -149,7 +149,7 @@ export function AdherenceAnalysisProgress({
           <div
             key={step.id}
             className={cn(
-              "flex items-start gap-3 p-3 rounded-lg transition-all",
+              "flex items-start gap-3 p-3 rounded-lg transition-ui",
               step.status === 'active' && "bg-primary/5 border border-primary/20",
               step.status === 'completed' && "opacity-60",
               step.status === 'error' && "bg-destructive/5 border border-destructive/20"
@@ -158,16 +158,16 @@ export function AdherenceAnalysisProgress({
             {/* Ícone de status */}
             <div className="flex-shrink-0 mt-0.5">
               {step.status === 'completed' && (
-                <CheckCircle2 className="h-5 w-5 text-green-600" strokeWidth={1.5}/>
+                <IconSuccess className="h-5 w-5 text-success" strokeWidth={1.5}/>
               )}
               {step.status === 'active' && (
                 <AkurisPulse size={20} className="text-primary" />
               )}
               {step.status === 'pending' && (
-                <Circle className="h-5 w-5 text-muted-foreground" strokeWidth={1.5}/>
+                <IconDot className="h-5 w-5 text-muted-foreground" strokeWidth={1.5}/>
               )}
               {step.status === 'error' && (
-                <AlertCircle className="h-5 w-5 text-destructive" strokeWidth={1.5}/>
+                <IconInfo className="h-5 w-5 text-destructive" strokeWidth={1.5}/>
               )}
             </div>
 
@@ -195,12 +195,12 @@ export function AdherenceAnalysisProgress({
 
       {/* Mensagem de conclusão */}
       {currentProgress >= 100 && !isError && (
-        <div className="text-center p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
-          <CheckCircle2 className="h-8 w-8 text-green-600 mx-auto mb-2" strokeWidth={1.5}/>
-          <p className="text-sm font-medium text-green-900 dark:text-green-100">
+        <div className="text-center p-4 bg-success/10 dark:bg-success/10/20 rounded-lg border border-success/30 dark:border-success/30">
+          <IconSuccess className="h-8 w-8 text-success mx-auto mb-2" strokeWidth={1.5}/>
+          <p className="text-sm font-medium text-success dark:text-success">
             {t('gapAnalysis.adherenceUi.progress.successTitle')}
           </p>
-          <p className="text-xs text-green-700 dark:text-green-300 mt-1">
+          <p className="text-xs text-success dark:text-success mt-1">
             {t('gapAnalysis.adherenceUi.progress.successDescription')}
           </p>
         </div>
