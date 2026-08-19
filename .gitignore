@@ -28,3 +28,8 @@ dist-ssr
 
 # Dumps de producao trazidos para teste local — nunca versionados
 .local-dumps/
+
+# Metadados do CLI do Supabase: expõem o project-ref, a URL do pooler e as
+# versões exactas dos componentes. Num repositório público isso é
+# reconhecimento gratuito — e não há razão para versionar estado local.
+supabase/.temp/
