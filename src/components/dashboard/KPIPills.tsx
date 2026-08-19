@@ -1,5 +1,4 @@
 import { useNavigate } from 'react-router-dom';
-import { Badge } from '@/components/ui/badge';
 import { AtivosIcon, RiscosIcon, IncidentesIcon, DocumentosIcon, DueDiligenceIcon, DenunciasIcon, IconInfo, IconScale, IconChecklist } from '@/components/icons';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -172,7 +171,11 @@ export function KPIPills(props: KPIPillsProps) {
         {pills.map((pill) => (
           <button
             key={pill.key}
-            title={pill.hint}
+            /* O aviso ("2 críticos", "4 atrasados") saiu do corpo da pílula:
+               com oito pílulas em fila, oito crachás coloridos competiam entre
+               si e com o número, que é o que a pílula existe para mostrar. A
+               informação não se perde — vem no tooltip, junto com a dica. */
+            title={[pill.hint, pill.alertBadge?.label].filter(Boolean).join(' · ')}
             onClick={() => (props.onPillClick ? props.onPillClick(pill.key) : pill.onClick ? pill.onClick() : navigate(pill.route))}
             className="group flex items-center gap-2 px-3 py-2 rounded-lg border bg-card hover:bg-accent/50 hover:border-primary/30 transition-ui duration-200 cursor-pointer flex-shrink-0"
           >
@@ -183,11 +186,6 @@ export function KPIPills(props: KPIPillsProps) {
                 e na cor, que chegam para separar o número do rótulo. */}
             <span className="text-micro font-bold tabular-nums text-foreground">{pill.value}</span>
             <span className="text-micro text-muted-foreground whitespace-nowrap">{pill.label}</span>
-            {pill.alertBadge && (
-              <Badge variant={pill.alertBadge.variant} className="text-micro px-1.5 py-0 h-4 hidden md:flex">
-                {pill.alertBadge.label}
-              </Badge>
-            )}
           </button>
         ))}
       </div>

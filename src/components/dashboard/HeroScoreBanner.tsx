@@ -108,14 +108,16 @@ export function HeroScoreBanner({
                   }`}
                 >
                   <metric.icon className={`h-4 w-4 shrink-0 ${metric.color}`} />
-                  {/* Rótulo, valor e nota no mesmo corpo de letra. Eram três
-                      degraus — xs, sm e micro — num cartão de 90px de largura,
-                      e a diferença lia-se como desalinho. Separa o peso. */}
+                  {/* O NÚMERO é o que o cartão existe para mostrar, e estava no
+                      mesmo `text-micro` do rótulo e da nota — o corpo mais
+                      pequeno do sistema, num cartão que tem espaço de sobra.
+                      Sobe para `text-lg`; rótulo e nota ficam em `text-xs`,
+                      legíveis sem competir. */}
                   <div>
-                    <p className="text-micro text-muted-foreground leading-none">{metric.label}</p>
-                    <p className={`text-micro font-bold tabular-nums ${metric.color} leading-tight mt-0.5`}>{metric.value}</p>
+                    <p className="text-xs text-muted-foreground leading-none">{metric.label}</p>
+                    <p className={`text-lg font-bold tabular-nums ${metric.color} leading-tight mt-0.5`}>{metric.value}</p>
                     {metric.hint && (
-                      <p className="text-micro text-muted-foreground leading-none mt-1">{metric.hint}</p>
+                      <p className="text-xs text-muted-foreground leading-none mt-1">{metric.hint}</p>
                     )}
                   </div>
                 </Wrapper>
