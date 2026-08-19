@@ -75,6 +75,7 @@ import { detalheRegisto } from './detalhe-registo';
 import { vinculoRequisitos } from './vinculo-requisitos';
 import { t4Ciclo } from './t4-ciclo';
 import { pwa } from './pwa';
+import { fornecedorStatus } from './fornecedor-status';
 
 type ModuleDict = { pt: Record<string, unknown>; en: Record<string, unknown> };
 
@@ -104,6 +105,7 @@ export function mergeDictionaries(
 }
 
 const modules: Record<string, ModuleDict> = {
+  fornecedorStatus,
   detalheRegisto,
   vinculoRequisitos,
   t4Ciclo,

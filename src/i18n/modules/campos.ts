@@ -62,6 +62,7 @@ export const campos = {
       },
       comum: {
         categoria: 'Categoria',
+        sugerido: 'Sugerido',
         risco: 'Risco',
         buscarEvidencia: 'Buscar evidência por nome, descrição ou tag...',
         exCodigoControle: 'Ex: CT-001',
@@ -178,6 +179,7 @@ export const campos = {
       },
       comum: {
         categoria: 'Category',
+        sugerido: 'Suggested',
         risco: 'Risk',
         buscarEvidencia: 'Search evidence by name, description or tag...',
         exCodigoControle: 'E.g.: CT-001',

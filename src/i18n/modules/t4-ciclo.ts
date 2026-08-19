@@ -82,7 +82,7 @@ export const t4Ciclo = {
         itemJustificacaoObrigatoria: 'Escreva a justificação para concluir sem evidência.',
         itemJustificacaoRegistada: 'Concluído sem evidência — justificação registada',
         auditoriaSemItens: 'Uma auditoria sem itens não pode ser concluída',
-        auditoriaSemItensDesc: 'Sem itens não há trabalho de auditoria registado, logo não há nada que sustente a conclusão. Adicione pelo menos um item.',
+        auditoriaSemItensDesc: 'Sem itens não há trabalho de auditoria registrado, logo não há nada que sustente a conclusão. Adicione pelo menos um item.',
         auditoriaPendencias: 'Concluir com pendências',
         auditoriaPendenciasDesc: 'Existem {{itens}} item(ns) por resolver e {{maiores}} não conformidade(s) maior(es) em aberto. Se insistir, escreva a razão — fica no registro.',
         auditoriaRazao: 'Razão para concluir com pendências',

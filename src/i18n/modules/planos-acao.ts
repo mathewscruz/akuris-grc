@@ -45,7 +45,7 @@ export const planosAcao = {
       detailCompletedAt: 'Concluído em',
       detailOrigin: 'Origem ligada',
       detailNoOrigin: 'Sem origem ligada',
-      historyEmpty: 'Sem histórico registado',
+      historyEmpty: 'Sem histórico registrado',
       commentsEmpty: 'Ainda sem comentários',
       commentPlaceholder: 'Escreva um comentário...',
       commentSubmit: 'Comentar',

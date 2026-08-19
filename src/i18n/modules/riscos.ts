@@ -125,6 +125,10 @@ const riscosRaw = {
       daysLeftSuffix: 'd restantes',
       onTrack: 'Em dia',
     },
+    validity: {
+      none: 'Sem validade',
+      expired: 'Expirado',
+    },
     columns: {
       risk: 'Risco',
       level: 'Nível',
@@ -162,9 +166,12 @@ const riscosRaw = {
     stats: {
       acceptedTitle: 'Riscos Aceitos',
       acceptedDesc: 'Total aprovados',
-      acceptedEmptyHint: 'Riscos aceitos formalmente aparecerão aqui.',
       pendingTitle: 'Pendentes de Aprovação',
       pendingDesc: 'Aguardando decisão',
+      expiringTitle: 'Aceites a Expirar',
+      expiringDesc: 'Nos próximos 30 dias',
+      expiredTitle: 'Aceites Expirados',
+      expiredDesc: 'Riscos reabertos',
       overdueTitle: 'Revisões Vencidas',
       overdueDesc: 'Precisam de atenção',
       upcomingTitle: 'Revisões Próximas',
@@ -298,6 +305,10 @@ const riscosRaw = {
       daysLeftSuffix: 'd left',
       onTrack: 'On track',
     },
+    validity: {
+      none: 'No expiry',
+      expired: 'Expired',
+    },
     columns: {
       risk: 'Risk',
       level: 'Level',
@@ -335,9 +346,12 @@ const riscosRaw = {
     stats: {
       acceptedTitle: 'Accepted Risks',
       acceptedDesc: 'Total approved',
-      acceptedEmptyHint: 'Formally accepted risks will appear here.',
       pendingTitle: 'Pending Approval',
       pendingDesc: 'Awaiting decision',
+      expiringTitle: 'Acceptances Expiring',
+      expiringDesc: 'In the next 30 days',
+      expiredTitle: 'Expired Acceptances',
+      expiredDesc: 'Reopened risks',
       overdueTitle: 'Overdue Reviews',
       overdueDesc: 'Need attention',
       upcomingTitle: 'Upcoming Reviews',

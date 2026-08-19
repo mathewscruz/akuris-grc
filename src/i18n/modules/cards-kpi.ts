@@ -8,8 +8,9 @@ export const cardsKpi = {
     cardsKpi: {
       metricas: {
         semDados: 'Sem dados',
-        efetividadeSemTestes: 'A efetividade só aparece depois do primeiro teste de controlo registado.',
+        efetividadeSemTestes: 'A efetividade só aparece depois do primeiro teste de controle registrado.',
         efetividadeTestada: 'Média dos últimos testes de {testados} de {total} controlos',
+        efetividadeDe: 'Efetividade {testados} de {total}',
         preventivosDe: 'Preventivos {preventivos} de {total}',
       },
       contratos: {
@@ -26,6 +27,7 @@ export const cardsKpi = {
 
       privacidade: {
         totalDados: 'Total de Dados',
+        ropaRegistros: 'Registros ROPA',
         dadosSensiveis: 'Dados Sensíveis',
         requeremProtecao: 'Requerem proteção especial',
         solicitacoesPendentes: 'Solicitações Pendentes',
@@ -185,6 +187,7 @@ export const cardsKpi = {
         semDados: 'No data',
         efetividadeSemTestes: 'Effectiveness appears only after the first control test is recorded.',
         efetividadeTestada: 'Average of the latest tests on {testados} of {total} controls',
+        efetividadeDe: 'Effectiveness {testados} of {total}',
         preventivosDe: 'Preventive {preventivos} of {total}',
       },
       contratos: {
@@ -201,6 +204,7 @@ export const cardsKpi = {
 
       privacidade: {
         totalDados: 'Total data records',
+        ropaRegistros: 'ROPA records',
         dadosSensiveis: 'Sensitive data',
         requeremProtecao: 'Require special protection',
         solicitacoesPendentes: 'Pending requests',

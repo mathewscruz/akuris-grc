@@ -211,6 +211,10 @@ export const finalI18n = {
         nenhum: 'Nenhum contrato encontrado',
         novo: 'Novo Contrato',
         renovacaoAutomatica: 'Renovação Automática',
+        aVencer: 'A vencer (30 dias)',
+        trilhaAuditoria: 'Trilha de Auditoria',
+        riscoFornecedor: 'Risco do fornecedor',
+        objeto: 'Objeto',
       },
       fornecedores: {
         buscar: 'Buscar fornecedores...',
@@ -811,6 +815,10 @@ export const finalI18n = {
         nenhum: 'No contract found',
         novo: 'New contract',
         renovacaoAutomatica: 'Automatic renewal',
+        aVencer: 'Due within 30 days',
+        trilhaAuditoria: 'Audit trail',
+        riscoFornecedor: 'Supplier risk',
+        objeto: 'Scope',
       },
       fornecedores: {
         buscar: 'Search suppliers...',

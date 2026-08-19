@@ -4,6 +4,26 @@
  */
 export const detalheRegisto = {
   pt: {
+    /**
+     * Rótulos de coluna para a trilha de auditoria.
+     *
+     * O visor lista os campos alterados pelo nome da coluna que o gatilho
+     * gravou; sem estes rótulos, um UPDATE de contrato mostrava
+     * "data_fim, valor, gestor_contrato" cru na tela.
+     */
+    trilhaCampos: {
+      moeda: 'Moeda',
+      dataAssinatura: 'Data de assinatura',
+      areaSolicitante: 'Área solicitante',
+      prazoRenovacao: 'Prazo de renovação (meses)',
+      sla: 'SLA principal',
+      numeroAditivo: 'Número do aditivo',
+      motivo: 'Motivo',
+      valorAnterior: 'Valor anterior',
+      valorNovo: 'Valor novo',
+      novaDataFim: 'Nova data de fim',
+      justificativa: 'Justificativa',
+    },
     detalheRegisto: {
       titulo: 'Detalhe do registro',
       abrirRegisto: 'Abrir registro',
@@ -34,6 +54,19 @@ export const detalheRegisto = {
     },
   },
   en: {
+    trilhaCampos: {
+      moeda: 'Currency',
+      dataAssinatura: 'Signature date',
+      areaSolicitante: 'Requesting area',
+      prazoRenovacao: 'Renewal notice (months)',
+      sla: 'Main SLA',
+      numeroAditivo: 'Amendment number',
+      motivo: 'Reason',
+      valorAnterior: 'Previous value',
+      valorNovo: 'New value',
+      novaDataFim: 'New end date',
+      justificativa: 'Rationale',
+    },
     detalheRegisto: {
       titulo: 'Record details',
       abrirRegisto: 'Open record',
