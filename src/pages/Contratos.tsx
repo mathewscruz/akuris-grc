@@ -37,7 +37,7 @@ import { useContratosStats } from '@/hooks/useContratosStats';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useEmpresaMoeda } from '@/hooks/useEmpresaMoeda';
-import { formatDateOnly } from '@/lib/date-utils';
+import { formatDateOnly, formatarDiaParaDB} from '@/lib/date-utils';
 import { formatStatus } from '@/lib/text-utils';
 import { resolveContratoStatusTone, resolveCriticidadeTone } from '@/lib/status-tone';
 import { estadoContrato } from '@/lib/metrics';
@@ -354,7 +354,7 @@ export default function Contratos() {
     const blob = new Blob(["\ufeff" + csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = `contratos_${new Date().toISOString().split("T")[0]}.csv`;
+    link.download = `contratos_${formatarDiaParaDB(new Date())}.csv`;
     link.click();
     toast({ title: t('fin.comum.exportacaoConcluida'), description: t('fin.comum.csvBaixado') });
   };

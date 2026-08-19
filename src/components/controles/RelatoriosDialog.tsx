@@ -23,7 +23,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, 
 import { criticidadeControle, resultadoTeste } from '@/lib/metrics/controles';
 import { severidadeRiscoEfetiva, SEVERIDADES, type Severidade } from '@/lib/metrics/riscos';
 import { chartSeries, CHART_GRID, CHART_AXIS, CHART_TOOLTIP_STYLE } from '@/lib/chart-tokens';
-import { formatMonthYearLabel, intlLocale, parseDataLocal } from '@/lib/date-utils';
+import { formatMonthYearLabel, intlLocale, parseDataLocal, formatarDiaParaDB} from '@/lib/date-utils';
 import { pct } from '@/lib/metrics/core';
 
 interface RelatoriosDialogProps {
@@ -275,7 +275,7 @@ export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) 
       });
 
       addAkurisFooter(doc);
-      doc.save(`relatorio_controles_${new Date().toISOString().split('T')[0]}.pdf`);
+      doc.save(`relatorio_controles_${formatarDiaParaDB(new Date())}.pdf`);
       toast({ title: t('controlesAuditorias.rdToastPdfGeneratedTitle'), description: t('controlesAuditorias.rdToastPdfGeneratedDesc') });
     } catch {
       toast({ title: t('controlesAuditorias.rdToastPdfErrorTitle'), description: t('controlesAuditorias.rdToastPdfErrorDesc'), variant: "destructive" });

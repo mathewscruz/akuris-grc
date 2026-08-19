@@ -24,7 +24,7 @@ import { PlanoAcaoDetailDrawer } from '@/components/planos-acao/PlanoAcaoDetailD
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
-import { formatDateOnly, intlLocale, parseDataLocal } from '@/lib/date-utils';
+import { formatDateOnly, intlLocale, parseDataLocal, formatarDiaParaDB} from '@/lib/date-utils';
 import { differenceInDays } from 'date-fns';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -373,7 +373,7 @@ export default function PlanosAcao() {
     const anterior = queryClient.getQueryData<any[]>(key);
     const patch = {
       status: novoStatus,
-      data_conclusao: novoStatus === 'concluido' ? new Date().toISOString().slice(0, 10) : null,
+      data_conclusao: novoStatus === 'concluido' ? formatarDiaParaDB(new Date()) : null,
     };
 
     queryClient.setQueryData<any[]>(key, (old) =>

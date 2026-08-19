@@ -3,7 +3,7 @@ import { RiscosStats } from '@/hooks/useRiscosStats';
 import { loadAkurisLogo, addAkurisHeader, addAkurisFooter, addSectionTitle, drawProgressBar, drawTableHeader, formatLabel, AKURIS_COLORS } from '@/lib/pdf-utils';
 import { riscosDialogs } from '@/i18n/modules/riscos-dialogs';
 import type { Locale } from '@/contexts/LanguageContext';
-import { intlLocale } from '@/lib/date-utils';
+import { intlLocale, formatarDiaParaDB} from '@/lib/date-utils';
 
 interface RiscoExport {
   nome: string;
@@ -127,6 +127,6 @@ export function exportRiscosCSV(riscos: RiscoExport[], locale: Locale = 'pt') {
   const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
-  link.download = `riscos-${new Date().toISOString().split('T')[0]}.csv`;
+  link.download = `riscos-${formatarDiaParaDB(new Date())}.csv`;
   link.click();
 }

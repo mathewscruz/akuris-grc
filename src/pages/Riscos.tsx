@@ -736,7 +736,7 @@ export function Riscos() {
             <Button
               variant="ghost"
               size="sm"
-              aria-label={`${t('p8Layout.layout.moreActions')}: ${risco.nome}`}
+              aria-label={`${t('layout.moreActions')}: ${risco.nome}`}
               className="h-8 w-8 p-0"
             >
               <IconMore className="h-4 w-4" strokeWidth={1.5} />

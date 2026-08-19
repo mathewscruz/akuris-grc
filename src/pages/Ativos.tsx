@@ -25,7 +25,7 @@ import { RecordDetailDrawer } from '@/components/common/RecordDetailDrawer';
 import ManutencaoDialog from '@/components/ativos/ManutencaoDialog';
 import TrilhaAuditoriaAtivos from '@/components/ativos/TrilhaAuditoriaAtivos';
 import { exportCSV } from '@/lib/csv-utils';
-import { formatDateOnly } from '@/lib/date-utils';
+import { formatDateOnly, formatarDiaParaDB} from '@/lib/date-utils';
 import { formatStatus } from '@/lib/text-utils';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveCriticidadeTone, resolveItemStatusTone } from '@/lib/status-tone';
@@ -398,7 +398,7 @@ const Ativos = () => {
         ativo.localizacao || '',
         ativo.data_aquisicao ? formatDateOnly(ativo.data_aquisicao) : ''
       ]),
-      `ativos-${new Date().toISOString().split('T')[0]}.csv`,
+      `ativos-${formatarDiaParaDB(new Date())}.csv`,
     );
   };
 

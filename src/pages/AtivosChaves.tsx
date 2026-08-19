@@ -19,7 +19,7 @@ import ConfirmDialog from '@/components/ConfirmDialog';
 import { useChavesStats } from '@/hooks/useChavesStats';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { exportCSV } from '@/lib/csv-utils';
-import { formatDateOnly } from '@/lib/date-utils';
+import { formatDateOnly, formatarDiaParaDB} from '@/lib/date-utils';
 import { formatStatus } from '@/lib/text-utils';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveCriticidadeTone, resolveItemStatusTone } from '@/lib/status-tone';
@@ -472,7 +472,7 @@ export default function AtivosChaves() {
                   c.status,
                   c.responsavel_nome || ''
                 ]),
-                `chaves-criptograficas-${new Date().toISOString().split('T')[0]}.csv`,
+                `chaves-criptograficas-${formatarDiaParaDB(new Date())}.csv`,
               );
             }}
             emptyState={{

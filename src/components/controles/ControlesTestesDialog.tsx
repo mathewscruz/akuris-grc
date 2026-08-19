@@ -15,6 +15,7 @@ import { UserSelect } from "@/components/riscos/UserSelect";
 import { proximaDataPorFrequencia, frequenciaLabel } from "@/lib/controle-testes";
 import { logger } from "@/lib/logger";
 
+import { formatarDiaParaDB } from '@/lib/date-utils';
 interface ControleTeste {
   id: string;
   controle_id: string;
@@ -38,7 +39,7 @@ interface ControlesTestesDialogProps {
 
 export default function ControlesTestesDialog({ open, onOpenChange, controle, teste }: ControlesTestesDialogProps) {
   const emptyForm = {
-    data_teste: new Date().toISOString().split('T')[0],
+    data_teste: formatarDiaParaDB(new Date()),
     resultado: "eficaz",
     observacoes: "",
     evidencias: "",
@@ -69,7 +70,7 @@ export default function ControlesTestesDialog({ open, onOpenChange, controle, te
   useEffect(() => {
     if (teste) {
       setFormData({
-        data_teste: teste.data_teste || new Date().toISOString().split('T')[0],
+        data_teste: teste.data_teste || formatarDiaParaDB(new Date()),
         resultado: teste.resultado || "eficaz",
         observacoes: teste.observacoes || "",
         evidencias: teste.evidencias || "",

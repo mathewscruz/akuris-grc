@@ -195,7 +195,7 @@ export default function Continuidade() {
           { key: 'ativos', label: t('cardsKpi.sweep.continuidade.planosAtivos'), value: stats?.ativos ?? 0, drillDown: 'continuidade_ativos' },
           { key: 'emRevisao', label: t('cardsKpi.continuidade.emRevisao'), value: stats?.emRevisao ?? 0, tone: 'warning', drillDown: 'continuidade_revisao' },
           { key: 'testes', label: t('cardsKpi.continuidade.testesRealizados'), value: stats?.testesRealizados ?? 0, drillDown: 'continuidade_testes' },
-          { key: 'tarefasPendentes', label: t('cardsKpi.sweep.continuidade.tarefasPendentes'), value: stats?.tarefasPendentes ?? 0, tone: 'destructive', drillDown: 'planos' },
+          { key: 'tarefasPendentes', label: t('cardsKpi.sweep.continuidade.tarefasPendentes'), value: stats?.tarefasPendentes ?? 0, tone: 'destructive', drillDown: 'continuidade_tarefas' },
         ]}
       />
 

@@ -28,6 +28,7 @@ import {
 } from 'docx';
 import { parseMarkdown, runsToPlain, type InlineRun, type MdNode } from './docgen-render';
 
+import { formatarDiaParaDB } from '@/lib/date-utils';
 export interface DocGenDocument {
   titulo?: string;
   versao?: string;
@@ -230,7 +231,7 @@ export async function buildDocGenDocxBlob(doc: DocGenDocument, options: DocxOpti
   const { empresaNome, labels } = options;
   const titulo = doc.titulo || 'Documento';
   const versao = doc.versao || '1.0';
-  const dataCriacao = doc.data_criacao || new Date().toISOString().slice(0, 10);
+  const dataCriacao = doc.data_criacao || formatarDiaParaDB(new Date());
   const classificacao = doc.metadados?.classificacao || 'Interno';
   const logoUrl: string | undefined = doc.metadados?.logo_url;
   const logoAltura = parseInt(doc.metadados?.logo_altura || '48', 10);

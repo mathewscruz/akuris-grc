@@ -56,6 +56,7 @@ import { AkurisComplete } from '@/components/ui/AkurisComplete';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { logger } from '@/lib/logger';
 
+import { formatarDiaParaDB } from '@/lib/date-utils';
 /**
  * Tempo máximo (ms) que o frontend espera por uma chamada do docgen-chat.
  * Tem de ser MAIOR do que o orçamento do servidor (115s) para que a resposta
@@ -444,7 +445,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
       if (data?.document) {
         setGeneratedDocument({
           ...data.document,
-          data_criacao: generatedDocument.data_criacao || new Date().toISOString().slice(0, 10),
+          data_criacao: generatedDocument.data_criacao || formatarDiaParaDB(new Date()),
         });
         setAdherenceResult(null);
         const summary: string = data.summary || t('docgen.dialog.documentUpdatedDefault');
@@ -756,7 +757,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
       // real do usuário na capa/preview/export, independentemente do que veio.
       const doc = {
         ...data.document,
-        data_criacao: new Date().toISOString().slice(0, 10),
+        data_criacao: formatarDiaParaDB(new Date()),
       };
       setGeneratedDocument(doc);
       lastGenerationKeyRef.current = null;
@@ -830,7 +831,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     section: t('docgen.dialog.section'),
     versaoText: t('docgen.dialog.versao', { versao: docLike?.versao || '1.0' }),
     emissionDateText: t('docgen.dialog.emissionDate', {
-      date: docLike?.data_criacao || new Date().toISOString().slice(0, 10),
+      date: docLike?.data_criacao || formatarDiaParaDB(new Date()),
     }),
     classificationText: t('docgen.dialog.classification', {
       classification: docLike?.metadados?.classificacao || 'Interno',

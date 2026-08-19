@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { differenceInDays } from "date-fns";
+import { differenceInCalendarDays } from "date-fns";
 import { useAuth } from "@/components/AuthProvider";
 import { parseDataLocal } from '@/lib/date-utils';
 
@@ -34,7 +34,7 @@ export const useChavesStats = () => {
       
       const expiradas = chaves?.filter(c => {
         if (!c.data_proxima_rotacao) return false;
-        return differenceInDays(parseDataLocal(c.data_proxima_rotacao), hoje) < 0;
+        return differenceInCalendarDays(parseDataLocal(c.data_proxima_rotacao), hoje) < 0;
       }).length || 0;
 
       /**
@@ -47,7 +47,7 @@ export const useChavesStats = () => {
        */
       const rotacao30dias = chaves?.filter(c => {
         if (!c.data_proxima_rotacao) return false;
-        return differenceInDays(parseDataLocal(c.data_proxima_rotacao), hoje) <= 30;
+        return differenceInCalendarDays(parseDataLocal(c.data_proxima_rotacao), hoje) <= 30;
       }).length || 0;
 
       const criticas = chaves?.filter(c => c.criticidade === 'critica' && c.status === 'ativa').length || 0;

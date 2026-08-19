@@ -103,6 +103,7 @@ export const finalI18n = {
         vazioDesc: 'Comece cadastrando as chaves criptográficas da sua organização para monitorar rotações e manter a segurança.',
       },
       comum: {
+        categoria: 'Categoria',
         acoes: 'Ações',
         ambiente: 'Ambiente',
         aprovacao: 'Aprovação',
@@ -712,6 +713,7 @@ export const finalI18n = {
         vazioDesc: 'Start by registering your organisation cryptographic keys to monitor rotations and keep security.',
       },
       comum: {
+        categoria: 'Category',
         acoes: 'Actions',
         ambiente: 'Environment',
         aprovacao: 'Approval',

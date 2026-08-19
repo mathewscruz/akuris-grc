@@ -13,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
 import { useLanguage } from '@/contexts/LanguageContext';
 
+import { formatarDiaParaDB } from '@/lib/date-utils';
 export type ChangelogItemType = 'feature' | 'improvement' | 'fix';
 
 interface ChangelogItem {
@@ -35,7 +36,7 @@ interface Props {
 }
 
 function todayIso() {
-  return new Date().toISOString().slice(0, 10);
+  return formatarDiaParaDB(new Date());
 }
 
 export function ChangelogEntryDialog({ open, onOpenChange, entry, onSaved }: Props) {

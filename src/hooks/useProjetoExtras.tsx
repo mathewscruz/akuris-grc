@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { tGlobal } from '@/lib/i18n-global';
 import { exigirEscrita } from '@/lib/supabase-write';
 
+import { formatarDiaParaDB } from '@/lib/date-utils';
 /* =========================================================
    SPRINTS
 ========================================================= */
@@ -117,7 +118,7 @@ export function useAddTempo(tarefaId: string) {
         user_id: user.id,
         horas,
         descricao: descricao ?? null,
-        data: data ?? new Date().toISOString().slice(0, 10),
+        data: data ?? formatarDiaParaDB(new Date()),
       } as any);
       if (error) throw error;
     },

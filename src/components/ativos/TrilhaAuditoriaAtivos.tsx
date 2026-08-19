@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { formatarDiaParaDB } from '@/lib/date-utils';
 interface TrilhaAuditoriaProps {
   ativoId?: string;
   open: boolean;
@@ -133,7 +134,7 @@ const TrilhaAuditoriaAtivos: React.FC<TrilhaAuditoriaProps> = ({ ativoId, open, 
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
-    link.setAttribute('download', `auditoria-ativos-${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `auditoria-ativos-${formatarDiaParaDB(new Date())}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();

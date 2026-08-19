@@ -52,7 +52,7 @@ import { resolveCriticidadeTone, resolveControleStatusTone, resolveControleTipoT
 import { resumirTestesPorControlo, resultadoTesteLabel, resultadoTesteTone } from '@/lib/controle-testes';
 import { criticidadeControle } from '@/lib/metrics/controles';
 import { shortControleId } from '@/lib/controle-id';
-import { formatDateOnly, parseDataLocal } from '@/lib/date-utils';
+import { formatDateOnly, parseDataLocal, formatarDiaParaDB} from '@/lib/date-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Controle {
@@ -245,7 +245,9 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
 
   // Detectar parâmetro de controle na URL (deep link do e-mail)
   useEffect(() => {
-    const controleId = searchParams.get('controle');
+    // `?controle=` vem do e-mail; `?focus=` vem das gavetas de KPI. Duas
+    // grafias para a mesma coisa, e a página só reconhecia uma.
+    const controleId = searchParams.get('controle') ?? searchParams.get('focus');
     if (controleId && controles.length > 0) {
       const controle = controles.find(c => c.id === controleId);
       if (controle) {
@@ -253,6 +255,7 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
         setDetalheDialogOpen(true);
         // Limpar o parâmetro da URL para evitar reabrir em refresh
         searchParams.delete('controle');
+        searchParams.delete('focus');
         setSearchParams(searchParams, { replace: true });
       }
     }
@@ -563,7 +566,7 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
             <Button
               variant="ghost"
               size="sm"
-              aria-label={`${t('p8Layout.layout.moreActions')}: ${controle.nome}`}
+              aria-label={`${t('layout.moreActions')}: ${controle.nome}`}
               className="h-8 w-8 p-0"
             >
               <IconMore className="h-4 w-4" />
@@ -658,7 +661,7 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
               const blob = new Blob(["\ufeff" + csvContent], { type: "text/csv;charset=utf-8;" });
               const link = document.createElement("a");
               link.href = URL.createObjectURL(blob);
-              link.download = `controles_${new Date().toISOString().split("T")[0]}.csv`;
+              link.download = `controles_${formatarDiaParaDB(new Date())}.csv`;
               link.click();
               toast({ title: t("governancaComp.controles.toastExportTitle"), description: t("governancaComp.controles.toastExportDesc") });
             }}>

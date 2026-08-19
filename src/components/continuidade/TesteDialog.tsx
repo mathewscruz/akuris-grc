@@ -12,6 +12,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { IconTest } from '@/components/icons';
 
+import { formatarDiaParaDB } from '@/lib/date-utils';
 interface TesteDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -49,7 +50,7 @@ export function TesteDialog({ open, onOpenChange, planoId, teste, onSuccess }: T
         participantes: (teste.participantes || []).join(', '),
       });
     } else {
-      setForm({ tipo_teste: 'tabletop', descricao: '', data_teste: new Date().toISOString().split('T')[0], resultado: '', observacoes: '', licoes_aprendidas: '', participantes: '' });
+      setForm({ tipo_teste: 'tabletop', descricao: '', data_teste: formatarDiaParaDB(new Date()), resultado: '', observacoes: '', licoes_aprendidas: '', participantes: '' });
     }
   }, [teste, open]);
 

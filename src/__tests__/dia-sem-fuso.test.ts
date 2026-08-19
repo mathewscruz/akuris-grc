@@ -118,8 +118,24 @@ describe('dia sem fuso', () => {
    */
   const escritaCrua = /\.toISOString\(\)\s*\.\s*(split\(\s*'T'\s*\)\s*\[0\]|slice\(\s*0\s*,\s*10\s*\)|substring\(\s*0\s*,\s*10\s*\))/;
 
-  /** `new Date()` sem argumento é "agora": cortar aí dá o dia de hoje, e serve. */
-  const eAgora = (linha: string) => /new Date\(\)\s*\.toISOString/.test(linha);
+  /*
+    A excepção que deixou passar a classe toda.
+    ------------------------------------------------------------------------
+    Dizia: `new Date()` sem argumento é "agora", cortar aí dá o dia de hoje e
+    serve. Não serve. `toISOString()` converte para UTC ANTES de cortar, e a
+    oeste de Greenwich "agora" e "hoje" separam-se todas as noites: às 21:00 em
+    Brasília o corte devolve o dia SEGUINTE.
+
+    Custou trinta e seis sítios. O mais caro foi `todayIso()` na gaveta de KPIs,
+    que a partir das 21:00 comparava vencimentos contra amanhã enquanto o cartão
+    ao lado contava contra hoje — uma licença mudava de "a vencer" para
+    "vencida" sem que nada tivesse acontecido. `useReviewStats` contava as
+    revisões vencidas pelo mesmo dia errado.
+
+    `formatarDiaParaDB(new Date())` dá o dia local e é o que o repositório já
+    tinha para isto. Não há caso legítimo para a forma crua, nem sequer em nomes
+    de ficheiro exportado: um relatório tirado às 21:30 deve dizer hoje.
+  */
 
   it('nenhuma data de calendário é gravada via toISOString', () => {
     const infratores: string[] = [];
@@ -128,7 +144,7 @@ describe('dia sem fuso', () => {
       linhas(arquivo).forEach((linha, i) => {
         const t = linha.trimStart();
         if (t.startsWith('*') || t.startsWith('//')) return;
-        if (escritaCrua.test(linha) && !eAgora(linha)) {
+        if (escritaCrua.test(linha)) {
           infratores.push(`${arquivo}:${i + 1} → ${linha.trim()}`);
         }
       });
@@ -142,12 +158,13 @@ describe('dia sem fuso', () => {
 
   it('a guarda de escrita enxerga o padrão que proíbe', () => {
     const mau = "data_prazo: data.data_prazo?.toISOString().split('T')[0],";
-    expect(escritaCrua.test(mau) && !eAgora(mau)).toBe(true);
+    expect(escritaCrua.test(mau)).toBe(true);
     // A forma correta.
     const boa = 'data_prazo: data.data_prazo ? formatarDiaParaDB(data.data_prazo) : null,';
     expect(escritaCrua.test(boa)).toBe(false);
-    // E "hoje" continua permitido.
+    // E "hoje" deixou de ser excepção: é o caso que custou a classe toda.
     const hoje = "const hoje = new Date().toISOString().split('T')[0];";
-    expect(escritaCrua.test(hoje) && !eAgora(hoje)).toBe(false);
+    expect(escritaCrua.test(hoje)).toBe(true);
+    expect(escritaCrua.test('const hoje = formatarDiaParaDB(new Date());')).toBe(false);
   });
 });

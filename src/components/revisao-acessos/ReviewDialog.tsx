@@ -25,7 +25,7 @@ import { useReviewData } from "@/hooks/useReviewData";
 import { useEmpresaId } from "@/hooks/useEmpresaId";
 import { useOptimizedQuery } from "@/hooks/useOptimizedQuery";
 import { supabase } from "@/integrations/supabase/client";
-import { parseDateForDB } from "@/lib/date-utils";
+import { parseDateForDB, formatarDiaParaDB} from "@/lib/date-utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { IconView } from '@/components/icons';
 
@@ -62,7 +62,7 @@ export function ReviewDialog({ open, onClose, review, onSuccess }: ReviewDialogP
       tipo_revisao: "periodica",
       sistema_id: "",
       responsavel_revisao: "",
-      data_inicio: new Date().toISOString().split("T")[0],
+      data_inicio: formatarDiaParaDB(new Date()),
       data_limite: "",
       observacoes: "",
     },
@@ -120,7 +120,7 @@ export function ReviewDialog({ open, onClose, review, onSuccess }: ReviewDialogP
         tipo_revisao: "periodica",
         sistema_id: "",
         responsavel_revisao: "",
-        data_inicio: new Date().toISOString().split("T")[0],
+        data_inicio: formatarDiaParaDB(new Date()),
         data_limite: "",
         observacoes: "",
       });

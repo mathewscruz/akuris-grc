@@ -81,6 +81,7 @@ export type DrillDownKey =
   | 'continuidade_ativos'
   | 'continuidade_revisao'
   | 'continuidade_testes'
+  | 'continuidade_tarefas'
   | 'contas_pendentes'
   | 'contas_vencendo'
   | 'contas_expiradas'
@@ -130,7 +131,17 @@ const fmtDate = (iso?: string | null) => {
   }
 };
 
-const todayIso = () => new Date().toISOString().slice(0, 10);
+/**
+ * O dia de hoje, em `YYYY-MM-DD`, pelos componentes LOCAIS.
+ *
+ * Estava `new Date().toISOString().slice(0, 10)`, que converte para UTC antes
+ * de cortar: em Brasília, a partir das 21:00, "hoje" saltava para amanhã. As
+ * gavetas de vencimento passavam a usar um dia diferente do `emJanela()` logo
+ * acima — dois fusos dentro da mesma janela de trinta dias — e diferente do
+ * dia com que os cartões contam. Uma licença que vencia hoje mudava de gaveta
+ * às nove da noite sem que nada tivesse acontecido.
+ */
+const todayIso = () => formatarDiaParaDB(new Date());
 
 
 /**
@@ -179,7 +190,7 @@ const RECORTES: Record<string, Recorte> = {
   // ---- Controles ---------------------------------------------------------
   controles_vencidos: {
     tabela: 'controles', campos: 'id, nome, codigo, criticidade, proxima_avaliacao',
-    rota: '/controles', icone: ControlesIcon,
+    rota: '/governanca/controles', icone: ControlesIcon,
     onde: (q) => q.lt('proxima_avaliacao', todayIso()),
     ordem: ['proxima_avaliacao', true],
     titulo: (c) => c.nome, sub: (c) => c.codigo,
@@ -188,7 +199,7 @@ const RECORTES: Record<string, Recorte> = {
   },
   controles_vencendo: {
     tabela: 'controles', campos: 'id, nome, codigo, criticidade, proxima_avaliacao',
-    rota: '/controles', icone: ControlesIcon,
+    rota: '/governanca/controles', icone: ControlesIcon,
     onde: (q) => q.gte('proxima_avaliacao', todayIso()).lte('proxima_avaliacao', emJanela(30)),
     ordem: ['proxima_avaliacao', true],
     titulo: (c) => c.nome, sub: (c) => c.codigo,
@@ -197,7 +208,7 @@ const RECORTES: Record<string, Recorte> = {
   },
   controles_preventivos: {
     tabela: 'controles', campos: 'id, nome, codigo, tipo, criticidade',
-    rota: '/controles', icone: ControlesIcon,
+    rota: '/governanca/controles', icone: ControlesIcon,
     onde: (q) => q.eq('tipo', 'preventivo'),
     titulo: (c) => c.nome, sub: (c) => c.codigo,
     estado: (c) => formatStatus(c.tipo || ''), tom: () => 'success',
@@ -274,6 +285,17 @@ const RECORTES: Record<string, Recorte> = {
     titulo: (x) => formatStatus(x.tipo_teste || ''), sub: (x) => formatStatus(x.resultado || ''),
     tom: (x) => ((x.resultado || '').toLowerCase().includes('sucesso') ? 'success' : 'info'),
     quando: (x) => x.data_teste,
+  },
+  continuidade_tarefas: {
+    // O tile contava `continuidade_tarefas` e abria a gaveta de `planos_acao`:
+    // o número vinha de uma tabela e a lista de outra, com o "ver todos" a
+    // atirar o utilizador para fora do módulo.
+    tabela: 'continuidade_tarefas', campos: 'id, titulo, prioridade, status, prazo',
+    rota: '/continuidade', icone: IconChecklist,
+    onde: (q) => q.eq('status', 'pendente'), ordem: ['prazo', true],
+    titulo: (x) => x.titulo, sub: (x) => formatStatus(x.prioridade || ''),
+    estado: (x) => formatStatus(x.status || ''), tom: (x) => tomPorNivel(x.prioridade),
+    quando: (x) => x.prazo,
   },
   // ---- Contas privilegiadas ---------------------------------------------
   contas_pendentes: {
@@ -419,8 +441,10 @@ const RECORTES: Record<string, Recorte> = {
   contratos_vigentes: {
     tabela: 'contratos', campos: 'id, nome, numero_contrato, status, data_fim',
     rota: '/contratos', icone: IconScale,
-    // Mesmo critério do valor somado no KPI: só o que está de facto em vigor.
-    onde: (q) => q.in('status', ['ativo', 'vigente']).gte('data_fim', todayIso()),
+    // Mesmo critério de `isContratoVigente`: sem data de fim é contrato por
+    // prazo indeterminado, e conta como vigente. O `.gte` sozinho excluía-o —
+    // o KPI somava-lhe o valor e a gaveta não o mostrava.
+    onde: (q) => q.in('status', ['ativo', 'vigente']).or(`data_fim.is.null,data_fim.gte.${todayIso()}`),
     ordem: ['data_fim', true],
     titulo: (c) => c.nome || c.numero_contrato || '',
     sub: (c) => c.numero_contrato, estado: (c) => formatStatus(c.status || ''),
@@ -739,7 +763,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
         title: d('controles.title'),
         description: d('controles.description'),
         icon: ControlesIcon,
-        route: '/controles',
+        route: '/governanca/controles',
         fetcher: async (empresaId) => {
           const { data, error } = await supabase
             .from('controles')
@@ -948,7 +972,10 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             .from('dados_solicitacoes_titular')
             .select('id, tipo_solicitacao, status, prazo_resposta')
             .eq('empresa_id', empresaId)
-            .neq('status', 'concluida')
+            // O tile é "Solicitações pendentes" e a página conta
+            // `status === 'pendente'`. O `.neq('concluida')` não excluía nada:
+            // esta tabela não tem esse estado.
+            .eq('status', 'pendente')
             .order('prazo_resposta', { ascending: true, nullsFirst: false })
             .limit(5);
           if (error) throw error;
@@ -985,7 +1012,8 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             .from('dados_solicitacoes_titular')
             .select('id, tipo_solicitacao, status, prazo_resposta')
             .eq('empresa_id', empresaId)
-            .neq('status', 'concluida')
+            // Encerradas não estão fora do prazo. É o mesmo corte da página.
+            .not('status', 'in', '(atendida,rejeitada)')
             .lt('prazo_resposta', todayIso())
             .order('prazo_resposta', { ascending: true })
             .limit(5);
@@ -1062,7 +1090,9 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             .from('incidentes')
             .select('id, titulo, status, criticidade, created_at')
             .eq('empresa_id', empresaId)
-            .eq('status', 'em_investigacao')
+            // O importador de CSV grava `investigacao` e o produto grava
+            // `em_investigacao`: o cartão conta as duas e a gaveta só via uma.
+            .in('status', ['em_investigacao', 'investigacao', 'em_analise', 'analise'])
             .order('created_at', { ascending: false })
             .limit(5);
           if (error) throw error;
@@ -1108,19 +1138,30 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
         fetcher: async (empresaId) => {
           const { data, error } = await supabase
             .from('dados_pessoais')
-            .select('id, nome, categoria_dados, sensibilidade')
+            .select('id, nome, categoria_dados, tipo_dados, sensibilidade')
             .eq('empresa_id', empresaId)
-            .in('sensibilidade', ['sensivel', 'muito_sensivel'])
+            // A página classifica por DUAS colunas: `tipo_dados = 'sensivel'`
+            // com sensibilidade comum também conta. A gaveta olhava só para
+            // uma e perdia esses registos.
+            .or('tipo_dados.eq.sensivel,sensibilidade.in.(sensivel,muito_sensivel)')
             .order('sensibilidade', { ascending: false })
             .limit(5);
           if (error) throw error;
-          return (data || []).map((x: any) => ({
-            id: x.id,
-            title: x.nome,
-            subtitle: formatStatus(x.categoria_dados || ''),
-            status: formatStatus(x.sensibilidade || ''),
-            tone: (x.sensibilidade === 'muito_sensivel' ? 'destructive' : 'warning') as DrillItem['tone'],
-          }));
+          return (data || []).map((x: any) => {
+            // O nível efectivo, como em Privacidade.tsx: `tipo_dados` sensível
+            // ganha à sensibilidade comum, senão a gaveta "Dados sensíveis"
+            // mostrava o crachá "Comum" ao lado do registo.
+            const nivel = x.tipo_dados === 'sensivel' && (x.sensibilidade || 'comum') === 'comum'
+              ? 'sensivel'
+              : (x.sensibilidade || 'comum');
+            return {
+              id: x.id,
+              title: x.nome,
+              subtitle: formatStatus(x.categoria_dados || ''),
+              status: formatStatus(nivel),
+              tone: (nivel === 'muito_sensivel' ? 'destructive' : 'warning') as DrillItem['tone'],
+            };
+          });
         },
       };
     case 'privacidade_mapeamentos':
@@ -1311,7 +1352,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
         title: d('controles_testados.title'),
         description: d('controles_testados.description'),
         icon: ControlesIcon,
-        route: '/controles',
+        route: '/governanca/controles',
         fetcher: async (empresaId) => {
           // `controles_testes` não tem `empresa_id`; o recorte vem pelos
           // controles, como no cálculo da efectividade.
@@ -1332,7 +1373,9 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             const c: any = porId.get(tst.controle_id) || {};
             const ok = (tst.resultado || '').toLowerCase();
             return {
-              id: tst.id,
+              // O id que a linha carrega é o do CONTROLO: é ele que a página
+              // sabe abrir. `tst.id` é a linha de teste, que lá não existe.
+              id: tst.controle_id,
               title: c.nome || '',
               subtitle: c.codigo,
               status: formatStatus(tst.resultado || ''),
@@ -1410,7 +1453,10 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             .select('id, usuario_beneficiario, nivel_privilegio, status, data_expiracao') as any)
             .eq('empresa_id', empresaId)
             .eq('status', 'ativo')
-            .gte('data_expiracao', todayIso())
+            // Sem data de expiração é conta permanente, e a página conta-a como
+            // activa. O `.gte` sozinho excluía o NULL e a gaveta ficava a menos
+            // do que o cartão ao lado.
+            .or(`data_expiracao.is.null,data_expiracao.gte.${todayIso()}`)
             .order('data_expiracao', { ascending: true, nullsFirst: false })
             .limit(5);
           if (error) throw error;

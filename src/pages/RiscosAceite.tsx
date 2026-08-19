@@ -17,7 +17,7 @@ import { formatDateOnly, formatarDiaParaDB, parseDataLocal } from '@/lib/date-ut
 import { formatStatus } from '@/lib/text-utils';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveNivelRiscoTone, resolveRevisaoTone } from '@/lib/status-tone';
-import { differenceInDays } from 'date-fns';
+import { differenceInCalendarDays } from 'date-fns';
 import { AceiteDetalheDialog } from '@/components/riscos/AceiteDetalheDialog';
 import { AprovacaoRiscoDialog } from '@/components/riscos/AprovacaoRiscoDialog';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -151,7 +151,7 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
 
   const getRevisaoStatus = (dataRevisao?: string): 'vencida' | 'proxima' | 'ok' | 'sem_data' => {
     if (!dataRevisao) return 'sem_data';
-    const dias = differenceInDays(parseDataLocal(dataRevisao), new Date());
+    const dias = differenceInCalendarDays(parseDataLocal(dataRevisao), new Date());
     if (dias < 0) return 'vencida';
     if (dias <= 7) return 'proxima';
     return 'ok';
@@ -178,7 +178,7 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
   const revisoesProximas = riscos.filter(r => getRevisaoStatus(r.data_proxima_revisao) === 'proxima').length;
   const aceitesAExpirar = riscos.filter(r => {
     if (!r.aceite_valido_ate) return false;
-    const dias = differenceInDays(parseDataLocal(r.aceite_valido_ate), new Date());
+    const dias = differenceInCalendarDays(parseDataLocal(r.aceite_valido_ate), new Date());
     return dias >= 0 && dias <= 30;
   }).length;
   const totalExpirados = riscosExpirados.length;
@@ -189,7 +189,7 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
 
   const getValidadeBadge = (validoAte?: string) => {
     if (!validoAte) return <StatusBadge tone="neutral">{t('riscos.aceite.validity.none')}</StatusBadge>;
-    const dias = differenceInDays(parseDataLocal(validoAte), new Date());
+    const dias = differenceInCalendarDays(parseDataLocal(validoAte), new Date());
     if (dias < 0) return <StatusBadge tone="destructive">{t('riscos.aceite.validity.expired')}</StatusBadge>;
     if (dias <= 30) return <StatusBadge tone="warning">{dias}d</StatusBadge>;
     return <StatusBadge tone="success">{dias}d</StatusBadge>;
@@ -241,7 +241,7 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
     const status = getRevisaoStatus(dataRevisao);
     if (status === 'sem_data') return <StatusBadge tone="neutral">{t('riscos.aceite.review.noDate')}</StatusBadge>;
     if (!dataRevisao) return null;
-    const dias = differenceInDays(parseDataLocal(dataRevisao), new Date());
+    const dias = differenceInCalendarDays(parseDataLocal(dataRevisao), new Date());
     switch (status) {
       case 'vencida': return <StatusBadge {...resolveRevisaoTone(dias)}>{t('riscos.aceite.review.overdue')}</StatusBadge>;
       case 'proxima': return <StatusBadge {...resolveRevisaoTone(dias)}>{dias}{t('riscos.aceite.review.daysLeftSuffix')}</StatusBadge>;

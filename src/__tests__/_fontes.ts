@@ -89,7 +89,7 @@ export function linhas(f: string): string[] {
  * `*`. Um bloco multi-linha aberto continua a ser lido — é raro e o custo de
  * o seguir não compensa.
  */
-const semComentario = (linha: string): string => {
+export const semComentario = (linha: string): string => {
   const t = linha.trim();
   if (t.startsWith('//') || t.startsWith('*') || t.startsWith('/*')) return '';
   return linha.replace(/\/\*.*?\*\//g, '').replace(/\/\/.*$/, '');

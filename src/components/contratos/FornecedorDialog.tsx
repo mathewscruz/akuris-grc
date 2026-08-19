@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { IconOrg } from '@/components/icons';
 
+import { formatarDiaParaDB } from '@/lib/date-utils';
 interface Fornecedor {
   id: string;
   nome: string;
@@ -80,7 +81,7 @@ export function FornecedorDialog({ fornecedor, open, onOpenChange, onSuccess }: 
           status: 'ativo',
           categoria: '',
           avaliacao_risco: 'baixo',
-          data_cadastro: new Date().toISOString().split('T')[0],
+          data_cadastro: formatarDiaParaDB(new Date()),
           observacoes: ''
         });
       }

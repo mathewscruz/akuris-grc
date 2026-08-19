@@ -275,7 +275,7 @@ export default function RelatoriosContratos({ open: openProp, onOpenChange, hide
       });
 
       addAkurisFooter(doc);
-      doc.save(`relatorio_contratos_${new Date().toISOString().split('T')[0]}.pdf`);
+      doc.save(`relatorio_contratos_${formatarDiaParaDB(new Date())}.pdf`);
       toast({ title: t('contratosAtivos.relatoriosContratos.toastPdfGenerated'), description: t('contratosAtivos.relatoriosContratos.toastPdfGeneratedDescription') });
     } catch {
       toast({ title: t('contratosAtivos.common.error'), description: t('contratosAtivos.relatoriosContratos.toastPdfError'), variant: "destructive" });

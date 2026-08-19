@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 
+import { formatarDiaParaDB } from '@/lib/date-utils';
 export const useReviewStats = () => {
   const { profile } = useAuth();
   const empresaId = profile?.empresa_id;
@@ -39,7 +40,7 @@ export const useReviewStats = () => {
         .select("*", { count: "exact", head: true })
         .eq("empresa_id", empresaId)
         .eq("status", "em_andamento")
-        .lt("data_limite", new Date().toISOString().split("T")[0]);
+        .lt("data_limite", formatarDiaParaDB(new Date()));
 
       // Total de contas revisadas
       const { data: statsData } = await supabase

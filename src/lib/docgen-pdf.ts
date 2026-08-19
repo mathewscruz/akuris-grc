@@ -9,6 +9,7 @@ import autoTable from 'jspdf-autotable';
 import { parseMarkdown, runsToPlain, type InlineRun, type MdNode } from './docgen-render';
 import type { DocGenDocument, DocxLabels } from './docgen-docx';
 
+import { formatarDiaParaDB } from '@/lib/date-utils';
 export interface PdfOptions {
   empresaNome: string;
   labels: DocxLabels;
@@ -173,7 +174,7 @@ export async function buildDocGenPdfBlob(doc: DocGenDocument, options: PdfOption
 
   const titulo = doc.titulo || 'Documento';
   const versao = doc.versao || '1.0';
-  const dataCriacao = doc.data_criacao || new Date().toISOString().slice(0, 10);
+  const dataCriacao = doc.data_criacao || formatarDiaParaDB(new Date());
   const classificacao = doc.metadados?.classificacao || 'Interno';
   const logoUrl: string | undefined = doc.metadados?.logo_url;
   const logoAltura = parseInt(doc.metadados?.logo_altura || '48', 10);

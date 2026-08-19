@@ -37,7 +37,7 @@ import { useDocumentosStats } from '@/hooks/useDocumentosStats';
 import { isDocumentoVencido } from '@/lib/metrics';
 import { PageSkeleton } from '@/components/ui/page-skeleton';
 import ConfirmDialog from '@/components/ConfirmDialog';
-import { formatDateOnly, parseDataLocal } from '@/lib/date-utils';
+import { formatDateOnly, parseDataLocal, formatarDiaParaDB} from '@/lib/date-utils';
 
 interface Documento {
   id: string;
@@ -408,7 +408,7 @@ export default function Documentos() {
     const blob = new Blob(["\ufeff" + csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = `documentos_${new Date().toISOString().split("T")[0]}.csv`;
+    link.download = `documentos_${formatarDiaParaDB(new Date())}.csv`;
     link.click();
     toast({
       title: t('documentos.lista.exportacaoConcluidaTitulo'),

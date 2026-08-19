@@ -35,6 +35,7 @@ export const t4Ciclo = {
         },
       },
       constatacoes: {
+        guardar: 'Salvar constatação',
         tab: 'Constatações ({{count}})',
         titulo: 'Constatações',
         nova: 'Nova constatação',
@@ -133,6 +134,7 @@ export const t4Ciclo = {
         },
       },
       constatacoes: {
+        guardar: 'Save finding',
         tab: 'Findings ({{count}})',
         titulo: 'Findings',
         nova: 'New finding',

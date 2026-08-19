@@ -11,6 +11,7 @@ import { logger } from '@/lib/logger';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { IconUpload, IconLink } from '@/components/icons';
 
+import { formatarDiaParaDB } from '@/lib/date-utils';
 interface Props {
   frameworkId: string;
   empresaId: string;
@@ -96,7 +97,7 @@ export function DocumentsHero({ frameworkId, empresaId, onUploadClick, onLinkCli
         // entre "tem documento" e "tem documento que ainda vale" — numa
         // auditoria de manutenção é exatamente essa a pergunta.
         const soComEvidenciaVencida = new Set<string>();
-        const hoje = new Date().toISOString().slice(0, 10);
+        const hoje = formatarDiaParaDB(new Date());
         (linksRes.data || []).forEach(l => {
           if (!l.requirement_id) return;
           const validade = (l as { evidence_library?: { valido_ate?: string | null } | null })

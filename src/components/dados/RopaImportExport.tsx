@@ -11,6 +11,7 @@ import { logger } from "@/lib/logger";
 import { exportRopaWorkbook, parseRopaWorkbook, toRopaPayload } from "@/lib/ropa-planilha";
 import { normalizeRopaLabel } from "@/lib/ropa-schema";
 
+import { formatarDiaParaDB } from '@/lib/date-utils';
 interface Props {
   registos: any[];
   /**
@@ -38,7 +39,7 @@ export function RopaImportExport({ registos, exercicioId, onImported }: Props) {
       toast.info(t("dadosDashboard.ropaPlanilha.semRegistos"));
       return;
     }
-    exportRopaWorkbook(registos, locale, `ROPA_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    exportRopaWorkbook(registos, locale, `ROPA_${formatarDiaParaDB(new Date())}.xlsx`);
   };
 
   const handleFile = async (file: File) => {

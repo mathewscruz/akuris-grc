@@ -191,7 +191,7 @@ function SprintDialog({ open, onOpenChange, projetoId, sprint }: { open: boolean
       setForm({
         nome: sprint?.nome ?? '',
         objetivo: sprint?.objetivo ?? '',
-        data_inicio: sprint?.data_inicio ?? new Date().toISOString().slice(0, 10),
+        data_inicio: sprint?.data_inicio ?? formatarDiaParaDB(new Date()),
         data_fim: sprint?.data_fim ?? formatarDiaParaDB(new Date(Date.now() + 14 * 86400000)),
         ativa: sprint?.ativa ?? !sprint,
         concluida: sprint?.concluida ?? false,

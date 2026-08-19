@@ -13,6 +13,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { logger } from "@/lib/logger";
 import { IconChecklist } from '@/components/icons';
 
+import { formatarDiaParaDB } from '@/lib/date-utils';
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -23,7 +24,7 @@ interface Props {
 const emptyForm = {
   nome: "",
   versao: "",
-  data_realizacao: new Date().toISOString().slice(0, 10),
+  data_realizacao: formatarDiaParaDB(new Date()),
   periodo_inicio: "",
   periodo_fim: "",
   responsavel_id: "",
@@ -47,7 +48,7 @@ export function RopaExercicioDialog({ open, onOpenChange, exercicio, onSaved }: 
         ? {
             nome: exercicio.nome || "",
             versao: exercicio.versao || "",
-            data_realizacao: exercicio.data_realizacao || new Date().toISOString().slice(0, 10),
+            data_realizacao: exercicio.data_realizacao || formatarDiaParaDB(new Date()),
             periodo_inicio: exercicio.periodo_inicio || "",
             periodo_fim: exercicio.periodo_fim || "",
             responsavel_id: exercicio.responsavel_id || "",
@@ -78,7 +79,7 @@ export function RopaExercicioDialog({ open, onOpenChange, exercicio, onSaved }: 
       const payload = {
         nome: form.nome.trim(),
         versao: form.versao || null,
-        data_realizacao: form.data_realizacao || new Date().toISOString().slice(0, 10),
+        data_realizacao: form.data_realizacao || formatarDiaParaDB(new Date()),
         periodo_inicio: form.periodo_inicio || null,
         periodo_fim: form.periodo_fim || null,
         responsavel_id: form.responsavel_id || null,

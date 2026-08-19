@@ -35,7 +35,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { formatDateOnly } from "@/lib/date-utils";
+import { formatDateOnly, formatarDiaParaDB} from "@/lib/date-utils";
 import { formatStatus } from "@/lib/text-utils";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -258,7 +258,7 @@ export default function AuditoriasContent({ actionsSlot }: { actionsSlot?: HTMLE
     const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `auditorias_${new Date().toISOString().split('T')[0]}.csv`;
+    link.download = `auditorias_${formatarDiaParaDB(new Date())}.csv`;
     link.click();
     
     toast({

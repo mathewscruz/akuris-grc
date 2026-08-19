@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { formatDateOnly, intlLocale, parseDataLocal } from '@/lib/date-utils';
+import { formatDateOnly, intlLocale, parseDataLocal, formatarDiaParaDB} from '@/lib/date-utils';
 import jsPDF from 'jspdf';
 import { loadAkurisLogo, addAkurisHeader, addAkurisFooter, addSectionTitle, drawTableHeader, formatLabel, AKURIS_COLORS } from '@/lib/pdf-utils';
 
@@ -67,7 +67,7 @@ export function DocumentosRelatorios({ documentos, categorias, open, onOpenChang
     const blob = new Blob(["\ufeff" + csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = `${nomeArquivo}_${new Date().toISOString().split("T")[0]}.csv`;
+    link.download = `${nomeArquivo}_${formatarDiaParaDB(new Date())}.csv`;
     link.click();
   };
 
@@ -149,7 +149,7 @@ export function DocumentosRelatorios({ documentos, categorias, open, onOpenChang
       });
 
       addAkurisFooter(doc);
-      doc.save(`relatorio_geral_documentos_${new Date().toISOString().split("T")[0]}.pdf`);
+      doc.save(`relatorio_geral_documentos_${formatarDiaParaDB(new Date())}.pdf`);
       toast({ title: t('documentosExtras.relatorios.relatorioGerado'), description: t('documentosExtras.relatorios.pdfBaixado') });
     } catch {
       toast({ title: t('documentosExtras.relatorios.erroTitulo'), description: t('documentosExtras.relatorios.erroGerar'), variant: "destructive" });

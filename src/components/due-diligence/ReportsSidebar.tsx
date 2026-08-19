@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { CHART_GRID, CHART_AXIS, CHART_TOOLTIP_STYLE, chartSeries, CHART_FONT } from '@/lib/chart-tokens';
 
+import { formatarDiaParaDB } from '@/lib/date-utils';
 export function ReportsSidebar() {
   const { t } = useLanguage();
   const { data: stats, isLoading: statsLoading } = useDueDiligenceStats();
@@ -36,7 +37,7 @@ export function ReportsSidebar() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `relatorio-due-diligence-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `relatorio-due-diligence-${formatarDiaParaDB(new Date())}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
