@@ -35,6 +35,12 @@ pop3_port = 54326
 [storage]
 enabled = true
 
+# O projecto esta em plano que nao suporta vector buckets. Sem esta linha o
+# CLI assume o default (`true`) e o `config push` aborta inteiro com HTTP 402 —
+# levando com ele a politica de senha, que e o que interessa empurrar.
+[storage.vector]
+enabled = false
+
 [auth]
 enabled = true
 # Politica de senha imposta pelo servidor.
