@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
+import { IconView, IconSuccess, IconWarning, IconTime, IconCalendar, IconShield, IconUserCheck } from '@/components/icons';
 import { supabase } from '@/integrations/supabase/client';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, Shield, Clock, CheckCircle, Eye, UserCheck, Calendar } from 'lucide-react';
 import { DenunciaDialog } from './DenunciaDialog';
 import { useToast } from '@/hooks/use-toast';
 import { DataTable } from '@/components/ui/data-table';
@@ -33,7 +33,6 @@ interface Denuncia {
     nome: string;
   } | null;
 }
-
 
 interface DenunciasDashboardProps {
   itemIdToOpen?: string | null;
@@ -162,7 +161,7 @@ export function DenunciasDashboard({ itemIdToOpen, refreshKey }: DenunciasDashbo
       label: t('denunciasAdmin.dashboard.colStatus'),
       sortable: true,
       render: (_: any, denuncia: Denuncia) => (
-        <StatusBadge size="sm" {...resolveDenunciaStatusTone(denuncia.status)}>
+        <StatusBadge {...resolveDenunciaStatusTone(denuncia.status)}>
           {formatStatus(denuncia.status)}
         </StatusBadge>
       )
@@ -172,7 +171,7 @@ export function DenunciasDashboard({ itemIdToOpen, refreshKey }: DenunciasDashbo
       label: t('denunciasAdmin.dashboard.colGravidade'),
       sortable: true,
       render: (_: any, denuncia: Denuncia) => (
-        <StatusBadge size="sm" {...resolveCriticidadeTone(denuncia.gravidade)}>
+        <StatusBadge {...resolveCriticidadeTone(denuncia.gravidade)}>
           {formatStatus(denuncia.gravidade)}
         </StatusBadge>
       )
@@ -209,7 +208,7 @@ export function DenunciasDashboard({ itemIdToOpen, refreshKey }: DenunciasDashbo
       sortable: true,
       render: (_: any, denuncia: Denuncia) => (
         <div className="flex items-center gap-1">
-          <Calendar className="h-4 w-4 text-muted-foreground" />
+          <IconCalendar className="h-4 w-4 text-muted-foreground" />
           {formatDateOnly(denuncia.created_at)}
         </div>
       )
@@ -223,7 +222,7 @@ export function DenunciasDashboard({ itemIdToOpen, refreshKey }: DenunciasDashbo
           size="sm"
           onClick={() => handleVisualizarDenuncia(denuncia)}
         >
-          <Eye className="h-4 w-4" />
+          <IconView className="h-4 w-4" />
         </Button>
       )
     }
@@ -285,7 +284,7 @@ export function DenunciasDashboard({ itemIdToOpen, refreshKey }: DenunciasDashbo
               }
             }}
             emptyState={{
-              icon: <Shield className="h-8 w-8" />,
+              icon: <IconShield className="h-8 w-8" />,
               title: searchTerm ? t('denunciasAdmin.dashboard.emptyTitleSearch') : t('denunciasAdmin.dashboard.emptyTitle'),
               description: searchTerm 
                 ? t('denunciasAdmin.dashboard.emptyDescriptionSearch')

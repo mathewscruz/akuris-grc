@@ -1,10 +1,10 @@
 import { useState } from 'react';
+import { IconAdd, IconEdit, IconDelete, IconTime, IconChecklist, IconTest, IconTarget, IconShieldCheck } from '@/components/icons';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import { Button } from '@/components/ui/button';
 import { StatusBadge, type StatusTone } from '@/components/ui/status-badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Edit, Trash2, ClipboardList, TestTube, Clock, Target, ShieldCheck } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -13,6 +13,7 @@ import { TarefaDialog } from './TarefaDialog';
 import { TesteDialog } from './TesteDialog';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { formatStatus } from '@/lib/text-utils';
 
 interface PlanoDetalheDialogProps {
   open: boolean;
@@ -101,7 +102,7 @@ export function PlanoDetalheDialog({ open, onOpenChange, plano }: PlanoDetalheDi
       <DialogShell
         open={open}
         onOpenChange={onOpenChange}
-        icon={ShieldCheck}
+        icon={IconShieldCheck}
         title={plano.nome}
         size="lg"
         hideFooter
@@ -115,22 +116,22 @@ export function PlanoDetalheDialog({ open, onOpenChange, plano }: PlanoDetalheDi
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 my-4">
             {plano.rto_horas != null && (
               <Card className="p-3">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground"><Clock className="h-4 w-4" /> {t('continuidadeComp.detalhe.rto')}</div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground"><IconTime className="h-4 w-4" /> {t('continuidadeComp.detalhe.rto')}</div>
                 <p className="text-lg font-semibold mt-1">{plano.rto_horas}h</p>
               </Card>
             )}
             {plano.rpo_horas != null && (
               <Card className="p-3">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground"><Target className="h-4 w-4" /> {t('continuidadeComp.detalhe.rpo')}</div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground"><IconTarget className="h-4 w-4" /> {t('continuidadeComp.detalhe.rpo')}</div>
                 <p className="text-lg font-semibold mt-1">{plano.rpo_horas}h</p>
               </Card>
             )}
             <Card className="p-3">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground"><ClipboardList className="h-4 w-4" /> {t('continuidadeComp.detalhe.tarefas')}</div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground"><IconChecklist className="h-4 w-4" /> {t('continuidadeComp.detalhe.tarefas')}</div>
               <p className="text-lg font-semibold mt-1">{tarefas.length}</p>
             </Card>
             <Card className="p-3">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground"><TestTube className="h-4 w-4" /> {t('continuidadeComp.detalhe.testes')}</div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground"><IconTest className="h-4 w-4" /> {t('continuidadeComp.detalhe.testes')}</div>
               <p className="text-lg font-semibold mt-1">{testes.length}</p>
             </Card>
           </div>
@@ -143,10 +144,10 @@ export function PlanoDetalheDialog({ open, onOpenChange, plano }: PlanoDetalheDi
               <TabsTrigger value="testes">{t('continuidadeComp.detalhe.tabTestes', { count: testes.length })}</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="tarefas" className="space-y-3 mt-4">
+            <TabsContent value="tarefas" className="space-y-3">
               <div className="flex justify-end">
                 <Button size="sm" onClick={() => setTarefaDialog({ open: true })}>
-                  <Plus className="h-4 w-4 mr-1" /> {t('continuidadeComp.detalhe.buttonTarefa')}
+                  <IconAdd className="h-4 w-4 mr-1" /> {t('continuidadeComp.detalhe.buttonTarefa')}
                 </Button>
               </div>
               {tarefas.length === 0 ? (
@@ -160,8 +161,8 @@ export function PlanoDetalheDialog({ open, onOpenChange, plano }: PlanoDetalheDi
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-medium text-sm">{tarefa.titulo}</span>
-                            <StatusBadge tone={pri.tone} size="sm">{pri.label}</StatusBadge>
-                            <StatusBadge tone={tarefa.status === 'concluida' ? 'success' : tarefa.status === 'em_andamento' ? 'info' : 'neutral'} size="sm">
+                            <StatusBadge tone={pri.tone}>{pri.label}</StatusBadge>
+                            <StatusBadge tone={tarefa.status === 'concluida' ? 'success' : tarefa.status === 'em_andamento' ? 'info' : 'neutral'}>
                               {tarefa.status === 'pendente' ? t('continuidadeComp.detalhe.statusPendente') : tarefa.status === 'em_andamento' ? t('continuidadeComp.detalhe.statusEmAndamento') : t('continuidadeComp.detalhe.statusConcluida')}
                             </StatusBadge>
                           </div>
@@ -170,10 +171,10 @@ export function PlanoDetalheDialog({ open, onOpenChange, plano }: PlanoDetalheDi
                         </div>
                         <div className="flex gap-1 shrink-0">
                           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setTarefaDialog({ open: true, tarefa })}>
-                            <Edit className="h-3.5 w-3.5" />
+                            <IconEdit className="h-3.5 w-3.5" />
                           </Button>
                           <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteConfirm({ open: true, type: 'tarefa', id: tarefa.id })}>
-                            <Trash2 className="h-3.5 w-3.5" />
+                            <IconDelete className="h-3.5 w-3.5" />
                           </Button>
                         </div>
                       </div>
@@ -183,35 +184,35 @@ export function PlanoDetalheDialog({ open, onOpenChange, plano }: PlanoDetalheDi
               )}
             </TabsContent>
 
-            <TabsContent value="testes" className="space-y-3 mt-4">
+            <TabsContent value="testes" className="space-y-3">
               <div className="flex justify-end">
                 <Button size="sm" onClick={() => setTesteDialog({ open: true })}>
-                  <Plus className="h-4 w-4 mr-1" /> {t('continuidadeComp.detalhe.buttonTeste')}
+                  <IconAdd className="h-4 w-4 mr-1" /> {t('continuidadeComp.detalhe.buttonTeste')}
                 </Button>
               </div>
               {testes.length === 0 ? (
                 <p className="text-center text-sm text-muted-foreground py-8">{t('continuidadeComp.detalhe.emptyTestes')}</p>
               ) : (
                 testes.map((teste: any) => {
-                  const res = teste.resultado ? (resultadoMap[teste.resultado] || { label: teste.resultado, tone: 'neutral' as StatusTone }) : null;
+                  const res = teste.resultado ? (resultadoMap[teste.resultado] || { label: formatStatus(teste.resultado), tone: 'neutral' as StatusTone }) : null;
                   return (
                     <Card key={teste.id} className="p-3">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-medium text-sm">{tipoTesteMap[teste.tipo_teste] || teste.tipo_teste}</span>
-                            <StatusBadge tone="neutral" variant="outline" size="sm">{formatDateOnly(teste.data_teste)}</StatusBadge>
-                            {res && <StatusBadge tone={res.tone} size="sm">{res.label}</StatusBadge>}
+                            <StatusBadge tone="neutral" variant="outline">{formatDateOnly(teste.data_teste)}</StatusBadge>
+                            {res && <StatusBadge tone={res.tone}>{res.label}</StatusBadge>}
                           </div>
                           {teste.descricao && <p className="text-xs text-muted-foreground mt-1">{teste.descricao}</p>}
                           {teste.licoes_aprendidas && <p className="text-xs text-muted-foreground mt-1"><strong>{t('continuidadeComp.detalhe.licoesPrefix')}:</strong> {teste.licoes_aprendidas}</p>}
                         </div>
                         <div className="flex gap-1 shrink-0">
                           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setTesteDialog({ open: true, teste })}>
-                            <Edit className="h-3.5 w-3.5" />
+                            <IconEdit className="h-3.5 w-3.5" />
                           </Button>
                           <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteConfirm({ open: true, type: 'teste', id: teste.id })}>
-                            <Trash2 className="h-3.5 w-3.5" />
+                            <IconDelete className="h-3.5 w-3.5" />
                           </Button>
                         </div>
                       </div>

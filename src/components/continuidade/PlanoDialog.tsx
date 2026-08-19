@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { DialogShell } from '@/components/ui/dialog-shell';
-import { ShieldCheck } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { DateField } from '@/components/ui/date-field';
 import { Label } from '@/components/ui/label';
@@ -11,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { useAuth } from '@/components/AuthProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { IconShieldCheck } from '@/components/icons';
 
 interface PlanoDialogProps {
   open: boolean;
@@ -104,7 +104,7 @@ export function PlanoDialog({ open, onOpenChange, plano, onSuccess }: PlanoDialo
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      icon={ShieldCheck}
+      icon={IconShieldCheck}
       title={plano ? t('continuidadeComp.planoDialog.titleEdit') : t('continuidadeComp.planoDialog.titleNew')}
       size="lg"
       onSubmit={handleSubmit}

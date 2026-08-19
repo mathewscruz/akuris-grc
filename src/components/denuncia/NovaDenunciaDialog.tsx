@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
+import { IconAdd } from '@/components/icons';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Plus } from 'lucide-react';
+;
 import { Button } from '@/components/ui/button';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import { Input } from '@/components/ui/input';
@@ -179,7 +180,7 @@ export function NovaDenunciaDialog({ onDenunciaCriada }: NovaDenunciaDialogProps
   return (
     <>
       <Button onClick={() => setOpen(true)}>
-        <Plus className="mr-2 h-4 w-4" />
+        <IconAdd className="mr-2 h-4 w-4" />
         {t('denunciasAdmin.novaDenuncia.button')}
       </Button>
 

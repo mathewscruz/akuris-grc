@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { IconAdd, IconCalendar, IconMessage } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import {
@@ -20,9 +21,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Plus, MessageSquare } from 'lucide-react';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -30,6 +29,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { dateFnsLocale } from '@/lib/date-utils';
 
 const makeComunicacaoSchema = (t: (key: string) => string) => z.object({
   tipo_comunicacao: z.string().min(1, t('modDialogs.incidentes.comunicacao.validation.tipoRequired')),
@@ -158,7 +158,7 @@ export function ComunicacaoDialog({ incidenteId, comunicacao, onSuccess, trigger
         <span onClick={() => setOpen(true)} className="inline-flex">
           {trigger || (
             <Button size="sm" variant="outline">
-              <MessageSquare className="mr-2 h-4 w-4" />
+              <IconMessage className="mr-2 h-4 w-4" />
               {t('incidentesComp.comunicacao.newButton')}
             </Button>
           )}
@@ -167,7 +167,7 @@ export function ComunicacaoDialog({ incidenteId, comunicacao, onSuccess, trigger
       <DialogShell
         open={open}
         onOpenChange={setOpen}
-        icon={MessageSquare}
+        icon={IconMessage}
         title={comunicacao ? t('incidentesComp.comunicacao.titleEdit') : t('incidentesComp.comunicacao.titleNew')}
         description={comunicacao ? t('incidentesComp.comunicacao.descEdit') : t('incidentesComp.comunicacao.descNew')}
         size="md"
@@ -264,11 +264,11 @@ export function ComunicacaoDialog({ incidenteId, comunicacao, onSuccess, trigger
                           )}
                         >
                           {field.value ? (
-                            format(field.value, 'PPP', { locale: ptBR })
+                            format(field.value, 'PPP', { locale: dateFnsLocale() })
                           ) : (
                             <span>{t('incidentesComp.comunicacao.fieldDataPlaceholder')}</span>
                           )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          <IconCalendar className="ml-auto h-4 w-4 opacity-50" />
                         </Button>
                       </FormControl>
                     </PopoverTrigger>

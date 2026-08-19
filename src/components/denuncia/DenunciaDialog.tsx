@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { IconDownload, IconUpload, IconCalendar, IconFile, IconPerson, IconMail, IconShield, IconHistory, IconUserCheck, IconSave, IconMessage } from '@/components/icons';
 import { supabase } from '@/integrations/supabase/client';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { DialogShell } from '@/components/ui/dialog-shell';
@@ -12,19 +13,6 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { 
-  Calendar, 
-  User, 
-  Mail, 
-  Shield, 
-  FileText, 
-  History,
-  UserCheck,
-  Save,
-  Download,
-  Upload,
-  MessageSquare
-} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { formatDateOnly } from '@/lib/date-utils';
 import { useIntegrationNotify } from '@/hooks/useIntegrationNotify';
@@ -270,12 +258,12 @@ export function DenunciaDialog({
       onOpenChange={onOpenChange}
       title={t('denunciasAdmin.dialog.title', { protocolo: denuncia.protocolo })}
       description={t('denunciasAdmin.dialog.description')}
-      icon={Shield}
+      icon={IconShield}
       size="lg"
       hideFooter
       disableShortcuts
     >
-        <Tabs defaultValue="detalhes" className="space-y-4">
+        <Tabs defaultValue="detalhes">
           <TabsList>
             <TabsTrigger value="detalhes">{t('denunciasAdmin.dialog.tabDetalhes')}</TabsTrigger>
             <TabsTrigger value="tratamento">{t('denunciasAdmin.dialog.tabTratamento')}</TabsTrigger>
@@ -291,17 +279,17 @@ export function DenunciaDialog({
                   <CardTitle className="text-sm">{t('denunciasAdmin.dialog.infoTitle')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div>
+                  <div className="space-y-2">
                     <Label className="text-xs text-muted-foreground">{t('denunciasAdmin.dialog.labelProtocolo')}</Label>
                     <div className="font-mono text-sm">{denuncia.protocolo}</div>
                   </div>
                   
-                  <div>
+                  <div className="space-y-2">
                     <Label className="text-xs text-muted-foreground">{t('denunciasAdmin.dialog.labelTitulo')}</Label>
                     <div className="text-sm">{denuncia.titulo}</div>
                   </div>
 
-                  <div>
+                  <div className="space-y-2">
                     <Label className="text-xs text-muted-foreground">{t('denunciasAdmin.dialog.labelGravidade')}</Label>
                     <div>
                       <StatusBadge {...resolveGravidadeTone(denuncia.gravidade)}>
@@ -310,16 +298,16 @@ export function DenunciaDialog({
                     </div>
                   </div>
 
-                  <div>
+                  <div className="space-y-2">
                     <Label className="text-xs text-muted-foreground">{t('denunciasAdmin.dialog.labelDataDenuncia')}</Label>
                     <div className="flex items-center gap-1 text-sm">
-                      <Calendar className="h-4 w-4" />
+                      <IconCalendar className="h-4 w-4" />
                       {formatDateTime(denuncia.created_at)}
                     </div>
                   </div>
 
                   {denuncia.categoria && (
-                    <div>
+                    <div className="space-y-2">
                       <Label className="text-xs text-muted-foreground">{t('denunciasAdmin.dialog.labelCategoria')}</Label>
                       <div>
                         <Badge variant="outline" style={{ borderColor: denuncia.categoria.cor }}>
@@ -338,26 +326,26 @@ export function DenunciaDialog({
                 <CardContent className="space-y-3">
                   {denuncia.anonima ? (
                     <div className="flex items-center gap-2">
-                      <Shield className="h-4 w-4 text-muted-foreground" />
+                      <IconShield className="h-4 w-4 text-muted-foreground" />
                       <Badge variant="secondary">{t('denunciasAdmin.dialog.anonymousBadge')}</Badge>
                     </div>
                   ) : (
                     <>
                       {denuncia.nome_denunciante && (
-                        <div>
+                        <div className="space-y-2">
                           <Label className="text-xs text-muted-foreground">{t('denunciasAdmin.dialog.labelNome')}</Label>
                           <div className="flex items-center gap-2 text-sm">
-                            <User className="h-4 w-4" />
+                            <IconPerson className="h-4 w-4" />
                             {denuncia.nome_denunciante}
                           </div>
                         </div>
                       )}
                       
                       {denuncia.email_denunciante && (
-                        <div>
+                        <div className="space-y-2">
                           <Label className="text-xs text-muted-foreground">{t('denunciasAdmin.dialog.labelEmail')}</Label>
                           <div className="flex items-center gap-2 text-sm">
-                            <Mail className="h-4 w-4" />
+                            <IconMail className="h-4 w-4" />
                             {denuncia.email_denunciante}
                           </div>
                         </div>
@@ -366,7 +354,7 @@ export function DenunciaDialog({
                   )}
 
                   {denuncia.ip_origem && (
-                    <div>
+                    <div className="space-y-2">
                       <Label className="text-xs text-muted-foreground">{t('denunciasAdmin.dialog.labelIp')}</Label>
                       <div className="font-mono text-sm">{denuncia.ip_origem}</div>
                     </div>
@@ -457,7 +445,7 @@ export function DenunciaDialog({
 
             <div className="flex justify-end">
               <Button onClick={handleSalvar} disabled={saving}>
-                <Save className="w-4 h-4 mr-2" />
+                <IconSave className="w-4 h-4 mr-2" />
                 {saving ? t('denunciasAdmin.dialog.saving') : t('denunciasAdmin.dialog.saveChanges')}
               </Button>
             </div>
@@ -471,7 +459,7 @@ export function DenunciaDialog({
                   <Card key={anexo.id}>
                     <CardContent className="flex items-center justify-between p-4">
                       <div className="flex items-center gap-3">
-                        <FileText className="h-8 w-8 text-muted-foreground" />
+                        <IconFile className="h-8 w-8 text-muted-foreground" />
                         <div>
                           <div className="font-medium">{anexo.nome_arquivo}</div>
                           <div className="text-sm text-muted-foreground">
@@ -487,7 +475,7 @@ export function DenunciaDialog({
                         size="sm"
                         onClick={() => downloadAnexo(anexo)}
                       >
-                        <Download className="h-4 w-4 mr-2" />
+                        <IconDownload className="h-4 w-4 mr-2" />
                         {t('denunciasAdmin.dialog.download')}
                       </Button>
                     </CardContent>
@@ -536,7 +524,7 @@ export function DenunciaDialog({
                 ))
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
-                  <History className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <IconHistory className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>{t('denunciasAdmin.dialog.noMovements')}</p>
                 </div>
               )}

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { IconAdd, IconCalendar } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import {
@@ -20,9 +21,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Plus } from 'lucide-react';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -31,7 +30,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/components/AuthProvider';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
-
+import { dateFnsLocale, formatarDiaParaDB, parseDataLocal } from '@/lib/date-utils';
 const makeTratamentoSchema = (t: (key: string) => string) => z.object({
   titulo: z.string().min(1, t('modDialogs.incidentes.tratamento.validation.tituloRequired')),
   descricao: z.string().min(1, t('modDialogs.incidentes.tratamento.validation.descricaoRequired')),
@@ -88,7 +87,7 @@ export function TratamentoDialog({ incidenteId, tratamento, onSuccess, trigger, 
         descricao: tratamento.descricao || '',
         tipo_acao: tratamento.tipo_acao || 'corretiva',
         responsavel_id: tratamento.responsavel_id || '',
-        data_prazo: tratamento.data_prazo ? new Date(tratamento.data_prazo) : undefined,
+        data_prazo: tratamento.data_prazo ? parseDataLocal(tratamento.data_prazo) : undefined,
         observacoes: tratamento.observacoes || '',
       });
     }
@@ -120,8 +119,11 @@ export function TratamentoDialog({ incidenteId, tratamento, onSuccess, trigger, 
         titulo: data.titulo!,
         descricao: data.descricao!,
         tipo_acao: data.tipo_acao!,
-        responsavel_id: data.responsavel_id,
-        data_prazo: data.data_prazo?.toISOString().split('T')[0],
+        // `responsavel_id` é `uuid` e o campo é opcional: sem esta conversão,
+        // guardar um tratamento sem responsável falhava com "invalid input
+        // syntax for type uuid".
+        responsavel_id: data.responsavel_id || null,
+        data_prazo: data.data_prazo ? formatarDiaParaDB(data.data_prazo) : undefined,
         observacoes: data.observacoes,
         incidente_id: incidenteId,
         created_by: userData.user?.id,
@@ -164,7 +166,7 @@ export function TratamentoDialog({ incidenteId, tratamento, onSuccess, trigger, 
         <span onClick={() => setOpen(true)} className="inline-flex">
           {trigger || (
             <Button size="sm">
-              <Plus className="mr-2 h-4 w-4" />
+              <IconAdd className="mr-2 h-4 w-4" />
               {t('incidentesComp.tratamento.newButton')}
             </Button>
           )}
@@ -173,7 +175,7 @@ export function TratamentoDialog({ incidenteId, tratamento, onSuccess, trigger, 
       <DialogShell
         open={open}
         onOpenChange={setOpen}
-        icon={Plus}
+        icon={IconAdd}
         title={tratamento ? t('incidentesComp.tratamento.titleEdit') : t('incidentesComp.tratamento.titleNew')}
         description={tratamento ? t('incidentesComp.tratamento.descEdit') : t('incidentesComp.tratamento.descNew')}
         size="md"
@@ -267,11 +269,11 @@ export function TratamentoDialog({ incidenteId, tratamento, onSuccess, trigger, 
                           )}
                         >
                           {field.value ? (
-                            format(field.value, 'PPP', { locale: ptBR })
+                            format(field.value, 'PPP', { locale: dateFnsLocale() })
                           ) : (
                             <span>{t('incidentesComp.tratamento.fieldDataPrazoPlaceholder')}</span>
                           )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                          <IconCalendar className="ml-auto h-4 w-4 opacity-50" />
                         </Button>
                       </FormControl>
                     </PopoverTrigger>

@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
-import { Upload, Download, AlertTriangle, CheckCircle, X } from 'lucide-react';
+import { IconClose, IconDownload, IconUpload, IconSuccess, IconWarning } from '@/components/icons';
+;
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -273,7 +274,7 @@ const ImportacaoAtivos: React.FC<ImportacaoAtivosProps> = ({ open, onOpenChange,
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Upload className="h-5 w-5" />
+            <IconUpload className="h-5 w-5" />
             {t('contratosAtivos.importacaoAtivos.title')}
           </DialogTitle>
           <DialogDescription>
@@ -285,7 +286,7 @@ const ImportacaoAtivos: React.FC<ImportacaoAtivosProps> = ({ open, onOpenChange,
           {step === 'upload' && (
             <div className="space-y-6">
               <Alert>
-                <AlertTriangle className="h-4 w-4" />
+                <IconWarning className="h-4 w-4" />
                 <AlertDescription>
                   <strong>{t('contratosAtivos.importacaoAtivos.alertTitle')}</strong> {t('contratosAtivos.importacaoAtivos.alertDescription')}
                 </AlertDescription>
@@ -301,7 +302,7 @@ const ImportacaoAtivos: React.FC<ImportacaoAtivosProps> = ({ open, onOpenChange,
                   </CardHeader>
                   <CardContent>
                     <Button onClick={downloadTemplate} variant="outline" className="w-full">
-                      <Download className="h-4 w-4 mr-2" />
+                      <IconDownload className="h-4 w-4 mr-2" />
                       {t('contratosAtivos.importacaoAtivos.downloadTemplateButton')}
                     </Button>
                   </CardContent>
@@ -323,7 +324,7 @@ const ImportacaoAtivos: React.FC<ImportacaoAtivosProps> = ({ open, onOpenChange,
                       className="hidden"
                     />
                     <Button onClick={() => fileInputRef.current?.click()} className="w-full">
-                      <Upload className="h-4 w-4 mr-2" />
+                      <IconUpload className="h-4 w-4 mr-2" />
                       {t('contratosAtivos.importacaoAtivos.selectFileButton')}
                     </Button>
                   </CardContent>
@@ -405,21 +406,21 @@ const ImportacaoAtivos: React.FC<ImportacaoAtivosProps> = ({ open, onOpenChange,
                         <TableCell>{ativo.line}</TableCell>
                         <TableCell>
                           {ativo.valid ? (
-                            <CheckCircle className="h-4 w-4 text-green-500" />
+                            <IconSuccess className="h-4 w-4 text-success" />
                           ) : (
-                            <X className="h-4 w-4 text-red-500" />
+                            <IconClose className="h-4 w-4 text-destructive" />
                           )}
                         </TableCell>
                         <TableCell>{ativo.nome}</TableCell>
                         <TableCell>{formatStatus(ativo.tipo)}</TableCell>
                         <TableCell>
-                          <StatusBadge size="sm" {...resolveCriticidadeTone(ativo.criticidade)}>
+                          <StatusBadge {...resolveCriticidadeTone(ativo.criticidade)}>
                             {formatStatus(ativo.criticidade)}
                           </StatusBadge>
                         </TableCell>
                         <TableCell>
                           {ativo.errors.length > 0 && (
-                            <ul className="text-xs text-red-600">
+                            <ul className="text-xs text-destructive">
                               {ativo.errors.map((error, i) => (
                                 <li key={i}>• {error}</li>
                               ))}
@@ -461,7 +462,7 @@ const ImportacaoAtivos: React.FC<ImportacaoAtivosProps> = ({ open, onOpenChange,
 
           {step === 'success' && (
             <div className="space-y-6 text-center">
-              <CheckCircle className="h-16 w-16 text-green-500 mx-auto" />
+              <IconSuccess className="h-16 w-16 text-success mx-auto" />
               <div>
                 <h3 className="text-lg font-semibold">{t('contratosAtivos.importacaoAtivos.successTitle')}</h3>
                 <p className="text-sm text-muted-foreground">

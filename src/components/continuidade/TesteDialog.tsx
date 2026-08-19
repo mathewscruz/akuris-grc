@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { DialogShell } from '@/components/ui/dialog-shell';
-import { FlaskConical } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { DateField } from '@/components/ui/date-field';
 import { Label } from '@/components/ui/label';
@@ -11,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { useAuth } from '@/components/AuthProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { IconTest } from '@/components/icons';
 
 interface TesteDialogProps {
   open: boolean;
@@ -100,7 +100,7 @@ export function TesteDialog({ open, onOpenChange, planoId, teste, onSuccess }: T
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      icon={FlaskConical}
+      icon={IconTest}
       title={teste ? t('modDialogs.continuidade.teste.titleEdit') : t('modDialogs.continuidade.teste.titleNew')}
       size="lg"
       onSubmit={handleSubmit}

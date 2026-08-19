@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Calendar, User, DollarSign, Wrench } from 'lucide-react';
+import { IconAdd, IconEdit, IconDelete, IconCalendar, IconPerson, IconMoney, IconSettings } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -318,7 +318,7 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      icon={Wrench}
+      icon={IconSettings}
       title={t('contratosAtivos.manutencaoDialog.title', { ativo: ativoNome })}
       description={t('contratosAtivos.manutencaoDialog.description')}
       size="xl"
@@ -330,7 +330,7 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">{t('contratosAtivos.manutencaoDialog.cardTotal')}</CardTitle>
-                <Wrench className="h-4 w-4 text-muted-foreground" />
+                <IconSettings className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{manutencoes.length}</div>
@@ -340,7 +340,7 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">{t('contratosAtivos.manutencaoDialog.cardCompleted')}</CardTitle>
-                <Calendar className="h-4 w-4 text-muted-foreground" />
+                <IconCalendar className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
@@ -352,7 +352,7 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">{t('contratosAtivos.manutencaoDialog.cardInProgress')}</CardTitle>
-                <User className="h-4 w-4 text-muted-foreground" />
+                <IconPerson className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
@@ -364,7 +364,7 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">{t('contratosAtivos.manutencaoDialog.cardTotalCost')}</CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                <IconMoney className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
@@ -381,13 +381,13 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
               resetForm();
               setIsDialogOpen(true);
             }}>
-              <Plus className="h-4 w-4 mr-2" />
+              <IconAdd className="h-4 w-4 mr-2" />
               {t('contratosAtivos.manutencaoDialog.newButton')}
             </Button>
             <DialogShell
               open={isDialogOpen}
               onOpenChange={setIsDialogOpen}
-              icon={Wrench}
+              icon={IconSettings}
               title={editingManutencao ? t('contratosAtivos.manutencaoDialog.dialogTitleEdit') : t('contratosAtivos.manutencaoDialog.dialogTitleNew')}
               size="md"
               onSubmit={() => handleSubmit(new Event('submit') as unknown as React.FormEvent)}
@@ -580,7 +580,7 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
                           {formatDateOnly(manutencao.data_manutencao)}
                         </TableCell>
                         <TableCell>
-                          <StatusBadge size="sm" tone={getBadgeTone('tipo', manutencao.tipo_manutencao)}>
+                          <StatusBadge tone={getBadgeTone('tipo', manutencao.tipo_manutencao)}>
                             {tiposManutencao(t).find(tp => tp.value === manutencao.tipo_manutencao)?.label}
                           </StatusBadge>
                         </TableCell>
@@ -588,12 +588,12 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
                           {manutencao.descricao}
                         </TableCell>
                         <TableCell>
-                          <StatusBadge size="sm" tone={getBadgeTone('status', manutencao.status)}>
+                          <StatusBadge tone={getBadgeTone('status', manutencao.status)}>
                             {statusOptions(t).find(s => s.value === manutencao.status)?.label}
                           </StatusBadge>
                         </TableCell>
                         <TableCell>
-                          <StatusBadge size="sm" tone={getBadgeTone('criticidade', manutencao.criticidade)}>
+                          <StatusBadge tone={getBadgeTone('criticidade', manutencao.criticidade)}>
                             {criticidades(t).find(c => c.value === manutencao.criticidade)?.label}
                           </StatusBadge>
                         </TableCell>
@@ -609,7 +609,7 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
                                     size="sm"
                                     onClick={() => handleEdit(manutencao)}
                                   >
-                                    <Edit className="h-4 w-4" />
+                                    <IconEdit className="h-4 w-4" />
                                   </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>
@@ -626,7 +626,7 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
                                     onClick={() => handleDelete(manutencao.id)}
                                     className="text-destructive hover:text-destructive"
                                   >
-                                    <Trash2 className="h-4 w-4" />
+                                    <IconDelete className="h-4 w-4" />
                                   </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { IconSearch, IconDownload, IconView, IconExternal, IconWarning, IconRefresh, IconSave, IconLink, IconCopy, IconShield, IconSettings, IconMail, IconHide, IconQr } from '@/components/icons';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,22 +18,6 @@ import {
   SheetDescription,
 } from '@/components/ui/sheet';
 import { QRCodeCanvas } from 'qrcode.react';
-import { 
-  Save, 
-  Link2, 
-  Copy, 
-  ExternalLink, 
-  Shield, 
-  Settings,
-  Mail,
-  Eye,
-  EyeOff,
-  Search,
-  RefreshCw,
-  QrCode,
-  Download,
-  AlertTriangle
-} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { toast as sonnerToast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
@@ -70,7 +55,6 @@ export function ConfiguracoesDenuncia() {
     : config?.token_publico
       ? `${window.location.origin}/denuncia/externa/${config.token_publico}`
       : '';
-
 
   const copiarLinkPublico = () => {
     if (!publicChannelUrl) return;
@@ -336,7 +320,7 @@ export function ConfiguracoesDenuncia() {
       <Card className="border-primary/30">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />
+            <IconShield className="h-5 w-5" />
             {t('p3Denuncia.channel.title')}
           </CardTitle>
           <CardDescription>
@@ -355,15 +339,15 @@ export function ConfiguracoesDenuncia() {
                   </div>
                   <div className="flex gap-2">
                     <Button variant="outline" size="sm" onClick={copiarLinkPublico}>
-                      <Copy className="h-4 w-4 mr-1" />
+                      <IconCopy className="h-4 w-4 mr-1" />
                       {t('p3Denuncia.channel.copy')}
                     </Button>
                     <Button variant="outline" size="sm" onClick={abrirLinkPublico}>
-                      <ExternalLink className="h-4 w-4 mr-1" />
+                      <IconExternal className="h-4 w-4 mr-1" />
                       {t('p3Denuncia.channel.open')}
                     </Button>
                     <Button variant="outline" size="sm" onClick={() => setPreviewOpen(true)}>
-                      <Eye className="h-4 w-4 mr-1" />
+                      <IconView className="h-4 w-4 mr-1" />
                       {t('p3Denuncia.channel.preview')}
                     </Button>
                   </div>
@@ -372,7 +356,7 @@ export function ConfiguracoesDenuncia() {
 
               <div className="space-y-2">
                 <Label className="text-sm font-medium flex items-center gap-2">
-                  <QrCode className="h-4 w-4" />
+                  <IconQr className="h-4 w-4" />
                   {t('p3Denuncia.channel.qrTitle')}
                 </Label>
                 <p className="text-sm text-muted-foreground">{t('p3Denuncia.channel.qrDescription')}</p>
@@ -381,7 +365,7 @@ export function ConfiguracoesDenuncia() {
                     <QRCodeCanvas id="denuncia-public-qr" value={publicChannelUrl} size={160} includeMargin />
                   </div>
                   <Button variant="outline" size="sm" onClick={descarregarQr}>
-                    <Download className="h-4 w-4 mr-1" />
+                    <IconDownload className="h-4 w-4 mr-1" />
                     {t('p3Denuncia.channel.downloadQr')}
                   </Button>
                 </div>
@@ -389,7 +373,7 @@ export function ConfiguracoesDenuncia() {
 
               {!empresaSlug && (
                 <Alert>
-                  <AlertTriangle className="h-4 w-4" />
+                  <IconWarning className="h-4 w-4" />
                   <AlertTitle>{t('p3Denuncia.channel.noSlugTitle')}</AlertTitle>
                   <AlertDescription className="space-y-3">
                     <p>{t('p3Denuncia.channel.noSlugDescription')}</p>
@@ -403,7 +387,7 @@ export function ConfiguracoesDenuncia() {
 
           ) : (
             <Alert variant="destructive">
-              <AlertTriangle className="h-4 w-4" />
+              <IconWarning className="h-4 w-4" />
               <AlertTitle>{t('p3Denuncia.channel.noSlugTitle')}</AlertTitle>
               <AlertDescription className="space-y-3">
                 <p>{t('p3Denuncia.channel.noSlugDescription')}</p>
@@ -421,7 +405,7 @@ export function ConfiguracoesDenuncia() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Link2 className="h-5 w-5" />
+              <IconLink className="h-5 w-5" />
               {t('denunciasAdmin.config.publicLinksTitle')}
             </CardTitle>
             <CardDescription>
@@ -440,10 +424,10 @@ export function ConfiguracoesDenuncia() {
                   }
                 </div>
                 <Button variant="outline" size="sm" onClick={copiarLink}>
-                  <Copy className="h-4 w-4" />
+                  <IconCopy className="h-4 w-4" />
                 </Button>
                 <Button variant="outline" size="sm" onClick={abrirFormulario}>
-                  <ExternalLink className="h-4 w-4" />
+                  <IconExternal className="h-4 w-4" />
                 </Button>
               </div>
             </div>
@@ -457,14 +441,14 @@ export function ConfiguracoesDenuncia() {
                     {window.location.origin}/{empresaSlug}/denuncia/consulta
                   </div>
                   <Button variant="outline" size="sm" onClick={copiarLinkConsulta}>
-                    <Copy className="h-4 w-4" />
+                    <IconCopy className="h-4 w-4" />
                   </Button>
                   <Button 
                     variant="outline" 
                     size="sm" 
                     onClick={() => window.open(`${window.location.origin}/${empresaSlug}/denuncia/consulta`, '_blank')}
                   >
-                    <Search className="h-4 w-4" />
+                    <IconSearch className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
@@ -480,14 +464,14 @@ export function ConfiguracoesDenuncia() {
                 </Badge>
               ) : (
                 <Button variant="outline" size="sm" onClick={regenerarToken}>
-                  <RefreshCw className="h-4 w-4 mr-1" />
+                  <IconRefresh className="h-4 w-4 mr-1" />
                   {t('denunciasAdmin.config.regenerateLink')}
                 </Button>
               )}
             </div>
 
             <Alert>
-              <Shield className="h-4 w-4" />
+              <IconShield className="h-4 w-4" />
               <AlertDescription>
                 {empresaSlug ? (
                   <>
@@ -508,7 +492,7 @@ export function ConfiguracoesDenuncia() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Settings className="h-5 w-5" />
+            <IconSettings className="h-5 w-5" />
             {t('denunciasAdmin.config.generalTitle')}
           </CardTitle>
         </CardHeader>
@@ -638,7 +622,7 @@ export function ConfiguracoesDenuncia() {
       {/* Botão Salvar */}
       <div className="flex justify-end">
         <Button onClick={handleSalvar} disabled={saving}>
-          <Save className="w-4 h-4 mr-2" />
+          <IconSave className="w-4 h-4 mr-2" />
           {saving ? t('denunciasAdmin.config.saving') : t('denunciasAdmin.config.saveButton')}
         </Button>
       </div>
@@ -649,7 +633,7 @@ export function ConfiguracoesDenuncia() {
             <SheetTitle>{t('p3Denuncia.channel.previewTitle')}</SheetTitle>
             <SheetDescription>{t('p3Denuncia.channel.previewDescription')}</SheetDescription>
           </SheetHeader>
-          <div className="flex-1 overflow-hidden px-6 pb-6">
+          <div className="flex-1 min-h-0 overflow-hidden px-6 pb-6">
             {publicChannelUrl && (
               <iframe
                 src={publicChannelUrl}
@@ -660,7 +644,7 @@ export function ConfiguracoesDenuncia() {
           </div>
           <div className="p-6 pt-0">
             <Button variant="outline" onClick={abrirLinkPublico} className="w-full">
-              <ExternalLink className="h-4 w-4 mr-2" />
+              <IconExternal className="h-4 w-4 mr-2" />
               {t('p3Denuncia.channel.openFull')}
             </Button>
           </div>

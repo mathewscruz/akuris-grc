@@ -1,11 +1,12 @@
 import { useEffect } from "react";
+import { IconSuccess } from '@/components/icons';
 import { useForm } from "react-hook-form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useEmpresaId } from "@/hooks/useEmpresaId";
 import { DialogShell } from "@/components/ui/dialog-shell";
-import { BadgeCheck } from "lucide-react";
+;
 import {
   Form,
   FormControl,
@@ -142,7 +143,7 @@ export function LicencaDialog({ open, onOpenChange, licenca }: LicencaDialogProp
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      icon={BadgeCheck}
+      icon={IconSuccess}
       title={licenca ? t('contratosAtivos.licencaDialog.titleEdit') : t('contratosAtivos.licencaDialog.title')}
       size="lg"
       onSubmit={form.handleSubmit(onSubmit)}

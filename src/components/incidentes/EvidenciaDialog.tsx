@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { IconAdd, IconUpload, IconFile } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import {
@@ -18,7 +19,7 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Upload, FileText, Plus } from 'lucide-react';
+;
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -176,7 +177,7 @@ export function EvidenciaDialog({ incidenteId, evidencia, onSuccess, trigger, ex
         <span onClick={() => setOpen(true)} className="inline-flex">
           {trigger || (
             <Button size="sm" variant="outline">
-              <FileText className="mr-2 h-4 w-4" />
+              <IconFile className="mr-2 h-4 w-4" />
               {t('incidentesComp.evidencia.newButton')}
             </Button>
           )}
@@ -185,7 +186,7 @@ export function EvidenciaDialog({ incidenteId, evidencia, onSuccess, trigger, ex
       <DialogShell
         open={open}
         onOpenChange={setOpen}
-        icon={FileText}
+        icon={IconFile}
         title={evidencia ? t('incidentesComp.evidencia.titleEdit') : t('incidentesComp.evidencia.titleNew')}
         description={evidencia ? t('incidentesComp.evidencia.descEdit') : t('incidentesComp.evidencia.descNew')}
         size="md"
@@ -247,7 +248,7 @@ export function EvidenciaDialog({ incidenteId, evidencia, onSuccess, trigger, ex
                   onClick={() => document.getElementById('file-upload')?.click()}
                   className="flex items-center gap-2"
                 >
-                  <Upload className="h-4 w-4" />
+                  <IconUpload className="h-4 w-4" />
                   {selectedFile ? t('incidentesComp.evidencia.buttonAlterarArquivo') : t('incidentesComp.evidencia.buttonSelecionarArquivo')}
                 </Button>
                 {selectedFile && (

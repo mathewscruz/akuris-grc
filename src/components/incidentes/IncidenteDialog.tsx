@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { IconAdd, IconWarning, IconFile, IconCalendar, IconShield, IconDatabase, IconUsers, IconLayers } from '@/components/icons';
 import { UserSelect } from '@/components/riscos/UserSelect';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogTrigger } from '@/components/ui/dialog';
@@ -10,9 +11,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveCriticidadeTone } from '@/lib/status-tone';
-import { CalendarIcon, Plus, AlertTriangle, Shield, Database, FileText, Users, Layers } from 'lucide-react';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -26,7 +25,7 @@ import { FieldHelpTooltip } from '@/components/ui/field-help-tooltip';
 import { useWizardDraft } from '@/hooks/useWizardDraft';
 import { formatStatus } from '@/lib/text-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
-
+import { dateFnsLocale, datePattern, parseDataLocal } from '@/lib/date-utils';
 const makeIncidenteSchema = (t: (key: string) => string) => z.object({
   titulo: z.string().min(1, t('modDialogs.incidentes.incidente.validation.tituloRequired')),
   descricao: z.string().optional(),
@@ -53,7 +52,6 @@ interface IncidenteDialogProps {
   externalOpen?: boolean;
   onExternalOpenChange?: (open: boolean) => void;
 }
-
 
 export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, onExternalOpenChange }: IncidenteDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false);
@@ -97,7 +95,7 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
         tipo_incidente: incidente.tipo_incidente || 'seguranca',
         categoria: incidente.categoria || '',
         criticidade: incidente.criticidade || 'media',
-        data_ocorrencia: incidente.data_ocorrencia ? new Date(incidente.data_ocorrencia) : undefined,
+        data_ocorrencia: incidente.data_ocorrencia ? parseDataLocal(incidente.data_ocorrencia) : undefined,
         origem_deteccao: incidente.origem_deteccao || '',
         responsavel_deteccao: incidente.responsavel_deteccao || '',
         responsavel_tratamento: incidente.responsavel_tratamento || '',
@@ -136,7 +134,7 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
       if (d) {
         form.reset({
           ...d,
-          data_ocorrencia: d.data_ocorrencia ? new Date(d.data_ocorrencia) : undefined,
+          data_ocorrencia: d.data_ocorrencia ? parseDataLocal(d.data_ocorrencia) : undefined,
         } as IncidenteFormData);
       }
     }
@@ -233,7 +231,7 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
       {
         id: 'identificacao',
         label: t('incidentesComp.incidente.tabIdentificacao'),
-        icon: AlertTriangle,
+        icon: IconWarning,
         state: identState,
         hint: t('incidentesComp.incidente.tabIdentificacaoHint'),
         content: (
@@ -273,13 +271,13 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="seguranca">
-                          <div className="flex items-center gap-2"><Shield className="h-4 w-4" /> {t('incidentesComp.incidente.tipoSeguranca')}</div>
+                          <div className="flex items-center gap-2"><IconShield className="h-4 w-4" /> {t('incidentesComp.incidente.tipoSeguranca')}</div>
                         </SelectItem>
                         <SelectItem value="privacidade">
-                          <div className="flex items-center gap-2"><Database className="h-4 w-4" /> {t('incidentesComp.incidente.tipoPrivacidade')}</div>
+                          <div className="flex items-center gap-2"><IconDatabase className="h-4 w-4" /> {t('incidentesComp.incidente.tipoPrivacidade')}</div>
                         </SelectItem>
                         <SelectItem value="disponibilidade">
-                          <div className="flex items-center gap-2"><AlertTriangle className="h-4 w-4" /> {t('incidentesComp.incidente.tipoDisponibilidade')}</div>
+                          <div className="flex items-center gap-2"><IconWarning className="h-4 w-4" /> {t('incidentesComp.incidente.tipoDisponibilidade')}</div>
                         </SelectItem>
                       </SelectContent>
                     </Select>
@@ -343,8 +341,8 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
                             variant="outline"
                             className={cn('w-full pl-3 text-left font-normal', !field.value && 'text-muted-foreground')}
                           >
-                            {field.value ? format(field.value, 'PPP', { locale: ptBR }) : <span>{t('incidentesComp.incidente.fieldDataOcorrenciaPlaceholder')}</span>}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            {field.value ? format(field.value, 'PPP', { locale: dateFnsLocale() }) : <span>{t('incidentesComp.incidente.fieldDataOcorrenciaPlaceholder')}</span>}
+                            <IconCalendar className="ml-auto h-4 w-4 opacity-50" />
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
@@ -388,7 +386,7 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
       {
         id: 'deteccao',
         label: t('incidentesComp.incidente.tabDeteccao'),
-        icon: FileText,
+        icon: IconFile,
         state: detectState,
         hint: t('incidentesComp.incidente.tabDeteccaoHint'),
         content: (
@@ -434,7 +432,7 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
       {
         id: 'impacto',
         label: t('incidentesComp.incidente.tabImpacto'),
-        icon: Layers,
+        icon: IconLayers,
         state: impactoState,
         hint: t('incidentesComp.incidente.tabImpactoHint'),
         content: (
@@ -481,7 +479,7 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
       {
         id: 'tratamento',
         label: t('incidentesComp.incidente.tabTratamento'),
-        icon: Users,
+        icon: IconUsers,
         state: tratamentoState,
         hint: t('incidentesComp.incidente.tabTratamentoHint'),
         content: (
@@ -527,14 +525,14 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
       <WizardSummaryRow
         label={t('incidentesComp.incidente.summaryCriticidade')}
         value={
-          <StatusBadge size="sm" {...resolveCriticidadeTone(watched.criticidade)}>
+          <StatusBadge {...resolveCriticidadeTone(watched.criticidade)}>
             {formatStatus(watched.criticidade)}
           </StatusBadge>
         }
       />
       <WizardSummaryRow
         label={t('incidentesComp.incidente.summaryData')}
-        value={watched.data_ocorrencia ? format(watched.data_ocorrencia, 'dd/MM/yyyy') : <span className="text-muted-foreground italic">—</span>}
+        value={watched.data_ocorrencia ? format(watched.data_ocorrencia, datePattern()) : <span className="text-muted-foreground italic">—</span>}
       />
     </WizardSummaryCard>
   );
@@ -551,7 +549,7 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
           <DialogTrigger asChild>
             {trigger || (
               <Button onClick={() => setOpen(true)}>
-                <Plus className="mr-2 h-4 w-4" />
+                <IconAdd className="mr-2 h-4 w-4" />
                 {t('incidentesComp.incidente.newButton')}
               </Button>
             )}
@@ -565,7 +563,7 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
         description={
           incidente ? t('incidentesComp.incidente.descEdit') : t('incidentesComp.incidente.descNew')
         }
-        icon={AlertTriangle}
+        icon={IconWarning}
         tabs={tabs}
         summary={summary}
         activeTab={activeTab}

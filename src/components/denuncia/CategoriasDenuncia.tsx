@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { IconAdd, IconClose, IconEdit, IconDelete, IconSave, IconTag } from '@/components/icons';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,14 +10,6 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Badge } from '@/components/ui/badge';
 import { Chip } from '@/components/ui/chip';
 import { DataTable, Column } from '@/components/ui/data-table';
-import { 
-  Plus, 
-  Edit, 
-  Trash2, 
-  Save, 
-  X,
-  Tag
-} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { formatDateOnly } from '@/lib/date-utils';
@@ -146,11 +139,15 @@ export function CategoriasDenuncia() {
       } else {
         const { error } = await supabase
           .from('denuncias_categorias')
+          // Sem `empresa_id`: a coluna tem DEFAULT get_user_empresa_id().
+          // Aqui ia um UUID de zeros fixo, que sobrepunha o default e batia
+          // na RLS — criar categoria nunca funcionou, para nenhuma empresa.
+          // Editar funcionava (o update não toca em empresa_id), o que fazia
+          // o defeito parecer intermitente.
           .insert({
             nome: formData.nome.trim(),
             descricao: formData.descricao.trim(),
             cor: formData.cor,
-            empresa_id: '00000000-0000-0000-0000-000000000000'
           });
 
         if (error) throw error;
@@ -333,14 +330,14 @@ export function CategoriasDenuncia() {
             size="sm"
             onClick={() => abrirDialog(cat)}
           >
-            <Edit className="h-4 w-4" />
+            <IconEdit className="h-4 w-4" />
           </Button>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => confirmarDelete(cat)}
           >
-            <Trash2 className="h-4 w-4" />
+            <IconDelete className="h-4 w-4" />
           </Button>
         </div>
       )
@@ -374,7 +371,7 @@ export function CategoriasDenuncia() {
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={() => abrirDialog()}>
-              <Plus className="w-4 h-4 mr-2" />
+              <IconAdd className="w-4 h-4 mr-2" />
               {t('denunciasAdmin.categorias.newCategory')}
             </Button>
           </DialogTrigger>
@@ -421,7 +418,7 @@ export function CategoriasDenuncia() {
                       key={cor}
                       onClick={() => setFormData(prev => ({ ...prev, cor }))}
                       className={`w-8 h-8 rounded-full border-2 ${
-                        formData.cor === cor ? 'border-primary scale-110' : 'border-gray-300'
+                        formData.cor === cor ? 'border-primary scale-110' : 'border-border'
                       }`}
                       style={{ backgroundColor: cor }}
                     />
@@ -447,11 +444,11 @@ export function CategoriasDenuncia() {
 
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={fecharDialog}>
-                  <X className="w-4 h-4 mr-2" />
+                  <IconClose className="w-4 h-4 mr-2" />
                   {t('denunciasAdmin.categorias.cancel')}
                 </Button>
                 <Button onClick={handleSalvar} disabled={saving}>
-                  <Save className="w-4 h-4 mr-2" />
+                  <IconSave className="w-4 h-4 mr-2" />
                   {saving ? t('denunciasAdmin.categorias.saving') : t('denunciasAdmin.categorias.save')}
                 </Button>
               </div>
@@ -463,7 +460,7 @@ export function CategoriasDenuncia() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Tag className="h-5 w-5" />
+            <IconTag className="h-5 w-5" />
             {t('denunciasAdmin.categorias.cardTitle')}
           </CardTitle>
           <CardDescription>
@@ -490,7 +487,7 @@ export function CategoriasDenuncia() {
               }
             }}
             emptyState={{
-              icon: <Tag className="w-12 h-12" />,
+              icon: <IconTag className="w-12 h-12" />,
               title: t('denunciasAdmin.categorias.emptyTitle'),
               description: t('denunciasAdmin.categorias.emptyDescription')
             }}

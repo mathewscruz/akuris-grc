@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Check } from 'lucide-react';
+import { IconAdd, IconCheck } from '@/components/icons';
+;
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -115,7 +116,7 @@ const LocalizacaoSelect = ({ value, onValueChange }: LocalizacaoSelectProps) => 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogTrigger asChild>
           <Button variant="outline" size="icon">
-            <Plus className="h-4 w-4" />
+            <IconAdd className="h-4 w-4" />
           </Button>
         </DialogTrigger>
         <DialogContent>
@@ -151,7 +152,7 @@ const LocalizacaoSelect = ({ value, onValueChange }: LocalizacaoSelectProps) => 
                 {t('contratosAtivos.common.cancel')}
               </Button>
               <Button type="submit">
-                <Check className="h-4 w-4 mr-2" />
+                <IconCheck className="h-4 w-4 mr-2" />
                 {t('contratosAtivos.localizacaoSelect.createButton')}
               </Button>
             </div>

@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { IconFile, IconPackage, IconPin, IconSettings, IconCalendar } from '@/components/icons';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveCriticidadeTone } from '@/lib/status-tone';
-import { Box, FileText, MapPin, Settings2, Calendar as CalendarIcon } from 'lucide-react';
 import LocalizacaoSelect from '@/components/ativos/LocalizacaoSelect';
 import { UserSelect } from '@/components/riscos/UserSelect';
 import { WizardDialog, WizardTab, WizardTabState } from '@/components/ui/wizard-dialog';
@@ -157,7 +157,7 @@ const AtivoDialog: React.FC<AtivoDialogProps> = ({ open, onOpenChange, formData,
       {
         id: 'identificacao',
         label: t('contratosAtivos.ativoDialog.tabIdentification'),
-        icon: Box,
+        icon: IconPackage,
         state: identState,
         hint: t('contratosAtivos.ativoDialog.tabIdentificationHint'),
         content: (
@@ -235,7 +235,7 @@ const AtivoDialog: React.FC<AtivoDialogProps> = ({ open, onOpenChange, formData,
       {
         id: 'localizacao',
         label: t('contratosAtivos.ativoDialog.tabLocation'),
-        icon: MapPin,
+        icon: IconPin,
         state: localState,
         hint: t('contratosAtivos.ativoDialog.tabLocationHint'),
         content: (
@@ -273,7 +273,7 @@ const AtivoDialog: React.FC<AtivoDialogProps> = ({ open, onOpenChange, formData,
       {
         id: 'classificacao',
         label: t('contratosAtivos.ativoDialog.tabClassification'),
-        icon: Settings2,
+        icon: IconSettings,
         state: classifState,
         hint: t('contratosAtivos.ativoDialog.tabClassificationHint'),
         content: (
@@ -337,7 +337,7 @@ const AtivoDialog: React.FC<AtivoDialogProps> = ({ open, onOpenChange, formData,
       {
         id: 'aquisicao',
         label: t('contratosAtivos.ativoDialog.tabAcquisition'),
-        icon: FileText,
+        icon: IconFile,
         state: aquisState,
         hint: t('contratosAtivos.ativoDialog.tabAcquisitionHint'),
         content: (
@@ -345,7 +345,7 @@ const AtivoDialog: React.FC<AtivoDialogProps> = ({ open, onOpenChange, formData,
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label className="flex items-center gap-1">
-                  <CalendarIcon className="h-3.5 w-3.5" />
+                  <IconCalendar className="h-3.5 w-3.5" />
                   {t('contratosAtivos.ativoDialog.labelAcquisitionDate')}
                 </Label>
                 <Input
@@ -378,7 +378,7 @@ const AtivoDialog: React.FC<AtivoDialogProps> = ({ open, onOpenChange, formData,
         label={t('contratosAtivos.ativoDialog.summaryCriticality')}
         value={
           formData.criticidade
-            ? <StatusBadge size="sm" {...resolveCriticidadeTone(formData.criticidade)}>{formatStatus(formData.criticidade)}</StatusBadge>
+            ? <StatusBadge {...resolveCriticidadeTone(formData.criticidade)}>{formatStatus(formData.criticidade)}</StatusBadge>
             : <span className="text-muted-foreground italic">—</span>
         }
       />
@@ -393,7 +393,7 @@ const AtivoDialog: React.FC<AtivoDialogProps> = ({ open, onOpenChange, formData,
       onOpenChange={onOpenChange}
       title={isEditing ? t('contratosAtivos.ativoDialog.dialogTitleEdit') : t('contratosAtivos.ativoDialog.dialogTitleNew')}
       description={t('contratosAtivos.ativoDialog.dialogDescription')}
-      icon={Box}
+      icon={IconPackage}
       tabs={tabs}
       summary={summary}
       activeTab={activeTab}

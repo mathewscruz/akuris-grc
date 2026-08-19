@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { IconDownload, IconSuccess, IconWarning, IconTime, IconCalendar, IconTrendUp, IconChart, IconChartPie } from '@/components/icons';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,23 +20,14 @@ import {
   LineChart,
   Line
 } from 'recharts';
-import { 
-  Download, 
-  Calendar, 
-  TrendingUp, 
-  AlertTriangle,
-  Clock,
-  CheckCircle,
-  BarChart3,
-  PieChart as PieChartIcon
-} from 'lucide-react';
 import { format, subDays, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { DateRange } from 'react-day-picker';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { chartSeries, CHART_GRID, CHART_AXIS, CHART_TOOLTIP_STYLE, CHART_SEVERITY } from '@/lib/chart-tokens';
+import { chartSeries, CHART_GRID, CHART_AXIS, CHART_TOOLTIP_STYLE, CHART_SEVERITY, CHART_FONT } from '@/lib/chart-tokens';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { datePattern, parseDataLocal } from '@/lib/date-utils';
 interface RelatorioMetricas {
   total_denuncias: number;
   denuncias_periodo: number;
@@ -46,8 +38,6 @@ interface RelatorioMetricas {
   denuncias_por_gravidade: { gravidade: string; count: number; label: string }[];
   timeline_denuncias: { data: string; count: number }[];
 }
-
-
 
 export function RelatoriosDenuncia() {
   const { t } = useLanguage();
@@ -122,7 +112,7 @@ export function RelatoriosDenuncia() {
       const tempo_medio_resolucao = denunciasResolvidas.length > 0
         ? denunciasResolvidas.reduce((acc, d) => {
             const inicio = new Date(d.created_at);
-            const fim = new Date(d.data_conclusao);
+            const fim = parseDataLocal(d.data_conclusao);
             return acc + (fim.getTime() - inicio.getTime());
           }, 0) / denunciasResolvidas.length / (1000 * 60 * 60 * 24) // em dias
         : 0;
@@ -182,7 +172,7 @@ export function RelatoriosDenuncia() {
         const data = subDays(new Date(), 29 - i);
         const dataStr = format(data, 'dd/MM');
         const count = denuncias?.filter(d => 
-          format(new Date(d.created_at), 'dd/MM/yyyy') === format(data, 'dd/MM/yyyy')
+          format(new Date(d.created_at), datePattern()) === format(data, datePattern())
         ).length || 0;
         
         return { data: dataStr, count };
@@ -252,7 +242,7 @@ export function RelatoriosDenuncia() {
         </div>
         
         <Button onClick={exportarRelatorio}>
-          <Download className="w-4 h-4 mr-2" />
+          <IconDownload className="w-4 h-4 mr-2" />
           {t('denunciasAdmin.relatorios.exportCsv')}
         </Button>
       </div>
@@ -261,7 +251,7 @@ export function RelatoriosDenuncia() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
+            <IconCalendar className="h-5 w-5" />
             {t('denunciasAdmin.relatorios.periodTitle')}
           </CardTitle>
         </CardHeader>
@@ -297,7 +287,7 @@ export function RelatoriosDenuncia() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">{t('denunciasAdmin.relatorios.totalCard')}</CardTitle>
-                <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                <IconChart className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{metricas.total_denuncias}</div>
@@ -310,7 +300,7 @@ export function RelatoriosDenuncia() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">{t('denunciasAdmin.relatorios.avgTimeCard')}</CardTitle>
-                <Clock className="h-4 w-4 text-muted-foreground" />
+                <IconTime className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
@@ -325,10 +315,10 @@ export function RelatoriosDenuncia() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">{t('denunciasAdmin.relatorios.resolutionRateCard')}</CardTitle>
-                <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                <IconSuccess className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-green-600">
+                <div className="text-2xl font-bold text-success">
                   {metricas.taxa_resolucao.toFixed(1)}%
                 </div>
                 <p className="text-xs text-muted-foreground">
@@ -340,10 +330,10 @@ export function RelatoriosDenuncia() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">{t('denunciasAdmin.relatorios.pendingCard')}</CardTitle>
-                <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+                <IconWarning className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-orange-600">
+                <div className="text-2xl font-bold text-warning">
                   {metricas.denuncias_por_status
                     .filter(s => ['nova', 'em_analise', 'em_investigacao'].includes(s.status))
                     .reduce((acc, s) => acc + s.count, 0)
@@ -362,7 +352,7 @@ export function RelatoriosDenuncia() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5" />
+                  <IconChart className="h-5 w-5" />
                   {t('denunciasAdmin.relatorios.statusChartTitle')}
                 </CardTitle>
               </CardHeader>
@@ -372,7 +362,7 @@ export function RelatoriosDenuncia() {
                     <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} />
                     <XAxis 
                       dataKey="label" 
-                      tick={{ fontSize: 12, fill: CHART_AXIS }}
+                      tick={{ fontSize: CHART_FONT.label, fill: CHART_AXIS }}
                       angle={-45}
                       textAnchor="end"
                       height={80}
@@ -389,7 +379,7 @@ export function RelatoriosDenuncia() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <PieChartIcon className="h-5 w-5" />
+                  <IconChartPie className="h-5 w-5" />
                   {t('denunciasAdmin.relatorios.categoryChartTitle')}
                 </CardTitle>
               </CardHeader>
@@ -420,7 +410,7 @@ export function RelatoriosDenuncia() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <AlertTriangle className="h-5 w-5" />
+                  <IconWarning className="h-5 w-5" />
                   {t('denunciasAdmin.relatorios.gravityChartTitle')}
                 </CardTitle>
               </CardHeader>
@@ -450,7 +440,7 @@ export function RelatoriosDenuncia() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" />
+                  <IconTrendUp className="h-5 w-5" />
                   {t('denunciasAdmin.relatorios.timelineTitle')}
                 </CardTitle>
                 <CardDescription>
@@ -463,7 +453,7 @@ export function RelatoriosDenuncia() {
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis 
                       dataKey="data" 
-                      tick={{ fontSize: 10 }}
+                      tick={{ fontSize: CHART_FONT.axis }}
                     />
                     <YAxis />
                     <Tooltip />

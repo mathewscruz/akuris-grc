@@ -5,7 +5,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useEmpresaId } from "@/hooks/useEmpresaId";
 import { DialogShell } from "@/components/ui/dialog-shell";
-import { KeyRound } from "lucide-react";
 import {
   Form,
   FormControl,
@@ -25,6 +24,7 @@ import {
 } from "@/components/ui/select";
 import { UserSelect } from "@/components/riscos/UserSelect";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { IconKey } from '@/components/icons';
 
 interface ChaveDialogProps {
   open: boolean;
@@ -118,7 +118,7 @@ export function ChaveDialog({ open, onOpenChange, chave }: ChaveDialogProps) {
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      icon={KeyRound}
+      icon={IconKey}
       title={chave ? t('contratosAtivos.chaveDialog.titleEdit') : t('contratosAtivos.chaveDialog.title')}
       size="lg"
       onSubmit={form.handleSubmit(onSubmit)}

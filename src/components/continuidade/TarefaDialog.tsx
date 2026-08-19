@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { DialogShell } from '@/components/ui/dialog-shell';
-import { ListChecks } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { DateField } from '@/components/ui/date-field';
 import { Label } from '@/components/ui/label';
@@ -10,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { IconChecklist } from '@/components/icons';
 
 interface TarefaDialogProps {
   open: boolean;
@@ -88,7 +88,7 @@ export function TarefaDialog({ open, onOpenChange, planoId, tarefa, onSuccess }:
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      icon={ListChecks}
+      icon={IconChecklist}
       title={tarefa ? t('modDialogs.continuidade.tarefa.titleEdit') : t('modDialogs.continuidade.tarefa.titleNew')}
       size="lg"
       onSubmit={handleSubmit}
