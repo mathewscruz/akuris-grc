@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useMemo, useState, useEffect } from "react";
+import { IconChevron, IconChevronLeft, IconSearch, IconAdd, IconEdit, IconDelete, IconView, IconMore, IconWarning, IconTime, IconFile, IconDatabase, IconUsers, IconLink, IconShieldAlert } from '@/components/icons';
 import { logger } from '@/lib/logger';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
-import { Plus, Database, Users, AlertTriangle, Edit, Trash2, Link2, FileText, Eye, Clock, ShieldAlert, MoreHorizontal } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,22 +16,26 @@ import { DadosPessoaisDialog } from "@/components/dados/DadosPessoaisDialog";
 import { MapeamentoDialog } from "@/components/dados/MapeamentoDialog";
 import { RopaWizard } from "@/components/dados/RopaWizard";
 import { RopaDialog } from "@/components/dados/RopaDialog";
-import { RopaImportExport } from "@/components/dados/RopaImportExport";
-import { ExerciciosRopaTab } from "@/components/dados/ExerciciosRopaTab";
+import { RopaTab, type NivelRopa } from "@/components/dados/RopaTab";
 
 import { SolicitacaoTitularDialog } from "@/components/dados/SolicitacaoTitularDialog";
 import { DescoberDadosTab } from "@/components/dados/DescoberDadosTab";
 import { StatStrip } from "@/components/ui/stat-strip";
 import { PageHeader } from "@/components/ui/page-header";
 import ConfirmDialog from '@/components/ConfirmDialog';
-import { formatDateOnly } from '@/lib/date-utils';
+import { formatDateOnly, parseDataLocal } from '@/lib/date-utils';
+import { startOfDay, differenceInDays } from 'date-fns';
 import { formatStatus } from '@/lib/text-utils';
+import { rotuloCategoriaDados } from '@/lib/dados-categorias';
+import { RecordDetailDrawer } from '@/components/common/RecordDetailDrawer';
+import { rotuloTipoSolicitacao, tiposSolicitacaoDaJurisdicao, normalizarTipoSolicitacao } from '@/lib/direitos-titular';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveSensibilidadeTone, resolveItemStatusTone, resolveWorkflowStatusTone } from '@/lib/status-tone';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useJurisdicao } from "@/hooks/useJurisdicao";
-import { prazoResposta } from "@/lib/jurisdicao";
+import { prazoResposta, ehDadoSensivel } from "@/lib/jurisdicao";
+import { rotuloCanalSolicitacao } from '@/lib/canal-solicitacao';
 
 export default function Privacidade() {
   const { t } = useLanguage();
@@ -43,7 +47,12 @@ export default function Privacidade() {
   const [showDadosDialog, setShowDadosDialog] = useState(false);
   const [showMapeamentoDialog, setShowMapeamentoDialog] = useState(false);
   const [showRopaWizard, setShowRopaWizard] = useState(false);
+  /** Sinal para o botão do cabeçalho pedir um ROPA novo ao `RopaTab`. */
   const [novoExercicioSinal, setNovoExercicioSinal] = useState(0);
+  /** Nível aberto na aba ROPA — decide o que o botão do cabeçalho cria. */
+  const [nivelRopa, setNivelRopa] = useState<NivelRopa>('ropas');
+  /** ROPA onde o próximo tratamento vai nascer. */
+  const [ropaDoNovoTratamento, setRopaDoNovoTratamento] = useState<string | null>(null);
 
   const [showRopaDialog, setShowRopaDialog] = useState(false);
   const [showSolicitacaoDialog, setShowSolicitacaoDialog] = useState(false);
@@ -62,15 +71,9 @@ export default function Privacidade() {
   // States for Catálogo tab DataTable
   const [catalogoSortField, setCatalogoSortField] = useState<string>("");
   const [catalogoSortDirection, setCatalogoSortDirection] = useState<"asc" | "desc">("asc");
+  const [searchCatalogoTerm, setSearchCatalogoTerm] = useState("");
   const [categoriaFilter, setCategoriaFilter] = useState("todos");
   const [sensibilidadeFilter, setSensibilidadeFilter] = useState("todos");
-  
-  // States for ROPA tab DataTable
-  const [searchRopaTerm, setSearchRopaTerm] = useState("");
-  const [statusRopaFilter, setStatusRopaFilter] = useState("todos");
-  const [baseLegalFilter, setBaseLegalFilter] = useState("todos");
-  const [sortRopaField, setSortRopaField] = useState<string>("");
-  const [sortRopaDirection, setSortRopaDirection] = useState<"asc" | "desc">("asc");
   
   // States for Solicitações tab DataTable
   const [searchSolicitacoesTerm, setSearchSolicitacoesTerm] = useState("");
@@ -93,7 +96,7 @@ export default function Privacidade() {
       const solicitacoesRes = await supabase.from('dados_solicitacoes_titular').select('*').eq('empresa_id', empresaId).order('data_solicitacao', { ascending: false });
       const dadosIds = (dadosRes.data || []).map((d: any) => d.id);
       const ropaDadosRes = dadosIds.length > 0
-        ? await supabase.from('ropa_dados_vinculados').select('id, dados_pessoais_id').in('dados_pessoais_id', dadosIds)
+        ? await supabase.from('ropa_dados_vinculados').select('id, ropa_id, dados_pessoais_id').in('dados_pessoais_id', dadosIds)
         : { data: [] };
       const incidentesRes = await (supabase.from('incidentes').select('id') as any).eq('tipo', 'privacidade').eq('empresa_id', empresaId).in('status', ['aberto', 'investigacao', 'contido']);
 
@@ -107,6 +110,48 @@ export default function Privacidade() {
         ropasCounts[r.dados_pessoais_id] = (ropasCounts[r.dados_pessoais_id] || 0) + 1;
       });
 
+      /**
+       * Um tratamento herda a sensibilidade do dado mais sensível que toca:
+       * é isso que decide se a base legal tem de vir do Art. 11 (LGPD) ou do
+       * Art. 9 (RGPD). Sem este cruzamento a ROPA seria sempre avaliada como
+       * dado comum e a base ilícita nunca apareceria.
+       */
+      const sensibilidadePorDado: Record<string, string> = {};
+      (dadosRes.data || []).forEach((d: any) => { sensibilidadePorDado[d.id] = d.sensibilidade; });
+      const ropaSensivel = new Set<string>();
+      (ropaDadosRes.data || []).forEach((v: any) => {
+        if (ehDadoSensivel(sensibilidadePorDado[v.dados_pessoais_id])) ropaSensivel.add(v.ropa_id);
+      });
+      /**
+       * Um tratamento pode apoiar-se em várias bases legais, e desde
+       * `20260819200000` elas vivem em `ropa_bases_legais`. A coluna
+       * `ropa_registros.base_legal` guarda só a primeira, projetada por
+       * gatilho — a lista mostrava-a como se fosse a base do processo inteiro,
+       * e o filtro por "Legítimo interesse" escondia os quatro tratamentos em
+       * que ela é a segunda.
+       */
+      const ropaIds = (ropaRes.data || []).map((r: any) => r.id);
+      const basesRes = ropaIds.length > 0
+        ? await supabase
+            .from('ropa_bases_legais')
+            .select('ropa_id, base_legal, ordem')
+            .in('ropa_id', ropaIds)
+            .order('ordem')
+        : { data: [], error: null };
+      if (basesRes.error) throw basesRes.error;
+      const basesPorRopa: Record<string, string[]> = {};
+      (basesRes.data || []).forEach((b: any) => {
+        (basesPorRopa[b.ropa_id] ||= []).push(b.base_legal);
+      });
+
+      const ropaEnriquecida = (ropaRes.data || []).map((r: any) => ({
+        ...r,
+        sensibilidade_maxima: ropaSensivel.has(r.id) ? 'sensivel' : 'comum',
+        // Sempre um array: um registo antigo sem linhas normalizadas continua
+        // a valer pela coluna, em vez de ficar sem base legal nenhuma.
+        bases_legais: basesPorRopa[r.id] ?? (r.base_legal ? [r.base_legal] : []),
+      }));
+
       const dadosEnriquecidos = (dadosRes.data || []).map((dado: any) => ({
         ...dado,
         mapeamentos_count: mapeamentosCounts[dado.id] || 0,
@@ -115,27 +160,29 @@ export default function Privacidade() {
 
       const dados = dadosRes.data || [];
       const sensiveis = dados.filter((d: any) => d.tipo_dados === 'sensivel' || d.sensibilidade === 'muito_sensivel' || d.sensibilidade === 'sensivel').length;
-      const allSolicitacoes = solicitacoesRes.data || [];
+      /**
+       * O tipo é normalizado à entrada: o valor antigo (`exclusao`,
+       * `revogacao_consentimento`) passa a ler-se pela chave da lei. Sem isto
+       * o filtro ofereceria "Eliminação dos dados" e não encontraria as linhas
+       * gravadas como "exclusao". O banco não é reescrito — o registo só migra
+       * quando for gravado.
+       */
+      const allSolicitacoes = (solicitacoesRes.data || []).map((s: any) => ({
+        ...s,
+        tipo_solicitacao: normalizarTipoSolicitacao(s.tipo_solicitacao),
+      }));
       const pendentes = allSolicitacoes.filter((s: any) => s.status === 'pendente').length;
       
-      const hoje = new Date();
-      const foraPrazo = allSolicitacoes.filter((s: any) => {
-        if (s.status === 'atendida' || s.status === 'rejeitada') return false;
-        const prazo = s.prazo_resposta ? new Date(s.prazo_resposta) : null;
-        return prazo && prazo < hoje;
-      }).length;
-
       return {
         dadosPessoais: dadosEnriquecidos,
-        ropaRegistros: ropaRes.data || [],
+        ropaRegistros: ropaEnriquecida,
         solicitacoes: allSolicitacoes,
         incidentesPrivacidade: (incidentesRes.data || []).length,
-        solicitacoesForaPrazo: foraPrazo,
         stats: {
           totalDados: dados.length,
           dadosSensiveis: sensiveis,
           mapeamentos: (mapeamentosRes.data || []).length,
-          ropaAtivos: (ropaRes.data || []).filter((r: any) => r.status === 'ativo').length,
+          ropaAtivos: ropaEnriquecida.filter((r: any) => r.status === 'ativo').length,
           solicitacoesPendentes: pendentes
         }
       };
@@ -146,20 +193,84 @@ export default function Privacidade() {
   const dadosPessoais = privacidadeData?.dadosPessoais || [];
   const ropaRegistros = privacidadeData?.ropaRegistros || [];
   const solicitacoes = privacidadeData?.solicitacoes || [];
+
+  /**
+   * A barra do módulo era decorativa.
+   *
+   * As três abas mostravam seis filtros e três campos de busca, e nenhum deles
+   * tocava nos dados: o `DataTable` apenas DESENHA o que recebe em `filters` e
+   * `searchValue` — quem filtra é a página, e esta passava a lista crua.
+   *
+   * Verificado no ecrã: escolher "Saúde" no filtro de categoria deixava as
+   * quatro linhas na tabela, incluindo Biométrico, Identificação e Contato.
+   *
+   * `'todos'` é o valor de "sem filtro", e é também o estado inicial — daí a
+   * opção correspondente ter passado a existir em cada lista.
+   */
+  const semFiltro = (v: string) => !v || v === 'todos';
+
+  /**
+   * "Não há registos" e "o filtro não casou" são coisas diferentes.
+   *
+   * Com os filtros a funcionar, uma busca sem correspondência passava a
+   * mostrar "Nenhuma solicitação registada — comece criando o primeiro
+   * registro", com botão de criar, numa tabela que tem três. Quem lê isso
+   * conclui que perdeu dados.
+   */
+  const vazio = (temRegistos: boolean, doModulo: { icon: JSX.Element; title: string; description: string; action: { label: string; onClick: () => void } }) =>
+    temRegistos
+      ? { icon: <IconSearch className="h-8 w-8" />, title: t('common.noResults'), description: t('common.noResultsHint') }
+      : doModulo;
+  const contem = (texto: unknown, termo: string) =>
+    !termo || String(texto ?? '').toLowerCase().includes(termo.toLowerCase());
+
+  const dadosFiltrados = useMemo(
+    () =>
+      dadosPessoais.filter(
+        (d: any) =>
+          (semFiltro(categoriaFilter) || d.categoria_dados === categoriaFilter) &&
+          (semFiltro(sensibilidadeFilter) || d.sensibilidade === sensibilidadeFilter) &&
+          (contem(d.nome, searchCatalogoTerm) || contem(d.descricao, searchCatalogoTerm)),
+      ),
+    [dadosPessoais, categoriaFilter, sensibilidadeFilter, searchCatalogoTerm],
+  );
+
+  const solicitacoesFiltradas = useMemo(
+    () =>
+      solicitacoes.filter(
+        (s: any) =>
+          (semFiltro(statusSolicitacoesFilter) || s.status === statusSolicitacoesFilter) &&
+          (semFiltro(tipoSolicitacaoFilter) || s.tipo_solicitacao === tipoSolicitacaoFilter) &&
+          // O titular vive em `dados_titular`, que é `jsonb` — não há colunas
+          // `nome_titular`/`email_titular`. Procurar nelas devolvia sempre
+          // zero: escrever "Bianca" esvaziava uma tabela que mostra
+          // "Bianca Souza" na coluna Titular.
+          (contem(s.dados_titular?.nome, searchSolicitacoesTerm) ||
+            contem(s.dados_titular?.email, searchSolicitacoesTerm) ||
+            contem(s.dados_titular?.documento, searchSolicitacoesTerm)),
+      ),
+    [solicitacoes, statusSolicitacoesFilter, tipoSolicitacaoFilter, searchSolicitacoesTerm],
+  );
   const incidentesPrivacidade = privacidadeData?.incidentesPrivacidade || 0;
   // "Fora do prazo" usa o prazo legal da jurisdição configurada (LGPD 15 dias,
   // RGPD/GDPR 1 mês) e não um valor fixo. Se a solicitação já tem prazo próprio
   // definido pelo utilizador, esse prevalece.
   const solicitacoesForaPrazo = (() => {
-    const hoje = new Date();
+    // O titular tem o dia inteiro do prazo. Comparar contra `new Date()` — o
+    // instante — declarava fora do prazo uma solicitação que vence HOJE, a
+    // partir do momento em que o relógio passava do meio-dia. E `prazo_resposta`
+    // é coluna `date`: lida com `new Date()` crua virava meia-noite UTC, ou
+    // seja, o dia anterior em Brasília. Os dois erros somavam-se num KPI que
+    // se chama "Fora do prazo (LGPD)".
+    const inicioDeHoje = startOfDay(new Date());
     return solicitacoes.filter((s: any) => {
       if (s.status === 'atendida' || s.status === 'rejeitada') return false;
       const limite = s.prazo_resposta
-        ? new Date(s.prazo_resposta)
+        ? parseDataLocal(s.prazo_resposta)
         : (s.data_solicitacao || s.created_at)
           ? prazoResposta(s.data_solicitacao || s.created_at, jurisdicao.codigo)
           : null;
-      return limite ? limite < hoje : false;
+      return limite ? startOfDay(limite) < inicioDeHoje : false;
     }).length;
   })();
   const stats = privacidadeData?.stats || {
@@ -184,27 +295,39 @@ export default function Privacidade() {
       moderado: t('sweepDados.privacidade.sensibilidade.moderado'),
       comum: t('sweepDados.privacidade.sensibilidade.comum'),
     };
-    return <StatusBadge size="sm" {...resolveSensibilidadeTone(nivel)}>{labels[nivel] || t('sweepDados.privacidade.sensibilidade.comum')}</StatusBadge>;
+    return <StatusBadge {...resolveSensibilidadeTone(nivel)}>{labels[nivel] || t('sweepDados.privacidade.sensibilidade.comum')}</StatusBadge>;
   };
 
   const getStatusBadge = (status: string) => {
     const isWorkflow = ['pendente', 'em_analise', 'atendida', 'rejeitada'].includes(status);
     const tone = isWorkflow ? resolveWorkflowStatusTone(status) : resolveItemStatusTone(status);
-    return <StatusBadge size="sm" {...tone}>{formatStatus(status)}</StatusBadge>;
+    return <StatusBadge {...tone}>{formatStatus(status)}</StatusBadge>;
   };
 
   const getCategoriaLabel = (categoria: string) => {
-    const labels: Record<string, string> = {
-      identificacao: t('sweepDados.privacidade.categoria.identificacao'),
-      contato: t('sweepDados.privacidade.categoria.contato'),
-      localizacao: t('sweepDados.privacidade.categoria.localizacao'),
-      financeiro: t('sweepDados.privacidade.categoria.financeiro'),
-      saude: t('sweepDados.privacidade.categoria.saude'),
-      biometrico: t('sweepDados.privacidade.categoria.biometrico'),
-      comportamental: t('sweepDados.privacidade.categoria.comportamental'),
-      outros: t('sweepDados.privacidade.categoria.outros')
-    };
-    return labels[categoria] || formatStatus(categoria);
+    return rotuloCategoriaDados(categoria, t);
+  };
+
+  /**
+   * Base legal com veredicto. `incompativel` é a base que existe na lei mas
+   * não para aquele grau de sensibilidade — biometria com legítimo interesse,
+   * por exemplo. Antes isto era gravado, listado e exportado na ROPA como se
+   * estivesse correto; agora a linha diz o que está errado.
+   */
+  const celulaBaseLegal = (valor: string, sensibilidade?: string | null) => {
+    const { estado, label } = jurisdicao.baseLegal(valor, sensibilidade);
+    if (!valor) return <span className="text-muted-foreground">-</span>;
+    if (estado === 'ok') return <Badge variant="secondary">{label}</Badge>;
+    return (
+      <span className="inline-flex items-center gap-1.5">
+        <Badge variant="secondary">{label}</Badge>
+        <StatusBadge tone="destructive">
+          {t(estado === 'incompativel'
+            ? 'sweepDados.privacidade.baseLegalIncompativel'
+            : 'sweepDados.privacidade.baseLegalDesconhecida')}
+        </StatusBadge>
+      </span>
+    );
   };
 
   // Catálogo DataTable columns
@@ -241,7 +364,7 @@ export default function Privacidade() {
       key: 'base_legal',
       label: t('sweepDados.privacidade.colBaseLegal'),
       sortable: true,
-      render: (value: string) => value ? <Badge variant="secondary">{formatStatus(value)}</Badge> : <span className="text-muted-foreground">-</span>
+      render: (value: string, row: any) => celulaBaseLegal(value, row?.sensibilidade)
     },
     {
       key: 'mapeamentos_count',
@@ -266,24 +389,24 @@ export default function Privacidade() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm">
-              <MoreHorizontal className="h-4 w-4" />
+              <IconMore className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => { setSelectedDado(row); setShowDadoSheet(true); }}>
-              <Eye className="h-4 w-4 mr-2" /> {t('sweepDados.privacidade.verDetalhes')}
+              <IconView className="h-4 w-4 mr-2" /> {t('sweepDados.privacidade.verDetalhes')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => { setSelectedDado(row); setShowDadosDialog(true); }}>
-              <Edit className="h-4 w-4 mr-2" /> {t('sweepDados.privacidade.editar')}
+              <IconEdit className="h-4 w-4 mr-2" /> {t('sweepDados.privacidade.editar')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => { setSelectedDado(row); setShowMapeamentoDialog(true); }}>
-              <Link2 className="h-4 w-4 mr-2" /> {t('sweepDados.privacidade.mapear')}
+              <IconLink className="h-4 w-4 mr-2" /> {t('sweepDados.privacidade.mapear')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => { setPreSelectedDadoId(row.id); setShowRopaWizard(true); }}>
-              <FileText className="h-4 w-4 mr-2" /> {t('sweepDados.privacidade.criarRopa')}
+              <IconFile className="h-4 w-4 mr-2" /> {t('sweepDados.privacidade.criarRopa')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => handleDelete(row.id, 'dados')} className="text-destructive focus:text-destructive">
-              <Trash2 className="h-4 w-4 mr-2" /> {t('sweepDados.privacidade.excluir')}
+              <IconDelete className="h-4 w-4 mr-2" /> {t('sweepDados.privacidade.excluir')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -297,6 +420,7 @@ export default function Privacidade() {
       label: t('sweepDados.privacidade.colCategoria'),
       type: 'select' as const,
       options: [
+        { value: 'todos', label: t('sweepDados.privacidade.filtroTodas.categorias') },
         { value: 'identificacao', label: t('sweepDados.privacidade.categoria.identificacao') },
         { value: 'contato', label: t('sweepDados.privacidade.categoria.contato') },
         { value: 'localizacao', label: t('sweepDados.privacidade.categoria.localizacao') },
@@ -313,88 +437,19 @@ export default function Privacidade() {
       key: 'sensibilidade',
       label: t('sweepDados.privacidade.colSensibilidade'),
       type: 'select' as const,
+      // Os rótulos estavam deslocados uma posição: `sensivel` aparecia como
+      // "Moderado" e `muito_sensivel` como "Sensível". Filtrar por "Sensível"
+      // devolvia zero linhas ao lado de uma tabela com dois crachás "Sensível".
+      // `moderado` nem era oferecido, apesar de o crachá o saber mostrar.
       options: [
+        { value: 'todos', label: t('sweepDados.privacidade.filtroTodas.sensibilidades') },
         { value: 'comum', label: t('sweepDados.privacidade.sensibilidade.comum') },
-        { value: 'sensivel', label: t('sweepDados.privacidade.sensibilidade.moderado') },
-        { value: 'muito_sensivel', label: t('sweepDados.privacidade.sensibilidade.sensivel') }
+        { value: 'moderado', label: t('sweepDados.privacidade.sensibilidade.moderado') },
+        { value: 'sensivel', label: t('sweepDados.privacidade.sensibilidade.sensivel') },
+        { value: 'muito_sensivel', label: t('sweepDados.privacidade.sensibilidade.muitoSensivel') }
       ],
       value: sensibilidadeFilter,
       onChange: setSensibilidadeFilter
-    }
-  ];
-
-  // ROPA DataTable columns
-  const ropaColumns = [
-    {
-      key: 'nome_tratamento',
-      label: t('sweepDados.privacidade.colNomeTratamento'),
-      sortable: true,
-      render: (value: string) => <span className="font-medium">{value}</span>
-    },
-    {
-      key: 'base_legal',
-      label: t('sweepDados.privacidade.colBaseLegal'),
-      sortable: true,
-      render: (value: string) => <Badge variant="outline">{value}</Badge>
-    },
-    {
-      key: 'categoria_titulares',
-      label: t('sweepDados.privacidade.colCategoriaTitulares'),
-      sortable: true,
-    },
-    {
-      key: 'status',
-      label: t('sweepDados.privacidade.colStatus'),
-      render: (value: string) => getStatusBadge(value)
-    },
-    {
-      key: 'actions',
-      label: t('sweepDados.privacidade.colAcoes'),
-      render: (_: any, ropa: any) => (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => { setSelectedRopa(ropa); setShowRopaDialog(true); }}>
-              <Edit className="h-4 w-4 mr-2" /> {t('sweepDados.privacidade.editar')}
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleDelete(ropa.id, 'ropa')} className="text-destructive focus:text-destructive">
-              <Trash2 className="h-4 w-4 mr-2" /> {t('sweepDados.privacidade.excluir')}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )
-    }
-  ];
-
-  const ropaFilters = [
-    {
-      key: 'status',
-      label: t('sweepDados.privacidade.colStatus'),
-      type: 'select' as const,
-      options: [
-        { value: 'ativo', label: t('sweepDados.privacidade.statusRopa.ativo') },
-        { value: 'inativo', label: t('sweepDados.privacidade.statusRopa.inativo') },
-        { value: 'revisao', label: t('sweepDados.privacidade.statusRopa.revisao') }
-      ],
-      value: statusRopaFilter,
-      onChange: setStatusRopaFilter
-    },
-    {
-      key: 'base_legal',
-      label: t('sweepDados.privacidade.colBaseLegal'),
-      type: 'select' as const,
-      options: [
-        { value: 'consentimento', label: t('sweepDados.privacidade.baseLegal.consentimento') },
-        { value: 'legitimo_interesse', label: t('sweepDados.privacidade.baseLegal.legitimoInteresse') },
-        { value: 'execucao_contrato', label: t('sweepDados.privacidade.baseLegal.execucaoContrato') },
-        { value: 'cumprimento_obrigacao', label: t('sweepDados.privacidade.baseLegal.cumprimentoObrigacao') }
-      ],
-      value: baseLegalFilter,
-      onChange: setBaseLegalFilter
     }
   ];
 
@@ -404,24 +459,33 @@ export default function Privacidade() {
       key: 'tipo_solicitacao',
       label: t('sweepDados.privacidade.colTipo'),
       sortable: true,
-      render: (value: string) => <Badge variant="outline">{value}</Badge>
+      render: (value: string) => <Badge variant="outline">{rotuloTipoSolicitacao(value, jurisdicao.codigo, t)}</Badge>
     },
     {
       key: 'dados_titular',
       label: t('sweepDados.privacidade.colTitular'),
-      render: (value: string) => {
-        try {
-          const titular = JSON.parse(value);
-          return titular.nome || '-';
-        } catch {
-          return '-';
-        }
+      /**
+       * `dados_titular` é `jsonb`: o cliente Supabase já devolve um objeto.
+       * Aqui fazia-se `JSON.parse(objeto)`, que estoira sempre — o catch
+       * devolvia '-' e a coluna do titular nunca mostrou ninguém, em nenhuma
+       * solicitação, desde que existe. Numa tela cujo trabalho é responder ao
+       * titular dentro do prazo legal, era a informação mais importante.
+       */
+      render: (value: unknown) => {
+        const titular = typeof value === 'string'
+          ? (() => { try { return JSON.parse(value); } catch { return null; } })()
+          : (value as Record<string, string> | null);
+        return titular?.nome || titular?.email || '-';
       }
     },
     {
       key: 'canal_solicitacao',
       label: t('sweepDados.privacidade.colCanal'),
       sortable: true,
+      // Sem `render`, saía o valor cru do banco — "telefone", "portal",
+      // "email" — em minúsculas, ao lado de colunas que mostram "Correção" e
+      // "Pendente". O rótulo já existia, mas só o diálogo o usava.
+      render: (value: string) => rotuloCanalSolicitacao(value, t),
     },
     {
       key: 'status',
@@ -432,7 +496,27 @@ export default function Privacidade() {
       key: 'prazo_resposta',
       label: t('sweepDados.privacidade.colPrazo'),
       sortable: true,
-      render: (value: string) => formatDateOnly(value)
+      /**
+       * A tela tem um KPI "Fora do prazo", mas a lista mostrava todas as datas
+       * iguais: quem estava cinco dias atrasado parecia igual a quem tinha duas
+       * semanas. O estado do prazo é a razão de ser desta lista.
+       */
+      render: (value: string, row: any) => {
+        if (!value) return <span className="text-muted-foreground">-</span>;
+        const encerrada = row.status === 'atendida' || row.status === 'rejeitada';
+        const dias = differenceInDays(startOfDay(parseDataLocal(value)), startOfDay(new Date()));
+        return (
+          <span className="inline-flex items-center gap-2">
+            {formatDateOnly(value)}
+            {!encerrada && dias < 0 && (
+              <StatusBadge tone="destructive">{t('sweepDados.privacidade.prazoVencido')}</StatusBadge>
+            )}
+            {!encerrada && dias >= 0 && dias <= 3 && (
+              <StatusBadge tone="warning">{t('sweepDados.privacidade.prazoEmDias', { dias })}</StatusBadge>
+            )}
+          </span>
+        );
+      }
     },
     {
       key: 'actions',
@@ -441,15 +525,15 @@ export default function Privacidade() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm">
-              <MoreHorizontal className="h-4 w-4" />
+              <IconMore className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => { setSelectedSolicitacao(solicitacao); setShowSolicitacaoDialog(true); }}>
-              <Edit className="h-4 w-4 mr-2" /> {t('sweepDados.privacidade.editar')}
+              <IconEdit className="h-4 w-4 mr-2" /> {t('sweepDados.privacidade.editar')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => handleDelete(solicitacao.id, 'solicitacao')} className="text-destructive focus:text-destructive">
-              <Trash2 className="h-4 w-4 mr-2" /> {t('sweepDados.privacidade.excluir')}
+              <IconDelete className="h-4 w-4 mr-2" /> {t('sweepDados.privacidade.excluir')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -463,6 +547,7 @@ export default function Privacidade() {
       label: t('sweepDados.privacidade.colStatus'),
       type: 'select' as const,
       options: [
+        { value: 'todos', label: t('sweepDados.privacidade.filtroTodas.estados') },
         { value: 'pendente', label: t('sweepDados.privacidade.statusSolicitacao.pendente') },
         { value: 'em_analise', label: t('sweepDados.privacidade.statusSolicitacao.emAnalise') },
         { value: 'atendida', label: t('sweepDados.privacidade.statusSolicitacao.atendida') },
@@ -475,13 +560,11 @@ export default function Privacidade() {
       key: 'tipo_solicitacao',
       label: t('sweepDados.privacidade.colTipo'),
       type: 'select' as const,
+      // Os direitos são os da lei aplicável — LGPD Art. 18, RGPD Arts. 15-22 —
+      // e não uma lista fixa de seis que ignorava metade deles.
       options: [
-        { value: 'acesso', label: t('sweepDados.privacidade.tipoSolicitacao.acesso') },
-        { value: 'correcao', label: t('sweepDados.privacidade.tipoSolicitacao.correcao') },
-        { value: 'exclusao', label: t('sweepDados.privacidade.tipoSolicitacao.exclusao') },
-        { value: 'portabilidade', label: t('sweepDados.privacidade.tipoSolicitacao.portabilidade') },
-        { value: 'oposicao', label: t('sweepDados.privacidade.tipoSolicitacao.oposicao') },
-        { value: 'revogacao_consentimento', label: t('sweepDados.privacidade.tipoSolicitacao.revogacaoConsentimento') }
+        { value: 'todos', label: t('sweepDados.privacidade.filtroTodas.tipos') },
+        ...tiposSolicitacaoDaJurisdicao(jurisdicao.codigo, t).map((d) => ({ value: d.key, label: d.label })),
       ],
       value: tipoSolicitacaoFilter,
       onChange: setTipoSolicitacaoFilter
@@ -544,23 +627,28 @@ export default function Privacidade() {
         actions={
           activeTab === 'catalogo' ? (
             <Button size="sm" onClick={() => setShowDadosDialog(true)}>
-              <Plus className="mr-2 h-4 w-4" />
+              <IconAdd className="mr-2 h-4 w-4" />
               {t('sweepDados.privacidade.novoDado')}
             </Button>
           ) : activeTab === 'ropa' ? (
-            <Button size="sm" onClick={() => setShowRopaWizard(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              {t('sweepDados.privacidade.novoRopa')}
-            </Button>
-          ) : activeTab === 'exercicios' ? (
-            <Button size="sm" onClick={() => setNovoExercicioSinal((n) => n + 1)}>
-              <Plus className="mr-2 h-4 w-4" />
-              {t('dadosDashboard.ropaExercicios.novo')}
-            </Button>
+            // O botão cria o que a lista mostra: um ROPA na lista de ROPAs, um
+            // tratamento quando já se está dentro de um. No dossiê não há nada
+            // para criar.
+            nivelRopa === 'ropas' ? (
+              <Button size="sm" onClick={() => setNovoExercicioSinal((n) => n + 1)}>
+                <IconAdd className="mr-2 h-4 w-4" />
+                {t('ropaLista.novoRopa')}
+              </Button>
+            ) : nivelRopa === 'tratamentos' ? (
+              <Button size="sm" onClick={() => setShowRopaWizard(true)}>
+                <IconAdd className="mr-2 h-4 w-4" />
+                {t('ropaLista.novoTratamento')}
+              </Button>
+            ) : undefined
           ) : activeTab === 'solicitacoes' ? (
 
             <Button size="sm" onClick={() => setShowSolicitacaoDialog(true)}>
-              <Plus className="mr-2 h-4 w-4" />
+              <IconAdd className="mr-2 h-4 w-4" />
               {t('sweepDados.privacidade.novaSolicitacao')}
             </Button>
           ) : undefined
@@ -569,19 +657,17 @@ export default function Privacidade() {
           activeTab === 'catalogo'
             ? [{
                 label: t('sweepDados.privacidade.mapearDado'),
-                icon: <Link2 className="h-4 w-4" />,
+                icon: <IconLink className="h-4 w-4" />,
                 onClick: () => setShowMapeamentoDialog(true),
               }]
             : undefined
         }
       />
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="catalogo">{t('cardsKpi.privacidade.abaCatalogo')}</TabsTrigger>
           <TabsTrigger value="ropa">{t('sweepDados.privacidade.abaRopa')}</TabsTrigger>
-          <TabsTrigger value="exercicios">{t('dadosDashboard.ropaExercicios.tabTitulo')}</TabsTrigger>
-
           <TabsTrigger value="solicitacoes">{t('cardsKpi.privacidade.abaSolicitacoes')}</TabsTrigger>
           <TabsTrigger value="descobertas">{t('sweepDados.privacidade.abaDescobertas')}</TabsTrigger>
         </TabsList>
@@ -591,6 +677,11 @@ export default function Privacidade() {
         items={[
           { key: 'totalDados', label: t('cardsKpi.privacidade.totalDados'), value: stats.totalDados, drillDown: 'privacidade' },
           { key: 'dadosSensiveis', label: t('cardsKpi.privacidade.dadosSensiveis'), value: stats.dadosSensiveis, tone: 'warning', drillDown: 'privacidade' },
+          // O ROPA não tinha card nenhum, apesar de `stats.ropaAtivos` já ser
+          // calculado e deitado fora. Numa empresa cujo trabalho de privacidade
+          // é o registo de tratamentos — e há uma assim nos dados reais, com 7
+          // ROPA e zero dados catalogados — a tira inteira mostrava zero.
+          { key: 'ropa', label: t('cardsKpi.privacidade.ropaRegistros'), value: stats.ropaAtivos, onClick: () => setActiveTab('ropa') },
           { key: 'mapeamentos', label: t('cardsKpi.privacidade.mapeamentos'), value: stats.mapeamentos, drillDown: 'privacidade' },
           { key: 'solicitacoesPendentes', label: t('cardsKpi.privacidade.solicitacoesPendentes'), value: stats.solicitacoesPendentes, drillDown: 'privacidade' },
           { key: 'foraPrazo', label: t('jurisdicao.privacidade.foraPrazo', { lei: jurisdicao.lei }), value: solicitacoesForaPrazo, tone: 'destructive', drillDown: 'privacidade' },
@@ -598,15 +689,16 @@ export default function Privacidade() {
         ]}
       />
 
-
         <TabsContent value="catalogo" className="space-y-4">
           <Card className="rounded-lg border overflow-hidden">
             <CardContent className="p-0">
               <DataTable
-                data={dadosPessoais}
+                data={dadosFiltrados}
                 columns={catalogoColumns}
                 onRowClick={(row) => { setSelectedDado(row); setShowDadoSheet(true); }}
                 searchPlaceholder={t('sweepDados.privacidade.buscarDados')}
+                searchValue={searchCatalogoTerm}
+                onSearchChange={setSearchCatalogoTerm}
                 filters={catalogoFilters}
                 sortField={catalogoSortField}
                 sortDirection={catalogoSortDirection}
@@ -618,71 +710,32 @@ export default function Privacidade() {
                     setCatalogoSortDirection('asc');
                   }
                 }}
-                emptyState={{
-                  icon: <Database className="h-8 w-8" />,
+                emptyState={vazio(dadosPessoais.length > 0, {
+                  icon: <IconDatabase className="h-8 w-8" />,
                   title: t('sweepDados.privacidade.emptyDadosTitulo'),
                   description: t('sweepDados.privacidade.emptyDadosDescricao'),
                   action: {
                     label: t('sweepDados.privacidade.novoDado'),
                     onClick: () => setShowDadosDialog(true)
                   }
-                }}
+                })}
               />
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="ropa" className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm text-muted-foreground">
-              {t('jurisdicao.privacidade.ropaSubtitulo', { lei: jurisdicao.lei })}
-            </p>
-            <RopaImportExport registos={ropaRegistros} onImported={() => queryClient.invalidateQueries({ queryKey: ['privacidade'] })} />
-          </div>
-          <Card className="rounded-lg border overflow-hidden">
-            <CardContent className="p-0">
-              <DataTable
-                data={ropaRegistros}
-                columns={ropaColumns}
-                onRowClick={(ropa) => { setSelectedRopa(ropa); setShowRopaDialog(true); }}
-                loading={false}
-                searchable
-                searchPlaceholder={t('sweepDados.privacidade.buscarRopa')}
-                searchValue={searchRopaTerm}
-                onSearchChange={setSearchRopaTerm}
-                filters={ropaFilters}
-                sortField={sortRopaField}
-                sortDirection={sortRopaDirection}
-                onSort={(field) => {
-                  if (sortRopaField === field) {
-                    setSortRopaDirection(sortRopaDirection === 'asc' ? 'desc' : 'asc');
-                  } else {
-                    setSortRopaField(field);
-                    setSortRopaDirection('asc');
-                  }
-                }}
-                emptyState={{
-                  icon: <FileText className="h-8 w-8" />,
-                  title: t('sweepDados.privacidade.emptyRopaTitulo'),
-                  description: t('sweepDados.privacidade.emptyRopaDescricao'),
-                  action: {
-                    label: t('sweepDados.privacidade.novoRopa'),
-                    onClick: () => setShowRopaWizard(true)
-                  }
-                }}
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="exercicios" className="space-y-4">
-          <ExerciciosRopaTab
+          {/* Três níveis — ROPAs, tratamentos, dossiê — em `RopaTab`. A aba
+              listava os TRATAMENTOS como se fossem os ROPA, e a lista de ROPA
+              propriamente dita vivia noutra aba sem ligação nenhuma a esta. */}
+          <RopaTab
             registos={ropaRegistros}
-            novoSinal={novoExercicioSinal}
-            onOpenRegisto={(registo) => {
-              setSelectedRopa(registo);
-              setShowRopaDialog(true);
-            }}
+            aoRecarregar={invalidatePrivacidade}
+            aoEditarTratamento={(registo) => { setSelectedRopa(registo); setShowRopaDialog(true); }}
+            aoApagarTratamento={(id) => handleDelete(id, 'ropa')}
+            aoCriarTratamento={(exercicioId) => { setRopaDoNovoTratamento(exercicioId); setShowRopaWizard(true); }}
+            novoRopaSinal={novoExercicioSinal}
+            aoMudarNivel={setNivelRopa}
           />
         </TabsContent>
 
@@ -691,7 +744,7 @@ export default function Privacidade() {
           <Card className="rounded-lg border overflow-hidden">
             <CardContent className="p-0">
               <DataTable
-                data={solicitacoes}
+                data={solicitacoesFiltradas}
                 columns={solicitacoesColumns}
                 onRowClick={(solicitacao) => { setSelectedSolicitacao(solicitacao); setShowSolicitacaoDialog(true); }}
                 loading={false}
@@ -710,15 +763,15 @@ export default function Privacidade() {
                     setSortSolicitacoesDirection('asc');
                   }
                 }}
-                emptyState={{
-                  icon: <Users className="h-8 w-8" />,
+                emptyState={vazio(solicitacoes.length > 0, {
+                  icon: <IconUsers className="h-8 w-8" />,
                   title: t('sweepDados.privacidade.emptySolicitacoesTitulo'),
                   description: t('sweepDados.privacidade.emptySolicitacoesDescricao'),
                   action: {
                     label: t('sweepDados.privacidade.novaSolicitacao'),
                     onClick: () => setShowSolicitacaoDialog(true)
                   }
-                }}
+                })}
               />
             </CardContent>
           </Card>
@@ -746,6 +799,18 @@ export default function Privacidade() {
         }}
         onSave={invalidatePrivacidade}
       />
+      {/* Estava importado e o estado era ligado em três sítios, mas o componente
+          nunca aparecia no JSX — logo, não havia forma nenhuma de editar um
+          registo ROPA pela interface. O único caminho de entrada era a planilha. */}
+      <RopaDialog
+        isOpen={showRopaDialog}
+        onClose={() => {
+          setShowRopaDialog(false);
+          setSelectedRopa(null);
+        }}
+        onSave={invalidatePrivacidade}
+        ropa={selectedRopa}
+      />
       <RopaWizard
         isOpen={showRopaWizard}
         onClose={() => {
@@ -754,6 +819,7 @@ export default function Privacidade() {
         }}
         onSave={invalidatePrivacidade}
         preSelectedDadoId={preSelectedDadoId}
+        exercicioId={ropaDoNovoTratamento}
       />
       <SolicitacaoTitularDialog
         isOpen={showSolicitacaoDialog}
@@ -765,31 +831,38 @@ export default function Privacidade() {
         solicitacao={selectedSolicitacao}
       />
       
-      <Sheet open={showDadoSheet} onOpenChange={setShowDadoSheet}>
-        <SheetContent className="w-full sm:max-w-[600px] overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>{t('cardsKpi.privacidade.detalhesDado')}</SheetTitle>
-          </SheetHeader>
-          {selectedDado && (
-            <div className="space-y-4 mt-6">
-              <div>
-                <h3 className="font-semibold mb-2">{selectedDado.nome}</h3>
-                <p className="text-sm text-muted-foreground">{selectedDado.descricao}</p>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <span className="text-sm text-muted-foreground">{t('sweepDados.privacidade.colCategoria')}</span>
-                  <p className="font-medium">{selectedDado.categoria_dados}</p>
-                </div>
-                <div>
-                  <span className="text-sm text-muted-foreground">{t('sweepDados.privacidade.colBaseLegal')}</span>
-                  <p className="font-medium">{selectedDado.base_legal}</p>
-                </div>
-              </div>
-            </div>
-          )}
-        </SheetContent>
-      </Sheet>
+      {/*
+        Era uma Sheet própria com quatro campos — nome, descrição, categoria e
+        base legal — de um catálogo que tem onze. Finalidade, prazo de retenção
+        e origem da coleta, que são o que um encarregado precisa de ver, só
+        existiam abrindo o formulário de edição. `RecordDetailDrawer` é o
+        painel de detalhe que o resto do produto já usa.
+      */}
+      <RecordDetailDrawer
+        open={showDadoSheet}
+        onOpenChange={setShowDadoSheet}
+        title={selectedDado?.nome}
+        subtitle={selectedDado?.descricao}
+        badges={selectedDado && (
+          <>
+            {getSensibilidadeBadge(selectedDado.tipo_dados, selectedDado.sensibilidade)}
+            {celulaBaseLegal(selectedDado.base_legal, selectedDado.sensibilidade)}
+          </>
+        )}
+        fields={selectedDado ? [
+          { label: t('sweepDados.privacidade.colCategoria'), value: rotuloCategoriaDados(selectedDado.categoria_dados, t) },
+          { label: t('sweepDados.privacidade.detTipoDados'), value: formatStatus(selectedDado.tipo_dados) },
+          { label: t('sweepDados.privacidade.detOrigemColeta'), value: formatStatus(selectedDado.origem_coleta) },
+          { label: t('sweepDados.privacidade.detFormaColeta'), value: formatStatus(selectedDado.forma_coleta) },
+          { label: t('sweepDados.privacidade.detPrazoRetencao'), value: selectedDado.prazo_retencao },
+          { label: t('sweepDados.privacidade.colMapeamentos'), value: String(selectedDado.mapeamentos_count ?? 0) },
+          { label: t('sweepDados.privacidade.colRopas'), value: String(selectedDado.ropas_count ?? 0) },
+          { label: t('sweepDados.privacidade.detFinalidade'), value: selectedDado.finalidade_tratamento, full: true },
+          { label: t('sweepDados.privacidade.detObservacoes'), value: selectedDado.observacoes, full: true },
+        ] : []}
+        createdAt={selectedDado?.created_at}
+        updatedAt={selectedDado?.updated_at}
+      />
 
       <ConfirmDialog
         open={deleteConfirm.open}

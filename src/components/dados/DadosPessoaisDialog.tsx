@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { DialogShell } from "@/components/ui/dialog-shell";
-import { Database } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { IconDatabase } from '@/components/icons';
+import { useJurisdicao } from "@/hooks/useJurisdicao";
 
 interface DadosPessoaisDialogProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ interface DadosPessoaisDialogProps {
 
 export function DadosPessoaisDialog({ isOpen, onClose, onSave, dados }: DadosPessoaisDialogProps) {
   const { t } = useLanguage();
+  const jurisdicao = useJurisdicao();
   const [formData, setFormData] = useState({
     nome: dados?.nome || "",
     descricao: dados?.descricao || "",
@@ -34,6 +36,51 @@ export function DadosPessoaisDialog({ isOpen, onClose, onSave, dados }: DadosPes
   });
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+
+  /**
+   * A lei separa as bases por sensibilidade: dado sensível tem lista própria
+   * e mais curta. A lista era única e fixa, o que permitia gravar biometria
+   * com base em legítimo interesse — hipótese que a LGPD não admite para dado
+   * sensível (Art. 11) nem o RGPD para categoria especial (Art. 9).
+   */
+  const basesLegaisDaLei = jurisdicao.basesLegais(formData.sensibilidade);
+
+  /**
+   * Um valor já gravado que a lei não admite continua na lista, marcado.
+   * Apagá-lo ao abrir esconderia do utilizador exactamente o problema que ele
+   * precisa de ver — e um registo que ele nunca reviu passaria a parecer
+   * apenas "por preencher".
+   */
+  const baseGravadaForaDaLista =
+    formData.base_legal && !basesLegaisDaLei.some((b) => b.key === formData.base_legal)
+      ? formData.base_legal
+      : null;
+
+  const basesDisponiveis = baseGravadaForaDaLista
+    ? [
+        {
+          key: baseGravadaForaDaLista,
+          label: `${jurisdicao.baseLegal(baseGravadaForaDaLista, formData.sensibilidade).label} — ${t('dadosDashboard.dadosPessoaisDialog.baseLegalNaoAdmitida')}`,
+        },
+        ...basesLegaisDaLei,
+      ]
+    : basesLegaisDaLei;
+
+  /**
+   * Trocar a sensibilidade pode invalidar a base já escolhida — mas só quando
+   * é o UTILIZADOR a trocar. Fazer isto num efeito sobre `formData` não
+   * distingue essa troca do recarregamento do formulário quando se abre outro
+   * registo, e a primeira versão apagava a base gravada só por abrir a
+   * biometria para revisão. No handler não há essa ambiguidade.
+   */
+  const trocarSensibilidade = (valor: string) => {
+    const permitidas = jurisdicao.basesLegais(valor).map((b) => b.key);
+    setFormData((f) => ({
+      ...f,
+      sensibilidade: valor,
+      base_legal: f.base_legal && !permitidas.includes(f.base_legal) ? '' : f.base_legal,
+    }));
+  };
 
   useEffect(() => {
     setFormData({
@@ -106,7 +153,7 @@ export function DadosPessoaisDialog({ isOpen, onClose, onSave, dados }: DadosPes
         open={isOpen}
         onOpenChange={onClose}
         title={dados?.id ? t('dadosDashboard.dadosPessoaisDialog.titleEdit') : t('dadosDashboard.dadosPessoaisDialog.titleNew')}
-        icon={Database}
+        icon={IconDatabase}
         size="lg"
         onSubmit={handleSave}
       >
@@ -158,7 +205,7 @@ export function DadosPessoaisDialog({ isOpen, onClose, onSave, dados }: DadosPes
             </div>
             <div className="space-y-2">
               <Label htmlFor="sensibilidade">{t('dadosDashboard.dadosPessoaisDialog.labelSensibilidade')}</Label>
-              <Select value={formData.sensibilidade} onValueChange={(value) => setFormData({ ...formData, sensibilidade: value })}>
+              <Select value={formData.sensibilidade} onValueChange={trocarSensibilidade}>
                 <SelectTrigger>
                   <SelectValue placeholder={t('dadosDashboard.dadosPessoaisDialog.placeholderSensibilidade')} />
                 </SelectTrigger>
@@ -231,13 +278,9 @@ export function DadosPessoaisDialog({ isOpen, onClose, onSave, dados }: DadosPes
                   <SelectValue placeholder={t('dadosDashboard.dadosPessoaisDialog.placeholderBaseLegal')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="consentimento">{t('dadosDashboard.common.baseLegalConsentimento')}</SelectItem>
-                  <SelectItem value="legitimo_interesse">{t('dadosDashboard.common.baseLegalLegitimoInteresse')}</SelectItem>
-                  <SelectItem value="execucao_contrato">{t('dadosDashboard.common.baseLegalExecucaoContrato')}</SelectItem>
-                  <SelectItem value="cumprimento_obrigacao">{t('dadosDashboard.common.baseLegalCumprimentoObrigacao')}</SelectItem>
-                  <SelectItem value="protecao_vida">{t('dadosDashboard.common.baseLegalProtecaoVida')}</SelectItem>
-                  <SelectItem value="exercicio_direitos">{t('dadosDashboard.common.baseLegalExercicioDireitos')}</SelectItem>
-                  <SelectItem value="politicas_publicas">{t('dadosDashboard.common.baseLegalPoliticasPublicas')}</SelectItem>
+                  {basesDisponiveis.map((base) => (
+                    <SelectItem key={base.key} value={base.key}>{base.label}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

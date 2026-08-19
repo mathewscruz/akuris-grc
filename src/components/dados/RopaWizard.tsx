@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
+import { IconCheck, IconChevron, IconChecklist, IconChevronLeft } from '@/components/icons';
 import { DialogShell } from "@/components/ui/dialog-shell";
-import { ClipboardList } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,8 +11,10 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useEmpresaId } from "@/hooks/useEmpresaId";
-import { ChevronLeft, ChevronRight, Check } from "lucide-react";
+import { useJurisdicao } from "@/hooks/useJurisdicao";
+import { ehDadoSensivel } from "@/lib/jurisdicao";
 import { formatStatus } from "@/lib/text-utils";
+import { rotuloCategoriaDados } from "@/lib/dados-categorias";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { resolveCriticidadeTone, resolveSensibilidadeTone } from "@/lib/status-tone";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -22,11 +24,18 @@ interface RopaWizardProps {
   onClose: () => void;
   onSave: () => void;
   preSelectedDadoId?: string;
+  /**
+   * ROPA a que o tratamento novo pertence. Sem isto, criar um tratamento de
+   * dentro de um ROPA gravava-o com `exercicio_id` nulo: o registo aparecia na
+   * linha "Tratamentos sem ROPA" e sumia do ROPA onde se carregou no botão.
+   */
+  exercicioId?: string | null;
 }
 
-export function RopaWizard({ isOpen, onClose, onSave, preSelectedDadoId }: RopaWizardProps) {
+export function RopaWizard({ isOpen, onClose, onSave, preSelectedDadoId, exercicioId }: RopaWizardProps) {
   const { t } = useLanguage();
   const { empresaId } = useEmpresaId();
+  const jurisdicao = useJurisdicao();
   const [step, setStep] = useState(1);
   const [selectedDados, setSelectedDados] = useState<string[]>(preSelectedDadoId ? [preSelectedDadoId] : []);
   const [selectedAtivos, setSelectedAtivos] = useState<string[]>([]);
@@ -43,6 +52,24 @@ export function RopaWizard({ isOpen, onClose, onSave, preSelectedDadoId }: RopaW
   const [ativos, setAtivos] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+
+  /**
+   * O passo 1 já diz quais dados o tratamento toca — logo o wizard sabe se
+   * há dado sensível envolvido e pode oferecer só as bases que a lei admite
+   * nesse caso (Art. 11 na LGPD, Art. 9 no RGPD).
+   */
+  const tocaDadoSensivel = dadosPessoais
+    .filter((d) => selectedDados.includes(d.id))
+    .some((d) => ehDadoSensivel(d.sensibilidade));
+
+  const basesDisponiveis = jurisdicao.basesLegais(tocaDadoSensivel ? 'sensivel' : 'comum');
+
+  // Voltar ao passo 1 e trocar a seleção pode invalidar a base já escolhida.
+  useEffect(() => {
+    if (formData.base_legal && !basesDisponiveis.some((b) => b.key === formData.base_legal)) {
+      setFormData((f) => ({ ...f, base_legal: '' }));
+    }
+  }, [tocaDadoSensivel]);
 
   useEffect(() => {
     if (isOpen) {
@@ -89,7 +116,8 @@ export function RopaWizard({ isOpen, onClose, onSave, preSelectedDadoId }: RopaW
         .insert([{
           ...formData,
           empresa_id: profile.empresa_id,
-          created_by: profile.user_id
+          created_by: profile.user_id,
+          exercicio_id: exercicioId ?? null
         }])
         .select()
         .single();
@@ -184,7 +212,7 @@ export function RopaWizard({ isOpen, onClose, onSave, preSelectedDadoId }: RopaW
     <DialogShell
       open={isOpen}
       onOpenChange={onClose}
-      icon={ClipboardList}
+      icon={IconChecklist}
       title={t('dadosDashboard.ropaWizard.dialogTitle')}
       size="lg"
       footer={
@@ -195,18 +223,18 @@ export function RopaWizard({ isOpen, onClose, onSave, preSelectedDadoId }: RopaW
             onClick={() => step === 1 ? onClose() : setStep(step - 1)}
             disabled={isLoading}
           >
-            <ChevronLeft className="h-4 w-4 mr-1" />
+            <IconChevronLeft className="h-4 w-4 mr-1" />
             {step === 1 ? t('dadosDashboard.ropaWizard.buttonCancelar') : t('dadosDashboard.ropaWizard.buttonVoltar')}
           </Button>
 
           {step < 4 ? (
             <Button size="sm" onClick={() => setStep(step + 1)} disabled={!canProceed()}>
               {t('dadosDashboard.ropaWizard.buttonProximo')}
-              <ChevronRight className="h-4 w-4 ml-1" />
+              <IconChevron className="h-4 w-4 ml-1" />
             </Button>
           ) : (
             <Button size="sm" onClick={handleSave} disabled={isLoading}>
-              <Check className="h-4 w-4 mr-1" />
+              <IconCheck className="h-4 w-4 mr-1" />
               {isLoading ? t('dadosDashboard.ropaWizard.buttonCriando') : t('dadosDashboard.ropaWizard.buttonCriarRopa')}
             </Button>
           )}
@@ -235,15 +263,15 @@ export function RopaWizard({ isOpen, onClose, onSave, preSelectedDadoId }: RopaW
                 {dadosPessoais.map((dado) => (
                   <div
                     key={dado.id}
-                    className="flex items-center gap-3 p-3 border rounded-lg hover:bg-muted/50 cursor-pointer"
+                    className="flex items-center gap-3 p-3 border rounded-lg hover:bg-accent cursor-pointer"
                     onClick={() => toggleDado(dado.id)}
                   >
                     <Checkbox checked={selectedDados.includes(dado.id)} />
                     <div className="flex-1">
                       <div className="font-medium">{dado.nome}</div>
-                      <div className="text-sm text-muted-foreground">{dado.categoria_dados}</div>
+                      <div className="text-sm text-muted-foreground">{rotuloCategoriaDados(dado.categoria_dados, t)}</div>
                     </div>
-                    <StatusBadge size="sm" {...resolveSensibilidadeTone(dado.sensibilidade)}>
+                    <StatusBadge {...resolveSensibilidadeTone(dado.sensibilidade)}>
                       {formatStatus(dado.sensibilidade)}
                     </StatusBadge>
                   </div>
@@ -295,11 +323,20 @@ export function RopaWizard({ isOpen, onClose, onSave, preSelectedDadoId }: RopaW
                     <SelectTrigger>
                       <SelectValue placeholder={t('dadosDashboard.ropaWizard.placeholderSelecione')} />
                     </SelectTrigger>
+                    {/*
+                      As bases legais vêm do mesmo vocabulário do diálogo de
+                      edição (`dadosDashboard.common.*`). O wizard tinha uma
+                      lista própria com quatro — e é ele o caminho de CRIAÇÃO
+                      do ROPA. Quem precisasse de "Proteção da Vida" ou
+                      "Políticas Públicas" tinha de gravar uma base errada e
+                      corrigir depois no outro formulário. A quarta ainda se
+                      chamava "Obrigação Legal" aqui e "Cumprimento de
+                      Obrigação Legal" ali, para o mesmo valor gravado.
+                    */}
                     <SelectContent>
-                      <SelectItem value="consentimento">{t('dadosDashboard.ropaWizard.baseLegalConsentimento')}</SelectItem>
-                      <SelectItem value="legitimo_interesse">{t('dadosDashboard.ropaWizard.baseLegalLegitimoInteresse')}</SelectItem>
-                      <SelectItem value="execucao_contrato">{t('dadosDashboard.ropaWizard.baseLegalExecucaoContrato')}</SelectItem>
-                      <SelectItem value="cumprimento_obrigacao">{t('dadosDashboard.ropaWizard.baseLegalObrigacaoLegal')}</SelectItem>
+                      {basesDisponiveis.map((base) => (
+                        <SelectItem key={base.key} value={base.key}>{base.label}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -345,7 +382,7 @@ export function RopaWizard({ isOpen, onClose, onSave, preSelectedDadoId }: RopaW
                 {ativos.map((ativo) => (
                   <div
                     key={ativo.id}
-                    className="flex items-center gap-3 p-3 border rounded-lg hover:bg-muted/50 cursor-pointer"
+                    className="flex items-center gap-3 p-3 border rounded-lg hover:bg-accent cursor-pointer"
                     onClick={() => toggleAtivo(ativo.id)}
                   >
                     <Checkbox checked={selectedAtivos.includes(ativo.id)} />
@@ -353,7 +390,7 @@ export function RopaWizard({ isOpen, onClose, onSave, preSelectedDadoId }: RopaW
                       <div className="font-medium">{ativo.nome}</div>
                       <div className="text-sm text-muted-foreground">{formatStatus(ativo.tipo)} - {ativo.localizacao}</div>
                     </div>
-                    <StatusBadge size="sm" {...resolveCriticidadeTone(ativo.criticidade)}>
+                    <StatusBadge {...resolveCriticidadeTone(ativo.criticidade)}>
                       {formatStatus(ativo.criticidade)}
                     </StatusBadge>
                   </div>
@@ -378,35 +415,41 @@ export function RopaWizard({ isOpen, onClose, onSave, preSelectedDadoId }: RopaW
               </div>
 
               <div className="space-y-3 border rounded-lg p-4">
-                <div>
+                <div className="space-y-2">
                   <Label className="text-muted-foreground">{t('dadosDashboard.ropaWizard.labelNomeTratamentoReview')}</Label>
                   <p className="font-medium">{formData.nome_tratamento}</p>
                 </div>
-                <div>
+                <div className="space-y-2">
                   <Label className="text-muted-foreground">{t('dadosDashboard.ropaWizard.labelDadosVinculados')}</Label>
                   <div className="flex flex-wrap gap-2 mt-1">
                     {selectedDados.map(id => {
                       const dado = dadosPessoais.find(d => d.id === id);
-                      return <StatusBadge key={id} size="sm" tone="neutral">{dado?.nome}</StatusBadge>;
+                      return <StatusBadge key={id} tone="neutral">{dado?.nome}</StatusBadge>;
                     })}
                   </div>
                 </div>
-                <div>
+                <div className="space-y-2">
                   <Label className="text-muted-foreground">{t('dadosDashboard.ropaWizard.labelAtivosVinculados')}</Label>
                   <div className="flex flex-wrap gap-2 mt-1">
                     {selectedAtivos.length > 0 ? (
                       selectedAtivos.map(id => {
                         const ativo = ativos.find(a => a.id === id);
-                        return <StatusBadge key={id} size="sm" tone="neutral" variant="outline">{ativo?.nome}</StatusBadge>;
+                        return <StatusBadge key={id} tone="neutral" variant="outline">{ativo?.nome}</StatusBadge>;
                       })
                     ) : (
                       <span className="text-sm text-muted-foreground">{t('dadosDashboard.ropaWizard.nenhumAtivoVinculado')}</span>
                     )}
                   </div>
                 </div>
-                <div>
+                <div className="space-y-2">
                   <Label className="text-muted-foreground">{t('dadosDashboard.ropaWizard.labelBaseLegalReview')}</Label>
-                  <p className="font-medium">{formData.base_legal}</p>
+                  {/* O passo de revisão mostrava o valor cru do banco
+                      ("execucao_contrato"), quando o passo anterior o escolheu
+                      pelo rótulo da lei ("Execução de contrato"). */}
+                  <p className="font-medium">
+                    {basesDisponiveis.find((b) => b.key === formData.base_legal)?.label
+                      ?? formatStatus(formData.base_legal)}
+                  </p>
                 </div>
               </div>
 

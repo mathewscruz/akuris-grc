@@ -3,6 +3,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { textoDaVariante } from "@/lib/pt-variants";
+import { formatStatus } from "@/lib/text-utils";
 import { ROPA_SECTIONS, ropaFieldsBySection, type RopaFieldDef } from "@/lib/ropa-schema";
 
 /** Campos já cobertos pelo formulário base do ROPA. */
@@ -25,13 +27,14 @@ interface Props {
 
 export function RopaCamposDetalhados({ values, onChange }: Props) {
   const { locale } = useLanguage();
-  const lang = String(locale).startsWith("en") ? "en" : "pt";
+  /** Rótulo do esquema já na variante activa — ver `textoDaVariante`. */
+  const rotulo = (par: { pt: string; en: string }) => textoDaVariante(String(locale), par);
 
 
   const renderField = (field: RopaFieldDef) => {
     const value = values[field.key] ?? "";
-    const label = field.label[lang];
-    const hint = field.hint[lang];
+    const label = rotulo(field.label);
+    const hint = rotulo(field.hint);
 
     return (
       <div key={field.key} className="space-y-2">
@@ -44,9 +47,10 @@ export function RopaCamposDetalhados({ values, onChange }: Props) {
             <SelectContent>
               {(field.options || []).map((option) => (
                 <SelectItem key={option} value={option}>
-                  {lang === "en"
-                    ? { baixo: "Low", medio: "Medium", alto: "High", critico: "Critical" }[option] ?? option
-                    : { baixo: "Baixo", medio: "Médio", alto: "Alto", critico: "Crítico" }[option] ?? option}
+                  {/* `formatStatus` é o tradutor único de valores de domínio.
+                      Aqui havia dois mapas à mão para os mesmos quatro níveis,
+                      que já divergiam do resto do produto. */}
+                  {formatStatus(option)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -78,8 +82,8 @@ export function RopaCamposDetalhados({ values, onChange }: Props) {
         if (fields.length === 0) return null;
         return (
           <div key={section.key} className="space-y-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              {section.label[lang]}
+            <p className="text-xs font-semibold text-muted-foreground">
+              {rotulo(section.label)}
             </p>
             <div className="grid gap-4 md:grid-cols-2">
               {fields.map((field) => (

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
+import { IconAdd, IconSearch, IconDelete, IconView, IconExternal, IconWarning, IconFile, IconGlobe, IconShield } from '@/components/icons';
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Globe, Trash2, Eye, Plus, Search, ExternalLink, FileText, AlertTriangle, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -60,11 +60,11 @@ interface Descoberta {
 const getSensitivityBadge = (sensitivity: string, t: (key: string) => string) => {
   switch (sensitivity) {
     case 'critico':
-      return <StatusBadge size="sm" tone="destructive" intensity="high">{t('dadosDashboard.descobertaDadosTab.sensitivityCritico')}</StatusBadge>;
+      return <StatusBadge tone="destructive" intensity="high">{t('dadosDashboard.descobertaDadosTab.sensitivityCritico')}</StatusBadge>;
     case 'sensivel':
-      return <StatusBadge size="sm" tone="warning">{t('dadosDashboard.descobertaDadosTab.sensitivitySensivel')}</StatusBadge>;
+      return <StatusBadge tone="warning">{t('dadosDashboard.descobertaDadosTab.sensitivitySensivel')}</StatusBadge>;
     default:
-      return <StatusBadge size="sm" tone="neutral">{t('dadosDashboard.descobertaDadosTab.sensitivityComum')}</StatusBadge>;
+      return <StatusBadge tone="neutral">{t('dadosDashboard.descobertaDadosTab.sensitivityComum')}</StatusBadge>;
   }
 };
 
@@ -225,7 +225,7 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
       label: t('dadosDashboard.descobertaDadosTab.columnFormularios'),
       sortable: true,
       render: (value: number) => (
-        <StatusBadge size="sm" tone="neutral" variant="outline">{value}</StatusBadge>
+        <StatusBadge tone="neutral" variant="outline">{value}</StatusBadge>
       )
     },
     {
@@ -233,7 +233,7 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
       label: t('dadosDashboard.descobertaDadosTab.columnCampos'),
       sortable: true,
       render: (value: number) => (
-        <StatusBadge size="sm" tone="neutral">{value}</StatusBadge>
+        <StatusBadge tone="neutral">{value}</StatusBadge>
       )
     },
     {
@@ -242,7 +242,7 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
       sortable: true,
       render: (value: number) => (
         value > 0 ? (
-          <StatusBadge size="sm" tone="warning">{value}</StatusBadge>
+          <StatusBadge tone="warning">{value}</StatusBadge>
         ) : <span className="text-muted-foreground">0</span>
       )
     },
@@ -252,7 +252,7 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
       sortable: true,
       render: (value: number) => (
         value > 0 ? (
-          <StatusBadge size="sm" tone="destructive" intensity="high">{value}</StatusBadge>
+          <StatusBadge tone="destructive" intensity="high">{value}</StatusBadge>
         ) : <span className="text-muted-foreground">0</span>
       )
     },
@@ -262,7 +262,7 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
       sortable: true,
       render: (value: number) => (
         value > 0 ? (
-          <StatusBadge size="sm" tone="success">{value}</StatusBadge>
+          <StatusBadge tone="success">{value}</StatusBadge>
         ) : <span className="text-muted-foreground">0</span>
       )
     },
@@ -285,7 +285,7 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
                   size="sm"
                   onClick={() => handleViewDetails(row)}
                 >
-                  <Eye className="h-4 w-4" />
+                  <IconView className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>{t('dadosDashboard.descobertaDadosTab.tooltipVerDetalhes')}</TooltipContent>
@@ -298,7 +298,7 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
                   onClick={() => handleDelete(row.id)}
                   className="text-destructive hover:text-destructive"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <IconDelete className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>{t('dadosDashboard.descobertaDadosTab.tooltipExcluir')}</TooltipContent>
@@ -320,7 +320,7 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
             </p>
           </div>
           <Button size="sm" onClick={() => setShowUrlScanner(true)}>
-            <Globe className="h-4 w-4 mr-2" />
+            <IconGlobe className="h-4 w-4 mr-2" />
             {t('dadosDashboard.descobertaDadosTab.buttonNovaDescoberta')}
           </Button>
         </div>
@@ -340,7 +340,7 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
             }
           }}
           emptyState={{
-            icon: <Globe className="h-8 w-8" />,
+            icon: <IconGlobe className="h-8 w-8" />,
             title: t('dadosDashboard.descobertaDadosTab.emptyTitle'),
             description: t('dadosDashboard.descobertaDadosTab.emptyDescription'),
             action: {
@@ -394,7 +394,7 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
       <DialogShell
         open={showDetailDialog}
         onOpenChange={setShowDetailDialog}
-        icon={Globe}
+        icon={IconGlobe}
         title={t('dadosDashboard.descobertaDadosTab.detailDialogTitle')}
         size="lg"
         hideFooter
@@ -406,7 +406,7 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
                 <Card>
                   <CardContent className="pt-4">
                     <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-primary" />
+                      <IconFile className="h-4 w-4 text-primary" />
                       <div>
                         <p className="text-2xl font-bold">{selectedDescoberta.total_formularios}</p>
                         <p className="text-xs text-muted-foreground">{t('dadosDashboard.descobertaDadosTab.cardFormularios')}</p>
@@ -417,7 +417,7 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
                 <Card>
                   <CardContent className="pt-4">
                     <div className="flex items-center gap-2">
-                      <Search className="h-4 w-4 text-info" />
+                      <IconSearch className="h-4 w-4 text-info" />
                       <div>
                         <p className="text-2xl font-bold">{selectedDescoberta.total_campos}</p>
                         <p className="text-xs text-muted-foreground">{t('dadosDashboard.descobertaDadosTab.cardCampos')}</p>
@@ -428,7 +428,7 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
                 <Card>
                   <CardContent className="pt-4">
                     <div className="flex items-center gap-2">
-                      <AlertTriangle className="h-4 w-4 text-warning" />
+                      <IconWarning className="h-4 w-4 text-warning" />
                       <div>
                         <p className="text-2xl font-bold">{selectedDescoberta.campos_sensiveis}</p>
                         <p className="text-xs text-muted-foreground">{t('dadosDashboard.descobertaDadosTab.cardSensiveis')}</p>
@@ -439,7 +439,7 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
                 <Card>
                   <CardContent className="pt-4">
                     <div className="flex items-center gap-2">
-                      <Shield className="h-4 w-4 text-destructive" />
+                      <IconShield className="h-4 w-4 text-destructive" />
                       <div>
                         <p className="text-2xl font-bold">{selectedDescoberta.campos_criticos}</p>
                         <p className="text-xs text-muted-foreground">{t('dadosDashboard.descobertaDadosTab.cardCriticos')}</p>
@@ -453,7 +453,7 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
               <Card>
                 <CardContent className="py-3">
                   <div className="flex items-center gap-2 mb-1">
-                    <ExternalLink className="h-4 w-4" />
+                    <IconExternal className="h-4 w-4" />
                     <span className="font-medium">{selectedDescoberta.titulo_pagina || t('dadosDashboard.descobertaDadosTab.semTitulo')}</span>
                   </div>
                   <a 
@@ -480,9 +480,9 @@ export function DescoberDadosTab({ onRefresh }: DescoberDadosTabProps) {
                     <AccordionItem key={formIndex} value={`form-${formIndex}`}>
                       <AccordionTrigger className="hover:no-underline">
                         <div className="flex items-center gap-3">
-                          <FileText className="h-4 w-4" />
+                          <IconFile className="h-4 w-4" />
                           <span className="font-medium">{form.formName}</span>
-                          <StatusBadge size="sm" tone="neutral">
+                          <StatusBadge tone="neutral">
                             {t('dadosDashboard.descobertaDadosTab.camposCount', { count: form.fields.length })}
                           </StatusBadge>
                         </div>

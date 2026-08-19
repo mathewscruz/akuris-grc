@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { DialogShell } from "@/components/ui/dialog-shell";
-import { Map } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useEmpresaId } from "@/hooks/useEmpresaId";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { IconPin } from '@/components/icons';
 
 interface MapeamentoDialogProps {
   isOpen: boolean;
@@ -118,7 +118,7 @@ export function MapeamentoDialog({ isOpen, onClose, onSave, mapeamento }: Mapeam
         open={isOpen}
         onOpenChange={onClose}
         title={mapeamento?.id ? t('dadosDashboard.mapeamentoDialog.titleEdit') : t('dadosDashboard.mapeamentoDialog.titleNew')}
-        icon={Map}
+        icon={IconPin}
         size="lg"
         onSubmit={handleSave}
       >

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { IconAdd, IconSearch, IconExternal, IconWarning, IconFile, IconGlobe, IconShield, IconSettings } from '@/components/icons';
 import { DialogShell } from "@/components/ui/dialog-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +11,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Progress } from "@/components/ui/progress";
-import { Search, Globe, FileText, AlertTriangle, Shield, Plus, ExternalLink, Settings2 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -67,11 +67,11 @@ interface UrlScannerDialogProps {
 const getSensitivityBadge = (sensitivity: string, t: (key: string) => string) => {
   switch (sensitivity) {
     case 'critico':
-      return <StatusBadge size="sm" tone="destructive" intensity="high">{t('dadosDialogs.urlScanner.sensitivityCritico')}</StatusBadge>;
+      return <StatusBadge tone="destructive" intensity="high">{t('dadosDialogs.urlScanner.sensitivityCritico')}</StatusBadge>;
     case 'sensivel':
-      return <StatusBadge size="sm" tone="warning">{t('dadosDialogs.urlScanner.sensitivitySensivel')}</StatusBadge>;
+      return <StatusBadge tone="warning">{t('dadosDialogs.urlScanner.sensitivitySensivel')}</StatusBadge>;
     default:
-      return <StatusBadge size="sm" tone="neutral">{t('dadosDialogs.urlScanner.sensitivityComum')}</StatusBadge>;
+      return <StatusBadge tone="neutral">{t('dadosDialogs.urlScanner.sensitivityComum')}</StatusBadge>;
   }
 };
 
@@ -341,7 +341,7 @@ export const UrlScannerDialog = ({ isOpen, onClose, onImport }: UrlScannerDialog
     <DialogShell
       open={isOpen}
       onOpenChange={handleClose}
-      icon={Globe}
+      icon={IconGlobe}
       title={t('dadosDialogs.urlScanner.dialogTitle')}
       size="lg"
       footer={
@@ -351,7 +351,7 @@ export const UrlScannerDialog = ({ isOpen, onClose, onImport }: UrlScannerDialog
           </Button>
           {scanResult && selectedFields.size > 0 && (
             <Button size="sm" onClick={handleImport}>
-              <Plus className="h-4 w-4 mr-2" />
+              <IconAdd className="h-4 w-4 mr-2" />
               {t('dadosDialogs.urlScanner.buttonImportar').replace('{count}', String(selectedFields.size))}
             </Button>
           )}
@@ -380,7 +380,7 @@ export const UrlScannerDialog = ({ isOpen, onClose, onImport }: UrlScannerDialog
                   </>
                 ) : (
                   <>
-                    <Search className="h-4 w-4 mr-2" />
+                    <IconSearch className="h-4 w-4 mr-2" />
                     {t('dadosDialogs.urlScanner.buttonEscanear')}
                   </>
                 )}
@@ -422,11 +422,11 @@ export const UrlScannerDialog = ({ isOpen, onClose, onImport }: UrlScannerDialog
             <Collapsible open={showAdvanced} onOpenChange={setShowAdvanced}>
               <CollapsibleTrigger asChild>
                 <Button variant="ghost" size="sm" className="gap-2">
-                  <Settings2 className="h-4 w-4" />
+                  <IconSettings className="h-4 w-4" />
                   {t('dadosDialogs.urlScanner.buttonOpcoesAvancadas')}
                 </Button>
               </CollapsibleTrigger>
-              <CollapsibleContent className="space-y-3 mt-3 p-3 border rounded-lg bg-muted/30">
+              <CollapsibleContent className="space-y-3 mt-3 p-3 border rounded-lg bg-card">
                 <div className="flex items-center gap-4">
                   <div className="flex-1">
                     <Label htmlFor="pageLimit">{t('dadosDialogs.urlScanner.labelLimitePaginas')}</Label>
@@ -484,7 +484,7 @@ export const UrlScannerDialog = ({ isOpen, onClose, onImport }: UrlScannerDialog
                 <Card>
                   <CardContent className="pt-4">
                     <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-primary" />
+                      <IconFile className="h-4 w-4 text-primary" />
                       <div>
                         <p className="text-2xl font-bold">
                           {scanResult.pages ? scanResult.pages.reduce((sum, p) => sum + p.forms.length, 0) : scanResult.forms.length}
@@ -497,7 +497,7 @@ export const UrlScannerDialog = ({ isOpen, onClose, onImport }: UrlScannerDialog
                 <Card>
                   <CardContent className="pt-4">
                     <div className="flex items-center gap-2">
-                      <Search className="h-4 w-4 text-info" />
+                      <IconSearch className="h-4 w-4 text-info" />
                       <div>
                         <p className="text-2xl font-bold">{getTotalFieldsCount()}</p>
                         <p className="text-xs text-muted-foreground">{t('dadosDialogs.urlScanner.cardCampos')}</p>
@@ -508,7 +508,7 @@ export const UrlScannerDialog = ({ isOpen, onClose, onImport }: UrlScannerDialog
                 <Card>
                   <CardContent className="pt-4">
                     <div className="flex items-center gap-2">
-                      <AlertTriangle className="h-4 w-4 text-warning" />
+                      <IconWarning className="h-4 w-4 text-warning" />
                       <div>
                         <p className="text-2xl font-bold">{scanResult.sensitiveFieldsCount}</p>
                         <p className="text-xs text-muted-foreground">{t('dadosDialogs.urlScanner.cardSensiveis')}</p>
@@ -519,7 +519,7 @@ export const UrlScannerDialog = ({ isOpen, onClose, onImport }: UrlScannerDialog
                 <Card>
                   <CardContent className="pt-4">
                     <div className="flex items-center gap-2">
-                      <Shield className="h-4 w-4 text-destructive" />
+                      <IconShield className="h-4 w-4 text-destructive" />
                       <div>
                         <p className="text-2xl font-bold">{scanResult.criticalFieldsCount}</p>
                         <p className="text-xs text-muted-foreground">{t('dadosDialogs.urlScanner.cardCriticos')}</p>
@@ -545,7 +545,7 @@ export const UrlScannerDialog = ({ isOpen, onClose, onImport }: UrlScannerDialog
                 <Card>
                   <CardHeader className="py-3">
                     <CardTitle className="text-sm flex items-center gap-2">
-                      <ExternalLink className="h-4 w-4" />
+                      <IconExternal className="h-4 w-4" />
                       {scanResult.title}
                     </CardTitle>
                   </CardHeader>
@@ -579,12 +579,12 @@ export const UrlScannerDialog = ({ isOpen, onClose, onImport }: UrlScannerDialog
                         <AccordionItem key={pageIndex} value={`page-${pageIndex}`}>
                           <AccordionTrigger className="hover:no-underline">
                             <div className="flex items-center gap-3 flex-wrap">
-                              <Globe className="h-4 w-4" />
+                              <IconGlobe className="h-4 w-4" />
                               <span className="font-medium truncate max-w-[300px]">{page.title || page.url}</span>
-                              <StatusBadge size="sm" tone="neutral">
+                              <StatusBadge tone="neutral">
                                 {t('dadosDialogs.urlScanner.formsCount').replace('{count}', String(page.forms.length))}
                               </StatusBadge>
-                              <StatusBadge size="sm" tone="neutral" variant="outline">
+                              <StatusBadge tone="neutral" variant="outline">
                                 {t('dadosDialogs.urlScanner.camposCount').replace('{count}', String(page.totalFields))}
                               </StatusBadge>
                             </div>
@@ -602,10 +602,10 @@ export const UrlScannerDialog = ({ isOpen, onClose, onImport }: UrlScannerDialog
                               {page.forms.map((form, formIndex) => (
                                 <div key={formIndex} className="border rounded-lg p-3">
                                   <div className="flex items-center gap-2 mb-3">
-                                    <FileText className="h-4 w-4" />
+                                    <IconFile className="h-4 w-4" />
                                     <span className="font-medium">{form.formName}</span>
                                     {form.method && (
-                                      <StatusBadge size="sm" tone="neutral" variant="outline">{form.method}</StatusBadge>
+                                      <StatusBadge tone="neutral" variant="outline">{form.method}</StatusBadge>
                                     )}
                                   </div>
                                   {renderFormFields(form, formIndex, String(pageIndex))}
@@ -621,13 +621,13 @@ export const UrlScannerDialog = ({ isOpen, onClose, onImport }: UrlScannerDialog
                         <AccordionItem key={formIndex} value={`form-${formIndex}`}>
                           <AccordionTrigger className="hover:no-underline">
                             <div className="flex items-center gap-3">
-                              <FileText className="h-4 w-4" />
+                              <IconFile className="h-4 w-4" />
                               <span className="font-medium">{form.formName}</span>
-                              <StatusBadge size="sm" tone="neutral">
+                              <StatusBadge tone="neutral">
                                 {t('dadosDialogs.urlScanner.camposCount').replace('{count}', String(form.fields.length))}
                               </StatusBadge>
                               {form.method && (
-                                <StatusBadge size="sm" tone="neutral" variant="outline">
+                                <StatusBadge tone="neutral" variant="outline">
                                   {form.method}
                                 </StatusBadge>
                               )}

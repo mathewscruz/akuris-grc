@@ -1,8 +1,8 @@
 import { useRef, useState } from "react";
+import { IconDelete, IconDownload, IconUpload, IconAttach } from '@/components/icons';
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, Paperclip, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useEmpresaId } from "@/hooks/useEmpresaId";
@@ -131,7 +131,7 @@ export function RopaExercicioAnexos({ exercicioId }: { exercicioId: string }) {
           }}
         />
         <Button size="sm" variant="outline" disabled={busy} onClick={() => inputRef.current?.click()}>
-          <Upload className="mr-2 h-4 w-4" />
+          <IconUpload className="mr-2 h-4 w-4" />
           {t("dadosDashboard.ropaExercicios.carregarAnexo")}
         </Button>
       </div>
@@ -140,7 +140,7 @@ export function RopaExercicioAnexos({ exercicioId }: { exercicioId: string }) {
         <AkurisPulse />
       ) : anexos.length === 0 ? (
         <EmptyState
-          icon={<Paperclip className="h-8 w-8" />}
+          icon={<IconAttach className="h-8 w-8" />}
           title={t("dadosDashboard.ropaExercicios.semAnexosTitulo")}
           description={t("dadosDashboard.ropaExercicios.semAnexosDescricao")}
         />
@@ -164,10 +164,10 @@ export function RopaExercicioAnexos({ exercicioId }: { exercicioId: string }) {
                     if (!ok) toast.error(t("dadosDashboard.ropaExercicios.erroAbrirAnexo"));
                   }}
                 >
-                  <Download className="h-4 w-4" />
+                  <IconDownload className="h-4 w-4" />
                 </Button>
                 <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDelete(anexo)}>
-                  <Trash2 className="h-4 w-4" />
+                  <IconDelete className="h-4 w-4" />
                 </Button>
               </div>
             </li>

@@ -7,14 +7,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, UserCheck } from "lucide-react";
-import { format, addDays } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { parseDateForDB } from "@/lib/date-utils";
+import { parseDateForDB, parseDataLocal } from "@/lib/date-utils";
+import { prazoResposta } from "@/lib/jurisdicao";
+import { useJurisdicao } from "@/hooks/useJurisdicao";
+import { tiposSolicitacaoDaJurisdicao, normalizarTipoSolicitacao, rotuloTipoSolicitacao } from "@/lib/direitos-titular";
 import { useLanguage } from "@/contexts/LanguageContext";
-
+import { IconCalendar, IconUserCheck } from '@/components/icons';
+import { dateFnsLocale, datePattern } from '@/lib/date-utils';
+import { opcoesCanalSolicitacao } from '@/lib/canal-solicitacao';
 interface SolicitacaoTitularDialogProps {
   isOpen: boolean;
   onClose: () => void;
@@ -24,6 +27,18 @@ interface SolicitacaoTitularDialogProps {
 
 export function SolicitacaoTitularDialog({ isOpen, onClose, onSave, solicitacao }: SolicitacaoTitularDialogProps) {
   const { t } = useLanguage();
+  const jurisdicao = useJurisdicao();
+
+  /**
+   * O prazo de resposta ao titular é o da lei aplicável: 15 dias na LGPD, 1 mês
+   * no RGPD/GDPR. Aqui estavam 15 dias fixos em três sítios, sem olhar a
+   * jurisdição — uma empresa europeia abria a solicitação já com metade do
+   * prazo que a lei lhe dá, e o número contradizia o KPI "Fora do prazo" do
+   * ecrã anterior, que sempre usou `prazoResposta`.
+   */
+  const prazoLegalPadrao = () => prazoResposta(new Date(), jurisdicao.codigo);
+
+
   // Campos separados para dados do titular (mais amigáveis)
   const [titularNome, setTitularNome] = useState("");
   const [titularEmail, setTitularEmail] = useState("");
@@ -37,7 +52,7 @@ export function SolicitacaoTitularDialog({ isOpen, onClose, onSave, solicitacao 
     canal_solicitacao: "",
     status: "pendente",
     data_resposta: undefined as Date | undefined,
-    prazo_resposta: addDays(new Date(), 15),
+    prazo_resposta: new Date(),
     responsavel_analise: "",
     observacoes_internas: "",
     resposta_titular: "",
@@ -45,6 +60,19 @@ export function SolicitacaoTitularDialog({ isOpen, onClose, onSave, solicitacao 
   });
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+
+  /**
+   * Os direitos são os da lei aplicável. Estavam seis escritos à mão, iguais
+   * para toda a gente: faltavam a confirmação de tratamento, a anonimização e
+   * a informação sobre partilha (LGPD Art. 18) e sobrava a oposição, que é
+   * figura do RGPD. Um valor antigo já gravado continua na lista para não
+   * desaparecer ao abrir o registo.
+   */
+  const tiposDaLei = tiposSolicitacaoDaJurisdicao(jurisdicao.codigo, t);
+  const tipoGravado = normalizarTipoSolicitacao(formData.tipo_solicitacao);
+  const tiposDisponiveis = tipoGravado && !tiposDaLei.some((d) => d.key === tipoGravado)
+    ? [{ key: tipoGravado, label: rotuloTipoSolicitacao(tipoGravado, jurisdicao.codigo, t) }, ...tiposDaLei]
+    : tiposDaLei;
 
   // Carregar dados existentes quando editar
   useEffect(() => {
@@ -56,13 +84,13 @@ export function SolicitacaoTitularDialog({ isOpen, onClose, onSave, solicitacao 
       setTitularTelefone(dadosTitular.telefone || "");
       
       setFormData({
-        tipo_solicitacao: solicitacao.tipo_solicitacao || "",
+        tipo_solicitacao: normalizarTipoSolicitacao(solicitacao.tipo_solicitacao),
         dados_solicitados: solicitacao.dados_solicitados || "",
         justificativa: solicitacao.justificativa || "",
         canal_solicitacao: solicitacao.canal_solicitacao || "",
         status: solicitacao.status || "pendente",
         data_resposta: solicitacao.data_resposta ? new Date(solicitacao.data_resposta) : undefined,
-        prazo_resposta: solicitacao.prazo_resposta ? new Date(solicitacao.prazo_resposta) : addDays(new Date(), 15),
+        prazo_resposta: solicitacao.prazo_resposta ? parseDataLocal(solicitacao.prazo_resposta) : prazoLegalPadrao(),
         responsavel_analise: solicitacao.responsavel_analise || "",
         observacoes_internas: solicitacao.observacoes_internas || "",
         resposta_titular: solicitacao.resposta_titular || "",
@@ -81,7 +109,7 @@ export function SolicitacaoTitularDialog({ isOpen, onClose, onSave, solicitacao 
         canal_solicitacao: "",
         status: "pendente",
         data_resposta: undefined,
-        prazo_resposta: addDays(new Date(), 15),
+        prazo_resposta: prazoLegalPadrao(),
         responsavel_analise: "",
         observacoes_internas: "",
         resposta_titular: "",
@@ -140,7 +168,10 @@ export function SolicitacaoTitularDialog({ isOpen, onClose, onSave, solicitacao 
         status: formData.status,
         data_resposta: formData.data_resposta ? parseDateForDB(format(formData.data_resposta, 'yyyy-MM-dd')) : null,
         prazo_resposta: parseDateForDB(format(formData.prazo_resposta, 'yyyy-MM-dd')),
-        responsavel_analise: formData.responsavel_analise,
+        // `responsavel_analise` é `uuid`: um <Select> por escolher guarda ""
+        // no estado, e o Postgres recusa com "invalid input syntax for type
+        // uuid". Sem responsável escolhido, a solicitação não se gravava.
+        responsavel_analise: formData.responsavel_analise || null,
         observacoes_internas: formData.observacoes_internas,
         resposta_titular: formData.resposta_titular,
         evidencias_atendimento: formData.evidencias_atendimento,
@@ -182,13 +213,13 @@ export function SolicitacaoTitularDialog({ isOpen, onClose, onSave, solicitacao 
         open={isOpen}
         onOpenChange={onClose}
         title={solicitacao?.id ? t('dadosDashboard.solicitacaoTitularDialog.titleEdit') : t('dadosDashboard.solicitacaoTitularDialog.titleNew')}
-        icon={UserCheck}
+        icon={IconUserCheck}
         size="lg"
         onSubmit={handleSave}
       >
 <div className="grid gap-4 py-4">
           {/* Dados do Titular - Campos separados */}
-          <div className="space-y-4 p-4 bg-muted/50 rounded-lg">
+          <div className="space-y-4 p-4 bg-card rounded-lg border border-border">
             <h3 className="font-medium text-sm text-muted-foreground">{t('dadosDashboard.solicitacaoTitularDialog.sectionTitularTitle')}</h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -241,12 +272,9 @@ export function SolicitacaoTitularDialog({ isOpen, onClose, onSave, solicitacao 
                   <SelectValue placeholder={t('dadosDashboard.solicitacaoTitularDialog.placeholderTipoSolicitacao')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="acesso">{t('dadosDashboard.solicitacaoTitularDialog.tipoAcesso')}</SelectItem>
-                  <SelectItem value="correcao">{t('dadosDashboard.solicitacaoTitularDialog.tipoCorrecao')}</SelectItem>
-                  <SelectItem value="exclusao">{t('dadosDashboard.solicitacaoTitularDialog.tipoExclusao')}</SelectItem>
-                  <SelectItem value="portabilidade">{t('dadosDashboard.solicitacaoTitularDialog.tipoPortabilidade')}</SelectItem>
-                  <SelectItem value="oposicao">{t('dadosDashboard.solicitacaoTitularDialog.tipoOposicao')}</SelectItem>
-                  <SelectItem value="revogacao_consentimento">{t('dadosDashboard.solicitacaoTitularDialog.tipoRevogacaoConsentimento')}</SelectItem>
+                  {tiposDisponiveis.map((tipo) => (
+                    <SelectItem key={tipo.key} value={tipo.key}>{tipo.label}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -257,12 +285,9 @@ export function SolicitacaoTitularDialog({ isOpen, onClose, onSave, solicitacao 
                   <SelectValue placeholder={t('dadosDashboard.solicitacaoTitularDialog.placeholderCanalSolicitacao')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="email">{t('dadosDashboard.solicitacaoTitularDialog.canalEmail')}</SelectItem>
-                  <SelectItem value="portal">{t('dadosDashboard.solicitacaoTitularDialog.canalPortal')}</SelectItem>
-                  <SelectItem value="presencial">{t('dadosDashboard.solicitacaoTitularDialog.canalPresencial')}</SelectItem>
-                  <SelectItem value="telefone">{t('dadosDashboard.solicitacaoTitularDialog.canalTelefone')}</SelectItem>
-                  <SelectItem value="chat">{t('dadosDashboard.solicitacaoTitularDialog.canalChat')}</SelectItem>
-                  <SelectItem value="outros">{t('dadosDashboard.solicitacaoTitularDialog.canalOutros')}</SelectItem>
+                  {opcoesCanalSolicitacao(t).map((o) => (
+                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -308,8 +333,8 @@ export function SolicitacaoTitularDialog({ isOpen, onClose, onSave, solicitacao 
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="w-full justify-start">
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {format(formData.prazo_resposta, "dd/MM/yyyy", { locale: ptBR })}
+                    <IconCalendar className="mr-2 h-4 w-4" />
+                    {format(formData.prazo_resposta, datePattern(), { locale: dateFnsLocale() })}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
@@ -317,7 +342,7 @@ export function SolicitacaoTitularDialog({ isOpen, onClose, onSave, solicitacao 
                     mode="single"
                     selected={formData.prazo_resposta}
                     onSelect={(date) => date && setFormData({ ...formData, prazo_resposta: date })}
-                    locale={ptBR}
+                    locale={dateFnsLocale()}
                   />
                 </PopoverContent>
               </Popover>
@@ -343,8 +368,8 @@ export function SolicitacaoTitularDialog({ isOpen, onClose, onSave, solicitacao 
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button variant="outline" className="w-full justify-start">
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {formData.data_resposta ? format(formData.data_resposta, "dd/MM/yyyy", { locale: ptBR }) : t('dadosDashboard.solicitacaoTitularDialog.placeholderSelecionarData')}
+                          <IconCalendar className="mr-2 h-4 w-4" />
+                          {formData.data_resposta ? format(formData.data_resposta, datePattern(), { locale: dateFnsLocale() }) : t('dadosDashboard.solicitacaoTitularDialog.placeholderSelecionarData')}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0">
@@ -352,7 +377,7 @@ export function SolicitacaoTitularDialog({ isOpen, onClose, onSave, solicitacao 
                           mode="single"
                           selected={formData.data_resposta}
                           onSelect={(date) => setFormData({ ...formData, data_resposta: date })}
-                          locale={ptBR}
+                          locale={dateFnsLocale()}
                         />
                       </PopoverContent>
                     </Popover>

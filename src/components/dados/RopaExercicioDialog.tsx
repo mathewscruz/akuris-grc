@@ -6,12 +6,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DateField } from "@/components/ui/date-field";
 import { UserSelect } from "@/components/riscos/UserSelect";
-import { ClipboardList } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useEmpresaId } from "@/hooks/useEmpresaId";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { logger } from "@/lib/logger";
+import { IconChecklist } from '@/components/icons';
 
 interface Props {
   open: boolean;
@@ -124,7 +124,7 @@ export function RopaExercicioDialog({ open, onOpenChange, exercicio, onSaved }: 
       onOpenChange={onOpenChange}
       title={exercicio?.id ? t("dadosDashboard.ropaExercicios.editarTitulo") : t("dadosDashboard.ropaExercicios.novoTitulo")}
       description={t("dadosDashboard.ropaExercicios.dialogDescricao")}
-      icon={ClipboardList}
+      icon={IconChecklist}
       size="lg"
       onSubmit={handleSave}
       isSubmitting={saving}

@@ -1,4 +1,7 @@
 import { useState, useEffect } from "react";
+import { logger } from '@/lib/logger';
+import { exigirEscrita, exigirLinhas } from '@/lib/supabase-write';
+import { IconFile, IconCalendar } from '@/components/icons';
 import { DialogShell } from "@/components/ui/dialog-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,15 +11,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, FileText } from "lucide-react";
 import { format, parse } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { formatDateForInput, parseDateForDB } from "@/lib/date-utils";
 import { useEmpresaId } from "@/hooks/useEmpresaId";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { RopaCamposDetalhados } from "@/components/dados/RopaCamposDetalhados";
+import { dateFnsLocale, datePattern, parseDataLocal } from '@/lib/date-utils';
+import { useJurisdicao } from "@/hooks/useJurisdicao";
+import { ehDadoSensivel } from "@/lib/jurisdicao";
 
 interface RopaDialogProps {
   isOpen: boolean;
@@ -27,46 +31,92 @@ interface RopaDialogProps {
 
 export function RopaDialog({ isOpen, onClose, onSave, ropa }: RopaDialogProps) {
   const { t } = useLanguage();
-  const [formData, setFormData] = useState({
-    nome_tratamento: ropa?.nome_tratamento || "",
-    finalidade: ropa?.finalidade || "",
-    base_legal: ropa?.base_legal || "",
-    categoria_titulares: ropa?.categoria_titulares || "",
-    origem_dados: ropa?.origem_dados || "",
-    compartilhamento_dados: ropa?.compartilhamento_dados || "",
-    transferencia_internacional: ropa?.transferencia_internacional || false,
-    pais_destino: ropa?.pais_destino || "",
-    adequacao_destino: ropa?.adequacao_destino || "",
-    prazo_retencao: ropa?.prazo_retencao || "",
-    medidas_seguranca: ropa?.medidas_seguranca || "",
-    responsavel_tratamento: ropa?.responsavel_tratamento || "",
-    encarregado_dados: ropa?.encarregado_dados || "",
-    controlador_conjunto: ropa?.controlador_conjunto || "",
-    operador_dados: ropa?.operador_dados || "",
-    data_inicio: ropa?.data_inicio ? new Date(ropa.data_inicio) : undefined,
-    data_fim: ropa?.data_fim ? new Date(ropa.data_fim) : undefined,
-    status: ropa?.status || "ativo",
-    observacoes: ropa?.observacoes || "",
-    codigo: ropa?.codigo || "",
-    area_responsavel: ropa?.area_responsavel || "",
-    dados_tratados: ropa?.dados_tratados || "",
-    categoria_dados: ropa?.categoria_dados || "",
-    fonte_dados: ropa?.fonte_dados || "",
-    descricao_atividade: ropa?.descricao_atividade || "",
-    operacoes_realizadas: ropa?.operacoes_realizadas || "",
-    decisao_automatizada_detalhes: ropa?.decisao_automatizada_detalhes || "",
-    justificativa_base_legal: ropa?.justificativa_base_legal || "",
-    compartilhamento_interno: ropa?.compartilhamento_interno || "",
-    compartilhamento_externo: ropa?.compartilhamento_externo || "",
-    transferencia_detalhes: ropa?.transferencia_detalhes || "",
-    criterio_descarte: ropa?.criterio_descarte || "",
-    risco_probabilidade: ropa?.risco_probabilidade || "",
-    risco_impacto: ropa?.risco_impacto || "",
-    risco_nivel: ropa?.risco_nivel || "",
-    evidencias_documentos: ropa?.evidencias_documentos || "",
-    versao: ropa?.versao || "v1"
+  const jurisdicao = useJurisdicao();
+  /**
+   * A sensibilidade de um tratamento é a do dado mais sensível que ele toca:
+   * se a ROPA inclui um dado sensível, a base legal tem de vir do Art. 11
+   * (LGPD) ou do Art. 9 (RGPD), não da lista comum.
+   */
+  const [tocaDadoSensivel, setTocaDadoSensivel] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen || !ropa?.id) { setTocaDadoSensivel(false); return; }
+    let vivo = true;
+    (async () => {
+      const { data } = await supabase
+        .from('ropa_dados_vinculados')
+        .select('dados_pessoais(sensibilidade)')
+        .eq('ropa_id', ropa.id);
+      if (!vivo) return;
+      setTocaDadoSensivel(
+        (data || []).some((v: any) => ehDadoSensivel(v?.dados_pessoais?.sensibilidade)),
+      );
+    })();
+    return () => { vivo = false; };
+  }, [isOpen, ropa?.id]);
+
+  const basesDisponiveis = jurisdicao.basesLegais(tocaDadoSensivel ? 'sensivel' : 'comum');
+  /**
+   * Os valores do registo, calculados a partir da prop.
+   *
+   * Extraído para função porque o inicializador de `useState` só corre na
+   * PRIMEIRA renderização. Enquanto este diálogo não era renderizado isso não
+   * se via; assim que passou a estar sempre na árvore, montou uma vez com
+   * `ropa` a nulo e nunca mais recarregou — abrir um registo para editar
+   * mostrava o formulário VAZIO, e guardar teria apagado o que lá estava.
+   */
+  const valoresDe = (r: any) => ({
+    nome_tratamento: r?.nome_tratamento || "",
+    finalidade: r?.finalidade || "",
+    base_legal: r?.base_legal || "",
+    categoria_titulares: r?.categoria_titulares || "",
+    origem_dados: r?.origem_dados || "",
+    compartilhamento_dados: r?.compartilhamento_dados || "",
+    transferencia_internacional: r?.transferencia_internacional || false,
+    pais_destino: r?.pais_destino || "",
+    adequacao_destino: r?.adequacao_destino || "",
+    prazo_retencao: r?.prazo_retencao || "",
+    medidas_seguranca: r?.medidas_seguranca || "",
+    responsavel_tratamento: r?.responsavel_tratamento || "",
+    encarregado_dados: r?.encarregado_dados || "",
+    controlador_conjunto: r?.controlador_conjunto || "",
+    operador_dados: r?.operador_dados || "",
+    data_inicio: r?.data_inicio ? parseDataLocal(r.data_inicio) : undefined,
+    data_fim: r?.data_fim ? parseDataLocal(r.data_fim) : undefined,
+    status: r?.status || "ativo",
+    observacoes: r?.observacoes || "",
+    codigo: r?.codigo || "",
+    area_responsavel: r?.area_responsavel || "",
+    dados_tratados: r?.dados_tratados || "",
+    categoria_dados: r?.categoria_dados || "",
+    fonte_dados: r?.fonte_dados || "",
+    descricao_atividade: r?.descricao_atividade || "",
+    operacoes_realizadas: r?.operacoes_realizadas || "",
+    decisao_automatizada_detalhes: r?.decisao_automatizada_detalhes || "",
+    justificativa_base_legal: r?.justificativa_base_legal || "",
+    compartilhamento_interno: r?.compartilhamento_interno || "",
+    compartilhamento_externo: r?.compartilhamento_externo || "",
+    transferencia_detalhes: r?.transferencia_detalhes || "",
+    criterio_descarte: r?.criterio_descarte || "",
+    risco_probabilidade: r?.risco_probabilidade || "",
+    risco_impacto: r?.risco_impacto || "",
+    risco_nivel: r?.risco_nivel || "",
+    evidencias_documentos: r?.evidencias_documentos || "",
+    versao: r?.versao || "v1",
+    // O ROPA a que este tratamento pertence. Sem este campo, um registo que
+    // caísse em "Tratamentos sem ROPA" não tinha como sair de lá.
+    exercicio_id: r?.exercicio_id || ""
   });
+
+  const [formData, setFormData] = useState(() => valoresDe(ropa));
+
+  // Recarrega sempre que o diálogo abre noutro registo.
+  useEffect(() => {
+    if (isOpen) setFormData(valoresDe(ropa));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, ropa?.id]);
   const [usuarios, setUsuarios] = useState<any[]>([]);
+  const [ropas, setRopas] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const { empresaId } = useEmpresaId();
@@ -91,49 +141,82 @@ export function RopaDialog({ isOpen, onClose, onSave, ropa }: RopaDialogProps) {
     } catch (error) {
       console.error('Erro ao carregar usuários:', error);
     }
+
+    const { data: listaRopas, error: erroRopas } = await supabase
+      .from('ropa_exercicios')
+      .select('id, nome, versao')
+      .eq('empresa_id', empresaId)
+      .order('data_realizacao', { ascending: false });
+    if (erroRopas) {
+      logger.error('Erro ao carregar ROPAs', { data: erroRopas });
+      return;
+    }
+    setRopas(listaRopas || []);
   };
+
+  /**
+   * Guardar o tratamento.
+   *
+   * A empresa vem de `useEmpresaId()`, que a página já resolveu — antes este
+   * método voltava a ler `profiles` a cada gravação e, pior, encadeava a
+   * chamada dentro de um `await supabase.auth.getUser()` no meio de um
+   * argumento. Quando esse `await` não resolvia, `handleSave` ficava pendurado
+   * para sempre: sem pedido, sem erro, sem aviso — carregar em Salvar não fazia
+   * absolutamente nada e o diálogo continuava aberto como se nada tivesse
+   * acontecido. E a escrita passa por `exigirEscrita`/`exigirLinhas`, porque
+   * uma linha barrada por RLS volta sem erro e com zero linhas.
+   */
+  /**
+   * Campos de referência ficam a `null` quando ninguém os escolheu.
+   *
+   * O formulário guarda `""` no estado (um <Select> sem valor é string vazia),
+   * e estas cinco colunas são `uuid`. O Postgres recusa: `invalid input syntax
+   * for type uuid: ""`. Como nenhum dos sete tratamentos importados tem
+   * responsável ou encarregado preenchido, guardar QUALQUER um deles falhava
+   * sempre — o registo não se conseguia editar de todo pela interface.
+   */
+  const COLUNAS_DE_REFERENCIA = [
+    'responsavel_tratamento',
+    'encarregado_dados',
+    'controlador_conjunto',
+    'operador_dados',
+    'exercicio_id',
+  ] as const;
+
+  const vazioComoNulo = (valores: Record<string, any>) =>
+    Object.fromEntries(
+      COLUNAS_DE_REFERENCIA.map((c) => [c, valores[c]?.trim?.() ? valores[c] : null]),
+    );
 
   const handleSave = async () => {
     try {
       setIsLoading(true);
-      
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('empresa_id')
-        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
-        .single();
 
-      if (!profile?.empresa_id) {
+      if (!empresaId) {
         throw new Error(t('dadosDashboard.common.errorEmpresaNaoEncontrada'));
       }
 
       const detalhesDecisao = (formData.decisao_automatizada_detalhes || '').trim().toLowerCase();
       const payload = {
         ...formData,
+        ...vazioComoNulo(formData),
         decisao_automatizada: detalhesDecisao.length > 0 && !detalhesDecisao.startsWith('não') && !detalhesDecisao.startsWith('nao') && !detalhesDecisao.startsWith('no'),
         risco_probabilidade: formData.risco_probabilidade || null,
         risco_impacto: formData.risco_impacto || null,
         risco_nivel: formData.risco_nivel || null,
         data_inicio: formData.data_inicio ? parseDateForDB(format(formData.data_inicio, 'yyyy-MM-dd')) : null,
         data_fim: formData.data_fim ? parseDateForDB(format(formData.data_fim, 'yyyy-MM-dd')) : null,
-        empresa_id: profile.empresa_id,
+        empresa_id: empresaId,
         ...(ropa?.id ? {} : { created_by: (await supabase.auth.getUser()).data.user?.id })
       };
 
       if (ropa?.id) {
-        const { error } = await supabase
-          .from('ropa_registros')
-          .update(payload)
-          .eq('id', ropa.id);
-        
-        if (error) throw error;
+        await exigirLinhas(
+          supabase.from('ropa_registros').update(payload).eq('id', ropa.id).select('id'),
+        );
         toast({ title: t('dadosDashboard.ropaDialog.toastUpdated') });
       } else {
-        const { error } = await supabase
-          .from('ropa_registros')
-          .insert([payload]);
-        
-        if (error) throw error;
+        await exigirEscrita(supabase.from('ropa_registros').insert([payload]));
         toast({ title: t('dadosDashboard.ropaDialog.toastCreated') });
       }
       
@@ -155,7 +238,7 @@ export function RopaDialog({ isOpen, onClose, onSave, ropa }: RopaDialogProps) {
         open={isOpen}
         onOpenChange={onClose}
         title={ropa?.id ? t('dadosDashboard.ropaDialog.titleEdit') : t('dadosDashboard.ropaDialog.titleNew')}
-        icon={FileText}
+        icon={IconFile}
         size="xl"
         onSubmit={handleSave}
       >
@@ -169,6 +252,27 @@ export function RopaDialog({ isOpen, onClose, onSave, ropa }: RopaDialogProps) {
                 onChange={(e) => setFormData({ ...formData, nome_tratamento: e.target.value })}
                 placeholder={t('dadosDashboard.ropaDialog.placeholderNomeTratamento')}
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="exercicio_id">{t('ropaLista.colRopa')}</Label>
+              <Select
+                value={formData.exercicio_id || 'nenhum'}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, exercicio_id: value === 'nenhum' ? '' : value })
+                }
+              >
+                <SelectTrigger id="exercicio_id">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="nenhum">{t('ropaLista.semRopaNome')}</SelectItem>
+                  {ropas.map((r) => (
+                    <SelectItem key={r.id} value={r.id}>
+                      {r.nome}{r.versao ? ` · ${r.versao}` : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="categoria_titulares">{t('dadosDashboard.ropaDialog.labelCategoriaTitulares')}</Label>
@@ -207,13 +311,9 @@ export function RopaDialog({ isOpen, onClose, onSave, ropa }: RopaDialogProps) {
                   <SelectValue placeholder={t('dadosDashboard.ropaDialog.placeholderBaseLegal')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="consentimento">{t('dadosDashboard.common.baseLegalConsentimento')}</SelectItem>
-                  <SelectItem value="legitimo_interesse">{t('dadosDashboard.common.baseLegalLegitimoInteresse')}</SelectItem>
-                  <SelectItem value="execucao_contrato">{t('dadosDashboard.common.baseLegalExecucaoContrato')}</SelectItem>
-                  <SelectItem value="cumprimento_obrigacao">{t('dadosDashboard.common.baseLegalCumprimentoObrigacao')}</SelectItem>
-                  <SelectItem value="protecao_vida">{t('dadosDashboard.common.baseLegalProtecaoVida')}</SelectItem>
-                  <SelectItem value="exercicio_direitos">{t('dadosDashboard.common.baseLegalExercicioDireitos')}</SelectItem>
-                  <SelectItem value="politicas_publicas">{t('dadosDashboard.common.baseLegalPoliticasPublicas')}</SelectItem>
+                  {basesDisponiveis.map((base) => (
+                    <SelectItem key={base.key} value={base.key}>{base.label}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -335,8 +435,8 @@ export function RopaDialog({ isOpen, onClose, onSave, ropa }: RopaDialogProps) {
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="w-full justify-start">
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.data_inicio ? format(formData.data_inicio, "dd/MM/yyyy", { locale: ptBR }) : t('dadosDashboard.ropaDialog.placeholderSelecionarData')}
+                    <IconCalendar className="mr-2 h-4 w-4" />
+                    {formData.data_inicio ? format(formData.data_inicio, datePattern(), { locale: dateFnsLocale() }) : t('dadosDashboard.ropaDialog.placeholderSelecionarData')}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
@@ -344,7 +444,7 @@ export function RopaDialog({ isOpen, onClose, onSave, ropa }: RopaDialogProps) {
                     mode="single"
                     selected={formData.data_inicio}
                     onSelect={(date) => setFormData({ ...formData, data_inicio: date })}
-                    locale={ptBR}
+                    locale={dateFnsLocale()}
                   />
                 </PopoverContent>
               </Popover>
@@ -354,8 +454,8 @@ export function RopaDialog({ isOpen, onClose, onSave, ropa }: RopaDialogProps) {
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="w-full justify-start">
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.data_fim ? format(formData.data_fim, "dd/MM/yyyy", { locale: ptBR }) : t('dadosDashboard.ropaDialog.placeholderSelecionarData')}
+                    <IconCalendar className="mr-2 h-4 w-4" />
+                    {formData.data_fim ? format(formData.data_fim, datePattern(), { locale: dateFnsLocale() }) : t('dadosDashboard.ropaDialog.placeholderSelecionarData')}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
@@ -363,7 +463,7 @@ export function RopaDialog({ isOpen, onClose, onSave, ropa }: RopaDialogProps) {
                     mode="single"
                     selected={formData.data_fim}
                     onSelect={(date) => setFormData({ ...formData, data_fim: date })}
-                    locale={ptBR}
+                    locale={dateFnsLocale()}
                   />
                 </PopoverContent>
               </Popover>
@@ -386,7 +486,6 @@ export function RopaDialog({ isOpen, onClose, onSave, ropa }: RopaDialogProps) {
               onChange={(key, value) => setFormData((prev) => ({ ...prev, [key]: value }))}
             />
           </div>
-
 
           <div className="space-y-2">
             <Label htmlFor="observacoes">{t('dadosDashboard.ropaDialog.labelObservacoes')}</Label>
