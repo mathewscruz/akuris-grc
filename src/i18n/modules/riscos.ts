@@ -90,6 +90,7 @@ const riscosRaw = {
       seeTreatments: 'Ver tratamentos',
     },
     myRisks: 'Meus riscos',
+    responsavelPorResolver: 'Responsável não encontrado',
     searchPlaceholder: 'Buscar por nome ou ID…',
     empty: {
       foundTitle: 'Nenhum risco encontrado',
@@ -270,6 +271,7 @@ const riscosRaw = {
       seeTreatments: 'See treatments',
     },
     myRisks: 'My risks',
+    responsavelPorResolver: 'Owner not found',
     searchPlaceholder: 'Search by name or ID…',
     empty: {
       foundTitle: 'No risks found',

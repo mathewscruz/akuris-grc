@@ -101,11 +101,13 @@ export function ScoreVisualization({ scoreData, assessmentData }: ScoreVisualiza
             
             <div className="w-full max-w-sm mx-auto">
               <Progress 
-                value={scoreData.score_total} 
+                value={scoreData.score_total}
+                // O `/ 10` sobrou de uma escala antiga: 75 virava 7,5 e caía
+                // sempre na faixa vermelha. E a cor ia numa variável CSS que o
+                // `Progress` nunca lê — a barra ficava roxa aconteça o que
+                // acontecer. Agora vai por classe, no indicador.
+                indicatorClassName={getScoreColor(scoreData.score_total)}
                 className="h-3"
-                style={{
-                  '--progress-background': getScoreColor(scoreData.score_total / 10)
-                } as React.CSSProperties}
               />
             </div>
           </div>
@@ -144,11 +146,9 @@ export function ScoreVisualization({ scoreData, assessmentData }: ScoreVisualiza
                     </span>
                   </div>
                   <Progress 
-                    value={score} 
+                    value={score}
+                    indicatorClassName={getScoreColor(score)}
                     className="h-2"
-                    style={{
-                      '--progress-background': getScoreColor(score / 10)
-                    } as React.CSSProperties}
                   />
                 </div>
               ))}

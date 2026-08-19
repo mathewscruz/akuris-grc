@@ -91,6 +91,8 @@ interface Risco {
   status: string;
   responsavel?: string;
   responsavel_nome?: string;
+  /** UUID de responsável sem perfil correspondente. */
+  responsavel_por_resolver?: boolean;
   responsavel_foto?: string;
   controles_existentes?: string;
   mitigacao_snapshot?: unknown;
@@ -296,6 +298,12 @@ export function Riscos() {
             ...risco,
             responsavel_nome: profileData?.nome || label || null,
             responsavel_foto: profileData?.foto_url || null,
+            // Um UUID que não tem perfil NÃO é "sem responsável": é um
+            // responsável que a aplicação não conseguiu resolver. Nos dados
+            // reais há 24 riscos apontados a um utilizador que existe em
+            // `auth.users` e nunca teve linha em `profiles` — o KPI dizia
+            // "Sem responsável: 25 de 31" com um único risco realmente órfão.
+            responsavel_por_resolver: !!userId && !profileData,
           };
         }) as unknown as Risco[];
       }
@@ -528,7 +536,7 @@ export function Riscos() {
   const viewFilters: Record<SavedView, (r: Risco) => boolean> = useMemo(() => ({
     todos: () => true,
     acima_apetite: (r) => isAcimaApetite(r, apetiteScore),
-    sem_responsavel: (r) => !r.responsavel_nome,
+    sem_responsavel: (r) => !r.responsavel_nome && !(r as any).responsavel_por_resolver,
     revisao_vencida: (r) => slaFromRevisao(r.data_proxima_revisao) === 'vencido',
     meus_riscos: (r) => !!profile?.user_id && r.responsavel === profile.user_id,
   }), [apetiteScore, profile?.user_id]);
@@ -679,7 +687,17 @@ export function Riscos() {
       key: 'responsavel',
       label: t('riscos.page.columns.responsible'),
       render: (_value: string, risco: Risco) => {
-        if (!risco.responsavel_nome) return <span className="text-xs text-muted-foreground">—</span>;
+        if (!risco.responsavel_nome) {
+          // Distinguir os dois casos: "ninguém" e "alguém que não conseguimos
+          // resolver" pedem acções diferentes.
+          return risco.responsavel_por_resolver ? (
+            <span className="text-xs text-muted-foreground" title={risco.responsavel ?? undefined}>
+              {t('riscos.page.responsavelPorResolver')}
+            </span>
+          ) : (
+            <span className="text-xs text-muted-foreground">—</span>
+          );
+        }
         const first = risco.responsavel_nome.trim().split(/\s+/)[0];
         return (
           <div className="inline-flex items-center gap-1.5">

@@ -45,23 +45,32 @@ export const useDueDiligenceStats = () => {
 
         const total = assessments?.length || 0;
 
+        const hojeRef = new Date();
+        const estaExpirada = (a: any) =>
+          a.data_expiracao && parseDataLocal(a.data_expiracao) < hojeRef &&
+          !['concluido', 'finalizado'].includes(a.status);
+
+        /**
+         * "Activa" é o que está em curso E ainda dentro do prazo.
+         *
+         * `active` e `pending` reduziam-se ambos a `em_andamento|enviado`: a
+         * MESMA avaliação era contada nas duas, e ainda uma terceira vez em
+         * `expired`. A Akuris mostrava "Due Diligence 1 · 1 expirada" com uma
+         * única avaliação no banco.
+         */
         const active = assessments?.filter(a =>
-          a.status === 'ativo' || a.status === 'em_andamento' || a.status === 'enviado'
+          ['ativo', 'em_andamento', 'enviado'].includes(a.status) && !estaExpirada(a)
         ).length || 0;
 
-        const pending = assessments?.filter(a =>
-          a.status === 'pendente' || a.status === 'em_andamento' || a.status === 'enviado'
-        ).length || 0;
+        /** Ainda não saiu para o fornecedor. */
+        const pending = assessments?.filter(a => a.status === 'pendente').length || 0;
 
         const completed = assessments?.filter(a =>
           a.status === 'concluido' || a.status === 'finalizado'
         ).length || 0;
 
-        const hoje = new Date();
-        const expired = assessments?.filter(a =>
-          a.data_expiracao && parseDataLocal(a.data_expiracao) < hoje &&
-          !['concluido', 'finalizado'].includes(a.status)
-        ).length || 0;
+        const hoje = hojeRef;
+        const expired = assessments?.filter(estaExpirada).length || 0;
 
         const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
         const thisMonth = assessments?.filter(a =>

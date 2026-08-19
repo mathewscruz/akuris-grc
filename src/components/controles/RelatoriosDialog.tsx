@@ -184,6 +184,14 @@ export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) 
       .map(([, v]) => ({ mes: formatMonthYearLabel(v.data), eficacia: Math.round(v.soma / v.n), testes: v.n }));
   }, [controles, dateRange]);
 
+  /** Tom por faixa de percentagem — verde só quando a cobertura é boa. */
+  const tomDaCobertura = (percentual: number | null) => {
+    if (percentual === null) return { cor: 'text-muted-foreground', fundo: 'bg-muted/40 border-border' };
+    if (percentual >= 80) return { cor: 'text-success', fundo: 'bg-success/10 border-success/20' };
+    if (percentual >= 50) return { cor: 'text-warning', fundo: 'bg-warning/10 border-warning/20' };
+    return { cor: 'text-destructive', fundo: 'bg-destructive/10 border-destructive/20' };
+  };
+
   const { toast } = useToast();
   const { t } = useLanguage();
 
@@ -516,9 +524,12 @@ export function RelatoriosDialog({ open, onOpenChange }: RelatoriosDialogProps) 
               <CardContent>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {([
-                    { faixa: cobertura.geral, rotulo: t('controlesAuditorias.rdCoberturaGeral'), cor: 'text-success', fundo: 'bg-success/10 border-success/20' },
-                    { faixa: cobertura.critico, rotulo: t('controlesAuditorias.rdCoberturaRiscosCriticos'), cor: 'text-destructive', fundo: 'bg-destructive/10 border-destructive/20' },
-                    { faixa: cobertura.alto, rotulo: t('controlesAuditorias.rdCoberturaRiscosAltos'), cor: 'text-warning', fundo: 'bg-warning/10 border-warning/20' },
+                    // O tom vem da PERCENTAGEM, não da faixa de risco: "Cobertura
+                    // Geral 0% (0 de 31)" saía a verde de sucesso porque a cor
+                    // estava fixa na linha. Verde tem de querer dizer bom.
+                    { faixa: cobertura.geral, rotulo: t('controlesAuditorias.rdCoberturaGeral'), ...tomDaCobertura(cobertura.geral.percentual) },
+                    { faixa: cobertura.critico, rotulo: t('controlesAuditorias.rdCoberturaRiscosCriticos'), ...tomDaCobertura(cobertura.critico.percentual) },
+                    { faixa: cobertura.alto, rotulo: t('controlesAuditorias.rdCoberturaRiscosAltos'), ...tomDaCobertura(cobertura.alto.percentual) },
                   ]).map(({ faixa, rotulo, cor, fundo }) => (
                     <Card key={rotulo} className={fundo}>
                       <CardContent className="p-4 text-center">

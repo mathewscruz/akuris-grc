@@ -5,8 +5,11 @@ import { cn } from "@/lib/utils"
 
 const Progress = React.forwardRef<
   React.ElementRef<typeof ProgressPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof ProgressPrimitive.Root>
->(({ className, value, ...props }, ref) => (
+  React.ComponentPropsWithoutRef<typeof ProgressPrimitive.Root> & {
+    /** Classe do indicador — é aqui que a cor da barra vive. */
+    indicatorClassName?: string;
+  }
+>(({ className, value, indicatorClassName, ...props }, ref) => (
   <ProgressPrimitive.Root
     ref={ref}
     className={cn(
@@ -15,8 +18,11 @@ const Progress = React.forwardRef<
     )}
     {...props}
   >
+    {/* `bg-primary` era fixo, e quem queria outra cor passava
+        `--progress-background` — uma variável que este componente nunca leu.
+        Todas as barras "coloridas" do produto eram roxas. */}
     <ProgressPrimitive.Indicator
-      className="h-full w-full flex-1 bg-primary transition-ui"
+      className={cn('h-full w-full flex-1 bg-primary transition-ui', indicatorClassName)}
       style={{ transform: `translateX(-${100 - (value || 0)}%)` }}
     />
   </ProgressPrimitive.Root>
