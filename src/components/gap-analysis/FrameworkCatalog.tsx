@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { FrameworkCard } from './FrameworkCard';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { IconChevronDown, IconShield, IconLock, IconScale, IconOrg } from '@/components/icons';
+import { getCategory, CATEGORIAS_DE_FRAMEWORK } from '@/lib/gap-analysis-tokens';
+import { IconChevronDown, IconShield, IconLock, IconScale, IconOrg, IconWarning, IconChecklist, IconLeaf } from '@/components/icons';
 
 interface Framework {
   id: string;
@@ -23,21 +24,16 @@ interface FrameworkCatalogProps {
 const CATEGORY_CONFIG: Record<string, { labelKey: string; icon: React.ElementType; color: string }> = {
   seguranca: { labelKey: 'gapAnalysis.catalog.category.seguranca', icon: IconShield, color: 'text-info' },
   privacidade: { labelKey: 'gapAnalysis.catalog.category.privacidade', icon: IconLock, color: 'text-success' },
-  qualidade: { labelKey: 'gapAnalysis.catalog.category.qualidade', icon: IconScale, color: 'text-warning' },
+  risco: { labelKey: 'gapAnalysis.catalog.category.risco', icon: IconWarning, color: 'text-warning' },
   governanca: { labelKey: 'gapAnalysis.catalog.category.governanca', icon: IconOrg, color: 'text-primary' },
+  compliance: { labelKey: 'gapAnalysis.catalog.category.compliance', icon: IconScale, color: 'text-info' },
+  qualidade: { labelKey: 'gapAnalysis.catalog.category.qualidade', icon: IconChecklist, color: 'text-warning' },
+  ambiente: { labelKey: 'gapAnalysis.catalog.category.ambiente', icon: IconLeaf, color: 'text-success' },
 };
-
-function getCategory(tipo: string): string {
-  const t = tipo?.toLowerCase() || '';
-  if (t.includes('privacidade') || t.includes('privacy') || t.includes('lgpd') || t.includes('gdpr')) return 'privacidade';
-  if (t.includes('governanca') || t.includes('governance') || t.includes('cobit') || t.includes('sox')) return 'governanca';
-  if (t.includes('qualidade') || t.includes('quality') || t.includes('iso 9') || t.includes('itil')) return 'qualidade';
-  return 'seguranca';
-}
 
 export function FrameworkCatalog({ frameworks, requirementCounts, onFrameworkClick }: FrameworkCatalogProps) {
   const { t } = useLanguage();
-  const [openCategories, setOpenCategories] = useState<string[]>(['seguranca', 'privacidade', 'governanca', 'qualidade']);
+  const [openCategories, setOpenCategories] = useState<string[]>([...CATEGORIAS_DE_FRAMEWORK]);
 
   const grouped = useMemo(() => {
     const groups: Record<string, Framework[]> = {};
@@ -55,7 +51,7 @@ export function FrameworkCatalog({ frameworks, requirementCounts, onFrameworkCli
     );
   };
 
-  const categoryOrder = ['seguranca', 'privacidade', 'governanca', 'qualidade'];
+  const categoryOrder = CATEGORIAS_DE_FRAMEWORK;
 
   return (
     <div className="space-y-3">
@@ -108,4 +104,4 @@ export function FrameworkCatalog({ frameworks, requirementCounts, onFrameworkCli
   );
 }
 
-export { getCategory, CATEGORY_CONFIG };
+export { CATEGORY_CONFIG };

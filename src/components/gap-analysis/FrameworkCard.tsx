@@ -4,11 +4,12 @@ import { Badge } from "@/components/ui/badge";
 import { FrameworkLogo } from "./FrameworkLogos";
 import {
   CATEGORY_BADGE_CLASS,
+  getCategory,
   getEffortLevel,
   type FrameworkCategory,
 } from "@/lib/gap-analysis-tokens";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { IconArrowRight, IconShield, IconLock, IconScale, IconOrg } from '@/components/icons';
+import { IconArrowRight, IconShield, IconLock, IconScale, IconOrg, IconWarning, IconChecklist, IconLeaf } from '@/components/icons';
 
 interface FrameworkCardProps {
   id: string;
@@ -23,8 +24,11 @@ interface FrameworkCardProps {
 const CATEGORY_ICON: Record<FrameworkCategory, React.ElementType> = {
   seguranca: IconShield,
   privacidade: IconLock,
+  risco: IconWarning,
   governanca: IconOrg,
-  qualidade: IconScale,
+  compliance: IconScale,
+  qualidade: IconChecklist,
+  ambiente: IconLeaf,
 };
 
 const FRAMEWORK_AUDIENCE_KEYS: Record<string, string> = {
@@ -42,13 +46,6 @@ const FRAMEWORK_AUDIENCE_KEYS: Record<string, string> = {
   'HIPAA': 'hipaaShort',
 };
 
-function getCategory(tipo: string): FrameworkCategory {
-  const t = tipo?.toLowerCase() || '';
-  if (t.includes('privacidade') || t.includes('privacy') || t.includes('lgpd') || t.includes('gdpr')) return 'privacidade';
-  if (t.includes('governanca') || t.includes('governance') || t.includes('cobit') || t.includes('sox')) return 'governanca';
-  if (t.includes('qualidade') || t.includes('quality') || t.includes('iso 9') || t.includes('itil')) return 'qualidade';
-  return 'seguranca';
-}
 
 export const FrameworkCard: React.FC<FrameworkCardProps> = (props) => {
   const { t } = useLanguage();
@@ -79,7 +76,7 @@ export const FrameworkCard: React.FC<FrameworkCardProps> = (props) => {
       </div>
 
       <div className="flex justify-center pt-3 pb-2">
-        <FrameworkLogo nome={nome} className="h-10 w-10" />
+        <FrameworkLogo nome={nome} tipo={tipo_framework} className="h-10 w-10" />
       </div>
 
       <div className="text-center px-3 pb-1">

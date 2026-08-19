@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { getCategory, CATEGORIAS_DE_FRAMEWORK } from '@/lib/gap-analysis-tokens';
 import { calcularScoreFramework } from '@/lib/gap-score';
 import { useReusoFrameworks } from '@/hooks/useReusoFramework';
 import { useMaturityTrend } from '@/hooks/useMaturityTrend';
@@ -73,21 +74,16 @@ function prioridadeJurisdicao(nome: string, codigo: JurisdicaoCodigo): number {
   return idx === -1 ? 0 : (lista.length - idx) * 100;
 }
 
+// As pílulas de filtro vêm da mesma lista do catálogo: eram quatro para sete
+// grupos, e filtrar por "Riscos" não era sequer oferecido.
 const CATEGORY_OPTIONS: { id: string; labelKey: string }[] = [
   { id: 'all', labelKey: 'gapAnalysis.frameworks.category.all' },
-  { id: 'seguranca', labelKey: 'gapAnalysis.frameworks.category.seguranca' },
-  { id: 'privacidade', labelKey: 'gapAnalysis.frameworks.category.privacidade' },
-  { id: 'governanca', labelKey: 'gapAnalysis.frameworks.category.governanca' },
-  { id: 'qualidade', labelKey: 'gapAnalysis.frameworks.category.qualidade' },
+  ...CATEGORIAS_DE_FRAMEWORK.map((c) => ({
+    id: c,
+    labelKey: `gapAnalysis.frameworks.category.${c}`,
+  })),
 ];
 
-function getCategory(tipo: string): string {
-  const t = tipo?.toLowerCase() || '';
-  if (t.includes('privacidade') || t.includes('privacy') || t.includes('lgpd') || t.includes('gdpr')) return 'privacidade';
-  if (t.includes('governanca') || t.includes('governance') || t.includes('cobit') || t.includes('sox')) return 'governanca';
-  if (t.includes('qualidade') || t.includes('quality') || t.includes('iso 9') || t.includes('itil')) return 'qualidade';
-  return 'seguranca';
-}
 
 function buildSegments(sc: StatusCounts): StackSegment[] {
   return [

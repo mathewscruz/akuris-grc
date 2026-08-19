@@ -55,7 +55,7 @@ export function WelcomeHero({ onFrameworkClick, onShowCatalog, suggestedFramewor
               onClick={() => onFrameworkClick(fw.id)}
             >
               <div className="flex items-start gap-3">
-                <FrameworkLogo nome={fw.nome} className="h-10 w-10 shrink-0 mt-0.5"/>
+                <FrameworkLogo nome={fw.nome} tipo={fw.tipo_framework} className="h-10 w-10 shrink-0 mt-0.5"/>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-sm group-hover:text-primary transition-colors">
                     {fw.nome}

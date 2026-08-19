@@ -6,7 +6,7 @@ export const gapAnalysis = {
         description: 'Avalie a conformidade da sua organização com frameworks regulatórios',
         searchPlaceholder: 'Buscar framework por nome, tipo ou descrição...',
         otherAvailable: 'OUTROS DISPONÍVEIS',
-        category: { all: 'Todas', seguranca: 'Segurança', privacidade: 'Privacidade', governanca: 'Governança', qualidade: 'Qualidade' },
+        category: { all: 'Todas', seguranca: 'Segurança', privacidade: 'Privacidade', risco: 'Riscos', governanca: 'Governança', compliance: 'Compliance', qualidade: 'Qualidade', ambiente: 'Ambiente' },
         recommended: { title: 'RECOMENDADOS PARA SUA EMPRESA', basedOn: 'Sugeridos pela jurisdição da sua empresa' },
         active: { title: 'FRAMEWORKS ATIVOS', noneMatchFilters: 'Nenhum framework ativo corresponde aos filtros.' },
         available: { title: 'FRAMEWORKS DISPONÍVEIS' },
@@ -75,8 +75,11 @@ export const gapAnalysis = {
         category: {
           seguranca: 'Segurança da Informação',
           privacidade: 'Privacidade e Proteção de Dados',
+          risco: 'Gestão de Riscos',
+          governanca: 'Governança de TI',
+          compliance: 'Compliance e Regulatório',
           qualidade: 'Qualidade e Processos',
-          governanca: 'Governança Corporativa',
+          ambiente: 'Meio Ambiente',
         },
       },
       ai: {
@@ -913,7 +916,7 @@ export const gapAnalysis = {
         description: "Assess your organization's compliance with regulatory frameworks",
         searchPlaceholder: 'Search framework by name, type or description...',
         otherAvailable: 'OTHER AVAILABLE',
-        category: { all: 'All', seguranca: 'Security', privacidade: 'Privacy', governanca: 'Governance', qualidade: 'Quality' },
+        category: { all: 'All', seguranca: 'Security', privacidade: 'Privacy', risco: 'Risk', governanca: 'Governance', compliance: 'Compliance', qualidade: 'Quality', ambiente: 'Environment' },
         recommended: { title: 'RECOMMENDED FOR YOUR COMPANY', basedOn: 'Suggested by your company jurisdiction' },
         active: { title: 'ACTIVE FRAMEWORKS', noneMatchFilters: 'No active framework matches the filters.' },
         available: { title: 'AVAILABLE FRAMEWORKS' },
@@ -982,8 +985,11 @@ export const gapAnalysis = {
         category: {
           seguranca: 'Information Security',
           privacidade: 'Privacy and Data Protection',
+          risco: 'Risk Management',
+          governanca: 'IT Governance',
+          compliance: 'Compliance and Regulatory',
           qualidade: 'Quality and Processes',
-          governanca: 'Corporate Governance',
+          ambiente: 'Environment',
         },
       },
       ai: {

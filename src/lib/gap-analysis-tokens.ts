@@ -118,24 +118,71 @@ export function getScoreBgClass(score: number): string {
 // Categorias de framework — tokens neutros + ícone diferenciador
 // ---------------------------------------------------------------------------
 
-export type FrameworkCategory = 'seguranca' | 'privacidade' | 'governanca' | 'qualidade';
+export type FrameworkCategory =
+  | 'seguranca'
+  | 'privacidade'
+  | 'risco'
+  | 'governanca'
+  | 'compliance'
+  | 'qualidade'
+  | 'ambiente';
+
+export const CATEGORIAS_DE_FRAMEWORK: FrameworkCategory[] = [
+  'seguranca',
+  'privacidade',
+  'risco',
+  'governanca',
+  'compliance',
+  'qualidade',
+  'ambiente',
+];
+
+/**
+ * `tipo_framework` → grupo do catálogo. Fonte única.
+ *
+ * Havia TRÊS cópias desta função — em `FrameworkCatalog`, em
+ * `GapAnalysisFrameworks` e implícita nos tokens — e todas conheciam quatro
+ * grupos para um catálogo de sete tipos. Sete frameworks apareciam sob
+ * "Segurança da Informação": a ISO 14001 (ambiente), a ISO 31000 e o COSO ERM
+ * (risco), o DORA, a ISO 37301, a NIS2 e a SOX (compliance). Quem filtrava por
+ * risco não encontrava um único framework de risco.
+ */
+const GRUPO_POR_TIPO: Record<string, FrameworkCategory> = {
+  seguranca_informacao: 'seguranca',
+  privacidade: 'privacidade',
+  gestao_riscos: 'risco',
+  governanca_ti: 'governanca',
+  compliance: 'compliance',
+  qualidade: 'qualidade',
+  meio_ambiente: 'ambiente',
+};
+
+export function getCategory(tipo?: string | null): FrameworkCategory {
+  const t = (tipo || '').toLowerCase().trim();
+  if (GRUPO_POR_TIPO[t]) return GRUPO_POR_TIPO[t];
+  // Um tipo novo, cadastrado por um cliente, cai na heurística de texto.
+  if (t.includes('privacidade') || t.includes('privacy')) return 'privacidade';
+  if (t.includes('risco') || t.includes('risk')) return 'risco';
+  if (t.includes('ambiente') || t.includes('environment')) return 'ambiente';
+  if (t.includes('qualidade') || t.includes('quality')) return 'qualidade';
+  if (t.includes('compliance') || t.includes('conformidade')) return 'compliance';
+  if (t.includes('governanca') || t.includes('governance')) return 'governanca';
+  return 'seguranca';
+}
 
 /** Classes para badge de categoria — tons neutros sobre superfície, sem cores cruas */
 export const CATEGORY_BADGE_CLASS: Record<FrameworkCategory, string> = {
   seguranca: 'bg-primary/10 text-primary border-primary/20',
   privacidade: 'bg-info/10 text-info border-info/20',
+  risco: 'bg-warning/10 text-warning border-warning/20',
   governanca: 'bg-accent/30 text-accent-foreground border-accent/40',
+  compliance: 'bg-info/10 text-info border-info/20',
   qualidade: 'bg-success/10 text-success border-success/20',
+  ambiente: 'bg-success/10 text-success border-success/20',
 };
 
 export function getCategoryLabel(category: FrameworkCategory): string {
-  const map: Record<FrameworkCategory, string> = {
-    seguranca: tGlobal('sweepRiscos.gap.fwCategoryLong.seguranca'),
-    privacidade: tGlobal('sweepRiscos.gap.fwCategoryLong.privacidade'),
-    governanca: tGlobal('sweepRiscos.gap.fwCategoryLong.governanca'),
-    qualidade: tGlobal('sweepRiscos.gap.fwCategoryLong.qualidade'),
-  };
-  return map[category];
+  return tGlobal(`gapAnalysis.catalog.category.${category}`);
 }
 
 /** Esforço estimado a partir do nº de requisitos */
