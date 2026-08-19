@@ -102,6 +102,7 @@ describe('DocumentosLista — listagem responsiva (AKURIS QA-001)', () => {
       'Status',
       'Versão',
       'Validade',
+      'Responsável',
       'Ações',
     ]);
     expect(within(table).getByText(documento.nome)).toBeInTheDocument();
@@ -132,9 +133,29 @@ describe('DocumentosLista — listagem responsiva (AKURIS QA-001)', () => {
     const mobile = screen.getByTestId('documentos-lista-mobile');
     const badge = within(mobile).getByText('Confidencial');
 
-    // Mesmo destaque de risco usado na tabela desktop (token destructive + ícone)
-    expect(badge.className).toMatch(/destructive/);
+    /**
+     * A asserção original exigia `destructive` na classe do chip. Isso deixou
+     * de valer quando os estados foram padronizados: hoje **toda** superfície
+     * de chip é neutra e a cor vive na marca (ver `STATE_CLASSES` em
+     * `ui/chip.tsx`, onde `blocked` usa fundo neutro e ponto crítico). O teste
+     * ficou a defender um desenho abandonado, e vermelho por isso.
+     *
+     * O que continua a importar — e é o que se guarda aqui — é que
+     * confidencial se distinga de qualquer outra classificação no card: leva um
+     * glifo próprio no lugar do ponto.
+     */
     expect(badge.querySelector('svg')).not.toBeNull();
+  });
+
+  it('classificação não confidencial não recebe o glifo de risco', () => {
+    renderLista({ documentos: [{ ...documento, classificacao: 'interna' }] });
+
+    const mobile = screen.getByTestId('documentos-lista-mobile');
+    const badge = within(mobile).getByText('Interna');
+
+    // Sem glifo: cai no ponto de estado. É o contraste que dá sentido ao
+    // teste anterior — sem este, um ícone em toda a gente passaria na guarda.
+    expect(badge.querySelector('svg')).toBeNull();
   });
 
   it('aceita campos anuláveis vindos do banco sem quebrar a exibição', () => {

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { IconEdit, IconDelete, IconSuccess, IconError, IconTime, IconFile, IconCalendar, IconArrowRight } from '@/components/icons';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,11 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { StatusBadge, type StatusTone } from '@/components/ui/status-badge';
 import { DialogShell } from '@/components/ui/dialog-shell';
-import { CalendarIcon, Edit, Trash2, FileText, CheckCircle, Clock, XCircle, FileEdit, ArrowRight } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -24,6 +23,8 @@ import { logger } from '@/lib/logger';
 import { MasterDetailDialog, type MasterDetailItem } from '@/components/ui/master-detail-dialog';
 import { Separator } from '@/components/ui/separator';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { dateFnsLocale, datePattern, formatDateOnly, formatarDiaParaDB, parseDataLocal } from '@/lib/date-utils';
+import { useEmpresaMoeda } from '@/hooks/useEmpresaMoeda';
 
 const makeAditivoSchema = (t: (key: string) => string) => z.object({
   numero_aditivo: z.string().min(1, t('contratosDialogs.aditivosDialog.zodNumeroRequired')),
@@ -78,20 +79,16 @@ interface AditivosDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const getStatusInfo = (t: (key: string) => string): Record<string, { label: string; icon: typeof FileText; tone: StatusTone }> => ({
-  rascunho: { label: t('contratosAtivos.aditivosDialog.statusRascunho'), icon: FileText, tone: 'neutral' },
-  aprovacao: { label: t('contratosAtivos.aditivosDialog.statusAprovacao'), icon: Clock, tone: 'info' },
-  ativo: { label: t('contratosAtivos.aditivosDialog.statusAtivo'), icon: CheckCircle, tone: 'success' },
-  rejeitado: { label: t('contratosAtivos.aditivosDialog.statusRejeitado'), icon: XCircle, tone: 'destructive' },
+const getStatusInfo = (t: (key: string) => string): Record<string, { label: string; icon: typeof IconFile; tone: StatusTone }> => ({
+  rascunho: { label: t('contratosAtivos.aditivosDialog.statusRascunho'), icon: IconFile, tone: 'neutral' },
+  aprovacao: { label: t('contratosAtivos.aditivosDialog.statusAprovacao'), icon: IconTime, tone: 'info' },
+  ativo: { label: t('contratosAtivos.aditivosDialog.statusAtivo'), icon: IconSuccess, tone: 'success' },
+  rejeitado: { label: t('contratosAtivos.aditivosDialog.statusRejeitado'), icon: IconError, tone: 'destructive' },
 });
 
-const formatCurrency = (value: number | null) => {
-  if (value === null || value === undefined) return 'N/A';
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
-};
 
-const formatDate = (date: string | null) =>
-  date ? format(new Date(date), 'dd/MM/yyyy', { locale: ptBR }) : '—';
+// Coluna `date`: formatar por `new Date(...)` devolvia um dia a menos.
+const formatDate = (date: string | null) => (date ? formatDateOnly(date) : '—');
 
 export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, onOpenChange }) => {
   const [aditivos, setAditivos] = useState<Aditivo[]>([]);
@@ -104,6 +101,19 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
   const { toast } = useToast();
   const { t } = useLanguage();
   const STATUS_INFO = useMemo(() => getStatusInfo(t), [t]);
+  // Moeda da empresa — estava congelada em BRL, ignorando `empresas.moeda`.
+  const { format: formatCurrency } = useEmpresaMoeda();
+  /**
+   * Estado fora do ciclo aparece como está, em tom neutro.
+   *
+   * O fallback anterior mapeava qualquer status desconhecido para "Rascunho":
+   * um aditivo com status legado (ex.: "assinado", que nem existe no ciclo)
+   * era exibido como rascunho — mentira silenciosa sobre um registro que
+   * altera valor de contrato. Mostrar o valor cru é honesto e denuncia o dado
+   * a corrigir.
+   */
+  const infoDoStatus = (status: string) =>
+    STATUS_INFO[status] ?? { label: formatStatus(status), icon: IconFile, tone: 'neutral' as StatusTone };
   const aditivoSchema = useMemo(() => makeAditivoSchema(t), [t]);
 
   const form = useForm<AditivoFormData>({
@@ -128,17 +138,19 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
   useEffect(() => {
     if (!formOpen) return;
     if (editingAditivo) {
+      // parseDataLocal: coluna `date` lida por `new Date` vira o dia anterior
+      // no formulário — cada edição salvava as datas um dia para trás.
       form.reset({
         numero_aditivo: editingAditivo.numero_aditivo,
         tipo: editingAditivo.tipo,
         motivo: editingAditivo.motivo,
         valor_anterior: editingAditivo.valor_anterior?.toString() || '',
         valor_novo: editingAditivo.valor_novo?.toString() || '',
-        data_inicio_anterior: editingAditivo.data_inicio_anterior ? new Date(editingAditivo.data_inicio_anterior) : undefined,
-        data_fim_anterior: editingAditivo.data_fim_anterior ? new Date(editingAditivo.data_fim_anterior) : undefined,
-        data_inicio_nova: editingAditivo.data_inicio_nova ? new Date(editingAditivo.data_inicio_nova) : undefined,
-        data_fim_nova: editingAditivo.data_fim_nova ? new Date(editingAditivo.data_fim_nova) : undefined,
-        data_assinatura: editingAditivo.data_assinatura ? new Date(editingAditivo.data_assinatura) : undefined,
+        data_inicio_anterior: editingAditivo.data_inicio_anterior ? parseDataLocal(editingAditivo.data_inicio_anterior) : undefined,
+        data_fim_anterior: editingAditivo.data_fim_anterior ? parseDataLocal(editingAditivo.data_fim_anterior) : undefined,
+        data_inicio_nova: editingAditivo.data_inicio_nova ? parseDataLocal(editingAditivo.data_inicio_nova) : undefined,
+        data_fim_nova: editingAditivo.data_fim_nova ? parseDataLocal(editingAditivo.data_fim_nova) : undefined,
+        data_assinatura: editingAditivo.data_assinatura ? parseDataLocal(editingAditivo.data_assinatura) : undefined,
         justificativa: editingAditivo.justificativa,
         status: editingAditivo.status,
       });
@@ -149,8 +161,8 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
         motivo: '',
         valor_anterior: contrato?.valor?.toString() || '',
         valor_novo: '',
-        data_inicio_anterior: contrato?.data_inicio ? new Date(contrato.data_inicio) : undefined,
-        data_fim_anterior: contrato?.data_fim ? new Date(contrato.data_fim) : undefined,
+        data_inicio_anterior: contrato?.data_inicio ? parseDataLocal(contrato.data_inicio) : undefined,
+        data_fim_anterior: contrato?.data_fim ? parseDataLocal(contrato.data_fim) : undefined,
         data_inicio_nova: undefined,
         data_fim_nova: undefined,
         data_assinatura: undefined,
@@ -195,11 +207,11 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
         motivo: data.motivo,
         valor_anterior: data.valor_anterior ? parseFloat(data.valor_anterior) : null,
         valor_novo: data.valor_novo ? parseFloat(data.valor_novo) : null,
-        data_inicio_anterior: data.data_inicio_anterior?.toISOString().split('T')[0] || null,
-        data_fim_anterior: data.data_fim_anterior?.toISOString().split('T')[0] || null,
-        data_inicio_nova: data.data_inicio_nova?.toISOString().split('T')[0] || null,
-        data_fim_nova: data.data_fim_nova?.toISOString().split('T')[0] || null,
-        data_assinatura: data.data_assinatura?.toISOString().split('T')[0] || null,
+        data_inicio_anterior: data.data_inicio_anterior ? formatarDiaParaDB(data.data_inicio_anterior) : null,
+        data_fim_anterior: data.data_fim_anterior ? formatarDiaParaDB(data.data_fim_anterior) : null,
+        data_inicio_nova: data.data_inicio_nova ? formatarDiaParaDB(data.data_inicio_nova) : null,
+        data_fim_nova: data.data_fim_nova ? formatarDiaParaDB(data.data_fim_nova) : null,
+        data_assinatura: data.data_assinatura ? formatarDiaParaDB(data.data_assinatura) : null,
         justificativa: data.justificativa,
         status: data.status,
       };
@@ -255,13 +267,13 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
   const items: (MasterDetailItem & { raw: Aditivo })[] = useMemo(
     () =>
       aditivos.map((a) => {
-        const info = STATUS_INFO[a.status] ?? STATUS_INFO.rascunho;
+        const info = infoDoStatus(a.status);
         return {
           id: a.id,
           label: t('contratosAtivos.aditivosDialog.aditivoLabel').replace('{numero}', a.numero_aditivo),
           description: `${formatStatus(a.tipo)} · ${formatDate(a.data_assinatura)}`,
           badge: (
-            <StatusBadge tone={info.tone} size="sm">
+            <StatusBadge tone={info.tone}>
               {info.label}
             </StatusBadge>
           ),
@@ -277,7 +289,7 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
   const renderDetail = (item: (MasterDetailItem & { raw: Aditivo }) | null) => {
     if (!item) return null;
     const a = item.raw;
-    const info = STATUS_INFO[a.status] ?? STATUS_INFO.rascunho;
+    const info = infoDoStatus(a.status);
     const StatusIcon = info.icon;
 
     return (
@@ -287,18 +299,18 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
             <h2 className="text-xl font-semibold tracking-tight">{t('contratosAtivos.aditivosDialog.aditivoLabel').replace('{numero}', a.numero_aditivo)}</h2>
             <p className="text-sm text-muted-foreground">{formatStatus(a.tipo)}</p>
           </div>
-          <StatusBadge tone={info.tone} icon={<StatusIcon className="h-3 w-3" />}>
+          <StatusBadge tone={info.tone}>
             {info.label}
           </StatusBadge>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('contratosAtivos.aditivosDialog.detailMotivo')}</p>
+            <p className="text-xs font-medium text-muted-foreground">{t('contratosAtivos.aditivosDialog.detailMotivo')}</p>
             <p className="text-sm">{a.motivo}</p>
           </div>
           <div className="space-y-1">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('contratosAtivos.aditivosDialog.detailSignatureDate')}</p>
+            <p className="text-xs font-medium text-muted-foreground">{t('contratosAtivos.aditivosDialog.detailSignatureDate')}</p>
             <p className="text-sm">{formatDate(a.data_assinatura)}</p>
           </div>
         </div>
@@ -307,10 +319,10 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
           <>
             <Separator />
             <div>
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">{t('contratosAtivos.aditivosDialog.detailValueChange')}</p>
+              <p className="text-xs font-medium text-muted-foreground mb-2">{t('contratosAtivos.aditivosDialog.detailValueChange')}</p>
               <div className="flex items-center gap-3 text-sm">
                 <span className="font-mono">{formatCurrency(a.valor_anterior)}</span>
-                <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                <IconArrowRight className="h-4 w-4 text-muted-foreground" />
                 <span className="font-mono font-semibold text-foreground">{formatCurrency(a.valor_novo)}</span>
               </div>
             </div>
@@ -322,13 +334,13 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
             <Separator />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('contratosAtivos.aditivosDialog.detailPreviousTerm')}</p>
+                <p className="text-xs font-medium text-muted-foreground">{t('contratosAtivos.aditivosDialog.detailPreviousTerm')}</p>
                 <p className="text-sm">
                   {formatDate(a.data_inicio_anterior)} → {formatDate(a.data_fim_anterior)}
                 </p>
               </div>
               <div className="space-y-1">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('contratosAtivos.aditivosDialog.detailNewTerm')}</p>
+                <p className="text-xs font-medium text-muted-foreground">{t('contratosAtivos.aditivosDialog.detailNewTerm')}</p>
                 <p className="text-sm font-medium">
                   {formatDate(a.data_inicio_nova)} → {formatDate(a.data_fim_nova)}
                 </p>
@@ -339,8 +351,8 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
 
         <Separator />
         <div className="space-y-1">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('contratosAtivos.aditivosDialog.detailJustification')}</p>
-          <p className="text-sm whitespace-pre-wrap leading-relaxed bg-muted/40 rounded-md p-3 border">
+          <p className="text-xs font-medium text-muted-foreground">{t('contratosAtivos.aditivosDialog.detailJustification')}</p>
+          <p className="text-sm whitespace-pre-wrap leading-relaxed bg-card rounded-md p-3 border">
             {a.justificativa}
           </p>
         </div>
@@ -354,7 +366,7 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
               setFormOpen(true);
             }}
           >
-            <Edit className="h-4 w-4 mr-2" />
+            <IconEdit className="h-4 w-4 mr-2" />
             {t('contratosAtivos.aditivosDialog.editButton')}
           </Button>
           <Button
@@ -366,7 +378,7 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
               setDeleteConfirmOpen(true);
             }}
           >
-            <Trash2 className="h-4 w-4 mr-2" />
+            <IconDelete className="h-4 w-4 mr-2" />
             {t('contratosAtivos.aditivosDialog.deleteButton')}
           </Button>
         </div>
@@ -381,7 +393,7 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
         onOpenChange={onOpenChange}
         title={t('contratosAtivos.aditivosDialog.title')}
         description={`${contrato.nome} (${contrato.numero_contrato})`}
-        icon={FileEdit}
+        icon={IconEdit}
         items={items}
         selectedId={selectedId}
         onSelect={(it) => setSelectedId(it.id)}
@@ -394,7 +406,7 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
         searchPlaceholder={t('contratosAtivos.aditivosDialog.searchPlaceholder')}
         emptyState={
           <div className="space-y-2">
-            <FileText className="h-8 w-8 mx-auto text-muted-foreground" />
+            <IconFile className="h-8 w-8 mx-auto text-muted-foreground" />
             <p>{t('contratosAtivos.aditivosDialog.emptyStateText')}</p>
             <p className="text-xs">{t('contratosAtivos.aditivosDialog.emptyStateHint')}</p>
           </div>
@@ -407,7 +419,7 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
       <DialogShell
         open={formOpen}
         onOpenChange={setFormOpen}
-        icon={FileEdit}
+        icon={IconEdit}
         title={editingAditivo ? t('contratosAtivos.aditivosDialog.dialogTitleEdit') : t('contratosAtivos.aditivosDialog.dialogTitleNew')}
         description={t('contratosAtivos.aditivosDialog.dialogDescription')}
         size="lg"
@@ -526,11 +538,11 @@ export const AditivosDialog: React.FC<AditivosDialogProps> = ({ contrato, open, 
                                   )}
                                 >
                                   {field.value ? (
-                                    format(field.value, 'dd/MM/yyyy', { locale: ptBR })
+                                    format(field.value, datePattern(), { locale: dateFnsLocale() })
                                   ) : (
                                     <span>{t('contratosAtivos.aditivosDialog.selectDatePlaceholder')}</span>
                                   )}
-                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                  <IconCalendar className="ml-auto h-4 w-4 opacity-50" />
                                 </Button>
                               </FormControl>
                             </PopoverTrigger>

@@ -1,10 +1,10 @@
 import { matchesSearch } from '@/lib/search-utils';
+import { IconSearch, IconArrowRight, IconAdd } from '@/components/icons';
 import React, { useMemo, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Search, ArrowRight, FilePlus2 } from 'lucide-react';
 import {
   DOCGEN_TEMPLATES,
   TEMPLATE_CATEGORIES,
@@ -48,7 +48,7 @@ export const DocGenTemplateGallery: React.FC<DocGenTemplateGalleryProps> = ({
       <div className="space-y-2">
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <div>
-            <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">
+            <p className="text-xs text-muted-foreground font-semibold">
               {t('docgen.templateGallery.startFrom')}
             </p>
             <h3 className="text-lg font-semibold mt-1">
@@ -59,14 +59,14 @@ export const DocGenTemplateGallery: React.FC<DocGenTemplateGalleryProps> = ({
             </p>
           </div>
           <Button variant="outline" onClick={onStartBlank} className="gap-2 shrink-0">
-            <FilePlus2 className="h-4 w-4" strokeWidth={1.5} />
+            <IconAdd className="h-4 w-4" strokeWidth={1.5} />
             {t('docgen.templateGallery.startBlank')}
           </Button>
         </div>
 
         {/* Search */}
         <div className="relative">
-          <Search
+          <IconSearch
             className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground"
             strokeWidth={1.5}
           />
@@ -84,7 +84,7 @@ export const DocGenTemplateGallery: React.FC<DocGenTemplateGalleryProps> = ({
             type="button"
             onClick={() => setActiveCategory(ALL_CATEGORY)}
             className={cn(
-              'px-3 py-1 rounded-full text-xs font-medium transition-colors border',
+              'px-3 py-1 rounded-md text-xs font-medium transition-colors border',
               activeCategory === ALL_CATEGORY
                 ? 'bg-primary text-primary-foreground border-primary'
                 : 'bg-transparent text-muted-foreground border-border hover:text-foreground hover:border-primary/30',
@@ -98,7 +98,7 @@ export const DocGenTemplateGallery: React.FC<DocGenTemplateGalleryProps> = ({
               key={cat.id}
               onClick={() => setActiveCategory(cat.id)}
               className={cn(
-                'px-3 py-1 rounded-full text-xs font-medium transition-colors border',
+                'px-3 py-1 rounded-md text-xs font-medium transition-colors border',
                 activeCategory === cat.id
                   ? 'bg-primary text-primary-foreground border-primary'
                   : 'bg-transparent text-muted-foreground border-border hover:text-foreground hover:border-primary/30',
@@ -123,12 +123,12 @@ export const DocGenTemplateGallery: React.FC<DocGenTemplateGalleryProps> = ({
               return (
                 <Card
                   key={tpl.id}
-                  className="group cursor-pointer transition-all hover:border-primary/40 hover:shadow-elegant"
+                  className="group cursor-pointer transition-ui hover:border-primary/40 hover:shadow-elegant"
                   onClick={() => onPickTemplate(tpl)}
                 >
                   <CardContent className="p-4 flex flex-col h-full gap-3">
                     <div className="flex items-start gap-3">
-                      <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <div className="h-10 w-10 flex items-center justify-center shrink-0">
                         <Icon className="h-5 w-5 text-primary" strokeWidth={1.5} />
                       </div>
                       <div className="min-w-0">
@@ -143,7 +143,7 @@ export const DocGenTemplateGallery: React.FC<DocGenTemplateGalleryProps> = ({
                     {tpl.briefingDefaults.frameworks.length > 0 && (
                       <div className="flex flex-wrap gap-1">
                         {tpl.briefingDefaults.frameworks.map((fw) => (
-                          <Badge key={fw} variant="secondary" className="text-[10px] py-0 h-4">
+                          <Badge key={fw} variant="secondary" className="text-micro py-0 h-4">
                             {fw}
                           </Badge>
                         ))}
@@ -151,7 +151,7 @@ export const DocGenTemplateGallery: React.FC<DocGenTemplateGalleryProps> = ({
                     )}
                     <div className="flex items-center justify-end text-xs text-primary opacity-0 group-hover:opacity-100 transition-opacity">
                       {t('docgen.templateGallery.useTemplate')}
-                      <ArrowRight className="h-3.5 w-3.5 ml-1" strokeWidth={1.5} />
+                      <IconArrowRight className="h-3.5 w-3.5 ml-1" strokeWidth={1.5} />
                     </div>
                   </CardContent>
                 </Card>
@@ -164,4 +164,3 @@ export const DocGenTemplateGallery: React.FC<DocGenTemplateGalleryProps> = ({
   );
 };
 
-export default DocGenTemplateGallery;

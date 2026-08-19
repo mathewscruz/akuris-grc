@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { IconAdd, IconView, IconExternal, IconSuccess, IconError, IconTime, IconFile, IconPerson, IconMessage, IconShieldCheck } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import { StatusBadge, type StatusTone } from '@/components/ui/status-badge';
@@ -6,11 +7,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CheckCircle, XCircle, Clock, User, Plus, MessageSquare, FileText, Eye, ExternalLink, ShieldCheck } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import { enUS, ptBR } from 'date-fns/locale';
 import { useIntegrationNotify } from '@/hooks/useIntegrationNotify';
 import { logger } from '@/lib/logger';
 import { MasterDetailDialog, type MasterDetailItem } from '@/components/ui/master-detail-dialog';
@@ -18,6 +17,7 @@ import { Separator } from '@/components/ui/separator';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { parseDataLocal, dateFnsLocale, datePattern } from '@/lib/date-utils';
 interface Documento {
   id: string;
   nome: string;
@@ -56,10 +56,10 @@ interface AprovacaoDialogProps {
   empresaId?: string | null;
 }
 
-const STATUS_INFO: Record<string, { labelKey: string; icon: typeof Clock; tone: StatusTone }> = {
-  pendente: { labelKey: 'documentos.dialogs.statusPendente', icon: Clock, tone: 'warning' },
-  aprovado: { labelKey: 'documentos.dialogs.statusAprovado', icon: CheckCircle, tone: 'success' },
-  rejeitado: { labelKey: 'documentos.dialogs.statusRejeitado', icon: XCircle, tone: 'destructive' },
+const STATUS_INFO: Record<string, { labelKey: string; icon: typeof IconTime; tone: StatusTone }> = {
+  pendente: { labelKey: 'documentos.dialogs.statusPendente', icon: IconTime, tone: 'warning' },
+  aprovado: { labelKey: 'documentos.dialogs.statusAprovado', icon: IconSuccess, tone: 'success' },
+  rejeitado: { labelKey: 'documentos.dialogs.statusRejeitado', icon: IconError, tone: 'destructive' },
 };
 
 export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empresaId }: AprovacaoDialogProps) {
@@ -373,13 +373,13 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
         return {
           id: a.id,
           label: a.aprovador_nome || 'Aprovador',
-          description: format(new Date(a.data_aprovacao || a.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }),
+          description: format(parseDataLocal(a.data_aprovacao || a.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: dateFnsLocale() }),
           badge: (
-            <StatusBadge tone={info.tone} size="sm">
+            <StatusBadge tone={info.tone}>
               {t(info.labelKey)}
             </StatusBadge>
           ),
-          icon: User,
+          icon: IconPerson,
           raw: a,
         };
       }),
@@ -392,7 +392,7 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
       <DialogShell
         open={open}
         onOpenChange={onOpenChange}
-        icon={ShieldCheck}
+        icon={IconShieldCheck}
         title={t('documentos.dialogs.aprovacaoDesabilitadaTitulo')}
         description={t('documentos.dialogs.aprovacaoDesabilitadaDescricao')}
         size="md"
@@ -433,20 +433,20 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
               {a.tipo_acao === 'solicitacao' ? t('documentos.dialogs.solicitacaoAprovacao') : t('documentos.dialogs.registroAprovacao')}
             </p>
           </div>
-          <StatusBadge tone={info.tone} icon={<StatusIcon className="h-3 w-3" />}>
+          <StatusBadge tone={info.tone}>
             {t(info.labelKey)}
           </StatusBadge>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('documentos.dialogs.solicitadaEm')}</p>
-            <p className="text-sm">{format(new Date(a.created_at), locale === 'pt' ? "dd/MM/yyyy 'às' HH:mm" : "MM/dd/yyyy 'at' h:mm a", { locale: locale === 'pt' ? ptBR : enUS })}</p>
+            <p className="text-xs font-medium text-muted-foreground">{t('documentos.dialogs.solicitadaEm')}</p>
+            <p className="text-sm">{format(new Date(a.created_at), `${datePattern()} '${locale === 'en' ? 'at' : 'às'}' HH:mm`, { locale: dateFnsLocale() })}</p>
           </div>
           {a.data_aprovacao && (
             <div className="space-y-1">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('documentos.dialogs.decididaEm')}</p>
-              <p className="text-sm">{format(new Date(a.data_aprovacao), locale === 'pt' ? "dd/MM/yyyy 'às' HH:mm" : "MM/dd/yyyy 'at' h:mm a", { locale: locale === 'pt' ? ptBR : enUS })}</p>
+              <p className="text-xs font-medium text-muted-foreground">{t('documentos.dialogs.decididaEm')}</p>
+              <p className="text-sm">{format(parseDataLocal(a.data_aprovacao), `${datePattern()} '${locale === 'en' ? 'at' : 'às'}' HH:mm`, { locale: dateFnsLocale() })}</p>
             </div>
           )}
         </div>
@@ -455,8 +455,8 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
           <>
             <Separator />
             <div className="space-y-1">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('documentos.dialogs.comentariosLabel')}</p>
-              <p className="text-sm whitespace-pre-wrap leading-relaxed bg-muted/40 rounded-md p-3 border">{a.comentarios}</p>
+              <p className="text-xs font-medium text-muted-foreground">{t('documentos.dialogs.comentariosLabel')}</p>
+              <p className="text-sm whitespace-pre-wrap leading-relaxed bg-card rounded-md p-3 border">{a.comentarios}</p>
             </div>
           </>
         )}
@@ -468,15 +468,15 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
               {isAprovador && (
                 <>
                   <Button size="sm" onClick={() => openActionModal('aprovar', a.id)}>
-                    <CheckCircle className="h-4 w-4 mr-2" />
+                    <IconSuccess className="h-4 w-4 mr-2" />
                     {t('documentos.dialogs.aprovar')}
                   </Button>
                   <Button variant="outline" size="sm" onClick={() => openActionModal('alteracoes', a.id)}>
-                    <MessageSquare className="h-4 w-4 mr-2" />
+                    <IconMessage className="h-4 w-4 mr-2" />
                     {t('documentos.dialogs.solicitarAlteracoes')}
                   </Button>
                   <Button variant="destructive" size="sm" onClick={() => openActionModal('rejeitar', a.id)}>
-                    <XCircle className="h-4 w-4 mr-2" />
+                    <IconError className="h-4 w-4 mr-2" />
                     {t('documentos.dialogs.rejeitar')}
                   </Button>
                 </>
@@ -505,7 +505,7 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
         onOpenChange={onOpenChange}
         title={t('documentos.dialogs.aprovacaoDocumentoTitulo')}
         description={documento.nome}
-        icon={ShieldCheck}
+        icon={IconShieldCheck}
         items={items}
         selectedId={selectedId}
         onSelect={(it) => setSelectedId(it.id)}
@@ -515,7 +515,7 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
         searchPlaceholder={t('documentos.dialogs.buscarAprovador')}
         emptyState={
           <div className="space-y-2">
-            <CheckCircle className="h-8 w-8 mx-auto text-muted-foreground" />
+            <IconSuccess className="h-8 w-8 mx-auto text-muted-foreground" />
             <p>{t('documentos.dialogs.nenhumaAprovacao')}</p>
             <p className="text-xs">{t('documentos.dialogs.useNovaSolicitacao')}</p>
           </div>
@@ -535,7 +535,7 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
             )}
             {documento.arquivo_url && (
               <Button variant="outline" size="sm" onClick={() => setPreviewOpen(true)}>
-                <Eye className="h-4 w-4 mr-2" />
+                <IconView className="h-4 w-4 mr-2" />
                 {t('documentos.dialogs.visualizarDocumento')}
               </Button>
             )}
@@ -550,7 +550,7 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
       <DialogShell
         open={requestOpen}
         onOpenChange={setRequestOpen}
-        icon={Plus}
+        icon={IconAdd}
         title={t('documentos.dialogs.novaSolicitacaoAprovacaoTitulo')}
         description={t('documentos.dialogs.novaSolicitacaoAprovacaoDescricao')}
         size="sm"
@@ -572,7 +572,7 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
                   {profiles.map((profile) => (
                     <SelectItem key={profile.user_id} value={profile.user_id}>
                       <div className="flex items-center gap-2 min-w-0">
-                        <User className="h-4 w-4 shrink-0" />
+                        <IconPerson className="h-4 w-4 shrink-0" />
                         <div className="min-w-0">
                           <div className="truncate">{profile.nome}</div>
                           <div className="text-xs text-muted-foreground truncate">{profile.email}</div>
@@ -602,7 +602,7 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
       <DialogShell
         open={previewOpen}
         onOpenChange={setPreviewOpen}
-        icon={Eye}
+        icon={IconView}
         title={documento.nome}
         description={documento.arquivo_nome || t('documentos.dialogs.visualizacaoDocumento')}
         size="xl"
@@ -616,23 +616,23 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
           </div>
         }
       >
-          <div className="flex-1 overflow-hidden bg-muted/20">
+          <div className="flex-1 min-h-0 overflow-hidden bg-card border border-border">
             {loadingPreview ? (
               <div className="flex items-center justify-center h-full">
                 <AkurisPulse size={32} className="text-muted-foreground" />
               </div>
             ) : !documento?.arquivo_url ? (
               <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-                <FileText className="h-16 w-16 mb-4" />
+                <IconFile className="h-16 w-16 mb-4" />
                 <p className="text-lg font-medium">{t('documentos.dialogs.documentoSemArquivo')}</p>
               </div>
             ) : !canPreview() ? (
               <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-                <FileText className="h-16 w-16 mb-4" />
+                <IconFile className="h-16 w-16 mb-4" />
                 <p className="text-lg font-medium">{t('documentos.dialogs.visualizacaoIndisponivel')}</p>
                 <p className="text-sm mb-4">{t('documentos.dialogs.arquivoNaoVisualizavel')}</p>
                 <Button variant="outline" onClick={() => previewUrl && window.open(previewUrl, '_blank')}>
-                  <ExternalLink className="h-4 w-4 mr-2" />
+                  <IconExternal className="h-4 w-4 mr-2" />
                   {t('documentos.dialogs.baixarDocumento')}
                 </Button>
               </div>
@@ -644,9 +644,9 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-                <FileText className="h-16 w-16 mb-4" />
+                <IconFile className="h-16 w-16 mb-4" />
                 <Button variant="outline" onClick={() => previewUrl && window.open(previewUrl, '_blank')}>
-                  <ExternalLink className="h-4 w-4 mr-2" />
+                  <IconExternal className="h-4 w-4 mr-2" />
                   {t('documentos.dialogs.abrirNovaAba')}
                 </Button>
               </div>
@@ -658,7 +658,7 @@ export function AprovacaoDialog({ open, onOpenChange, documento, onSuccess, empr
       <DialogShell
         open={actionModal.open}
         onOpenChange={(o) => !o && closeActionModal()}
-        icon={actionModal.type === 'rejeitar' ? XCircle : actionModal.type === 'alteracoes' ? MessageSquare : CheckCircle}
+        icon={actionModal.type === 'rejeitar' ? IconError : actionModal.type === 'alteracoes' ? IconMessage : IconSuccess}
         title={
           actionModal.type === 'aprovar' ? t('documentos.dialogs.aprovarDocumentoTitulo')
             : actionModal.type === 'rejeitar' ? t('documentos.dialogs.rejeitarDocumentoTitulo')

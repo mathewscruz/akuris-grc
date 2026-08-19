@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { IconAdd, IconInfo, IconCalendar, IconCalendarClock, IconMoney, IconPerson } from '@/components/icons';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { Button } from '@/components/ui/button';
@@ -11,12 +12,10 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveMarcoStatusTone, resolveMarcoTipoTone } from '@/lib/status-tone';
 import { formatStatus } from '@/lib/text-utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Calendar, CalendarClock, DollarSign, User, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { formatDateOnly } from '@/lib/date-utils';
 
 interface Contrato {
   id: string;
@@ -255,7 +254,7 @@ export function MarcosDialog({ contrato, open, onOpenChange }: MarcosDialogProps
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      icon={CalendarClock}
+      icon={IconCalendarClock}
       title={t('contratosAtivos.marcosDialog.title').replace('{nome}', contrato.nome)}
       description={t('contratosAtivos.marcosDialog.description').replace('{numero}', contrato.numero_contrato)}
       size="lg"
@@ -265,7 +264,7 @@ export function MarcosDialog({ contrato, open, onOpenChange }: MarcosDialogProps
           {!showForm && (
             <div className="flex justify-end items-center">
               <Button onClick={() => setShowForm(true)}>
-                <Plus className="h-4 w-4 mr-2" />
+                <IconAdd className="h-4 w-4 mr-2" />
                 {t('contratosAtivos.marcosDialog.newButton')}
               </Button>
             </div>
@@ -421,46 +420,46 @@ export function MarcosDialog({ contrato, open, onOpenChange }: MarcosDialogProps
 
           <div className="space-y-4">
             {marcos.map((marco) => (
-              <Card key={marco.id} className={`hover:shadow-md transition-shadow ${isOverdue(marco.data_prevista, marco.status) ? 'border-destructive/30' : ''}`}>
+              <Card key={marco.id} className={`hover:shadow-sm transition-shadow ${isOverdue(marco.data_prevista, marco.status) ? 'border-destructive/30' : ''}`}>
                 <CardContent className="pt-6">
                   <div className="flex justify-between items-start mb-4">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <h3 className="font-semibold">{marco.nome}</h3>
                         {isOverdue(marco.data_prevista, marco.status) && (
-                          <AlertCircle className="h-4 w-4 text-destructive" />
+                          <IconInfo className="h-4 w-4 text-destructive" />
                         )}
                       </div>
                       <p className="text-sm text-muted-foreground">{marco.descricao}</p>
                     </div>
                     <div className="flex gap-2">
-                      <StatusBadge size="sm" {...resolveMarcoTipoTone(marco.tipo)}>{formatStatus(marco.tipo)}</StatusBadge>
-                      <StatusBadge size="sm" {...resolveMarcoStatusTone(marco.status)}>{formatStatus(marco.status)}</StatusBadge>
+                      <StatusBadge {...resolveMarcoTipoTone(marco.tipo)}>{formatStatus(marco.tipo)}</StatusBadge>
+                      <StatusBadge {...resolveMarcoStatusTone(marco.status)}>{formatStatus(marco.status)}</StatusBadge>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
                     <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <IconCalendar className="h-4 w-4 text-muted-foreground" />
                       <div>
                         <span className="font-medium">{t('contratosAtivos.marcosDialog.fieldExpectedDate')}</span>
-                        <p>{format(new Date(marco.data_prevista), 'dd/MM/yyyy', { locale: ptBR })}</p>
+                        <p>{formatDateOnly(marco.data_prevista)}</p>
                       </div>
                     </div>
 
                     {marco.data_realizada && (
                       <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-success" />
+                        <IconCalendar className="h-4 w-4 text-success" />
                         <div>
                           <span className="font-medium">{t('contratosAtivos.marcosDialog.fieldActualDate')}</span>
-                          <p>{format(new Date(marco.data_realizada), 'dd/MM/yyyy', { locale: ptBR })}</p>
+                          <p>{formatDateOnly(marco.data_realizada)}</p>
                         </div>
                       </div>
                     )}
 
                     {marco.valor && (
                       <div className="flex items-center gap-2">
-                        <DollarSign className="h-4 w-4 text-muted-foreground" />
+                        <IconMoney className="h-4 w-4 text-muted-foreground" />
                         <div>
                           <span className="font-medium">{t('contratosAtivos.marcosDialog.fieldValue')}</span>
                           <p>{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(marco.valor))}</p>
@@ -470,7 +469,7 @@ export function MarcosDialog({ contrato, open, onOpenChange }: MarcosDialogProps
 
                     {marco.responsavel && (
                       <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-muted-foreground" />
+                        <IconPerson className="h-4 w-4 text-muted-foreground" />
                         <div>
                           <span className="font-medium">{t('contratosAtivos.marcosDialog.fieldResponsible')}</span>
                           <p>{usuarios.find(u => u.user_id === marco.responsavel)?.nome || t('contratosAtivos.marcosDialog.naFallback')}</p>
@@ -501,7 +500,7 @@ export function MarcosDialog({ contrato, open, onOpenChange }: MarcosDialogProps
           {marcos.length === 0 && !showForm && (
             <Card>
               <CardContent className="text-center py-8">
-                <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <IconCalendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-muted-foreground">{t('contratosAtivos.marcosDialog.emptyState')}</p>
               </CardContent>
             </Card>

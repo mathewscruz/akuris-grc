@@ -1,17 +1,6 @@
 import React, { type ReactNode } from 'react';
+import { IconEdit, IconDelete, IconView, IconMore, IconSuccess, IconRefresh, IconActivity, IconHistory, IconMessage, IconShield } from '@/components/icons';
 import { rowOpenProps } from '@/lib/row-interaction';
-import {
-  Activity,
-  CheckCircle,
-  Edit,
-  Eye,
-  History,
-  MessageSquare,
-  MoreHorizontal,
-  RefreshCw,
-  Shield,
-  Trash2,
-} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { SortableTableHead, useTableSort } from '@/components/ui/sortable-table-head';
@@ -24,7 +13,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { Badge } from '@/components/ui/badge';
 import { capitalizeText, formatStatus } from '@/lib/text-utils';
 import {
   resolveClassificacaoTone,
@@ -46,6 +34,8 @@ export interface DocumentoListaItem {
   versao?: number | null;
   data_vencimento?: string | null;
   requer_aprovacao?: boolean | null;
+  /** Nome já resolvido pelo chamador; a lista só exibe. */
+  responsavel_nome?: string | null;
 }
 
 const SEM_VALOR = '-';
@@ -76,7 +66,7 @@ export interface DocumentosListaProps<T extends DocumentoListaItem = DocumentoLi
 
 function getTipoBadge(tipo: string) {
   return (
-    <StatusBadge size="sm" {...resolveTipoDocumentoTone(tipo)}>
+    <StatusBadge {...resolveTipoDocumentoTone(tipo)}>
       {capitalizeText(tipo)}
     </StatusBadge>
   );
@@ -92,14 +82,14 @@ function getVencimentoBadge(dataVencimento: string | null | undefined, vencidoLa
 
   if (diffDays < 0) {
     return (
-      <StatusBadge size="sm" {...resolveRevisaoTone(diffDays)} className="ml-2">
+      <StatusBadge {...resolveRevisaoTone(diffDays)} className="ml-2">
         {vencidoLabel}
       </StatusBadge>
     );
   }
   if (diffDays <= 30) {
     return (
-      <StatusBadge size="sm" {...resolveRevisaoTone(diffDays)} className="ml-2">
+      <StatusBadge {...resolveRevisaoTone(diffDays)} className="ml-2">
         {diffDays}d
       </StatusBadge>
     );
@@ -138,7 +128,7 @@ export function DocumentoAcoesMenu<T extends DocumentoListaItem>({
     <DropdownMenuTrigger asChild>
       <Button variant="ghost" className="h-8 w-8 p-0">
         <span className="sr-only">{t('documentos.lista.acoesDocumento', { nome: documento.nome })}</span>
-        <MoreHorizontal className="h-4 w-4" />
+        <IconMore className="h-4 w-4" />
       </Button>
     </DropdownMenuTrigger>
   );
@@ -159,46 +149,46 @@ export function DocumentoAcoesMenu<T extends DocumentoListaItem>({
       )}
       <DropdownMenuContent align="end">
         <DropdownMenuItem onClick={() => onPreview(documento)}>
-          <Eye className="mr-2 h-4 w-4" />
+          <IconView className="mr-2 h-4 w-4" />
           {t('documentos.lista.preview')}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => onEditar(documento)}>
-          <Edit className="mr-2 h-4 w-4" />
+          <IconEdit className="mr-2 h-4 w-4" />
           {t('documentos.lista.editar')}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => onVinculacoes(documento)}>
-          <Eye className="mr-2 h-4 w-4" />
+          <IconView className="mr-2 h-4 w-4" />
           {t('documentos.lista.vinculacoes')}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => onComentarios(documento)}>
-          <MessageSquare className="mr-2 h-4 w-4" />
+          <IconMessage className="mr-2 h-4 w-4" />
           {t('documentos.lista.comentarios')}
         </DropdownMenuItem>
         {documento.requer_aprovacao && (
           <DropdownMenuItem onClick={() => onAprovacao(documento)}>
-            <CheckCircle className="mr-2 h-4 w-4" />
+            <IconSuccess className="mr-2 h-4 w-4" />
             {t('documentos.lista.aprovacao')}
           </DropdownMenuItem>
         )}
         {podeRenovar && (
           <DropdownMenuItem onClick={() => onRenovar(documento)}>
-            <RefreshCw className="mr-2 h-4 w-4" />
+            <IconRefresh className="mr-2 h-4 w-4" />
             {t('documentos.lista.renovarDocumento')}
           </DropdownMenuItem>
         )}
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => onHistorico(documento)}>
-          <History className="mr-2 h-4 w-4" />
+          <IconHistory className="mr-2 h-4 w-4" />
           {t('documentos.lista.historicoVersoes')}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => onAuditoria(documento)}>
-          <Activity className="mr-2 h-4 w-4" />
+          <IconActivity className="mr-2 h-4 w-4" />
           {t('documentos.lista.trilhaAuditoria')}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => onExcluir(documento)} className="text-red-600">
-          <Trash2 className="mr-2 h-4 w-4" />
+        <DropdownMenuItem onClick={() => onExcluir(documento)} className="text-destructive">
+          <IconDelete className="mr-2 h-4 w-4" />
           {t('documentos.lista.excluir')}
         </DropdownMenuItem>
       </DropdownMenuContent>
@@ -209,7 +199,7 @@ export function DocumentoAcoesMenu<T extends DocumentoListaItem>({
 function CampoCard({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="space-y-1 min-w-0">
-      <dt className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</dt>
+      <dt className="text-xs text-muted-foreground">{label}</dt>
       <dd className="flex items-center text-sm">{children}</dd>
     </div>
   );
@@ -271,7 +261,7 @@ export function DocumentosLista<T extends DocumentoListaItem>({
 
                 <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3">
                   <CampoCard label={t('documentos.lista.status')}>
-                    <StatusBadge size="sm" {...resolveItemStatusTone(documento.status)}>
+                    <StatusBadge {...resolveItemStatusTone(documento.status)}>
                       {formatStatus(documento.status)}
                     </StatusBadge>
                   </CampoCard>
@@ -284,10 +274,9 @@ export function DocumentosLista<T extends DocumentoListaItem>({
                   <CampoCard label={t('documentos.lista.classificacao')}>
                     {/* Confidencial mantém a saliência do ícone usada na tabela */}
                     <StatusBadge
-                      size="sm"
                       icon={
                         documento.classificacao === 'confidencial' ? (
-                          <Shield className="h-3 w-3" />
+                          <IconShield className="h-3 w-3" />
                         ) : undefined
                       }
                       {...resolveClassificacaoTone(documento.classificacao || 'interna')}
@@ -297,6 +286,11 @@ export function DocumentosLista<T extends DocumentoListaItem>({
                   </CampoCard>
                   <CampoCard label={t('documentos.lista.versao')}>
                     <span>{formatVersao(documento.versao)}</span>
+                  </CampoCard>
+                  <CampoCard label={t('documentos.lista.responsavel')}>
+                    <span className={documento.responsavel_nome ? '' : 'text-muted-foreground'}>
+                      {documento.responsavel_nome || SEM_VALOR}
+                    </span>
                   </CampoCard>
                 </dl>
               </li>
@@ -316,13 +310,14 @@ export function DocumentosLista<T extends DocumentoListaItem>({
               <SortableTableHead field="status" sort={sort} onSort={toggleSort}>{t('documentos.lista.status')}</SortableTableHead>
               <SortableTableHead field="versao" sort={sort} onSort={toggleSort}>{t('documentos.lista.versao')}</SortableTableHead>
               <SortableTableHead field="data_validade" sort={sort} onSort={toggleSort}>{t('documentos.lista.validade')}</SortableTableHead>
+              <SortableTableHead field="responsavel_nome" sort={sort} onSort={toggleSort}>{t('documentos.lista.responsavel')}</SortableTableHead>
               <TableHead className="text-right">{t('documentos.lista.acoes')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {vazio ? (
               <TableRow>
-                <TableCell colSpan={7} className="p-0">
+                <TableCell colSpan={8} className="p-0">
                   {emptyState}
                 </TableCell>
               </TableRow>
@@ -330,6 +325,8 @@ export function DocumentosLista<T extends DocumentoListaItem>({
               documentosOrdenados.map((documento) => (
                 <TableRow key={documento.id} data-focus-id={documento.id} {...rowOpenProps(() => acoes.onPreview(documento), documento.nome)}>
                   <TableCell>
+                    {/* Sem tarja de confidencial aqui: a coluna Classificação
+                        já mostra o mesmo rótulo na mesma linha. */}
                     <div className="space-y-1">
                       <div className="font-medium">{documento.nome}</div>
                       {documento.descricao && (
@@ -337,25 +334,18 @@ export function DocumentosLista<T extends DocumentoListaItem>({
                           {documento.descricao}
                         </div>
                       )}
-                      {documento.classificacao === 'confidencial' && (
-                        <Badge variant="destructive" className="text-xs">
-                          <Shield className="h-3 w-3 mr-1" />
-                          {t('documentos.lista.confidencial')}
-                        </Badge>
-                      )}
                     </div>
                   </TableCell>
                   <TableCell>{getTipoBadge(documento.tipo)}</TableCell>
                   <TableCell>
                     <StatusBadge
-                      size="sm"
                       {...resolveClassificacaoTone(documento.classificacao || 'interna')}
                     >
                       {capitalizeText(documento.classificacao || 'interna')}
                     </StatusBadge>
                   </TableCell>
                   <TableCell>
-                    <StatusBadge size="sm" {...resolveItemStatusTone(documento.status)}>
+                    <StatusBadge {...resolveItemStatusTone(documento.status)}>
                       {formatStatus(documento.status)}
                     </StatusBadge>
                   </TableCell>
@@ -365,6 +355,11 @@ export function DocumentosLista<T extends DocumentoListaItem>({
                       {formatDateOnly(documento.data_vencimento)}
                       {getVencimentoBadge(documento.data_vencimento, t('documentos.lista.vencido'))}
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    <span className={documento.responsavel_nome ? '' : 'text-muted-foreground'}>
+                      {documento.responsavel_nome || SEM_VALOR}
+                    </span>
                   </TableCell>
                   <TableCell className="text-right">
                     <DocumentoAcoesMenu

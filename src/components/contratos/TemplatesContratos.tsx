@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { IconAdd, IconEdit, IconDelete, IconDownload, IconFile, IconCopy } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -7,7 +8,6 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { FileText, Plus, Edit, Trash2, Copy, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -289,7 +289,7 @@ A manutenção preventiva e corretiva dos equipamentos será de responsabilidade
         {!hideTrigger && (
           <DialogTrigger asChild>
             <Button variant="outline">
-              <FileText className="h-4 w-4 mr-2" />
+              <IconFile className="h-4 w-4 mr-2" />
               {t('contratosAtivos.templatesContratos.triggerButton')}
             </Button>
           </DialogTrigger>
@@ -304,7 +304,7 @@ A manutenção preventiva e corretiva dos equipamentos será de responsabilidade
                 </DialogDescription>
               </div>
               <Button onClick={() => setFormOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
+                <IconAdd className="h-4 w-4 mr-2" />
                 {t('contratosAtivos.templatesContratos.newButton')}
               </Button>
             </div>
@@ -350,28 +350,28 @@ A manutenção preventiva e corretiva dos equipamentos será de responsabilidade
                               variant="outline"
                               onClick={() => duplicarTemplate(template)}
                             >
-                              <Copy className="h-4 w-4" />
+                              <IconCopy className="h-4 w-4" />
                             </Button>
                             <Button 
                               size="sm" 
                               variant="outline"
                               onClick={() => exportarTemplate(template)}
                             >
-                              <Download className="h-4 w-4" />
+                              <IconDownload className="h-4 w-4" />
                             </Button>
                             <Button 
                               size="sm" 
                               variant="outline"
                               onClick={() => setEditingTemplate(template)}
                             >
-                              <Edit className="h-4 w-4" />
+                              <IconEdit className="h-4 w-4" />
                             </Button>
                             <Button 
                               size="sm" 
                               variant="outline"
                               onClick={() => excluirTemplate(template.id!)}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <IconDelete className="h-4 w-4" />
                             </Button>
                           </div>
                         </div>

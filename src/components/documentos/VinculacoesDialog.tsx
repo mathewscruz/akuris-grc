@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { IconAdd, IconDelete, IconExternal, IconSuccess, IconWarning, IconFile, IconShield, IconOrg, IconLink } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import ConfirmDialog from '@/components/ConfirmDialog';
@@ -7,7 +8,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Plus, Link, Trash2, FileText, Shield, AlertTriangle, CheckCircle, Building, ExternalLink } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -43,11 +43,11 @@ interface VinculacoesDialogProps {
 }
 
 const getModulosDisponiveis = (t: (k: string) => string) => [
-  { value: 'contrato', label: t('documentosExtras.vinculacoes.moduloContratos'), icon: FileText },
-  { value: 'auditoria', label: t('documentosExtras.vinculacoes.moduloAuditorias'), icon: CheckCircle },
-  { value: 'risco', label: t('documentosExtras.vinculacoes.moduloRiscos'), icon: AlertTriangle },
-  { value: 'controle', label: t('documentosExtras.vinculacoes.moduloControles'), icon: Shield },
-  { value: 'ativo', label: t('documentosExtras.vinculacoes.moduloAtivos'), icon: Building },
+  { value: 'contrato', label: t('documentosExtras.vinculacoes.moduloContratos'), icon: IconFile },
+  { value: 'auditoria', label: t('documentosExtras.vinculacoes.moduloAuditorias'), icon: IconSuccess },
+  { value: 'risco', label: t('documentosExtras.vinculacoes.moduloRiscos'), icon: IconWarning },
+  { value: 'controle', label: t('documentosExtras.vinculacoes.moduloControles'), icon: IconShield },
+  { value: 'ativo', label: t('documentosExtras.vinculacoes.moduloAtivos'), icon: IconOrg },
 ];
 
 const tiposVinculacao = [
@@ -316,7 +316,7 @@ export function VinculacoesDialog({ open, onOpenChange, documento, empresaId }: 
 
   const getModuloIcon = (modulo: string) => {
     const moduloConfig = modulosDisponiveis.find(m => m.value === modulo);
-    const Icon = moduloConfig?.icon || Link;
+    const Icon = moduloConfig?.icon || IconLink;
     return <Icon className="h-4 w-4" />;
   };
 
@@ -326,7 +326,7 @@ export function VinculacoesDialog({ open, onOpenChange, documento, empresaId }: 
   };
 
   const getTipoVinculacaoBadge = (tipo: string) => (
-    <StatusBadge size="sm" {...resolveTipoVinculacaoTone(tipo)}>
+    <StatusBadge {...resolveTipoVinculacaoTone(tipo)}>
       {formatStatus(tipo)}
     </StatusBadge>
   );
@@ -336,7 +336,7 @@ export function VinculacoesDialog({ open, onOpenChange, documento, empresaId }: 
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      icon={Link}
+      icon={IconLink}
       title={t('documentosExtras.vinculacoes.titulo')}
       description={t('documentosExtras.vinculacoes.descricao').replace('{nome}', documento.nome)}
       size="lg"
@@ -348,7 +348,7 @@ export function VinculacoesDialog({ open, onOpenChange, documento, empresaId }: 
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-medium">{t('documentosExtras.vinculacoes.vinculacoesExistentes')}</h3>
                 <Button onClick={() => setShowForm(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
+                  <IconAdd className="h-4 w-4 mr-2" />
                   {t('documentosExtras.vinculacoes.novaVinculacao')}
                 </Button>
               </div>
@@ -360,7 +360,7 @@ export function VinculacoesDialog({ open, onOpenChange, documento, empresaId }: 
               ) : vinculacoes.length === 0 ? (
                 <Card>
                   <CardContent className="flex flex-col items-center justify-center h-32">
-                    <Link className="h-12 w-12 text-muted-foreground mb-2" />
+                    <IconLink className="h-12 w-12 text-muted-foreground mb-2" />
                     <p className="text-muted-foreground">{t('documentosExtras.vinculacoes.nenhumaVinculacao')}</p>
                     <p className="text-sm text-muted-foreground">{t('documentosExtras.vinculacoes.clickeParaComecar')}</p>
                   </CardContent>
@@ -408,7 +408,7 @@ export function VinculacoesDialog({ open, onOpenChange, documento, empresaId }: 
                                 window.open(path, '_blank');
                               }}
                             >
-                              <ExternalLink className="h-4 w-4" />
+                              <IconExternal className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="outline"
@@ -416,7 +416,7 @@ export function VinculacoesDialog({ open, onOpenChange, documento, empresaId }: 
                               onClick={() => setDeleteConfirm({ open: true, id: vinculacao.id })}
                               className="text-destructive hover:text-destructive"
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <IconDelete className="h-4 w-4" />
                             </Button>
                           </div>
                         </TableCell>

@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { IconClose, IconDownload, IconExternal, IconFile, IconImage } from '@/components/icons';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveItemStatusTone } from '@/lib/status-tone';
-import { X, Download, ExternalLink, FileText, Image as ImageIcon, File } from 'lucide-react';
 import DOMPurify from 'dompurify';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -247,9 +247,9 @@ export function DocumentoPreview({ open, onOpenChange, documento }: DocumentoPre
   };
 
   const getFileIcon = (className = 'h-5 w-5') => {
-    if (kind === 'image') return <ImageIcon className={className} />;
-    if (kind === 'pdf' || kind === 'word' || !hasFile) return <FileText className={className} />;
-    return <File className={className} />;
+    if (kind === 'image') return <IconImage className={className} />;
+    if (kind === 'pdf' || kind === 'word' || !hasFile) return <IconFile className={className} />;
+    return <IconFile className={className} />;
   };
 
   const formatFileSize = (bytes?: number) => {
@@ -383,23 +383,23 @@ export function DocumentoPreview({ open, onOpenChange, documento }: DocumentoPre
           </div>
         </DialogHeader>
 
-        <div className="flex-1 min-h-0 bg-muted/30">{renderBody()}</div>
+        <div className="flex-1 min-h-0 bg-card border border-border">{renderBody()}</div>
 
         <div className="flex items-center justify-between gap-2 border-t border-border px-6 py-4 shrink-0">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            <X className="h-4 w-4 mr-2" />
+            <IconClose className="h-4 w-4 mr-2" />
             {t('documentosExtras.preview.fechar')}
           </Button>
           <div className="flex gap-2">
             {canOpenTab && (
               <Button variant="outline" onClick={openInNewTab}>
-                <ExternalLink className="h-4 w-4 mr-2" />
+                <IconExternal className="h-4 w-4 mr-2" />
                 {t('documentosExtras.preview.abrirNovaAba')}
               </Button>
             )}
             {canDownload && (
               <Button onClick={handleDownload}>
-                <Download className="h-4 w-4 mr-2" />
+                <IconDownload className="h-4 w-4 mr-2" />
                 {t('documentosExtras.preview.download')}
               </Button>
             )}

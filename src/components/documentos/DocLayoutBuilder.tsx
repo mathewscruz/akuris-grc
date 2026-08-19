@@ -1,11 +1,11 @@
 import React from 'react';
+import { IconAdd, IconDelete, IconArrowDown, IconArrowUp } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface DocSection {
@@ -121,7 +121,7 @@ export const DocLayoutBuilder: React.FC<DocLayoutBuilderProps> = ({ value, onCha
       <div className="flex items-center justify-between">
         <h4 className="font-semibold">{t('documentosExtras.layoutBuilder.secoes')}</h4>
         <Button size="sm" className="gap-1" onClick={addSection}>
-          <Plus className="h-4 w-4" /> {t('documentosExtras.layoutBuilder.novaSecao')}
+          <IconAdd className="h-4 w-4" /> {t('documentosExtras.layoutBuilder.novaSecao')}
         </Button>
       </div>
 
@@ -137,13 +137,13 @@ export const DocLayoutBuilder: React.FC<DocLayoutBuilderProps> = ({ value, onCha
                   />
                   <div className="ml-auto flex gap-1">
                     <Button variant="outline" size="icon" onClick={() => moveUp(idx)} aria-label={t('documentosExtras.layoutBuilder.moverParaCima')}>
-                      <ArrowUp className="h-4 w-4" />
+                      <IconArrowUp className="h-4 w-4" />
                     </Button>
                     <Button variant="outline" size="icon" onClick={() => moveDown(idx)} aria-label={t('documentosExtras.layoutBuilder.moverParaBaixo')}>
-                      <ArrowDown className="h-4 w-4" />
+                      <IconArrowDown className="h-4 w-4" />
                     </Button>
                     <Button variant="destructive" size="icon" onClick={() => removeSection(idx)} aria-label={t('documentosExtras.layoutBuilder.removerSecao')}>
-                      <Trash2 className="h-4 w-4" />
+                      <IconDelete className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>

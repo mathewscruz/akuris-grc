@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { IconDelete, IconSend, IconMessage, IconPerson } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { MessageSquare, Send, User, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -13,6 +13,7 @@ import { ptBR } from 'date-fns/locale';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { dateFnsLocale, datePattern } from '@/lib/date-utils';
 interface Documento {
   id: string;
   nome: string;
@@ -198,7 +199,7 @@ export function ComentariosDialog({ open, onOpenChange, documento }: Comentarios
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      icon={MessageSquare}
+      icon={IconMessage}
       title={t('documentos.dialogs.comentariosDocumentoTitulo')}
       description={t('documentos.dialogs.comentariosDocumentoDescricao', { nome: documento.nome })}
       size="md"
@@ -214,7 +215,7 @@ export function ComentariosDialog({ open, onOpenChange, documento }: Comentarios
             ) : comentarios.length === 0 ? (
               <Card>
                 <CardContent className="flex flex-col items-center justify-center h-32">
-                  <MessageSquare className="h-12 w-12 text-muted-foreground mb-2" />
+                  <IconMessage className="h-12 w-12 text-muted-foreground mb-2" />
                   <p className="text-muted-foreground">{t('documentos.dialogs.nenhumComentario')}</p>
                   <p className="text-sm text-muted-foreground">{t('documentos.dialogs.sejaOPrimeiro')}</p>
                 </CardContent>
@@ -234,7 +235,7 @@ export function ComentariosDialog({ open, onOpenChange, documento }: Comentarios
                           <div>
                             <p className="font-medium text-sm">{comentario.usuario_nome}</p>
                             <p className="text-xs text-muted-foreground">
-                              {format(new Date(comentario.created_at), 'dd/MM/yyyy \'às\' HH:mm', { locale: ptBR })}
+                              {format(new Date(comentario.created_at), `${datePattern()} 'às' HH:mm`, { locale: dateFnsLocale() })}
                             </p>
                           </div>
                           {comentario.user_id === currentUserId && (
@@ -244,7 +245,7 @@ export function ComentariosDialog({ open, onOpenChange, documento }: Comentarios
                               onClick={() => setDeleteConfirm({ open: true, id: comentario.id })}
                               className="text-destructive hover:text-destructive"
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <IconDelete className="h-4 w-4" />
                             </Button>
                           )}
                         </div>
@@ -277,7 +278,7 @@ export function ComentariosDialog({ open, onOpenChange, documento }: Comentarios
                   </>
                 ) : (
                   <>
-                    <Send className="h-4 w-4 mr-2" />
+                    <IconSend className="h-4 w-4 mr-2" />
                     {t('documentos.dialogs.comentar')}
                   </>
                 )}

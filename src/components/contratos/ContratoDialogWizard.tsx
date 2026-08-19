@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { IconCheck, IconCalendar, IconFile, IconChevron, IconChevronLeft, IconMoney, IconUsers, IconChecklist } from '@/components/icons';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,9 +12,9 @@ import { resolveContratoStatusTone } from '@/lib/status-tone';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
-import { Check, ChevronLeft, ChevronRight, FileText, DollarSign, Calendar, Users, ClipboardList } from 'lucide-react';
 import { formatStatus } from '@/lib/text-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { parseDataLocal } from '@/lib/date-utils';
 
 interface Contrato {
   id: string;
@@ -53,11 +54,11 @@ interface ContratoDialogWizardProps {
 }
 
 const buildSteps = (t: (key: string) => string) => [
-  { id: 1, title: t('contratosAtivos.contratoDialogWizard.stepBasicData'), icon: FileText, description: t('contratosAtivos.contratoDialogWizard.stepBasicDataDescription') },
-  { id: 2, title: t('contratosAtivos.contratoDialogWizard.stepValuesAndDates'), icon: DollarSign, description: t('contratosAtivos.contratoDialogWizard.stepValuesAndDatesDescription') },
-  { id: 3, title: t('contratosAtivos.contratoDialogWizard.stepParties'), icon: Users, description: t('contratosAtivos.contratoDialogWizard.stepPartiesDescription') },
-  { id: 4, title: t('contratosAtivos.contratoDialogWizard.stepDetails'), icon: ClipboardList, description: t('contratosAtivos.contratoDialogWizard.stepDetailsDescription') },
-  { id: 5, title: t('contratosAtivos.contratoDialogWizard.stepReview'), icon: Check, description: t('contratosAtivos.contratoDialogWizard.stepReviewDescription') }
+  { id: 1, title: t('contratosAtivos.contratoDialogWizard.stepBasicData'), icon: IconFile, description: t('contratosAtivos.contratoDialogWizard.stepBasicDataDescription') },
+  { id: 2, title: t('contratosAtivos.contratoDialogWizard.stepValuesAndDates'), icon: IconMoney, description: t('contratosAtivos.contratoDialogWizard.stepValuesAndDatesDescription') },
+  { id: 3, title: t('contratosAtivos.contratoDialogWizard.stepParties'), icon: IconUsers, description: t('contratosAtivos.contratoDialogWizard.stepPartiesDescription') },
+  { id: 4, title: t('contratosAtivos.contratoDialogWizard.stepDetails'), icon: IconChecklist, description: t('contratosAtivos.contratoDialogWizard.stepDetailsDescription') },
+  { id: 5, title: t('contratosAtivos.contratoDialogWizard.stepReview'), icon: IconCheck, description: t('contratosAtivos.contratoDialogWizard.stepReviewDescription') }
 ];
 
 export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, fornecedores }: ContratoDialogWizardProps) {
@@ -175,7 +176,7 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
         return !!formData.nome && !!formData.numero_contrato;
       case 2:
         if (formData.data_inicio && formData.data_fim) {
-          return new Date(formData.data_inicio) <= new Date(formData.data_fim);
+          return parseDataLocal(formData.data_inicio) <= parseDataLocal(formData.data_fim);
         }
         return true;
       case 3:
@@ -192,7 +193,7 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
         if (!formData.numero_contrato) return t('contratosAtivos.contratoDialogWizard.errorNumberRequired');
         return null;
       case 2:
-        if (formData.data_inicio && formData.data_fim && new Date(formData.data_inicio) > new Date(formData.data_fim)) {
+        if (formData.data_inicio && formData.data_fim && parseDataLocal(formData.data_inicio) > parseDataLocal(formData.data_fim)) {
           return t('contratosAtivos.contratoDialogWizard.errorDateRange');
         }
         return null;
@@ -602,7 +603,7 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
-                <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">{t('contratosAtivos.contratoDialogWizard.reviewBasicData')}</h4>
+                <h4 className="font-medium text-sm text-muted-foreground">{t('contratosAtivos.contratoDialogWizard.reviewBasicData')}</h4>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">{t('contratosAtivos.contratoDialogWizard.reviewNumber')}</span>
@@ -614,23 +615,23 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">{t('contratosAtivos.contratoDialogWizard.reviewType')}</span>
-                    <StatusBadge tone="neutral" variant="outline" size="sm">{formatStatus(formData.tipo)}</StatusBadge>
+                    <StatusBadge tone="neutral" variant="outline">{formatStatus(formData.tipo)}</StatusBadge>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">{t('contratosAtivos.contratoDialogWizard.reviewStatus')}</span>
-                    <StatusBadge size="sm" {...resolveContratoStatusTone(formData.status)}>{formatStatus(formData.status)}</StatusBadge>
+                    <StatusBadge {...resolveContratoStatusTone(formData.status)}>{formatStatus(formData.status)}</StatusBadge>
                   </div>
                   {formData.confidencial && (
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">{t('contratosAtivos.contratoDialogWizard.reviewConfidential')}</span>
-                      <StatusBadge tone="destructive" size="sm">{t('contratosAtivos.contratoDialogWizard.reviewYes')}</StatusBadge>
+                      <StatusBadge tone="destructive">{t('contratosAtivos.contratoDialogWizard.reviewYes')}</StatusBadge>
                     </div>
                   )}
                 </div>
               </div>
 
               <div className="space-y-4">
-                <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">{t('contratosAtivos.contratoDialogWizard.reviewValuesAndDates')}</h4>
+                <h4 className="font-medium text-sm text-muted-foreground">{t('contratosAtivos.contratoDialogWizard.reviewValuesAndDates')}</h4>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">{t('contratosAtivos.contratoDialogWizard.reviewValue')}</span>
@@ -657,7 +658,7 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
               </div>
 
               <div className="space-y-4">
-                <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">{t('contratosAtivos.contratoDialogWizard.reviewParties')}</h4>
+                <h4 className="font-medium text-sm text-muted-foreground">{t('contratosAtivos.contratoDialogWizard.reviewParties')}</h4>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">{t('contratosAtivos.contratoDialogWizard.reviewSupplier')}</span>
@@ -675,7 +676,7 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
               </div>
 
               <div className="space-y-4">
-                <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide">{t('contratosAtivos.contratoDialogWizard.reviewDetails')}</h4>
+                <h4 className="font-medium text-sm text-muted-foreground">{t('contratosAtivos.contratoDialogWizard.reviewDetails')}</h4>
                 <div className="space-y-2 text-sm">
                   <div>
                     <span className="text-muted-foreground">{t('contratosAtivos.contratoDialogWizard.reviewObject')}</span>
@@ -696,7 +697,7 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      icon={FileText}
+      icon={IconFile}
       title={contrato ? t('contratosAtivos.contratoDialogWizard.dialogTitleEdit') : t('contratosAtivos.contratoDialogWizard.dialogTitleNew')}
       description={contrato
         ? t('contratosAtivos.contratoDialogWizard.dialogDescriptionEdit')
@@ -712,7 +713,7 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
             onClick={handlePrevious}
             disabled={currentStep === 1}
           >
-            <ChevronLeft className="h-4 w-4 mr-2" />
+            <IconChevronLeft className="h-4 w-4 mr-2" />
             {t('contratosAtivos.contratoDialogWizard.previousButton')}
           </Button>
 
@@ -723,7 +724,7 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
             {currentStep < STEPS.length ? (
               <Button type="button" size="sm" onClick={handleNext}>
                 {t('contratosAtivos.contratoDialogWizard.nextButton')}
-                <ChevronRight className="h-4 w-4 ml-2" />
+                <IconChevron className="h-4 w-4 ml-2" />
               </Button>
             ) : (
               <Button type="button" size="sm" onClick={handleSubmit} disabled={loading}>
@@ -755,7 +756,7 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
                     className={cn(
                       "flex flex-col items-center gap-1 p-2 rounded-lg transition-colors",
                       isCurrent && "bg-primary/10",
-                      (isCompleted || step.id <= currentStep) && "cursor-pointer hover:bg-muted",
+                      (isCompleted || step.id <= currentStep) && "cursor-pointer hover:bg-accent",
                       step.id > currentStep && "cursor-not-allowed opacity-50"
                     )}
                   >
@@ -766,7 +767,7 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
                       !isCompleted && !isCurrent && "border-muted-foreground/30 text-muted-foreground"
                     )}>
                       {isCompleted ? (
-                        <Check className="h-5 w-5" />
+                        <IconCheck className="h-5 w-5" />
                       ) : (
                         <StepIcon className="h-5 w-5" />
                       )}
@@ -792,7 +793,7 @@ export function ContratoDialogWizard({ contrato, open, onOpenChange, onSuccess, 
         </div>
 
         {/* Step Content */}
-        <div className="flex-1 overflow-y-auto px-6 pb-4">
+        <div className="flex-1 min-h-0 overflow-y-auto px-6 pb-4">
           <div className="mb-4">
             <h3 className="text-lg font-semibold">{STEPS[currentStep - 1].title}</h3>
             <p className="text-sm text-muted-foreground">{STEPS[currentStep - 1].description}</p>

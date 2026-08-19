@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
+import { IconFilter, IconDownload, IconChart } from '@/components/icons';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { FileBarChart, Download, Filter } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { formatDateOnly } from '@/lib/date-utils';
+import { formatDateOnly, intlLocale, parseDataLocal } from '@/lib/date-utils';
 import jsPDF from 'jspdf';
 import { loadAkurisLogo, addAkurisHeader, addAkurisFooter, addSectionTitle, drawTableHeader, formatLabel, AKURIS_COLORS } from '@/lib/pdf-utils';
 
@@ -91,7 +91,7 @@ export function DocumentosRelatorios({ documentos, categorias, open, onOpenChang
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(AKURIS_COLORS.textLight);
       doc.text(
-        t('documentosExtras.relatorios.pdfGeradoEm', { data: new Date().toLocaleDateString('pt-BR'), total: String(documentos.length) }),
+        t('documentosExtras.relatorios.pdfGeradoEm', { data: new Date().toLocaleDateString(intlLocale()), total: String(documentos.length) }),
         pageWidth / 2,
         y,
         { align: 'center' }
@@ -102,7 +102,7 @@ export function DocumentosRelatorios({ documentos, categorias, open, onOpenChang
       const inativos = documentos.filter(d => d.status === 'inativo').length;
       const vencidos = documentos.filter(d => {
         if (!d.data_vencimento) return false;
-        return new Date(d.data_vencimento) < new Date();
+        return parseDataLocal(d.data_vencimento) < new Date();
       }).length;
 
       y = addSectionTitle(doc, t('documentosExtras.relatorios.pdfResumoStatus'), y, margin);
@@ -157,7 +157,7 @@ export function DocumentosRelatorios({ documentos, categorias, open, onOpenChang
     setGerando('vencidos');
     try {
       const hoje = new Date();
-      const vencidos = documentos.filter(d => d.data_vencimento && new Date(d.data_vencimento) < hoje);
+      const vencidos = documentos.filter(d => d.data_vencimento && parseDataLocal(d.data_vencimento) < hoje);
       exportCSV(vencidos, 'documentos_vencidos');
       toast({
         title: t('documentosExtras.relatorios.relatorioGerado'),
@@ -200,7 +200,7 @@ export function DocumentosRelatorios({ documentos, categorias, open, onOpenChang
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <FileBarChart className="h-5 w-5" />
+                  <IconChart className="h-5 w-5" />
                   {t('documentosExtras.relatorios.relatorioGeralTitulo')}
                 </CardTitle>
                 <CardDescription>
@@ -209,7 +209,7 @@ export function DocumentosRelatorios({ documentos, categorias, open, onOpenChang
               </CardHeader>
               <CardContent>
                 <Button className="w-full" onClick={gerarRelatorioGeral} disabled={gerando === 'geral'}>
-                  <Download className="h-4 w-4 mr-2" />
+                  <IconDownload className="h-4 w-4 mr-2" />
                   {gerando === 'geral' ? t('documentosExtras.relatorios.gerando') : t('documentosExtras.relatorios.gerarPdf')}
                 </Button>
               </CardContent>
@@ -218,7 +218,7 @@ export function DocumentosRelatorios({ documentos, categorias, open, onOpenChang
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Filter className="h-5 w-5" />
+                  <IconFilter className="h-5 w-5" />
                   {t('documentosExtras.relatorios.docsVencidosTitulo')}
                 </CardTitle>
                 <CardDescription>
@@ -227,7 +227,7 @@ export function DocumentosRelatorios({ documentos, categorias, open, onOpenChang
               </CardHeader>
               <CardContent>
                 <Button className="w-full" onClick={gerarRelatorioVencidos} disabled={gerando === 'vencidos'}>
-                  <Download className="h-4 w-4 mr-2" />
+                  <IconDownload className="h-4 w-4 mr-2" />
                   {gerando === 'vencidos' ? t('documentosExtras.relatorios.gerando') : t('documentosExtras.relatorios.exportarCsv')}
                 </Button>
               </CardContent>
@@ -236,7 +236,7 @@ export function DocumentosRelatorios({ documentos, categorias, open, onOpenChang
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <FileBarChart className="h-5 w-5" />
+                  <IconChart className="h-5 w-5" />
                   {t('documentosExtras.relatorios.porCategoriaTitulo')}
                 </CardTitle>
                 <CardDescription>
@@ -245,7 +245,7 @@ export function DocumentosRelatorios({ documentos, categorias, open, onOpenChang
               </CardHeader>
               <CardContent>
                 <Button className="w-full" onClick={gerarRelatorioPorCategoria} disabled={gerando === 'categoria'}>
-                  <Download className="h-4 w-4 mr-2" />
+                  <IconDownload className="h-4 w-4 mr-2" />
                   {gerando === 'categoria' ? t('documentosExtras.relatorios.gerando') : t('documentosExtras.relatorios.exportarCsv')}
                 </Button>
               </CardContent>

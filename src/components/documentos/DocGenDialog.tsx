@@ -19,6 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { IconAdd, IconDownload, IconSend, IconFile, IconSave, IconHistory, IconArrowLeft } from '@/components/icons';
 import { useToast } from '@/hooks/use-toast';
 import { useFrameworkRequirementCount } from '@/hooks/useFrameworkRequirementCount';
 import { akurisToast } from '@/lib/akuris-toast';
@@ -30,8 +31,6 @@ import { akurisToast } from '@/lib/akuris-toast';
 const DOCGEN_STATUS_TOAST = 'docgen-status';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Send, FileText, Download, Save, Plus, History, ArrowLeft } from 'lucide-react';
-import { AkurisAIIcon } from '@/components/icons';
 import DocLayoutBuilder from './DocLayoutBuilder';
 import { DocGenTemplateGallery } from './DocGenTemplateGallery';
 import { DocGenBriefing } from './DocGenBriefing';
@@ -139,7 +138,6 @@ async function callDocGen(
   }
 }
 
-
 interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
@@ -166,8 +164,6 @@ interface TooltipTerm {
   term: string;
   definition: string;
 }
-
-
 
 export const DocGenDialog: React.FC<DocGenDialogProps> = ({
   open,
@@ -206,7 +202,6 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
   const genPercentRef = useRef(0);
   const [refineProgress, setRefineProgress] = useState<{ attempt: number; total: number } | null>(null);
 
-
   const [draft, setDraft] = useState<{ briefing: BriefingDefaults; templateId?: string; step: number } | null>(null);
   const lastGenerationArgsRef = useRef<{ briefingText?: string; docNameHint?: string; conversationId?: string | null }>({});
   const lastGenerationKeyRef = useRef<string | null>(null);
@@ -224,7 +219,6 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
   // Rastreia score anterior para calcular delta após refinos.
 
   // Confirmação antes de publicar quando o score está baixo.
-
 
   // Buscar informações do usuário
   const [userInfo, setUserInfo] = useState<{ user_id: string; empresa_id: string; nome: string } | null>(null);
@@ -399,7 +393,6 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
       }
       if (res.error) throw new Error(res.error);
       const data = res.data;
-
 
       const assistantMessage: ChatMessage = {
         role: 'assistant',
@@ -659,7 +652,6 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     return current;
   };
 
-
   /**
    * Gera o documento completo.
    * `opts.briefingText` é usado no modo "Gerar documento direto": o briefing vai
@@ -679,7 +671,6 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     setGenComplete(false);
     setGenMilestone(1);
     setIsGeneratingDoc(true);
-
 
     // P0: uma chave por tentativa lógica do utilizador. Se a chamada falhar de
     // forma recuperável, reenviamos com a MESMA chave — o servidor não debita
@@ -726,7 +717,6 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
       setTimeout(() => setGenMilestone(3), 400);
       let res = await invokeGenerate(false);
 
-
       // JSON inválido/truncado é recuperável: uma segunda tentativa com prompt
       // estrito, mesma chave de idempotência (sem novo débito).
       if (res.retryable && res.error === 'INVALID_DOCUMENT') {
@@ -761,7 +751,6 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
       if (data.conversation_id && data.conversation_id !== conversationId) {
         setConversationId(data.conversation_id);
       }
-
 
       // A IA não conhece a data atual (chuta valores errados). Fixamos a data
       // real do usuário na capa/preview/export, independentemente do que veio.
@@ -813,9 +802,6 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
       setGenComplete(true);
       window.setTimeout(() => setGenComplete(false), 1600);
 
-
-
-
     } catch (error) {
       logger.error('Erro ao gerar documento', {
         module: 'docgen',
@@ -834,7 +820,6 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
       setIsGeneratingDoc(false);
     }
   };
-
 
   /**
    * Rótulos usados pelos exportadores (DOCX/PDF). Ficam aqui porque dependem
@@ -952,9 +937,6 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     await handleOpenCreateDialog();
   };
 
-
-
-
   /**
    * Renderiza a mensagem do assistente com o MESMO parser de markdown do
    * preview/exportação (títulos #..####, listas com "-" ou "*", tabelas),
@@ -981,8 +963,6 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
     
     return parts;
   };
-
-
 
   // Estado para tracking de mudanças não salvas
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -1026,8 +1006,6 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
   // Score de compliance deixou de existir no DocGen: o documento é escrito em
   // conformidade com os referenciais escolhidos e a avaliação formal acontece
   // na Análise de Aderência.
-
-
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     // Enter envia, Shift+Enter quebra linha. Ignora durante composição IME (acentos compostos).
@@ -1136,8 +1114,6 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
         })
       : t(`docgen.dialog.progressStage${generationStage}` as any);
 
-
-
   // Existe trabalho em curso que se perderia ao fechar?
   const hasWorkInProgress =
     (hasUnsavedChanges && !isDocumentSaved && !isDocumentExported) ||
@@ -1148,7 +1124,6 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
   // briefing em preenchimento, conversa sem documento, ou documento pronto.
   const discardCopyKey: 'discard' | 'discardBriefing' | 'discardChat' =
     generatedDocument ? 'discard' : phase === 'briefing' ? 'discardBriefing' : 'discardChat';
-
 
   // Verificar mudanças antes de fechar
   const handleDialogClose = (newOpen: boolean) => {
@@ -1282,7 +1257,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
       title={`${t('docgen.dialog.title')}${currentDocType ? ` · ${currentDocType}` : ''}${requirementContext ? ` — ${requirementContext.requirementCode}` : ''}`}
       description={DOCGEN_DIALOG_DESCRIPTION}
       descriptionSrOnly
-      icon={AkurisAIIcon}
+      icon={IconFile}
       size="xl"
       noScroll
       hideFooter
@@ -1302,7 +1277,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                 disabled={isLoading || isGeneratingDoc}
                 title={t('docgen.briefing.back')}
               >
-                <ArrowLeft className="h-3.5 w-3.5" strokeWidth={1.5} />
+                <IconArrowLeft className="h-3.5 w-3.5" strokeWidth={1.5} />
                 {t('docgen.dialog.briefingButton')}
               </Button>
               <span className="hidden sm:inline">·</span>
@@ -1324,7 +1299,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                 onClick={startNewConversation}
                 disabled={isLoading || isGeneratingDoc}
               >
-                <Plus className="h-4 w-4" />
+                <IconAdd className="h-4 w-4" />
                 {t('docgen.dialog.newConversation')}
               </Button>
               <Popover
@@ -1336,7 +1311,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
               >
                 <PopoverTrigger asChild>
                   <Button variant="ghost" size="sm" className="gap-1" disabled={isLoading || isGeneratingDoc}>
-                    <History className="h-4 w-4" />
+                    <IconHistory className="h-4 w-4" />
                     {t('docgen.dialog.history')}
                   </Button>
                 </PopoverTrigger>
@@ -1363,7 +1338,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                         <div className="text-sm font-medium truncate">{it.titulo || t('docgen.dialog.untitledConversation')}</div>
                         <div className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
                           {it.tipo_documento_identificado && (
-                            <Badge variant="secondary" className="text-[10px] py-0 h-4">{formatStatus(it.tipo_documento_identificado)}</Badge>
+                            <Badge variant="secondary" className="text-micro py-0 h-4">{formatStatus(it.tipo_documento_identificado)}</Badge>
                           )}
                           <span>{new Date(it.updated_at).toLocaleString()}</span>
                         </div>
@@ -1388,7 +1363,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
             >
               <PopoverTrigger asChild>
                 <Button variant="ghost" size="sm" className="gap-1">
-                  <History className="h-4 w-4" />
+                  <IconHistory className="h-4 w-4" />
                   {t('docgen.dialog.restoreConversation')}
                 </Button>
               </PopoverTrigger>
@@ -1415,7 +1390,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                       <div className="text-sm font-medium truncate">{it.titulo || t('docgen.dialog.untitledConversation')}</div>
                       <div className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
                         {it.tipo_documento_identificado && (
-                          <Badge variant="secondary" className="text-[10px] py-0 h-4">{formatStatus(it.tipo_documento_identificado)}</Badge>
+                          <Badge variant="secondary" className="text-micro py-0 h-4">{formatStatus(it.tipo_documento_identificado)}</Badge>
                         )}
                         <span>{new Date(it.updated_at).toLocaleString()}</span>
                       </div>
@@ -1431,7 +1406,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
         {phase === 'gallery' && (
           <div className="flex-1 min-h-0 flex flex-col">
             {draft && (
-              <div className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-border bg-muted/40 px-3 py-2">
+              <div className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-3 py-2">
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-foreground">{t('docgen.dialog.draftBannerTitle')}</p>
                   <p className="text-xs text-muted-foreground">{t('docgen.dialog.draftBannerDescription')}</p>
@@ -1545,7 +1520,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                 className="h-[60px]"
                 aria-label={t('docgen.dialog.sendMessage')}
               >
-                <Send className="h-4 w-4" />
+                <IconSend className="h-4 w-4" />
               </Button>
             </div>
 
@@ -1577,7 +1552,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                   {isGeneratingDoc ? (
                     <AkurisPulse size={16} />
                   ) : (
-                    <FileText className="h-4 w-4" />
+                    <IconFile className="h-4 w-4" />
                   )}
                   {isGeneratingDoc ? t('docgen.dialog.generatingDocument') : t('docgen.dialog.generateDocumentCredit')}
                 </Button>
@@ -1608,7 +1583,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button onClick={handleSaveClick} size="sm" className="gap-1">
-                            <Save className="h-3 w-3" strokeWidth={1.5} />
+                            <IconSave className="h-3 w-3" strokeWidth={1.5} />
                             {t('docgen.dialog.saveToDocuments')}
                           </Button>
                         </TooltipTrigger>
@@ -1619,7 +1594,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button size="sm" variant="outline" className="gap-1">
-                                <Download className="h-3 w-3" strokeWidth={1.5} />
+                                <IconDownload className="h-3 w-3" strokeWidth={1.5} />
                                 {t('docgen.dialog.export')}
                               </Button>
                             </DropdownMenuTrigger>
@@ -1657,7 +1632,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                       </div>
                       <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
                         <div
-                          className="h-full rounded-full bg-primary transition-all duration-500"
+                          className="h-full rounded-full bg-primary transition-ui duration-500"
                           style={{ width: `${Math.max(4, generationPercent)}%` }}
                         />
                       </div>
@@ -1680,7 +1655,6 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                     </div>
                   </div>
                 </div>
-
 
               ) : isEditingLayout ? (
                 <div className="flex-1 min-h-0 overflow-y-auto">
@@ -1718,7 +1692,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                             <div className="flex items-center gap-2 min-w-0">
                               <h5 className="font-semibold truncate">{secao.nome}</h5>
                               {sectionAdherence && (
-                                <Badge variant="outline" className="text-[10px] capitalize shrink-0">
+                                <Badge variant="outline" className="text-micro capitalize shrink-0">
                                   {sectionAdherence.status}
                                 </Badge>
                               )}
@@ -1730,7 +1704,6 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
                               onClick={() => setRefiningSectionIndex(index)}
                               title={t('docgen.dialog.refineSectionTooltip')}
                             >
-                              <AkurisAIIcon className="h-3.5 w-3.5" />
                               {t('docgen.dialog.refineSection')}
                             </Button>
                           </div>
@@ -1816,7 +1789,6 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
 
     </DialogShell>
   );

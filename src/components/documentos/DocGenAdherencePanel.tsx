@@ -1,9 +1,9 @@
 import React from 'react';
+import { IconRefresh, IconChevronDown, IconShieldCheck } from '@/components/icons';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Button } from '@/components/ui/button';
-import { ChevronDown, ShieldCheck, RefreshCw } from 'lucide-react';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -40,24 +40,24 @@ export const DocGenAdherencePanel: React.FC<Props> = ({ result, loading, framewo
 
   const scoreColor =
     !result ? 'text-muted-foreground'
-    : result.score >= 80 ? 'text-emerald-500'
-    : result.score >= 60 ? 'text-amber-500'
-    : 'text-rose-500';
+    : result.score >= 80 ? 'text-success'
+    : result.score >= 60 ? 'text-warning'
+    : 'text-destructive';
 
   return (
     <Collapsible defaultOpen={!!result} className="rounded-lg border border-border bg-card/50 mb-3">
       <div className="flex items-center justify-between p-3 gap-2">
         <CollapsibleTrigger className="flex items-center gap-2 group flex-1 text-left">
-          <ShieldCheck className="h-4 w-4 text-primary" strokeWidth={1.5} />
+          <IconShieldCheck className="h-4 w-4 text-primary" strokeWidth={1.5} />
           <span className="font-medium text-sm">{t('docgen.adherence.title')}</span>
-          <Badge variant="outline" className="text-[10px]">{frameworkName}</Badge>
+          <Badge variant="outline" className="text-micro">{frameworkName}</Badge>
           {result && (
             <span className={`ml-2 text-sm font-semibold ${scoreColor}`}>{Math.round(result.score)}%</span>
           )}
-          <ChevronDown className="h-4 w-4 text-muted-foreground ml-auto transition-transform group-data-[state=open]:rotate-180" strokeWidth={1.5} />
+          <IconChevronDown className="h-4 w-4 text-muted-foreground ml-auto transition-transform group-data-[state=open]:rotate-180" strokeWidth={1.5} />
         </CollapsibleTrigger>
         <Button size="sm" variant="ghost" onClick={onRun} disabled={loading} className="gap-1 shrink-0">
-          {loading ? <AkurisPulse size={14} /> : <RefreshCw className="h-3.5 w-3.5" strokeWidth={1.5} />}
+          {loading ? <AkurisPulse size={14} /> : <IconRefresh className="h-3.5 w-3.5" strokeWidth={1.5} />}
           {result ? t('docgen.adherence.reevaluate') : t('docgen.adherence.evaluate')}
         </Button>
       </div>
@@ -73,11 +73,10 @@ export const DocGenAdherencePanel: React.FC<Props> = ({ result, loading, framewo
 
             {result.secoes?.length > 0 && (
               <div className="space-y-1.5">
-                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{t('docgen.adherence.bySection')}</div>
+                <div className="text-xs text-muted-foreground">{t('docgen.adherence.bySection')}</div>
                 {result.secoes.map((s, i) => (
                   <div key={i} className="flex items-start gap-2 text-xs">
                     <StatusBadge
-                      size="sm"
                       tone={STATUS_TONE_MAP[s.status]?.tone || 'neutral'}
                       mark={STATUS_TONE_MAP[s.status]?.mark}
                       className="shrink-0 capitalize"
@@ -92,7 +91,7 @@ export const DocGenAdherencePanel: React.FC<Props> = ({ result, loading, framewo
                         </div>
                       )}
                       {s.gaps?.length > 0 && (
-                        <div className="text-rose-500/90">{t('docgen.adherence.gapPrefix')}: {s.gaps[0]}</div>
+                        <div className="text-destructive/90">{t('docgen.adherence.gapPrefix')}: {s.gaps[0]}</div>
                       )}
                     </div>
                   </div>
@@ -102,12 +101,12 @@ export const DocGenAdherencePanel: React.FC<Props> = ({ result, loading, framewo
 
             {result.requisitos_nao_cobertos?.length > 0 && (
               <div className="pt-2 border-t border-border/50">
-                <div className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1">
+                <div className="text-xs text-muted-foreground mb-1">
                   {t('docgen.adherence.uncoveredRequirements', { count: result.requisitos_nao_cobertos.length })}
                 </div>
                 <div className="flex flex-wrap gap-1">
                   {result.requisitos_nao_cobertos.slice(0, 20).map((c, i) => (
-                    <Badge key={i} variant="outline" className="text-[10px]">{c}</Badge>
+                    <Badge key={i} variant="outline" className="text-micro">{c}</Badge>
                   ))}
                 </div>
               </div>

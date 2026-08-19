@@ -22,7 +22,7 @@ const Runs: React.FC<{ runs: InlineRun[] }> = ({ runs }) => (
 const NodeView: React.FC<{ node: MdNode; index: number }> = ({ node, index }) => {
   switch (node.type) {
     case 'heading': {
-      const size = node.level === 2 ? 'text-sm' : 'text-[13px]';
+      const size = node.level === 2 ? 'text-sm' : 'text-sm';
       return (
         <p key={index} className={cn('font-semibold text-foreground mt-3', size)}>
           <Runs runs={node.runs} />

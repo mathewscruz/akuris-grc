@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
+import { IconClose, IconUpload, IconFile } from '@/components/icons';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import { Button } from '@/components/ui/button';
-import { Upload, FileText, X } from 'lucide-react';
+;
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
@@ -143,7 +144,7 @@ export function UploadMultiplosDialog({ open, onOpenChange, onSuccess, categoria
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      icon={Upload}
+      icon={IconUpload}
       title={t('documentosExtras.uploadMultiplo.titulo')}
       description={t('documentosExtras.uploadMultiplo.descricao')}
       size="md"
@@ -177,7 +178,7 @@ export function UploadMultiplosDialog({ open, onOpenChange, onSuccess, categoria
             />
             <label htmlFor="multiple-files">
               <div className="border-2 border-dashed border-muted-foreground/30 rounded-lg p-8 text-center cursor-pointer hover:border-muted-foreground/50 transition-colors">
-                <Upload className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <IconUpload className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-lg font-medium text-foreground">
                   {t('documentosExtras.uploadMultiplo.clickeSelecionar')}
                 </p>
@@ -195,7 +196,7 @@ export function UploadMultiplosDialog({ open, onOpenChange, onSuccess, categoria
                 {files.map((file, index) => (
                   <div key={index} className="flex items-center justify-between p-2 border rounded">
                     <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4" />
+                      <IconFile className="h-4 w-4" />
                       <div>
                         <p className="text-sm font-medium">{file.name}</p>
                         <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
@@ -206,7 +207,7 @@ export function UploadMultiplosDialog({ open, onOpenChange, onSuccess, categoria
                       size="sm"
                       onClick={() => removeFile(index)}
                     >
-                      <X className="h-4 w-4" />
+                      <IconClose className="h-4 w-4" />
                     </Button>
                   </div>
                 ))}

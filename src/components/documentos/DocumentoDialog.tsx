@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { IconClose, IconUpload, IconFile, IconLink, IconSettings, IconTag, IconAttach } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,7 +11,6 @@ import { UserSelect } from '@/components/riscos/UserSelect';
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveClassificacaoTone } from '@/lib/status-tone';
-import { Upload, X, File, Link2, FileText, Settings2, Tag, Paperclip } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -20,6 +20,7 @@ import { WizardDialog, WizardTab, WizardTabState } from '@/components/ui/wizard-
 import { WizardSummaryCard, WizardSummaryRow } from '@/components/ui/wizard-summary-card';
 import { FieldHelpTooltip } from '@/components/ui/field-help-tooltip';
 import { logger } from '@/lib/logger';
+import { parseDataLocal } from '@/lib/date-utils';
 import { formatStatus } from '@/lib/text-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -31,10 +32,17 @@ interface Documento {
   created_by?: string; created_at: string; updated_at: string;
 }
 
+interface CategoriaOpcao {
+  id: string;
+  nome: string;
+}
+
 interface DocumentoDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   documento?: Documento;
+  /** Categorias da empresa — a coluna existia só na tabela de gestão. */
+  categorias?: CategoriaOpcao[];
   onSuccess: () => void;
   initialFile?: File | null;
   initialData?: Partial<{
@@ -45,7 +53,7 @@ interface DocumentoDialogProps {
   originSource?: 'docgen';
 }
 
-export function DocumentoDialog({ open, onOpenChange, documento, onSuccess, initialFile, initialData, originSource }: DocumentoDialogProps) {
+export function DocumentoDialog({ open, onOpenChange, documento, categorias = [], onSuccess, initialFile, initialData, originSource }: DocumentoDialogProps) {
   const { t } = useLanguage();
   const isDocGenFlow = originSource === 'docgen';
   const [loading, setLoading] = useState(false);
@@ -59,6 +67,7 @@ export function DocumentoDialog({ open, onOpenChange, documento, onSuccess, init
     nome: '', descricao: '', tipo: 'documento', classificacao: 'interna',
     tags: [] as string[], requer_aprovacao: false, status: 'ativo',
     data_vencimento: undefined as Date | undefined,
+    categoria_id: '' as string, responsavel_id: '' as string,
   });
   const [newTag, setNewTag] = useState('');
   const [aprovadorId, setAprovadorId] = useState('');
@@ -72,9 +81,16 @@ export function DocumentoDialog({ open, onOpenChange, documento, onSuccess, init
           tipo: documento.tipo, classificacao: documento.classificacao || 'interna',
           tags: documento.tags || [], requer_aprovacao: (documento as any).requer_aprovacao || false,
           status: documento.status,
-          data_vencimento: documento.data_vencimento ? new Date(documento.data_vencimento) : undefined,
+          // parseDataLocal, não `new Date`: a coluna é `date` puro, e lida
+          // como meia-noite UTC ela vira o dia ANTERIOR no formulário — cada
+          // edição salva movia o vencimento um dia para trás. A trilha de
+          // auditoria pegou isso no primeiro dia: 2027-01-14 → 2027-01-13 num
+          // edit em que ninguém tocou na data.
+          data_vencimento: documento.data_vencimento ? parseDataLocal(documento.data_vencimento) : undefined,
+          categoria_id: (documento as { categoria_id?: string | null }).categoria_id || '',
+          responsavel_id: (documento as { responsavel_id?: string | null }).responsavel_id || '',
         }
-      : { nome: '', descricao: '', tipo: 'documento', classificacao: 'interna', tags: [], requer_aprovacao: false, status: 'ativo', data_vencimento: undefined };
+      : { nome: '', descricao: '', tipo: 'documento', classificacao: 'interna', tags: [], requer_aprovacao: false, status: 'ativo', data_vencimento: undefined, categoria_id: '', responsavel_id: '' };
 
     if (initialData) {
       base = { ...base, ...initialData, tags: initialData.tags ?? base.tags, data_vencimento: initialData.data_vencimento ?? base.data_vencimento } as typeof base;
@@ -198,6 +214,8 @@ export function DocumentoDialog({ open, onOpenChange, documento, onSuccess, init
         arquivo_url_externa, versao, requer_aprovacao: formData.requer_aprovacao,
         status: formData.requer_aprovacao ? 'pendente' : formData.status,
         data_vencimento: formData.data_vencimento ? format(formData.data_vencimento, 'yyyy-MM-dd') : null,
+        categoria_id: formData.categoria_id || null,
+        responsavel_id: formData.responsavel_id || null,
         empresa_id: profileData.empresa_id, created_by: userData.user.id,
       };
 
@@ -285,7 +303,7 @@ export function DocumentoDialog({ open, onOpenChange, documento, onSuccess, init
 
   const tabs: WizardTab[] = useMemo(() => [
     {
-      id: 'identificacao', label: t('documentos.dialogs.identificacao'), icon: FileText, state: identState, hint: t('documentos.dialogs.identificacaoHint'),
+      id: 'identificacao', label: t('documentos.dialogs.identificacao'), icon: IconFile, state: identState, hint: t('documentos.dialogs.identificacaoHint'),
       content: (
         <div className="space-y-5 max-w-3xl">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -317,11 +335,42 @@ export function DocumentoDialog({ open, onOpenChange, documento, onSuccess, init
             <Label>{t('documentos.dialogs.descricao')}</Label>
             <Textarea value={formData.descricao} onChange={(e) => update({ descricao: e.target.value })} rows={4} />
           </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="doc-categoria">{t('documentos.lista.categoria')}</Label>
+              <Select
+                value={formData.categoria_id || 'nenhuma'}
+                onValueChange={(v) => update({ categoria_id: v === 'nenhuma' ? '' : v })}
+              >
+                <SelectTrigger id="doc-categoria"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="nenhuma">{t('documentos.dialogs.semCategoria')}</SelectItem>
+                  {categorias.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="doc-responsavel" className="flex items-center gap-1">
+                {t('documentos.lista.responsavel')}
+                <FieldHelpTooltip content={t('documentos.dialogs.responsavelAjuda')} />
+              </Label>
+              {/* Um prazo sem dono não é processo, é só uma data: é a quem o
+                  vencimento cobra. */}
+              <UserSelect
+                id="doc-responsavel"
+                value={formData.responsavel_id || undefined}
+                onValueChange={(v) => update({ responsavel_id: v })}
+                placeholder={t('documentos.dialogs.selecioneResponsavel')}
+              />
+            </div>
+          </div>
         </div>
       ),
     },
     {
-      id: 'classificacao', label: t('documentos.dialogs.classificacaoEStatus'), icon: Settings2, state: classifState, hint: t('documentos.dialogs.classificacaoEStatusHint'),
+      id: 'classificacao', label: t('documentos.dialogs.classificacaoEStatus'), icon: IconSettings, state: classifState, hint: t('documentos.dialogs.classificacaoEStatusHint'),
       content: (
         <div className="space-y-5 max-w-3xl">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -395,7 +444,7 @@ export function DocumentoDialog({ open, onOpenChange, documento, onSuccess, init
       ),
     },
     {
-      id: 'tags', label: t('documentos.dialogs.tags'), icon: Tag, state: tagsState, hint: t('documentos.dialogs.tagsHint'),
+      id: 'tags', label: t('documentos.dialogs.tags'), icon: IconTag, state: tagsState, hint: t('documentos.dialogs.tagsHint'),
       content: (
         <div className="space-y-4 max-w-2xl">
           <Label className="flex items-center gap-1">
@@ -406,7 +455,7 @@ export function DocumentoDialog({ open, onOpenChange, documento, onSuccess, init
             {formData.tags.map((tag, i) => (
               <Badge key={i} variant="secondary" className="flex items-center gap-1">
                 {tag}
-                <X className="h-3 w-3 cursor-pointer" onClick={() => handleRemoveTag(tag)} />
+                <IconClose className="h-3 w-3 cursor-pointer" onClick={() => handleRemoveTag(tag)} />
               </Badge>
             ))}
             {formData.tags.length === 0 && (
@@ -426,18 +475,18 @@ export function DocumentoDialog({ open, onOpenChange, documento, onSuccess, init
       ),
     },
     {
-      id: 'anexo', label: t('documentos.dialogs.anexo'), icon: Paperclip, state: anexoState, hint: t('documentos.dialogs.anexoHint'),
+      id: 'anexo', label: t('documentos.dialogs.anexo'), icon: IconAttach, state: anexoState, hint: t('documentos.dialogs.anexoHint'),
       content: (
         <div className="space-y-4 max-w-3xl">
           <Tabs value={arquivoModo} onValueChange={(v) => setArquivoModo(v as 'upload' | 'url')}>
             <TabsList>
-              <TabsTrigger value="upload"><Upload className="h-4 w-4 mr-2" />Upload</TabsTrigger>
-              <TabsTrigger value="url"><Link2 className="h-4 w-4 mr-2" />{t('documentos.dialogs.urlExterna')}</TabsTrigger>
+              <TabsTrigger value="upload"><IconUpload className="h-4 w-4 mr-2" />Upload</TabsTrigger>
+              <TabsTrigger value="url"><IconLink className="h-4 w-4 mr-2" />{t('documentos.dialogs.urlExterna')}</TabsTrigger>
             </TabsList>
-            <TabsContent value="upload" className="space-y-2 mt-3">
+            <TabsContent value="upload" className="space-y-2">
               {documento?.arquivo_nome && !selectedFile && (
                 <div className="flex items-center gap-2 p-2 border rounded">
-                  <File className="h-4 w-4" />
+                  <IconFile className="h-4 w-4" />
                   <span className="text-sm">{documento.arquivo_nome}</span>
                   <span className="text-xs text-muted-foreground">(v{documento.versao} - {formatFileSize(documento.arquivo_tamanho || 0)})</span>
                 </div>
@@ -445,21 +494,21 @@ export function DocumentoDialog({ open, onOpenChange, documento, onSuccess, init
               <Input ref={fileInputRef} type="file" onChange={handleFileSelect} className="hidden"
                 accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.jpg,.jpeg,.png" />
               <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} className="w-full">
-                <Upload className="h-4 w-4 mr-2" />
+                <IconUpload className="h-4 w-4 mr-2" />
                 {selectedFile ? t('documentos.dialogs.trocarArquivo') : documento ? t('documentos.dialogs.atualizarArquivo') : t('documentos.dialogs.selecionarArquivo')}
               </Button>
               {selectedFile && (
                 <div className="flex items-center gap-2 p-2 border rounded bg-muted">
-                  <File className="h-4 w-4" />
+                  <IconFile className="h-4 w-4" />
                   <span className="text-sm">{selectedFile.name}</span>
                   <span className="text-xs text-muted-foreground">({formatFileSize(selectedFile.size)})</span>
                   <Button type="button" variant="ghost" size="sm" onClick={() => setSelectedFile(null)}>
-                    <X className="h-3 w-3" />
+                    <IconClose className="h-3 w-3" />
                   </Button>
                 </div>
               )}
             </TabsContent>
-            <TabsContent value="url" className="space-y-2 mt-3">
+            <TabsContent value="url" className="space-y-2">
               <Input type="url" value={arquivoUrlExterna} onChange={(e) => setArquivoUrlExterna(e.target.value)}
                 aria-invalid={urlInvalida}
                 className={cn(urlInvalida && 'border-destructive focus-visible:ring-destructive')}
@@ -480,7 +529,7 @@ export function DocumentoDialog({ open, onOpenChange, documento, onSuccess, init
       <WizardSummaryRow label={t('documentos.dialogs.tipoObrigatorio')} value={<span>{formatStatus(formData.tipo)}</span>} />
       <WizardSummaryRow
         label={t('documentos.dialogs.classificacaoObrigatorio')}
-        value={<StatusBadge size="sm" {...resolveClassificacaoTone(formData.classificacao)}>{formatStatus(formData.classificacao)}</StatusBadge>}
+        value={<StatusBadge {...resolveClassificacaoTone(formData.classificacao)}>{formatStatus(formData.classificacao)}</StatusBadge>}
       />
       <WizardSummaryRow label={t('documentos.dialogs.tags')} value={formData.tags.length} />
       <WizardSummaryRow
@@ -504,7 +553,7 @@ export function DocumentoDialog({ open, onOpenChange, documento, onSuccess, init
           ? t('documentos.dialogs.passoDocGen')
           : documento ? t('documentos.dialogs.atualizeInformacoes') : t('documentos.dialogs.adicioneNovoDocumento')
       }
-      icon={FileText}
+      icon={IconFile}
       tabs={tabs}
       summary={summary}
       activeTab={activeTab}

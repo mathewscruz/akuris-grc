@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
-import { Sparkles } from 'lucide-react';
+;
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Props {
@@ -15,8 +16,6 @@ interface Props {
   loading?: boolean;
   onSubmit: (instruction: string) => void;
 }
-
-
 
 export const DocGenSectionRefiner: React.FC<Props> = ({
   open, onOpenChange, sectionName, currentContent, loading, onSubmit,
@@ -41,7 +40,6 @@ export const DocGenSectionRefiner: React.FC<Props> = ({
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-primary" strokeWidth={1.5} />
             {t('docgen.sectionRefiner.title', { sectionName })}
           </DialogTitle>
           <DialogDescription>
@@ -50,7 +48,7 @@ export const DocGenSectionRefiner: React.FC<Props> = ({
         </DialogHeader>
 
         <div className="space-y-3">
-          <div className="rounded-md border border-border bg-muted/30 p-3 max-h-32 overflow-y-auto text-xs text-muted-foreground whitespace-pre-wrap">
+          <div className="rounded-md border border-border bg-card p-3 max-h-32 overflow-y-auto text-xs text-muted-foreground whitespace-pre-wrap">
             {currentContent.slice(0, 600)}{currentContent.length > 600 ? '…' : ''}
           </div>
 
@@ -59,7 +57,7 @@ export const DocGenSectionRefiner: React.FC<Props> = ({
               <Badge
                 key={p}
                 variant="outline"
-                className="cursor-pointer hover:bg-accent text-[11px]"
+                className="cursor-pointer hover:bg-accent text-micro"
                 onClick={() => setInstruction(prev => prev ? `${prev}\n${p}` : p)}
               >
                 + {p}
@@ -79,7 +77,7 @@ export const DocGenSectionRefiner: React.FC<Props> = ({
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>{t('docgen.sectionRefiner.cancel')}</Button>
           <Button onClick={handleSubmit} disabled={!instruction.trim() || loading} className="gap-2">
-            {loading ? <><AkurisPulse size={16} /> {t('docgen.sectionRefiner.refining')}</> : <><Sparkles className="h-3.5 w-3.5" strokeWidth={1.5} /> {t('docgen.sectionRefiner.refineWithAI')}</>}
+            {loading ? <><AkurisPulse size={16} /> {t('docgen.sectionRefiner.refining')}</> : <>{t('docgen.sectionRefiner.refineWithAI')}</>}
           </Button>
         </DialogFooter>
       </DialogContent>

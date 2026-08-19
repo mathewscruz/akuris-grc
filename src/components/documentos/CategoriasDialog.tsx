@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { IconAdd, IconEdit, IconDelete, IconFolder } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,7 +9,6 @@ import ConfirmDialog from '@/components/ConfirmDialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Edit, Trash2, FolderOpen } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -207,7 +207,7 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess, empresaId }: C
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      icon={FolderOpen}
+      icon={IconFolder}
       title={t('documentos.dialogs.gerenciarCategoriasTitulo')}
       description={t('documentos.dialogs.gerenciarCategoriasDescricao')}
       size="lg"
@@ -219,7 +219,7 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess, empresaId }: C
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-medium">{t('documentos.dialogs.categoriasExistentes')}</h3>
                 <Button onClick={() => setShowForm(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
+                  <IconAdd className="h-4 w-4 mr-2" />
                   {t('documentos.dialogs.novaCategoria')}
                 </Button>
               </div>
@@ -231,7 +231,7 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess, empresaId }: C
               ) : categorias.length === 0 ? (
                 <Card>
                   <CardContent className="flex flex-col items-center justify-center h-32">
-                    <FolderOpen className="h-12 w-12 text-muted-foreground mb-2" />
+                    <IconFolder className="h-12 w-12 text-muted-foreground mb-2" />
                     <p className="text-muted-foreground">{t('documentos.dialogs.nenhumaCategoriaCriada')}</p>
                     <p className="text-sm text-muted-foreground">{t('documentos.dialogs.cliqueNovaCategoria')}</p>
                   </CardContent>
@@ -274,7 +274,7 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess, empresaId }: C
                               size="sm"
                               onClick={() => handleEdit(categoria)}
                             >
-                              <Edit className="h-4 w-4" />
+                              <IconEdit className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="outline"
@@ -282,7 +282,7 @@ export function CategoriasDialog({ open, onOpenChange, onSuccess, empresaId }: C
                               onClick={() => setDeleteConfirm({ open: true, id: categoria.id, nome: categoria.nome })}
                               className="text-destructive hover:text-destructive"
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <IconDelete className="h-4 w-4" />
                             </Button>
                           </div>
                         </TableCell>

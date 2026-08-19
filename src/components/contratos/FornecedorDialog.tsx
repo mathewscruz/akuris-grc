@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { DialogShell } from '@/components/ui/dialog-shell';
-import { Building2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -8,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { IconOrg } from '@/components/icons';
 
 interface Fornecedor {
   id: string;
@@ -165,7 +165,7 @@ export function FornecedorDialog({ fornecedor, open, onOpenChange, onSuccess }: 
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      icon={Building2}
+      icon={IconOrg}
       title={fornecedor ? t('contratosAtivos.fornecedorDialog.titleEdit') : t('contratosAtivos.fornecedorDialog.titleNew')}
       size="md"
       onSubmit={() => handleSubmit(new Event('submit') as unknown as React.FormEvent)}

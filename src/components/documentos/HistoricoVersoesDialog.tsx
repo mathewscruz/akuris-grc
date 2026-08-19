@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { IconDownload, IconView, IconSuccess, IconInfo, IconTime, IconCalendar, IconFile, IconPerson } from '@/components/icons';
 import { DialogShell } from "@/components/ui/dialog-shell";
 import { Button } from "@/components/ui/button";
 import { StatusBadge, type StatusTone } from "@/components/ui/status-badge";
@@ -6,12 +7,11 @@ import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { FileText, Download, Eye, CheckCircle, Clock, User, Calendar, AlertCircle } from 'lucide-react';
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
-
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { dateFnsLocale, formatDateOnly } from '@/lib/date-utils';
+import { formatStatus } from '@/lib/text-utils';
 interface DocumentoHistorico {
   id: string;
   versao: number;
@@ -144,8 +144,8 @@ export const HistoricoVersoesDialog = ({
       rejeitado: { label: t('documentosExtras.historico.statusRejeitado'), tone: 'destructive' },
     };
 
-    const config = statusConfig[status] || { label: status, tone: 'neutral' as StatusTone };
-    return <StatusBadge size="sm" tone={config.tone}>{config.label}</StatusBadge>;
+    const config = statusConfig[status] || { label: formatStatus(status), tone: 'neutral' as StatusTone };
+    return <StatusBadge tone={config.tone}>{config.label}</StatusBadge>;
   };
 
   if (!documento) return null;
@@ -154,7 +154,7 @@ export const HistoricoVersoesDialog = ({
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      icon={FileText}
+      icon={IconFile}
       title={t('documentosExtras.historico.titulo').replace('{nome}', documento.nome)}
       size="lg"
       hideFooter
@@ -178,9 +178,9 @@ export const HistoricoVersoesDialog = ({
                         {getStatusBadge(documento.status)}
                       </div>
                       <p className="text-sm text-muted-foreground flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
+                        <IconCalendar className="h-3 w-3" />
                         {format(new Date(documento.created_at), "dd/MM/yyyy 'às' HH:mm", {
-                          locale: ptBR,
+                          locale: dateFnsLocale(),
                         })}
                       </p>
                     </div>
@@ -188,25 +188,25 @@ export const HistoricoVersoesDialog = ({
 
                   {documento.arquivo_nome && (
                     <div className="flex items-center gap-2 text-sm">
-                      <FileText className="h-4 w-4 text-muted-foreground" />
+                      <IconFile className="h-4 w-4 text-muted-foreground" />
                       <span className="truncate flex-1">{documento.arquivo_nome}</span>
                     </div>
                   )}
 
                   {documento.data_aprovacao && documento.aprovado_por && (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <CheckCircle className="h-4 w-4 text-success" />
+                      <IconSuccess className="h-4 w-4 text-success" />
                       <span>
-                        {t('documentosExtras.historico.aprovadoEm').replace('{data}', format(new Date(documento.data_aprovacao), "dd/MM/yyyy", { locale: ptBR }))}
+                        {t('documentosExtras.historico.aprovadoEm').replace('{data}', formatDateOnly(documento.data_aprovacao))}
                       </span>
                     </div>
                   )}
 
                   {documento.data_vencimento && (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Clock className="h-4 w-4" />
+                      <IconTime className="h-4 w-4" />
                       <span>
-                        {t('documentosExtras.historico.vencimento').replace('{data}', format(new Date(documento.data_vencimento), "dd/MM/yyyy", { locale: ptBR }))}
+                        {t('documentosExtras.historico.vencimento').replace('{data}', formatDateOnly(documento.data_vencimento))}
                       </span>
                     </div>
                   )}
@@ -218,7 +218,7 @@ export const HistoricoVersoesDialog = ({
                         size="sm"
                         onClick={() => handleVisualizarExterno(documento.arquivo_url!)}
                       >
-                        <Eye className="mr-2 h-4 w-4" />
+                        <IconView className="mr-2 h-4 w-4" />
                         {t('documentosExtras.historico.visualizar')}
                       </Button>
                       <Button
@@ -228,7 +228,7 @@ export const HistoricoVersoesDialog = ({
                           handleDownload(documento.arquivo_url!, documento.arquivo_nome!)
                         }
                       >
-                        <Download className="mr-2 h-4 w-4" />
+                        <IconDownload className="mr-2 h-4 w-4" />
                         {t('documentosExtras.historico.download')}
                       </Button>
                     </div>
@@ -253,12 +253,12 @@ export const HistoricoVersoesDialog = ({
                             <div className="flex items-center gap-2">
                               <h3 className="font-semibold">{t('documentosExtras.historico.versao').replace('{versao}', String(versao.versao))}</h3>
                               {getStatusBadge(versao.status)}
-                              <StatusBadge size="sm" tone="neutral">{t('documentosExtras.historico.arquivada')}</StatusBadge>
+                              <StatusBadge tone="neutral">{t('documentosExtras.historico.arquivada')}</StatusBadge>
                             </div>
                             <p className="text-sm text-muted-foreground flex items-center gap-1">
-                              <Calendar className="h-3 w-3" />
+                              <IconCalendar className="h-3 w-3" />
                               {format(new Date(versao.created_at), "dd/MM/yyyy 'às' HH:mm", {
-                                locale: ptBR,
+                                locale: dateFnsLocale(),
                               })}
                             </p>
                           </div>
@@ -266,41 +266,41 @@ export const HistoricoVersoesDialog = ({
 
                         {versao.arquivo_nome && (
                           <div className="flex items-center gap-2 text-sm">
-                            <FileText className="h-4 w-4 text-muted-foreground" />
+                            <IconFile className="h-4 w-4 text-muted-foreground" />
                             <span className="truncate flex-1">{versao.arquivo_nome}</span>
                           </div>
                         )}
 
                         {versao.created_by_nome && (
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <User className="h-4 w-4" />
+                            <IconPerson className="h-4 w-4" />
                             <span>{t('documentosExtras.historico.criadoPor').replace('{nome}', versao.created_by_nome)}</span>
                           </div>
                         )}
 
                         {versao.data_aprovacao && versao.aprovador_nome && (
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <CheckCircle className="h-4 w-4 text-success" />
+                            <IconSuccess className="h-4 w-4 text-success" />
                             <span>
                               {t('documentosExtras.historico.aprovadoPorEm')
                                 .replace('{nome}', versao.aprovador_nome)
-                                .replace('{data}', format(new Date(versao.data_aprovacao), "dd/MM/yyyy", { locale: ptBR }))}
+                                .replace('{data}', formatDateOnly(versao.data_aprovacao))}
                             </span>
                           </div>
                         )}
 
                         {versao.data_vencimento && (
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Clock className="h-4 w-4" />
+                            <IconTime className="h-4 w-4" />
                             <span>
-                              {t('documentosExtras.historico.vencimento').replace('{data}', format(new Date(versao.data_vencimento), "dd/MM/yyyy", { locale: ptBR }))}
+                              {t('documentosExtras.historico.vencimento').replace('{data}', formatDateOnly(versao.data_vencimento))}
                             </span>
                           </div>
                         )}
 
                         {versao.observacoes && (
                           <div className="flex gap-2 text-sm">
-                            <AlertCircle className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                            <IconInfo className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
                             <p className="text-muted-foreground">{versao.observacoes}</p>
                           </div>
                         )}
@@ -312,7 +312,7 @@ export const HistoricoVersoesDialog = ({
                               size="sm"
                               onClick={() => handleVisualizarExterno(versao.arquivo_url!)}
                             >
-                              <Eye className="mr-2 h-4 w-4" />
+                              <IconView className="mr-2 h-4 w-4" />
                               {t('documentosExtras.historico.visualizar')}
                             </Button>
                             <Button
@@ -322,7 +322,7 @@ export const HistoricoVersoesDialog = ({
                                 handleDownload(versao.arquivo_url!, versao.arquivo_nome!)
                               }
                             >
-                              <Download className="mr-2 h-4 w-4" />
+                              <IconDownload className="mr-2 h-4 w-4" />
                               {t('documentosExtras.historico.download')}
                             </Button>
                           </div>
@@ -333,7 +333,7 @@ export const HistoricoVersoesDialog = ({
                 </>
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
-                  <FileText className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                  <IconFile className="h-12 w-12 mx-auto mb-3 opacity-50" />
                   <p>{t('documentosExtras.historico.nenhumaVersaoAnterior')}</p>
                   <p className="text-sm mt-1">{t('documentosExtras.historico.primeiroRegistro')}</p>
                 </div>

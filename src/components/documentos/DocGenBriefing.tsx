@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import { IconClose, IconArrowLeft, IconArrowRight, IconShieldCheck, IconLayers } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { ArrowLeft, ArrowRight, Sparkles, X, ShieldCheck, Layers } from 'lucide-react';
 import {
   type BriefingDefaults,
   DOC_TYPE_OPTIONS,
@@ -89,7 +89,6 @@ export const DocGenBriefing: React.FC<DocGenBriefingProps> = ({
   const [frameworkInput, setFrameworkInput] = useState('');
   const [roleInput, setRoleInput] = useState('');
 
-
   // Guarda o rascunho a cada alteração, para que nada se perca se o modal fechar.
   useEffect(() => {
     onDraftChange?.(briefing, step);
@@ -128,7 +127,6 @@ export const DocGenBriefing: React.FC<DocGenBriefingProps> = ({
   const removeRole = (role: string) =>
     update('roles', (briefing.roles || []).filter((r) => r !== role));
 
-
   // Sugestões enriquecidas: frameworks da empresa primeiro, depois defaults.
   const enrichedSuggestions = useMemo(() => {
     const fromCompany = (companyContext?.frameworks || [])
@@ -145,7 +143,6 @@ export const DocGenBriefing: React.FC<DocGenBriefingProps> = ({
     });
     return ordered.slice(0, 10);
   }, [companyContext, briefing.frameworks]);
-
 
   const canAdvance = step === 1 ? !!briefing.docType : true;
 
@@ -168,7 +165,7 @@ export const DocGenBriefing: React.FC<DocGenBriefingProps> = ({
     <div className="flex flex-col h-full min-h-0 gap-4">
       {/* Header */}
       <div>
-        <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">
+        <p className="text-xs text-muted-foreground font-semibold">
           {t('docgen.briefing.stepLabel', { step, total: TOTAL_STEPS })}
           {templateLabel ? ` · ${templateLabel}` : ''}
         </p>
@@ -230,10 +227,10 @@ export const DocGenBriefing: React.FC<DocGenBriefingProps> = ({
                     <button
                       type="button"
                       onClick={() => removeFramework(fw)}
-                      className="ml-1 hover:bg-muted-foreground/10 rounded p-0.5"
+                      className="ml-1 hover:bg-accent-foreground/10 rounded p-0.5"
                       aria-label={t('docgen.briefing.removeFramework', { fw })}
                     >
-                      <X className="h-3 w-3" strokeWidth={1.5} />
+                      <IconClose className="h-3 w-3" strokeWidth={1.5} />
                     </button>
                   </Badge>
                 ))}
@@ -268,7 +265,7 @@ export const DocGenBriefing: React.FC<DocGenBriefingProps> = ({
                       type="button"
                       key={s}
                       onClick={() => addFramework(s)}
-                      className="px-2 py-0.5 rounded-full text-[11px] text-muted-foreground border border-dashed border-border hover:text-foreground hover:border-primary/40 transition-colors"
+                      className="px-2 py-0.5 rounded-md text-micro text-muted-foreground border border-dashed border-border hover:text-foreground hover:border-primary/40 transition-colors"
                     >
                       + {s}
                     </button>
@@ -279,7 +276,7 @@ export const DocGenBriefing: React.FC<DocGenBriefingProps> = ({
               {/* Conformidade pelos referenciais escolhidos */}
               {briefing.frameworks.length > 0 && (
                 <div className="mt-3 rounded-lg border border-border bg-card/50 p-3 flex items-start gap-3">
-                  <ShieldCheck className="h-4 w-4 text-primary mt-0.5" strokeWidth={1.5} />
+                  <IconShieldCheck className="h-4 w-4 text-primary mt-0.5" strokeWidth={1.5} />
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium">
                       {t('docgen.briefing.complianceNote', { list: briefing.frameworks.join(' · ') })}
@@ -405,10 +402,10 @@ export const DocGenBriefing: React.FC<DocGenBriefingProps> = ({
                         <button
                           type="button"
                           onClick={() => removeRole(role)}
-                          className="ml-1 hover:bg-muted-foreground/10 rounded p-0.5"
+                          className="ml-1 hover:bg-accent-foreground/10 rounded p-0.5"
                           aria-label={t('docgen.briefing.removeRole', { role })}
                         >
-                          <X className="h-3 w-3" strokeWidth={1.5} />
+                          <IconClose className="h-3 w-3" strokeWidth={1.5} />
                         </button>
                       </Badge>
                     ))}
@@ -441,11 +438,8 @@ export const DocGenBriefing: React.FC<DocGenBriefingProps> = ({
 
             </div>
 
-
-
             {/* Toggle gerar direto */}
             <div className="rounded-lg border border-border bg-card/50 p-3 flex items-start gap-3">
-              <Sparkles className="h-4 w-4 text-primary mt-0.5" strokeWidth={1.5} />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-3">
                   <Label htmlFor="direct-gen" className="text-sm font-medium cursor-pointer">
@@ -465,7 +459,7 @@ export const DocGenBriefing: React.FC<DocGenBriefingProps> = ({
 
             {/* Resumo */}
             <div className="rounded-lg border border-dashed border-border p-3 space-y-1 text-xs">
-              <div className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground font-semibold mb-1">
+              <div className="text-xs text-muted-foreground font-semibold mb-1">
                 {t('docgen.briefing.summary')}
               </div>
               <div><span className="text-muted-foreground">{t('docgen.briefing.summaryType')}</span> {currentDocTypeLabel}</div>
@@ -487,19 +481,18 @@ export const DocGenBriefing: React.FC<DocGenBriefingProps> = ({
       {/* Footer */}
       <div className="flex items-center justify-between gap-2 border-t pt-3">
         <Button variant="ghost" onClick={handleBack} className="gap-1">
-          <ArrowLeft className="h-4 w-4" strokeWidth={1.5} />
+          <IconArrowLeft className="h-4 w-4" strokeWidth={1.5} />
           {step === 1 ? t('docgen.briefing.changeTemplate') : t('docgen.briefing.back')}
         </Button>
         <Button onClick={handleNext} disabled={!canAdvance} className="gap-1">
           {step === TOTAL_STEPS ? (
             <>
-              <Sparkles className="h-4 w-4" strokeWidth={1.5} />
               {briefing.directGenerate !== false ? t('docgen.briefing.generateDocument') : t('docgen.briefing.startConversation')}
             </>
           ) : (
             <>
               {t('docgen.briefing.advance')}
-              <ArrowRight className="h-4 w-4" strokeWidth={1.5} />
+              <IconArrowRight className="h-4 w-4" strokeWidth={1.5} />
             </>
           )}
         </Button>
@@ -508,4 +501,3 @@ export const DocGenBriefing: React.FC<DocGenBriefingProps> = ({
   );
 };
 
-export default DocGenBriefing;

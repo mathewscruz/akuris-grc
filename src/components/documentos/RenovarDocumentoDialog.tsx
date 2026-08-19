@@ -1,17 +1,19 @@
 import { useState } from "react";
+import { IconUpload, IconInfo, IconFile } from '@/components/icons';
 import { DialogShell } from "@/components/ui/dialog-shell";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { DateField } from "@/components/ui/date-field";
-import { Upload, FileText, AlertCircle } from 'lucide-react';
+;
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { formatDateOnly, parseDataLocal } from '@/lib/date-utils';
 interface Documento {
   id: string;
   nome: string;
@@ -140,7 +142,7 @@ export const RenovarDocumentoDialog = ({
   // Calcular dias até o vencimento
   const diasAteVencimento = documento.data_vencimento
     ? Math.ceil(
-        (new Date(documento.data_vencimento).getTime() - new Date().getTime()) /
+        (parseDataLocal(documento.data_vencimento).getTime() - new Date().getTime()) /
           (1000 * 60 * 60 * 24)
       )
     : null;
@@ -149,7 +151,7 @@ export const RenovarDocumentoDialog = ({
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      icon={FileText}
+      icon={IconFile}
       title={t('documentosExtras.renovar.titulo')}
       size="md"
       footer={
@@ -173,7 +175,7 @@ export const RenovarDocumentoDialog = ({
               </>
             ) : (
               <>
-                <Upload className="mr-2 h-4 w-4" />
+                <IconUpload className="mr-2 h-4 w-4" />
                 {t('documentosExtras.renovar.renovarPara').replace('{versao}', String(documento.versao + 1))}
               </>
             )}
@@ -184,7 +186,7 @@ export const RenovarDocumentoDialog = ({
         <div className="space-y-4">
           {/* Informações do documento atual */}
           <Alert>
-            <AlertCircle className="h-4 w-4" />
+            <IconInfo className="h-4 w-4" />
             <AlertDescription>
               <div className="space-y-1">
                 <p className="font-medium">{documento.nome}</p>
@@ -194,7 +196,7 @@ export const RenovarDocumentoDialog = ({
                 </p>
                 {documento.data_vencimento && (
                   <p className="text-sm text-muted-foreground">
-                    {t('documentosExtras.renovar.vencimento').replace('{data}', new Date(documento.data_vencimento).toLocaleDateString('pt-BR'))}
+                    {t('documentosExtras.renovar.vencimento').replace('{data}', formatDateOnly(documento.data_vencimento))}
                     {diasAteVencimento !== null && (
                       <span
                         className={
@@ -231,7 +233,7 @@ export const RenovarDocumentoDialog = ({
               />
               {novoArquivo && (
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Upload className="h-4 w-4" />
+                  <IconUpload className="h-4 w-4" />
                   <span className="truncate max-w-[200px]">{novoArquivo.name}</span>
                 </div>
               )}
@@ -280,7 +282,7 @@ export const RenovarDocumentoDialog = ({
           {/* Aviso sobre aprovação */}
           {documento.requer_aprovacao && (
             <Alert>
-              <AlertCircle className="h-4 w-4" />
+              <IconInfo className="h-4 w-4" />
               <AlertDescription className="text-sm">
                 {t('documentosExtras.renovar.avisoAprovacao')}{" "}
                 <span className="font-medium">{t('documentosExtras.renovar.pendenteAprovacao')}</span> {t('documentosExtras.renovar.avisoAprovacaoFim')}

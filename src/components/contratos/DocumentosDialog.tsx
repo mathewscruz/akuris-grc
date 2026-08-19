@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { IconAdd, IconDelete, IconDownload, IconUpload, IconFile, IconFolder } from '@/components/icons';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,14 +7,14 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatusBadge, type StatusTone } from '@/components/ui/status-badge';
-import { FolderOpen } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, FileText, Upload, Download, Trash2 } from 'lucide-react';
+;
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDateOnly } from '@/lib/date-utils';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { formatStatus } from '@/lib/text-utils';
 
 interface Contrato {
   id: string;
@@ -248,8 +249,8 @@ export function DocumentosDialog({ contrato, open, onOpenChange }: DocumentosDia
       outros: { tone: 'neutral', label: t('contratosAtivos.documentosDialog.typeOutros') }
     };
 
-    const tipoInfo = tipoMap[tipo] || { tone: 'neutral' as StatusTone, label: tipo };
-    return <StatusBadge size="sm" tone={tipoInfo.tone}>{tipoInfo.label}</StatusBadge>;
+    const tipoInfo = tipoMap[tipo] || { tone: 'neutral' as StatusTone, label: formatStatus(tipo) };
+    return <StatusBadge tone={tipoInfo.tone}>{tipoInfo.label}</StatusBadge>;
   };
 
   const formatFileSize = (bytes: number) => {
@@ -267,7 +268,7 @@ export function DocumentosDialog({ contrato, open, onOpenChange }: DocumentosDia
       <DialogShell
         open={open}
         onOpenChange={onOpenChange}
-        icon={FolderOpen}
+        icon={IconFolder}
         title={t('contratosAtivos.documentosDialog.title').replace('{nome}', contrato.nome)}
         description={t('contratosAtivos.documentosDialog.description').replace('{numero}', contrato.numero_contrato)}
         size="lg"
@@ -277,7 +278,7 @@ export function DocumentosDialog({ contrato, open, onOpenChange }: DocumentosDia
             {!showForm && (
               <div className="flex justify-end items-center">
                 <Button onClick={() => setShowForm(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
+                  <IconAdd className="h-4 w-4 mr-2" />
                   {t('contratosAtivos.documentosDialog.newButton')}
                 </Button>
               </div>
@@ -359,15 +360,15 @@ export function DocumentosDialog({ contrato, open, onOpenChange }: DocumentosDia
 
             <div className="space-y-4">
               {documentos.map((documento) => (
-                <Card key={documento.id} className="hover:shadow-md transition-shadow">
+                <Card key={documento.id} className="hover:shadow-sm transition-shadow">
                   <CardContent className="pt-6">
                     <div className="flex justify-between items-start mb-4">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                          <FileText className="h-5 w-5 text-muted-foreground" />
+                          <IconFile className="h-5 w-5 text-muted-foreground" />
                           <h3 className="font-semibold">{documento.nome}</h3>
                           {documento.is_current_version && (
-                            <StatusBadge size="sm" tone="success" variant="outline">{t('contratosAtivos.documentosDialog.currentVersionBadge')}</StatusBadge>
+                            <StatusBadge tone="success" variant="outline">{t('contratosAtivos.documentosDialog.currentVersionBadge')}</StatusBadge>
                           )}
                         </div>
                         <p className="text-sm text-muted-foreground">{documento.descricao}</p>
@@ -398,7 +399,7 @@ export function DocumentosDialog({ contrato, open, onOpenChange }: DocumentosDia
                         size="sm"
                         onClick={() => handleDownload(documento)}
                       >
-                        <Download className="h-4 w-4 mr-1" />
+                        <IconDownload className="h-4 w-4 mr-1" />
                         {t('contratosAtivos.documentosDialog.downloadButton')}
                       </Button>
                       <Button 
@@ -406,7 +407,7 @@ export function DocumentosDialog({ contrato, open, onOpenChange }: DocumentosDia
                         size="sm"
                         onClick={() => handleDeleteClick(documento)}
                       >
-                        <Trash2 className="h-4 w-4 mr-1" />
+                        <IconDelete className="h-4 w-4 mr-1" />
                         {t('contratosAtivos.documentosDialog.deleteButton')}
                       </Button>
                     </div>
@@ -418,7 +419,7 @@ export function DocumentosDialog({ contrato, open, onOpenChange }: DocumentosDia
             {documentos.length === 0 && !showForm && (
               <Card>
                 <CardContent className="text-center py-8">
-                  <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <IconFile className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <p className="text-muted-foreground">{t('contratosAtivos.documentosDialog.emptyState')}</p>
                 </CardContent>
               </Card>

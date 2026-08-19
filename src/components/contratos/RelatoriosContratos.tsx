@@ -1,24 +1,23 @@
 import React, { useState, useEffect } from 'react';
+import { IconDownload, IconFile, IconTrendUp, IconTrendDown, IconMoney, IconCalendar, IconUsers, IconChart } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { FileText, Download, TrendingUp, TrendingDown, DollarSign, CalendarIcon, Users, BarChart3 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import jsPDF from 'jspdf';
 import { loadAkurisLogo, addAkurisHeader, addAkurisFooter, addSectionTitle, drawTableHeader, formatLabel, AKURIS_COLORS } from '@/lib/pdf-utils';
 import { exportCSV } from '@/lib/csv-utils';
 import { formatStatus } from '@/lib/text-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { CHART_SERIES, CHART_GRID, CHART_AXIS, CHART_TOOLTIP_STYLE, chartSeries } from '@/lib/chart-tokens';
-
+import { CHART_SERIES, CHART_GRID, CHART_AXIS, CHART_TOOLTIP_STYLE, chartSeries, CHART_FONT } from '@/lib/chart-tokens';
+import { dateFnsLocale, datePattern, formatDateOnly, intlLocale, parseDataLocal } from '@/lib/date-utils';
 interface RelatorioData {
   contratos: any[];
   fornecedores: any[];
@@ -190,8 +189,8 @@ export default function RelatoriosContratos({ open: openProp, onOpenChange, hide
           formatLabel(c.tipo || ''),
           formatLabel(c.status || ''),
           c.valor_total ? Number(c.valor_total).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '',
-          c.data_inicio ? format(new Date(c.data_inicio), 'dd/MM/yyyy') : '',
-          c.data_fim ? format(new Date(c.data_fim), 'dd/MM/yyyy') : '',
+          c.data_inicio ? formatDateOnly(c.data_inicio) : '',
+          c.data_fim ? formatDateOnly(c.data_fim) : '',
         ]),
         'relatorio_contratos'
       );
@@ -216,7 +215,7 @@ export default function RelatoriosContratos({ open: openProp, onOpenChange, hide
       doc.setFontSize(9);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(AKURIS_COLORS.textLight);
-      doc.text(t('contratosAtivos.relatoriosContratos.pdfGeneratedAt').replace('{date}', new Date().toLocaleDateString('pt-BR')).replace('{count}', String(dados.contratos.length)), pageWidth / 2, y, { align: 'center' });
+      doc.text(t('contratosAtivos.relatoriosContratos.pdfGeneratedAt').replace('{date}', new Date().toLocaleDateString(intlLocale())).replace('{count}', String(dados.contratos.length)), pageWidth / 2, y, { align: 'center' });
       y += 12;
 
       y = addSectionTitle(doc, t('contratosAtivos.relatoriosContratos.pdfSummarySection'), y, margin);
@@ -291,7 +290,8 @@ export default function RelatoriosContratos({ open: openProp, onOpenChange, hide
 
   const dadosGraficoMarcosPorMes = () => {
     const marcosPorMes = dados.marcos.reduce((acc, marco) => {
-      const mes = format(new Date(marco.data_prevista), 'MMM/yyyy', { locale: ptBR });
+      // Sem ancorar ao fuso local, um marco no dia 1 caia no mes anterior.
+      const mes = format(parseDataLocal(marco.data_prevista), 'MMM/yyyy', { locale: dateFnsLocale() });
       acc[mes] = (acc[mes] || 0) + 1;
       return acc;
     }, {});
@@ -307,7 +307,7 @@ export default function RelatoriosContratos({ open: openProp, onOpenChange, hide
     valorTotal: dados.contratos.reduce((sum, c) => sum + (parseFloat(c.valor) || 0), 0),
     contratosAtivos: dados.contratos.filter(c => c.status === 'ativo').length,
     marcosVencendo: dados.marcos.filter(m => {
-      const diasRestantes = Math.ceil((new Date(m.data_prevista).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+      const diasRestantes = Math.ceil((parseDataLocal(m.data_prevista).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
       return diasRestantes <= 30 && diasRestantes >= 0;
     }).length
   };
@@ -317,7 +317,7 @@ export default function RelatoriosContratos({ open: openProp, onOpenChange, hide
       {!hideTrigger && (
         <DialogTrigger asChild>
           <Button variant="outline">
-            <BarChart3 className="h-4 w-4 mr-2" />
+            <IconChart className="h-4 w-4 mr-2" />
             {t('contratosAtivos.relatoriosContratos.triggerButton')}
           </Button>
         </DialogTrigger>
@@ -355,8 +355,8 @@ export default function RelatoriosContratos({ open: openProp, onOpenChange, hide
                       <Popover>
                         <PopoverTrigger asChild>
                           <Button variant="outline" className={cn("justify-start text-left font-normal", !filtros.dataInicio && "text-muted-foreground")}>
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {filtros.dataInicio ? format(filtros.dataInicio, "dd/MM/yyyy", { locale: ptBR }) : t('contratosAtivos.relatoriosContratos.startDatePlaceholder')}
+                            <IconCalendar className="mr-2 h-4 w-4" />
+                            {filtros.dataInicio ? format(filtros.dataInicio, datePattern(), { locale: dateFnsLocale() }) : t('contratosAtivos.relatoriosContratos.startDatePlaceholder')}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
@@ -366,8 +366,8 @@ export default function RelatoriosContratos({ open: openProp, onOpenChange, hide
                       <Popover>
                         <PopoverTrigger asChild>
                           <Button variant="outline" className={cn("justify-start text-left font-normal", !filtros.dataFim && "text-muted-foreground")}>
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {filtros.dataFim ? format(filtros.dataFim, "dd/MM/yyyy", { locale: ptBR }) : t('contratosAtivos.relatoriosContratos.endDatePlaceholder')}
+                            <IconCalendar className="mr-2 h-4 w-4" />
+                            {filtros.dataFim ? format(filtros.dataFim, datePattern(), { locale: dateFnsLocale() }) : t('contratosAtivos.relatoriosContratos.endDatePlaceholder')}
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
@@ -379,11 +379,11 @@ export default function RelatoriosContratos({ open: openProp, onOpenChange, hide
 
                 <div className="flex gap-2">
                   <Button onClick={() => exportarRelatorio('excel')} size="sm">
-                    <Download className="h-4 w-4 mr-2" />
+                    <IconDownload className="h-4 w-4 mr-2" />
                     {t('contratosAtivos.relatoriosContratos.excelButton')}
                   </Button>
                   <Button onClick={() => exportarRelatorio('pdf')} size="sm" variant="outline">
-                    <FileText className="h-4 w-4 mr-2" />
+                    <IconFile className="h-4 w-4 mr-2" />
                     {t('contratosAtivos.relatoriosContratos.pdfButton')}
                   </Button>
                 </div>
@@ -400,7 +400,7 @@ export default function RelatoriosContratos({ open: openProp, onOpenChange, hide
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">{t('contratosAtivos.relatoriosContratos.statTotalContracts')}</CardTitle>
-                    <FileText className="h-4 w-4 text-muted-foreground" />
+                    <IconFile className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">{estatisticasGerais.totalContratos}</div>
@@ -410,7 +410,7 @@ export default function RelatoriosContratos({ open: openProp, onOpenChange, hide
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">{t('contratosAtivos.relatoriosContratos.statTotalValue')}</CardTitle>
-                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    <IconMoney className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
@@ -425,7 +425,7 @@ export default function RelatoriosContratos({ open: openProp, onOpenChange, hide
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">{t('contratosAtivos.relatoriosContratos.statActiveContracts')}</CardTitle>
-                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                    <IconTrendUp className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">{estatisticasGerais.contratosAtivos}</div>
@@ -480,8 +480,8 @@ export default function RelatoriosContratos({ open: openProp, onOpenChange, hide
                     <ResponsiveContainer width="100%" height={300}>
                       <BarChart data={dadosGraficoValorPorTipo()}>
                         <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} />
-                        <XAxis dataKey="tipo" stroke={CHART_AXIS} tick={{ fontSize: 12, fill: CHART_AXIS }} />
-                        <YAxis stroke={CHART_AXIS} tick={{ fontSize: 12, fill: CHART_AXIS }} />
+                        <XAxis dataKey="tipo" stroke={CHART_AXIS} tick={{ fontSize: CHART_FONT.label, fill: CHART_AXIS }} />
+                        <YAxis stroke={CHART_AXIS} tick={{ fontSize: CHART_FONT.label, fill: CHART_AXIS }} />
                         <Tooltip 
                           formatter={(value: number) => [
                             new Intl.NumberFormat('pt-BR', {
@@ -505,8 +505,8 @@ export default function RelatoriosContratos({ open: openProp, onOpenChange, hide
                     <ResponsiveContainer width="100%" height={300}>
                       <LineChart data={dadosGraficoMarcosPorMes()}>
                         <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} />
-                        <XAxis dataKey="mes" stroke={CHART_AXIS} tick={{ fontSize: 12, fill: CHART_AXIS }} />
-                        <YAxis stroke={CHART_AXIS} tick={{ fontSize: 12, fill: CHART_AXIS }} />
+                        <XAxis dataKey="mes" stroke={CHART_AXIS} tick={{ fontSize: CHART_FONT.label, fill: CHART_AXIS }} />
+                        <YAxis stroke={CHART_AXIS} tick={{ fontSize: CHART_FONT.label, fill: CHART_AXIS }} />
                         <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
                         <Line type="monotone" dataKey="marcos" stroke={chartSeries(0)} strokeWidth={2} />
                       </LineChart>

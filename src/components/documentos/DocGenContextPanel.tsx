@@ -1,7 +1,7 @@
 import React from 'react';
+import { IconOrg, IconChevronDown, IconLayers, IconShieldAlert, IconPackage } from '@/components/icons';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Badge } from '@/components/ui/badge';
-import { Building2, ChevronDown, Layers, ShieldAlert, Boxes, Sparkles } from 'lucide-react';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -38,7 +38,6 @@ export const DocGenContextPanel: React.FC<Props> = ({ context, loading, defaultO
   if (!context || !context.empresa) {
     return (
       <div className="rounded-lg border border-dashed border-border bg-card/30 p-3 text-xs text-muted-foreground flex items-center gap-2">
-        <Sparkles className="h-3.5 w-3.5" strokeWidth={1.5} />
         {t('docgen.contextPanel.noContext')}
       </div>
     );
@@ -53,13 +52,12 @@ export const DocGenContextPanel: React.FC<Props> = ({ context, loading, defaultO
     <Collapsible defaultOpen={defaultOpen} className="rounded-lg border border-border bg-card/50">
       <CollapsibleTrigger className="w-full flex items-center justify-between p-3 group">
         <div className="flex items-center gap-2 text-sm">
-          <Sparkles className="h-4 w-4 text-primary" strokeWidth={1.5} />
           <span className="font-medium">{t('docgen.contextPanel.title')}</span>
         </div>
-        <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" strokeWidth={1.5} />
+        <IconChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" strokeWidth={1.5} />
       </CollapsibleTrigger>
       <CollapsibleContent className="px-3 pb-3 space-y-3 text-sm">
-        <Section icon={<Building2 className="h-3.5 w-3.5" strokeWidth={1.5} />} label={t('docgen.contextPanel.company')}>
+        <Section icon={<IconOrg className="h-3.5 w-3.5" strokeWidth={1.5} />} label={t('docgen.contextPanel.company')}>
           <div className="text-foreground">{emp.nome}</div>
           <div className="text-xs text-muted-foreground">
             {[emp.setor_atuacao, emp.porte_empresa, emp.cnpj].filter(Boolean).join(' · ') || '—'}
@@ -70,10 +68,10 @@ export const DocGenContextPanel: React.FC<Props> = ({ context, loading, defaultO
         </Section>
 
         {fw.length > 0 && (
-          <Section icon={<Layers className="h-3.5 w-3.5" strokeWidth={1.5} />} label={t('docgen.contextPanel.frameworks')}>
+          <Section icon={<IconLayers className="h-3.5 w-3.5" strokeWidth={1.5} />} label={t('docgen.contextPanel.frameworks')}>
             <div className="flex flex-wrap gap-1.5">
               {fw.slice(0, 6).map((f, i) => (
-                <Badge key={i} variant="outline" className="text-[11px]">
+                <Badge key={i} variant="outline" className="text-micro">
                   {f.nome}{f.versao ? ` ${f.versao}` : ''} · {Math.round(Number(f.score || 0))}%
                 </Badge>
               ))}
@@ -82,7 +80,7 @@ export const DocGenContextPanel: React.FC<Props> = ({ context, loading, defaultO
         )}
 
         {ativos.length > 0 && (
-          <Section icon={<Boxes className="h-3.5 w-3.5" strokeWidth={1.5} />} label={t('docgen.contextPanel.criticalAssets', { count: ativos.length })}>
+          <Section icon={<IconPackage className="h-3.5 w-3.5" strokeWidth={1.5} />} label={t('docgen.contextPanel.criticalAssets', { count: ativos.length })}>
             <ul className="text-xs text-muted-foreground space-y-0.5">
               {ativos.slice(0, 5).map((a, i) => (
                 <li key={i}>• {a.nome} <span className="opacity-70">— {a.tipo} · {a.criticidade}</span></li>
@@ -92,7 +90,7 @@ export const DocGenContextPanel: React.FC<Props> = ({ context, loading, defaultO
         )}
 
         {riscos.length > 0 && (
-          <Section icon={<ShieldAlert className="h-3.5 w-3.5" strokeWidth={1.5} />} label={t('docgen.contextPanel.highRisks', { count: riscos.length })}>
+          <Section icon={<IconShieldAlert className="h-3.5 w-3.5" strokeWidth={1.5} />} label={t('docgen.contextPanel.highRisks', { count: riscos.length })}>
             <ul className="text-xs text-muted-foreground space-y-0.5">
               {riscos.slice(0, 5).map((r, i) => (
                 <li key={i}>• {r.nome} <span className="opacity-70">— {r.nivel}</span></li>
@@ -101,7 +99,7 @@ export const DocGenContextPanel: React.FC<Props> = ({ context, loading, defaultO
           </Section>
         )}
 
-        <p className="text-[11px] text-muted-foreground pt-1 border-t border-border/50">
+        <p className="text-micro text-muted-foreground pt-1 border-t border-border/50">
           {t('docgen.contextPanel.footerNote')}
         </p>
       </CollapsibleContent>
@@ -111,7 +109,7 @@ export const DocGenContextPanel: React.FC<Props> = ({ context, loading, defaultO
 
 const Section: React.FC<{ icon: React.ReactNode; label: string; children: React.ReactNode }> = ({ icon, label, children }) => (
   <div>
-    <div className="flex items-center gap-1.5 text-xs uppercase tracking-wide text-muted-foreground mb-1">
+    <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1">
       {icon}
       <span>{label}</span>
     </div>

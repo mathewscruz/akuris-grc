@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,10 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { IconCalendar } from '@/components/icons';
 
 interface Categoria {
   id: string;
@@ -38,22 +38,40 @@ interface BuscaAvancadaDocumentosProps {
   onOpenChange: (open: boolean) => void;
   onSearch: (filters: FiltrosAvancados) => void;
   categorias: Categoria[];
+  /**
+   * O que está aplicado agora, para o formulário espelhar a realidade.
+   *
+   * Sem isto o diálogo guardava o próprio estado para sempre: o "Limpar" da
+   * barra zerava a lista, mas reabrir a busca mostrava o nome anterior e a
+   * caixa de confidenciais ainda marcada — e o "Aplicar" seguinte reintroduzia
+   * o filtro em silêncio.
+   */
+  filtrosAtuais?: Partial<FiltrosAvancados> | null;
 }
 
 export function BuscaAvancadaDocumentos({ 
   open, 
   onOpenChange, 
-  onSearch, 
-  categorias 
+  onSearch,
+  categorias,
+  filtrosAtuais,
 }: BuscaAvancadaDocumentosProps) {
   const { t } = useLanguage();
-  const [filters, setFilters] = useState<FiltrosAvancados>({
+  const FILTROS_VAZIOS: FiltrosAvancados = {
     nome: '',
     tipo: '',
     categoria: '',
     status: '',
     tags: '',
-  });
+  };
+  const [filters, setFilters] = useState<FiltrosAvancados>(FILTROS_VAZIOS);
+
+  // Ao abrir, o formulário reflete o que está aplicado — inclusive o nada.
+  useEffect(() => {
+    if (!open) return;
+    setFilters({ ...FILTROS_VAZIOS, ...(filtrosAtuais || {}) });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const handleSearch = () => {
     // Criar filtros limpos (sem valores vazios)
@@ -69,13 +87,7 @@ export function BuscaAvancadaDocumentos({
   };
 
   const handleReset = () => {
-    setFilters({
-      nome: '',
-      tipo: '',
-      categoria: '',
-      status: '',
-      tags: '',
-    });
+    setFilters(FILTROS_VAZIOS);
   };
 
   const updateFilter = <K extends keyof FiltrosAvancados>(key: K, value: FiltrosAvancados[K]) => {
@@ -96,7 +108,7 @@ export function BuscaAvancadaDocumentos({
             !date && "text-muted-foreground"
           )}
         >
-          <CalendarIcon className="mr-2 h-4 w-4" />
+          <IconCalendar className="mr-2 h-4 w-4" />
           {date ? format(date, "PPP") : <span>{placeholder}</span>}
         </Button>
       </PopoverTrigger>
@@ -167,7 +179,7 @@ export function BuscaAvancadaDocumentos({
                   <SelectContent>
                     <SelectItem value="all">{t('documentos.dialogs.todasCategorias')}</SelectItem>
                     {categorias.map((categoria) => (
-                      <SelectItem key={categoria.id} value={categoria.nome}>
+                      <SelectItem key={categoria.id} value={categoria.id}>
                         {categoria.nome}
                       </SelectItem>
                     ))}
