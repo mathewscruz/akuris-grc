@@ -404,9 +404,9 @@ export default function ContasPrivilegiadas() {
         loading={isLoading}
         items={[
           { key: 'ativas', label: t('sweepDenuncias.contas.cardContasAtivas'), value: contasAtivas, drillDown: 'contas_privilegiadas' },
-          { key: 'pendentes', label: t('cardsKpi.sweep.acessos.pendentes'), value: contasPendentes, drillDown: 'contas_privilegiadas' },
-          { key: 'vencendo', label: t('residuos.geral.vencendo30'), value: contasVencendo, tone: 'warning', drillDown: 'contas_privilegiadas' },
-          { key: 'expiradas', label: t('sweepDenuncias.contas.cardExpiradas'), value: contasExpiradas, tone: 'destructive', drillDown: 'contas_privilegiadas' },
+          { key: 'pendentes', label: t('cardsKpi.sweep.acessos.pendentes'), value: contasPendentes, drillDown: 'contas_pendentes' },
+          { key: 'vencendo', label: t('residuos.geral.vencendo30'), value: contasVencendo, tone: 'warning', drillDown: 'contas_vencendo' },
+          { key: 'expiradas', label: t('sweepDenuncias.contas.cardExpiradas'), value: contasExpiradas, tone: 'destructive', drillDown: 'contas_expiradas' },
         ]}
       />
 

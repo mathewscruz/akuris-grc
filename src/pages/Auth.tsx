@@ -296,19 +296,19 @@ const Auth = () => {
         </div>
 
         <div className="relative z-10 auth-entra">
-          <h1 className="max-w-[19ch] text-[2.5rem] font-medium leading-[1.12] tracking-[-0.02em] text-white text-balance">
+          {/* Sem o subtítulo a explicar o que é GRC a quem trabalha com GRC.
+              A segunda linha fica a meio tom: separa as duas partes da frase
+              sem gradiente e sem outra cor. */}
+          <h1 className="max-w-[14ch] text-[3.25rem] font-medium leading-[1.05] tracking-[-0.03em] text-white">
             {t('auth.platformTitle')}{' '}
-            <span className="text-white">{t('auth.platformHighlight')}</span>
+            <span className="text-white/45">{t('auth.platformHighlight')}</span>
           </h1>
-          <p className="mt-5 max-w-[44ch] text-[0.9375rem] leading-relaxed text-white/45">
-            {t('auth.platformDesc')}
-          </p>
 
           {/* O cartão sangra para fora do painel: sugere que há mais produto
               do lado de lá do que cabe aqui. Sem isto ficavam 568px de deserto
               à direita — o cartão parecia uma nota de rodapé do título, e não
               o assunto. */}
-          <div className="mt-10 ml-20 -mr-[13rem]">
+          <div className="mt-12 ml-20 -mr-[13rem]">
             <AuthProductPreview />
           </div>
         </div>

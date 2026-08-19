@@ -605,8 +605,8 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
         loading={isLoading}
         items={[
           { key: 'total', label: t("governancaComp.controles.statTotal"), value: stats?.total || 0, icon: IconShield, drillDown: 'controles' },
-          { key: 'vencidas', label: t("governancaComp.controles.statVencidas"), value: stats?.vencidos || 0, icon: IconWarning, tone: 'destructive', drillDown: 'controles' },
-          { key: 'vencendo', label: t("governancaComp.controles.statVencendo"), value: stats?.vencendoAvaliacao || 0, icon: IconTime, tone: 'warning', drillDown: 'controles' },
+          { key: 'vencidas', label: t("governancaComp.controles.statVencidas"), value: stats?.vencidos || 0, icon: IconWarning, tone: 'destructive', drillDown: 'controles_vencidos' },
+          { key: 'vencendo', label: t("governancaComp.controles.statVencendo"), value: stats?.vencendoAvaliacao || 0, icon: IconTime, tone: 'warning', drillDown: 'controles_vencendo' },
           {
             key: 'efetividade',
             icon: IconTest,
@@ -622,14 +622,14 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
             hint: stats?.efetividade === null || stats?.efetividade === undefined
               ? t('cardsKpi.metricas.efetividadeSemTestes')
               : t('cardsKpi.metricas.efetividadeTestada', { testados: stats?.controlesTestados ?? 0, total: stats?.total ?? 0 }),
-            drillDown: 'controles',
+            drillDown: 'controles_testados',
           },
           {
             key: 'preventivos',
             icon: IconSuccess,
             label: t('cardsKpi.metricas.preventivosDe', { preventivos: stats?.preventivos ?? 0, total: stats?.total ?? 0 }),
             value: `${stats?.percentualPreventivos ?? 0}%`,
-            drillDown: 'controles',
+            drillDown: 'controles_preventivos',
           },
         ]}
       />

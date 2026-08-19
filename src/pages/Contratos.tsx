@@ -470,7 +470,7 @@ export default function Contratos() {
               label: t('cardsKpi.contratos.valorVigente'),
               value: formatMoedaEmpresa(statsContratos?.valorTotal || 0, true),
               hint: t('cardsKpi.contratos.valorVigenteHint'),
-              drillDown: 'contratos',
+              drillDown: 'contratos_vigentes',
             },
             {
               key: 'valorVencido',
@@ -478,7 +478,7 @@ export default function Contratos() {
               value: formatMoedaEmpresa(statsContratos?.valorVencido || 0, true),
               tone: (statsContratos?.valorVencido || 0) > 0 ? 'destructive' : undefined,
               hint: t('cardsKpi.contratos.valorVencidoHint'),
-              drillDown: 'contratos-vencidos',
+              drillDown: 'contratos_vencidos',
             },
             {
               key: 'vencendo',
@@ -486,13 +486,13 @@ export default function Contratos() {
               value: statsContratos?.vencendo30Dias || 0,
               tone: 'warning',
               hint: t('fin.comum.proximos30'),
-              drillDown: 'contratos-vencendo',
+              drillDown: 'contratos_vencendo',
             },
             {
               key: 'renovacao',
               label: t('fin.contratos.renovacaoAutomatica'),
               value: statsContratos?.renovacaoAutomatica || 0,
-              drillDown: 'contratos',
+              drillDown: 'contratos_renovacao',
             },
           ]}
         />

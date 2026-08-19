@@ -314,9 +314,9 @@ export default function SistemasContent() {
         loading={isLoading}
         items={[
           { key: 'total', label: t("governancaComp.sistemas.statTotal"), value: sistemas.length, drillDown: 'sistemas' },
-          { key: 'ativos', label: t("governancaComp.sistemas.statAtivos"), value: sistemasAtivos, drillDown: 'sistemas' },
-          { key: 'criticidade_alta', label: t("governancaComp.sistemas.statCriticidadeAlta"), value: sistemasCriticos, tone: 'warning', drillDown: 'sistemas' },
-          { key: 'inativos', label: t("governancaComp.sistemas.statInativos"), value: sistemas.length - sistemasAtivos, drillDown: 'sistemas' },
+          { key: 'ativos', label: t("governancaComp.sistemas.statAtivos"), value: sistemasAtivos, drillDown: 'sistemas_ativos' },
+          { key: 'criticidade_alta', label: t("governancaComp.sistemas.statCriticidadeAlta"), value: sistemasCriticos, tone: 'warning', drillDown: 'sistemas_criticos' },
+          { key: 'inativos', label: t("governancaComp.sistemas.statInativos"), value: sistemas.length - sistemasAtivos, drillDown: 'sistemas_inativos' },
         ]}
       />
 

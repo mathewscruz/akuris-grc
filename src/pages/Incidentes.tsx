@@ -321,7 +321,7 @@ export default function Incidentes() {
       description: t('fin.incidentes.atencaoImediata'),
       icon: <IconShield />,
       variant: 'destructive' as const,
-      drillDown: 'incidentes' as const,
+      drillDown: 'incidentes_criticos' as const,
     },
     {
       title: t('fin.incidentes.emInvestigacao'),
@@ -329,7 +329,7 @@ export default function Incidentes() {
       description: t('sweepRiscos.incidentes.statInvestigacaoDesc'),
       icon: <IconTime />,
       variant: 'info' as const,
-      drillDown: 'incidentes' as const,
+      drillDown: 'incidentes_investigacao' as const,
     },
     {
       title: t('fin.comum.esteMes'),
@@ -424,8 +424,8 @@ export default function Incidentes() {
         loading={loading}
         items={[
           { key: 'total', label: statsCards[0].title, value: statsCards[0].value, drillDown: 'incidentes' },
-          { key: 'criticosAltos', label: statsCards[1].title, value: statsCards[1].value, tone: 'destructive', drillDown: 'incidentes' },
-          { key: 'investigacao', label: statsCards[2].title, value: statsCards[2].value, drillDown: 'incidentes' },
+          { key: 'criticosAltos', label: statsCards[1].title, value: statsCards[1].value, tone: 'destructive', drillDown: 'incidentes_criticos' },
+          { key: 'investigacao', label: statsCards[2].title, value: statsCards[2].value, drillDown: 'incidentes_investigacao' },
           { key: 'mes', label: statsCards[3].title, value: statsCards[3].value },
         ]}
       />

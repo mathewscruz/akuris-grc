@@ -361,10 +361,10 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
       <StatStrip
         items={[
           { key: 'aceitos', label: t('riscos.aceite.stats.acceptedTitle'), value: totalAceitos, icon: IconSuccess, hint: t('riscos.aceite.stats.acceptedDesc'), drillDown: 'riscos_aceite' },
-          { key: 'pendentes', label: t('riscos.aceite.stats.pendingTitle'), value: totalPendentes, icon: IconTime, tone: 'warning', hint: t('riscos.aceite.stats.pendingDesc'), drillDown: 'riscos_aceite' },
+          { key: 'pendentes', label: t('riscos.aceite.stats.pendingTitle'), value: totalPendentes, icon: IconTime, tone: 'warning', hint: t('riscos.aceite.stats.pendingDesc'), drillDown: 'riscos_aceite_pendentes' },
           { key: 'aExpirar', label: t('riscos.aceite.stats.expiringTitle'), value: aceitesAExpirar, icon: IconTimer, tone: 'warning', hint: t('riscos.aceite.stats.expiringDesc') },
           { key: 'expirados', label: t('riscos.aceite.stats.expiredTitle'), value: totalExpirados, icon: IconBan, tone: 'destructive', hint: t('riscos.aceite.stats.expiredDesc') },
-          { key: 'revisoesVencidas', label: t('riscos.aceite.stats.overdueTitle'), value: revisoesVencidas, icon: IconCalendarClock, tone: 'destructive', hint: t('riscos.aceite.stats.overdueDesc'), drillDown: 'riscos_aceite' },
+          { key: 'revisoesVencidas', label: t('riscos.aceite.stats.overdueTitle'), value: revisoesVencidas, icon: IconCalendarClock, tone: 'destructive', hint: t('riscos.aceite.stats.overdueDesc'), drillDown: 'riscos_aceite_revisoes' },
           { key: 'revisoesProximas', label: t('riscos.aceite.stats.upcomingTitle'), value: revisoesProximas, icon: IconWarning, tone: 'warning', hint: t('riscos.aceite.stats.upcomingDesc') },
         ]}
       />

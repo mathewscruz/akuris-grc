@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { corteAltoValor, criticidadeAtivo, isAtivoAltoValor } from '@/lib/metrics/ativos';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -41,8 +42,8 @@ export type DrillDownKey =
   | 'incidentes'
   | 'planos'
   | 'contratos'
-  | 'contratos-vencidos'
-  | 'contratos-vencendo'
+  | 'contratos_vencidos'
+  | 'contratos_vencendo'
   | 'documentos'
   | 'due_diligence'
   | 'denuncias'
@@ -54,7 +55,52 @@ export type DrillDownKey =
   | 'gap_analysis'
   | 'revisao_acessos'
   | 'privacidade'
+  | 'privacidade_fora_prazo'
+  | 'documentos_vencendo'
+  | 'ativos_operacionais'
+  | 'incidentes_investigacao'
+  | 'privacidade_catalogo'
+  | 'privacidade_sensiveis'
+  | 'privacidade_mapeamentos'
+  | 'documentos_vencidos'
+  | 'documentos_pendentes'
+  | 'ativos_alto_valor'
+  | 'ativos_criticos'
+  | 'incidentes_criticos'
   | 'riscos_aceite'
+  | 'controles_vencidos'
+  | 'controles_vencendo'
+  | 'controles_testados'
+  | 'controles_preventivos'
+  | 'sistemas_ativos'
+  | 'sistemas_criticos'
+  | 'sistemas_inativos'
+  | 'denuncias_novas'
+  | 'denuncias_andamento'
+  | 'denuncias_resolvidas'
+  | 'continuidade_ativos'
+  | 'continuidade_revisao'
+  | 'continuidade_testes'
+  | 'contas_pendentes'
+  | 'contas_vencendo'
+  | 'contas_expiradas'
+  | 'auditorias_andamento'
+  | 'auditorias_pendentes'
+  | 'auditorias_itens'
+  | 'licencas_ativas'
+  | 'licencas_a_vencer'
+  | 'licencas_vencidas'
+  | 'chaves_ativas'
+  | 'chaves_rotacao'
+  | 'chaves_criticas'
+  | 'riscos_aceite_pendentes'
+  | 'riscos_aceite_revisoes'
+  | 'due_diligence_fornecedores'
+  | 'due_diligence_concluidos'
+  | 'due_diligence_expirados'
+  | 'contratos_vigentes'
+  | 'contratos_renovacao'
+  | 'revisao_acessos_vencidas'
   | 'sistemas'
   | 'contas_privilegiadas';
 
@@ -86,8 +132,346 @@ const fmtDate = (iso?: string | null) => {
 
 const todayIso = () => new Date().toISOString().slice(0, 10);
 
+
+/**
+ * Um KPI, uma gaveta — a tabela.
+ *
+ * O `switch` abaixo tinha uma entrada por MÓDULO, não por cartão: os cinco
+ * tiles de Privacidade, os quatro de Documentos, os cinco de Controles e mais
+ * nove módulos partilhavam, cada grupo, uma única consulta. Clicar em "Chaves
+ * críticas" abria a mesma lista que "Total de chaves".
+ *
+ * A causa não é descuido de quem escreveu cada tile: escrever um `case` novo
+ * custava vinte e cinco linhas de consulta quase idêntica à do vizinho, e o
+ * caminho barato era reaproveitar a chave do lado. Isto torna o caminho barato
+ * o correcto — um recorte é uma linha declarativa, e a única coisa que muda
+ * entre irmãos é o filtro.
+ *
+ * O que NÃO cabe aqui (junções entre tabelas, quartis calculados em memória)
+ * continua a ter o seu `case` explícito mais abaixo. A tabela serve o caso
+ * simples; ninguém é obrigado a torcê-la para servir o caso difícil.
+ */
+type Recorte = {
+  tabela: string;
+  campos: string;
+  rota: string;
+  icone: React.ElementType;
+  /** Filtros próprios do recorte. `empresa_id` e `limit` são sempre aplicados. */
+  onde?: (q: any) => any;
+  ordem?: [string, boolean];
+  titulo: (r: any) => string;
+  sub?: (r: any) => string | undefined;
+  estado?: (r: any) => string | undefined;
+  tom?: (r: any) => DrillItem['tone'];
+  quando?: (r: any) => string | null | undefined;
+};
+
+/** Tom por criticidade, com as várias grafias que o produto grava. */
+const tomPorNivel = (v?: string | null): DrillItem['tone'] => {
+  const n = (v || '').toLowerCase();
+  if (n.includes('crit')) return 'destructive';
+  if (n.includes('alt')) return 'warning';
+  if (n.includes('med') || n.includes('méd')) return 'info';
+  return 'neutral';
+};
+
+const RECORTES: Record<string, Recorte> = {
+  // ---- Controles ---------------------------------------------------------
+  controles_vencidos: {
+    tabela: 'controles', campos: 'id, nome, codigo, criticidade, proxima_avaliacao',
+    rota: '/controles', icone: ControlesIcon,
+    onde: (q) => q.lt('proxima_avaliacao', todayIso()),
+    ordem: ['proxima_avaliacao', true],
+    titulo: (c) => c.nome, sub: (c) => c.codigo,
+    estado: (c) => formatStatus(c.criticidade || ''), tom: () => 'destructive',
+    quando: (c) => c.proxima_avaliacao,
+  },
+  controles_vencendo: {
+    tabela: 'controles', campos: 'id, nome, codigo, criticidade, proxima_avaliacao',
+    rota: '/controles', icone: ControlesIcon,
+    onde: (q) => q.gte('proxima_avaliacao', todayIso()).lte('proxima_avaliacao', emJanela(30)),
+    ordem: ['proxima_avaliacao', true],
+    titulo: (c) => c.nome, sub: (c) => c.codigo,
+    estado: (c) => formatStatus(c.criticidade || ''), tom: () => 'warning',
+    quando: (c) => c.proxima_avaliacao,
+  },
+  controles_preventivos: {
+    tabela: 'controles', campos: 'id, nome, codigo, tipo, criticidade',
+    rota: '/controles', icone: ControlesIcon,
+    onde: (q) => q.eq('tipo', 'preventivo'),
+    titulo: (c) => c.nome, sub: (c) => c.codigo,
+    estado: (c) => formatStatus(c.tipo || ''), tom: () => 'success',
+  },
+  // ---- Sistemas privilegiados -------------------------------------------
+  sistemas_ativos: {
+    tabela: 'sistemas_privilegiados', campos: 'id, nome_sistema, tipo_sistema, criticidade, updated_at',
+    rota: '/sistemas', icone: IconServer,
+    onde: (q) => q.eq('ativo', true), ordem: ['updated_at', false],
+    titulo: (x) => x.nome_sistema, sub: (x) => formatStatus(x.tipo_sistema || ''),
+    estado: (x) => formatStatus(x.criticidade || ''), tom: (x) => tomPorNivel(x.criticidade),
+    quando: (x) => x.updated_at,
+  },
+  sistemas_criticos: {
+    tabela: 'sistemas_privilegiados', campos: 'id, nome_sistema, tipo_sistema, criticidade, updated_at',
+    rota: '/sistemas', icone: IconServer,
+    // As três grafias que a página conta como criticidade alta.
+    onde: (q) => q.in('criticidade', ['critica', 'critico', 'alta']),
+    titulo: (x) => x.nome_sistema, sub: (x) => formatStatus(x.tipo_sistema || ''),
+    estado: (x) => formatStatus(x.criticidade || ''), tom: (x) => tomPorNivel(x.criticidade),
+    quando: (x) => x.updated_at,
+  },
+  sistemas_inativos: {
+    tabela: 'sistemas_privilegiados', campos: 'id, nome_sistema, tipo_sistema, criticidade, updated_at',
+    rota: '/sistemas', icone: IconServer,
+    onde: (q) => q.eq('ativo', false), ordem: ['updated_at', false],
+    titulo: (x) => x.nome_sistema, sub: (x) => formatStatus(x.tipo_sistema || ''),
+    tom: () => 'neutral', quando: (x) => x.updated_at,
+  },
+  // ---- Denúncias ---------------------------------------------------------
+  denuncias_novas: {
+    tabela: 'denuncias', campos: 'id, protocolo, titulo, gravidade, created_at',
+    rota: '/denuncia', icone: DenunciasIcon,
+    onde: (q) => q.eq('status', 'nova'), ordem: ['created_at', false],
+    titulo: (x) => x.titulo || x.protocolo, sub: (x) => x.protocolo,
+    estado: (x) => formatStatus(x.gravidade || ''), tom: (x) => tomPorNivel(x.gravidade),
+    quando: (x) => x.created_at,
+  },
+  denuncias_andamento: {
+    tabela: 'denuncias', campos: 'id, protocolo, titulo, gravidade, status, created_at',
+    rota: '/denuncia', icone: DenunciasIcon,
+    onde: (q) => q.in('status', ['em_analise', 'em_investigacao']), ordem: ['created_at', false],
+    titulo: (x) => x.titulo || x.protocolo, sub: (x) => formatStatus(x.status || ''),
+    estado: (x) => formatStatus(x.gravidade || ''), tom: (x) => tomPorNivel(x.gravidade),
+    quando: (x) => x.created_at,
+  },
+  denuncias_resolvidas: {
+    tabela: 'denuncias', campos: 'id, protocolo, titulo, status, created_at',
+    rota: '/denuncia', icone: DenunciasIcon,
+    onde: (q) => q.in('status', ['resolvida', 'arquivada']), ordem: ['created_at', false],
+    titulo: (x) => x.titulo || x.protocolo, sub: (x) => x.protocolo,
+    estado: (x) => formatStatus(x.status || ''), tom: () => 'success',
+    quando: (x) => x.created_at,
+  },
+  // ---- Continuidade ------------------------------------------------------
+  continuidade_ativos: {
+    tabela: 'continuidade_planos', campos: 'id, nome, tipo, proxima_revisao',
+    rota: '/continuidade', icone: IconShieldCheck,
+    onde: (q) => q.eq('status', 'ativo'), ordem: ['proxima_revisao', true],
+    titulo: (x) => x.nome, sub: (x) => formatStatus(x.tipo || ''),
+    tom: () => 'success', quando: (x) => x.proxima_revisao,
+  },
+  continuidade_revisao: {
+    tabela: 'continuidade_planos', campos: 'id, nome, tipo, proxima_revisao',
+    rota: '/continuidade', icone: IconShieldCheck,
+    onde: (q) => q.eq('status', 'em_revisao'), ordem: ['proxima_revisao', true],
+    titulo: (x) => x.nome, sub: (x) => formatStatus(x.tipo || ''),
+    tom: () => 'warning', quando: (x) => x.proxima_revisao,
+  },
+  continuidade_testes: {
+    tabela: 'continuidade_testes', campos: 'id, tipo_teste, resultado, data_teste',
+    rota: '/continuidade', icone: IconChecklist,
+    ordem: ['data_teste', false],
+    titulo: (x) => formatStatus(x.tipo_teste || ''), sub: (x) => formatStatus(x.resultado || ''),
+    tom: (x) => ((x.resultado || '').toLowerCase().includes('sucesso') ? 'success' : 'info'),
+    quando: (x) => x.data_teste,
+  },
+  // ---- Contas privilegiadas ---------------------------------------------
+  contas_pendentes: {
+    tabela: 'contas_privilegiadas', campos: 'id, usuario_beneficiario, nivel_privilegio, data_expiracao',
+    rota: '/contas-privilegiadas', icone: IconLock,
+    onde: (q) => q.eq('status', 'pendente_aprovacao'), ordem: ['data_expiracao', true],
+    titulo: (x) => x.usuario_beneficiario, sub: (x) => formatStatus(x.nivel_privilegio || ''),
+    tom: () => 'warning', quando: (x) => x.data_expiracao,
+  },
+  contas_vencendo: {
+    tabela: 'contas_privilegiadas', campos: 'id, usuario_beneficiario, nivel_privilegio, data_expiracao',
+    rota: '/contas-privilegiadas', icone: IconLock,
+    onde: (q) => q.eq('status', 'ativo').gte('data_expiracao', todayIso()).lte('data_expiracao', emJanela(30)),
+    ordem: ['data_expiracao', true],
+    titulo: (x) => x.usuario_beneficiario, sub: (x) => formatStatus(x.nivel_privilegio || ''),
+    tom: () => 'warning', quando: (x) => x.data_expiracao,
+  },
+  contas_expiradas: {
+    tabela: 'contas_privilegiadas', campos: 'id, usuario_beneficiario, nivel_privilegio, status, data_expiracao',
+    rota: '/contas-privilegiadas', icone: IconLock,
+    // Como na página: `expirado` gravado OU activa com a data já no passado —
+    // o estado não é actualizado sozinho quando a data vence.
+    onde: (q) => q.or(`status.eq.expirado,and(status.eq.ativo,data_expiracao.lt.${todayIso()})`),
+    ordem: ['data_expiracao', true],
+    titulo: (x) => x.usuario_beneficiario, sub: (x) => formatStatus(x.nivel_privilegio || ''),
+    tom: () => 'destructive', quando: (x) => x.data_expiracao,
+  },
+  // ---- Auditorias --------------------------------------------------------
+  auditorias_andamento: {
+    tabela: 'auditorias', campos: 'id, nome, tipo, data_inicio',
+    rota: '/governanca/auditorias', icone: IconChecklist,
+    onde: (q) => q.eq('status', 'em_andamento'), ordem: ['data_inicio', true],
+    titulo: (x) => x.nome, sub: (x) => formatStatus(x.tipo || ''),
+    tom: () => 'info', quando: (x) => x.data_inicio,
+  },
+  auditorias_pendentes: {
+    tabela: 'auditorias', campos: 'id, nome, tipo, data_inicio',
+    rota: '/governanca/auditorias', icone: IconChecklist,
+    onde: (q) => q.eq('status', 'planejamento'), ordem: ['data_inicio', true],
+    titulo: (x) => x.nome, sub: (x) => formatStatus(x.tipo || ''),
+    tom: () => 'warning', quando: (x) => x.data_inicio,
+  },
+  // ---- Licenças ----------------------------------------------------------
+  licencas_ativas: {
+    tabela: 'ativos_licencas', campos: 'id, nome, tipo_licenca, criticidade, data_vencimento',
+    rota: '/ativos/licencas', icone: IconKey,
+    onde: (q) => q.eq('status', 'ativa'), ordem: ['data_vencimento', true],
+    titulo: (x) => x.nome, sub: (x) => formatStatus(x.tipo_licenca || ''),
+    estado: (x) => formatStatus(x.criticidade || ''), tom: () => 'success',
+    quando: (x) => x.data_vencimento,
+  },
+  licencas_a_vencer: {
+    tabela: 'ativos_licencas', campos: 'id, nome, tipo_licenca, criticidade, data_vencimento',
+    rota: '/ativos/licencas', icone: IconKey,
+    onde: (q) => q.gte('data_vencimento', todayIso()).lte('data_vencimento', emJanela(30)),
+    ordem: ['data_vencimento', true],
+    titulo: (x) => x.nome, sub: (x) => formatStatus(x.tipo_licenca || ''),
+    estado: (x) => formatStatus(x.criticidade || ''), tom: () => 'warning',
+    quando: (x) => x.data_vencimento,
+  },
+  licencas_vencidas: {
+    tabela: 'ativos_licencas', campos: 'id, nome, tipo_licenca, criticidade, data_vencimento',
+    rota: '/ativos/licencas', icone: IconKey,
+    onde: (q) => q.lt('data_vencimento', todayIso()), ordem: ['data_vencimento', true],
+    titulo: (x) => x.nome, sub: (x) => formatStatus(x.tipo_licenca || ''),
+    estado: (x) => formatStatus(x.criticidade || ''), tom: () => 'destructive',
+    quando: (x) => x.data_vencimento,
+  },
+  // ---- Chaves criptográficas --------------------------------------------
+  chaves_ativas: {
+    tabela: 'ativos_chaves_criptograficas', campos: 'id, nome, tipo_chave, criticidade, data_proxima_rotacao',
+    rota: '/ativos/chaves', icone: IconKey,
+    onde: (q) => q.eq('status', 'ativa'), ordem: ['data_proxima_rotacao', true],
+    titulo: (x) => x.nome, sub: (x) => formatStatus(x.tipo_chave || ''),
+    estado: (x) => formatStatus(x.criticidade || ''), tom: () => 'success',
+    quando: (x) => x.data_proxima_rotacao,
+  },
+  chaves_rotacao: {
+    tabela: 'ativos_chaves_criptograficas', campos: 'id, nome, tipo_chave, criticidade, data_proxima_rotacao',
+    rota: '/ativos/chaves', icone: IconKey,
+    // Sem piso inferior: uma chave que devia ter rodado no mês passado é a
+    // mais pendente de todas. É o mesmo critério do KPI.
+    onde: (q) => q.lte('data_proxima_rotacao', emJanela(30)),
+    ordem: ['data_proxima_rotacao', true],
+    titulo: (x) => x.nome, sub: (x) => formatStatus(x.tipo_chave || ''),
+    estado: (x) => formatStatus(x.criticidade || ''), tom: () => 'warning',
+    quando: (x) => x.data_proxima_rotacao,
+  },
+  chaves_criticas: {
+    tabela: 'ativos_chaves_criptograficas', campos: 'id, nome, tipo_chave, criticidade, data_proxima_rotacao',
+    rota: '/ativos/chaves', icone: IconKey,
+    onde: (q) => q.eq('criticidade', 'critica').eq('status', 'ativa'),
+    ordem: ['data_proxima_rotacao', true],
+    titulo: (x) => x.nome, sub: (x) => formatStatus(x.tipo_chave || ''),
+    estado: (x) => formatStatus(x.criticidade || ''), tom: () => 'destructive',
+    quando: (x) => x.data_proxima_rotacao,
+  },
+  // ---- Aceite de risco ---------------------------------------------------
+  riscos_aceite_pendentes: {
+    tabela: 'riscos', campos: 'id, nome, nivel_risco_residual, nivel_risco_inicial, created_at',
+    rota: '/riscos/aceite', icone: RiscosIcon,
+    onde: (q) => q.eq('status_aceite', 'pendente'), ordem: ['created_at', false],
+    titulo: (r) => r.nome,
+    estado: (r) => formatStatus(r.nivel_risco_residual || r.nivel_risco_inicial || ''),
+    tom: (r) => tomPorNivel(r.nivel_risco_residual || r.nivel_risco_inicial),
+    quando: (r) => r.created_at,
+  },
+  riscos_aceite_revisoes: {
+    tabela: 'riscos', campos: 'id, nome, nivel_risco_residual, nivel_risco_inicial, data_proxima_revisao',
+    rota: '/riscos/aceite', icone: RiscosIcon,
+    onde: (q) => q.eq('aceito', true).lt('data_proxima_revisao', todayIso()),
+    ordem: ['data_proxima_revisao', true],
+    titulo: (r) => r.nome,
+    estado: (r) => formatStatus(r.nivel_risco_residual || r.nivel_risco_inicial || ''),
+    tom: () => 'destructive', quando: (r) => r.data_proxima_revisao,
+  },
+  // ---- Due diligence -----------------------------------------------------
+  due_diligence_fornecedores: {
+    tabela: 'fornecedores', campos: 'id, nome, categoria, avaliacao_risco, updated_at',
+    rota: '/due-diligence', icone: DueDiligenceIcon,
+    onde: (q) => q.eq('status', 'ativo'), ordem: ['nome', true],
+    titulo: (f) => f.nome, sub: (f) => formatStatus(f.categoria || ''),
+    estado: (f) => formatStatus(f.avaliacao_risco || ''), tom: (f) => tomPorNivel(f.avaliacao_risco),
+  },
+  due_diligence_concluidos: {
+    tabela: 'due_diligence_assessments', campos: 'id, fornecedor_nome, score_final, updated_at',
+    rota: '/due-diligence', icone: DueDiligenceIcon,
+    onde: (q) => q.eq('status', 'concluido'), ordem: ['updated_at', false],
+    titulo: (a) => a.fornecedor_nome,
+    estado: (a) => (typeof a.score_final === 'number' ? `${a.score_final}%` : undefined),
+    tom: (a) => (typeof a.score_final !== 'number' ? 'neutral' : a.score_final < 50 ? 'destructive' : a.score_final < 70 ? 'warning' : 'success'),
+    quando: (a) => a.updated_at,
+  },
+  due_diligence_expirados: {
+    tabela: 'due_diligence_assessments', campos: 'id, fornecedor_nome, status, data_expiracao',
+    rota: '/due-diligence', icone: DueDiligenceIcon,
+    onde: (q) => q.neq('status', 'concluido').lt('data_expiracao', todayIso()),
+    ordem: ['data_expiracao', true],
+    titulo: (a) => a.fornecedor_nome, sub: (a) => formatStatus(a.status || ''),
+    tom: () => 'destructive', quando: (a) => a.data_expiracao,
+  },
+  // ---- Contratos ---------------------------------------------------------
+  contratos_vigentes: {
+    tabela: 'contratos', campos: 'id, nome, numero_contrato, status, data_fim',
+    rota: '/contratos', icone: IconScale,
+    // Mesmo critério do valor somado no KPI: só o que está de facto em vigor.
+    onde: (q) => q.in('status', ['ativo', 'vigente']).gte('data_fim', todayIso()),
+    ordem: ['data_fim', true],
+    titulo: (c) => c.nome || c.numero_contrato || '',
+    sub: (c) => c.numero_contrato, estado: (c) => formatStatus(c.status || ''),
+    tom: () => 'success', quando: (c) => c.data_fim,
+  },
+  contratos_renovacao: {
+    tabela: 'contratos', campos: 'id, nome, numero_contrato, status, data_fim',
+    rota: '/contratos', icone: IconScale,
+    onde: (q) => q.eq('renovacao_automatica', true), ordem: ['data_fim', true],
+    titulo: (c) => c.nome || c.numero_contrato || '',
+    sub: (c) => c.numero_contrato, estado: (c) => formatStatus(c.status || ''),
+    tom: () => 'info', quando: (c) => c.data_fim,
+  },
+  // ---- Revisão de acessos ------------------------------------------------
+  revisao_acessos_vencidas: {
+    tabela: 'access_reviews', campos: 'id, nome_revisao, data_limite, total_contas',
+    rota: '/revisao-acessos', icone: IconUserCheck,
+    onde: (q) => q.eq('status', 'em_andamento').lt('data_limite', todayIso()),
+    ordem: ['data_limite', true],
+    titulo: (r) => r.nome_revisao,
+    tom: () => 'destructive', quando: (r) => r.data_limite,
+  },
+};
+
 const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
   const d = (k: string) => t(`dashWidgets.drill.${k}`);
+  const recorte = RECORTES[key];
+  if (recorte) {
+    return {
+      title: d(`${key}.title`),
+      description: d(`${key}.description`),
+      icon: recorte.icone,
+      route: recorte.rota,
+      fetcher: async (empresaId) => {
+        let q: any = (supabase.from(recorte.tabela as any).select(recorte.campos) as any)
+          .eq('empresa_id', empresaId);
+        if (recorte.onde) q = recorte.onde(q);
+        if (recorte.ordem) q = q.order(recorte.ordem[0], { ascending: recorte.ordem[1], nullsFirst: false });
+        const { data, error } = await q.limit(5);
+        if (error) throw error;
+        return (data || []).map((r: any) => ({
+          id: r.id,
+          title: recorte.titulo(r),
+          subtitle: recorte.sub?.(r),
+          status: recorte.estado?.(r),
+          tone: recorte.tom?.(r) ?? 'neutral',
+          date: fmtDate(recorte.quando?.(r)),
+        }));
+      },
+    };
+  }
   switch (key) {
     case 'riscos':
       return {
@@ -152,8 +536,8 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             return {
               id: i.id,
               title: i.titulo,
-              subtitle: i.status,
-              status: i.criticidade,
+              subtitle: formatStatus(i.status || ''),
+              status: formatStatus(i.criticidade || ''),
               tone: (c.includes('crit') ? 'destructive' : c.includes('alt') ? 'warning' : 'info') as DrillItem['tone'],
               date: fmtDate(i.created_at),
             };
@@ -206,8 +590,8 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
           return (data || []).map((a: any) => ({
             id: a.id,
             title: a.nome,
-            subtitle: a.tipo,
-            status: a.criticidade,
+            subtitle: formatStatus(a.tipo || ''),
+            status: formatStatus(a.criticidade || ''),
             tone: a.criticidade === 'alta' ? 'warning' : 'neutral',
             date: fmtDate(a.updated_at),
           }));
@@ -219,16 +603,12 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
     // que o rótulo promete. E a data leva o ano — "03 de jul" não distingue
     // 2026 de 2027, que é a única pergunta num vencimento.
     case 'contratos':
-    case 'contratos-vencidos':
-    case 'contratos-vencendo': {
+    case 'contratos_vencidos':
+    case 'contratos_vencendo': {
       const escopo = key;
-      const rotulo =
-        escopo === 'contratos-vencidos' ? 'contratosVencidos'
-        : escopo === 'contratos-vencendo' ? 'contratosVencendo'
-        : 'contratos';
       return {
-        title: d(`${rotulo}.title`),
-        description: d(`${rotulo}.description`),
+        title: d(`${escopo}.title`),
+        description: d(`${escopo}.description`),
         icon: IconScale,
         route: '/contratos',
         fetcher: async (empresaId) => {
@@ -245,10 +625,10 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
           const administra = (st: string) =>
             !['ativo', 'vigente'].includes((st || '').toLowerCase());
           const filtrado = (data || []).filter((c: any) => {
-            if (escopo === 'contratos-vencidos') {
+            if (escopo === 'contratos_vencidos') {
               return !administra(c.status) && c.data_fim && c.data_fim < today;
             }
-            if (escopo === 'contratos-vencendo') {
+            if (escopo === 'contratos_vencendo') {
               return !administra(c.status) && c.data_fim && c.data_fim >= today && c.data_fim <= em30;
             }
             return true;
@@ -258,8 +638,8 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             return {
               id: c.id,
               title: c.nome || c.numero_contrato || d('fallbackContract'),
-              subtitle: c.numero_contrato || c.status,
-              status: expired ? d('expired') : c.status,
+              subtitle: c.numero_contrato || formatStatus(c.status || ''),
+              status: expired ? d('expired') : formatStatus(c.status || ''),
               tone: (expired ? 'destructive' : 'info') as DrillItem['tone'],
               date: formatDateOnly(c.data_fim),
             };
@@ -286,15 +666,14 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             .eq('empresa_id', empresaId)
             // O estado gravado é `pendente`; `pendente_aprovacao` não existe
             // numa única linha — três linhas abaixo o mesmo bloco já o tratava.
-            .or(`status.eq.pendente,and(status.eq.ativo,data_vencimento.lte.${emJanela(30)})`)
-            .order('data_vencimento', { ascending: true, nullsFirst: false })
+            .order('updated_at', { ascending: false })
             .limit(5);
           if (error) throw error;
           return (data || []).map((d: any) => ({
             id: d.id,
             title: d.nome,
-            subtitle: d.status,
-            status: d.status,
+            subtitle: formatStatus(d.status || ''),
+            status: formatStatus(d.status || ''),
             tone: (d.status === 'pendente' || d.status === 'pendente_aprovacao' ? 'warning' : 'info') as DrillItem['tone'],
             date: fmtDate(d.data_vencimento),
           }));
@@ -339,7 +718,6 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             .from('denuncias')
             .select('id, protocolo, titulo, gravidade, status, created_at')
             .eq('empresa_id', empresaId)
-            .in('status', ['nova', 'novas', 'em_investigacao', 'em_andamento'])
             .order('created_at', { ascending: false })
             .limit(5);
           if (error) throw error;
@@ -367,7 +745,6 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             .from('controles')
             .select('id, nome, codigo, status, criticidade, proxima_avaliacao')
             .eq('empresa_id', empresaId)
-            .eq('status', 'ativo')
             .order('criticidade', { ascending: false })
             .limit(5);
           if (error) throw error;
@@ -397,7 +774,6 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             .from('ativos_chaves_criptograficas')
             .select('id, nome, tipo_chave, criticidade, data_proxima_rotacao')
             .eq('empresa_id', empresaId)
-            .lte('data_proxima_rotacao', emJanela(30))
             .order('data_proxima_rotacao', { ascending: true, nullsFirst: false })
             .limit(5);
           if (error) throw error;
@@ -426,7 +802,6 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             .from('ativos_licencas')
             .select('id, nome, tipo_licenca, criticidade, data_vencimento')
             .eq('empresa_id', empresaId)
-            .lte('data_vencimento', emJanela(30))
             .order('data_vencimento', { ascending: true, nullsFirst: false })
             .limit(5);
           if (error) throw error;
@@ -458,7 +833,6 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             .from('auditorias')
             .select('id, nome, tipo, status, data_inicio')
             .eq('empresa_id', empresaId)
-            .neq('status', 'concluida')
             .order('data_inicio', { ascending: true, nullsFirst: false })
             .limit(5);
           if (error) throw error;
@@ -483,7 +857,6 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             .from('continuidade_planos')
             .select('id, nome, tipo, status, proxima_revisao')
             .eq('empresa_id', empresaId)
-            .lte('proxima_revisao', emJanela(30))
             .order('proxima_revisao', { ascending: true, nullsFirst: false })
             .limit(5);
           if (error) throw error;
@@ -546,7 +919,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             .from('access_reviews')
             .select('id, nome_revisao, status, data_limite, total_contas')
             .eq('empresa_id', empresaId)
-            .neq('status', 'concluida')
+            .eq('status', 'em_andamento')
             .order('data_limite', { ascending: true, nullsFirst: false })
             .limit(5);
           if (error) throw error;
@@ -584,13 +957,324 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             const overdue = s.prazo_resposta && s.prazo_resposta < today;
             return {
               id: s.id,
-              title: s.tipo_solicitacao,
-              subtitle: s.status,
-              status: overdue ? d('deadlineExpired') : s.status,
+              title: formatStatus(s.tipo_solicitacao || ''),
+              subtitle: formatStatus(s.status || ''),
+              status: overdue ? d('deadlineExpired') : formatStatus(s.status || ''),
               tone: (overdue ? 'destructive' : 'warning') as DrillItem['tone'],
               date: fmtDate(s.prazo_resposta),
             };
           });
+        },
+      };
+    /*
+      Um KPI, uma gaveta.
+      ---------------------------------------------------------------------
+      Cinco cartoes de Privacidade, quatro de Documentos, quatro de Ativos e
+      seis de Incidentes partilhavam a MESMA chave: clicar em "Total de Dados"
+      abria a lista de solicitacoes de titular. Vinte e quatro cartoes a
+      prometer recortes diferentes e a entregar sete gavetas.
+    */
+    case 'privacidade_fora_prazo':
+      return {
+        title: d('privacidade_fora_prazo.title'),
+        description: d('privacidade_fora_prazo.description'),
+        icon: IconView,
+        route: '/privacidade',
+        fetcher: async (empresaId) => {
+          const { data, error } = await supabase
+            .from('dados_solicitacoes_titular')
+            .select('id, tipo_solicitacao, status, prazo_resposta')
+            .eq('empresa_id', empresaId)
+            .neq('status', 'concluida')
+            .lt('prazo_resposta', todayIso())
+            .order('prazo_resposta', { ascending: true })
+            .limit(5);
+          if (error) throw error;
+          return (data || []).map((s: any) => ({
+            id: s.id,
+            title: formatStatus(s.tipo_solicitacao || ''),
+            subtitle: formatStatus(s.status || ''),
+            status: d('deadlineExpired'),
+            tone: 'destructive' as DrillItem['tone'],
+            date: fmtDate(s.prazo_resposta),
+          }));
+        },
+      };
+    case 'documentos_vencendo':
+      return {
+        title: d('documentos_vencendo.title'),
+        description: d('documentos_vencendo.description'),
+        icon: DocumentosIcon,
+        route: '/documentos',
+        fetcher: async (empresaId) => {
+          const { data, error } = await supabase
+            .from('documentos')
+            .select('id, nome, status, data_vencimento')
+            .eq('empresa_id', empresaId)
+            .eq('status', 'ativo')
+            .gte('data_vencimento', todayIso())
+            .lte('data_vencimento', emJanela(30))
+            .order('data_vencimento', { ascending: true })
+            .limit(5);
+          if (error) throw error;
+          return (data || []).map((x: any) => ({
+            id: x.id,
+            title: x.nome,
+            subtitle: formatStatus(x.status || ''),
+            tone: 'warning' as DrillItem['tone'],
+            date: fmtDate(x.data_vencimento),
+          }));
+        },
+      };
+    case 'ativos_operacionais':
+      return {
+        title: d('ativos_operacionais.title'),
+        description: d('ativos_operacionais.description'),
+        icon: AtivosIcon,
+        route: '/ativos',
+        fetcher: async (empresaId) => {
+          const { data, error } = await supabase
+            .from('ativos')
+            .select('id, nome, tipo, criticidade, status, updated_at')
+            .eq('empresa_id', empresaId)
+            .eq('status', 'ativo')
+            .order('updated_at', { ascending: false })
+            .limit(5);
+          if (error) throw error;
+          return (data || []).map((a: any) => ({
+            id: a.id,
+            title: a.nome,
+            subtitle: formatStatus(a.tipo || ''),
+            status: formatStatus(a.criticidade || ''),
+            tone: 'info' as DrillItem['tone'],
+            date: fmtDate(a.updated_at),
+          }));
+        },
+      };
+    case 'incidentes_investigacao':
+      return {
+        title: d('incidentes_investigacao.title'),
+        description: d('incidentes_investigacao.description'),
+        icon: IncidentesIcon,
+        route: '/incidentes',
+        fetcher: async (empresaId) => {
+          const { data, error } = await supabase
+            .from('incidentes')
+            .select('id, titulo, status, criticidade, created_at')
+            .eq('empresa_id', empresaId)
+            .eq('status', 'em_investigacao')
+            .order('created_at', { ascending: false })
+            .limit(5);
+          if (error) throw error;
+          return (data || []).map((i: any) => ({
+            id: i.id,
+            title: i.titulo,
+            subtitle: formatStatus(i.status),
+            status: formatStatus(i.criticidade || ''),
+            tone: 'warning' as DrillItem['tone'],
+            date: fmtDate(i.created_at),
+          }));
+        },
+      };
+    case 'privacidade_catalogo':
+      return {
+        title: d('privacidade_catalogo.title'),
+        description: d('privacidade_catalogo.description'),
+        icon: IconView,
+        route: '/privacidade',
+        fetcher: async (empresaId) => {
+          const { data, error } = await supabase
+            .from('dados_pessoais')
+            .select('id, nome, categoria_dados, sensibilidade')
+            .eq('empresa_id', empresaId)
+            .order('nome')
+            .limit(5);
+          if (error) throw error;
+          return (data || []).map((x: any) => ({
+            id: x.id,
+            title: x.nome,
+            subtitle: formatStatus(x.categoria_dados || ''),
+            status: formatStatus(x.sensibilidade || ''),
+            tone: 'info' as DrillItem['tone'],
+          }));
+        },
+      };
+    case 'privacidade_sensiveis':
+      return {
+        title: d('privacidade_sensiveis.title'),
+        description: d('privacidade_sensiveis.description'),
+        icon: IconView,
+        route: '/privacidade',
+        fetcher: async (empresaId) => {
+          const { data, error } = await supabase
+            .from('dados_pessoais')
+            .select('id, nome, categoria_dados, sensibilidade')
+            .eq('empresa_id', empresaId)
+            .in('sensibilidade', ['sensivel', 'muito_sensivel'])
+            .order('sensibilidade', { ascending: false })
+            .limit(5);
+          if (error) throw error;
+          return (data || []).map((x: any) => ({
+            id: x.id,
+            title: x.nome,
+            subtitle: formatStatus(x.categoria_dados || ''),
+            status: formatStatus(x.sensibilidade || ''),
+            tone: (x.sensibilidade === 'muito_sensivel' ? 'destructive' : 'warning') as DrillItem['tone'],
+          }));
+        },
+      };
+    case 'privacidade_mapeamentos':
+      return {
+        title: d('privacidade_mapeamentos.title'),
+        description: d('privacidade_mapeamentos.description'),
+        icon: IconView,
+        route: '/privacidade',
+        fetcher: async (empresaId) => {
+          // `dados_mapeamento` nao tem `empresa_id`: o recorte por empresa vem
+          // pelos dados pessoais, como no resto do modulo.
+          const { data: dados, error: e1 } = await supabase
+            .from('dados_pessoais').select('id, nome').eq('empresa_id', empresaId);
+          if (e1) throw e1;
+          const ids = (dados || []).map((x: any) => x.id);
+          if (ids.length === 0) return [];
+          const nomePorDado = new Map((dados || []).map((x: any) => [x.id, x.nome]));
+          const { data, error } = await supabase
+            .from('dados_mapeamento')
+            .select('id, dados_pessoais_id')
+            .in('dados_pessoais_id', ids)
+            .limit(5);
+          if (error) throw error;
+          return (data || []).map((m: any) => ({
+            id: m.id,
+            title: String(nomePorDado.get(m.dados_pessoais_id) || ''),
+            subtitle: d('privacidade_mapeamentos.subtitle'),
+            tone: 'info' as DrillItem['tone'],
+          }));
+        },
+      };
+    case 'documentos_vencidos':
+      return {
+        title: d('documentos_vencidos.title'),
+        description: d('documentos_vencidos.description'),
+        icon: DocumentosIcon,
+        route: '/documentos',
+        fetcher: async (empresaId) => {
+          const { data, error } = await supabase
+            .from('documentos')
+            .select('id, nome, status, data_vencimento')
+            .eq('empresa_id', empresaId)
+            .eq('status', 'ativo')
+            .lt('data_vencimento', todayIso())
+            .order('data_vencimento', { ascending: true })
+            .limit(5);
+          if (error) throw error;
+          return (data || []).map((x: any) => ({
+            id: x.id,
+            title: x.nome,
+            subtitle: formatStatus(x.status),
+            tone: 'destructive' as DrillItem['tone'],
+            date: fmtDate(x.data_vencimento),
+          }));
+        },
+      };
+    case 'documentos_pendentes':
+      return {
+        title: d('documentos_pendentes.title'),
+        description: d('documentos_pendentes.description'),
+        icon: DocumentosIcon,
+        route: '/documentos',
+        fetcher: async (empresaId) => {
+          const { data, error } = await supabase
+            .from('documentos')
+            .select('id, nome, status, updated_at')
+            .eq('empresa_id', empresaId)
+            .eq('status', 'pendente')
+            .order('updated_at', { ascending: true })
+            .limit(5);
+          if (error) throw error;
+          return (data || []).map((x: any) => ({
+            id: x.id,
+            title: x.nome,
+            subtitle: formatStatus(x.status),
+            tone: 'warning' as DrillItem['tone'],
+            date: fmtDate(x.updated_at),
+          }));
+        },
+      };
+    case 'ativos_alto_valor':
+      return {
+        title: d('ativos_alto_valor.title'),
+        description: d('ativos_alto_valor.description'),
+        icon: AtivosIcon,
+        route: '/ativos',
+        fetcher: async (empresaId) => {
+          const { data, error } = await supabase
+            .from('ativos')
+            .select('id, nome, tipo, valor_negocio')
+            .eq('empresa_id', empresaId)
+            .not('valor_negocio', 'is', null);
+          if (error) throw error;
+          const corte = corteAltoValor(data || []);
+          return (data || [])
+            .filter((a: any) => isAtivoAltoValor(a, corte))
+            .slice(0, 5)
+            .map((a: any) => ({
+              id: a.id,
+              title: a.nome,
+              subtitle: formatStatus(a.tipo || ''),
+              status: String(a.valor_negocio ?? ''),
+              tone: 'info' as DrillItem['tone'],
+            }));
+        },
+      };
+    case 'ativos_criticos':
+      return {
+        title: d('ativos_criticos.title'),
+        description: d('ativos_criticos.description'),
+        icon: AtivosIcon,
+        route: '/ativos',
+        fetcher: async (empresaId) => {
+          const { data, error } = await supabase
+            .from('ativos')
+            .select('id, nome, tipo, criticidade')
+            .eq('empresa_id', empresaId);
+          if (error) throw error;
+          return (data || [])
+            .filter((a: any) => ['critico', 'alto'].includes(criticidadeAtivo(a)))
+            .slice(0, 5)
+            .map((a: any) => ({
+              id: a.id,
+              title: a.nome,
+              subtitle: formatStatus(a.tipo || ''),
+              status: formatStatus(a.criticidade || ''),
+              tone: (criticidadeAtivo(a) === 'critico' ? 'destructive' : 'warning') as DrillItem['tone'],
+            }));
+        },
+      };
+    case 'incidentes_criticos':
+      return {
+        title: d('incidentes_criticos.title'),
+        description: d('incidentes_criticos.description'),
+        icon: IncidentesIcon,
+        route: '/incidentes',
+        fetcher: async (empresaId) => {
+          const { data, error } = await supabase
+            .from('incidentes')
+            .select('id, titulo, status, criticidade, created_at')
+            .eq('empresa_id', empresaId)
+            .in('criticidade', ['critica', 'alta'])
+            .in('status', ['aberto', 'em_investigacao', 'contido'])
+            .order('created_at', { ascending: false })
+            .limit(5);
+          if (error) throw error;
+          return (data || []).map((i: any) => ({
+            id: i.id,
+            title: i.titulo,
+            subtitle: formatStatus(i.status),
+            status: formatStatus(i.criticidade),
+            tone: (i.criticidade === 'critica' ? 'destructive' : 'warning') as DrillItem['tone'],
+            date: fmtDate(i.created_at),
+          }));
         },
       };
     case 'riscos_aceite':
@@ -622,6 +1306,74 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
           });
         },
       };
+    case 'controles_testados':
+      return {
+        title: d('controles_testados.title'),
+        description: d('controles_testados.description'),
+        icon: ControlesIcon,
+        route: '/controles',
+        fetcher: async (empresaId) => {
+          // `controles_testes` não tem `empresa_id`; o recorte vem pelos
+          // controles, como no cálculo da efectividade.
+          const { data: ctrl, error: e1 } = await supabase
+            .from('controles').select('id, nome, codigo').eq('empresa_id', empresaId);
+          if (e1) throw e1;
+          const ids = (ctrl || []).map((c: any) => c.id);
+          if (ids.length === 0) return [];
+          const porId = new Map((ctrl || []).map((c: any) => [c.id, c]));
+          const { data, error } = await supabase
+            .from('controles_testes')
+            .select('id, controle_id, resultado, data_teste')
+            .in('controle_id', ids)
+            .order('data_teste', { ascending: false })
+            .limit(5);
+          if (error) throw error;
+          return (data || []).map((tst: any) => {
+            const c: any = porId.get(tst.controle_id) || {};
+            const ok = (tst.resultado || '').toLowerCase();
+            return {
+              id: tst.id,
+              title: c.nome || '',
+              subtitle: c.codigo,
+              status: formatStatus(tst.resultado || ''),
+              tone: (ok.includes('efic') || ok.includes('conform') ? 'success' : ok.includes('inef') || ok.includes('nao') ? 'destructive' : 'info') as DrillItem['tone'],
+              date: fmtDate(tst.data_teste),
+            };
+          });
+        },
+      };
+    case 'auditorias_itens':
+      return {
+        title: d('auditorias_itens.title'),
+        description: d('auditorias_itens.description'),
+        icon: IconChecklist,
+        route: '/governanca/auditorias',
+        fetcher: async (empresaId) => {
+          // `auditoria_itens` também não tem `empresa_id`.
+          const { data: auds, error: e1 } = await supabase
+            .from('auditorias').select('id, nome').eq('empresa_id', empresaId);
+          if (e1) throw e1;
+          const ids = (auds || []).map((a: any) => a.id);
+          if (ids.length === 0) return [];
+          const nome = new Map((auds || []).map((a: any) => [a.id, a.nome]));
+          const { data, error } = await supabase
+            .from('auditoria_itens')
+            .select('id, titulo, codigo, status, auditoria_id, prazo')
+            .in('auditoria_id', ids)
+            .neq('status', 'concluido')
+            .order('prazo', { ascending: true, nullsFirst: false })
+            .limit(5);
+          if (error) throw error;
+          return (data || []).map((i: any) => ({
+            id: i.id,
+            title: i.titulo || i.codigo || '',
+            subtitle: String(nome.get(i.auditoria_id) || ''),
+            status: formatStatus(i.status || ''),
+            tone: 'warning' as DrillItem['tone'],
+            date: fmtDate(i.prazo),
+          }));
+        },
+      };
     case 'sistemas':
       return {
         title: d('sistemas.title'),
@@ -639,8 +1391,8 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
           return (data || []).map((s: any) => ({
             id: s.id,
             title: s.nome_sistema,
-            subtitle: s.tipo_sistema,
-            status: s.criticidade,
+            subtitle: formatStatus(s.tipo_sistema || ''),
+            status: formatStatus(s.criticidade || ''),
             tone: (s.criticidade === 'alta' ? 'warning' : 'info') as DrillItem['tone'],
             date: fmtDate(s.updated_at),
           }));
@@ -657,6 +1409,8 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             .from('contas_privilegiadas' as any)
             .select('id, usuario_beneficiario, nivel_privilegio, status, data_expiracao') as any)
             .eq('empresa_id', empresaId)
+            .eq('status', 'ativo')
+            .gte('data_expiracao', todayIso())
             .order('data_expiracao', { ascending: true, nullsFirst: false })
             .limit(5);
           if (error) throw error;
@@ -666,8 +1420,8 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             return {
               id: c.id,
               title: c.usuario_beneficiario,
-              subtitle: c.nivel_privilegio,
-              status: expired ? d('expired') : c.status,
+              subtitle: formatStatus(c.nivel_privilegio || ''),
+              status: expired ? d('expired') : formatStatus(c.status || ''),
               tone: (expired ? 'destructive' : 'warning') as DrillItem['tone'],
               date: fmtDate(c.data_expiracao),
             };

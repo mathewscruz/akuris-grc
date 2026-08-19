@@ -292,9 +292,9 @@ export default function AuditoriasContent({ actionsSlot }: { actionsSlot?: HTMLE
         loading={isLoading}
         items={[
           { key: 'total', label: t("governancaComp.auditorias.statTotal"), value: todasAsAuditorias?.length || 0, drillDown: 'auditorias' },
-          { key: 'em_andamento', label: t("governancaComp.auditorias.statEmAndamento"), value: todasAsAuditorias?.filter(a => a.status === 'em_andamento').length || 0, drillDown: 'auditorias' },
-          { key: 'controles', label: t("governancaComp.auditorias.statControles"), value: `${totalConcluidos}/${totalItens}`, drillDown: 'auditorias' },
-          { key: 'pendentes', label: t("governancaComp.auditorias.statPendentes"), value: todasAsAuditorias?.filter(a => a.status === 'planejamento').length || 0, tone: 'warning', drillDown: 'auditorias' },
+          { key: 'em_andamento', label: t("governancaComp.auditorias.statEmAndamento"), value: todasAsAuditorias?.filter(a => a.status === 'em_andamento').length || 0, drillDown: 'auditorias_andamento' },
+          { key: 'controles', label: t("governancaComp.auditorias.statControles"), value: `${totalConcluidos}/${totalItens}`, drillDown: 'auditorias_itens' },
+          { key: 'pendentes', label: t("governancaComp.auditorias.statPendentes"), value: todasAsAuditorias?.filter(a => a.status === 'planejamento').length || 0, tone: 'warning', drillDown: 'auditorias_pendentes' },
         ]}
       />
 

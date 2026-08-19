@@ -701,16 +701,16 @@ export default function Privacidade() {
       <StatStrip
         loading={isLoading}
         items={[
-          { key: 'totalDados', label: t('cardsKpi.privacidade.totalDados'), value: stats.totalDados, drillDown: 'privacidade' },
-          { key: 'dadosSensiveis', label: t('cardsKpi.privacidade.dadosSensiveis'), value: stats.dadosSensiveis, tone: 'warning', drillDown: 'privacidade' },
+          { key: 'totalDados', label: t('cardsKpi.privacidade.totalDados'), value: stats.totalDados, drillDown: 'privacidade_catalogo' },
+          { key: 'dadosSensiveis', label: t('cardsKpi.privacidade.dadosSensiveis'), value: stats.dadosSensiveis, tone: 'warning', drillDown: 'privacidade_sensiveis' },
           // O ROPA não tinha card nenhum, apesar de `stats.ropaAtivos` já ser
           // calculado e deitado fora. Numa empresa cujo trabalho de privacidade
           // é o registo de tratamentos — e há uma assim nos dados reais, com 7
           // ROPA e zero dados catalogados — a tira inteira mostrava zero.
           { key: 'ropa', label: t('cardsKpi.privacidade.ropaRegistros'), value: stats.ropaAtivos, onClick: () => setActiveTab('ropa') },
-          { key: 'mapeamentos', label: t('cardsKpi.privacidade.mapeamentos'), value: stats.mapeamentos, drillDown: 'privacidade' },
+          { key: 'mapeamentos', label: t('cardsKpi.privacidade.mapeamentos'), value: stats.mapeamentos, drillDown: 'privacidade_mapeamentos' },
           { key: 'solicitacoesPendentes', label: t('cardsKpi.privacidade.solicitacoesPendentes'), value: stats.solicitacoesPendentes, drillDown: 'privacidade' },
-          { key: 'foraPrazo', label: t('jurisdicao.privacidade.foraPrazo', { lei: jurisdicao.lei }), value: solicitacoesForaPrazo, tone: 'destructive', drillDown: 'privacidade' },
+          { key: 'foraPrazo', label: t('jurisdicao.privacidade.foraPrazo', { lei: jurisdicao.lei }), value: solicitacoesForaPrazo, tone: 'destructive', drillDown: 'privacidade_fora_prazo' },
           { key: 'incidentes', label: t('cardsKpi.sweep.privacidade.incidentesPrivacidade'), value: incidentesPrivacidade, tone: 'warning', onClick: () => navigate('/incidentes') },
         ]}
       />
