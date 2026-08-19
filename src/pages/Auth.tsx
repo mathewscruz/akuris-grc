@@ -17,6 +17,7 @@ import { logger } from '@/lib/logger';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { LoadingOverlay } from '@/components/ui/LoadingOverlay';
+import { AuthProductPreview } from '@/components/auth/AuthProductPreview';
 import { AkurisMarkPattern } from '@/components/identity/AkurisMarkPattern';
 import { CornerAccent } from '@/components/identity/CornerAccent';
 import { RiscosIcon, ControlesIcon, GapAnalysisIcon, IconView, IconHide, IconMail, IconLock, IconArrowRight, IconArrowLeft } from '@/components/icons';
@@ -261,45 +262,59 @@ const Auth = () => {
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-[hsl(230,25%,7%)]">
       {/* ===== BRAND PANEL (desktop only) ===== */}
-      <div className="hidden lg:flex lg:w-[58%] relative flex-col justify-between sidebar-gradient overflow-hidden p-14">
-        <AkurisMarkPattern opacity={0.05} />
-        <div className="absolute top-1/3 -left-24 w-[420px] h-[420px] bg-[hsl(252,100%,66%,0.08)] rounded-full blur-[120px] pointer-events-none" />
+      {/*
+        Painel de marca.
+        --------------------------------------------------------------------
+        Tinha seis blocos empilhados e três camadas de decoração ambiente: um
+        gradiente roxo dentro do título, um halo de 420px desfocado a 120px, o
+        padrão da marca por baixo, um fio com gradiente a esbater nas pontas e
+        quatro tempos de entrada escalonada. Cada um desses é um marcador do
+        que se produz em série — e juntos deixam de ser identidade para serem
+        maneirismo.
 
-        <div className="relative z-10 landing-fade-in-1">
+        O que sobra: a marca, uma frase, três competências e o fio. A cor da
+        casa continua a ser a mesma; só deixa de ser usada como enfeite dentro
+        da tipografia, que é onde ela mais denuncia. O gradiente do fundo fica,
+        porque é profundidade e não ornamento.
+      */}
+      {/*
+        Painel de marca — mostra o PRODUTO, não palavras sobre ele.
+        --------------------------------------------------------------------
+        Antes eram três competências escritas ("Riscos", "Controles", "Gap
+        Analysis"). Quem chega a um login de GRC já sabe o que é GRC; o que
+        ainda não viu é como o trabalho fica quando está feito.
+
+        O cartão é desenhado com o próprio sistema do produto — mesma
+        tipografia, mesma escala de severidade, mesmo fio de 1px — e não um
+        screenshot, portanto não envelhece em relação à aplicação.
+      */}
+      <div className="hidden lg:flex lg:w-[54%] relative flex-col justify-between sidebar-gradient overflow-hidden p-14">
+        <AkurisMarkPattern opacity={0.03} />
+
+        <div className="relative z-10 auth-entra">
           <img src={logoImage} alt="Akuris" className="h-9 object-contain" />
         </div>
 
-        <div className="relative z-10 max-w-xl space-y-10 landing-fade-in-2">
-          <div className="space-y-5">
-            <h1 className="text-4xl lg:text-5xl font-semibold text-white leading-[1.05] tracking-tight">
-              {t('auth.platformTitle')}{' '}
-              <span className="text-gradient">{t('auth.platformHighlight')}</span>
-            </h1>
-            <p className="text-white/55 text-base max-w-md leading-relaxed">
-              {t('auth.platformDesc')}
-            </p>
-          </div>
+        <div className="relative z-10 auth-entra">
+          <h1 className="max-w-[19ch] text-[2.5rem] font-medium leading-[1.12] tracking-[-0.02em] text-white text-balance">
+            {t('auth.platformTitle')}{' '}
+            <span className="text-white">{t('auth.platformHighlight')}</span>
+          </h1>
+          <p className="mt-5 max-w-[44ch] text-[0.9375rem] leading-relaxed text-white/45">
+            {t('auth.platformDesc')}
+          </p>
 
-          <ul className="space-y-5 landing-fade-in-3">
-            {pillars.map((p, i) => (
-              <li key={i} className="flex items-start gap-4">
-                <span className="flex items-center justify-center w-10 h-10 text-primary shrink-0">
-                  <p.Icon size={18} />
-                </span>
-                <div className="pt-1">
-                  <p className="text-sm font-semibold text-white tracking-tight">{p.title}</p>
-                  <p className="text-xs text-white/45 mt-0.5">{p.desc}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
+          {/* O cartão sangra para fora do painel: sugere que há mais produto
+              do lado de lá do que cabe aqui. Sem isto ficavam 568px de deserto
+              à direita — o cartão parecia uma nota de rodapé do título, e não
+              o assunto. */}
+          <div className="mt-10 ml-20 -mr-[13rem]">
+            <AuthProductPreview />
+          </div>
         </div>
 
-        <div className="relative z-10 landing-fade-in-4">
-          <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mb-5" />
-          <p className="text-white/35 text-xs font-medium">
-            {t('auth.complianceBadges')}
-          </p>
+        <div className="relative z-10 auth-entra">
+          <p className="text-[0.6875rem] text-white/25">{t('auth.previewNote')}</p>
         </div>
       </div>
 
@@ -311,12 +326,15 @@ const Auth = () => {
           <img src={logoImage} alt="Akuris" className="h-10 mx-auto object-contain" />
         </div>
 
-        <div className="w-full max-w-sm space-y-7 landing-fade-in-2">
-          <div className="space-y-2 text-center lg:text-left">
-            <h1 className="text-2xl lg:text-3xl font-semibold text-white tracking-tight">
+        <div className="w-full max-w-sm space-y-8 auth-entra">
+          <div className="space-y-1.5 text-center lg:text-left">
+            {/* "Bem-vindo de volta" era a saudação de um produto de consumo. O
+                utilizador aqui é um profissional de compliance a entrar na
+                ferramenta de trabalho: o título diz o que a página faz. */}
+            <h1 className="text-[1.75rem] font-medium text-white tracking-[-0.02em]">
               {t('auth.welcomeBack')}
             </h1>
-            <p className="text-sm text-white/55">{t('auth.signInToContinue')}</p>
+            <p className="text-sm text-white/45">{t('auth.signInToContinue')}</p>
           </div>
 
           <form onSubmit={handleSignIn} className="space-y-5">
@@ -324,19 +342,19 @@ const Auth = () => {
               <Label htmlFor="email" className="text-xs text-white/65 font-medium tracking-wide">
                 {t('auth.emailLabel')}
               </Label>
-              <div className="relative">
-                <IconMail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/35" />
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder={t('auth.emailPlaceholder')}
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10 h-11 bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/30 rounded-lg focus:border-primary/50 focus:ring-1 focus:ring-primary/30"
-                  disabled={isBusy}
-                  autoComplete="email"
-                />
-              </div>
+              {/* Sem ícone dentro do campo: um envelope ao lado de uma
+                  etiqueta que já diz "E-mail" não acrescenta nada e empurra o
+                  texto do utilizador 10px para dentro. */}
+              <Input
+                id="email"
+                type="email"
+                placeholder={t('auth.emailPlaceholder')}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="h-11 bg-white/[0.03] border-white/[0.09] text-white placeholder:text-white/25 rounded-md focus:border-primary/60 focus:ring-1 focus:ring-primary/25"
+                disabled={isBusy}
+                autoComplete="email"
+              />
               {errors.email && <p className="text-xs text-destructive mt-1">{errors.email}</p>}
             </div>
 
@@ -354,14 +372,14 @@ const Auth = () => {
                 </button>
               </div>
               <div className="relative">
-                <IconLock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/35" />
+                {/* O cadeado sai; o olho fica, porque tem função. */}
                 <Input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10 pr-12 h-11 bg-white/[0.04] border-white/[0.08] text-white placeholder:text-white/30 rounded-lg focus:border-primary/50 focus:ring-1 focus:ring-primary/30"
+                  className="pr-12 h-11 bg-white/[0.03] border-white/[0.09] text-white placeholder:text-white/25 rounded-md focus:border-primary/60 focus:ring-1 focus:ring-primary/25"
                   disabled={isBusy}
                   autoComplete="current-password"
                 />
@@ -392,13 +410,18 @@ const Auth = () => {
 
             <Button
               type="submit"
-              className="w-full h-11 font-semibold text-sm bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg shadow-[0_8px_24px_-8px_hsl(var(--primary)/0.5)] hover:shadow-[0_10px_30px_-8px_hsl(var(--primary)/0.6)] transition-ui"
+              /* Sem a sombra roxa projectada: um halo de 24px por baixo do
+                 botão é brilho, não elevação — e num ecrã escuro lê-se como
+                 néon. O botão já é o único elemento com a cor da casa. */
+              className="w-full h-11 font-medium text-sm bg-primary hover:bg-primary/90 text-primary-foreground rounded-md transition-ui"
               disabled={isBusy}
             >
               {isBusy ? (
                 <><AkurisPulse size={16} className="mr-2" />{t('auth.signingIn')}</>
               ) : (
-                <>{t('auth.signIn')} <IconArrowRight className="w-4 h-4 ml-1.5" /></>
+                /* A seta não leva a lado nenhum que o utilizador não saiba:
+                   é o botão de submeter de um formulário de duas linhas. */
+                <>{t('auth.signIn')}</>
               )}
             </Button>
           </form>

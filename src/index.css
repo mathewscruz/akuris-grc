@@ -1628,3 +1628,21 @@ input:-webkit-autofill:focus {
     max-width: 100% !important;
   }
 }
+
+/* ===== Entrada da tela de acesso =====
+   As `landing-fade-in-1..4` que estavam no Auth NÃO existiam: nem em CSS nem
+   no Tailwind. Quatro classes mortas a fingir uma entrada escalonada que nunca
+   aconteceu — e ainda bem, porque escalonar a entrada de um ecrã de login é
+   fazer o utilizador esperar para escrever a senha.
+
+   Fica UM fade curto, igual para os três blocos. */
+@keyframes auth-entra {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+.auth-entra {
+  animation: auth-entra 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .auth-entra { animation: none; }
+}

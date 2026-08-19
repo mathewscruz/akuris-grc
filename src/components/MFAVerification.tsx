@@ -126,11 +126,11 @@ export const MFAVerification: React.FC<MFAVerificationProps> = ({
       <div className="absolute top-0 right-0 w-72 h-72 bg-primary/5 rounded-full blur-[100px] pointer-events-none" />
 
       <div className="w-full max-w-sm relative z-10 space-y-8">
-        <div className="text-center landing-fade-in-1">
+        <div className="text-center auth-entra">
           <img src={logoImage} alt="Akuris" className="h-12 mx-auto object-contain" />
         </div>
 
-        <div className="relative rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-md p-8 space-y-7 landing-fade-in-2 overflow-hidden">
+        <div className="relative rounded-2xl border border-white/[0.08] bg-white/[0.03] backdrop-blur-md p-8 space-y-7 auth-entra overflow-hidden">
           <CornerAccent />
 
           <div className="text-center space-y-4">

@@ -76,10 +76,29 @@ export function linhas(f: string): string[] {
 }
 
 /** `arquivo:linha` de cada arquivo onde o padrão aparece pela primeira vez. */
+/**
+ * Uma linha de comentário não é código.
+ *
+ * As guardas visuais procuram classes proibidas linha a linha, e acusavam
+ * também quem as MENCIONA — explicar num comentário porque não se usa
+ * `rounded-xl` fazia a guarda apontar o comentário. O aviso deixava de
+ * distinguir a infração da nota sobre a infração, que é a maneira mais rápida
+ * de uma guarda perder a confiança de quem a lê.
+ *
+ * Corta `//`, `/* … *\/` de uma linha e as linhas de bloco que começam por
+ * `*`. Um bloco multi-linha aberto continua a ser lido — é raro e o custo de
+ * o seguir não compensa.
+ */
+const semComentario = (linha: string): string => {
+  const t = linha.trim();
+  if (t.startsWith('//') || t.startsWith('*') || t.startsWith('/*')) return '';
+  return linha.replace(/\/\*.*?\*\//g, '').replace(/\/\/.*$/, '');
+};
+
 export function ocorrencias(lista: string[], re: RegExp): string[] {
   const achados: string[] = [];
   for (const f of lista) {
-    const i = linhas(f).findIndex((l) => re.test(l));
+    const i = linhas(f).findIndex((l) => re.test(semComentario(l)));
     if (i >= 0) achados.push(`${f}:${i + 1}`);
   }
   return achados;

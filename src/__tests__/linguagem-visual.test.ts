@@ -9,7 +9,7 @@
  * são superfícies públicas com identidade própria, fora do tema da aplicação.
  */
 import { describe, it, expect } from 'vitest';
-import { fontes, linhas } from './_fontes';
+import { fontes, linhas, ocorrencias } from './_fontes';
 
 const FORA_DO_TEMA = ['pages/Assessment.tsx', 'MFAVerification'];
 
@@ -21,14 +21,10 @@ const semCatalogo = arquivos.filter((f) => !f.includes('components/icons/'));
 const noTema = semCatalogo.filter((f) => !FORA_DO_TEMA.some((x) => f.includes(x)));
 
 /** Arquivos onde o padrão aparece, com o número da primeira linha. */
-function ocorrencias(lista: string[], re: RegExp): string[] {
-  const achados: string[] = [];
-  for (const f of lista) {
-    const i = linhas(f).findIndex((l) => re.test(l));
-    if (i >= 0) achados.push(`${f}:${i + 1}`);
-  }
-  return achados;
-}
+// Havia uma cópia local desta função, idêntica à de `_fontes` mas sem o corte
+// de comentários — e por isso a guarda acusava quem EXPLICA num comentário
+// porque não usa a classe proibida. Uma só implementação.
+export {};
 
 describe('ícones', () => {
   it('um conceito, um glifo', () => {
