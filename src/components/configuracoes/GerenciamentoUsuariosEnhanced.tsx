@@ -754,10 +754,10 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
         }
         
         if (accessInfo?.first_access_pending) {
+          // Mostra quando o convite saiu — a informacao que faltava. Com
+          // `IconTime` do catalogo e nao `Clock` do lucide: relogio ja tem uma
+          // metafora unica no produto.
           return (
-            {/* Estrutura do remoto — mostra quando o convite saiu, que e a
-                informacao que faltava. Com `IconTime` do catalogo e nao `Clock`
-                do lucide: relogio ja tem uma metafora unica no produto. */}
             <div className="space-y-1">
               <Badge variant="warning" className="whitespace-nowrap">
                 <IconTime className="h-3 w-3 mr-1" />
@@ -922,7 +922,7 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
             {bulkResending ? (
               <AkurisPulse size={16} className="mr-2" />
             ) : (
-              <Mail className="h-4 w-4 mr-2" />
+              <IconMail className="h-4 w-4 mr-2" />
             )}
             {t('admin.usuarios.resendPendingInvitesButton', { total: String(stats.pending) })}
           </Button>
