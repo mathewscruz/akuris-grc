@@ -109,7 +109,9 @@ Deno.serve(async (req) => {
         has_temp_password: !!tempPassword,
         temp_password_created_at: tempPassword?.created_at,
         temp_password_expires_at: tempPassword?.expires_at,
-        first_access_pending: !user.last_sign_in_at && !!tempPassword
+        // Primeiro acesso pendente = nunca fez login. Não depende de existir
+        // senha temporária: no fluxo atual o convite é um link, sem senha temp.
+        first_access_pending: !user.last_sign_in_at
       }
     })
 

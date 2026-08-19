@@ -113,6 +113,8 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterEmpresa, setFilterEmpresa] = useState<string>('all');
   const [filterRole, setFilterRole] = useState<string>('all');
+  const [filterAcesso, setFilterAcesso] = useState<string>('all');
+  const [bulkResending, setBulkResending] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingUsuario, setEditingUsuario] = useState<Usuario | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -324,8 +326,12 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
                          usuario.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesEmpresa = filterEmpresa === 'all' || usuario.empresa_id === filterEmpresa;
     const matchesRole = filterRole === 'all' || usuario.role === filterRole;
-    
-    return matchesSearch && matchesEmpresa && matchesRole;
+    const info = usersAccessInfo.get(usuario.user_id);
+    const matchesAcesso =
+      filterAcesso === 'all' ||
+      (filterAcesso === 'pending' ? !!info?.first_access_pending : !!info?.last_sign_in_at);
+
+    return matchesSearch && matchesEmpresa && matchesRole && matchesAcesso;
   });
 
   // Stats
@@ -538,12 +544,20 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
   const resetPassword = async (usuario: Usuario) => {
     try {
       setActionLoading(prev => ({ ...prev, [`reset-${usuario.id}`]: true }));
-      
-      const { error } = await supabase.functions.invoke('send-password-reset', {
-        body: { userId: usuario.user_id }
+
+      // A função de envio identifica o destinatário pelo e-mail; enviar apenas
+      // o userId fazia com que ela devolvesse sucesso genérico sem enviar nada.
+      const { data, error } = await supabase.functions.invoke('send-password-reset', {
+        body: { email: usuario.email, userId: usuario.user_id }
       });
 
-      if (error) throw error;
+      if (error) {
+        const mensagem = await extrairMensagemEdge(error);
+        throw new Error(mensagem || t('admin.usuarios.toastErrorResetPassword'));
+      }
+      if (data && (data as any).success === false) {
+        throw new Error((data as any).error || t('admin.usuarios.toastErrorResetPassword'));
+      }
 
       toast.success(t('admin.usuarios.toastPasswordReset', { email: usuario.email }));
       
@@ -555,6 +569,43 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
     } finally {
       setActionLoading(prev => ({ ...prev, [`reset-${usuario.id}`]: false }));
     }
+  };
+
+  /** Reenvia o convite a todos os utilizadores que nunca acederam. */
+  const resendPendingInvites = async () => {
+    const pendentes = filteredUsuarios.filter((u) => shouldShowResendButton(u));
+    if (pendentes.length === 0) {
+      toast.info(t('admin.usuarios.toastNoPendingInvites'));
+      return;
+    }
+
+    setBulkResending(true);
+    let enviados = 0;
+    let falhas = 0;
+
+    for (const usuario of pendentes) {
+      try {
+        const { error } = await supabase.functions.invoke('resend-welcome-email', {
+          body: { userId: usuario.user_id }
+        });
+        if (error) throw error;
+        enviados++;
+      } catch (e) {
+        console.error('Falha ao reenviar convite', usuario.email, e);
+        falhas++;
+      }
+    }
+
+    setBulkResending(false);
+    if (falhas === 0) {
+      toast.success(t('admin.usuarios.toastBulkResendDone', { enviados: String(enviados) }));
+    } else {
+      toast.warning(t('admin.usuarios.toastBulkResendPartial', { enviados: String(enviados), falhas: String(falhas) }));
+    }
+
+    const userIds = usuarios.map(u => u.user_id);
+    await fetchUsersAccessInfo(userIds);
+    await fetchUsuarios();
   };
 
   const getRoleBadge = (role: string) => {
@@ -704,10 +755,20 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
         
         if (accessInfo?.first_access_pending) {
           return (
-            <Badge variant="warning" className="whitespace-nowrap">
-              <IconTime className="h-3 w-3 mr-1" />
-              {t('admin.usuarios.primeiroAcessoPendente')}
-            </Badge>
+            {/* Estrutura do remoto — mostra quando o convite saiu, que e a
+                informacao que faltava. Com `IconTime` do catalogo e nao `Clock`
+                do lucide: relogio ja tem uma metafora unica no produto. */}
+            <div className="space-y-1">
+              <Badge variant="warning" className="whitespace-nowrap">
+                <IconTime className="h-3 w-3 mr-1" />
+                {t('admin.usuarios.convitePendente')}
+              </Badge>
+              {usuario.invitation_sent_at && (
+                <div className="text-xs text-muted-foreground">
+                  {t('admin.usuarios.conviteEnviadoEm', { data: formatDateTime(usuario.invitation_sent_at) })}
+                </div>
+              )}
+            </div>
           );
         }
         
@@ -825,6 +886,17 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
       value: filterRole,
       onChange: setFilterRole,
     },
+    {
+      key: 'acesso',
+      label: t('admin.usuarios.filterAcessoLabel'),
+      options: [
+        { value: 'all', label: t('admin.usuarios.filterAcessoAll') },
+        { value: 'pending', label: t('admin.usuarios.filterAcessoPending') },
+        { value: 'active', label: t('admin.usuarios.filterAcessoActive') },
+      ],
+      value: filterAcesso,
+      onChange: setFilterAcesso,
+    },
   ];
 
   return (
@@ -841,6 +913,22 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
 
       {/* Actions */}
       <div className="flex flex-wrap gap-3 justify-end">
+        {stats.pending > 0 && (
+          <Button
+            variant="outline"
+            onClick={resendPendingInvites}
+            disabled={bulkResending}
+          >
+            {bulkResending ? (
+              <AkurisPulse size={16} className="mr-2" />
+            ) : (
+              <Mail className="h-4 w-4 mr-2" />
+            )}
+            {t('admin.usuarios.resendPendingInvitesButton', { total: String(stats.pending) })}
+          </Button>
+        )}
+
+
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>

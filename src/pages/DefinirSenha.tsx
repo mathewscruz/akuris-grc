@@ -10,6 +10,7 @@ import logoImage from '@/assets/akuris-logo.png';
 import { z } from 'zod';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { logger } from '@/lib/logger';
+import { ForgotPasswordDialog } from '@/components/ForgotPasswordDialog';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { REGRAS_SENHA, esquemaSenha } from '@/lib/politica-senha';
@@ -36,6 +37,7 @@ const DefinirSenha = () => {
   const [isVerifying, setIsVerifying] = useState(true);
   const [isTokenValid, setIsTokenValid] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [forgotOpen, setForgotOpen] = useState(false);
   const [errors, setErrors] = useState<{ password?: string; confirmPassword?: string }>({});
 
   // Guardamos o token e só o consumimos no submit (evita que scanners de
@@ -161,11 +163,15 @@ const DefinirSenha = () => {
             <p className="text-white/50 text-sm">
               {t('defineSenhaPage.invalidLinkDesc')}
             </p>
-            <Button onClick={() => navigate('/auth')} variant="gradient" className="w-full">
+            <Button onClick={() => setForgotOpen(true)} variant="gradient" className="w-full">
+              {t('defineSenhaPage.requestNewLink')}
+            </Button>
+            <Button onClick={() => navigate('/auth')} variant="outline" className="w-full">
               {t('defineSenhaPage.goToLogin')}
             </Button>
           </div>
         </div>
+        <ForgotPasswordDialog open={forgotOpen} onOpenChange={setForgotOpen} />
       </div>
     );
   }
