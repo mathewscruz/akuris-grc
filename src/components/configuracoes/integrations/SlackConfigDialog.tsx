@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
+import { IconExternal, IconSuccess, IconInfo, IconError, IconSend, IconMessage } from '@/components/icons';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, XCircle, ExternalLink, Send, AlertCircle, MessageSquare } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -197,7 +197,7 @@ export function SlackConfigDialog({
       onOpenChange={onOpenChange}
       title={t('configIntegrations.slack.title')}
       description={t('configIntegrations.slack.description')}
-      icon={MessageSquare}
+      icon={IconMessage}
       size="md"
       footer={footer}
       onSubmit={handleSave}
@@ -205,9 +205,9 @@ export function SlackConfigDialog({
     >
       <div className="space-y-6">
           {/* Instruções */}
-          <div className="p-3 rounded-lg bg-muted/50 border space-y-2">
+          <div className="p-3 rounded-lg bg-card border space-y-2">
             <h4 className="font-medium text-sm flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-primary" />
+              <IconInfo className="h-4 w-4 text-primary" />
               {t('configIntegrations.slack.instrucoesTitle')}
             </h4>
             <ol className="text-xs text-muted-foreground space-y-1 ml-6 list-decimal">
@@ -242,16 +242,16 @@ export function SlackConfigDialog({
                 {testing ? (
                   <AkurisPulse size={16} />
                 ) : testResult === 'success' ? (
-                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  <IconSuccess className="h-4 w-4 text-success" />
                 ) : testResult === 'error' ? (
-                  <XCircle className="h-4 w-4 text-destructive" />
+                  <IconError className="h-4 w-4 text-destructive" />
                 ) : (
-                  <Send className="h-4 w-4" />
+                  <IconSend className="h-4 w-4" />
                 )}
               </Button>
             </div>
             {testResult === 'success' && (
-              <p className="text-xs text-green-600">{t('configIntegrations.slack.testSuccess')}</p>
+              <p className="text-xs text-success">{t('configIntegrations.slack.testSuccess')}</p>
             )}
             {testResult === 'error' && (
               <p className="text-xs text-destructive">{t('configIntegrations.slack.testError')}</p>
@@ -265,7 +265,7 @@ export function SlackConfigDialog({
               {EVENTOS_DISPONIVEIS.map(evento => (
                 <div
                   key={evento.id}
-                  className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50"
+                  className="flex items-center gap-3 p-2 rounded-md hover:bg-accent"
                 >
                   <Checkbox
                     id={evento.id}
@@ -296,7 +296,7 @@ export function SlackConfigDialog({
             className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
           >
             {t('configIntegrations.slack.linkDocs')}
-            <ExternalLink className="h-3 w-3" />
+            <IconExternal className="h-3 w-3" />
           </a>
       </div>
     </DialogShell>

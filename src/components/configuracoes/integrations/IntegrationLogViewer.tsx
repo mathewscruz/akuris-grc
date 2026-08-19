@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
+import { IconFilter, IconSuccess, IconError, IconTime, IconRefresh } from '@/components/icons';
 import { supabase } from '@/integrations/supabase/client';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { RefreshCw, CheckCircle, XCircle, Clock, Filter } from 'lucide-react';
+;
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { formatDateOnly } from '@/lib/date-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -107,9 +108,9 @@ export function IntegrationLogViewer({ open, onOpenChange }: IntegrationLogViewe
 
   const getStatusIcon = (success: boolean) => {
     if (success) {
-      return <CheckCircle className="h-4 w-4 text-green-500" />;
+      return <IconSuccess className="h-4 w-4 text-success" />;
     }
-    return <XCircle className="h-4 w-4 text-red-500" />;
+    return <IconError className="h-4 w-4 text-destructive" />;
   };
 
   const getEventLabel = (evento: string) => {
@@ -125,7 +126,7 @@ export function IntegrationLogViewer({ open, onOpenChange }: IntegrationLogViewe
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      icon={Clock}
+      icon={IconTime}
       title={t('configIntegrations.logViewer.title')}
       description={t('configIntegrations.logViewer.description')}
       size="lg"
@@ -134,15 +135,15 @@ export function IntegrationLogViewer({ open, onOpenChange }: IntegrationLogViewe
         {/* Resumo + Filtros */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-2">
           <div className="flex items-center gap-3 text-sm">
-            <StatusBadge tone="success" size="sm">
+            <StatusBadge tone="success">
               ✓ {successCount} {t('configIntegrations.logViewer.sucesso')}
             </StatusBadge>
-            <StatusBadge tone="destructive" size="sm">
+            <StatusBadge tone="destructive">
               ✗ {errorCount} {errorCount !== 1 ? t('configIntegrations.logViewer.falhas') : t('configIntegrations.logViewer.falha')}
             </StatusBadge>
           </div>
           <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-muted-foreground" />
+            <IconFilter className="h-4 w-4 text-muted-foreground" />
             <Select value={filterStatus} onValueChange={setFilterStatus}>
               <SelectTrigger className="w-[130px] h-8 text-xs">
                 <SelectValue />
@@ -165,7 +166,7 @@ export function IntegrationLogViewer({ open, onOpenChange }: IntegrationLogViewe
               </SelectContent>
             </Select>
             <Button variant="outline" size="sm" onClick={fetchLogs} disabled={loading} className="h-8">
-              {loading ? <AkurisPulse size={12} className="mr-1" /> : <RefreshCw className="h-3 w-3 mr-1" />}
+              {loading ? <AkurisPulse size={12} className="mr-1" /> : <IconRefresh className="h-3 w-3 mr-1" />}
               {t('configIntegrations.logViewer.btnAtualizar')}
             </Button>
           </div>
@@ -174,7 +175,7 @@ export function IntegrationLogViewer({ open, onOpenChange }: IntegrationLogViewe
         <ScrollArea className="h-[500px] pr-4">
           {logs.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-              <Clock className="h-12 w-12 mb-4 opacity-50" />
+              <IconTime className="h-12 w-12 mb-4 opacity-50" />
               <p>{t('configIntegrations.logViewer.emptyTitle')}</p>
               <p className="text-sm">{t('configIntegrations.logViewer.emptyDesc')}</p>
             </div>
@@ -183,7 +184,7 @@ export function IntegrationLogViewer({ open, onOpenChange }: IntegrationLogViewe
               {logs.map((log) => (
                 <div
                   key={log.id}
-                  className="border rounded-lg p-4 hover:bg-muted/50 transition-colors"
+                  className="border rounded-lg p-4 hover:bg-accent transition-colors"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-center gap-3">
@@ -198,7 +199,7 @@ export function IntegrationLogViewer({ open, onOpenChange }: IntegrationLogViewe
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <StatusBadge tone={log.sucesso ? 'success' : 'destructive'} size="sm">
+                      <StatusBadge tone={log.sucesso ? 'success' : 'destructive'}>
                         HTTP {log.status_code || 'N/A'}
                       </StatusBadge>
                     </div>
@@ -211,7 +212,7 @@ export function IntegrationLogViewer({ open, onOpenChange }: IntegrationLogViewe
                   )}
 
                   {!log.sucesso && log.resposta && (
-                    <div className="mt-2 p-2 bg-red-50 dark:bg-red-950 rounded text-xs text-red-600 dark:text-red-400">
+                    <div className="mt-2 p-2 bg-destructive/10 dark:bg-destructive/10 rounded text-xs text-destructive dark:text-destructive">
                       <strong>{t('configIntegrations.logViewer.erroLabel')}</strong> {typeof log.resposta === 'string' ? log.resposta.substring(0, 200) : JSON.stringify(log.resposta).substring(0, 200)}
                     </div>
                   )}

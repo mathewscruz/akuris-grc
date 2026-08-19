@@ -1,10 +1,10 @@
 import { useState } from 'react';
+import { IconExternal, IconSuccess, IconInfo, IconError, IconSend, IconTag } from '@/components/icons';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CheckCircle2, XCircle, ExternalLink, Send, AlertCircle, Ticket } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -198,7 +198,7 @@ export function JiraConfigDialog({
       onOpenChange={onOpenChange}
       title={t('configIntegrations.jira.title')}
       description={t('configIntegrations.jira.description')}
-      icon={Ticket}
+      icon={IconTag}
       size="md"
       footer={footer}
       onSubmit={handleSave}
@@ -208,7 +208,7 @@ export function JiraConfigDialog({
           {/* Informação sobre o que a integração faz */}
           <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 space-y-2">
             <h4 className="font-medium text-sm flex items-center gap-2 text-primary">
-              <AlertCircle className="h-4 w-4" />
+              <IconInfo className="h-4 w-4" />
               {t('configIntegrations.jira.comoFuncionaTitle')}
             </h4>
             <p className="text-xs text-muted-foreground">
@@ -267,7 +267,7 @@ export function JiraConfigDialog({
               className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
             >
               {t('configIntegrations.jira.criarToken')}
-              <ExternalLink className="h-3 w-3" />
+              <IconExternal className="h-3 w-3" />
             </a>
           </div>
 
@@ -313,17 +313,17 @@ export function JiraConfigDialog({
               {testing ? (
                 <AkurisPulse size={16} className="mr-2" />
               ) : testResult === 'success' ? (
-                <CheckCircle2 className="h-4 w-4 mr-2 text-green-500" />
+                <IconSuccess className="h-4 w-4 mr-2 text-success" />
               ) : testResult === 'error' ? (
-                <XCircle className="h-4 w-4 mr-2 text-destructive" />
+                <IconError className="h-4 w-4 mr-2 text-destructive" />
               ) : (
-                <Send className="h-4 w-4 mr-2" />
+                <IconSend className="h-4 w-4 mr-2" />
               )}
               {t('configIntegrations.jira.btnTestar')}
             </Button>
           </div>
           {testResult === 'success' && (
-            <p className="text-xs text-green-600">{t('configIntegrations.jira.testSuccess')}</p>
+            <p className="text-xs text-success">{t('configIntegrations.jira.testSuccess')}</p>
           )}
           {testResult === 'error' && (
             <p className="text-xs text-destructive">{t('configIntegrations.jira.testError')}</p>

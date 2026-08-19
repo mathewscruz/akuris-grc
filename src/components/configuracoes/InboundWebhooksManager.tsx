@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { IconAdd, IconDelete, IconSend, IconLink, IconCopy, IconCode } from '@/components/icons';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,11 +13,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
-import { Webhook, Plus, Copy, Trash2, Send, Code } from 'lucide-react';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { exigirEscrita } from '@/lib/supabase-write';
 interface InboundWebhook {
   id: string;
   nome: string;
@@ -172,7 +173,7 @@ export function InboundWebhooksManager() {
 
   const handleToggle = async (id: string, ativo: boolean) => {
     try {
-      await supabase.from('api_inbound_webhooks').update({ ativo }).eq('id', id);
+      await exigirEscrita(supabase.from('api_inbound_webhooks').update({ ativo }).eq('id', id));
       fetchWebhooks();
       toast.success(ativo ? t('configGeral.inboundWebhooks.toastActivated') : t('configGeral.inboundWebhooks.toastDeactivated'));
     } catch (err: any) {
@@ -181,7 +182,7 @@ export function InboundWebhooksManager() {
   };
 
   const handleDelete = async (id: string) => {
-    await supabase.from('api_inbound_webhooks').delete().eq('id', id);
+    await exigirEscrita(supabase.from('api_inbound_webhooks').delete().eq('id', id));
     setDeleteConfirm(null);
     fetchWebhooks();
     toast.success(t('configGeral.inboundWebhooks.toastDeleted'));
@@ -231,7 +232,7 @@ export function InboundWebhooksManager() {
           </p>
         </div>
         <Button onClick={() => setDialogOpen(true)} className="gap-2">
-          <Plus className="h-4 w-4" /> {t('configGeral.inboundWebhooks.newButton')}
+          <IconAdd className="h-4 w-4" /> {t('configGeral.inboundWebhooks.newButton')}
         </Button>
       </div>
 
@@ -240,7 +241,7 @@ export function InboundWebhooksManager() {
       ) : webhooks.length === 0 ? (
         <Card className="border-dashed">
           <CardContent className="py-10 text-center">
-            <Webhook className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
+            <IconLink className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
             <p className="text-sm text-muted-foreground">{t('configGeral.inboundWebhooks.emptyTitle')}</p>
             <p className="text-xs text-muted-foreground mt-1">
               {t('configGeral.inboundWebhooks.emptyHint')}
@@ -277,11 +278,11 @@ export function InboundWebhooksManager() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
-                      <code className="text-[10px] bg-muted px-1 py-0.5 rounded max-w-[200px] truncate">
+                      <code className="text-micro bg-muted px-1 py-0.5 rounded max-w-[200px] truncate">
                         {baseUrl}?token={wh.webhook_token.substring(0, 8)}...
                       </code>
                       <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => copyUrl(wh.webhook_token)}>
-                        <Copy className="h-3 w-3" />
+                        <IconCopy className="h-3 w-3" />
                       </Button>
                     </div>
                   </TableCell>
@@ -298,7 +299,7 @@ export function InboundWebhooksManager() {
                         title={t('configGeral.inboundWebhooks.actionViewPayload')}
                         onClick={() => setPayloadDialogOpen(wh.modulo_destino)}
                       >
-                        <Code className="h-3.5 w-3.5" />
+                        <IconCode className="h-3.5 w-3.5" />
                       </Button>
                       <Button
                         variant="ghost"
@@ -311,11 +312,11 @@ export function InboundWebhooksManager() {
                         {testingWebhook === wh.id ? (
                           <AkurisPulse size={14} />
                         ) : (
-                          <Send className="h-3.5 w-3.5" />
+                          <IconSend className="h-3.5 w-3.5" />
                         )}
                       </Button>
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => setDeleteConfirm(wh.id)}>
-                        <Trash2 className="h-3.5 w-3.5" />
+                        <IconDelete className="h-3.5 w-3.5" />
                       </Button>
                     </div>
                   </TableCell>
@@ -331,7 +332,7 @@ export function InboundWebhooksManager() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         title={t('configGeral.inboundWebhooks.newDialogTitle')}
-        icon={Webhook}
+        icon={IconLink}
         size="md"
         onSubmit={handleCreate}
         submitLabel={t('configGeral.inboundWebhooks.createButton')}
@@ -340,15 +341,15 @@ export function InboundWebhooksManager() {
         isDirty={!!(nome || descricao || tipoEvento || moduloDestino)}
       >
         <div className="space-y-4">
-          <div>
+          <div className="space-y-2">
             <Label>{t('configGeral.inboundWebhooks.labelName')}</Label>
             <Input value={nome} onChange={e => setNome(e.target.value)} placeholder={t('configGeral.inboundWebhooks.placeholderName')} />
           </div>
-          <div>
+          <div className="space-y-2">
             <Label>{t('configGeral.inboundWebhooks.labelDescription')}</Label>
             <Textarea value={descricao} onChange={e => setDescricao(e.target.value)} placeholder={t('configGeral.inboundWebhooks.placeholderDescription')} rows={2} />
           </div>
-          <div>
+          <div className="space-y-2">
             <Label>{t('configGeral.inboundWebhooks.labelEventType')}</Label>
             <Select value={tipoEvento} onValueChange={setTipoEvento}>
               <SelectTrigger><SelectValue placeholder={t('configGeral.inboundWebhooks.placeholderSelect')} /></SelectTrigger>
@@ -359,7 +360,7 @@ export function InboundWebhooksManager() {
               </SelectContent>
             </Select>
           </div>
-          <div>
+          <div className="space-y-2">
             <Label>{t('configGeral.inboundWebhooks.labelDestinationModule')}</Label>
             <Select value={moduloDestino} onValueChange={setModuloDestino}>
               <SelectTrigger><SelectValue placeholder={t('configGeral.inboundWebhooks.placeholderDestinationModule')} /></SelectTrigger>
@@ -387,7 +388,7 @@ export function InboundWebhooksManager() {
         open={!!payloadDialogOpen}
         onOpenChange={(o) => !o && setPayloadDialogOpen(null)}
         title={t('configGeral.inboundWebhooks.payloadDialogTitle')}
-        icon={Code}
+        icon={IconCode}
         size="md"
         footer={
           <div className="flex justify-end w-full">
@@ -399,7 +400,7 @@ export function InboundWebhooksManager() {
                 toast.info(t('cardsKpi.sweep.sistema.payloadCopiado'));
               }}
             >
-              <Copy className="h-4 w-4 mr-2" /> {t('configGeral.inboundWebhooks.copyButton')}
+              <IconCopy className="h-4 w-4 mr-2" /> {t('configGeral.inboundWebhooks.copyButton')}
             </Button>
           </div>
         }

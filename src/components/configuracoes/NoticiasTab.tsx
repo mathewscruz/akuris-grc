@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { IconAdd, IconEdit, IconDelete, IconSend, IconMail, IconUsers } from '@/components/icons';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -14,7 +15,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Mail, Pencil, Plus, Send, Trash2, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
 import { EmailCampanhaEditor, type CampanhaRow } from './EmailCampanhaEditor';
@@ -95,14 +95,14 @@ export default function NoticiasTab() {
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="space-y-1">
           <h3 className="text-base font-semibold flex items-center gap-2">
-            <Mail className="h-4 w-4 text-primary" /> {t('configPlanos.noticiasTab.headerTitle')}
+            <IconMail className="h-4 w-4 text-primary" /> {t('configPlanos.noticiasTab.headerTitle')}
           </h3>
           <p className="text-sm text-muted-foreground">
             {t('configPlanos.noticiasTab.headerSubtitle')}
           </p>
         </div>
         <Button onClick={handleNew}>
-          <Plus className="h-4 w-4" /> {t('configPlanos.noticiasTab.newCampanha')}
+          <IconAdd className="h-4 w-4" /> {t('configPlanos.noticiasTab.newCampanha')}
         </Button>
       </div>
 
@@ -113,10 +113,10 @@ export default function NoticiasTab() {
       ) : campanhas.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground space-y-3">
-            <Mail className="h-10 w-10 mx-auto text-muted-foreground" />
+            <IconMail className="h-10 w-10 mx-auto text-muted-foreground" />
             <p>{t('configPlanos.noticiasTab.emptyState')}</p>
             <Button onClick={handleNew} variant="outline">
-              <Plus className="h-4 w-4" /> {t('configPlanos.noticiasTab.firstCampanha')}
+              <IconAdd className="h-4 w-4" /> {t('configPlanos.noticiasTab.firstCampanha')}
             </Button>
           </CardContent>
         </Card>
@@ -139,7 +139,7 @@ export default function NoticiasTab() {
                     </p>
                     {c.status === 'enviado' && (
                       <p className="text-xs text-muted-foreground flex items-center gap-1">
-                        <Users className="h-3 w-3" />
+                        <IconUsers className="h-3 w-3" />
                         {t('configPlanos.noticiasTab.entregues', { enviados: c.total_enviados, total: c.total_destinatarios })}
                         {c.total_falhados > 0 && t('configPlanos.noticiasTab.falhas', { count: c.total_falhados })}
                       </p>
@@ -147,11 +147,11 @@ export default function NoticiasTab() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Button variant="outline" size="sm" onClick={() => handleEdit(c)}>
-                      {isDraft ? <Pencil className="h-3.5 w-3.5" /> : <Send className="h-3.5 w-3.5" />}
+                      {isDraft ? <IconEdit className="h-3.5 w-3.5" /> : <IconSend className="h-3.5 w-3.5" />}
                       {isDraft ? t('configPlanos.noticiasTab.editar') : t('configPlanos.noticiasTab.ver')}
                     </Button>
                     <Button variant="ghost" size="icon" onClick={() => setDeletingId(c.id)}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
+                      <IconDelete className="h-4 w-4 text-destructive" />
                     </Button>
                   </div>
                 </CardContent>

@@ -1,7 +1,8 @@
 import React from 'react';
+import { IconClose, IconCheck } from '@/components/icons';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
-import { Check, X } from 'lucide-react';
+;
 import { useLanguage } from '@/contexts/LanguageContext';
 
 export type ProvisioningStepState = 'pending' | 'running' | 'done' | 'error';
@@ -51,7 +52,7 @@ export const EmpresaProvisioningDialog: React.FC<Props> = ({ open, steps, title,
             </div>
             <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
               <div
-                className="h-full rounded-full bg-primary transition-all duration-500"
+                className="h-full rounded-full bg-primary transition-ui duration-500"
                 style={{ width: `${Math.max(4, percent)}%` }}
               />
             </div>
@@ -60,9 +61,9 @@ export const EmpresaProvisioningDialog: React.FC<Props> = ({ open, steps, title,
                 <li key={step.id} className="flex items-center gap-2">
                   <span className="flex h-4 w-4 items-center justify-center shrink-0">
                     {step.state === 'done' ? (
-                      <Check className="h-3.5 w-3.5 text-primary" strokeWidth={1.5} />
+                      <IconCheck className="h-3.5 w-3.5 text-primary" strokeWidth={1.5} />
                     ) : step.state === 'error' ? (
-                      <X className="h-3.5 w-3.5 text-destructive" strokeWidth={1.5} />
+                      <IconClose className="h-3.5 w-3.5 text-destructive" strokeWidth={1.5} />
                     ) : step.state === 'running' ? (
                       <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
                     ) : (
@@ -85,7 +86,7 @@ export const EmpresaProvisioningDialog: React.FC<Props> = ({ open, steps, title,
                 </li>
               ))}
             </ol>
-            <p className="pt-2 text-[11px] text-muted-foreground">
+            <p className="pt-2 text-micro text-muted-foreground">
               {t('admin.empresas.provisioning.hint')}
             </p>
           </div>

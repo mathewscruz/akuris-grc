@@ -5,7 +5,6 @@ import { Input } from '@/components/ui/input';
 import { DateField } from '@/components/ui/date-field';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Building2, Save } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { toast } from 'sonner';
@@ -15,6 +14,7 @@ import { JURISDICOES, inferirJurisdicao, type JurisdicaoCodigo } from '@/lib/jur
 import { useQueryClient } from '@tanstack/react-query';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { IconOrg, IconSave } from '@/components/icons';
 const SETOR_OPTIONS: { value: string; key: string }[] = [
   { value: 'Financeiro / Bancário', key: 'financeiro' },
   { value: 'Saúde', key: 'saude' },
@@ -33,6 +33,32 @@ const SETOR_OPTIONS: { value: string; key: string }[] = [
 ];
 
 const PORTE_KEYS = ['micro', 'pequena', 'media', 'grande', 'enterprise'] as const;
+
+/**
+ * `setor_atuacao` e `porte_empresa` são texto livre, sem CHECK e sem vocabulário
+ * partilhado — foram escritos ao longo do tempo por este formulário e por
+ * provisionamentos. O banco local, por exemplo, guarda `Industria` e `medio`,
+ * que não batem com `Indústria / Manufatura` nem com `media`.
+ *
+ * O Radix só mostra o placeholder quando o valor é vazio: com um valor que não
+ * casa com nenhum item, ele pinta o gatilho EM BRANCO. Ou seja, o setor e o
+ * porte da empresa simplesmente desapareciam da tela — enquanto continuavam a
+ * ser enviados para a IA do gerador de documentos.
+ *
+ * Casamos sem acento e sem caixa; o que não casar continua visível como está,
+ * porque mostrar um valor estranho é sempre melhor do que mostrar nada.
+ */
+/** Compara ignorando acento e caixa — 'Industria' casa com 'Indústria'. */
+const mesmoTermo = (a: string, b: string) =>
+  a.trim().localeCompare(b.trim(), 'pt', { sensitivity: 'base' }) === 0;
+
+function casarComOpcao(valor: string, opcoes: string[]): string | null {
+  if (!valor) return null;
+  const exato = opcoes.find((o) => mesmoTermo(o, valor));
+  if (exato) return exato;
+  // 'Industria' ⇄ 'Indústria / Manufatura': casa pelo primeiro termo antes da barra.
+  return opcoes.find((o) => mesmoTermo(o.split(' / ')[0], valor)) ?? null;
+}
 
 export function CompanyContextSettings() {
   const { t, locale } = useLanguage();
@@ -57,8 +83,10 @@ export function CompanyContextSettings() {
         .eq('id', empresaId)
         .single();
       if (data) {
-        setSetor((data as any).setor_atuacao || '');
-        setPorte((data as any).porte_empresa || '');
+        const setorBruto = (data as any).setor_atuacao || '';
+        const porteBruto = (data as any).porte_empresa || '';
+        setSetor(casarComOpcao(setorBruto, SETOR_OPTIONS.map(o => o.value)) ?? setorBruto);
+        setPorte(casarComOpcao(porteBruto, [...PORTE_KEYS]) ?? porteBruto);
         setObjetivo((data as any).objetivo_compliance || '');
         setDataAlvo((data as any).data_alvo_certificacao || '');
         setMoeda(((data as any).moeda as MoedaCodigo) || 'EUR');
@@ -106,7 +134,7 @@ export function CompanyContextSettings() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2 mb-2">
-        <Building2 className="h-5 w-5 text-primary" />
+        <IconOrg className="h-5 w-5 text-primary" />
         <div>
           <h3 className="font-semibold text-base">{t('configGeral.companyContext.title')}</h3>
           <p className="text-sm text-muted-foreground">
@@ -123,6 +151,11 @@ export function CompanyContextSettings() {
               <SelectValue placeholder={t('configGeral.companyContext.placeholderSetor')} />
             </SelectTrigger>
             <SelectContent>
+              {/* Um valor gravado fora da lista precisa de item próprio, senão o
+                  gatilho fica em branco e o setor da empresa some da tela. */}
+              {setor && !SETOR_OPTIONS.some(o => o.value === setor) && (
+                <SelectItem value={setor}>{setor}</SelectItem>
+              )}
               {SETOR_OPTIONS.map(opt => (
                 <SelectItem key={opt.value} value={opt.value}>{t(`configGeral.companyContext.setores.${opt.key}`)}</SelectItem>
               ))}
@@ -137,6 +170,9 @@ export function CompanyContextSettings() {
               <SelectValue placeholder={t('configGeral.companyContext.placeholderPorte')} />
             </SelectTrigger>
             <SelectContent>
+              {porte && !PORTE_KEYS.some(k => k === porte) && (
+                <SelectItem value={porte}>{porte}</SelectItem>
+              )}
               {PORTE_KEYS.map(key => (
                 <SelectItem key={key} value={key}>{t(`configGeral.companyContext.portes.${key}`)}</SelectItem>
               ))}
@@ -195,7 +231,7 @@ export function CompanyContextSettings() {
 
       <div className="flex justify-end">
         <Button onClick={handleSave} disabled={loading}>
-          <Save className="h-4 w-4 mr-2" />
+          <IconSave className="h-4 w-4 mr-2" />
           {loading ? t('configGeral.companyContext.saving') : t('configGeral.companyContext.saveButton')}
         </Button>
       </div>

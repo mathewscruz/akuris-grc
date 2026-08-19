@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
+import { IconAdd, IconEdit, IconDelete, IconUpload, IconMore, IconRefresh, IconShieldAlert, IconOrg, IconPower } from '@/components/icons';
 import { useAuth } from '@/components/AuthProvider';
-import { ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -14,7 +14,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Plus, Edit, Trash2, Building2, Upload, MoreHorizontal, RefreshCw, Power, PowerOff } from 'lucide-react';
 import { differenceInDays } from 'date-fns';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { logger } from '@/lib/logger';
@@ -438,8 +437,8 @@ const GerenciamentoEmpresasInner = () => {
               className="h-8 w-8 object-contain rounded"
             />
           ) : (
-            <div className="h-8 w-8 bg-muted rounded flex items-center justify-center">
-              <Building2 className="h-4 w-4 text-muted-foreground" />
+            <div className="h-8 w-8 flex items-center justify-center">
+              <IconOrg className="h-4 w-4 text-muted-foreground" />
             </div>
           )}
         </div>
@@ -518,17 +517,17 @@ const GerenciamentoEmpresasInner = () => {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm">
-              <MoreHorizontal className="h-4 w-4" />
+              <IconMore className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => handleEdit(empresa)}>
-              <Edit className="h-4 w-4 mr-2" />
+              <IconEdit className="h-4 w-4 mr-2" />
               {t('admin.empresas.actionEditar')}
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
               <label className="flex items-center gap-2 cursor-pointer">
-                <Upload className="h-4 w-4" />
+                <IconUpload className="h-4 w-4" />
                 {t('admin.empresas.actionUploadLogo')}
                 <input
                   type="file"
@@ -545,25 +544,25 @@ const GerenciamentoEmpresasInner = () => {
             <DropdownMenuItem onClick={() => setToggleAtivoEmpresa(empresa)}>
               {empresa.ativo ? (
                 <>
-                  <PowerOff className="h-4 w-4 mr-2" />
+                  <IconPower className="h-4 w-4 mr-2" />
                   {t('admin.empresas.actionInativarEmpresa')}
                 </>
               ) : (
                 <>
-                  <Power className="h-4 w-4 mr-2" />
+                  <IconPower className="h-4 w-4 mr-2" />
                   {t('admin.empresas.actionAtivarEmpresa')}
                 </>
               )}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setRenewTrialEmpresa(empresa)}>
-              <RefreshCw className="h-4 w-4 mr-2" />
+              <IconRefresh className="h-4 w-4 mr-2" />
               {t('admin.empresas.actionRenovarTrial')}
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => openDeleteDialog(empresa)}
               className="text-destructive focus:text-destructive"
             >
-              <Trash2 className="h-4 w-4 mr-2" />
+              <IconDelete className="h-4 w-4 mr-2" />
               {t('admin.empresas.actionExcluir')}
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -603,7 +602,7 @@ const GerenciamentoEmpresasInner = () => {
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={openCreateDialog} className="flex items-center gap-2">
-              <Plus className="h-4 w-4" />
+              <IconAdd className="h-4 w-4" />
               {t('admin.empresas.newEmpresaButton')}
             </Button>
           </DialogTrigger>
@@ -681,7 +680,7 @@ const GerenciamentoEmpresasInner = () => {
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold">{t('admin.empresas.planoSectionTitle')}</h3>
                   
-                  <div className="p-4 border rounded-lg bg-muted/30 space-y-4">
+                  <div className="p-4 border rounded-lg bg-card space-y-4">
                     {editingEmpresa?.plano && (
                       <div className="flex items-center gap-3">
                         <PlanBadge 
@@ -775,7 +774,7 @@ const GerenciamentoEmpresasInner = () => {
         onRefresh={fetchEmpresas}
         paginated
         emptyState={{
-          icon: <Building2 className="h-12 w-12" />,
+          icon: <IconOrg className="h-12 w-12" />,
           title: t('admin.empresas.emptyTitle'),
           description: searchTerm ? t('admin.empresas.emptyDescriptionFiltered') : t('admin.empresas.emptyDescriptionEmpty'),
         }}
@@ -834,7 +833,7 @@ const GerenciamentoEmpresas = () => {
   if (!isSuperAdmin) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <ShieldAlert className="h-12 w-12 text-muted-foreground mb-4" />
+        <IconShieldAlert className="h-12 w-12 text-muted-foreground mb-4" />
         <h3 className="text-lg font-semibold">{t('admin.empresas.accessRestrictedTitle')}</h3>
         <p className="text-sm text-muted-foreground max-w-md mt-2">
           {t('admin.empresas.accessRestrictedDescription')}

@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
+import { IconAdd, IconEdit, IconStar, IconUsers, IconOrg } from '@/components/icons';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
-import { Plus, Edit, Star, Users, Sparkles, Building2 } from 'lucide-react';
 import { fetchPlanos, formatBRL, MODULOS_DISPONIVEIS, type Plano } from '@/lib/planos-utils';
 import { PlanoFormDialog } from './PlanoFormDialog';
 import ConfirmDialog from '@/components/ConfirmDialog';
@@ -92,7 +92,7 @@ export const GerenciamentoPlanos: React.FC = () => {
           </p>
         </div>
         <Button onClick={handleNew}>
-          <Plus className="h-4 w-4 mr-2" /> {t('configPlanos.gerenciamentoPlanos.newPlano')}
+          <IconAdd className="h-4 w-4 mr-2" /> {t('configPlanos.gerenciamentoPlanos.newPlano')}
         </Button>
       </div>
 
@@ -111,7 +111,7 @@ export const GerenciamentoPlanos: React.FC = () => {
                   <div className="space-y-1">
                     <CardTitle className="text-base flex items-center gap-2">
                       {plano.nome}
-                      {plano.is_destaque && <Star className="h-4 w-4 text-primary fill-primary" />}
+                      {plano.is_destaque && <IconStar className="h-4 w-4 text-primary fill-primary" />}
                     </CardTitle>
                     <p className="text-xs text-muted-foreground font-mono">{plano.codigo}</p>
                   </div>
@@ -139,21 +139,20 @@ export const GerenciamentoPlanos: React.FC = () => {
                   <div className="space-y-0.5">
                     <p className="text-muted-foreground">{t('configPlanos.gerenciamentoPlanos.usuarios')}</p>
                     <p className="font-medium text-foreground flex items-center gap-1">
-                      <Users className="h-3 w-3" />
+                      <IconUsers className="h-3 w-3" />
                       {plano.limite_usuarios ?? '∞'}
                     </p>
                   </div>
                   <div className="space-y-0.5">
                     <p className="text-muted-foreground">{t('configPlanos.gerenciamentoPlanos.creditosIA')}</p>
                     <p className="font-medium text-foreground flex items-center gap-1">
-                      <Sparkles className="h-3 w-3" />
                       {plano.creditos_franquia}
                     </p>
                   </div>
                   <div className="space-y-0.5">
                     <p className="text-muted-foreground">{t('configPlanos.gerenciamentoPlanos.empresas')}</p>
                     <p className="font-medium text-foreground flex items-center gap-1">
-                      <Building2 className="h-3 w-3" />
+                      <IconOrg className="h-3 w-3" />
                       {plano.empresas_count}
                     </p>
                   </div>
@@ -168,14 +167,14 @@ export const GerenciamentoPlanos: React.FC = () => {
                       plano.modulos_habilitados.slice(0, 6).map(key => {
                         const mod = MODULOS_DISPONIVEIS.find(m => m.key === key);
                         return (
-                          <Badge key={key} variant="secondary" className="text-[10px]">
+                          <Badge key={key} variant="secondary" className="text-micro">
                             {mod?.label || key}
                           </Badge>
                         );
                       })
                     )}
                     {plano.modulos_habilitados.length > 6 && (
-                      <Badge variant="outline" className="text-[10px]">
+                      <Badge variant="outline" className="text-micro">
                         +{plano.modulos_habilitados.length - 6}
                       </Badge>
                     )}
@@ -183,7 +182,7 @@ export const GerenciamentoPlanos: React.FC = () => {
                 </div>
 
                 <Button variant="outline" size="sm" className="w-full" onClick={() => handleEdit(plano)}>
-                  <Edit className="h-3.5 w-3.5 mr-1.5" /> {t('configPlanos.gerenciamentoPlanos.editar')}
+                  <IconEdit className="h-3.5 w-3.5 mr-1.5" /> {t('configPlanos.gerenciamentoPlanos.editar')}
                 </Button>
               </CardContent>
             </Card>

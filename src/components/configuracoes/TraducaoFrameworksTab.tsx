@@ -200,4 +200,3 @@ export function TraducaoFrameworksTab() {
   );
 }
 
-export default TraducaoFrameworksTab;

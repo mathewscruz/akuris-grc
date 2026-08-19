@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { IconExternal, IconSuccess, IconInfo, IconError, IconRefresh, IconSend, IconMonitor, IconCloud } from '@/components/icons';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,7 +7,6 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { CheckCircle2, XCircle, ExternalLink, Send, AlertCircle, RefreshCw, Monitor, Cloud } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -255,7 +255,7 @@ export function AzureConfigDialog({
       onOpenChange={onOpenChange}
       title={t('configIntegrations.azure.title')}
       description={t('configIntegrations.azure.description')}
-      icon={Cloud}
+      icon={IconCloud}
       size="lg"
       footer={footer}
       onSubmit={handleSave}
@@ -269,11 +269,11 @@ export function AzureConfigDialog({
         </TabsList>
 
         <ScrollArea className="flex-1 min-h-0">
-          <TabsContent value="config" className="space-y-6 px-6 py-4 mt-0">
+          <TabsContent value="config" className="space-y-6 px-6 py-4">
             {/* Instruções */}
-            <div className="p-3 rounded-lg bg-muted/50 border space-y-2">
+            <div className="p-3 rounded-lg bg-card border space-y-2">
               <h4 className="font-medium text-sm flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 text-primary" />
+                <IconInfo className="h-4 w-4 text-primary" />
                 {t('configIntegrations.azure.instrucoesTitle')}
               </h4>
               <ol className="text-xs text-muted-foreground space-y-1 ml-6 list-decimal">
@@ -348,17 +348,17 @@ export function AzureConfigDialog({
                 {testing ? (
                   <AkurisPulse size={16} className="mr-2" />
                 ) : testResult === 'success' ? (
-                  <CheckCircle2 className="h-4 w-4 mr-2 text-green-500" />
+                  <IconSuccess className="h-4 w-4 mr-2 text-success" />
                 ) : testResult === 'error' ? (
-                  <XCircle className="h-4 w-4 mr-2 text-destructive" />
+                  <IconError className="h-4 w-4 mr-2 text-destructive" />
                 ) : (
-                  <Send className="h-4 w-4 mr-2" />
+                  <IconSend className="h-4 w-4 mr-2" />
                 )}
                 {t('configIntegrations.azure.btnTestar')}
               </Button>
             </div>
             {testResult === 'success' && (
-              <p className="text-xs text-green-600">{t('configIntegrations.azure.testSuccess')}</p>
+              <p className="text-xs text-success">{t('configIntegrations.azure.testSuccess')}</p>
             )}
             {testResult === 'error' && (
               <p className="text-xs text-destructive">{t('configIntegrations.azure.testError')}</p>
@@ -372,11 +372,11 @@ export function AzureConfigDialog({
               className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
             >
               {t('configIntegrations.azure.linkDocs')}
-              <ExternalLink className="h-3 w-3" />
+              <IconExternal className="h-3 w-3" />
             </a>
           </TabsContent>
 
-          <TabsContent value="sync" className="space-y-6 px-6 py-4 mt-0">
+          <TabsContent value="sync" className="space-y-6 px-6 py-4">
             {/* Opções de sincronização */}
             <div className="space-y-3">
               <Label>{t('configIntegrations.azure.syncOptionsLabel')}</Label>
@@ -384,7 +384,7 @@ export function AzureConfigDialog({
                 {SYNC_OPTIONS.map(option => (
                   <div
                     key={option.id}
-                    className="flex items-start gap-3 p-3 rounded-md border hover:bg-muted/50"
+                    className="flex items-start gap-3 p-3 rounded-md border hover:bg-accent"
                   >
                     <Checkbox
                       id={option.id}
@@ -397,7 +397,7 @@ export function AzureConfigDialog({
                         htmlFor={option.id}
                         className="text-sm font-medium cursor-pointer flex items-center gap-2"
                       >
-                        <Monitor className="h-4 w-4 text-muted-foreground" />
+                        <IconMonitor className="h-4 w-4 text-muted-foreground" />
                         {option.label}
                       </label>
                       <p className="text-xs text-muted-foreground mt-1">
@@ -432,7 +432,7 @@ export function AzureConfigDialog({
 
             {/* Sincronizar agora */}
             {existingConfig && (
-              <div className="space-y-3 p-4 rounded-lg border bg-muted/30">
+              <div className="space-y-3 p-4 rounded-lg border bg-card">
                 <div className="flex items-center justify-between">
                   <div>
                     <h4 className="font-medium text-sm">{t('configIntegrations.azure.syncManualTitle')}</h4>
@@ -447,7 +447,7 @@ export function AzureConfigDialog({
                     {syncing ? (
                       <AkurisPulse size={16} className="mr-2" />
                     ) : (
-                      <RefreshCw className="h-4 w-4 mr-2" />
+                      <IconRefresh className="h-4 w-4 mr-2" />
                     )}
                     {t('configIntegrations.azure.btnSyncNow')}
                   </Button>
@@ -455,7 +455,7 @@ export function AzureConfigDialog({
 
                 {lastSyncInfo && (
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <CheckCircle2 className="h-3 w-3 text-green-500" />
+                    <IconSuccess className="h-3 w-3 text-success" />
                     {t('configIntegrations.azure.lastSync').replace('{count}', String(lastSyncInfo.count)).replace('{date}', lastSyncInfo.date)}
                   </div>
                 )}
@@ -463,8 +463,8 @@ export function AzureConfigDialog({
             )}
 
             {/* Mapeamento */}
-            <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/30">
-              <h4 className="font-medium text-sm text-blue-600 mb-2">{t('configIntegrations.azure.mappingTitle')}</h4>
+            <div className="p-3 rounded-lg bg-info/10 border border-info/30">
+              <h4 className="font-medium text-sm text-info mb-2">{t('configIntegrations.azure.mappingTitle')}</h4>
               <div className="text-xs text-muted-foreground space-y-1">
                 <p>• <strong>{t('configIntegrations.azure.mapNome')}</strong> {t('configIntegrations.azure.mapNomeArrow')}</p>
                 <p>• <strong>{t('configIntegrations.azure.mapModelo')}</strong> {t('configIntegrations.azure.mapModeloArrow')}</p>

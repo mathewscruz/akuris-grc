@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { IconAdd, IconEdit, IconDelete, IconExternal } from '@/components/icons';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Pencil, Plus, Trash2, ExternalLink } from 'lucide-react';
+;
 import { toast } from 'sonner';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { logger } from '@/lib/logger';
@@ -122,7 +123,7 @@ export default function BlogManager() {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <p className="text-sm text-muted-foreground">{t('configPlanos.blog.postCount', { count: posts.length })}</p>
-        <Button onClick={openNew}><Plus className="h-4 w-4 mr-2" /> {t('configPlanos.blog.newPost')}</Button>
+        <Button onClick={openNew}><IconAdd className="h-4 w-4 mr-2" /> {t('configPlanos.blog.newPost')}</Button>
       </div>
 
       <div className="space-y-2">
@@ -141,11 +142,11 @@ export default function BlogManager() {
               <div className="flex gap-1 shrink-0">
                 {p.published && (
                   <Button size="sm" variant="ghost" asChild>
-                    <a href={`/blog/${p.slug}`} target="_blank" rel="noreferrer"><ExternalLink className="h-4 w-4" /></a>
+                    <a href={`/blog/${p.slug}`} target="_blank" rel="noreferrer"><IconExternal className="h-4 w-4" /></a>
                   </Button>
                 )}
-                <Button size="sm" variant="ghost" onClick={() => openEdit(p)}><Pencil className="h-4 w-4" /></Button>
-                <Button size="sm" variant="ghost" onClick={() => remove(p.id)}><Trash2 className="h-4 w-4" /></Button>
+                <Button size="sm" variant="ghost" onClick={() => openEdit(p)}><IconEdit className="h-4 w-4" /></Button>
+                <Button size="sm" variant="ghost" onClick={() => remove(p.id)}><IconDelete className="h-4 w-4" /></Button>
               </div>
             </CardContent>
           </Card>
@@ -159,46 +160,46 @@ export default function BlogManager() {
             <DialogTitle>{editing.id ? t('configPlanos.blog.dialogEditTitle') : t('configPlanos.blog.dialogNewTitle')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div>
+            <div className="space-y-2">
               <Label>{t('configPlanos.blog.fieldTitulo')}</Label>
               <Input value={editing.titulo || ''} onChange={e => setEditing({ ...editing, titulo: e.target.value, slug: editing.slug || slugify(e.target.value) })} />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label>{t('configPlanos.blog.fieldSlug')}</Label>
               <Input value={editing.slug || ''} onChange={e => setEditing({ ...editing, slug: slugify(e.target.value) })} />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label>{t('configPlanos.blog.fieldResumo')}</Label>
               <Textarea rows={2} value={editing.resumo || ''} onChange={e => setEditing({ ...editing, resumo: e.target.value })} />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label>{t('configPlanos.blog.fieldConteudo')}</Label>
               <Textarea rows={14} className="font-mono text-sm" value={editing.conteudo_md || ''} onChange={e => setEditing({ ...editing, conteudo_md: e.target.value })} />
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div>
+              <div className="space-y-2">
                 <Label>{t('configPlanos.blog.fieldAutor')}</Label>
                 <Input value={editing.autor || ''} onChange={e => setEditing({ ...editing, autor: e.target.value })} />
               </div>
-              <div>
+              <div className="space-y-2">
                 <Label>{t('configPlanos.blog.fieldFrameworkSlug')}</Label>
                 <Input placeholder={t('configPlanos.blog.fieldFrameworkPlaceholder')} value={editing.framework_slug || ''} onChange={e => setEditing({ ...editing, framework_slug: e.target.value || null })} />
               </div>
             </div>
-            <div>
+            <div className="space-y-2">
               <Label>{t('configPlanos.blog.fieldTags')}</Label>
               <Input value={tagInput} onChange={e => setTagInput(e.target.value)} />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label>{t('configPlanos.blog.fieldCapaUrl')}</Label>
               <Input value={editing.capa_url || ''} onChange={e => setEditing({ ...editing, capa_url: e.target.value || null })} />
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div>
+              <div className="space-y-2">
                 <Label>{t('configPlanos.blog.fieldSeoTitle')}</Label>
                 <Input value={editing.seo_title || ''} onChange={e => setEditing({ ...editing, seo_title: e.target.value || null })} />
               </div>
-              <div>
+              <div className="space-y-2">
                 <Label>{t('configPlanos.blog.fieldSeoDescription')}</Label>
                 <Input value={editing.seo_description || ''} onChange={e => setEditing({ ...editing, seo_description: e.target.value || null })} />
               </div>

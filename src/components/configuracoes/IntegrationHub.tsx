@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
+import { IconSuccess, IconError, IconPlug, IconInfo, IconHistory, IconKey, IconLink } from '@/components/icons';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Plug, CheckCircle2, XCircle, Info, History, Key, Webhook } from 'lucide-react';
 import { SlackConfigDialog } from './integrations/SlackConfigDialog';
 import { TeamsConfigDialog } from './integrations/TeamsConfigDialog';
 import { WebhooksConfigDialog } from './integrations/WebhooksConfigDialog';
@@ -73,9 +73,7 @@ const AzureLogo = () => (
 );
 
 const WebhookIcon = () => (
-  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center">
-    <Plug className="w-5 h-5 text-white" />
-  </div>
+  <IconPlug className="w-5 h-5 shrink-0 text-primary" />
 );
 
 interface Integration {
@@ -259,7 +257,7 @@ export function IntegrationHub() {
     return (
       <Card 
         key={integration.id} 
-        className={`relative overflow-hidden transition-all hover:shadow-md ${
+        className={`relative overflow-hidden transition-ui hover:shadow-sm ${
           !integration.disponivel ? 'opacity-60' : ''
         }`}
       >
@@ -286,10 +284,10 @@ export function IntegrationHub() {
               <CardTitle className="text-base flex items-center gap-2">
                 {integration.nome}
                 {status === 'conectado' && (
-                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  <IconSuccess className="h-4 w-4 text-success" />
                 )}
                 {status === 'erro' && (
-                  <XCircle className="h-4 w-4 text-destructive" />
+                  <IconError className="h-4 w-4 text-destructive" />
                 )}
               </CardTitle>
               <CardDescription className="text-xs mt-1 line-clamp-2">
@@ -303,7 +301,7 @@ export function IntegrationHub() {
           <div className="flex items-center justify-between">
             <Badge 
               variant={status === 'conectado' ? 'default' : 'outline'}
-              className={status === 'conectado' ? 'bg-green-500/10 text-green-600 border-green-200' : ''}
+              className={status === 'conectado' ? 'bg-success/10 text-success border-success/30' : ''}
             >
               {status === 'conectado' ? t('configIntegrations.hub.conectado') : t('configIntegrations.hub.desconectado')}
             </Badge>
@@ -338,16 +336,16 @@ export function IntegrationHub() {
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="conectores" className="space-y-6">
+      <Tabs defaultValue="conectores">
         <TabsList>
           <TabsTrigger value="conectores" className="gap-2">
-            <Plug className="h-4 w-4" /> {t('configIntegrations.hub.tabConectores')}
+            <IconPlug className="h-4 w-4" /> {t('configIntegrations.hub.tabConectores')}
           </TabsTrigger>
           <TabsTrigger value="api-keys" className="gap-2">
-            <Key className="h-4 w-4" /> {t('configIntegrations.hub.tabApiKeys')}
+            <IconKey className="h-4 w-4" /> {t('configIntegrations.hub.tabApiKeys')}
           </TabsTrigger>
           <TabsTrigger value="inbound-webhooks" className="gap-2">
-            <Webhook className="h-4 w-4" /> {t('configIntegrations.hub.tabInboundWebhooks')}
+            <IconLink className="h-4 w-4" /> {t('configIntegrations.hub.tabInboundWebhooks')}
           </TabsTrigger>
         </TabsList>
 
@@ -355,13 +353,13 @@ export function IntegrationHub() {
           <div className="space-y-8">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/50 border flex-1">
-                <Info className="h-5 w-5 text-primary shrink-0" />
+                <IconInfo className="h-5 w-5 text-primary shrink-0" />
                 <p className="text-sm text-muted-foreground">
                   {t('configIntegrations.hub.infoBanner')}
                 </p>
               </div>
               <Button variant="outline" className="ml-4" onClick={() => setLogViewerOpen(true)}>
-                <History className="h-4 w-4 mr-2" />
+                <IconHistory className="h-4 w-4 mr-2" />
                 {t('configIntegrations.hub.verLogs')}
               </Button>
             </div>

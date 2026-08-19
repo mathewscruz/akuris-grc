@@ -5,10 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Mail } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { IconMail } from '@/components/icons';
 interface EmailTestDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -57,7 +57,7 @@ export function EmailTestDialog({ open, onOpenChange }: EmailTestDialogProps) {
           </>
         ) : (
           <>
-            <Mail className="mr-2 h-4 w-4" />
+            <IconMail className="mr-2 h-4 w-4" />
             {t('configGeral.emailTestDialog.sendButton')}
           </>
         )}
@@ -71,7 +71,7 @@ export function EmailTestDialog({ open, onOpenChange }: EmailTestDialogProps) {
       onOpenChange={onOpenChange}
       title={t('configGeral.emailTestDialog.title')}
       description={t('configGeral.emailTestDialog.description')}
-      icon={Mail}
+      icon={IconMail}
       size="sm"
       footer={footer}
       onSubmit={handleSendTest}

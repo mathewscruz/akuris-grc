@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, Users } from 'lucide-react';
 import { PermissionProfilesList } from './PermissionProfilesList';
 import { UserPermissionsList } from './UserPermissionsList';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { IconShield, IconUsers } from '@/components/icons';
 interface PermissionMatrixProps {
   selectedUserId?: string;
 }
@@ -53,14 +53,14 @@ export const PermissionMatrix: React.FC<PermissionMatrixProps> = ({ selectedUser
 
   return (
     <div>
-      <Tabs defaultValue={selectedUserId ? 'usuarios' : 'perfis'} className="space-y-4">
+      <Tabs defaultValue={selectedUserId ? 'usuarios' : 'perfis'}>
         <TabsList>
           <TabsTrigger value="perfis" className="flex items-center gap-2">
-            <Shield className="h-4 w-4" />
+            <IconShield className="h-4 w-4" />
             {t('configPerms.matrix.tabProfiles')}
           </TabsTrigger>
           <TabsTrigger value="usuarios" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
+            <IconUsers className="h-4 w-4" />
             {t('configPerms.matrix.tabUsers')}
           </TabsTrigger>
         </TabsList>
@@ -77,4 +77,3 @@ export const PermissionMatrix: React.FC<PermissionMatrixProps> = ({ selectedUser
   );
 };
 
-export default PermissionMatrix;

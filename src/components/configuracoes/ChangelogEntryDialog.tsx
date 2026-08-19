@@ -6,8 +6,8 @@ import { DateField } from '@/components/ui/date-field';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2 } from 'lucide-react';
-import { AkurisAIIcon } from '@/components/icons';
+import { IconMegaphone, IconAdd, IconDelete } from '@/components/icons';
+;
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
@@ -111,7 +111,7 @@ export function ChangelogEntryDialog({ open, onOpenChange, entry, onSaved }: Pro
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      icon={AkurisAIIcon as any}
+      icon={IconMegaphone as any}
       title={entry?.id ? t('configPlanos.changelogDialog.titleEdit') : t('configPlanos.changelogDialog.titleNew')}
       size="md"
       onSubmit={handleSave}
@@ -144,14 +144,14 @@ export function ChangelogEntryDialog({ open, onOpenChange, entry, onSaved }: Pro
             <div className="flex items-center justify-between">
               <Label>{t('configPlanos.changelogDialog.itemsLabel')}</Label>
               <Button type="button" size="sm" variant="outline" onClick={addItem}>
-                <Plus className="h-4 w-4 mr-1" /> {t('configPlanos.changelogDialog.addItem')}
+                <IconAdd className="h-4 w-4 mr-1" /> {t('configPlanos.changelogDialog.addItem')}
               </Button>
             </div>
 
             {items.map((item, idx) => (
               <div
                 key={idx}
-                className="grid grid-cols-[140px_1fr_auto] gap-2 items-start border border-border/50 rounded-lg p-3 bg-card/40"
+                className="grid grid-cols-[140px_1fr_auto] gap-2 items-start border border-border/50 rounded-lg p-3 bg-card"
               >
                 <Select
                   value={item.type}
@@ -182,7 +182,7 @@ export function ChangelogEntryDialog({ open, onOpenChange, entry, onSaved }: Pro
                   disabled={items.length === 1}
                   aria-label={t('configPlanos.changelogDialog.removeItemAria')}
                 >
-                  <Trash2 className="h-4 w-4 text-destructive" />
+                  <IconDelete className="h-4 w-4 text-destructive" />
                 </Button>
               </div>
             ))}

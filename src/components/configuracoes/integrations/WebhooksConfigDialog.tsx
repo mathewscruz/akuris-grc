@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
+import { IconAdd, IconDelete, IconSuccess, IconError, IconSend, IconLink } from '@/components/icons';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
-import { CheckCircle2, XCircle, Send, Webhook, Plus, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -240,7 +240,7 @@ export function WebhooksConfigDialog({
       onOpenChange={onOpenChange}
       title={t('configIntegrations.webhooks.title')}
       description={t('configIntegrations.webhooks.description')}
-      icon={Webhook}
+      icon={IconLink}
       size="lg"
       footer={footer}
       onSubmit={handleSave}
@@ -270,16 +270,16 @@ export function WebhooksConfigDialog({
                 {testing ? (
                   <AkurisPulse size={16} />
                 ) : testResult === 'success' ? (
-                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  <IconSuccess className="h-4 w-4 text-success" />
                 ) : testResult === 'error' ? (
-                  <XCircle className="h-4 w-4 text-destructive" />
+                  <IconError className="h-4 w-4 text-destructive" />
                 ) : (
-                  <Send className="h-4 w-4" />
+                  <IconSend className="h-4 w-4" />
                 )}
               </Button>
             </div>
             {testResult === 'success' && (
-              <p className="text-xs text-green-600">{t('configIntegrations.webhooks.testSuccess')}</p>
+              <p className="text-xs text-success">{t('configIntegrations.webhooks.testSuccess')}</p>
             )}
             {testResult === 'error' && (
               <p className="text-xs text-destructive">{t('configIntegrations.webhooks.testError')}</p>
@@ -291,7 +291,7 @@ export function WebhooksConfigDialog({
             <div className="flex items-center justify-between">
               <Label>{t('configIntegrations.webhooks.headersLabel')}</Label>
               <Button variant="outline" size="sm" onClick={addHeader}>
-                <Plus className="h-3 w-3 mr-1" />
+                <IconAdd className="h-3 w-3 mr-1" />
                 {t('configIntegrations.webhooks.btnAdicionar')}
               </Button>
             </div>
@@ -316,7 +316,7 @@ export function WebhooksConfigDialog({
                       size="icon"
                       onClick={() => removeHeader(index)}
                     >
-                      <Trash2 className="h-4 w-4 text-destructive" />
+                      <IconDelete className="h-4 w-4 text-destructive" />
                     </Button>
                   </div>
                 ))}

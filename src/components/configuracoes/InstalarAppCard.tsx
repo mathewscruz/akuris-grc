@@ -1,11 +1,11 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Smartphone } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { usePwaInstall } from '@/hooks/usePwaInstall';
 import { IosInstallDialog } from '@/components/pwa/InstallAppPrompt';
 import { toast } from 'sonner';
+import { IconPhone } from '@/components/icons';
 
 /**
  * Permite instalar o Akuris (atalho no ecrã inicial) a partir das Configurações,
@@ -33,7 +33,7 @@ export function InstalarAppCard() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Smartphone className="h-5 w-5" strokeWidth={1.5} />
+          <IconPhone className="h-5 w-5" strokeWidth={1.5} />
           {t('pwa.settingsTitle')}
         </CardTitle>
         <CardDescription>{t('pwa.settingsDescription')}</CardDescription>
@@ -44,7 +44,7 @@ export function InstalarAppCard() {
             {installed ? t('pwa.alreadyInstalled') : t('pwa.bannerDescription')}
           </p>
           <Button variant="outline" onClick={handleClick} disabled={installed}>
-            <Smartphone className="mr-2 h-4 w-4" strokeWidth={1.5} />
+            <IconPhone className="mr-2 h-4 w-4" strokeWidth={1.5} />
             {t('pwa.settingsButton')}
           </Button>
         </div>

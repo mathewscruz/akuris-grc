@@ -11,11 +11,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
-import { Link2, Save, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { logger } from '@/lib/logger';
+import { IconWarning, IconLink, IconSave } from '@/components/icons';
 
 const SLUG_RE = /^[a-z0-9]([a-z0-9-]{1,38})[a-z0-9]$/;
 
@@ -118,7 +118,7 @@ export function CompanySlugSettings() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Link2 className="h-5 w-5" strokeWidth={1.5} />
+          <IconLink className="h-5 w-5" strokeWidth={1.5} />
           {t('configGeral.slugPublico.title')}
         </CardTitle>
         <CardDescription>{t('configGeral.slugPublico.description')}</CardDescription>
@@ -141,7 +141,7 @@ export function CompanySlugSettings() {
               </Button>
             )}
             <Button type="button" onClick={handleSave} disabled={!value || invalid || !changed || saving}>
-              <Save className="h-4 w-4 mr-2" strokeWidth={1.5} />
+              <IconSave className="h-4 w-4 mr-2" strokeWidth={1.5} />
               {t('configGeral.slugPublico.save')}
             </Button>
           </div>
@@ -162,7 +162,7 @@ export function CompanySlugSettings() {
 
         {current && changed && (
           <Alert>
-            <AlertTriangle className="h-4 w-4" strokeWidth={1.5} />
+            <IconWarning className="h-4 w-4" strokeWidth={1.5} />
             <AlertDescription>{t('configGeral.slugPublico.warnChange')}</AlertDescription>
           </Alert>
         )}

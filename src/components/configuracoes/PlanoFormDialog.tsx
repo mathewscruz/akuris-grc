@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { IconAdd, IconClose, IconCard } from '@/components/icons';
 import { DialogShell } from '@/components/ui/dialog-shell';
-import { CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,11 +10,12 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Plus, X } from 'lucide-react';
+;
 import { MODULOS_DISPONIVEIS, type Plano } from '@/lib/planos-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { exigirEscrita } from '@/lib/supabase-write';
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -136,7 +137,7 @@ export const PlanoFormDialog: React.FC<Props> = ({ open, onOpenChange, plano, on
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      icon={CreditCard}
+      icon={IconCard}
       title={plano ? t('configPlanos.planoForm.titleEdit') : t('configPlanos.planoForm.titleNew')}
       size="lg"
       onSubmit={handleSave}
@@ -160,7 +161,7 @@ export const PlanoFormDialog: React.FC<Props> = ({ open, onOpenChange, plano, on
                   disabled={!!plano}
                   className="font-mono text-sm"
                 />
-                <p className="text-[11px] text-muted-foreground">{t('configPlanos.planoForm.fieldCodigoHelp')}</p>
+                <p className="text-micro text-muted-foreground">{t('configPlanos.planoForm.fieldCodigoHelp')}</p>
               </div>
             </div>
 
@@ -242,7 +243,7 @@ export const PlanoFormDialog: React.FC<Props> = ({ open, onOpenChange, plano, on
                   </label>
                 ))}
               </div>
-              <p className="text-[11px] text-muted-foreground">{t('configPlanos.planoForm.modulosSelecionados', { count: form.modulos_habilitados.length })}</p>
+              <p className="text-micro text-muted-foreground">{t('configPlanos.planoForm.modulosSelecionados', { count: form.modulos_habilitados.length })}</p>
             </div>
 
             {/* Recursos */}
@@ -255,7 +256,7 @@ export const PlanoFormDialog: React.FC<Props> = ({ open, onOpenChange, plano, on
                   onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addRecurso(); } }}
                   placeholder={t('configPlanos.planoForm.recursoPlaceholder')}
                 />
-                <Button type="button" variant="outline" onClick={addRecurso}><Plus className="h-4 w-4" /></Button>
+                <Button type="button" variant="outline" onClick={addRecurso}><IconAdd className="h-4 w-4" /></Button>
               </div>
               {form.recursos_destacados.length > 0 && (
                 <div className="space-y-1 pt-1">
@@ -263,7 +264,7 @@ export const PlanoFormDialog: React.FC<Props> = ({ open, onOpenChange, plano, on
                     <div key={i} className="flex items-center justify-between gap-2 p-2 rounded bg-muted text-sm">
                       <span>{r}</span>
                       <Button type="button" size="icon" variant="ghost" className="h-6 w-6" onClick={() => removeRecurso(i)}>
-                        <X className="h-3 w-3" />
+                        <IconClose className="h-3 w-3" />
                       </Button>
                     </div>
                   ))}

@@ -4,11 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Switch } from "@/components/ui/switch"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { StatCard } from "@/components/ui/stat-card"
+import { StatStrip } from '@/components/ui/stat-strip';
 import { toast } from "sonner"
 import { supabase } from "@/integrations/supabase/client"
-import { Bell, Mail, Clock, Users, TrendingUp } from "lucide-react"
 import { useLanguage } from "@/contexts/LanguageContext"
+import { IconTime, IconBell, IconMail, IconUsers, IconTrendUp } from '@/components/icons';
 
 interface ReminderSettingsData {
   id?: string
@@ -141,6 +141,13 @@ export function ReminderSettings() {
   const saveSettings = async () => {
     setSaving(true)
     try {
+      // `empresa_id` é `uuid` e arranca a "" enquanto o carregamento não
+      // resolve. Guardar nessa janela mandava a string vazia para o banco e a
+      // gravação falhava inteira com "invalid input syntax for type uuid".
+      if (!settings.empresa_id) {
+        throw new Error(t('configPerms.reminderSettings.errorSavingTitle'))
+      }
+
       const { error } = await supabase
         .from('empresa_reminder_settings')
         .upsert(settings)
@@ -196,37 +203,19 @@ export function ReminderSettings() {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          title={t('configPerms.reminderSettings.statUsersInvited')}
-          value={stats.total_invited}
-          icon={<Users className="h-4 w-4" />}
-          variant="info"
-        />
-        <StatCard
-          title={t('configPerms.reminderSettings.statPendingReminders')}
-          value={stats.pending_reminders}
-          icon={<Clock className="h-4 w-4" />}
-          variant="warning"
-        />
-        <StatCard
-          title={t('configPerms.reminderSettings.statAcceptedInvites')}
-          value={stats.completed_invitations}
-          icon={<Mail className="h-4 w-4" />}
-          variant="success"
-        />
-        <StatCard
-          title={t('configPerms.reminderSettings.statConversionRate')}
-          value={`${stats.reminder_effectiveness}%`}
-          icon={<TrendingUp className="h-4 w-4" />}
-          variant="primary"
-        />
-      </div>
+      <StatStrip
+        items={[
+          { key: 'convidados', label: t('configPerms.reminderSettings.statUsersInvited'), value: stats.total_invited, icon: IconUsers },
+          { key: 'lembretes', label: t('configPerms.reminderSettings.statPendingReminders'), value: stats.pending_reminders, icon: IconTime, tone: 'warning' },
+          { key: 'aceites', label: t('configPerms.reminderSettings.statAcceptedInvites'), value: stats.completed_invitations, icon: IconMail },
+          { key: 'conversao', label: t('configPerms.reminderSettings.statConversionRate'), value: `${stats.reminder_effectiveness}%`, icon: IconTrendUp },
+        ]}
+      />
 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Bell className="h-5 w-5" />
+            <IconBell className="h-5 w-5" />
             {t('configPerms.reminderSettings.cardTitle')}
           </CardTitle>
           <CardDescription>

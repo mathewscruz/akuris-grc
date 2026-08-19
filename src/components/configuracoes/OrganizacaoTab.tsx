@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Mail } from 'lucide-react';
 import { CompanyContextSettings } from './CompanyContextSettings';
 import { CompanySlugSettings } from './CompanySlugSettings';
 import { CompanyLogoUpload } from './CompanyLogoUpload';
 import { EmailTestDialog } from './EmailTestDialog';
 import { InstalarAppCard } from './InstalarAppCard';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { IconMail } from '@/components/icons';
 
 export function OrganizacaoTab() {
   const { t } = useLanguage();
@@ -26,7 +26,7 @@ export function OrganizacaoTab() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Mail className="h-5 w-5" />
+            <IconMail className="h-5 w-5" />
             {t('configGeral.organizacaoTab.emailConfigTitle')}
           </CardTitle>
           <CardDescription>
@@ -42,7 +42,7 @@ export function OrganizacaoTab() {
               </p>
             </div>
             <Button variant="outline" onClick={() => setEmailTestDialogOpen(true)}>
-              <Mail className="h-4 w-4 mr-2" />
+              <IconMail className="h-4 w-4 mr-2" />
               {t('configGeral.organizacaoTab.testEmailButton')}
             </Button>
           </div>

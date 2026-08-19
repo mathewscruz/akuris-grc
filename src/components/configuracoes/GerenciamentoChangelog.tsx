@@ -15,14 +15,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Pencil, Plus, ShieldAlert, Trash2 } from 'lucide-react';
-import { AkurisAIIcon } from '@/components/icons';
+import { IconAdd, IconEdit, IconDelete, IconShieldAlert } from '@/components/icons';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
 import { formatDate } from '@/lib/i18n-format';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ChangelogEntryDialog, type ChangelogEntryRow } from './ChangelogEntryDialog';
-
 
 export default function GerenciamentoChangelog() {
   const { profile } = useAuth();
@@ -71,7 +69,7 @@ export default function GerenciamentoChangelog() {
   if (!isSuperAdmin) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <ShieldAlert className="h-12 w-12 text-muted-foreground mb-4" />
+        <IconShieldAlert className="h-12 w-12 text-muted-foreground mb-4" />
         <h3 className="text-lg font-semibold">{t('configPlanos.gerenciamentoChangelog.accessRestrictedTitle')}</h3>
         <p className="text-sm text-muted-foreground mt-1">
           {t('configPlanos.gerenciamentoChangelog.accessRestrictedDesc')}
@@ -109,7 +107,6 @@ export default function GerenciamentoChangelog() {
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-base font-semibold flex items-center gap-2">
-            <AkurisAIIcon className="h-4 w-4 text-primary" />
             {t('configPlanos.gerenciamentoChangelog.headerTitle')}
           </h3>
           <p className="text-sm text-muted-foreground">
@@ -117,7 +114,7 @@ export default function GerenciamentoChangelog() {
           </p>
         </div>
         <Button onClick={handleNew}>
-          <Plus className="h-4 w-4 mr-1" /> {t('configPlanos.gerenciamentoChangelog.newVersion')}
+          <IconAdd className="h-4 w-4 mr-1" /> {t('configPlanos.gerenciamentoChangelog.newVersion')}
         </Button>
       </div>
 
@@ -154,7 +151,7 @@ export default function GerenciamentoChangelog() {
                         const cfg = TYPE_LABEL[item.type] || TYPE_LABEL.improvement;
                         return (
                           <li key={i} className="flex items-start gap-2 text-sm">
-                            <Badge variant={cfg.variant} className="text-[10px] px-1.5 py-0 shrink-0 mt-0.5">
+                            <Badge variant={cfg.variant} className="text-micro px-1.5 py-0 shrink-0 mt-0.5">
                               {cfg.label}
                             </Badge>
                             <span className="text-muted-foreground">{item.text}</span>
@@ -165,7 +162,7 @@ export default function GerenciamentoChangelog() {
                   </div>
                   <div className="flex flex-col gap-1 shrink-0">
                     <Button variant="ghost" size="icon" onClick={() => handleEdit(entry)} aria-label={t('configPlanos.gerenciamentoChangelog.editAria')}>
-                      <Pencil className="h-4 w-4" />
+                      <IconEdit className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="ghost"
@@ -173,7 +170,7 @@ export default function GerenciamentoChangelog() {
                       onClick={() => setDeletingId(entry.id!)}
                       aria-label={t('configPlanos.gerenciamentoChangelog.deleteAria')}
                     >
-                      <Trash2 className="h-4 w-4 text-destructive" />
+                      <IconDelete className="h-4 w-4 text-destructive" />
                     </Button>
                   </div>
                 </div>

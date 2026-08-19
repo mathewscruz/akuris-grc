@@ -8,10 +8,11 @@ import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { CheckSquare, Square, BookOpen, ShieldCheck } from 'lucide-react';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { IconCheckbox, IconBook, IconShieldCheck } from '@/components/icons';
+import { exigirEscrita } from '@/lib/supabase-write';
 interface Module {
   id: string;
   name: string;
@@ -165,7 +166,7 @@ export const PermissionProfileDialog: React.FC<Props> = ({
         profileId = profile.id;
 
         // Delete existing module permissions
-        await supabase.from('permission_profile_modules').delete().eq('profile_id', profileId);
+        await exigirEscrita(supabase.from('permission_profile_modules').delete().eq('profile_id', profileId));
       } else {
         const { data, error } = await supabase
           .from('permission_profiles')
@@ -233,7 +234,7 @@ export const PermissionProfileDialog: React.FC<Props> = ({
       open={open}
       onOpenChange={onOpenChange}
       title={profile ? t('configPerms.profileDialog.titleEdit') : t('configPerms.profileDialog.titleNew')}
-      icon={ShieldCheck}
+      icon={IconShieldCheck}
       size="lg"
       footer={footer}
       onSubmit={handleSave}
@@ -241,7 +242,7 @@ export const PermissionProfileDialog: React.FC<Props> = ({
     >
       <div className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
-          <div>
+          <div className="space-y-2">
             <Label>{t('configPerms.profileDialog.fieldName')}</Label>
             <Input value={name} onChange={e => setName(e.target.value)} placeholder={t('configPerms.profileDialog.fieldNamePlaceholder')} />
           </div>
@@ -253,7 +254,7 @@ export const PermissionProfileDialog: React.FC<Props> = ({
           </div>
         </div>
 
-        <div>
+        <div className="space-y-2">
           <Label>{t('configPerms.profileDialog.fieldDescription')}</Label>
           <Textarea value={description} onChange={e => setDescription(e.target.value)} placeholder={t('configPerms.profileDialog.fieldDescriptionPlaceholder')} rows={2} />
         </div>
@@ -262,15 +263,15 @@ export const PermissionProfileDialog: React.FC<Props> = ({
 
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="outline" size="sm" onClick={() => setAllPermissions(true)}>
-            <CheckSquare className="h-3.5 w-3.5 mr-1" />
+            <IconCheckbox className="h-3.5 w-3.5 mr-1" />
             {t('configPerms.profileDialog.markAll')}
           </Button>
           <Button type="button" variant="outline" size="sm" onClick={setReadOnly}>
-            <BookOpen className="h-3.5 w-3.5 mr-1" />
+            <IconBook className="h-3.5 w-3.5 mr-1" />
             {t('configPerms.profileDialog.readOnly')}
           </Button>
           <Button type="button" variant="outline" size="sm" onClick={() => setAllPermissions(false)}>
-            <Square className="h-3.5 w-3.5 mr-1" />
+            <IconCheckbox className="h-3.5 w-3.5 mr-1" />
             {t('configPerms.profileDialog.unmarkAll')}
           </Button>
         </div>
@@ -283,7 +284,7 @@ export const PermissionProfileDialog: React.FC<Props> = ({
           <div className="border rounded-lg overflow-hidden">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b bg-muted/50">
+                <tr className="border-b bg-card">
                   <th className="text-left px-3 py-2 font-medium">{t('configPerms.profileDialog.colModule')}</th>
                   {PERM_LABELS.map(p => (
                     <th key={p.key} className="text-center px-2 py-2 font-medium">{p.label}</th>
@@ -294,7 +295,7 @@ export const PermissionProfileDialog: React.FC<Props> = ({
                 {modules.map(module => {
                   const perm = getPermission(module.id);
                   return (
-                    <tr key={module.id} className="border-b last:border-0 hover:bg-muted/30">
+                    <tr key={module.id} className="border-b last:border-0 hover:bg-accent">
                       <td className="px-3 py-2 font-medium">{module.display_name}</td>
                       {PERM_LABELS.map(({ key }) => (
                         <td key={key} className="text-center px-2 py-2">
@@ -314,7 +315,7 @@ export const PermissionProfileDialog: React.FC<Props> = ({
         )}
 
         {profile && (
-          <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+          <div className="flex items-center gap-2 p-3 bg-card rounded-lg border border-border">
             <Switch checked={propagate} onCheckedChange={setPropagate} />
             <Label className="text-sm">{t('configPerms.profileDialog.propagateLabel')}</Label>
           </div>

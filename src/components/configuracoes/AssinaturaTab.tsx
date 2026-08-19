@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
+import { IconPackage, IconWarning, IconCalendar, IconAward, IconShield, IconBolt, IconCard, IconUsers } from '@/components/icons';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Crown, Shield, Zap, Sparkles, CreditCard, Calendar, Users, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { differenceInDays } from 'date-fns';
@@ -13,6 +13,7 @@ import { Link } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { intlLocale } from '@/lib/date-utils';
 interface EmpresaInfo {
   id: string;
   nome: string;
@@ -25,13 +26,13 @@ interface EmpresaInfo {
 }
 
 const planIcons: Record<string, React.ElementType> = {
-  free: Sparkles,
-  compliance_start: Shield,
-  starter: Shield,
-  grc_manager: Zap,
-  professional: Zap,
-  governaii_enterprise: Crown,
-  enterprise: Crown,
+  free: IconPackage,
+  compliance_start: IconShield,
+  starter: IconShield,
+  grc_manager: IconBolt,
+  professional: IconBolt,
+  governaii_enterprise: IconAward,
+  enterprise: IconAward,
 };
 
 export function AssinaturaTab() {
@@ -98,7 +99,7 @@ export function AssinaturaTab() {
     );
   }
 
-  const Icon = planIcons[info.plano?.codigo || 'free'] || Shield;
+  const Icon = planIcons[info.plano?.codigo || 'free'] || IconShield;
   const trialDiasRestantes = info.data_inicio_trial
     ? Math.max(0, 14 - differenceInDays(new Date(), new Date(info.data_inicio_trial)))
     : 0;
@@ -124,16 +125,14 @@ export function AssinaturaTab() {
       {info.status_licenca === 'trial' && (
         <Card className="border-warning/50">
           <CardContent className="py-4 flex flex-col sm:flex-row items-start sm:items-center gap-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-500/20 text-amber-600 shrink-0">
-              <AlertTriangle className="h-5 w-5" />
-            </div>
+            <IconWarning className="h-5 w-5 shrink-0 text-warning" />
             <div className="flex-1">
               <p className="text-sm font-semibold text-foreground">
                 {t('configPlanos.assinatura.trialBanner', { dias: trialDiasRestantes, diaLabel: t(trialDiasRestantes === 1 ? 'configPlanos.assinatura.diaSingular' : 'configPlanos.assinatura.diaPlural') })}
               </p>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {trialFim
-                  ? t('configPlanos.assinatura.trialFimMsg', { data: trialFim.toLocaleDateString('pt-BR') })
+                  ? t('configPlanos.assinatura.trialFimMsg', { data: trialFim.toLocaleDateString(intlLocale()) })
                   : t('configPlanos.assinatura.trialFimMsgSemData')}
               </p>
             </div>
@@ -159,7 +158,7 @@ export function AssinaturaTab() {
                   {t('configPlanos.assinatura.planoLabel', { nome: info.plano?.nome || t('configPlanos.assinatura.planoNaoAtribuido') })}
                 </CardTitle>
                 {info.plano?.publico_alvo && (
-                  <p className="text-[11px] uppercase tracking-wide text-muted-foreground mt-0.5">
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     {info.plano.publico_alvo}
                   </p>
                 )}
@@ -177,19 +176,19 @@ export function AssinaturaTab() {
           {info.plano && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="flex items-center gap-2">
-                <CreditCard className="h-4 w-4 text-muted-foreground" />
+                <IconCard className="h-4 w-4 text-muted-foreground" />
                 <div>
                   <p className="text-xs text-muted-foreground">{t('configPlanos.assinatura.valorMensal')}</p>
                   <p className="text-sm font-medium">{formatBRL(info.plano.preco_mensal)}{t('configPlanos.assinatura.porMes')}</p>
                   {(info.plano.preco_setup ?? 0) > 0 && (
-                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                    <p className="text-micro text-muted-foreground mt-0.5">
                       {t('configPlanos.assinatura.setup', { valor: info.plano.setup_observacao || t('configPlanos.assinatura.setupUnico', { valor: formatBRL(info.plano.preco_setup ?? 0) }) })}
                     </p>
                   )}
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Zap className="h-4 w-4 text-muted-foreground" />
+                <IconBolt className="h-4 w-4 text-muted-foreground" />
                 <div>
                   <p className="text-xs text-muted-foreground">{t('configPlanos.assinatura.creditosIA')}</p>
                   <p className="text-sm font-medium">
@@ -198,7 +197,7 @@ export function AssinaturaTab() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-muted-foreground" />
+                <IconUsers className="h-4 w-4 text-muted-foreground" />
                 <div>
                   <p className="text-xs text-muted-foreground">{t('configPlanos.assinatura.usuarios')}</p>
                   <p className="text-sm font-medium">
@@ -219,7 +218,7 @@ export function AssinaturaTab() {
                   </div>
                   <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
                     <div
-                      className={cn('h-full transition-all', usuariosPercent >= 90 ? 'bg-destructive' : 'bg-primary')}
+                      className={cn('h-full transition-ui', usuariosPercent >= 90 ? 'bg-destructive' : 'bg-primary')}
                       style={{ width: `${Math.min(100, usuariosPercent)}%` }}
                     />
                   </div>
@@ -233,7 +232,7 @@ export function AssinaturaTab() {
                   </div>
                   <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
                     <div
-                      className={cn('h-full transition-all', creditosPercent >= 90 ? 'bg-destructive' : 'bg-primary')}
+                      className={cn('h-full transition-ui', creditosPercent >= 90 ? 'bg-destructive' : 'bg-primary')}
                       style={{ width: `${Math.min(100, creditosPercent)}%` }}
                     />
                   </div>
@@ -246,9 +245,9 @@ export function AssinaturaTab() {
             <>
               <Separator />
               <div className="flex items-center gap-2 text-sm">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
+                <IconCalendar className="h-4 w-4 text-muted-foreground" />
                 <span className="text-muted-foreground">{t('configPlanos.assinatura.vigenciaAte')}</span>
-                <span className="font-medium">{new Date(info.data_fim_assinatura).toLocaleDateString('pt-BR')}</span>
+                <span className="font-medium">{new Date(info.data_fim_assinatura).toLocaleDateString(intlLocale())}</span>
               </div>
             </>
           )}

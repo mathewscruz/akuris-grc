@@ -1,14 +1,13 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { StatCard } from '@/components/ui/stat-card';
+import { StatStrip } from '@/components/ui/stat-strip';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { DataTable } from '@/components/ui/data-table';
 import { toast } from 'sonner';
-import { Building2, RotateCcw, TrendingUp, History, MoreHorizontal } from 'lucide-react';
-import { AkurisAIIcon } from '@/components/icons';
+import { IconBolt, IconMore, IconOrg, IconUndo, IconTrendUp, IconHistory } from '@/components/icons';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { formatDateOnly } from '@/lib/date-utils';
 import ConfirmDialog from '@/components/ConfirmDialog';
@@ -181,19 +180,19 @@ export function CreditosIAManager() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="sm">
-              <MoreHorizontal className="h-4 w-4" />
+              <IconMore className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => openHistorico(row.id, row.nome)}>
-              <History className="h-4 w-4 mr-2" />
+              <IconHistory className="h-4 w-4 mr-2" />
               {t('configPlanos.creditosIA.historicoAction')}
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => setResetConfirm({ open: true, empresaId: row.id, empresaNome: row.nome })}
               className="text-destructive focus:text-destructive"
             >
-              <RotateCcw className="h-4 w-4 mr-2" />
+              <IconUndo className="h-4 w-4 mr-2" />
               {t('configPlanos.creditosIA.resetAction')}
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -221,7 +220,7 @@ export function CreditosIAManager() {
         return (
           <div className="space-y-1">
             <Badge variant="secondary">{aiFeatureLabel(value, locale)}</Badge>
-            {modulo && <div className="text-[11px] text-muted-foreground">{modulo}</div>}
+            {modulo && <div className="text-micro text-muted-foreground">{modulo}</div>}
           </div>
         );
       }
@@ -245,31 +244,17 @@ export function CreditosIAManager() {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <StatCard
-          title={t('configPlanos.creditosIA.statTotalEmpresas')}
-          value={empresas.length}
-          description={t('configPlanos.creditosIA.statTotalEmpresasDesc')}
-          icon={<Building2 className="h-4 w-4" />}
-        />
-        <StatCard
-          title={t('configPlanos.creditosIA.statCreditosConsumidos')}
-          value={totalConsumo}
-          description={t('configPlanos.creditosIA.statCreditosConsumidosDesc')}
-          icon={<AkurisAIIcon className="h-4 w-4" />}
-        />
-        <StatCard
-          title={t('configPlanos.creditosIA.statMaiorConsumo')}
-          value={empresaMaisConsumo?.creditos_consumidos || 0}
-          description={empresaMaisConsumo?.nome || '-'}
-          icon={<TrendingUp className="h-4 w-4" />}
-        />
-      </div>
+      <StatStrip
+        items={[
+          { key: 'empresas', label: t('configPlanos.creditosIA.statTotalEmpresas'), value: empresas.length, icon: IconOrg, hint: t('configPlanos.creditosIA.statTotalEmpresasDesc') },
+          { key: 'consumo', label: t('configPlanos.creditosIA.statCreditosConsumidos'), value: totalConsumo, icon: IconBolt, hint: t('configPlanos.creditosIA.statCreditosConsumidosDesc') },
+          { key: 'maiorConsumo', label: t('configPlanos.creditosIA.statMaiorConsumo'), value: empresaMaisConsumo?.creditos_consumidos || 0, icon: IconTrendUp, hint: empresaMaisConsumo?.nome || '-' },
+        ]}
+      />
 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <AkurisAIIcon className="h-5 w-5" />
             {t('configPlanos.creditosIA.cardTitle')}
           </CardTitle>
         </CardHeader>
@@ -281,7 +266,7 @@ export function CreditosIAManager() {
             searchPlaceholder={t('configPlanos.creditosIA.searchPlaceholder')}
             paginated
             emptyState={{
-              icon: <AkurisAIIcon className="h-8 w-8" />,
+              icon: <IconHistory className="h-8 w-8" />,
               title: t('configPlanos.creditosIA.emptyTitle'),
               description: t('configPlanos.creditosIA.emptyDescription')
             }}
@@ -312,7 +297,7 @@ export function CreditosIAManager() {
               searchPlaceholder={t('configPlanos.creditosIA.historicoSearchPlaceholder')}
               paginated
               emptyState={{
-                icon: <History className="h-8 w-8" />,
+                icon: <IconHistory className="h-8 w-8" />,
                 title: t('configPlanos.creditosIA.historicoEmptyTitle'),
                 description: t('configPlanos.creditosIA.historicoEmptyDescription')
               }}

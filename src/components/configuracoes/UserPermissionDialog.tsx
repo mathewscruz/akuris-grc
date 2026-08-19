@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { IconInfo, IconPerson } from '@/components/icons';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -8,10 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { AlertCircle, UserCog } from 'lucide-react';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { exigirEscrita } from '@/lib/supabase-write';
 interface Module {
   id: string;
   name: string;
@@ -181,12 +182,12 @@ export const UserPermissionDialog: React.FC<Props> = ({
       const currentUser = (await supabase.auth.getUser()).data.user;
 
       // Update profile assignment
-      await supabase.from('profiles')
+      await exigirEscrita(supabase.from('profiles')
         .update({ permission_profile_id: selectedProfileId === 'none' ? null : selectedProfileId })
-        .eq('user_id', userId);
+        .eq('user_id', userId));
 
       // Delete existing permissions
-      await supabase.from('user_module_permissions').delete().eq('user_id', userId);
+      await exigirEscrita(supabase.from('user_module_permissions').delete().eq('user_id', userId));
 
       // Insert new permissions
       const toInsert = permissions
@@ -238,7 +239,7 @@ export const UserPermissionDialog: React.FC<Props> = ({
       open={open}
       onOpenChange={onOpenChange}
       title={t('configPerms.userDialog.title').replace('{name}', userName)}
-      icon={UserCog}
+      icon={IconPerson}
       size="lg"
       footer={footer}
       onSubmit={handleSave}
@@ -249,7 +250,7 @@ export const UserPermissionDialog: React.FC<Props> = ({
         </div>
       ) : (
         <div className="space-y-4">
-          <div>
+          <div className="space-y-2">
             <Label>{t('configPerms.userDialog.fieldProfile')}</Label>
             <Select value={selectedProfileId} onValueChange={handleProfileChange}>
               <SelectTrigger>
@@ -269,7 +270,7 @@ export const UserPermissionDialog: React.FC<Props> = ({
 
           {hasCustomizations && (
             <div className="flex items-center gap-2 p-2 bg-muted rounded-lg text-sm text-muted-foreground">
-              <AlertCircle className="h-4 w-4 shrink-0" />
+              <IconInfo className="h-4 w-4 shrink-0" />
               {t('configPerms.userDialog.customizationsWarning')}
             </div>
           )}
@@ -279,7 +280,7 @@ export const UserPermissionDialog: React.FC<Props> = ({
           <div className="border rounded-lg overflow-hidden">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b bg-muted/50">
+                <tr className="border-b bg-card">
                   <th className="text-left px-3 py-2 font-medium">{t('configPerms.userDialog.colModule')}</th>
                   {PERM_KEYS.map(k => (
                     <th key={k} className="text-center px-2 py-2 font-medium">{PERM_LABELS[k]}</th>
@@ -290,7 +291,7 @@ export const UserPermissionDialog: React.FC<Props> = ({
                 {modules.map(module => {
                   const perm = getPerm(module.id);
                   return (
-                    <tr key={module.id} className="border-b last:border-0 hover:bg-muted/30">
+                    <tr key={module.id} className="border-b last:border-0 hover:bg-accent">
                       <td className="px-3 py-2 font-medium">{module.display_name}</td>
                       {PERM_KEYS.map(key => (
                         <td key={key} className="text-center px-2 py-2">
@@ -301,7 +302,7 @@ export const UserPermissionDialog: React.FC<Props> = ({
                               className="scale-75"
                             />
                             {isCustomized(module.id, key) && (
-                              <Badge variant="outline" className="text-[10px] px-1 py-0 text-primary">
+                              <Badge variant="outline" className="text-micro px-1 py-0 text-primary">
                                 ✎
                               </Badge>
                             )}

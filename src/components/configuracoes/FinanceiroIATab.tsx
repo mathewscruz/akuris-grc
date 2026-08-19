@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { StatCard } from '@/components/ui/stat-card';
+import { StatStrip } from '@/components/ui/stat-strip';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DataTable } from '@/components/ui/data-table';
@@ -9,13 +9,12 @@ import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { DollarSign, TrendingUp, TrendingDown, BarChart3, Building2, AlertTriangle, Cpu } from 'lucide-react';
-import { AkurisAIIcon } from '@/components/icons';
+import { IconWarning, IconMoney, IconTrendUp, IconTrendDown, IconChart, IconOrg, IconChip } from '@/components/icons';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
-import { CHART_SERIES, CHART_GRID, CHART_AXIS } from '@/lib/chart-tokens';
+import { CHART_SERIES, CHART_GRID, CHART_AXIS, CHART_FONT } from '@/lib/chart-tokens';
 // --- Catálogo único de funcionalidades/modelos de IA (src/lib/ai-usage-catalog.ts) ---
 import {
   AI_MODELS,
@@ -32,7 +31,6 @@ const MODEL_PRICING = AI_MODELS;
 function getModelForFunc(funcionalidade: string): AiModelId | null {
   return resolveAiFeature(funcionalidade)?.model ?? null;
 }
-
 
 // --- Interfaces ---
 
@@ -287,7 +285,7 @@ export function FinanceiroIATab() {
     { key: 'custo_estimado', label: t('configPlanos.financeiroIA.colCustoEst'), sortable: true, render: (v: number) => `R$ ${v.toFixed(2)}` },
     {
       key: 'margem', label: t('configPlanos.financeiroIA.colMargem'), sortable: true, render: (v: number, row: EmpresaFinanceiro) => (
-        <span className={v < 0 ? 'text-destructive font-semibold' : 'text-emerald-600 dark:text-emerald-400 font-semibold'}>
+        <span className={v < 0 ? 'text-destructive font-semibold' : 'text-success dark:text-success font-semibold'}>
           R$ {v.toFixed(2)} ({row.margem_percent.toFixed(0)}%)
         </span>
       )
@@ -304,7 +302,7 @@ export function FinanceiroIATab() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Cpu className="h-5 w-5" />
+            <IconChip className="h-5 w-5" />
             {t('configPlanos.financeiroIA.modelosTitle')}
           </CardTitle>
         </CardHeader>
@@ -332,7 +330,7 @@ export function FinanceiroIATab() {
                       <td className="py-2 font-medium">
                         {info.label}
                         {info.fallbackOnly && (
-                          <span className="ml-2 text-[10px] uppercase tracking-wide text-muted-foreground">fallback</span>
+                          <span className="ml-2 text-xs text-muted-foreground">fallback</span>
                         )}
                       </td>
                       <td className="py-2">
@@ -346,7 +344,7 @@ export function FinanceiroIATab() {
                           {feats.length === 0 ? (
                             <span className="text-xs text-muted-foreground">—</span>
                           ) : feats.map(f => (
-                            <Badge key={f.key} variant="secondary" className="text-[10px]">
+                            <Badge key={f.key} variant="secondary" className="text-micro">
                               {aiFeatureLabel(f.key, locale)}
                             </Badge>
                           ))}
@@ -398,7 +396,7 @@ export function FinanceiroIATab() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5" />
+            <IconChart className="h-5 w-5" />
             {t('configPlanos.financeiroIA.funcionalidadesTitle')}
           </CardTitle>
         </CardHeader>
@@ -422,7 +420,7 @@ export function FinanceiroIATab() {
                       <td className="py-2">
                         <span className="font-medium">{f.label}</span>
                         {!f.mapped && (
-                          <span className="ml-2 text-[10px] text-muted-foreground">
+                          <span className="ml-2 text-micro text-muted-foreground">
                             {t('configPlanos.financeiroIA.funcionalidadeNaoMapeada')}
                           </span>
                         )}
@@ -443,38 +441,20 @@ export function FinanceiroIATab() {
 
       {/* KPIs */}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          title={t('configPlanos.financeiroIA.statReceitaTotal')}
-          value={`R$ ${totals.receita.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
-          description={t('configPlanos.financeiroIA.statReceitaTotalDesc', { count: empresas.filter(e => e.receita_mensal > 0).length })}
-          icon={<DollarSign className="h-4 w-4" />}
-        />
-        <StatCard
-          title={t('configPlanos.financeiroIA.statCustoEstimado')}
-          value={`R$ ${totals.custo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
-          description={t('configPlanos.financeiroIA.statCustoEstimadoDesc', { reqs: totals.totalReqs, media: avgCostPerReq.toFixed(3) })}
-          icon={<AkurisAIIcon className="h-4 w-4" />}
-        />
-        <StatCard
-          title={t('configPlanos.financeiroIA.statMargemBruta')}
-          value={`R$ ${totals.margem.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
-          description={t('configPlanos.financeiroIA.statMargemBrutaDesc', { percent: totals.margemPct.toFixed(1) })}
-          icon={totals.margem >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
-        />
-        <StatCard
-          title={t('configPlanos.financeiroIA.statEmpresasDeficit')}
-          value={totals.deficitarios}
-          description={totals.deficitarios > 0 ? t('configPlanos.financeiroIA.statEmpresasDeficitAtencao') : t('configPlanos.financeiroIA.statEmpresasDeficitOk')}
-          icon={<AlertTriangle className="h-4 w-4" />}
-        />
-      </div>
+      <StatStrip
+        items={[
+          { key: 'receita', label: t('configPlanos.financeiroIA.statReceitaTotal'), value: `R$ ${totals.receita.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: IconMoney, hint: t('configPlanos.financeiroIA.statReceitaTotalDesc', { count: empresas.filter(e => e.receita_mensal > 0).length }) },
+          { key: 'custo', label: t('configPlanos.financeiroIA.statCustoEstimado'), value: `R$ ${totals.custo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: IconChip, hint: t('configPlanos.financeiroIA.statCustoEstimadoDesc', { reqs: totals.totalReqs, media: avgCostPerReq.toFixed(3) }) },
+          { key: 'margem', label: t('configPlanos.financeiroIA.statMargemBruta'), value: `R$ ${totals.margem.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: totals.margem >= 0 ? IconTrendUp : IconTrendDown, hint: t('configPlanos.financeiroIA.statMargemBrutaDesc', { percent: totals.margemPct.toFixed(1) }) },
+          { key: 'deficit', label: t('configPlanos.financeiroIA.statEmpresasDeficit'), value: totals.deficitarios, icon: IconWarning, tone: 'destructive', hint: totals.deficitarios > 0 ? t('configPlanos.financeiroIA.statEmpresasDeficitAtencao') : t('configPlanos.financeiroIA.statEmpresasDeficitOk') },
+        ]}
+      />
 
       {/* Tabela rentabilidade */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Building2 className="h-5 w-5" />
+            <IconOrg className="h-5 w-5" />
             {t('configPlanos.financeiroIA.rentabilidadeTitle')}
           </CardTitle>
         </CardHeader>
@@ -486,7 +466,7 @@ export function FinanceiroIATab() {
             searchPlaceholder={t('configPlanos.financeiroIA.searchPlaceholder')}
             paginated
             emptyState={{
-              icon: <Building2 className="h-8 w-8" />,
+              icon: <IconOrg className="h-8 w-8" />,
               title: t('configPlanos.financeiroIA.emptyTitle'),
               description: t('configPlanos.financeiroIA.emptyDescription'),
             }}
@@ -499,7 +479,7 @@ export function FinanceiroIATab() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5" />
+              <IconChart className="h-5 w-5" />
               {t('configPlanos.financeiroIA.chartTitle')}
             </CardTitle>
           </CardHeader>
@@ -508,13 +488,13 @@ export function FinanceiroIATab() {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={modelStats.filter(m => m.reqs > 0)} layout="vertical" margin={{ left: 20, right: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} />
-                  <XAxis type="number" stroke={CHART_AXIS} tick={{ fontSize: 12, fill: CHART_AXIS }} />
+                  <XAxis type="number" stroke={CHART_AXIS} tick={{ fontSize: CHART_FONT.label, fill: CHART_AXIS }} />
                   <YAxis
                     dataKey="label"
                     type="category"
                     width={160}
                     className="text-xs fill-muted-foreground"
-                    tick={{ fontSize: 11 }}
+                    tick={{ fontSize: CHART_FONT.axis }}
                   />
                   <Tooltip
                     contentStyle={{ borderRadius: '8px', border: '1px solid hsl(var(--border))' }}
@@ -539,13 +519,12 @@ export function FinanceiroIATab() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <AkurisAIIcon className="h-5 w-5" />
             {t('configPlanos.financeiroIA.analiseTitle')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <Button onClick={handleAIAnalysis} disabled={aiLoading || loading}>
-            {aiLoading ? <AkurisPulse size={16} className="mr-2" /> : <AkurisAIIcon className="h-4 w-4 mr-2" />}
+            {aiLoading && <AkurisPulse size={16} className="mr-2" />}
             {aiLoading ? t('configPlanos.financeiroIA.analisando') : t('configPlanos.financeiroIA.gerarAnalise')}
           </Button>
 

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { IconUpload, IconOrg } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,7 +7,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Upload, Building2 } from 'lucide-react';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 export function CompanyLogoUpload() {
@@ -130,7 +130,7 @@ export function CompanyLogoUpload() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Building2 className="h-5 w-5" />
+          <IconOrg className="h-5 w-5" />
           {t('configGeral.logoUpload.title')}
         </CardTitle>
         <CardDescription>
@@ -161,7 +161,7 @@ export function CompanyLogoUpload() {
               </div>
             ) : (
               <div className="h-20 w-20 rounded-lg border-2 border-dashed border-border bg-muted flex items-center justify-center">
-                <Building2 className="h-8 w-8 text-muted-foreground" />
+                <IconOrg className="h-8 w-8 text-muted-foreground" />
               </div>
             )}
           </div>
@@ -183,7 +183,7 @@ export function CompanyLogoUpload() {
               />
               <Button variant="outline" disabled={uploading} asChild>
                 <span className="flex items-center gap-2">
-                  <Upload className="h-4 w-4" />
+                  <IconUpload className="h-4 w-4" />
                   {uploading ? t('configGeral.logoUpload.uploading') : t('configGeral.logoUpload.changeButton')}
                 </span>
               </Button>

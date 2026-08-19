@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { IconAdd, IconEdit, IconDelete, IconMore, IconTime, IconUserCheck, IconPerson, IconShield, IconMail, IconUsers, IconShieldCheck, IconKey, IconCopy } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -13,15 +14,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Plus, Edit, Trash2, UserCheck, User, Clock, MoreHorizontal, Shield, Mail, Users, ShieldCheck, Key, Copy } from 'lucide-react';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { PermissionMatrix } from './PermissionMatrix';
 import { DataTable, Column, Filter } from '@/components/ui/data-table';
-import { StatCard } from '@/components/ui/stat-card';
-import { formatDateOnly, formatDateTime } from '@/lib/date-utils';
-
+import { StatStrip } from '@/components/ui/stat-strip';
+import { dateFnsLocale, formatDateOnly, formatDateTime } from '@/lib/date-utils';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -120,6 +118,8 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [usuarioToDelete, setUsuarioToDelete] = useState<Usuario | null>(null);
   const [usersAccessInfo, setUsersAccessInfo] = useState<Map<string, UserAccessInfo>>(new Map());
+  /** A consulta de último acesso falhou: não sabemos, e não vamos fingir que sabemos. */
+  const [acessoIndisponivel, setAcessoIndisponivel] = useState(false);
   const [showPermissionMatrix, setShowPermissionMatrix] = useState(false);
   const [selectedUserForPermissions, setSelectedUserForPermissions] = useState<string | undefined>();
   const [restoringPermissions, setRestoringPermissions] = useState(false);
@@ -192,9 +192,18 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
     }
   };
 
+  /**
+   * O último acesso vive no `auth.users`, fora do alcance da RLS, e só a edge
+   * function o alcança. Quando ela falha, o mapa fica vazio — e um mapa vazio
+   * é indistinguível de "ninguém entrou ainda". Era exatamente isso que a tela
+   * afirmava: `0 Usuários Ativos` e "Nunca acessou" em todas as linhas, ao lado
+   * de uma coluna Status onde todos apareciam como Ativo. Um erro de rede
+   * passava por diagnóstico. Agora a ausência de dado diz que é ausência.
+   */
   const fetchUsersAccessInfo = async (userIds: string[]) => {
     if (!userIds || userIds.length === 0) {
       setUsersAccessInfo(new Map());
+      setAcessoIndisponivel(false);
       return;
     }
 
@@ -202,17 +211,20 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
       const { data, error } = await supabase.functions.invoke('get-user-access-info', {
         body: { user_ids: userIds }
       });
-      
+
       if (error) throw error;
-      
+
       const accessMap = new Map<string, UserAccessInfo>();
       const users = data?.users || [];
       users.forEach((info: UserAccessInfo) => {
         accessMap.set(info.user_id, info);
       });
       setUsersAccessInfo(accessMap);
+      setAcessoIndisponivel(false);
     } catch (error) {
-      console.error('Erro ao buscar informações de acesso:', error);
+      setUsersAccessInfo(new Map());
+      setAcessoIndisponivel(true);
+      toast.error(t('admin.usuarios.acessoIndisponivelToast'));
     }
   };
 
@@ -299,7 +311,6 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [permissionProfiles]);
-
 
   useEffect(() => {
     if (usuarios.length > 0) {
@@ -399,7 +410,6 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
         toast.success(t('admin.usuarios.toastUserCreated'));
       }
 
-
       await fetchUsuarios();
       setDialogOpen(false);
       form.reset();
@@ -462,12 +472,21 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
       });
 
       if (deleteError) {
-        const { error: profileDeleteError } = await supabase
+        // `.select()` para saber o que foi de facto apagado: um DELETE barrado
+        // pela RLS não devolve erro nenhum, devolve zero linhas. Sem isto, um
+        // admin a tentar remover outro admin — caso que a policy proíbe — via
+        // "Usuário removido do sistema" e acreditava que o desligamento estava
+        // feito, enquanto o acesso continuava ativo.
+        const { data: apagados, error: profileDeleteError } = await supabase
           .from('profiles')
           .delete()
-          .eq('id', usuarioToDelete.id);
+          .eq('id', usuarioToDelete.id)
+          .select('id');
 
         if (profileDeleteError) throw profileDeleteError;
+        if (!apagados || apagados.length === 0) {
+          throw new Error(t('admin.usuarios.toastDeleteBlocked'));
+        }
         toast.success(t('admin.usuarios.toastUserRemoved'));
       } else {
         toast.success(t('admin.usuarios.toastUserDeletedFully'));
@@ -605,8 +624,8 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
               className="w-8 h-8 rounded-full object-cover"
             />
           ) : (
-            <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-              <User className="h-4 w-4 text-primary" />
+            <div className="w-8 h-8 flex items-center justify-center">
+              <IconPerson className="h-4 w-4 text-primary" />
             </div>
           )}
           <div>
@@ -630,7 +649,7 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
         const profileName = usuario.permission_profiles?.name;
         return profileName ? (
           <Badge variant="outline" className="whitespace-nowrap">
-            <Shield className="h-3 w-3 mr-1" />
+            <IconShield className="h-3 w-3 mr-1" />
             {profileName}
           </Badge>
         ) : (
@@ -660,19 +679,23 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
       sortable: false,
       render: (_, usuario) => {
         const accessInfo = usersAccessInfo.get(usuario.user_id);
-        
+
+        if (acessoIndisponivel) {
+          return <span className="text-sm text-muted-foreground">{t('admin.usuarios.acessoIndisponivel')}</span>;
+        }
+
         if (accessInfo?.last_sign_in_at) {
           return (
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="flex items-center gap-1 text-green-600">
-                    <UserCheck className="h-4 w-4" />
+                  <div className="flex items-center gap-1 text-success">
+                    <IconUserCheck className="h-4 w-4" />
                     <span className="text-sm">{formatDateTime(accessInfo.last_sign_in_at)}</span>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
-                  {t('admin.usuarios.ultimoAcesso', { data: format(new Date(accessInfo.last_sign_in_at), "dd 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: ptBR }) })}
+                  {t('admin.usuarios.ultimoAcesso', { data: format(new Date(accessInfo.last_sign_in_at), "dd 'de' MMMM 'de' yyyy 'às' HH:mm", { locale: dateFnsLocale() }) })}
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -682,7 +705,7 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
         if (accessInfo?.first_access_pending) {
           return (
             <Badge variant="warning" className="whitespace-nowrap">
-              <Clock className="h-3 w-3 mr-1" />
+              <IconTime className="h-3 w-3 mr-1" />
               {t('admin.usuarios.primeiroAcessoPendente')}
             </Badge>
           );
@@ -707,16 +730,16 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="h-8 w-8 p-0">
-              <MoreHorizontal className="h-4 w-4" />
+              <IconMore className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => handleEdit(usuario)}>
-              <Edit className="h-4 w-4 mr-2" />
+              <IconEdit className="h-4 w-4 mr-2" />
               {t('admin.usuarios.actionEditar')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => handleManagePermissions(usuario.user_id)}>
-              <Shield className="h-4 w-4 mr-2" />
+              <IconShield className="h-4 w-4 mr-2" />
               {t('admin.usuarios.actionGerenciarPermissoes')}
             </DropdownMenuItem>
             <DropdownMenuItem 
@@ -726,7 +749,7 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
               {actionLoading[`reset-${usuario.id}`] ? (
                 <AkurisPulse size={16} className="mr-2" />
               ) : (
-                <Key className="h-4 w-4 mr-2" />
+                <IconKey className="h-4 w-4 mr-2" />
               )}
               {t('admin.usuarios.actionResetarSenha')}
             </DropdownMenuItem>
@@ -738,7 +761,7 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
                 {actionLoading[`resend-${usuario.id}`] ? (
                   <AkurisPulse size={16} className="mr-2" />
                 ) : (
-                  <Mail className="h-4 w-4 mr-2" />
+                  <IconMail className="h-4 w-4 mr-2" />
                 )}
                 {t('admin.usuarios.actionReenviarConvite')}
               </DropdownMenuItem>
@@ -760,7 +783,7 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
                   }
                 }}
               >
-                <Copy className="h-4 w-4 mr-2" />
+                <IconCopy className="h-4 w-4 mr-2" />
                 {t('admin.usuarios.actionCopiarLinkConvite')}
               </DropdownMenuItem>
             )}
@@ -769,7 +792,7 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
               className="text-destructive"
               onClick={() => openDeleteDialog(usuario)}
             >
-              <Trash2 className="h-4 w-4 mr-2" />
+              <IconDelete className="h-4 w-4 mr-2" />
               {t('admin.usuarios.actionExcluir')}
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -807,34 +830,14 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
   return (
     <div className="space-y-6">
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <StatCard
-          title={t('admin.usuarios.statTotalTitle')}
-          value={stats.total}
-          icon={<Users className="h-5 w-5" />}
-          variant="default"
-        />
-        <StatCard
-          title={t('admin.usuarios.statActiveTitle')}
-          value={stats.active}
-          icon={<UserCheck className="h-5 w-5" />}
-          variant="default"
-          description={t('admin.usuarios.statActiveDesc')}
-        />
-        <StatCard
-          title={t('admin.usuarios.statPendingTitle')}
-          value={stats.pending}
-          icon={<Clock className="h-5 w-5" />}
-          variant={stats.pending > 0 ? 'warning' : 'default'}
-          description={t('admin.usuarios.statPendingDesc')}
-        />
-        <StatCard
-          title={t('admin.usuarios.statAdminsTitle')}
-          value={stats.admins}
-          icon={<ShieldCheck className="h-5 w-5" />}
-          variant="default"
-        />
-      </div>
+      <StatStrip
+        items={[
+          { key: 'total', label: t('admin.usuarios.statTotalTitle'), value: stats.total, icon: IconUsers },
+          { key: 'ativos', label: t('admin.usuarios.statActiveTitle'), value: acessoIndisponivel ? '—' : stats.active, icon: IconUserCheck, hint: acessoIndisponivel ? t('admin.usuarios.acessoIndisponivel') : t('admin.usuarios.statActiveDesc') },
+          { key: 'pendentes', label: t('admin.usuarios.statPendingTitle'), value: acessoIndisponivel ? '—' : stats.pending, icon: IconTime, tone: 'warning', hint: acessoIndisponivel ? t('admin.usuarios.acessoIndisponivel') : t('admin.usuarios.statPendingDesc') },
+          { key: 'admins', label: t('admin.usuarios.statAdminsTitle'), value: stats.admins, icon: IconShieldCheck },
+        ]}
+      />
 
       {/* Actions */}
       <div className="flex flex-wrap gap-3 justify-end">
@@ -849,7 +852,7 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
                 {restoringPermissions ? (
                   <AkurisPulse size={16} className="mr-2" />
                 ) : (
-                  <Shield className="h-4 w-4 mr-2" />
+                  <IconShield className="h-4 w-4 mr-2" />
                 )}
                 {t('admin.usuarios.restorePermissionsButton')}
               </Button>
@@ -861,14 +864,14 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
         </TooltipProvider>
         
         <Button variant="outline" onClick={() => handleManagePermissions()}>
-          <Shield className="h-4 w-4 mr-2" />
+          <IconShield className="h-4 w-4 mr-2" />
           {t('admin.usuarios.managePermissionsButton')}
         </Button>
         
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button>
-              <Plus className="h-4 w-4 mr-2" />
+              <IconAdd className="h-4 w-4 mr-2" />
               {t('admin.usuarios.newUserButton')}
             </Button>
           </DialogTrigger>
@@ -1027,7 +1030,7 @@ const GerenciamentoUsuariosEnhanced = ({ userRole }: Props) => {
         onRefresh={fetchUsuarios}
         paginated
         emptyState={{
-          icon: <Users className="h-12 w-12" />,
+          icon: <IconUsers className="h-12 w-12" />,
           title: t('admin.usuarios.emptyTitle'),
           description: searchTerm ? t('admin.usuarios.emptyDescriptionFiltered') : t('admin.usuarios.emptyDescriptionEmpty'),
         }}

@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { IconSearch, IconShield, IconUsers } from '@/components/icons';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { Shield, Search, Users } from 'lucide-react';
 import { UserPermissionDialog } from './UserPermissionDialog';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
@@ -108,7 +108,7 @@ export const UserPermissionsList: React.FC<Props> = ({ empresaId, selectedUserId
   return (
     <div className="space-y-4">
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder={t('configPerms.usersList.searchPlaceholder')}
           value={searchTerm}
@@ -119,13 +119,13 @@ export const UserPermissionsList: React.FC<Props> = ({ empresaId, selectedUserId
 
       {filteredUsers.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
-          <Users className="h-12 w-12 mx-auto mb-3 opacity-50" />
+          <IconUsers className="h-12 w-12 mx-auto mb-3 opacity-50" />
           <p>{t('configPerms.usersList.emptyState')}</p>
         </div>
       ) : (
         <div className="border rounded-lg divide-y">
           {filteredUsers.map(user => (
-            <div key={user.user_id} className="flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors">
+            <div key={user.user_id} className="flex items-center justify-between px-4 py-3 hover:bg-accent transition-colors">
               <div className="flex-1 min-w-0">
                 <div className="font-medium truncate">{user.nome}</div>
                 <div className="text-sm text-muted-foreground truncate">{user.email}</div>
@@ -138,7 +138,7 @@ export const UserPermissionsList: React.FC<Props> = ({ empresaId, selectedUserId
 
                 {user.profile_name ? (
                   <Badge variant="secondary" className="text-xs">
-                    <Shield className="h-3 w-3 mr-1" />
+                    <IconShield className="h-3 w-3 mr-1" />
                     {user.profile_name}
                   </Badge>
                 ) : (

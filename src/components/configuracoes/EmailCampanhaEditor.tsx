@@ -15,6 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { IconClose, IconUpload, IconView, IconSend, IconSave, IconImage, IconMail } from '@/components/icons';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,8 +26,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Send, Save, ImageIcon, Upload, X, Eye, MailCheck } from 'lucide-react';
-import { AkurisAIIcon } from '@/components/icons';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
 import { EmailPreview } from './EmailPreview';
@@ -68,6 +67,19 @@ export function EmailCampanhaEditor({ open, onOpenChange, campanha, onSaved }: P
   const [activeUserCount, setActiveUserCount] = useState<number | null>(null);
   const [sending, setSending] = useState(false);
   const [sendingTest, setSendingTest] = useState(false);
+
+  /**
+   * Campanha já disparada não volta a ser rascunho.
+   *
+   * `persist` gravava `status: 'rascunho'` sempre, e os três botões do rodapé
+   * passam por ele — inclusive "Enviar para todos", que salva antes de abrir a
+   * confirmação. Abrir uma campanha "Enviado" e tocar em qualquer botão
+   * rebaixava o status, o cartão perdia o selo e as estatísticas de entrega, e
+   * a trava do backend ("Campanha já enviada ou em envio", que olha justamente
+   * o status) deixava de valer: o mesmo comunicado saía uma segunda vez para
+   * toda a base.
+   */
+  const somenteLeitura = !!campanha && campanha.status !== 'rascunho';
 
   useEffect(() => {
     if (open) {
@@ -150,6 +162,7 @@ export function EmailCampanhaEditor({ open, onOpenChange, campanha, onSaved }: P
 
   const persist = async (status: 'rascunho') => {
     if (!profile?.user_id) return null;
+    if (somenteLeitura) return id;
     if (!validate()) return null;
     setSaving(true);
     try {
@@ -272,9 +285,8 @@ export function EmailCampanhaEditor({ open, onOpenChange, campanha, onSaved }: P
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Coluna esquerda — formulário */}
             <div className="space-y-5">
-              <div className="rounded-lg border border-border bg-card/50 p-4 space-y-3">
+              <div className="rounded-lg border border-border bg-card p-4 space-y-3">
                 <div className="flex items-center gap-2 text-sm font-semibold">
-                  <AkurisAIIcon className="h-4 w-4 text-primary" />
                   {t('configGeral.emailCampanhaEditor.aiGenerateTitle')}
                   <AiCostHint className="ml-auto" action={t('configGeral.emailCampanhaEditor.aiGenerateActionLabel')} />
                 </div>
@@ -294,7 +306,7 @@ export function EmailCampanhaEditor({ open, onOpenChange, campanha, onSaved }: P
                     {t('configGeral.emailCampanhaEditor.checkboxSuggestSubject')}
                   </label>
                   <Button onClick={handleGenerate} disabled={generating} size="sm" className="ml-auto">
-                    {generating ? <AkurisPulse size={16} /> : <AkurisAIIcon className="h-4 w-4" />}
+                    {generating && <AkurisPulse size={16} />}
                     {t('configGeral.emailCampanhaEditor.generateButton')}
                   </Button>
                 </div>
@@ -323,16 +335,16 @@ export function EmailCampanhaEditor({ open, onOpenChange, campanha, onSaved }: P
                       className="absolute -top-2 -right-2 h-7 w-7"
                       onClick={() => setImagemUrl(null)}
                     >
-                      <X className="h-3.5 w-3.5" />
+                      <IconClose className="h-3.5 w-3.5" />
                     </Button>
                   </div>
                 ) : (
                   <div className="flex items-center gap-2">
                     <Label
                       htmlFor="upload-img"
-                      className="inline-flex items-center gap-2 cursor-pointer rounded-md border border-dashed border-border px-3 py-2 text-sm hover:bg-muted/50"
+                      className="inline-flex items-center gap-2 cursor-pointer rounded-md border border-dashed border-border px-3 py-2 text-sm hover:bg-accent"
                     >
-                      {uploading ? <AkurisPulse size={16} /> : <Upload className="h-4 w-4" />}
+                      {uploading ? <AkurisPulse size={16} /> : <IconUpload className="h-4 w-4" />}
                       {t('configGeral.emailCampanhaEditor.uploadManualLabel')}
                     </Label>
                     <Input id="upload-img" type="file" accept="image/*" onChange={handleUpload} className="hidden" disabled={uploading} />
@@ -360,7 +372,7 @@ export function EmailCampanhaEditor({ open, onOpenChange, campanha, onSaved }: P
             {/* Coluna direita — preview */}
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm font-semibold">
-                <Eye className="h-4 w-4 text-primary" />
+                <IconView className="h-4 w-4 text-primary" />
                 {t('configGeral.emailCampanhaEditor.previewLabel')}
               </div>
               <EmailPreview assunto={assunto} conteudoHtml={conteudoHtml} imagemUrl={imagemUrl} />
@@ -369,21 +381,21 @@ export function EmailCampanhaEditor({ open, onOpenChange, campanha, onSaved }: P
 
           <DialogFooter className="flex-wrap gap-2">
             <Button variant="ghost" onClick={() => onOpenChange(false)}>{t('configGeral.emailCampanhaEditor.cancelButton')}</Button>
-            <Button variant="outline" onClick={handleSaveDraft} disabled={saving || sending || sendingTest}>
-              {saving ? <AkurisPulse size={16} /> : <Save className="h-4 w-4" />}
+            <Button variant="outline" onClick={handleSaveDraft} disabled={somenteLeitura || saving || sending || sendingTest}>
+              {saving ? <AkurisPulse size={16} /> : <IconSave className="h-4 w-4" />}
               {t('configGeral.emailCampanhaEditor.saveDraftButton')}
             </Button>
             <Button
               variant="secondary"
               onClick={handleSendTest}
-              disabled={saving || sending || sendingTest}
+              disabled={somenteLeitura || saving || sending || sendingTest}
               title={profile?.email ? t('configGeral.emailCampanhaEditor.sendTestTitleWithEmail').replace('{email}', profile.email) : t('configGeral.emailCampanhaEditor.sendTestTitleDefault')}
             >
-              {sendingTest ? <AkurisPulse size={16} /> : <MailCheck className="h-4 w-4" />}
+              {sendingTest ? <AkurisPulse size={16} /> : <IconMail className="h-4 w-4" />}
               {t('configGeral.emailCampanhaEditor.sendTestButton')}
             </Button>
-            <Button onClick={openConfirmSend} disabled={saving || sending || sendingTest}>
-              <Send className="h-4 w-4" />
+            <Button onClick={openConfirmSend} disabled={somenteLeitura || saving || sending || sendingTest}>
+              <IconSend className="h-4 w-4" />
               {t('configGeral.emailCampanhaEditor.sendAllButton')}
             </Button>
           </DialogFooter>
@@ -403,7 +415,7 @@ export function EmailCampanhaEditor({ open, onOpenChange, campanha, onSaved }: P
           <AlertDialogFooter>
             <AlertDialogCancel disabled={sending}>{t('configGeral.emailCampanhaEditor.confirmSendCancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirmSend} disabled={sending || !activeUserCount}>
-              {sending ? <AkurisPulse size={16} /> : <Send className="h-4 w-4" />}
+              {sending ? <AkurisPulse size={16} /> : <IconSend className="h-4 w-4" />}
               {t('configGeral.emailCampanhaEditor.confirmSendAction')}
             </AlertDialogAction>
           </AlertDialogFooter>
