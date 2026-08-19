@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { formatStatus } from '@/lib/text-utils';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
@@ -81,8 +82,12 @@ export function useJurisdicao() {
         const estado = avaliarBaseLegal(codigo, valor, sensibilidade);
         return {
           estado,
+          // Uma base que a lei não conhece é sinalizada pelo `estado`, mas o
+          // TEXTO nunca sai cru: saía "obrigacao_legal" e "contrato" em
+          // minúscula com underscore, no meio de uma coluna de rótulos.
+          // `formatStatus` é o tradutor único de valores de domínio.
           label: valor
-            ? (estado === 'desconhecida' ? valor : t(`jurisdicao.basesLegais.${valor}`))
+            ? (estado === 'desconhecida' ? formatStatus(valor) : t(`jurisdicao.basesLegais.${valor}`))
             : '-',
         };
       },

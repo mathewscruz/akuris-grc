@@ -16,7 +16,15 @@ const ROOT = process.cwd();
 const MIGRATIONS_DIR = resolve(ROOT, 'supabase/migrations');
 
 /** Migration que criou a tabela — nunca deve ser editada retroativamente. */
-const MIGRATION_CRIACAO = '20250723112905-0cf88b81-9022-4116-8033-bd29104a2614.sql';
+/**
+ * Identificada pelo CARIMBO, não pelo nome completo.
+ *
+ * O nome mudou quando os 89 ficheiros gerados pelo Lovable passaram de
+ * `<carimbo>-uuid.sql` para `<carimbo>_uuid.sql` — o formato que o CLI exige
+ * para os ver. O carimbo é a identidade da migration e não muda; prender o
+ * teste ao nome completo fazia-o partir a cada renomeação.
+ */
+const CARIMBO_CRIACAO = '20250723112905';
 
 interface ForeignKey {
   file: string;
@@ -88,11 +96,14 @@ describe('documentos_aprovacoes — relacionamentos PostgREST (AKURIS QA-003)', 
   });
 
   it('cria as FKs em migration nova, sem editar a migration histórica', () => {
-    const criacao = readMigration(MIGRATION_CRIACAO);
+    const ficheiroCriacao = readdirSync(MIGRATIONS_DIR).find((f) => f.startsWith(CARIMBO_CRIACAO));
+    expect(ficheiroCriacao, `migration ${CARIMBO_CRIACAO} não encontrada`).toBeDefined();
+    const criacao = readMigration(ficheiroCriacao!);
     expect(criacao).not.toMatch(/FOREIGN KEY/i);
 
     for (const fk of fks) {
-      expect(fk.file > MIGRATION_CRIACAO).toBe(true);
+      // Comparação por carimbo: o nome completo mudou com a renomeação.
+      expect(fk.file.slice(0, 14) > CARIMBO_CRIACAO).toBe(true);
     }
 
     /**

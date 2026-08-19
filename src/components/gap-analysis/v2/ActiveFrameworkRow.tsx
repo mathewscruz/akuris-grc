@@ -7,10 +7,10 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { rowOpenProps, CARD_HOVER } from '@/lib/row-interaction';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { FwMono } from './FwMono';
+import { FrameworkBadge } from '@/components/frameworks/FrameworkBadge';
 import { StackBar, type StackSegment } from './StackBar';
 import { getMaturityLevel } from './MaturityScale';
-import { deriveFwMono, getFwCategory } from './fw-utils';
+import { getFwCategory } from './fw-utils';
 import { IconArrowRight } from '@/components/icons';
 
 interface ActiveFrameworkRowProps {
@@ -35,7 +35,6 @@ export function ActiveFrameworkRow({
   onClick,
 }: ActiveFrameworkRowProps) {
   const { t } = useLanguage();
-  const mono = deriveFwMono(nome);
   const cat = getFwCategory(tipo_framework);
   const FW_CATEGORY_LABEL: Record<string, string> = {
     seguranca: t('gapV2.fwCategory.seguranca'),
@@ -79,7 +78,7 @@ export function ActiveFrameworkRow({
       <div className="grid grid-cols-1 md:grid-cols-[auto_1.4fr_1.6fr_auto] gap-5 items-center">
         {/* Selo + identidade */}
         <div className="flex items-center gap-3 min-w-0">
-          <FwMono l1={mono.l1} l2={mono.l2} size="lg" />
+          <FrameworkBadge name={nome} tipo={tipo_framework} size="lg" />
           <div className="min-w-0">
             <div className="text-xs text-muted-foreground">
               {FW_CATEGORY_LABEL[cat]}

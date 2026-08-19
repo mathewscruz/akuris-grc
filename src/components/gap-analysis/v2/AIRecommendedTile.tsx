@@ -1,10 +1,10 @@
 /**
  * AIRecommendedTile — tile editorial de framework recomendado.
- * Mostra selo FwMono, nome, categoria, descrição e a ação de iniciar.
+ * Mostra o selo do framework, nome, categoria, descrição e a ação de iniciar.
  */
 import { useLanguage } from '@/contexts/LanguageContext';
-import { FwMono } from './FwMono';
-import { deriveFwMono, getFwCategory } from './fw-utils';
+import { FrameworkBadge } from '@/components/frameworks/FrameworkBadge';
+import { getFwCategory } from './fw-utils';
 import { IconArrowRight } from '@/components/icons';
 
 interface AIRecommendedTileProps {
@@ -29,7 +29,6 @@ export function AIRecommendedTile({
   onClick,
 }: AIRecommendedTileProps) {
   const { t } = useLanguage();
-  const mono = deriveFwMono(nome);
   const cat = getFwCategory(tipo_framework);
   const FW_CATEGORY_LABEL: Record<string, string> = {
     seguranca: t('gapV2.fwCategory.seguranca'),
@@ -45,7 +44,7 @@ export function AIRecommendedTile({
       className="group text-left relative overflow-hidden rounded-lg border border-border bg-card hover:border-primary/40 hover:shadow-elegant transition-ui duration-200 p-4 flex flex-col gap-3"
     >
       <div className="flex items-start gap-3">
-        <FwMono l1={mono.l1} l2={mono.l2} size="md" />
+        <FrameworkBadge name={nome} tipo={tipo_framework} size="md" />
         <div className="flex-1 min-w-0">
           <h3 className="font-semibold text-sm text-foreground group-hover:text-primary transition-colors truncate">
             {nome} <span className="text-xs font-normal text-muted-foreground">{versao}</span>
