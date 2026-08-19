@@ -3,6 +3,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { tGlobal } from "@/lib/i18n-global";
+import { exigirEscrita } from '@/lib/supabase-write';
 
 export const useReviewData = () => {
   const { profile } = useAuth();
@@ -58,10 +59,10 @@ export const useReviewData = () => {
         if (itemsError) throw itemsError;
 
         // Atualizar total de contas
-        await supabase
+        await exigirEscrita(supabase
           .from("access_reviews")
           .update({ total_contas: usuarios.length })
-          .eq("id", review.id);
+          .eq("id", review.id));
       }
 
       invalidateCache();

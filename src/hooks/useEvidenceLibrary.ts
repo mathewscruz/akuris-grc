@@ -19,6 +19,10 @@ export interface EvidenceLibraryItem {
   arquivo_hash: string | null;
   link_externo: string | null;
   origem_evaluation_id: string | null;
+  /** Data em que a prova deixa de servir. `null` = sem prazo definido. */
+  valido_ate: string | null;
+  /** De quantos em quantos meses a prova tem de ser refeita. */
+  periodicidade_meses: number | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -26,6 +30,23 @@ export interface EvidenceLibraryItem {
   total_links?: number;
   /** computado: total de sugestões IA pendentes */
   total_sugestoes?: number;
+}
+
+/** Estado de validade de uma evidência, para a interface. */
+export type EstadoValidade = 'sem_prazo' | 'vigente' | 'a_vencer' | 'vencida';
+
+/** Uma prova a menos de 30 dias do fim já precisa de ser reagendada. */
+export const DIAS_PARA_ALERTA = 30;
+
+export function estadoDaValidade(validoAte: string | null | undefined): {
+  estado: EstadoValidade;
+  dias: number | null;
+} {
+  if (!validoAte) return { estado: 'sem_prazo', dias: null };
+  const dias = Math.ceil((new Date(validoAte + 'T00:00:00').getTime() - Date.now()) / 86400000);
+  if (dias < 0) return { estado: 'vencida', dias };
+  if (dias <= DIAS_PARA_ALERTA) return { estado: 'a_vencer', dias };
+  return { estado: 'vigente', dias };
 }
 
 export interface EvidenceLibraryLink {
@@ -315,12 +336,37 @@ export function useEvidenceLibrary(empresaId: string | null) {
     total: items.length,
     com_links: items.filter((i) => (i.total_links || 0) > 0).length,
     com_sugestoes: items.filter((i) => (i.total_sugestoes || 0) > 0).length,
+    // Prova caducada é prova que não comprova. Sem estes dois números, um
+    // requisito continua verde com um relatório de pentest de 2024 anexado.
+    vencidas: items.filter((i) => estadoDaValidade(i.valido_ate).estado === 'vencida').length,
+    a_vencer: items.filter((i) => estadoDaValidade(i.valido_ate).estado === 'a_vencer').length,
+    sem_prazo: items.filter((i) => !i.valido_ate).length,
   }), [items]);
+
+  /** Define ou limpa a validade de uma evidência. */
+  const definirValidade = useCallback(async (
+    evidenceId: string,
+    validoAte: string | null,
+    periodicidadeMeses: number | null,
+  ) => {
+    const { error } = await supabase
+      .from('evidence_library')
+      .update({ valido_ate: validoAte, periodicidade_meses: periodicidadeMeses })
+      .eq('id', evidenceId);
+    if (error) {
+      logger.error('Erro ao definir validade da evidência', { error: error.message, evidenceId });
+      toast.error(tGlobal('sweepRiscos.gap.evidenceHub.erroValidade'));
+      return false;
+    }
+    await fetchAll();
+    return true;
+  }, [fetchAll]);
 
   return {
     items,
     loading,
     stats,
+    definirValidade,
     fetchAll,
     uploadAndCreate,
     linkToEvaluation,

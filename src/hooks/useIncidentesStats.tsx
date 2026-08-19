@@ -28,7 +28,7 @@ export const useIncidentesStats = () => {
     queryFn: async (): Promise<IncidentesStats> => {
       const { data: incidentes, error } = await supabase
         .from('incidentes')
-        .select('status, criticidade, created_at')
+        .select('status, criticidade, created_at, data_deteccao')
         .eq('empresa_id', empresaId!);
 
       if (error) throw error;
@@ -37,7 +37,18 @@ export const useIncidentesStats = () => {
 
       const agora = new Date();
       const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1);
-      const mes = incidentes?.filter(i => new Date(i.created_at) >= inicioMes).length || 0;
+      // Conta por DETEÇÃO, não por criação do registo.
+      //
+      // Contava `created_at`, que é quando alguém digitou o incidente no
+      // sistema. Com três incidentes detetados em julho e agosto mas semeados
+      // todos no mesmo dia, o cartão dizia "Este Mês: 3" mesmo ao lado de uma
+      // tabela cuja coluna "Data Deteção" mostrava duas datas de julho.
+      //
+      // A pergunta que a equipa de segurança faz é quantos incidentes
+      // ACONTECERAM este mês; `created_at` mede atividade de digitação.
+      const mes = incidentes?.filter(
+        (i) => new Date(i.data_deteccao ?? i.created_at) >= inicioMes,
+      ).length || 0;
 
       return { ...base, mes };
     },

@@ -6,6 +6,8 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import {
   JURISDICAO_CONFIG,
   DIREITOS_TITULAR,
+  basesLegaisAplicaveis,
+  avaliarBaseLegal,
   inferirJurisdicao,
   setJurisdicaoAtual,
   type JurisdicaoCodigo,
@@ -60,6 +62,30 @@ export function useJurisdicao() {
       artigoTitular: t(config.artigoTitularKey),
       /** Nomes dos direitos do titular na jurisdição ativa. */
       direitos: DIREITOS_TITULAR[codigo].map((k) => ({ key: k, label: t(`jurisdicao.direitos.${k}`) })),
+      /**
+       * Bases legais que a lei aplicável admite para o grau de sensibilidade
+       * dado. Dado sensível tem lista própria e mais curta — é o que impede
+       * gravar "biometria com base em legítimo interesse".
+       */
+      basesLegais: (sensibilidade?: string | null) =>
+        basesLegaisAplicaveis(codigo, sensibilidade).map((k) => ({
+          key: k,
+          label: t(`jurisdicao.basesLegais.${k}`),
+        })),
+      /**
+       * Rótulo e licitude de uma base legal já gravada. Devolve o estado
+       * junto com o texto para que a tela possa marcar o que a lei não
+       * admite, em vez de o apresentar como se estivesse correto.
+       */
+      baseLegal: (valor?: string | null, sensibilidade?: string | null) => {
+        const estado = avaliarBaseLegal(codigo, valor, sensibilidade);
+        return {
+          estado,
+          label: valor
+            ? (estado === 'desconhecida' ? valor : t(`jurisdicao.basesLegais.${valor}`))
+            : '-',
+        };
+      },
       /** Rótulo da jurisdição para seletores. */
       label: t(`jurisdicao.opcoes.${codigo}`),
     }),

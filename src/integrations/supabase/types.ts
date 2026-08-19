@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       access_review_history: {
@@ -2149,7 +2174,15 @@ export type Database = {
           valor_anterior?: number | null
           valor_novo?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "contrato_aditivos_contrato_fk"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       contrato_documentos: {
         Row: {
@@ -2200,7 +2233,15 @@ export type Database = {
           uploaded_by?: string | null
           versao?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "contrato_documentos_contrato_fk"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       contrato_marcos: {
         Row: {
@@ -2251,7 +2292,15 @@ export type Database = {
           updated_at?: string
           valor?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "contrato_marcos_contrato_fk"
+            columns: ["contrato_id"]
+            isOneToOne: false
+            referencedRelation: "contratos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       contratos: {
         Row: {
@@ -2335,7 +2384,22 @@ export type Database = {
           updated_at?: string
           valor?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "contratos_empresa_fk"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contratos_fornecedor_fk"
+            columns: ["fornecedor_id"]
+            isOneToOne: false
+            referencedRelation: "fornecedores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       controles: {
         Row: {
@@ -3709,6 +3773,7 @@ export type Database = {
           arquivo_tipo: string | null
           arquivo_url: string | null
           arquivo_url_externa: string | null
+          categoria_id: string | null
           classificacao: string | null
           created_at: string
           created_by: string | null
@@ -3720,6 +3785,7 @@ export type Database = {
           is_current_version: boolean | null
           nome: string
           requer_aprovacao: boolean | null
+          responsavel_id: string | null
           status: string | null
           tags: string[] | null
           tipo: string
@@ -3733,6 +3799,7 @@ export type Database = {
           arquivo_tipo?: string | null
           arquivo_url?: string | null
           arquivo_url_externa?: string | null
+          categoria_id?: string | null
           classificacao?: string | null
           created_at?: string
           created_by?: string | null
@@ -3744,6 +3811,7 @@ export type Database = {
           is_current_version?: boolean | null
           nome: string
           requer_aprovacao?: boolean | null
+          responsavel_id?: string | null
           status?: string | null
           tags?: string[] | null
           tipo?: string
@@ -3757,6 +3825,7 @@ export type Database = {
           arquivo_tipo?: string | null
           arquivo_url?: string | null
           arquivo_url_externa?: string | null
+          categoria_id?: string | null
           classificacao?: string | null
           created_at?: string
           created_by?: string | null
@@ -3768,13 +3837,29 @@ export type Database = {
           is_current_version?: boolean | null
           nome?: string
           requer_aprovacao?: boolean | null
+          responsavel_id?: string | null
           status?: string | null
           tags?: string[] | null
           tipo?: string
           updated_at?: string
           versao?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "documentos_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "documentos_categorias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documentos_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       documentos_aprovacoes: {
         Row: {
@@ -3986,6 +4071,7 @@ export type Database = {
           data_inicio: string | null
           empresa_id: string
           fornecedor_email: string
+          fornecedor_id: string | null
           fornecedor_nome: string
           id: string
           link_token: string
@@ -4005,6 +4091,7 @@ export type Database = {
           data_inicio?: string | null
           empresa_id: string
           fornecedor_email: string
+          fornecedor_id?: string | null
           fornecedor_nome: string
           id?: string
           link_token: string
@@ -4024,6 +4111,7 @@ export type Database = {
           data_inicio?: string | null
           empresa_id?: string
           fornecedor_email?: string
+          fornecedor_id?: string | null
           fornecedor_nome?: string
           id?: string
           link_token?: string
@@ -4035,6 +4123,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "due_diligence_assessments_fornecedor_id_fkey"
+            columns: ["fornecedor_id"]
+            isOneToOne: false
+            referencedRelation: "fornecedores"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "due_diligence_assessments_template_id_fkey"
             columns: ["template_id"]
@@ -4550,6 +4645,7 @@ export type Database = {
           arquivo_tamanho: number | null
           arquivo_tipo: string | null
           arquivo_url: string | null
+          bucket: string
           created_at: string
           created_by: string | null
           descricao: string | null
@@ -4558,8 +4654,10 @@ export type Database = {
           link_externo: string | null
           nome: string
           origem_evaluation_id: string | null
+          periodicidade_meses: number | null
           tags: string[] | null
           updated_at: string
+          valido_ate: string | null
         }
         Insert: {
           arquivo_hash?: string | null
@@ -4567,6 +4665,7 @@ export type Database = {
           arquivo_tamanho?: number | null
           arquivo_tipo?: string | null
           arquivo_url?: string | null
+          bucket?: string
           created_at?: string
           created_by?: string | null
           descricao?: string | null
@@ -4575,8 +4674,10 @@ export type Database = {
           link_externo?: string | null
           nome: string
           origem_evaluation_id?: string | null
+          periodicidade_meses?: number | null
           tags?: string[] | null
           updated_at?: string
+          valido_ate?: string | null
         }
         Update: {
           arquivo_hash?: string | null
@@ -4584,6 +4685,7 @@ export type Database = {
           arquivo_tamanho?: number | null
           arquivo_tipo?: string | null
           arquivo_url?: string | null
+          bucket?: string
           created_at?: string
           created_by?: string | null
           descricao?: string | null
@@ -4592,8 +4694,10 @@ export type Database = {
           link_externo?: string | null
           nome?: string
           origem_evaluation_id?: string | null
+          periodicidade_meses?: number | null
           tags?: string[] | null
           updated_at?: string
+          valido_ate?: string | null
         }
         Relationships: [
           {
@@ -5083,7 +5187,6 @@ export type Database = {
           requirement_id: string
           responsavel_avaliacao: string | null
           responsible_area: string | null
-          status: string
           updated_at: string
         }
         Insert: {
@@ -5108,7 +5211,6 @@ export type Database = {
           requirement_id: string
           responsavel_avaliacao?: string | null
           responsible_area?: string | null
-          status?: string
           updated_at?: string
         }
         Update: {
@@ -5133,7 +5235,6 @@ export type Database = {
           requirement_id?: string
           responsavel_avaliacao?: string | null
           responsible_area?: string | null
-          status?: string
           updated_at?: string
         }
         Relationships: [
@@ -5253,6 +5354,102 @@ export type Database = {
           versao?: string | null
         }
         Relationships: []
+      }
+      gap_analysis_marcos: {
+        Row: {
+          concluido_em: string | null
+          created_at: string
+          created_by: string | null
+          data_alvo: string
+          empresa_id: string
+          framework_id: string
+          id: string
+          rotulo: string
+          score_alvo: number
+          updated_at: string
+        }
+        Insert: {
+          concluido_em?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_alvo: string
+          empresa_id: string
+          framework_id: string
+          id?: string
+          rotulo: string
+          score_alvo: number
+          updated_at?: string
+        }
+        Update: {
+          concluido_em?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_alvo?: string
+          empresa_id?: string
+          framework_id?: string
+          id?: string
+          rotulo?: string
+          score_alvo?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gap_analysis_marcos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gap_analysis_marcos_framework_id_fkey"
+            columns: ["framework_id"]
+            isOneToOne: false
+            referencedRelation: "gap_analysis_frameworks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gap_analysis_requirement_crosswalk: {
+        Row: {
+          created_at: string
+          id: string
+          observacao: string | null
+          relacao: string
+          requisito_a: string
+          requisito_b: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          observacao?: string | null
+          relacao?: string
+          requisito_a: string
+          requisito_b: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          observacao?: string | null
+          relacao?: string
+          requisito_a?: string
+          requisito_b?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gap_analysis_requirement_crosswalk_requisito_a_fkey"
+            columns: ["requisito_a"]
+            isOneToOne: false
+            referencedRelation: "gap_analysis_requirements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gap_analysis_requirement_crosswalk_requisito_b_fkey"
+            columns: ["requisito_b"]
+            isOneToOne: false
+            referencedRelation: "gap_analysis_requirements"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       gap_analysis_requirements: {
         Row: {
@@ -6306,7 +6503,7 @@ export type Database = {
           invitation_sent_at?: string | null
           nome: string
           permission_profile_id?: string | null
-          preferred_locale?: string
+          preferred_locale: string
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
           user_id: string
@@ -8115,6 +8312,57 @@ export type Database = {
           },
         ]
       }
+      ropa_bases_legais: {
+        Row: {
+          abrangencia: string | null
+          base_legal: string
+          created_at: string
+          empresa_id: string
+          id: string
+          justificativa: string | null
+          ordem: number
+          ropa_id: string
+          updated_at: string
+        }
+        Insert: {
+          abrangencia?: string | null
+          base_legal: string
+          created_at?: string
+          empresa_id: string
+          id?: string
+          justificativa?: string | null
+          ordem?: number
+          ropa_id: string
+          updated_at?: string
+        }
+        Update: {
+          abrangencia?: string | null
+          base_legal?: string
+          created_at?: string
+          empresa_id?: string
+          id?: string
+          justificativa?: string | null
+          ordem?: number
+          ropa_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ropa_bases_legais_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ropa_bases_legais_ropa_id_fkey"
+            columns: ["ropa_id"]
+            isOneToOne: false
+            referencedRelation: "ropa_registros"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ropa_dados_vinculados: {
         Row: {
           created_at: string
@@ -8974,6 +9222,17 @@ export type Database = {
         }
         Returns: string
       }
+      criar_notificacao: {
+        Args: {
+          p_link_to?: string
+          p_message: string
+          p_metadata?: Json
+          p_title: string
+          p_type?: string
+          p_user_id: string
+        }
+        Returns: string
+      }
       dados_pessoais_pertence_empresa: {
         Args: { dados_id: string }
         Returns: boolean
@@ -9006,6 +9265,36 @@ export type Database = {
           p_tracking_hash: string
         }
         Returns: string
+      }
+      gap_calcula_score_framework: {
+        Args: { p_empresa_id: string; p_framework_id: string }
+        Returns: {
+          avaliados: number
+          score: number
+          total_requisitos: number
+        }[]
+      }
+      gap_propostas_de_heranca: {
+        Args: { p_empresa_id: string; p_framework_alvo: string }
+        Returns: {
+          origem_codigo: string
+          origem_framework: string
+          origem_id: string
+          origem_status: string
+          relacao: string
+          requisito_codigo: string
+          requisito_id: string
+          requisito_titulo: string
+          status_proposto: string
+        }[]
+      }
+      gap_reuso_do_framework: {
+        Args: { p_empresa_id: string; p_framework_alvo: string }
+        Returns: {
+          com_equivalente: number
+          percentagem: number
+          requisitos: number
+        }[]
       }
       generate_temp_password: { Args: never; Returns: string }
       gerar_protocolo_denuncia: { Args: never; Returns: string }
@@ -9326,6 +9615,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       app_role: ["user", "admin", "super_admin"],
@@ -9356,3 +9648,4 @@ export const Constants = {
     },
   },
 } as const
+

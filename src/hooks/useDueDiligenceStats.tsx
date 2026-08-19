@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { logger } from '@/lib/logger';
+import { parseDataLocal } from '@/lib/date-utils';
 
 interface DueDiligenceStats {
   totalTemplates: number;
@@ -58,7 +59,7 @@ export const useDueDiligenceStats = () => {
 
         const hoje = new Date();
         const expired = assessments?.filter(a =>
-          a.data_expiracao && new Date(a.data_expiracao) < hoje &&
+          a.data_expiracao && parseDataLocal(a.data_expiracao) < hoje &&
           !['concluido', 'finalizado'].includes(a.status)
         ).length || 0;
 
@@ -73,7 +74,8 @@ export const useDueDiligenceStats = () => {
         ) || [];
 
         const averageScore = completedWithScores.length > 0
-          ? (completedWithScores.reduce((sum, a) => sum + (a.score_final || 0), 0) / completedWithScores.length) * 10
+          // Sem `* 10`: `score_final` já é percentagem.
+          ? (completedWithScores.reduce((sum, a) => sum + (a.score_final || 0), 0) / completedWithScores.length)
           : 0;
 
         return {

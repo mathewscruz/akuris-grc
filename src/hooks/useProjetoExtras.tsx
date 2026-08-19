@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { toast } from 'sonner';
 import { tGlobal } from '@/lib/i18n-global';
+import { exigirEscrita } from '@/lib/supabase-write';
 
 /* =========================================================
    SPRINTS
@@ -360,7 +361,7 @@ export function useAplicarTemplate() {
       // 2) Se template define colunas, remove default e cria as do template
       const colunasTpl = template.dados?.colunas ?? [];
       if (colunasTpl.length > 0) {
-        await supabase.from('projeto_colunas' as any).delete().eq('projeto_id', projetoId);
+        await exigirEscrita(supabase.from('projeto_colunas' as any).delete().eq('projeto_id', projetoId));
         const linhas = colunasTpl.map((c, i) => ({
           projeto_id: projetoId, nome: c.nome, ordem: c.ordem ?? i, is_concluido: c.is_concluido ?? false,
         }));

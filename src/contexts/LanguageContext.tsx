@@ -181,7 +181,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const t = useCallback((key: string, params?: Record<string, string | number>): string => {
-    const dict = dictionaries[locale] ?? dictionaries.pt;
+    const dict = dictionaries[locale] ?? dictionaries['pt-BR'];
     const keys = key.split('.');
     let result: any = dict;
     for (const k of keys) {
@@ -193,7 +193,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     return interpolate(result, params);
   }, [locale]);
 
-  const tList = useCallback((key: string): string[] => resolveList(dictionaries[locale] ?? dictionaries.pt, key), [locale]);
+  const tList = useCallback((key: string): string[] => resolveList(dictionaries[locale] ?? dictionaries['pt-BR'], key), [locale]);
 
   return (
     <LanguageContext.Provider value={{ locale, setLocale, t, tList }}>
@@ -205,11 +205,11 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 // Fallback seguro caso o contexto não esteja disponível (ex.: durante HMR ou
 // remontagem após hot reload). Evita tela branca e mantém a aplicação funcional.
 const fallbackContext: LanguageContextType = {
-  locale: (typeof window !== 'undefined' && (localStorage.getItem(STORAGE_KEY) as Locale)) || 'pt',
+  locale: (typeof window !== 'undefined' && (localStorage.getItem(STORAGE_KEY) as Locale)) || 'pt-BR',
   setLocale: () => {},
   t: (key: string, params?: Record<string, string | number>) => {
-    const loc: Locale = (typeof window !== 'undefined' && (localStorage.getItem(STORAGE_KEY) as Locale)) || 'pt';
-    const dict = dictionaries[loc] ?? dictionaries.pt;
+    const loc: Locale = (typeof window !== 'undefined' && (localStorage.getItem(STORAGE_KEY) as Locale)) || 'pt-BR';
+    const dict = dictionaries[loc] ?? dictionaries['pt-BR'];
     const keys = key.split('.');
     let result: any = dict;
     for (const k of keys) {
@@ -221,8 +221,8 @@ const fallbackContext: LanguageContextType = {
     return interpolate(result, params);
   },
   tList: (key: string) => {
-    const loc = (typeof window !== 'undefined' && (localStorage.getItem(STORAGE_KEY) as Locale)) || 'pt';
-    return resolveList(dictionaries[loc] ?? dictionaries.pt, key);
+    const loc = (typeof window !== 'undefined' && (localStorage.getItem(STORAGE_KEY) as Locale)) || 'pt-BR';
+    return resolveList(dictionaries[loc] ?? dictionaries['pt-BR'], key);
   },
 };
 

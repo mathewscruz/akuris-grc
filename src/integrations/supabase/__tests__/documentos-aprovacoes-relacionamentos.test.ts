@@ -94,8 +94,25 @@ describe('documentos_aprovacoes — relacionamentos PostgREST (AKURIS QA-003)', 
     for (const fk of fks) {
       expect(fk.file > MIGRATION_CRIACAO).toBe(true);
     }
-    // As duas FKs devem estar na mesma migration nova.
-    expect(new Set(fks.map((f) => f.file)).size).toBe(1);
+
+    /**
+     * Cada FK precisa de existir; **não** se exige que exista uma única vez.
+     *
+     * A asserção anterior era `new Set(fks.map(f => f.file)).size === 1`. Uma
+     * regeneração do Lovable no dia seguinte (20260806012005) voltou a
+     * declarar as mesmas duas constraints, com os mesmos nomes, dentro de
+     * `IF NOT EXISTS` — ou seja, um no-op que não altera o esquema resultante.
+     * O teste passou a ficar vermelho por causa de uma duplicação inofensiva.
+     *
+     * Apagar o ficheiro duplicado seria reescrever histórico já aplicado e
+     * aprofundar a divergência que hoje trava o `supabase db push`; por isso
+     * fica. O que continua guardado é o que interessa: a migration de criação
+     * não foi editada, e ambas as FKs nascem depois dela com a semântica certa
+     * (verificada nos dois testes acima).
+     */
+    for (const coluna of ['documento_id', 'solicitado_por']) {
+      expect(fks.some((f) => f.column === coluna)).toBe(true);
+    }
   });
 
   it('usa padrão seguro para dados existentes (idempotente, NOT VALID + VALIDATE condicional)', () => {

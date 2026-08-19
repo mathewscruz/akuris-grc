@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { differenceInDays } from "date-fns";
 import { useAuth } from "@/components/AuthProvider";
+import { parseDataLocal } from '@/lib/date-utils';
 
 interface LicencasStats {
   total: number;
@@ -33,12 +34,12 @@ export const useLicencasStats = () => {
       
       const vencidas = licencas?.filter(l => {
         if (!l.data_vencimento) return false;
-        return differenceInDays(new Date(l.data_vencimento), hoje) < 0;
+        return differenceInDays(parseDataLocal(l.data_vencimento), hoje) < 0;
       }).length || 0;
 
       const vencendo30dias = licencas?.filter(l => {
         if (!l.data_vencimento) return false;
-        const dias = differenceInDays(new Date(l.data_vencimento), hoje);
+        const dias = differenceInDays(parseDataLocal(l.data_vencimento), hoje);
         return dias >= 0 && dias <= 30;
       }).length || 0;
 

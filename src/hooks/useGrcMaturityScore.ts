@@ -18,9 +18,9 @@ export interface GrcMaturity {
 }
 
 const STATUS_COLOR: Record<MaturityStatus, string> = {
-  excellent: 'text-green-500',
+  excellent: 'text-success',
   good: 'text-primary',
-  warning: 'text-yellow-500',
+  warning: 'text-warning',
   critical: 'text-destructive',
   no_data: 'text-muted-foreground',
 };

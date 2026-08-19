@@ -4,7 +4,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { logger } from "@/lib/logger";
 import {
   contarRiscosPorSeveridade,
-  severidadeRiscoEfetiva,
+  severidadeRisco,
   isRiscoCritico,
   isRevisaoVencida,
   isRevisaoProxima,
@@ -25,8 +25,6 @@ export interface RiscosStats {
    * contador de alertas críticos, por isso o dashboard usa-a para não
    * apresentar duas definições de "crítico" no mesmo ecrã.
    */
-  criticosEfetivos: number;
-  altosEfetivos: number;
   tratamentos_pendentes: number;
   tratamentos_andamento: number;
   tratamentos_concluidos: number;
@@ -51,7 +49,7 @@ const SCORE_SEVERIDADE: Record<Severidade, number> = {
   baixo: 25,
   indefinido: 0,
 };
-const calcularScore = (r: any): number => SCORE_SEVERIDADE[severidadeRiscoEfetiva(r)];
+const calcularScore = (r: any): number => SCORE_SEVERIDADE[severidadeRisco(r)];
 
 export const useRiscosStats = () => {
   const { profile } = useAuth();
@@ -100,8 +98,6 @@ export const useRiscosStats = () => {
         altos: contagem.altos,
         medios: contagem.medios,
         baixos: contagem.baixos,
-        criticosEfetivos: (riscos || []).filter(r => severidadeRiscoEfetiva(r as any) === 'critico').length,
-        altosEfetivos: (riscos || []).filter(r => severidadeRiscoEfetiva(r as any) === 'alto').length,
         tratamentos_pendentes: 0,
         tratamentos_andamento: 0,
         tratamentos_concluidos: 0,

@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { differenceInDays } from "date-fns";
 import { useAuth } from "@/components/AuthProvider";
+import { parseDataLocal } from '@/lib/date-utils';
 
 interface ChavesStats {
   total: number;
@@ -33,12 +34,12 @@ export const useChavesStats = () => {
       
       const expiradas = chaves?.filter(c => {
         if (!c.data_proxima_rotacao) return false;
-        return differenceInDays(new Date(c.data_proxima_rotacao), hoje) < 0;
+        return differenceInDays(parseDataLocal(c.data_proxima_rotacao), hoje) < 0;
       }).length || 0;
 
       const rotacao30dias = chaves?.filter(c => {
         if (!c.data_proxima_rotacao) return false;
-        const dias = differenceInDays(new Date(c.data_proxima_rotacao), hoje);
+        const dias = differenceInDays(parseDataLocal(c.data_proxima_rotacao), hoje);
         return dias >= 0 && dias <= 30;
       }).length || 0;
 

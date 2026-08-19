@@ -42,6 +42,7 @@ function getRouteMap(t: (k: string) => string): Record<string, string> {
     '/gap-analysis/frameworks': t('sweepCore.breadcrumb.frameworks'),
     '/gap-analysis/avaliacao-aderencia': t('sweepCore.breadcrumb.avaliacaoAderencia'),
     '/governanca': t('p3Breadcrumbs.routes.governanca'),
+    '/governanca/controles': t('sweepCore.breadcrumb.controles'),
     '/governanca/auditorias': t('sweepCore.breadcrumb.auditorias'),
     '/sistemas': t('p3Breadcrumbs.routes.sistemas'),
     '/controles': t('sweepCore.breadcrumb.controles'),

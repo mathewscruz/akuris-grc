@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
+import { parseDataLocal } from '@/lib/date-utils';
 
 export interface ProjetoStats {
   totalProjetos: number;
@@ -38,7 +39,7 @@ export function useProjetoStats() {
 
       const now = new Date();
       const tarefasAtrasadas = tar.filter(
-        (t) => t.prazo && !t.concluida_em && new Date(t.prazo) < now
+        (t) => t.prazo && !t.concluida_em && parseDataLocal(t.prazo) < now
       ).length;
       const tarefasConcluidas = tar.filter((t) => t.concluida_em).length;
       const tarefasAbertas = tar.length - tarefasConcluidas;

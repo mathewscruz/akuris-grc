@@ -38,7 +38,7 @@ export function useFocusRow(options?: { onFound?: (id: string) => void }) {
 
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        el.classList.add('ring-2', 'ring-primary', 'ring-offset-2', 'bg-accent/40', 'transition-all', 'duration-300');
+        el.classList.add('ring-2', 'ring-primary', 'ring-offset-2', 'bg-accent/40', 'transition-ui', 'duration-200');
         window.setTimeout(() => {
           el.classList.remove('ring-2', 'ring-primary', 'ring-offset-2', 'bg-accent/40');
         }, 2500);

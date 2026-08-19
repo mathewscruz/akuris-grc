@@ -129,10 +129,34 @@ export function useFrameworkScore(frameworkId: string, config: FrameworkConfig, 
 
         if (evalError) throw evalError;
 
+        // Declaração de Aplicabilidade: o que a empresa excluiu do escopo, com
+        // justificativa registrada, não é lacuna. Antes só a própria aba do SoA
+        // respeitava isso — o score, a fila de prioridades e a remediação
+        // continuavam cobrando um requisito que a diretoria já tinha dispensado.
+        const { data: soaRows } = await supabase
+          .from('gap_analysis_soa')
+          .select('requirement_id, aplicavel')
+          .eq('framework_id', frameworkId)
+          .eq('empresa_id', empresaId);
+
+        const foraDoEscopo = new Set(
+          (soaRows || []).filter((s) => s.aplicavel === false).map((s) => s.requirement_id),
+        );
+
         // Criar mapa de avaliações
         const evalMap = new Map<string, Evaluation>();
         (evaluations || []).forEach((e: Evaluation) => {
           evalMap.set(e.requirement_id, e);
+        });
+
+        // Um requisito fora do escopo entra em toda a lógica abaixo como
+        // `nao_aplicavel`, que é o estado que ela já sabe descartar.
+        foraDoEscopo.forEach((requirementId) => {
+          const atual = evalMap.get(requirementId);
+          evalMap.set(requirementId, {
+            ...(atual ?? { requirement_id: requirementId }),
+            conformity_status: 'nao_aplicavel',
+          } as Evaluation);
         });
 
         // Agrupar requisitos por pilar

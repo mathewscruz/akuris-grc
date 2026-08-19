@@ -52,10 +52,12 @@ export const useReportsData = () => {
 
       if (error) throw error;
 
-      // Métricas gerais - converter score para escala 0-100%
+      // `score_final` já vem em 0-100: quem grava é calculate-assessment-score,
+      // que faz (média das notas 0-10 / peso) * 10. O comentário anterior dizia
+      // "converter para 0-100%" e multiplicava de novo — num relatório exportável.
       const totalAssessments = assessments?.length || 0;
       const averageScore = totalAssessments > 0 
-        ? (assessments.reduce((sum, a) => sum + (a.score_final || 0), 0) / totalAssessments) * 10
+        ? (assessments.reduce((sum, a) => sum + (a.score_final || 0), 0) / totalAssessments)
         : 0;
 
       // Fornecedores únicos
@@ -107,7 +109,7 @@ export const useReportsData = () => {
         if (!acc[name] || (a.score_final || 0) > acc[name].score) {
           acc[name] = {
             nome: name,
-            score: (a.score_final || 0) * 10,
+            score: (a.score_final || 0),
             categoria: a.templates?.categoria || 'N/A'
           };
         }

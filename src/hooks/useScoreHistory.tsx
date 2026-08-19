@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
+import { formatarDiaParaDB } from '@/lib/date-utils';
 
 export type ScoreHistoryPeriod = 'daily' | 'weekly' | 'monthly' | 'yearly';
 
@@ -81,12 +82,12 @@ const groupDataByPeriod = (data: any[], period: ScoreHistoryPeriod): ScoreHistor
 
     switch (period) {
       case 'daily':
-        key = date.toISOString().split('T')[0]; // YYYY-MM-DD
+        key = formatarDiaParaDB(date); // YYYY-MM-DD
         break;
       case 'weekly':
         const weekStart = new Date(date);
         weekStart.setDate(date.getDate() - date.getDay());
-        key = weekStart.toISOString().split('T')[0];
+        key = formatarDiaParaDB(weekStart);
         break;
       case 'monthly':
         key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
