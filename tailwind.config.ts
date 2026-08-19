@@ -22,6 +22,51 @@ export default {
         sans: ['DM Sans', 'system-ui', 'sans-serif'],
         display: ['DM Sans', 'system-ui', 'sans-serif'],
       },
+      transitionProperty: {
+        /**
+         * O que muda numa interação — e só isso. `transition-all` animava
+         * largura, altura e posição junto com a cor: era o "amolecimento"
+         * de tudo ao passar o rato, e punha o compositor a trabalhar à toa.
+         * Eram 73 usos.
+         */
+        ui: 'color, background-color, border-color, text-decoration-color, fill, stroke, box-shadow, transform, opacity',
+      },
+      fontSize: {
+        /**
+         * A escala inteira, e não só o pé dela.
+         *
+         * A primeira tentativa apertou micro/xs/sm e deixou base, lg, xl,
+         * 2xl e 4xl nos valores de fábrica do Tailwind. O resultado foi o
+         * pior dos dois mundos: o corpo do texto a 13px debaixo de títulos
+         * a 24px e de um número a 36px. O salto de 13 para 24 é de 1,85× —
+         * é isso que se lê como "grosso", não o tamanho de cada peça.
+         *
+         * Agora o degrau é de ~1,15 do princípio ao fim, e a escala está em
+         * `rem`, portanto acompanha a raiz — que por sua vez acompanha a
+         * resolução (ver o `html { font-size: clamp(...) }` em `index.css`).
+         * Os números abaixo são o que se vê num ecrã de 1440:
+         *
+         *   micro 10,5 · xs 11,4 · sm 12,4 · base 13,3 · lg 15,2 · xl 17,1
+         *   · 2xl 19 · 3xl 22,8 · 4xl 26,6 · 5xl 32,3
+         *
+         * Num monitor de 2560 o mesmo texto sai ~12% maior, e num portátil
+         * de 1280 ~6% menor. As páginas públicas não vêm por aqui: têm CSS
+         * próprio com `clamp()` em `index.css`.
+         *
+         * O que continua proibido é o tamanho escrito à mão: eram 399, em
+         * quatorze degraus, e voltam sozinhos se ninguém contar.
+         */
+        micro: ['0.6875rem', { lineHeight: '0.9375rem' }],
+        xs: ['0.75rem', { lineHeight: '1.0625rem' }],
+        sm: ['0.8125rem', { lineHeight: '1.125rem' }],
+        base: ['0.875rem', { lineHeight: '1.25rem' }],
+        lg: ['1rem', { lineHeight: '1.375rem' }],
+        xl: ['1.125rem', { lineHeight: '1.5rem' }],
+        '2xl': ['1.25rem', { lineHeight: '1.625rem' }],
+        '3xl': ['1.5rem', { lineHeight: '1.875rem' }],
+        '4xl': ['1.75rem', { lineHeight: '2.125rem' }],
+        '5xl': ['2.125rem', { lineHeight: '2.375rem' }],
+      },
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
@@ -140,9 +185,29 @@ export default {
 				'smooth': 'var(--transition-smooth)'
 			},
 			borderRadius: {
+				/**
+				 * Um raio, e só um.
+				 *
+				 * A versão anterior tinha dois — 4px para controlo, 10px para
+				 * contentor — e a ideia era que o contraste fosse decisão de
+				 * forma. Na prática somaram-se a esses o `rounded` de fábrica
+				 * (3,73px), o `rounded-xl`/`2xl` que ninguém tinha mapeado e a
+				 * pílula dos estados, e o resultado eram cinco cantos
+				 * diferentes no mesmo ecrã.
+				 *
+				 * Agora todos os degraus apontam para `--radius`. Escrever
+				 * `rounded-sm` ou `rounded-2xl` dá exatamente o mesmo canto,
+				 * portanto nem é preciso corrigir as 576 classes já escritas.
+				 * `rounded-full` fica reservado ao que é mesmo redondo:
+				 * avatar, ponto e barra de progresso.
+				 */
+				DEFAULT: 'var(--radius)',
+				sm: 'var(--radius)',
+				md: 'var(--radius)',
 				lg: 'var(--radius)',
-				md: 'calc(var(--radius) - 2px)',
-				sm: 'calc(var(--radius) - 4px)'
+				xl: 'var(--radius)',
+				'2xl': 'var(--radius)',
+				'3xl': 'var(--radius)'
 			},
 			keyframes: {
 				'accordion-down': {

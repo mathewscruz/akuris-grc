@@ -7,7 +7,9 @@ import { componentTagger } from "lovable-tagger";
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
-    port: 8080,
+    // 8080 continua a ser a porta do Lovable; PORT permite subir uma segunda
+    // instância local sem colidir com a que já estiver a correr.
+    port: Number(process.env.PORT) || 8080,
   },
   plugins: [
     react(),
