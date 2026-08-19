@@ -1,14 +1,14 @@
 import React from 'react';
+import { IconSearch, IconChevron } from '@/components/icons';
 import { Input } from '@/components/ui/input';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { SortableTableHead, compareSortValues } from '@/components/ui/sortable-table-head';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { Search, CornerDownRight } from 'lucide-react';
 import type { ProjetoTarefa, ProjetoColuna, ProjetoTarefaPrioridade } from '@/types/projetos';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getPrioridadeLabel } from './enum-labels';
-
+import { intlLocale, parseDataLocal } from '@/lib/date-utils';
 const prioridadeTone: Record<ProjetoTarefaPrioridade, 'destructive' | 'warning' | 'info' | 'neutral'> = {
   critica: 'destructive', alta: 'warning', media: 'info', baixa: 'neutral',
 };
@@ -35,7 +35,7 @@ export function ListaTarefas({ tarefas, colunas, onSelect }: Props) {
       if (fStatus === 'abertas' && t.concluida_em) return false;
       if (fStatus === 'concluidas' && !t.concluida_em) return false;
       if (fStatus === 'atrasadas') {
-        const atrasada = t.prazo && !t.concluida_em && new Date(t.prazo) < new Date();
+        const atrasada = t.prazo && !t.concluida_em && parseDataLocal(t.prazo) < new Date();
         if (!atrasada) return false;
       }
       return true;
@@ -99,7 +99,7 @@ export function ListaTarefas({ tarefas, colunas, onSelect }: Props) {
     <div className="space-y-3">
       <div className="flex flex-wrap gap-2 items-center">
         <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Search className="h-3.5 w-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <IconSearch className="h-3.5 w-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input placeholder={t('projetos.lista.searchPlaceholder')} value={busca} onChange={(e) => setBusca(e.target.value)} className="pl-8 h-9" />
         </div>
         <div className="flex flex-col gap-1 min-w-[180px]">
@@ -171,33 +171,33 @@ export function ListaTarefas({ tarefas, colunas, onSelect }: Props) {
                 <React.Fragment key={g.key}>
                   {g.label && (
                     <TableRow>
-                      <TableCell colSpan={5} className="bg-muted/40 text-xs font-semibold uppercase tracking-wide text-muted-foreground py-1.5">
+                      <TableCell colSpan={5} className="bg-muted/40 text-xs font-semibold text-muted-foreground py-1.5">
                         {g.label} <span className="text-muted-foreground">({g.rows.length})</span>
                       </TableCell>
                     </TableRow>
                   )}
                   {g.rows.map(({ t: task, depth }) => {
                     const col = colunas.find((c) => c.id === task.coluna_id);
-                    const atrasada = task.prazo && !task.concluida_em && new Date(task.prazo) < new Date();
+                    const atrasada = task.prazo && !task.concluida_em && parseDataLocal(task.prazo) < new Date();
                     return (
                       <TableRow key={task.id} className="cursor-pointer" onClick={() => onSelect(task)}>
                         <TableCell className="font-medium">
                           <div className="flex items-center gap-1.5" style={{ paddingLeft: depth * 18 }}>
-                            {depth > 0 && <CornerDownRight className="h-3.5 w-3.5 text-muted-foreground" />}
+                            {depth > 0 && <IconChevron className="h-3.5 w-3.5 text-muted-foreground" />}
                             <span className="truncate">{task.titulo}</span>
                           </div>
                         </TableCell>
                         <TableCell>{col?.nome ?? '—'}</TableCell>
                         <TableCell>
-                          <StatusBadge tone={prioridadeTone[task.prioridade]} size="sm">{getPrioridadeLabel(t, task.prioridade)}</StatusBadge>
+                          <StatusBadge tone={prioridadeTone[task.prioridade]}>{getPrioridadeLabel(t, task.prioridade)}</StatusBadge>
                         </TableCell>
                         <TableCell className={atrasada ? 'text-destructive font-medium' : ''}>
-                          {task.prazo ? new Date(task.prazo).toLocaleDateString('pt-BR') : '—'}
+                          {task.prazo ? parseDataLocal(task.prazo).toLocaleDateString(intlLocale()) : '—'}
                         </TableCell>
                         <TableCell>
                           {task.concluida_em
-                            ? <StatusBadge tone="success" size="sm">{t('projetos.lista.done')}</StatusBadge>
-                            : <StatusBadge tone="info" size="sm">{t('projetos.lista.open')}</StatusBadge>}
+                            ? <StatusBadge tone="success">{t('projetos.lista.done')}</StatusBadge>
+                            : <StatusBadge tone="info">{t('projetos.lista.open')}</StatusBadge>}
                         </TableCell>
                       </TableRow>
                     );

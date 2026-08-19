@@ -1,16 +1,16 @@
 import React from 'react';
+import { IconAdd, IconCalendar, IconPerson } from '@/components/icons';
 import { DndContext, DragOverlay, useSensor, useSensors, PointerSensor, KeyboardSensor, pointerWithin, rectIntersection, type CollisionDetection, type DragEndEvent } from '@dnd-kit/core';
 import { useDroppable, useDraggable } from '@dnd-kit/core';
 import { Card } from '@/components/ui/card';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { Plus, Calendar, User as UserIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import type { ProjetoColuna, ProjetoTarefa, ProjetoTarefaPrioridade } from '@/types/projetos';
 import { useMoveTarefa, useUpsertTarefa } from '@/hooks/useProjetoTarefas';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getPrioridadeLabel } from './enum-labels';
-import { formatDateOnly } from '@/lib/date-utils';
+import { formatDateOnly, parseDataLocal } from '@/lib/date-utils';
 
 /**
  * Colisão por ponteiro: a coluna de destino é a que está debaixo do cursor.
@@ -120,7 +120,7 @@ function ColumnDroppable({ projetoId, coluna, tarefas, onAdd, onEdit, highlight,
   };
 
   return (
-    <div ref={setNodeRef} className={`flex-shrink-0 w-72 rounded-lg border border-border bg-muted/30 p-3 transition-all ${highlight ? 'border-primary ring-2 ring-primary bg-primary/5' : ''}`}>
+    <div ref={setNodeRef} className={`flex-shrink-0 w-72 rounded-lg border border-border bg-muted/30 p-3 transition-ui ${highlight ? 'border-primary ring-2 ring-primary bg-primary/5' : ''}`}>
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <span className="h-2 w-2 rounded-full" style={{ backgroundColor: coluna.cor ?? '#64748b' }} />
@@ -128,7 +128,7 @@ function ColumnDroppable({ projetoId, coluna, tarefas, onAdd, onEdit, highlight,
           <span className="text-xs text-muted-foreground tabular-nums">({tarefas.length})</span>
         </div>
         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onAdd} title={t('projetos.kanban.addTaskDetailed')}>
-          <Plus className="h-4 w-4" />
+          <IconAdd className="h-4 w-4" />
         </Button>
       </div>
       <div className="space-y-2 min-h-[100px]">
@@ -162,7 +162,7 @@ function ColumnDroppable({ projetoId, coluna, tarefas, onAdd, onEdit, highlight,
           className="mt-2 w-full h-7 justify-start text-xs text-muted-foreground hover:text-foreground"
           onClick={() => setQuickOpen(true)}
         >
-          <Plus className="h-3 w-3" /> {t('projetos.kanban.addTask')}
+          <IconAdd className="h-3 w-3" /> {t('projetos.kanban.addTask')}
         </Button>
       )}
     </div>
@@ -180,21 +180,21 @@ function DraggableTask({ tarefa, onClick }: { tarefa: ProjetoTarefa; onClick: ()
 
 function TaskCard({ tarefa, dragging }: { tarefa: ProjetoTarefa; dragging?: boolean }) {
   const { t } = useLanguage();
-  const atrasada = tarefa.prazo && !tarefa.concluida_em && new Date(tarefa.prazo) < new Date();
+  const atrasada = tarefa.prazo && !tarefa.concluida_em && parseDataLocal(tarefa.prazo) < new Date();
   return (
     <Card className={`p-3 cursor-pointer hover:border-primary/40 transition-colors ${dragging ? 'shadow-elegant rotate-2' : ''}`}>
       <p className="text-sm font-medium mb-2 line-clamp-2">{tarefa.titulo}</p>
       <div className="flex items-center gap-1.5 flex-wrap">
-        <StatusBadge tone={prioridadeTone[tarefa.prioridade]} size="sm">
+        <StatusBadge tone={prioridadeTone[tarefa.prioridade]}>
           {getPrioridadeLabel(t, tarefa.prioridade)}
         </StatusBadge>
         {tarefa.prazo && (
-          <StatusBadge tone={atrasada ? 'destructive' : 'neutral'} variant={atrasada ? 'soft' : 'outline'} size="sm" icon={<Calendar className="h-2.5 w-2.5" />}>
+          <StatusBadge tone={atrasada ? 'destructive' : 'neutral'} variant={atrasada ? 'soft' : 'outline'} icon={<IconCalendar className="h-2.5 w-2.5" />}>
             {formatDateOnly(tarefa.prazo)}
           </StatusBadge>
         )}
         {tarefa.responsavel_id && (
-          <StatusBadge tone="info" size="sm" icon={<UserIcon className="h-2.5 w-2.5" />}>
+          <StatusBadge tone="info" icon={<IconPerson className="h-2.5 w-2.5" />}>
             {t('projetos.kanban.assigned')}
           </StatusBadge>
         )}

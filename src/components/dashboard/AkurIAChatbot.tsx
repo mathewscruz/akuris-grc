@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { IconAdd, IconClose, IconSend, IconExpand, IconCollapse, IconHistory, IconStop } from '@/components/icons';
 import { useLocation } from "react-router-dom";
-import { X, Send, Maximize2, Minimize2, History, StopCircle, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
@@ -224,7 +224,7 @@ export function AkurIAChatbot() {
 
   // Dimensões por modo
   const panelClass = cn(
-    "fixed z-50 rounded-2xl border border-border/60 bg-card/95 backdrop-blur-xl shadow-[0_20px_60px_-15px_hsl(var(--primary)/0.35)] flex overflow-hidden animate-fade-in",
+    "fixed z-50 rounded-lg border border-border/60 bg-card/95 backdrop-blur-xl shadow-[0_20px_60px_-15px_hsl(var(--primary)/0.35)] flex overflow-hidden animate-fade-in",
     mode === "compact" && "inset-x-3 bottom-20 md:bottom-6 md:right-6 md:left-auto md:w-[400px] h-[calc(100dvh-9rem)] max-h-[600px]",
     mode === "expanded" && "inset-x-3 bottom-20 md:bottom-6 md:right-6 md:left-auto md:w-[640px] h-[calc(100dvh-7rem)] max-h-[760px]",
     mode === "fullscreen" && "inset-4 md:inset-10 max-h-none max-w-none"
@@ -237,7 +237,7 @@ export function AkurIAChatbot() {
         <button
           onClick={() => setOpen(true)}
           className={cn(
-            "fixed bottom-20 md:bottom-6 right-4 md:right-6 z-50 h-14 w-14 rounded-full bg-card shadow-lg border border-border/60 hover:shadow-[0_0_30px_hsl(var(--primary)/0.4)] transition-all duration-300 hover:scale-110 flex items-center justify-center animate-fade-in group",
+            "fixed bottom-20 md:bottom-6 right-4 md:right-6 z-50 h-14 w-14 rounded-full bg-card shadow-lg border border-border/60 hover:shadow-[0_0_30px_hsl(var(--primary)/0.4)] transition-ui duration-200 hover:scale-110 flex items-center justify-center animate-fade-in group",
             scrolling && "pointer-events-none translate-y-24 opacity-0"
           )}
           title="AkurIA — Assistente Inteligente"
@@ -277,7 +277,7 @@ export function AkurIAChatbot() {
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-sm text-foreground leading-tight">AkurIA</h3>
-                <p className="text-[10px] text-muted-foreground leading-tight">
+                <p className="text-micro text-muted-foreground leading-tight">
                   {isLoading ? "digitando…" : "Assistente GRC Inteligente"}
                 </p>
               </div>
@@ -291,7 +291,7 @@ export function AkurIAChatbot() {
                     onClick={() => setShowSidebar((v) => !v)}
                     title={t("dashWidgets.akuria.history")}
                   >
-                    <History className="h-3.5 w-3.5" />
+                    <IconHistory className="h-3.5 w-3.5" />
                   </Button>
                 )}
                 <Button
@@ -301,7 +301,7 @@ export function AkurIAChatbot() {
                   onClick={newConversation}
                   title={t("dashWidgets.akuria.newConversation")}
                 >
-                  <Plus className="h-3.5 w-3.5" />
+                  <IconAdd className="h-3.5 w-3.5" />
                 </Button>
                 <Button
                   variant="ghost"
@@ -312,10 +312,10 @@ export function AkurIAChatbot() {
                   }
                   title={mode === "fullscreen" ? "Reduzir" : "Expandir"}
                 >
-                  {mode === "fullscreen" ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+                  {mode === "fullscreen" ? <IconCollapse className="h-3.5 w-3.5" /> : <IconExpand className="h-3.5 w-3.5" />}
                 </Button>
                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setOpen(false)}>
-                  <X className="h-4 w-4" />
+                  <IconClose className="h-4 w-4" />
                 </Button>
               </div>
             </div>
@@ -325,7 +325,7 @@ export function AkurIAChatbot() {
               <div ref={scrollRef} className="px-4 py-3 space-y-3">
                 {messages.length === 0 && (
                   <div className="py-6 text-center space-y-2">
-                    <div className="h-12 w-12 rounded-full mx-auto bg-primary/10 flex items-center justify-center">
+                    <div className="h-12 w-12 mx-auto flex items-center justify-center">
                       <img src="/akuris-favicon.png" alt="" className="h-8 w-8 rounded-full" />
                     </div>
                     <p className="font-medium text-sm text-foreground">Olá, {profile?.nome?.split(" ")[0] || "tudo bem"}? 👋</p>
@@ -352,7 +352,7 @@ export function AkurIAChatbot() {
                     <div className="h-7 w-7 rounded-full overflow-hidden border border-border bg-card shrink-0">
                       <img src="/akuris-favicon.png" alt="AkurIA" className="h-full w-full object-cover" />
                     </div>
-                    <div className="bg-muted/70 border border-border/50 rounded-2xl rounded-tl-sm px-3.5 py-2.5 flex items-center gap-1">
+                    <div className="bg-muted/70 border border-border/50 rounded-lg rounded-tl-sm px-3.5 py-2.5 flex items-center gap-1">
                       <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60 animate-bounce [animation-delay:0ms]" />
                       <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60 animate-bounce [animation-delay:150ms]" />
                       <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60 animate-bounce [animation-delay:300ms]" />
@@ -383,16 +383,16 @@ export function AkurIAChatbot() {
                 />
                 {isLoading ? (
                   <Button type="button" size="icon" variant="destructive" className="h-9 w-9 shrink-0" onClick={stop} title={t("dashWidgets.akuria.cancel")}>
-                    <StopCircle className="h-4 w-4" />
+                    <IconStop className="h-4 w-4" />
                   </Button>
                 ) : (
                   <Button type="submit" size="icon" className="h-9 w-9 shrink-0" disabled={!input.trim()}>
-                    <Send className="h-4 w-4" />
+                    <IconSend className="h-4 w-4" />
                   </Button>
                 )}
               </form>
               {input.length > 500 && (
-                <p className="text-[10px] text-muted-foreground text-right mt-1">{input.length} caracteres</p>
+                <p className="text-micro text-muted-foreground text-right mt-1">{input.length} caracteres</p>
               )}
             </div>
           </div>

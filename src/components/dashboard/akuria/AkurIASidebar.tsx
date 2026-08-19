@@ -1,4 +1,4 @@
-import { Plus, MessageSquare, Trash2 } from "lucide-react";
+import { IconAdd, IconDelete, IconMessage } from '@/components/icons';
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -41,7 +41,7 @@ export function AkurIASidebar({
           variant="soft"
           className="w-full justify-start gap-2 h-8 text-xs"
         >
-          <Plus className="h-3.5 w-3.5" />
+          <IconAdd className="h-3.5 w-3.5" />
           Nova conversa
         </Button>
       </div>
@@ -49,7 +49,7 @@ export function AkurIASidebar({
       <ScrollArea className="flex-1">
         <div className="p-1 space-y-0.5">
           {conversations.length === 0 ? (
-            <p className="text-[11px] text-muted-foreground text-center py-4 px-2">
+            <p className="text-micro text-muted-foreground text-center py-4 px-2">
               Sem histórico ainda
             </p>
           ) : (
@@ -61,16 +61,16 @@ export function AkurIASidebar({
                   className={`group flex items-start gap-1.5 px-2 py-1.5 rounded-md cursor-pointer transition-colors ${
                     isActive
                       ? "bg-primary/10 text-foreground"
-                      : "hover:bg-muted text-muted-foreground hover:text-foreground"
+                      : "hover:bg-accent text-muted-foreground hover:text-foreground"
                   }`}
                   onClick={() => onSelect(c.id)}
                 >
-                  <MessageSquare className="h-3 w-3 shrink-0 mt-0.5" />
+                  <IconMessage className="h-3 w-3 shrink-0 mt-0.5" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-[11px] font-medium truncate leading-tight">
+                    <p className="text-micro font-medium truncate leading-tight">
                       {c.title}
                     </p>
-                    <p className="text-[10px] text-muted-foreground">{timeAgo(c.updatedAt)}</p>
+                    <p className="text-micro text-muted-foreground">{timeAgo(c.updatedAt)}</p>
                   </div>
                   <button
                     onClick={(e) => {
@@ -80,7 +80,7 @@ export function AkurIASidebar({
                     className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
                     title={t("dashWidgets.akuria.delete")}
                   >
-                    <Trash2 className="h-3 w-3" />
+                    <IconDelete className="h-3 w-3" />
                   </button>
                 </div>
               );

@@ -6,7 +6,6 @@ import { DateField } from '@/components/ui/date-field';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
-import { ListTodo } from 'lucide-react';
 import { useProjetos } from '@/hooks/useProjetos';
 import { useProjetoColunas, useUpsertTarefa } from '@/hooks/useProjetoTarefas';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,6 +14,8 @@ import type { ProjetoTarefaPrioridade, ProjetoVinculoEntidade } from '@/types/pr
 import { PRIORIDADE_LABEL } from '@/types/projetos';
 import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { IconChecklist } from '@/components/icons';
+import { exigirEscrita } from '@/lib/supabase-write';
 
 interface CriarTarefaFromGRCProps {
   entidadeTipo: ProjetoVinculoEntidade;
@@ -73,12 +74,12 @@ export const CriarTarefaFromGRC: React.FC<CriarTarefaFromGRCProps> = ({
 
       // cria vínculo polimórfico
       if (tarefa?.id && profile?.empresa_id) {
-        await supabase.from('projeto_tarefa_vinculos' as any).insert({
+        await exigirEscrita(supabase.from('projeto_tarefa_vinculos' as any).insert({
           tarefa_id: tarefa.id,
           entidade_tipo: entidadeTipo,
           entidade_id: entidadeId,
           criado_por: user?.id ?? null,
-        } as any);
+        } as any));
       }
 
       toast.success(t('projetos.criarTarefaGRC.successMessage'));
@@ -96,14 +97,14 @@ export const CriarTarefaFromGRC: React.FC<CriarTarefaFromGRCProps> = ({
         <span onClick={() => setOpen(true)}>{trigger}</span>
       ) : (
         <Button variant={variant} size={size} onClick={() => setOpen(true)}>
-          <ListTodo className="h-4 w-4" /> {t('projetos.criarTarefaGRC.buttonLabel')}
+          <IconChecklist className="h-4 w-4" /> {t('projetos.criarTarefaGRC.buttonLabel')}
         </Button>
       )}
 
       <DialogShell
         open={open}
         onOpenChange={setOpen}
-        icon={ListTodo}
+        icon={IconChecklist}
         title={t('projetos.criarTarefaGRC.dialogTitle')}
         description={t('projetos.criarTarefaGRC.dialogDescription')}
         size="sm"

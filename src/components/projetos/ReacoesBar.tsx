@@ -1,10 +1,10 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { SmilePlus } from 'lucide-react';
 import { useReacoes, useToggleReacao } from '@/hooks/useProjetoExtras';
 import { useAuth } from '@/components/AuthProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { IconReaction } from '@/components/icons';
 
 const EMOJIS = ['👍', '✅', '🚀', '🎉', '🙏', '👀', '❓', '🛑'];
 
@@ -38,8 +38,8 @@ export function ReacoesPorComentario({ comentarioId, reacoes }: { comentarioId: 
         <button
           key={emoji}
           onClick={() => toggle.mutate({ comentarioId, emoji, atual: g.minha })}
-          className={`inline-flex items-center gap-1 rounded-full border px-2 h-6 text-xs leading-none transition-colors ${
-            g.minha ? 'border-primary/40 bg-primary/10 text-primary' : 'border-border bg-card hover:bg-muted'
+          className={`inline-flex items-center gap-1 rounded-md border px-2 h-6 text-xs leading-none transition-colors ${
+            g.minha ? 'border-primary/40 bg-primary/10 text-primary' : 'border-border bg-card hover:bg-accent'
           }`}
           title={g.minha ? t('projetos.reacoes.remove') : t('projetos.reacoes.react')}
         >
@@ -49,8 +49,8 @@ export function ReacoesPorComentario({ comentarioId, reacoes }: { comentarioId: 
       ))}
       <Popover>
         <PopoverTrigger asChild>
-          <button className="inline-flex items-center justify-center h-6 w-6 rounded-full border border-border bg-card hover:bg-muted text-muted-foreground">
-            <SmilePlus className="h-3 w-3" />
+          <button className="inline-flex items-center justify-center h-6 w-6 rounded-full border border-border bg-card hover:bg-accent text-muted-foreground">
+            <IconReaction className="h-3 w-3" />
           </button>
         </PopoverTrigger>
         <PopoverContent align="start" className="w-auto p-2">
@@ -61,7 +61,7 @@ export function ReacoesPorComentario({ comentarioId, reacoes }: { comentarioId: 
                 <button
                   key={e}
                   onClick={() => toggle.mutate({ comentarioId, emoji: e, atual: minha })}
-                  className={`h-7 w-7 rounded hover:bg-muted text-lg leading-none ${minha ? 'bg-primary/10' : ''}`}
+                  className={`h-7 w-7 rounded hover:bg-accent text-lg leading-none ${minha ? 'bg-primary/10' : ''}`}
                 >
                   {e}
                 </button>

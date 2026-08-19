@@ -1,10 +1,10 @@
 import React from 'react';
+import { IconWarning, IconCalendar, IconFile, IconShield, IconUsers, IconOrg, IconMessage, IconActivity } from '@/components/icons';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { useNavigate } from 'react-router-dom';
-import { FileText, AlertTriangle, Shield, Users, Calendar, Building, MessageSquareWarning, Activity as ActivityIcon } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR, enUS } from 'date-fns/locale';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -12,6 +12,7 @@ import { formatStatus } from '@/lib/text-utils';
 import { getEnumLabel } from '@/lib/enum-labels';
 import { useQuery } from '@tanstack/react-query';
 import { CornerAccent } from '@/components/identity/CornerAccent';
+import { dateFnsLocale } from '@/lib/date-utils';
 
 interface Activity {
   id: string;
@@ -27,14 +28,14 @@ interface Activity {
 
 const getIcon = (module: string) => {
   switch (module) {
-    case 'riscos': return <AlertTriangle className="h-4 w-4 text-destructive" />;
-    case 'controles': return <Shield className="h-4 w-4 text-primary" />;
-    case 'documentos': return <FileText className="h-4 w-4 text-info" />;
-    case 'auditorias': return <Calendar className="h-4 w-4 text-warning" />;
-    case 'usuarios': return <Users className="h-4 w-4 text-muted-foreground" />;
-    case 'contratos': return <Building className="h-4 w-4 text-secondary-foreground" />;
-    case 'denuncias': return <MessageSquareWarning className="h-4 w-4 text-orange-500" />;
-    default: return <FileText className="h-4 w-4 text-muted-foreground" />;
+    case 'riscos': return <IconWarning className="h-4 w-4 text-destructive" />;
+    case 'controles': return <IconShield className="h-4 w-4 text-primary" />;
+    case 'documentos': return <IconFile className="h-4 w-4 text-info" />;
+    case 'auditorias': return <IconCalendar className="h-4 w-4 text-warning" />;
+    case 'usuarios': return <IconUsers className="h-4 w-4 text-muted-foreground" />;
+    case 'contratos': return <IconOrg className="h-4 w-4 text-secondary-foreground" />;
+    case 'denuncias': return <IconMessage className="h-4 w-4 text-warning" />;
+    default: return <IconFile className="h-4 w-4 text-muted-foreground" />;
   }
 };
 
@@ -74,7 +75,7 @@ const getStatusBadge = (status: string | undefined, t: (key: string) => string, 
   const variant = statusVariantMap[normalizedStatus] || 'outline';
   const label = isSeverity ? getEnumLabel(t, 'severidade', status) : formatStatus(status);
   return (
-    <Badge variant={variant} className="text-[10px] px-1.5 py-0 whitespace-nowrap">
+    <Badge variant={variant} className="text-micro px-1.5 py-0 whitespace-nowrap">
       {label}
     </Badge>
   );
@@ -155,9 +156,9 @@ export function RecentActivities({ className }: { className?: string }) {
 
   const routeMap: Record<string, string> = {
     'riscos': '/riscos',
-    'controles': '/governanca?tab=controles',
+    'controles': '/governanca/controles',
     'documentos': '/documentos',
-    'auditorias': '/governanca?tab=auditorias',
+    'auditorias': '/governanca/auditorias',
     'denuncias': '/denuncia'
   };
 
@@ -171,7 +172,7 @@ export function RecentActivities({ className }: { className?: string }) {
       <CornerAccent />
       <CardHeader className="pb-3">
         <CardTitle className="text-base font-semibold flex items-center gap-2">
-          <ActivityIcon className="h-4 w-4 text-muted-foreground" /> {t('dashboard.recentActivities')}
+          <IconActivity className="h-4 w-4 text-muted-foreground" /> {t('dashboard.recentActivities')}
         </CardTitle>
       </CardHeader>
       <CardContent className="max-h-[400px] overflow-y-auto pt-0 pb-4">
@@ -194,13 +195,13 @@ export function RecentActivities({ className }: { className?: string }) {
             {activities.map((activity) => (
               <div
                 key={activity.id}
-                className="flex items-start space-x-3 p-3 rounded-lg border border-border bg-surface-2/60 cursor-pointer hover:bg-muted/50 transition-colors"
+                className="flex items-start space-x-3 p-3 rounded-lg border border-border bg-surface-2/60 cursor-pointer hover:bg-accent transition-colors"
                 onClick={() => handleActivityClick(activity)}
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => e.key === 'Enter' && handleActivityClick(activity)}
               >
-                <div className="flex-shrink-0 mt-1 h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+                <div className="flex-shrink-0 mt-1 h-8 w-8 flex items-center justify-center">
                   {getIcon(activity.module)}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -210,7 +211,7 @@ export function RecentActivities({ className }: { className?: string }) {
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5">{activity.description}</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true, locale: locale === 'pt' ? ptBR : enUS })}
+                    {formatDistanceToNow(new Date(activity.created_at), { addSuffix: true, locale: dateFnsLocale() })}
                   </p>
                 </div>
               </div>
@@ -219,7 +220,7 @@ export function RecentActivities({ className }: { className?: string }) {
         ) : (
           <div className="text-center py-8">
             <div className="mx-auto h-12 w-12 text-muted-foreground mb-4">
-              <Calendar className="h-12 w-12" />
+              <IconCalendar className="h-12 w-12" />
             </div>
             <p className="text-muted-foreground">{t('dashboard.noActivities')}</p>
           </div>

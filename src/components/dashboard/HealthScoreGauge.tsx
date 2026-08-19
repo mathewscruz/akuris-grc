@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 import type { GrcMaturity } from '@/hooks/useGrcMaturityScore';
 import { useMaturityTrend } from '@/hooks/useMaturityTrend';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { IconTrendUp, IconTrendDown, IconMinus } from '@/components/icons';
 
 interface HealthScoreGaugeProps {
   maturity: GrcMaturity;
@@ -90,7 +90,7 @@ export function HealthScoreGauge({ maturity }: HealthScoreGaugeProps) {
           <span className={`text-4xl font-bold leading-none ${maturity.colorClass}`}>
             {maturity.status === 'no_data' ? '—' : maturity.score}
           </span>
-          <span className="text-[11px] text-muted-foreground mt-1">{statusLabel}</span>
+          <span className="text-micro text-muted-foreground mt-1">{statusLabel}</span>
         </div>
       </div>
 
@@ -101,24 +101,24 @@ export function HealthScoreGauge({ maturity }: HealthScoreGaugeProps) {
       {/* Tendência vs. 30 dias — centralizada */}
       <div className="mt-2 flex w-full items-center justify-center">
         {trend?.delta === null || trend?.delta === undefined ? (
-          <span className="text-[11px] text-muted-foreground">
+          <span className="text-micro text-muted-foreground">
             {t('dashWidgets.radar.trendNoBaseline')}
           </span>
         ) : trend.delta === 0 ? (
-          <span className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground">
-            <Minus className="h-3 w-3" strokeWidth={1.5} />
+          <span className="flex items-center gap-1 text-micro font-medium text-muted-foreground">
+            <IconMinus className="h-3 w-3" strokeWidth={1.5} />
             {t('dashWidgets.radar.trendFlat')}
           </span>
         ) : (
           <span
-            className={`flex items-center gap-1 text-[11px] font-medium ${
+            className={`flex items-center gap-1 text-micro font-medium ${
               trend.delta > 0 ? 'text-success' : 'text-destructive'
             }`}
           >
             {trend.delta > 0 ? (
-              <TrendingUp className="h-3 w-3" strokeWidth={1.5} />
+              <IconTrendUp className="h-3 w-3" strokeWidth={1.5} />
             ) : (
-              <TrendingDown className="h-3 w-3" strokeWidth={1.5} />
+              <IconTrendDown className="h-3 w-3" strokeWidth={1.5} />
             )}
             {trend.delta > 0
               ? t('dashWidgets.radar.trendUp', { delta: String(trend.delta) })

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import { IconAdd, IconDelete, IconSend, IconChecklist } from '@/components/icons';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import ConfirmDialog from '@/components/ConfirmDialog';
-import { ListChecks } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { DateField } from '@/components/ui/date-field';
 import { Label } from '@/components/ui/label';
@@ -24,7 +24,7 @@ import { TempoPanel } from './TempoPanel';
 import { ReacoesPorComentario } from './ReacoesBar';
 import { useReacoes, useSprints } from '@/hooks/useProjetoExtras';
 import type { ProjetoTarefa, ProjetoTarefaPrioridade, ProjetoColuna } from '@/types/projetos';
-import { Trash2, Plus, Send } from 'lucide-react';
+;
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Props {
@@ -91,7 +91,7 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      icon={ListChecks}
+      icon={IconChecklist}
       title={tarefa ? t('projetos.tarefaDialog.titleEdit') : t('projetos.tarefaDialog.titleNew')}
       size="lg"
       footer={
@@ -104,7 +104,7 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
               className="mr-auto"
               onClick={() => setDeleteConfirm(true)}
             >
-              <Trash2 className="h-4 w-4" /> {t('projetos.tarefaDialog.delete')}
+              <IconDelete className="h-4 w-4" /> {t('projetos.tarefaDialog.delete')}
             </Button>
           )}
           <Button type="button" variant="ghost" size="sm" onClick={() => onOpenChange(false)}>{t('projetos.tarefaDialog.close')}</Button>
@@ -123,16 +123,16 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
 
           <TabsContent value="detalhes" className="space-y-4 pt-3">
             <form onSubmit={handleSubmit} className="space-y-4" id="tarefa-form">
-              <div>
+              <div className="space-y-2">
                 <Label>{t('projetos.tarefaDialog.fieldTitulo')}</Label>
                 <Input value={form.titulo} onChange={(e) => setForm({ ...form, titulo: e.target.value })} required />
               </div>
-              <div>
+              <div className="space-y-2">
                 <Label>{t('projetos.tarefaDialog.fieldDescricao')}</Label>
                 <Textarea value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} rows={4} />
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div>
+                <div className="space-y-2">
                   <Label>{t('projetos.tarefaDialog.fieldColuna')}</Label>
                   <Select value={form.coluna_id} onValueChange={(v) => setForm({ ...form, coluna_id: v })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
@@ -141,7 +141,7 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
+                <div className="space-y-2">
                   <Label>{t('projetos.tarefaDialog.fieldPrioridade')}</Label>
                   <Select value={form.prioridade} onValueChange={(v) => setForm({ ...form, prioridade: v as ProjetoTarefaPrioridade })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
@@ -154,21 +154,21 @@ export function TarefaDialog({ open, onOpenChange, projetoId, colunas, tarefa, d
                   </Select>
                 </div>
               </div>
-              <div>
+              <div className="space-y-2">
                 <Label>{t('projetos.tarefaDialog.fieldResponsavel')}</Label>
                 <UserSelect value={form.responsavel_id} onValueChange={(v) => setForm({ ...form, responsavel_id: v })} />
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div>
+                <div className="space-y-2">
                   <Label>{t('projetos.tarefaDialog.fieldPrazo')}</Label>
                   <DateField value={form.prazo || null} onChange={(v) => setForm({ ...form, prazo: v ?? '' })} />
                 </div>
-                <div>
+                <div className="space-y-2">
                   <Label>{t('projetos.tarefaDialog.fieldEstimativa')}</Label>
                   <Input type="number" step="0.5" value={form.estimativa_horas} onChange={(e) => setForm({ ...form, estimativa_horas: e.target.value })} />
                 </div>
               </div>
-              <div>
+              <div className="space-y-2">
                 <Label>{t('projetos.tarefaDialog.fieldSprint')}</Label>
                 <Select value={form.sprint_id || 'none'} onValueChange={(v) => setForm({ ...form, sprint_id: v === 'none' ? '' : v })}>
                   <SelectTrigger><SelectValue placeholder={t('projetos.tarefaDialog.noSprint')} /></SelectTrigger>
@@ -246,7 +246,7 @@ function ChecklistPanel({ tarefaId }: { tarefaId: string }) {
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); if (novo.trim()) { add.mutate(novo.trim()); setNovo(''); } } }}
         />
         <Button type="button" size="icon" onClick={() => { if (novo.trim()) { add.mutate(novo.trim()); setNovo(''); } }}>
-          <Plus className="h-4 w-4" />
+          <IconAdd className="h-4 w-4" />
         </Button>
       </div>
       <ul className="space-y-1.5">
@@ -255,7 +255,7 @@ function ChecklistPanel({ tarefaId }: { tarefaId: string }) {
             <Checkbox checked={i.concluido} onCheckedChange={(c) => toggle.mutate({ id: i.id, concluido: !!c })} />
             <span className={`flex-1 text-sm ${i.concluido ? 'line-through text-muted-foreground' : ''}`}>{i.texto}</span>
             <Button type="button" variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 h-7 w-7" onClick={() => remove.mutate(i.id)}>
-              <Trash2 className="h-3 w-3" />
+              <IconDelete className="h-3 w-3" />
             </Button>
           </li>
         ))}
@@ -286,7 +286,7 @@ function ComentariosPanel({ tarefaId }: { tarefaId: string }) {
       <div className="flex gap-2">
         <Textarea rows={2} placeholder={t('projetos.tarefaDialog.commentPlaceholder')} value={novo} onChange={(e) => setNovo(e.target.value)} />
         <Button type="button" onClick={() => { if (novo.trim()) { add.mutate(novo.trim()); setNovo(''); } }}>
-          <Send className="h-4 w-4" />
+          <IconSend className="h-4 w-4" />
         </Button>
       </div>
     </div>

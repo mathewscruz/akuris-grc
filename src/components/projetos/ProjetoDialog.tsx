@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { DialogShell } from '@/components/ui/dialog-shell';
-import { FolderKanban } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { DateField } from '@/components/ui/date-field';
 import { Label } from '@/components/ui/label';
@@ -11,6 +10,7 @@ import { useUpsertProjeto } from '@/hooks/useProjetos';
 import { useAuth } from '@/components/AuthProvider';
 import type { Projeto, ProjetoStatus } from '@/types/projetos';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { IconFolder } from '@/components/icons';
 
 interface Props {
   open: boolean;
@@ -66,7 +66,7 @@ export function ProjetoDialog({ open, onOpenChange, projeto }: Props) {
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      icon={FolderKanban}
+      icon={IconFolder}
       title={projeto ? t('projetos.dialog.titleEdit') : t('projetos.dialog.titleNew')}
       size="sm"
       onSubmit={() => handleSubmit(new Event('submit') as unknown as React.FormEvent)}
@@ -74,16 +74,16 @@ export function ProjetoDialog({ open, onOpenChange, projeto }: Props) {
       isSubmitting={upsert.isPending}
     >
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
+          <div className="space-y-2">
             <Label>{t('projetos.dialog.fieldNome')}</Label>
             <Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} required />
           </div>
-          <div>
+          <div className="space-y-2">
             <Label>{t('projetos.dialog.fieldDescricao')}</Label>
             <Textarea value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} rows={3} />
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div>
+            <div className="space-y-2">
               <Label>{t('projetos.dialog.fieldStatus')}</Label>
               <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as ProjetoStatus })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
@@ -95,21 +95,21 @@ export function ProjetoDialog({ open, onOpenChange, projeto }: Props) {
                 </SelectContent>
               </Select>
             </div>
-            <div>
+            <div className="space-y-2">
               <Label>{t('projetos.dialog.fieldCor')}</Label>
               <Input type="color" value={form.cor} onChange={(e) => setForm({ ...form, cor: e.target.value })} className="h-10" />
             </div>
           </div>
-          <div>
+          <div className="space-y-2">
             <Label>{t('projetos.dialog.fieldOwner')}</Label>
             <UserSelect value={form.owner_id} onValueChange={(v) => setForm({ ...form, owner_id: v })} />
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div>
+            <div className="space-y-2">
               <Label>{t('projetos.dialog.fieldInicio')}</Label>
               <DateField value={form.data_inicio || null} onChange={(v) => setForm({ ...form, data_inicio: v ?? '' })} />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label>{t('projetos.dialog.fieldFimPrevisto')}</Label>
               <DateField value={form.data_fim_prevista || null} onChange={(v) => setForm({ ...form, data_fim_prevista: v ?? '' })} />
             </div>

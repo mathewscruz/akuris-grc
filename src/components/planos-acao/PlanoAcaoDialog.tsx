@@ -6,7 +6,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { DateField } from '@/components/ui/date-field';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolvePrioridadeTone } from '@/lib/status-tone';
-import { ClipboardList, Settings2, Link2, Target } from 'lucide-react';
 import { formatDateOnly } from '@/lib/date-utils';
 import { UserSelect } from '@/components/riscos/UserSelect';
 import { WizardDialog, WizardTab, WizardTabState } from '@/components/ui/wizard-dialog';
@@ -17,6 +16,7 @@ import { formatStatus } from '@/lib/text-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { EntidadeSelect } from '@/components/common/EntidadeSelect';
 import type { EntityKey } from '@/lib/entity-search';
+import { IconChecklist, IconSettings, IconLink, IconTarget } from '@/components/icons';
 
 /** Módulo de origem → entidade pesquisável (seletor real, sem UUID à mão). */
 const MODULO_ENTIDADE: Record<string, EntityKey> = {
@@ -206,7 +206,7 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading, or
       {
         id: 'identificacao',
         label: t('planosAcao.tabIdentification'),
-        icon: ClipboardList,
+        icon: IconChecklist,
         state: identState,
         hint: t('planosAcao.tabIdentificationHint'),
         content: (
@@ -241,7 +241,7 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading, or
       {
         id: 'planejamento',
         label: t('planosAcao.tabPlanning'),
-        icon: Settings2,
+        icon: IconSettings,
         state: planejamentoState,
         hint: t('planosAcao.tabPlanningHint'),
         content: (
@@ -308,7 +308,7 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading, or
       {
         id: 'origem',
         label: t('planosAcao.tabOrigin'),
-        icon: Link2,
+        icon: IconLink,
         state: origemState,
         hint: t('planosAcao.tabOriginHint'),
         content: (
@@ -359,7 +359,7 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading, or
       <WizardSummaryRow label={t('planosAcao.summaryLabelTitle')} value={titulo || <span className="text-muted-foreground italic">{t('planosAcao.summaryNoTitle')}</span>} highlight />
       <WizardSummaryRow
         label={t('planosAcao.summaryLabelPriority')}
-        value={<StatusBadge size="sm" {...resolvePrioridadeTone(prioridade)}>{formatStatus(prioridade)}</StatusBadge>}
+        value={<StatusBadge {...resolvePrioridadeTone(prioridade)}>{formatStatus(prioridade)}</StatusBadge>}
       />
       <WizardSummaryRow label={t('planosAcao.summaryLabelStatus')} value={<span>{formatStatus(status)}</span>} />
       <WizardSummaryRow
@@ -387,7 +387,7 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading, or
       onOpenChange={onOpenChange}
       title={plano ? t('planosAcao.dialogTitleEdit') : t('planosAcao.dialogTitleNew')}
       description={t('planosAcao.dialogDescription')}
-      icon={Target}
+      icon={IconTarget}
       tabs={tabs}
       summary={summary}
       activeTab={activeTab}

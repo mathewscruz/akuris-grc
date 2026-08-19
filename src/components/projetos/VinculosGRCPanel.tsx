@@ -1,9 +1,9 @@
 import React, { useMemo, useState } from 'react';
+import { IconDelete, IconLink } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTarefaVinculos, useVinculoMutations } from '@/hooks/useProjetoTarefas';
 import type { ProjetoVinculoEntidade } from '@/types/projetos';
-import { Link2, Trash2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { EntidadeSelect } from '@/components/common/EntidadeSelect';
 import { ENTITY_BY_KEY, type EntityKey, type EntityRow } from '@/lib/entity-search';
@@ -62,7 +62,7 @@ export function VinculosGRCPanel({ tarefaId }: Props) {
           />
         </div>
         <Button type="button" onClick={handleAdd} disabled={!entId || add.isPending}>
-          <Link2 className="h-4 w-4" /> {t('projetos.vinculos.link')}
+          <IconLink className="h-4 w-4" /> {t('projetos.vinculos.link')}
         </Button>
       </div>
       {rowSelecionada && (
@@ -79,7 +79,7 @@ export function VinculosGRCPanel({ tarefaId }: Props) {
               <VinculoResumo tipo={v.entidade_tipo as EntityKey} id={v.entidade_id} />
             </span>
             <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => remove.mutate(v.id)}>
-              <Trash2 className="h-3 w-3" />
+              <IconDelete className="h-3 w-3" />
             </Button>
           </li>
         ))}

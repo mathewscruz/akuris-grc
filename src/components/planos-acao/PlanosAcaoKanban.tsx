@@ -29,9 +29,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, GripVertical, ExternalLink } from 'lucide-react';
 import { formatDateOnly } from '@/lib/date-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { IconMore, IconExternal, IconDrag } from '@/components/icons';
 
 export const PLANO_STATUS_EDITAVEIS = ['pendente', 'em_andamento', 'concluido', 'cancelado'] as const;
 
@@ -167,7 +167,7 @@ function KanbanColumn({
       <div
         ref={setNodeRef}
         className={[
-          'space-y-2 min-h-[200px] rounded-lg p-1.5 transition-all',
+          'space-y-2 min-h-[200px] rounded-lg p-1.5 transition-ui',
           highlight ? 'ring-2 ring-primary bg-primary/5' : 'ring-1 ring-transparent',
           dragging && !droppable ? 'opacity-60' : '',
         ].join(' ')}
@@ -192,7 +192,7 @@ function KanbanColumn({
         )}
       </div>
       {!droppable && dragging && (
-        <p className="px-2 text-[11px] text-muted-foreground">{t('planosAcao.kanbanDerivedColumn')}</p>
+        <p className="px-2 text-micro text-muted-foreground">{t('planosAcao.kanbanDerivedColumn')}</p>
       )}
     </div>
   );
@@ -226,7 +226,7 @@ function PlanoCard({
         data-focus-id={item.id}
         className={[
           'p-3 transition-shadow group',
-          overlay ? 'shadow-elegant rotate-1 cursor-grabbing' : 'hover:shadow-md',
+          overlay ? 'shadow-elegant rotate-1 cursor-grabbing' : 'hover:shadow-sm',
         ].join(' ')}
       >
         <div className="flex items-start gap-1.5">
@@ -238,7 +238,7 @@ function PlanoCard({
               {...attributes}
               {...listeners}
             >
-              <GripVertical className="h-4 w-4" strokeWidth={1.5} />
+              <IconDrag className="h-4 w-4" strokeWidth={1.5} />
             </button>
           )}
           <button
@@ -252,12 +252,12 @@ function PlanoCard({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0">
-                  <MoreHorizontal className="h-3.5 w-3.5" />
+                  <IconMore className="h-3.5 w-3.5" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-52">
                 <DropdownMenuItem onClick={() => onOpen(item)}>
-                  <ExternalLink className="h-4 w-4 mr-2" />
+                  <IconExternal className="h-4 w-4 mr-2" />
                   {t('planosAcao.actionOpenDetail')}
                 </DropdownMenuItem>
                 {!item._isExternal &&
@@ -278,13 +278,12 @@ function PlanoCard({
 
         <div className="flex items-center gap-2 mt-2 flex-wrap">
           <StatusBadge
-            size="sm"
             tone={prioridadeConfig[item.prioridade]?.tone || 'neutral'}
             mark={prioridadeConfig[item.prioridade]?.mark}
           >
             {prioridadeConfig[item.prioridade]?.label || item.prioridade}
           </StatusBadge>
-          <Chip family="category" size="sm">
+          <Chip family="category">
             {moduloLabels[item.modulo_origem] || item.modulo_origem || 'Manual'}
           </Chip>
         </div>

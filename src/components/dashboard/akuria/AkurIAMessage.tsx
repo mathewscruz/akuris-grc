@@ -1,8 +1,8 @@
 import { useState, memo } from "react";
+import { IconAdd, IconView, IconCheck, IconCopy, IconArrowRight } from '@/components/icons';
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeSanitize from "rehype-sanitize";
-import { Copy, Check, ArrowRight, Plus, Eye } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -24,7 +24,7 @@ interface Props {
 
 function ActionButton({ action, onAfter }: { action: AkurIAAction; onAfter: () => void }) {
   const navigate = useNavigate();
-  const Icon = action.type === "create" ? Plus : action.type === "open" ? Eye : ArrowRight;
+  const Icon = action.type === "create" ? IconAdd : action.type === "open" ? IconView : IconArrowRight;
 
   const handle = () => {
     if (action.type === "navigate" || action.type === "open") {
@@ -88,7 +88,7 @@ function MessageInner({ role, content, timestamp, isStreaming, userInitials }: P
       {/* Avatar */}
       <div className="shrink-0 mt-0.5">
         {isUser ? (
-          <div className="h-7 w-7 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[10px] font-semibold border border-primary/20">
+          <div className="h-7 w-7 rounded-full bg-primary/15 text-primary flex items-center justify-center text-micro font-semibold border border-primary/20">
             {userInitials || "EU"}
           </div>
         ) : (
@@ -101,7 +101,7 @@ function MessageInner({ role, content, timestamp, isStreaming, userInitials }: P
       {/* Bubble + meta */}
       <div className={`flex flex-col max-w-[85%] ${isUser ? "items-end" : "items-start"}`}>
         <div
-          className={`rounded-2xl px-3.5 py-2 text-sm ${
+          className={`rounded-lg px-3.5 py-2 text-sm ${
             isUser
               ? "bg-primary text-primary-foreground rounded-tr-sm"
               : "bg-muted/70 text-foreground rounded-tl-sm border border-border/50"
@@ -135,14 +135,14 @@ function MessageInner({ role, content, timestamp, isStreaming, userInitials }: P
 
         {/* Footer: hora + copiar */}
         <div className={`flex items-center gap-2 mt-1 px-1 ${isUser ? "flex-row-reverse" : ""}`}>
-          {time && <span className="text-[10px] text-muted-foreground">{time}</span>}
+          {time && <span className="text-micro text-muted-foreground">{time}</span>}
           {!isUser && cleanContent && !isStreaming && (
             <button
               onClick={copy}
-              className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1"
+              className="opacity-0 group-hover:opacity-100 transition-opacity text-micro text-muted-foreground hover:text-foreground flex items-center gap-1"
               title="Copiar"
             >
-              {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+              {copied ? <IconCheck className="h-3 w-3" /> : <IconCopy className="h-3 w-3" />}
             </button>
           )}
         </div>

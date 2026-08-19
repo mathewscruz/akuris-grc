@@ -1,11 +1,11 @@
 import React from 'react';
+import { IconChevron, IconChevronLeft } from '@/components/icons';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { StatusBadge } from '@/components/ui/status-badge';
 import type { ProjetoTarefa, ProjetoTarefaPrioridade } from '@/types/projetos';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getPrioridadeLabel } from '@/components/projetos/enum-labels';
-
+import { formatarDiaParaDB, intlLocale, parseDataLocal } from '@/lib/date-utils';
 const prioridadeTone: Record<ProjetoTarefaPrioridade, 'destructive' | 'warning' | 'info' | 'neutral'> = {
   critica: 'destructive', alta: 'warning', media: 'info', baixa: 'neutral',
 };
@@ -31,7 +31,12 @@ export function CalendarView({ tarefas, onSelectTarefa }: { tarefas: ProjetoTare
     const m: Record<string, ProjetoTarefa[]> = {};
     tarefas.forEach((t) => {
       if (!t.prazo) return;
-      const key = new Date(t.prazo).toISOString().slice(0, 10);
+      // Componentes LOCAIS nos dois lados. Com `toISOString()` a célula
+      // (meia-noite local) e a tarefa (meio-dia local) caem em dias
+      // diferentes a partir de UTC+1 — e o calendário ficava vazio para
+      // qualquer utilizador a leste de Greenwich, Portugal incluído no
+      // horário de verão. No Brasil funcionava por acaso.
+      const key = formatarDiaParaDB(parseDataLocal(t.prazo));
       (m[key] ??= []).push(t);
     });
     return m;
@@ -42,7 +47,7 @@ export function CalendarView({ tarefas, onSelectTarefa }: { tarefas: ProjetoTare
     t('projetos.calendar.weekdayWed'), t('projetos.calendar.weekdayThu'), t('projetos.calendar.weekdayFri'), t('projetos.calendar.weekdaySat'),
   ];
 
-  const monthLabel = cursor.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  const monthLabel = cursor.toLocaleDateString(intlLocale(), { month: 'long', year: 'numeric' });
 
   return (
     <div className="rounded-lg border border-border bg-card">
@@ -50,13 +55,13 @@ export function CalendarView({ tarefas, onSelectTarefa }: { tarefas: ProjetoTare
         <h3 className="text-sm font-semibold capitalize">{monthLabel}</h3>
         <div className="flex gap-1">
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCursor(new Date(ano, mes - 1, 1))}>
-            <ChevronLeft className="h-4 w-4" />
+            <IconChevronLeft className="h-4 w-4" />
           </Button>
           <Button variant="outline" size="sm" className="h-7" onClick={() => { const d = new Date(); setCursor(new Date(d.getFullYear(), d.getMonth(), 1)); }}>
             {t('projetos.calendar.today')}
           </Button>
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCursor(new Date(ano, mes + 1, 1))}>
-            <ChevronRight className="h-4 w-4" />
+            <IconChevron className="h-4 w-4" />
           </Button>
         </div>
       </div>
@@ -68,7 +73,7 @@ export function CalendarView({ tarefas, onSelectTarefa }: { tarefas: ProjetoTare
 
       <div className="grid grid-cols-7 gap-px bg-border min-w-[560px]">
         {grid.map((d, i) => {
-          const key = d ? d.toISOString().slice(0, 10) : `empty-${i}`;
+          const key = d ? formatarDiaParaDB(d) : `empty-${i}`;
           const items = d ? (porDia[key] ?? []) : [];
           const isToday = d && d.toDateString() === new Date().toDateString();
           return (
@@ -84,16 +89,16 @@ export function CalendarView({ tarefas, onSelectTarefa }: { tarefas: ProjetoTare
                   return (
                     <button
                       key={tarefaItem.id}
-                      className="w-full text-left text-[11px] leading-tight px-1.5 py-0.5 rounded bg-muted hover:bg-primary/10 truncate"
+                      className="w-full text-left text-micro leading-tight px-1.5 py-0.5 rounded bg-muted hover:bg-primary/10 truncate"
                       onClick={() => onSelectTarefa(tarefaItem)}
                       title={`${prioridadeLabel} · ${tarefaItem.titulo}`}
                     >
-                      <StatusBadge tone={prioridadeTone[tarefaItem.prioridade]} size="sm">{prioridadeLabel[0].toUpperCase()}</StatusBadge>{' '}
+                      <StatusBadge tone={prioridadeTone[tarefaItem.prioridade]}>{prioridadeLabel[0].toUpperCase()}</StatusBadge>{' '}
                       {tarefaItem.titulo}
                     </button>
                   );
                 })}
-                {items.length > 3 && <div className="text-[10px] text-muted-foreground px-1.5">{t('projetos.calendar.more', { count: items.length - 3 })}</div>}
+                {items.length > 3 && <div className="text-micro text-muted-foreground px-1.5">{t('projetos.calendar.more', { count: items.length - 3 })}</div>}
               </div>
             </div>
           );

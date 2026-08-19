@@ -1,4 +1,5 @@
 import React from 'react';
+import { IconAdd, IconEdit, IconDelete, IconSuccess, IconPlay, IconFlag } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import ConfirmDialog from '@/components/ConfirmDialog';
@@ -8,13 +9,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Plus, Pencil, Trash2, Play, CheckCircle2, Flag } from 'lucide-react';
 import { useSprints, useUpsertSprint, useDeleteSprint, type ProjetoSprint } from '@/hooks/useProjetoExtras';
 import type { ProjetoTarefa } from '@/types/projetos';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getPrioridadeLabel } from './enum-labels';
 import { DateField } from '@/components/ui/date-field';
-
+import { formatarDiaParaDB, intlLocale, parseDataLocal } from '@/lib/date-utils';
 interface Props {
   projetoId: string;
   tarefas: ProjetoTarefa[];
@@ -48,11 +48,11 @@ export function SprintsPanel({ projetoId, tarefas, onSelectTarefa }: Props) {
           </SelectContent>
         </Select>
         <Button size="sm" onClick={() => { setEditing(null); setOpen(true); }}>
-          <Plus className="h-4 w-4" /> {t('projetos.sprints.newSprint')}
+          <IconAdd className="h-4 w-4" /> {t('projetos.sprints.newSprint')}
         </Button>
         {ativa && (
           <Button size="sm" variant="outline" onClick={() => { setEditing(ativa); setOpen(true); }}>
-            <Pencil className="h-4 w-4" /> {t('projetos.sprints.edit')}
+            <IconEdit className="h-4 w-4" /> {t('projetos.sprints.edit')}
           </Button>
         )}
       </div>
@@ -60,7 +60,7 @@ export function SprintsPanel({ projetoId, tarefas, onSelectTarefa }: Props) {
       {isLoading ? null : sprints.length === 0 ? (
         <EmptyState
           variant="illustrated"
-          icon={<Flag className="h-8 w-8" />}
+          icon={<IconFlag className="h-8 w-8" />}
           title={t('projetos.sprints.emptyTitle')}
           description={t('projetos.sprints.emptyDesc')}
           action={{ label: t('projetos.sprints.createFirst'), onClick: () => { setEditing(null); setOpen(true); } }}
@@ -86,21 +86,21 @@ function SprintCabecalho({ sprint, tarefas }: { sprint: ProjetoSprint; tarefas: 
     <div className="rounded-lg border border-border bg-card p-4 space-y-2">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
-          <div className="text-xs uppercase tracking-wide text-muted-foreground">{t('projetos.sprints.sprintLabel')}</div>
+          <div className="text-xs text-muted-foreground">{t('projetos.sprints.sprintLabel')}</div>
           <h3 className="text-lg font-semibold">{sprint.nome}</h3>
           {sprint.objetivo && <p className="text-sm text-muted-foreground">{sprint.objetivo}</p>}
         </div>
         <div className="flex gap-2 items-center">
-          {sprint.ativa && <StatusBadge tone="success" size="sm">{t('projetos.sprints.activeBadge')}</StatusBadge>}
-          {sprint.concluida && <StatusBadge tone="info" size="sm">{t('projetos.sprints.completedBadge')}</StatusBadge>}
+          {sprint.ativa && <StatusBadge tone="success">{t('projetos.sprints.activeBadge')}</StatusBadge>}
+          {sprint.concluida && <StatusBadge tone="info">{t('projetos.sprints.completedBadge')}</StatusBadge>}
           <span className="text-xs text-muted-foreground">
-            {new Date(sprint.data_inicio).toLocaleDateString('pt-BR')} → {new Date(sprint.data_fim).toLocaleDateString('pt-BR')}
+            {parseDataLocal(sprint.data_inicio).toLocaleDateString(intlLocale())} → {parseDataLocal(sprint.data_fim).toLocaleDateString(intlLocale())}
           </span>
         </div>
       </div>
       <div className="flex items-center gap-3 pt-1">
-        <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
-          <div className="h-full bg-primary transition-all" style={{ width: `${pct}%` }} />
+        <div className="flex-1 min-h-0 h-2 rounded-full bg-muted overflow-hidden">
+          <div className="h-full bg-primary transition-ui" style={{ width: `${pct}%` }} />
         </div>
         <span className="text-xs tabular-nums text-muted-foreground">{conc}/{tarefas.length} · {pct}%</span>
       </div>
@@ -113,8 +113,8 @@ function Burndown({ sprint, tarefas }: { sprint?: ProjetoSprint; tarefas: Projet
   if (!sprint || tarefas.length === 0) return null;
 
   const total = tarefas.length;
-  const start = new Date(sprint.data_inicio).getTime();
-  const end = new Date(sprint.data_fim).getTime();
+  const start = parseDataLocal(sprint.data_inicio).getTime();
+  const end = parseDataLocal(sprint.data_fim).getTime();
   const dias = Math.max(1, Math.round((end - start) / 86400000) + 1);
 
   // série ideal: linha linear de total -> 0
@@ -167,10 +167,10 @@ function ListaTarefasSprint({ tarefas, onSelect }: { tarefas: ProjetoTarefa[]; o
         <button
           key={t.id}
           onClick={() => onSelect(t)}
-          className="w-full text-left px-3 py-2 hover:bg-muted/40 flex items-center gap-2"
+          className="w-full text-left px-3 py-2 hover:bg-accent flex items-center gap-2"
         >
           {t.concluida_em
-            ? <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+            ? <IconSuccess className="h-4 w-4 text-success" />
             : <span className="h-3.5 w-3.5 rounded-full border border-muted-foreground/40" />}
           <span className={`flex-1 text-sm ${t.concluida_em ? 'line-through text-muted-foreground' : ''}`}>{t.titulo}</span>
           <span className="text-xs text-muted-foreground">{getPrioridadeLabel(t2, t.prioridade)}</span>
@@ -192,7 +192,7 @@ function SprintDialog({ open, onOpenChange, projetoId, sprint }: { open: boolean
         nome: sprint?.nome ?? '',
         objetivo: sprint?.objetivo ?? '',
         data_inicio: sprint?.data_inicio ?? new Date().toISOString().slice(0, 10),
-        data_fim: sprint?.data_fim ?? new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10),
+        data_fim: sprint?.data_fim ?? formatarDiaParaDB(new Date(Date.now() + 14 * 86400000)),
         ativa: sprint?.ativa ?? !sprint,
         concluida: sprint?.concluida ?? false,
       });
@@ -210,14 +210,14 @@ function SprintDialog({ open, onOpenChange, projetoId, sprint }: { open: boolean
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      icon={Flag}
+      icon={IconFlag}
       title={sprint ? t('projetos.sprints.dialogTitleEdit') : t('projetos.sprints.dialogTitleNew')}
       size="sm"
       footer={
         <div className="flex items-center justify-end gap-2 w-full">
           {sprint && (
             <Button variant="destructive" size="sm" className="mr-auto" onClick={() => setDeleteConfirm(true)}>
-              <Trash2 className="h-4 w-4" /> {t('projetos.sprints.deleteButton')}
+              <IconDelete className="h-4 w-4" /> {t('projetos.sprints.deleteButton')}
             </Button>
           )}
           <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>{t('projetos.sprints.cancel')}</Button>

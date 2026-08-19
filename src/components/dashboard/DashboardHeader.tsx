@@ -1,11 +1,13 @@
 import * as React from 'react';
-import { Clock, RefreshCw } from 'lucide-react';
+import { IconTime, IconRefresh } from '@/components/icons';
+;
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Icon } from '@/components/icons/Icon';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { format } from 'date-fns';
 import { ptBR, enUS } from 'date-fns/locale';
+import { dateFnsLocale } from '@/lib/date-utils';
 
 interface DashboardHeaderProps {
   /** Mantido por compatibilidade — não é mais exibido. */
@@ -31,7 +33,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   onRefresh,
 }) => {
   const { t, locale } = useLanguage();
-  const dateLocale = locale === 'pt' ? ptBR : enUS;
+  const dateLocale = dateFnsLocale();
 
   const timeStr = dataUpdatedAt ? format(new Date(dataUpdatedAt), 'HH:mm', { locale: dateLocale }) : '--:--';
 
@@ -86,7 +88,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 
       <div className="flex items-center gap-1.5 flex-shrink-0">
         <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground mr-1">
-          <Icon as={Clock} size="xs" />
+          <Icon as={IconTime} size="xs" />
           <span className="tabular-nums">{t('dashboard_v3.updatedAt').replace('{{time}}', timeStr)}</span>
         </div>
 
@@ -109,7 +111,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
               onClick={handleRefresh}
               aria-label={refreshLabel}
             >
-              <Icon as={RefreshCw} size="sm" className={atualizando ? 'animate-spin' : undefined} />
+              <Icon as={IconRefresh} size="sm" className={atualizando ? 'animate-spin' : undefined} />
             </Button>
           </TooltipTrigger>
           <TooltipContent>{statusLabel ?? refreshLabel}</TooltipContent>
@@ -123,5 +125,4 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   );
 };
 
-export default DashboardHeader;
 

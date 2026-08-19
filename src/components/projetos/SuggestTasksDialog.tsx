@@ -1,4 +1,6 @@
+import { IconChecklist } from '@/components/icons';
 import React, { useState } from 'react';
+
 import { DialogShell } from '@/components/ui/dialog-shell';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -6,13 +8,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
-import { Sparkles } from 'lucide-react';
+;
 import { invokeEdgeFunction } from '@/lib/edge-function-utils';
 import { useUpsertTarefa } from '@/hooks/useProjetoTarefas';
 import type { ProjetoColuna, ProjetoTarefaPrioridade } from '@/types/projetos';
 import { PRIORIDADE_LABEL } from '@/types/projetos';
 import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { formatStatus } from '@/lib/text-utils';
 
 interface SuggestTasksDialogProps {
   open: boolean;
@@ -83,7 +86,7 @@ export const SuggestTasksDialog: React.FC<SuggestTasksDialogProps> = ({ open, on
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      icon={Sparkles}
+      icon={IconChecklist}
       title={t('projetos.suggestTasks.title')}
       description={t('projetos.suggestTasks.description')}
       size="md"
@@ -101,12 +104,12 @@ export const SuggestTasksDialog: React.FC<SuggestTasksDialogProps> = ({ open, on
 
           {sugestoes.length === 0 ? (
             <Button onClick={handleGerar} disabled={loading} className="w-full">
-              {loading ? <AkurisPulse size={20} /> : <><Sparkles className="h-4 w-4 mr-2" />{t('projetos.suggestTasks.generateSuggestions')}</>}
+              {loading ? <AkurisPulse size={20} /> : <>{t('projetos.suggestTasks.generateSuggestions')}</>}
             </Button>
           ) : (
             <div className="space-y-2 max-h-64 overflow-auto rounded-md border border-border p-3">
               {sugestoes.map((s, i) => (
-                <div key={i} className="flex gap-3 p-2 rounded hover:bg-muted/40">
+                <div key={i} className="flex gap-3 p-2 rounded hover:bg-accent">
                   <Checkbox
                     checked={selecionadas.has(i)}
                     onCheckedChange={(c) => {
@@ -118,7 +121,7 @@ export const SuggestTasksDialog: React.FC<SuggestTasksDialogProps> = ({ open, on
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-medium">{s.titulo}</span>
-                      {s.prioridade && <StatusBadge tone={s.prioridade === 'critica' ? 'destructive' : s.prioridade === 'alta' ? 'warning' : 'info'} size="sm">{PRIORIDADE_LABEL[s.prioridade]}</StatusBadge>}
+                      {s.prioridade && <StatusBadge tone={s.prioridade === 'critica' ? 'destructive' : s.prioridade === 'alta' ? 'warning' : 'info'}>{PRIORIDADE_LABEL[s.prioridade] ?? formatStatus(s.prioridade)}</StatusBadge>}
                       {s.estimativa_horas && <span className="text-xs text-muted-foreground">{s.estimativa_horas}h</span>}
                     </div>
                     {s.descricao && <p className="text-sm text-muted-foreground mt-1">{s.descricao}</p>}

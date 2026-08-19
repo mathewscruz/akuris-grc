@@ -1,7 +1,6 @@
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowRight, ExternalLink } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -10,27 +9,29 @@ import {
   SheetTitle,
   SheetFooter,
 } from '@/components/ui/sheet';
+import { AtivosIcon, RiscosIcon, IncidentesIcon, DocumentosIcon, DueDiligenceIcon, DenunciasIcon, ControlesIcon, IconView, IconExternal, IconInfo, IconArrowRight, IconScale, IconChecklist, IconKey, IconShieldCheck, IconActivity, IconLock, IconServer, IconChart, IconUserCheck } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Icon } from '@/components/icons/Icon';
-import {
-  AtivosIcon,
-  RiscosIcon,
-  IncidentesIcon,
-  DocumentosIcon,
-  DueDiligenceIcon,
-  DenunciasIcon,
-  ControlesIcon,
-} from '@/components/icons';
-import { Scale, ListChecks, AlertCircle, KeyRound, FileKey, ShieldCheck, Activity, Lock, Server, Eye, FileBarChart, ClipboardCheck, UserCheck } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { logger } from '@/lib/logger';
-import { formatDateShort } from '@/lib/date-utils';
+import { formatDateShort, formatDateOnly, formatarDiaParaDB } from '@/lib/date-utils';
 import { formatStatus } from '@/lib/text-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+
+/**
+ * Limite superior da janela, em `YYYY-MM-DD`, para os recortes de "vencendo".
+ * Formatado a partir dos componentes LOCAIS: `toISOString()` converte para UTC
+ * primeiro e, a oeste de Greenwich, entrega o dia anterior.
+ */
+const emJanela = (dias: number): string => {
+  const d = new Date();
+  d.setDate(d.getDate() + dias);
+  return formatarDiaParaDB(d);
+};
 
 type TFunc = (key: string, params?: Record<string, string | number>) => string;
 
@@ -40,6 +41,8 @@ export type DrillDownKey =
   | 'incidentes'
   | 'planos'
   | 'contratos'
+  | 'contratos-vencidos'
+  | 'contratos-vencendo'
   | 'documentos'
   | 'due_diligence'
   | 'denuncias'
@@ -158,7 +161,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
       return {
         title: d('planos.title'),
         description: d('planos.description'),
-        icon: ListChecks,
+        icon: IconChecklist,
         route: '/planos-acao',
         fetcher: async (empresaId) => {
           const { data, error } = await supabase
@@ -207,22 +210,47 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
           }));
         },
       };
+    // As quatro KPIs de contratos abriam TODAS esta mesma lista: clicar em
+    // "Valor vencido" (1 contrato) mostrava os cinco, incluindo rascunhos e
+    // contratos que vencem no ano seguinte. Cada tile passa a abrir a lista
+    // que o rótulo promete. E a data leva o ano — "03 de jul" não distingue
+    // 2026 de 2027, que é a única pergunta num vencimento.
     case 'contratos':
+    case 'contratos-vencidos':
+    case 'contratos-vencendo': {
+      const escopo = key;
+      const rotulo =
+        escopo === 'contratos-vencidos' ? 'contratosVencidos'
+        : escopo === 'contratos-vencendo' ? 'contratosVencendo'
+        : 'contratos';
       return {
-        title: d('contratos.title'),
-        description: d('contratos.description'),
-        icon: Scale,
+        title: d(`${rotulo}.title`),
+        description: d(`${rotulo}.description`),
+        icon: IconScale,
         route: '/contratos',
         fetcher: async (empresaId) => {
           const { data, error } = await supabase
             .from('contratos')
             .select('id, nome, numero_contrato, status, data_fim')
             .eq('empresa_id', empresaId)
-            .order('data_fim', { ascending: true, nullsFirst: false })
-            .limit(5);
+            .order('data_fim', { ascending: true, nullsFirst: false });
           if (error) throw error;
           const today = todayIso();
-          return (data || []).map((c: any) => {
+          const em30 = formatarDiaParaDB(new Date(Date.now() + 30 * 86400000));
+          // Estados administrativos (rascunho, negociação, encerrado...) não
+          // vencem: nunca entram nas listas de vencimento.
+          const administra = (st: string) =>
+            !['ativo', 'vigente'].includes((st || '').toLowerCase());
+          const filtrado = (data || []).filter((c: any) => {
+            if (escopo === 'contratos-vencidos') {
+              return !administra(c.status) && c.data_fim && c.data_fim < today;
+            }
+            if (escopo === 'contratos-vencendo') {
+              return !administra(c.status) && c.data_fim && c.data_fim >= today && c.data_fim <= em30;
+            }
+            return true;
+          });
+          return filtrado.slice(0, 5).map((c: any) => {
             const expired = c.data_fim && c.data_fim < today;
             return {
               id: c.id,
@@ -230,11 +258,12 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
               subtitle: c.numero_contrato || c.status,
               status: expired ? d('expired') : c.status,
               tone: (expired ? 'destructive' : 'info') as DrillItem['tone'],
-              date: fmtDate(c.data_fim),
+              date: formatDateOnly(c.data_fim),
             };
           });
         },
       };
+    }
     case 'documentos':
       return {
         title: d('documentos.title'),
@@ -242,10 +271,17 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
         icon: DocumentosIcon,
         route: '/documentos',
         fetcher: async (empresaId) => {
+          /*
+            O painel promete um recorte no seu próprio subtítulo; a consulta
+            trazia as primeiras N linhas da tabela. Um arquivado ou um rascunho
+            aparecia em "vencendo", uma chave saudável em "próxima da rotação".
+            Num painel de GRC isso enterra o que é problema no meio do que não é.
+          */
           const { data, error } = await supabase
             .from('documentos')
             .select('id, nome, status, data_vencimento')
             .eq('empresa_id', empresaId)
+            .or(`status.eq.pendente_aprovacao,and(status.eq.ativo,data_vencimento.lte.${emJanela(30)})`)
             .order('data_vencimento', { ascending: true, nullsFirst: false })
             .limit(5);
           if (error) throw error;
@@ -270,6 +306,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             .from('due_diligence_assessments')
             .select('id, fornecedor_nome, status, score_final, updated_at')
             .eq('empresa_id', empresaId)
+            .neq('status', 'concluido')
             .order('updated_at', { ascending: false })
             .limit(5);
           if (error) throw error;
@@ -325,6 +362,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             .from('controles')
             .select('id, nome, codigo, status, criticidade, proxima_avaliacao')
             .eq('empresa_id', empresaId)
+            .eq('status', 'ativo')
             .order('criticidade', { ascending: false })
             .limit(5);
           if (error) throw error;
@@ -347,13 +385,14 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
       return {
         title: d('ativos_chaves.title'),
         description: d('ativos_chaves.description'),
-        icon: KeyRound,
+        icon: IconKey,
         route: '/ativos/chaves',
         fetcher: async (empresaId) => {
           const { data, error } = await supabase
             .from('ativos_chaves_criptograficas')
             .select('id, nome, tipo_chave, criticidade, data_proxima_rotacao')
             .eq('empresa_id', empresaId)
+            .lte('data_proxima_rotacao', emJanela(30))
             .order('data_proxima_rotacao', { ascending: true, nullsFirst: false })
             .limit(5);
           if (error) throw error;
@@ -375,13 +414,14 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
       return {
         title: d('ativos_licencas.title'),
         description: d('ativos_licencas.description'),
-        icon: FileKey,
+        icon: IconKey,
         route: '/ativos/licencas',
         fetcher: async (empresaId) => {
           const { data, error } = await supabase
             .from('ativos_licencas')
             .select('id, nome, tipo_licenca, criticidade, data_vencimento')
             .eq('empresa_id', empresaId)
+            .lte('data_vencimento', emJanela(30))
             .order('data_vencimento', { ascending: true, nullsFirst: false })
             .limit(5);
           if (error) throw error;
@@ -403,8 +443,8 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
       return {
         title: d('auditorias.title'),
         description: d('auditorias.description'),
-        icon: ClipboardCheck,
-        route: '/governanca?tab=auditorias',
+        icon: IconChecklist,
+        route: '/governanca/auditorias',
         fetcher: async (empresaId) => {
           // Junta auditorias da empresa via auditoria_id → auditorias.empresa_id
           const { data, error } = await supabase
@@ -429,13 +469,14 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
       return {
         title: d('continuidade.title'),
         description: d('continuidade.description'),
-        icon: ShieldCheck,
+        icon: IconShieldCheck,
         route: '/continuidade',
         fetcher: async (empresaId) => {
           const { data, error } = await supabase
             .from('continuidade_planos')
             .select('id, nome, tipo, status, proxima_revisao')
             .eq('empresa_id', empresaId)
+            .lte('proxima_revisao', emJanela(30))
             .order('proxima_revisao', { ascending: true, nullsFirst: false })
             .limit(5);
           if (error) throw error;
@@ -457,7 +498,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
       return {
         title: d('gap_analysis.title'),
         description: d('gap_analysis.description'),
-        icon: FileBarChart,
+        icon: IconChart,
         route: '/gap-analysis/frameworks',
         fetcher: async (empresaId) => {
           // Lista os 5 frameworks com mais avaliações da empresa
@@ -491,7 +532,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
       return {
         title: d('revisao_acessos.title'),
         description: d('revisao_acessos.description'),
-        icon: UserCheck,
+        icon: IconUserCheck,
         route: '/revisao-acessos',
         fetcher: async (empresaId) => {
           const { data, error } = await supabase
@@ -520,7 +561,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
       return {
         title: d('privacidade.title'),
         description: d('privacidade.description'),
-        icon: Eye,
+        icon: IconView,
         route: '/privacidade',
         fetcher: async (empresaId) => {
           const { data, error } = await supabase
@@ -549,7 +590,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
       return {
         title: d('riscos_aceite.title'),
         description: d('riscos_aceite.description'),
-        icon: Activity,
+        icon: IconActivity,
         route: '/riscos/aceite',
         fetcher: async (empresaId) => {
           const { data, error } = await supabase
@@ -578,7 +619,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
       return {
         title: d('sistemas.title'),
         description: d('sistemas.description'),
-        icon: Server,
+        icon: IconServer,
         route: '/sistemas',
         fetcher: async (empresaId) => {
           const { data, error } = await (supabase
@@ -602,7 +643,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
       return {
         title: d('contas_privilegiadas.title'),
         description: d('contas_privilegiadas.description'),
-        icon: Lock,
+        icon: IconLock,
         route: '/contas-privilegiadas',
         fetcher: async (empresaId) => {
           const { data, error } = await (supabase
@@ -630,7 +671,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
       return {
         title: d('fallback.title'),
         description: d('fallback.description'),
-        icon: AlertCircle,
+        icon: IconInfo,
         route: '/dashboard',
         fetcher: async () => [],
       };
@@ -673,9 +714,7 @@ export const KpiDrillDownDrawer: React.FC<KpiDrillDownDrawerProps> = ({ open, on
       <SheetContent side="right" className="w-full sm:max-w-md flex flex-col">
         <SheetHeader>
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <Icon as={config.icon as any} size="md" className="text-primary" />
-            </div>
+            <Icon as={config.icon as any} size="md" className="shrink-0 text-primary" />
             <div className="min-w-0">
               <SheetTitle className="truncate">{config.title}</SheetTitle>
               <SheetDescription className="text-xs">{config.description}</SheetDescription>
@@ -683,7 +722,7 @@ export const KpiDrillDownDrawer: React.FC<KpiDrillDownDrawerProps> = ({ open, on
           </div>
         </SheetHeader>
 
-        <div className="flex-1 overflow-y-auto -mx-6 px-6 py-4 space-y-2">
+        <div className="flex-1 min-h-0 overflow-y-auto -mx-6 px-6 py-4 space-y-2">
           {isLoading && (
             <div className="min-h-[200px] flex flex-col items-center justify-center gap-2">
               <AkurisPulse size={48} />
@@ -695,7 +734,7 @@ export const KpiDrillDownDrawer: React.FC<KpiDrillDownDrawerProps> = ({ open, on
               <EmptyState
                 title={t('dashWidgets.drill.errorTitle')}
                 description={t('dashWidgets.drill.errorDescription')}
-                icon={<Icon as={AlertCircle} size="lg" />}
+                icon={<Icon as={IconInfo} size="lg" />}
               />
               <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
                 {isFetching ? t('dashWidgets.drill.retrying') : t('dashWidgets.drill.retry')}
@@ -719,7 +758,7 @@ export const KpiDrillDownDrawer: React.FC<KpiDrillDownDrawerProps> = ({ open, on
                   onOpenChange(false);
                   navigate(`${config.route}?focus=${item.id}`);
                 }}
-                className="w-full text-left p-3 rounded-lg border bg-card hover:bg-accent/50 hover:border-primary/30 transition-all flex items-start justify-between gap-3 group"
+                className="w-full text-left p-3 rounded-lg border bg-card hover:bg-accent/50 hover:border-primary/30 transition-ui flex items-start justify-between gap-3 group"
               >
                 <div className="min-w-0 flex-1">
                   <div className="text-sm font-medium text-foreground truncate">{item.title}</div>
@@ -730,12 +769,12 @@ export const KpiDrillDownDrawer: React.FC<KpiDrillDownDrawerProps> = ({ open, on
                       </StatusBadge>
                     )}
                     {item.date && (
-                      <span className="text-[11px] text-muted-foreground tabular-nums">{item.date}</span>
+                      <span className="text-micro text-muted-foreground tabular-nums">{item.date}</span>
                     )}
                   </div>
                 </div>
                 <Icon
-                  as={ExternalLink}
+                  as={IconExternal}
                   size="sm"
                   className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-0.5"
                 />
@@ -753,7 +792,7 @@ export const KpiDrillDownDrawer: React.FC<KpiDrillDownDrawerProps> = ({ open, on
             }}
           >
             {t('dashWidgets.drill.viewAll')}
-            <Icon as={ArrowRight} size="sm" className="ml-2" />
+            <Icon as={IconArrowRight} size="sm" className="ml-2" />
           </Button>
         </SheetFooter>
       </SheetContent>
@@ -761,4 +800,3 @@ export const KpiDrillDownDrawer: React.FC<KpiDrillDownDrawerProps> = ({ open, on
   );
 };
 
-export default KpiDrillDownDrawer;

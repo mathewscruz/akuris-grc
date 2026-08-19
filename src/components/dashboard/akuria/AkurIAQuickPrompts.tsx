@@ -1,4 +1,4 @@
-import { Sparkles, AlertTriangle, ShieldCheck, FileText, BarChart3, Zap } from "lucide-react";
+import { AkurisAIIcon, IconWarning, IconFile, IconShieldCheck, IconChart, IconBolt } from '@/components/icons';
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -10,39 +10,39 @@ interface QuickPrompt {
 
 const PROMPTS_BY_ROUTE: Record<string, QuickPrompt[]> = {
   "/dashboard": [
-    { icon: BarChart3, key: "executiveSummary" },
-    { icon: AlertTriangle, key: "criticalRisks" },
-    { icon: ShieldCheck, key: "complianceMaturity" },
-    { icon: Zap, key: "topActions" },
+    { icon: IconChart, key: "executiveSummary" },
+    { icon: IconWarning, key: "criticalRisks" },
+    { icon: IconShieldCheck, key: "complianceMaturity" },
+    { icon: IconBolt, key: "topActions" },
   ],
   "/riscos": [
-    { icon: AlertTriangle, key: "untreatedRisks" },
-    { icon: BarChart3, key: "riskDistribution" },
-    { icon: Sparkles, key: "suggestTreatments" },
-    { icon: Zap, key: "newRisk" },
+    { icon: IconWarning, key: "untreatedRisks" },
+    { icon: IconChart, key: "riskDistribution" },
+    { icon: AkurisAIIcon, key: "suggestTreatments" },
+    { icon: IconBolt, key: "newRisk" },
   ],
   "/incidentes": [
-    { icon: AlertTriangle, key: "openIncidents" },
-    { icon: BarChart3, key: "trends" },
-    { icon: Zap, key: "newIncident" },
-    { icon: ShieldCheck, key: "lessonsLearned" },
+    { icon: IconWarning, key: "openIncidents" },
+    { icon: IconChart, key: "trends" },
+    { icon: IconBolt, key: "newIncident" },
+    { icon: IconShieldCheck, key: "lessonsLearned" },
   ],
   "/governanca": [
-    { icon: ShieldCheck, key: "controlsDue" },
-    { icon: BarChart3, key: "controlEffectiveness" },
-    { icon: AlertTriangle, key: "pendingAudits" },
+    { icon: IconShieldCheck, key: "controlsDue" },
+    { icon: IconChart, key: "controlEffectiveness" },
+    { icon: IconWarning, key: "pendingAudits" },
   ],
   "/documentos": [
-    { icon: FileText, key: "expiredDocs" },
-    { icon: Sparkles, key: "docCoverage" },
+    { icon: IconFile, key: "expiredDocs" },
+    { icon: AkurisAIIcon, key: "docCoverage" },
   ],
   "/contratos": [
-    { icon: FileText, key: "expiringContracts" },
-    { icon: BarChart3, key: "contractValue" },
+    { icon: IconFile, key: "expiringContracts" },
+    { icon: IconChart, key: "contractValue" },
   ],
   "/planos-acao": [
-    { icon: Zap, key: "latePlans" },
-    { icon: AlertTriangle, key: "highPriorityPlans" },
+    { icon: IconBolt, key: "latePlans" },
+    { icon: IconWarning, key: "highPriorityPlans" },
   ],
 };
 
@@ -69,9 +69,9 @@ export function AkurIAQuickPrompts({ route, onPick }: Props) {
             variant="outline"
             size="sm"
             onClick={() => onPick(t(`dashWidgets.akuria.qp.${p.key}.prompt`))}
-            className="h-auto py-2 px-3 justify-start text-left whitespace-normal hover:border-primary/40 hover:bg-primary/5 transition-all group"
+            className="h-auto py-2 px-3 justify-start text-left whitespace-normal hover:border-primary/40 hover:bg-primary/5 transition-ui group"
           >
-            <Icon className="h-3.5 w-3.5 text-primary shrink-0 mr-2 group-hover:scale-110 transition-transform" />
+            <Icon className="h-3.5 w-3.5 text-primary shrink-0 mr-2" />
             <span className="text-xs leading-tight text-foreground">
               {t(`dashWidgets.akuria.qp.${p.key}.label`)}
             </span>

@@ -1,4 +1,4 @@
-import { Shield, AlertTriangle } from 'lucide-react';
+import { IconWarning, IconShield } from '@/components/icons';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { GrcMaturity } from '@/hooks/useGrcMaturityScore';
 import { HealthScoreGauge } from './HealthScoreGauge';
@@ -44,22 +44,20 @@ export function HeroScoreBanner({
 
   const metrics = [
     {
-      icon: AlertTriangle,
+      icon: IconWarning,
       label: t('dashboard.criticalAlerts'),
       value: criticalAlerts,
       color: criticalAlerts > 0 ? 'text-destructive' : 'text-success',
-      bgColor: criticalAlerts > 0 ? 'bg-destructive/10' : 'bg-success/10',
       title: alertsTooltip as string | undefined,
       // Severidade residual: é o que ainda exige decisão depois dos controlos.
       hint: t('dashboard.criticalAlertsBasis'),
       onClick: onAlertsClick,
     },
     {
-      icon: Shield,
+      icon: IconShield,
       label: t('dashboard.activeControls'),
       value: activeControls,
       color: 'text-primary',
-      bgColor: 'bg-primary/10',
       title: undefined as string | undefined,
       hint: undefined as string | undefined,
       onClick: undefined as (() => void) | undefined,
@@ -67,7 +65,7 @@ export function HeroScoreBanner({
   ];
 
   return (
-    <div className="relative overflow-hidden rounded-xl border bg-gradient-to-br from-primary/5 via-card to-accent/5 p-4 md:p-6 lg:p-8">
+    <div className="relative overflow-hidden rounded-lg border bg-gradient-to-br from-primary/5 via-card to-accent/5 p-4 md:p-6 lg:p-8">
       {/* Akuris Mark Pattern — assinatura visual */}
       <AkurisMarkPattern opacity={0.05} />
       {/* Corner Accent — chevron de marca */}
@@ -109,14 +107,15 @@ export function HeroScoreBanner({
                       : ''
                   }`}
                 >
-                  <div className={`p-1.5 rounded-md ${metric.bgColor}`}>
-                    <metric.icon className={`h-3.5 w-3.5 ${metric.color}`} />
-                  </div>
+                  <metric.icon className={`h-4 w-4 shrink-0 ${metric.color}`} />
+                  {/* Rótulo, valor e nota no mesmo corpo de letra. Eram três
+                      degraus — xs, sm e micro — num cartão de 90px de largura,
+                      e a diferença lia-se como desalinho. Separa o peso. */}
                   <div>
-                    <p className="text-xs text-muted-foreground leading-none">{metric.label}</p>
-                    <p className={`text-sm font-bold ${metric.color} leading-tight mt-0.5`}>{metric.value}</p>
+                    <p className="text-micro text-muted-foreground leading-none">{metric.label}</p>
+                    <p className={`text-micro font-bold tabular-nums ${metric.color} leading-tight mt-0.5`}>{metric.value}</p>
                     {metric.hint && (
-                      <p className="text-[10px] text-muted-foreground leading-none mt-1">{metric.hint}</p>
+                      <p className="text-micro text-muted-foreground leading-none mt-1">{metric.hint}</p>
                     )}
                   </div>
                 </Wrapper>

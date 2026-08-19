@@ -9,7 +9,7 @@ const KpiDrillDownContext = React.createContext<KpiDrillDownContextValue | null>
 
 /**
  * Provider único do drawer de drill-down. Deve envolver a árvore (Layout)
- * para que qualquer StatCard com prop `drillDown` possa abri-lo via contexto,
+ * para que qualquer item de StatStrip com `drillDown` possa abri-lo via contexto,
  * sem prop-drilling.
  */
 export const KpiDrillDownProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {

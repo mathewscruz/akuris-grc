@@ -1,4 +1,5 @@
 import React from 'react';
+import { IconEdit, IconDelete, IconMore, IconArchive } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
@@ -9,7 +10,6 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { MoreVertical, Pencil, Archive, ArchiveRestore, Trash2 } from 'lucide-react';
 import type { Projeto } from '@/types/projetos';
 import { useUpsertProjeto, useDeleteProjeto } from '@/hooks/useProjetos';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -55,23 +55,23 @@ export function ProjetoActionsMenu({ projeto, onEdit, variant = 'menu' }: Props)
               className="h-7 w-7"
               onClick={(e) => e.stopPropagation()}
             >
-              <MoreVertical className="h-4 w-4" />
+              <IconMore className="h-4 w-4" />
             </Button>
           ) : (
             <Button variant="outline" size="sm">
-              <MoreVertical className="h-4 w-4" /> {t('projetos.actionsMenu.actions')}
+              <IconMore className="h-4 w-4" /> {t('projetos.actionsMenu.actions')}
             </Button>
           )}
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
           <DropdownMenuItem onClick={onEdit}>
-            <Pencil className="h-4 w-4 mr-2" /> {t('projetos.actionsMenu.editProject')}
+            <IconEdit className="h-4 w-4 mr-2" /> {t('projetos.actionsMenu.editProject')}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={toggleArquivo}>
             {arquivado ? (
-              <><ArchiveRestore className="h-4 w-4 mr-2" /> {t('projetos.actionsMenu.reactivate')}</>
+              <><IconArchive className="h-4 w-4 mr-2" /> {t('projetos.actionsMenu.reactivate')}</>
             ) : (
-              <><Archive className="h-4 w-4 mr-2" /> {t('projetos.actionsMenu.archive')}</>
+              <><IconArchive className="h-4 w-4 mr-2" /> {t('projetos.actionsMenu.archive')}</>
             )}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
@@ -79,7 +79,7 @@ export function ProjetoActionsMenu({ projeto, onEdit, variant = 'menu' }: Props)
             className="text-destructive focus:text-destructive"
             onClick={() => { setConfirmName(''); setConfirmDel(true); }}
           >
-            <Trash2 className="h-4 w-4 mr-2" /> {t('projetos.actionsMenu.deleteProject')}
+            <IconDelete className="h-4 w-4 mr-2" /> {t('projetos.actionsMenu.deleteProject')}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

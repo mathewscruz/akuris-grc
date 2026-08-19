@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
+import { IconFile } from '@/components/icons';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import { Button } from '@/components/ui/button';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { FileText, Sparkles } from 'lucide-react';
+;
 import { invokeEdgeFunction } from '@/lib/edge-function-utils';
-import { StatCard } from '@/components/ui/stat-card';
+import { StatStrip } from '@/components/ui/stat-strip';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface StatusReportDialogProps {
@@ -56,7 +57,7 @@ export const StatusReportDialog: React.FC<StatusReportDialogProps> = ({ open, on
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      icon={FileText}
+      icon={IconFile}
       title={t('projetos.statusReport.title', { nome: projetoNome })}
       description={t('projetos.statusReport.description')}
       size="lg"
@@ -64,7 +65,7 @@ export const StatusReportDialog: React.FC<StatusReportDialogProps> = ({ open, on
     >
         {!report && !loading && (
           <Button onClick={handleGerar} className="w-full">
-            <Sparkles className="h-4 w-4 mr-2" />{t('projetos.statusReport.generate')}
+            {t('projetos.statusReport.generate')}
           </Button>
         )}
 
@@ -72,16 +73,18 @@ export const StatusReportDialog: React.FC<StatusReportDialogProps> = ({ open, on
 
         {report && metrics && (
           <div className="space-y-5">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <StatCard title={t('projetos.statusReport.statTasks')} value={metrics.total} />
-              <StatCard title={t('projetos.statusReport.statDone')} value={metrics.concluidas} />
-              <StatCard title={t('projetos.statusReport.statOverdue')} value={metrics.atrasadas} />
-              <StatCard title={t('projetos.statusReport.statProgress')} value={`${metrics.progressoMedio}%`} />
-            </div>
+            <StatStrip
+              items={[
+                { key: 'total', label: t('projetos.statusReport.statTasks'), value: metrics.total },
+                { key: 'concluidas', label: t('projetos.statusReport.statDone'), value: metrics.concluidas },
+                { key: 'atrasadas', label: t('projetos.statusReport.statOverdue'), value: metrics.atrasadas, tone: 'destructive' },
+                { key: 'progresso', label: t('projetos.statusReport.statProgress'), value: `${metrics.progressoMedio}%` },
+              ]}
+            />
 
             <div className="rounded-lg border border-border bg-card p-5 space-y-3">
               <div className="flex items-center gap-3 flex-wrap">
-                {report.saude && <StatusBadge tone={saudeTone[report.saude] ?? 'info'} size="md">{t('projetos.statusReport.health', { value: report.saude })}</StatusBadge>}
+                {report.saude && <StatusBadge tone={saudeTone[report.saude] ?? 'info'}>{t('projetos.statusReport.health', { value: report.saude })}</StatusBadge>}
                 {report.headline && <span className="font-semibold text-lg">{report.headline}</span>}
               </div>
               {report.resumo_executivo && <p className="text-sm leading-relaxed">{report.resumo_executivo}</p>}
@@ -107,13 +110,13 @@ export const StatusReportDialog: React.FC<StatusReportDialogProps> = ({ open, on
 
             {report.recomendacao_gestor && (
               <div className="rounded-lg border-l-4 border-primary bg-primary/5 p-4">
-                <p className="text-xs uppercase tracking-wide text-primary font-semibold mb-1">{t('projetos.statusReport.managerRecommendation')}</p>
+                <p className="text-xs text-primary font-semibold mb-1">{t('projetos.statusReport.managerRecommendation')}</p>
                 <p className="text-sm">{report.recomendacao_gestor}</p>
               </div>
             )}
 
             <Button variant="outline" onClick={handleGerar} className="w-full">
-              <Sparkles className="h-4 w-4 mr-2" />{t('projetos.statusReport.regenerate')}
+              {t('projetos.statusReport.regenerate')}
             </Button>
           </div>
         )}

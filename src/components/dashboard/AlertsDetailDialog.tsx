@@ -1,5 +1,5 @@
 import { DialogShell } from "@/components/ui/dialog-shell";
-import { AlertTriangle, Shield, FileWarning, Flame, ExternalLink } from "lucide-react";
+import { IconExternal, IconWarning, IconShield, IconBolt, IconMegaphone } from '@/components/icons';
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -36,13 +36,13 @@ const AlertsDetailDialog = ({
   const getTypeConfig = (type: AlertDetail['type']) => {
     switch (type) {
       case 'risco':
-        return { icon: AlertTriangle, label: t('alertsDialog.risk'), variant: 'destructive' as const, route: '/riscos' };
+        return { icon: IconWarning, label: t('alertsDialog.risk'), variant: 'destructive' as const, route: '/riscos' };
       case 'denuncia':
-        return { icon: FileWarning, label: t('alertsDialog.complaint'), variant: 'warning' as const, route: '/denuncia' };
+        return { icon: IconMegaphone, label: t('alertsDialog.complaint'), variant: 'warning' as const, route: '/denuncia' };
       case 'controle':
-        return { icon: Shield, label: t('alertsDialog.control'), variant: 'secondary' as const, route: '/governanca?tab=controles' };
+        return { icon: IconShield, label: t('alertsDialog.control'), variant: 'secondary' as const, route: '/governanca/controles' };
       case 'incidente':
-        return { icon: Flame, label: t('alertsDialog.incident'), variant: 'destructive' as const, route: '/incidentes' };
+        return { icon: IconBolt, label: t('alertsDialog.incident'), variant: 'destructive' as const, route: '/incidentes' };
     }
   };
 
@@ -63,7 +63,7 @@ const AlertsDetailDialog = ({
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      icon={AlertTriangle}
+      icon={IconWarning}
       title={t('alertsDialog.title')}
       size="md"
       hideFooter
@@ -93,16 +93,16 @@ const AlertsDetailDialog = ({
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-semibold flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4 text-destructive" />
+                    <IconWarning className="h-4 w-4 text-destructive" />
                     {t('alertsDialog.highCriticalRisks')}
                   </h3>
                   <Button variant="ghost" size="sm" onClick={() => handleNavigate('risco')} className="text-xs">
-                    {t('alertsDialog.viewAll')} <ExternalLink className="h-3 w-3 ml-1" />
+                    {t('alertsDialog.viewAll')} <IconExternal className="h-3 w-3 ml-1" />
                   </Button>
                 </div>
                 <div className="space-y-2">
                   {groupedAlerts.risco.slice(0, 5).map(alert => (
-                    <div key={alert.id} className="p-3 bg-muted/50 rounded-lg border-l-4 border-destructive">
+                    <div key={alert.id} className="p-3 bg-card rounded-lg border-l-4 border-destructive">
                       <p className="font-medium text-sm">{alert.title}</p>
                       {alert.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{alert.description}</p>}
                     </div>
@@ -118,16 +118,16 @@ const AlertsDetailDialog = ({
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-semibold flex items-center gap-2">
-                    <FileWarning className="h-4 w-4 text-warning" />
+                    <IconWarning className="h-4 w-4 text-warning" />
                     {t('alertsDialog.pendingComplaints')}
                   </h3>
                   <Button variant="ghost" size="sm" onClick={() => handleNavigate('denuncia')} className="text-xs">
-                    {t('alertsDialog.viewAll')} <ExternalLink className="h-3 w-3 ml-1" />
+                    {t('alertsDialog.viewAll')} <IconExternal className="h-3 w-3 ml-1" />
                   </Button>
                 </div>
                 <div className="space-y-2">
                   {groupedAlerts.denuncia.slice(0, 5).map(alert => (
-                    <div key={alert.id} className="p-3 bg-muted/50 rounded-lg border-l-4 border-warning">
+                    <div key={alert.id} className="p-3 bg-card rounded-lg border-l-4 border-warning">
                       <p className="font-medium text-sm">{alert.title}</p>
                       {alert.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{alert.description}</p>}
                     </div>
@@ -143,16 +143,16 @@ const AlertsDetailDialog = ({
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-semibold flex items-center gap-2">
-                    <Shield className="h-4 w-4 text-secondary-foreground" />
+                    <IconShield className="h-4 w-4 text-secondary-foreground" />
                     {t('alertsDialog.expiringControls')}
                   </h3>
                   <Button variant="ghost" size="sm" onClick={() => handleNavigate('controle')} className="text-xs">
-                    {t('alertsDialog.viewAll')} <ExternalLink className="h-3 w-3 ml-1" />
+                    {t('alertsDialog.viewAll')} <IconExternal className="h-3 w-3 ml-1" />
                   </Button>
                 </div>
                 <div className="space-y-2">
                   {groupedAlerts.controle.slice(0, 5).map(alert => (
-                    <div key={alert.id} className="p-3 bg-muted/50 rounded-lg border-l-4 border-secondary">
+                    <div key={alert.id} className="p-3 bg-card rounded-lg border-l-4 border-secondary">
                       <p className="font-medium text-sm">{alert.title}</p>
                       {alert.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{alert.description}</p>}
                     </div>
@@ -168,16 +168,16 @@ const AlertsDetailDialog = ({
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-semibold flex items-center gap-2">
-                    <Flame className="h-4 w-4 text-destructive" />
+                    <IconBolt className="h-4 w-4 text-destructive" />
                     {t('alertsDialog.criticalIncidents')}
                   </h3>
                   <Button variant="ghost" size="sm" onClick={() => handleNavigate('incidente')} className="text-xs">
-                    {t('alertsDialog.viewAll')} <ExternalLink className="h-3 w-3 ml-1" />
+                    {t('alertsDialog.viewAll')} <IconExternal className="h-3 w-3 ml-1" />
                   </Button>
                 </div>
                 <div className="space-y-2">
                   {groupedAlerts.incidente.slice(0, 5).map(alert => (
-                    <div key={alert.id} className="p-3 bg-muted/50 rounded-lg border-l-4 border-destructive">
+                    <div key={alert.id} className="p-3 bg-card rounded-lg border-l-4 border-destructive">
                       <p className="font-medium text-sm">{alert.title}</p>
                       {alert.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{alert.description}</p>}
                     </div>
@@ -191,7 +191,7 @@ const AlertsDetailDialog = ({
 
             {alertDetails.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
-                <Shield className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <IconShield className="h-12 w-12 mx-auto mb-3 opacity-50" />
                 <p>{t('alertsDialog.noAlerts')}</p>
                 <p className="text-sm">{t('alertsDialog.allGood')}</p>
               </div>

@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import type { ProjetoTarefa, ProjetoTarefaPrioridade } from '@/types/projetos';
 import { EmptyState } from '@/components/ui/empty-state';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { parseDataLocal } from '@/lib/date-utils';
 
 interface GanttChartProps {
   tarefas: ProjetoTarefa[];
@@ -23,8 +24,8 @@ export const GanttChart: React.FC<GanttChartProps> = ({ tarefas, onSelectTarefa 
     const items = (tarefas ?? [])
       .filter(t => t.data_inicio || t.prazo)
       .map(t => {
-        const inicio = t.data_inicio ? new Date(t.data_inicio) : (t.prazo ? new Date(t.prazo) : new Date());
-        const fim = t.data_fim ? new Date(t.data_fim) : (t.prazo ? new Date(t.prazo) : new Date(inicio.getTime() + DAY_MS));
+        const inicio = t.data_inicio ? parseDataLocal(t.data_inicio) : (t.prazo ? parseDataLocal(t.prazo) : new Date());
+        const fim = t.data_fim ? parseDataLocal(t.data_fim) : (t.prazo ? parseDataLocal(t.prazo) : new Date(inicio.getTime() + DAY_MS));
         return { t, inicio, fim: fim.getTime() < inicio.getTime() ? new Date(inicio.getTime() + DAY_MS) : fim };
       });
     if (items.length === 0) return null;

@@ -10,7 +10,6 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from 'recharts';
-import { TrendingUp, TrendingDown, Minus, LineChart as LineChartIcon } from 'lucide-react';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { CornerAccent } from '@/components/identity/CornerAccent';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,7 +17,8 @@ import { useAuth } from '@/components/AuthProvider';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getAppLocale } from '@/lib/i18n-locale';
-import { chartSeries, CHART_GRID, CHART_AXIS, CHART_AREA_OPACITY, CHART_TOOLTIP_STYLE } from '@/lib/chart-tokens';
+import { chartSeries, CHART_GRID, CHART_AXIS, CHART_AREA_OPACITY, CHART_TOOLTIP_STYLE, CHART_FONT } from '@/lib/chart-tokens';
+import { IconTrendUp, IconTrendDown, IconMinus, IconChartLine } from '@/components/icons';
 
 type TimeRange = 'daily' | 'weekly' | 'monthly' | 'yearly';
 
@@ -100,7 +100,6 @@ export function RiskScoreTimeline() {
       totalAtual: 0,
     };
     if (!riscos || riscos.length === 0) return empty;
-
 
     const now = new Date();
     const buckets: { end: Date; label: string }[] = [];
@@ -188,7 +187,7 @@ export function RiskScoreTimeline() {
       <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 pb-2">
         <div className="space-y-1 min-w-0">
           <CardTitle className="text-base">{t('dashboard.riskEvolution')}</CardTitle>
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-micro text-muted-foreground">
             {t('dashWidgets.timeline.subtitle')}
           </p>
           {latestScore !== null && (
@@ -205,16 +204,16 @@ export function RiskScoreTimeline() {
                       : 'text-muted-foreground'
                   }`}
                 >
-                  {delta.dir === 'down' && <TrendingDown className="h-3 w-3" strokeWidth={1.5} />}
-                  {delta.dir === 'up' && <TrendingUp className="h-3 w-3" strokeWidth={1.5} />}
-                  {delta.dir === 'flat' && <Minus className="h-3 w-3" strokeWidth={1.5} />}
+                  {delta.dir === 'down' && <IconTrendDown className="h-3 w-3" strokeWidth={1.5} />}
+                  {delta.dir === 'up' && <IconTrendUp className="h-3 w-3" strokeWidth={1.5} />}
+                  {delta.dir === 'flat' && <IconMinus className="h-3 w-3" strokeWidth={1.5} />}
                   {delta.value > 0 ? '+' : ''}
                   {delta.value.toFixed(0)}
                   <span className="text-muted-foreground font-normal">{t('dashWidgets.timeline.vsPrevious')}</span>
                 </span>
               )}
               {totalAtual > 0 && (
-                <span className="text-[11px] text-muted-foreground">{t('dashWidgets.timeline.risksCount', { count: totalAtual })}</span>
+                <span className="text-micro text-muted-foreground">{t('dashWidgets.timeline.risksCount', { count: totalAtual })}</span>
               )}
             </div>
           )}
@@ -239,9 +238,7 @@ export function RiskScoreTimeline() {
       <CardContent className="pt-3 flex-1 flex flex-col min-h-0">
         {displayData.length === 0 || latestScore === null ? (
           <div className="flex flex-col items-center justify-center h-[260px] gap-3 rounded-lg border border-dashed border-border bg-muted/20">
-            <div className="flex items-center justify-center h-10 w-10 rounded-full bg-muted">
-              <LineChartIcon className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
-            </div>
+            <IconChartLine className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
             <div className="text-center space-y-1 max-w-[280px]">
               <p className="text-sm font-medium text-foreground">{t('dashWidgets.timeline.emptyTitle')}</p>
               <p className="text-xs text-muted-foreground">
@@ -266,14 +263,14 @@ export function RiskScoreTimeline() {
                 />
                 <XAxis
                   dataKey="date"
-                  tick={{ fill: CHART_AXIS, fontSize: 11 }}
+                  tick={{ fill: CHART_AXIS, fontSize: CHART_FONT.axis }}
                   axisLine={{ stroke: CHART_GRID }}
                   tickLine={false}
                 />
                 <YAxis
                   domain={[0, 100]}
                   ticks={[0, 25, 50, 75, 100]}
-                  tick={{ fill: CHART_AXIS, fontSize: 11 }}
+                  tick={{ fill: CHART_AXIS, fontSize: CHART_FONT.axis }}
                   tickFormatter={(v) => `${v}`}
                   axisLine={false}
                   tickLine={false}
@@ -287,7 +284,7 @@ export function RiskScoreTimeline() {
                     value: t('dashWidgets.timeline.goal', { value: GOAL_VALUE }),
                     position: 'right',
                     fill: CHART_AXIS,
-                    fontSize: 10,
+                    fontSize: CHART_FONT.axis,
                   }}
                 />
                 <Tooltip
@@ -295,10 +292,10 @@ export function RiskScoreTimeline() {
                   contentStyle={CHART_TOOLTIP_STYLE}
                   labelStyle={{
                     color: 'hsl(var(--muted-foreground))',
-                    fontSize: 11,
+                    fontSize: CHART_FONT.axis,
                     marginBottom: 4,
                   }}
-                  itemStyle={{ color: 'hsl(var(--popover-foreground))', fontSize: 13 }}
+                  itemStyle={{ color: 'hsl(var(--popover-foreground))', fontSize: CHART_FONT.label }}
                   formatter={(value: number | null, _name, item: any) => {
                     if (value === null || value === undefined)
                       return [t('dashWidgets.timeline.noData'), t('dashWidgets.timeline.exposure')];

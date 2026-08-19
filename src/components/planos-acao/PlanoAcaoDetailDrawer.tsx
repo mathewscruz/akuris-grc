@@ -18,7 +18,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { X, Edit, ChevronDown, ExternalLink, Send } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -26,6 +25,7 @@ import { formatDateOnly } from '@/lib/date-utils';
 import { logger } from '@/lib/logger';
 import { toast } from 'sonner';
 import { PLANO_STATUS_EDITAVEIS } from './PlanosAcaoKanban';
+import { IconEdit, IconClose, IconExternal, IconSend, IconChevronDown } from '@/components/icons';
 
 interface Props {
   plano: any | null;
@@ -126,19 +126,19 @@ export function PlanoAcaoDetailDrawer({
       <SheetContent side="right" className="w-full sm:max-w-[540px] p-0 flex flex-col gap-0 [&>button.absolute]:hidden">
         <SheetHeader className="px-6 pt-5 pb-5 border-b border-border space-y-4">
           <div className="flex items-center justify-between gap-3">
-            <span className="text-[10.5px] font-mono tracking-wider text-muted-foreground uppercase">
+            <span className="text-xs font-mono text-muted-foreground">
               {t('planosAcao.detailEyebrow')}
             </span>
             <div className="flex items-center gap-1">
               {!isExternal && (
                 <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => onEdit(plano)}>
-                  <Edit className="h-3.5 w-3.5 mr-1" strokeWidth={1.5} />
+                  <IconEdit className="h-3.5 w-3.5 mr-1" strokeWidth={1.5} />
                   {t('planosAcao.actionEdit')}
                 </Button>
               )}
               <SheetClose asChild>
                 <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground" aria-label={t('planosAcao.close')}>
-                  <X className="h-4 w-4" strokeWidth={1.5} />
+                  <IconClose className="h-4 w-4" strokeWidth={1.5} />
                 </Button>
               </SheetClose>
             </div>
@@ -154,7 +154,7 @@ export function PlanoAcaoDetailDrawer({
                     <button type="button" className="inline-flex items-center transition-opacity hover:opacity-80">
                       <StatusBadge tone={statusCfg.tone} className="gap-1">
                         {statusCfg.label}
-                        <ChevronDown className="h-3 w-3 opacity-70" />
+                        <IconChevronDown className="h-3 w-3 opacity-70" />
                       </StatusBadge>
                     </button>
                   </DropdownMenuTrigger>
@@ -198,7 +198,7 @@ export function PlanoAcaoDetailDrawer({
               </div>
 
               <div className="space-y-1.5">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">{t('planosAcao.detailOrigin')}</p>
+                <p className="text-xs text-muted-foreground">{t('planosAcao.detailOrigin')}</p>
                 {plano.registro_origem_titulo || plano._isExternal ? (
                   <div className="flex items-center justify-between gap-2 rounded-lg border border-border p-3">
                     <div className="min-w-0">
@@ -211,7 +211,7 @@ export function PlanoAcaoDetailDrawer({
                     </div>
                     {onOpenOrigin && (
                       <Button variant="ghost" size="sm" className="h-7 px-2 text-xs shrink-0" onClick={() => onOpenOrigin(plano)}>
-                        <ExternalLink className="h-3.5 w-3.5 mr-1" />
+                        <IconExternal className="h-3.5 w-3.5 mr-1" />
                         {t('planosAcao.actionOpenInModule')}
                       </Button>
                     )}
@@ -252,7 +252,7 @@ export function PlanoAcaoDetailDrawer({
                     rows={3}
                   />
                   <Button size="sm" onClick={enviarComentario} disabled={enviando || !comentario.trim()}>
-                    <Send className="h-3.5 w-3.5 mr-1.5" />
+                    <IconSend className="h-3.5 w-3.5 mr-1.5" />
                     {t('planosAcao.commentSubmit')}
                   </Button>
                 </div>
@@ -284,7 +284,7 @@ export function PlanoAcaoDetailDrawer({
 function Field({ label, value }: { label: string; value?: string | null }) {
   return (
     <div className="space-y-1">
-      <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="text-xs text-muted-foreground">{label}</p>
       <p className="text-sm whitespace-pre-wrap">{value || '—'}</p>
     </div>
   );

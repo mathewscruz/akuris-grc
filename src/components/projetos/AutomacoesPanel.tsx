@@ -1,4 +1,5 @@
 import React from 'react';
+import { IconAdd, IconEdit, IconDelete, IconBolt, IconPlay } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import { Input } from '@/components/ui/input';
@@ -8,7 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { EmptyState } from '@/components/ui/empty-state';
-import { Plus, Pencil, Trash2, Zap, Play } from 'lucide-react';
 import { useAutomacoes, useUpsertAutomacao, useDeleteAutomacao, type Automacao } from '@/hooks/useProjetoExtras';
 import type { ProjetoColuna } from '@/types/projetos';
 import { UserSelect } from '@/components/riscos/UserSelect';
@@ -34,18 +34,18 @@ export function AutomacoesPanel({ projetoId, colunas }: { projetoId: string; col
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-semibold flex items-center gap-2"><Zap className="h-4 w-4 text-primary" strokeWidth={1.5} /> {t('projetos.automacoes.title')}</h3>
+          <h3 className="text-sm font-semibold flex items-center gap-2"><IconBolt className="h-4 w-4 text-primary" strokeWidth={1.5} /> {t('projetos.automacoes.title')}</h3>
           <p className="text-xs text-muted-foreground">{t('projetos.automacoes.subtitle')}</p>
         </div>
         <Button size="sm" onClick={() => { setEditando(null); setOpen(true); }}>
-          <Plus className="h-4 w-4" /> {t('projetos.automacoes.newAutomation')}
+          <IconAdd className="h-4 w-4" /> {t('projetos.automacoes.newAutomation')}
         </Button>
       </div>
 
       {isLoading ? null : automacoes.length === 0 ? (
         <EmptyState
           variant="illustrated"
-          icon={<Zap className="h-8 w-8" />}
+          icon={<IconBolt className="h-8 w-8" />}
           title={t('projetos.automacoes.emptyTitle')}
           description={t('projetos.automacoes.emptyDesc')}
           action={{ label: t('projetos.automacoes.createFirst'), onClick: () => { setEditando(null); setOpen(true); } }}
@@ -58,8 +58,8 @@ export function AutomacoesPanel({ projetoId, colunas }: { projetoId: string; col
                 <div className="flex items-center gap-2">
                   <h4 className="text-sm font-medium truncate">{a.nome}</h4>
                   {a.ativa
-                    ? <StatusBadge tone="success" size="sm">{t('projetos.automacoes.active')}</StatusBadge>
-                    : <StatusBadge tone="neutral" size="sm">{t('projetos.automacoes.paused')}</StatusBadge>}
+                    ? <StatusBadge tone="success">{t('projetos.automacoes.active')}</StatusBadge>
+                    : <StatusBadge tone="neutral">{t('projetos.automacoes.paused')}</StatusBadge>}
                 </div>
                 <div className="text-xs text-muted-foreground mt-0.5">
                   {GATILHOS.find((g) => g.value === a.gatilho)?.label ?? a.gatilho}
@@ -71,10 +71,10 @@ export function AutomacoesPanel({ projetoId, colunas }: { projetoId: string; col
               <div className="flex items-center gap-1">
                 <Switch checked={a.ativa} onCheckedChange={() => toggleAtiva(a)} />
                 <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditando(a); setOpen(true); }}>
-                  <Pencil className="h-3.5 w-3.5" />
+                  <IconEdit className="h-3.5 w-3.5" />
                 </Button>
                 <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { if (confirm(t('projetos.automacoes.removeConfirm'))) del.mutate(a.id); }}>
-                  <Trash2 className="h-3.5 w-3.5" />
+                  <IconDelete className="h-3.5 w-3.5" />
                 </Button>
               </div>
             </div>
@@ -128,7 +128,7 @@ function AutomacaoDialog({ open, onOpenChange, projetoId, colunas, automacao, ga
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      icon={Zap}
+      icon={IconBolt}
       title={automacao ? t('projetos.automacoes.dialogTitleEdit') : t('projetos.automacoes.dialogTitleNew')}
       size="md"
       onSubmit={submit}
@@ -139,7 +139,7 @@ function AutomacaoDialog({ open, onOpenChange, projetoId, colunas, automacao, ga
           <div><Label>{t('projetos.automacoes.fieldNome')}</Label><Input value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} /></div>
           <div><Label>{t('projetos.automacoes.fieldDescricao')}</Label><Textarea rows={2} value={form.descricao} onChange={(e) => setForm({ ...form, descricao: e.target.value })} /></div>
 
-          <div>
+          <div className="space-y-2">
             <Label>{t('projetos.automacoes.fieldGatilho')}</Label>
             <Select value={form.gatilho} onValueChange={(v) => setForm({ ...form, gatilho: v })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
@@ -148,7 +148,7 @@ function AutomacaoDialog({ open, onOpenChange, projetoId, colunas, automacao, ga
           </div>
 
           {form.gatilho === 'tarefa_movida_para_coluna' && (
-            <div>
+            <div className="space-y-2">
               <Label>{t('projetos.automacoes.fieldColunaAlvo')}</Label>
               <Select value={form.condicoes?.coluna_id ?? ''} onValueChange={(v) => setForm({ ...form, condicoes: { ...form.condicoes, coluna_id: v } })}>
                 <SelectTrigger><SelectValue placeholder={t('projetos.automacoes.placeholderQualquerColuna')} /></SelectTrigger>
@@ -160,7 +160,7 @@ function AutomacaoDialog({ open, onOpenChange, projetoId, colunas, automacao, ga
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label>{t('projetos.automacoes.fieldAcoes')}</Label>
-              <Button size="sm" variant="ghost" onClick={addAcao}><Plus className="h-3.5 w-3.5" /> {t('projetos.automacoes.addAction')}</Button>
+              <Button size="sm" variant="ghost" onClick={addAcao}><IconAdd className="h-3.5 w-3.5" /> {t('projetos.automacoes.addAction')}</Button>
             </div>
             {form.acoes.map((a: any, i: number) => (
               <div key={i} className="rounded-md border border-border bg-card p-2 space-y-2">
@@ -169,7 +169,7 @@ function AutomacaoDialog({ open, onOpenChange, projetoId, colunas, automacao, ga
                     <SelectTrigger className="flex-1"><SelectValue /></SelectTrigger>
                     <SelectContent>{TIPOS_ACAO.map((tp) => <SelectItem key={tp.value} value={tp.value}>{tp.label}</SelectItem>)}</SelectContent>
                   </Select>
-                  <Button size="icon" variant="ghost" className="h-9 w-9" onClick={() => rmAcao(i)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                  <Button size="icon" variant="ghost" className="h-9 w-9" onClick={() => rmAcao(i)}><IconDelete className="h-3.5 w-3.5" /></Button>
                 </div>
                 {a.tipo === 'mover_para_coluna' && (
                   <Select value={a.coluna_id ?? ''} onValueChange={(v) => setAcao(i, { coluna_id: v })}>

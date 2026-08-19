@@ -1,11 +1,12 @@
 import React from 'react';
+import { IconSuccess, IconWarning, IconTime, IconTrendUp, IconTimer } from '@/components/icons';
 import { Card, CardContent } from '@/components/ui/card';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { TrendingUp, Clock, AlertTriangle, CheckCircle2, Timer } from 'lucide-react';
 import type { ProjetoTarefa, ProjetoColuna } from '@/types/projetos';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getPrioridadeLabel } from './enum-labels';
 import type { ProjetoTarefaPrioridade } from '@/types/projetos';
+import { parseDataLocal } from '@/lib/date-utils';
 
 export function MetricasPanel({ tarefas, colunas }: { tarefas: ProjetoTarefa[]; colunas: ProjetoColuna[] }) {
   const { t } = useLanguage();
@@ -13,7 +14,7 @@ export function MetricasPanel({ tarefas, colunas }: { tarefas: ProjetoTarefa[]; 
     const total = tarefas.length;
     const concluidas = tarefas.filter((t) => t.concluida_em);
     const abertas = total - concluidas.length;
-    const atrasadas = tarefas.filter((t) => !t.concluida_em && t.prazo && new Date(t.prazo) < new Date()).length;
+    const atrasadas = tarefas.filter((t) => !t.concluida_em && t.prazo && parseDataLocal(t.prazo) < new Date()).length;
     const slaViolado = (tarefas as any[]).filter((t) => t.sla_status === 'violado').length;
     const slaRisco = (tarefas as any[]).filter((t) => t.sla_status === 'em_risco').length;
 
@@ -54,10 +55,10 @@ export function MetricasPanel({ tarefas, colunas }: { tarefas: ProjetoTarefa[]; 
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Mini icon={<TrendingUp />} label={t('projetos.metricas.velocity')} value={(m.semanas[3]?.concluidas ?? 0).toString()} hint={t('projetos.metricas.avg4Weeks', { value: (m.semanas.reduce((s, x) => s + x.concluidas, 0) / 4).toFixed(1) })} />
-        <Mini icon={<Clock />} label={t('projetos.metricas.cycleTime')} value={`${m.cycleMed.toFixed(1)}d`} hint={t('projetos.metricas.cycleTimeHint')} />
-        <Mini icon={<AlertTriangle />} label={t('projetos.metricas.overdue')} value={m.atrasadas.toString()} hint={m.atrasadas > 0 ? t('projetos.metricas.requiresAction') : t('projetos.metricas.ok')} tone={m.atrasadas > 0 ? 'destructive' : 'success'} />
-        <Mini icon={<CheckCircle2 />} label={t('projetos.metricas.completion')} value={m.total ? `${Math.round((m.concluidas / m.total) * 100)}%` : '—'} hint={t('projetos.metricas.completionHint', { done: m.concluidas, total: m.total })} />
+        <Mini icon={<IconTrendUp />} label={t('projetos.metricas.velocity')} value={(m.semanas[3]?.concluidas ?? 0).toString()} hint={t('projetos.metricas.avg4Weeks', { value: (m.semanas.reduce((s, x) => s + x.concluidas, 0) / 4).toFixed(1) })} />
+        <Mini icon={<IconTime />} label={t('projetos.metricas.cycleTime')} value={`${m.cycleMed.toFixed(1)}d`} hint={t('projetos.metricas.cycleTimeHint')} />
+        <Mini icon={<IconWarning />} label={t('projetos.metricas.overdue')} value={m.atrasadas.toString()} hint={m.atrasadas > 0 ? t('projetos.metricas.requiresAction') : t('projetos.metricas.ok')} tone={m.atrasadas > 0 ? 'destructive' : 'success'} />
+        <Mini icon={<IconSuccess />} label={t('projetos.metricas.completion')} value={m.total ? `${Math.round((m.concluidas / m.total) * 100)}%` : '—'} hint={t('projetos.metricas.completionHint', { done: m.concluidas, total: m.total })} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -81,7 +82,7 @@ export function MetricasPanel({ tarefas, colunas }: { tarefas: ProjetoTarefa[]; 
         </Card>
         <Card variant="elevated">
           <CardContent className="p-4 space-y-3">
-            <div className="text-sm font-semibold flex items-center gap-2"><Timer className="h-4 w-4 text-primary" /> {t('projetos.metricas.timeAndSla')}</div>
+            <div className="text-sm font-semibold flex items-center gap-2"><IconTimer className="h-4 w-4 text-primary" /> {t('projetos.metricas.timeAndSla')}</div>
             <Row label={t('projetos.metricas.estimatedTotal')} value={`${m.estimado.toFixed(1)}h`} />
             <Row label={t('projetos.metricas.spentTotal')} value={`${m.gasto.toFixed(1)}h`} />
             <Row label={t('projetos.metricas.efficiency')} value={m.estimado ? `${Math.round((m.gasto / m.estimado) * 100)}%` : '—'} hint={m.estimado && m.gasto > m.estimado ? t('projetos.metricas.aboveBudget') : ''} />
@@ -98,12 +99,12 @@ function Mini({ icon, label, value, hint, tone }: { icon: React.ReactNode; label
   return (
     <Card variant="elevated">
       <CardContent className="p-3 space-y-1">
-        <div className="flex items-center gap-2 text-muted-foreground text-xs uppercase tracking-wide">
+        <div className="flex items-center gap-2 text-muted-foreground text-xs">
           <span className="h-4 w-4 inline-flex items-center justify-center text-primary [&>svg]:h-4 [&>svg]:w-4">{icon}</span>
           {label}
         </div>
         <div className="text-2xl font-semibold tabular-nums">{value}</div>
-        {hint && (tone ? <StatusBadge tone={tone} size="sm">{hint}</StatusBadge> : <div className="text-xs text-muted-foreground">{hint}</div>)}
+        {hint && (tone ? <StatusBadge tone={tone}>{hint}</StatusBadge> : <div className="text-xs text-muted-foreground">{hint}</div>)}
       </CardContent>
     </Card>
   );
@@ -114,7 +115,7 @@ function Row({ label, value, hint, tone }: { label: string; value: string; hint?
     <div className="flex items-center justify-between text-sm">
       <span className="text-muted-foreground">{label}</span>
       <span className="flex items-center gap-2">
-        {hint && tone && <StatusBadge tone={tone} size="sm">{hint}</StatusBadge>}
+        {hint && tone && <StatusBadge tone={tone}>{hint}</StatusBadge>}
         <span className="font-semibold tabular-nums">{value}</span>
       </span>
     </div>
@@ -127,8 +128,8 @@ function BarChart({ data, max }: { data: { label: string; valor: number }[]; max
       {data.map((d) => (
         <div key={d.label} className="flex items-center gap-2 text-xs" title={d.label}>
           <div className="w-28 flex-shrink-0 truncate text-muted-foreground" title={d.label}>{d.label}</div>
-          <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
-            <div className="h-full bg-primary transition-all" style={{ width: `${(d.valor / max) * 100}%` }} />
+          <div className="flex-1 min-h-0 h-2 rounded-full bg-muted overflow-hidden">
+            <div className="h-full bg-primary transition-ui" style={{ width: `${(d.valor / max) * 100}%` }} />
           </div>
           <div className="w-8 text-right tabular-nums font-medium">{d.valor}</div>
         </div>

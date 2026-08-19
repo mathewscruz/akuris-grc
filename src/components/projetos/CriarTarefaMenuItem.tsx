@@ -1,9 +1,9 @@
 import React from 'react';
-import { ListTodo } from 'lucide-react';
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { CriarTarefaFromGRC } from './CriarTarefaFromGRC';
 import type { ProjetoVinculoEntidade } from '@/types/projetos';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { IconChecklist } from '@/components/icons';
 
 /**
  * Item de menu controlado: abre o dialog do CriarTarefaFromGRC mesmo quando
@@ -20,7 +20,7 @@ export function CriarTarefaMenuItem(props: {
   return (
     <>
       <DropdownMenuItem onSelect={(e) => { e.preventDefault(); setOpen(true); }}>
-        <ListTodo className="mr-2 h-4 w-4" /> {t('projetos.criarTarefaGRC.buttonLabel')}
+        <IconChecklist className="mr-2 h-4 w-4" /> {t('projetos.criarTarefaGRC.buttonLabel')}
       </DropdownMenuItem>
       <CriarTarefaFromGRCControlled
         open={open}

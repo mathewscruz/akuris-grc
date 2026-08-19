@@ -1,7 +1,7 @@
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { IconTrendUp, IconTrendDown, IconMinus } from '@/components/icons';
 
 interface TrendData {
   riscosChange: number;
@@ -48,7 +48,7 @@ export function useTrendData() {
 export function TrendBadge({ value, inverted = false }: { value: number; inverted?: boolean }) {
   if (value === 0) return (
     <span className="flex items-center gap-0.5 text-xs text-muted-foreground">
-      <Minus className="h-3 w-3" /> 0
+      <IconMinus className="h-3 w-3" /> 0
     </span>
   );
 
@@ -56,7 +56,7 @@ export function TrendBadge({ value, inverted = false }: { value: number; inverte
   
   return (
     <span className={`flex items-center gap-0.5 text-xs font-medium ${isPositive ? 'text-success' : 'text-destructive'}`}>
-      {value > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+      {value > 0 ? <IconTrendUp className="h-3 w-3" /> : <IconTrendDown className="h-3 w-3" />}
       {value > 0 ? '+' : ''}{value}
     </span>
   );

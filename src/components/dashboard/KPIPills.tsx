@@ -1,14 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, Scale, ListChecks } from 'lucide-react';
-import {
-  AtivosIcon,
-  RiscosIcon,
-  IncidentesIcon,
-  DocumentosIcon,
-  DueDiligenceIcon,
-  DenunciasIcon,
-} from '@/components/icons';
+import { AtivosIcon, RiscosIcon, IncidentesIcon, DocumentosIcon, DueDiligenceIcon, DenunciasIcon, IconInfo, IconScale, IconChecklist } from '@/components/icons';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 export type KpiKey =
@@ -30,7 +22,6 @@ interface KPIPillData {
   value: number | string;
   route: string;
   color: string;
-  bgColor: string;
   alertBadge?: { label: string; variant: 'destructive' | 'warning' | 'success' | 'info' };
   onClick?: () => void;
 }
@@ -73,7 +64,6 @@ export function KPIPills(props: KPIPillsProps) {
       value: props.ativos,
       route: '/ativos',
       color: 'text-primary',
-      bgColor: 'bg-primary/10',
     },
     {
       key: 'riscos',
@@ -83,7 +73,6 @@ export function KPIPills(props: KPIPillsProps) {
       value: props.totalRiscos,
       route: '/riscos',
       color: props.riscosCriticos > 0 ? 'text-destructive' : 'text-primary',
-      bgColor: props.riscosCriticos > 0 ? 'bg-destructive/10' : 'bg-primary/10',
       alertBadge:
         props.riscosCriticos > 0
           ? { label: `${props.riscosCriticos} ${t('kpi.critical')}`, variant: 'destructive' as const }
@@ -93,13 +82,12 @@ export function KPIPills(props: KPIPillsProps) {
     },
     {
       key: 'incidentes',
-      icon: AlertCircle,
+      icon: IconInfo,
       label: t('kpi.incidentsOpen'),
       hint: t('kpi.hint.incidentsOpen'),
       value: props.activeIncidents,
       route: '/incidentes',
       color: props.activeIncidents > 0 ? 'text-destructive' : 'text-muted-foreground',
-      bgColor: props.activeIncidents > 0 ? 'bg-destructive/10' : 'bg-muted/50',
       alertBadge:
         props.incidentsThisMonth > 0
           ? { label: `+${props.incidentsThisMonth} ${t('kpi.month')}`, variant: 'info' as const }
@@ -107,13 +95,12 @@ export function KPIPills(props: KPIPillsProps) {
     },
     {
       key: 'planos',
-      icon: ListChecks,
+      icon: IconChecklist,
       label: t('kpi.actionPlansOpen'),
       hint: t('kpi.hint.actionPlansOpen'),
       value: props.planosPendentes,
       route: '/planos-acao',
       color: props.planosAtrasados > 0 ? 'text-destructive' : 'text-primary',
-      bgColor: props.planosAtrasados > 0 ? 'bg-destructive/10' : 'bg-primary/10',
       alertBadge:
         props.planosAtrasados > 0
           ? { label: `${props.planosAtrasados} ${t('kpi.overdue')}`, variant: 'destructive' as const }
@@ -121,13 +108,12 @@ export function KPIPills(props: KPIPillsProps) {
     },
     {
       key: 'contratos',
-      icon: Scale,
+      icon: IconScale,
       label: t('kpi.contractsActive'),
       hint: t('kpi.hint.contractsActive'),
       value: props.activeContracts,
       route: '/contratos',
       color: 'text-primary',
-      bgColor: 'bg-primary/10',
       alertBadge:
         props.contractsExpired > 0
           ? { label: `${props.contractsExpired} ${t('kpi.expired')}`, variant: 'destructive' as const }
@@ -143,7 +129,6 @@ export function KPIPills(props: KPIPillsProps) {
       value: props.totalDocs,
       route: '/documentos',
       color: 'text-primary',
-      bgColor: 'bg-primary/10',
       alertBadge:
         props.docsExpiring > 0
           ? { label: `${props.docsExpiring} ${t('kpi.expiring')}`, variant: 'warning' as const }
@@ -159,7 +144,6 @@ export function KPIPills(props: KPIPillsProps) {
       value: props.ddAtivos,
       route: '/due-diligence',
       color: props.ddExpirados > 0 ? 'text-destructive' : 'text-primary',
-      bgColor: props.ddExpirados > 0 ? 'bg-destructive/10' : 'bg-primary/10',
       alertBadge:
         props.ddExpirados > 0
           ? { label: `${props.ddExpirados} ${t('kpi.expired')}`, variant: 'destructive' as const }
@@ -173,7 +157,6 @@ export function KPIPills(props: KPIPillsProps) {
       value: props.denunciasAbertas,
       route: '/denuncia',
       color: props.denunciasNovas > 0 ? 'text-warning' : 'text-primary',
-      bgColor: props.denunciasNovas > 0 ? 'bg-warning/10' : 'bg-primary/10',
       alertBadge:
         props.denunciasNovas > 0
           ? { label: `${props.denunciasNovas} ${t('kpi.new')}`, variant: 'warning' as const }
@@ -191,15 +174,17 @@ export function KPIPills(props: KPIPillsProps) {
             key={pill.key}
             title={pill.hint}
             onClick={() => (props.onPillClick ? props.onPillClick(pill.key) : pill.onClick ? pill.onClick() : navigate(pill.route))}
-            className="group flex items-center gap-2 px-3 py-2 rounded-lg border bg-card hover:bg-accent/50 hover:border-primary/30 transition-all duration-200 cursor-pointer flex-shrink-0"
+            className="group flex items-center gap-2 px-3 py-2 rounded-lg border bg-card hover:bg-accent/50 hover:border-primary/30 transition-ui duration-200 cursor-pointer flex-shrink-0"
           >
-            <div className={`p-1 rounded-md ${pill.bgColor} group-hover:scale-110 transition-transform`}>
-              <pill.icon className={`h-3.5 w-3.5 ${pill.color}`} />
-            </div>
-            <span className="text-sm font-bold text-foreground">{pill.value}</span>
-            <span className="text-[11px] text-muted-foreground whitespace-nowrap">{pill.label}</span>
+            <pill.icon className={`h-4 w-4 shrink-0 ${pill.color}`} />
+            {/* Um só corpo de letra na pílula. O número estava a `text-sm` e o
+                rótulo a `text-micro`, e a diferença de dois degraus fazia a
+                fila de pílulas parecer desalinhada. A hierarquia fica no peso
+                e na cor, que chegam para separar o número do rótulo. */}
+            <span className="text-micro font-bold tabular-nums text-foreground">{pill.value}</span>
+            <span className="text-micro text-muted-foreground whitespace-nowrap">{pill.label}</span>
             {pill.alertBadge && (
-              <Badge variant={pill.alertBadge.variant} className="text-[10px] px-1.5 py-0 h-4 hidden md:flex">
+              <Badge variant={pill.alertBadge.variant} className="text-micro px-1.5 py-0 h-4 hidden md:flex">
                 {pill.alertBadge.label}
               </Badge>
             )}

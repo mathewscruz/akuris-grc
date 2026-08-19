@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
+import { IconSuccess, IconInfo, IconError, IconMinus, IconTarget, IconTrophy } from '@/components/icons';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { CornerAccent } from '@/components/identity/CornerAccent';
 import {
@@ -12,19 +12,18 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from 'recharts';
-import { Hexagon, CheckCircle2, AlertCircle, XCircle, Minus } from 'lucide-react';
 import { useRadarChartData } from '@/hooks/useRadarChartData';
 import { useGrcMaturityScore } from '@/hooks/useGrcMaturityScore';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { chartSeries, CHART_GRID, CHART_AXIS, CHART_AREA_OPACITY } from '@/lib/chart-tokens';
+import { chartSeries, CHART_GRID, CHART_AXIS, CHART_AREA_OPACITY, CHART_FONT } from '@/lib/chart-tokens';
 
 // Rótulos curtos para os eixos não estourarem nas laterais do radar.
 const STATUS_META = {
-  excellent: { key: 'statusExcellent', variant: 'success' as const, icon: CheckCircle2 },
-  good: { key: 'statusGood', variant: 'default' as const, icon: CheckCircle2 },
-  warning: { key: 'statusWarning', variant: 'warning' as const, icon: AlertCircle },
-  critical: { key: 'statusCritical', variant: 'destructive' as const, icon: XCircle },
-  no_data: { key: 'statusNoData', variant: 'outline' as const, icon: Minus },
+  excellent: { key: 'statusExcellent', variant: 'success' as const, icon: IconTrophy },
+  good: { key: 'statusGood', variant: 'default' as const, icon: IconSuccess },
+  warning: { key: 'statusWarning', variant: 'warning' as const, icon: IconInfo },
+  critical: { key: 'statusCritical', variant: 'destructive' as const, icon: IconError },
+  no_data: { key: 'statusNoData', variant: 'outline' as const, icon: IconMinus },
 };
 
 interface RadarPoint {
@@ -39,7 +38,7 @@ const RadarTooltip = ({ active, payload }: any) => {
   if (!active || !payload?.length) return null;
   const p = payload[0].payload as RadarPoint;
   return (
-    <div className="rounded-lg border border-border bg-popover px-3 py-2 shadow-md">
+    <div className="rounded-lg border border-border bg-popover px-3 py-2 shadow-sm">
       <div className="flex items-center justify-between gap-4">
         <span className="text-sm font-semibold text-popover-foreground">{p.full}</span>
         <span className="text-sm font-bold tabular-nums text-foreground">
@@ -75,23 +74,19 @@ export function GrcHealthRadar() {
   );
 
   const hasAny = chartData.some((d) => d.hasData);
-  const status = STATUS_META[maturity.status] ?? STATUS_META.no_data;
-  const StatusIcon = status.icon;
 
   const Header = (
     <CardHeader className="pb-2">
       <CardTitle className="text-base font-semibold flex items-center gap-2">
-        <Hexagon className="h-4 w-4 text-muted-foreground" /> {t('dashWidgets.radar.title')}
+        <IconTarget className="h-4 w-4 text-muted-foreground" /> {t('dashWidgets.radar.title')}
       </CardTitle>
       <div className="flex items-center gap-2 mt-1.5 flex-wrap">
         <span className="text-2xl font-bold tabular-nums text-foreground leading-none">
           {maturity.score}
         </span>
+        {/* O chip de estado saiu daqui: o mesmo "Atenção" já está debaixo do
+            mostrador no cartão ao lado, a dizer o mesmo sobre o mesmo número. */}
         <span className="text-xs text-muted-foreground">{t('dashWidgets.radar.maturitySuffix')}</span>
-        <Badge variant={status.variant} className="text-[10px] gap-1">
-          <StatusIcon className="h-3 w-3" />
-          {t(`dashWidgets.radar.${status.key}`)}
-        </Badge>
       </div>
     </CardHeader>
   );
@@ -115,9 +110,7 @@ export function GrcHealthRadar() {
       <CardContent className="flex-1 flex flex-col min-h-0 pt-0 pb-3">
         {!hasAny ? (
           <div className="flex flex-col items-center justify-center h-[240px] gap-3 rounded-lg border border-dashed border-border bg-muted/20">
-            <div className="flex items-center justify-center h-10 w-10 rounded-full bg-muted">
-              <Hexagon className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
-            </div>
+            <IconTarget className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
             <p className="text-xs text-muted-foreground text-center max-w-[240px]">
               {t('dashWidgets.radar.empty')}
             </p>
@@ -130,7 +123,7 @@ export function GrcHealthRadar() {
                 <PolarGrid stroke={CHART_GRID} />
                 <PolarAngleAxis
                   dataKey="subject"
-                  tick={{ fill: CHART_AXIS, fontSize: 11 }}
+                  tick={{ fill: CHART_AXIS, fontSize: CHART_FONT.axis }}
                 />
                 <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
                 <Radar
@@ -153,4 +146,3 @@ export function GrcHealthRadar() {
   );
 }
 
-export default GrcHealthRadar;
