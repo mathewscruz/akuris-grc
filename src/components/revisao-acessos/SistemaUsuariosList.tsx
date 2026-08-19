@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { IconAdd, IconEdit, IconDelete, IconMore, IconUsers } from '@/components/icons';
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useEmpresaId } from "@/hooks/useEmpresaId";
@@ -14,7 +15,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Pencil, Trash2, Users, MoreHorizontal } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -166,7 +166,7 @@ export function SistemaUsuariosList() {
       label: t("revisaoAcessosComp.usuariosList.columnTipoAcesso"),
       sortable: true,
       render: (row) => (
-        <StatusBadge size="sm" {...resolveTipoAcessoTone(row.tipo_acesso)}>
+        <StatusBadge {...resolveTipoAcessoTone(row.tipo_acesso)}>
           {formatStatus(row.tipo_acesso)}
         </StatusBadge>
       ),
@@ -182,7 +182,7 @@ export function SistemaUsuariosList() {
       label: t("revisaoAcessosComp.usuariosList.columnStatus"),
       sortable: true,
       render: (row) => (
-        <StatusBadge size="sm" {...resolveAtivoTone(row.ativo)}>
+        <StatusBadge {...resolveAtivoTone(row.ativo)}>
           {row.ativo ? t("revisaoAcessosComp.usuariosList.statusAtivo") : t("revisaoAcessosComp.usuariosList.statusInativo")}
         </StatusBadge>
       ),
@@ -194,12 +194,12 @@ export function SistemaUsuariosList() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="h-8 w-8">
-              <MoreHorizontal className="h-4 w-4" />
+              <IconMore className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => handleEdit(row)}>
-              <Pencil className="h-4 w-4 mr-2" />
+              <IconEdit className="h-4 w-4 mr-2" />
               {t("revisaoAcessosComp.usuariosList.buttonEditar")}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
@@ -210,7 +210,7 @@ export function SistemaUsuariosList() {
               }}
               className="text-destructive focus:text-destructive"
             >
-              <Trash2 className="h-4 w-4 mr-2" />
+              <IconDelete className="h-4 w-4 mr-2" />
               {t("revisaoAcessosComp.usuariosList.buttonExcluir")}
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -237,13 +237,13 @@ export function SistemaUsuariosList() {
             </SelectContent>
           </Select>
           <Button onClick={() => { setSelectedUsuario(null); setDialogOpen(true); }}>
-            <Plus className="h-4 w-4 mr-2" />
+            <IconAdd className="h-4 w-4 mr-2" />
             {t("revisaoAcessosComp.usuariosList.buttonNovo")}
           </Button>
         </div>
 
         <EmptyState
-          icon={<Users className="h-10 w-10" />}
+          icon={<IconUsers className="h-10 w-10" />}
           title={t("revisaoAcessosComp.usuariosList.emptyTitle")}
           description={t("revisaoAcessosComp.usuariosList.emptyDescription")}
           action={{
@@ -280,7 +280,7 @@ export function SistemaUsuariosList() {
           </SelectContent>
         </Select>
         <Button onClick={() => { setSelectedUsuario(null); setDialogOpen(true); }}>
-          <Plus className="h-4 w-4 mr-2" />
+          <IconAdd className="h-4 w-4 mr-2" />
           {t("revisaoAcessosComp.usuariosList.buttonNovo")}
         </Button>
       </div>

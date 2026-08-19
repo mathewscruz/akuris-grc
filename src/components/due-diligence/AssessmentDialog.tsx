@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { IconExternal, IconChecklist, IconCopy, IconMail } from '@/components/icons';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import { Button } from '@/components/ui/button';
@@ -7,13 +8,12 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { ClipboardCheck } from 'lucide-react';
 import { resolveDueDiligenceStatusTone } from '@/lib/status-tone';
 import { formatStatus } from '@/lib/text-utils';
 import { supabase } from '@/integrations/supabase/client';
 import { FornecedorSelector } from './FornecedorSelector';
 import { useToast } from '@/hooks/use-toast';
-import { Copy, Mail, ExternalLink } from 'lucide-react';
+import { parseDataLocal } from '@/lib/date-utils';
 
 interface Template {
   id: string;
@@ -23,6 +23,7 @@ interface Template {
 
 interface Assessment {
   id: string;
+  fornecedor_id: string | null;
   fornecedor_nome: string;
   fornecedor_email: string;
   status: string;
@@ -54,6 +55,7 @@ export function AssessmentDialog({
   const [templates, setTemplates] = useState<Template[]>([]);
   const [formData, setFormData] = useState({
     template_id: '',
+    fornecedor_id: null,
     fornecedor_nome: '',
     fornecedor_email: '',
     observacoes: '',
@@ -70,6 +72,7 @@ export function AssessmentDialog({
         fetchTemplates();
         setFormData({
           template_id: '',
+          fornecedor_id: null,
           fornecedor_nome: '',
           fornecedor_email: '',
           observacoes: '',
@@ -78,6 +81,7 @@ export function AssessmentDialog({
       } else if (mode === 'view' && assessment) {
         setFormData({
           template_id: '',
+          fornecedor_id: assessment.fornecedor_id ?? null,
           fornecedor_nome: assessment.fornecedor_nome,
           fornecedor_email: assessment.fornecedor_email,
           observacoes: '',
@@ -165,6 +169,9 @@ export function AssessmentDialog({
         .from('due_diligence_assessments')
         .insert({
           template_id: formData.template_id,
+          // A relação com o cadastro. As colunas de texto continuam a ser o
+          // registo de para quem e para onde o convite foi enviado.
+          fornecedor_id: formData.fornecedor_id,
           fornecedor_nome: formData.fornecedor_nome,
           fornecedor_email: formData.fornecedor_email,
           link_token: linkToken,
@@ -289,7 +296,7 @@ export function AssessmentDialog({
       <DialogShell
         open={open}
         onOpenChange={onOpenChange}
-        icon={ClipboardCheck}
+        icon={IconChecklist}
         title={t('dueDiligence.assessmentDialog.viewTitle')}
         description={t('dueDiligence.assessmentDialog.viewDescription')}
         size="md"
@@ -301,50 +308,50 @@ export function AssessmentDialog({
       >
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <div>
+              <div className="space-y-2">
                 <Label>{t('dueDiligence.assessmentDialog.fieldSupplier')}</Label>
                 <p className="font-medium">{assessment.fornecedor_nome}</p>
               </div>
-              <div>
+              <div className="space-y-2">
                 <Label>{t('dueDiligence.assessmentDialog.fieldEmail')}</Label>
                 <p className="text-sm text-muted-foreground">{assessment.fornecedor_email}</p>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div>
+              <div className="space-y-2">
                 <Label>{t('dueDiligence.assessmentDialog.fieldTemplate')}</Label>
                 <p className="font-medium">{assessment.template.nome}</p>
               </div>
-              <div>
+              <div className="space-y-2">
                 <Label>{t('dueDiligence.assessmentDialog.fieldStatus')}</Label>
                 <div className="mt-1">
-                  <StatusBadge size="md" {...resolveDueDiligenceStatusTone(assessment.status)}>{formatStatus(assessment.status)}</StatusBadge>
+                  <StatusBadge {...resolveDueDiligenceStatusTone(assessment.status)}>{formatStatus(assessment.status)}</StatusBadge>
                 </div>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div>
+              <div className="space-y-2">
                 <Label>{t('dueDiligence.assessmentDialog.fieldSentDate')}</Label>
                 <p className="text-sm">{new Date(assessment.data_envio).toLocaleString('pt-BR')}</p>
               </div>
               {assessment.data_conclusao && (
-                <div>
+                <div className="space-y-2">
                   <Label>{t('dueDiligence.assessmentDialog.fieldCompletionDate')}</Label>
-                  <p className="text-sm">{new Date(assessment.data_conclusao).toLocaleString('pt-BR')}</p>
+                  <p className="text-sm">{parseDataLocal(assessment.data_conclusao).toLocaleString('pt-BR')}</p>
                 </div>
               )}
             </div>
 
             {assessment.score_final && (
-              <div>
+              <div className="space-y-2">
                 <Label>{t('dueDiligence.assessmentDialog.fieldFinalScore')}</Label>
                 <p className="text-2xl font-bold text-primary">{assessment.score_final.toFixed(1)}%</p>
               </div>
             )}
 
-            <div>
+            <div className="space-y-2">
               <Label>{t('dueDiligence.assessmentDialog.fieldAssessmentLink')}</Label>
               <div className="flex gap-2 mt-1">
                 <Button
@@ -353,7 +360,7 @@ export function AssessmentDialog({
                   onClick={copyAssessmentLink}
                   className="flex items-center gap-2"
                 >
-                  <Copy className="h-4 w-4" />
+                  <IconCopy className="h-4 w-4" />
                   {t('dueDiligence.assessmentDialog.copyLink')}
                 </Button>
                 <Button
@@ -362,7 +369,7 @@ export function AssessmentDialog({
                   onClick={() => window.open(`/assessment/${assessment.link_token}`, '_blank')}
                   className="flex items-center gap-2"
                 >
-                  <ExternalLink className="h-4 w-4" />
+                  <IconExternal className="h-4 w-4" />
                   {t('dueDiligence.assessmentDialog.open')}
                 </Button>
               </div>
@@ -376,7 +383,7 @@ export function AssessmentDialog({
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      icon={ClipboardCheck}
+      icon={IconChecklist}
       title={t('dueDiligence.assessmentDialog.createTitle')}
       description={t('dueDiligence.assessmentDialog.createDescription')}
       size="sm"
@@ -407,11 +414,13 @@ export function AssessmentDialog({
 
             <FornecedorSelector
               value={{
+                id: formData.fornecedor_id,
                 nome: formData.fornecedor_nome,
                 email: formData.fornecedor_email
               }}
               onChange={(fornecedor) => setFormData(prev => ({
                 ...prev,
+                fornecedor_id: fornecedor.id ?? null,
                 fornecedor_nome: fornecedor.nome,
                 fornecedor_email: fornecedor.email
               }))}

@@ -4,7 +4,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { DialogShell } from "@/components/ui/dialog-shell";
-import { ShieldCheck } from "lucide-react";
 import {
   Form,
   FormControl,
@@ -22,7 +21,7 @@ import { formatDateForInput, parseDateForDB } from "@/lib/date-utils";
 import { formatStatus } from "@/lib/text-utils";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Info } from "lucide-react";
+import { IconShieldCheck, IconInfo } from '@/components/icons';
 
 const buildDecisionSchema = (t: (key: string) => string) => z.object({
   decisao: z.enum(["aprovar", "revogar", "modificar"]),
@@ -99,7 +98,7 @@ export function ReviewItemDecisionDialog({
     <DialogShell
       open={open}
       onOpenChange={(o) => { if (!o) onClose(); }}
-      icon={ShieldCheck}
+      icon={IconShieldCheck}
       title={t("revisaoAcessosComp.itemDecisionDialog.title").replace("{nome}", item?.usuario_beneficiario ?? '')}
       size="md"
       onSubmit={form.handleSubmit(onSubmit)}
@@ -108,12 +107,12 @@ export function ReviewItemDecisionDialog({
     >
         <div className="space-y-4">
           <Alert>
-            <Info className="h-4 w-4" />
+            <IconInfo className="h-4 w-4" />
             <AlertDescription>
               <div className="space-y-1 text-sm">
                 <p><strong>{t("revisaoAcessosComp.itemDecisionDialog.email")}</strong> {item?.email_beneficiario || "-"}</p>
                 <p><strong>{t("revisaoAcessosComp.itemDecisionDialog.tipoAcesso")}</strong> {formatStatus(item?.tipo_acesso || '')}</p>
-                <p><strong>{t("revisaoAcessosComp.itemDecisionDialog.nivel")}</strong> <StatusBadge size="sm" tone="neutral">{formatStatus(item?.nivel_privilegio || '')}</StatusBadge></p>
+                <p><strong>{t("revisaoAcessosComp.itemDecisionDialog.nivel")}</strong> <StatusBadge tone="neutral">{formatStatus(item?.nivel_privilegio || '')}</StatusBadge></p>
                 <p><strong>{t("revisaoAcessosComp.itemDecisionDialog.dataConcessao")}</strong> {item?.data_concessao ? formatDateForInput(item.data_concessao) : "-"}</p>
                 <p><strong>{t("revisaoAcessosComp.itemDecisionDialog.dataExpiracao")}</strong> {item?.data_expiracao ? formatDateForInput(item.data_expiracao) : "-"}</p>
                 {item?.justificativa_original && (

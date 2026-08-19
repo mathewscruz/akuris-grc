@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { IconAdd, IconSuccess, IconWarning, IconTime, IconSend, IconFile, IconChecklist, IconUsers, IconTrendUp } from '@/components/icons';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/status-badge';
@@ -7,10 +8,10 @@ import { formatStatus } from '@/lib/text-utils';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { StatStrip } from '@/components/ui/stat-strip';
-import { ClipboardList, Users, CheckCircle, Clock, AlertTriangle, TrendingUp, Plus, Send, FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { formatDateOnly } from '@/lib/date-utils';
+import { formatDateOnly, parseDataLocal } from '@/lib/date-utils';
+import { startOfDay } from 'date-fns';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface DashboardStats {
@@ -68,19 +69,21 @@ export function DueDiligenceDashboard() {
       
       const completedAssessments = assessments.filter(a => a.status === 'concluido').length;
       const expiredAssessments = assessments.filter(a => 
-        a.data_expiracao && new Date(a.data_expiracao) < now && a.status !== 'concluido'
+        a.data_expiracao && parseDataLocal(a.data_expiracao) < now && a.status !== 'concluido'
       ).length;
       const pendingAssessments = assessments.filter(a => 
-        a.status !== 'concluido' && !(a.data_expiracao && new Date(a.data_expiracao) < now)
+        a.status !== 'concluido' && !(a.data_expiracao && parseDataLocal(a.data_expiracao) < now)
       ).length;
       
       const completedWithScores = assessments.filter(a => a.status === 'concluido' && a.score_final);
       const averageScore = completedWithScores.length > 0 
-        ? completedWithScores.reduce((sum, a) => sum + (a.score_final || 0), 0) / completedWithScores.length * 10
+        // Sem `* 10`: `score_final` já é percentagem. O KPI mostrava 750% para
+        // uma avaliação de 75.
+        ? completedWithScores.reduce((sum, a) => sum + (a.score_final || 0), 0) / completedWithScores.length
         : 0;
 
       const recentAssessments = assessments
-        .filter(a => a.status !== 'concluido' || (a.data_expiracao && new Date(a.data_expiracao) < now))
+        .filter(a => a.status !== 'concluido' || (a.data_expiracao && parseDataLocal(a.data_expiracao) < now))
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
         .slice(0, 5);
 
@@ -103,7 +106,13 @@ export function DueDiligenceDashboard() {
 
   // (status mapping removido — usar resolveDueDiligenceStatusTone + formatStatus)
 
-  const isExpired = (date: string) => new Date() > new Date(date);
+  /**
+   * Expira no fim do dia do prazo, não no instante em que o relógio passa.
+   * `new Date() > new Date(date)` marcava como expirada, desde a madrugada,
+   * uma avaliação cujo prazo é hoje — e com `new Date` cru sobre uma data sem
+   * hora ainda perdia um dia por causa do fuso.
+   */
+  const isExpired = (date: string) => startOfDay(new Date()) > startOfDay(parseDataLocal(date));
 
   return (
     <div className="space-y-4">
@@ -122,7 +131,7 @@ export function DueDiligenceDashboard() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-amber-500" />
+              <IconWarning className="h-4 w-4 text-warning" />
               {t('dueDiligence.dashboard.attentionCardTitle')}
             </CardTitle>
           </CardHeader>
@@ -133,16 +142,24 @@ export function DueDiligenceDashboard() {
                   <div className="flex items-center gap-3">
                     <div>
                       <p className="font-medium text-sm">{assessment.fornecedor_nome}</p>
+                      {/*
+                        O painel chama-se "precisam de atenção" e mostrava a
+                        data de CRIAÇÃO — que não é o que exige a atenção. O
+                        que interessa é o prazo: quando expira, ou há quanto
+                        tempo já expirou.
+                      */}
                       <p className="text-xs text-muted-foreground">
-                        {formatDateOnly(assessment.created_at)}
+                        {assessment.data_expiracao
+                          ? t('dueDiligence.dashboard.prazoEm', { data: formatDateOnly(assessment.data_expiracao) })
+                          : formatDateOnly(assessment.created_at)}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     {assessment.data_expiracao && isExpired(assessment.data_expiracao) && assessment.status !== 'concluido' && (
-                      <StatusBadge size="sm" tone="destructive">{t('dueDiligence.dashboard.expiredBadge')}</StatusBadge>
+                      <StatusBadge tone="destructive">{t('dueDiligence.dashboard.expiredBadge')}</StatusBadge>
                     )}
-                    <StatusBadge size="sm" {...resolveDueDiligenceStatusTone(assessment.status)}>
+                    <StatusBadge {...resolveDueDiligenceStatusTone(assessment.status)}>
                       {formatStatus(assessment.status)}
                     </StatusBadge>
                   </div>

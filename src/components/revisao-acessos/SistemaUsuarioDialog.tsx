@@ -1,4 +1,3 @@
-import { UserCog } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -29,6 +28,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useOptimizedQuery } from "@/hooks/useOptimizedQuery";
 import { parseDateForDB, formatDateForInput } from "@/lib/date-utils";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { IconPerson } from '@/components/icons';
 
 const makeUsuarioSchema = (t: (k: string) => string) => z.object({
   sistema_id: z.string().min(1, t('fin.validacao.sistemaObrigatorio')),
@@ -198,7 +198,7 @@ export function SistemaUsuarioDialog({
         open={open}
         onOpenChange={onClose}
         title={usuario?.id ? t('fin.sistemaUsuario.editarTitle') : t('fin.sistemaUsuario.novoTitle')}
-        icon={UserCog}
+        icon={IconPerson}
         size="lg"
         onSubmit={form.handleSubmit(onSubmit)}
       >

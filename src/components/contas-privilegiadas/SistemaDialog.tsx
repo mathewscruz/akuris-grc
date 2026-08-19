@@ -1,4 +1,5 @@
 import React, { useState, useRef, useMemo } from 'react';
+import { IconClose, IconUpload, IconServer, IconImage } from '@/components/icons';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -13,9 +14,9 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { UserSelect } from '@/components/riscos/UserSelect';
-import { Server, Upload, X, Image as ImageIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { exigirEscrita } from '@/lib/supabase-write';
 
 type SistemaFormData = {
   nome_sistema: string;
@@ -200,10 +201,10 @@ export default function SistemaDialog({ open, onClose, sistema }: SistemaDialogP
         if (imageFile) {
           imagemUrl = await uploadImage(sistemaId);
           if (imagemUrl) {
-            await supabase
+            await exigirEscrita(supabase
               .from('sistemas_privilegiados')
               .update({ imagem_url: imagemUrl } as any)
-              .eq('id', sistemaId);
+              .eq('id', sistemaId));
           }
         }
 
@@ -254,7 +255,7 @@ export default function SistemaDialog({ open, onClose, sistema }: SistemaDialogP
         open={open}
         onOpenChange={onClose}
         title={sistema?.id ? t('contasPrivilegiadasComp.sistemaDialog.titleEdit') : t('contasPrivilegiadasComp.sistemaDialog.titleNew')}
-        icon={Server}
+        icon={IconServer}
         size="lg"
         onSubmit={form.handleSubmit(onSubmit)}
         submitLabel={sistema ? t('contasPrivilegiadasComp.sistemaDialog.submitUpdate') : t('contasPrivilegiadasComp.sistemaDialog.submitCreate')}
@@ -270,7 +271,7 @@ export default function SistemaDialog({ open, onClose, sistema }: SistemaDialogP
                 {/* Preview */}
                 <div 
                   className={cn(
-                    "relative flex items-center justify-center w-24 h-24 rounded-lg border-2 border-dashed transition-all",
+                    "relative flex items-center justify-center w-24 h-24 rounded-lg border-2 border-dashed transition-ui",
                     imagePreview 
                       ? "border-primary bg-primary/5" 
                       : "border-border bg-muted/50"
@@ -288,11 +289,11 @@ export default function SistemaDialog({ open, onClose, sistema }: SistemaDialogP
                         onClick={handleRemoveImage}
                         className="absolute -top-2 -right-2 p-1 bg-destructive text-destructive-foreground rounded-full hover:bg-destructive/90 transition-colors"
                       >
-                        <X className="h-3 w-3" />
+                        <IconClose className="h-3 w-3" />
                       </button>
                     </>
                   ) : (
-                    <Server className="h-10 w-10 text-muted-foreground" />
+                    <IconServer className="h-10 w-10 text-muted-foreground" />
                   )}
                 </div>
 
@@ -312,7 +313,7 @@ export default function SistemaDialog({ open, onClose, sistema }: SistemaDialogP
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploadingImage}
                   >
-                    <Upload className="h-4 w-4 mr-2" />
+                    <IconUpload className="h-4 w-4 mr-2" />
                     {imagePreview ? t('contasPrivilegiadasComp.sistemaDialog.buttonAlterarImagem') : t('contasPrivilegiadasComp.sistemaDialog.buttonUploadImagem')}
                   </Button>
                   <p className="text-xs text-muted-foreground">

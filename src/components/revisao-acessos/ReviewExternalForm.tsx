@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { IconSuccess, IconError, IconChevron, IconChevronLeft, IconInfo } from '@/components/icons';
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -7,7 +8,6 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card } from "@/components/ui/card";
-import { CheckCircle, XCircle, ChevronLeft, ChevronRight, Info } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDateForInput } from "@/lib/date-utils";
 import { formatStatus } from "@/lib/text-utils";
@@ -183,7 +183,7 @@ export function ReviewExternalForm({ review, onComplete }: ReviewExternalFormPro
 
       {allReviewed ? (
         <Alert>
-          <CheckCircle className="h-4 w-4" />
+          <IconSuccess className="h-4 w-4" />
           <AlertDescription>
             {t("revisaoAcessosComp.externalForm.allReviewedMsg")}
           </AlertDescription>
@@ -198,11 +198,11 @@ export function ReviewExternalForm({ review, onComplete }: ReviewExternalFormPro
                   <p className="text-sm text-muted-foreground">{currentItem.email_beneficiario}</p>
                 )}
                 <div className="flex gap-2 flex-wrap">
-                  <StatusBadge size="sm" tone="neutral">{formatStatus(currentItem.tipo_acesso)}</StatusBadge>
-                  <StatusBadge size="sm" tone="neutral" variant="outline">{formatStatus(currentItem.nivel_privilegio)}</StatusBadge>
+                  <StatusBadge tone="neutral">{formatStatus(currentItem.tipo_acesso)}</StatusBadge>
+                  <StatusBadge tone="neutral" variant="outline">{formatStatus(currentItem.nivel_privilegio)}</StatusBadge>
                 </div>
               </div>
-              <StatusBadge size="sm" tone={currentItem.decisao === "pendente" ? "neutral" : "info"} variant={currentItem.decisao === "pendente" ? "outline" : "soft"}>
+              <StatusBadge tone={currentItem.decisao === "pendente" ? "neutral" : "info"} variant={currentItem.decisao === "pendente" ? "outline" : "soft"}>
                 {formatStatus(currentItem.decisao)}
               </StatusBadge>
             </div>
@@ -249,7 +249,7 @@ export function ReviewExternalForm({ review, onComplete }: ReviewExternalFormPro
                 onClick={() => handleDecision("aprovar")}
                 disabled={submitting}
               >
-                <CheckCircle className="mr-2 h-4 w-4" />
+                <IconSuccess className="mr-2 h-4 w-4" />
                 {t("revisaoAcessosComp.externalForm.buttonAprovar")}
               </Button>
               <Button
@@ -257,7 +257,7 @@ export function ReviewExternalForm({ review, onComplete }: ReviewExternalFormPro
                 onClick={() => handleDecision("revogar")}
                 disabled={submitting}
               >
-                <XCircle className="mr-2 h-4 w-4" />
+                <IconError className="mr-2 h-4 w-4" />
                 {t("revisaoAcessosComp.externalForm.buttonRevogar")}
               </Button>
             </div>
@@ -271,13 +271,13 @@ export function ReviewExternalForm({ review, onComplete }: ReviewExternalFormPro
           onClick={() => setCurrentIndex(Math.max(0, currentIndex - 1))}
           disabled={currentIndex === 0}
         >
-          <ChevronLeft className="mr-2 h-4 w-4" />
+          <IconChevronLeft className="mr-2 h-4 w-4" />
           {t("revisaoAcessosComp.externalForm.buttonAnterior")}
         </Button>
 
         {allReviewed ? (
           <Button onClick={handleFinalize} disabled={submitting} size="lg">
-            <CheckCircle className="mr-2 h-4 w-4" />
+            <IconSuccess className="mr-2 h-4 w-4" />
             {t("revisaoAcessosComp.externalForm.buttonFinalizar")}
           </Button>
         ) : (
@@ -292,7 +292,7 @@ export function ReviewExternalForm({ review, onComplete }: ReviewExternalFormPro
           disabled={currentIndex === items.length - 1}
         >
           {t("revisaoAcessosComp.externalForm.buttonProximo")}
-          <ChevronRight className="ml-2 h-4 w-4" />
+          <IconChevron className="ml-2 h-4 w-4" />
         </Button>
       </div>
     </div>

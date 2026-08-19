@@ -56,4 +56,3 @@ export const CornerAccent: React.FC<CornerAccentProps> = ({
   );
 };
 
-export default CornerAccent;

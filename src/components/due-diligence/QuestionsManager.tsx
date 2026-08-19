@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { IconAdd, IconEdit, IconDelete, IconArrowUp, IconArrowDown } from '@/components/icons';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,7 +12,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Plus, Edit, Trash2, MoveUp, MoveDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { DialogShell } from '@/components/ui/dialog-shell';
@@ -276,13 +276,13 @@ export function QuestionsManager({ templateId, templateName }: QuestionsManagerP
         </div>
 
         <Button onClick={() => { resetForm(); setShowDialog(true); }}>
-          <Plus className="mr-2 h-4 w-4" />
+          <IconAdd className="mr-2 h-4 w-4" />
           {t('dueDiligence.questionsManager.newQuestion')}
         </Button>
         <DialogShell
           open={showDialog}
           onOpenChange={setShowDialog}
-          icon={Plus}
+          icon={IconAdd}
           title={editingQuestion ? t('dueDiligence.questionsManager.editTitle') : t('dueDiligence.questionsManager.createTitle')}
           size="md"
           onSubmit={() => handleSubmit(new Event('submit') as unknown as React.FormEvent)}
@@ -362,13 +362,13 @@ export function QuestionsManager({ templateId, templateName }: QuestionsManagerP
                           size="sm"
                           onClick={() => removeOption(index)}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <IconDelete className="h-4 w-4" />
                         </Button>
                       )}
                     </div>
                   ))}
                   <Button type="button" variant="outline" onClick={addOption}>
-                    <Plus className="mr-2 h-4 w-4" />
+                    <IconAdd className="mr-2 h-4 w-4" />
                     {t('dueDiligence.questionsManager.addOption')}
                   </Button>
                 </div>
@@ -408,7 +408,7 @@ export function QuestionsManager({ templateId, templateName }: QuestionsManagerP
               {t('dueDiligence.questionsManager.emptyDescription')}
             </p>
             <Button onClick={() => setShowDialog(true)}>
-              <Plus className="mr-2 h-4 w-4" />
+              <IconAdd className="mr-2 h-4 w-4" />
               {t('dueDiligence.questionsManager.createFirst')}
             </Button>
           </CardContent>
@@ -427,13 +427,13 @@ export function QuestionsManager({ templateId, templateName }: QuestionsManagerP
                     <div className="flex-1 min-w-0 space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <h4 className="font-medium text-sm truncate">{question.titulo}</h4>
-                        <StatusBadge size="sm" {...resolveQuestionTypeTone(question.tipo)}>
+                        <StatusBadge {...resolveQuestionTypeTone(question.tipo)}>
                           {getTypeLabel(question.tipo)}
                         </StatusBadge>
                         {question.obrigatoria && (
-                          <StatusBadge size="sm" tone="destructive">{t('dueDiligence.questionsManager.requiredBadge')}</StatusBadge>
+                          <StatusBadge tone="destructive">{t('dueDiligence.questionsManager.requiredBadge')}</StatusBadge>
                         )}
-                        <StatusBadge size="sm" tone="neutral">{t('dueDiligence.questionsManager.weightBadge', { peso: question.peso })}</StatusBadge>
+                        <StatusBadge tone="neutral">{t('dueDiligence.questionsManager.weightBadge', { peso: question.peso })}</StatusBadge>
                       </div>
                       {question.descricao && (
                         <p className="text-xs text-muted-foreground truncate">{question.descricao}</p>
@@ -453,7 +453,7 @@ export function QuestionsManager({ templateId, templateName }: QuestionsManagerP
                         disabled={index === 0}
                         className="h-7 w-7 p-0"
                       >
-                        <MoveUp className="h-3 w-3" />
+                        <IconArrowUp className="h-3 w-3" />
                       </Button>
                       <Button
                         variant="ghost"
@@ -462,7 +462,7 @@ export function QuestionsManager({ templateId, templateName }: QuestionsManagerP
                         disabled={index === questions.length - 1}
                         className="h-7 w-7 p-0"
                       >
-                        <MoveDown className="h-3 w-3" />
+                        <IconArrowDown className="h-3 w-3" />
                       </Button>
                       <Button
                         variant="ghost"
@@ -470,7 +470,7 @@ export function QuestionsManager({ templateId, templateName }: QuestionsManagerP
                         onClick={() => handleEdit(question)}
                         className="h-7 w-7 p-0"
                       >
-                        <Edit className="h-3 w-3" />
+                        <IconEdit className="h-3 w-3" />
                       </Button>
                       <Button
                         variant="ghost"
@@ -478,7 +478,7 @@ export function QuestionsManager({ templateId, templateName }: QuestionsManagerP
                         onClick={() => setDeleteConfirm({ open: true, question })}
                         className="h-7 w-7 p-0"
                       >
-                        <Trash2 className="h-3 w-3" />
+                        <IconDelete className="h-3 w-3" />
                       </Button>
                     </div>
                   </div>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { IconEdit, IconDownload, IconSuccess, IconError, IconChecklist } from '@/components/icons';
 import { useLanguage } from "@/contexts/LanguageContext";
 import { DialogShell } from "@/components/ui/dialog-shell";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,6 @@ import { useReviewData } from "@/hooks/useReviewData";
 import { supabase } from "@/integrations/supabase/client";
 import { formatDateForInput } from "@/lib/date-utils";
 import { formatStatus } from "@/lib/text-utils";
-import { CheckCircle, XCircle, Edit, Download, ClipboardCheck } from "lucide-react";
 import { ReviewItemDecisionDialog } from "./ReviewItemDecisionDialog";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
@@ -85,7 +85,7 @@ export function ReviewItemsDialog({ open, onClose, review, onSuccess }: ReviewIt
       modificar: { tone: "info", label: t("revisaoAcessosComp.itemsDialog.decisaoModificado") },
     };
     const config = variants[decisao] || variants.pendente;
-    return <StatusBadge size="sm" tone={config.tone}>{config.label}</StatusBadge>;
+    return <StatusBadge tone={config.tone}>{config.label}</StatusBadge>;
   };
 
   const filteredItems = searchTerm
@@ -104,7 +104,7 @@ export function ReviewItemsDialog({ open, onClose, review, onSuccess }: ReviewIt
       <DialogShell
         open={open}
         onOpenChange={(o) => { if (!o) onClose(); }}
-        icon={ClipboardCheck}
+        icon={IconChecklist}
         title={t("revisaoAcessosComp.itemsDialog.title").replace("{nome}", review?.nome_revisao ?? '')}
         size="xl"
         hideFooter
@@ -151,11 +151,11 @@ export function ReviewItemsDialog({ open, onClose, review, onSuccess }: ReviewIt
                 onClick={handleFinalize}
                 disabled={review?.contas_revisadas !== review?.total_contas}
               >
-                <CheckCircle className="mr-2 h-4 w-4" />
+                <IconSuccess className="mr-2 h-4 w-4" />
                 {t("revisaoAcessosComp.itemsDialog.buttonFinalizar")}
               </Button>
               <Button variant="outline">
-                <Download className="mr-2 h-4 w-4" />
+                <IconDownload className="mr-2 h-4 w-4" />
                 {t("revisaoAcessosComp.itemsDialog.buttonExportar")}
               </Button>
             </div>
@@ -168,8 +168,8 @@ export function ReviewItemsDialog({ open, onClose, review, onSuccess }: ReviewIt
                       <h4 className="font-semibold">{item.usuario_beneficiario}</h4>
                       <p className="text-sm text-muted-foreground">{item.email_beneficiario || "-"}</p>
                       <div className="flex gap-2 mt-2">
-                        <StatusBadge size="sm" tone="neutral">{formatStatus(item.tipo_acesso)}</StatusBadge>
-                        <StatusBadge size="sm" tone="neutral" variant="outline">{formatStatus(item.nivel_privilegio)}</StatusBadge>
+                        <StatusBadge tone="neutral">{formatStatus(item.tipo_acesso)}</StatusBadge>
+                        <StatusBadge tone="neutral" variant="outline">{formatStatus(item.nivel_privilegio)}</StatusBadge>
                         {getDecisionBadge(item.decisao)}
                       </div>
                       {item.data_expiracao && (
@@ -185,12 +185,12 @@ export function ReviewItemsDialog({ open, onClose, review, onSuccess }: ReviewIt
                     >
                       {item.decisao === "pendente" ? (
                         <>
-                          <Edit className="mr-2 h-4 w-4" />
+                          <IconEdit className="mr-2 h-4 w-4" />
                           {t("revisaoAcessosComp.itemsDialog.buttonRevisar")}
                         </>
                       ) : (
                         <>
-                          <Edit className="mr-2 h-4 w-4" />
+                          <IconEdit className="mr-2 h-4 w-4" />
                           {t("revisaoAcessosComp.itemsDialog.buttonEditar")}
                         </>
                       )}

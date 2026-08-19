@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { DialogShell } from '@/components/ui/dialog-shell';
-import { ClipboardList } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { QuestionsManager } from './QuestionsManager';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { IconChecklist } from '@/components/icons';
 
 interface Template {
   id: string;
@@ -199,7 +199,7 @@ export function TemplateDialog({
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      icon={ClipboardList}
+      icon={IconChecklist}
       title={getDialogTitle()}
       description={getDialogDescription()}
       size={isQuestions ? 'xl' : 'sm'}

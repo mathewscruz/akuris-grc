@@ -72,4 +72,3 @@ export const AkurisMarkPattern: React.FC<AkurisMarkPatternProps> = ({
   );
 };
 
-export default AkurisMarkPattern;

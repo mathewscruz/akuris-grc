@@ -1,4 +1,4 @@
-import { Eye } from "lucide-react";
+;
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -27,6 +27,7 @@ import { useOptimizedQuery } from "@/hooks/useOptimizedQuery";
 import { supabase } from "@/integrations/supabase/client";
 import { parseDateForDB } from "@/lib/date-utils";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { IconView } from '@/components/icons';
 
 const reviewSchema = z.object({
   nome_revisao: z.string().min(3, "Nome deve ter no mínimo 3 caracteres"),
@@ -161,7 +162,7 @@ export function ReviewDialog({ open, onClose, review, onSuccess }: ReviewDialogP
         open={open}
         onOpenChange={onClose}
         title={review?.id ? t("revisaoAcessosComp.reviewDialog.titleEdit") : t("revisaoAcessosComp.reviewDialog.titleNew")}
-        icon={Eye}
+        icon={IconView}
         size="lg"
         onSubmit={form.handleSubmit(onSubmit)}
         submitLabel={review ? t("revisaoAcessosComp.reviewDialog.submitUpdate") : t("revisaoAcessosComp.reviewDialog.submitCreate")}

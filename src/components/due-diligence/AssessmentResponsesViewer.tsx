@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { IconDownload, IconCalendar, IconFile, IconPerson, IconMail } from '@/components/icons';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,11 +8,11 @@ import { resolveDueDiligenceStatusTone } from '@/lib/status-tone';
 import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { ScoreVisualization } from './ScoreVisualization';
-import { FileText, Download, User, Calendar, Mail } from 'lucide-react';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { formatStatus } from '@/lib/text-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { intlLocale, parseDataLocal } from '@/lib/date-utils';
 interface Assessment {
   id: string;
   fornecedor_nome: string;
@@ -142,7 +143,7 @@ export function AssessmentResponsesViewer({
         return response.resposta === 'sim' ? t('dueDiligence.assessmentResponsesViewer.yes') : t('dueDiligence.assessmentResponsesViewer.no');
       case 'data':
         try {
-          return new Date(response.resposta).toLocaleDateString('pt-BR');
+          return new Date(response.resposta).toLocaleDateString(intlLocale());
         } catch {
           return response.resposta;
         }
@@ -183,7 +184,7 @@ export function AssessmentResponsesViewer({
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      icon={FileText}
+      icon={IconFile}
       title={t('dueDiligence.assessmentResponsesViewer.title', { fornecedor: assessment.fornecedor_nome })}
       size="xl"
       hideFooter
@@ -194,7 +195,7 @@ export function AssessmentResponsesViewer({
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <User className="h-4 w-4" />
+                  <IconPerson className="h-4 w-4" />
                   {t('dueDiligence.assessmentResponsesViewer.infoCardTitle')}
                 </CardTitle>
               </CardHeader>
@@ -214,16 +215,16 @@ export function AssessmentResponsesViewer({
                   </div>
                   <div>
                     <span className="text-muted-foreground">{t('dueDiligence.assessmentResponsesViewer.fieldStatus')}</span>
-                    <StatusBadge size="sm" {...resolveDueDiligenceStatusTone(assessment.status)}>{formatStatus(assessment.status)}</StatusBadge>
+                    <StatusBadge {...resolveDueDiligenceStatusTone(assessment.status)}>{formatStatus(assessment.status)}</StatusBadge>
                   </div>
                   {assessment.data_conclusao && (
                     <div className="col-span-2">
                       <span className="text-muted-foreground flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
+                        <IconCalendar className="h-3 w-3" />
                         {t('dueDiligence.assessmentResponsesViewer.completedAt')}
                       </span>
                       <p className="font-medium">
-                        {new Date(assessment.data_conclusao).toLocaleDateString('pt-BR', {
+                        {parseDataLocal(assessment.data_conclusao).toLocaleDateString(intlLocale(), {
                           day: '2-digit',
                           month: '2-digit',
                           year: 'numeric',
@@ -274,15 +275,15 @@ export function AssessmentResponsesViewer({
                                   </span>
                                   <h4 className="font-medium">{question.titulo}</h4>
                                   {question.obrigatoria && (
-                                    <StatusBadge size="sm" tone="neutral" variant="outline">{t('dueDiligence.assessmentResponsesViewer.requiredBadge')}</StatusBadge>
+                                    <StatusBadge tone="neutral" variant="outline">{t('dueDiligence.assessmentResponsesViewer.requiredBadge')}</StatusBadge>
                                   )}
                                 </div>
                                 <div className="flex items-center gap-2 mb-2">
-                                  <StatusBadge size="sm" tone="neutral">
+                                  <StatusBadge tone="neutral">
                                     {getQuestionTypeLabel(question.tipo)}
                                   </StatusBadge>
                                   {question.peso && (
-                                    <StatusBadge size="sm" tone="neutral" variant="outline">
+                                    <StatusBadge tone="neutral" variant="outline">
                                       {t('dueDiligence.assessmentResponsesViewer.weightLabel', { peso: question.peso })}
                                     </StatusBadge>
                                   )}
@@ -290,7 +291,7 @@ export function AssessmentResponsesViewer({
                               </div>
                             </div>
                             
-                            <div className="bg-muted/30 p-3 rounded-md">
+                            <div className="bg-card p-3 rounded-md border border-border">
                               <div className="flex items-center justify-between">
                                 <div className="flex-1">
                                   <span className="text-sm text-muted-foreground">{t('dueDiligence.assessmentResponsesViewer.responseLabel')}</span>
@@ -309,7 +310,7 @@ export function AssessmentResponsesViewer({
                               </div>
                               {response && (
                                 <p className="text-xs text-muted-foreground mt-2">
-                                  {t('dueDiligence.assessmentResponsesViewer.answeredAt', { data: new Date(response.created_at).toLocaleDateString('pt-BR', {
+                                  {t('dueDiligence.assessmentResponsesViewer.answeredAt', { data: new Date(response.created_at).toLocaleDateString(intlLocale(), {
                                     day: '2-digit',
                                     month: '2-digit',
                                     year: 'numeric',
@@ -342,7 +343,7 @@ export function AssessmentResponsesViewer({
                   className="flex items-center gap-2"
                   disabled // Implementar posteriormente
                 >
-                  <Download className="h-4 w-4" />
+                  <IconDownload className="h-4 w-4" />
                   {t('dueDiligence.assessmentResponsesViewer.exportPdf')}
                 </Button>
                 <Button onClick={() => onOpenChange(false)}>

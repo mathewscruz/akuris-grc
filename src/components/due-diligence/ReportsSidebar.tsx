@@ -1,13 +1,13 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { IconDownload, IconChart, IconTrendUp, IconUsers, IconAward } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart3, Download, TrendingUp, Users, Award } from 'lucide-react';
 import { useDueDiligenceStats } from '@/hooks/useDueDiligenceStats';
 import { useReportsData } from '@/hooks/useReportsData';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { CHART_GRID, CHART_AXIS, CHART_TOOLTIP_STYLE, chartSeries } from '@/lib/chart-tokens';
+import { CHART_GRID, CHART_AXIS, CHART_TOOLTIP_STYLE, chartSeries, CHART_FONT } from '@/lib/chart-tokens';
 
 export function ReportsSidebar() {
   const { t } = useLanguage();
@@ -47,7 +47,7 @@ export function ReportsSidebar() {
     <Sheet>
       <SheetTrigger asChild>
         <Button variant="outline" size="sm">
-          <BarChart3 className="h-4 w-4 mr-2" />
+          <IconChart className="h-4 w-4 mr-2" />
           {t('dueDiligence.reportsSidebar.reports')}
         </Button>
       </SheetTrigger>
@@ -62,7 +62,7 @@ export function ReportsSidebar() {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
-                <TrendingUp className="h-4 w-4" />
+                <IconTrendUp className="h-4 w-4" />
                 {t('dueDiligence.reportsSidebar.overviewTitle')}
               </CardTitle>
             </CardHeader>
@@ -99,11 +99,11 @@ export function ReportsSidebar() {
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">{t('dueDiligence.reportsSidebar.completed')}</span>
-                    <span className="font-semibold text-green-600">{stats?.completedAssessments || 0}</span>
+                    <span className="font-semibold text-success">{stats?.completedAssessments || 0}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">{t('dueDiligence.reportsSidebar.pending')}</span>
-                    <span className="font-semibold text-orange-600">
+                    <span className="font-semibold text-warning">
                       {(stats?.totalAssessments || 0) - (stats?.completedAssessments || 0)}
                     </span>
                   </div>
@@ -122,8 +122,8 @@ export function ReportsSidebar() {
                 <ResponsiveContainer width="100%" height={250}>
                   <BarChart data={reports.categoryPerformance}>
                     <CartesianGrid strokeDasharray="3 3" stroke={CHART_GRID} />
-                    <XAxis dataKey="categoria" stroke={CHART_AXIS} tick={{ fontSize: 12, fill: CHART_AXIS }} />
-                    <YAxis stroke={CHART_AXIS} tick={{ fontSize: 12, fill: CHART_AXIS }} />
+                    <XAxis dataKey="categoria" stroke={CHART_AXIS} tick={{ fontSize: CHART_FONT.label, fill: CHART_AXIS }} />
+                    <YAxis stroke={CHART_AXIS} tick={{ fontSize: CHART_FONT.label, fill: CHART_AXIS }} />
                     <Tooltip contentStyle={CHART_TOOLTIP_STYLE} />
                     <Legend />
                     <Bar dataKey="averageScore" fill={chartSeries(0)} name={t('dueDiligence.reportsSidebar.averageScoreLegend')} />
@@ -138,7 +138,7 @@ export function ReportsSidebar() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
-                  <Award className="h-4 w-4" />
+                  <IconAward className="h-4 w-4" />
                   {t('dueDiligence.reportsSidebar.topSuppliersTitle')}
                 </CardTitle>
               </CardHeader>
@@ -165,14 +165,14 @@ export function ReportsSidebar() {
             <Card>
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
-                  <Users className="h-4 w-4" />
+                  <IconUsers className="h-4 w-4" />
                   {t('dueDiligence.reportsSidebar.lowPerformingTitle')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
                   {reports.lowPerformingSuppliers.map((supplier, index) => (
-                    <div key={index} className="flex items-center justify-between p-2 border border-orange-200 rounded bg-orange-50/50">
+                    <div key={index} className="flex items-center justify-between p-2 border border-warning/30 rounded bg-warning/10/50">
                       <span className="text-sm">{supplier.nome}</span>
                       <Badge variant="destructive">
                         {supplier.score.toFixed(1)}%
@@ -186,7 +186,7 @@ export function ReportsSidebar() {
           
           {/* Botão de Exportação */}
           <Button onClick={exportReport} className="w-full">
-            <Download className="h-4 w-4 mr-2" />
+            <IconDownload className="h-4 w-4 mr-2" />
             {t('dueDiligence.reportsSidebar.exportButton')}
           </Button>
         </div>

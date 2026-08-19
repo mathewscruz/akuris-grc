@@ -1,8 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { IconWarning, IconTrendUp, IconTrendDown, IconMinus, IconAward } from '@/components/icons';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { TrendingUp, TrendingDown, Minus, Award, AlertTriangle } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { intlLocale } from '@/lib/date-utils';
 
 interface ScoreData {
   score_total: number;
@@ -32,29 +33,30 @@ export function ScoreVisualization({ scoreData, assessmentData }: ScoreVisualiza
 
   const getClassificationColor = (classification: string) => {
     switch (classification) {
-      case 'excelente': return 'text-green-600';
-      case 'bom': return 'text-blue-600';
-      case 'regular': return 'text-yellow-600';
-      case 'ruim': return 'text-red-600';
+      case 'excelente': return 'text-success';
+      case 'bom': return 'text-info';
+      case 'regular': return 'text-warning';
+      case 'ruim': return 'text-destructive';
       default: return 'text-muted-foreground';
     }
   };
 
   const getClassificationBadge = (classification: string) => {
     switch (classification) {
-      case 'excelente': return { variant: 'default' as const, icon: Award };
-      case 'bom': return { variant: 'secondary' as const, icon: TrendingUp };
-      case 'regular': return { variant: 'outline' as const, icon: Minus };
-      case 'ruim': return { variant: 'destructive' as const, icon: AlertTriangle };
-      default: return { variant: 'outline' as const, icon: Minus };
+      case 'excelente': return { variant: 'default' as const, icon: IconAward };
+      case 'bom': return { variant: 'secondary' as const, icon: IconTrendUp };
+      case 'regular': return { variant: 'outline' as const, icon: IconMinus };
+      case 'ruim': return { variant: 'destructive' as const, icon: IconWarning };
+      default: return { variant: 'outline' as const, icon: IconMinus };
     }
   };
 
   const getScoreColor = (score: number) => {
-    if (score >= 8) return 'bg-green-500';
-    if (score >= 6) return 'bg-blue-500';
-    if (score >= 4) return 'bg-yellow-500';
-    return 'bg-red-500';
+    // Escala de percentagem, como o valor gravado.
+    if (score >= 80) return 'bg-success';
+    if (score >= 60) return 'bg-info';
+    if (score >= 40) return 'bg-warning';
+    return 'bg-destructive';
   };
 
   const classificationBadge = getClassificationBadge(scoreData.classificacao);
@@ -111,7 +113,7 @@ export function ScoreVisualization({ scoreData, assessmentData }: ScoreVisualiza
           {/* Data da avaliação */}
           <div className="text-center text-sm text-muted-foreground">
             {t('dueDiligence.scoreVisualization.evaluatedAt', {
-              data: new Date(scoreData.created_at).toLocaleDateString('pt-BR', {
+              data: new Date(scoreData.created_at).toLocaleDateString(intlLocale(), {
                 day: '2-digit',
                 month: '2-digit',
                 year: 'numeric',
@@ -160,7 +162,7 @@ export function ScoreVisualization({ scoreData, assessmentData }: ScoreVisualiza
         <Card>
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
-              <Award className="h-4 w-4" />
+              <IconAward className="h-4 w-4" />
               {t('dueDiligence.scoreVisualization.aiAnalysisTitle')}
             </CardTitle>
           </CardHeader>
@@ -180,22 +182,22 @@ export function ScoreVisualization({ scoreData, assessmentData }: ScoreVisualiza
         <CardContent>
           <div className="space-y-2">
             {scoreData.classificacao === 'excelente' && (
-              <p className="text-green-600">
+              <p className="text-success">
                 {t('dueDiligence.scoreVisualization.recommendationExcellent')}
               </p>
             )}
             {scoreData.classificacao === 'bom' && (
-              <p className="text-blue-600">
+              <p className="text-info">
                 {t('dueDiligence.scoreVisualization.recommendationGood')}
               </p>
             )}
             {scoreData.classificacao === 'regular' && (
-              <p className="text-yellow-600">
+              <p className="text-warning">
                 {t('dueDiligence.scoreVisualization.recommendationRegular')}
               </p>
             )}
             {scoreData.classificacao === 'ruim' && (
-              <p className="text-red-600">
+              <p className="text-destructive">
                 {t('dueDiligence.scoreVisualization.recommendationBad')}
               </p>
             )}

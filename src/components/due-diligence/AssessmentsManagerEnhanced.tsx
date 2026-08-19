@@ -1,4 +1,5 @@
 import { rowOpenProps, CARD_HOVER } from '@/lib/row-interaction';
+import { IconAdd, IconClose, IconFilter, IconEdit, IconDelete, IconView, IconMore, IconSuccess, IconWarning, IconTime, IconRefresh, IconSend, IconFile, IconPerson, IconAward, IconTrendUp, IconUsers, IconSort, IconMail } from '@/components/icons';
 import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,8 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { DialogShell } from '@/components/ui/dialog-shell';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { StatCard } from '@/components/ui/stat-card';
-import { Plus, Send, Clock, AlertTriangle, FileText, Eye, User, Edit2, Trash2, RefreshCw, Award, TrendingUp, Filter, CheckCircle, Users, ArrowUpDown, MoreHorizontal, X, Mail } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useDueDiligenceStats } from '@/hooks/useDueDiligenceStats';
@@ -19,13 +18,15 @@ import { ScoreVisualization } from './ScoreVisualization';
 import { AssessmentResponsesViewer } from './AssessmentResponsesViewer';
 import { ReportsSidebar } from './ReportsSidebar';
 import { IntegrationSuggestions } from './IntegrationSuggestions';
-import { formatDateOnly } from '@/lib/date-utils';
+import { formatDateOnly, parseDataLocal } from '@/lib/date-utils';
+import { startOfDay } from 'date-fns';
 import { formatStatus } from '@/lib/text-utils';
 import { StatusBadge, type StatusTone } from '@/components/ui/status-badge';
 import { resolveDueDiligenceStatusTone } from '@/lib/status-tone';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { exigirEscrita } from '@/lib/supabase-write';
 interface Assessment {
   id: string;
   fornecedor_nome: string;
@@ -101,10 +102,10 @@ function ReminderDialog({ assessment, open, onOpenChange, onSuccess }: ReminderD
         }
       });
 
-      await supabase
+      await exigirEscrita(supabase
         .from('due_diligence_assessments')
         .update({ ultimo_lembrete_enviado: new Date().toISOString() })
-        .eq('id', assessment.id);
+        .eq('id', assessment.id));
 
       toast({
         title: t('dueDiligence.assessmentsManagerEnhanced.toastReminderSentTitle'),
@@ -129,7 +130,7 @@ function ReminderDialog({ assessment, open, onOpenChange, onSuccess }: ReminderD
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      icon={Mail}
+      icon={IconMail}
       title={t('dueDiligence.assessmentsManagerEnhanced.reminderTitle')}
       size="sm"
       footer={
@@ -258,13 +259,17 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
 
       if (error) throw error;
 
+      /*
+        O status gravado é o status. Aqui reescrevia-se para 'expirado' no
+        cliente sempre que o prazo tivesse passado — e como o cartão ainda
+        acrescenta o seu próprio selo de expirado, saíam dois chips iguais
+        lado a lado. Pior: o painel do topo não faz essa reescrita, portanto a
+        MESMA avaliação aparecia como "Expirado" aqui e "Em Andamento" ali, no
+        mesmo ecrã. A expiração é uma marca sobre o estado, não o estado.
+      */
       const formattedAssessments: Assessment[] = (data || []).map(assessment => {
-        let status = assessment.status;
-        
-        if (new Date() > new Date(assessment.data_expiracao) && status !== 'concluido') {
-          status = 'expirado';
-        }
-        
+        const status = assessment.status;
+
         return {
           id: assessment.id,
           fornecedor_nome: assessment.fornecedor_nome,
@@ -364,27 +369,38 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
   }, [searchTerm, statusFilter, categoriaFilter]);
 
   const getStatusBadge = (status: string) => {
-    return <StatusBadge size="sm" {...resolveDueDiligenceStatusTone(status)}>{formatStatus(status)}</StatusBadge>;
+    return <StatusBadge {...resolveDueDiligenceStatusTone(status)}>{formatStatus(status)}</StatusBadge>;
   };
 
   const getScoreColor = (score?: number) => {
     if (!score || score === 0) return 'text-muted-foreground';
-    if (score >= 8) return 'text-success font-semibold';
-    if (score >= 6) return 'text-info font-semibold';
-    if (score >= 4) return 'text-warning font-semibold';
+    // Escala de percentagem, como o valor gravado.
+    if (score >= 80) return 'text-success font-semibold';
+    if (score >= 60) return 'text-info font-semibold';
+    if (score >= 40) return 'text-warning font-semibold';
     return 'text-destructive font-semibold';
   };
 
+  /**
+   * Limiares na escala em que o score é gravado: percentagem.
+   *
+   * Estavam em 8 / 6 / 4 — a escala de 0 a 10 das notas por pergunta — a
+   * comparar com um `score_final` de 0 a 100. Qualquer avaliação acima de 8%
+   * era classificada "Excelente", inclusive um fornecedor com 12.
+   */
   const getScoreBadge = (score?: number): { text: string; tone: StatusTone } => {
     if (!score || score === 0) return { text: t('dueDiligence.assessmentsManagerEnhanced.scoreAwaiting'), tone: "neutral" };
-    if (score >= 8) return { text: t('dueDiligence.assessmentsManagerEnhanced.scoreExcellent'), tone: "success" };
-    if (score >= 6) return { text: t('dueDiligence.assessmentsManagerEnhanced.scoreGood'), tone: "info" };
-    if (score >= 4) return { text: t('dueDiligence.assessmentsManagerEnhanced.scoreRegular'), tone: "warning" };
+    if (score >= 80) return { text: t('dueDiligence.assessmentsManagerEnhanced.scoreExcellent'), tone: "success" };
+    if (score >= 60) return { text: t('dueDiligence.assessmentsManagerEnhanced.scoreGood'), tone: "info" };
+    if (score >= 40) return { text: t('dueDiligence.assessmentsManagerEnhanced.scoreRegular'), tone: "warning" };
     return { text: t('dueDiligence.assessmentsManagerEnhanced.scoreBad'), tone: "destructive" };
   };
 
   const isExpired = (dateString: string) => {
-    return new Date() > new Date(dateString);
+    // Expira no fim do dia do prazo, e `parseDataLocal` evita perder um dia
+    // por fuso quando a coluna não tem hora.
+    if (!dateString) return false;
+    return startOfDay(new Date()) > startOfDay(parseDataLocal(dateString));
   };
 
   const isExpiringSoon = (dateString: string) => {
@@ -510,7 +526,8 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
     
     if (concluidas.length === 0) return 0;
     
-    return (concluidas.reduce((sum, a) => sum + ((a.score_final || 0) * 10), 0) / concluidas.length);
+    // `score_final` já é percentagem — ver calculate-assessment-score.
+    return (concluidas.reduce((sum, a) => sum + (a.score_final || 0), 0) / concluidas.length);
   };
 
   const handleScoreClick = async (assessment: Assessment) => {
@@ -572,21 +589,21 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
                     size="sm"
                     onClick={() => setShowFilters(!showFilters)}
                   >
-                    <Filter className="h-4 w-4 mr-2" />
+                    <IconFilter className="h-4 w-4 mr-2" />
                     {t('dueDiligence.assessmentsManagerEnhanced.filters')}
                   </Button>
                   <Button 
                     size="sm"
                     onClick={() => setAssessmentDialog({ open: true, assessment: null, mode: 'create' })}
                   >
-                    <Plus className="h-4 w-4 mr-2" />
+                    <IconAdd className="h-4 w-4 mr-2" />
                     {t('dueDiligence.assessmentsManagerEnhanced.newAssessment')}
                   </Button>
                 </div>
               </div>
               
               {showFilters && (
-                <div className="bg-muted/50 rounded-lg p-4 mb-4 flex items-center gap-4 flex-wrap">
+                <div className="bg-card rounded-lg p-4 mb-4 flex items-center gap-4 flex-wrap border border-border">
                   <div className="flex items-center gap-2">
                     <Label className="text-sm">{t('dueDiligence.assessmentsManagerEnhanced.filterStatusLabel')}</Label>
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -623,7 +640,7 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
                       size="sm"
                       onClick={clearFilters}
                     >
-                      <X className="h-4 w-4 mr-1" />
+                      <IconClose className="h-4 w-4 mr-1" />
                       {t('dueDiligence.assessmentsManagerEnhanced.clearFilters')}
                     </Button>
                   )}
@@ -650,12 +667,12 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
                       <div className="flex items-center gap-2">
                         {getStatusBadge(assessment.status)}
                         {isExpired(assessment.data_expiracao) && assessment.status !== 'concluido' && (
-                          <StatusBadge size="sm" tone="destructive" intensity="high" icon={<AlertTriangle className="h-3 w-3" />}>
+                          <StatusBadge tone="destructive" intensity="high">
                             {t('dueDiligence.assessmentsManagerEnhanced.expired')}
                           </StatusBadge>
                         )}
                         {isExpiringSoon(assessment.data_expiracao) && assessment.status !== 'concluido' && !isExpired(assessment.data_expiracao) && (
-                          <StatusBadge size="sm" tone="warning" icon={<Clock className="h-3 w-3" />}>
+                          <StatusBadge tone="warning">
                             {t('dueDiligence.assessmentsManagerEnhanced.expiresIn', { dias: getDaysUntilExpiration(assessment.data_expiracao) })}
                           </StatusBadge>
                         )}
@@ -688,14 +705,13 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
                               className="hover:underline cursor-pointer flex items-center gap-2"
                             >
                               <StatusBadge
-                                size="sm"
                                 tone={getScoreBadge(assessment.score_final).tone}
-                                icon={<Award className="h-3 w-3" />}
-                                className="transition-all hover:scale-105"
+                                icon={<IconAward className="h-3 w-3" />}
+                                className="transition-ui hover:scale-105"
                               >
                                 {getScoreBadge(assessment.score_final).text}
                                 <span className="ml-1 font-mono">
-                                  {(assessment.score_final * 10).toFixed(1)}%
+                                  {assessment.score_final.toFixed(1)}%
                                 </span>
                               </StatusBadge>
                             </button>
@@ -710,8 +726,17 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
 
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Clock className="h-4 w-4" />
-                        {assessment.data_inicio ? (
+                        <IconTime className="h-4 w-4" />
+                        {/*
+                          A data mais forte que se souber. Só se olhava para
+                          `data_inicio`, e uma avaliação concluída sem data de
+                          início registada — o fluxo nem sempre a grava —
+                          exibia "Ainda não iniciado" ao lado do próprio chip
+                          "Concluído".
+                        */}
+                        {assessment.data_conclusao ? (
+                          <span>{t('dueDiligence.assessmentsManagerEnhanced.completedOn', { data: formatDateOnly(assessment.data_conclusao) })}</span>
+                        ) : assessment.data_inicio ? (
                           <span>{t('dueDiligence.assessmentsManagerEnhanced.startedOn', { data: formatDateOnly(assessment.data_inicio) })}</span>
                         ) : (
                           <span>{t('dueDiligence.assessmentsManagerEnhanced.notStarted')}</span>
@@ -726,7 +751,7 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
                               size="sm"
                               onClick={() => viewAssessment(assessment)}
                             >
-                              <Eye className="h-4 w-4 mr-1" />
+                              <IconView className="h-4 w-4 mr-1" />
                               {t('dueDiligence.assessmentsManagerEnhanced.view')}
                             </Button>
                           </TooltipTrigger>
@@ -738,7 +763,7 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
                             <TooltipTrigger asChild>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="outline" size="sm">
-                                  <MoreHorizontal className="h-4 w-4" />
+                                  <IconMore className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>
                             </TooltipTrigger>
@@ -747,18 +772,18 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
                           <DropdownMenuContent align="end">
                             {assessment.score_final && assessment.score_final > 0 && (
                               <DropdownMenuItem onClick={() => setScoreDialog({ open: true, assessment, scoreData: null })}>
-                                <Award className="h-4 w-4 mr-2" />
+                                <IconAward className="h-4 w-4 mr-2" />
                                 {t('dueDiligence.assessmentsManagerEnhanced.viewScore')}
                               </DropdownMenuItem>
                             )}
                             {assessment.status === 'concluido' && (
                               <DropdownMenuItem onClick={() => setResponsesDialog({ open: true, assessment })}>
-                                <FileText className="h-4 w-4 mr-2" />
+                                <IconFile className="h-4 w-4 mr-2" />
                                 {t('dueDiligence.assessmentsManagerEnhanced.viewResponses')}
                               </DropdownMenuItem>
                             )}
                             <DropdownMenuItem onClick={() => setAssessmentDialog({ open: true, assessment, mode: 'view' })}>
-                              <Edit2 className="h-4 w-4 mr-2" />
+                              <IconEdit className="h-4 w-4 mr-2" />
                               {t('dueDiligence.assessmentsManagerEnhanced.details')}
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
@@ -766,12 +791,12 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
                               onClick={() => resendAssessment(assessment)}
                               disabled={assessment.status === 'concluido'}
                             >
-                              <RefreshCw className="h-4 w-4 mr-2" />
+                              <IconRefresh className="h-4 w-4 mr-2" />
                               {t('dueDiligence.assessmentsManagerEnhanced.resend')}
                             </DropdownMenuItem>
                             {canSendReminder(assessment) && (
                               <DropdownMenuItem onClick={() => setReminderDialog({ open: true, assessment })}>
-                                <Send className="h-4 w-4 mr-2" />
+                                <IconSend className="h-4 w-4 mr-2" />
                                 {t('dueDiligence.assessmentsManagerEnhanced.reminder')}
                               </DropdownMenuItem>
                             )}
@@ -780,7 +805,7 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
                               onClick={() => setDeleteDialog({ open: true, assessment })}
                               className="text-destructive"
                             >
-                              <Trash2 className="h-4 w-4 mr-2" />
+                              <IconDelete className="h-4 w-4 mr-2" />
                               {t('dueDiligence.assessmentsManagerEnhanced.delete')}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -839,7 +864,7 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
           {filteredAndSortedAssessments.length === 0 && !loading && (
             <Card>
               <CardContent className="text-center py-8">
-                <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <IconFile className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-semibold mb-2">{t('dueDiligence.assessmentsManagerEnhanced.emptyTitle')}</h3>
                 <p className="text-muted-foreground">
                   {hasActiveFilters 
@@ -879,7 +904,7 @@ export function AssessmentsManagerEnhanced({ filter }: AssessmentsManagerEnhance
           <DialogShell
             open={scoreDialog.open}
             onOpenChange={(open) => setScoreDialog({ open, assessment: null, scoreData: null })}
-            icon={Award}
+            icon={IconAward}
             title={t('dueDiligence.assessmentsManagerEnhanced.scoreDialogTitle', { fornecedor: scoreDialog.assessment?.fornecedor_nome ?? '' })}
             size="xl"
             hideFooter

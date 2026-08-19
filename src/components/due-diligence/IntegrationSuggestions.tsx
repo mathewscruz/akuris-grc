@@ -1,7 +1,7 @@
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { IconSuccess, IconWarning, IconFile, IconShield } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertTriangle, FileText, Shield, CheckCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
@@ -34,7 +34,9 @@ export function IntegrationSuggestions({ assessment }: IntegrationSuggestionsPro
         throw new Error('Empresa não encontrada');
       }
 
-      const scorePorcentagem = assessment.score_final * 10;
+      // `score_final` já é percentagem — este risco ia para o registo com
+      // um valor dez vezes maior do que a avaliação real.
+      const scorePorcentagem = assessment.score_final;
       
       const { error } = await supabase
         .from('riscos')
@@ -74,13 +76,15 @@ export function IntegrationSuggestions({ assessment }: IntegrationSuggestionsPro
     });
   };
 
-  const scorePorcentagem = assessment.score_final * 10;
-  
+  // Mesma escala do resto: `score_final` já é 0-100. Com o `* 10`, o aviso
+  // de "score crítico abaixo de 50" nunca disparava — 5 já dava 50.
+  const scorePorcentagem = assessment.score_final;
+
   return (
     <div className="space-y-4">
       {scorePorcentagem < 50 && (
         <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
+          <IconWarning className="h-4 w-4" />
           <AlertTitle>{t('dueDiligence.integrationSuggestions.criticalTitle')}</AlertTitle>
           <AlertDescription>
             {t('dueDiligence.integrationSuggestions.criticalDescription', { score: scorePorcentagem.toFixed(1) })}
@@ -90,7 +94,7 @@ export function IntegrationSuggestions({ assessment }: IntegrationSuggestionsPro
       
       {scorePorcentagem >= 50 && scorePorcentagem < 70 && (
         <Alert>
-          <AlertTriangle className="h-4 w-4" />
+          <IconWarning className="h-4 w-4" />
           <AlertTitle>{t('dueDiligence.integrationSuggestions.attentionTitle')}</AlertTitle>
           <AlertDescription>
             {t('dueDiligence.integrationSuggestions.attentionDescription', { score: scorePorcentagem.toFixed(1) })}
@@ -99,10 +103,10 @@ export function IntegrationSuggestions({ assessment }: IntegrationSuggestionsPro
       )}
 
       {scorePorcentagem >= 80 && (
-        <Alert className="border-green-200 bg-green-50">
-          <CheckCircle className="h-4 w-4 text-green-600" />
-          <AlertTitle className="text-green-900">{t('dueDiligence.integrationSuggestions.excellentTitle')}</AlertTitle>
-          <AlertDescription className="text-green-800">
+        <Alert className="border-success/30 bg-success/10">
+          <IconSuccess className="h-4 w-4 text-success" />
+          <AlertTitle className="text-success">{t('dueDiligence.integrationSuggestions.excellentTitle')}</AlertTitle>
+          <AlertDescription className="text-success">
             {t('dueDiligence.integrationSuggestions.excellentDescription', { score: scorePorcentagem.toFixed(1) })}
           </AlertDescription>
         </Alert>
@@ -119,7 +123,7 @@ export function IntegrationSuggestions({ assessment }: IntegrationSuggestionsPro
             variant={scorePorcentagem < 50 ? 'default' : 'outline'}
             className="w-full justify-start"
           >
-            <Shield className="h-4 w-4 mr-2" />
+            <IconShield className="h-4 w-4 mr-2" />
             {isCreating ? t('dueDiligence.integrationSuggestions.creatingRisk') : t('dueDiligence.integrationSuggestions.createRiskInModule')}
           </Button>
           
@@ -128,16 +132,16 @@ export function IntegrationSuggestions({ assessment }: IntegrationSuggestionsPro
             variant="outline"
             className="w-full justify-start"
           >
-            <FileText className="h-4 w-4 mr-2" />
+            <IconFile className="h-4 w-4 mr-2" />
             {t('dueDiligence.integrationSuggestions.requestAdditionalDocs')}
           </Button>
           
           {scorePorcentagem >= 80 && (
             <Button
               variant="outline"
-              className="w-full justify-start text-green-600 hover:text-green-700 hover:bg-green-50"
+              className="w-full justify-start text-success hover:text-success hover:bg-success/10"
             >
-              <CheckCircle className="h-4 w-4 mr-2" />
+              <IconSuccess className="h-4 w-4 mr-2" />
               {t('dueDiligence.integrationSuggestions.approveSupplier')}
             </Button>
           )}

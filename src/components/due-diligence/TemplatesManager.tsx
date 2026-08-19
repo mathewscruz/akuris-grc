@@ -9,8 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Plus, Edit, Copy, Trash2, FileText, Settings as SettingsIcon, Star, Filter, X, Shield, Scale, Leaf } from 'lucide-react';
-import { AkurisAIIcon } from '@/components/icons';
+import { IconAdd, IconClose, IconFilter, IconEdit, IconDelete, IconFile, IconCopy, IconStar, IconShield, IconScale, IconSettings, IconLeaf } from '@/components/icons';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -21,6 +20,7 @@ import { formatDateOnly } from '@/lib/date-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { exigirEscrita } from '@/lib/supabase-write';
 interface Template {
   id: string;
   nome: string;
@@ -103,54 +103,61 @@ const fetchTemplates = async (): Promise<Template[]> => {
   return templatesWithCounts;
 };
 
+/**
+ * Os tipos aqui seguem o CHECK de `due_diligence_questions.tipo`:
+ * `text | textarea | select | checkbox | radio | file | score | date`.
+ * Estavam escritos como `booleano` e `texto`, que o banco recusa — clicar em
+ * "Usar" criava o template e falhava a inserir as perguntas, deixando um
+ * modelo vazio para trás.
+ */
 const SUGGESTED_TEMPLATES = [
   {
     nome: 'Segurança da Informação',
     descricao: 'Avalia controles de segurança, gestão de acessos, criptografia e resposta a incidentes do fornecedor.',
     categoria: 'Segurança',
-    icon: Shield,
-    color: 'text-blue-600 bg-blue-50 border-blue-200',
+    icon: IconShield,
+    color: 'text-info bg-info/10 border-info/30',
     perguntas: [
-      { titulo: 'Política de Segurança', pergunta: 'A empresa possui uma política de segurança da informação formalizada e atualizada?', tipo: 'booleano', obrigatoria: true, peso: 3, secao: 'Governança', configuracoes: { mostrar_evidencia_quando: 'sim', label_evidencia: 'Anexe a política de segurança vigente' } },
-      { titulo: 'Controle de Acesso', pergunta: 'Existe controle de acesso baseado em papéis (RBAC) e autenticação multifator (MFA)?', tipo: 'booleano', obrigatoria: true, peso: 3, secao: 'Controle de Acesso', configuracoes: { mostrar_evidencia_quando: 'sim', label_evidencia: 'Descreva os controles implementados' } },
+      { titulo: 'Política de Segurança', pergunta: 'A empresa possui uma política de segurança da informação formalizada e atualizada?', tipo: 'radio', opcoes: ['Sim', 'Não'], obrigatoria: true, peso: 3, secao: 'Governança', configuracoes: { mostrar_evidencia_quando: 'sim', label_evidencia: 'Anexe a política de segurança vigente' } },
+      { titulo: 'Controle de Acesso', pergunta: 'Existe controle de acesso baseado em papéis (RBAC) e autenticação multifator (MFA)?', tipo: 'radio', opcoes: ['Sim', 'Não'], obrigatoria: true, peso: 3, secao: 'Controle de Acesso', configuracoes: { mostrar_evidencia_quando: 'sim', label_evidencia: 'Descreva os controles implementados' } },
       { titulo: 'Gestão de Vulnerabilidades', pergunta: 'A empresa realiza análise de vulnerabilidades e testes de penetração periodicamente?', tipo: 'radio', opcoes: ['Sim, mensalmente', 'Sim, trimestralmente', 'Sim, anualmente', 'Não realiza'], obrigatoria: true, peso: 2, secao: 'Segurança Técnica' },
-      { titulo: 'Backup e Recuperação', pergunta: 'Existem procedimentos de backup e recuperação de desastres documentados e testados?', tipo: 'booleano', obrigatoria: true, peso: 3, secao: 'Continuidade', configuracoes: { mostrar_evidencia_quando: 'sim', label_evidencia: 'Anexe evidência dos testes de restore' } },
-      { titulo: 'Resposta a Incidentes', pergunta: 'A empresa possui um plano de resposta a incidentes de segurança?', tipo: 'booleano', obrigatoria: true, peso: 3, secao: 'Incidentes', configuracoes: { mostrar_justificativa_quando: 'nao', label_justificativa: 'Quais são os planos para implementar?' } },
+      { titulo: 'Backup e Recuperação', pergunta: 'Existem procedimentos de backup e recuperação de desastres documentados e testados?', tipo: 'radio', opcoes: ['Sim', 'Não'], obrigatoria: true, peso: 3, secao: 'Continuidade', configuracoes: { mostrar_evidencia_quando: 'sim', label_evidencia: 'Anexe evidência dos testes de restore' } },
+      { titulo: 'Resposta a Incidentes', pergunta: 'A empresa possui um plano de resposta a incidentes de segurança?', tipo: 'radio', opcoes: ['Sim', 'Não'], obrigatoria: true, peso: 3, secao: 'Incidentes', configuracoes: { mostrar_justificativa_quando: 'nao', label_justificativa: 'Quais são os planos para implementar?' } },
       { titulo: 'Treinamento em Segurança', pergunta: 'Os colaboradores recebem treinamento periódico em segurança da informação?', tipo: 'radio', opcoes: ['Sim, trimestral', 'Sim, semestral', 'Sim, anual', 'Não há programa'], obrigatoria: true, peso: 2, secao: 'Pessoas' },
-      { titulo: 'Criptografia', pergunta: 'Dados sensíveis são criptografados em trânsito e em repouso?', tipo: 'booleano', obrigatoria: true, peso: 3, secao: 'Segurança Técnica' },
-      { titulo: 'Certificações', pergunta: 'A empresa possui certificações de segurança (ISO 27001, SOC 2, etc.)?', tipo: 'texto', obrigatoria: false, peso: 2, secao: 'Governança' },
+      { titulo: 'Criptografia', pergunta: 'Dados sensíveis são criptografados em trânsito e em repouso?', tipo: 'radio', opcoes: ['Sim', 'Não'], obrigatoria: true, peso: 3, secao: 'Segurança Técnica' },
+      { titulo: 'Certificações', pergunta: 'A empresa possui certificações de segurança (ISO 27001, SOC 2, etc.)?', tipo: 'textarea', obrigatoria: false, peso: 2, secao: 'Governança' },
     ]
   },
   {
     nome: 'LGPD - Proteção de Dados',
     descricao: 'Verifica conformidade com a Lei Geral de Proteção de Dados, mapeamento de dados e direitos dos titulares.',
     categoria: 'Privacidade',
-    icon: Scale,
-    color: 'text-purple-600 bg-purple-50 border-purple-200',
+    icon: IconScale,
+    color: 'text-primary bg-primary/10 border-primary/30',
     perguntas: [
-      { titulo: 'DPO / Encarregado', pergunta: 'A empresa possui um Encarregado de Proteção de Dados (DPO) nomeado?', tipo: 'booleano', obrigatoria: true, peso: 3, secao: 'Governança', configuracoes: { mostrar_evidencia_quando: 'sim', label_evidencia: 'Informe nome e contato do DPO' } },
-      { titulo: 'Mapeamento de Dados', pergunta: 'Existe um inventário/mapeamento dos dados pessoais tratados?', tipo: 'booleano', obrigatoria: true, peso: 3, secao: 'Mapeamento' },
+      { titulo: 'DPO / Encarregado', pergunta: 'A empresa possui um Encarregado de Proteção de Dados (DPO) nomeado?', tipo: 'radio', opcoes: ['Sim', 'Não'], obrigatoria: true, peso: 3, secao: 'Governança', configuracoes: { mostrar_evidencia_quando: 'sim', label_evidencia: 'Informe nome e contato do DPO' } },
+      { titulo: 'Mapeamento de Dados', pergunta: 'Existe um inventário/mapeamento dos dados pessoais tratados?', tipo: 'radio', opcoes: ['Sim', 'Não'], obrigatoria: true, peso: 3, secao: 'Mapeamento' },
       { titulo: 'Base Legal', pergunta: 'O tratamento de dados pessoais está fundamentado em bases legais adequadas?', tipo: 'radio', opcoes: ['Sim, todas documentadas', 'Parcialmente documentadas', 'Em processo de documentação', 'Não documentado'], obrigatoria: true, peso: 3, secao: 'Conformidade' },
-      { titulo: 'Direitos dos Titulares', pergunta: 'Existem procedimentos para atender solicitações de titulares de dados?', tipo: 'booleano', obrigatoria: true, peso: 3, secao: 'Direitos', configuracoes: { mostrar_justificativa_quando: 'nao', label_justificativa: 'Como pretende implementar?' } },
-      { titulo: 'Compartilhamento com Terceiros', pergunta: 'Existe controle sobre o compartilhamento de dados pessoais com terceiros?', tipo: 'booleano', obrigatoria: true, peso: 2, secao: 'Compartilhamento' },
-      { titulo: 'Notificação de Incidentes', pergunta: 'Existe procedimento para notificação de incidentes envolvendo dados pessoais à ANPD?', tipo: 'booleano', obrigatoria: true, peso: 3, secao: 'Incidentes' },
-      { titulo: 'Política de Privacidade', pergunta: 'A empresa possui política de privacidade pública e atualizada?', tipo: 'booleano', obrigatoria: true, peso: 2, secao: 'Transparência', configuracoes: { mostrar_evidencia_quando: 'sim', label_evidencia: 'Informe o link da política' } },
+      { titulo: 'Direitos dos Titulares', pergunta: 'Existem procedimentos para atender solicitações de titulares de dados?', tipo: 'radio', opcoes: ['Sim', 'Não'], obrigatoria: true, peso: 3, secao: 'Direitos', configuracoes: { mostrar_justificativa_quando: 'nao', label_justificativa: 'Como pretende implementar?' } },
+      { titulo: 'Compartilhamento com Terceiros', pergunta: 'Existe controle sobre o compartilhamento de dados pessoais com terceiros?', tipo: 'radio', opcoes: ['Sim', 'Não'], obrigatoria: true, peso: 2, secao: 'Compartilhamento' },
+      { titulo: 'Notificação de Incidentes', pergunta: 'Existe procedimento para notificação de incidentes envolvendo dados pessoais à ANPD?', tipo: 'radio', opcoes: ['Sim', 'Não'], obrigatoria: true, peso: 3, secao: 'Incidentes' },
+      { titulo: 'Política de Privacidade', pergunta: 'A empresa possui política de privacidade pública e atualizada?', tipo: 'radio', opcoes: ['Sim', 'Não'], obrigatoria: true, peso: 2, secao: 'Transparência', configuracoes: { mostrar_evidencia_quando: 'sim', label_evidencia: 'Informe o link da política' } },
     ]
   },
   {
     nome: 'ESG Básico',
     descricao: 'Avalia práticas ambientais, sociais e de governança corporativa do parceiro.',
     categoria: 'ESG',
-    icon: Leaf,
-    color: 'text-green-600 bg-green-50 border-green-200',
+    icon: IconLeaf,
+    color: 'text-success bg-success/10 border-success/30',
     perguntas: [
-      { titulo: 'Política Ambiental', pergunta: 'A empresa possui política ambiental formalizada?', tipo: 'booleano', obrigatoria: true, peso: 2, secao: 'Ambiental' },
+      { titulo: 'Política Ambiental', pergunta: 'A empresa possui política ambiental formalizada?', tipo: 'radio', opcoes: ['Sim', 'Não'], obrigatoria: true, peso: 2, secao: 'Ambiental' },
       { titulo: 'Emissões de Carbono', pergunta: 'A empresa mensura e reporta suas emissões de gases de efeito estufa?', tipo: 'radio', opcoes: ['Sim, com metas de redução', 'Sim, sem metas', 'Em processo de implementação', 'Não'], obrigatoria: true, peso: 2, secao: 'Ambiental' },
-      { titulo: 'Diversidade e Inclusão', pergunta: 'Existem programas de diversidade e inclusão na empresa?', tipo: 'booleano', obrigatoria: true, peso: 2, secao: 'Social' },
-      { titulo: 'Trabalho Escravo/Infantil', pergunta: 'A empresa possui política contra trabalho escravo e infantil em sua cadeia?', tipo: 'booleano', obrigatoria: true, peso: 3, secao: 'Social' },
-      { titulo: 'Código de Conduta', pergunta: 'Existe um código de conduta e ética formalizado?', tipo: 'booleano', obrigatoria: true, peso: 2, secao: 'Governança', configuracoes: { mostrar_evidencia_quando: 'sim', label_evidencia: 'Anexe o código de conduta' } },
-      { titulo: 'Canal de Denúncias', pergunta: 'A empresa possui canal de denúncias independente?', tipo: 'booleano', obrigatoria: true, peso: 2, secao: 'Governança' },
-      { titulo: 'Anticorrupção', pergunta: 'Existem políticas e treinamentos anticorrupção?', tipo: 'booleano', obrigatoria: true, peso: 3, secao: 'Governança' },
+      { titulo: 'Diversidade e Inclusão', pergunta: 'Existem programas de diversidade e inclusão na empresa?', tipo: 'radio', opcoes: ['Sim', 'Não'], obrigatoria: true, peso: 2, secao: 'Social' },
+      { titulo: 'Trabalho Escravo/Infantil', pergunta: 'A empresa possui política contra trabalho escravo e infantil em sua cadeia?', tipo: 'radio', opcoes: ['Sim', 'Não'], obrigatoria: true, peso: 3, secao: 'Social' },
+      { titulo: 'Código de Conduta', pergunta: 'Existe um código de conduta e ética formalizado?', tipo: 'radio', opcoes: ['Sim', 'Não'], obrigatoria: true, peso: 2, secao: 'Governança', configuracoes: { mostrar_evidencia_quando: 'sim', label_evidencia: 'Anexe o código de conduta' } },
+      { titulo: 'Canal de Denúncias', pergunta: 'A empresa possui canal de denúncias independente?', tipo: 'radio', opcoes: ['Sim', 'Não'], obrigatoria: true, peso: 2, secao: 'Governança' },
+      { titulo: 'Anticorrupção', pergunta: 'Existem políticas e treinamentos anticorrupção?', tipo: 'radio', opcoes: ['Sim', 'Não'], obrigatoria: true, peso: 3, secao: 'Governança' },
     ]
   }
 ];
@@ -217,7 +224,13 @@ export function TemplatesManager() {
         .from('due_diligence_questions')
         .insert(questionsToInsert);
 
-      if (questionsError) throw questionsError;
+      if (questionsError) {
+        // Não há transação entre as duas chamadas: se as perguntas falham, o
+        // template já existe e ficaria na lista vazio, indistinguível de um
+        // modelo legítimo por preencher. Desfaz-se antes de reportar.
+        await exigirEscrita(supabase.from('due_diligence_templates').delete().eq('id', newTemplate.id));
+        throw questionsError;
+      }
 
       toast({
         title: t('dueDiligence.templatesManager.toastClonedTitle'),
@@ -420,7 +433,6 @@ export function TemplatesManager() {
           <Card className="mb-6 border-dashed border-2">
             <CardHeader className="pb-3">
               <CardTitle className="text-lg flex items-center gap-2">
-                <AkurisAIIcon className="h-5 w-5 text-primary" />
                 {t('dueDiligence.templatesManager.suggestedTitle')}
               </CardTitle>
               <CardDescription>
@@ -433,7 +445,7 @@ export function TemplatesManager() {
                   const Icon = suggested.icon;
                   const alreadyExists = templates.some(t => t.nome === suggested.nome);
                   return (
-                    <Card key={suggested.nome} className={`border ${suggested.color} transition-all hover:shadow-md`}>
+                    <Card key={suggested.nome} className={`border ${suggested.color} transition-ui hover:shadow-sm`}>
                       <CardContent className="p-4">
                         <div className="flex items-start gap-3 mb-3">
                           <div className={`p-2 rounded-lg ${suggested.color}`}>
@@ -462,7 +474,7 @@ export function TemplatesManager() {
                               t('dueDiligence.templatesManager.alreadyAdded')
                             ) : (
                               <>
-                                <Plus className="h-3 w-3 mr-1" />
+                                <IconAdd className="h-3 w-3 mr-1" />
                                 {t('dueDiligence.templatesManager.use')}
                               </>
                             )}
@@ -494,14 +506,14 @@ export function TemplatesManager() {
                     size="sm"
                     onClick={() => setShowFilters(!showFilters)}
                   >
-                    <Filter className="h-4 w-4 mr-2" />
+                    <IconFilter className="h-4 w-4 mr-2" />
                     {t('dueDiligence.templatesManager.filters')}
                   </Button>
                   <Button 
                     size="sm"
                     onClick={() => setTemplateDialog({ open: true, mode: 'create' })}
                   >
-                    <Plus className="h-4 w-4 mr-2" />
+                    <IconAdd className="h-4 w-4 mr-2" />
                     {t('dueDiligence.templatesManager.newTemplate')}
                   </Button>
                 </div>
@@ -542,7 +554,7 @@ export function TemplatesManager() {
                       size="sm"
                       onClick={clearFilters}
                     >
-                      <X className="h-4 w-4 mr-1" />
+                      <IconClose className="h-4 w-4 mr-1" />
                       {t('dueDiligence.templatesManager.clearFilters')}
                     </Button>
                   )}
@@ -562,11 +574,11 @@ export function TemplatesManager() {
                               <div className="flex items-center gap-2 mb-1">
                                 <h3 className="text-lg font-semibold truncate">{template.nome}</h3>
                                 {template.padrao && (
-                                  <StatusBadge size="sm" tone="warning" icon={<Star className="h-3 w-3" strokeWidth={1.5} />}>
+                                  <StatusBadge tone="warning">
                                     {t('dueDiligence.templatesManager.defaultBadge')}
                                   </StatusBadge>
                                 )}
-                                <StatusBadge size="sm" {...resolveCategoriaTone(template.categoria)}>
+                                <StatusBadge {...resolveCategoriaTone(template.categoria)}>
                                   {template.categoria}
                                 </StatusBadge>
                               </div>
@@ -578,7 +590,7 @@ export function TemplatesManager() {
                             <div className="flex items-center gap-4 text-sm text-muted-foreground">
                               <span>{t('dueDiligence.templatesManager.questionsSuffix', { count: String(template._count?.questions || 0) })}</span>
                               <span>{t('dueDiligence.templatesManager.assessmentsSuffix', { count: String(template._count?.assessments || 0) })}</span>
-                              <StatusBadge size="sm" {...resolveAtivoTone(template.ativo)}>
+                              <StatusBadge {...resolveAtivoTone(template.ativo)}>
                                 {template.ativo ? t('dueDiligence.templatesManager.statusActive') : t('dueDiligence.templatesManager.statusInactive')}
                               </StatusBadge>
                               <span className="text-xs">{t('dueDiligence.templatesManager.versionPrefix', { versao: String(template.versao) })}</span>
@@ -598,7 +610,7 @@ export function TemplatesManager() {
                                   mode: 'questions' 
                                 })}
                               >
-                                <FileText className="h-4 w-4" />
+                                <IconFile className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>{t('dueDiligence.templatesManager.manageQuestionsTooltip')}</TooltipContent>
@@ -617,7 +629,7 @@ export function TemplatesManager() {
                                 }}
                                 className="bg-primary"
                               >
-                                <Plus className="h-4 w-4 mr-1" />
+                                <IconAdd className="h-4 w-4 mr-1" />
                                 {t('dueDiligence.templatesManager.useTemplate')}
                               </Button>
                             </TooltipTrigger>
@@ -636,7 +648,7 @@ export function TemplatesManager() {
                                 })}
                                 disabled={template.padrao}
                               >
-                                <Edit className="h-4 w-4" />
+                                <IconEdit className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>{t('dueDiligence.templatesManager.editTooltip')}</TooltipContent>
@@ -653,7 +665,7 @@ export function TemplatesManager() {
                                   mode: 'duplicate' 
                                 })}
                               >
-                                <Copy className="h-4 w-4" />
+                                <IconCopy className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>{t('dueDiligence.templatesManager.duplicateTooltip')}</TooltipContent>
@@ -667,7 +679,7 @@ export function TemplatesManager() {
                                 onClick={() => toggleTemplateStatus(template)}
                                 disabled={template.padrao}
                               >
-                                <SettingsIcon className="h-4 w-4" />
+                                <IconSettings className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>{t('dueDiligence.templatesManager.statusToggleTooltip')}</TooltipContent>
@@ -681,7 +693,7 @@ export function TemplatesManager() {
                                 onClick={() => setDeleteDialog({ open: true, template })}
                                 disabled={template.padrao || (!!template._count?.assessments && template._count.assessments > 0)}
                               >
-                                <Trash2 className="h-4 w-4" />
+                                <IconDelete className="h-4 w-4" />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>{t('dueDiligence.templatesManager.deleteTooltip')}</TooltipContent>
@@ -699,7 +711,7 @@ export function TemplatesManager() {
             ) : (
               <Card className="m-6 mt-0">
                 <CardContent className="flex flex-col items-center justify-center py-12">
-                  <FileText className="h-12 w-12 text-muted-foreground mb-4" />
+                  <IconFile className="h-12 w-12 text-muted-foreground mb-4" />
                   <h3 className="text-lg font-semibold mb-2">{t('dueDiligence.templatesManager.emptyTitle')}</h3>
                   <p className="text-muted-foreground text-center mb-4">
                     {hasActiveFilters 
@@ -712,7 +724,7 @@ export function TemplatesManager() {
                       onClick={() => setTemplateDialog({ open: true, mode: 'create' })}
                       className="flex items-center gap-2"
                     >
-                      <Plus className="h-4 w-4" />
+                      <IconAdd className="h-4 w-4" />
                       {t('dueDiligence.templatesManager.createFirst')}
                     </Button>
                   )}
@@ -748,7 +760,7 @@ export function TemplatesManager() {
         <Card className="mt-6">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
-              <SettingsIcon className="h-4 w-4" />
+              <IconSettings className="h-4 w-4" />
               {t('dueDiligence.templatesManager.automationsTitle')}
             </CardTitle>
             <CardDescription>
@@ -784,7 +796,7 @@ export function TemplatesManager() {
               <Switch />
             </div>
             <Button variant="outline" className="w-full">
-              <Plus className="h-4 w-4 mr-2" />
+              <IconAdd className="h-4 w-4 mr-2" />
               {t('dueDiligence.templatesManager.addAutomationRule')}
             </Button>
           </CardContent>

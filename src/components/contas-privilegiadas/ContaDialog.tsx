@@ -11,7 +11,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Switch } from '@/components/ui/switch';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, KeyRound } from "lucide-react";
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -20,7 +19,8 @@ import { useAuth } from '@/components/AuthProvider';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { useQueryClient } from '@tanstack/react-query';
 import { useLanguage } from '@/contexts/LanguageContext';
-
+import { IconCalendar, IconKey } from '@/components/icons';
+import { datePattern, parseDataLocal } from '@/lib/date-utils';
 interface ContaDialogProps {
   open: boolean;
   onClose: () => void;
@@ -62,8 +62,8 @@ export default function ContaDialog({ open, onClose, conta, sistemas }: ContaDia
       sistema_id: conta?.sistema_id || '',
       tipo_acesso: conta?.tipo_acesso || 'administrativo',
       nivel_privilegio: conta?.nivel_privilegio || 'alto',
-      data_concessao: conta?.data_concessao ? new Date(conta.data_concessao) : new Date(),
-      data_expiracao: conta?.data_expiracao ? new Date(conta.data_expiracao) : new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 dias
+      data_concessao: conta?.data_concessao ? parseDataLocal(conta.data_concessao) : new Date(),
+      data_expiracao: conta?.data_expiracao ? parseDataLocal(conta.data_expiracao) : new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 dias
       justificativa_negocio: conta?.justificativa_negocio || '',
       renovavel: conta?.renovavel ?? true,
       observacoes: conta?.observacoes || '',
@@ -79,8 +79,8 @@ export default function ContaDialog({ open, onClose, conta, sistemas }: ContaDia
       sistema_id: conta?.sistema_id || '',
       tipo_acesso: conta?.tipo_acesso || 'administrativo',
       nivel_privilegio: conta?.nivel_privilegio || 'alto',
-      data_concessao: conta?.data_concessao ? new Date(conta.data_concessao) : new Date(),
-      data_expiracao: conta?.data_expiracao ? new Date(conta.data_expiracao) : new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+      data_concessao: conta?.data_concessao ? parseDataLocal(conta.data_concessao) : new Date(),
+      data_expiracao: conta?.data_expiracao ? parseDataLocal(conta.data_expiracao) : new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
       justificativa_negocio: conta?.justificativa_negocio || '',
       renovavel: conta?.renovavel ?? true,
       observacoes: conta?.observacoes || '',
@@ -160,7 +160,7 @@ export default function ContaDialog({ open, onClose, conta, sistemas }: ContaDia
         open={open}
         onOpenChange={onClose}
         title={conta?.id ? t('contasPrivilegiadasComp.contaDialog.titleEdit') : t('contasPrivilegiadasComp.contaDialog.titleNew')}
-        icon={KeyRound}
+        icon={IconKey}
         size="lg"
         onSubmit={form.handleSubmit(onSubmit)}
         submitLabel={conta ? t('contasPrivilegiadasComp.contaDialog.submitUpdate') : t('contasPrivilegiadasComp.contaDialog.submitCreate')}
@@ -293,11 +293,11 @@ export default function ContaDialog({ open, onClose, conta, sistemas }: ContaDia
                             )}
                           >
                             {field.value ? (
-                              format(field.value, "dd/MM/yyyy")
+                              format(field.value, datePattern())
                             ) : (
                               <span>{t('contasPrivilegiadasComp.contaDialog.fieldDataPlaceholder')}</span>
                             )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            <IconCalendar className="ml-auto h-4 w-4 opacity-50" />
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
@@ -336,11 +336,11 @@ export default function ContaDialog({ open, onClose, conta, sistemas }: ContaDia
                             )}
                           >
                             {field.value ? (
-                              format(field.value, "dd/MM/yyyy")
+                              format(field.value, datePattern())
                             ) : (
                               <span>{t('contasPrivilegiadasComp.contaDialog.fieldDataPlaceholder')}</span>
                             )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            <IconCalendar className="ml-auto h-4 w-4 opacity-50" />
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
