@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Cache incremental do "npm run typecheck" (tsc -b)
+*.tsbuildinfo
+
+# Dumps de producao trazidos para teste local — nunca versionados
+.local-dumps/
