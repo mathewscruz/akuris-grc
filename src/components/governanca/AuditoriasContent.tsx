@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
+import { IconAdd, IconDownload, IconMore, IconSuccess, IconWarning, IconTime, IconFile } from '@/components/icons';
 import { createPortal } from "react-dom";
 import { useLocation } from "react-router-dom";
 import { useEmpresaId } from "@/hooks/useEmpresaId";
-import { Plus, FileText, AlertTriangle, CheckCircle, Clock, Download } from "lucide-react";
+;
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -15,7 +16,7 @@ import {
   DropdownMenuItem as ActionsMenuItem,
   DropdownMenuTrigger as ActionsMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal } from "lucide-react";
+;
 import { EmptyState } from "@/components/ui/empty-state";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -259,18 +260,18 @@ export default function AuditoriasContent({ actionsSlot }: { actionsSlot?: HTMLE
           <ActionsMenu>
             <ActionsMenuTrigger asChild>
               <Button variant="outline" size="icon" aria-label={t("layout.moreActions")} title={t("layout.moreActions")}>
-                <MoreHorizontal className="h-4 w-4" strokeWidth={1.5} />
+                <IconMore className="h-4 w-4" strokeWidth={1.5} />
               </Button>
             </ActionsMenuTrigger>
             <ActionsMenuContent align="end" className="w-56">
               <ActionsMenuItem onClick={handleExportCSV} disabled={!auditorias || auditorias.length === 0}>
-                <Download className="mr-2 h-4 w-4" strokeWidth={1.5} />
+                <IconDownload className="mr-2 h-4 w-4" strokeWidth={1.5} />
                 {t("governancaComp.auditorias.buttonExportar")}
               </ActionsMenuItem>
             </ActionsMenuContent>
           </ActionsMenu>
           <Button size="sm" onClick={() => setShowAuditoriaDialog(true)}>
-            <Plus className="h-4 w-4 mr-2" />
+            <IconAdd className="h-4 w-4 mr-2" />
             {t("governancaComp.auditorias.buttonNova")}
           </Button>
         </>,
@@ -328,7 +329,7 @@ export default function AuditoriasContent({ actionsSlot }: { actionsSlot?: HTMLE
             </div>
           ) : !auditorias || auditorias.length === 0 ? (
             <EmptyState
-              icon={<FileText className="h-8 w-8" />}
+              icon={<IconFile className="h-8 w-8" />}
               title={t("governancaComp.auditorias.emptyTitle")}
               description={t("governancaComp.auditorias.emptyDescription")}
               action={{

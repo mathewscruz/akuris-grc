@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
-import { AlertTriangle, ListChecks, Pencil, Plus, Trash2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { classificacaoTone } from '@/lib/constatacoes';
@@ -17,6 +16,7 @@ import { ConstatacaoDialog } from '@/components/auditorias/ConstatacaoDialog';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
+import { IconAdd, IconEdit, IconDelete, IconChecklist } from '@/components/icons';
 
 interface Props {
   auditoriaId: string;
@@ -120,7 +120,7 @@ export function ConstatacoesPanel({ auditoriaId, itemId, itemTitulo }: Props) {
             setDialogOpen(true);
           }}
         >
-          <Plus className="h-4 w-4 mr-1.5" strokeWidth={1.5} />
+          <IconAdd className="h-4 w-4 mr-1.5" strokeWidth={1.5} />
           {t('t4.constatacoes.nova')}
         </Button>
       </div>
@@ -140,7 +140,7 @@ export function ConstatacoesPanel({ auditoriaId, itemId, itemTitulo }: Props) {
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 space-y-1.5">
                   <div className="flex flex-wrap items-center gap-2">
-                    <StatusBadge size="sm" tone={classificacaoTone(achado.classificacao)}>
+                    <StatusBadge tone={classificacaoTone(achado.classificacao)}>
                       {t(`t4.constatacoes.classificacaoLabel.${achado.classificacao}`)}
                     </StatusBadge>
                     <span className="text-sm font-medium truncate">{achado.titulo}</span>
@@ -162,7 +162,7 @@ export function ConstatacoesPanel({ auditoriaId, itemId, itemTitulo }: Props) {
                     disabled={comAcao.has(achado.id) || gerarAcao.isPending}
                     onClick={() => gerarAcao.mutate(achado)}
                   >
-                    <ListChecks className="h-4 w-4 mr-1.5" strokeWidth={1.5} />
+                    <IconChecklist className="h-4 w-4 mr-1.5" strokeWidth={1.5} />
                     {comAcao.has(achado.id) ? t('t4.constatacoes.acaoExistente') : t('t4.constatacoes.gerarAcao')}
                   </Button>
                   <Button
@@ -173,10 +173,10 @@ export function ConstatacoesPanel({ auditoriaId, itemId, itemTitulo }: Props) {
                       setDialogOpen(true);
                     }}
                   >
-                    <Pencil className="h-4 w-4" strokeWidth={1.5} />
+                    <IconEdit className="h-4 w-4" strokeWidth={1.5} />
                   </Button>
                   <Button variant="ghost" size="icon" onClick={() => setAEliminar(achado)}>
-                    <Trash2 className="h-4 w-4 text-destructive" strokeWidth={1.5} />
+                    <IconDelete className="h-4 w-4 text-destructive" strokeWidth={1.5} />
                   </Button>
                 </div>
               </div>
@@ -204,4 +204,3 @@ export function ConstatacoesPanel({ auditoriaId, itemId, itemTitulo }: Props) {
   );
 }
 
-export default ConstatacoesPanel;

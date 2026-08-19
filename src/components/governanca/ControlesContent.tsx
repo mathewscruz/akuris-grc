@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
+import { IconAdd, IconFilter, IconEdit, IconDelete, IconDownload, IconMore, IconSuccess, IconWarning, IconTime, IconShield, IconChart, IconTest, IconLink } from '@/components/icons';
 import { createPortal } from "react-dom";
 import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { useLocation, useSearchParams } from "react-router-dom";
-import { Plus, Shield, AlertTriangle, CheckCircle, Clock, Link, BarChart3, Edit, Trash2, Filter, TestTube, Download, MoreHorizontal } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,7 +50,9 @@ import { capitalizeText, formatStatus } from '@/lib/text-utils';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveCriticidadeTone, resolveControleStatusTone, resolveControleTipoTone } from '@/lib/status-tone';
 import { resumirTestesPorControlo, resultadoTesteLabel, resultadoTesteTone } from '@/lib/controle-testes';
-import { formatDateOnly } from '@/lib/date-utils';
+import { criticidadeControle } from '@/lib/metrics/controles';
+import { shortControleId } from '@/lib/controle-id';
+import { formatDateOnly, parseDataLocal } from '@/lib/date-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface Controle {
@@ -321,7 +323,9 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
     const filtered = controles.filter(controle => {
       const matchStatus = statusFilter === "todos" || controle.status === statusFilter;
       const matchTipo = tipoFilter === "todos" || controle.tipo === tipoFilter;
-      const matchCriticidade = criticidadeFilter === "todos" || controle.criticidade === criticidadeFilter;
+      // O banco guarda 'alta'/'media' (feminino) e o combo oferece a escala canónica
+      // ('alto'/'medio'): comparar o valor cru devolvia sempre zero resultados.
+      const matchCriticidade = criticidadeFilter === "todos" || criticidadeControle(controle) === criticidadeFilter;
       const matchAuditoria = auditoriaFilter === "todas" || 
         vinculos.some(v => v.controle_id === controle.id && v.auditoria_id === auditoriaFilter);
       const matchSearch = !searchValue || 
@@ -362,9 +366,18 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
     });
   }, [controles, sortField, sortDirection, statusFilter, tipoFilter, criticidadeFilter, auditoriaFilter, vinculos, searchValue]);
 
+  /** Filtro ou pesquisa activos: o estado vazio tem de dizer "nada encontrado",
+   *  e não "comece por criar" — a base pode estar cheia. */
+  const filtrosAtivos =
+    statusFilter !== "todos" ||
+    tipoFilter !== "todos" ||
+    criticidadeFilter !== "todos" ||
+    auditoriaFilter !== "todas" ||
+    searchValue.trim() !== "";
+
   const getStatusBadge = (status: string) => {
     return (
-      <StatusBadge size="sm" {...resolveControleStatusTone(status)}>
+      <StatusBadge {...resolveControleStatusTone(status)}>
         {formatStatus(status)}
       </StatusBadge>
     );
@@ -372,7 +385,7 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
 
   const getCriticidadeBadge = (criticidade: string) => {
     return (
-      <StatusBadge size="sm" {...resolveCriticidadeTone(criticidade)}>
+      <StatusBadge {...resolveCriticidadeTone(criticidade)}>
         {formatStatus(criticidade)}
       </StatusBadge>
     );
@@ -380,10 +393,10 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
 
   const getTipoIcon = (tipo: string) => {
     switch (tipo) {
-      case 'preventivo': return <Shield className="w-4 h-4 text-blue-500" />;
-      case 'detectivo': return <AlertTriangle className="w-4 h-4 text-yellow-500" />;
-      case 'corretivo': return <CheckCircle className="w-4 h-4 text-green-500" />;
-      default: return <Clock className="w-4 h-4 text-gray-500" />;
+      case 'preventivo': return <IconShield className="w-4 h-4 text-info" />;
+      case 'detectivo': return <IconWarning className="w-4 h-4 text-warning" />;
+      case 'corretivo': return <IconSuccess className="w-4 h-4 text-success" />;
+      default: return <IconTime className="w-4 h-4 text-muted-foreground" />;
     }
   };
 
@@ -406,7 +419,7 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
       sortable: true,
       render: (value: any, controle: Controle) => (
         <span className="font-mono text-xs text-muted-foreground">
-          {controle.codigo || '-'}
+          {shortControleId(controle.id, controle.codigo)}
         </span>
       )
     },
@@ -415,7 +428,8 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
       label: t("governancaComp.controles.columnNome"),
       sortable: true,
       render: (value: any, controle: Controle) => (
-        <button 
+        <button
+          type="button"
           className="font-medium text-left hover:text-primary hover:underline transition-colors"
           onClick={(e) => {
             e.stopPropagation();
@@ -444,7 +458,7 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
       label: t("governancaComp.controles.columnTipo"),
       sortable: true,
       render: (value: any, controle: Controle) => (
-        <StatusBadge size="sm" {...resolveControleTipoTone(controle.tipo)}>
+        <StatusBadge {...resolveControleTipoTone(controle.tipo)}>
           {capitalizeText(controle.tipo)}
         </StatusBadge>
       )
@@ -504,7 +518,7 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
           <div className="flex items-center gap-2 whitespace-nowrap">
             <span className="text-sm font-medium tabular-nums">{controle.testesCount}</span>
             {controle.ultimoResultado && (
-              <StatusBadge size="sm" tone={resultadoTesteTone(controle.ultimoResultado)}>
+              <StatusBadge tone={resultadoTesteTone(controle.ultimoResultado)}>
                 {resultadoTesteLabel(controle.ultimoResultado, t)}
               </StatusBadge>
             )}
@@ -525,7 +539,7 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
         
         const hoje = new Date();
         hoje.setHours(0, 0, 0, 0);
-        const dataAvaliacao = new Date(controle.proxima_avaliacao);
+        const dataAvaliacao = parseDataLocal(controle.proxima_avaliacao);
         dataAvaliacao.setHours(0, 0, 0, 0);
         const isVencido = dataAvaliacao < hoje;
         
@@ -544,31 +558,38 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
       render: (value: any, controle: Controle) => (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-              <MoreHorizontal className="h-4 w-4" />
+            {/* Botão só-ícone: sem nome acessível não aparecia sequer na árvore
+                de acessibilidade. O nome do controlo distingue as linhas. */}
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-label={`${t('p8Layout.layout.moreActions')}: ${controle.nome}`}
+              className="h-8 w-8 p-0"
+            >
+              <IconMore className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => handleEdit(controle)}>
-              <Edit className="h-4 w-4 mr-2" />
+              <IconEdit className="h-4 w-4 mr-2" />
               {t("governancaComp.controles.buttonEditar")}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => {
               setSelectedControleForTests(controle);
               setTestesDialogOpen(true);
             }}>
-              <TestTube className="h-4 w-4 mr-2" />
+              <IconTest className="h-4 w-4 mr-2" />
               {t("governancaComp.controles.buttonGerenciarTestes")}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => {
               setSelectedControleForVinculacao(controle);
               setVinculacaoDialogOpen(true);
             }}>
-              <Link className="h-4 w-4 mr-2" />
+              <IconLink className="h-4 w-4 mr-2" />
               {t("governancaComp.controles.buttonGerenciarVinculacoes")}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => handleDelete(controle.id)} className="text-destructive focus:text-destructive">
-              <Trash2 className="h-4 w-4 mr-2" />
+              <IconDelete className="h-4 w-4 mr-2" />
               {t("governancaComp.controles.buttonExcluir")}
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -583,13 +604,18 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
       <StatStrip
         loading={isLoading}
         items={[
-          { key: 'total', label: t("governancaComp.controles.statTotal"), value: stats?.total || 0, icon: Shield, drillDown: 'controles' },
-          { key: 'vencidas', label: t("governancaComp.controles.statVencidas"), value: stats?.vencidos || 0, icon: AlertTriangle, tone: 'destructive', drillDown: 'controles' },
-          { key: 'vencendo', label: t("governancaComp.controles.statVencendo"), value: stats?.vencendoAvaliacao || 0, icon: Clock, tone: 'warning', drillDown: 'controles' },
+          { key: 'total', label: t("governancaComp.controles.statTotal"), value: stats?.total || 0, icon: IconShield, drillDown: 'controles' },
+          { key: 'vencidas', label: t("governancaComp.controles.statVencidas"), value: stats?.vencidos || 0, icon: IconWarning, tone: 'destructive', drillDown: 'controles' },
+          { key: 'vencendo', label: t("governancaComp.controles.statVencendo"), value: stats?.vencendoAvaliacao || 0, icon: IconTime, tone: 'warning', drillDown: 'controles' },
           {
             key: 'efetividade',
-            icon: TestTube,
-            label: t("governancaComp.controles.statEfetividade"),
+            icon: IconTest,
+            // O denominador vai no rótulo, como em "Preventivos 4 de 6": sem ele,
+            // "100%" com um único controlo testado de seis lia-se como ambiente
+            // de controlo integralmente eficaz.
+            label: stats?.efetividade === null || stats?.efetividade === undefined
+              ? t("governancaComp.controles.statEfetividade")
+              : t('cardsKpi.metricas.efetividadeDe', { testados: stats?.controlesTestados ?? 0, total: stats?.total ?? 0 }),
             value: stats?.efetividade === null || stats?.efetividade === undefined
               ? t('cardsKpi.metricas.semDados')
               : `${stats.efetividade}%`,
@@ -600,7 +626,7 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
           },
           {
             key: 'preventivos',
-            icon: CheckCircle,
+            icon: IconSuccess,
             label: t('cardsKpi.metricas.preventivosDe', { preventivos: stats?.preventivos ?? 0, total: stats?.total ?? 0 }),
             value: `${stats?.percentualPreventivos ?? 0}%`,
             drillDown: 'controles',
@@ -613,14 +639,14 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
         <ActionsMenu>
           <ActionsMenuTrigger asChild>
             <Button variant="outline" size="icon" aria-label={t("layout.moreActions")} title={t("layout.moreActions")}>
-              <MoreHorizontal className="h-4 w-4" strokeWidth={1.5} />
+              <IconMore className="h-4 w-4" strokeWidth={1.5} />
             </Button>
           </ActionsMenuTrigger>
           <ActionsMenuContent align="end" className="w-56">
             <ActionsMenuItem onClick={() => {
               const headers = [t("governancaComp.controles.columnCodigo"), t("governancaComp.controles.columnNome"), t("governancaComp.controles.columnTipo"), t("governancaComp.controles.columnStatus"), t("governancaComp.controles.columnCriticidade"), t("governancaComp.controles.columnResponsavel"), t("governancaComp.controles.columnTestes")];
               const rows = sortedControles.map(c => [
-                c.codigo || '',
+                shortControleId(c.id, c.codigo),
                 c.nome,
                 c.tipo,
                 c.status,
@@ -636,14 +662,14 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
               link.click();
               toast({ title: t("governancaComp.controles.toastExportTitle"), description: t("governancaComp.controles.toastExportDesc") });
             }}>
-              <Download className="mr-2 h-4 w-4" strokeWidth={1.5} />
+              <IconDownload className="mr-2 h-4 w-4" strokeWidth={1.5} />
               {t("governancaComp.controles.exportarCsv")}
             </ActionsMenuItem>
             <ActionsMenuItem onClick={() => setCategoriasDialogOpen(true)}>
               {t("governancaComp.controles.buttonCategorias")}
             </ActionsMenuItem>
             <ActionsMenuItem onClick={() => setRelatoriosDialogOpen(true)}>
-              <BarChart3 className="mr-2 h-4 w-4" strokeWidth={1.5} />
+              <IconChart className="mr-2 h-4 w-4" strokeWidth={1.5} />
               {t("governancaComp.controles.buttonRelatorios")}
             </ActionsMenuItem>
           </ActionsMenuContent>
@@ -652,7 +678,7 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
           size="sm"
           onClick={() => setControleDialogOpen(true)}
         >
-          <Plus className="mr-2 h-4 w-4" strokeWidth={1.5} />
+          <IconAdd className="mr-2 h-4 w-4" strokeWidth={1.5} />
           {t("governancaComp.controles.buttonNovo")}
         </Button>
         </>,
@@ -725,13 +751,19 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
               },
             ]}
             emptyState={{
-              icon: <Shield className="h-12 w-12" />,
-              title: t("governancaComp.controles.emptyTitle"),
-              description: t("governancaComp.controles.emptyDescription"),
-              action: {
-                label: t("governancaComp.controles.emptyAction"),
-                onClick: () => setControleDialogOpen(true)
-              }
+              icon: <IconShield className="h-12 w-12" />,
+              title: filtrosAtivos
+                ? t("governancaComp.controles.emptyFilteredTitle")
+                : t("governancaComp.controles.emptyTitle"),
+              description: filtrosAtivos
+                ? t("governancaComp.controles.emptyFilteredDescription")
+                : t("governancaComp.controles.emptyDescription"),
+              action: filtrosAtivos
+                ? undefined
+                : {
+                    label: t("governancaComp.controles.emptyAction"),
+                    onClick: () => setControleDialogOpen(true)
+                  }
             }}
           />
         </CardContent>

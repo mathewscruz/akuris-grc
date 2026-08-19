@@ -17,9 +17,10 @@ import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { RequisitoSelect } from '@/components/auditorias/RequisitoSelect';
 import { ControleSelect } from '@/components/auditorias/ControleSelect';
 import { CLASSIFICACOES, derivarTipoCriticidade, type ClassificacaoAchado } from '@/lib/constatacoes';
-import { AlertTriangle } from 'lucide-react';
+;
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
+import { IconWarning } from '@/components/icons';
 
 interface Props {
   open: boolean;
@@ -98,7 +99,7 @@ export function ConstatacaoDialog({ open, onOpenChange, auditoriaId, itemId, ach
       open={open}
       onOpenChange={onOpenChange}
       title={achado?.id ? t('t4.constatacoes.editar') : t('t4.constatacoes.nova')}
-      icon={AlertTriangle}
+      icon={IconWarning}
       size="lg"
       footer={
         <div className="flex justify-end gap-2">
@@ -179,4 +180,3 @@ export function ConstatacaoDialog({ open, onOpenChange, auditoriaId, itemId, ach
   );
 }
 
-export default ConstatacaoDialog;

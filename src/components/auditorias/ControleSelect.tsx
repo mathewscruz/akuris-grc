@@ -8,8 +8,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Shield } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { IconShield } from '@/components/icons';
 
 interface Controle {
   id: string;
@@ -84,7 +84,7 @@ export function ControleSelect({
           controles.map((controle) => (
             <SelectItem key={controle.id} value={controle.id}>
               <div className="flex items-center gap-2">
-                <Shield className="h-3 w-3 text-muted-foreground" />
+                <IconShield className="h-3 w-3 text-muted-foreground" />
                 <span>{controle.nome}</span>
               </div>
             </SelectItem>

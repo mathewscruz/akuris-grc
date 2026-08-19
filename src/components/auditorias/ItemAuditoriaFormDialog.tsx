@@ -26,7 +26,6 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { useUsuariosEmpresa } from "@/hooks/useAuditoriaData";
-import { ListChecks } from "lucide-react";
 import { formatDateForInput, parseDateForDB } from "@/lib/date-utils";
 import { DateField } from "@/components/ui/date-field";
 import { ControleSelect } from "./ControleSelect";
@@ -44,6 +43,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { logger } from "@/lib/logger";
+import { IconChecklist } from '@/components/icons';
 
 const makeFormSchema = (t: (key: string) => string) => z.object({
   codigo: z.string().min(1, t("govDialogs.itemAuditoriaFormDialog.zodCodigoRequired")),
@@ -252,7 +252,7 @@ export function ItemAuditoriaFormDialog({
       await notify('auditoria_item_atribuido', {
         titulo: `Item de auditoria: ${data.titulo}`,
         descricao: `Auditoria: ${auditoriaNome}`,
-        link: `/governanca?tab=auditorias`,
+        link: `/governanca/auditorias`,
         gravidade: data.prioridade === 'alta' ? 'alta' : 'media',
         dados: {
           item_codigo: data.codigo,
@@ -278,7 +278,7 @@ export function ItemAuditoriaFormDialog({
         open={open}
         onOpenChange={onOpenChange}
         title={item?.id ? t("govDialogs.itemAuditoriaFormDialog.titleEdit") : t("govDialogs.itemAuditoriaFormDialog.titleNew")}
-        icon={ListChecks}
+        icon={IconChecklist}
         size="lg"
         onSubmit={form.handleSubmit(onSubmit)}
         isSubmitting={isSubmitting}

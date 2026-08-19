@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Server, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
+import { IconAdd, IconEdit, IconDelete, IconMore, IconServer } from '@/components/icons';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -128,7 +128,7 @@ export default function SistemasContent() {
 
   const getCriticidadeBadge = (criticidade: string) => {
     return (
-      <StatusBadge size="sm" {...resolveCriticidadeTone(criticidade)}>
+      <StatusBadge {...resolveCriticidadeTone(criticidade)}>
         {formatStatus(criticidade)}
       </StatusBadge>
     );
@@ -173,7 +173,7 @@ export default function SistemasContent() {
       sortable: true,
       render: (_: any, sistema: SistemaPrivilegiado) => (
         <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-primary/10 overflow-hidden">
+          <div className="flex items-center justify-center w-9 h-9 overflow-hidden">
             {sistema.imagem_url ? (
               <img 
                 src={sistema.imagem_url} 
@@ -181,7 +181,7 @@ export default function SistemasContent() {
                 className="w-full h-full object-contain"
               />
             ) : (
-              <Server className="h-5 w-5 text-primary" />
+              <IconServer className="h-5 w-5 text-primary" />
             )}
           </div>
           <div className="font-medium">{sistema.nome_sistema}</div>
@@ -241,19 +241,19 @@ export default function SistemasContent() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="h-8 w-8">
-              <MoreHorizontal className="h-4 w-4" />
+              <IconMore className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => handleEditSistema(sistema)}>
-              <Edit className="h-4 w-4 mr-2" />
+              <IconEdit className="h-4 w-4 mr-2" />
               {t("governancaComp.sistemas.buttonEditar")}
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => handleDeleteSistema(sistema.id, sistema.nome_sistema)}
               className="text-destructive focus:text-destructive"
             >
-              <Trash2 className="h-4 w-4 mr-2" />
+              <IconDelete className="h-4 w-4 mr-2" />
               {t("governancaComp.sistemas.buttonExcluir")}
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -325,7 +325,7 @@ export default function SistemasContent() {
           <div className="p-6 pb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <h3 className="text-lg font-semibold">{t("governancaComp.sistemas.title")}</h3>
             <Button onClick={() => setShowSistemaDialog(true)} size="sm">
-              <Plus className="h-4 w-4 mr-2" />
+              <IconAdd className="h-4 w-4 mr-2" />
               {t("governancaComp.sistemas.buttonNovo")}
             </Button>
           </div>
@@ -349,7 +349,7 @@ export default function SistemasContent() {
             emptyState={{
               title: t("governancaComp.sistemas.emptyTitle"),
               description: t("governancaComp.sistemas.emptyDescription"),
-              icon: <Server className="h-12 w-12" />,
+              icon: <IconServer className="h-12 w-12" />,
             }}
             loading={isLoading}
           />
@@ -378,7 +378,7 @@ export default function SistemasContent() {
         title={detalheSistema?.nome_sistema}
         subtitle={detalheSistema ? formatStatus(detalheSistema.tipo_sistema) : undefined}
         badges={detalheSistema ? (
-          <StatusBadge size="sm" {...resolveCriticidadeTone(detalheSistema.criticidade)}>
+          <StatusBadge {...resolveCriticidadeTone(detalheSistema.criticidade)}>
             {formatStatus(detalheSistema.criticidade)}
           </StatusBadge>
         ) : undefined}

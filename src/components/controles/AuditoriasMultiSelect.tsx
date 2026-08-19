@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Check, ChevronsUpDown, ClipboardList, X } from 'lucide-react';
+import { IconClose, IconCheck, IconSort, IconChecklist } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
@@ -24,12 +24,15 @@ interface AuditoriasMultiSelectProps {
   value: string[];
   onValueChange: (value: string[]) => void;
   placeholder?: string;
+  /** Liga o gatilho ao <Label htmlFor> do campo. */
+  id?: string;
 }
 
 export function AuditoriasMultiSelect({ 
   value = [], 
   onValueChange, 
-  placeholder
+  placeholder,
+  id
 }: AuditoriasMultiSelectProps) {
   const { profile } = useAuth();
   const { t } = useLanguage();
@@ -84,6 +87,7 @@ export function AuditoriasMultiSelect({
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
+            id={id}
             variant="outline"
             role="combobox"
             aria-expanded={open}
@@ -94,12 +98,12 @@ export function AuditoriasMultiSelect({
                 <span className="text-muted-foreground">{resolvedPlaceholder}</span>
               ) : (
                 <>
-                  <ClipboardList className="h-4 w-4 flex-shrink-0" />
+                  <IconChecklist className="h-4 w-4 flex-shrink-0" />
                   <span className="text-sm">{t('controlesAuditorias.amsSelectedCount', { count: selectedAuditorias.length })}</span>
                 </>
               )}
             </div>
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            <IconSort className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-full p-0 bg-popover" align="start">
@@ -118,21 +122,21 @@ export function AuditoriasMultiSelect({
                       value={auditoria.nome}
                       onSelect={() => toggleAuditoria(auditoria.id)}
                     >
-                      <Check
+                      <IconCheck
                         className={cn(
                           "mr-2 h-4 w-4",
                           value.includes(auditoria.id) ? "opacity-100" : "opacity-0"
                         )}
                       />
                       <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <ClipboardList className="h-4 w-4 flex-shrink-0" />
+                        <IconChecklist className="h-4 w-4 flex-shrink-0" />
                         <div className="flex flex-col flex-1 min-w-0">
                           <span className="font-medium truncate">{auditoria.nome}</span>
                       <div className="flex items-center gap-2 mt-1">
-                            <StatusBadge size="sm" {...resolveAuditoriaTipoTone(auditoria.tipo)}>
+                            <StatusBadge {...resolveAuditoriaTipoTone(auditoria.tipo)}>
                               {formatStatus(auditoria.tipo)}
                             </StatusBadge>
-                            <StatusBadge size="sm" {...resolveAuditoriaStatusTone(auditoria.status)}>
+                            <StatusBadge {...resolveAuditoriaStatusTone(auditoria.status)}>
                               {formatStatus(auditoria.status)}
                             </StatusBadge>
                           </div>
@@ -158,7 +162,7 @@ export function AuditoriasMultiSelect({
                 className="h-auto p-0 ml-2 hover:bg-transparent"
                 onClick={(e) => removeAuditoria(auditoria.id, e)}
               >
-                <X className="h-3 w-3" />
+                <IconClose className="h-3 w-3" />
               </Button>
             </Badge>
           ))}

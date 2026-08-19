@@ -6,10 +6,10 @@ import { useMemo, useState } from 'react';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
-import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useRequisitosDisponiveis, type RequisitoOpcao } from '@/hooks/useRiscoRequisitos';
+import { IconCheck, IconSort } from '@/components/icons';
 
 interface Props {
   value?: string;
@@ -33,7 +33,7 @@ export function RequisitoSelect({ value, onValueChange, placeholder }: Props) {
               ? `${selecionado.codigo ? selecionado.codigo + ' · ' : ''}${selecionado.titulo}`
               : placeholder || t('vinculoReq.itemRefNenhum')}
           </span>
-          <ChevronsUpDown className="h-4 w-4 opacity-50 shrink-0" strokeWidth={1.5} />
+          <IconSort className="h-4 w-4 opacity-50 shrink-0" strokeWidth={1.5} />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
@@ -51,7 +51,7 @@ export function RequisitoSelect({ value, onValueChange, placeholder }: Props) {
                   setOpen(false);
                 }}
               >
-                <Check className={cn('mr-2 h-4 w-4', !value ? 'opacity-100' : 'opacity-0')} />
+                <IconCheck className={cn('mr-2 h-4 w-4', !value ? 'opacity-100' : 'opacity-0')} />
                 {t('vinculoReq.itemRefNenhum')}
               </CommandItem>
               {requisitos.map((r) => (
@@ -63,13 +63,13 @@ export function RequisitoSelect({ value, onValueChange, placeholder }: Props) {
                     setOpen(false);
                   }}
                 >
-                  <Check className={cn('mr-2 h-4 w-4', value === r.id ? 'opacity-100' : 'opacity-0')} />
+                  <IconCheck className={cn('mr-2 h-4 w-4', value === r.id ? 'opacity-100' : 'opacity-0')} />
                   <span className="min-w-0">
                     <span className="block truncate text-sm">
                       {r.codigo ? <span className="font-mono text-xs text-muted-foreground mr-1.5">{r.codigo}</span> : null}
                       {r.titulo}
                     </span>
-                    <span className="block text-[11px] text-muted-foreground">{r.framework_nome}</span>
+                    <span className="block text-micro text-muted-foreground">{r.framework_nome}</span>
                   </span>
                 </CommandItem>
               ))}

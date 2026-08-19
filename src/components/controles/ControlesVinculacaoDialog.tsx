@@ -12,9 +12,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { Link, Shield, Package } from "lucide-react";
 import { formatStatus } from '@/lib/text-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { IconShield, IconPackage, IconLink } from '@/components/icons';
+import { exigirEscrita } from '@/lib/supabase-write';
 
 interface ControlesVinculacaoDialogProps {
   open: boolean;
@@ -28,6 +29,7 @@ interface Risco {
   nome: string;
   descricao?: string;
   nivel_risco_inicial: string;
+  nivel_risco_residual?: string | null;
   categoria?: { nome: string; cor?: string };
 }
 
@@ -81,6 +83,7 @@ export default function ControlesVinculacaoDialog({
           nome,
           descricao,
           nivel_risco_inicial,
+          nivel_risco_residual,
           categoria:riscos_categorias(nome, cor)
         `)
         .order('nome');
@@ -146,8 +149,8 @@ export default function ControlesVinculacaoDialog({
       if (!controleId) throw new Error(t('controlesAuditorias.cvdErrorControleIdRequired'));
 
       // Deletar vinculações existentes
-      await supabase.from('controles_riscos').delete().eq('controle_id', controleId);
-      await supabase.from('controles_ativos').delete().eq('controle_id', controleId);
+      await exigirEscrita(supabase.from('controles_riscos').delete().eq('controle_id', controleId));
+      await exigirEscrita(supabase.from('controles_ativos').delete().eq('controle_id', controleId));
 
       // Inserir novas vinculações com riscos
       if (vinculacoesRiscos.length > 0) {
@@ -258,7 +261,7 @@ export default function ControlesVinculacaoDialog({
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      icon={Link}
+      icon={IconLink}
       title={t('controlesAuditorias.cvdTitle')}
       description={controleNome ? t('controlesAuditorias.cvdDescription', { nome: controleNome }) : undefined}
       size="lg"
@@ -270,11 +273,11 @@ export default function ControlesVinculacaoDialog({
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList>
           <TabsTrigger value="riscos" className="flex items-center gap-2">
-            <Shield className="w-4 h-4" />
+            <IconShield className="w-4 h-4" />
             {t('controlesAuditorias.cvdTabRiscos', { count: vinculacoesRiscos.length })}
           </TabsTrigger>
           <TabsTrigger value="ativos" className="flex items-center gap-2">
-            <Package className="w-4 h-4" />
+            <IconPackage className="w-4 h-4" />
             {t('controlesAuditorias.cvdTabAtivos', { count: vinculacoesAtivos.length })}
           </TabsTrigger>
         </TabsList>
@@ -288,8 +291,8 @@ export default function ControlesVinculacaoDialog({
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
                       <h4 className="font-medium">{risco.nome}</h4>
-                      <StatusBadge size="sm" {...resolveNivelRiscoTone(risco.nivel_risco_inicial)}>
-                        {formatStatus(risco.nivel_risco_inicial)}
+                      <StatusBadge {...resolveNivelRiscoTone(risco.nivel_risco_residual || risco.nivel_risco_inicial)}>
+                        {formatStatus(risco.nivel_risco_residual || risco.nivel_risco_inicial)}
                       </StatusBadge>
                       {risco.categoria && (
                         <Badge
@@ -319,9 +322,9 @@ export default function ControlesVinculacaoDialog({
                 </div>
 
                 {isRiscoVinculado(risco.id) && (
-                  <div className="mt-4 p-4 bg-muted/50 rounded-lg space-y-3">
+                  <div className="mt-4 p-4 bg-card rounded-lg space-y-3 border border-border">
                     <div className="grid grid-cols-2 gap-4">
-                      <div>
+                      <div className="space-y-2">
                         <Label>{t('controlesAuditorias.cvdFieldTipoVinculacao')}</Label>
                         <Select
                           value={vinculacoesRiscos.find(v => v.risco_id === risco.id)?.tipo_vinculacao || 'mitiga'}
@@ -338,7 +341,7 @@ export default function ControlesVinculacaoDialog({
                           </SelectContent>
                         </Select>
                       </div>
-                      <div>
+                      <div className="space-y-2">
                         <Label>{t('controlesAuditorias.cvdFieldEficaciaEstimada')}</Label>
                         <Select
                           value={vinculacoesRiscos.find(v => v.risco_id === risco.id)?.eficacia_estimada || 'media'}
@@ -355,7 +358,7 @@ export default function ControlesVinculacaoDialog({
                         </Select>
                       </div>
                     </div>
-                    <div>
+                    <div className="space-y-2">
                       <Label>{t('controlesAuditorias.cvdFieldObservacoes')}</Label>
                       <Textarea
                         value={vinculacoesRiscos.find(v => v.risco_id === risco.id)?.observacoes || ''}
@@ -380,7 +383,7 @@ export default function ControlesVinculacaoDialog({
                     <div className="flex items-center gap-2 mb-2">
                       <h4 className="font-medium">{ativo.nome}</h4>
                       <Badge variant="outline">{formatStatus(ativo.tipo)}</Badge>
-                      <StatusBadge size="sm" {...resolveCriticidadeTone(ativo.criticidade)}>
+                      <StatusBadge {...resolveCriticidadeTone(ativo.criticidade)}>
                         {formatStatus(ativo.criticidade)}
                       </StatusBadge>
                     </div>
@@ -403,9 +406,9 @@ export default function ControlesVinculacaoDialog({
                 </div>
 
                 {isAtivoVinculado(ativo.id) && (
-                  <div className="mt-4 p-4 bg-muted/50 rounded-lg space-y-3">
+                  <div className="mt-4 p-4 bg-card rounded-lg space-y-3 border border-border">
                     <div className="grid grid-cols-2 gap-4">
-                      <div>
+                      <div className="space-y-2">
                         <Label>{t('controlesAuditorias.cvdFieldTipoProtecao')}</Label>
                         <Select
                           value={vinculacoesAtivos.find(v => v.ativo_id === ativo.id)?.tipo_protecao || 'protege'}
@@ -424,7 +427,7 @@ export default function ControlesVinculacaoDialog({
                       </div>
                       <div></div>
                     </div>
-                    <div>
+                    <div className="space-y-2">
                       <Label>{t('controlesAuditorias.cvdFieldObservacoes')}</Label>
                       <Textarea
                         value={vinculacoesAtivos.find(v => v.ativo_id === ativo.id)?.observacoes || ''}

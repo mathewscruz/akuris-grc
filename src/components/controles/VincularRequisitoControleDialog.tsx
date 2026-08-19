@@ -10,12 +10,12 @@ import { DialogShell } from '@/components/ui/dialog-shell';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveConformityTone } from '@/lib/status-tone';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
-import { Link as LinkIcon, Search, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useRequisitosDisponiveis, type RequisitoOpcao } from '@/hooks/useRiscoRequisitos';
 import { useControleRequisitos, useSalvarControleRequisitos } from '@/hooks/useControleRequisitos';
 import { cn } from '@/lib/utils';
+import { IconSearch, IconShieldCheck, IconLink } from '@/components/icons';
 
 interface Props {
   open: boolean;
@@ -112,7 +112,7 @@ export function VincularRequisitoControleDialog({ open, onOpenChange, controleId
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      icon={LinkIcon}
+      icon={IconLink}
       title={t('vinculoReq.tituloControlo')}
       description={controleNome}
       size="lg"
@@ -121,12 +121,12 @@ export function VincularRequisitoControleDialog({ open, onOpenChange, controleId
       onSubmit={handleSubmit}
     >
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-3">
-        <ShieldCheck className="h-3.5 w-3.5" strokeWidth={1.5} />
+        <IconShieldCheck className="h-3.5 w-3.5" strokeWidth={1.5} />
         {t('vinculoReq.selecionados', { count: selecionados.size })}
       </div>
 
       <div className="relative mb-3">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
+        <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
         <Input
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
@@ -171,13 +171,13 @@ export function VincularRequisitoControleDialog({ open, onOpenChange, controleId
         <div className="space-y-5 max-h-[52vh] overflow-y-auto pr-1">
           {grupos.map((g) => (
             <div key={g.framework}>
-              <div className="text-[10.5px] font-semibold tracking-[1.2px] uppercase text-muted-foreground mb-2">
+              <div className="text-xs font-semibold text-muted-foreground mb-2">
                 {g.framework}
               </div>
               <div className="space-y-3">
                 {g.seccoes.map((s) => (
                   <div key={s.sec}>
-                    <div className="text-[11px] text-muted-foreground mb-1">{s.sec}</div>
+                    <div className="text-micro text-muted-foreground mb-1">{s.sec}</div>
                     <div className="space-y-1">
                       {s.itens.map((r) => {
                         const checked = selecionados.has(r.id);
@@ -186,19 +186,19 @@ export function VincularRequisitoControleDialog({ open, onOpenChange, controleId
                             key={r.id}
                             className={cn(
                               'flex items-start gap-3 rounded-lg border border-border p-2.5 cursor-pointer transition-colors',
-                              checked ? 'bg-primary/5 border-primary/40' : 'hover:bg-muted/40',
+                              checked ? 'bg-primary/5 border-primary/40' : 'hover:bg-accent',
                             )}
                           >
                             <Checkbox checked={checked} onCheckedChange={() => toggle(r.id)} className="mt-0.5" />
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-2 flex-wrap">
                                 {r.codigo && (
-                                  <span className="font-mono text-[11px] text-muted-foreground">{r.codigo}</span>
+                                  <span className="font-mono text-micro text-muted-foreground">{r.codigo}</span>
                                 )}
                                 <span className="text-sm font-medium">{r.titulo}</span>
                               </div>
                             </div>
-                            <StatusBadge size="sm" {...resolveConformityTone(r.conformity_status)}>
+                            <StatusBadge {...resolveConformityTone(r.conformity_status)}>
                               {t(STATUS_KEY[r.conformity_status] || STATUS_KEY.nao_avaliado)}
                             </StatusBadge>
                           </label>

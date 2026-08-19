@@ -8,12 +8,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, ClipboardCheck } from "lucide-react";
 import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { IconCalendar, IconChecklist } from '@/components/icons';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,8 +23,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-
-
+import { dateFnsLocale, formatarDiaParaDB, parseDataLocal } from '@/lib/date-utils';
 interface AuditoriaDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -63,8 +61,8 @@ const AuditoriaDialog = ({ open, onOpenChange, auditoria, onSuccess }: Auditoria
         prioridade: auditoria.prioridade || 'media',
         
         auditor_equipe: auditoria.auditor_equipe || [],
-        data_inicio: auditoria.data_inicio ? new Date(auditoria.data_inicio) : null,
-        data_fim_prevista: auditoria.data_fim_prevista ? new Date(auditoria.data_fim_prevista) : null,
+        data_inicio: auditoria.data_inicio ? parseDataLocal(auditoria.data_inicio) : null,
+        data_fim_prevista: auditoria.data_fim_prevista ? parseDataLocal(auditoria.data_fim_prevista) : null,
         escopo: auditoria.escopo || '',
         objetivos: auditoria.objetivos || '',
         metodologia: auditoria.metodologia || '',
@@ -179,8 +177,8 @@ const AuditoriaDialog = ({ open, onOpenChange, auditoria, onSuccess }: Auditoria
       const auditoriaData: Record<string, any> = {
         ...formData,
         empresa_id: profile.empresa_id,
-        data_inicio: formData.data_inicio?.toISOString().split('T')[0] || null,
-        data_fim_prevista: formData.data_fim_prevista?.toISOString().split('T')[0] || null,
+        data_inicio: formData.data_inicio ? formatarDiaParaDB(formData.data_inicio) : null,
+        data_fim_prevista: formData.data_fim_prevista ? formatarDiaParaDB(formData.data_fim_prevista) : null,
       };
 
       if (razaoGate) {
@@ -219,7 +217,7 @@ const AuditoriaDialog = ({ open, onOpenChange, auditoria, onSuccess }: Auditoria
         open={open}
         onOpenChange={onOpenChange}
         title={auditoria?.id ? t("controlesAuditorias.adTitleEdit") : t("controlesAuditorias.adTitleNew")}
-        icon={ClipboardCheck}
+        icon={IconChecklist}
         size="lg"
         onSubmit={() => handleSubmit({ preventDefault: () => {} } as React.FormEvent)}
         submitLabel={auditoria ? t('controlesAuditorias.adSubmitUpdate') : t('controlesAuditorias.adSubmitCreate')}
@@ -233,9 +231,9 @@ const AuditoriaDialog = ({ open, onOpenChange, auditoria, onSuccess }: Auditoria
                 id="nome"
                 value={formData.nome}
                 onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                className={errors.nome ? "border-red-500" : ""}
+                className={errors.nome ? "border-destructive" : ""}
               />
-              {errors.nome && <p className="text-sm text-red-500">{errors.nome}</p>}
+              {errors.nome && <p className="text-sm text-destructive">{errors.nome}</p>}
             </div>
 
             <div className="space-y-2">
@@ -244,7 +242,7 @@ const AuditoriaDialog = ({ open, onOpenChange, auditoria, onSuccess }: Auditoria
                 value={formData.tipo}
                 onValueChange={(value) => setFormData({ ...formData, tipo: value })}
               >
-                <SelectTrigger className={errors.tipo ? "border-red-500" : ""}>
+                <SelectTrigger className={errors.tipo ? "border-destructive" : ""}>
                   <SelectValue placeholder={t("controlesAuditorias.adTipoPlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
@@ -255,7 +253,7 @@ const AuditoriaDialog = ({ open, onOpenChange, auditoria, onSuccess }: Auditoria
                   <SelectItem value="ti">{t("controlesAuditorias.adTipoTi")}</SelectItem>
                 </SelectContent>
               </Select>
-              {errors.tipo && <p className="text-sm text-red-500">{errors.tipo}</p>}
+              {errors.tipo && <p className="text-sm text-destructive">{errors.tipo}</p>}
             </div>
 
             <div className="space-y-2">
@@ -294,7 +292,6 @@ const AuditoriaDialog = ({ open, onOpenChange, auditoria, onSuccess }: Auditoria
               </Select>
             </div>
 
-
             <div className="space-y-2">
               <Label htmlFor="framework">{t("controlesAuditorias.adFieldFramework")}</Label>
               <Select
@@ -319,8 +316,8 @@ const AuditoriaDialog = ({ open, onOpenChange, auditoria, onSuccess }: Auditoria
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="outline" className="w-full justify-start text-left font-normal">
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.data_inicio ? format(formData.data_inicio, "PPP", { locale: ptBR }) : t("controlesAuditorias.adSelecioneData")}
+                    <IconCalendar className="mr-2 h-4 w-4" />
+                    {formData.data_inicio ? format(formData.data_inicio, "PPP", { locale: dateFnsLocale() }) : t("controlesAuditorias.adSelecioneData")}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
@@ -340,10 +337,10 @@ const AuditoriaDialog = ({ open, onOpenChange, auditoria, onSuccess }: Auditoria
                 <PopoverTrigger asChild>
                   <Button 
                     variant="outline" 
-                    className={`w-full justify-start text-left font-normal ${errors.data_fim_prevista ? "border-red-500" : ""}`}
+                    className={`w-full justify-start text-left font-normal ${errors.data_fim_prevista ? "border-destructive" : ""}`}
                   >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.data_fim_prevista ? format(formData.data_fim_prevista, "PPP", { locale: ptBR }) : t("controlesAuditorias.adSelecioneData")}
+                    <IconCalendar className="mr-2 h-4 w-4" />
+                    {formData.data_fim_prevista ? format(formData.data_fim_prevista, "PPP", { locale: dateFnsLocale() }) : t("controlesAuditorias.adSelecioneData")}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
@@ -355,7 +352,7 @@ const AuditoriaDialog = ({ open, onOpenChange, auditoria, onSuccess }: Auditoria
                   />
                 </PopoverContent>
               </Popover>
-              {errors.data_fim_prevista && <p className="text-sm text-red-500">{errors.data_fim_prevista}</p>}
+              {errors.data_fim_prevista && <p className="text-sm text-destructive">{errors.data_fim_prevista}</p>}
             </div>
           </div>
 

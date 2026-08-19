@@ -1,7 +1,7 @@
 import { DialogShell } from "@/components/ui/dialog-shell";
-import { FlaskConical } from "lucide-react";
 import TestesList from "./TestesList";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { IconTest } from '@/components/icons';
 
 interface TestesDialogProps {
   open: boolean;
@@ -21,7 +21,7 @@ export default function TestesDialog({
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      icon={FlaskConical}
+      icon={IconTest}
       title={t('controlesAuditorias.tdTitle')}
       description={controleNome}
       size="lg"

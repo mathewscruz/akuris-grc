@@ -1,11 +1,11 @@
 import { useState } from "react";
+import { IconAdd, IconEdit, IconDelete, IconTag } from '@/components/icons';
 import { DialogShell } from "@/components/ui/dialog-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Pencil, Trash2, Tag } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -167,7 +167,7 @@ export default function CategoriasDialog({ open, onOpenChange }: CategoriasDialo
       <DialogShell
         open={open}
         onOpenChange={onOpenChange}
-        icon={Tag}
+        icon={IconTag}
         title={t('controlesAuditorias.catDialogTitle')}
         description={t('controlesAuditorias.catDialogDescription')}
         size="lg"
@@ -177,7 +177,7 @@ export default function CategoriasDialog({ open, onOpenChange }: CategoriasDialo
           {/* Formulário */}
           <div>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="nome">{t('controlesAuditorias.catFieldNome')}</Label>
                 <Input
                   id="nome"
@@ -188,7 +188,7 @@ export default function CategoriasDialog({ open, onOpenChange }: CategoriasDialo
                 />
               </div>
 
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="descricao">{t('controlesAuditorias.catFieldDescricao')}</Label>
                 <Textarea
                   id="descricao"
@@ -199,14 +199,18 @@ export default function CategoriasDialog({ open, onOpenChange }: CategoriasDialo
                 />
               </div>
 
-              <div>
+              <div className="space-y-2">
                 <Label>{t('controlesAuditorias.catFieldCor')}</Label>
                 <div className="flex gap-2 mt-2">
                   {cores.map((cor) => (
                     <button
                       key={cor}
                       type="button"
-                      className={`w-8 h-8 rounded-full border-2 ${formData.cor === cor ? 'border-gray-900' : 'border-gray-300'}`}
+                      // Botão só-cor: sem nome acessível o leitor de ecrã anunciava
+                      // oito "botão" idênticos. `aria-pressed` diz qual está activa.
+                      aria-label={t('controlesAuditorias.catCorEscolher', { cor })}
+                      aria-pressed={formData.cor === cor}
+                      className={`w-8 h-8 rounded-full border-2 ${formData.cor === cor ? 'border-foreground' : 'border-border'}`}
                       style={{ backgroundColor: cor }}
                       onClick={() => setFormData(prev => ({ ...prev, cor }))}
                     />
@@ -234,7 +238,7 @@ export default function CategoriasDialog({ open, onOpenChange }: CategoriasDialo
             {categorias.length === 0 ? (
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-8">
-                  <Plus className="w-8 h-8 text-muted-foreground mb-2" />
+                  <IconAdd className="w-8 h-8 text-muted-foreground mb-2" />
                   <p className="text-muted-foreground">{t('controlesAuditorias.catEmpty')}</p>
                 </CardContent>
               </Card>
@@ -257,14 +261,14 @@ export default function CategoriasDialog({ open, onOpenChange }: CategoriasDialo
                             variant="ghost"
                             onClick={() => handleEdit(categoria)}
                           >
-                            <Pencil className="w-4 h-4" />
+                            <IconEdit className="w-4 h-4" />
                           </Button>
                           <Button
                             size="sm"
                             variant="ghost"
                             onClick={() => handleDelete(categoria.id, categoria.nome)}
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <IconDelete className="w-4 h-4" />
                           </Button>
                         </div>
                       </div>

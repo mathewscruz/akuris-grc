@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { IconSearch, IconShield } from '@/components/icons';
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEmpresaId } from "@/hooks/useEmpresaId";
@@ -7,11 +8,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, Shield } from 'lucide-react';
 import { toast } from "sonner";
 import { formatStatus } from "@/lib/text-utils";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { resolveCriticidadeTone, resolveControleStatusTone, resolveControleTipoTone } from "@/lib/status-tone";
+import { criticidadeControle } from "@/lib/metrics/controles";
+import { norm } from "@/lib/metrics/core";
+import { Checkbox as ToggleInativos } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -34,6 +38,9 @@ export function ImportarControlesDialog({
   const { empresaId } = useEmpresaId();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  // Um controlo inativo ou descontinuado não se audita: fica fora por omissão,
+  // mas continua alcançável para quem estiver a auditar exactamente isso.
+  const [incluirInativos, setIncluirInativos] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
 
   // Buscar controles disponíveis
@@ -68,11 +75,17 @@ export function ImportarControlesDialog({
     enabled: open && !!auditoriaId,
   });
 
+  const ativoParaAuditar = (c: { status?: string | null }) =>
+    incluirInativos || !['inativo', 'descontinuado'].includes(norm(c.status));
+
   const filteredControles = controles?.filter(
     (c) =>
-      c.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.descricao?.toLowerCase().includes(searchTerm.toLowerCase())
+      ativoParaAuditar(c) &&
+      (c.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.descricao?.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  const ocultos = (controles ?? []).filter((c) => !ativoParaAuditar(c)).length;
 
   const toggleSelection = (id: string) => {
     setSelectedIds((prev) =>
@@ -90,20 +103,41 @@ export function ImportarControlesDialog({
 
       const selectedControles = controles?.filter((c) => selectedIds.includes(c.id)) || [];
 
+      // O código do item é o identificador do papel de trabalho: tem de
+      // continuar a sequência da auditoria, não recomeçar em CTRL-001 a cada
+      // importação (duas importações geravam códigos repetidos).
+      const { data: existentes } = await supabase
+        .from("auditoria_itens")
+        .select("codigo")
+        .eq("auditoria_id", auditoriaId)
+        .like("codigo", "CTRL-%");
+      const ultimoNumero = (existentes ?? []).reduce((maior, item) => {
+        const n = Number(String(item.codigo).replace("CTRL-", ""));
+        return Number.isFinite(n) && n > maior ? n : maior;
+      }, 0);
+
       const itemsToInsert = selectedControles.map((controle, index) => ({
         auditoria_id: auditoriaId,
-        codigo: `CTRL-${String(index + 1).padStart(3, "0")}`,
+        codigo: `CTRL-${String(ultimoNumero + index + 1).padStart(3, "0")}`,
         titulo: controle.nome,
         descricao: controle.descricao || null,
         controle_vinculado_id: controle.id,
-        prioridade:
-          controle.criticidade === "critico"
-            ? "alta"
-            : controle.criticidade === "alto"
-            ? "alta"
-            : controle.criticidade === "medio"
-            ? "media"
-            : "baixa",
+        // A criticidade vem do banco em género feminino ("alta"/"media") e a
+        // comparação directa com "alto"/"medio" caía sempre no ramo final:
+        // um controlo crítico entrava na auditoria como prioridade baixa.
+        prioridade: (() => {
+          switch (criticidadeControle(controle)) {
+            case "critico":
+            case "alto":
+              return "alta";
+            case "baixo":
+              return "baixa";
+            // Sem criticidade classificada não se pode assumir prioridade
+            // baixa: fica em média até alguém decidir.
+            default:
+              return "media";
+          }
+        })(),
         status: "pendente",
         created_by: userId,
       }));
@@ -126,7 +160,7 @@ export function ImportarControlesDialog({
 
   const getCriticidadeBadge = (criticidade: string) => {
     return (
-      <StatusBadge size="sm" {...resolveCriticidadeTone(criticidade)}>
+      <StatusBadge {...resolveCriticidadeTone(criticidade)}>
         {formatStatus(criticidade)}
       </StatusBadge>
     );
@@ -136,7 +170,7 @@ export function ImportarControlesDialog({
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      icon={Shield}
+      icon={IconShield}
       title={t("controlesAuditorias.icdTitle")}
       size="md"
       noScroll
@@ -159,13 +193,29 @@ export function ImportarControlesDialog({
     >
       <div className="h-full flex flex-col min-h-0 gap-4 px-6 py-6">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder={t("controlesAuditorias.icdSearchPlaceholder")}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
           />
+        </div>
+
+        <div className="flex items-center gap-2">
+          <ToggleInativos
+            id="incluir-inativos"
+            checked={incluirInativos}
+            onCheckedChange={(v) => setIncluirInativos(v === true)}
+          />
+          <Label htmlFor="incluir-inativos" className="cursor-pointer text-sm font-normal">
+            {t("controlesAuditorias.icdIncluirInativos")}
+          </Label>
+          {!incluirInativos && ocultos > 0 && (
+            <span className="text-xs text-muted-foreground">
+              {t("controlesAuditorias.icdOcultos", { count: ocultos })}
+            </span>
+          )}
         </div>
 
         <ScrollArea className="flex-1 border rounded-lg max-h-[400px]">
@@ -187,7 +237,7 @@ export function ImportarControlesDialog({
                     className={`p-3 flex items-start gap-3 ${
                       isJaVinculado
                         ? "opacity-50 bg-muted/30"
-                        : "hover:bg-muted/20 cursor-pointer"
+                        : "hover:bg-accent cursor-pointer"
                     }`}
                     onClick={() => !isJaVinculado && toggleSelection(controle.id)}
                   >
@@ -195,6 +245,11 @@ export function ImportarControlesDialog({
                       checked={isSelected}
                       disabled={isJaVinculado}
                       onCheckedChange={() => toggleSelection(controle.id)}
+                      // A linha inteira também alterna a seleção. Sem parar a
+                      // propagação, clicar na própria caixa disparava os dois
+                      // handlers e o resultado líquido era nenhum — a caixa
+                      // parecia morta.
+                      onClick={(e) => e.stopPropagation()}
                       className="mt-1"
                     />
                     <div className="flex-1 min-w-0">
@@ -202,7 +257,7 @@ export function ImportarControlesDialog({
                         <span className="font-medium truncate">{controle.nome}</span>
                         {getCriticidadeBadge(controle.criticidade)}
                         {isJaVinculado && (
-                          <StatusBadge size="sm" tone="neutral" variant="outline">
+                          <StatusBadge tone="neutral" variant="outline">
                             {t("controlesAuditorias.icdJaVinculado")}
                           </StatusBadge>
                         )}
@@ -213,10 +268,10 @@ export function ImportarControlesDialog({
                         </p>
                       )}
                       <div className="flex gap-2 mt-1">
-                        <StatusBadge size="sm" {...resolveControleTipoTone(controle.tipo)}>
+                        <StatusBadge {...resolveControleTipoTone(controle.tipo)}>
                           {formatStatus(controle.tipo)}
                         </StatusBadge>
-                        <StatusBadge size="sm" {...resolveControleStatusTone(controle.status)}>
+                        <StatusBadge {...resolveControleStatusTone(controle.status)}>
                           {formatStatus(controle.status)}
                         </StatusBadge>
                       </div>

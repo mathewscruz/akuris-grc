@@ -1,16 +1,8 @@
 import { rowOpenProps, CARD_HOVER } from '@/lib/row-interaction';
+import { IconEdit, IconDelete, IconMore, IconCalendar, IconFile, IconPerson, IconChecklist } from '@/components/icons';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { 
-  FileText, 
-  Edit, 
-  Trash2,
-  Calendar,
-  User,
-  ClipboardList,
-  MoreHorizontal
-} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,7 +23,6 @@ interface AuditoriaCardAccordionProps {
   onOpenControles: () => void;
   auditorNome?: string;
 }
-
 
 export function AuditoriaCardAccordion({
   auditoria,
@@ -56,26 +47,26 @@ export function AuditoriaCardAccordion({
         <div className="flex items-start justify-between gap-3">
           {/* Nome */}
           <div className="flex items-start gap-2 min-w-0 flex-shrink-0" style={{ width: '220px' }}>
-            <FileText className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0 mt-0.5" />
+            <IconFile className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0 mt-0.5" />
             <span className="font-medium text-sm line-clamp-2 break-words">{auditoria.nome}</span>
           </div>
 
           {/* Badges */}
           <div className="flex items-center gap-1.5 flex-1 flex-wrap">
-            <StatusBadge size="sm" tone="neutral" variant="outline" className="whitespace-nowrap">
+            <StatusBadge tone="neutral" variant="outline" className="whitespace-nowrap">
               {formatStatus(auditoria.tipo)}
             </StatusBadge>
-            <StatusBadge size="sm" {...resolveAuditoriaStatusTone(auditoria.status)}>
+            <StatusBadge {...resolveAuditoriaStatusTone(auditoria.status)}>
               {formatStatus(auditoria.status)}
             </StatusBadge>
             {auditoria.conclusao_forcada && (
               <span title={auditoria.conclusao_justificativa || undefined}>
-                <StatusBadge size="sm" tone="warning">
+                <StatusBadge tone="warning">
                   {t('t4.gates.forcadaCurta')}
                 </StatusBadge>
               </span>
             )}
-            <StatusBadge size="sm" {...resolveAuditoriaPrioridadeTone(auditoria.prioridade)}>
+            <StatusBadge {...resolveAuditoriaPrioridadeTone(auditoria.prioridade)}>
               {formatStatus(auditoria.prioridade)}
             </StatusBadge>
             
@@ -84,11 +75,11 @@ export function AuditoriaCardAccordion({
               variant="outline"
               size="sm"
               onClick={onOpenControles}
-              className="h-6 px-2 text-[11px] gap-1.5"
+              className="h-6 px-2 text-micro gap-1.5"
             >
-              <ClipboardList className="h-3 w-3" />
+              <IconChecklist className="h-3 w-3" />
               <span>{t('controlesAuditorias.acaItens')}</span>
-              <StatusBadge size="sm" tone="neutral" className="ml-1">
+              <StatusBadge tone="neutral" className="ml-1">
                 {counts.itensConcluidos}/{counts.itens}
               </StatusBadge>
             </Button>
@@ -97,18 +88,18 @@ export function AuditoriaCardAccordion({
             {counts.itens > 0 && (
               <div className="flex items-center gap-1.5 min-w-[80px]">
                 <Progress value={progressPercent} className="h-1.5 flex-1" />
-                <span className="text-[10px] text-muted-foreground">{progressPercent}%</span>
+                <span className="text-micro text-muted-foreground">{progressPercent}%</span>
               </div>
             )}
 
             {/* Data e Auditor */}
             {auditoria.data_inicio && (
-              <StatusBadge size="sm" tone="neutral" variant="outline" icon={<Calendar className="h-3 w-3" />}>
+              <StatusBadge tone="neutral" variant="outline" icon={<IconCalendar className="h-3 w-3" />}>
                 {formatDateOnly(auditoria.data_inicio)}
               </StatusBadge>
             )}
             {auditorNome && (
-              <StatusBadge size="sm" tone="neutral" variant="outline" icon={<User className="h-3 w-3" />}>
+              <StatusBadge tone="neutral" variant="outline" icon={<IconPerson className="h-3 w-3" />}>
                 <span className="max-w-[100px] truncate">{auditorNome}</span>
               </StatusBadge>
             )}
@@ -119,20 +110,20 @@ export function AuditoriaCardAccordion({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-                  <MoreHorizontal className="h-4 w-4" />
+                  <IconMore className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={onEdit}>
-                  <Edit className="h-4 w-4 mr-2" />
+                  <IconEdit className="h-4 w-4 mr-2" />
                   {t('controlesAuditorias.acaEditar')}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={onOpenControles}>
-                  <ClipboardList className="h-4 w-4 mr-2" />
+                  <IconChecklist className="h-4 w-4 mr-2" />
                   {t('controlesAuditorias.acaGerenciarItens')}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive">
-                  <Trash2 className="h-4 w-4 mr-2" />
+                  <IconDelete className="h-4 w-4 mr-2" />
                   {t('controlesAuditorias.acaExcluir')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -142,7 +133,7 @@ export function AuditoriaCardAccordion({
 
         {/* Descrição se houver */}
         {auditoria.descricao && (
-          <p className="text-[11px] text-muted-foreground mt-2 line-clamp-1">
+          <p className="text-micro text-muted-foreground mt-2 line-clamp-1">
             {auditoria.descricao}
           </p>
         )}

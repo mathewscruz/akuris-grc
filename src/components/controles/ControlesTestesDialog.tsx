@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { IconClose, IconChecklist, IconAttach } from '@/components/icons';
 import { DialogShell } from "@/components/ui/dialog-shell";
 import { Input } from "@/components/ui/input";
 import { DateField } from "@/components/ui/date-field";
@@ -6,7 +7,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ClipboardCheck, Paperclip, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -189,7 +189,7 @@ export default function ControlesTestesDialog({ open, onOpenChange, controle, te
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      icon={ClipboardCheck}
+      icon={IconChecklist}
       title={teste ? t('controlesAuditorias.ctdTitleEdit') : t('controlesAuditorias.ctdTitleNew')}
       description={controle?.nome}
       size="md"
@@ -200,7 +200,7 @@ export default function ControlesTestesDialog({ open, onOpenChange, controle, te
     >
       <div className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
-          <div>
+          <div className="space-y-2">
             <Label htmlFor="data_teste">{t('t4.testes.campoData')}</Label>
             <DateField
               id="data_teste"
@@ -210,7 +210,7 @@ export default function ControlesTestesDialog({ open, onOpenChange, controle, te
             />
           </div>
 
-          <div>
+          <div className="space-y-2">
             <Label htmlFor="resultado">{t('t4.testes.campoResultado')}</Label>
             <Select value={formData.resultado} onValueChange={(value) => update({ resultado: value })}>
               <SelectTrigger>
@@ -227,7 +227,7 @@ export default function ControlesTestesDialog({ open, onOpenChange, controle, te
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <div>
+          <div className="space-y-2">
             <Label>{t('t4.testes.campoTestador')}</Label>
             <UserSelect
               value={formData.testador_id}
@@ -235,7 +235,7 @@ export default function ControlesTestesDialog({ open, onOpenChange, controle, te
             />
           </div>
 
-          <div>
+          <div className="space-y-2">
             <Label htmlFor="proxima_avaliacao">{t('t4.testes.campoProxima')}</Label>
             <DateField
               id="proxima_avaliacao"
@@ -250,7 +250,7 @@ export default function ControlesTestesDialog({ open, onOpenChange, controle, te
           </div>
         </div>
 
-        <div>
+        <div className="space-y-2">
           <Label htmlFor="observacoes">{t('t4.testes.campoObservacoes')}</Label>
           <Textarea
             id="observacoes"
@@ -272,7 +272,7 @@ export default function ControlesTestesDialog({ open, onOpenChange, controle, te
           />
           {formData.evidencia_nome ? (
             <div className="flex items-center gap-2 text-sm">
-              <Paperclip className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
+              <IconAttach className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
               <span className="truncate">{formData.evidencia_nome}</span>
               <Button
                 type="button"
@@ -282,7 +282,7 @@ export default function ControlesTestesDialog({ open, onOpenChange, controle, te
                 aria-label={t('t4.testes.removerAnexo')}
                 onClick={() => update({ evidencia_url: '', evidencia_nome: '' })}
               >
-                <X className="h-3 w-3" />
+                <IconClose className="h-3 w-3" />
               </Button>
             </div>
           ) : (

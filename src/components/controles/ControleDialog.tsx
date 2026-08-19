@@ -7,7 +7,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { resolveCriticidadeTone } from "@/lib/status-tone";
-import { ShieldCheck, Settings2, Link2, Calendar as CalendarIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -21,6 +20,8 @@ import { FieldHelpTooltip } from "@/components/ui/field-help-tooltip";
 import { logger } from "@/lib/logger";
 import { formatStatus } from '@/lib/text-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { IconShieldCheck, IconSettings, IconLink, IconCalendar } from '@/components/icons';
+import { exigirEscrita } from '@/lib/supabase-write';
 
 const formatDateForDatabase = (dateString: string): string | null => (!dateString ? null : dateString);
 const formatDateForInput = (dateString: string | null): string => (!dateString ? '' : dateString.split('T')[0]);
@@ -130,18 +131,18 @@ export default function ControleDialog({ open, onOpenChange, controle, categoria
         controleId = nc.id;
       }
 
-      await supabase.from('controles_riscos').delete().eq('controle_id', controleId);
+      await exigirEscrita(supabase.from('controles_riscos').delete().eq('controle_id', controleId));
       if (data.risco_id) {
-        await supabase.from('controles_riscos').insert([{
+        await exigirEscrita(supabase.from('controles_riscos').insert([{
           controle_id: controleId, risco_id: data.risco_id, tipo_vinculacao: 'mitigacao',
-        }]);
+        }]));
       }
 
-      await supabase.from('controles_auditorias').delete().eq('controle_id', controleId);
+      await exigirEscrita(supabase.from('controles_auditorias').delete().eq('controle_id', controleId));
       if (data.auditorias_ids.length > 0) {
-        await supabase.from('controles_auditorias').insert(
+        await exigirEscrita(supabase.from('controles_auditorias').insert(
           data.auditorias_ids.map((auditoria_id) => ({ controle_id: controleId, auditoria_id }))
-        );
+        ));
       }
 
       if (isNewResponsavel && data.responsavel_id) {
@@ -159,7 +160,7 @@ export default function ControleDialog({ open, onOpenChange, controle, categoria
       await notify(controle ? 'controle_atualizado' : 'controle_criado', {
         titulo: controle ? t('sweepRiscos.controles.notifyControleAtualizado', { nome: data.nome }) : t('sweepRiscos.controles.notifyNovoControle', { nome: data.nome }),
         descricao: data.descricao?.substring(0, 200) || undefined,
-        link: `/governanca?tab=controles&controle=${controleId}`,
+        link: `/governanca/controles?controle=${controleId}`,
         gravidade: data.criticidade === 'critico' ? 'alta' : data.criticidade === 'alto' ? 'media' : 'baixa',
         dados: { controle_id: controleId, nome: data.nome, tipo: data.tipo, criticidade: data.criticidade, status: data.status },
       });
@@ -210,23 +211,24 @@ export default function ControleDialog({ open, onOpenChange, controle, categoria
 
   const tabs: WizardTab[] = useMemo(() => [
     {
-      id: 'identificacao', label: t('controlesAuditorias.cdlgTabIdent'), icon: ShieldCheck, state: identState, hint: t('controlesAuditorias.cdlgTabIdentHint'),
+      id: 'identificacao', label: t('controlesAuditorias.cdlgTabIdent'), icon: IconShieldCheck, state: identState, hint: t('controlesAuditorias.cdlgTabIdentHint'),
       content: (
         <div className="space-y-5 max-w-3xl">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <Label className="flex items-center gap-1">
+            <div className="space-y-2">
+              <Label htmlFor="controle-codigo">
                 {t('controlesAuditorias.cdlgFieldCodigo')}
                 <FieldHelpTooltip content={t('controlesAuditorias.cdlgFieldCodigoHelp')} />
               </Label>
-              <Input value={formData.codigo} onChange={(e) => update({ codigo: e.target.value })} placeholder={t('controlesAuditorias.cdlgFieldCodigoPlaceholder')} />
+              <Input id="controle-codigo" value={formData.codigo} onChange={(e) => update({ codigo: e.target.value })} placeholder={t('controlesAuditorias.cdlgFieldCodigoPlaceholder')} />
             </div>
-            <div className="md:col-span-2">
-              <Label className="flex items-center gap-1">
+            <div className="md:col-span-2 space-y-2">
+              <Label htmlFor="controle-nome">
                 {t('controlesAuditorias.cdlgFieldNome')} <span className="text-destructive">*</span>
                 <FieldHelpTooltip content={t('controlesAuditorias.cdlgFieldNomeHelp')} />
               </Label>
               <Input
+                id="controle-nome"
                 value={formData.nome}
                 onChange={(e) => update({ nome: e.target.value })}
                 placeholder={t('controlesAuditorias.cdlgFieldNomePlaceholder')}
@@ -239,19 +241,19 @@ export default function ControleDialog({ open, onOpenChange, controle, categoria
               )}
             </div>
           </div>
-          <div>
-            <Label>{t('controlesAuditorias.cdlgFieldDescricao')}</Label>
-            <Textarea value={formData.descricao} onChange={(e) => update({ descricao: e.target.value })} rows={6} />
+          <div className="space-y-2">
+            <Label htmlFor="controle-descricao">{t('controlesAuditorias.cdlgFieldDescricao')}</Label>
+            <Textarea id="controle-descricao" value={formData.descricao} onChange={(e) => update({ descricao: e.target.value })} rows={6} />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label>{t('controlesAuditorias.cdlgFieldArea')}</Label>
-              <Input value={formData.area} onChange={(e) => update({ area: e.target.value })} placeholder={t('controlesAuditorias.cdlgFieldAreaPlaceholder')} />
+            <div className="space-y-2">
+              <Label htmlFor="controle-area">{t('controlesAuditorias.cdlgFieldArea')}</Label>
+              <Input id="controle-area" value={formData.area} onChange={(e) => update({ area: e.target.value })} placeholder={t('controlesAuditorias.cdlgFieldAreaPlaceholder')} />
             </div>
-            <div>
-              <Label>{t('controlesAuditorias.cdlgFieldCategoria')}</Label>
+            <div className="space-y-2">
+              <Label htmlFor="controle-categoria">{t('controlesAuditorias.cdlgFieldCategoria')}</Label>
               <Select value={formData.categoria_id || "sem_categoria"} onValueChange={(v) => update({ categoria_id: v === "sem_categoria" ? "" : v })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger id="controle-categoria"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="sem_categoria">{t('controlesAuditorias.cdlgSemCategoria')}</SelectItem>
                   {categorias.map((c) => <SelectItem key={c.id} value={c.id}>{c.nome}</SelectItem>)}
@@ -263,17 +265,17 @@ export default function ControleDialog({ open, onOpenChange, controle, categoria
       ),
     },
     {
-      id: 'classificacao', label: t('controlesAuditorias.cdlgTabClassif'), icon: Settings2, state: classifState, hint: t('controlesAuditorias.cdlgTabClassifHint'),
+      id: 'classificacao', label: t('controlesAuditorias.cdlgTabClassif'), icon: IconSettings, state: classifState, hint: t('controlesAuditorias.cdlgTabClassifHint'),
       content: (
         <div className="space-y-5 max-w-3xl">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <Label className="flex items-center gap-1">
+            <div className="space-y-2">
+              <Label htmlFor="controle-tipo">
                 {t('controlesAuditorias.cdlgFieldTipo')}
                 <FieldHelpTooltip content={t('controlesAuditorias.cdlgFieldTipoHelp')} />
               </Label>
               <Select value={formData.tipo} onValueChange={(v) => update({ tipo: v })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger id="controle-tipo"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="preventivo">{t('controlesAuditorias.cdlgTipoPreventivo')}</SelectItem>
                   <SelectItem value="detectivo">{t('controlesAuditorias.cdlgTipoDetectivo')}</SelectItem>
@@ -281,10 +283,10 @@ export default function ControleDialog({ open, onOpenChange, controle, categoria
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label>{t('controlesAuditorias.cdlgFieldFrequencia')}</Label>
+            <div className="space-y-2">
+              <Label htmlFor="controle-frequencia">{t('controlesAuditorias.cdlgFieldFrequencia')}</Label>
               <Select value={formData.frequencia} onValueChange={(v) => update({ frequencia: v })}>
-                <SelectTrigger><SelectValue placeholder={t('controlesAuditorias.cdlgFrequenciaSelecione')} /></SelectTrigger>
+                <SelectTrigger id="controle-frequencia"><SelectValue placeholder={t('controlesAuditorias.cdlgFrequenciaSelecione')} /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="diaria">{t('controlesAuditorias.cdlgFrequenciaDiaria')}</SelectItem>
                   <SelectItem value="semanal">{t('controlesAuditorias.cdlgFrequenciaSemanal')}</SelectItem>
@@ -295,10 +297,10 @@ export default function ControleDialog({ open, onOpenChange, controle, categoria
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label>{t('controlesAuditorias.cdlgFieldStatus')}</Label>
+            <div className="space-y-2">
+              <Label htmlFor="controle-status">{t('controlesAuditorias.cdlgFieldStatus')}</Label>
               <Select value={formData.status} onValueChange={(v) => update({ status: v })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger id="controle-status"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ativo">{t('controlesAuditorias.cdlgStatusAtivo')}</SelectItem>
                   <SelectItem value="inativo">{t('controlesAuditorias.cdlgStatusInativo')}</SelectItem>
@@ -309,13 +311,13 @@ export default function ControleDialog({ open, onOpenChange, controle, categoria
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <Label className="flex items-center gap-1">
+            <div className="space-y-2">
+              <Label htmlFor="controle-criticidade">
                 {t('controlesAuditorias.cdlgFieldCriticidade')}
                 <FieldHelpTooltip content={t('controlesAuditorias.cdlgFieldCriticidadeHelp')} />
               </Label>
               <Select value={formData.criticidade} onValueChange={(v) => update({ criticidade: v })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger id="controle-criticidade"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="baixo">{t('controlesAuditorias.cdlgCriticidadeBaixo')}</SelectItem>
                   <SelectItem value="medio">{t('controlesAuditorias.cdlgCriticidadeMedio')}</SelectItem>
@@ -324,28 +326,29 @@ export default function ControleDialog({ open, onOpenChange, controle, categoria
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label className="flex items-center gap-1"><CalendarIcon className="h-3.5 w-3.5" /> {t('controlesAuditorias.cdlgFieldImplementacao')}</Label>
-              <DateField value={formData.data_implementacao || null} onChange={(v) => update({ data_implementacao: v || '' })} />
+            <div className="space-y-2">
+              <Label htmlFor="controle-implementacao"><IconCalendar className="h-3.5 w-3.5" /> {t('controlesAuditorias.cdlgFieldImplementacao')}</Label>
+              <DateField id="controle-implementacao" aria-label={t('controlesAuditorias.cdlgFieldImplementacao')} value={formData.data_implementacao || null} onChange={(v) => update({ data_implementacao: v || '' })} />
             </div>
-            <div>
-              <Label className="flex items-center gap-1"><CalendarIcon className="h-3.5 w-3.5" /> {t('controlesAuditorias.cdlgFieldProximaAvaliacao')}</Label>
-              <DateField value={formData.proxima_avaliacao || null} onChange={(v) => update({ proxima_avaliacao: v || '' })} />
+            <div className="space-y-2">
+              <Label htmlFor="controle-proxima-avaliacao"><IconCalendar className="h-3.5 w-3.5" /> {t('controlesAuditorias.cdlgFieldProximaAvaliacao')}</Label>
+              <DateField id="controle-proxima-avaliacao" aria-label={t('controlesAuditorias.cdlgFieldProximaAvaliacao')} value={formData.proxima_avaliacao || null} onChange={(v) => update({ proxima_avaliacao: v || '' })} />
             </div>
           </div>
         </div>
       ),
     },
     {
-      id: 'responsabilidade', label: t('controlesAuditorias.cdlgTabResp'), icon: Settings2, state: respState, hint: t('controlesAuditorias.cdlgTabRespHint'),
+      id: 'responsabilidade', label: t('controlesAuditorias.cdlgTabResp'), icon: IconSettings, state: respState, hint: t('controlesAuditorias.cdlgTabRespHint'),
       content: (
         <div className="space-y-5 max-w-2xl">
-          <div>
-            <Label className="flex items-center gap-1">
+          <div className="space-y-2">
+            <Label htmlFor="controle-responsavel">
               {t('controlesAuditorias.cdlgFieldResponsavel')}
               <FieldHelpTooltip content={t('controlesAuditorias.cdlgFieldResponsavelHelp')} />
             </Label>
             <UserSelect
+              id="controle-responsavel"
               value={formData.responsavel_id}
               onValueChange={(v) => update({ responsavel_id: v })}
               placeholder={t('controlesAuditorias.cdlgFieldResponsavelPlaceholder')}
@@ -358,22 +361,23 @@ export default function ControleDialog({ open, onOpenChange, controle, categoria
       ),
     },
     {
-      id: 'vinculacoes', label: t('controlesAuditorias.cdlgTabVinc'), icon: Link2, state: vincState, hint: t('controlesAuditorias.cdlgTabVincHint'),
+      id: 'vinculacoes', label: t('controlesAuditorias.cdlgTabVinc'), icon: IconLink, state: vincState, hint: t('controlesAuditorias.cdlgTabVincHint'),
       content: (
         <div className="space-y-5 max-w-3xl">
-          <div>
-            <Label className="flex items-center gap-1">
+          <div className="space-y-2">
+            <Label htmlFor="controle-risco">
               {t('controlesAuditorias.cdlgFieldRisco')}
               <FieldHelpTooltip content={t('controlesAuditorias.cdlgFieldRiscoHelp')} />
             </Label>
-            <RiscoSelect value={formData.risco_id} onValueChange={(v) => update({ risco_id: v })} placeholder={t('controlesAuditorias.cdlgFieldRiscoPlaceholder')} />
+            <RiscoSelect id="controle-risco" value={formData.risco_id} onValueChange={(v) => update({ risco_id: v })} placeholder={t('controlesAuditorias.cdlgFieldRiscoPlaceholder')} />
           </div>
-          <div>
-            <Label className="flex items-center gap-1">
+          <div className="space-y-2">
+            <Label htmlFor="controle-auditorias">
               {t('controlesAuditorias.cdlgFieldAuditorias')}
               <FieldHelpTooltip content={t('controlesAuditorias.cdlgFieldAuditoriasHelp')} />
             </Label>
             <AuditoriasMultiSelect
+              id="controle-auditorias"
               value={formData.auditorias_ids}
               onValueChange={(v) => update({ auditorias_ids: v })}
               placeholder={t('controlesAuditorias.cdlgFieldAuditoriasPlaceholder')}
@@ -390,7 +394,7 @@ export default function ControleDialog({ open, onOpenChange, controle, categoria
       <WizardSummaryRow label={t('controlesAuditorias.cdlgSummaryTipo')} value={<span>{formatStatus(formData.tipo)}</span>} />
       <WizardSummaryRow
         label={t('controlesAuditorias.cdlgSummaryCriticidade')}
-        value={<StatusBadge size="sm" {...resolveCriticidadeTone(formData.criticidade)}>{formatStatus(formData.criticidade)}</StatusBadge>}
+        value={<StatusBadge {...resolveCriticidadeTone(formData.criticidade)}>{formatStatus(formData.criticidade)}</StatusBadge>}
       />
       <WizardSummaryRow label={t('controlesAuditorias.cdlgSummaryStatus')} value={<span>{formatStatus(formData.status)}</span>} />
       <WizardSummaryRow label={t('controlesAuditorias.cdlgSummaryAuditorias')} value={formData.auditorias_ids.length} />
@@ -403,7 +407,7 @@ export default function ControleDialog({ open, onOpenChange, controle, categoria
       onOpenChange={onOpenChange}
       title={controle ? t('controlesAuditorias.cdlgTitleEdit') : t('controlesAuditorias.cdlgTitleNew')}
       description={t('controlesAuditorias.cdlgDescription')}
-      icon={ShieldCheck}
+      icon={IconShieldCheck}
       tabs={tabs}
       summary={summary}
       activeTab={activeTab}

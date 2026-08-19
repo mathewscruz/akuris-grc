@@ -1,8 +1,8 @@
 import { useState } from "react";
+import { IconAdd, IconEdit, IconDelete, IconCalendar, IconTest, IconPerson } from '@/components/icons';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, TestTube, Calendar, User } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -109,7 +109,7 @@ export default function TestesList({ controleId, controleNome }: TestesListProps
   };
 
   const getResultadoBadge = (resultado: string) => (
-    <StatusBadge size="sm" tone={resultadoTesteTone(resultado)}>
+    <StatusBadge tone={resultadoTesteTone(resultado)}>
       {resultadoTesteLabel(resultado, t)}
     </StatusBadge>
   );
@@ -130,7 +130,7 @@ export default function TestesList({ controleId, controleNome }: TestesListProps
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
-          <TestTube className="w-5 h-5" />
+          <IconTest className="w-5 h-5" />
           <h3 className="text-lg font-semibold">{t('controlesAuditorias.tlTitle')}</h3>
         </div>
         <Button
@@ -140,7 +140,7 @@ export default function TestesList({ controleId, controleNome }: TestesListProps
           }}
           size="sm"
         >
-          <Plus className="w-4 h-4 mr-2" />
+          <IconAdd className="w-4 h-4 mr-2" />
           {t('controlesAuditorias.tlBtnNovo')}
         </Button>
       </div>
@@ -148,7 +148,7 @@ export default function TestesList({ controleId, controleNome }: TestesListProps
       {testes.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <TestTube className="w-12 h-12 text-muted-foreground mb-4" />
+            <IconTest className="w-12 h-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">{t('controlesAuditorias.tlEmptyTitle')}</h3>
             <p className="text-muted-foreground mb-4 text-center">
               {t('controlesAuditorias.tlEmptyDesc')}
@@ -159,7 +159,7 @@ export default function TestesList({ controleId, controleNome }: TestesListProps
                 setTesteDialogOpen(true);
               }}
             >
-              <Plus className="w-4 h-4 mr-2" />
+              <IconAdd className="w-4 h-4 mr-2" />
               {t('controlesAuditorias.tlBtnRegistrar')}
             </Button>
           </CardContent>
@@ -167,7 +167,7 @@ export default function TestesList({ controleId, controleNome }: TestesListProps
       ) : (
         <div className="grid gap-4">
           {testes.map((teste) => (
-            <Card key={teste.id} className="hover:shadow-md transition-shadow">
+            <Card key={teste.id} className="hover:shadow-sm transition-shadow">
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div>
@@ -177,13 +177,13 @@ export default function TestesList({ controleId, controleNome }: TestesListProps
                     <CardDescription className="flex items-center gap-4 mt-1">
                       {(teste.testador_id || teste.testador) && (
                         <span className="flex items-center gap-1">
-                          <User className="w-3 h-3" />
+                          <IconPerson className="w-3 h-3" />
                           {nomePorUser.get(teste.testador_id || '') || teste.testador}
                         </span>
                       )}
                       {teste.proxima_avaliacao && (
                         <span className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
+                          <IconCalendar className="w-3 h-3" />
                           {t('controlesAuditorias.tlProxima', { data: formatDateOnly(teste.proxima_avaliacao) })}
                         </span>
                       )}
@@ -228,7 +228,7 @@ export default function TestesList({ controleId, controleNome }: TestesListProps
                     size="sm"
                     onClick={() => handleEdit(teste)}
                   >
-                    <Edit className="w-3 h-3 mr-1" />
+                    <IconEdit className="w-3 h-3 mr-1" />
                     {t('controlesAuditorias.tlBtnEditar')}
                   </Button>
                   <Button
@@ -236,7 +236,7 @@ export default function TestesList({ controleId, controleNome }: TestesListProps
                     size="sm"
                     onClick={() => handleDelete(teste.id)}
                   >
-                    <Trash2 className="w-3 h-3 mr-1" />
+                    <IconDelete className="w-3 h-3 mr-1" />
                     {t('controlesAuditorias.tlBtnExcluir')}
                   </Button>
                 </div>

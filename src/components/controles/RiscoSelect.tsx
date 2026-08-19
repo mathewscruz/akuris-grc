@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Check, ChevronsUpDown, AlertTriangle } from 'lucide-react';
+import { IconCheck, IconWarning, IconSort } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
@@ -16,6 +16,7 @@ interface Risco {
   id: string;
   nome: string;
   nivel_risco_inicial: string;
+  nivel_risco_residual?: string | null;
   status: string;
 }
 
@@ -23,9 +24,11 @@ interface RiscoSelectProps {
   value?: string;
   onValueChange: (value: string) => void;
   placeholder?: string;
+  /** Liga o gatilho ao <Label htmlFor> do campo. */
+  id?: string;
 }
 
-export function RiscoSelect({ value, onValueChange, placeholder }: RiscoSelectProps) {
+export function RiscoSelect({ value, onValueChange, placeholder, id }: RiscoSelectProps) {
   const { t } = useLanguage();
   const { profile } = useAuth();
   const [open, setOpen] = useState(false);
@@ -42,7 +45,7 @@ export function RiscoSelect({ value, onValueChange, placeholder }: RiscoSelectPr
     try {
       const { data, error } = await supabase
         .from('riscos')
-        .select('id, nome, nivel_risco_inicial, status')
+        .select('id, nome, nivel_risco_inicial, nivel_risco_residual, status')
         .eq('empresa_id', profile?.empresa_id)
         .in('status', ['identificado', 'em_tratamento', 'monitorado'])
         .order('nome');
@@ -71,6 +74,7 @@ export function RiscoSelect({ value, onValueChange, placeholder }: RiscoSelectPr
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
+          id={id}
           variant="outline"
           role="combobox"
           aria-expanded={open}
@@ -78,16 +82,16 @@ export function RiscoSelect({ value, onValueChange, placeholder }: RiscoSelectPr
         >
           {selectedRisco ? (
             <div className="flex items-center gap-2 truncate">
-              <AlertTriangle className="h-4 w-4 flex-shrink-0 text-orange-500" />
+              <IconWarning className="h-4 w-4 flex-shrink-0 text-warning" />
               <span className="truncate">{selectedRisco.nome}</span>
-              <Badge variant={getNivelBadgeVariant(selectedRisco.nivel_risco_inicial)} className="ml-2 text-xs">
-                {getEnumLabel(t, 'severidade', selectedRisco.nivel_risco_inicial)}
+              <Badge variant={getNivelBadgeVariant(selectedRisco.nivel_risco_residual || selectedRisco.nivel_risco_inicial)} className="ml-2 text-xs">
+                {getEnumLabel(t, 'severidade', selectedRisco.nivel_risco_residual || selectedRisco.nivel_risco_inicial)}
               </Badge>
             </div>
           ) : (
             <span className="text-muted-foreground">{placeholder ?? t('controlesAuditorias.rsPlaceholder')}</span>
           )}
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          <IconSort className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-full p-0 bg-popover" align="start">
@@ -107,7 +111,7 @@ export function RiscoSelect({ value, onValueChange, placeholder }: RiscoSelectPr
                     setOpen(false);
                   }}
                 >
-                  <Check
+                  <IconCheck
                     className={cn(
                       "mr-2 h-4 w-4",
                       !value ? "opacity-100" : "opacity-0"
@@ -124,19 +128,19 @@ export function RiscoSelect({ value, onValueChange, placeholder }: RiscoSelectPr
                       setOpen(false);
                     }}
                   >
-                    <Check
+                    <IconCheck
                       className={cn(
                         "mr-2 h-4 w-4",
                         value === risco.id ? "opacity-100" : "opacity-0"
                       )}
                     />
                     <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <AlertTriangle className="h-4 w-4 flex-shrink-0 text-orange-500" />
+                      <IconWarning className="h-4 w-4 flex-shrink-0 text-warning" />
                       <div className="flex flex-col flex-1 min-w-0">
                         <span className="font-medium truncate">{risco.nome}</span>
                         <div className="flex items-center gap-2">
-                          <Badge variant={getNivelBadgeVariant(risco.nivel_risco_inicial)} className="text-xs">
-                            {getEnumLabel(t, 'severidade', risco.nivel_risco_inicial)}
+                          <Badge variant={getNivelBadgeVariant(risco.nivel_risco_residual || risco.nivel_risco_inicial)} className="text-xs">
+                            {getEnumLabel(t, 'severidade', risco.nivel_risco_residual || risco.nivel_risco_inicial)}
                           </Badge>
                           <Badge variant="outline" className="text-xs">{formatStatus(risco.status)}</Badge>
                         </div>

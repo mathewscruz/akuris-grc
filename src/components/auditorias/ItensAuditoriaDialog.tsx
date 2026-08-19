@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { IconAdd, IconSearch, IconDownload, IconCalendar, IconFile, IconChevron, IconMessage, IconAttach, IconPerson, IconShield, IconLink } from '@/components/icons';
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { criticidadeControle } from "@/lib/metrics/controles";
 import { DialogShell } from "@/components/ui/dialog-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +22,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Search, FileText, MessageSquare, Paperclip, User, Calendar, ChevronRight, Download, Shield, Link2 } from "lucide-react";
 import { toast } from "sonner";
 import { ItemAuditoriaFormDialog } from "./ItemAuditoriaFormDialog";
 import { ItemAuditoriaDetalheDialog } from "./ItemAuditoriaDetalheDialog";
@@ -109,14 +110,36 @@ export function ItensAuditoriaDialog({
         responsaveisMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
       }
 
-      // Mapear controles vinculados para o formato de itens
-      const controlesAsItens = controlesData?.map((cv: any) => ({
+      // Um controlo no âmbito que JÁ tem item de trabalho aparece por esse item —
+      // e não também como pseudo-item. Desde que `controles_auditorias` passou a
+      // ser espelhada por gatilho a partir de `auditoria_itens`, cada controlo
+      // importado entrava duas vezes e o progresso contava a mais.
+      const comItemProprio = new Set(
+        (itensData || []).map((i: any) => i.controle_vinculado_id).filter(Boolean),
+      );
+
+      // Sobram os controlos que estão no âmbito mas ainda sem papel de trabalho.
+      const controlesAsItens = controlesData
+        ?.filter((cv: any) => cv.controle?.id && !comItemProprio.has(cv.controle.id))
+        .map((cv: any) => ({
         id: cv.controle?.id,
         codigo: `CTRL-${cv.controle?.id?.slice(0, 6).toUpperCase()}`,
         titulo: cv.controle?.nome,
         descricao: cv.controle?.descricao,
-        status: cv.controle?.status === 'ativo' ? 'concluido' : 'pendente',
-        prioridade: cv.controle?.criticidade === 'critico' ? 'alta' : cv.controle?.criticidade === 'alto' ? 'alta' : 'media',
+        // Estar no âmbito não é estar auditado: o controlo estar "ativo" nada diz
+        // sobre o trabalho de auditoria, e marcá-lo como concluído inflava a barra.
+        status: 'pendente',
+        prioridade: (() => {
+          switch (criticidadeControle(cv.controle || {})) {
+            case 'critico':
+            case 'alto':
+              return 'alta';
+            case 'baixo':
+              return 'baixa';
+            default:
+              return 'media';
+          }
+        })(),
         controle_vinculado_id: cv.controle?.id,
         responsavel_id: cv.controle?.responsavel_id,
         responsavel: responsaveisMap.get(cv.controle?.responsavel_id) || null,
@@ -213,7 +236,7 @@ export function ItensAuditoriaDialog({
 
   const getStatusBadge = (status: string) => {
     return (
-      <StatusBadge size="sm" {...resolveWorkflowStatusTone(status)}>
+      <StatusBadge {...resolveWorkflowStatusTone(status)}>
         {formatStatus(status)}
       </StatusBadge>
     );
@@ -221,7 +244,7 @@ export function ItensAuditoriaDialog({
 
   const getPrioridadeBadge = (prioridade: string) => {
     return (
-      <StatusBadge size="sm" {...resolveAuditoriaPrioridadeTone(prioridade)}>
+      <StatusBadge {...resolveAuditoriaPrioridadeTone(prioridade)}>
         {formatStatus(prioridade)}
       </StatusBadge>
     );
@@ -232,7 +255,7 @@ export function ItensAuditoriaDialog({
       <DialogShell
         open={open}
         onOpenChange={onOpenChange}
-        icon={FileText}
+        icon={IconFile}
         title={t("controlesAuditorias.iadTitle", { nome: auditoriaNome })}
         size="xl"
         noScroll
@@ -240,7 +263,7 @@ export function ItensAuditoriaDialog({
       >
         <div className="h-full flex flex-col min-h-0 gap-4 px-6 py-6">
           {/* Progresso */}
-          <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+          <div className="bg-card rounded-lg p-4 space-y-2 border border-border">
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">{t("controlesAuditorias.iadProgresso")}</span>
               <span className="font-medium">{t("controlesAuditorias.iadProgressoConcluido", { percent: progressPercent })}</span>
@@ -257,7 +280,7 @@ export function ItensAuditoriaDialog({
           {/* Filtros */}
           <div className="flex gap-3 items-center">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder={t("controlesAuditorias.iadSearchPlaceholder")}
                 value={searchTerm}
@@ -292,11 +315,11 @@ export function ItensAuditoriaDialog({
               </SelectContent>
             </Select>
             <Button variant="outline" onClick={() => setIsImportOpen(true)}>
-              <Download className="h-4 w-4 mr-2" />
+              <IconDownload className="h-4 w-4 mr-2" />
               {t("controlesAuditorias.iadBtnImportarControles")}
             </Button>
             <Button onClick={handleAddItem}>
-              <Plus className="h-4 w-4 mr-2" />
+              <IconAdd className="h-4 w-4 mr-2" />
               {t("controlesAuditorias.iadBtnAdicionarItem")}
             </Button>
           </div>
@@ -332,13 +355,13 @@ export function ItensAuditoriaDialog({
                   filteredItens?.map((item) => (
                     <TableRow
                       key={item.id}
-                      className="cursor-pointer hover:bg-muted/50"
+                      className="cursor-pointer hover:bg-accent"
                       onClick={() => handleOpenDetalhe(item)}
                     >
                       <TableCell className="font-mono text-sm">
                         <div className="flex items-center gap-1">
                           {(item as any).is_controle_vinculado && (
-                            <Link2 className="h-3 w-3 text-primary" />
+                            <IconLink className="h-3 w-3 text-primary" />
                           )}
                           {item.codigo}
                         </div>
@@ -347,17 +370,17 @@ export function ItensAuditoriaDialog({
                         <div className="flex flex-col">
                           <span className="font-medium">{item.titulo}</span>
                           {(item as any).is_controle_vinculado ? (
-                            <StatusBadge size="sm" tone="neutral" variant="outline" className="w-fit mt-1">
+                            <StatusBadge tone="neutral" variant="outline" className="w-fit mt-1">
                               {t("controlesAuditorias.iadControleVinculado")}
                             </StatusBadge>
                           ) : (
                             <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
                               <span className="flex items-center gap-1">
-                                <Paperclip className="h-3 w-3" />
+                                <IconAttach className="h-3 w-3" />
                                 {contagens?.evidencias?.[item.id] || 0}
                               </span>
                               <span className="flex items-center gap-1">
-                                <MessageSquare className="h-3 w-3" />
+                                <IconMessage className="h-3 w-3" />
                                 {contagens?.comentarios?.[item.id] || 0}
                               </span>
                             </div>
@@ -367,7 +390,7 @@ export function ItensAuditoriaDialog({
                       <TableCell>
                         {item.responsavel ? (
                           <div className="flex items-center gap-2">
-                            <User className="h-3 w-3 text-muted-foreground" />
+                            <IconPerson className="h-3 w-3 text-muted-foreground" />
                             <span className="text-sm truncate max-w-[120px]">
                               {item.responsavel.nome}
                             </span>
@@ -379,7 +402,7 @@ export function ItensAuditoriaDialog({
                       <TableCell>
                         {item.prazo ? (
                           <div className="flex items-center gap-1 text-sm">
-                            <Calendar className="h-3 w-3 text-muted-foreground" />
+                            <IconCalendar className="h-3 w-3 text-muted-foreground" />
                             {formatDateOnly(item.prazo)}
                           </div>
                         ) : (
@@ -389,7 +412,7 @@ export function ItensAuditoriaDialog({
                       <TableCell>{getPrioridadeBadge(item.prioridade)}</TableCell>
                       <TableCell>{getStatusBadge(item.status)}</TableCell>
                       <TableCell className="text-center">
-                        <ChevronRight className="h-4 w-4 text-muted-foreground mx-auto" />
+                        <IconChevron className="h-4 w-4 text-muted-foreground mx-auto" />
                       </TableCell>
                     </TableRow>
                   ))

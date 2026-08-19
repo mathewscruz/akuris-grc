@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { IconAdd, IconOrg } from '@/components/icons';
 import { supabase } from "@/integrations/supabase/client";
 import { useEmpresaId } from "@/hooks/useEmpresaId";
 import {
@@ -10,7 +11,6 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Building, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { formatStatus } from '@/lib/text-utils';
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -114,7 +114,7 @@ export function AreaSistemaSelect({
             areas.map((area) => (
               <SelectItem key={area.id} value={area.id}>
                 <div className="flex items-center gap-2">
-                  <Building className="h-3 w-3 text-muted-foreground" />
+                  <IconOrg className="h-3 w-3 text-muted-foreground" />
                   <span>{area.nome}</span>
                   {area.tipo && (
                     <span className="text-xs text-muted-foreground">({formatStatus(area.tipo)})</span>
@@ -150,7 +150,7 @@ export function AreaSistemaSelect({
           className="text-xs"
           onClick={() => setIsAdding(true)}
         >
-          <Plus className="h-3 w-3 mr-1" />
+          <IconAdd className="h-3 w-3 mr-1" />
           {t("controlesAuditorias.assBtnNovaArea")}
         </Button>
       )}

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { IconEdit, IconDelete, IconDownload, IconUpload, IconWarning, IconCalendar, IconSend, IconFile, IconAttach, IconMessage, IconPerson, IconMail } from '@/components/icons';
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { DialogShell } from "@/components/ui/dialog-shell";
@@ -6,14 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ConstatacoesPanel } from "@/components/auditorias/ConstatacoesPanel";
-import { AlertTriangle } from "lucide-react";
+;
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Edit, Paperclip, MessageSquare, Send, Upload, Trash2, User, Calendar, Download, FileText, AtSign } from 'lucide-react';
 import { toast } from "sonner";
 import { formatDateOnly } from "@/lib/date-utils";
 import ConfirmDialog from "@/components/ConfirmDialog";
@@ -32,6 +32,8 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { resolveItemAuditoriaStatusTone, resolvePrioridadeTone } from "@/lib/status-tone";
 import { formatStatus } from "@/lib/text-utils";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { notificarVarios } from "@/lib/notificar";
+import { intlLocale } from '@/lib/date-utils';
 
 export function ItemAuditoriaDetalheDialog({
   open,
@@ -207,15 +209,11 @@ export function ItemAuditoriaDetalheDialog({
 
       // Notificar usuários mencionados
       if (mencoes.length > 0) {
-        for (const userId of mencoes) {
-          await supabase.from("notifications").insert({
-            user_id: userId,
-            title: t("controlesAuditorias.iaddMentionNotifyTitle"),
-            message: t("controlesAuditorias.iaddMentionNotifyMessage", { titulo: item.titulo }),
-            type: "info",
-            link_to: "/auditorias",
-          });
-        }
+        await notificarVarios(mencoes, {
+          titulo: t("controlesAuditorias.iaddMentionNotifyTitle"),
+          mensagem: t("controlesAuditorias.iaddMentionNotifyMessage", { titulo: item.titulo }),
+          linkPara: "/auditorias",
+        });
       }
 
       setNovoComentario("");
@@ -336,7 +334,7 @@ export function ItemAuditoriaDetalheDialog({
         open={open}
         onOpenChange={onOpenChange}
         title={item.titulo}
-        icon={FileText}
+        icon={IconFile}
         size="lg"
         hideFooter
         disableShortcuts
@@ -344,37 +342,37 @@ export function ItemAuditoriaDetalheDialog({
         <div className="space-y-4">
           <div className="flex items-start justify-between gap-4">
             <div className="flex flex-wrap items-center gap-2">
-              <StatusBadge size="md" tone="neutral" variant="outline" className="font-mono">
+              <StatusBadge tone="neutral" variant="outline" className="font-mono">
                 {item.codigo}
               </StatusBadge>
-              <StatusBadge size="md" {...resolvePrioridadeTone(item.prioridade)}>
+              <StatusBadge {...resolvePrioridadeTone(item.prioridade)}>
                 {formatStatus(item.prioridade)}
               </StatusBadge>
-              <StatusBadge size="md" {...resolveItemAuditoriaStatusTone(item.status)}>
+              <StatusBadge {...resolveItemAuditoriaStatusTone(item.status)}>
                 {formatStatus(item.status)}
               </StatusBadge>
             </div>
             <Button variant="outline" size="sm" onClick={onEdit}>
-              <Edit className="h-4 w-4 mr-2" />
+              <IconEdit className="h-4 w-4 mr-2" />
               {t("controlesAuditorias.iaddEditar")}
             </Button>
           </div>
 
           {/* Info do item */}
-          <div className="flex-shrink-0 bg-muted/50 rounded-lg p-4 space-y-2">
+          <div className="flex-shrink-0 bg-card rounded-lg p-4 space-y-2 border border-border">
             {item.descricao && (
               <p className="text-sm text-muted-foreground">{item.descricao}</p>
             )}
             <div className="flex gap-4 text-sm">
               {item.responsavel && (
                 <div className="flex items-center gap-1">
-                  <User className="h-4 w-4 text-muted-foreground" />
+                  <IconPerson className="h-4 w-4 text-muted-foreground" />
                   <span>{item.responsavel.nome}</span>
                 </div>
               )}
               {item.prazo && (
                 <div className="flex items-center gap-1">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <IconCalendar className="h-4 w-4 text-muted-foreground" />
                   <span>{t("controlesAuditorias.iaddPrazo", { data: formatDateOnly(item.prazo) })}</span>
                 </div>
               )}
@@ -382,23 +380,23 @@ export function ItemAuditoriaDetalheDialog({
           </div>
 
           {/* Tabs */}
-          <Tabs defaultValue="comentarios" className="flex-1 flex flex-col overflow-hidden">
+          <Tabs defaultValue="comentarios" className="flex-1 min-h-0 flex flex-col overflow-hidden">
             <TabsList className="flex-shrink-0">
               <TabsTrigger value="comentarios" className="flex items-center gap-2">
-                <MessageSquare className="h-4 w-4" />
+                <IconMessage className="h-4 w-4" />
                 {t("controlesAuditorias.iaddTabComentarios", { count: comentarios?.length || 0 })}
               </TabsTrigger>
               <TabsTrigger value="evidencias" className="flex items-center gap-2">
-                <Paperclip className="h-4 w-4" />
+                <IconAttach className="h-4 w-4" />
                 {t("controlesAuditorias.iaddTabEvidencias", { count: evidencias?.length || 0 })}
               </TabsTrigger>
               <TabsTrigger value="constatacoes" className="flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4" strokeWidth={1.5} />
+                <IconWarning className="h-4 w-4" strokeWidth={1.5} />
                 {t('t4.constatacoes.tab', { count: achadosCount })}
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="comentarios" className="flex-1 overflow-hidden flex flex-col mt-4">
+            <TabsContent value="comentarios" className="flex-1 min-h-0 overflow-hidden flex flex-col">
               {/* Input de novo comentário com menções */}
               <div className="flex gap-2 mb-4 flex-shrink-0 relative">
                 <div className="flex-1 relative">
@@ -421,7 +419,7 @@ export function ItemAuditoriaDetalheDialog({
                     }}
                     title={t("controlesAuditorias.iaddMentionTitle")}
                   >
-                    <AtSign className="h-4 w-4 text-muted-foreground" />
+                    <IconMail className="h-4 w-4 text-muted-foreground" />
                   </Button>
                   
                   {/* Popover de menções */}
@@ -430,10 +428,10 @@ export function ItemAuditoriaDetalheDialog({
                       {filteredUsers.map((user) => (
                         <button
                           key={user.user_id}
-                          className="w-full px-3 py-2 text-left hover:bg-muted flex items-center gap-2 text-sm"
+                          className="w-full px-3 py-2 text-left hover:bg-accent flex items-center gap-2 text-sm"
                           onClick={() => insertMention(user)}
                         >
-                          <User className="h-4 w-4 text-muted-foreground" />
+                          <IconPerson className="h-4 w-4 text-muted-foreground" />
                           <span>{user.nome}</span>
                         </button>
                       ))}
@@ -448,7 +446,7 @@ export function ItemAuditoriaDetalheDialog({
                   {isSubmittingComment ? (
                     <AkurisPulse size={16} />
                   ) : (
-                    <Send className="h-4 w-4" />
+                    <IconSend className="h-4 w-4" />
                   )}
                 </Button>
               </div>
@@ -464,11 +462,11 @@ export function ItemAuditoriaDetalheDialog({
                     comentarios?.map((c) => (
                       <div
                         key={c.id}
-                        className="bg-muted/30 rounded-lg p-3 border border-border/50"
+                        className="bg-card rounded-lg p-3 border border-border/50"
                       >
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
-                            <User className="h-4 w-4 text-muted-foreground" />
+                            <IconPerson className="h-4 w-4 text-muted-foreground" />
                             <span className="font-medium text-sm">{c.user_nome}</span>
                           </div>
                           <div className="flex items-center gap-2">
@@ -481,7 +479,7 @@ export function ItemAuditoriaDetalheDialog({
                               className="h-6 w-6 p-0"
                               onClick={() => setDeleteTarget({ type: "comentario", id: c.id })}
                             >
-                              <Trash2 className="h-3 w-3 text-muted-foreground hover:text-destructive" />
+                              <IconDelete className="h-3 w-3 text-muted-foreground hover:text-destructive" />
                             </Button>
                           </div>
                         </div>
@@ -495,15 +493,15 @@ export function ItemAuditoriaDetalheDialog({
               </ScrollArea>
             </TabsContent>
 
-            <TabsContent value="constatacoes" className="flex-1 overflow-y-auto mt-4 pr-1">
+            <TabsContent value="constatacoes" className="flex-1 min-h-0 overflow-y-auto pr-1">
               <ConstatacoesPanel auditoriaId={item.auditoria_id} itemId={item.id} itemTitulo={item.titulo} />
             </TabsContent>
 
-            <TabsContent value="evidencias" className="flex-1 overflow-hidden flex flex-col mt-4">
+            <TabsContent value="evidencias" className="flex-1 min-h-0 overflow-hidden flex flex-col">
               {/* Upload de evidência */}
               <div className="flex-shrink-0 mb-4">
                 <label className="cursor-pointer">
-                  <div className="border-2 border-dashed rounded-lg p-4 text-center hover:bg-muted/50 transition-colors">
+                  <div className="border-2 border-dashed rounded-lg p-4 text-center hover:bg-accent transition-colors">
                     {isUploading ? (
                       <div className="flex items-center justify-center gap-2">
                         <AkurisPulse size={20} />
@@ -511,7 +509,7 @@ export function ItemAuditoriaDetalheDialog({
                       </div>
                     ) : (
                       <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                        <Upload className="h-5 w-5" />
+                        <IconUpload className="h-5 w-5" />
                         <span>{t("controlesAuditorias.iaddClickToUpload")}</span>
                       </div>
                     )}
@@ -536,10 +534,10 @@ export function ItemAuditoriaDetalheDialog({
                     evidencias?.map((e) => (
                       <div
                         key={e.id}
-                        className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-border/50"
+                        className="flex items-center justify-between p-3 bg-card rounded-lg border border-border/50"
                       >
                         <div className="flex items-center gap-3">
-                          <FileText className="h-5 w-5 text-primary" />
+                          <IconFile className="h-5 w-5 text-primary" />
                           <div>
                             <p className="font-medium text-sm">{e.nome}</p>
                             <p className="text-xs text-muted-foreground">
@@ -547,7 +545,7 @@ export function ItemAuditoriaDetalheDialog({
                                 ? `${(e.arquivo_tamanho / 1024).toFixed(1)} KB`
                                 : ""}
                               {" • "}
-                              {new Date(e.created_at).toLocaleDateString("pt-BR")}
+                              {new Date(e.created_at).toLocaleDateString(intlLocale())}
                             </p>
                           </div>
                         </div>
@@ -557,14 +555,14 @@ export function ItemAuditoriaDetalheDialog({
                             size="sm"
                             onClick={() => handleDownload(e)}
                           >
-                            <Download className="h-4 w-4" />
+                            <IconDownload className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => setDeleteTarget({ type: "evidencia", id: e.id })}
                           >
-                            <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                            <IconDelete className="h-4 w-4 text-muted-foreground hover:text-destructive" />
                           </Button>
                         </div>
                       </div>

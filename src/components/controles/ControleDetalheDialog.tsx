@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { IconEdit, IconDelete, IconDownload, IconUpload, IconCalendar, IconSend, IconFile, IconMessage, IconPerson, IconMail, IconShield, IconActivity, IconLink, IconAttach, IconTest } from '@/components/icons';
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { DialogShell } from "@/components/ui/dialog-shell";
@@ -8,7 +9,6 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Edit, MessageSquare, Send, Trash2, User, Calendar, AtSign, Shield, Activity, Link2, FileText, Paperclip, Upload, Download } from 'lucide-react';
 import { toast } from "sonner";
 import { formatDateOnly } from "@/lib/date-utils";
 import ConfirmDialog from "@/components/ConfirmDialog";
@@ -21,11 +21,23 @@ import { conformidadeRequisito } from "@/lib/metrics/requisitos";
 import { useControleRequisitos } from "@/hooks/useControleRequisitos";
 import { VincularRequisitoControleDialog } from "@/components/controles/VincularRequisitoControleDialog";
 import { openStorageFile } from "@/lib/storage";
+import { logger } from "@/lib/logger";
+
+/** Bucket da biblioteca partilhada de evidências. */
+const EVIDENCE_BUCKET = 'gap-evidence-library';
+
+/** Impressão digital do ficheiro — a biblioteca deduplica por conteúdo. */
+async function sha256(buffer: ArrayBuffer): Promise<string> {
+  const hash = await crypto.subtle.digest('SHA-256', buffer);
+  return Array.from(new Uint8Array(hash))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
 import TestesList from "@/components/controles/TestesList";
-import { FlaskConical } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { notificarVarios } from '@/lib/notificar';
 interface ControleDetalheDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -54,14 +66,20 @@ export function ControleDetalheDialog({
   // Requisitos de framework ligados a este controlo (N para N)
   const { data: requisitosLigados } = useControleRequisitos(open ? controle?.id ?? null : null);
 
+  // Partilha a chave de cache com <TestesList/>: as duas queries pediam
+  // ['controles_testes', id] mas esta trazia só `id`. Quem resolvia primeiro
+  // enchia a cache, e a lista de testes ficava a renderizar registos sem data
+  // nem resultado ("Teste de -"). Buscar as linhas completas nas duas resolve a
+  // colisão e poupa um pedido.
   const { data: testesControle } = useQuery({
     queryKey: ['controles_testes', controle?.id],
     enabled: open && !!controle?.id,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('controles_testes')
-        .select('id')
-        .eq('controle_id', controle.id);
+        .select('*')
+        .eq('controle_id', controle.id)
+        .order('data_teste', { ascending: false });
       if (error) throw error;
       return data || [];
     },
@@ -131,18 +149,24 @@ export function ControleDetalheDialog({
     enabled: open && !!controle?.id,
   });
 
-  // Buscar evidências
+  // Evidências do controlo, lidas da biblioteca partilhada: o mesmo ficheiro
+  // pode provar este controlo e um requisito de norma sem ser carregado outra vez.
   const { data: evidencias, refetch: refetchEvidencias } = useQuery({
     queryKey: ["controle-evidencias", controle?.id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("controles_evidencias")
-        .select("*")
-        .eq("controle_id", controle.id)
+        .from("evidence_library_links")
+        .select("id, created_at, evidencia:evidence_library(id, nome, arquivo_url, arquivo_nome, arquivo_tipo, arquivo_tamanho, bucket)")
+        .eq("modulo", "controles")
+        .eq("registro_id", controle.id)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      // O que a lista mostra é a evidência; o id que se guarda é o do vínculo,
+      // porque remover aqui desliga do controlo sem apagar o ficheiro.
+      return (data || [])
+        .filter((l: any) => l.evidencia)
+        .map((l: any) => ({ ...l.evidencia, link_id: l.id, created_at: l.created_at }));
     },
     enabled: open && !!controle?.id,
   });
@@ -226,16 +250,14 @@ export function ControleDetalheDialog({
 
       // Notificar usuários mencionados (in-app + e-mail)
       if (mencoes.length > 0) {
-        for (const userId of mencoes) {
-          // Notificação in-app
-          await supabase.from("notifications").insert({
-            user_id: userId,
-            title: t('controlesAuditorias.cddMentionNotifyTitle'),
-            message: t('controlesAuditorias.cddMentionNotifyMessage', { nome: controle.nome }),
-            type: "info",
-            link_to: `/controles?detalhe=${controle.id}`,
-          });
+        // In-app de uma vez: um aviso no fim, e não um toast por menção falhada.
+        await notificarVarios(mencoes, {
+          titulo: t('controlesAuditorias.cddMentionNotifyTitle'),
+          mensagem: t('controlesAuditorias.cddMentionNotifyMessage', { nome: controle.nome }),
+          linkPara: `/controles?detalhe=${controle.id}`,
+        });
 
+        for (const userId of mencoes) {
           // Enviar e-mail de notificação
           try {
             await supabase.functions.invoke('send-controle-mention-notification', {
@@ -312,47 +334,96 @@ export function ControleDetalheDialog({
     setIsUploading(true);
     try {
       const { data: userData } = await supabase.auth.getUser();
-      const fileName = `${controle.id}/${Date.now()}_${file.name}`;
+      const empresaId = controle.empresa_id;
+      const hash = await sha256(await file.arrayBuffer());
 
-      const { error: uploadError } = await supabase.storage
-        .from("controles-evidencias")
-        .upload(fileName, file);
+      // Deduplica por conteúdo dentro da empresa: o mesmo ficheiro entra uma vez
+      // na biblioteca e ganha só mais um vínculo.
+      const { data: existente } = await supabase
+        .from("evidence_library")
+        .select("id")
+        .eq("empresa_id", empresaId)
+        .eq("arquivo_hash", hash)
+        .maybeSingle();
 
-      if (uploadError) throw uploadError;
+      let evidenceId = existente?.id ?? null;
 
-      const { data: urlData } = supabase.storage
-        .from("controles-evidencias")
-        .getPublicUrl(fileName);
+      if (!evidenceId) {
+        // Guarda o caminho dentro do bucket, não uma URL "public": o bucket é
+        // privado e `openStorageFile` reassina a partir do caminho.
+        const fileName = `${empresaId}/${hash.slice(0, 16)}-${Date.now()}_${file.name}`;
+        const { error: uploadError } = await supabase.storage
+          .from(EVIDENCE_BUCKET)
+          .upload(fileName, file);
+        if (uploadError) throw uploadError;
 
-      const { error: insertError } = await supabase.from("controles_evidencias").insert({
-        controle_id: controle.id,
-        nome: file.name,
-        arquivo_url: urlData.publicUrl,
-        arquivo_nome: file.name,
-        arquivo_tamanho: file.size,
-        arquivo_tipo: file.type,
+        const { data: nova, error: insertError } = await supabase
+          .from("evidence_library")
+          .insert({
+            empresa_id: empresaId,
+            nome: file.name,
+            arquivo_url: fileName,
+            arquivo_nome: file.name,
+            arquivo_tamanho: file.size,
+            arquivo_tipo: file.type,
+            arquivo_hash: hash,
+            bucket: EVIDENCE_BUCKET,
+            created_by: userData.user?.id,
+          })
+          .select("id")
+          .single();
+        if (insertError) throw insertError;
+        evidenceId = nova.id;
+      }
+
+      // O ficheiro pode já estar ligado a este mesmo controlo — anexar duas
+      // vezes não é erro do utilizador, é um aviso.
+      if (existente?.id) {
+        const { data: jaLigada } = await supabase
+          .from("evidence_library_links")
+          .select("id")
+          .eq("evidence_id", evidenceId)
+          .eq("modulo", "controles")
+          .eq("registro_id", controle.id)
+          .maybeSingle();
+        if (jaLigada) {
+          toast.info(t('controlesAuditorias.cddEvidenciaJaAnexada'));
+          return;
+        }
+      }
+
+      const { error: linkError } = await supabase.from("evidence_library_links").insert({
+        empresa_id: empresaId,
+        evidence_id: evidenceId,
+        modulo: "controles",
+        registro_id: controle.id,
+        vinculo_tipo: "manual",
+        aceito_em: new Date().toISOString(),
         created_by: userData.user?.id,
       });
-
-      if (insertError) throw insertError;
+      if (linkError) throw linkError;
 
       refetchEvidencias();
       toast.success(t('controlesAuditorias.cddEvidenciaAdded'));
     } catch (error: any) {
-      toast.error(error.message || t('controlesAuditorias.cddUploadError'));
+      // A mensagem crua do Supabase vem em inglês ("Bucket not found", "new row
+      // violates row-level security policy") e não diz nada ao utilizador.
+      logger.error('Falha ao anexar evidência ao controlo', error);
+      toast.error(t('controlesAuditorias.cddUploadError'));
     } finally {
       setIsUploading(false);
       event.target.value = "";
     }
   };
 
-  // Deletar evidência
-  const handleDeleteEvidencia = async (evidenciaId: string) => {
+  // Desliga a evidência deste controlo. O ficheiro fica na biblioteca porque
+  // pode estar a provar outro registo — apagá-lo aqui destruiria essa prova.
+  const handleDeleteEvidencia = async (linkId: string) => {
     try {
       const { error } = await supabase
-        .from("controles_evidencias")
+        .from("evidence_library_links")
         .delete()
-        .eq("id", evidenciaId);
+        .eq("id", linkId);
 
       if (error) throw error;
 
@@ -367,7 +438,8 @@ export function ControleDetalheDialog({
   // Download de evidência (bucket privado — signed URL)
   const handleDownload = async (evidencia: any) => {
     if (!evidencia?.arquivo_url) return;
-    const ok = await openStorageFile("controles-evidencias", evidencia.arquivo_url);
+    // Entradas migradas do repositório antigo mantêm o bucket de origem.
+    const ok = await openStorageFile(evidencia.bucket || EVIDENCE_BUCKET, evidencia.arquivo_url);
     if (!ok) toast.error(t('controlesAuditorias.cddDownloadError'));
   };
 
@@ -403,7 +475,7 @@ export function ControleDetalheDialog({
         open={open}
         onOpenChange={onOpenChange}
         title={controle.nome}
-        icon={Shield}
+        icon={IconShield}
         size="lg"
         hideFooter
         disableShortcuts
@@ -412,39 +484,39 @@ export function ControleDetalheDialog({
           <div className="flex items-start justify-between gap-4">
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="outline" className="gap-1">
-                <Shield className="h-3 w-3" />
+                <IconShield className="h-3 w-3" />
                 {capitalizeText(controle.tipo)}
               </Badge>
-              <StatusBadge size="md" {...resolveCriticidadeTone(controle.criticidade)}>
+              <StatusBadge {...resolveCriticidadeTone(controle.criticidade)}>
                 {formatStatus(controle.criticidade)}
               </StatusBadge>
-              <StatusBadge size="md" {...resolveControleStatusTone(controle.status)}>
+              <StatusBadge {...resolveControleStatusTone(controle.status)}>
                 {formatStatus(controle.status)}
               </StatusBadge>
             </div>
             <Button variant="outline" size="sm" onClick={onEdit}>
-              <Edit className="h-4 w-4 mr-2" />
+              <IconEdit className="h-4 w-4 mr-2" />
               {t('controlesAuditorias.cddEdit')}
             </Button>
           </div>
 
           {/* Metadados do controle - linha separada */}
-          <div className="flex-shrink-0 flex flex-wrap gap-4 items-center text-sm bg-muted/30 rounded-lg p-3">
+          <div className="flex-shrink-0 flex flex-wrap gap-4 items-center text-sm bg-card rounded-lg p-3 border border-border">
             {controle.responsavel_nome && (
               <div className="flex items-center gap-2">
-                <User className="h-4 w-4 text-primary" />
+                <IconPerson className="h-4 w-4 text-primary" />
                 <span className="font-medium">{controle.responsavel_nome}</span>
               </div>
             )}
             {controle.frequencia && (
               <div className="flex items-center gap-1.5 text-muted-foreground">
-                <Activity className="h-4 w-4" />
+                <IconActivity className="h-4 w-4" />
                 <span>{capitalizeText(controle.frequencia)}</span>
               </div>
             )}
             {controle.proxima_avaliacao && (
               <div className="flex items-center gap-1.5 text-muted-foreground">
-                <Calendar className="h-4 w-4" />
+                <IconCalendar className="h-4 w-4" />
                 <span>{formatDateOnly(controle.proxima_avaliacao)}</span>
               </div>
             )}
@@ -462,11 +534,11 @@ export function ControleDetalheDialog({
           {controle.descricao?.trim() && (
             <div className="mt-4">
               <h4 className="text-sm font-medium mb-2 text-foreground flex items-center gap-2">
-                <FileText className="h-4 w-4" />
+                <IconFile className="h-4 w-4" />
                 {t('controlesAuditorias.cddDescricao')}
               </h4>
               <ScrollArea className="max-h-[200px]">
-                <div className="bg-muted/50 rounded-lg p-4 border border-border/50">
+                <div className="bg-card rounded-lg p-4 border border-border/50">
                   <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
                     {controle.descricao}
                   </p>
@@ -479,28 +551,28 @@ export function ControleDetalheDialog({
           <Tabs defaultValue="comentarios" className="mt-4">
             <TabsList className="flex-shrink-0">
               <TabsTrigger value="comentarios" className="flex items-center gap-2">
-                <MessageSquare className="h-4 w-4" />
+                <IconMessage className="h-4 w-4" />
                 {t('controlesAuditorias.cddTabComentarios', { count: comentarios?.length || 0 })}
               </TabsTrigger>
               <TabsTrigger value="evidencias" className="flex items-center gap-2">
-                <Paperclip className="h-4 w-4" />
+                <IconAttach className="h-4 w-4" />
                 {t('controlesAuditorias.cddTabEvidencias', { count: evidencias?.length || 0 })}
               </TabsTrigger>
               <TabsTrigger value="auditorias" className="flex items-center gap-2">
-                <Link2 className="h-4 w-4" />
+                <IconLink className="h-4 w-4" />
                 {t('controlesAuditorias.cddTabAuditorias', { count: auditoriasVinculadas?.length || 0 })}
               </TabsTrigger>
               <TabsTrigger value="testes" className="flex items-center gap-2">
-                <FlaskConical className="h-4 w-4" strokeWidth={1.5} />
+                <IconTest className="h-4 w-4" strokeWidth={1.5} />
                 {t('t4.testes.tab', { count: testesControle?.length || 0 })}
               </TabsTrigger>
               <TabsTrigger value="requisitos" className="flex items-center gap-2">
-                <Shield className="h-4 w-4" />
+                <IconShield className="h-4 w-4" />
                 {t('vinculoReq.tabRequisitos', { count: requisitosLigados?.length || 0 })}
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="comentarios" className="flex flex-col mt-4 space-y-4">
+            <TabsContent value="comentarios" className="flex flex-col space-y-4">
               {/* Input de novo comentário com menções */}
               <div className="flex gap-2 mb-4 flex-shrink-0">
                 <div className="flex-1 relative">
@@ -524,7 +596,7 @@ export function ControleDetalheDialog({
                     }}
                     title={t('controlesAuditorias.cddMentionTitle')}
                   >
-                    <AtSign className="h-4 w-4 text-muted-foreground" />
+                    <IconMail className="h-4 w-4 text-muted-foreground" />
                   </Button>
                   
                   {/* Dropdown de menções - renderizado via Portal */}
@@ -541,10 +613,10 @@ export function ControleDetalheDialog({
                       {filteredUsers?.map((user) => (
                         <button
                           key={user.user_id}
-                          className="w-full px-3 py-2 text-left hover:bg-muted flex items-center gap-2 text-sm first:rounded-t-md last:rounded-b-md"
+                          className="w-full px-3 py-2 text-left hover:bg-accent flex items-center gap-2 text-sm first:rounded-t-md last:rounded-b-md"
                           onClick={() => insertMention(user)}
                         >
-                          <User className="h-4 w-4 text-muted-foreground" />
+                          <IconPerson className="h-4 w-4 text-muted-foreground" />
                           <span>{user.nome}</span>
                         </button>
                       ))}
@@ -554,12 +626,13 @@ export function ControleDetalheDialog({
                 <Button
                   onClick={handleAddComentario}
                   disabled={!novoComentario.trim() || isSubmittingComment}
+                  aria-label={t('controlesAuditorias.cddCommentSend')}
                   className="self-end"
                 >
                   {isSubmittingComment ? (
                     <AkurisPulse size={16} />
                   ) : (
-                    <Send className="h-4 w-4" />
+                    <IconSend className="h-4 w-4" />
                   )}
                 </Button>
               </div>
@@ -575,11 +648,11 @@ export function ControleDetalheDialog({
                     comentarios?.map((c) => (
                       <div
                         key={c.id}
-                        className="bg-muted/30 rounded-lg p-3 border border-border/50"
+                        className="bg-card rounded-lg p-3 border border-border/50"
                       >
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
-                            <User className="h-4 w-4 text-muted-foreground" />
+                            <IconPerson className="h-4 w-4 text-muted-foreground" />
                             <span className="font-medium text-sm">{c.user_nome}</span>
                           </div>
                           <div className="flex items-center gap-2">
@@ -592,7 +665,7 @@ export function ControleDetalheDialog({
                               className="h-6 w-6 p-0"
                               onClick={() => setDeleteTarget({ type: "comentario", id: c.id })}
                             >
-                              <Trash2 className="h-3 w-3 text-muted-foreground hover:text-destructive" />
+                              <IconDelete className="h-3 w-3 text-muted-foreground hover:text-destructive" />
                             </Button>
                           </div>
                         </div>
@@ -606,10 +679,10 @@ export function ControleDetalheDialog({
               </ScrollArea>
             </TabsContent>
 
-            <TabsContent value="evidencias" className="flex-1 overflow-hidden flex flex-col mt-4">
+            <TabsContent value="evidencias" className="flex-1 min-h-0 overflow-hidden flex flex-col">
               {/* Upload de evidência */}
               <div className="flex-shrink-0 mb-4">
-                <label className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+                <label className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-accent transition-colors">
                   <input
                     type="file"
                     className="hidden"
@@ -620,7 +693,7 @@ export function ControleDetalheDialog({
                   {isUploading ? (
                     <AkurisPulse size={20} className="text-muted-foreground" />
                   ) : (
-                    <Upload className="h-5 w-5 text-muted-foreground" />
+                    <IconUpload className="h-5 w-5 text-muted-foreground" />
                   )}
                   <span className="text-sm text-muted-foreground">
                     {isUploading ? t('controlesAuditorias.cddUploadingLabel') : t('controlesAuditorias.cddUploadLabel')}
@@ -638,17 +711,17 @@ export function ControleDetalheDialog({
                   ) : (
                     evidencias?.map((ev) => (
                       <div
-                        key={ev.id}
-                        className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-border/50"
+                        key={ev.link_id}
+                        className="flex items-center justify-between p-3 bg-card rounded-lg border border-border/50"
                       >
                         <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <FileText className="h-5 w-5 text-primary flex-shrink-0" />
+                          <IconFile className="h-5 w-5 text-primary flex-shrink-0" />
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium truncate">{ev.nome}</p>
                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
                               <span>{formatFileSize(ev.arquivo_tamanho || 0)}</span>
                               <span>•</span>
-                              <span>{new Date(ev.created_at).toLocaleDateString("pt-BR")}</span>
+                              <span>{formatDateOnly(ev.created_at)}</span>
                             </div>
                           </div>
                         </div>
@@ -660,16 +733,16 @@ export function ControleDetalheDialog({
                             onClick={() => handleDownload(ev)}
                             title={t('controlesAuditorias.cddDownloadTitle')}
                           >
-                            <Download className="h-4 w-4 text-muted-foreground" />
+                            <IconDownload className="h-4 w-4 text-muted-foreground" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="sm"
                             className="h-8 w-8 p-0"
-                            onClick={() => setDeleteTarget({ type: "evidencia", id: ev.id })}
+                            onClick={() => setDeleteTarget({ type: "evidencia", id: ev.link_id })}
                             title={t('controlesAuditorias.cddDeleteTitle')}
                           >
-                            <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                            <IconDelete className="h-4 w-4 text-muted-foreground hover:text-destructive" />
                           </Button>
                         </div>
                       </div>
@@ -679,8 +752,8 @@ export function ControleDetalheDialog({
               </ScrollArea>
             </TabsContent>
 
-            <TabsContent value="auditorias" className="flex-1 overflow-hidden mt-4">
-              <ScrollArea className="h-full">
+            <TabsContent value="auditorias" className="flex-1 min-h-0 overflow-hidden flex flex-col">
+              <ScrollArea className="flex-1 min-h-0">
                 <div className="space-y-2 pr-4">
                   {auditoriasVinculadas?.length === 0 ? (
                     <p className="text-center text-muted-foreground py-8">
@@ -690,10 +763,10 @@ export function ControleDetalheDialog({
                     auditoriasVinculadas?.map((av: any) => (
                       <div
                         key={av.auditoria_id}
-                        className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-border/50"
+                        className="flex items-center justify-between p-3 bg-card rounded-lg border border-border/50"
                       >
                         <div className="flex items-center gap-2">
-                          <Link2 className="h-4 w-4 text-muted-foreground" />
+                          <IconLink className="h-4 w-4 text-muted-foreground" />
                           <span className="font-medium">{av.auditoria?.nome}</span>
                         </div>
                         <Badge variant="outline">
@@ -706,22 +779,22 @@ export function ControleDetalheDialog({
               </ScrollArea>
             </TabsContent>
 
-            <TabsContent value="testes" className="flex-1 overflow-hidden mt-4">
-              <ScrollArea className="h-full">
+            <TabsContent value="testes" className="flex-1 min-h-0 overflow-hidden flex flex-col">
+              <ScrollArea className="flex-1 min-h-0">
                 <div className="pr-4">
                   <TestesList controleId={controle.id} controleNome={controle.nome} />
                 </div>
               </ScrollArea>
             </TabsContent>
 
-            <TabsContent value="requisitos" className="flex-1 overflow-hidden mt-4">
+            <TabsContent value="requisitos" className="flex-1 min-h-0 overflow-hidden flex flex-col">
               <div className="flex justify-end mb-3">
                 <Button variant="outline" size="sm" onClick={() => setVincularOpen(true)}>
-                  <Link2 className="h-4 w-4 mr-2" strokeWidth={1.5} />
+                  <IconLink className="h-4 w-4 mr-2" strokeWidth={1.5} />
                   {t('vinculoReq.gerirLigacoes')}
                 </Button>
               </div>
-              <ScrollArea className="h-full">
+              <ScrollArea className="flex-1 min-h-0">
                 <div className="space-y-2 pr-4">
                   {(requisitosLigados?.length || 0) === 0 ? (
                     <p className="text-center text-muted-foreground py-8">
@@ -731,16 +804,16 @@ export function ControleDetalheDialog({
                     requisitosLigados?.map((r) => (
                       <div
                         key={r.id}
-                        className="flex items-center justify-between gap-3 p-3 bg-muted/30 rounded-lg border border-border/50"
+                        className="flex items-center justify-between gap-3 p-3 bg-card rounded-lg border border-border/50"
                       >
                         <div className="min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            {r.codigo && <span className="font-mono text-[11px] text-muted-foreground">{r.codigo}</span>}
+                            {r.codigo && <span className="font-mono text-micro text-muted-foreground">{r.codigo}</span>}
                             <span className="text-sm font-medium truncate">{r.titulo}</span>
                           </div>
                           <span className="text-xs text-muted-foreground">{r.framework_nome}</span>
                         </div>
-                        <StatusBadge size="sm" {...resolveConformityTone(r.conformity_status)}>
+                        <StatusBadge {...resolveConformityTone(r.conformity_status)}>
                           {getStatusLabel(conformidadeRequisito({ conformity_status: r.conformity_status } as never))}
                         </StatusBadge>
 
