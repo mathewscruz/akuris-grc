@@ -7,9 +7,9 @@ import { Card } from '@/components/ui/card';
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-import { Rocket, CheckCircle2, Circle, AlertTriangle, Database, Shield, FileCheck, Lock, BarChart3, ArrowRight, ArrowLeft, X } from 'lucide-react';
-import { AkurisAIIcon } from '@/components/icons';
+import { IconClose, IconSuccess, IconWarning, IconDot, IconDatabase, IconShield, IconFileCheck, IconLock, IconChart, IconArrowRight, IconArrowLeft, IconBolt } from '@/components/icons';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { exigirEscrita } from '@/lib/supabase-write';
 
 interface OnboardingStep {
   id: string;
@@ -31,11 +31,11 @@ export function OnboardingWizard() {
   const [dismissed, setDismissed] = useState(false);
 
   const steps: OnboardingStep[] = [
-    { id: 'ativos', title: t('sweepCore.onboarding.ativosTitle'), description: t('sweepCore.onboarding.ativosDescription'), icon: <Database className="h-5 w-5" />, route: '/ativos', completed: stepsCompleted.includes('ativos') },
-    { id: 'riscos', title: t('sweepCore.onboarding.riscosTitle'), description: t('sweepCore.onboarding.riscosDescription'), icon: <AlertTriangle className="h-5 w-5" />, route: '/riscos', completed: stepsCompleted.includes('riscos') },
-    { id: 'controles', title: t('sweepCore.onboarding.controlesTitle'), description: t('sweepCore.onboarding.controlesDescription'), icon: <Shield className="h-5 w-5" />, route: '/governanca?tab=controles', completed: stepsCompleted.includes('controles') },
-    { id: 'frameworks', title: t('sweepCore.onboarding.frameworksTitle'), description: t('sweepCore.onboarding.frameworksDescription'), icon: <BarChart3 className="h-5 w-5" />, route: '/gap-analysis/frameworks', completed: stepsCompleted.includes('frameworks') },
-    { id: 'documentos', title: t('sweepCore.onboarding.documentosTitle'), description: t('sweepCore.onboarding.documentosDescription'), icon: <FileCheck className="h-5 w-5" />, route: '/documentos', completed: stepsCompleted.includes('documentos') },
+    { id: 'ativos', title: t('sweepCore.onboarding.ativosTitle'), description: t('sweepCore.onboarding.ativosDescription'), icon: <IconDatabase className="h-5 w-5" />, route: '/ativos', completed: stepsCompleted.includes('ativos') },
+    { id: 'riscos', title: t('sweepCore.onboarding.riscosTitle'), description: t('sweepCore.onboarding.riscosDescription'), icon: <IconWarning className="h-5 w-5" />, route: '/riscos', completed: stepsCompleted.includes('riscos') },
+    { id: 'controles', title: t('sweepCore.onboarding.controlesTitle'), description: t('sweepCore.onboarding.controlesDescription'), icon: <IconShield className="h-5 w-5" />, route: '/governanca/controles', completed: stepsCompleted.includes('controles') },
+    { id: 'frameworks', title: t('sweepCore.onboarding.frameworksTitle'), description: t('sweepCore.onboarding.frameworksDescription'), icon: <IconChart className="h-5 w-5" />, route: '/gap-analysis/frameworks', completed: stepsCompleted.includes('frameworks') },
+    { id: 'documentos', title: t('sweepCore.onboarding.documentosTitle'), description: t('sweepCore.onboarding.documentosDescription'), icon: <IconFileCheck className="h-5 w-5" />, route: '/documentos', completed: stepsCompleted.includes('documentos') },
   ];
 
   const completedCount = stepsCompleted.length;
@@ -66,10 +66,10 @@ export function OnboardingWizard() {
         }
       } else {
         // First time - create record and show wizard
-        await supabase.from('onboarding_progress').insert({
+        await exigirEscrita(supabase.from('onboarding_progress').insert({
           user_id: user.id,
           empresa_id: profile.empresa_id,
-        });
+        }));
         await autoDetectProgress();
         setOpen(true);
       }
@@ -102,10 +102,10 @@ export function OnboardingWizard() {
     
     const allDone = completed.length >= steps.length;
     if (user && profile?.empresa_id) {
-      await supabase.from('onboarding_progress')
+      await exigirEscrita(supabase.from('onboarding_progress')
         .update({ steps_completed: completed, completed: allDone, current_step: completed.length })
         .eq('user_id', user.id)
-        .eq('empresa_id', profile.empresa_id);
+        .eq('empresa_id', profile.empresa_id));
     }
 
     if (!allDone && completed.length < steps.length) {
@@ -117,10 +117,10 @@ export function OnboardingWizard() {
     setOpen(false);
     setDismissed(true);
     if (user && profile?.empresa_id) {
-      await supabase.from('onboarding_progress')
+      await exigirEscrita(supabase.from('onboarding_progress')
         .update({ dismissed: true })
         .eq('user_id', user.id)
-        .eq('empresa_id', profile.empresa_id);
+        .eq('empresa_id', profile.empresa_id));
     }
   };
 
@@ -137,11 +137,11 @@ export function OnboardingWizard() {
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 bg-primary text-primary-foreground rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105 animate-fade-in"
+          className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 bg-primary text-primary-foreground rounded-md shadow-lg hover:shadow-lg transition-ui hover:scale-105 animate-fade-in"
         >
-          <Rocket className="h-5 w-5" />
+          <IconBolt className="h-5 w-5" />
           <span className="text-sm font-medium hidden sm:inline">Setup {completedCount}/{steps.length}</span>
-          <div className="w-8 h-8 rounded-full bg-primary-foreground/20 flex items-center justify-center text-xs font-bold">
+          <div className="w-8 h-8 flex items-center justify-center text-xs font-bold">
             {Math.round(progress)}%
           </div>
         </button>
@@ -151,9 +151,6 @@ export function OnboardingWizard() {
         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-xl bg-primary/10">
-                <AkurisAIIcon className="h-6 w-6 text-primary" />
-              </div>
               <div>
                 <DialogTitle className="text-xl">{t('cardsKpi.sweep.sistema.configureSuaPlataforma')}</DialogTitle>
                 <DialogDescription>
@@ -175,18 +172,18 @@ export function OnboardingWizard() {
               {steps.map((step, index) => (
                 <Card
                   key={step.id}
-                  className={`p-3 cursor-pointer transition-all hover:shadow-sm ${
+                  className={`p-3 cursor-pointer transition-ui hover:shadow-sm ${
                     step.completed 
                       ? 'bg-success/5 border-success/20' 
                       : index === currentStep 
                         ? 'border-primary/40 bg-primary/5' 
-                        : 'hover:bg-muted/50'
+                        : 'hover:bg-accent'
                   }`}
                   onClick={() => !step.completed && setCurrentStep(index)}
                 >
                   <div className="flex items-center gap-3">
                     <div className={`p-2 rounded-lg ${step.completed ? 'bg-success/10 text-success' : 'bg-muted text-muted-foreground'}`}>
-                      {step.completed ? <CheckCircle2 className="h-5 w-5" /> : step.icon}
+                      {step.completed ? <IconSuccess className="h-5 w-5" /> : step.icon}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
@@ -199,7 +196,7 @@ export function OnboardingWizard() {
                     </div>
                     {!step.completed && (
                       <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); handleGoToStep(step); }}>
-                        <ArrowRight className="h-4 w-4" />
+                        <IconArrowRight className="h-4 w-4" />
                       </Button>
                     )}
                   </div>
@@ -209,11 +206,11 @@ export function OnboardingWizard() {
 
             <div className="flex justify-between pt-2">
               <Button variant="ghost" size="sm" onClick={handleDismiss} className="text-muted-foreground">
-                <X className="h-4 w-4 mr-1" /> {t('sweepCore.onboarding.skip')}
+                <IconClose className="h-4 w-4 mr-1" /> {t('sweepCore.onboarding.skip')}
               </Button>
               {!steps[currentStep]?.completed && (
                 <Button size="sm" onClick={() => handleGoToStep(steps[currentStep])}>
-                  {t('sweepCore.onboarding.goTo', { title: steps[currentStep]?.title ?? '' })} <ArrowRight className="h-4 w-4 ml-1" />
+                  {t('sweepCore.onboarding.goTo', { title: steps[currentStep]?.title ?? '' })} <IconArrowRight className="h-4 w-4 ml-1" />
                 </Button>
               )}
             </div>

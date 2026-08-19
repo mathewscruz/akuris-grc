@@ -72,7 +72,7 @@ export function RecordDetailDrawer({
         <ScrollArea className="flex-1">
           <div className="px-6 py-5 space-y-6">
             <section>
-              <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-3">
+              <h3 className="text-xs font-medium text-muted-foreground mb-3">
                 {t('detalheRegisto.visao')}
               </h3>
               {visible.length === 0 ? (
@@ -123,4 +123,3 @@ export function RecordDetailDrawer({
   );
 }
 
-export default RecordDetailDrawer;

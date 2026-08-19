@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
+import { IconCheck } from '@/components/icons';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { AkurisPulse } from "@/components/ui/AkurisPulse";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Check } from "lucide-react";
+;
 import { z } from "zod";
 import { logger } from "@/lib/logger";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -167,7 +168,7 @@ export function DemoRequestDialog({ open, onOpenChange }: Props) {
           </form>
         ) : (
           <div className="lp-demo-success">
-            <div className="lp-demo-check"><Check size={28} strokeWidth={2.2} /></div>
+            <div className="lp-demo-check"><IconCheck size={28} strokeWidth={2.2} /></div>
             <span className="lp-eyebrow lp-demo-eyebrow-center">{d("recebido")}</span>
             <h3 className="lp-demo-thanks">{d("obrigado")} <em>{firstName}.</em></h3>
             <p className="lp-demo-sub">{d("successSub")}</p>

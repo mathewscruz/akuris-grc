@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { DialogShell } from '@/components/ui/dialog-shell';
-import { FileBarChart } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { IconChart } from '@/components/icons';
 
 interface RelatorioDialogProps {
   open: boolean;
@@ -44,7 +44,7 @@ export function RelatorioDialog({ open, onOpenChange, onSave, relatorio, loading
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      icon={FileBarChart}
+      icon={IconChart}
       title={relatorio ? t('relatoriosComp.dialog.titleEdit') : t('relatoriosComp.dialog.titleNew')}
       size="sm"
       onSubmit={handleSave}

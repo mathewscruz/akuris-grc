@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { loadAkurisLogo, addAkurisCover, addAkurisFooter, addSectionTitle as addPdfSectionTitle, drawTableHeader, formatLabel, AKURIS_COLORS } from '@/lib/pdf-utils';
 import { getAppLocale } from '@/lib/i18n-locale';
 import { contarRiscosPorSeveridade, severidadeRisco } from '@/lib/metrics';
+import { intlLocale } from '@/lib/date-utils';
 
 const PDF_LABELS: Record<string, string> = {
   "Altos": "High",
@@ -254,7 +255,9 @@ async function fetchRiscosData(empresaId: string) {
         { label: tr('Tratamentos Concluidos'), value: `${concluidos}/${t.length}` },
       ]},
       { title: tr('Detalhamento dos Riscos'), tableHeaders: [tr('Nome'), tr('Nivel'), tr('Status'), tr('Responsavel')],
-        tableRows: r.map(x => [x.nome, x.nivel_risco_inicial || '-', x.status || '-', respLabel(x.responsavel)]),
+        // `residual || inicial`: era o unico sitio do PDF ainda a mostrar so o
+        // inerente, e contradizia o proprio resumo logo acima.
+        tableRows: r.map(x => [x.nome, x.nivel_risco_residual || x.nivel_risco_inicial || '-', x.status || '-', respLabel(x.responsavel)]),
         colWidths: [60, 30, 35, 45] },
     ] as Section[]
   };
@@ -297,7 +300,7 @@ async function fetchLGPDData(empresaId: string) {
         tableRows: d.map(x => [x.nome, x.categoria_dados || '-', x.base_legal || '-', x.sensibilidade || '-']),
         colWidths: [50, 35, 45, 40] },
       ...(s.length > 0 ? [{ title: tr('Solicitacoes de Titulares'), tableHeaders: [tr('Tipo'), tr('Status'), tr('Criado em')],
-        tableRows: s.map((x: any) => [x.tipo_solicitacao || '-', x.status || '-', new Date(x.created_at).toLocaleDateString('pt-BR')]),
+        tableRows: s.map((x: any) => [x.tipo_solicitacao || '-', x.status || '-', new Date(x.created_at).toLocaleDateString(intlLocale())]),
         colWidths: [60, 50, 60] }] : []),
     ] as Section[]
   };
@@ -411,7 +414,7 @@ async function fetchContinuidadeData(empresaId: string) {
         tableRows: p.map((x: any) => [x.nome, x.tipo || '-', x.status || '-', `${x.rto_horas || '-'}h / ${x.rpo_horas || '-'}h`]),
         colWidths: [70, 30, 35, 35] },
       ...(te.length > 0 ? [{ title: tr('Historico de Testes'), tableHeaders: [tr('Tipo'), tr('Data'), tr('Resultado')],
-        tableRows: te.map((x: any) => [x.tipo_teste || '-', x.data_teste ? new Date(x.data_teste).toLocaleDateString('pt-BR') : '-', x.resultado || '-']),
+        tableRows: te.map((x: any) => [x.tipo_teste || '-', x.data_teste ? new Date(x.data_teste).toLocaleDateString(intlLocale()) : '-', x.resultado || '-']),
         colWidths: [60, 50, 60] }] : []),
     ] as Section[]
   };
@@ -435,7 +438,7 @@ async function fetchContratosData(empresaId: string) {
         { label: tr('Valor Total (BRL)'), value: valorTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) },
       ]},
       { title: tr('Lista de Contratos'), tableHeaders: [tr('Nome'), tr('Tipo'), tr('Status'), tr('Vencimento')],
-        tableRows: c.map((x: any) => [x.nome || x.numero_contrato || '-', x.tipo || '-', x.status || '-', x.data_fim ? new Date(x.data_fim).toLocaleDateString('pt-BR') : '-']),
+        tableRows: c.map((x: any) => [x.nome || x.numero_contrato || '-', x.tipo || '-', x.status || '-', x.data_fim ? new Date(x.data_fim).toLocaleDateString(intlLocale()) : '-']),
         colWidths: [70, 30, 35, 35] },
     ] as Section[]
   };
@@ -493,7 +496,7 @@ async function fetchAuditoriaInternaData(empresaId: string) {
         { label: tr('Itens em Aberto'), value: itensAbertos },
       ]},
       { title: tr('Auditorias'), tableHeaders: [tr('Nome'), tr('Tipo'), tr('Status'), tr('Inicio')],
-        tableRows: a.map((x: any) => [x.nome, x.tipo || '-', x.status || '-', x.data_inicio ? new Date(x.data_inicio).toLocaleDateString('pt-BR') : '-']),
+        tableRows: a.map((x: any) => [x.nome, x.tipo || '-', x.status || '-', x.data_inicio ? new Date(x.data_inicio).toLocaleDateString(intlLocale()) : '-']),
         colWidths: [70, 30, 35, 35] },
       ...(i.length > 0 ? [{ title: tr('Itens de Auditoria'), tableHeaders: [tr('Codigo'), tr('Titulo'), tr('Prioridade'), tr('Status')],
         tableRows: i.slice(0, 30).map((x: any) => [x.codigo || '-', (x.titulo || '').substring(0, 40), x.prioridade || '-', x.status || '-']),
@@ -524,7 +527,7 @@ async function fetchDueDiligenceData(empresaId: string) {
           x.fornecedor_nome || '-',
           x.status || '-',
           x.score_final != null ? String(x.score_final) : '-',
-          x.data_conclusao ? new Date(x.data_conclusao).toLocaleDateString('pt-BR') : '-'
+          x.data_conclusao ? new Date(x.data_conclusao).toLocaleDateString(intlLocale()) : '-'
         ]),
         colWidths: [70, 35, 25, 40] },
     ] as Section[]
@@ -554,7 +557,7 @@ async function fetchDocumentosData(empresaId: string) {
         tableRows: Object.entries(tipos).map(([t, q]) => [t, String(q)]),
         colWidths: [120, 50] },
       { title: tr('Documentos'), tableHeaders: [tr('Nome'), tr('Tipo'), tr('Status'), tr('Vencimento')],
-        tableRows: d.slice(0, 50).map((x: any) => [(x.nome || '').substring(0, 40), x.tipo || '-', x.status || '-', x.data_vencimento ? new Date(x.data_vencimento).toLocaleDateString('pt-BR') : '-']),
+        tableRows: d.slice(0, 50).map((x: any) => [(x.nome || '').substring(0, 40), x.tipo || '-', x.status || '-', x.data_vencimento ? new Date(x.data_vencimento).toLocaleDateString(intlLocale()) : '-']),
         colWidths: [70, 30, 35, 35] },
     ] as Section[]
   };
@@ -595,7 +598,7 @@ export async function generateTemplatePDF(relatorio: any, empresaId: string) {
 
   // Cover
   addAkurisCover(doc, logo, relatorio.nome, relatorio.descricao || '', {
-    data: new Date().toLocaleDateString('pt-BR')
+    data: new Date().toLocaleDateString(intlLocale())
   });
 
   // Sections

@@ -8,11 +8,10 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { formatDateTime } from '@/lib/date-utils';
 import { IconAdd, IconEdit, IconDelete, IconView, IconCalendar, IconHistory, IconPerson } from '@/components/icons';
 /**
  * Trilha de auditoria de um registro, lida de `audit_logs`.
@@ -127,26 +126,69 @@ export function TrilhaAuditoria({
     }
   };
 
+  /**
+   * Rótulo humano de uma coluna alterada, por tabela.
+   *
+   * Este mapa cobria só campos de documento — herança de quando o componente
+   * era `TrilhaAuditoriaDocumentos`. Ao generalizá-lo para contratos, um
+   * UPDATE passava a listar "data_fim, valor, gestor_contrato" cru na tela,
+   * porque o gatilho grava `changed_fields` com o nome da coluna e aqui não
+   * havia entrada para nenhum deles.
+   */
+  const rotuloDoCampo = (field: string): string => {
+    const comuns: Record<string, string> = {
+      nome: t('documentosExtras.auditoria.campoNome'),
+      descricao: t('documentosExtras.auditoria.campoDescricao'),
+      tipo: t('documentosExtras.auditoria.campoTipo'),
+      status: t('documentosExtras.auditoria.campoStatus'),
+    };
+    const porTabela: Record<string, Record<string, string>> = {
+      documentos: {
+        categoria: t('documentosExtras.auditoria.campoCategoria'),
+        categoria_id: t('documentosExtras.auditoria.campoCategoria'),
+        confidencial: t('documentosExtras.auditoria.campoConfidencial'),
+        classificacao: t('documentosExtras.auditoria.campoConfidencial'),
+        data_vencimento: t('documentosExtras.auditoria.campoDataVencimento'),
+        tags: t('documentosExtras.auditoria.campoTags'),
+        arquivo_url: t('documentosExtras.auditoria.campoArquivoUrl'),
+        aprovado_por: t('documentosExtras.auditoria.campoAprovadoPor'),
+        data_aprovacao: t('documentosExtras.auditoria.campoDataAprovacao'),
+        responsavel_id: t('documentos.lista.responsavel'),
+        versao: t('documentos.lista.versao'),
+      },
+      contratos: {
+        numero_contrato: t('fin.comum.numero'),
+        fornecedor_id: t('fin.comum.fornecedor'),
+        valor: t('fin.comum.valor'),
+        moeda: t('trilhaCampos.moeda'),
+        data_inicio: t('fin.comum.dataInicio'),
+        data_fim: t('detalheRegisto.dataFim'),
+        data_assinatura: t('trilhaCampos.dataAssinatura'),
+        gestor_contrato: t('detalheRegisto.responsavel'),
+        area_solicitante: t('trilhaCampos.areaSolicitante'),
+        objeto: t('fin.contratos.objeto'),
+        observacoes: t('detalheRegisto.observacoes'),
+        renovacao_automatica: t('fin.contratos.renovacaoAutomatica'),
+        prazo_renovacao: t('trilhaCampos.prazoRenovacao'),
+        sla_principal: t('trilhaCampos.sla'),
+        confidencial: t('documentosExtras.auditoria.campoConfidencial'),
+      },
+      contrato_aditivos: {
+        numero_aditivo: t('trilhaCampos.numeroAditivo'),
+        motivo: t('trilhaCampos.motivo'),
+        valor_anterior: t('trilhaCampos.valorAnterior'),
+        valor_novo: t('trilhaCampos.valorNovo'),
+        data_fim_nova: t('trilhaCampos.novaDataFim'),
+        data_assinatura: t('trilhaCampos.dataAssinatura'),
+        justificativa: t('trilhaCampos.justificativa'),
+      },
+    };
+    return porTabela[tabela]?.[field] ?? comuns[field] ?? field;
+  };
+
   const formatChangedFields = (fields?: string[]) => {
     if (!fields || fields.length === 0) return t('documentosExtras.auditoria.naoDisponivel');
-    
-    const fieldTranslations: Record<string, string> = {
-      'nome': t('documentosExtras.auditoria.campoNome'),
-      'descricao': t('documentosExtras.auditoria.campoDescricao'),
-      'tipo': t('documentosExtras.auditoria.campoTipo'),
-      'categoria': t('documentosExtras.auditoria.campoCategoria'),
-      'status': t('documentosExtras.auditoria.campoStatus'),
-      'confidencial': t('documentosExtras.auditoria.campoConfidencial'),
-      'data_vencimento': t('documentosExtras.auditoria.campoDataVencimento'),
-      'tags': t('documentosExtras.auditoria.campoTags'),
-      'arquivo_url': t('documentosExtras.auditoria.campoArquivoUrl'),
-      'aprovado_por': t('documentosExtras.auditoria.campoAprovadoPor'),
-      'data_aprovacao': t('documentosExtras.auditoria.campoDataAprovacao')
-    };
-
-    return fields
-      .map(field => fieldTranslations[field] || field)
-      .join(', ');
+    return fields.map(rotuloDoCampo).join(', ');
   };
 
   const formatJsonData = (data: any) => {
@@ -177,7 +219,7 @@ export function TrilhaAuditoria({
 
       return (
         <div key={field} className="border rounded p-3">
-          <h5 className="font-medium mb-2 capitalize">{field.replace('_', ' ')}</h5>
+          <h5 className="font-medium mb-2">{rotuloDoCampo(field)}</h5>
           <div className="grid grid-cols-2 gap-2">
             <div className="bg-destructive/10 p-2 rounded">
               <p className="text-xs font-medium text-destructive">{t('documentosExtras.auditoria.anterior')}</p>
@@ -243,11 +285,11 @@ export function TrilhaAuditoria({
                           <div className="flex items-center gap-4 text-sm text-muted-foreground">
                             <div className="flex items-center gap-1">
                               <IconPerson className="h-4 w-4" />
-                              {log.profiles?.nome || 'Sistema'}
+                              {log.profiles?.nome || t('documentosExtras.historico.sistema')}
                             </div>
                             <div className="flex items-center gap-1">
                               <IconCalendar className="h-4 w-4" />
-                              {format(new Date(log.created_at), 'dd/MM/yyyy HH:mm:ss', { locale: ptBR })}
+                              {formatDateTime(log.created_at)}
                             </div>
                           </div>
                         </div>

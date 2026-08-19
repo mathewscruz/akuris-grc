@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { DialogShell } from '@/components/ui/dialog-shell';
-import { FileBarChart } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { fetchTemplateData } from './generateTemplatePDF';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { IconChart } from '@/components/icons';
 
 interface RelatorioPreviewDialogProps {
   open: boolean;
@@ -33,7 +33,7 @@ export function RelatorioPreviewDialog({ open, onOpenChange, relatorio, empresaI
     <DialogShell
       open={open}
       onOpenChange={onOpenChange}
-      icon={FileBarChart}
+      icon={IconChart}
       title={t('relatoriosComp.preview.title', { nome: relatorio?.nome ?? '' })}
       description={relatorio?.template_base || undefined}
       size="lg"

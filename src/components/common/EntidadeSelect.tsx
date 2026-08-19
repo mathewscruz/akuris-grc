@@ -5,7 +5,6 @@
  */
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +16,7 @@ import { formatStatus } from '@/lib/text-utils';
 import { getEnumLabel, categoryFromFieldName } from '@/lib/enum-labels';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { ENTITY_BY_KEY, EntityKey, EntityRow, fetchEntityRows, matchesTokens, queryTokens } from '@/lib/entity-search';
+import { IconCheck, IconSort } from '@/components/icons';
 
 interface EntidadeSelectProps {
   entidade: EntityKey;
@@ -54,7 +54,12 @@ export function EntidadeSelect({
   }, [rows, busca]);
 
   const selecionado = rows.find((r) => r.id === value);
-  const subtituloCategory = categoryFromFieldName(ENTITY_BY_KEY[entidade]?.subtituloField);
+  // `subtituloField` pode ser uma lista de alternativas (o risco usa
+  // residual → inerente); a categoria do rótulo sai da primeira.
+  const campoSubtitulo = ENTITY_BY_KEY[entidade]?.subtituloField;
+  const subtituloCategory = categoryFromFieldName(
+    Array.isArray(campoSubtitulo) ? campoSubtitulo[0] : campoSubtitulo,
+  );
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -69,7 +74,7 @@ export function EntidadeSelect({
         >
           {selecionado ? (
             <span className="flex items-center gap-2 truncate">
-              <Badge variant="outline" className="text-[10px] font-mono">{selecionado.codigo}</Badge>
+              <Badge variant="outline" className="text-micro font-mono">{selecionado.codigo}</Badge>
               <span className="truncate">{selecionado.titulo}</span>
             </span>
           ) : (
@@ -77,7 +82,7 @@ export function EntidadeSelect({
               {placeholder ?? t('entidadeSelect.placeholder')}
             </span>
           )}
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          <IconSort className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[min(28rem,90vw)] p-0 bg-popover" align="start">
@@ -96,7 +101,7 @@ export function EntidadeSelect({
               <CommandGroup>
                 {allowClear && (
                   <CommandItem value="__none__" onSelect={() => { onValueChange(''); setOpen(false); }}>
-                    <Check className={cn('mr-2 h-4 w-4', !value ? 'opacity-100' : 'opacity-0')} />
+                    <IconCheck className={cn('mr-2 h-4 w-4', !value ? 'opacity-100' : 'opacity-0')} />
                     <span className="text-muted-foreground">{t('entidadeSelect.none')}</span>
                   </CommandItem>
                 )}
@@ -106,12 +111,12 @@ export function EntidadeSelect({
                     value={row.id}
                     onSelect={() => { onValueChange(row.id, row); setOpen(false); }}
                   >
-                    <Check className={cn('mr-2 h-4 w-4', value === row.id ? 'opacity-100' : 'opacity-0')} />
+                    <IconCheck className={cn('mr-2 h-4 w-4', value === row.id ? 'opacity-100' : 'opacity-0')} />
                     <div className="flex min-w-0 flex-1 flex-col">
                       <span className="truncate font-medium">{row.titulo}</span>
                       <span className="flex items-center gap-2 text-xs text-muted-foreground">
                         <span className="font-mono">{row.codigo}</span>
-                        {row.subtitulo && <Badge variant="outline" className="text-[10px]">{getEnumLabel(t, subtituloCategory, row.subtitulo)}</Badge>}
+                        {row.subtitulo && <Badge variant="outline" className="text-micro">{getEnumLabel(t, subtituloCategory, row.subtitulo)}</Badge>}
                       </span>
                     </div>
                   </CommandItem>

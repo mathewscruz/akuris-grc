@@ -6,7 +6,7 @@ import { formatDate } from '@/lib/i18n-format';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { StatusBadge, type StatusTone } from '@/components/ui/status-badge';
 import { Button } from '@/components/ui/button';
-import { AkurisAIIcon } from '@/components/icons';
+import { IconChevron, IconMegaphone } from '@/components/icons';
 import {
   Dialog,
   DialogContent,
@@ -14,7 +14,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { ChevronRight, Sparkles } from 'lucide-react';
+;
 
 export interface ChangelogItem {
   type: 'feature' | 'improvement' | 'fix';
@@ -112,8 +112,8 @@ export function ChangelogPanel({ entries, loading, onOpenDetail }: ChangelogPane
         </div>
       ) : entries.length === 0 ? (
         <div className="flex flex-col items-center justify-center px-6 py-10 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-muted/40 ring-1 ring-border/50 text-muted-foreground mb-3">
-            <Sparkles className="h-5 w-5" strokeWidth={1.5} />
+          <div className="flex h-12 w-12 items-center justify-center text-muted-foreground mb-3">
+            <IconMegaphone className="h-5 w-5" strokeWidth={1.5} />
           </div>
           <p className="text-xs text-muted-foreground">{t('changelog.noUpdates')}</p>
         </div>
@@ -129,32 +129,32 @@ export function ChangelogPanel({ entries, loading, onOpenDetail }: ChangelogPane
                 type="button"
                 key={entry.id}
                 onClick={() => openDetail(entry)}
-                className="group w-full text-left px-4 py-3 transition-colors hover:bg-muted/50 focus-visible:bg-muted/60 focus-visible:outline-none"
+                className="group w-full text-left px-4 py-3 transition-colors hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-[11px] font-semibold text-primary tracking-tight">
+                      <span className="font-mono text-micro font-semibold text-primary tracking-tight">
                         {entry.version}
                       </span>
-                      <span className="text-[11px] text-muted-foreground tabular-nums">
+                      <span className="text-micro text-muted-foreground tabular-nums">
                         {formatDate(entry.release_date + 'T00:00:00', locale)}
                       </span>
                     </div>
-                    <p className="mt-1 text-[13px] font-semibold text-foreground leading-tight tracking-tight">
+                    <p className="mt-1 text-sm font-semibold text-foreground leading-tight tracking-tight">
                       {entry.items[0]?.text || t('changelog.whatsNew')}
                     </p>
                     <div className="mt-2 flex flex-wrap items-center gap-1.5">
                       {(['feature', 'improvement', 'fix'] as const).map((type) =>
                         counts[type] ? (
-                          <StatusBadge key={type} size="sm" tone={TYPE_TONE[type]}>
+                          <StatusBadge key={type} tone={TYPE_TONE[type]}>
                             {counts[type]} {typeLabel(type)}
                           </StatusBadge>
                         ) : null
                       )}
                     </div>
                   </div>
-                  <ChevronRight
+                  <IconChevron
                     className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors mt-0.5 shrink-0"
                     strokeWidth={1.5}
                   />
@@ -173,12 +173,12 @@ export function ChangelogPanel({ entries, loading, onOpenDetail }: ChangelogPane
                 <div className="flex items-start gap-3">
                   <span
                     aria-hidden
-                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 ring-1 ring-primary/20 text-primary"
+                    className="flex h-11 w-11 shrink-0 items-center justify-center text-primary"
                   >
-                    <AkurisAIIcon className="h-5 w-5" />
+                    <IconMegaphone className="h-5 w-5" />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-primary/70 leading-none">
+                    <p className="text-xs font-semibold text-primary/70 leading-none">
                       {t('changelog.title')}
                     </p>
                     <DialogTitle className="mt-1.5 text-base font-semibold leading-tight tracking-tight">
@@ -195,8 +195,8 @@ export function ChangelogPanel({ entries, loading, onOpenDetail }: ChangelogPane
               <div className="mt-2 max-h-[55vh] overflow-y-auto">
                 <ul className="space-y-3">
                   {detail.items.map((item, i) => (
-                    <li key={i} className="flex items-start gap-3 rounded-lg border border-border/50 bg-card/40 p-3">
-                      <StatusBadge size="sm" tone={TYPE_TONE[item.type]} className="mt-0.5 shrink-0">
+                    <li key={i} className="flex items-start gap-3 rounded-lg border border-border/50 bg-card p-3">
+                      <StatusBadge tone={TYPE_TONE[item.type]} className="mt-0.5 shrink-0">
                         {typeLabel(item.type)}
                       </StatusBadge>
                       <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap break-words flex-1">

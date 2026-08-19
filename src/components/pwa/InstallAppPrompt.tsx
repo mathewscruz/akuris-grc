@@ -1,7 +1,7 @@
 import React from 'react';
+import { IconAdd, IconClose, IconPhone, IconShare } from '@/components/icons';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Smartphone, Share, Plus, X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { usePwaInstall } from '@/hooks/usePwaInstall';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -26,7 +26,7 @@ export const IosInstallDialog: React.FC<{
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Share className="h-5 w-5" strokeWidth={1.5} />
+            <IconShare className="h-5 w-5" strokeWidth={1.5} />
             {isIos ? t('pwa.iosTitle') : t('pwa.manualTitle')}
           </DialogTitle>
           <DialogDescription>{t('pwa.settingsDescription')}</DialogDescription>
@@ -45,7 +45,7 @@ export const IosInstallDialog: React.FC<{
 
         <div className="flex justify-end pt-2">
           <Button onClick={() => onOpenChange(false)}>
-            <Plus className="mr-2 h-4 w-4" strokeWidth={1.5} />
+            <IconAdd className="mr-2 h-4 w-4" strokeWidth={1.5} />
             {t('pwa.iosUnderstood')}
           </Button>
         </div>
@@ -88,13 +88,13 @@ export const InstallAppPrompt: React.FC = () => {
   return (
     <>
       <div className="fixed inset-x-3 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-40 md:hidden">
-        <div className="relative flex gap-3 overflow-hidden rounded-xl border border-border bg-card p-3 shadow-lg dark:shadow-none">
+        <div className="relative flex gap-3 overflow-hidden rounded-lg border border-border bg-card p-3 shadow-lg dark:shadow-none">
           <span className="absolute inset-y-0 left-0 w-[3px] bg-primary" aria-hidden />
-          <div className="ml-1 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <Smartphone className="h-4 w-4" strokeWidth={1.5} />
+          <div className="ml-1 flex h-8 w-8 flex-shrink-0 items-center justify-center text-primary">
+            <IconPhone className="h-4 w-4" strokeWidth={1.5} />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <p className="text-xs font-semibold text-muted-foreground">
               {t('pwa.eyebrow')}
             </p>
             <p className="text-sm font-semibold text-foreground">{t('pwa.bannerTitle')}</p>
@@ -118,7 +118,7 @@ export const InstallAppPrompt: React.FC = () => {
             onClick={dismiss}
             className="absolute right-1 top-1 flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:text-foreground"
           >
-            <X className="h-4 w-4" strokeWidth={1.5} />
+            <IconClose className="h-4 w-4" strokeWidth={1.5} />
           </button>
         </div>
       </div>
@@ -128,4 +128,3 @@ export const InstallAppPrompt: React.FC = () => {
   );
 };
 
-export default InstallAppPrompt;
