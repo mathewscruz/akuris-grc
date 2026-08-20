@@ -36,6 +36,8 @@ interface PriorityRequirement {
 interface PriorityQueueCardProps {
   frameworkId: string;
   empresaId: string;
+  /** Muda quando o escopo ou uma avaliacao muda, forcando recarga. */
+  refreshKey?: number;
   limit?: number;
   onRequirementClick: (req: { id: string; codigo: string | null; titulo: string }) => void;
   onSeeAll?: () => void;
@@ -72,6 +74,7 @@ export function PriorityQueueCard({
   frameworkId,
   empresaId,
   limit = 5,
+  refreshKey = 0,
   onRequirementClick,
   onSeeAll,
 }: PriorityQueueCardProps) {
@@ -156,7 +159,19 @@ export function PriorityQueueCard({
     return () => {
       cancelled = true;
     };
-  }, [frameworkId, empresaId, limit]);
+  /*
+    A chave que diz "o escopo mudou, recarrega".
+
+    Depois de responder as 27 perguntas do assistente e declarar que a empresa
+    nao tem escritorio proprio, a fila continuava a mandar tratar "Perimetro de
+    seguranca fisica" e a tabela continuava a mostrar esses requisitos. O
+    cabecalho e o painel de fases actualizavam; estes dois nao, porque so
+    recarregavam por frameworkId/empresaId.
+
+    O utilizador acabava de responder a vinte e sete perguntas e a tela dizia
+    que nao tinham servido para nada.
+  */
+  }, [frameworkId, empresaId, limit, refreshKey]);
 
   /* Alguma coisa ja foi respondida? A fila muda de discurso conforme isso. */
   const algumAvaliado = useMemo(

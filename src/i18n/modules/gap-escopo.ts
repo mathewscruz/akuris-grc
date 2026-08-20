@@ -11,6 +11,8 @@ const TEXTO = {
   conviteTexto: 'São {total} requisitos, e uma parte deles não tem objeto na sua empresa. Responda a algumas perguntas sobre como a empresa funciona — se desenvolve software, se tem escritório, se usa nuvem — e nós tiramos da lista o que não se aplica, já com a justificativa escrita para o auditor ler.',
   conviteBotao: 'Responder as perguntas',
   irDireto: 'Prefiro ir direto para a lista completa',
+  revisarTexto: 'A sua empresa mudou? Abriu escritório, passou a usar nuvem, começou a desenvolver software? Responda de novo e o escopo se ajusta.',
+  revisarBotao: 'Rever escopo',
   revisar: 'Revisar o que sai',
   voltar: 'Voltar às perguntas',
   aplicar: 'Aplicar ao meu escopo',

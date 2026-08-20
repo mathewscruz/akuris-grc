@@ -70,6 +70,8 @@ interface GenericRequirementsTableProps {
   onStatusChange?: () => void;
   /** Categoria escolhida no mapa de calor, que é o seletor único. */
   initialCategoryFilter?: string;
+  /** Muda quando o escopo ou uma avaliacao muda, forcando recarga. */
+  refreshKey?: number;
   /** Avisa o mapa de calor quando a categoria é limpa a partir da tabela. */
   onCategoryFilterChange?: (categoria: string | undefined) => void;
 }
@@ -82,6 +84,7 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
   config,
   onStatusChange,
   initialCategoryFilter,
+  refreshKey = 0,
   onCategoryFilterChange,
 }) => {
   const { empresaId, loading: loadingEmpresa } = useEmpresaId();
@@ -282,7 +285,19 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
 
   useEffect(() => {
     loadRequirements();
-  }, [frameworkId, empresaId]);
+  /*
+    A chave que diz "o escopo mudou, recarrega".
+
+    Depois de responder as 27 perguntas do assistente e declarar que a empresa
+    nao tem escritorio proprio, a fila continuava a mandar tratar "Perimetro de
+    seguranca fisica" e a tabela continuava a mostrar esses requisitos. O
+    cabecalho e o painel de fases actualizavam; estes dois nao, porque so
+    recarregavam por frameworkId/empresaId.
+
+    O utilizador acabava de responder a vinte e sete perguntas e a tela dizia
+    que nao tinham servido para nada.
+  */
+  }, [frameworkId, empresaId, refreshKey]);
 
   // Não abrir numa secção vazia.
   //

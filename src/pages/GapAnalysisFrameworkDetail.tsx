@@ -311,11 +311,21 @@ function GapAnalysisFrameworkDetailInner() {
     if (!empresaId || !frameworkId || !temAssistente) return;
     let cancelado = false;
     (async () => {
+      /*
+        Conta EXCLUSOES, nao linhas.
+
+        Contava qualquer linha em gap_analysis_soa. Mas o Salvar da aba
+        Aplicabilidade grava os 121 requisitos de uma vez, aplicaveis inclusive:
+        bastava um clique la para o convite ao assistente desaparecer para
+        sempre, sem ninguem perceber porque. Quem ainda nao excluiu nada nunca
+        recortou o escopo, tenha ou nao passado pela aba.
+      */
       const { count } = await supabase
         .from('gap_analysis_soa')
         .select('id', { count: 'exact', head: true })
         .eq('framework_id', frameworkId)
-        .eq('empresa_id', empresaId);
+        .eq('empresa_id', empresaId)
+        .eq('aplicavel', false);
       if (!cancelado) setJaDeclarouEscopo((count ?? 0) > 0);
     })();
     return () => { cancelado = true; };
@@ -571,6 +581,7 @@ function GapAnalysisFrameworkDetailInner() {
                   <PriorityQueueCard
                     frameworkId={frameworkId!}
                     empresaId={empresaId}
+                    refreshKey={scoreRefreshKey}
                     limit={6}
                     onRequirementClick={(req) => {
                       openRequirement({
@@ -623,6 +634,7 @@ function GapAnalysisFrameworkDetailInner() {
                     frameworkName={framework.nome}
                     config={config}
                     onStatusChange={handleScoreChange}
+                    refreshKey={scoreRefreshKey}
                     initialCategoryFilter={activeCategoryFilter}
                     onCategoryFilterChange={setActiveCategoryFilter}
                   />
@@ -676,7 +688,26 @@ function GapAnalysisFrameworkDetailInner() {
               evaluatedRequirements={evaluatedRequirements}
             />
           </TabsContent>
-          <TabsContent value="soa">
+          <TabsContent value="soa" className="space-y-4">
+            {/*
+                A porta de volta ao assistente.
+
+                A unica entrada para as 27 perguntas era o convite, que so
+                aparece antes da primeira exclusao. Uma empresa que abriu
+                escritorio, passou a usar nuvem ou comecou a desenvolver
+                software ficava sem forma de rever o escopo - e o escopo e'
+                justamente a coisa que muda quando a empresa muda.
+            */}
+            {temAssistente && (
+              <div className="flex items-center justify-between rounded-lg border border-border bg-card px-4 py-3">
+                <p className="text-sm text-muted-foreground">
+                  {t('gapEscopo.revisarTexto')}
+                </p>
+                <Button variant="outline" size="sm" onClick={() => setEscopoAberto(true)}>
+                  {t('gapEscopo.revisarBotao')}
+                </Button>
+              </div>
+            )}
             <SoATabV2
               frameworkId={frameworkId!}
               frameworkName={framework.nome}
