@@ -11,6 +11,8 @@ interface FrameworkOnboardingProps {
   frameworkTipo: string;
   totalRequirements: number;
   onStart: () => void;
+  /** Abre o assistente de escopo. Ausente quando o framework ainda não o tem. */
+  onEscopo?: () => void;
 }
 
 function getOnboardingKey(nome: string): { key: string; icon: React.ReactNode } {
@@ -48,7 +50,7 @@ function getOnboardingKey(nome: string): { key: string; icon: React.ReactNode } 
   return { key: 'generic', icon: icon(IconBook) };
 }
 
-export function FrameworkOnboarding({ frameworkNome, frameworkVersao, frameworkTipo, totalRequirements, onStart }: FrameworkOnboardingProps) {
+export function FrameworkOnboarding({ frameworkNome, frameworkVersao, frameworkTipo, totalRequirements, onStart, onEscopo }: FrameworkOnboardingProps) {
   const { t } = useLanguage();
   const { key, icon } = getOnboardingKey(frameworkNome);
   const ns = `gapExports.onboarding.${key}`;
@@ -192,10 +194,32 @@ export function FrameworkOnboarding({ frameworkNome, frameworkVersao, frameworkT
         </CardContent>
       </Card>
 
+      {/*
+          A saida daqui e' o escopo, nao a lista.
+
+          Vanta, Drata, Sprinto e Secureframe abrem todos por contexto e
+          recortam a norma ANTES de a mostrar. Mandar a pessoa direto para
+          {totalRequirements} linhas em branco e' o oposto disso, e era o que
+          este botao fazia. Quem quiser ir direto continua a poder.
+      */}
       <div className="text-center pb-4">
-        <Button size="lg" onClick={onStart} className="gap-2">
-          {t('gapExports.onboardingUi.startButton')} <IconArrowRight className="h-4 w-4" strokeWidth={1.5}/>
-        </Button>
+        {onEscopo ? (
+          <div className="flex flex-col items-center gap-2">
+            <Button size="lg" onClick={onEscopo} className="gap-2">
+              {t('gapEscopo.conviteBotao')} <IconArrowRight className="h-4 w-4" strokeWidth={1.5}/>
+            </Button>
+            <p className="max-w-xl text-xs leading-5 text-muted-foreground">
+              {t('gapEscopo.conviteTexto', { total: totalRequirements })}
+            </p>
+            <Button variant="ghost" size="sm" onClick={onStart} className="mt-1 text-xs text-muted-foreground">
+              {t('gapEscopo.irDireto')}
+            </Button>
+          </div>
+        ) : (
+          <Button size="lg" onClick={onStart} className="gap-2">
+            {t('gapExports.onboardingUi.startButton')} <IconArrowRight className="h-4 w-4" strokeWidth={1.5}/>
+          </Button>
+        )}
         <p className="text-xs text-muted-foreground mt-2">
           {t('gapExports.onboardingUi.aiHint')}
         </p>

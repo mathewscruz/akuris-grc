@@ -10,6 +10,7 @@ const TEXTO = {
   conviteTitulo: 'Antes de começar: nem tudo isto se aplica a você',
   conviteTexto: 'São {total} requisitos, e uma parte deles não tem objeto na sua empresa. Responda a algumas perguntas sobre como a empresa funciona — se desenvolve software, se tem escritório, se usa nuvem — e nós tiramos da lista o que não se aplica, já com a justificativa escrita para o auditor ler.',
   conviteBotao: 'Responder as perguntas',
+  irDireto: 'Prefiro ir direto para a lista completa',
   revisar: 'Revisar o que sai',
   voltar: 'Voltar às perguntas',
   aplicar: 'Aplicar ao meu escopo',

@@ -452,6 +452,20 @@ function GapAnalysisFrameworkDetailInner() {
               />
             )}
 
+            {/* Montado fora do ramo: o onboarding pode abri-lo, e o dialogo
+                precisa de existir nos dois estados. */}
+            {empresaId && (
+              <AssistenteDeEscopo
+                open={escopoAberto}
+                onOpenChange={setEscopoAberto}
+                frameworkId={frameworkId!}
+                frameworkName={framework.nome}
+                empresaId={empresaId}
+                totalRequisitos={totalRequirements}
+                onAplicado={() => { setJaDeclarouEscopo(true); handleScoreChange(); }}
+              />
+            )}
+
             {showOnboarding ? (
               <FrameworkOnboarding
                 frameworkNome={framework.nome}
@@ -459,6 +473,12 @@ function GapAnalysisFrameworkDetailInner() {
                 frameworkTipo={framework.tipo_framework}
                 totalRequirements={totalRequirements}
                 onStart={() => setShowOnboarding(false)}
+                /* O caminho recomendado a partir daqui e' recortar o escopo,
+                   nao abrir a lista inteira. So aparece se o framework tiver
+                   assistente e a empresa ainda nao tiver declarado nada. */
+                onEscopo={temAssistente && jaDeclarouEscopo === false
+                  ? () => { setShowOnboarding(false); setEscopoAberto(true); }
+                  : undefined}
               />
             ) : (
               <>
@@ -508,18 +528,6 @@ function GapAnalysisFrameworkDetailInner() {
                       {t('gapEscopo.conviteBotao')}
                     </Button>
                   </section>
-                )}
-
-                {empresaId && (
-                  <AssistenteDeEscopo
-                    open={escopoAberto}
-                    onOpenChange={setEscopoAberto}
-                    frameworkId={frameworkId!}
-                    frameworkName={framework.nome}
-                    empresaId={empresaId}
-                    totalRequisitos={totalRequirements}
-                    onAplicado={() => { setJaDeclarouEscopo(true); handleScoreChange(); }}
-                  />
                 )}
 
                 {/*
