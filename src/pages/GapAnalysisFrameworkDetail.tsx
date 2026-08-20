@@ -3,7 +3,8 @@ import { buscarForaDoEscopo } from '@/lib/gap-soa';
 import { calcularScoreFramework, type RequisitoParaScore } from '@/lib/gap-score';
 import { DefinirMarcoDialog } from '@/components/gap-analysis/v2/DefinirMarcoDialog';
 import { useMarcoCertificacao } from '@/hooks/useMarcoCertificacao';
-import { fasesDe } from '@/lib/gap-fases';
+import { fasesDe, chaveDoFramework } from '@/lib/gap-fases';
+import { escopoDe } from '@/lib/gap-escopo';
 import { HerancaCrossFramework } from '@/components/gap-analysis/v2/HerancaCrossFramework';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { IconDownload, IconMore, IconFile, IconChevronLeft, IconChart, IconHelp } from '@/components/icons';
@@ -22,6 +23,7 @@ import { FrameworkOnboarding } from '@/components/gap-analysis/FrameworkOnboardi
 import { EvidenceLibraryHub } from '@/components/gap-analysis/EvidenceLibraryHub';
 import {
   SectionHeatmap,
+  AssistenteDeEscopo,
   PainelDeFases,
   PriorityQueueCard,
   FrameworkHeader,
@@ -293,6 +295,32 @@ function GapAnalysisFrameworkDetailInner() {
 
   const { data: marco } = useMarcoCertificacao(empresaId ?? undefined, frameworkId);
 
+  /*
+    O assistente de escopo aparece antes da lista, e só enquanto faz sentido.
+
+    Quem já declarou aplicabilidade — pelo assistente ou a mão, na aba
+    Aplicabilidade — não precisa de ser convidado outra vez. Quem nunca
+    declarou nada recebe 121 linhas em branco, que é o problema que isto
+    resolve.
+  */
+  const [escopoAberto, setEscopoAberto] = useState(false);
+  const [jaDeclarouEscopo, setJaDeclarouEscopo] = useState<boolean | null>(null);
+  const temAssistente = !!escopoDe(chaveDoFramework(framework?.nome || ''));
+
+  useEffect(() => {
+    if (!empresaId || !frameworkId || !temAssistente) return;
+    let cancelado = false;
+    (async () => {
+      const { count } = await supabase
+        .from('gap_analysis_soa')
+        .select('id', { count: 'exact', head: true })
+        .eq('framework_id', frameworkId)
+        .eq('empresa_id', empresaId);
+      if (!cancelado) setJaDeclarouEscopo((count ?? 0) > 0);
+    })();
+    return () => { cancelado = true; };
+  }, [empresaId, frameworkId, temAssistente, scoreRefreshKey]);
+
   /** Filtra a tabela por estado e leva o utilizador até ela. */
   const filtrarPorEstado = useCallback((estado: string) => {
     const sp = new URLSearchParams(window.location.search);
@@ -460,6 +488,40 @@ function GapAnalysisFrameworkDetailInner() {
                 {/* A fila é o "o que eu faço agora" e estava espremida em um
                     terço de uma linha, debaixo de um cartão que dizia quase o
                     mesmo. Passa a largura inteira, logo abaixo do cabeçalho. */}
+                {/*
+                    O convite ao escopo, antes de tudo.
+
+                    Vanta, Drata, Sprinto e Secureframe abrem todos por
+                    contexto e recortam a norma antes de a mostrar. Aqui a
+                    pessoa via 121 linhas em branco e a instrucao implicita de
+                    as classificar uma a uma.
+                */}
+                {empresaId && temAssistente && jaDeclarouEscopo === false && (
+                  <section className="rounded-lg border border-primary/30 bg-primary/5 p-5">
+                    <h3 className="text-sm font-semibold text-foreground">
+                      {t('gapEscopo.conviteTitulo')}
+                    </h3>
+                    <p className="mt-1.5 max-w-2xl text-sm leading-6 text-muted-foreground">
+                      {t('gapEscopo.conviteTexto', { total: totalRequirements })}
+                    </p>
+                    <Button className="mt-3" size="sm" onClick={() => setEscopoAberto(true)}>
+                      {t('gapEscopo.conviteBotao')}
+                    </Button>
+                  </section>
+                )}
+
+                {empresaId && (
+                  <AssistenteDeEscopo
+                    open={escopoAberto}
+                    onOpenChange={setEscopoAberto}
+                    frameworkId={frameworkId!}
+                    frameworkName={framework.nome}
+                    empresaId={empresaId}
+                    totalRequisitos={totalRequirements}
+                    onAplicado={() => { setJaDeclarouEscopo(true); handleScoreChange(); }}
+                  />
+                )}
+
                 {/*
                     O plano, antes da fila.
 
