@@ -79,18 +79,18 @@
     "Vulnerability Management"
   ],
   "soc2": [
+    "Ambiente de Controle",
+    "Atividades de Controle",
     "Availability",
-    "Common Criteria",
+    "Avaliação de Riscos",
+    "Comunicação e Informação",
     "Confidentiality",
+    "Controles de Acesso",
+    "Gestão de Mudanças",
+    "Mitigação de Riscos",
+    "Monitoramento",
+    "Operação de Sistemas",
     "Privacy",
-    "Processing Integrity",
-    "Security - Atividades de Controle",
-    "Security - Detecção",
-    "Security - Gestão de Riscos",
-    "Security - Governança",
-    "Security - Informação",
-    "Security - Monitoramento",
-    "Security - Mudanças",
-    "Security - Segurança"
+    "Processing Integrity"
   ]
 }

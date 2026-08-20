@@ -20,7 +20,6 @@
     "  fonte_secundaria-> o teste avisa mas não reprova",
     "  por_verificar   -> o teste só regista que falta verificar"
   ],
-
   "iso27001": {
     "norma": "ISO/IEC 27001:2022",
     "confianca": "fonte_primaria",
@@ -28,10 +27,17 @@
     "verificadoEm": "2026-08-20",
     "totalAnexoA": 93,
     "prefixoAnexoA": "A.",
-    "clausulasObrigatorias": ["4", "5", "6", "7", "8", "9", "10"],
+    "clausulasObrigatorias": [
+      "4",
+      "5",
+      "6",
+      "7",
+      "8",
+      "9",
+      "10"
+    ],
     "nota": "As cláusulas 4 a 10 NUNCA podem ser excluídas do escopo; só os controlos do Anexo A admitem exclusão justificada. A base tem 28 requisitos de cláusula e 93 de Anexo A, o que bate."
   },
-
   "cis": {
     "norma": "CIS Controls v8",
     "confianca": "fonte_primaria",
@@ -40,14 +46,101 @@
     "totalSalvaguardas": 153,
     "nota": "Único framework do catálogo auditado sem qualquer divergência. Existe v8.1 desde 2024; confirmar se muda a contagem antes de actualizar a versão."
   },
-
   "lgpd": {
     "norma": "Lei 13.709/2018 (LGPD), texto compilado",
     "confianca": "fonte_primaria",
     "fonte": "planalto.gov.br — texto compilado e Mensagem de veto nº 451/2018",
     "verificadoEm": "2026-08-20",
-    "artigosVetadosNaOrigem": ["Art. 28", "Art. 55", "Art. 56", "Art. 57", "Art. 58", "Art. 59"],
-    "artigosRevogados": ["Art. 55-B"],
+    "artigosVetadosNaOrigem": [
+      "Art. 28",
+      "Art. 55",
+      "Art. 56",
+      "Art. 57",
+      "Art. 58",
+      "Art. 59"
+    ],
+    "artigosRevogados": [
+      "Art. 55-B"
+    ],
     "nota": "Os arts. 55 a 59 foram TODOS vetados no acto da sanção, por criarem autarquia por iniciativa parlamentar; a série 55-A a 55-M e os arts. 58-A/58-B nasceram depois (Lei 13.853/2019) para preencher esse vazio. O Art. 55-B foi depois revogado pela Lei 14.460/2022. A Lei 15.352/2026 renomeou a ANPD de Autoridade para AGÊNCIA Nacional de Proteção de Dados. Nenhum destes códigos pode voltar a ser semeado."
+  },
+  "soc2": {
+    "norma": "SOC 2 — Trust Services Criteria (AICPA), TSP Section 100, edição 2017 com pontos de foco revistos em 2022",
+    "confianca": "fonte_primaria",
+    "fonte": "PDF red-lined da 2017 TSC publicado pela AICPA no seu CDN; texto extraído e os 'TSP Ref. #' enumerados. Cruzado com o crosswalk oficial NIST Privacy Framework x AICPA TSC. Conferido por segunda leitura independente, que baixou também a versão limpa.",
+    "verificadoEm": "2026-08-20",
+    "total": 61,
+    "distribuicao": {
+      "CC": 33,
+      "A1": 3,
+      "C1": 2,
+      "PI1": 5,
+      "P": 18
+    },
+    "nota": "A Disponibilidade é SÓ A1.1 a A1.3 — não existem A2, A3, A4 nem A5. A Confidencialidade é só C1.1 e C1.2, a Integridade de Processamento só PI1.1 a PI1.5, e a Privacidade acaba em P8.1. O P9.1 não existe e aparece até no crosswalk do NIST, que nisto está errado. Os Common Criteria vão de CC1.1 a CC9.2, e a série CC9 existe com dois critérios: CC9.1 (mitigação de riscos) e CC9.2 (fornecedores e parceiros). A revisão de 2022 não mudou código nenhum. Os itens P1.0 a P8.0 têm número TSP próprio mas são títulos de secção, não critérios: não podem ser semeados como pergunta.",
+    "grupos": {
+      "CC1": "Ambiente de Controle",
+      "CC2": "Comunicação e Informação",
+      "CC3": "Avaliação de Riscos",
+      "CC4": "Monitoramento",
+      "CC5": "Atividades de Controle",
+      "CC6": "Controles de Acesso",
+      "CC7": "Operação de Sistemas",
+      "CC8": "Gestão de Mudanças",
+      "CC9": "Mitigação de Riscos"
+    },
+    "codigosInexistentes": [
+      "A2.1",
+      "A2.2",
+      "A3.1",
+      "A3.2",
+      "A4.1",
+      "A4.2",
+      "A5.1",
+      "C2.1",
+      "C2.2",
+      "C3.1",
+      "C3.2",
+      "C4.1",
+      "C4.2",
+      "P8.2",
+      "P9.1",
+      "PI2.1",
+      "PI2.2",
+      "PI3.1",
+      "PI3.2",
+      "PI4.1"
+    ],
+    "avisoDeEscopo": "Só a categoria Security (os Common Criteria) é obrigatória em todo SOC 2. Availability, Confidentiality, Processing Integrity e Privacy dependem do que foi contratado — perguntar as cinco a toda a gente faz o cliente responder ao que não se comprometeu a cumprir."
+  },
+  "nistCsf": {
+    "norma": "NIST Cybersecurity Framework 2.0 (NIST CSWP 29, fevereiro de 2024)",
+    "confianca": "fonte_primaria",
+    "fonte": "Export oficial do NIST CSF 2.0 Reference Tool (csrc.nist.gov), contado programaticamente. Duas leituras independentes chegaram aos mesmos números.",
+    "verificadoEm": "2026-08-20",
+    "total": 106,
+    "distribuicao": {
+      "GV": 31,
+      "ID": 21,
+      "PR": 22,
+      "DE": 11,
+      "RS": 13,
+      "RC": 8
+    },
+    "nota": "O export tem 185 linhas de subcategoria, das quais 79 estão marcadas [Withdrawn] — são elementos da CSF 1.1 mantidos só para rastreabilidade. As activas são 106. O formato do código na 2.0 leva dois dígitos (GV.OC-01). Atenção ao normalizar da 1.1: ela não usava zero à esquerda mas tinha códigos de dois dígitos, como PR.IP-10 a PR.IP-12.",
+    "codigosInexistentes": [
+      "DE.CM-04",
+      "DE.CM-05",
+      "DE.CM-07",
+      "DE.CM-08",
+      "PR.DS-05",
+      "PR.DS-06",
+      "PR.DS-07",
+      "PR.DS-08",
+      "PR.DS-09",
+      "RC.CO-01",
+      "RS.AN-01",
+      "RS.AN-04"
+    ]
   }
 }

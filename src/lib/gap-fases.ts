@@ -101,11 +101,21 @@ export const FASES_POR_FRAMEWORK: Record<string, FaseDeTrabalho[]> = {
     { id: 'titular', categorias: ['Direitos do Titular', 'Segurança e Boas Práticas'], semanas: '4 a 6' },
     { id: 'anpd', categorias: ['ANPD', 'Sanções', 'Disposições Finais'], semanas: '2 a 3' },
   ],
+  /*
+    Os grupos reais da AICPA, depois da equalização.
+
+    Os rótulos antigos estavam deslocados em um: 'Security - Gestão de Riscos'
+    cobria o CC2, que é Comunicação e Informação, e 'Atividades de Controle'
+    cobria o CC3, que é Avaliação de Riscos. Com a taxonomia corrigida, as
+    fases seguem a lógica do próprio relatório: montar a governança, pôr a
+    segurança a funcionar, cobrir o que se prometeu ao cliente por contrato, e
+    provar que se vigia — que é o que o auditor examina ao longo do período.
+  */
   soc2: [
-    { id: 'governanca', categorias: ['Common Criteria', 'Security - Governança', 'Security - Gestão de Riscos'], semanas: '3 a 4' },
-    { id: 'seguranca', categorias: ['Security - Atividades de Controle', 'Security - Informação', 'Security - Segurança', 'Security - Mudanças'], semanas: '6 a 8' },
+    { id: 'governanca', categorias: ['Ambiente de Controle', 'Comunicação e Informação', 'Avaliação de Riscos'], semanas: '3 a 4' },
+    { id: 'seguranca', categorias: ['Atividades de Controle', 'Controles de Acesso', 'Gestão de Mudanças'], semanas: '6 a 8' },
     { id: 'promessas', categorias: ['Availability', 'Processing Integrity', 'Confidentiality', 'Privacy'], semanas: '8 a 12' },
-    { id: 'auditor', categorias: ['Security - Detecção', 'Security - Monitoramento'], semanas: '12 a 16' },
+    { id: 'auditor', categorias: ['Operação de Sistemas', 'Monitoramento', 'Mitigação de Riscos'], semanas: '12 a 16' },
   ],
   nistCsf: [
     { id: 'direcao', categorias: ['Contexto Organizacional', 'Estratégia de Gestão de Riscos', 'Papéis e Responsabilidades', 'Política', 'Supervisão'], semanas: '3 a 4' },

@@ -99,6 +99,54 @@ describe('catálogo bate com a norma', () => {
     expect(codigos.length).toBe(REF.cis.totalSalvaguardas);
   });
 
+  it('o SOC 2 tem os 61 critérios, e nenhum dos 20 fantasmas', () => {
+    const ref = REF.soc2;
+    const codigos = BASE.soc2 ?? [];
+    expect(codigos.length, `a 2017 TSC tem ${ref.total} critérios`).toBe(ref.total);
+
+    const fantasmas = (ref.codigosInexistentes as string[]).filter((c) => codigos.includes(c));
+    expect(
+      fantasmas,
+      `códigos que não existem na norma, de volta na semente:
+${fantasmas.join(', ')}
+` +
+        'A Disponibilidade é só A1.1 a A1.3; não existem A2, A3, A4 nem A5.',
+    ).toEqual([]);
+
+    // A série CC9 é a que mais falta faz e a que mais facilmente se perde:
+    // CC9.2 é gestão de fornecedores, o item mais escrutinado num SOC 2.
+    for (const c of ['CC9.1', 'CC9.2']) {
+      expect(codigos, `${c} desapareceu do catálogo`).toContain(c);
+    }
+
+    // E a distribuição por categoria, que é onde a numeração se desalinha.
+    const conta = (p: string) => codigos.filter((c) => c.startsWith(p)).length;
+    expect(conta('CC')).toBe(ref.distribuicao.CC);
+    expect(conta('A1')).toBe(ref.distribuicao.A1);
+    expect(conta('C1')).toBe(ref.distribuicao.C1);
+    expect(conta('PI1')).toBe(ref.distribuicao.PI1);
+  });
+
+  it('o NIST CSF tem as 106 subcategorias activas da 2.0', () => {
+    const ref = REF.nistCsf;
+    const codigos = BASE.nistCsf ?? [];
+    expect(codigos.length, `a CSF 2.0 tem ${ref.total} subcategorias activas`).toBe(ref.total);
+
+    const retiradas = (ref.codigosInexistentes as string[]).filter((c) => codigos.includes(c));
+    expect(
+      retiradas,
+      `subcategorias que o NIST retirou na 2.0, de volta na semente:
+${retiradas.join(', ')}`,
+    ).toEqual([]);
+
+    // Por função. O erro anterior estava concentrado em PR, DE e RS, e as
+    // contagens de GV e ID já batiam — um total certo não prova nada.
+    const conta = (f: string) => codigos.filter((c) => c.startsWith(`${f}.`)).length;
+    for (const [funcao, esperado] of Object.entries(ref.distribuicao as Record<string, number>)) {
+      expect(conta(funcao), `função ${funcao}`).toBe(esperado);
+    }
+  });
+
   it('o retrato da base e a referência falam dos mesmos frameworks', () => {
     // Não é exigência de igualdade: a referência cresce mais devagar do que o
     // catálogo, de propósito. É para o relatório abaixo não mentir por omissão.
