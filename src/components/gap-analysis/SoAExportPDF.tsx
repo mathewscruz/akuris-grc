@@ -142,8 +142,9 @@ export async function exportSoAPDF(params: ExportSoAPDFParams) {
     doc.text(item.codigo.substring(0, 12), xPos, yPos + 1);
     xPos += colWidths[0];
 
-    const truncTitle = item.titulo.length > 50 ? item.titulo.substring(0, 47) + '...' : item.titulo;
-    doc.text(truncTitle, xPos, yPos + 1);
+    // O titulo tambem quebra em vez de cortar: um nome de controlo cortado
+    // aos 47 caracteres deixa o auditor sem saber de que controlo se trata.
+    doc.text(doc.splitTextToSize(item.titulo, colWidths[1] - 4), xPos, yPos + 1);
     xPos += colWidths[1];
 
     doc.text(item.aplicavel ? tGlobal('sweepRiscos.gap.pdf.soaSim') : tGlobal('sweepRiscos.gap.pdf.soaNao'), xPos, yPos + 1);
@@ -158,10 +159,24 @@ export async function exportSoAPDF(params: ExportSoAPDFParams) {
     doc.text(String(item.evidencias_count), xPos, yPos + 1);
     xPos += colWidths[5];
 
-    const truncJust = (item.justificativa || '-').substring(0, 40);
-    doc.text(truncJust, xPos, yPos + 1);
+    /*
+      A justificativa cabe inteira, e a linha cresce com ela.
 
-    yPos += 7;
+      Estava `substring(0, 40)`. As justificativas que o assistente de escopo
+      redige tem 400 a 900 caracteres, portanto sairiam como "A organizacao nao
+      ocupa nem controla q" — sem reticencias sequer. E este e' o documento que
+      o auditor de ISO 27001 abre PRIMEIRO: quanto melhor o texto redigido,
+      mais se perdia.
+
+      `splitTextToSize` ja e' usado no ExportFrameworkPDF, no mesmo directorio.
+    */
+    const linhasJust = doc.splitTextToSize(item.justificativa || '-', colWidths[6] - 4);
+    doc.text(linhasJust, xPos, yPos + 1);
+
+    // A altura da linha passa a ser a da celula mais alta, senao o texto de uma
+    // invade a seguinte.
+    const alturaLinha = Math.max(7, linhasJust.length * 3 + 4);
+    yPos += alturaLinha;
   });
 
   // Footer on all pages

@@ -528,13 +528,28 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion, section
         </CardContent>
       </Card>
 
+      {/*
+            Atribuir, Prazo e Plano saíram daqui.
+
+            Os três respondiam com um aviso a dizer que ainda não existiam. São
+            os três verbos que o utilizador foi ali procurar, e um botão que
+            promete e não faz é pior do que um botão ausente — mais ainda numa
+            ferramenta de conformidade, onde a pessoa fica sem saber se o
+            trabalho ficou registado.
+
+            Não foram ligados, foram removidos. Atribuir dono e prazo em lote já
+            funciona na tabela de requisitos, com selector de pessoa e de data;
+            construir aqui uma segunda interface para a mesma operação seria
+            duplicar o conceito, que é o defeito que este módulo já teve com o
+            getCategory, com as ocorrencias e com os chips de filtro.
+
+            Esta aba é sobre aplicabilidade: o que fica dentro, o que fica fora,
+            e porquê. As duas acções que restam são exactamente essas.
+      */}
       <BulkActionBar
         selectedCount={selected.size}
         onClear={() => setSelected(new Set())}
         onStatusChange={bulkChangeStatus}
-        onAssign={() => toast.info(t('gapV2.soa.comingSoonAssign'))}
-        onSetDeadline={() => toast.info(t('gapV2.soa.comingSoonDeadline'))}
-        onCreatePlan={() => toast.info(t('gapV2.soa.comingSoonPlan'))}
         onGenerateJustification={gerarJustificacoes}
       />
     </div>
