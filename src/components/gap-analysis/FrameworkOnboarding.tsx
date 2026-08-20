@@ -19,7 +19,10 @@ function getOnboardingKey(nome: string): { key: string; icon: React.ReactNode } 
   if (lower.includes('iso') && nome.includes('27001')) return { key: 'iso27001', icon: icon(IconShield) };
   if (lower.includes('nist') && !lower.includes('800') && !lower.includes('sp 800')) return { key: 'nist', icon: icon(IconTarget) };
   if (lower.includes('lgpd')) return { key: 'lgpd', icon: icon(IconScale) };
-  if (lower.includes('pci')) return { key: 'pciDss', icon: icon(Lock) };
+  // `IconLock`, nao `Lock`: `Lock` e a classe Web Locks do navegador, existe em
+  // lib.dom.d.ts e por isso compila. Em execucao o React tentava instancia-la e
+  // o PCI DSS - 288 requisitos, o maior do catalogo - abria no ErrorBoundary.
+  if (lower.includes('pci')) return { key: 'pciDss', icon: icon(IconLock) };
   if (lower.includes('soc')) return { key: 'soc2', icon: icon(IconFileCheck) };
   if (lower.includes('gdpr')) return { key: 'gdpr', icon: icon(IconGlobe) };
   if (lower.includes('hipaa')) return { key: 'hipaa', icon: icon(IconDatabase) };

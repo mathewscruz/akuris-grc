@@ -23,6 +23,7 @@ import { resolveControleStatusTone } from "@/lib/status-tone";
 import { useRequisitoControles } from "@/hooks/useControleRequisitos";
 import { PlanoAcaoDialog } from "@/components/planos-acao/PlanoAcaoDialog";
 import { AuditTrailTimeline } from "@/components/gap-analysis/AuditTrailTimeline";
+import { statusDeErroDeFuncao } from '@/lib/edge-function-utils';
 import { logger } from '@/lib/logger';
 import { useDocGen } from '@/contexts/DocGenContext';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -376,6 +377,16 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
   const [guidanceText, setGuidanceText] = useState<string | null>(null);
   const [evidenciasText, setEvidenciasText] = useState<string | null>(null);
   const [generatingGuidance, setGeneratingGuidance] = useState(false);
+  /*
+    Três estados, não dois.
+
+    Antes havia só "tem texto" e "não tem". O ramo do "não tem" mandava clicar
+    em "Regenerar" — um botão dentro de `{isSuperAdmin && …}`, que o cliente não
+    vê. E a geração automática, quando falhava por outra coisa que não crédito,
+    falhava calada: o utilizador ficava a olhar para uma instrução impossível
+    sem saber que tinha havido um erro.
+  */
+  const [guidanceErro, setGuidanceErro] = useState<'creditos' | 'falha' | null>(null);
   const [diagnosticQuestions, setDiagnosticQuestions] = useState<Array<{pergunta: string; peso: number}>>([]);
   const [guidanceOpen, setGuidanceOpen] = useState(true);
   const [diagnosticAnswers, setDiagnosticAnswers] = useState<Record<number, 'sim' | 'parcial' | 'nao' | null>>({});
@@ -408,6 +419,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
 
   const triggerGuidanceGeneration = useCallback(async (forceRegenerate = false) => {
     setGeneratingGuidance(true);
+    setGuidanceErro(null);
     try {
       // O conteúdo é global (compartilhado por todas as empresas) e por idioma:
       // a função devolve o texto salvo quando já existir, sem consumir crédito.
@@ -427,7 +439,17 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
       }
     } catch (error: any) {
       logger.error('Error generating guidance:', { error: error instanceof Error ? error.message : String(error) });
-      if (error?.message?.includes('402') || error?.status === 402) {
+      /*
+        O 402 chega dentro de `error.context.status`, não em `error.status`:
+        o supabase-js embrulha a resposta num FunctionsHttpError. A leitura
+        directa dava sempre `undefined`, portanto o aviso de crédito esgotado
+        nunca aparecia — e o ramo seguinte só falava se fosse regeneração
+        manual, deixando a geração automática a falhar em silêncio.
+      */
+      const status = statusDeErroDeFuncao(error);
+      const semCredito = status === 402 || error?.message?.includes('402');
+      setGuidanceErro(semCredito ? 'creditos' : 'falha');
+      if (semCredito) {
         toast.error(t('gapUi.detail.aiCreditsExhausted'));
       } else if (forceRegenerate) {
         toast.error(t('gapUi.detail.errorGenerateGuidance'));
@@ -887,11 +909,40 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                       {requirement.descricao && (
                         <p className="text-sm text-muted-foreground leading-7">{requirement.descricao}</p>
                       )}
-                      <div className="flex items-start gap-2 p-3 rounded-lg bg-card border border-dashed">
-                        <IconIdea className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" strokeWidth={1.5} />
-                        <p className="text-xs text-muted-foreground">
-                          {t('gapUi.detail.clickRegenerateHint')}
-                        </p>
+                      {/*
+                        Dizer a verdade sobre o estado, e oferecer a saída certa.
+
+                        O texto da norma continua a aparecer — é o que há — mas
+                        deixa de ser servido como se fosse a orientação. E a
+                        acção proposta é a que a pessoa PODE executar: tentar de
+                        novo, ou ir buscar o diagnóstico guiado, que funciona
+                        mesmo sem orientação escrita.
+                      */}
+                      <div className="rounded-lg border border-dashed bg-card p-3">
+                        <div className="flex items-start gap-2">
+                          <IconIdea className="h-4 w-4 shrink-0 text-muted-foreground mt-0.5" strokeWidth={1.5} />
+                          <p className="text-xs text-muted-foreground leading-6">
+                            {guidanceErro === 'creditos'
+                              ? t('gapUi.detail.guidanceSemCreditos')
+                              : guidanceErro === 'falha'
+                                ? t('gapUi.detail.guidanceFalhou')
+                                : t('gapUi.detail.guidanceIndisponivel')}
+                          </p>
+                        </div>
+                        {guidanceErro !== 'creditos' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="mt-3 h-7 text-xs"
+                            disabled={generatingGuidance}
+                            onClick={() => triggerGuidanceGeneration(false)}
+                          >
+                            {generatingGuidance
+                              ? <AkurisPulse size={12} className="mr-1.5" />
+                              : <IconRefresh className="h-3 w-3 mr-1.5" strokeWidth={1.5} />}
+                            {t('gapUi.detail.guidanceTentarDeNovo')}
+                          </Button>
+                        )}
                       </div>
                     </div>
                   ))}

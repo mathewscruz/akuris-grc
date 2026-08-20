@@ -24,6 +24,24 @@ const DEFAULT_ERROR_MESSAGES: Record<number, string> = {
   500: 'Erro interno no servidor. Tente novamente.',
 };
 
+/**
+ * O status HTTP de um erro de Edge Function, sem precisar de `await`.
+ *
+ * O supabase-js embrulha a resposta num `FunctionsHttpError` e guarda o status
+ * em `error.context.status` — quem lê `error.status` recebe sempre `undefined`.
+ * Foi assim que o aviso de "créditos de IA esgotados" deixou de aparecer no
+ * painel de orientação do Gap Analysis: a condição nunca era verdadeira e a
+ * falha ficava muda.
+ */
+export function statusDeErroDeFuncao(error: unknown): number | null {
+  const e = error as any;
+  if (typeof e?.status === 'number') return e.status;
+  const ctx = e?.context;
+  if (typeof ctx?.status === 'number') return ctx.status;
+  if (typeof Response !== 'undefined' && ctx instanceof Response) return ctx.status;
+  return null;
+}
+
 /** Tenta extrair o status HTTP real da resposta da Edge Function */
 async function extractStatus(error: any): Promise<number> {
   const direct = (error as any)?.status;
