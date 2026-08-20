@@ -84,6 +84,7 @@ export const gapV2 = {
       priorityQueue: {
         title: 'Fila de prioridades',
         seeAll: 'Ver todos',
+        criterio: 'A ordem vem de três coisas: o peso do requisito na norma, o quanto ele está longe de conforme, e o prazo que você definiu. Comece pelo 01 e desça.',
         emptyState: 'Nenhum requisito pendente de tratamento.',
         triage: 'Triagem',
         nonCompliant: 'Não conforme',
@@ -279,6 +280,7 @@ export const gapV2 = {
       priorityQueue: {
         title: 'Priority queue',
         seeAll: 'View all',
+        criterio: 'The order comes from three things: how much weight the standard gives the requirement, how far it is from compliant, and the deadline you set. Start at 01 and work down.',
         emptyState: 'No requirements pending treatment.',
         triage: 'Triage',
         nonCompliant: 'Non-compliant',

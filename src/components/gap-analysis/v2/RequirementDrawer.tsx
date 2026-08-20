@@ -30,6 +30,7 @@ import { StatusSeg } from './StatusSeg';
 import { SectionHead } from './SectionHead';
 import { AIDiagnosticCard, type AIDiagnosticResult } from './AIDiagnosticCard';
 import { localizeRequirement } from "@/lib/gap-i18n";
+import { useOrientacaoRequisito } from '@/hooks/useOrientacaoRequisito';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface RequirementDrawerProps {
@@ -93,6 +94,15 @@ export function RequirementDrawer({
     setSearchParams(sp, { replace: true });
     onOpenChange(false);
   }, [requirementId, searchParams, setSearchParams, onOpenChange]);
+
+  /*
+    A mesma orientação do diálogo completo, no caminho principal.
+
+    A gaveta mostrava o que estivesse gravado e nunca pedia. Como 98% dos
+    requisitos não têm nada gravado, quem chegava pela fila de prioridades —
+    o caminho que o próprio produto recomenda — via só o texto da norma.
+  */
+  const orientacao = useOrientacaoRequisito(open ? requirementId : null, open);
 
   useEffect(() => {
     if (!open || !requirementId || !empresaId) return;
@@ -282,25 +292,69 @@ export function RequirementDrawer({
 
             {/* Body */}
             <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-5">
-              {/* Texto oficial / orientação (renderizado como Markdown) */}
-              {(requirement.descricao || requirement.orientacao_implementacao) && (
+              {/* O que a norma exige — sempre o texto da própria norma, e nada mais. */}
+              {requirement.descricao && (
                 <section>
                   <SectionHead title={t('gapUi.drawer.whatStandardRequires')} />
                   <div className={`rounded-lg border border-border bg-card p-4 text-sm text-foreground/85 leading-relaxed ${PROSE_CLASS}`}>
                     <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSanitize]}>
-                      {requirement.orientacao_implementacao || requirement.descricao || ''}
+                      {requirement.descricao}
                     </ReactMarkdown>
                   </div>
                 </section>
               )}
 
-              {/* Evidências esperadas — orienta o usuário sobre que prova buscar/anexar */}
-              {requirement.exemplos_evidencias && (
+              {/*
+                  Como cumprir — secção própria, separada da norma.
+
+                  Antes, a orientação e o texto da norma partilhavam a mesma
+                  caixa com o mesmo rótulo: não havendo orientação, a frase da
+                  norma era servida como se fosse a instrução. São coisas
+                  diferentes e passam a ocupar lugares diferentes.
+              */}
+              <section>
+                <SectionHead title={t('gapUi.drawer.comoCumprir')} />
+                {orientacao.estado === 'gerando' ? (
+                  <div className="flex items-center gap-2 rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">
+                    <AkurisPulse size={14} />
+                    {t('gapUi.drawer.comoCumprirGerando')}
+                  </div>
+                ) : orientacao.texto ? (
+                  <div className={`rounded-lg border border-border bg-card p-4 text-sm text-foreground/85 leading-relaxed ${PROSE_CLASS}`}>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSanitize]}>
+                      {orientacao.texto}
+                    </ReactMarkdown>
+                  </div>
+                ) : (
+                  <div className="rounded-lg border border-dashed border-border bg-card p-4">
+                    <p className="text-sm leading-6 text-muted-foreground">
+                      {orientacao.estado === 'creditos'
+                        ? t('gapUi.detail.guidanceSemCreditos')
+                        : orientacao.estado === 'falha'
+                          ? t('gapUi.detail.guidanceFalhou')
+                          : t('gapUi.detail.guidanceIndisponivel')}
+                    </p>
+                    {orientacao.estado !== 'creditos' && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-3 h-7 text-xs"
+                        onClick={() => orientacao.gerar(false)}
+                      >
+                        {t('gapUi.detail.guidanceTentarDeNovo')}
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </section>
+
+              {/* Evidências esperadas — que prova o auditor aceita para este requisito. */}
+              {orientacao.evidencias && (
                 <section>
                   <SectionHead title={t('gapUi.drawer.expectedEvidence')} />
                   <div className={`rounded-lg border border-border bg-card p-4 text-sm text-foreground/85 leading-relaxed ${PROSE_CLASS}`}>
                     <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeSanitize]}>
-                      {requirement.exemplos_evidencias}
+                      {orientacao.evidencias}
                     </ReactMarkdown>
                   </div>
                 </section>

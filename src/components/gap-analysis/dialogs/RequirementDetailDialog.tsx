@@ -23,7 +23,7 @@ import { resolveControleStatusTone } from "@/lib/status-tone";
 import { useRequisitoControles } from "@/hooks/useControleRequisitos";
 import { PlanoAcaoDialog } from "@/components/planos-acao/PlanoAcaoDialog";
 import { AuditTrailTimeline } from "@/components/gap-analysis/AuditTrailTimeline";
-import { statusDeErroDeFuncao } from '@/lib/edge-function-utils';
+import { useOrientacaoRequisito } from '@/hooks/useOrientacaoRequisito';
 import { logger } from '@/lib/logger';
 import { useDocGen } from '@/contexts/DocGenContext';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -32,8 +32,6 @@ import type { ConformityStatus } from "@/lib/gap-analysis-tokens";
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { EvidenceReusePanel } from '@/components/gap-analysis/dialogs/EvidenceReusePanel';
-import { localizeRequirement } from "@/lib/gap-i18n";
-import { getAppLocale } from "@/lib/i18n-locale";
 import { useAuth } from "@/components/AuthProvider";
 import { useLanguage } from '@/contexts/LanguageContext';
 import { intlLocale, parseDataLocal } from '@/lib/date-utils';
@@ -374,20 +372,22 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
   // Concorrência otimista: guarda o updated_at carregado para detectar sobrescrita.
   const loadedUpdatedAtRef = useRef<string | null>(null);
   const [savingPlano, setSavingPlano] = useState(false);
-  const [guidanceText, setGuidanceText] = useState<string | null>(null);
-  const [evidenciasText, setEvidenciasText] = useState<string | null>(null);
-  const [generatingGuidance, setGeneratingGuidance] = useState(false);
   /*
-    Três estados, não dois.
+    Uma conta só para a orientação.
 
-    Antes havia só "tem texto" e "não tem". O ramo do "não tem" mandava clicar
-    em "Regenerar" — um botão dentro de `{isSuperAdmin && …}`, que o cliente não
-    vê. E a geração automática, quando falhava por outra coisa que não crédito,
-    falhava calada: o utilizador ficava a olhar para uma instrução impossível
-    sem saber que tinha havido um erro.
+    Estes cinco estados e a função de geração existiam aqui e não existiam na
+    gaveta lateral — que é para onde a fila de prioridades manda o utilizador.
+    Duas superfícies para o mesmo requisito, uma com orientação e outra sem.
+    `useOrientacaoRequisito` é agora o único sítio onde isto se decide.
   */
-  const [guidanceErro, setGuidanceErro] = useState<'creditos' | 'falha' | null>(null);
-  const [diagnosticQuestions, setDiagnosticQuestions] = useState<Array<{pergunta: string; peso: number}>>([]);
+  const orientacao = useOrientacaoRequisito(open ? requirement.id : null, open);
+  const guidanceText = orientacao.texto;
+  const evidenciasText = orientacao.evidencias;
+  const diagnosticQuestions = orientacao.perguntas;
+  const generatingGuidance = orientacao.estado === 'gerando';
+  const guidanceErro = orientacao.estado === 'creditos' ? 'creditos'
+    : orientacao.estado === 'falha' ? 'falha'
+    : null;
   const [guidanceOpen, setGuidanceOpen] = useState(true);
   const [diagnosticAnswers, setDiagnosticAnswers] = useState<Record<number, 'sim' | 'parcial' | 'nao' | null>>({});
   const { openDocGen } = useDocGen();
@@ -417,85 +417,19 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
     if (open && empresaId) loadData();
   }, [open, empresaId, requirement.id]);
 
-  const triggerGuidanceGeneration = useCallback(async (forceRegenerate = false) => {
-    setGeneratingGuidance(true);
-    setGuidanceErro(null);
-    try {
-      // O conteúdo é global (compartilhado por todas as empresas) e por idioma:
-      // a função devolve o texto salvo quando já existir, sem consumir crédito.
-      const { data, error } = await supabase.functions.invoke('populate-requirement-guidance', {
-        body: { requirement_id: requirement.id, locale: getAppLocale(), force: forceRegenerate }
-      });
-      if (error) throw error;
-      if (data?.orientacao_implementacao) {
-        setGuidanceText(data.orientacao_implementacao);
-        setEvidenciasText(data.exemplos_evidencias || null);
-      }
-      if (data?.perguntas_diagnostico) {
-        try {
-          const parsed = JSON.parse(data.perguntas_diagnostico);
-          if (Array.isArray(parsed)) setDiagnosticQuestions(parsed);
-        } catch { /* ignore */ }
-      }
-    } catch (error: any) {
-      logger.error('Error generating guidance:', { error: error instanceof Error ? error.message : String(error) });
-      /*
-        O 402 chega dentro de `error.context.status`, não em `error.status`:
-        o supabase-js embrulha a resposta num FunctionsHttpError. A leitura
-        directa dava sempre `undefined`, portanto o aviso de crédito esgotado
-        nunca aparecia — e o ramo seguinte só falava se fosse regeneração
-        manual, deixando a geração automática a falhar em silêncio.
-      */
-      const status = statusDeErroDeFuncao(error);
-      const semCredito = status === 402 || error?.message?.includes('402');
-      setGuidanceErro(semCredito ? 'creditos' : 'falha');
-      if (semCredito) {
-        toast.error(t('gapUi.detail.aiCreditsExhausted'));
-      } else if (forceRegenerate) {
-        toast.error(t('gapUi.detail.errorGenerateGuidance'));
-      }
-    } finally {
-      setGeneratingGuidance(false);
-    }
-  }, [requirement.id, t]);
-
   const loadData = async () => {
     setLoading(true);
     try {
-      const [usersRes, riscosRes, reqDetailsRes] = await Promise.all([
+      const [usersRes, riscosRes] = await Promise.all([
         supabase.from('profiles').select('user_id, nome, email').eq('empresa_id', empresaId).order('nome'),
-        supabase.from('riscos').select('id, nome, nivel_risco_inicial, nivel_risco_residual').eq('empresa_id', empresaId).order('nome'),
-        supabase.from('gap_analysis_requirements').select('orientacao_implementacao, exemplos_evidencias, perguntas_diagnostico, orientacao_implementacao_en, exemplos_evidencias_en, perguntas_diagnostico_en').eq('id', requirement.id).single()
+        supabase.from('riscos').select('id, nome, nivel_risco_inicial, nivel_risco_residual').eq('empresa_id', empresaId).order('nome')
       ]);
       if (usersRes.error) throw usersRes.error;
       if (riscosRes.error) throw riscosRes.error;
       setUsers(usersRes.data || []);
       setRiscos(riscosRes.data || []);
 
-      // Conteúdo bilíngue: exibe a versão em inglês quando existir, senão a portuguesa.
-      const rawDetails = (reqDetailsRes.data || {}) as Record<string, string | null>;
-      const details = localizeRequirement(rawDetails as any) as {
-        orientacao_implementacao?: string | null; exemplos_evidencias?: string | null; perguntas_diagnostico?: string | null;
-      };
-      setGuidanceText(details.orientacao_implementacao || null);
-      setEvidenciasText(details.exemplos_evidencias || null);
-
-      if (details.perguntas_diagnostico) {
-        try {
-          const parsed = JSON.parse(details.perguntas_diagnostico);
-          if (Array.isArray(parsed)) setDiagnosticQuestions(parsed);
-        } catch { /* ignore */ }
-      } else {
-        setDiagnosticQuestions([]);
-      }
       setDiagnosticAnswers({});
-
-      // Falta no idioma atual? Gera (e salva no banco) a versão desse idioma —
-      // mesmo que exista fallback em português sendo exibido.
-      const localeCol = getAppLocale() === 'en' ? 'orientacao_implementacao_en' : 'orientacao_implementacao';
-      if (!(rawDetails[localeCol] || '').trim()) {
-        triggerGuidanceGeneration();
-      }
 
       if (requirement.evaluation_id) {
         const { data: evalData, error: evalError } = await supabase
@@ -872,7 +806,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                         variant="ghost"
                         size="sm"
                         className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
-                        onClick={() => triggerGuidanceGeneration(true)}
+                        onClick={() => orientacao.gerar(true)}
                         disabled={generatingGuidance}
                       >
                         {generatingGuidance ? <AkurisPulse size={12} className="mr-1" /> : <IconRefresh className="h-3 w-3 mr-1" strokeWidth={1.5} />}
@@ -935,7 +869,7 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                             size="sm"
                             className="mt-3 h-7 text-xs"
                             disabled={generatingGuidance}
-                            onClick={() => triggerGuidanceGeneration(false)}
+                            onClick={() => orientacao.gerar(false)}
                           >
                             {generatingGuidance
                               ? <AkurisPulse size={12} className="mr-1.5" />

@@ -132,7 +132,18 @@ export function PriorityQueueCard({
             reason: reasonParts.join(' · '),
           };
         });
-        scored.sort((a, b) => b.priority - a.priority);
+        /*
+          Desempate por código, sempre.
+
+          No dia um todos os requisitos têm o mesmo estado, logo a prioridade
+          reduz-se ao peso e há dezenas de empates. Sem critério de desempate a
+          ordem vinha do banco, que não a garante: a mesma empresa via os "seis
+          primeiros" trocarem a cada recarga. Numa lista que diz ao utilizador
+          por onde começar, isso é o mesmo que não dizer nada.
+        */
+        scored.sort((a, b) =>
+          b.priority - a.priority || (a.codigo || '').localeCompare(b.codigo || '', undefined, { numeric: true }),
+        );
         setItems(scored.filter(s => s.priority > 0).slice(0, limit));
       } catch (e) {
         logger.error('Erro ao montar fila de prioridade', {
@@ -177,6 +188,18 @@ export function PriorityQueueCard({
             </div>
           }
         />
+
+        {/*
+            Por que esta ordem, dito em voz alta.
+
+            A fila ordenava por peso × estado × urgência e não dizia nada. O
+            utilizador tinha de confiar que o 01 era mesmo o primeiro. Uma frase
+            resolve, e é o que os concorrentes fazem: a Drata escreve à letra
+            "é importante completar esta conexão primeiro" e explica porquê.
+        */}
+        <p className="-mt-1 mb-3 text-xs leading-6 text-muted-foreground">
+          {t('gapV2.priorityQueue.criterio')}
+        </p>
 
         {loading ? (
           <div className="flex justify-center py-8">

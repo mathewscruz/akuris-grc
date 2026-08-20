@@ -458,7 +458,17 @@ function GapAnalysisFrameworkDetailInner() {
                 {/* A fila é o "o que eu faço agora" e estava espremida em um
                     terço de uma linha, debaixo de um cartão que dizia quase o
                     mesmo. Passa a largura inteira, logo abaixo do cabeçalho. */}
-                {empresaId && evaluatedRequirements > 0 && (
+                {/*
+                    Sem `evaluatedRequirements > 0`.
+
+                    A fila é a resposta a "o que eu faço agora", e estava atrás
+                    de já se ter feito alguma coisa: quem mais precisava dela
+                    era exactamente quem não a via. E ela nunca precisou do
+                    portão — `statusPenalty` já dá 0,35 a um requisito por
+                    avaliar, portanto no dia um ela ordena por peso e devolve os
+                    seis primeiros sem uma única avaliação registada.
+                */}
+                {empresaId && (
                   <PriorityQueueCard
                     frameworkId={frameworkId!}
                     empresaId={empresaId}
