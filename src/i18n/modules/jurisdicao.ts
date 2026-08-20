@@ -14,7 +14,7 @@ export const jurisdicao = {
         INTL: 'Outro / Internacional (GDPR)',
       },
       autoridades: {
-        anpd: 'Autoridade Nacional de Proteção de Dados (ANPD)',
+        anpd: 'Agência Nacional de Proteção de Dados (ANPD)',
         cnpd: 'Comissão Nacional de Proteção de Dados (CNPD)',
         intl: 'autoridade de controlo competente',
       },
