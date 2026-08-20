@@ -1,0 +1,53 @@
+{
+  "_leia": [
+    "A REFERÊNCIA NORMATIVA: o que cada norma PUBLICADA tem, não o que a nossa base semeou.",
+    "",
+    "Este ficheiro existe porque a guarda anterior comparava a semente com um retrato da",
+    "própria semente. Isso apanha código inventado e é cego a requisito em falta: a série",
+    "CC9 inteira do SOC 2 podia desaparecer amanhã e o teste continuava verde.",
+    "",
+    "REGRAS PARA EDITAR:",
+    "  1. Só entra aqui o que foi confirmado em FONTE PRIMÁRIA — o texto da norma ou o",
+    "     índice publicado pelo organismo emissor. Blogue de fornecedor não serve.",
+    "  2. Cada entrada leva a fonte e a data em que foi verificada.",
+    "  3. Uma norma que ainda não foi verificada NÃO entra com números inventados. Fica de",
+    "     fora, e o teste diz que falta verificar. Uma referência incompleta e honesta é",
+    "     utilizável; uma completa e adivinhada não é.",
+    "  4. Quando uma norma é revista, actualiza-se aqui PRIMEIRO e a semente a seguir.",
+    "",
+    "O campo 'confianca' governa o rigor do teste:",
+    "  fonte_primaria  -> o teste exige que a base bata com esta lista",
+    "  fonte_secundaria-> o teste avisa mas não reprova",
+    "  por_verificar   -> o teste só regista que falta verificar"
+  ],
+
+  "iso27001": {
+    "norma": "ISO/IEC 27001:2022",
+    "confianca": "fonte_primaria",
+    "fonte": "Índice da ISO/IEC 27001:2022 — 93 controlos no Anexo A, organizados em 4 temas (5 Organizacional, 6 Pessoas, 7 Físico, 8 Tecnológico), mais as cláusulas 4 a 10 do sistema de gestão.",
+    "verificadoEm": "2026-08-20",
+    "totalAnexoA": 93,
+    "prefixoAnexoA": "A.",
+    "clausulasObrigatorias": ["4", "5", "6", "7", "8", "9", "10"],
+    "nota": "As cláusulas 4 a 10 NUNCA podem ser excluídas do escopo; só os controlos do Anexo A admitem exclusão justificada. A base tem 28 requisitos de cláusula e 93 de Anexo A, o que bate."
+  },
+
+  "cis": {
+    "norma": "CIS Controls v8",
+    "confianca": "fonte_primaria",
+    "fonte": "CIS Controls v8 — 18 controlos, 153 salvaguardas.",
+    "verificadoEm": "2026-08-20",
+    "totalSalvaguardas": 153,
+    "nota": "Único framework do catálogo auditado sem qualquer divergência. Existe v8.1 desde 2024; confirmar se muda a contagem antes de actualizar a versão."
+  },
+
+  "lgpd": {
+    "norma": "Lei 13.709/2018 (LGPD), texto compilado",
+    "confianca": "fonte_primaria",
+    "fonte": "planalto.gov.br — texto compilado e Mensagem de veto nº 451/2018",
+    "verificadoEm": "2026-08-20",
+    "artigosVetadosNaOrigem": ["Art. 28", "Art. 55", "Art. 56", "Art. 57", "Art. 58", "Art. 59"],
+    "artigosRevogados": ["Art. 55-B"],
+    "nota": "Os arts. 55 a 59 foram TODOS vetados no acto da sanção, por criarem autarquia por iniciativa parlamentar; a série 55-A a 55-M e os arts. 58-A/58-B nasceram depois (Lei 13.853/2019) para preencher esse vazio. O Art. 55-B foi depois revogado pela Lei 14.460/2022. A Lei 15.352/2026 renomeou a ANPD de Autoridade para AGÊNCIA Nacional de Proteção de Dados. Nenhum destes códigos pode voltar a ser semeado."
+  }
+}
