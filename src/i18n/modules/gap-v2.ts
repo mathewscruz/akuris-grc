@@ -27,7 +27,7 @@ export const gapV2 = {
       header: {
         prontidao: 'Prontidão para auditoria',
         naoAvaliado: 'Não avaliado',
-        avaliadosDeAplicaveis: '{avaliados} de {aplicaveis} requisitos aplicáveis avaliados',
+        avaliadosDeAplicaveis: '{avaliados} de {aplicaveis} requisitos já respondidos',
       },
       heranca: {
         titulo: 'Aproveitar de outros frameworks',
@@ -238,7 +238,7 @@ export const gapV2 = {
       header: {
         prontidao: 'Audit readiness',
         naoAvaliado: 'Not assessed',
-        avaliadosDeAplicaveis: '{avaliados} of {aplicaveis} applicable requirements assessed',
+        avaliadosDeAplicaveis: '{avaliados} of {aplicaveis} requirements answered',
       },
       heranca: {
         titulo: 'Reuse from other frameworks',

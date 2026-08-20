@@ -122,6 +122,47 @@ describe('filtro que filtra', () => {
     ).toEqual([]);
   });
 
+  it('a tabela de requisitos tem uma conta só de filtragem', () => {
+    /*
+      Três caminhos, uma conta.
+
+      `GenericRequirementsTable` decide o que mostrar em três sítios: o
+      `getFilteredRequirements`, o `map` das secções, e o render simples. O
+      filtro por fase foi ligado aos dois primeiros e esquecido no terceiro —
+      que é justamente o que serve 23 dos 24 frameworks, porque só a ISO 27001
+      declara `sections`.
+
+      O sintoma era o pior possível: o cartão da fase acendia, o endereço
+      ganhava `?fase=`, a pílula dizia o nome da fase, a legenda dizia
+      "61 de 288", e a tabela mostrava os 288. A funcionalidade foi verificada
+      no único framework onde funcionava.
+
+      Esta guarda exige que os caminhos de render passem pela mesma função que
+      alimenta a legenda. Se aparecer um quarto caminho a filtrar por conta
+      própria, reprova.
+    */
+    const fonte = ler('src/components/gap-analysis/GenericRequirementsTable.tsx');
+
+    // Cada `renderTableContent(...)` tem de receber uma conta central, não um
+    // filtro montado ali mesmo.
+    const chamadas = [...fonte.matchAll(/renderTableContent\(([\s\S]{0,220}?)\)\}/g)].map((m) => m[1]);
+    expect(chamadas.length, 'renderTableContent deixou de ser o ponto único de render').toBeGreaterThan(1);
+
+    const soltas = chamadas.filter(
+      (arg) => /\.filter\(/.test(arg) && !/getFilteredRequirements|applyFilters|daFase/.test(arg),
+    );
+    expect(
+      soltas,
+      `caminho de render a filtrar por conta própria, fora da conta central:\n${soltas.join('\n---\n')}`,
+    ).toEqual([]);
+
+    // E a fase tem de ser conhecida pela conta central.
+    expect(
+      /getFilteredRequirements[\s\S]{0,400}categoriasDaFase/.test(fonte),
+      'getFilteredRequirements deixou de conhecer o filtro por fase',
+    ).toBe(true);
+  });
+
   it('as guardas enxergam os padrões que proíbem', () => {
     // Filtro desenhado e nunca aplicado.
     const decorativo = [

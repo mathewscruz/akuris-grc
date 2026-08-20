@@ -1180,11 +1180,24 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
       <CardContent>
         <SearchAndFilterBar />
 
-        {renderTableContent(
-          categoriaAtiva === 'all'
-            ? requirements
-            : requirements.filter(r => (r.categoria || 'Outros') === categoriaAtiva),
-        )}
+        {/*
+            O TERCEIRO caminho de filtragem, e o unico que servia a maioria.
+
+            Esta tabela tem tres sitios onde decide o que mostrar: o
+            getFilteredRequirements, o map das seccoes, e este. Liguei o filtro
+            por fase aos dois primeiros e falhei este - que e' justamente o que
+            serve 23 dos 24 frameworks, porque so a ISO 27001 declara `sections`.
+
+            O efeito era o pior possivel: clicar numa fase acendia o cartao,
+            escrevia ?fase= no endereco, a pilula dizia o nome da fase, a
+            legenda dizia "61 de 288", e a tabela mostrava os 288. Verifiquei a
+            funcionalidade na ISO 27001, o unico caso onde funcionava, e dei-a
+            por feita.
+
+            Passa a usar getFilteredRequirements, que ja e' a conta usada pela
+            legenda desta mesma tela. Uma conta so.
+        */}
+        {renderTableContent(getFilteredRequirements(requirements))}
 
         {selectedRequirement && (
           <RequirementDetailDialog
