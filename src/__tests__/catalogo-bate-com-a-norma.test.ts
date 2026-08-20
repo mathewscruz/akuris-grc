@@ -147,6 +147,58 @@ ${retiradas.join(', ')}`,
     }
   });
 
+  it('o PCI DSS não pergunta cabeçalhos de secção', () => {
+    const ref = REF.pciDss;
+    const codigos = BASE.pciDss ?? [];
+
+    /*
+      A regra é de profundidade, não de folha. A Figura 5 do padrão diz que o
+      nível X.X é uma "Requirement Description" — organiza os requisitos que
+      ficam por baixo dela e não tem coluna de avaliação no ROC. O catálogo
+      tinha 39 desses semeados como se fossem controlos.
+    */
+    const cabecalhos = codigos.filter((c) => c.split('.').length === 2);
+    expect(
+      cabecalhos,
+      `cabeçalhos de secção de volta como requisito:
+${cabecalhos.join(', ')}`,
+    ).toEqual([]);
+
+    expect(codigos.length, 'Requisitos 1 a 12, avaliáveis hoje').toBe(ref.total);
+
+    // Os três substituídos em 31/03/2025 não podem voltar: os sucessores já
+    // estão no catálogo e a versão antiga é mais fraca nos três casos, portanto
+    // o cliente responderia duas vezes ao mesmo controlo com veredictos
+    // possivelmente opostos.
+    const substituidos = Object.keys(ref.substituidosEm2025 as Record<string, string>)
+      .filter((k) => k !== 'nota')
+      .filter((c) => codigos.includes(c));
+    expect(
+      substituidos,
+      `requisitos substituídos em 31/03/2025 de volta no catálogo:
+${substituidos.join(', ')}`,
+    ).toEqual([]);
+
+    // Por requisito. Um total certo esconde compensação entre requisitos.
+    const conta = (n: string) => codigos.filter((c) => c.split('.')[0] === n).length;
+    for (const [req, esperado] of Object.entries(ref.distribuicao as Record<string, number>)) {
+      expect(conta(req), `Requisito ${req}`).toBe(esperado);
+    }
+
+    // Os dois que a verificação apanhou, em direcções opostas.
+    expect(codigos, 'o 3.1.2 é o único X.1.2 que faltava').toContain('3.1.2');
+    expect(codigos, 'o 9.5.1.2.1 existe na página 233 e foi indevidamente dado como inventado').toContain('9.5.1.2.1');
+
+    // E os apêndices ficam de fora: são condicionais, nenhum se aplica por omissão.
+    const apendices = codigos.filter((c) => /^A[123]/.test(c));
+    expect(
+      apendices,
+      `apêndices semeados por omissão — só se aplicam a quem for designado, ` +
+        `for multi-inquilino ou ainda usar SSL antigo:
+${apendices.join(', ')}`,
+    ).toEqual([]);
+  });
+
   it('o retrato da base e a referência falam dos mesmos frameworks', () => {
     // Não é exigência de igualdade: a referência cresce mais devagar do que o
     // catálogo, de propósito. É para o relatório abaixo não mentir por omissão.

@@ -142,5 +142,42 @@
       "RS.AN-01",
       "RS.AN-04"
     ]
+  },
+  "pciDss": {
+    "norma": "PCI DSS v4.0.1 (junho de 2024)",
+    "confianca": "fonte_primaria",
+    "fonte": "Texto integral de 'PCI DSS: Requirements and Testing Procedures, v4.0.1, June 2024', lido em PDF. Blocos 'Defined Approach Requirements' contados por requisito, com verificação de lacunas de numeração.",
+    "verificadoEm": "2026-08-20",
+    "versaoAnterior": "v4.0 (março de 2022), retirada em 31/12/2024. A numeração NÃO mudou entre v4.0 e v4.0.1.",
+    "total": 247,
+    "distribuicao": {
+      "1": 19,
+      "2": 11,
+      "3": 29,
+      "4": 6,
+      "5": 13,
+      "6": 18,
+      "7": 12,
+      "8": 28,
+      "9": 27,
+      "10": 26,
+      "11": 21,
+      "12": 37
+    },
+    "regraDeProfundidade": "Figura 5 do padrão: o nível X (1 a 12) é o requisito principal e o nível X.X é uma 'Requirement Description' que organiza os que ficam por baixo. Nenhum dos dois tem bloco 'Defined Approach Requirements' nem coluna de avaliação no ROC. Só X.X.X e mais fundo é testável.",
+    "nota": "O catálogo tinha 288 = 250 testáveis + 39 cabeçalhos de dois níveis, e faltava-lhe o 3.1.2. Os cabeçalhos estavam a ser perguntados como se fossem controlos, e sem critério: entraram os dos Requisitos 1 a 11 e os do 12 ficaram de fora. O 9.5.1.2.1 EXISTE (página 233) e define por análise de risco a frequência de inspecção dos terminais POI — um levantamento anterior dizia que não, e estava errado. Atenção: o 12.1.2 NÃO é papéis e responsabilidades (é a revisão anual da política); o equivalente no Requisito 12 é o 12.1.3.",
+    "apendices": {
+      "A1": 7,
+      "A2": 3,
+      "A3": 20,
+      "porqueNaoSemeados": "Os três são condicionais e nenhum se aplica por omissão. A1 só a provedor multi-inquilino (e o próprio texto exclui quem presta apenas colocation); A2 só a quem ainda usa SSL ou TLS antigo em terminais POI; A3 só a entidade DESIGNADA por uma bandeira ou pelo adquirente. Semeá-los faria toda a gente responder ao que não lhe diz respeito. Pertencem ao assistente de escopo."
+    },
+    "totalNoPapel": 250,
+    "substituidosEm2025": {
+      "6.4.1": "substituído por 6.4.2 após 31/03/2025; o 6.4.1 admitia revisão manual, o 6.4.2 exige solução automatizada",
+      "8.3.10": "substituído por 8.3.10.1; o 8.3.10 pedia só orientação ao cliente, o 8.3.10.1 exige controlo técnico. Ambos só para provedor de serviço",
+      "10.7.1": "substituído por 10.7.2 em 31/03/2025; o 10.7.1 valia só para provedor de serviço, o 10.7.2 vale para todos e cobre mais dois sistemas",
+      "nota": "Uma varredura do documento por 'supersede' e 'replace Requirement' devolve exactamente estas três nos Requisitos 1 a 12. O único prazo que existe na v4.0.1 é 31/03/2025, portanto nenhum requisito está hoje em carência. Manter os antigos fazia o cliente responder duas vezes ao mesmo controlo, e como a versão antiga é mais fraca em todos os três casos, podia responder 'conforme' numa e 'não conforme' na outra."
+    }
   }
 }
