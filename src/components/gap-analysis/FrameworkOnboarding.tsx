@@ -159,6 +159,28 @@ export function FrameworkOnboarding({ frameworkNome, frameworkVersao, frameworkT
         </CardContent>
       </Card>
 
+      {/*
+          O que é certificar-se.
+
+          O produto pedia a data-alvo da certificação sem nunca ter dito que
+          existe um organismo certificador a contratar, que a auditoria tem dois
+          estágios e que o certificado tem validade. Quem nunca passou por isto
+          não descobria em lado nenhum do produto.
+      */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <IconAward className="h-5 w-5 text-primary" strokeWidth={1.5}/>
+            {t('gapV2.certificacao.tituloComoFunciona')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm leading-7 text-muted-foreground">
+            {t('gapV2.certificacao.oQueE')}
+          </p>
+        </CardContent>
+      </Card>
+
       <div className="text-center pb-4">
         <Button size="lg" onClick={onStart} className="gap-2">
           {t('gapExports.onboardingUi.startButton')} <IconArrowRight className="h-4 w-4" strokeWidth={1.5}/>

@@ -27,7 +27,7 @@ export const gapAnalysis = {
         taskDescription: 'Plano de remediação para o framework {nome}.',
         revisitTour: 'Revisitar tour',
         priorityQueueEmpty: 'A fila de prioridade aparece após as primeiras avaliações.',
-        tabs: { evaluation: 'Avaliação', documents: 'Análise de Documentos', remediation: 'Remediação', soa: 'SoA', evidenceLibrary: 'Biblioteca de Evidências', history: 'Histórico' },
+        tabs: { evaluation: 'Avaliação', documents: 'Análise de Documentos', remediation: 'Remediação', soa: 'Aplicabilidade', evidenceLibrary: 'Biblioteca de Evidências', history: 'Histórico' },
         toast: { pdfExported: 'PDF exportado com sucesso', pdfExportError: 'Erro ao exportar PDF', boardExported: 'Relatório executivo exportado com sucesso', boardExportError: 'Erro ao exportar relatório executivo' },
       },
       welcome: {
@@ -937,7 +937,7 @@ export const gapAnalysis = {
         taskDescription: 'Remediation plan for the {nome} framework.',
         revisitTour: 'Revisit tour',
         priorityQueueEmpty: 'The priority queue appears after the first assessments.',
-        tabs: { evaluation: 'Assessment', documents: 'Document Analysis', remediation: 'Remediation', soa: 'SoA', evidenceLibrary: 'Evidence Library', history: 'History' },
+        tabs: { evaluation: 'Assessment', documents: 'Document Analysis', remediation: 'Remediation', soa: 'Applicability', evidenceLibrary: 'Evidence Library', history: 'History' },
         toast: { pdfExported: 'PDF exported successfully', pdfExportError: 'Error exporting PDF', boardExported: 'Executive report exported successfully', boardExportError: 'Error exporting executive report' },
       },
       welcome: {

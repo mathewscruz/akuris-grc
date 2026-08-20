@@ -158,6 +158,12 @@ export function PriorityQueueCard({
     };
   }, [frameworkId, empresaId, limit]);
 
+  /* Alguma coisa ja foi respondida? A fila muda de discurso conforme isso. */
+  const algumAvaliado = useMemo(
+    () => items.some(i => i.conformity_status && i.conformity_status !== 'nao_avaliado'),
+    [items]
+  );
+
   // Mesma definição de "crítico" usada no cartão Gaps a Tratar e no dashboard.
   const totalCritical = useMemo(
     () => items.filter(i => isGapCritico(i)).length,
@@ -198,7 +204,9 @@ export function PriorityQueueCard({
             "é importante completar esta conexão primeiro" e explica porquê.
         */}
         <p className="-mt-1 mb-3 text-xs leading-6 text-muted-foreground">
-          {t('gapV2.priorityQueue.criterio')}
+          {/* Quem nunca avaliou nada precisa de instrucao, nao de criterio: o
+              criterio explica uma ordem que ainda nao tem informacao dentro. */}
+          {algumAvaliado ? t('gapV2.priorityQueue.criterio') : t('gapV2.priorityQueue.comecarAqui')}
         </p>
 
         {loading ? (

@@ -22,6 +22,7 @@
 * fiscalização LGPD ou uma atestação SOC 2 — o produto oferece os mesmos
 * recursos seja qual for o framework escolhido.
 */
+import { useMemo } from 'react';
 import { CornerAccent } from '@/components/identity/CornerAccent';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { Button } from '@/components/ui/button';
@@ -199,6 +200,36 @@ export function FrameworkHeader({
 
   const diasParaMarco = marco ? diasAte(marco.dataAlvo) : 0;
 
+  /*
+    Ritmo, não contagem regressiva.
+
+    O convite do diálogo de marco diz "para acompanhar o ritmo" e o cabeçalho
+    entregava "em 84 dias". Um número de dias não diz a ninguém o que fazer na
+    segunda-feira de manhã; "4 requisitos por semana" diz, e permite avisar
+    quando a data deixou de ser possível.
+
+    Conta REQUISITOS, não pontos: é a unidade em que a pessoa trabalha. Falta o
+    que não está conforme e está dentro do escopo — parciais contam, porque um
+    parcial ainda dá trabalho até fechar.
+  */
+  const ritmo = useMemo(() => {
+    if (!marco) return null;
+    const faltam = parcial + naoConforme + naoAvaliado;
+    if (faltam === 0) return { estado: 'concluido' as const, faltam, semanas: 0, porSemana: 0 };
+    if (diasParaMarco < 0) return { estado: 'vencido' as const, faltam, semanas: 0, porSemana: 0 };
+    // Uma semana é o mínimo: com três dias pela frente, "1 semana" é uma
+    // aproximação honesta e evita dividir por zero.
+    const semanas = Math.max(1, Math.ceil(diasParaMarco / 7));
+    const porSemana = Math.ceil(faltam / semanas);
+    // Acima de dez requisitos por semana o plano deixou de ser um plano.
+    return {
+      estado: porSemana > 10 ? ('insuficiente' as const) : ('possivel' as const),
+      faltam,
+      semanas,
+      porSemana,
+    };
+  }, [marco, parcial, naoConforme, naoAvaliado, diasParaMarco]);
+
   return (
     <article className="relative overflow-hidden rounded-lg border border-border bg-card">
       <CornerAccent position="top-left" />
@@ -319,6 +350,26 @@ export function FrameworkHeader({
                     </span>
                   )}
                 </div>
+
+                {/* O ritmo que a data-alvo exige, na unidade em que se trabalha. */}
+                {ritmo && ritmo.estado !== 'concluido' && (
+                  <p
+                    className={cn(
+                      'mt-2 text-xs leading-6',
+                      ritmo.estado === 'possivel' ? 'text-muted-foreground' : 'text-destructive',
+                    )}
+                  >
+                    {ritmo.estado === 'vencido'
+                      ? t('gapV2.certificacao.prazoVencido', { faltam: ritmo.faltam })
+                      : ritmo.estado === 'insuficiente'
+                        ? t('gapV2.certificacao.ritmoInsuficiente', {
+                            faltam: ritmo.faltam, semanas: ritmo.semanas, porSemana: ritmo.porSemana,
+                          })
+                        : t('gapV2.certificacao.ritmoNecessario', {
+                            faltam: ritmo.faltam, semanas: ritmo.semanas, porSemana: ritmo.porSemana,
+                          })}
+                  </p>
+                )}
               </div>
               {onAbrirMarco && (
                 <button
