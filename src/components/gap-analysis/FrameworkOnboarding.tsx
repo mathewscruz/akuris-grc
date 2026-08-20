@@ -3,6 +3,7 @@ import { IconTime, IconBook, IconTarget, IconIdea, IconArrowRight, IconShield, I
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { fimDoPercurso } from '@/lib/gap-fases';
 
 interface FrameworkOnboardingProps {
   frameworkNome: string;
@@ -171,12 +172,22 @@ export function FrameworkOnboarding({ frameworkNome, frameworkVersao, frameworkT
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
             <IconAward className="h-5 w-5 text-primary" strokeWidth={1.5}/>
-            {t('gapV2.certificacao.tituloComoFunciona')}
+            {t(`gapV2.certificacao.titulo_${fimDoPercurso(frameworkNome)}`)}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm leading-7 text-muted-foreground">
-            {t('gapV2.certificacao.oQueE')}
+            {/*
+                Um texto por familia, e nao um para todos.
+
+                A versao anterior dizia a toda a gente "contrate um organismo
+                certificador, o certificado vale tres anos". Quem abrisse a LGPD
+                lia isso — e nao existe certificado de LGPD. O SOC 2 tambem nao
+                da certificado: da um relatorio de auditor. Dizer o contrario a
+                quem nunca passou por isto e' mandar a pessoa procurar uma coisa
+                que nao existe.
+            */}
+            {t(`gapV2.certificacao.oQueE_${fimDoPercurso(frameworkNome)}`)}
           </p>
         </CardContent>
       </Card>

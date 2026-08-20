@@ -3,6 +3,7 @@ import { buscarForaDoEscopo } from '@/lib/gap-soa';
 import { calcularScoreFramework, type RequisitoParaScore } from '@/lib/gap-score';
 import { DefinirMarcoDialog } from '@/components/gap-analysis/v2/DefinirMarcoDialog';
 import { useMarcoCertificacao } from '@/hooks/useMarcoCertificacao';
+import { fasesDe } from '@/lib/gap-fases';
 import { HerancaCrossFramework } from '@/components/gap-analysis/v2/HerancaCrossFramework';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { IconDownload, IconMore, IconFile, IconChevronLeft, IconChart, IconHelp } from '@/components/icons';
@@ -21,6 +22,7 @@ import { FrameworkOnboarding } from '@/components/gap-analysis/FrameworkOnboardi
 import { EvidenceLibraryHub } from '@/components/gap-analysis/EvidenceLibraryHub';
 import {
   SectionHeatmap,
+  PainelDeFases,
   PriorityQueueCard,
   FrameworkHeader,
   RequirementDrawerProvider,
@@ -458,6 +460,33 @@ function GapAnalysisFrameworkDetailInner() {
                 {/* A fila é o "o que eu faço agora" e estava espremida em um
                     terço de uma linha, debaixo de um cartão que dizia quase o
                     mesmo. Passa a largura inteira, logo abaixo do cabeçalho. */}
+                {/*
+                    O plano, antes da fila.
+
+                    A ordem da pagina passa a ser: onde estou (cabecalho), para
+                    onde vou (fases), o que faco agora (fila), onde estou fraco
+                    (mapa de calor), e o trabalho (tabela). Era medicao a seguir
+                    a medicao ate a tabela.
+                */}
+                <PainelDeFases
+                  frameworkName={framework.nome}
+                  categorias={categoryData}
+                  faseAtiva={searchParams.get('fase')}
+                  onEscolherFase={(categorias) => {
+                    const fase = (fasesDe(framework.nome) || []).find(
+                      (f) => f.categorias.join('|') === categorias.join('|'),
+                    );
+                    const sp = new URLSearchParams(window.location.search);
+                    if (fase) sp.set('fase', fase.id); else sp.delete('fase');
+                    // A fase substitui o recorte por categoria: sao dois cortes
+                    // do mesmo eixo e mante-los juntos daria lista vazia.
+                    sp.delete('cat');
+                    setSearchParams(sp, { replace: true });
+                    setActiveCategoryFilter(undefined);
+                    document.getElementById('reqs-table')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }}
+                />
+
                 {/*
                     Sem `evaluatedRequirements > 0`.
 

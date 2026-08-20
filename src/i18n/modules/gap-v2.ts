@@ -2,9 +2,15 @@ export const gapV2 = {
   pt: {
     gapV2: {
       certificacao: {
-        oQueE: 'A Akuris prepara a sua empresa para a certificação, mas não certifica. Quem emite o certificado é um organismo certificador, uma empresa independente que você contrata à parte; no Brasil, para as normas ISO, ele precisa ser acreditado pelo Inmetro. A auditoria de certificação tem dois estágios: no primeiro, o auditor analisa a sua documentação e diz se você já pode seguir; no segundo, ele vai até a empresa e confere, conversando com as pessoas e olhando os registros, se o que está no papel acontece de verdade. Nas normas ISO o certificado vale três anos, com auditorias de manutenção a cada ano para confirmar que a empresa continua cumprindo.',
-        tituloComoFunciona: 'Como funciona a certificação',
-        oQueEsoa: 'A Declaração de Aplicabilidade é a lista de todos os controles da norma com a sua decisão sobre cada um: este se aplica à minha empresa, este não se aplica, e por quê. Quando não se aplica, você escreve o motivo (por exemplo: a empresa não desenvolve software, então os controles de desenvolvimento ficam de fora). É o primeiro documento que o auditor pede, porque é por ele que ele descobre o que vai auditar.',
+        oQueE_certificado: 'A Akuris prepara a sua empresa, mas não certifica. Quem emite o certificado é um organismo certificador, uma empresa independente que você contrata à parte, e ele precisa ser acreditado por uma entidade reconhecida internacionalmente: no Brasil o Inmetro, no exterior entidades como a UKAS e a ANAB. Certificado emitido por empresa sem acreditação nenhuma costuma não ser aceito pelo seu cliente. A auditoria tem dois estágios: no primeiro o auditor analisa a sua documentação e diz se você já pode seguir; no segundo ele vai até a empresa e confere, conversando com as pessoas e olhando os registros, se o que está no papel acontece de verdade. O certificado vale três anos, com auditorias de manutenção a cada ano.',
+        oQueE_lei: 'Isto é uma lei, não uma norma certificável: não existe certificado, e ninguém emite um. O que existe é a sua empresa conseguir demonstrar que cumpre, à autoridade que fiscaliza e aos seus clientes, quando eles perguntarem. A Akuris organiza essa demonstração: o que a lei exige, o que a empresa já faz, e a prova de cada ponto. A data-alvo que você define aqui é sua, não de um auditor externo.',
+        oQueE_relatorio: 'Aqui o resultado não é um certificado: é um relatório assinado por um auditor externo independente, que você entrega aos seus clientes. A Akuris prepara a empresa e organiza a prova; o relatório é emitido por uma firma que você contrata à parte. O auditor examina um período de operação, e não um instante, por isso os controles precisam de estar a funcionar e a deixar registro durante meses antes de ele começar.',
+        oQueE_referencial: 'Este é um referencial de boas práticas, não uma norma com certificado. Ninguém audita nem emite documento: o valor está em ter o retrato do que a empresa faz e do que falta, para conduzir a melhoria e responder a quem perguntar. A data-alvo que você define aqui é sua.',
+        titulo_certificado: 'Como funciona a certificação',
+        titulo_lei: 'Como se demonstra conformidade com esta lei',
+        titulo_relatorio: 'Como funciona o relatório de auditoria',
+        titulo_referencial: 'O que se ganha com este referencial',
+        oQueEsoa: 'A Declaração de Aplicabilidade é a lista dos controles da norma. Para cada um você registra três coisas: se ele se aplica à sua empresa e por quê, se já está implementado hoje, e, quando não se aplica, o motivo da exclusão. O auditor cobra as três — a justificativa de quem entra é tão exigida quanto a de quem fica de fora. É o primeiro documento que ele pede, porque é por ele que descobre o que vai auditar.',
         ritmoNecessario: 'Para cumprir a data-alvo, faltam {faltam} requisitos em {semanas} semanas, o que dá {porSemana} por semana.',
         ritmoInsuficiente: 'No ritmo atual você não cumpre a data-alvo: faltam {faltam} requisitos em {semanas} semanas, o que exige {porSemana} por semana.',
         prazoVencido: 'A data-alvo já passou e ainda faltam {faltam} requisitos. Reveja a data ou o escopo.',
@@ -92,8 +98,8 @@ export const gapV2 = {
       priorityQueue: {
         title: 'Fila de prioridades',
         seeAll: 'Ver todos',
-        comecarAqui: 'Você ainda não avaliou nada, então a fila está ordenada pelo peso de cada requisito na norma. Comece pelo número 01: abra, leia o que a norma pede e diga se a empresa já faz, faz em parte ou não faz. A cada resposta a fila se reorganiza sozinha.',
-        criterio: 'A ordem vem de três coisas: o peso do requisito na norma, o quanto ele está longe de conforme, e o prazo que você definiu. Comece pelo 01 e desça.',
+        comecarAqui: 'Você ainda não avaliou nada, então a fila está ordenada pela prioridade que o Akuris dá a cada requisito. Comece pelo número 01: abra, leia o que a norma pede e diga se a empresa já faz, faz em parte ou não faz. A cada resposta a fila se reorganiza sozinha.',
+        criterio: 'A ordem vem de três coisas: a prioridade que o Akuris dá ao requisito, o quanto ele está longe de conforme, e o prazo que você definiu. Comece pelo 01 e desça.',
         emptyState: 'Nenhum requisito pendente de tratamento.',
         triage: 'Triagem',
         nonCompliant: 'Não conforme',
@@ -207,9 +213,15 @@ export const gapV2 = {
   en: {
     gapV2: {
       certificacao: {
-        oQueE: 'Akuris gets your company ready for certification, but does not issue the certificate. The certificate comes from a certification body, an independent company you hire separately; in Brazil, for ISO standards, it must be accredited by Inmetro. The certification audit has two stages: in the first, the auditor reviews your documentation and says whether you are ready to move on; in the second, the auditor comes to your site and checks, by talking to people and looking at records, whether what is on paper actually happens. For ISO standards the certificate is valid for three years, with a surveillance audit every year to confirm the company is still complying.',
-        tituloComoFunciona: 'How certification works',
-        oQueEsoa: 'The Statement of Applicability is the list of every control in the standard with your decision on each one: this applies to my company, this one does not, and why. When it does not apply, you write the reason (for example: the company does not develop software, so the development controls stay out). It is the first document the auditor asks for, because it is how the auditor finds out what will be audited.',
+        oQueE_certificado: 'Akuris gets your company ready, but does not certify it. The certificate comes from a certification body, an independent company you hire separately, and it must be accredited by an internationally recognised authority: Inmetro in Brazil, bodies such as UKAS and ANAB abroad. A certificate from a body with no accreditation is often rejected by your customer. The audit has two stages: first the auditor reviews your documentation and says whether you can move on; then the auditor comes on site and checks, by talking to people and looking at records, whether what is on paper actually happens. The certificate is valid for three years, with a surveillance audit each year.',
+        oQueE_lei: 'This is a law, not a certifiable standard: there is no certificate and nobody issues one. What exists is your ability to demonstrate compliance, to the supervisory authority and to your customers, when they ask. Akuris organises that demonstration: what the law requires, what the company already does, and the evidence for each point. The target date you set here is yours, not an external auditor\u2019s.',
+        oQueE_relatorio: 'The outcome here is not a certificate: it is a report signed by an independent external auditor, which you hand to your customers. Akuris prepares the company and organises the evidence; the report is issued by a firm you hire separately. The auditor examines a period of operation rather than a moment, so the controls must be running and leaving records for months before the audit begins.',
+        oQueE_referencial: 'This is a framework of good practice, not a standard with a certificate. Nobody audits it or issues a document: the value is having a picture of what the company does and what is missing, to drive improvement and to answer whoever asks. The target date you set here is yours.',
+        titulo_certificado: 'How certification works',
+        titulo_lei: 'How you demonstrate compliance with this law',
+        titulo_relatorio: 'How the audit report works',
+        titulo_referencial: 'What this framework gives you',
+        oQueEsoa: 'The Statement of Applicability is the list of the standard\u2019s controls. For each one you record three things: whether it applies to your company and why, whether it is already implemented today, and, when it does not apply, the reason for the exclusion. The auditor checks all three — the justification for what is in is as required as the one for what is out. It is the first document they ask for, because it is how they find out what will be audited.',
         ritmoNecessario: 'To meet the target date, {faltam} requirements are left over {semanas} weeks, which works out to {porSemana} per week.',
         ritmoInsuficiente: 'At the current pace you will not meet the target date: {faltam} requirements in {semanas} weeks call for {porSemana} per week.',
         prazoVencido: 'The target date has passed and {faltam} requirements are still open. Review the date or the scope.',
@@ -297,8 +309,8 @@ export const gapV2 = {
       priorityQueue: {
         title: 'Priority queue',
         seeAll: 'View all',
-        comecarAqui: 'You have not evaluated anything yet, so the queue is ordered by how much weight each requirement carries in the standard. Start with number 01: open it, read what the standard asks for, and say whether your company already does it, does part of it, or does not do it. The queue reorders itself with every answer.',
-        criterio: 'The order comes from three things: how much weight the standard gives the requirement, how far it is from compliant, and the deadline you set. Start at 01 and work down.',
+        comecarAqui: 'You have not evaluated anything yet, so the queue is ordered by the priority Akuris gives each requirement. Start with number 01: open it, read what the standard asks for, and say whether your company already does it, does part of it, or does not do it. The queue reorders itself with every answer.',
+        criterio: 'The order comes from three things: the priority Akuris gives the requirement, how far it is from compliant, and the deadline you set. Start at 01 and work down.',
         emptyState: 'No requirements pending treatment.',
         triage: 'Triage',
         nonCompliant: 'Non-compliant',

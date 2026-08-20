@@ -15,6 +15,7 @@ export { ActiveFrameworkRow } from './ActiveFrameworkRow';
 export { SectionHeatmap } from './SectionHeatmap';
 export { FrameworkHeader } from './FrameworkHeader';
 export type { HeatCell } from './SectionHeatmap';
+export { PainelDeFases } from './PainelDeFases';
 export { PriorityQueueCard } from './PriorityQueueCard';
 export { AIDiagnosticCard } from './AIDiagnosticCard';
 export type { AIDiagnosticResult } from './AIDiagnosticCard';

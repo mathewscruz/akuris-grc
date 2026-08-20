@@ -22,6 +22,7 @@ import { gapAdherence } from './gap-adherence';
 import { gapV2 } from './gap-v2';
 import { gapUi } from './gap-ui';
 import { gapExports } from './gap-exports';
+import { gapFases } from './gap-fases';
 import { planosAcao } from './planos-acao';
 import { minhasTarefas } from './minhas-tarefas';
 import { contratosAtivos } from './contratos-ativos';
@@ -123,6 +124,7 @@ const modules: Record<string, ModuleDict> = {
   gapV2,
   gapUi,
   gapExports,
+  gapFases,
   contratosAtivos,
   planosAcao,
   minhasTarefas,

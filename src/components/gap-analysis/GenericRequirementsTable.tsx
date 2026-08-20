@@ -1,5 +1,6 @@
 import { matchesSearch } from '@/lib/search-utils';
 import { buscarForaDoEscopo } from '@/lib/gap-soa';
+import { fasesDe, chaveDoFramework } from '@/lib/gap-fases';
 import { IconClose, IconSearch, IconWarning, IconChevron, IconChevronLeft, IconAttach, IconCheckbox, IconHelp, IconCalendarClock, IconPerson, IconShieldAlert } from '@/components/icons';
 import { rowOpenProps } from '@/lib/row-interaction';
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
@@ -96,6 +97,23 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
   // abas por categoria dentro da tabela — a mesma lista que o mapa de calor já
   // mostrava logo acima, com o mesmo número. Ficou o estado, saíram as abas.
   const [categoriaAtiva, setCategoriaAtiva] = useState<string>(searchParams.get('cat') || 'all');
+  /*
+    O filtro por FASE, ao lado do filtro por categoria.
+
+    Uma fase do plano de trabalho agrupa varias categorias: "Escopo fechado"
+    sao Contexto, Lideranca e Apoio. Em vez de ensinar `categoriaAtiva` a
+    guardar listas, a fase viaja como chave propria no endereco e a tabela
+    resolve as categorias a partir de `gap-fases.ts`. O endereco continua
+    legivel e partilhavel, e a pilula mostra o nome da fase em vez de tres
+    categorias soltas.
+  */
+  const faseAtiva = searchParams.get('fase');
+  const chaveDoPlano = chaveDoFramework(frameworkName);
+  const categoriasDaFase = useMemo(() => {
+    if (!faseAtiva) return null;
+    const fase = (fasesDe(frameworkName) || []).find((f) => f.id === faseAtiva);
+    return fase ? new Set(fase.categorias) : null;
+  }, [faseAtiva, frameworkName]);
   const [activeSection, setActiveSection] = useState<string>(searchParams.get('sec') || config.sections?.[0]?.id || '');
   const [selectedRequirement, setSelectedRequirement] = useState<Requirement | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
@@ -676,7 +694,12 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
 
 
   const getFilteredRequirements = (baseReqs: Requirement[]) => {
-    let filtered = categoriaAtiva === 'all'
+    // A fase manda sobre a categoria: quem clicou numa fase quer aquele
+    // recorte inteiro, nao a interseccao com uma categoria escolhida antes.
+    if (categoriasDaFase) {
+      return applyFilters(baseReqs.filter(r => categoriasDaFase.has(r.categoria || 'Outros')));
+    }
+    const filtered = categoriaAtiva === 'all'
       ? baseReqs
       : baseReqs.filter(r => (r.categoria || 'Outros') === categoriaAtiva);
     return applyFilters(filtered);
@@ -689,7 +712,13 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [categoriaAtiva, activeSection, itemsPerPage, searchTerm, statusFilter, onlyMandatory]);
+  }, [categoriaAtiva, faseAtiva, activeSection, itemsPerPage, searchTerm, statusFilter, onlyMandatory]);
+
+  const limparFase = () => {
+    const sp = new URLSearchParams(window.location.search);
+    sp.delete('fase');
+    setSearchParams(sp, { replace: true });
+  };
 
   const clearFilters = () => {
     setSearchTerm('');
@@ -697,9 +726,10 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
     setOnlyMandatory(false);
     setCategoriaAtiva('all');
     onCategoryFilterChange?.(undefined);
+    limparFase();
   };
   const hasActiveFilters =
-    searchTerm.trim() !== '' || statusFilter !== 'all' || onlyMandatory || categoriaAtiva !== 'all';
+    searchTerm.trim() !== '' || statusFilter !== 'all' || onlyMandatory || categoriaAtiva !== 'all' || !!faseAtiva;
 
   // Legenda de ícones agora unificada dentro do popover "?" da SearchAndFilterBar.
 
@@ -755,7 +785,19 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
       {/* O filtro de categoria vem do mapa de calor, que fica bem acima. Sem
           isto o utilizador via a tabela encolher sem nada na própria tabela a
           dizer porquê. */}
-      {categoriaAtiva !== 'all' && (
+      {faseAtiva && chaveDoPlano && (
+        <button
+          type="button"
+          onClick={limparFase}
+          className="inline-flex items-center gap-1.5 rounded-md border border-primary/40 bg-primary/5 px-2.5 py-1 text-sm text-primary hover:bg-primary/10 transition-colors"
+        >
+          <span className="text-muted-foreground">{t('gapFases.pilula')}</span>
+          <span className="font-medium">{t(`gapFases.${chaveDoPlano}.${faseAtiva}.nome`)}</span>
+          <IconClose className="h-3.5 w-3.5" strokeWidth={1.5} />
+        </button>
+      )}
+
+      {!faseAtiva && categoriaAtiva !== 'all' && (
         <button
           type="button"
           onClick={() => { setCategoriaAtiva('all'); onCategoryFilterChange?.(undefined); }}
