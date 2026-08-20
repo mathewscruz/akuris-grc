@@ -22,7 +22,6 @@ import { AIRecommendationsButton } from '@/components/gap-analysis/AIRecommendat
 import { FrameworkOnboarding } from '@/components/gap-analysis/FrameworkOnboarding';
 import { EvidenceLibraryHub } from '@/components/gap-analysis/EvidenceLibraryHub';
 import {
-  SectionHeatmap,
   AssistenteDeEscopo,
   PainelDeFases,
   PriorityQueueCard,
@@ -33,7 +32,6 @@ import {
   DocumentsHero,
   RemediationTabV2,
   SoATabV2,
-  type HeatCell,
 } from '@/components/gap-analysis/v2';
 import { useDocGen } from '@/contexts/DocGenContext';
 
@@ -527,14 +525,17 @@ function GapAnalysisFrameworkDetailInner() {
                     as classificar uma a uma.
                 */}
                 {empresaId && temAssistente && jaDeclarouEscopo === false && (
-                  <section className="rounded-lg border border-primary/30 bg-primary/5 p-5">
-                    <h3 className="text-sm font-semibold text-foreground">
-                      {t('gapEscopo.conviteTitulo')}
-                    </h3>
-                    <p className="mt-1.5 max-w-2xl text-sm leading-6 text-muted-foreground">
-                      {t('gapEscopo.conviteTexto', { total: totalRequirements })}
+                  /* Um banner, não um cartão.
+
+                     Ocupava 175px acima da dobra para dizer uma coisa que se
+                     diz numa linha, e empurrava para baixo a fila de
+                     prioridades, que é o que a pessoa veio fazer. É temporário:
+                     desaparece assim que ela recorta o escopo. */
+                  <section className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3">
+                    <p className="min-w-0 flex-1 text-sm leading-6 text-foreground">
+                      {t('gapEscopo.conviteLinha', { total: totalRequirements })}
                     </p>
-                    <Button className="mt-3" size="sm" onClick={() => setEscopoAberto(true)}>
+                    <Button size="sm" onClick={() => setEscopoAberto(true)}>
                       {t('gapEscopo.conviteBotao')}
                     </Button>
                   </section>
@@ -598,23 +599,26 @@ function GapAnalysisFrameworkDetailInner() {
                   />
                 )}
 
-                {/* Heatmap de aderência por categoria */}
-                {categoryData.length > 0 && (
-                  <SectionHeatmap
-                    cells={categoryData.map<HeatCell>(c => ({
-                      id: c.categoria,
-                      label: c.categoria,
-                      total: c.total,
-                      score: c.score,
-                      aplicaveis: c.aplicaveis,
-                      avaliados: c.avaliados,
-                    }))}
-                    activeId={activeCategoryFilter}
-                    onCellClick={(id) =>
-                      setActiveCategoryFilter(prev => prev === id ? undefined : id)
-                    }
-                  />
-                )}
+                {/* O mapa de calor saiu daqui.
+
+                    Eram onze cartões de categoria a cortar EXACTAMENTE o mesmo
+                    eixo do painel de fases, 300px abaixo dele: os dois agrupam
+                    requisitos pela coluna `categoria` e os dois filtram a
+                    tabela. Acrescentei o painel e não tirei o mapa, que é o
+                    defeito que este módulo já teve com o `getCategory` em três
+                    cópias e com os chips de filtro.
+
+                    E não era só peso. Com uma fase activa o clique no mapa
+                    ficava morto: o handler mudava `activeCategoryFilter`, mas a
+                    fase tem precedência a jusante e a pílula da categoria nem
+                    aparece nesse estado. O cartão acendia e, 1800px abaixo,
+                    nada acontecia.
+
+                    Dois cortes do mesmo eixo garantem que um deles mente
+                    sempre. Fica o que tem ordem, nome de resultado e diz por
+                    onde começar. O recorte por categoria continua a existir
+                    dentro da tabela, com pílula e endereço partilhável.
+                */}
 
                 {/* A barra de chips saiu daqui.
 

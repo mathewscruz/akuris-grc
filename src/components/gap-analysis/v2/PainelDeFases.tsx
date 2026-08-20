@@ -21,7 +21,7 @@ import { cn } from '@/lib/utils';
 import { fasesDe, chaveDoFramework, progressoDasFases } from '@/lib/gap-fases';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { SectionHead } from './SectionHead';
-import { IconSuccess, IconArrowRight } from '@/components/icons';
+import { IconSuccess } from '@/components/icons';
 
 interface CategoriaContada {
   categoria: string;
@@ -66,7 +66,7 @@ export function PainelDeFases({ frameworkName, categorias, onEscolherFase, faseA
   return (
     <section className="rounded-lg border border-border bg-card p-5">
       <SectionHead title={t('gapFases.titulo')} />
-      <p className="-mt-1 mb-4 text-xs leading-6 text-muted-foreground">
+      <p className="-mt-1 mb-3 text-sm leading-6 text-muted-foreground">
         {t('gapFases.subtitulo')}
       </p>
 
@@ -82,7 +82,18 @@ export function PainelDeFases({ frameworkName, categorias, onEscolherFase, faseA
                 onClick={() => onEscolherFase(fase.categorias)}
                 aria-pressed={ativa}
                 className={cn(
-                  'group h-full w-full rounded-lg border bg-background p-3 text-left transition-ui',
+                  /*
+                    `flex flex-col items-stretch justify-start` não é enfeite.
+
+                    O `button` do produto é flex com centragem vertical. Com
+                    `h-full` num grid esticado, os cartões com menos conteúdo
+                    centravam-no: as fases 02 a 04 abriam com 56px de vazio no
+                    topo e o título 46px abaixo do da fase 01, na mesma linha.
+                    Só a fase actual, que tem o parágrafo de resultado, enchia o
+                    cartão e ficava alinhada.
+                  */
+                  'group flex h-full w-full flex-col items-stretch justify-start',
+                  'rounded-lg border bg-background p-3 text-left transition-ui',
                   'hover:border-primary/40 hover:bg-accent/40',
                   ativa ? 'border-primary/60 ring-1 ring-primary/30' : 'border-border',
                 )}
@@ -95,18 +106,30 @@ export function PainelDeFases({ frameworkName, categorias, onEscolherFase, faseA
                     <IconSuccess className="h-3.5 w-3.5 text-success" strokeWidth={1.5} />
                   ) : fase.atual ? (
                     /* Um só realce, e é onde o trabalho está agora. */
-                    <span className="rounded bg-primary/10 px-1.5 py-0.5 text-micro font-medium text-primary">
+                    <span className="rounded bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary">
                       {t('gapFases.agora')}
                     </span>
                   ) : null}
                 </div>
 
-                <h4 className="mt-1.5 text-sm font-semibold leading-snug text-foreground group-hover:text-primary transition-colors">
+                <h4 className="mt-1.5 text-[0.9375rem] font-semibold leading-snug text-foreground group-hover:text-primary transition-colors">
                   {t(`gapFases.${chave}.${fase.id}.nome`)}
                 </h4>
-                <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                  {t(`gapFases.${chave}.${fase.id}.resultado`)}
-                </p>
+                {/*
+                    O resultado só na fase onde o trabalho está.
+
+                    Eram 35 a 45 palavras por cartão, a 11,4px, quatro vezes em
+                    coluna estreita — texto escrito justamente para quem nunca
+                    leu a norma, impresso no menor corpo da página e repetido
+                    até deixar de ser lido. As outras três fases não precisam de
+                    o dizer agora: dizem-no quando chegar a vez delas, e o nome
+                    de resultado já carrega o essencial.
+                */}
+                {fase.atual && (
+                  <p className="mt-1.5 text-sm leading-6 text-muted-foreground">
+                    {t(`gapFases.${chave}.${fase.id}.resultado`)}
+                  </p>
+                )}
 
                 <div className="mt-3">
                   <div className="h-1 overflow-hidden rounded-full bg-muted">
@@ -115,16 +138,12 @@ export function PainelDeFases({ frameworkName, categorias, onEscolherFase, faseA
                       style={{ width: `${pct}%` }}
                     />
                   </div>
-                  <div className="mt-1.5 flex items-center justify-between text-micro tabular-nums text-muted-foreground">
+                  <div className="mt-1.5 flex items-center justify-between text-xs tabular-nums text-muted-foreground">
                     <span>{t('gapFases.progresso', { feitos: fase.concluidos, total: fase.total })}</span>
                     <span>{t('gapFases.semanas', { semanas: fase.semanas })}</span>
                   </div>
                 </div>
 
-                <span className="mt-2 inline-flex items-center gap-1 text-micro text-muted-foreground group-hover:text-primary transition-colors">
-                  {t('gapFases.verRequisitos')}
-                  <IconArrowRight className="h-3 w-3" strokeWidth={1.5} />
-                </span>
               </button>
             </li>
           );
