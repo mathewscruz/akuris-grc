@@ -43,7 +43,12 @@ interface DocumentoDialogProps {
   documento?: Documento;
   /** Categorias da empresa — a coluna existia só na tabela de gestão. */
   categorias?: CategoriaOpcao[];
-  onSuccess: () => void;
+  /**
+   * Recebe o documento gravado. Quem chama a partir de um requisito do Gap
+   * Analysis precisa da URL para o anexar como evidência sem obrigar a pessoa
+   * a descarregar e reenviar o ficheiro que ela mesma acabou de gerar.
+   */
+  onSuccess: (documentoSalvo?: DocumentoSalvo) => void;
   initialFile?: File | null;
   initialData?: Partial<{
     nome: string; descricao: string; tipo: string; classificacao: string;
@@ -51,6 +56,13 @@ interface DocumentoDialogProps {
   }>;
   /** Origem do dialog — quando "docgen", reformula textos para o fluxo de incorporação. */
   originSource?: 'docgen';
+}
+
+export interface DocumentoSalvo {
+  id: string;
+  nome: string;
+  arquivo_url: string | null;
+  arquivo_nome: string | null;
 }
 
 export function DocumentoDialog({ open, onOpenChange, documento, categorias = [], onSuccess, initialFile, initialData, originSource }: DocumentoDialogProps) {
@@ -271,7 +283,12 @@ export function DocumentoDialog({ open, onOpenChange, documento, categorias = []
       if (!isDocGenFlow) {
         toast({ title: documento ? t('documentos.dialogs.documentoAtualizado') : t('documentos.dialogs.documentoCriado') });
       }
-      onSuccess();
+      onSuccess(documentoId ? {
+        id: documentoId,
+        nome: documentoData.nome,
+        arquivo_url: documentoData.arquivo_url,
+        arquivo_nome: documentoData.arquivo_nome,
+      } : undefined);
       onOpenChange(false);
     } catch (error) {
       logger.error('Erro ao salvar documento:', error);

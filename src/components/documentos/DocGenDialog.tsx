@@ -151,6 +151,8 @@ interface DocGenDialogProps {
   onDocumentSaved?: () => void;
   frameworkName?: string;
   frameworkId?: string;
+  /** Devolve o documento gravado a quem abriu o gerador a partir de um requisito. */
+  onDocumentoVinculado?: (documento: { id: string; nome: string; arquivo_url: string | null }) => void;
   /** 'generate' (default) opens chat. 'validate' shows validator entry hint. */
   mode?: 'generate' | 'validate';
   /** When opened from inside a requirement, gives the AI extra context. */
@@ -171,6 +173,7 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
   onOpenChange,
   onDocumentSaved,
   frameworkName,
+  onDocumentoVinculado,
   frameworkId,
   mode = 'generate',
   requirementContext,
@@ -1738,7 +1741,16 @@ export const DocGenDialog: React.FC<DocGenDialogProps> = ({
           open={showCreateDialog}
           onOpenChange={setShowCreateDialog}
           originSource="docgen"
-          onSuccess={() => {
+          onSuccess={(documentoSalvo) => {
+            // O requisito que abriu o gerador recebe o documento de volta e
+            // anexa-o como evidência, sem a pessoa ter de o reenviar.
+            if (documentoSalvo && requirementContext) {
+              onDocumentoVinculado?.({
+                id: documentoSalvo.id,
+                nome: documentoSalvo.nome,
+                arquivo_url: documentoSalvo.arquivo_url,
+              });
+            }
             const nomeIncorporado = generatedDocument?.titulo || t('docgen.dialog.title');
             onDocumentSaved?.();
             setShowCreateDialog(false);

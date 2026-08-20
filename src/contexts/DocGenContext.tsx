@@ -16,6 +16,13 @@ export interface OpenDocGenOptions {
   requirementContext?: DocGenRequirementContext;
   /** Called after a document is saved/validated and the user closes the dialog */
   onDone?: () => void;
+  /**
+   * Chamado quando o documento é gravado a partir de um requisito.
+   *
+   * Fecha o ciclo: quem gerou a política a partir do requisito não devia ter
+   * de a ir buscar ao módulo Documentos para a anexar como prova.
+   */
+  onDocumentoVinculado?: (documento: { id: string; nome: string; arquivo_url: string | null }) => void;
 }
 
 interface DocGenContextValue {
@@ -67,6 +74,7 @@ export const DocGenProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         frameworkName={opts.frameworkName}
         mode={opts.mode}
         requirementContext={opts.requirementContext}
+        onDocumentoVinculado={opts.onDocumentoVinculado}
         onDocumentSaved={opts.onDone}
       />
     </DocGenContext.Provider>

@@ -1029,6 +1029,31 @@ export const RequirementDetailDialog: React.FC<RequirementDetailDialogProps> = (
                               requirementCode: requirement.codigo,
                               requirementTitle: requirement.titulo,
                             },
+                            /*
+                              O documento gerado volta como evidência daqui.
+
+                              Antes ia para o módulo Documentos e o passo 2
+                              continuava a dizer "Vazio": a pessoa fazia o
+                              esforço certo e o requisito não se mexia. Tinha de
+                              descobrir sozinha que precisava de voltar,
+                              descarregar e reenviar o ficheiro que acabara de
+                              gerar.
+                            */
+                            onDocumentoVinculado: (doc) => {
+                              if (!doc.arquivo_url) return;
+                              setFormData(prev => (
+                                prev.evidence_files.some((f: any) => f.url === doc.arquivo_url)
+                                  ? prev
+                                  : {
+                                      ...prev,
+                                      evidence_files: [
+                                        ...prev.evidence_files,
+                                        { type: 'file', name: doc.nome, url: doc.arquivo_url, origem: 'docgen' },
+                                      ],
+                                    }
+                              ));
+                              toast.success(t('gapUi.detail.documentoAnexadoAoRequisito'));
+                            },
                           })}
                         >
                           <div className="text-left leading-tight">
