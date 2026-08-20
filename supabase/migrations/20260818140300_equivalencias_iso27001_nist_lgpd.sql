@@ -1,3 +1,18 @@
+-- SUPERSEDED-BY: 20260820170000_heranca_entre_frameworks_volta_a_existir.sql
+--
+-- ESTA MIGRATION NUNCA INSERIU NADA. Fica no histórico por ser passado já
+-- aplicado, mas não a copie: os códigos abaixo não casam com o catálogo.
+--
+--     diz 'GV.OC'   ->  o catálogo tem 'GV.OC-01' ... 'GV.OC-05'
+--     diz 'PR.AA'   ->  o catálogo tem 'PR.AA-01' ... 'PR.AA-06'
+--     diz 'ID.AM'   ->  o catálogo tem 'ID.AM-01' ... 'ID.AM-08'
+--     diz 'Art.46'  ->  o catálogo tem 'Art. 46'   (com espaço)
+--
+-- O `INSERT ... SELECT` com JOIN por código não dá erro quando não casa —
+-- insere zero linhas e devolve sucesso. A tabela ficou vazia, e como
+-- `HerancaCrossFramework` não desenha nada sem propostas, a funcionalidade
+-- desapareceu do produto sem um único sinal.
+--
 -- Equivalências entre ISO/IEC 27001:2022, NIST CSF 2.0 e LGPD.
 --
 -- O mapeamento é feito por CÓDIGO do requisito, não por id: os frameworks são

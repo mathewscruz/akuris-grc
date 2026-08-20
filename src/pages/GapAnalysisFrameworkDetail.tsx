@@ -662,8 +662,10 @@ function GapAnalysisFrameworkDetailInner() {
                     frameworkId={frameworkId!}
                     empresaId={empresaId}
                     onUploadClick={() => setDocUploadSignal(s => s + 1)}
-                    onLinkClick={() => setDocUploadSignal(s => s + 1)}
-                    onAIGenerate={() => setDocUploadSignal(s => s + 1)}
+                    onAIGenerate={() => openDocGen({
+                      frameworkId: frameworkId!,
+                      frameworkName: framework.nome,
+                    })}
                   />
                 )}
                 <AdherenceAssessmentView

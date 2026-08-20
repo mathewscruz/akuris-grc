@@ -9,14 +9,14 @@ import { KpiTiny } from './KpiTiny';
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/lib/logger';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { IconUpload, IconLink } from '@/components/icons';
+import { IconUpload } from '@/components/icons';
 
 import { formatarDiaParaDB } from '@/lib/date-utils';
 interface Props {
   frameworkId: string;
   empresaId: string;
   onUploadClick?: () => void;
-  onLinkClick?: () => void;
+  /** Abre o gerador de documentos com o contexto deste framework. */
   onAIGenerate?: () => void;
 }
 
@@ -26,7 +26,7 @@ interface SuggestedType {
   status: string;
 }
 
-export function DocumentsHero({ frameworkId, empresaId, onUploadClick, onLinkClick, onAIGenerate }: Props) {
+export function DocumentsHero({ frameworkId, empresaId, onUploadClick, onAIGenerate }: Props) {
   const { t } = useLanguage();
   const [stats, setStats] = useState({
     analyzed: 0,
@@ -45,7 +45,17 @@ export function DocumentsHero({ frameworkId, empresaId, onUploadClick, onLinkCli
         const [asmtRes, reqsRes, evalsRes] = await Promise.all([
           supabase
             .from('gap_analysis_adherence_assessments')
-            .select('id, score_aderencia')
+            /*
+              A coluna chama-se `percentual_conformidade`.
+
+              Isto pedia `score_aderencia`, que nunca existiu: o PostgREST
+              respondia 400, o erro não era lido em lado nenhum, `data` vinha
+              null e os dois indicadores do topo — "documentos analisados" e
+              "conformidade média" — ficavam em 0 e "—" para sempre. Ao lado,
+              na mesma aba, a lista de "Avaliações Recentes" mostrava a análise
+              concluída com 67%. A tela contradizia-se e ninguém via porquê.
+            */
+            .select('id, percentual_conformidade')
             .eq('framework_id', frameworkId)
             .eq('empresa_id', empresaId),
           supabase
@@ -58,6 +68,16 @@ export function DocumentsHero({ frameworkId, empresaId, onUploadClick, onLinkCli
             .eq('framework_id', frameworkId)
             .eq('empresa_id', empresaId),
         ]);
+
+        /*
+          Consulta falhada não é "não há nada".
+
+          Os três indicadores desta aba são números que o utilizador lê como
+          facto. Se a leitura falhar, é melhor rebentar aqui e cair no catch —
+          que regista no log — do que desenhar zeros com ar de verdade.
+        */
+        const erro = asmtRes.error || reqsRes.error || evalsRes.error;
+        if (erro) throw erro;
 
         const asmts = asmtRes.data || [];
         const reqs = reqsRes.data || [];
@@ -128,7 +148,7 @@ export function DocumentsHero({ frameworkId, empresaId, onUploadClick, onLinkCli
         ).length;
 
         const scores = asmts
-          .map((a: any) => Number(a.score_aderencia))
+          .map((a: any) => Number(a.percentual_conformidade))
           .filter(n => Number.isFinite(n) && n > 0);
         const avg = scores.length
           ? Math.round(scores.reduce((s, n) => s + n, 0) / scores.length)
@@ -199,18 +219,25 @@ export function DocumentsHero({ frameworkId, empresaId, onUploadClick, onLinkCli
                 <IconUpload className="h-4 w-4" strokeWidth={1.5} />
                 {t('gapAnalysis.v2.documentsHero.attachFiles')}
               </button>
-              <button
-                type="button"
-                onClick={onLinkClick}
-                className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3.5 py-2 text-sm text-foreground hover:border-primary/40 transition-colors"
-              >
-                <IconLink className="h-4 w-4" strokeWidth={1.5} />
-                {t('gapAnalysis.v2.documentsHero.addLink')}
-              </button>
+              {/*
+                Havia aqui um terceiro botão, "Adicionar link / URL".
+
+                Os três — anexar, link e gerar — chamavam exactamente o mesmo
+                `setDocUploadSignal(s => s + 1)` e abriam o mesmo seletor de
+                ficheiros. Três promessas, um comportamento.
+
+                O "gerar" tinha para onde ir: o gerador de documentos existe e
+                é global, e agora abre com o contexto do framework. O "link"
+                não tinha: o produto não sabe analisar um documento a partir de
+                um URL a este nível — a análise trabalha sobre ficheiro no
+                bucket. Um botão que promete uma coisa e faz outra é pior do
+                que não existir, por isso saiu. Volta quando houver a análise
+                por URL para o sustentar.
+              */}
               <button
                 type="button"
                 onClick={onAIGenerate}
-                className="inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm text-primary hover:bg-primary/5 transition-colors"
+                className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3.5 py-2 text-sm text-foreground hover:border-primary/40 transition-colors"
               >
                 {t('gapAnalysis.v2.documentsHero.generateWithAi')}
               </button>

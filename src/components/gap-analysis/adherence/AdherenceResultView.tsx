@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type { Json } from '@/integrations/supabase/types';
 import { IconDownload, IconSuccess, IconWarning, IconRefresh, IconFile, IconIdea, IconArrowLeft, IconTrendUp } from '@/components/icons';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -142,6 +143,47 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
         nao_conforme: 'nao_conforme',
       };
 
+      /*
+        O documento que sustentou a conclusão anexa-se como prova.
+
+        Isto marcava o requisito como conforme e não deixava nada atrás: nem
+        ficheiro, nem — no ramo de actualização — sequer a nota a dizer de que
+        documento veio a decisão. O auditor pergunta "mostre-me a evidência de
+        que A.5.1 está conforme" e não havia nenhuma.
+
+        O caminho do ficheiro está em `metadados_analise.arquivo_storage`,
+        bucket `adherence-documents`. Entra no `evidence_files` da avaliação,
+        que é o que o ecrã lê — e daí o gatilho da base espelha-o na Biblioteca
+        de Evidências, já ligado a este requisito.
+      */
+      const meta = ((assessment as { metadados_analise?: Record<string, unknown> })
+        ?.metadados_analise ?? {}) as Record<string, unknown>;
+      const caminhoDoDocumento = (meta.arquivo_storage as string | undefined) || null;
+      const provaDaAnalise = caminhoDoDocumento
+        ? {
+            name: (meta.arquivo_original as string | undefined)
+              || assessment.documento_nome
+              || caminhoDoDocumento,
+            path: caminhoDoDocumento,
+            url: caminhoDoDocumento,
+            bucket: 'adherence-documents',
+            type: (meta.arquivo_original_tipo as string | undefined)
+              || assessment.documento_tipo
+              || null,
+            size: (meta.arquivo_tamanho as number | undefined) ?? null,
+            origem: 'analise_documental',
+          }
+        : null;
+
+      /** Junta a prova sem a repetir se já lá estiver. */
+      type FicheiroDeProva = { path?: string; url?: string; [k: string]: Json | undefined };
+      const comProva = (atuais: unknown): Json[] => {
+        const lista = Array.isArray(atuais) ? [...(atuais as FicheiroDeProva[])] : [];
+        if (!provaDaAnalise) return lista as Json[];
+        const jaTem = lista.some((f) => (f?.path || f?.url) === provaDaAnalise.path);
+        return (jaTem ? lista : [...lista, provaDaAnalise]) as Json[];
+      };
+
       let applied = 0;
       for (const detail of applicableDetails) {
         const conformityStatus = statusMap[detail.status_aderencia];
@@ -150,7 +192,7 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
         // Check if evaluation exists
         const { data: existing } = await supabase
           .from('gap_analysis_evaluations')
-          .select('id, conformity_status')
+          .select('id, conformity_status, evidence_files, observacoes')
           .eq('framework_id', frameworkId)
           .eq('requirement_id', detail.requirement_id)
           .eq('empresa_id', empresaId)
@@ -162,8 +204,21 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
           const currentPriority = priority[existing.conformity_status || 'nao_avaliado'] || 0;
           const newPriority = priority[conformityStatus] || 0;
           if (newPriority > currentPriority) {
+            const nota = t('gapAnalysis.adherenceUi.result.autoEvaluatedNote', { doc: assessment.documento_nome });
             await exigirEscrita(supabase.from('gap_analysis_evaluations')
-              .update({ conformity_status: conformityStatus, updated_at: new Date().toISOString() })
+              .update({
+                conformity_status: conformityStatus,
+                evidence_files: comProva(existing.evidence_files),
+                /*
+                  A origem da conclusão também aqui. O ramo de actualização não
+                  escrevia nota nenhuma: o status subia para conforme e não
+                  ficava registo de que documento o justificou.
+                */
+                observacoes: existing.observacoes?.includes(assessment.documento_nome ?? '')
+                  ? existing.observacoes
+                  : [existing.observacoes, nota].filter(Boolean).join('\n'),
+                updated_at: new Date().toISOString(),
+              })
               .eq('id', existing.id));
             applied++;
           }
@@ -174,7 +229,13 @@ export function AdherenceResultView({ assessment, onBack, frameworkId, onApplied
               requirement_id: detail.requirement_id,
               empresa_id: empresaId,
               conformity_status: conformityStatus,
-              evidence_status: 'pendente',
+              evidence_files: comProva(null),
+              /*
+                `pendente` alimenta o KPI "itens pendentes" em
+                useGapAnalysisStats. Com a prova anexada aqui mesmo, deixar
+                `pendente` fazia o painel pedir uma evidência que já existe.
+              */
+              evidence_status: provaDaAnalise ? 'anexada' : 'pendente',
               status: 'em_andamento',
               observacoes: t('gapAnalysis.adherenceUi.result.autoEvaluatedNote', { doc: assessment.documento_nome }),
             }));

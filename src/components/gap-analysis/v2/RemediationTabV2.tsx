@@ -14,6 +14,8 @@ import { useAuth } from '@/components/AuthProvider';
 import { logger } from '@/lib/logger';
 import { cn } from '@/lib/utils';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { PlanoAcaoDialog } from '@/components/planos-acao/PlanoAcaoDialog';
+import { toast } from 'sonner';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolvePrioridadeTone } from '@/lib/status-tone';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -22,7 +24,7 @@ import { SectionHead } from './SectionHead';
 import { CornerAccent } from '@/components/identity/CornerAccent';
 import { reqTitulo } from "@/lib/gap-i18n";
 import { useLanguage } from '@/contexts/LanguageContext';
-import { IconExternal, IconArrowRight, IconChecklist, IconGrid, IconList, IconBranch } from '@/components/icons';
+import { IconExternal, IconArrowRight, IconChecklist } from '@/components/icons';
 import { intlLocale, parseDataLocal } from '@/lib/date-utils';
 interface Props {
   frameworkId: string;
@@ -38,7 +40,8 @@ interface PlanoAcao {
   prazo: string | null;
   responsavel_id: string | null;
   responsavel_nome: string | null;
-  requirement_id: string;
+  /** `null` quando o plano existe mas o requisito de origem sumiu. */
+  requirement_id: string | null;
   requirement_codigo: string;
   requirement_titulo: string;
   requirement_categoria: string | null;
@@ -68,6 +71,10 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
   const [naoConformes, setNaoConformes] = useState<NaoConformeReq[]>([]);
   /** Universo do framework: sem ele não dá para converter peso em pontos de score. */
   const [todosRequisitos, setTodosRequisitos] = useState<RequisitoParaScore[]>([]);
+  const [recarga, setRecarga] = useState(0);
+  const [planoDialogOpen, setPlanoDialogOpen] = useState(false);
+  const [guardandoPlano, setGuardandoPlano] = useState(false);
+  const [grupoParaPlano, setGrupoParaPlano] = useState<{ categoria: string; items: NaoConformeReq[] } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -124,7 +131,7 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
             return {
               ...p,
               responsavel_nome: p.responsavel_id ? (profMap.get(p.responsavel_id) || null) : null,
-              requirement_id: reqId || '',
+              requirement_id: reqId ?? null,
               requirement_codigo: req?.codigo || '',
               requirement_titulo: reqTitulo(req as any) || '',
               requirement_categoria: req?.categoria || null,
@@ -171,7 +178,7 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
     return () => {
       alive = false;
     };
-  }, [empresaId, frameworkId]);
+  }, [empresaId, frameworkId, recarga]);
 
   const kpis = useMemo(() => {
     const gapsAbertos = naoConformes.length;
@@ -189,10 +196,21 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
     return { gapsAbertos, sugeridosIA, emExecucao, impactoPotencial };
   }, [planos, naoConformes, todosRequisitos]);
 
-  const [grouping, setGrouping] = useState<'causa' | 'secao' | 'esforco'>('causa');
-  const [boardView, setBoardView] = useState<'quadro' | 'lista' | 'timeline'>('quadro');
+  const [grouping, setGrouping] = useState<'causa' | 'esforco'>('causa');
 
   const aiClusters = useMemo(() => {
+    /**
+     * Quantos pontos de score este grupo fecha, na mesma conta do KPI do topo.
+     *
+     * Peso não é ponto: o peso é o que o requisito vale DENTRO do framework, e
+     * o ponto é o efeito no score, que depende do universo inteiro e do escopo.
+     */
+    const ganhoDoGrupo = (items: NaoConformeReq[]) =>
+      ganhoPotencial(
+        todosRequisitos,
+        items.map(r => ({ id: r.id, peso: r.peso, conformityStatus: 'nao_conforme' })),
+      );
+
     if (grouping === 'esforco') {
       // Buckets por esforço (1, 2-4, 5+) atravessando categorias
       const buckets: Array<{ key: string; label: string; items: NaoConformeReq[] }> = [
@@ -214,12 +232,9 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
         .map(b => ({
           categoria: b.label,
           items: b.items,
-          peso: b.items.reduce((s, r) => s + (Number(r.peso) || 1), 0),
-          esforco: b.key === 'baixo' ? 'L' : b.key === 'medio' ? 'M' : 'H',
-          dias: Math.min(90, 7 * b.items.length),
+          ganho: ganhoDoGrupo(b.items),
         }));
     }
-    // 'causa' e 'secao' ambos agrupam por categoria — diferença é apenas semântica
     const byCat = new Map<string, NaoConformeReq[]>();
     naoConformes.forEach(r => {
       const arr = byCat.get(r.categoria) || [];
@@ -230,13 +245,85 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
       .filter(([, items]) => items.length >= 2)
       .sort((a, b) => b[1].length - a[1].length)
       .slice(0, 3)
-      .map(([categoria, items]) => {
-        const peso = items.reduce((s, r) => s + (Number(r.peso) || 1), 0);
-        const esforco = items.length <= 2 ? 'L' : items.length <= 5 ? 'M' : 'H';
-        const dias = Math.min(90, 7 * items.length);
-        return { categoria, items, peso, esforco, dias };
+      .map(([categoria, items]) => ({
+        categoria,
+        items,
+        ganho: ganhoDoGrupo(items),
+      }));
+  }, [naoConformes, grouping, todosRequisitos]);
+
+  /**
+   * Abre o plano de ação já preenchido com o grupo.
+   *
+   * O que o utilizador quer daqui é "trate estes seis requisitos"; o que
+   * recebia era a lista geral de planos, sem contexto nenhum. A origem fica
+   * gravada (`modulo_origem: 'frameworks'`) para que o plano saiba de onde
+   * veio e o requisito saiba que tem plano.
+   */
+  const abrirPlanoPara = (grupo: { categoria: string; items: NaoConformeReq[] }) => {
+    setGrupoParaPlano(grupo);
+    setPlanoDialogOpen(true);
+  };
+
+  /** O que o PlanoAcaoDialog devolve em onSave. */
+  type PlanoNovo = {
+    titulo: string;
+    descricao: string | null;
+    status: string;
+    prioridade: string;
+    responsavel_id: string | null;
+    prazo: string | null;
+    modulo_origem: string;
+    registro_origem_titulo: string | null;
+    registro_origem_id: string | null;
+    observacoes: string | null;
+  };
+
+  const guardarPlanoDoGrupo = async (planoData: PlanoNovo) => {
+    if (!grupoParaPlano || !empresaId) return;
+    setGuardandoPlano(true);
+    try {
+      const codigos = grupoParaPlano.items.map(r => r.codigo).filter(Boolean);
+      const { error } = await supabase.from('planos_acao').insert({
+        ...planoData,
+        empresa_id: empresaId,
+        modulo_origem: 'frameworks',
+        registro_origem_id: frameworkId,
+        registro_origem_titulo: `${frameworkName} · ${grupoParaPlano.categoria} (${codigos.join(', ')})`,
       });
-  }, [naoConformes, grouping]);
+      if (error) throw error;
+      toast.success(t('gapV2.remediation.planCreated'));
+      setPlanoDialogOpen(false);
+      setGrupoParaPlano(null);
+      setRecarga(n => n + 1);
+    } catch (e) {
+      logger.error('RemediationTabV2.guardarPlanoDoGrupo', {
+        error: e instanceof Error ? e.message : String(e),
+      });
+      toast.error(t('gapV2.remediation.planCreateError'));
+    } finally {
+      setGuardandoPlano(false);
+    }
+  };
+
+  /*
+    Saíram daqui o "esforço" e os "dias estimados".
+
+    O esforço vinha de `items.length <= 2 ? 'L' : items.length <= 5 ? 'M' :
+    'H'` — o tamanho do grupo, não o trabalho de cada requisito. E os dias de
+    `Math.min(90, 7 * items.length)`: sete dias por requisito, para todos.
+    Escrever uma política de senhas e segmentar a rede de cardholder data
+    custavam a mesma semana.
+
+    Estava rotulado "estimado", ao lado de "+N pts impacto", que é uma conta
+    real. Numa ferramenta que vende preparação para auditoria, um número
+    inventado com ar de estimativa é pior do que nenhum: o cliente planeia
+    orçamento com ele.
+
+    Fica o que se pode defender: quantos requisitos o plano cobre e quantos
+    pontos de score fecha. Quando houver esforço a sério — por tipo de
+    requisito, ou pelo histórico da própria empresa — volta com base.
+  */
 
   if (loading) {
     return (
@@ -287,12 +374,20 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
               title={t('gapV2.remediation.consolidatedPlansTitle')}
               count={aiClusters.length}
             />
+            {/*
+              Eram três opções e duas faziam a mesma coisa.
+
+              "Por causa raiz" e "Por secção" caíam ambas no mesmo ramo — o
+              próprio código dizia "diferença é apenas semântica". O utilizador
+              clicava e a tela não mudava, o que o leva a pensar que o controlo
+              está partido. Ficam as duas que produzem resultados diferentes:
+              agrupar por categoria e agrupar por peso.
+            */}
             <SegmentToggle
               value={grouping}
-              onChange={(v) => setGrouping(v as 'causa' | 'secao' | 'esforco')}
+              onChange={(v) => setGrouping(v as 'causa' | 'esforco')}
               options={[
-                { value: 'causa', label: t('gapV2.remediation.segByRootCause') },
-                { value: 'secao', label: t('gapV2.remediation.segBySection') },
+                { value: 'causa', label: t('gapV2.remediation.segBySection') },
                 { value: 'esforco', label: t('gapV2.remediation.segByEffort') },
               ]}
             />
@@ -341,17 +436,29 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
                   )}
                 </div>
 
-                <div className="mt-3 flex items-center gap-2 text-micro text-muted-foreground">
-                  <span><strong className="text-foreground">{c.esforco === 'L' ? t('gapV2.remediation.effortLow') : c.esforco === 'M' ? t('gapV2.remediation.effortMedium') : t('gapV2.remediation.effortHigh')}</strong> {t('gapV2.remediation.effortSuffix')}</span>
-                  <span>·</span>
-                  <span><strong className="text-foreground">{c.dias}d</strong> {t('gapV2.remediation.estimated')}</span>
-                  <span>·</span>
-                  <span className="text-success">+{c.peso} pts impacto</span>
+                <div className="mt-3 text-micro text-muted-foreground">
+                  {/*
+                    Isto dizia "+{c.peso} pts impacto", e `peso` é a soma dos
+                    PESOS dos requisitos — não pontos de score. Num framework
+                    com 44 gaps, um grupo de 15 anunciava "+42 pts" ao lado de
+                    um KPI que dizia "+37 pts se todos forem resolvidos": a
+                    parte maior do que o todo, na mesma tela. É a mesma conta
+                    que o KPI já fazia bem, com `ganhoPotencial`.
+                  */}
+                  <span className="text-success">
+                    {t('gapV2.remediation.impactPoints', { pontos: c.ganho })}
+                  </span>
                 </div>
 
+                {/*
+                  "Criar plano" criava plano nenhum: era `navigate('/planos-acao')`
+                  e largava a pessoa na lista geral de planos de ação, sem o
+                  requisito, sem o framework, sem nada por onde continuar. Agora
+                  leva os requisitos deste grupo consigo.
+                */}
                 <button
                   type="button"
-                  onClick={() => navigate('/planos-acao')}
+                  onClick={() => abrirPlanoPara(c)}
                   className="mt-3 inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
                 >
                   {t('gapV2.remediation.createPlan')}
@@ -370,17 +477,13 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
             title={t('gapV2.remediation.actionPlansTitle')}
             count={planos.length}
           />
-          <div className="inline-flex items-center rounded-md border border-border bg-card p-0.5">
-            <ViewBtn icon={IconGrid} active={boardView === 'quadro'} onClick={() => setBoardView('quadro')}>
-              {t('gapV2.remediation.viewBoard')}
-            </ViewBtn>
-            <ViewBtn icon={IconList} active={boardView === 'lista'} onClick={() => setBoardView('lista')} disabled>
-              {t('gapV2.remediation.viewList')}
-            </ViewBtn>
-            <ViewBtn icon={IconBranch} active={boardView === 'timeline'} onClick={() => setBoardView('timeline')} disabled>
-              {t('gapV2.remediation.viewTimeline')}
-            </ViewBtn>
-          </div>
+          {/*
+            Havia aqui três botões de vista e dois estavam `disabled` fixo, a
+            50% de opacidade, com tooltip "em breve". Um seletor onde só uma
+            opção funciona não é um seletor — é a promessa de duas coisas que
+            não existem, permanentemente à vista. O quadro é a única vista
+            construída; quando houver lista e cronograma, os botões voltam.
+          */}
         </div>
 
         {planos.length === 0 ? (
@@ -411,7 +514,12 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
                       <button
                         key={p.id}
                         type="button"
-                        onClick={() => navigate('/planos-acao')}
+                        /*
+                          Clicar num plano levava à lista geral, onde era
+                          preciso encontrá-lo outra vez entre todos. Agora abre
+                          o plano em que se clicou.
+                        */
+                        onClick={() => navigate(`/planos-acao?plano=${p.id}`)}
                         className="w-full text-left rounded-lg border border-border bg-card p-3 hover:border-primary/40 transition-colors group"
                       >
                         <div className="flex items-center gap-2 mb-1">
@@ -452,6 +560,34 @@ export function RemediationTabV2({ frameworkId, frameworkName }: Props) {
           </div>
         )}
       </section>
+
+      <PlanoAcaoDialog
+        open={planoDialogOpen}
+        onOpenChange={(aberto) => {
+          setPlanoDialogOpen(aberto);
+          if (!aberto) setGrupoParaPlano(null);
+        }}
+        onSave={guardarPlanoDoGrupo}
+        loading={guardandoPlano}
+        /*
+          `rascunho`, e não `plano`: passar `plano` põe o diálogo em modo de
+          edição — o cabeçalho passa a dizer "Editar Plano de Ação" para algo
+          que ainda não existe, e a origem que se lhe dá é ignorada.
+        */
+        rascunho={grupoParaPlano ? {
+          titulo: t('gapV2.remediation.planTitleFor', { category: grupoParaPlano.categoria }),
+          descricao: t('gapV2.remediation.planDescriptionFor', {
+            framework: frameworkName,
+            count: grupoParaPlano.items.length,
+            codigos: grupoParaPlano.items.map(r => r.codigo).filter(Boolean).join(', '),
+          }),
+        } : undefined}
+        origemInicial={grupoParaPlano ? {
+          modulo: 'frameworks',
+          registroId: frameworkId,
+          registroTitulo: `${frameworkName} · ${grupoParaPlano.categoria}`,
+        } : undefined}
+      />
     </div>
   );
 }
@@ -493,42 +629,3 @@ function SegmentToggle<T extends string>({
   );
 }
 
-function ViewBtn({
-  icon: Icon,
-  active,
-  onClick,
-  disabled,
-  children,
-}: {
-  icon: React.ElementType;
-  active: boolean;
-  onClick: () => void;
-  disabled?: boolean;
-  children: React.ReactNode;
-}) {
-  const { t } = useLanguage();
-  const btn = (
-    <button
-      type="button"
-      onClick={disabled ? undefined : onClick}
-      disabled={disabled}
-      className={cn(
-        'inline-flex items-center gap-1.5 rounded-md px-3 py-1 text-xs transition-colors',
-        active ? 'bg-foreground text-background font-medium' : 'text-muted-foreground hover:text-foreground',
-        disabled && 'opacity-50 cursor-not-allowed hover:text-muted-foreground'
-      )}
-    >
-      <Icon className="h-3 w-3" strokeWidth={1.5} />
-      {children}
-    </button>
-  );
-  if (disabled) {
-    return (
-      <Tooltip>
-        <TooltipTrigger asChild>{btn}</TooltipTrigger>
-        <TooltipContent><span className="text-xs">{t('gapV2.remediation.comingSoon')}</span></TooltipContent>
-      </Tooltip>
-    );
-  }
-  return btn;
-}

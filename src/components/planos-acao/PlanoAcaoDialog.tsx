@@ -42,6 +42,15 @@ interface PlanoAcaoDialogProps {
   loading?: boolean;
   /** Pré-preenche a origem quando a ação é criada a partir de um registo. */
   origemInicial?: { modulo: string; registroId: string; registroTitulo: string };
+  /**
+   * Título e descrição já escritos, para criação a partir de um contexto.
+   *
+   * Não confundir com `plano`: passar `plano` põe o diálogo em modo de
+   * EDIÇÃO — muda o cabeçalho para "Editar" e ignora `origemInicial`. Quem
+   * cria um plano a partir de um grupo de requisitos quer criar, com o texto
+   * já preenchido, e continuar a poder mudá-lo.
+   */
+  rascunho?: { titulo?: string; descricao?: string };
 }
 
 function buildModulosOrigem(t: (key: string) => string) {
@@ -62,7 +71,7 @@ function buildModulosOrigem(t: (key: string) => string) {
   ];
 }
 
-export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading, origemInicial }: PlanoAcaoDialogProps) {
+export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading, origemInicial, rascunho }: PlanoAcaoDialogProps) {
   const { t } = useLanguage();
   const modulosOrigem = useMemo(() => buildModulosOrigem(t), [t]);
   const [titulo, setTitulo] = useState('');
@@ -91,8 +100,8 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading, or
       setRegistroOrigemId(plano.registro_origem_id || '');
       setObservacoes(plano.observacoes || '');
     } else {
-      setTitulo('');
-      setDescricao('');
+      setTitulo(rascunho?.titulo ?? '');
+      setDescricao(rascunho?.descricao ?? '');
       setStatus('pendente');
       setPrioridade('media');
       setResponsavelId('');
@@ -103,7 +112,7 @@ export function PlanoAcaoDialog({ open, onOpenChange, onSave, plano, loading, or
       setObservacoes('');
     }
     setActiveTab('identificacao');
-  }, [plano, open, origemInicial]);
+  }, [plano, open, origemInicial, rascunho]);
 
   useEffect(() => {
     if (open) {

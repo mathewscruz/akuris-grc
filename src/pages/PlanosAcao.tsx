@@ -1,8 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { IconAdd, IconEdit, IconDelete, IconDownload, IconExternal, IconMore, IconSuccess, IconWarning, IconError, IconTime, IconChecklist, IconGrid, IconList, IconTarget } from '@/components/icons';
 import { useIntegrationNotify } from '@/hooks/useIntegrationNotify';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useFocusRow } from '@/hooks/useFocusRow';
 import { exportCSV } from '@/lib/csv-utils';
 import { supabase } from '@/integrations/supabase/client';
@@ -123,6 +123,17 @@ export default function PlanosAcao() {
   const [activeTab, setActiveTab] = useState('meus');
 
   // Planos de ação nativos
+  /*
+    `?plano=<id>` abre o plano directamente.
+
+    Quem vem da Remediação do Gap Analysis clicou num plano concreto e caía
+    aqui na lista inteira, para o ter de encontrar outra vez. O parâmetro é
+    consumido uma vez e limpo do URL, para que voltar atrás não reabra a
+    gaveta.
+  */
+  const [searchParams, setSearchParams] = useSearchParams();
+  const planoNoUrl = searchParams.get('plano');
+
   const { data: planos = [], isLoading } = useQuery({
     queryKey: ['planos-acao', empresaId],
     queryFn: async () => {
@@ -149,6 +160,14 @@ export default function PlanosAcao() {
     },
     enabled: !!empresaId,
   });
+
+  useEffect(() => {
+    if (!planoNoUrl || planos.length === 0) return;
+    const alvo = planos.find((p: { id: string }) => p.id === planoNoUrl);
+    if (alvo) setDetailPlano(alvo);
+    searchParams.delete('plano');
+    setSearchParams(searchParams, { replace: true });
+  }, [planoNoUrl, planos, searchParams, setSearchParams]);
 
   // Controles pendentes do usuário
   const { data: controlesExternos = [] } = useQuery({

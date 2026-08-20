@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { IconSearch, IconExternal, IconSuccess, IconFile, IconChevron, IconBook } from '@/components/icons';
+import { useRef, useState } from 'react';
+import { IconSearch, IconExternal, IconSuccess, IconFile, IconChevron, IconBook, IconUpload } from '@/components/icons';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -68,6 +68,8 @@ export function EvidenceLibraryHub() {
   const lib = useEvidenceLibrary(empresaId);
   const [search, setSearch] = useState('');
   const [running, setRunning] = useState<string | null>(null);
+  const [enviando, setEnviando] = useState(false);
+  const inputFicheiro = useRef<HTMLInputElement>(null);
   const [openItem, setOpenItem] = useState<EvidenceLibraryItem | null>(null);
   const [matchResult, setMatchResult] = useState<{ suggestions: CrossMatchSuggestion[]; persisted: number } | null>(null);
 
@@ -136,14 +138,50 @@ export function EvidenceLibraryHub() {
             </div>
           </div>
 
-          <div className="relative">
-            <IconSearch className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" strokeWidth={1.5} />
-            <Input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={t('campos.comum.buscarEvidencia')}
-              className="pl-9"
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <IconSearch className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" strokeWidth={1.5} />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={t('campos.comum.buscarEvidencia')}
+                className="pl-9"
+              />
+            </div>
+            {/*
+              A biblioteca não tinha por onde acrescentar nada.
+
+              `uploadAndCreate` estava escrito no hook e não era chamado de
+              lado nenhum: quem chegava aqui só podia olhar. Agora a prova que
+              não nasce de um requisito — o certificado do fornecedor, a
+              apólice, a acta do comité — entra por aqui e fica disponível para
+              todos os requisitos e frameworks.
+            */}
+            <input
+              ref={inputFicheiro}
+              type="file"
+              className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                e.target.value = '';
+                if (!file) return;
+                setEnviando(true);
+                try {
+                  await lib.uploadAndCreate({ nome: file.name, file });
+                } finally {
+                  setEnviando(false);
+                }
+              }}
             />
+            <Button
+              variant="outline"
+              className="gap-1.5 shrink-0"
+              disabled={enviando}
+              onClick={() => inputFicheiro.current?.click()}
+            >
+              <IconUpload className="h-4 w-4" strokeWidth={1.5} />
+              {t('sweepRiscos.gap.evidenceHub.adicionar')}
+            </Button>
           </div>
 
           {lib.loading ? (

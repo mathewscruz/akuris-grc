@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
       // Buscar evaluations com prazo próximo ou vencido
       const { data: evalsPrazo, error: evalsPrazoError } = await supabase
         .from('gap_analysis_evaluations')
-        .select('id, framework_id, requirement_id, empresa_id, prazo_implementacao, conformity_status')
+        .select('id, framework_id, requirement_id, empresa_id, prazo_implementacao, conformity_status, responsavel_avaliacao')
         .not('prazo_implementacao', 'is', null)
         .not('conformity_status', 'eq', 'conforme')
         .not('conformity_status', 'eq', 'nao_aplicavel')
@@ -130,12 +130,32 @@ Deno.serve(async (req) => {
             ? `O prazo de implementação do requisito ${req?.codigo} (${fwNome}) venceu em ${prazoDate.toLocaleDateString('pt-BR')}.`
             : `O prazo de implementação do requisito ${req?.codigo} (${fwNome}) vence em ${prazoDate.toLocaleDateString('pt-BR')}.`
 
-          // Get users for this empresa
-          const { data: users } = await supabase
-            .from('profiles')
-            .select('user_id')
-            .eq('empresa_id', eval_.empresa_id)
-            .limit(5) // Notify first 5 users (admins)
+          /*
+            O aviso vai a quem é dono do requisito.
+
+            Isto ia buscar os CINCO PRIMEIROS perfis da empresa, sem ordem e
+            sem filtro de papel — o comentário dizia "(admins)" mas nada na
+            consulta o garantia. Resultado: cinco pessoas ao calhas recebiam o
+            aviso de um prazo que não é delas, e o responsável, que está
+            gravado em `responsavel_avaliacao`, podia não estar entre elas.
+
+            Um aviso que chega a quem não pode agir treina toda a gente a
+            ignorá-lo.
+
+            Sem responsável definido, cai para os administradores da empresa —
+            que são quem tem de o atribuir a alguém.
+          */
+          let users: Array<{ user_id: string }> = []
+          if (eval_.responsavel_avaliacao) {
+            users = [{ user_id: eval_.responsavel_avaliacao }]
+          } else {
+            const { data: admins } = await supabase
+              .from('profiles')
+              .select('user_id')
+              .eq('empresa_id', eval_.empresa_id)
+              .in('role', ['admin', 'super_admin'])
+            users = admins || []
+          }
 
           for (const user of (users || [])) {
             // Check if notification already sent today

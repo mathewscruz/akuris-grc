@@ -219,11 +219,40 @@ export function SoATabV2({ frameworkId, frameworkName, frameworkVersion, section
         empresa_id: empresaId,
         requirement_id: reqId,
         conformity_status: status,
+        updated_at: new Date().toISOString(),
       }));
       const { error } = await supabase
         .from('gap_analysis_evaluations')
         .upsert(records, { onConflict: 'framework_id,empresa_id,requirement_id' });
       if (error) throw error;
+
+      /*
+        "Não aplicável" em lote tem de mexer também na SoA.
+
+        Isto gravava só o `conformity_status`. A SoA continuava a dizer
+        `aplicavel = true`, e o `handleSave` logo abaixo tem uma etapa que
+        reverte para `nao_avaliado` tudo o que esteja aplicável com status
+        `nao_aplicavel` — pensada para quando alguém volta atrás na SoA.
+        Resultado: marcar trinta controlos como N/A em lote e clicar Salvar
+        apagava os trinta, sem aviso.
+
+        A decisão de aplicabilidade vive na SoA; a avaliação é o reflexo dela.
+        O lote passa a escrever nas duas, pela mesma ordem que o Salvar.
+      */
+      if (status === 'nao_aplicavel' || status === 'nao_avaliado') {
+        const aplicavel = status !== 'nao_aplicavel';
+        const soaRecords = Array.from(selected).map(reqId => ({
+          framework_id: frameworkId,
+          empresa_id: empresaId,
+          requirement_id: reqId,
+          aplicavel,
+          justificativa: justificativas[reqId] || '',
+        }));
+        const { error: soaErr } = await supabase
+          .from('gap_analysis_soa')
+          .upsert(soaRecords, { onConflict: 'framework_id,empresa_id,requirement_id' });
+        if (soaErr) throw soaErr;
+      }
       toast.success(t('gapV2.soa.bulkUpdateSuccess', { count: selected.size, status: t(STATUS_LABEL_KEYS[status]) || status }));
       setSelected(new Set());
       loadSoAData();
