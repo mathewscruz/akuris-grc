@@ -114,7 +114,29 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
     const fase = (fasesDe(frameworkName) || []).find((f) => f.id === faseAtiva);
     return fase ? new Set(fase.categorias) : null;
   }, [faseAtiva, frameworkName]);
+
   const [activeSection, setActiveSection] = useState<string>(searchParams.get('sec') || config.sections?.[0]?.id || '');
+
+  /*
+    A fase manda na seccao aberta.
+
+    Uma fase cruza as seccoes: "Controles no ar" vive todo no Anexo A. Escolher
+    a fase e ficar na aba das Clausulas mostrava uma lista vazia, ou pior, a
+    lista errada. Ao escolher a fase, abre-se a seccao que tem os requisitos
+    dela; se houver em mais do que uma, fica na primeira com conteudo.
+  */
+  useEffect(() => {
+    if (!categoriasDaFase || !config.sections?.length) return;
+    const temFase = (id: string) => {
+      const sec = config.sections!.find((x) => x.id === id);
+      return !!sec && requirements.some(
+        (r) => sec.filter(r.codigo) && categoriasDaFase.has(r.categoria || 'Outros'),
+      );
+    };
+    if (temFase(activeSection)) return;
+    const outra = config.sections.find((sec) => temFase(sec.id));
+    if (outra) setActiveSection(outra.id);
+  }, [categoriasDaFase, requirements, config.sections, activeSection]);
   const [selectedRequirement, setSelectedRequirement] = useState<Requirement | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [itemsPerPage, setItemsPerPage] = useState(Number(searchParams.get('size')) || 10);
@@ -1114,13 +1136,24 @@ export const GenericRequirementsTable: React.FC<GenericRequirementsTableProps> =
 
             {config.sections.map(section => {
               const sectionReqs = requirements.filter(r => section.filter(r.codigo));
+              /*
+                O segundo caminho de filtragem.
+
+                Quando o framework tem seccoes, a tabela nao passa por
+                `getFilteredRequirements`: filtra aqui, a parte. Ao ligar o
+                filtro por fase so' no primeiro caminho, clicar em "Controles no
+                ar" - que e' todo o Anexo A - deixava a seccao das Clausulas 4-10
+                a mostrar 4.1, 4.2, 4.3. A pilula dizia uma coisa e a lista
+                mostrava outra.
+              */
+              const daFase = categoriasDaFase
+                ? sectionReqs.filter(r => categoriasDaFase.has(r.categoria || 'Outros'))
+                : categoriaAtiva === 'all'
+                  ? sectionReqs
+                  : sectionReqs.filter(r => (r.categoria || 'Outros') === categoriaAtiva);
               return (
                 <TabsContent key={section.id} value={section.id}>
-                  {renderTableContent(
-                    categoriaAtiva === 'all'
-                      ? sectionReqs
-                      : sectionReqs.filter(r => (r.categoria || 'Outros') === categoriaAtiva),
-                  )}
+                  {renderTableContent(daFase)}
                 </TabsContent>
               );
             })}
