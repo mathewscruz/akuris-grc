@@ -36,8 +36,20 @@ export interface AvaliacaoNoTempo {
   severidade?: string | null;
 }
 
-/** Entre duas avaliações do mesmo instante, a residual é a que vigora. */
-const ordemDoTipo = (tipo?: string | null) => (tipo === 'residual' ? 1 : 0);
+/**
+ * A linha que fecha a série de um risco: escrita pelo gatilho de exclusão.
+ *
+ * O livro é append-only e sobrevive ao risco — é o que impede o gráfico de se
+ * reescrever quando alguém apaga um item. Mas um risco apagado também não pode
+ * contar para sempre: esta linha diz até quando ele contava.
+ */
+export const TIPO_EXCLUSAO = 'exclusao';
+
+/** Entre avaliações do mesmo instante: inicial → residual → exclusão. */
+const ordemDoTipo = (tipo?: string | null) => {
+  if (tipo === TIPO_EXCLUSAO) return 2;
+  return tipo === 'residual' ? 1 : 0;
+};
 
 /** Agrupa as avaliações por risco, em ordem crescente de data. */
 export function avaliacoesPorRisco<T extends AvaliacaoNoTempo>(
@@ -78,4 +90,26 @@ export function avaliacaoVigente<T extends AvaliacaoNoTempo>(
 /** Já existia? Então o risco conta para aquele mês. */
 export function jaExistiaEm(criadoEm: string, limite: Date): boolean {
   return new Date(criadoEm) < limite;
+}
+
+/**
+ * O risco fazia parte da carteira naquela data, e com que avaliação.
+ *
+ * Lê SÓ o livro — nunca a tabela `riscos`, que é o presente. Era essa leitura
+ * do presente que fazia o passado mudar: apagar um risco cadastrado em maio
+ * alterava o ponto de maio, porque a série era reconstruída a partir de quem
+ * ainda existia hoje.
+ *
+ * Três respostas possíveis:
+ *  · sem linha antes do limite → ainda não tinha sido cadastrado;
+ *  · a última linha é a de exclusão → já tinha saído da carteira;
+ *  · caso contrário → existia, com aquela avaliação.
+ */
+export function vigenteNoTempo<T extends AvaliacaoNoTempo>(
+  linhasDoRisco: T[] | undefined,
+  limite: Date,
+): { existia: boolean; avaliacao: T | null } {
+  const ultima = avaliacaoVigente(linhasDoRisco, limite);
+  if (!ultima || ultima.tipo === TIPO_EXCLUSAO) return { existia: false, avaliacao: null };
+  return { existia: true, avaliacao: ultima };
 }

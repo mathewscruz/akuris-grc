@@ -55,6 +55,20 @@ export const isAtivoAltoValor = (a: AtivoLike, corte?: number | null) => {
   return ['alto', 'critico'].includes(norm(a.valor_negocio));
 };
 
+/**
+ * O valor de negócio foi INFORMADO — seja montante, seja palavra da escala.
+ *
+ * Distingue "ninguém classificou" de "está tudo classificado como baixo", que
+ * a contagem de alto valor não consegue: as duas dão zero. É a mesma confusão
+ * entre zero e sem-dados que o radar já tinha corrigido nos domínios, e que
+ * continuava viva aqui — uma empresa que classificou tudo com rigor era
+ * tratada como uma que nunca abriu o campo.
+ */
+export const isAtivoClassificado = (a: AtivoLike) => {
+  if (valorNegocioNumerico(a) != null) return true;
+  return ['alto', 'critico', 'medio', 'baixo'].includes(norm(a.valor_negocio));
+};
+
 export const contarAtivos = (ativos: AtivoLike[] | null | undefined) => ({
   total: ativos?.length ?? 0,
   ativos: countBy(ativos, (a) => estadoAtivo(a) === 'ativo'),
@@ -70,4 +84,6 @@ export const contarAtivos = (ativos: AtivoLike[] | null | undefined) => ({
     const corte = corteAltoValor(ativos);
     return countBy(ativos, (a) => isAtivoAltoValor(a, corte));
   })(),
+  /** Quantos têm o valor de negócio preenchido, seja ele qual for. */
+  classificados: countBy(ativos, isAtivoClassificado),
 });

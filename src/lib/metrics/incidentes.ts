@@ -62,4 +62,21 @@ export const contarIncidentes = (incidentes: IncidenteLike[] | null | undefined)
   altos: countBy(incidentes, (i) => severidadeIncidente(i) === 'alto'),
   medios: countBy(incidentes, (i) => severidadeIncidente(i) === 'medio'),
   baixos: countBy(incidentes, (i) => severidadeIncidente(i) === 'baixo'),
+  /*
+    Severidade do que ainda está EM CURSO.
+
+    Os contadores acima somam o registo inteiro, incluindo o que já foi
+    resolvido — e um incidente crítico resolvido no ano passado não é uma
+    exposição de hoje. A saúde do módulo precisa de separar o histórico do
+    que ainda está aberto; sem isto, resolver um incidente não mexia no
+    número, e só registar incidentes leves é que mexia.
+  */
+  criticosEmCurso: countBy(
+    incidentes,
+    (i) => isIncidenteEmCurso(i) && severidadeIncidente(i) === 'critico',
+  ),
+  altosEmCurso: countBy(
+    incidentes,
+    (i) => isIncidenteEmCurso(i) && severidadeIncidente(i) === 'alto',
+  ),
 });

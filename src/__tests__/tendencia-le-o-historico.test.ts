@@ -21,7 +21,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { fontes, ler } from './_fontes';
-import { avaliacoesPorRisco, avaliacaoVigente } from '@/lib/risco-vigente';
+import { avaliacoesPorRisco, avaliacaoVigente, vigenteNoTempo } from '@/lib/risco-vigente';
 
 /** Ficheiros que desenham a evolução do risco ao longo do tempo. */
 function seriesDeRisco(): string[] {
@@ -59,9 +59,46 @@ describe('tendência lê o histórico', () => {
       `${f} desenha a evolução do risco sem abrir o histórico de avaliações.`,
     ).toBe(true);
     expect(
-      /avaliacaoVigente/.test(texto),
+      /avaliacaoVigente|vigenteNoTempo/.test(texto),
       `${f} tem de resolver a avaliação vigente com o helper partilhado, não à mão.`,
     ).toBe(true);
+  });
+
+  it('a série não toca na tabela dos riscos vivos', () => {
+    /*
+      A regra que faltava, e que custou o defeito reportado: apagar um risco
+      cadastrado em maio mudava o ponto de MAIO. A causa era a série cruzar o
+      histórico com `from('riscos')` — a tabela do PRESENTE. Quem não existe
+      hoje desaparecia de todos os meses em que existiu.
+
+      O livro (`riscos_historico_avaliacoes`) é append-only, sobrevive à
+      exclusão e traz a linha `exclusao` que diz até quando cada risco contava.
+      Ler a carteira de hoje para desenhar o passado é o defeito, não um
+      detalhe de implementação.
+    */
+    const f = 'src/components/dashboard/RiskScoreTimeline.tsx';
+    const texto = ler(f);
+    expect(
+      /\.from\(\s*['"]riscos['"]\s*\)/.test(texto),
+      `${f} lê a tabela dos riscos vivos para montar a série: o passado volta a reescrever-se a cada exclusão.`,
+    ).toBe(false);
+  });
+
+  it('um risco apagado continua a contar nos meses em que existiu', () => {
+    const linhas = [
+      { risco_id: 'r1', created_at: '2026-05-02T00:00:00Z', tipo: 'inicial', score: 12 },
+      { risco_id: 'r1', created_at: '2026-08-20T00:00:00Z', tipo: 'exclusao', score: 12 },
+    ];
+    const porRisco = avaliacoesPorRisco(linhas);
+
+    // Em maio existia — e continua a existir no livro depois de apagado.
+    const emMaio = vigenteNoTempo(porRisco.get('r1'), new Date('2026-06-01T00:00:00Z'));
+    expect(emMaio.existia, 'maio não pode mudar por causa de uma exclusão em agosto').toBe(true);
+    expect(emMaio.avaliacao?.score).toBe(12);
+
+    // Depois da exclusão, deixa de contar — o erro oposto, e igualmente errado.
+    const emSetembro = vigenteNoTempo(porRisco.get('r1'), new Date('2026-09-01T00:00:00Z'));
+    expect(emSetembro.existia, 'um risco apagado não conta para sempre').toBe(false);
   });
 
   it('entre a inicial e a residual do mesmo instante, vale a residual', () => {

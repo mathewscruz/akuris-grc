@@ -17,8 +17,7 @@ import { useMatrizConfigEmpresa } from '@/hooks/useMatrizConfigEmpresa';
 import { apetiteScoreDaConfig } from '@/components/riscos/matriz-config';
 import {
   avaliacoesPorRisco,
-  avaliacaoVigente,
-  jaExistiaEm,
+  vigenteNoTempo,
   type AvaliacaoNoTempo,
 } from '@/lib/risco-vigente';
 
@@ -60,42 +59,34 @@ export function RiskScoreTimeline() {
   // Mesma chave de query do painel: a composição não custa um pedido extra.
   const { data: stats } = useRiscosStats();
 
-  const { data: base, isLoading } = useQuery({
+  const { data: livro, isLoading } = useQuery({
     queryKey: ['riscos-timeline', profile?.empresa_id],
     queryFn: async () => {
-      if (!profile?.empresa_id) return { riscos: [], historico: [] };
-      const { data: riscos, error } = await supabase
-        .from('riscos')
-        .select('id, score_inicial, severidade_inicial, created_at')
-        .eq('empresa_id', profile.empresa_id);
-      if (error) throw error;
-
+      if (!profile?.empresa_id) return [] as AvaliacaoNoTempo[];
       /*
-        O histórico é o que faz a curva poder DESCER.
+        A série sai SÓ de `riscos_historico_avaliacoes`.
 
-        Sem ele, a série aplicava a severidade de hoje a todos os meses desde a
-        criação do risco: tratar um risco de Crítico para Baixo não movia o
-        gráfico nenhum — só cadastrar riscos novos movia. Ver `risco-vigente.ts`.
+        Lia-se antes a tabela `riscos` e cruzava-se com o histórico dos riscos
+        que ainda existiam. Como a tabela `riscos` é o presente, apagar um
+        risco cadastrado em maio mudava o ponto de MAIO — o gráfico reescrevia
+        o passado a cada exclusão.
+
+        O livro é append-only, sobrevive à exclusão do risco e carrega a linha
+        `exclusao` que diz até quando ele contava. Ver a migration
+        `20260821140000_historico_de_risco_nao_reescreve.sql`.
       */
-      const ids = (riscos || []).map((r) => r.id);
-      let historico: AvaliacaoNoTempo[] = [];
-      if (ids.length > 0) {
-        const { data: hist, error: histErr } = await supabase
-          .from('riscos_historico_avaliacoes')
-          .select('risco_id, created_at, score, severidade, tipo')
-          .in('risco_id', ids)
-          .order('created_at', { ascending: true });
-        if (histErr) throw histErr;
-        historico = (hist || []) as AvaliacaoNoTempo[];
-      }
-      return { riscos: riscos || [], historico };
+      const { data, error } = await supabase
+        .from('riscos_historico_avaliacoes')
+        .select('risco_id, created_at, score, severidade, tipo')
+        .eq('empresa_id', profile.empresa_id)
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      return (data || []) as AvaliacaoNoTempo[];
     },
     enabled: !!profile?.empresa_id,
     staleTime: 5 * 60 * 1000,
   });
 
-  const riscos = base?.riscos;
-  const historico = base?.historico;
 
   /**
    * Só os períodos que a empresa tem histórico para preencher.
@@ -107,10 +98,11 @@ export function RiskScoreTimeline() {
    * um ecrã vazio ensina a não clicar em selectores.
    */
   const idadeEmDias = useMemo(() => {
-    if (!riscos || riscos.length === 0) return 0;
-    const maisAntigo = Math.min(...riscos.map((r) => new Date(r.created_at).getTime()));
+    if (!livro || livro.length === 0) return 0;
+    // O livro vem ordenado por data: a primeira linha é o começo da carteira.
+    const maisAntigo = new Date(livro[0].created_at).getTime();
     return Math.floor((Date.now() - maisAntigo) / 86400000);
-  }, [riscos]);
+  }, [livro]);
 
   const periods = useMemo(() => {
     const todos: { value: TimeRange; label: string; minDias: number }[] = [
@@ -137,7 +129,7 @@ export function RiskScoreTimeline() {
       delta: null as null | { value: number; dir: 'up' | 'down' | 'flat' },
       totalAtual: 0,
     };
-    if (!riscos || riscos.length === 0) return empty;
+    if (!livro || livro.length === 0) return empty;
 
     const now = new Date();
     const buckets: { end: Date; label: string }[] = [];
@@ -174,7 +166,7 @@ export function RiskScoreTimeline() {
       tinha sido reavaliado. Antes usava-se `nivel_risco_residual` de hoje para
       todos os meses passados, e por isso a linha nunca podia cair.
     */
-    const porRisco = avaliacoesPorRisco(historico ?? []);
+    const porRisco = avaliacoesPorRisco(livro);
 
     const points: PointData[] = buckets.map(({ end, label }) => {
       let acima = 0;
@@ -182,11 +174,19 @@ export function RiskScoreTimeline() {
       let altos = 0;
       let existentes = 0;
       let somaScores = 0;
-      for (const r of riscos) {
-        if (!jaExistiaEm(r.created_at, end)) continue;
-        const vigente = avaliacaoVigente(porRisco.get(r.id), end);
-        const score = vigente?.score ?? r.score_inicial;
-        const sev = vigente?.severidade ?? r.severidade_inicial;
+      /*
+        Percorre o LIVRO, não a carteira de hoje.
+
+        A carteira de hoje não sabe quem existiu em maio — e era por isso que
+        apagar um risco de maio mudava maio. `vigenteNoTempo` responde as três
+        perguntas a partir das linhas: ainda não existia, já tinha saído, ou
+        existia com esta avaliação.
+      */
+      for (const linhas of porRisco.values()) {
+        const { existia, avaliacao } = vigenteNoTempo(linhas, end);
+        if (!existia || !avaliacao) continue;
+        const score = avaliacao.score;
+        const sev = avaliacao.severidade;
         if (score === null || score === undefined) continue; // ainda por avaliar
         existentes += 1;
         somaScores += score;
@@ -222,7 +222,7 @@ export function RiskScoreTimeline() {
         : { value: diff, dir: diff < 0 ? ('down' as const) : ('up' as const) },
       totalAtual: last.total,
     };
-  }, [riscos, historico, period, intlLocale, t, apetite]);
+  }, [livro, period, intlLocale, t, apetite]);
 
   /**
    * O tooltip mostra a repartição do período: quantos excedem o apetite e

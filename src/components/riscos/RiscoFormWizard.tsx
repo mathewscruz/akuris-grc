@@ -513,33 +513,18 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
         await exigirEscrita(supabase.from('riscos_ativos').insert(vinculos));
       }
 
-      // Registrar histórico de avaliação automaticamente
-      try {
-        await exigirEscrita(supabase.from('riscos_historico_avaliacoes').insert([
-          {
-            risco_id: riscoId,
-            empresa_id: profile.empresa_id,
-            probabilidade: Number(data.probabilidade_inicial),
-            impacto: Number(data.impacto_inicial),
-            nivel_risco: nivelInicial,
-            tipo: 'inicial',
-            avaliado_por: profile.user_id,
-            observacoes: risco?.id ? t('fin.riscos.wizard.reavaliacao') : t('fin.riscos.wizard.avaliacaoInicial')
-          },
-          ...(nivelResidual ? [{
-            risco_id: riscoId,
-            empresa_id: profile.empresa_id,
-            probabilidade: Number(data.probabilidade_residual),
-            impacto: Number(data.impacto_residual),
-            nivel_risco: nivelResidual,
-            tipo: 'residual',
-            avaliado_por: profile.user_id,
-            observacoes: risco?.id ? t('fin.riscos.wizard.reavaliacaoResidual') : t('fin.riscos.wizard.avaliacaoResidualInicial')
-          }] : [])
-        ]));
-      } catch (histError) {
-        logger.warn('Erro ao registrar histórico de avaliação:', { data: histError });
-      }
+      /*
+        O histórico é escrito pelo BANCO, não por aqui.
+
+        Havia um `insert` explícito em `riscos_historico_avaliacoes` a seguir a
+        cada gravação. Passou a duplicar: os gatilhos `trg_risco_livro_*`
+        registam a avaliação inerente e a residual sempre que mudam, venha a
+        escrita do formulário, da API ou de uma importação — que era
+        precisamente o buraco, porque um risco criado fora deste ecrã não
+        deixava rasto nenhum e desaparecia do gráfico ao ser apagado.
+
+        Ver `20260821140000_historico_de_risco_nao_reescreve.sql`.
+      */
 
       // Se é um novo aceite, enviar notificação e e-mail ao aprovador
       if (isNovoAceite && data.aprovador_aceite) {

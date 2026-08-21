@@ -14,6 +14,8 @@ interface AtivosStats {
   baixos: number;
   altoValorNegocio: number;
   percentualAltoValor: number;
+  /** Ativos com o valor de negócio preenchido — cobertura da classificação. */
+  classificados: number;
 }
 
 export const useAtivosStats = () => {

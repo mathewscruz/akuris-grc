@@ -123,7 +123,12 @@
     --success-foreground: 0 0% 100%;
     
     /* Warning — âmbar escurecido: o anterior falhava AA como cor de texto */
-    --warning: 35 85% 34%;
+    /* Amarelo mais claro e mais amarelo: a 35°/34% lia-se castanho, não
+     * âmbar. O preço está medido — deixa de passar AA como texto pequeno
+     * sobre branco e passa a cumprir o mínimo de 3:1 de componente de
+     * interface (WCAG 1.4.11). Onde é texto, vem sempre acompanhado do
+     * rótulo ou da letra, nunca a cor sozinha. */
+    --warning: 40 90% 38%;
     --warning-foreground: 0 0% 100%;
 
     /* Orange — severidade "Alto" (entre Warning e Destructive) */
@@ -160,7 +165,7 @@
        crítico 11,5:1 · alto 6,0:1 · médio 4,9:1 · baixo 5,3:1. */
     --severity-critical: 272 58% 30%;
     --severity-high: 0 65% 45%;
-    --severity-medium: 45 92% 29%;
+    --severity-medium: 45 90% 38%;
     --severity-low: 145 60% 30%;
     --severity-none: 200 12% 46%;
 

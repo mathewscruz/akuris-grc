@@ -85,13 +85,37 @@ export const useRadarChartData = () => {
       return [];
     }
 
-    // Riscos: alinhado com RiskScoreTimeline.computeExposure (peso 4/3/2/1).
-    // Saúde do módulo = 100 - exposição (maior = melhor).
+    /**
+     * Riscos: exposição EM ABERTO, não a fotografia do registo inteiro.
+     *
+     * Era a média ponderada das severidades (crítico 4, alto 3, médio 2,
+     * baixo 1) sobre o pior caso. Três defeitos medidos:
+     *
+     *  1. **Cadastrar risco baixo melhorava a nota.** Com a carteira real
+     *     (1 crítico, 7 altos, 2 médios, 1 baixo → 32), acrescentar um risco
+     *     BAIXO levava a 35. Identificar mais riscos subia o número sem que
+     *     nada fosse tratado — o mesmo defeito que já tinha sido retirado de
+     *     `useRiscosStats` e que tinha ficado vivo aqui.
+     *
+     *  2. **O tecto era 75, não 100.** Uma carteira inteira de riscos baixos
+     *     dá `(n×1)/(n×4)` = 25% de exposição, logo 75 pontos. Não havia
+     *     gestão possível que chegasse a 100 — só não ter riscos nenhuns.
+     *
+     *  3. **Ignorava o apetite declarado pela empresa**, que é a régua que o
+     *     resto do produto usa para decidir o que é aceitável.
+     *
+     * Passa a somar duas coisas que a gestão de risco de facto controla:
+     * quanto da carteira está DENTRO do apetite, e quanto dela foi sequer
+     * avaliada. A cobertura é o que impede o registo inflacionado de pagar:
+     * abrir riscos e não os avaliar agora BAIXA a nota.
+     */
     const scoreRiscos = riscosData.total > 0
-      ? Math.max(0, Math.round(100 - (
-          (riscosData.criticos * 4 + riscosData.altos * 3 + riscosData.medios * 2 + riscosData.baixos * 1) /
-          (riscosData.total * 4)
-        ) * 100))
+      ? Math.max(0, Math.round(
+          (riscosData.avaliados > 0
+            ? (1 - riscosData.acimaApetite / riscosData.avaliados) * 70
+            : 0) +
+          (riscosData.avaliados / riscosData.total) * 30,
+        ))
       : 0;
 
     // `vencendoAvaliacao` conta o que vence nos próximos 30 dias; `vencidos`
@@ -117,23 +141,53 @@ export const useRadarChartData = () => {
     const scoreAtivos = ativosData.total > 0
       ? (() => {
           const exposicao = (ativosData.criticos + ativosData.altos * 0.5) / ativosData.total;
-          const temValor = ativosData.altoValorNegocio > 0;
+          /*
+            O terceiro termo mede COBERTURA DA CLASSIFICAÇÃO, não quantos
+            ativos são de alto valor.
+
+            Lia `altoValorNegocio > 0`, e por isso não distinguia "ninguém
+            classificou" de "está tudo classificado como valor baixo": as duas
+            situações dão zero, e as duas perdiam os mesmos 20 pontos. Uma
+            empresa que classificou a carteira inteira com rigor era tratada
+            como uma que nunca abriu o campo.
+
+            A redistribuição fica: um dado em falta continua a não ser uma nota
+            baixa — o que muda é passar a saber quando ele não está em falta.
+          */
+          const temValor = ativosData.classificados > 0;
           const pesoEstado = temValor ? 50 : 62.5;
           const pesoExposicao = temValor ? 30 : 37.5;
           return (
             (ativosData.ativos / ativosData.total) * pesoEstado +
             Math.max(0, 1 - exposicao) * pesoExposicao +
-            (temValor ? (ativosData.altoValorNegocio / ativosData.total) * 20 : 0)
+            (temValor ? (ativosData.classificados / ativosData.total) * 20 : 0)
           );
         })()
       : 0;
 
-    // Incidentes: mesma lógica de exposição ponderada (crítico=4, alto=3, médio=2, baixo=1).
+    /**
+     * Incidentes: o que está aberto pesa; o que foi resolvido conta a favor.
+     *
+     * A fórmula anterior somava a severidade de TODOS os incidentes, sem olhar
+     * ao estado. Na base real, 3 dos 5 estão resolvidos e pesavam igual a um
+     * aberto — resolver um incidente não mexia no número. Pior: como era uma
+     * média, o que mexia era registar incidentes leves, que diluíam o rácio.
+     * Um módulo cujo trabalho é FECHAR incidentes não podia ter uma nota que
+     * ignora o fecho.
+     *
+     * Agora: 60 pontos pela taxa de resolução — o trabalho feito — e 40 pela
+     * ausência de casos graves ainda em curso. Um incidente crítico aberto
+     * pesa o dobro de um alto; nada em curso vale os 40 inteiros.
+     */
     const scoreIncidentes = incidentesData.total > 0
-      ? Math.max(0, Math.round(100 - (
-          (incidentesData.criticos * 4 + incidentesData.altos * 3 + incidentesData.medios * 2 + incidentesData.baixos * 1) /
-          (incidentesData.total * 4)
-        ) * 100))
+      ? Math.max(0, Math.round(
+          (incidentesData.resolvidos / incidentesData.total) * 60 +
+          (incidentesData.emCurso === 0
+            ? 40
+            : Math.max(0, 1 - (
+                incidentesData.criticosEmCurso * 2 + incidentesData.altosEmCurso
+              ) / incidentesData.emCurso) * 40),
+        ))
       : 0;
 
     const scoreGapAnalysis = gapData.averageCompliance || 0;
