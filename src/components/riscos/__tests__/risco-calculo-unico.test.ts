@@ -250,7 +250,12 @@ describe('vocabulário de severidade único na interface', () => {
     const infractores: string[] = [];
     const comparacao = /\.(criticidade|gravidade)\s*={2,3}\s*["'](critica|alta|media|baixa)["']/;
 
-    for (const caminho of [...ficheirosDe('src/components'), ...ficheirosDe('src/pages')]) {
+    for (const caminho of [
+      ...ficheirosDe('src/components'),
+      ...ficheirosDe('src/pages'),
+      ...ficheirosDe('src/hooks'),
+      ...ficheirosDe('src/lib'),
+    ]) {
       const conteudo = readFileSync(caminho, 'utf8');
       for (const linha of conteudo.split(String.fromCharCode(10))) {
         if (/^\s*(\/\/|\*)/.test(linha)) continue;

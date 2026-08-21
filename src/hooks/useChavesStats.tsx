@@ -4,6 +4,7 @@ import { differenceInCalendarDays } from "date-fns";
 import { useAuth } from "@/components/AuthProvider";
 import { parseDataLocal } from '@/lib/date-utils';
 
+import { severidadeDeFaixas } from '@/lib/metrics/riscos';
 interface ChavesStats {
   total: number;
   ativas: number;
@@ -50,7 +51,9 @@ export const useChavesStats = () => {
         return differenceInCalendarDays(parseDataLocal(c.data_proxima_rotacao), hoje) <= 30;
       }).length || 0;
 
-      const criticas = chaves?.filter(c => c.criticidade === 'critica' && c.status === 'ativa').length || 0;
+      // `=== 'critica'` deixou de ser verdade quando o vocabulário passou a
+      // masculino: o KPI de chaves críticas ficaria permanentemente em zero.
+      const criticas = chaves?.filter(c => severidadeDeFaixas(c.criticidade) === 'critico' && c.status === 'ativa').length || 0;
 
       const porTipo: Record<string, number> = {};
       const porAmbiente: Record<string, number> = {};

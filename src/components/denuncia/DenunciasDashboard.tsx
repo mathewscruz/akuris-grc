@@ -14,6 +14,7 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveDenunciaStatusTone, resolveCriticidadeTone } from '@/lib/status-tone';
 import { useLanguage } from '@/contexts/LanguageContext';
 
+import { severidadeDeFaixas } from '@/lib/metrics/riscos';
 interface Denuncia {
   id: string;
   protocolo: string;
@@ -114,7 +115,10 @@ export function DenunciasDashboard({ itemIdToOpen, refreshKey }: DenunciasDashbo
         denuncia.nome_denunciante?.toLowerCase().includes(searchTerm.toLowerCase());
       
       const matchesStatus = statusFilter === 'todos' || denuncia.status === statusFilter;
-      const matchesGravidade = gravidadeFilter === 'todos' || denuncia.gravidade === gravidadeFilter;
+      // Normaliza antes de comparar: registos antigos podem ainda trazer a
+      // grafia feminina, e um filtro não pode depender disso.
+      const matchesGravidade =
+        gravidadeFilter === 'todos' || severidadeDeFaixas(denuncia.gravidade) === gravidadeFilter;
 
       return matchesSearch && matchesStatus && matchesGravidade;
     });

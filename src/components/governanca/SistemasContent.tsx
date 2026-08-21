@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useLanguage } from '@/contexts/LanguageContext';
 
+import { severidadeDeFaixas } from '@/lib/metrics/riscos';
 interface SistemaPrivilegiado {
   id: string;
   nome_sistema: string;
@@ -143,7 +144,7 @@ export default function SistemasContent() {
       
       const matchesStatus = statusFilter === 'todos' || (sistema.ativo ? 'ativo' : 'inativo') === statusFilter;
       const matchesTipo = tipoFilter === 'todos' || sistema.tipo_sistema === tipoFilter;
-      const matchesCriticidade = criticidadeFilter === 'todos' || sistema.criticidade === criticidadeFilter;
+      const matchesCriticidade = criticidadeFilter === 'todos' || severidadeDeFaixas(sistema.criticidade) === criticidadeFilter;
 
       return matchesSearch && matchesStatus && matchesTipo && matchesCriticidade;
     });
@@ -300,10 +301,10 @@ export default function SistemasContent() {
       onChange: setCriticidadeFilter,
       options: [
         { value: 'todos', label: t("governancaComp.sistemas.filterCriticidadeAllFem") },
-        { value: 'critica', label: t("governancaComp.sistemas.criticidadeCritica") },
-        { value: 'alta', label: t("governancaComp.sistemas.criticidadeAlta") },
-        { value: 'media', label: t("governancaComp.sistemas.criticidadeMedia") },
-        { value: 'baixa', label: t("governancaComp.sistemas.criticidadeBaixa") },
+        { value: 'critico', label: t("governancaComp.sistemas.criticidadeCritica") },
+        { value: 'alto', label: t("governancaComp.sistemas.criticidadeAlta") },
+        { value: 'medio', label: t("governancaComp.sistemas.criticidadeMedia") },
+        { value: 'baixo', label: t("governancaComp.sistemas.criticidadeBaixa") },
       ]
     }
   ];

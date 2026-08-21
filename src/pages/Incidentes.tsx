@@ -42,6 +42,7 @@ import { useAuth } from '@/components/AuthProvider';
 import { CriarTarefaMenuItem } from '@/components/projetos/CriarTarefaMenuItem';
 import { useLanguage } from '@/contexts/LanguageContext';
 
+import { severidadeDeFaixas } from '@/lib/metrics/riscos';
 interface Incidente {
   id: string;
   titulo: string;
@@ -120,7 +121,9 @@ export default function Incidentes() {
     // Mesmo predicado dos cartões (camada única de métricas)
     const matchesStatus = statusFilter === 'todos' || estadoIncidente(incidente) === statusFilter;
     const matchesTipo = tipoFilter === 'todos' || incidente.tipo_incidente === tipoFilter;
-    const matchesCriticidade = criticidadeFilter === 'todos' || incidente.criticidade === criticidadeFilter;
+    const matchesCriticidade =
+      criticidadeFilter === 'todos' ||
+      severidadeDeFaixas(incidente.criticidade) === criticidadeFilter;
 
     return matchesSearch && matchesStatus && matchesTipo && matchesCriticidade;
   });
@@ -371,12 +374,16 @@ export default function Incidentes() {
       label: t('sweepRiscos.incidentes.filterCriticidadeLabel'),
       value: criticidadeFilter,
       onChange: setCriticidadeFilter,
+      // Vocabulário canónico. Com 'alta'/'critica' o filtro comparava com o
+      // texto gravado e devolvia "Nenhum incidente encontrado" numa lista com
+      // dois incidentes "Alto" à vista — o mesmo defeito que o filtro de nível
+      // do módulo de Riscos tinha.
       options: [
         { value: 'todos', label: t('sweepRiscos.incidentes.filterCriticidadeTodas') },
-        { value: 'baixa', label: t('sweepRiscos.incidentes.filterCriticidadeBaixa') },
-        { value: 'media', label: t('sweepRiscos.incidentes.filterCriticidadeMedia') },
-        { value: 'alta', label: t('sweepRiscos.incidentes.filterCriticidadeAlta') },
-        { value: 'critica', label: t('fin.comum.criticaF') },
+        { value: 'baixo', label: t('sweepRiscos.incidentes.filterCriticidadeBaixa') },
+        { value: 'medio', label: t('sweepRiscos.incidentes.filterCriticidadeMedia') },
+        { value: 'alto', label: t('sweepRiscos.incidentes.filterCriticidadeAlta') },
+        { value: 'critico', label: t('fin.comum.criticaF') },
       ]
     }
   ];

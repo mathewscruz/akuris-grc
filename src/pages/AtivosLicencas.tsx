@@ -27,6 +27,7 @@ import { RecordDetailDrawer } from '@/components/common/RecordDetailDrawer';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useEmpresaMoeda } from '@/hooks/useEmpresaMoeda';
 
+import { severidadeDeFaixas } from '@/lib/metrics/riscos';
 interface Licenca {
   id: string;
   nome: string;
@@ -205,7 +206,7 @@ export default function AtivosLicencas() {
         licenca.fornecedor.toLowerCase().includes(searchTerm.toLowerCase());
       
       const matchesStatus = statusFilter === 'todos' || licenca.status === statusFilter;
-      const matchesCriticidade = criticidadeFilter === 'todos' || licenca.criticidade === criticidadeFilter;
+      const matchesCriticidade = criticidadeFilter === 'todos' || severidadeDeFaixas(licenca.criticidade) === criticidadeFilter;
       const matchesTipo = tipoFilter === 'todos' || licenca.tipo_licenca === tipoFilter;
 
       return matchesSearch && matchesStatus && matchesCriticidade && matchesTipo;
@@ -366,10 +367,10 @@ export default function AtivosLicencas() {
       onChange: setCriticidadeFilter,
       options: [
         { value: 'todos', label: t('sweepDados.ativos.filtroTodasCriticidades') },
-        { value: 'critica', label: t('fin.comum.criticaF') },
-        { value: 'alta', label: t('sweepDados.ativos.criticidadeAlta') },
-        { value: 'media', label: t('sweepDados.ativos.criticidadeMedia') },
-        { value: 'baixa', label: t('sweepDados.ativos.criticidadeBaixa') },
+        { value: 'critico', label: t('fin.comum.criticaF') },
+        { value: 'alto', label: t('sweepDados.ativos.criticidadeAlta') },
+        { value: 'medio', label: t('sweepDados.ativos.criticidadeMedia') },
+        { value: 'baixo', label: t('sweepDados.ativos.criticidadeBaixa') },
       ]
     },
     {

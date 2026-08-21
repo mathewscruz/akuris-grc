@@ -26,6 +26,7 @@ import { resolveCriticidadeTone, resolveItemStatusTone } from '@/lib/status-tone
 import { RecordDetailDrawer } from '@/components/common/RecordDetailDrawer';
 import { useLanguage } from '@/contexts/LanguageContext';
 
+import { severidadeDeFaixas } from '@/lib/metrics/riscos';
 interface ChaveCriptografica {
   id: string;
   nome: string;
@@ -207,7 +208,7 @@ export default function AtivosChaves() {
         chave.localizacao.toLowerCase().includes(searchTerm.toLowerCase());
       
       const matchesStatus = statusFilter === 'todos' || chave.status === statusFilter;
-      const matchesCriticidade = criticidadeFilter === 'todos' || chave.criticidade === criticidadeFilter;
+      const matchesCriticidade = criticidadeFilter === 'todos' || severidadeDeFaixas(chave.criticidade) === criticidadeFilter;
       const matchesAmbiente = ambienteFilter === 'todos' || chave.ambiente === ambienteFilter;
       const matchesTipo = tipoFilter === 'todos' || chave.tipo_chave === tipoFilter;
 
@@ -368,10 +369,10 @@ export default function AtivosChaves() {
       onChange: setCriticidadeFilter,
       options: [
         { value: 'todos', label: t('sweepDados.ativos.filtroTodasCriticidades') },
-        { value: 'critica', label: t('fin.comum.criticaF') },
-        { value: 'alta', label: t('sweepDados.ativos.criticidadeAlta') },
-        { value: 'media', label: t('sweepDados.ativos.criticidadeMedia') },
-        { value: 'baixa', label: t('sweepDados.ativos.criticidadeBaixa') },
+        { value: 'critico', label: t('fin.comum.criticaF') },
+        { value: 'alto', label: t('sweepDados.ativos.criticidadeAlta') },
+        { value: 'medio', label: t('sweepDados.ativos.criticidadeMedia') },
+        { value: 'baixo', label: t('sweepDados.ativos.criticidadeBaixa') },
       ]
     },
     {
