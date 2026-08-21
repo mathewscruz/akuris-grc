@@ -6,6 +6,7 @@ import { ThemeProvider } from '@/contexts/ThemeContext';
 import { Toaster as SonnerToaster } from '@/components/ui/sonner';
 import { AuthProvider } from '@/components/AuthProvider';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { InicioDoCliente } from '@/components/InicioDoCliente';
 import Layout from '@/components/Layout';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { RouteFallback } from '@/components/ui/route-fallback';
@@ -121,11 +122,22 @@ function App() {
             <Route path="/review/:token" element={<Suspense fallback={<RouteFallback />}><ReviewExterna /></Suspense>} />
 
             {/* Rotas autenticadas - Layout traz seu próprio Suspense interno para preservar sidebar/header */}
+            {/*
+              O painel deixou de ser o início de toda a gente.
+
+              Quem compra só o canal de denúncia não tem painel de GRC; mandá-lo
+              para aqui dava-lhe um cartão de "acesso negado" como primeira tela
+              do produto. `InicioDoCliente` desvia para o primeiro módulo que a
+              pessoa consegue mesmo abrir, e todos os pontos de entrada
+              (login, checkout, logótipo) continuam a apontar para `/dashboard`.
+            */}
             <Route path="/dashboard" element={
               <Layout>
-                <ProtectedRoute moduleName="dashboard" fallbackToRoleCheck={false}>
-                  <Dashboard />
-                </ProtectedRoute>
+                <InicioDoCliente>
+                  <ProtectedRoute moduleName="dashboard" fallbackToRoleCheck={false}>
+                    <Dashboard />
+                  </ProtectedRoute>
+                </InicioDoCliente>
               </Layout>
             } />
             <Route path="/planos-acao" element={

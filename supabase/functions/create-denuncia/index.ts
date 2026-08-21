@@ -254,8 +254,42 @@ Deno.serve(async (req) => {
     if (error) return json({ error: error.message }, 400);
 
     const result: any = Array.isArray(data) ? (data[0] ?? {}) : (data ?? {});
+
+    /*
+      Avisar quem tem de apurar.
+
+      `send-denuncia-notification` existia, estava publicada, declarada no
+      `config.toml` — e não era chamada de lado nenhum. Nem daqui, nem por
+      gatilho, nem por webhook. Uma denúncia entrava às duas da manhã, o
+      relógio de 7 dias começava a correr, e a descoberta dependia de alguém
+      abrir o módulo por iniciativa própria.
+
+      Falha em silêncio de propósito: a denúncia JÁ está registada e o
+      protocolo tem de chegar a quem denunciou. Um erro de e-mail não pode
+      transformar-se em «não foi possível registar».
+    */
+    const denunciaId = result.id ?? result.denuncia_id ?? null;
+    const empresaId = result.empresa_id ?? null;
+    if (denunciaId && empresaId) {
+      try {
+        const aviso = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-denuncia-notification`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+          },
+          body: JSON.stringify({ denuncia_id: denunciaId, empresa_id: empresaId }),
+        });
+        if (!aviso.ok) {
+          console.error('Aviso da denúncia falhou:', aviso.status, await aviso.text());
+        }
+      } catch (e) {
+        console.error('Aviso da denúncia falhou:', e instanceof Error ? e.message : String(e));
+      }
+    }
+
     return json({
-      id: result.id ?? result.denuncia_id ?? null,
+      id: denunciaId,
       protocolo: result.protocolo ?? result,
       codigo_acompanhamento: codigo,
     });

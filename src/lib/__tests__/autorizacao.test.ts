@@ -12,7 +12,7 @@
  * `||` pretendia dar, e essa continua inteira.
  */
 import { describe, expect, it } from 'vitest';
-import { decidirAcesso, papelPermite } from '@/lib/autorizacao';
+import { chaveDePlano, decidirAcesso, papelPermite } from '@/lib/autorizacao';
 
 describe('decisão de acesso a módulo', () => {
   it('permissão revogada bloqueia, mesmo quando o papel permitiria', () => {
@@ -102,5 +102,97 @@ describe('decisão de acesso a módulo', () => {
     expect(papelPermite('user', 'auditorias', 'create')).toBe(false);
     expect(papelPermite('readonly', 'riscos', 'read')).toBe(true);
     expect(papelPermite('super_admin', 'configuracoes', 'delete')).toBe(true);
+  });
+
+  /*
+    O teto do plano — a parte que faz o canal de denúncia vender-se sozinho.
+
+    Antes disto, `planos.modulos_habilitados` era catálogo de preço que
+    ninguém lia, e o único recorte era a permissão POR UTILIZADOR: vender só o
+    canal obrigava a desligar dezoito módulos pessoa a pessoa, e a repetir a
+    cada contratação. Pior, `super_admin` passava por cima de tudo — o
+    administrador do próprio cliente veria a suíte inteira.
+  */
+  describe('o plano da empresa é teto', () => {
+    const soCanal = ['denuncia'];
+
+    it('bloqueia o que a empresa não comprou, mesmo a super_admin', () => {
+      expect(
+        decidirAcesso({
+          papel: 'super_admin',
+          modulo: 'riscos',
+          acao: 'access',
+          permissao: { can_access: true },
+          modulosDoPlano: soCanal,
+        }),
+      ).toBe(false);
+    });
+
+    it('deixa passar o que está no plano', () => {
+      expect(
+        decidirAcesso({
+          papel: 'super_admin',
+          modulo: 'denuncia',
+          acao: 'access',
+          permissao: undefined,
+          modulosDoPlano: soCanal,
+        }),
+      ).toBe(true);
+    });
+
+    it('é teto e não concessão: a permissão negada continua a valer', () => {
+      expect(
+        decidirAcesso({
+          papel: 'user',
+          modulo: 'denuncia',
+          acao: 'access',
+          permissao: { can_access: false },
+          modulosDoPlano: soCanal,
+        }),
+      ).toBe(false);
+    });
+
+    it('nunca esconde configurações — sem elas não há como ligar o que se comprou', () => {
+      expect(
+        decidirAcesso({
+          papel: 'admin',
+          modulo: 'configuracoes',
+          acao: 'access',
+          permissao: undefined,
+          modulosDoPlano: soCanal,
+        }),
+      ).toBe(true);
+    });
+
+    it('sem restrição de plano, nada muda', () => {
+      expect(
+        decidirAcesso({
+          papel: 'super_admin',
+          modulo: 'riscos',
+          acao: 'access',
+          permissao: undefined,
+          modulosDoPlano: null,
+        }),
+      ).toBe(true);
+    });
+
+    it('traduz o nome do módulo para a chave do plano', () => {
+      // A navegação usa hífen, o plano usa sublinhado; e `dados` é `privacidade`.
+      expect(chaveDePlano('planos-acao')).toBe('planos_acao');
+      expect(chaveDePlano('gap-analysis')).toBe('gap_analysis');
+      expect(chaveDePlano('contas-privilegiadas')).toBe('contas_privilegiadas');
+      expect(chaveDePlano('dados')).toBe('privacidade');
+      expect(chaveDePlano('denuncia')).toBe('denuncia');
+
+      expect(
+        decidirAcesso({
+          papel: 'admin',
+          modulo: 'planos-acao',
+          acao: 'access',
+          permissao: { can_access: true },
+          modulosDoPlano: ['planos_acao'],
+        }),
+      ).toBe(true);
+    });
   });
 });

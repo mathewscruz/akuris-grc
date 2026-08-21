@@ -316,25 +316,53 @@ export function ConfiguracoesDenuncia() {
         </div>
       </div>
 
-      {/* Canal de Denúncia Público - bloco legal obrigatório */}
-      <Card className="border-primary/30">
+      {/*
+        O canal público, num cartão só.
+
+        Havia três a dizer a mesma coisa: «Canal de denúncia público» (URL +
+        QR), «Links Públicos do Canal de Denúncia» (a MESMA URL outra vez, mais
+        a de consulta) e, na aba ao lado, um terceiro QR do mesmo endereço. Três
+        sítios para copiar o mesmo link é três sítios onde alguém copia o
+        errado — e num canal de denúncia o link errado é um cartaz impresso que
+        não leva a lado nenhum.
+
+        Fica um: os dois endereços que existem mesmo (registo e consulta), um QR
+        do primeiro, e o estado do canal ao lado.
+      */}
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <IconShield className="h-5 w-5" />
             {t('p3Denuncia.channel.title')}
           </CardTitle>
-          <CardDescription>
-            {t('p3Denuncia.channel.description')}
-          </CardDescription>
+          <CardDescription>{t('p3Denuncia.channel.description')}</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-5">
           {publicChannelUrl ? (
-
             <>
+              {/* Estado antes dos endereços: um canal inativo torna-os inúteis. */}
+              <div className="flex flex-wrap items-center gap-2">
+                <Chip family="state" tone={formData.ativo ? 'active' : 'rest'}>
+                  {formData.ativo
+                    ? t('denunciasAdmin.config.statusActive')
+                    : t('denunciasAdmin.config.statusInactive')}
+                </Chip>
+                {empresaSlug ? (
+                  <Badge variant="success">{t('denunciasAdmin.config.friendlyUrls')}</Badge>
+                ) : (
+                  <Button variant="outline" size="sm" onClick={regenerarToken}>
+                    <IconRefresh className="h-4 w-4 mr-1" />
+                    {t('denunciasAdmin.config.regenerateLink')}
+                  </Button>
+                )}
+              </div>
+
               <div className="space-y-2">
-                <Label className="text-sm font-medium">{t('p3Denuncia.channel.urlLabel')}</Label>
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                  <div className="flex-1 p-3 bg-muted rounded-lg font-mono text-sm break-all">
+                <Label className="text-sm font-medium">
+                  {t('denunciasAdmin.config.formLinkLabel')}
+                </Label>
+                <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
+                  <div className="flex-1 break-all rounded-lg bg-muted p-3 font-mono text-sm">
                     {publicChannelUrl}
                   </div>
                   <div className="flex gap-2">
@@ -354,14 +382,48 @@ export function ConfiguracoesDenuncia() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-sm font-medium flex items-center gap-2">
+              {empresaSlug && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">
+                    {t('denunciasAdmin.config.queryLinkLabel')}
+                  </Label>
+                  <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center">
+                    <div className="flex-1 break-all rounded-lg bg-muted p-3 font-mono text-sm">
+                      {window.location.origin}/{empresaSlug}/denuncia/consulta
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={copiarLinkConsulta}>
+                        <IconCopy className="h-4 w-4 mr-1" />
+                        {t('p3Denuncia.channel.copy')}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          window.open(
+                            `${window.location.origin}/${empresaSlug}/denuncia/consulta`,
+                            '_blank',
+                          )
+                        }
+                      >
+                        <IconExternal className="h-4 w-4 mr-1" />
+                        {t('p3Denuncia.channel.open')}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-2 border-t border-border pt-4">
+                <Label className="flex items-center gap-2 text-sm font-medium">
                   <IconQr className="h-4 w-4" />
                   {t('p3Denuncia.channel.qrTitle')}
                 </Label>
-                <p className="text-sm text-muted-foreground">{t('p3Denuncia.channel.qrDescription')}</p>
+                <p className="text-sm text-muted-foreground">
+                  {t('p3Denuncia.channel.qrDescription')}
+                </p>
                 <div className="flex items-center gap-4">
-                  <div className="p-3 bg-background border rounded-lg inline-block">
+                  <div className="inline-block rounded-lg border border-border bg-background p-3">
                     <QRCodeCanvas id="denuncia-public-qr" value={publicChannelUrl} size={160} includeMargin />
                   </div>
                   <Button variant="outline" size="sm" onClick={descarregarQr}>
@@ -370,21 +432,7 @@ export function ConfiguracoesDenuncia() {
                   </Button>
                 </div>
               </div>
-
-              {!empresaSlug && (
-                <Alert>
-                  <IconWarning className="h-4 w-4" />
-                  <AlertTitle>{t('p3Denuncia.channel.noSlugTitle')}</AlertTitle>
-                  <AlertDescription className="space-y-3">
-                    <p>{t('p3Denuncia.channel.noSlugDescription')}</p>
-                    <Button variant="outline" size="sm" onClick={() => navigate('/configuracoes?tab=organizacao')}>
-                      {t('p3Denuncia.channel.noSlugAction')}
-                    </Button>
-                  </AlertDescription>
-                </Alert>
-              )}
             </>
-
           ) : (
             <Alert variant="destructive">
               <IconWarning className="h-4 w-4" />
@@ -399,94 +447,6 @@ export function ConfiguracoesDenuncia() {
           )}
         </CardContent>
       </Card>
-
-      {/* Link Público */}
-      {(config?.token_publico || empresaSlug) && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <IconLink className="h-5 w-5" />
-              {t('denunciasAdmin.config.publicLinksTitle')}
-            </CardTitle>
-            <CardDescription>
-              {t('denunciasAdmin.config.publicLinksDescription')}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Link para criar denúncia */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">{t('denunciasAdmin.config.formLinkLabel')}</Label>
-              <div className="flex items-center gap-2">
-                <div className="flex-1 p-3 bg-muted rounded-lg font-mono text-sm">
-                  {empresaSlug 
-                    ? `${window.location.origin}/${empresaSlug}/denuncia`
-                    : `${window.location.origin}/denuncia/externa/${config?.token_publico}`
-                  }
-                </div>
-                <Button variant="outline" size="sm" onClick={copiarLink}>
-                  <IconCopy className="h-4 w-4" />
-                </Button>
-                <Button variant="outline" size="sm" onClick={abrirFormulario}>
-                  <IconExternal className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-
-            {/* Link para consultar denúncia (apenas com slug) */}
-            {empresaSlug && (
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">{t('denunciasAdmin.config.queryLinkLabel')}</Label>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 p-3 bg-muted rounded-lg font-mono text-sm">
-                    {window.location.origin}/{empresaSlug}/denuncia/consulta
-                  </div>
-                  <Button variant="outline" size="sm" onClick={copiarLinkConsulta}>
-                    <IconCopy className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => window.open(`${window.location.origin}/${empresaSlug}/denuncia/consulta`, '_blank')}
-                  >
-                    <IconSearch className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            )}
-            
-            <div className="flex items-center gap-2">
-              <Chip family="state" tone={formData.ativo ? 'active' : 'rest'}>
-                {formData.ativo ? t('denunciasAdmin.config.statusActive') : t('denunciasAdmin.config.statusInactive')}
-              </Chip>
-              {empresaSlug ? (
-                <Badge variant="success">
-                  {t('denunciasAdmin.config.friendlyUrls')}
-                </Badge>
-              ) : (
-                <Button variant="outline" size="sm" onClick={regenerarToken}>
-                  <IconRefresh className="h-4 w-4 mr-1" />
-                  {t('denunciasAdmin.config.regenerateLink')}
-                </Button>
-              )}
-            </div>
-
-            <Alert>
-              <IconShield className="h-4 w-4" />
-              <AlertDescription>
-                {empresaSlug ? (
-                  <>
-                    <strong>{t('denunciasAdmin.config.alertFriendlyTitle')}</strong>{t('denunciasAdmin.config.alertFriendlyText')}
-                  </>
-                ) : (
-                  <>
-                    {t('denunciasAdmin.config.alertSecureText')}
-                  </>
-                )}
-              </AlertDescription>
-            </Alert>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Configurações Gerais */}
       <Card>

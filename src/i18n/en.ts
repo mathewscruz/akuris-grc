@@ -669,9 +669,12 @@ export const en = {
   },
   protectedRoute: {
     deniedTitle: 'Access denied',
+    planTitle: 'Not in your plan',
+    planBody: 'This module is not part of the plan your company subscribes to.',
+    planHint: 'Talk to whoever manages the Akuris subscription to add this module.',
     deniedBody: 'You do not have permission to access this module or perform this action.',
     deniedHint: 'Contact your administrator to request access.',
-    backToDashboard: 'Back to dashboard',
+    backToDashboard: 'Back to start',
   },
   politicaSenha: {
     requirements: 'Password requirements:',

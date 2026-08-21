@@ -21,9 +21,7 @@
  */
 import { useState, useEffect } from 'react';
 import {
-  IconDownload,
   IconCalendar,
-  IconFile,
   IconPerson,
   IconMail,
   IconShield,
@@ -52,22 +50,13 @@ import { DenunciaConversa } from './DenunciaConversa';
 import { DenunciaRelogio } from './DenunciaRelogio';
 import { DenunciaApuracao } from './DenunciaApuracao';
 import { DenunciaReunioes } from './DenunciaReunioes';
+import { DenunciaAnexos } from './DenunciaAnexos';
 
 interface DenunciaDialogProps {
   denuncia: any;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onDenunciaAtualizada: () => void;
-}
-
-interface Anexo {
-  id: string;
-  nome_arquivo: string;
-  tipo_arquivo: string;
-  tamanho_arquivo: number;
-  arquivo_url: string;
-  tipo_anexo: string;
-  created_at: string;
 }
 
 function getStatusOptions(t: (k: string) => string) {
@@ -88,7 +77,6 @@ export function DenunciaDialog({
 }: DenunciaDialogProps) {
   const { t } = useLanguage();
   const statusOptions = getStatusOptions(t);
-  const [anexos, setAnexos] = useState<Anexo[]>([]);
   const [comite, setComite] = useState<{ user_id: string; nome: string; papel: string }[]>([]);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
@@ -112,14 +100,6 @@ export function DenunciaDialog({
 
   const carregarDados = async () => {
     try {
-      const { data: anexosData } = await supabase
-        .from('denuncias_anexos')
-        .select('*')
-        .eq('denuncia_id', denuncia.id)
-        .order('created_at', { ascending: false });
-
-      setAnexos(anexosData || []);
-
       /*
         Quem pode ficar responsável é quem já tem acesso: o comité.
 
@@ -245,40 +225,6 @@ export function DenunciaDialog({
     } finally {
       setSaving(false);
     }
-  };
-
-  const downloadAnexo = async (anexo: Anexo) => {
-    try {
-      const { data, error } = await supabase.storage
-        .from('denuncias-anexos')
-        .download(anexo.arquivo_url);
-
-      if (error) throw error;
-
-      const url = URL.createObjectURL(data);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = anexo.nome_arquivo;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Erro ao baixar anexo:', error);
-      toast({
-        title: t('denunciasAdmin.dialog.errorDownload'),
-        description: t('denunciasAdmin.dialog.errorDownload'),
-        variant: "destructive"
-      });
-    }
-  };
-
-  const formatBytes = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   const formatDateTime = (dateString: string) => {
@@ -655,40 +601,12 @@ export function DenunciaDialog({
           </TabsContent>
 
           <TabsContent value="anexos" className="space-y-4">
-            <div className="grid gap-4">
-              {anexos.length > 0 ? (
-                anexos.map((anexo) => (
-                  <Card key={anexo.id}>
-                    <CardContent className="flex items-center justify-between p-4">
-                      <div className="flex items-center gap-3">
-                        <IconFile className="h-8 w-8 text-muted-foreground" />
-                        <div>
-                          <div className="font-medium">{anexo.nome_arquivo}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {formatBytes(anexo.tamanho_arquivo)} • {anexo.tipo_anexo}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {formatDateTime(anexo.created_at)}
-                          </div>
-                        </div>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => downloadAnexo(anexo)}
-                      >
-                        <IconDownload className="h-4 w-4 mr-2" />
-                        {t('denunciasAdmin.dialog.download')}
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  {t('denunciasAdmin.dialog.noAttachments')}
-                </div>
-              )}
-            </div>
+            <DenunciaAnexos
+              denunciaId={denuncia.id}
+              empresaId={denuncia.empresa_id}
+              status={denuncia.status}
+              onAtualizado={onDenunciaAtualizada}
+            />
           </TabsContent>
         </Tabs>
     </DialogShell>

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { logger, measurePerformance } from '@/lib/logger';
+import { chaveDePlano, SEMPRE_PERMITIDOS } from '@/lib/autorizacao';
 
 interface ModulePermission {
   module_id: string;
@@ -15,6 +16,13 @@ interface ModulePermission {
 
 interface UsePermissionsReturn {
   permissions: ModulePermission[];
+  /**
+   * Os módulos que o plano da empresa contém, ou `null` quando o plano não
+   * restringe. É o teto por EMPRESA que faltava: até aqui o único recorte era
+   * a permissão por utilizador, e `planos.modulos_habilitados` era catálogo
+   * de preço que ninguém lia.
+   */
+  modulosDoPlano: string[] | null;
   loading: boolean;
   canAccess: (moduleName: string) => boolean;
   canCreate: (moduleName: string) => boolean;
@@ -27,6 +35,7 @@ interface UsePermissionsReturn {
 export const usePermissions = (): UsePermissionsReturn => {
   const { user, profile } = useAuth();
   const [permissions, setPermissions] = useState<ModulePermission[]>([]);
+  const [modulosDoPlano, setModulosDoPlano] = useState<string[] | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchPermissions = useCallback(async () => {
@@ -92,6 +101,33 @@ export const usePermissions = (): UsePermissionsReturn => {
     fetchPermissions();
   }, [fetchPermissions]);
 
+  /* O teto do plano, resolvido no banco para não depender de o cliente saber
+     ler `planos` — a tabela não é legível por quem não é administrador. */
+  useEffect(() => {
+    let vivo = true;
+    if (!user) {
+      setModulosDoPlano(null);
+      return;
+    }
+    supabase.rpc('modulos_da_empresa').then(({ data, error }) => {
+      if (!vivo) return;
+      if (error) {
+        logger.error('Falha ao ler os módulos do plano', {
+          error: error.message,
+          module: 'permissions',
+        });
+        /* Falhar aberto: um erro de leitura não pode tirar o produto a
+           ninguém. Quem manda de verdade é a RLS do banco. */
+        setModulosDoPlano(null);
+        return;
+      }
+      setModulosDoPlano((data as string[] | null) ?? null);
+    });
+    return () => {
+      vivo = false;
+    };
+  }, [user]);
+
   // Memoizar o mapa de permissões para melhor performance
   const permissionsMap = useMemo(() => {
     const map = new Map<string, ModulePermission>();
@@ -105,13 +141,21 @@ export const usePermissions = (): UsePermissionsReturn => {
     return permissionsMap.get(moduleName);
   }, [permissionsMap]);
 
+  /* O plano é teto para todos, super_admin da empresa incluído. */
+  const dentroDoPlano = useCallback((moduleName: string) => {
+    if (modulosDoPlano === null) return true;
+    if (SEMPRE_PERMITIDOS.has(moduleName)) return true;
+    return modulosDoPlano.includes(chaveDePlano(moduleName));
+  }, [modulosDoPlano]);
+
   const canAccess = useCallback((moduleName: string) => {
+    if (!dentroDoPlano(moduleName)) return false;
     // Super-admin sempre tem acesso total
     if (profile?.role === 'super_admin') return true;
-    
+
     const permission = getPermissionForModule(moduleName);
     return permission?.can_access || false;
-  }, [getPermissionForModule, profile?.role]);
+  }, [dentroDoPlano, getPermissionForModule, profile?.role]);
 
   const canCreate = useCallback((moduleName: string) => {
     // Super-admin sempre tem acesso total
@@ -153,6 +197,7 @@ export const usePermissions = (): UsePermissionsReturn => {
   return {
     permissions,
     loading,
+    modulosDoPlano,
     canAccess,
     canCreate,
     canRead,

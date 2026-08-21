@@ -6,6 +6,7 @@ import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
 import { useAuth } from '@/components/AuthProvider';
 import { useBreadcrumb } from '@/hooks/useBreadcrumb';
+import { useRotaInicial } from '@/hooks/useRotaInicial';
 import { LanguageSelector } from '@/components/LanguageSelector';
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import UserProfile from '@/components/UserProfile';
@@ -42,6 +43,8 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { user, loading, hasTemporaryPassword, checkTemporaryPassword, company, signOut } = useAuth();
   const navigate = useNavigate();
+  /* O logótipo leva ao início de QUEM está: um cliente só-canal não tem painel. */
+  const { rota: rotaInicial } = useRotaInicial();
   const location = useLocation();
   const breadcrumbs = useBreadcrumb();
   const isMobile = useIsMobile();
@@ -182,7 +185,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   src={akurisLogo} 
                   alt="Akuris" 
                   className="h-7 cursor-pointer flex-shrink-0" 
-                  onClick={() => navigate('/dashboard')} 
+                  onClick={() => navigate(rotaInicial)} 
                 />
               ) : (
                 <SidebarTrigger />

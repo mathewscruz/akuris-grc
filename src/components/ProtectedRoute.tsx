@@ -8,7 +8,8 @@ import { useNavigate } from 'react-router-dom';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { decidirAcesso } from '@/lib/autorizacao';
+import { decidirAcesso, chaveDePlano, SEMPRE_PERMITIDOS } from '@/lib/autorizacao';
+import { useRotaInicial } from '@/hooks/useRotaInicial';
 interface ProtectedRouteProps {
   children: React.ReactNode;
   moduleName: string;
@@ -23,9 +24,12 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   fallbackToRoleCheck = true,
 }) => {
   const { profile } = useAuth();
-  const { permissions, loading } = usePermissions();
+  const { permissions, modulosDoPlano, loading } = usePermissions();
   const { t } = useLanguage();
   const navigate = useNavigate();
+  /* O botão de saída não pode apontar para um módulo que esta empresa não
+     comprou — daria um ciclo de "acesso negado" a apontar para si próprio. */
+  const { rota: rotaInicial } = useRotaInicial();
 
   if (loading) {
     return (
@@ -45,7 +49,22 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     acao: action,
     permissao: permissions.find((p) => p.module_name === moduleName),
     usarPapelComoReserva: fallbackToRoleCheck,
+    /* O teto do plano da empresa. Sem isto, digitar a URL de um módulo não
+       comprado continuava a entrar — o recorte seria só de menu. */
+    modulosDoPlano,
   });
+
+  /*
+    Negado por permissão e negado por plano não são a mesma coisa.
+
+    «Entre em contacto com o administrador» é conselho útil quando falta uma
+    permissão — e conselho inútil quando o módulo não foi comprado: o
+    administrador da empresa não consegue conceder o que não está no plano.
+  */
+  const foraDoPlano =
+    modulosDoPlano !== null &&
+    !SEMPRE_PERMITIDOS.has(moduleName) &&
+    !modulosDoPlano.includes(chaveDePlano(moduleName));
 
   if (!allowed) {
     return (
@@ -56,22 +75,24 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
               <IconLock className="mx-auto h-8 w-8 text-destructive" />
               
               <div className="space-y-2">
-                <h3 className="text-lg font-semibold">{t('protectedRoute.deniedTitle')}</h3>
+                <h3 className="text-lg font-semibold">
+                  {t(foraDoPlano ? 'protectedRoute.planTitle' : 'protectedRoute.deniedTitle')}
+                </h3>
                 <p className="text-sm text-muted-foreground">
-                  {t('protectedRoute.deniedBody')}
+                  {t(foraDoPlano ? 'protectedRoute.planBody' : 'protectedRoute.deniedBody')}
                 </p>
               </div>
 
               <div className="flex items-center gap-2 p-3 bg-warning/10 rounded-lg">
                 <IconWarning className="h-4 w-4 text-warning" />
                 <p className="text-sm text-warning dark:text-warning">
-                  {t('protectedRoute.deniedHint')}
+                  {t(foraDoPlano ? 'protectedRoute.planHint' : 'protectedRoute.deniedHint')}
                 </p>
               </div>
 
               <Button 
                 variant="outline" 
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate(rotaInicial)}
                 className="w-full"
               >
                 {t('protectedRoute.backToDashboard')}

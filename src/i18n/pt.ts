@@ -675,9 +675,15 @@ export const pt = {
   },
   protectedRoute: {
     deniedTitle: 'Acesso negado',
+    /* Faltar permissão e não ter comprado o módulo pedem respostas
+       diferentes: o administrador da empresa não concede o que não está
+       no plano. */
+    planTitle: 'Fora do seu plano',
+    planBody: 'Este módulo não faz parte do plano contratado pela sua empresa.',
+    planHint: 'Fale com quem contratou o Akuris para incluir este módulo.',
     deniedBody: 'Você não tem permissão para acessar este módulo ou realizar esta ação.',
     deniedHint: 'Entre em contato com o administrador para solicitar acesso.',
-    backToDashboard: 'Voltar ao painel',
+    backToDashboard: 'Voltar ao início',
   },
   politicaSenha: {
     requirements: 'Requisitos da senha:',

@@ -50,13 +50,54 @@ const handler = async (req: Request): Promise<Response> => {
     const { data: config } = await supabaseClient.from('denuncias_configuracoes').select('*').eq('empresa_id', empresa_id).single();
     if (!config || !config.notificar_administradores) return new Response(JSON.stringify({ success: true, message: 'Notificações desabilitadas' }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
-    const { data: admins } = await supabaseClient.from('profiles').select('email, nome').eq('empresa_id', empresa_id).in('role', ['admin', 'super_admin']);
-    if (!admins || admins.length === 0) return new Response(JSON.stringify({ success: true, message: 'Nenhum administrador encontrado' }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    /*
+      Quem e avisado e o COMITE, nao os administradores.
+
+      A onda 1 tirou a denuncia de toda a administracao: quem ve e quem esta em
+      `denuncias_comite` ou foi designado responsavel (`pode_ver_denuncia`).
+      Esta funcao continuava a procurar `profiles` com papel de admin — ou
+      seja, avisava exactamente quem NAO consegue abrir o caso, e calava quem
+      consegue.
+    */
+    const { data: membros } = await supabaseClient
+      .from('denuncias_comite')
+      .select('user_id')
+      .eq('empresa_id', empresa_id);
+
+    const comiteIds = (membros ?? []).map((m: { user_id: string }) => m.user_id);
+    const { data: perfisComite } = comiteIds.length
+      ? await supabaseClient.from('profiles').select('user_id, email, nome').in('user_id', comiteIds)
+      : { data: [] as { user_id: string; email: string | null; nome: string | null }[] };
 
     const emailList = new Set<string>();
-    admins.forEach(admin => { if (admin.email) emailList.add(admin.email); });
+    (perfisComite ?? []).forEach((p) => { if (p.email) emailList.add(p.email); });
+
+    /*
+      O aviso dentro da aplicacao, alem do e-mail.
+
+      E-mail cai em spam, e uma denuncia com prazo de 7 dias nao pode depender
+      disso. `notifications` nao tem policy de INSERT — mas esta funcao corre
+      com a chave de servico, que passa por cima da RLS.
+    */
+    if (comiteIds.length > 0) {
+      const { error: erroAviso } = await supabaseClient.from('notifications').insert(
+        comiteIds.map((userId: string) => ({
+          user_id: userId,
+          title: `Nova denuncia - ${denuncia.protocolo}`,
+          message: denuncia.titulo,
+          type: 'warning',
+          link_to: '/denuncia',
+          metadata: { modulo: 'denuncia', denuncia_id, protocolo: denuncia.protocolo },
+        })),
+      );
+      if (erroAviso) console.error('Falha ao criar aviso na aplicacao:', erroAviso.message);
+    }
+
+    if (comiteIds.length === 0) {
+      console.error(`Empresa ${empresa_id} recebeu denuncia e nao tem comite: ninguem sera avisado nem conseguira abrir o caso.`);
+    }
     if (config.emails_notificacao?.length > 0) config.emails_notificacao.forEach((email: string) => { if (email?.includes('@')) emailList.add(email.trim()); });
-    if (emailList.size === 0) return new Response(JSON.stringify({ success: true, message: 'Nenhum e-mail válido' }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    if (emailList.size === 0) return new Response(JSON.stringify({ success: true, avisos_app: comiteIds.length, message: 'Nenhum e-mail válido' }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
     // O mapa de rótulos tem de aceitar o vocabulário gravado hoje (masculino)
     // sem perder os registos antigos que ainda cheguem no feminino.

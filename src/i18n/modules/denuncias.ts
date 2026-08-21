@@ -99,6 +99,8 @@ export const denunciasAdmin = {
           ata_partilhada: 'Ata enviada ao denunciante',
           ata_confirmada: 'Ata confirmada pelo denunciante',
           impedimento_declarado: 'Impedimento declarado',
+          evidencia_anexada: 'Evidência anexada',
+          evidencia_removida: 'Evidência removida',
         },
       },
       /* A reunião do art. 9.º/2, e a ata que o art. 18.º/2 exige. */
@@ -142,6 +144,27 @@ export const denunciasAdmin = {
           videochamada: 'Videochamada',
           telefone: 'Telefone',
         },
+      },
+      /*
+        A prova, dos dois lados. O balde só tinha política de leitura: o comité
+        via o que chegava pelo canal e não tinha por onde juntar o que a
+        apuração recolhia.
+      */
+      anexos: {
+        doCanal: 'Enviado por quem denunciou',
+        doCanalAjuda: 'Chegou com o relato. Não se apaga daqui: é prova de quem denunciou.',
+        semAnexosCanal: 'Nenhum arquivo veio com o relato.',
+        daApuracao: 'Recolhido na apuração',
+        daApuracaoAjuda:
+          'Fica no comitê e nunca aparece na consulta por protocolo. Máximo de 10 MB por arquivo.',
+        semAnexosApuracao: 'Nada anexado pela apuração ainda.',
+        juntar: 'Anexar arquivo',
+        enviando: 'Enviando…',
+        enviado: 'Arquivo anexado',
+        erroEnviar: 'Não foi possível anexar: {nomes}',
+        removido: 'Arquivo removido',
+        erroRemover: 'Não foi possível remover',
+        pendente: 'envio não confirmado',
       },
       relogio: {
         titulo: 'Prazos',
@@ -331,8 +354,11 @@ export const denunciasAdmin = {
         descPermitirAnonimas: 'Denunciantes podem optar por não se identificar',
         labelEmailObrigatorio: 'E-mail Obrigatório',
         descEmailObrigatorio: 'Exigir e-mail em denúncias não anônimas',
-        labelNotificarAdmins: 'Notificar Administradores',
-        descNotificarAdmins: 'Enviar e-mail quando nova denúncia for recebida',
+        /* Dizia «Administradores» e avisava administradores — que, desde a
+           onda 1, já não veem denúncia nenhuma. Quem é avisado é o comitê. */
+        labelNotificarAdmins: 'Avisar o comitê',
+        descNotificarAdmins:
+          'E-mail e aviso na aplicação para quem está no comitê, assim que uma denúncia entra.',
         labelEmailsNotificacao: 'E-mails para Notificação',
         placeholderEmails: 'email1@empresa.com, email2@empresa.com',
         hintEmails: 'Separe múltiplos e-mails com vírgula',
@@ -528,6 +554,8 @@ export const denunciasAdmin = {
           ata_partilhada: 'Minutes sent to the reporter',
           ata_confirmada: 'Minutes confirmed by the reporter',
           impedimento_declarado: 'Conflict of interest declared',
+          evidencia_anexada: 'Evidence attached',
+          evidencia_removida: 'Evidence removed',
         },
       },
       reuniao: {
@@ -570,6 +598,22 @@ export const denunciasAdmin = {
           videochamada: 'Video call',
           telefone: 'Phone',
         },
+      },
+      anexos: {
+        doCanal: 'Sent by the reporter',
+        doCanalAjuda: 'Came with the report. Not deletable here: it is the reporter’s evidence.',
+        semAnexosCanal: 'No file came with the report.',
+        daApuracao: 'Collected during the investigation',
+        daApuracaoAjuda:
+          'Stays with the committee and never appears in the protocol lookup. 10 MB per file.',
+        semAnexosApuracao: 'Nothing attached by the investigation yet.',
+        juntar: 'Attach file',
+        enviando: 'Uploading…',
+        enviado: 'File attached',
+        erroEnviar: 'Could not attach: {nomes}',
+        removido: 'File removed',
+        erroRemover: 'Could not remove',
+        pendente: 'upload not confirmed',
       },
       relogio: {
         titulo: 'Deadlines',
@@ -756,8 +800,9 @@ export const denunciasAdmin = {
         descPermitirAnonimas: 'Reporters can choose not to identify themselves',
         labelEmailObrigatorio: 'Required Email',
         descEmailObrigatorio: 'Require email for non-anonymous reports',
-        labelNotificarAdmins: 'Notify Administrators',
-        descNotificarAdmins: 'Send an email when a new report is received',
+        labelNotificarAdmins: 'Notify the committee',
+        descNotificarAdmins:
+          'Email and in-app alert for committee members as soon as a report comes in.',
         labelEmailsNotificacao: 'Notification Emails',
         placeholderEmails: 'email1@company.com, email2@company.com',
         hintEmails: 'Separate multiple emails with a comma',

@@ -3558,6 +3558,36 @@ export type Database = {
         }
         Relationships: []
       }
+      denuncias_ficheiros_por_apagar: {
+        Row: {
+          apagado_em: string | null
+          caminho: string
+          empresa_id: string | null
+          enfileirado_em: string
+          id: string
+          tentativas: number
+          ultimo_erro: string | null
+        }
+        Insert: {
+          apagado_em?: string | null
+          caminho: string
+          empresa_id?: string | null
+          enfileirado_em?: string
+          id?: string
+          tentativas?: number
+          ultimo_erro?: string | null
+        }
+        Update: {
+          apagado_em?: string | null
+          caminho?: string
+          empresa_id?: string | null
+          enfileirado_em?: string
+          id?: string
+          tentativas?: number
+          ultimo_erro?: string | null
+        }
+        Relationships: []
+      }
       denuncias_impedimentos: {
         Row: {
           created_at: string
@@ -4849,6 +4879,7 @@ export type Database = {
           nome: string
           objetivo_compliance: string | null
           plano_id: string | null
+          plano_restringe_modulos: boolean
           porte_empresa: string | null
           setor_atuacao: string | null
           slug: string | null
@@ -4873,6 +4904,7 @@ export type Database = {
           nome: string
           objetivo_compliance?: string | null
           plano_id?: string | null
+          plano_restringe_modulos?: boolean
           porte_empresa?: string | null
           setor_atuacao?: string | null
           slug?: string | null
@@ -4897,6 +4929,7 @@ export type Database = {
           nome?: string
           objetivo_compliance?: string | null
           plano_id?: string | null
+          plano_restringe_modulos?: boolean
           porte_empresa?: string | null
           setor_atuacao?: string | null
           slug?: string | null
@@ -9411,6 +9444,7 @@ export type Database = {
         Args: { p_code_id: string; p_user_id: string }
         Returns: boolean
       }
+      agendar_expurgo_denuncias: { Args: never; Returns: string }
       apply_default_permissions_for_user: {
         Args: { user_id_param: string }
         Returns: undefined
@@ -9451,6 +9485,10 @@ export type Database = {
       confirmar_ata_reuniao: {
         Args: { p_reuniao_id: string; p_tracking_hash: string }
         Returns: Json
+      }
+      confirmar_ficheiros_apagados: {
+        Args: { p_erro?: string; p_ids: string[] }
+        Returns: number
       }
       consult_denuncia_publica: {
         Args: {
@@ -9597,6 +9635,13 @@ export type Database = {
         Args: { denuncia_id: string }
         Returns: boolean
       }
+      denuncias_vencidas_com_ficheiros: {
+        Args: never
+        Returns: {
+          caminhos: string[]
+          denuncia_id: string
+        }[]
+      }
       documento_pertence_empresa: {
         Args: { documento_id: string }
         Returns: boolean
@@ -9611,6 +9656,20 @@ export type Database = {
         Returns: boolean
       }
       expirar_aceites_riscos: { Args: never; Returns: Json }
+      expurgar_denuncias_vencidas: {
+        Args: never
+        Returns: {
+          apagadas: number
+          empresa_id: string
+        }[]
+      }
+      ficheiros_por_apagar: {
+        Args: { p_limite?: number }
+        Returns: {
+          caminho: string
+          id: string
+        }[]
+      }
       finalize_denuncia_attachment: {
         Args: {
           p_mime_type: string
@@ -9755,6 +9814,7 @@ export type Database = {
         }[]
       }
       matriz_pertence_empresa: { Args: { matriz_id: string }; Returns: boolean }
+      modulos_da_empresa: { Args: never; Returns: string[] }
       pode_ver_denuncia: { Args: { p_denuncia_id: string }; Returns: boolean }
       popular_ativos_demo: {
         Args: { p_empresa_id: string; p_user_id: string }
@@ -9855,6 +9915,10 @@ export type Database = {
       }
       ropa_chave_da_base_legal: { Args: { p_texto: string }; Returns: string }
       ropa_pertence_empresa: { Args: { ropa_id: string }; Returns: boolean }
+      semear_comite_denuncias: {
+        Args: { p_empresa_id: string }
+        Returns: number
+      }
       severidade_canonica: { Args: { p_valor: string }; Returns: string }
       solicitar_reuniao_denuncia: {
         Args: {

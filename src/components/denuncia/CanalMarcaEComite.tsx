@@ -15,12 +15,12 @@
  *    administração — passou a ser quem está aqui. Sem esta tela, a estrutura
  *    existia e ninguém conseguia mexer nela.
  *
- * E o código QR, que o concorrente anuncia: é o que resolve o cartaz na parede
- * da fábrica, onde não há quem digite uma URL.
+ * O código QR viveu aqui durante uma versão e mudou-se: estava a ser o terceiro
+ * sítio a mostrar o mesmo endereço do canal. Vive agora com os endereços, em
+ * `ConfiguracoesDenuncia`.
  */
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { QRCodeCanvas } from 'qrcode.react';
 import { supabase } from '@/integrations/supabase/client';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,7 +31,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
-import { IconDownload, IconDelete, IconAdd } from '@/components/icons';
+import { IconDelete, IconAdd } from '@/components/icons';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from 'sonner';
 
@@ -173,17 +173,6 @@ export function CanalMarcaEComite() {
     if (error) return toast.error(t('denunciasAdmin.marca.erroComite'));
     queryClient.invalidateQueries({ queryKey: ['denuncia-comite', empresaId] });
     queryClient.invalidateQueries({ queryKey: ['denuncia-candidatos', empresaId] });
-  };
-
-  const urlCanal = empresa?.slug ? `${window.location.origin}/${empresa.slug}/denuncia` : '';
-
-  const baixarQr = () => {
-    const canvas = document.querySelector<HTMLCanvasElement>('#qr-canal canvas');
-    if (!canvas) return;
-    const link = document.createElement('a');
-    link.download = `canal-denuncia-${empresa?.slug ?? 'qr'}.png`;
-    link.href = canvas.toDataURL('image/png');
-    link.click();
   };
 
   if (isLoading) {
@@ -360,24 +349,6 @@ export function CanalMarcaEComite() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">{t('denunciasAdmin.marca.tituloQr')}</CardTitle>
-          <CardDescription>{t('denunciasAdmin.marca.descricaoQr')}</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-wrap items-center gap-6">
-          <div id="qr-canal" className="rounded-lg border border-border bg-white p-3">
-            {urlCanal && <QRCodeCanvas value={urlCanal} size={148} level="M" includeMargin={false} />}
-          </div>
-          <div className="min-w-0 flex-1 space-y-2">
-            <p className="break-all text-xs text-muted-foreground">{urlCanal}</p>
-            <Button variant="outline" size="sm" onClick={baixarQr}>
-              <IconDownload className="mr-2 h-4 w-4" strokeWidth={1.5} />
-              {t('denunciasAdmin.marca.baixarQr')}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
 
       <Card>
         <CardHeader>
