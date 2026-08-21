@@ -17,6 +17,8 @@ import { useToast } from '@/hooks/use-toast';
 import { formatDateOnly } from '@/lib/date-utils';
 import { useIntegrationNotify } from '@/hooks/useIntegrationNotify';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { DenunciaConversa } from './DenunciaConversa';
+import { DenunciaRelogio } from './DenunciaRelogio';
 
 interface DenunciaDialogProps {
   denuncia: any;
@@ -78,7 +80,9 @@ export function DenunciaDialog({
     status: denuncia.status,
     responsavel_id: denuncia.responsavel_id || '',
     observacoes: '',
-    parecer_final: denuncia.parecer_final || ''
+    parecer_final: denuncia.parecer_final || '',
+    resultado: denuncia.resultado || '',
+    medidas_adotadas: denuncia.medidas_adotadas || '',
   });
 
   useEffect(() => {
@@ -135,8 +139,16 @@ export function DenunciaDialog({
       const updateData: any = {
         status: formData.status,
         responsavel_id: formData.responsavel_id || null,
-        parecer_final: formData.parecer_final
+        parecer_final: formData.parecer_final,
+        resultado: formData.resultado || null,
+        medidas_adotadas: formData.medidas_adotadas || null,
       };
+
+      /* O parecer ganha data quando ganha desfecho: é o carimbo que a
+         auditoria procura, e antes não existia. */
+      if (formData.resultado && !denuncia.data_parecer) {
+        updateData.data_parecer = new Date().toISOString();
+      }
 
       // Definir datas baseadas no status
       if (statusNovo === 'em_analise' && statusAnterior === 'nova') {
@@ -267,6 +279,7 @@ export function DenunciaDialog({
           <TabsList>
             <TabsTrigger value="detalhes">{t('denunciasAdmin.dialog.tabDetalhes')}</TabsTrigger>
             <TabsTrigger value="tratamento">{t('denunciasAdmin.dialog.tabTratamento')}</TabsTrigger>
+            <TabsTrigger value="conversa">{t('denunciasAdmin.dialog.tabConversa')}</TabsTrigger>
             <TabsTrigger value="anexos">{t('denunciasAdmin.dialog.tabAnexos')}</TabsTrigger>
             <TabsTrigger value="historico">{t('denunciasAdmin.dialog.tabHistorico')}</TabsTrigger>
           </TabsList>
@@ -377,6 +390,8 @@ export function DenunciaDialog({
 
           {/* Tab Tratamento */}
           <TabsContent value="tratamento" className="space-y-4">
+            {/* O relógio primeiro: é o que tem prazo legal a correr. */}
+            <DenunciaRelogio denuncia={denuncia} onAtualizado={onDenunciaAtualizada} />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-4">
                 <div className="space-y-2">
@@ -433,6 +448,45 @@ export function DenunciaDialog({
             </div>
 
             <div className="space-y-2">
+              {/*
+                O desfecho, em campo próprio.
+
+                O parecer era só texto solto: não dava para contar quantas
+                denúncias foram procedentes, que é a primeira pergunta de
+                qualquer auditoria ao canal.
+              */}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="resultado">{t('denunciasAdmin.dialog.labelResultado')}</Label>
+                  <Select
+                    value={formData.resultado || 'sem_resultado'}
+                    onValueChange={(v) =>
+                      setFormData({ ...formData, resultado: v === 'sem_resultado' ? '' : v })
+                    }
+                  >
+                    <SelectTrigger id="resultado">
+                      <SelectValue placeholder={t('denunciasAdmin.dialog.placeholderResultado')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="sem_resultado">{t('denunciasAdmin.dialog.resultadoPendente')}</SelectItem>
+                      <SelectItem value="procedente">{t('denunciasAdmin.dialog.resultadoProcedente')}</SelectItem>
+                      <SelectItem value="parcialmente_procedente">{t('denunciasAdmin.dialog.resultadoParcial')}</SelectItem>
+                      <SelectItem value="improcedente">{t('denunciasAdmin.dialog.resultadoImprocedente')}</SelectItem>
+                      <SelectItem value="inconclusiva">{t('denunciasAdmin.dialog.resultadoInconclusiva')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="medidas">{t('denunciasAdmin.dialog.labelMedidas')}</Label>
+                  <Input
+                    id="medidas"
+                    value={formData.medidas_adotadas || ''}
+                    onChange={(e) => setFormData({ ...formData, medidas_adotadas: e.target.value })}
+                    placeholder={t('denunciasAdmin.dialog.placeholderMedidas')}
+                  />
+                </div>
+              </div>
+
               <Label htmlFor="parecer">{t('denunciasAdmin.dialog.labelParecerFinal')}</Label>
               <Textarea
                 id="parecer"
@@ -452,6 +506,10 @@ export function DenunciaDialog({
           </TabsContent>
 
           {/* Tab Anexos */}
+          <TabsContent value="conversa" className="space-y-4">
+            <DenunciaConversa denunciaId={denuncia.id} empresaId={denuncia.empresa_id} />
+          </TabsContent>
+
           <TabsContent value="anexos" className="space-y-4">
             <div className="grid gap-4">
               {anexos.length > 0 ? (

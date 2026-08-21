@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveDenunciaStatusTone, resolveGravidadeTone } from '@/lib/status-tone';
@@ -66,6 +67,16 @@ export default function DenunciaConsulta() {
   const [denuncia, setDenuncia] = useState<Denuncia | null>(null);
   const [movimentacoes, setMovimentacoes] = useState<Movimentacao[]>([]);
   const [showDetails, setShowDetails] = useState(false);
+  /*
+    A conversa com o comité.
+
+    Esta tela era só leitura: quem denunciou via o estado e a linha do tempo, e
+    não conseguia acrescentar nada. A Diretiva (UE) 2019/1937 exige retorno ao
+    informante, e retorno sem via de resposta não é retorno.
+  */
+  const [mensagens, setMensagens] = useState<{ id: string; autor_tipo: string; mensagem: string; created_at: string }[]>([]);
+  const [novaMensagem, setNovaMensagem] = useState('');
+  const [enviandoMensagem, setEnviandoMensagem] = useState(false);
 
   useEffect(() => {
     if (empresaSlug) {
@@ -116,6 +127,7 @@ export default function DenunciaConsulta() {
     setSearching(true);
     setDenuncia(null);
     setMovimentacoes([]);
+    setMensagens([]);
     setShowDetails(false);
 
     try {
@@ -140,6 +152,7 @@ export default function DenunciaConsulta() {
       }
 
       setDenuncia(denunciaData);
+      setMensagens(denunciaData.mensagens ?? []);
       setMovimentacoes(
         (denunciaData.movimentacoes ?? []).map((mov: any) => ({
           ...mov,
@@ -158,6 +171,46 @@ export default function DenunciaConsulta() {
       });
     } finally {
       setSearching(false);
+    }
+  };
+
+  /** Manda a mensagem pelo código de acompanhamento — a única credencial que
+      quem denunciou tem, porque não tem conta. */
+  const enviarMensagem = async () => {
+    const texto = novaMensagem.trim();
+    if (!texto || !denuncia) return;
+    setEnviandoMensagem(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-denuncia', {
+        body: {
+          action: 'mensagem',
+          denuncia_id: denuncia.id,
+          codigo: codigo.trim(),
+          mensagem: texto,
+        },
+      });
+      if (error || data?.error) throw new Error(String(error ?? data?.error));
+
+      setMensagens((atual) => [
+        ...atual,
+        {
+          id: `local-${Date.now()}`,
+          autor_tipo: 'denunciante',
+          mensagem: texto,
+          created_at: new Date().toISOString(),
+        },
+      ]);
+      setNovaMensagem('');
+      toast({ title: t('publicPortal.denunciaConsulta.mensagemEnviada') });
+    } catch (erro) {
+      logger.error('Erro ao enviar mensagem', { module: 'DenunciaConsulta', error: String(erro) });
+      toast({
+        title: t('publicPortal.denunciaConsulta.error'),
+        description: t('publicPortal.denunciaConsulta.mensagemErro'),
+        variant: 'destructive',
+      });
+    } finally {
+      setEnviandoMensagem(false);
     }
   };
 
@@ -342,6 +395,75 @@ export default function DenunciaConsulta() {
                     </AlertDescription>
                   </Alert>
                 )}
+              </CardContent>
+            </Card>
+
+            {/*
+              A conversa com o comité.
+
+              É a metade que faltava do direito ao retorno: sem via de
+              resposta, quem denunciou não podia acrescentar o que faltou nem
+              responder a uma pergunta da apuração.
+            */}
+            <Card className="bg-white">
+              <CardHeader>
+                <CardTitle className="text-base">
+                  {t('publicPortal.denunciaConsulta.conversaTitulo')}
+                </CardTitle>
+                <CardDescription>
+                  {t('publicPortal.denunciaConsulta.conversaDescricao')}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {mensagens.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    {t('publicPortal.denunciaConsulta.conversaVazia')}
+                  </p>
+                ) : (
+                  <div className="max-h-[280px] space-y-2 overflow-y-auto rounded-lg border border-border bg-muted/20 p-3">
+                    {mensagens.map((m) => {
+                      const meu = m.autor_tipo === 'denunciante';
+                      return (
+                        <div key={m.id} className={meu ? 'flex justify-end' : 'flex justify-start'}>
+                          <div
+                            className={
+                              meu
+                                ? 'max-w-[80%] rounded-lg bg-primary/10 px-3 py-2'
+                                : 'max-w-[80%] rounded-lg border border-border bg-card px-3 py-2'
+                            }
+                          >
+                            <p className="text-micro font-medium text-muted-foreground">
+                              {meu
+                                ? t('publicPortal.denunciaConsulta.conversaVoce')
+                                : t('publicPortal.denunciaConsulta.conversaComite')}
+                            </p>
+                            <p className="mt-0.5 whitespace-pre-wrap text-sm">{m.mensagem}</p>
+                            <p className="mt-1 text-micro tabular-nums text-muted-foreground">
+                              {formatDate(m.created_at)}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                <Textarea
+                  value={novaMensagem}
+                  onChange={(e) => setNovaMensagem(e.target.value)}
+                  rows={3}
+                  maxLength={5000}
+                  placeholder={t('publicPortal.denunciaConsulta.conversaPlaceholder')}
+                />
+                <div className="flex justify-end">
+                  <Button
+                    size="sm"
+                    onClick={enviarMensagem}
+                    disabled={enviandoMensagem || !novaMensagem.trim()}
+                  >
+                    {t('publicPortal.denunciaConsulta.conversaEnviar')}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
 
