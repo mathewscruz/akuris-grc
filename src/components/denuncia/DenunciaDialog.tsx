@@ -1,14 +1,45 @@
+/**
+ * DenunciaDialog — a ficha de uma denúncia, do lado de quem a apura.
+ *
+ * Três correcções de fundo em relação ao que estava:
+ *
+ * 1. **O campo «Observações da Movimentação» saía para fora.** O texto que o
+ *    investigador escrevia ali era devolvido pela consulta pública e impresso
+ *    na tela de quem denunciou. Deixou de haver campo de notas neste
+ *    formulário: a deliberação escreve-se na aba Apuração, que nasce interna e
+ *    diz, em cada linha, se é interna ou partilhada.
+ *
+ * 2. **O responsável era escolhido entre administradores.** Mas quem tem
+ *    acesso à denúncia é o COMITÉ (`pode_ver_denuncia`). Atribuir a um
+ *    administrador de fora do comité criava um responsável que via o caso por
+ *    ser responsável, sem nunca ter sido nomeado para o canal — e a lista
+ *    escondia os membros do comité que não fossem administradores.
+ *
+ * 3. **Faltava a resposta ao que importa antes de abrir uma aba.** Estado,
+ *    responsável, prazo e desfecho estavam espalhados por dentro das abas.
+ *    Agora estão no topo, sempre visíveis.
+ */
 import { useState, useEffect } from 'react';
-import { IconDownload, IconUpload, IconCalendar, IconFile, IconPerson, IconMail, IconShield, IconHistory, IconUserCheck, IconSave, IconMessage } from '@/components/icons';
+import {
+  IconDownload,
+  IconCalendar,
+  IconFile,
+  IconPerson,
+  IconMail,
+  IconShield,
+  IconSave,
+  IconLock,
+} from '@/components/icons';
 import { supabase } from '@/integrations/supabase/client';
 import { useEmpresaId } from '@/hooks/useEmpresaId';
 import { DialogShell } from '@/components/ui/dialog-shell';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { resolveGravidadeTone } from '@/lib/status-tone';
+import { resolveGravidadeTone, resolveDenunciaStatusTone } from '@/lib/status-tone';
+import { severidadeDeFaixas } from '@/lib/metrics/riscos';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -19,24 +50,14 @@ import { useIntegrationNotify } from '@/hooks/useIntegrationNotify';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { DenunciaConversa } from './DenunciaConversa';
 import { DenunciaRelogio } from './DenunciaRelogio';
+import { DenunciaApuracao } from './DenunciaApuracao';
+import { DenunciaReunioes } from './DenunciaReunioes';
 
 interface DenunciaDialogProps {
   denuncia: any;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onDenunciaAtualizada: () => void;
-}
-
-interface Movimentacao {
-  id: string;
-  acao: string;
-  status_anterior?: string;
-  status_novo?: string;
-  observacoes?: string;
-  created_at: string;
-  usuario?: {
-    nome: string;
-  } | null;
 }
 
 interface Anexo {
@@ -59,18 +80,16 @@ function getStatusOptions(t: (k: string) => string) {
   ];
 }
 
-export function DenunciaDialog({ 
-  denuncia, 
-  open, 
-  onOpenChange, 
-  onDenunciaAtualizada 
+export function DenunciaDialog({
+  denuncia,
+  open,
+  onOpenChange,
+  onDenunciaAtualizada
 }: DenunciaDialogProps) {
   const { t } = useLanguage();
   const statusOptions = getStatusOptions(t);
-  const [movimentacoes, setMovimentacoes] = useState<Movimentacao[]>([]);
   const [anexos, setAnexos] = useState<Anexo[]>([]);
-  const [usuarios, setUsuarios] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [comite, setComite] = useState<{ user_id: string; nome: string; papel: string }[]>([]);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
   const { notify } = useIntegrationNotify();
@@ -79,7 +98,6 @@ export function DenunciaDialog({
   const [formData, setFormData] = useState({
     status: denuncia.status,
     responsavel_id: denuncia.responsavel_id || '',
-    observacoes: '',
     parecer_final: denuncia.parecer_final || '',
     resultado: denuncia.resultado || '',
     medidas_adotadas: denuncia.medidas_adotadas || '',
@@ -89,21 +107,11 @@ export function DenunciaDialog({
     if (open && denuncia) {
       carregarDados();
     }
-  }, [open, denuncia]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, denuncia?.id]);
 
   const carregarDados = async () => {
-    setLoading(true);
     try {
-      // Carregar movimentações
-      const { data: movData } = await supabase
-        .from('denuncias_movimentacoes')
-        .select('*')
-        .eq('denuncia_id', denuncia.id)
-        .order('created_at', { ascending: false });
-
-      setMovimentacoes(movData || []);
-
-      // Carregar anexos
       const { data: anexosData } = await supabase
         .from('denuncias_anexos')
         .select('*')
@@ -112,20 +120,39 @@ export function DenunciaDialog({
 
       setAnexos(anexosData || []);
 
-      // Carregar usuários para atribuição (filtrado por empresa)
-      let usersQuery = supabase
-        .from('profiles')
-        .select('user_id, nome, role')
-        .in('role', ['admin', 'super_admin'])
-        .order('nome');
-      if (empresaId) usersQuery = usersQuery.eq('empresa_id', empresaId);
-      const { data: usersData } = await usersQuery;
+      /*
+        Quem pode ficar responsável é quem já tem acesso: o comité.
 
-      setUsuarios(usersData || []);
+        Isto era uma lista de `profiles` com papel de administrador. Um
+        administrador que não esteja no comité não devia ver esta denúncia —
+        e passava a ver, por ter sido nomeado responsável a partir de uma
+        lista onde nunca devia ter aparecido.
+      */
+      if (empresaId) {
+        const { data: membros } = await supabase
+          .from('denuncias_comite')
+          .select('user_id, papel')
+          .eq('empresa_id', empresaId);
+
+        if (membros?.length) {
+          const { data: perfis } = await supabase
+            .from('profiles')
+            .select('user_id, nome')
+            .in('user_id', membros.map((m) => m.user_id));
+
+          setComite(
+            membros.map((m) => ({
+              user_id: m.user_id,
+              papel: m.papel,
+              nome: perfis?.find((p) => p.user_id === m.user_id)?.nome ?? '',
+            })),
+          );
+        } else {
+          setComite([]);
+        }
+      }
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -135,7 +162,6 @@ export function DenunciaDialog({
       const statusAnterior = denuncia.status;
       const statusNovo = formData.status;
 
-      // Atualizar denúncia
       const updateData: any = {
         status: formData.status,
         responsavel_id: formData.responsavel_id || null,
@@ -168,16 +194,22 @@ export function DenunciaDialog({
 
       if (updateError) throw updateError;
 
-      // Registrar movimentação se houver mudança de status ou observações
-      if (statusAnterior !== statusNovo || formData.observacoes) {
+      /*
+        A mudança de estado entra na trilha assinada por quem a fez. O texto
+        fica de fora de propósito: a nota vive na aba Apuração, onde se decide
+        linha a linha se sai do comité.
+      */
+      if (statusAnterior !== statusNovo) {
+        const { data: sessao } = await supabase.auth.getUser();
         const { error: movError } = await supabase
           .from('denuncias_movimentacoes')
           .insert({
             denuncia_id: denuncia.id,
-            acao: statusAnterior !== statusNovo ? 'status_alterado' : 'observacao_adicionada',
+            acao: 'status_alterado',
             status_anterior: statusAnterior,
             status_novo: statusNovo,
-            observacoes: formData.observacoes
+            visibilidade: 'publica',
+            usuario_id: sessao?.user?.id ?? null,
           });
 
         if (movError) throw movError;
@@ -187,7 +219,7 @@ export function DenunciaDialog({
       try {
         await notify('denuncia_recebida', {
           titulo: `Denúncia ${denuncia.protocolo} atualizada para ${statusNovo}`,
-          descricao: `A denúncia "${denuncia.titulo}" teve seu status alterado de ${statusAnterior} para ${statusNovo}.${formData.observacoes ? ` Observação: ${formData.observacoes}` : ''}`,
+          descricao: `A denúncia "${denuncia.titulo}" teve seu status alterado de ${statusAnterior} para ${statusNovo}.`,
           link: `${window.location.origin}/denuncia`,
           gravidade: denuncia.gravidade === 'critico' ? 'critica' : denuncia.gravidade === 'alto' ? 'alta' : 'media',
           dados: { protocolo: denuncia.protocolo, status_anterior: statusAnterior, status_novo: statusNovo }
@@ -257,12 +289,20 @@ export function DenunciaDialog({
     return `${datePart} ${timePart}`;
   };
 
+  /*
+    O mapa estava na grafia feminina — baixa/media/alta/critica — e o
+    vocabulário canónico do produto é baixo/medio/alto/critico. Nenhuma chave
+    batia: a ficha mostrava «medio» em minúsculas, o valor cru da base.
+  */
   const gravidadeLabel: Record<string, string> = {
-    baixa: t('denunciasAdmin.dialog.gravidadeBaixa'),
-    media: t('denunciasAdmin.dialog.gravidadeMedia'),
-    alta: t('denunciasAdmin.dialog.gravidadeAlta'),
-    critica: t('denunciasAdmin.dialog.gravidadeCritica'),
+    baixo: t('denunciasAdmin.dialog.gravidadeBaixa'),
+    medio: t('denunciasAdmin.dialog.gravidadeMedia'),
+    alto: t('denunciasAdmin.dialog.gravidadeAlta'),
+    critico: t('denunciasAdmin.dialog.gravidadeCritica'),
   };
+
+  const nivel: string = denuncia.nivel_identificacao ?? (denuncia.anonima ? 'anonima' : 'identificada');
+  const responsavelNome = comite.find((c) => c.user_id === denuncia.responsavel_id)?.nome;
 
   return (
     <DialogShell
@@ -275,13 +315,80 @@ export function DenunciaDialog({
       hideFooter
       disableShortcuts
     >
+        {/*
+          O resumo antes das abas.
+
+          Quem abre esta ficha quer responder a quatro perguntas antes de
+          decidir onde clicar: em que pé está, de quem é, quando vence e como
+          acabou. Estavam em três abas diferentes.
+        */}
+        <dl className="mb-4 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-4">
+          {[
+            {
+              rotulo: t('denunciasAdmin.dialog.resumoEstado'),
+              valor: (
+                <StatusBadge {...resolveDenunciaStatusTone(denuncia.status)}>
+                  {statusOptions.find((s) => s.value === denuncia.status)?.label ?? denuncia.status}
+                </StatusBadge>
+              ),
+            },
+            {
+              rotulo: t('denunciasAdmin.dialog.resumoResponsavel'),
+              valor: (
+                <span className="text-sm text-foreground">
+                  {responsavelNome || t('denunciasAdmin.dialog.semResponsavel')}
+                </span>
+              ),
+            },
+            {
+              rotulo: t('denunciasAdmin.dialog.resumoPrazo'),
+              valor: (
+                <span className="text-sm tabular-nums text-foreground">
+                  {denuncia.prazo_retorno ? formatDateOnly(denuncia.prazo_retorno) : '—'}
+                </span>
+              ),
+            },
+            {
+              rotulo: t('denunciasAdmin.dialog.resumoDesfecho'),
+              valor: (
+                <span className="text-sm text-foreground">
+                  {denuncia.resultado
+                    ? t(`denunciasAdmin.dialog.resultado${resultadoEmChave(denuncia.resultado)}`)
+                    : t('denunciasAdmin.dialog.resultadoPendente')}
+                </span>
+              ),
+            },
+          ].map((item) => (
+            <div key={item.rotulo} className="bg-card px-3 py-2.5">
+              <dt className="text-micro font-semibold uppercase tracking-wide text-muted-foreground">
+                {item.rotulo}
+              </dt>
+              <dd className="mt-1">{item.valor}</dd>
+            </div>
+          ))}
+        </dl>
+
+        {/* Quem pediu reserva de identidade pediu-a por escrito. Diz-se aqui. */}
+        {nivel === 'confidencial' && (
+          <p className="mb-4 flex items-start gap-2 rounded-lg border border-border bg-card p-3 text-xs leading-relaxed text-muted-foreground">
+            <IconLock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" strokeWidth={1.5} />
+            <span>
+              <span className="font-semibold text-foreground">
+                {t('denunciasAdmin.dialog.confidencialTitulo')}{' '}
+              </span>
+              {t('denunciasAdmin.dialog.confidencialTexto')}
+            </span>
+          </p>
+        )}
+
         <Tabs defaultValue="detalhes">
           <TabsList>
             <TabsTrigger value="detalhes">{t('denunciasAdmin.dialog.tabDetalhes')}</TabsTrigger>
             <TabsTrigger value="tratamento">{t('denunciasAdmin.dialog.tabTratamento')}</TabsTrigger>
+            <TabsTrigger value="apuracao">{t('denunciasAdmin.dialog.tabApuracao')}</TabsTrigger>
             <TabsTrigger value="conversa">{t('denunciasAdmin.dialog.tabConversa')}</TabsTrigger>
+            <TabsTrigger value="reunioes">{t('denunciasAdmin.dialog.tabReunioes')}</TabsTrigger>
             <TabsTrigger value="anexos">{t('denunciasAdmin.dialog.tabAnexos')}</TabsTrigger>
-            <TabsTrigger value="historico">{t('denunciasAdmin.dialog.tabHistorico')}</TabsTrigger>
           </TabsList>
 
           {/* Tab Detalhes */}
@@ -296,7 +403,7 @@ export function DenunciaDialog({
                     <Label className="text-xs text-muted-foreground">{t('denunciasAdmin.dialog.labelProtocolo')}</Label>
                     <div className="font-mono text-sm">{denuncia.protocolo}</div>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label className="text-xs text-muted-foreground">{t('denunciasAdmin.dialog.labelTitulo')}</Label>
                     <div className="text-sm">{denuncia.titulo}</div>
@@ -306,7 +413,7 @@ export function DenunciaDialog({
                     <Label className="text-xs text-muted-foreground">{t('denunciasAdmin.dialog.labelGravidade')}</Label>
                     <div>
                       <StatusBadge {...resolveGravidadeTone(denuncia.gravidade)}>
-                        {gravidadeLabel[denuncia.gravidade] || denuncia.gravidade}
+                        {gravidadeLabel[severidadeDeFaixas(denuncia.gravidade)] || denuncia.gravidade}
                       </StatusBadge>
                     </div>
                   </div>
@@ -337,12 +444,19 @@ export function DenunciaDialog({
                   <CardTitle className="text-sm">{t('denunciasAdmin.dialog.denuncianteTitle')}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {denuncia.anonima ? (
-                    <div className="flex items-center gap-2">
-                      <IconShield className="h-4 w-4 text-muted-foreground" />
-                      <Badge variant="secondary">{t('denunciasAdmin.dialog.anonymousBadge')}</Badge>
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">
+                      {t('denunciasAdmin.dialog.labelNivel')}
+                    </Label>
+                    <div>
+                      <Badge variant="secondary">{t(`denunciasAdmin.dialog.nivel.${nivel}`)}</Badge>
                     </div>
-                  ) : (
+                    <p className="text-micro leading-relaxed text-muted-foreground">
+                      {t(`denunciasAdmin.dialog.nivelAjuda.${nivel}`)}
+                    </p>
+                  </div>
+
+                  {nivel !== 'anonima' && (
                     <>
                       {denuncia.nome_denunciante && (
                         <div className="space-y-2">
@@ -353,7 +467,7 @@ export function DenunciaDialog({
                           </div>
                         </div>
                       )}
-                      
+
                       {denuncia.email_denunciante && (
                         <div className="space-y-2">
                           <Label className="text-xs text-muted-foreground">{t('denunciasAdmin.dialog.labelEmail')}</Label>
@@ -380,9 +494,28 @@ export function DenunciaDialog({
               <CardHeader>
                 <CardTitle className="text-sm">{t('denunciasAdmin.dialog.descriptionTitle')}</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-3">
                 <div className="text-sm whitespace-pre-wrap bg-muted p-4 rounded-lg">
                   {denuncia.descricao}
+                </div>
+
+                {/* O que a apuração precisa e ninguém mostrava na ficha. */}
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {[
+                    ['labelLocal', denuncia.local_ocorrencia],
+                    ['labelDataOcorrencia', denuncia.data_ocorrencia ? formatDateOnly(denuncia.data_ocorrencia) : null],
+                    ['labelTestemunhas', denuncia.testemunhas],
+                    ['labelEvidencias', denuncia.evidencias_descricao],
+                  ]
+                    .filter(([, valor]) => !!valor)
+                    .map(([chave, valor]) => (
+                      <div key={String(chave)} className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">
+                          {t(`denunciasAdmin.dialog.${chave}`)}
+                        </Label>
+                        <p className="whitespace-pre-wrap text-sm text-foreground">{valor}</p>
+                      </div>
+                    ))}
                 </div>
               </CardContent>
             </Card>
@@ -393,57 +526,47 @@ export function DenunciaDialog({
             {/* O relógio primeiro: é o que tem prazo legal a correr. */}
             <DenunciaRelogio denuncia={denuncia} onAtualizado={onDenunciaAtualizada} />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="status">{t('denunciasAdmin.dialog.labelStatus')}</Label>
-                  <Select 
-                    value={formData.status} 
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {statusOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="responsavel">{t('denunciasAdmin.dialog.labelResponsavel')}</Label>
-                  <Select 
-                    value={formData.responsavel_id} 
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, responsavel_id: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={t('denunciasAdmin.dialog.placeholderResponsavel')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {usuarios.map((usuario) => (
-                        <SelectItem key={usuario.user_id} value={usuario.user_id}>
-                          {usuario.nome}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="status">{t('denunciasAdmin.dialog.labelStatus')}</Label>
+                <Select
+                  value={formData.status}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, status: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {statusOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="observacoes">{t('denunciasAdmin.dialog.labelObservacoesMovimentacao')}</Label>
-                  <Textarea
-                    id="observacoes"
-                    value={formData.observacoes}
-                    onChange={(e) => setFormData(prev => ({ ...prev, observacoes: e.target.value }))}
-                    placeholder={t('denunciasAdmin.dialog.placeholderObservacoes')}
-                    rows={3}
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="responsavel">{t('denunciasAdmin.dialog.labelResponsavel')}</Label>
+                <Select
+                  value={formData.responsavel_id}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, responsavel_id: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={t('denunciasAdmin.dialog.placeholderResponsavel')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {comite.map((membro) => (
+                      <SelectItem key={membro.user_id} value={membro.user_id}>
+                        {membro.nome || membro.user_id.slice(0, 8)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-micro text-muted-foreground">
+                  {comite.length === 0
+                    ? t('denunciasAdmin.dialog.comiteVazio')
+                    : t('denunciasAdmin.dialog.responsavelAjuda')}
+                </p>
               </div>
             </div>
 
@@ -495,6 +618,10 @@ export function DenunciaDialog({
                 placeholder={t('denunciasAdmin.dialog.placeholderParecerFinal')}
                 rows={4}
               />
+              <p className="flex items-start gap-1.5 text-micro text-muted-foreground">
+                <IconLock className="mt-0.5 h-3 w-3 shrink-0" strokeWidth={1.5} />
+                {t('denunciasAdmin.dialog.parecerInterno')}
+              </p>
             </div>
 
             <div className="flex justify-end">
@@ -505,9 +632,26 @@ export function DenunciaDialog({
             </div>
           </TabsContent>
 
-          {/* Tab Anexos */}
+          {/* Tab Apuração — a trilha com autor, e o sítio onde se opina. */}
+          <TabsContent value="apuracao" className="space-y-4">
+            <DenunciaApuracao
+              denunciaId={denuncia.id}
+              status={denuncia.status}
+              onAtualizado={onDenunciaAtualizada}
+            />
+          </TabsContent>
+
           <TabsContent value="conversa" className="space-y-4">
             <DenunciaConversa denunciaId={denuncia.id} empresaId={denuncia.empresa_id} />
+          </TabsContent>
+
+          <TabsContent value="reunioes" className="space-y-4">
+            <DenunciaReunioes
+              denunciaId={denuncia.id}
+              empresaId={denuncia.empresa_id}
+              status={denuncia.status}
+              onAtualizado={onDenunciaAtualizada}
+            />
           </TabsContent>
 
           <TabsContent value="anexos" className="space-y-4">
@@ -546,49 +690,13 @@ export function DenunciaDialog({
               )}
             </div>
           </TabsContent>
-
-          {/* Tab Histórico */}
-          <TabsContent value="historico" className="space-y-4">
-            <div className="space-y-4">
-              {movimentacoes.length > 0 ? (
-                movimentacoes.map((mov) => (
-                  <Card key={mov.id}>
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-start gap-3">
-                          <div className="w-2 h-2 bg-primary rounded-full mt-2"></div>
-                          <div>
-                            <div className="font-medium">
-                              {mov.acao === 'status_alterado' 
-                                ? t('denunciasAdmin.dialog.statusChanged', { de: mov.status_anterior, para: mov.status_novo })
-                                : mov.acao === 'observacao_adicionada'
-                                ? t('denunciasAdmin.dialog.observationAdded')
-                                : mov.acao
-                              }
-                            </div>
-                            {mov.observacoes && (
-                              <div className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">
-                                {mov.observacoes}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {formatDateTime(mov.created_at)}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  <IconHistory className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>{t('denunciasAdmin.dialog.noMovements')}</p>
-                </div>
-              )}
-            </div>
-          </TabsContent>
         </Tabs>
     </DialogShell>
   );
+}
+
+/** `parcialmente_procedente` → `Parcial`, para casar com as chaves existentes. */
+function resultadoEmChave(resultado: string): string {
+  if (resultado === 'parcialmente_procedente') return 'Parcial';
+  return resultado.charAt(0).toUpperCase() + resultado.slice(1);
 }

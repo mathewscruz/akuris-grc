@@ -1,12 +1,22 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
+import { parseDataLocal } from "@/lib/date-utils";
 
 interface DenunciasStats {
   total: number;
   novas: number;
   em_andamento: number;
   resolvidas: number;
+  /**
+   * Denúncias abertas com o prazo de retorno já ultrapassado.
+   *
+   * Era a única contagem que faltava e a única com consequência legal: a
+   * Diretiva (UE) 2019/1937 dá três meses para dar retorno a quem denunciou,
+   * e o painel do canal contava tudo menos isso. Para saber o que estava
+   * vencido era preciso abrir denúncia a denúncia.
+   */
+  prazo_vencido: number;
 }
 
 export const useDenunciasStats = () => {
@@ -21,7 +31,7 @@ export const useDenunciasStats = () => {
       try {
         const { data: denuncias, error } = await supabase
           .from('denuncias')
-          .select('id, status')
+          .select('id, status, prazo_retorno')
           .eq('empresa_id', empresaId!);
 
         if (error) {
@@ -38,11 +48,24 @@ export const useDenunciasStats = () => {
           ['resolvida', 'arquivada'].includes(d.status)
         ).length || 0;
 
+        /* Comparado por dia, no fuso de quem vê: um prazo que vence hoje
+           ainda não está vencido. */
+        const hoje = new Date();
+        hoje.setHours(0, 0, 0, 0);
+        const prazo_vencido = (denuncias ?? []).filter((d) => {
+          if (['resolvida', 'arquivada'].includes(d.status)) return false;
+          if (!d.prazo_retorno) return false;
+          const alvo = parseDataLocal(d.prazo_retorno);
+          alvo.setHours(0, 0, 0, 0);
+          return alvo.getTime() < hoje.getTime();
+        }).length;
+
         return {
           total,
           novas,
           em_andamento,
-          resolvidas
+          resolvidas,
+          prazo_vencido
         };
       } catch (error) {
         console.error('Erro ao carregar estatísticas de denúncias:', error);

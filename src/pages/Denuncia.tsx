@@ -52,6 +52,9 @@ export default function Denuncia() {
           { key: 'total', label: t('cardsKpi.denuncias.total'), value: stats?.total ?? 0, drillDown: 'denuncias' },
           { key: 'novas', label: t('cardsKpi.denuncias.novas'), value: stats?.novas ?? 0, tone: 'warning', drillDown: 'denuncias_novas' },
           { key: 'emAndamento', label: t('cardsKpi.denuncias.emAndamento'), value: stats?.em_andamento ?? 0, drillDown: 'denuncias_andamento' },
+          /* O único número com consequência legal, e o que faltava: a Diretiva
+             dá três meses para dar retorno a quem denunciou. */
+          { key: 'prazoVencido', label: t('cardsKpi.denuncias.prazoVencido'), value: stats?.prazo_vencido ?? 0, tone: 'destructive' as const },
           { key: 'resolvidas', label: t('cardsKpi.denuncias.resolvidas'), value: stats?.resolvidas ?? 0, drillDown: 'denuncias_resolvidas' },
         ]}
       />

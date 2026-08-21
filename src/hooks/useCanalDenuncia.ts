@@ -15,6 +15,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { fetchEmpresaPublicaPorSlug, type EmpresaPublica } from '@/lib/denuncia-publica';
 import { logger } from '@/lib/logger';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { LOCALE_EXPLICIT_KEY, isSupportedLocale } from '@/lib/i18n-locale';
 
 export interface ConfigCanal {
   id: string;
@@ -67,7 +69,17 @@ export function hexParaHsl(hex: string): string | null {
   return `${Math.round(h)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
 }
 
+/** O visitante já escolheu idioma alguma vez? Então a escolha dele manda. */
+function escolhaExplicitaDoVisitante(): boolean {
+  try {
+    return localStorage.getItem(LOCALE_EXPLICIT_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
 export function useCanalDenuncia(slug: string | undefined) {
+  const { setLocaleTransient } = useLanguage();
   const [empresa, setEmpresa] = useState<EmpresaPublica | null>(null);
   const [config, setConfig] = useState<ConfigCanal | null>(null);
   const [carregando, setCarregando] = useState(true);
@@ -112,6 +124,22 @@ export function useCanalDenuncia(slug: string | undefined) {
     const hsl = cor ? hexParaHsl(cor) : null;
     return hsl ? ({ ['--primary' as string]: hsl } as React.CSSProperties) : undefined;
   }, [config?.cor_destaque]);
+
+  /*
+    O idioma de abertura configurado pela empresa.
+
+    Era o terceiro ajuste que não fazia nada: `idioma_padrao` tinha campo,
+    tinha coluna e tinha view, e o canal abria sempre no idioma detectado pelo
+    fuso do dispositivo. Quem manda são as três coisas por esta ordem: a
+    escolha explícita do visitante, depois a configuração da empresa, depois a
+    detecção. Um clique no seletor grava escolha explícita e passa a ganhar.
+  */
+  useEffect(() => {
+    const preferido = config?.idioma_padrao;
+    if (!preferido || !isSupportedLocale(preferido)) return;
+    if (escolhaExplicitaDoVisitante()) return;
+    setLocaleTransient(preferido);
+  }, [config?.idioma_padrao, setLocaleTransient]);
 
   /** Como o canal se apresenta: nome escolhido, ou a razão social. */
   const nomeDoCanal = config?.nome_exibicao?.trim() || empresa?.nome || '';

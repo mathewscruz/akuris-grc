@@ -28,6 +28,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { IconDownload, IconDelete, IconAdd } from '@/components/icons';
@@ -45,6 +46,7 @@ interface Config {
   orgao_externo_url: string | null;
   texto_retaliacao: string | null;
   retencao_meses: number;
+  permitir_reuniao: boolean;
 }
 
 interface Membro {
@@ -77,7 +79,7 @@ export function CanalMarcaEComite() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('denuncias_configuracoes')
-        .select('id, cor_destaque, nome_exibicao, idioma_padrao, prazo_acusacao_dias, prazo_retorno_dias, orgao_externo_nome, orgao_externo_url, texto_retaliacao, retencao_meses')
+        .select('id, cor_destaque, nome_exibicao, idioma_padrao, prazo_acusacao_dias, prazo_retorno_dias, orgao_externo_nome, orgao_externo_url, texto_retaliacao, retencao_meses, permitir_reuniao')
         .eq('empresa_id', empresaId!)
         .maybeSingle();
       if (error) throw error;
@@ -141,6 +143,7 @@ export function CanalMarcaEComite() {
           orgao_externo_url: valor('orgao_externo_url') || null,
           texto_retaliacao: valor('texto_retaliacao') || null,
           retencao_meses: Number(valor('retencao_meses') ?? 60),
+          permitir_reuniao: valor('permitir_reuniao') !== false,
         })
         .eq('id', config.id);
       if (error) throw error;
@@ -313,6 +316,30 @@ export function CanalMarcaEComite() {
               />
               <p className="text-micro text-muted-foreground">{t('denunciasAdmin.marca.retaliacaoAjuda')}</p>
             </div>
+
+            {/*
+              O interruptor da reunião presencial.
+
+              A coluna `permitir_reuniao` foi criada com a onda anterior e
+              ficou sem ecrã: o direito do art. 9.º/2 estava ligado para toda
+              a gente e não havia forma de o desligar — nem de saber que
+              existia.
+            */}
+            <label className="flex cursor-pointer items-start gap-2">
+              <Checkbox
+                checked={valor('permitir_reuniao') !== false}
+                onCheckedChange={(v) => setRascunho({ ...rascunho, permitir_reuniao: v === true })}
+                className="mt-0.5"
+              />
+              <span className="min-w-0">
+                <span className="block text-sm font-medium text-foreground">
+                  {t('denunciasAdmin.marca.permitirReuniao')}
+                </span>
+                <span className="mt-0.5 block text-micro leading-relaxed text-muted-foreground">
+                  {t('denunciasAdmin.marca.permitirReuniaoAjuda')}
+                </span>
+              </span>
+            </label>
 
             <div className="max-w-[16rem] space-y-2">
               <Label htmlFor="retencao">{t('denunciasAdmin.marca.retencao')}</Label>

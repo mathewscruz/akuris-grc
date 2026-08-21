@@ -70,6 +70,16 @@ const buildDenunciaSchema = (
   descricao: z.string().min(20, t('publicPortal.denunciaForm.validation.description')),
   local_ocorrencia: z.string().optional(),
   data_ocorrencia: z.string().optional(),
+  /**
+   * Identificar-se e pedir reserva são coisas diferentes.
+   *
+   * O anonimato era inferido de um campo vazio: `anonima: !denunciante_nome`.
+   * Quem quisesse identificar-se ao comité mas exigir que o nome não saísse
+   * dali não tinha como o dizer — e o sistema também não tinha como o
+   * registar. É a diferença entre o art. 16.º (confidencialidade, obrigatória)
+   * e o art. 6.º/2 (anonimato, opcional) da Diretiva (UE) 2019/1937.
+   */
+  nivel_identificacao: z.enum(['identificada', 'confidencial', 'anonima']),
   denunciante_nome: permitirAnonimas
     ? z.string().optional()
     : z.string().trim().min(3, t('publicPortal.denunciaForm.validation.nameRequired')),
@@ -86,6 +96,17 @@ const buildDenunciaSchema = (
   politica_aceita: exigirPolitica
     ? z.literal(true, { errorMap: () => ({ message: t('publicPortal.denunciaForm.validation.policyRequired') }) })
     : z.boolean().optional(),
+}).superRefine((dados, ctx) => {
+  /* Quem escolhe identificar-se — mesmo pedindo reserva — tem de deixar nome.
+     A regra é a mesma no banco; aqui o erro aparece no campo certo em vez de
+     voltar como "denúncia inválida" no fim do formulário. */
+  if (dados.nivel_identificacao !== 'anonima' && (dados.denunciante_nome ?? '').trim().length < 3) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['denunciante_nome'],
+      message: t('publicPortal.denunciaForm.validation.nameRequired'),
+    });
+  }
 });
 
 type DenunciaFormData = z.infer<ReturnType<typeof buildDenunciaSchema>>;
@@ -93,11 +114,14 @@ type DenunciaFormData = z.infer<ReturnType<typeof buildDenunciaSchema>>;
 /** Que campos cada etapa tem de validar antes de deixar avançar. */
 const CAMPOS_POR_ETAPA: Record<number, (keyof DenunciaFormData)[]> = {
   1: ['categoria_id', 'titulo', 'descricao'],
-  2: ['denunciante_nome', 'denunciante_email'],
+  2: ['nivel_identificacao', 'denunciante_nome', 'denunciante_email'],
   3: [],
   4: ['politica_aceita'],
 };
 const TOTAL_ETAPAS = 4;
+
+/** Os três níveis, na ordem em que a pessoa os pondera. */
+const NIVEIS = ['identificada', 'confidencial', 'anonima'] as const;
 
 export default function DenunciaFormulario() {
   const { empresa: empresaSlug } = useParams();
@@ -142,6 +166,9 @@ export default function DenunciaFormulario() {
       descricao: '',
       local_ocorrencia: '',
       data_ocorrencia: '',
+      /* Confidencial por omissão: é o que a Diretiva já garante a quem se
+         identifica, e o que a maioria quer sem saber pedir. */
+      nivel_identificacao: 'confidencial',
       denunciante_nome: '',
       denunciante_email: '',
       denunciante_telefone: '',
@@ -255,7 +282,10 @@ export default function DenunciaFormulario() {
           categoria_id: data.categoria_id || null,
           titulo: data.titulo,
           descricao: data.descricao,
-          anonima: !data.denunciante_nome,
+          /* `anonima` continua a seguir para o que ainda o lê; o nível é que
+             manda, e é ele que distingue confidencial de identificada. */
+          nivel_identificacao: data.nivel_identificacao,
+          anonima: data.nivel_identificacao === 'anonima',
           politica_aceita: data.politica_aceita === true,
           denunciante_email: data.denunciante_email || null,
           denunciante_nome: data.denunciante_nome || null,
@@ -361,12 +391,19 @@ export default function DenunciaFormulario() {
     }
   };
 
+  /*
+    Estas três telas ficaram para trás na migração para o `CanalLayout`.
+
+    Continuavam com o azul-escuro da aplicação enquanto o resto do canal já era
+    claro e com a cor da empresa — e a do SUCESSO é justamente a que a pessoa
+    mais fixa, porque é a que traz o protocolo.
+  */
   if (loading) {
     return (
-      <div className="min-h-screen bg-[hsl(215,35%,12%)] flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="text-center">
           <AkurisPulse size={32} />
-          <p className="mt-2 text-sidebar-foreground">{t('publicPortal.common.loading')}</p>
+          <p className="mt-2 text-sm text-muted-foreground">{t('publicPortal.common.loading')}</p>
         </div>
       </div>
     );
@@ -374,12 +411,14 @@ export default function DenunciaFormulario() {
 
   if (!empresa || !config) {
     return (
-      <div className="min-h-screen bg-[hsl(215,35%,12%)] flex items-center justify-center">
-        <Card className="max-w-md mx-auto bg-white">
-          <CardContent className="text-center py-8">
-            <IconShield className="w-12 h-12 text-destructive mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">{t('publicPortal.denunciaForm.unavailableTitle')}</h2>
-            <p className="text-muted-foreground">
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
+        <Card className="mx-auto max-w-md">
+          <CardContent className="py-10 text-center">
+            <IconShield className="mx-auto mb-4 h-8 w-8 text-muted-foreground" strokeWidth={1.5} />
+            <h2 className="mb-2 text-base font-semibold text-foreground">
+              {t('publicPortal.denunciaForm.unavailableTitle')}
+            </h2>
+            <p className="text-sm text-muted-foreground">
               {t('publicPortal.denunciaForm.unavailableDescription')}
             </p>
           </CardContent>
@@ -390,30 +429,51 @@ export default function DenunciaFormulario() {
 
   if (showSuccess) {
     return (
-      <div className="min-h-screen bg-[hsl(215,35%,12%)] py-8">
-        <div className="container max-w-2xl mx-auto px-4">
-          <Card className="bg-white border-success/30">
-            <CardContent className="text-center py-12">
-              <IconShield className="w-8 h-8 text-success mx-auto mb-6" />
-              
-              <h2 className="text-2xl font-bold text-success mb-4">
-                {t('publicPortal.denunciaForm.successTitle')}
-              </h2>
-              
-              <div className="bg-success/10 p-4 rounded-lg border border-success/30 mb-6">
-                <p className="text-sm text-muted-foreground mb-2">{t('publicPortal.denunciaForm.yourProtocol')}</p>
-                <p className="text-2xl font-mono font-bold text-success">{protocolo}</p>
+      <CanalLayout
+        empresa={canal.empresa}
+        config={canal.config}
+        nomeDoCanal={canal.nomeDoCanal}
+        estiloDaMarca={canal.estiloDaMarca}
+        etapa={t('publicPortal.denunciaForm.successTitle')}
+      >
+        <div>
+          <Card>
+            <CardContent className="py-10 text-center">
+              {/* O título já está no cabeçalho da página. */}
+              <IconShield className="mx-auto mb-5 h-8 w-8 text-state-done" strokeWidth={1.5} />
+
+              {/*
+                Protocolo e código lado a lado, com o mesmo peso.
+
+                Eram dois blocos verdes empilhados, do tamanho do resto da
+                página. São as duas cadeias de caracteres sem as quais a
+                pessoa nunca mais volta a esta denúncia: precisam de parecer
+                credenciais, não de parecer uma mensagem de parabéns.
+              */}
+              <div className="grid gap-3 text-left sm:grid-cols-2">
+                <div className="rounded-lg border border-border bg-muted/20 p-4">
+                  <p className="text-micro font-semibold uppercase tracking-wide text-muted-foreground">
+                    {t('publicPortal.denunciaForm.yourProtocol')}
+                  </p>
+                  <p className="mt-1 break-all font-mono text-lg font-semibold text-foreground">
+                    {protocolo}
+                  </p>
+                </div>
+
+                {codigoAcompanhamento && (
+                  <div className="rounded-lg border border-border bg-muted/20 p-4">
+                    <p className="text-micro font-semibold uppercase tracking-wide text-muted-foreground">
+                      {t('publicPortal.denunciaForm.yourTrackingCode')}
+                    </p>
+                    <p className="mt-1 break-all font-mono text-lg font-semibold text-foreground">
+                      {codigoAcompanhamento}
+                    </p>
+                  </div>
+                )}
               </div>
 
-              {codigoAcompanhamento && (
-                <div className="bg-success/10 p-4 rounded-lg border border-success/30 mb-6">
-                  <p className="text-sm text-muted-foreground mb-2">{t('publicPortal.denunciaForm.yourTrackingCode')}</p>
-                  <p className="text-lg font-mono font-bold text-success break-all">{codigoAcompanhamento}</p>
-                  <p className="text-xs text-muted-foreground mt-2">{t('publicPortal.denunciaForm.trackingCodeHint')}</p>
-                </div>
-              )}
-              
-              <p className="text-success mb-6">
+              <p className="mb-6 mt-3 text-left text-xs leading-relaxed text-muted-foreground">
+                {t('publicPortal.denunciaForm.trackingCodeHint')}{' '}
                 {t('publicPortal.denunciaForm.successDescription')}
               </p>
 
@@ -461,15 +521,10 @@ export default function DenunciaFormulario() {
                 </Link>
               </div>
               
-              {config.politica_privacidade && (
-                <div className="mt-6 p-4 bg-success/10 rounded-lg border border-success/30">
-                  <p className="text-sm text-muted-foreground">{config.politica_privacidade}</p>
-                </div>
-              )}
             </CardContent>
           </Card>
         </div>
-      </div>
+      </CanalLayout>
     );
   }
 
@@ -483,12 +538,10 @@ export default function DenunciaFormulario() {
       voltarPara={`/${empresaSlug}/denuncia`}
     >
       <div>
-        {/* Formulário */}
-        <Card className="bg-white">
-          <CardHeader>
-            <CardTitle>{t('publicPortal.denunciaForm.cardTitle')}</CardTitle>
-          </CardHeader>
-          <CardContent>
+        {/* O título já está no cabeçalho da página: repeti-lo dentro do cartão
+            gastava a primeira linha do formulário a dizer o mesmo duas vezes. */}
+        <Card>
+          <CardContent className="pt-6">
             {/* Onde estou, e quanto falta. */}
             <div className="mb-6">
               <div className="flex items-center justify-between">
@@ -577,92 +630,148 @@ export default function DenunciaFormulario() {
                   )}
                 />
 
-                {/* Local de Ocorrência */}
-                <FormField
-                  control={form.control}
-                  name="local_ocorrencia"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('publicPortal.denunciaForm.place')}</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder={t('publicPortal.denunciaForm.placePlaceholder')} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {/* Onde e quando andam sempre juntos: cabem na mesma linha. */}
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="local_ocorrencia"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('publicPortal.denunciaForm.place')}</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder={t('publicPortal.denunciaForm.placePlaceholder')} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                {/* Data de Ocorrência */}
-                <FormField
-                  control={form.control}
-                  name="data_ocorrencia"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('publicPortal.denunciaForm.date')}</FormLabel>
-                      <FormControl>
-                        <DateField value={field.value || null} onChange={(v) => field.onChange(v || '')} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Identificação: sempre visível. Quando a empresa permite
-                    denúncias anónimas os campos são opcionais e deixá-los em
-                    branco envia a denúncia como anónima; quando não permite, o
-                    nome é obrigatório. */}
+                  <FormField
+                    control={form.control}
+                    name="data_ocorrencia"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('publicPortal.denunciaForm.date')}</FormLabel>
+                        <FormControl>
+                          <DateField value={field.value || null} onChange={(v) => field.onChange(v || '')} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
                   </div>
                 )}
                 {etapa === 2 && (
-                  <div className="space-y-4">
-                {(
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold">{t(identificacaoObrigatoria ? 'publicPortal.denunciaForm.identificationRequired' : 'publicPortal.denunciaForm.identification')}</h3>
-                    
+                  <div className="space-y-5">
+                    {/*
+                      A escolha, antes dos campos.
+
+                      Era um bloco de três campos opcionais e uma inferência:
+                      deixar o nome em branco fazia a denúncia anónima sem que
+                      ninguém o dissesse. Quem quisesse identificar-se ao
+                      comité exigindo que o nome não saísse dali não tinha
+                      sequer como o pedir. Agora escolhe-se, e cada opção diz o
+                      que implica — que é a parte que faz alguém decidir falar.
+                    */}
                     <FormField
                       control={form.control}
-                      name="denunciante_nome"
+                      name="nivel_identificacao"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>{t('publicPortal.denunciaForm.name')}{identificacaoObrigatoria ? ' *' : ''}</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder={t('publicPortal.denunciaForm.namePlaceholder')} />
-                          </FormControl>
+                          <FormLabel>{t('publicPortal.denunciaForm.nivelTitulo')}</FormLabel>
+                          <div className="mt-2 space-y-2">
+                            {NIVEIS.filter(
+                              (n) => n !== 'anonima' || !identificacaoObrigatoria,
+                            ).map((n) => {
+                              const escolhido = field.value === n;
+                              return (
+                                <label
+                                  key={n}
+                                  className={
+                                    escolhido
+                                      ? 'flex cursor-pointer gap-3 rounded-lg border border-primary bg-primary/5 p-3'
+                                      : 'flex cursor-pointer gap-3 rounded-lg border border-border bg-card p-3 transition-ui hover:bg-accent'
+                                  }
+                                >
+                                  <input
+                                    type="radio"
+                                    name="nivel_identificacao"
+                                    value={n}
+                                    checked={escolhido}
+                                    onChange={() => field.onChange(n)}
+                                    className="mt-0.5 h-4 w-4 shrink-0 accent-[hsl(var(--primary))]"
+                                  />
+                                  <span className="min-w-0">
+                                    <span className="block text-sm font-medium text-foreground">
+                                      {t(`publicPortal.denunciaForm.nivel.${n}`)}
+                                    </span>
+                                    <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">
+                                      {t(`publicPortal.denunciaForm.nivelAjuda.${n}`)}
+                                    </span>
+                                  </span>
+                                </label>
+                              );
+                            })}
+                          </div>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
 
-                    <FormField
-                      control={form.control}
-                      name="denunciante_email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t('publicPortal.denunciaForm.email')}</FormLabel>
-                          <FormControl>
-                            <Input {...field} type="email" placeholder={t('residuos.placeholders.seuEmail')} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    {/* Os dados de contacto só fazem sentido a quem se identifica. */}
+                    {form.watch('nivel_identificacao') !== 'anonima' && (
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <FormField
+                          control={form.control}
+                          name="denunciante_nome"
+                          render={({ field }) => (
+                            <FormItem className="sm:col-span-2">
+                              <FormLabel>{t('publicPortal.denunciaForm.name')} *</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder={t('publicPortal.denunciaForm.namePlaceholder')} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
 
-                    <FormField
-                      control={form.control}
-                      name="denunciante_telefone"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t('publicPortal.denunciaForm.phone')}</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="(11) 99999-9999" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                )}
+                        <FormField
+                          control={form.control}
+                          name="denunciante_email"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>{t('publicPortal.denunciaForm.email')}</FormLabel>
+                              <FormControl>
+                                <Input {...field} type="email" placeholder={t('residuos.placeholders.seuEmail')} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
 
+                        <FormField
+                          control={form.control}
+                          name="denunciante_telefone"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>{t('publicPortal.denunciaForm.phone')}</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder={t('publicPortal.denunciaForm.phonePlaceholder')} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    )}
+
+                    {/* Ser anónimo tem um custo: é preciso dizê-lo antes, não depois. */}
+                    {form.watch('nivel_identificacao') === 'anonima' && (
+                      <p className="rounded-lg border border-border bg-card p-3 text-xs leading-relaxed text-muted-foreground">
+                        {t('publicPortal.denunciaForm.anonimaAviso')}
+                      </p>
+                    )}
                   </div>
                 )}
                 {etapa === 3 && (
@@ -706,7 +815,7 @@ export default function DenunciaFormulario() {
                 />
 
                 {/* Upload de Anexos */}
-                {true && (
+                {(
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <label className="text-sm font-medium">{t('publicPortal.denunciaForm.attach')}</label>
@@ -756,13 +865,82 @@ export default function DenunciaFormulario() {
                 )}
                 {etapa === 4 && (
                   <div className="space-y-4">
+                {/*
+                  Rever antes de enviar.
+
+                  A última etapa continha só a caixa da política — e, quando a
+                  empresa não tinha política configurada, ficava **vazia**: um
+                  passo de quatro sem nada dentro. Agora mostra o que vai ser
+                  enviado, que é a pergunta de quem está prestes a carregar num
+                  botão sem poder voltar atrás.
+                */}
+                <div className="overflow-hidden rounded-lg border border-border">
+                  <p className="border-b border-border bg-muted/30 px-4 py-2 text-micro font-semibold uppercase tracking-wide text-muted-foreground">
+                    {t('publicPortal.denunciaForm.revisaoTitulo')}
+                  </p>
+                  <dl className="divide-y divide-border">
+                    {[
+                      {
+                        /* Rótulos curtos e sem asterisco: numa revisão o `*`
+                           não pede nada, só sobra. */
+                        rotulo: t('publicPortal.denunciaForm.revisaoCategoria'),
+                        valor: categorias.find((c) => c.id === form.watch('categoria_id'))?.nome,
+                      },
+                      {
+                        rotulo: t('publicPortal.denunciaForm.revisaoTitulo2'),
+                        valor: form.watch('titulo'),
+                      },
+                      {
+                        rotulo: t('publicPortal.denunciaForm.revisaoLocal'),
+                        valor: form.watch('local_ocorrencia'),
+                      },
+                      {
+                        rotulo: t('publicPortal.denunciaForm.revisaoIdentificacao'),
+                        valor: t(`publicPortal.denunciaForm.nivel.${form.watch('nivel_identificacao')}`),
+                      },
+                      {
+                        rotulo: t('publicPortal.denunciaForm.name'),
+                        /* Anónima já foi dito na linha de cima: repetir o mesmo
+                           texto em duas linhas seguidas lê-se como erro. */
+                        valor:
+                          form.watch('nivel_identificacao') === 'anonima'
+                            ? null
+                            : form.watch('denunciante_nome'),
+                      },
+                      {
+                        rotulo: t('publicPortal.denunciaForm.attach'),
+                        valor: anexos.length
+                          ? t('publicPortal.denunciaForm.revisaoAnexos', { count: anexos.length })
+                          : null,
+                      },
+                    ]
+                      .filter((linha) => !!linha.valor)
+                      .map((linha) => (
+                        <div key={linha.rotulo} className="flex gap-3 px-4 py-2.5">
+                          <dt className="w-32 shrink-0 text-xs text-muted-foreground">
+                            {linha.rotulo}
+                          </dt>
+                          <dd className="min-w-0 flex-1 break-words text-sm text-foreground">
+                            {linha.valor}
+                          </dd>
+                        </div>
+                      ))}
+                  </dl>
+                </div>
+
                 {config.politica_privacidade && (
                   <FormField
                     control={form.control}
                     name="politica_aceita"
                     render={({ field }) => (
                       <FormItem className="space-y-3 rounded-lg border border-border p-4">
-                        <p className="text-sm text-muted-foreground whitespace-pre-line">
+                        <p className="text-micro font-semibold uppercase tracking-wide text-muted-foreground">
+                          {t('publicPortal.denunciaForm.politicaTitulo')}
+                        </p>
+                        {/* A política num painel com altura própria: um texto
+                            longo deixava de empurrar a caixa de aceitação para
+                            fora do ecrã. */}
+                        <p className="max-h-56 overflow-y-auto whitespace-pre-line rounded-md border border-border bg-muted/20 p-3 text-xs leading-relaxed text-muted-foreground">
                           {config.politica_privacidade}
                         </p>
                         <div className="flex items-start gap-2">

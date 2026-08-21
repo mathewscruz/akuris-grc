@@ -69,6 +69,24 @@ const WORD_PAIRS: Array<[string, string]> = [
   ['salvar', 'guardar'],
   ['salvas', 'guardadas'],
   ['salvos', 'guardados'],
+  /*
+    O canal de denúncias trouxe vocabulário novo que escapava ao normalizador.
+    Em pt-PT o ecrã dizia «Registar Denúncia» e, três linhas abaixo, «Só o
+    comitê designado tem acesso» — meia frase em cada variante.
+  */
+  ['comitê', 'comité'],
+  ['comitês', 'comités'],
+  ['anônima', 'anónima'],
+  ['anônimas', 'anónimas'],
+  ['anônimo', 'anónimo'],
+  ['anônimos', 'anónimos'],
+  ['contato', 'contacto'],
+  ['contatos', 'contactos'],
+  ['contatar', 'contactar'],
+  ['equipe', 'equipa'],
+  ['equipes', 'equipas'],
+  ['planejamento', 'planeamento'],
+  ['planejar', 'planear'],
 ];
 
 /**

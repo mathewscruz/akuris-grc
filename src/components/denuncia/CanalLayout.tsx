@@ -22,7 +22,8 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { IconArrowLeft, IconShieldCheck, IconExternal, IconTime } from '@/components/icons';
-import { useLanguage, type Locale } from '@/contexts/LanguageContext';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { LOCALE_OPTIONS } from '@/components/LanguageSelector';
 import type { ConfigCanal } from '@/hooks/useCanalDenuncia';
 import type { EmpresaPublica } from '@/lib/denuncia-publica';
 
@@ -38,11 +39,14 @@ interface Props {
   children: ReactNode;
 }
 
-/** Só os idiomas que o produto tem mesmo dicionário para servir. */
-const IDIOMAS: { valor: Locale; rotulo: string }[] = [
-  { valor: 'pt-BR', rotulo: 'PT' },
-  { valor: 'en', rotulo: 'EN' },
-];
+/*
+  Os idiomas são os mesmos da aplicação — mesma lista, mesma ordem.
+
+  O canal oferecia dois, e um deles chamava-se «PT» servindo pt-BR: o
+  português de Portugal existia no produto desde sempre (com dicionário
+  próprio, normalizado em `lib/pt-variants`) e era o único sítio onde não
+  aparecia. Reutilizar `LOCALE_OPTIONS` evita que volte a divergir.
+*/
 
 export function CanalLayout({
   empresa,
@@ -57,55 +61,65 @@ export function CanalLayout({
 
   return (
     <div style={estiloDaMarca} className="min-h-screen bg-background">
+      {/*
+        Cabeçalho de produto, não faixa vazia.
+
+        A identidade da empresa estava repetida ao centro da página enquanto a
+        barra de topo levava só três botões de idioma a flutuar à direita. O
+        logótipo passa a ancorar a barra — como em qualquer sítio da empresa —
+        e a página fica com um título em vez de dois blocos de identidade.
+      */}
       <header className="border-b border-border bg-card">
-        <div className="mx-auto flex max-w-3xl items-center gap-4 px-4 py-4">
-          {voltarPara ? (
-            <Link
-              to={voltarPara}
-              className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-primary"
-            >
-              <IconArrowLeft className="h-4 w-4" strokeWidth={1.5} />
-              {t('publicPortal.canal.voltar')}
-            </Link>
-          ) : (
-            <span />
-          )}
+        <div className="mx-auto flex max-w-3xl items-center gap-4 px-4 py-3">
+          <span className="flex min-w-0 items-center gap-2.5">
+            {empresa?.logo_url ? (
+              <img
+                src={empresa.logo_url}
+                alt={nomeDoCanal}
+                className="max-h-8 max-w-[150px] object-contain"
+              />
+            ) : (
+              <span className="truncate text-sm font-semibold text-foreground">{nomeDoCanal}</span>
+            )}
+          </span>
 
           <div className="ml-auto flex items-center gap-1">
-            {IDIOMAS.map((i) => (
+            {LOCALE_OPTIONS.map((i) => (
               <button
-                key={i.valor}
+                key={i.value}
                 type="button"
-                onClick={() => setLocale(i.valor)}
+                onClick={() => setLocale(i.value)}
+                aria-label={i.label}
+                aria-pressed={locale === i.value}
                 className={
-                  locale === i.valor
+                  locale === i.value
                     ? 'rounded-md bg-accent px-2 py-1 text-micro font-semibold text-accent-foreground'
                     : 'rounded-md px-2 py-1 text-micro text-muted-foreground transition-ui hover:bg-accent'
                 }
               >
-                {i.rotulo}
+                {i.short}
               </button>
             ))}
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl px-4 py-10">
-        {/* A identidade é da empresa: logótipo dela, nome dela. */}
-        <div className="mb-8 flex flex-col items-center text-center">
-          {empresa?.logo_url ? (
-            <img
-              src={empresa.logo_url}
-              alt={nomeDoCanal}
-              className="mb-4 max-h-12 max-w-[220px] object-contain"
-            />
-          ) : (
-            <p className="mb-2 text-xl font-bold text-foreground">{nomeDoCanal}</p>
-          )}
+      <main className="mx-auto max-w-3xl px-4 py-8">
+        {voltarPara && (
+          <Link
+            to={voltarPara}
+            className="mb-4 inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-primary"
+          >
+            <IconArrowLeft className="h-4 w-4" strokeWidth={1.5} />
+            {t('publicPortal.canal.voltar')}
+          </Link>
+        )}
+
+        <div className="mb-6">
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
             {t('publicPortal.canal.titulo')}
           </h1>
-          {etapa && <p className="mt-1 text-sm text-muted-foreground">{etapa}</p>}
+          {etapa && <p className="mt-0.5 text-sm text-muted-foreground">{etapa}</p>}
         </div>
 
         {children}
@@ -117,7 +131,10 @@ export function CanalLayout({
           denúncia e a pessoa não sabe que podia ter ido a outro lado. Sem a
           palavra "retaliação", a promessa de sigilo é a parte fácil.
         */}
-        <section className="mt-10 grid gap-3 sm:grid-cols-3">
+        <p className="mb-2 mt-10 text-micro font-semibold uppercase tracking-wide text-muted-foreground">
+          {t('publicPortal.canal.direitosTitulo')}
+        </p>
+        <section className="grid gap-3 sm:grid-cols-3">
           <div className="rounded-lg border border-border bg-card p-4">
             <IconShieldCheck className="h-4 w-4 text-primary" strokeWidth={1.5} />
             <p className="mt-2 text-xs font-semibold text-foreground">
@@ -176,7 +193,7 @@ export function CanalLayout({
         )}
 
         {config?.retencao_meses ? (
-          <p className="mt-3 text-center text-micro text-muted-foreground">
+          <p className="mt-3 text-micro text-muted-foreground">
             {t('publicPortal.canal.retencao', { meses: config.retencao_meses })}
           </p>
         ) : null}

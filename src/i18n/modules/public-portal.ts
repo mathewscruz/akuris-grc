@@ -9,6 +9,7 @@ const ptDict = {
   canal: {
     titulo: 'Canal de Denúncias',
     voltar: 'Voltar',
+    direitosTitulo: 'Os seus direitos',
     direitoSigilo: 'Sigilo',
     direitoSigiloAnonimo: 'Você pode denunciar sem se identificar. Só o comitê designado tem acesso ao relato.',
     direitoSigiloIdentificado: 'Sua identidade fica restrita ao comitê designado e não é revelada a mais ninguém.',
@@ -68,6 +69,37 @@ const ptDict = {
     backToSite: 'Voltar ao site',
   },
   denunciaForm: {
+    /*
+      A escolha de identificação, em três níveis.
+
+      Confidencialidade e anonimato são artigos diferentes da Diretiva (UE)
+      2019/1937 — o 16.º é obrigatório, o 6.º/2 é opcional — e o formulário
+      tratava-os como um só campo vazio.
+    */
+    nivelTitulo: 'Como quer identificar-se?',
+    nivel: {
+      identificada: 'Identifico-me',
+      confidencial: 'Identifico-me, em confidencialidade',
+      anonima: 'Prefiro não me identificar',
+    },
+    nivelAjuda: {
+      identificada:
+        'Deixa nome e contato. O comitê pode falar consigo diretamente ao longo da apuração.',
+      confidencial:
+        'Deixa nome e contato, e a sua identidade fica apenas no comitê responsável: não é revelada a quem for apurado nem a mais ninguém.',
+      anonima:
+        'Não deixa nome nem contato. Continua a poder acompanhar e conversar pelo protocolo.',
+    },
+    anonimaAviso:
+      'Sem contato, o comitê só consegue falar consigo por esta página. Guarde o protocolo e o código de acompanhamento que aparecem no fim — sem eles não há como voltar a esta denúncia.',
+    phonePlaceholder: 'Telefone para contato',
+    revisaoTitulo: 'Confira antes de enviar',
+    revisaoCategoria: 'Categoria',
+    revisaoTitulo2: 'Título',
+    revisaoLocal: 'Local',
+    revisaoIdentificacao: 'Identificação',
+    revisaoAnexos: { one: '1 arquivo', other: '{count} arquivos' },
+    politicaTitulo: 'Tratamento dos seus dados',
     loading: 'Carregando...',
     unavailableTitle: 'Canal Indisponível',
     unavailableDescription: 'O canal de denúncias não está disponível ou foi desativado.',
@@ -131,7 +163,7 @@ const ptDict = {
       title: 'Título deve ter pelo menos 5 caracteres',
       description: 'Descrição deve ter pelo menos 20 caracteres',
       email: 'Email inválido',
-      nameRequired: 'Esta empresa não aceita denúncias anônimas: informe seu nome',
+      nameRequired: 'Informe seu nome, ou escolha não se identificar acima.',
       policyRequired: 'É preciso aceitar a política de privacidade para enviar',
     },
   },
@@ -280,6 +312,13 @@ const ptDict = {
     importantLabel: 'Importante:',
     importantText:
       'Esta consulta mostra apenas informações básicas sobre o andamento da sua denúncia. Dados sensíveis são mantidos em sigilo conforme nossa política de privacidade. Para mais informações, entre em contato através dos canais oficiais da empresa.',
+    /* A gravidade saía crua da base — «Medio», sem acento e sem tradução. */
+    gravidade: {
+      baixo: 'Baixa',
+      medio: 'Média',
+      alto: 'Alta',
+      critico: 'Crítica',
+    },
     status: {
       nova: 'Nova',
       em_analise: 'Em Análise',
@@ -287,6 +326,64 @@ const ptDict = {
       concluida: 'Concluída',
       arquivada: 'Arquivada',
     },
+    /* A linha do tempo imprimia o identificador cru da base, com underscores
+       trocados por espaços: «Recebimento Acusado». */
+    acao: {
+      registada: 'Denúncia recebida',
+      status_alterado: 'Situação alterada',
+      observacao_adicionada: 'Nova informação',
+      consideracao: 'Nova informação da apuração',
+      recebimento_acusado: 'Recebimento confirmado pelo comitê',
+      reuniao_solicitada: 'Reunião solicitada por você',
+      reuniao_proposta: 'Reunião proposta pelo comitê',
+      reuniao_agendada: 'Reunião marcada',
+      reuniao_realizada: 'Reunião realizada',
+      reuniao_recusada: 'Pedido de reunião recusado',
+      ata_registada: 'Ata da reunião registrada',
+      ata_partilhada: 'Ata enviada para sua conferência',
+      ata_confirmada: 'Ata confirmada por você',
+      impedimento_declarado: 'Mudança na equipe de apuração',
+    },
+  },
+  /*
+    A reunião do art. 9.º/2 da Diretiva (UE) 2019/1937.
+
+    A configuração `permitir_reuniao` existia desde a onda anterior e não
+    tinha ecrã nenhum — uma opção que ligava e desligava coisa alguma.
+  */
+  reuniao: {
+    titulo: 'Reunião com o comitê',
+    explicacao:
+      'Você tem direito a pedir uma reunião para relatar pessoalmente. Há coisas que não se escrevem num formulário.',
+    como: 'Como prefere que seja',
+    modalidade: {
+      presencial: 'Presencial',
+      videochamada: 'Videochamada',
+      telefone: 'Telefone',
+    },
+    preferencia: 'Quando lhe dá jeito, e o que quiser acrescentar',
+    preferenciaPlaceholder:
+      'Ex.: manhãs, fora do horário de trabalho, num local reservado…',
+    pedir: 'Pedir reunião',
+    pedida: 'Pedido enviado ao comitê',
+    erroPedir: 'Não foi possível enviar o pedido',
+    estado: {
+      solicitada: 'Pedido enviado',
+      agendada: 'Marcada',
+      realizada: 'Realizada',
+      recusada: 'Recusada',
+      cancelada: 'Cancelada',
+    },
+    marcadaPara: 'Marcada para {data}',
+    /* A acta não é burocracia: o art. 18.º/2 dá a quem esteve na reunião o
+       direito de a verificar, corrigir e aceitar. */
+    ata: 'Ata da reunião',
+    ataAjuda:
+      'Leia e confirme se corresponde ao que foi dito. Se algo estiver errado, escreva na conversa antes de confirmar.',
+    confirmarAta: 'Confirmo que corresponde',
+    ataConfirmada: 'Ata confirmada',
+    ataAceite: 'Confirmada por você em {data}',
+    erroConfirmar: 'Não foi possível confirmar',
   },
 };
 
@@ -294,6 +391,7 @@ const enDict: typeof ptDict = {
   canal: {
     titulo: 'Whistleblowing Channel',
     voltar: 'Back',
+    direitosTitulo: 'Your rights',
     direitoSigilo: 'Confidentiality',
     direitoSigiloAnonimo: 'You can report without identifying yourself. Only the designated committee sees the report.',
     direitoSigiloIdentificado: 'Your identity stays with the designated committee and is disclosed to no one else.',
@@ -353,6 +451,30 @@ const enDict: typeof ptDict = {
     backToSite: 'Back to website',
   },
   denunciaForm: {
+    nivelTitulo: 'How would you like to identify yourself?',
+    nivel: {
+      identificada: 'I identify myself',
+      confidencial: 'I identify myself, confidentially',
+      anonima: 'I prefer not to identify myself',
+    },
+    nivelAjuda: {
+      identificada:
+        'Leave your name and contact details. The committee can reach you directly during the investigation.',
+      confidencial:
+        'Leave your name and contact details, and your identity stays with the designated committee alone: it is not disclosed to the people investigated or to anyone else.',
+      anonima:
+        'Leave no name or contact details. You can still follow the case and exchange messages using the protocol.',
+    },
+    anonimaAviso:
+      'Without contact details, the committee can only reach you through this page. Keep the protocol and tracking code shown at the end — without them there is no way back to this report.',
+    phonePlaceholder: 'Contact phone number',
+    revisaoTitulo: 'Check before sending',
+    revisaoCategoria: 'Category',
+    revisaoTitulo2: 'Title',
+    revisaoLocal: 'Place',
+    revisaoIdentificacao: 'Identification',
+    revisaoAnexos: { one: '1 file', other: '{count} files' },
+    politicaTitulo: 'How your data is handled',
     loading: 'Loading...',
     unavailableTitle: 'Channel Unavailable',
     unavailableDescription: 'The whistleblower channel is unavailable or has been deactivated.',
@@ -414,7 +536,7 @@ const enDict: typeof ptDict = {
       title: 'Title must be at least 5 characters',
       description: 'Description must be at least 20 characters',
       email: 'Invalid email',
-      nameRequired: 'This company does not accept anonymous reports: enter your name',
+      nameRequired: 'Enter your name, or choose not to identify yourself above.',
       policyRequired: 'You must accept the privacy policy to submit',
     },
   },
@@ -562,6 +684,12 @@ const enDict: typeof ptDict = {
     importantLabel: 'Important:',
     importantText:
       'This lookup shows only basic information about the progress of your report. Sensitive data is kept confidential according to our privacy policy. For more information, contact the company through its official channels.',
+    gravidade: {
+      baixo: 'Low',
+      medio: 'Medium',
+      alto: 'High',
+      critico: 'Critical',
+    },
     status: {
       nova: 'New',
       em_analise: 'Under Analysis',
@@ -569,6 +697,53 @@ const enDict: typeof ptDict = {
       concluida: 'Concluded',
       arquivada: 'Archived',
     },
+    acao: {
+      registada: 'Report received',
+      status_alterado: 'Status changed',
+      observacao_adicionada: 'New information',
+      consideracao: 'New information from the investigation',
+      recebimento_acusado: 'Receipt acknowledged by the committee',
+      reuniao_solicitada: 'Meeting requested by you',
+      reuniao_proposta: 'Meeting offered by the committee',
+      reuniao_agendada: 'Meeting scheduled',
+      reuniao_realizada: 'Meeting held',
+      reuniao_recusada: 'Meeting request declined',
+      ata_registada: 'Meeting minutes recorded',
+      ata_partilhada: 'Minutes sent for your review',
+      ata_confirmada: 'Minutes confirmed by you',
+      impedimento_declarado: 'Change in the investigating team',
+    },
+  },
+  reuniao: {
+    titulo: 'Meeting with the committee',
+    explicacao:
+      'You have the right to request a meeting to report in person. Some things do not fit in a form.',
+    como: 'How you would prefer it',
+    modalidade: {
+      presencial: 'In person',
+      videochamada: 'Video call',
+      telefone: 'Phone',
+    },
+    preferencia: 'When it suits you, and anything else you want to add',
+    preferenciaPlaceholder: 'E.g. mornings, outside working hours, somewhere private…',
+    pedir: 'Request a meeting',
+    pedida: 'Request sent to the committee',
+    erroPedir: 'The request could not be sent',
+    estado: {
+      solicitada: 'Request sent',
+      agendada: 'Scheduled',
+      realizada: 'Held',
+      recusada: 'Declined',
+      cancelada: 'Cancelled',
+    },
+    marcadaPara: 'Scheduled for {data}',
+    ata: 'Meeting minutes',
+    ataAjuda:
+      'Read and confirm that this matches what was said. If anything is wrong, write in the conversation before confirming.',
+    confirmarAta: 'I confirm this is accurate',
+    ataConfirmada: 'Minutes confirmed',
+    ataAceite: 'Confirmed by you on {data}',
+    erroConfirmar: 'It was not possible to confirm',
   },
 };
 

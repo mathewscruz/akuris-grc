@@ -26,6 +26,16 @@ const dictionaries: Record<Locale, Dictionary> = {
 interface LanguageContextType {
   locale: Locale;
   setLocale: (locale: Locale) => void;
+  /**
+   * Troca o idioma **sem** o dar como escolha da pessoa.
+   *
+   * `setLocale` grava a escolha como explícita e ainda a escreve no perfil de
+   * quem estiver autenticado. Isso é o correto para um clique no seletor e é
+   * errado para um idioma que vem de configuração — como o idioma de abertura
+   * do canal de denúncia, definido pela empresa: um gestor que espreitasse o
+   * canal da sua própria empresa via a preferência dele reescrita em silêncio.
+   */
+  setLocaleTransient: (locale: Locale) => void;
   t: (key: string, params?: Record<string, string | number>) => string;
   /** Resolve chaves cujo valor é uma lista de strings (ex.: exemplos de documentos). */
   tList: (key: string) => string[];
@@ -180,6 +190,11 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  /* Idioma vindo de configuração: muda o que se vê, não o que a pessoa quer. */
+  const setLocaleTransient = useCallback((newLocale: Locale) => {
+    setLocaleState((atual) => (atual === newLocale ? atual : newLocale));
+  }, []);
+
   const t = useCallback((key: string, params?: Record<string, string | number>): string => {
     const dict = dictionaries[locale] ?? dictionaries['pt-BR'];
     const keys = key.split('.');
@@ -196,7 +211,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const tList = useCallback((key: string): string[] => resolveList(dictionaries[locale] ?? dictionaries['pt-BR'], key), [locale]);
 
   return (
-    <LanguageContext.Provider value={{ locale, setLocale, t, tList }}>
+    <LanguageContext.Provider value={{ locale, setLocale, setLocaleTransient, t, tList }}>
       {children}
     </LanguageContext.Provider>
   );
@@ -207,6 +222,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 const fallbackContext: LanguageContextType = {
   locale: (typeof window !== 'undefined' && (localStorage.getItem(STORAGE_KEY) as Locale)) || 'pt-BR',
   setLocale: () => {},
+  setLocaleTransient: () => {},
   t: (key: string, params?: Record<string, string | number>) => {
     const loc: Locale = (typeof window !== 'undefined' && (localStorage.getItem(STORAGE_KEY) as Locale)) || 'pt-BR';
     const dict = dictionaries[loc] ?? dictionaries['pt-BR'];

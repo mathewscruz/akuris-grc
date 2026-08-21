@@ -8,7 +8,7 @@ import { DenunciaDialog } from './DenunciaDialog';
 import { useToast } from '@/hooks/use-toast';
 import { DataTable } from '@/components/ui/data-table';
 import { Card, CardContent } from '@/components/ui/card';
-import { formatDateOnly } from '@/lib/date-utils';
+import { formatDateOnly, parseDataLocal } from '@/lib/date-utils';
 import { formatStatus } from '@/lib/text-utils';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveDenunciaStatusTone, resolveCriticidadeTone } from '@/lib/status-tone';
@@ -23,16 +23,28 @@ interface Denuncia {
   status: string;
   gravidade: string;
   anonima: boolean;
+  nivel_identificacao?: string | null;
   nome_denunciante?: string;
   email_denunciante?: string;
   created_at: string;
+  responsavel_id?: string | null;
+  prazo_retorno?: string | null;
+  prazo_acusacao?: string | null;
+  data_acusacao_recebimento?: string | null;
   categoria?: {
     nome: string;
     cor: string;
   };
-  responsavel?: {
-    nome: string;
-  } | null;
+}
+
+/** Quantos dias faltam para uma data — negativo quando já passou. */
+function diasAte(data?: string | null): number | null {
+  if (!data) return null;
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  const alvo = parseDataLocal(data);
+  alvo.setHours(0, 0, 0, 0);
+  return Math.round((alvo.getTime() - hoje.getTime()) / 86400000);
 }
 
 interface DenunciasDashboardProps {
@@ -49,6 +61,10 @@ export function DenunciasDashboard({ itemIdToOpen, refreshKey }: DenunciasDashbo
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
   const [gravidadeFilter, setGravidadeFilter] = useState('todos');
+  /* O filtro que faltava: quem gere o canal procura o que está a arder. */
+  const [prazoFilter, setPrazoFilter] = useState('todos');
+  const [nomes, setNomes] = useState<Record<string, string>>({});
+  const [comReuniao, setComReuniao] = useState<Set<string>>(new Set());
   const [sortField, setSortField] = useState('created_at');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const { toast } = useToast();
@@ -84,6 +100,41 @@ export function DenunciasDashboard({ itemIdToOpen, refreshKey }: DenunciasDashbo
       if (error) throw error;
 
       setDenuncias(data || []);
+
+      /*
+        Os nomes de quem está a apurar.
+
+        A lista declarava `responsavel` e nunca o pedia — a coluna não existia
+        e ninguém conseguia ver, da tabela, quem tinha o quê em mãos. Numa
+        apuração a várias mãos essa é a primeira pergunta do gestor do canal.
+      */
+      const responsaveis = Array.from(
+        new Set((data ?? []).map((d) => d.responsavel_id).filter(Boolean)),
+      ) as string[];
+      if (responsaveis.length > 0) {
+        const { data: perfis } = await supabase
+          .from('profiles')
+          .select('user_id, nome')
+          .in('user_id', responsaveis);
+        setNomes(Object.fromEntries((perfis ?? []).map((p) => [p.user_id, p.nome ?? ''])));
+      } else {
+        setNomes({});
+      }
+
+      /*
+        Que denúncias têm reunião por marcar.
+
+        Um pedido de reunião é uma obrigação com relógio (art. 9.º/2) e, sem
+        marca na lista, só se descobria abrindo a denúncia e indo à aba certa.
+        Uma obrigação que só se vê depois de a procurar não é uma obrigação
+        vigiada.
+      */
+      const { data: pedidos } = await supabase
+        .from('denuncias_reunioes')
+        .select('denuncia_id')
+        .eq('empresa_id', empresaId)
+        .eq('estado', 'solicitada');
+      setComReuniao(new Set((pedidos ?? []).map((r) => r.denuncia_id)));
     } catch (error) {
       console.error('Erro ao carregar denúncias:', error);
       toast({
@@ -120,7 +171,17 @@ export function DenunciasDashboard({ itemIdToOpen, refreshKey }: DenunciasDashbo
       const matchesGravidade =
         gravidadeFilter === 'todos' || severidadeDeFaixas(denuncia.gravidade) === gravidadeFilter;
 
-      return matchesSearch && matchesStatus && matchesGravidade;
+      /* Só interessa o prazo do que ainda está aberto: uma denúncia resolvida
+         com prazo passado não é uma pendência, é história. */
+      const encerrada = ['resolvida', 'arquivada'].includes(denuncia.status);
+      const dias = diasAte(denuncia.prazo_retorno);
+      const matchesPrazo =
+        prazoFilter === 'todos' ||
+        (prazoFilter === 'vencidas' && !encerrada && dias !== null && dias < 0) ||
+        (prazoFilter === 'a_vencer' && !encerrada && dias !== null && dias >= 0 && dias <= 15) ||
+        (prazoFilter === 'sem_responsavel' && !encerrada && !denuncia.responsavel_id);
+
+      return matchesSearch && matchesStatus && matchesGravidade && matchesPrazo;
     });
 
     // Ordenar
@@ -140,16 +201,30 @@ export function DenunciasDashboard({ itemIdToOpen, refreshKey }: DenunciasDashbo
     });
 
     return filtered;
-  }, [denuncias, searchTerm, statusFilter, gravidadeFilter, sortField, sortDirection]);
+  }, [denuncias, searchTerm, statusFilter, gravidadeFilter, prazoFilter, sortField, sortDirection]);
 
   // Configuração das colunas
   const columns = [
     {
+      /*
+        Protocolo e data numa célula só.
+
+        A lista ganhou responsável e prazo — informação que faltava — e passou
+        a ter dez colunas e barra horizontal: para ver o prazo era preciso
+        arrastar a tabela, o que anula a razão de o ter posto lá. Data e
+        categoria descem para debaixo do que qualificam, em vez de ocuparem
+        coluna própria.
+      */
       key: 'protocolo',
       label: t('denunciasAdmin.dashboard.colProtocolo'),
       sortable: true,
       render: (_: any, denuncia: Denuncia) => (
-        <span className="font-mono text-sm">{denuncia.protocolo}</span>
+        <span className="flex flex-col">
+          <span className="font-mono text-sm">{denuncia.protocolo}</span>
+          <span className="text-micro text-muted-foreground">
+            {formatDateOnly(denuncia.created_at)}
+          </span>
+        </span>
       )
     },
     {
@@ -157,7 +232,18 @@ export function DenunciasDashboard({ itemIdToOpen, refreshKey }: DenunciasDashbo
       label: t('denunciasAdmin.dashboard.colTitulo'),
       sortable: true,
       render: (_: any, denuncia: Denuncia) => (
-        <div className="max-w-xs truncate">{denuncia.titulo}</div>
+        <span className="flex max-w-xs flex-col">
+          <span className="truncate text-sm">{denuncia.titulo}</span>
+          <span className="truncate text-micro text-muted-foreground">
+            {denuncia.categoria?.nome}
+            {denuncia.categoria && comReuniao.has(denuncia.id) ? ' · ' : ''}
+            {comReuniao.has(denuncia.id) && (
+              <span className="font-medium text-warning">
+                {t('denunciasAdmin.dashboard.reuniaoPorMarcar')}
+              </span>
+            )}
+          </span>
+        </span>
       )
     },
     {
@@ -181,41 +267,73 @@ export function DenunciasDashboard({ itemIdToOpen, refreshKey }: DenunciasDashbo
       )
     },
     {
-      key: 'categoria',
-      label: t('denunciasAdmin.dashboard.colCategoria'),
-      sortable: true,
-      render: (_: any, denuncia: Denuncia) => (
-        denuncia.categoria ? (
-          <Badge variant="outline" style={{ borderColor: denuncia.categoria.cor }}>
-            {denuncia.categoria.nome}
-          </Badge>
-        ) : (
-          <span className="text-muted-foreground">-</span>
-        )
-      )
-    },
-    {
       key: 'denunciante',
       label: t('denunciasAdmin.dashboard.colDenunciante'),
       sortable: true,
-      render: (_: any, denuncia: Denuncia) => (
-        denuncia.anonima ? (
-          <Badge variant="secondary">{t('denunciasAdmin.dashboard.anonymousBadge')}</Badge>
-        ) : (
-          denuncia.nome_denunciante || t('denunciasAdmin.dashboard.notInformed')
-        )
-      )
+      render: (_: any, denuncia: Denuncia) => {
+        const nivel = denuncia.nivel_identificacao ?? (denuncia.anonima ? 'anonima' : 'identificada');
+        if (nivel === 'anonima') {
+          return <Badge variant="secondary">{t('denunciasAdmin.dashboard.anonymousBadge')}</Badge>;
+        }
+        /* Quem pediu reserva de identidade tem de o ver dito na lista, senão
+           o nome circula como se ninguém tivesse pedido nada. */
+        return (
+          <span className="flex flex-col">
+            <span className="text-sm">
+              {denuncia.nome_denunciante || t('denunciasAdmin.dashboard.notInformed')}
+            </span>
+            {nivel === 'confidencial' && (
+              <span className="text-micro text-muted-foreground">
+                {t('denunciasAdmin.dashboard.confidencialBadge')}
+              </span>
+            )}
+          </span>
+        );
+      }
     },
     {
-      key: 'created_at',
-      label: t('denunciasAdmin.dashboard.colData'),
+      key: 'responsavel_id',
+      label: t('denunciasAdmin.dashboard.colResponsavel'),
       sortable: true,
-      render: (_: any, denuncia: Denuncia) => (
-        <div className="flex items-center gap-1">
-          <IconCalendar className="h-4 w-4 text-muted-foreground" />
-          {formatDateOnly(denuncia.created_at)}
-        </div>
-      )
+      render: (_: any, denuncia: Denuncia) =>
+        denuncia.responsavel_id ? (
+          <span className="flex items-center gap-1.5 text-sm">
+            <IconUserCheck className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
+            {nomes[denuncia.responsavel_id] || t('denunciasAdmin.dashboard.notInformed')}
+          </span>
+        ) : (
+          <span className="text-sm text-muted-foreground">
+            {t('denunciasAdmin.dashboard.semResponsavel')}
+          </span>
+        )
+    },
+    {
+      /*
+        O prazo legal, na lista.
+
+        O relógio da Diretiva só existia dentro da ficha: para saber o que
+        estava a vencer era preciso abrir uma denúncia de cada vez.
+      */
+      key: 'prazo_retorno',
+      label: t('denunciasAdmin.dashboard.colPrazo'),
+      sortable: true,
+      render: (_: any, denuncia: Denuncia) => {
+        const encerrada = ['resolvida', 'arquivada'].includes(denuncia.status);
+        const dias = diasAte(denuncia.prazo_retorno);
+        if (encerrada) {
+          return <span className="text-sm text-muted-foreground">{t('denunciasAdmin.dashboard.prazoCumprido')}</span>;
+        }
+        if (dias === null) return <span className="text-sm text-muted-foreground">—</span>;
+        const tom =
+          dias < 0 ? 'text-severity-critical' : dias <= 15 ? 'text-warning' : 'text-muted-foreground';
+        return (
+          <span className={`text-sm tabular-nums ${tom}`}>
+            {dias < 0
+              ? t('denunciasAdmin.dashboard.prazoVencido', { count: Math.abs(dias) })
+              : t('denunciasAdmin.dashboard.prazoFaltam', { count: dias })}
+          </span>
+        );
+      }
     },
     {
       key: 'acoes',
@@ -259,6 +377,18 @@ export function DenunciasDashboard({ itemIdToOpen, refreshKey }: DenunciasDashbo
         { value: 'medio', label: t('denunciasAdmin.dashboard.gravidadeMedia') },
         { value: 'alto', label: t('denunciasAdmin.dashboard.gravidadeAlta') },
         { value: 'critico', label: t('denunciasAdmin.dashboard.gravidadeCritica') },
+      ]
+    },
+    {
+      key: 'prazo',
+      label: t('denunciasAdmin.dashboard.filterPrazoLabel'),
+      value: prazoFilter,
+      onChange: setPrazoFilter,
+      options: [
+        { value: 'todos', label: t('denunciasAdmin.dashboard.filterPrazoAll') },
+        { value: 'vencidas', label: t('denunciasAdmin.dashboard.filterPrazoVencidas') },
+        { value: 'a_vencer', label: t('denunciasAdmin.dashboard.filterPrazoAVencer') },
+        { value: 'sem_responsavel', label: t('denunciasAdmin.dashboard.filterPrazoSemResponsavel') },
       ]
     }
   ];

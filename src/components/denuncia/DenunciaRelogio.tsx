@@ -74,6 +74,10 @@ export function DenunciaRelogio({ denuncia, onAtualizado }: Props) {
         status_anterior: denuncia.status,
         status_novo: denuncia.status,
         observacoes: null,
+        /* Acusar o recebimento é um facto de quem denunciou: vê-o na consulta.
+           E fica assinado — `user` estava aqui, por usar, desde o início. */
+        visibilidade: 'publica',
+        usuario_id: user?.id ?? null,
       });
       /* A trilha é a prova de que a obrigação foi cumprida. Se ela não entrou,
          a acusação existe no banco e não existe no registo — falha alto. */

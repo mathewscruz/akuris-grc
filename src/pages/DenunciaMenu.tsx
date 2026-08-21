@@ -35,15 +35,21 @@ export default function DenunciaMenu() {
   const { empresa, config, carregando, estiloDaMarca, nomeDoCanal } = useCanalDenuncia(empresaSlug);
   const [categorias, setCategorias] = useState<string[]>([]);
 
-  /* O que se pode denunciar, nas palavras da própria empresa. */
+  /*
+    O que se pode denunciar, nas palavras da própria empresa.
+
+    Isto lia a tabela `denuncias_categorias` directamente — e a RLS dessa
+    tabela exige sessão. O bloco aparecia a quem estivesse autenticado (a mim,
+    a testar) e nunca a quem o canal serve. É para isso que existe o RPC
+    público, o mesmo que o formulário já usava.
+  */
   useEffect(() => {
     if (!empresa?.id) return;
     supabase
-      .from('denuncias_categorias')
-      .select('nome')
-      .eq('empresa_id', empresa.id)
-      .eq('ativo', true)
-      .then(({ data }) => setCategorias((data ?? []).map((c) => c.nome)));
+      .rpc('get_denuncias_categorias_publicas' as never, { p_empresa_id: empresa.id } as never)
+      .then(({ data }) =>
+        setCategorias((((data ?? []) as { nome: string }[]) ?? []).map((c) => c.nome)),
+      );
   }, [empresa?.id]);
 
   if (carregando) {
@@ -78,8 +84,11 @@ export default function DenunciaMenu() {
       nomeDoCanal={nomeDoCanal}
       estiloDaMarca={estiloDaMarca}
     >
+      {/* Alinhado ao título, não centrado: o cabeçalho deixou de ser um bloco
+          simétrico e um parágrafo centrado ao lado de um título à esquerda
+          lê-se como duas páginas diferentes coladas. */}
       {config.texto_apresentacao && (
-        <p className="mx-auto mb-6 max-w-xl text-center text-sm leading-relaxed text-muted-foreground">
+        <p className="mb-6 max-w-2xl text-sm leading-relaxed text-muted-foreground">
           {config.texto_apresentacao}
         </p>
       )}

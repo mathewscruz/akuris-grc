@@ -137,6 +137,44 @@ Deno.serve(async (req) => {
       return json({ ok: true });
     }
 
+    /*
+      A reunião do art. 9.º/2.
+
+      A Diretiva manda o canal permitir, a pedido, um encontro. O pedido tem
+      de partir de quem denunciou — e quem denunciou não tem conta: a única
+      credencial é o código de acompanhamento, o mesmo que já autentica as
+      mensagens e os anexos.
+    */
+    if (action === 'reuniao_solicitar') {
+      const { denuncia_id, codigo, modalidade, preferencia } = body;
+      const denuncia = await denunciaPeloCodigo(String(denuncia_id ?? ''), String(codigo ?? ''));
+      if (!denuncia) return json({ error: 'nao_autorizado' }, 403);
+
+      const { data, error } = await supabase.rpc('solicitar_reuniao_denuncia', {
+        p_denuncia_id: denuncia.id,
+        p_tracking_hash: await sha256(String(codigo).trim()),
+        p_modalidade: String(modalidade ?? 'presencial'),
+        p_preferencia: String(preferencia ?? ''),
+      });
+      if (error) return json({ error: error.message }, 400);
+      return json({ reuniao: data });
+    }
+
+    /* A acta lida e aceite por quem esteve na reunião — art. 18.º/2. */
+    if (action === 'reuniao_confirmar_ata') {
+      const { reuniao_id, denuncia_id, codigo } = body;
+      const denuncia = await denunciaPeloCodigo(String(denuncia_id ?? ''), String(codigo ?? ''));
+      if (!denuncia) return json({ error: 'nao_autorizado' }, 403);
+
+      const { data, error } = await supabase.rpc('confirmar_ata_reuniao', {
+        p_reuniao_id: String(reuniao_id ?? ''),
+        p_tracking_hash: await sha256(String(codigo).trim()),
+      });
+      if (error) return json({ error: error.message }, 400);
+      if (!data) return json({ error: 'nao_autorizado' }, 403);
+      return json({ ok: true });
+    }
+
     /* A resposta do denunciante. `autor_id` fica nulo de propósito: guardar um
        id aqui identificaria quem o canal promete não identificar. */
     if (action === 'mensagem') {
@@ -173,6 +211,7 @@ Deno.serve(async (req) => {
       data_ocorrencia,
       testemunhas,
       evidencias_descricao,
+      nivel_identificacao,
     } = body;
 
     if (!empresa_slug || !titulo || !descricao) {
@@ -207,6 +246,9 @@ Deno.serve(async (req) => {
       p_fingerprint_hash: fingerprintHash,
       p_client_ip: clientIp,
       p_user_agent: req.headers.get('user-agent') ?? null,
+      /* Três níveis, não um booleano: identificar-se e pedir reserva são
+         coisas diferentes, e a Diretiva trata-as em artigos diferentes. */
+      p_nivel_identificacao: nivel_identificacao ?? null,
     });
 
     if (error) return json({ error: error.message }, 400);

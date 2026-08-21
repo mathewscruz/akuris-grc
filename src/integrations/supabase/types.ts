@@ -3218,6 +3218,7 @@ export type Database = {
           ip_origem: unknown
           local_ocorrencia: string | null
           medidas_adotadas: string | null
+          nivel_identificacao: string | null
           nome_denunciante: string | null
           parecer_final: string | null
           plano_acao_id: string | null
@@ -3258,6 +3259,7 @@ export type Database = {
           ip_origem?: unknown
           local_ocorrencia?: string | null
           medidas_adotadas?: string | null
+          nivel_identificacao?: string | null
           nome_denunciante?: string | null
           parecer_final?: string | null
           plano_acao_id?: string | null
@@ -3298,6 +3300,7 @@ export type Database = {
           ip_origem?: unknown
           local_ocorrencia?: string | null
           medidas_adotadas?: string | null
+          nivel_identificacao?: string | null
           nome_denunciante?: string | null
           parecer_final?: string | null
           plano_acao_id?: string | null
@@ -3645,6 +3648,7 @@ export type Database = {
           status_anterior: string | null
           status_novo: string | null
           usuario_id: string | null
+          visibilidade: string
         }
         Insert: {
           acao: string
@@ -3655,6 +3659,7 @@ export type Database = {
           status_anterior?: string | null
           status_novo?: string | null
           usuario_id?: string | null
+          visibilidade?: string
         }
         Update: {
           acao?: string
@@ -3665,6 +3670,7 @@ export type Database = {
           status_anterior?: string | null
           status_novo?: string | null
           usuario_id?: string | null
+          visibilidade?: string
         }
         Relationships: [
           {
@@ -3680,6 +3686,87 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      denuncias_reunioes: {
+        Row: {
+          agendada_para: string | null
+          ata: string | null
+          ata_confirmada_em: string | null
+          ata_partilhada_em: string | null
+          atualizado_por: string | null
+          consentimento_registo: boolean
+          created_at: string
+          criado_por: string | null
+          denuncia_id: string
+          empresa_id: string
+          estado: string
+          id: string
+          local: string | null
+          modalidade: string
+          preferencia: string | null
+          realizada_em: string | null
+          resposta: string | null
+          solicitada_em: string
+          updated_at: string
+        }
+        Insert: {
+          agendada_para?: string | null
+          ata?: string | null
+          ata_confirmada_em?: string | null
+          ata_partilhada_em?: string | null
+          atualizado_por?: string | null
+          consentimento_registo?: boolean
+          created_at?: string
+          criado_por?: string | null
+          denuncia_id: string
+          empresa_id: string
+          estado?: string
+          id?: string
+          local?: string | null
+          modalidade?: string
+          preferencia?: string | null
+          realizada_em?: string | null
+          resposta?: string | null
+          solicitada_em?: string
+          updated_at?: string
+        }
+        Update: {
+          agendada_para?: string | null
+          ata?: string | null
+          ata_confirmada_em?: string | null
+          ata_partilhada_em?: string | null
+          atualizado_por?: string | null
+          consentimento_registo?: boolean
+          created_at?: string
+          criado_por?: string | null
+          denuncia_id?: string
+          empresa_id?: string
+          estado?: string
+          id?: string
+          local?: string | null
+          modalidade?: string
+          preferencia?: string | null
+          realizada_em?: string | null
+          resposta?: string | null
+          solicitada_em?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "denuncias_reunioes_denuncia_id_fkey"
+            columns: ["denuncia_id"]
+            isOneToOne: false
+            referencedRelation: "denuncias"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "denuncias_reunioes_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -9361,6 +9448,10 @@ export type Database = {
       check_company_user_limit: { Args: { _empresa_id: string }; Returns: Json }
       check_trial_expiration: { Args: never; Returns: undefined }
       cleanup_expired_mfa_codes: { Args: never; Returns: undefined }
+      confirmar_ata_reuniao: {
+        Args: { p_reuniao_id: string; p_tracking_hash: string }
+        Returns: Json
+      }
       consult_denuncia_publica: {
         Args: {
           p_empresa_slug: string
@@ -9437,6 +9528,7 @@ export type Database = {
           p_evidencias_descricao: string
           p_fingerprint_hash: string
           p_local_ocorrencia: string
+          p_nivel_identificacao?: string
           p_politica_aceita: boolean
           p_testemunhas: string
           p_titulo: string
@@ -9764,6 +9856,15 @@ export type Database = {
       ropa_chave_da_base_legal: { Args: { p_texto: string }; Returns: string }
       ropa_pertence_empresa: { Args: { ropa_id: string }; Returns: boolean }
       severidade_canonica: { Args: { p_valor: string }; Returns: string }
+      solicitar_reuniao_denuncia: {
+        Args: {
+          p_denuncia_id: string
+          p_modalidade: string
+          p_preferencia: string
+          p_tracking_hash: string
+        }
+        Returns: Json
+      }
       unaccent_immutable_fallback: { Args: { p_text: string }; Returns: string }
       validate_denuncia_token: { Args: { p_token: string }; Returns: string }
       verify_mfa_code_attempt: {

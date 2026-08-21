@@ -14,10 +14,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveDenunciaStatusTone, resolveGravidadeTone } from '@/lib/status-tone';
+import { severidadeDeFaixas } from '@/lib/metrics/riscos';
 import { useToast } from '@/hooks/use-toast';
 import { getCompanyLogo } from '@/lib/brand-logo';
 import { useCanalDenuncia } from '@/hooks/useCanalDenuncia';
 import { CanalLayout } from '@/components/denuncia/CanalLayout';
+import { SolicitarReuniao, type ReuniaoPublica } from '@/components/denuncia/SolicitarReuniao';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 interface Empresa {
@@ -41,6 +43,13 @@ interface Denuncia {
     nome: string;
     cor: string;
   } | null;
+}
+
+/** O que `consult_denuncia_publica` devolve, do lado de quem consulta. */
+interface RespostaConsulta extends Denuncia {
+  mensagens?: { id: string; autor_tipo: string; mensagem: string; created_at: string }[];
+  reunioes?: ReuniaoPublica[];
+  movimentacoes?: Omit<Movimentacao, 'usuario'>[];
 }
 
 interface Movimentacao {
@@ -79,6 +88,9 @@ export default function DenunciaConsulta() {
   const [mensagens, setMensagens] = useState<{ id: string; autor_tipo: string; mensagem: string; created_at: string }[]>([]);
   const [novaMensagem, setNovaMensagem] = useState('');
   const [enviandoMensagem, setEnviandoMensagem] = useState(false);
+  /* A reunião do art. 9.º/2 — pedida daqui, porque é aqui que quem denunciou
+     está autenticado pelo protocolo e pelo código. */
+  const [reunioes, setReunioes] = useState<ReuniaoPublica[]>([]);
   /* A mesma identidade e os mesmos direitos das outras duas telas. */
   const canal = useCanalDenuncia(empresaSlug);
 
@@ -116,9 +128,35 @@ export default function DenunciaConsulta() {
     }
   };
 
+  /* Recarrega sem passar pelo formulário — usado depois de pedir reunião ou
+     de aceitar a acta, para o ecrã mostrar já o novo estado. */
+  const recarregar = async () => {
+    if (!empresa || !protocolo.trim() || !codigo.trim()) return;
+    const { data } = await supabase.functions.invoke('create-denuncia', {
+      body: {
+        action: 'consult',
+        empresa_slug: empresa.slug,
+        protocolo: protocolo.trim().toUpperCase(),
+        codigo: codigo.trim(),
+      },
+    });
+    const atual = (data?.denuncia ?? null) as RespostaConsulta | null;
+    if (!atual) return;
+    setDenuncia(atual);
+    setMensagens(atual.mensagens ?? []);
+    setReunioes(atual.reunioes ?? []);
+    setMovimentacoes(
+      (atual.movimentacoes ?? []).map((mov) => ({
+        ...mov,
+        observacoes: mov.observacoes ?? null,
+        usuario: null,
+      })),
+    );
+  };
+
   const buscarDenuncia = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!empresa || !protocolo.trim() || !codigo.trim()) {
       toast({
         title: t('publicPortal.denunciaConsulta.error'),
@@ -132,6 +170,7 @@ export default function DenunciaConsulta() {
     setDenuncia(null);
     setMovimentacoes([]);
     setMensagens([]);
+    setReunioes([]);
     setShowDetails(false);
 
     try {
@@ -157,6 +196,7 @@ export default function DenunciaConsulta() {
 
       setDenuncia(denunciaData);
       setMensagens(denunciaData.mensagens ?? []);
+      setReunioes(denunciaData.reunioes ?? []);
       setMovimentacoes(
         (denunciaData.movimentacoes ?? []).map((mov: any) => ({
           ...mov,
@@ -238,8 +278,14 @@ export default function DenunciaConsulta() {
     return label.startsWith('publicPortal.') ? status : label;
   };
 
-  const getGravidadeLabel = (gravidade: string) =>
-    gravidade ? gravidade.charAt(0).toUpperCase() + gravidade.slice(1) : '-';
+  /* Saía o valor cru da base, com a inicial em maiúscula: «Medio». Passa pelo
+     vocabulário canónico e só depois pelo dicionário. */
+  const getGravidadeLabel = (gravidade: string) => {
+    if (!gravidade) return '-';
+    const canonica = severidadeDeFaixas(gravidade);
+    const rotulo = t(`publicPortal.denunciaConsulta.gravidade.${canonica}`);
+    return rotulo.startsWith('publicPortal.') ? gravidade : rotulo;
+  };
 
   const formatDate = (dateString: string) => formatDateTime(dateString);
 
@@ -451,6 +497,21 @@ export default function DenunciaConsulta() {
               </CardContent>
             </Card>
 
+            {/*
+              A reunião do art. 9.º/2.
+
+              `permitir_reuniao` existia na configuração e não tinha ecrã
+              nenhum — uma opção que ligava e desligava coisa alguma. O pedido
+              parte daqui porque é aqui que quem denunciou está autenticado.
+            */}
+            <SolicitarReuniao
+              denunciaId={denuncia.id}
+              codigo={codigo.trim()}
+              permitido={canal.config?.permitir_reuniao !== false}
+              reunioes={reunioes}
+              onMudou={recarregar}
+            />
+
             {/* Histórico de movimentações */}
             <Card>
               <CardHeader>
@@ -473,8 +534,11 @@ export default function DenunciaConsulta() {
                         <div className="absolute left-0 top-1 w-4 h-4 bg-primary rounded-full"></div>
                         <div className="space-y-1">
                           <div className="flex items-center justify-between">
+                            {/* O nome da acção, traduzido. Estava a sair o
+                                identificador da base com underscores trocados
+                                por espaços — «Recebimento Acusado». */}
                             <p className="font-medium text-sm">
-                              {movimentacao.acao.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                              {t(`publicPortal.denunciaConsulta.acao.${movimentacao.acao}`)}
                             </p>
                             <span className="text-xs text-muted-foreground">
                               {formatDate(movimentacao.created_at)}
