@@ -76,15 +76,11 @@ const handler = async (req: Request): Promise<Response> => {
       <span style="color: #ffffff; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">🚨 Nova Denúncia - ${gravidadeMap[denuncia.gravidade] || denuncia.gravidade}</span>
     </div>
     <div style="text-align: center; padding: 24px 32px 16px;">
-      <!--
-        O logótipo é o da EMPRESA, não o da Akuris.
-
-        A consulta acima já trazia `empresa:empresas(nome, logo_url)` — e o
-        template ignorava-o e punha a nossa marca fixa. Quem recebe este aviso
-        trabalha na empresa denunciada; ver a marca do fornecedor de software
-        no alerta de uma denúncia é ruído, e num produto revendido é pior:
-        entrega ao cliente final quem lhe fornece a ferramenta.
-      -->
+      <!-- Logotipo da EMPRESA. A consulta acima ja traz empresa(nome, logo_url);
+           o template ignorava-o e punha a marca da Akuris fixa. Quem recebe
+           este aviso trabalha na empresa denunciada, e num produto revendido
+           mostrar a marca do fornecedor entrega ao cliente final quem lhe
+           fornece a ferramenta. Sem logotipo, cai no nome em texto. -->
       ${denuncia.empresa?.logo_url
         ? `<img src="${denuncia.empresa.logo_url}" alt="${denuncia.empresa?.nome ?? ''}" style="display:block;margin:0 auto;max-height:60px;max-width:200px;" />`
         : `<div style="text-align:center;font-size:20px;font-weight:600;color:#1f2937;">${denuncia.empresa?.nome ?? 'Canal de Denúncias'}</div>`}
