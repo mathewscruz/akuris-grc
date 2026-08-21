@@ -121,11 +121,20 @@ CREATE INDEX IF NOT EXISTS idx_denuncias_impedimentos_denuncia ON public.denunci
   estrutura entre sem cortar ninguém — a partir daí o cliente reduz o comité
   ao que deve ser, que é uma decisão dele e não desta migration.
 */
+-- Quem era administrador.
 INSERT INTO public.denuncias_comite (empresa_id, user_id, papel)
 SELECT p.empresa_id, p.user_id, 'gestor'
 FROM public.profiles p
 WHERE p.empresa_id IS NOT NULL
   AND p.role IN ('admin','super_admin')
+ON CONFLICT (empresa_id, user_id) DO NOTHING;
+
+-- E quem já era responsável por alguma denúncia, mesmo sem ser administrador:
+-- a regra antiga dava-lhe acesso, e esta migration não pode tirá-lo.
+INSERT INTO public.denuncias_comite (empresa_id, user_id, papel)
+SELECT DISTINCT d.empresa_id, d.responsavel_id, 'investigador'
+FROM public.denuncias d
+WHERE d.responsavel_id IS NOT NULL
 ON CONFLICT (empresa_id, user_id) DO NOTHING;
 
 -- ─────────────────────────────────────────────────────────────────────────
@@ -182,32 +191,38 @@ $$;
 -- 6. As políticas passam a usá-la
 -- ─────────────────────────────────────────────────────────────────────────
 DROP POLICY IF EXISTS "Admins/responsavel can view denuncias" ON public.denuncias;
+DROP POLICY IF EXISTS "Comite ou responsavel ve denuncias" ON public.denuncias;
 CREATE POLICY "Comite ou responsavel ve denuncias" ON public.denuncias
   FOR SELECT TO authenticated
   USING (public.pode_ver_denuncia(id));
 
 DROP POLICY IF EXISTS "Admins or responsavel can update denuncias" ON public.denuncias;
+DROP POLICY IF EXISTS "Comite ou responsavel altera denuncias" ON public.denuncias;
 CREATE POLICY "Comite ou responsavel altera denuncias" ON public.denuncias
   FOR UPDATE TO authenticated
   USING (public.pode_ver_denuncia(id))
   WITH CHECK (public.pode_ver_denuncia(id));
 
 DROP POLICY IF EXISTS "Admins or responsavel can view denuncia movimentacoes" ON public.denuncias_movimentacoes;
+DROP POLICY IF EXISTS "Comite ve movimentacoes" ON public.denuncias_movimentacoes;
 CREATE POLICY "Comite ve movimentacoes" ON public.denuncias_movimentacoes
   FOR SELECT TO authenticated
   USING (public.pode_ver_denuncia(denuncia_id));
 
 DROP POLICY IF EXISTS "Users can insert movimentacoes in their empresa" ON public.denuncias_movimentacoes;
+DROP POLICY IF EXISTS "Comite regista movimentacoes" ON public.denuncias_movimentacoes;
 CREATE POLICY "Comite regista movimentacoes" ON public.denuncias_movimentacoes
   FOR INSERT TO authenticated
   WITH CHECK (public.pode_ver_denuncia(denuncia_id));
 
 DROP POLICY IF EXISTS "Admins or responsavel can view denuncia anexos" ON public.denuncias_anexos;
+DROP POLICY IF EXISTS "Comite ve anexos" ON public.denuncias_anexos;
 CREATE POLICY "Comite ve anexos" ON public.denuncias_anexos
   FOR SELECT TO authenticated
   USING (public.pode_ver_denuncia(denuncia_id));
 
 DROP POLICY IF EXISTS "Users can insert anexos in their empresa" ON public.denuncias_anexos;
+DROP POLICY IF EXISTS "Comite anexa a denuncia" ON public.denuncias_anexos;
 CREATE POLICY "Comite anexa a denuncia" ON public.denuncias_anexos
   FOR INSERT TO authenticated
   WITH CHECK (public.pode_ver_denuncia(denuncia_id));
@@ -215,17 +230,20 @@ CREATE POLICY "Comite anexa a denuncia" ON public.denuncias_anexos
 -- Comité: quem administra a empresa gere a composição; quem é do comité vê-a.
 ALTER TABLE public.denuncias_comite ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Admin gere o comite" ON public.denuncias_comite;
+DROP POLICY IF EXISTS "Admin gere o comite" ON public.denuncias_comite;
 CREATE POLICY "Admin gere o comite" ON public.denuncias_comite
   FOR ALL TO authenticated
   USING (empresa_id = public.get_user_empresa_id() AND public.is_admin_or_super_admin())
   WITH CHECK (empresa_id = public.get_user_empresa_id() AND public.is_admin_or_super_admin());
 
 DROP POLICY IF EXISTS "Comite ve-se a si mesmo" ON public.denuncias_comite;
+DROP POLICY IF EXISTS "Comite ve-se a si mesmo" ON public.denuncias_comite;
 CREATE POLICY "Comite ve-se a si mesmo" ON public.denuncias_comite
   FOR SELECT TO authenticated
   USING (empresa_id = public.get_user_empresa_id() AND public.e_do_comite_denuncias());
 
 ALTER TABLE public.denuncias_impedimentos ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Comite gere impedimentos" ON public.denuncias_impedimentos;
 DROP POLICY IF EXISTS "Comite gere impedimentos" ON public.denuncias_impedimentos;
 CREATE POLICY "Comite gere impedimentos" ON public.denuncias_impedimentos
   FOR ALL TO authenticated
@@ -239,6 +257,7 @@ CREATE POLICY "Comite gere impedimentos" ON public.denuncias_impedimentos
   Caminho: `<empresa_id>/<denuncia_id>/<ficheiro>`. A pasta carrega os dois
   identificadores para a política poder decidir sem consultar o objecto.
 */
+DROP POLICY IF EXISTS "denuncias_anexos_select" ON storage.objects;
 DROP POLICY IF EXISTS "denuncias_anexos_select" ON storage.objects;
 CREATE POLICY "denuncias_anexos_select" ON storage.objects
   FOR SELECT TO authenticated
@@ -264,17 +283,37 @@ BEGIN
 
   SELECT count(*) INTO v_comite FROM public.denuncias_comite;
 
-  -- Uma empresa que tinha denúncias e ficou sem ninguém para as ver seria uma
-  -- perda de acesso silenciosa. Falha alto em vez de deixar passar.
+  /*
+    A pergunta certa não é "esta empresa tem comité?" — é "alguém que via
+    antes deixou de ver?".
+
+    Há empresas com denúncias e sem administrador nenhum: nesse caso, pela
+    regra ANTIGA (`is_admin() OR responsavel_id = auth.uid()`), já não havia
+    quem as visse. Exigir comité ali seria bloquear a migration por uma perda
+    que não existe — foi o que aconteceu na primeira tentativa em produção.
+
+    A guarda compara com o acesso que existia: só falha se alguém via antes e
+    ninguém vê agora.
+  */
   SELECT count(*) INTO v_empresas_sem_comite
   FROM (SELECT DISTINCT empresa_id FROM public.denuncias) d
-  WHERE NOT EXISTS (
+  WHERE (
+    EXISTS (
+      SELECT 1 FROM public.profiles p
+      WHERE p.empresa_id = d.empresa_id AND p.role IN ('admin','super_admin')
+    )
+    OR EXISTS (
+      SELECT 1 FROM public.denuncias x
+      WHERE x.empresa_id = d.empresa_id AND x.responsavel_id IS NOT NULL
+    )
+  )
+  AND NOT EXISTS (
     SELECT 1 FROM public.denuncias_comite c WHERE c.empresa_id = d.empresa_id
   );
 
   IF v_empresas_sem_comite > 0 THEN
     RAISE EXCEPTION
-      'canal de denúncia: % empresa(s) com denúncias ficaram sem comité — ninguém as veria',
+      'canal de denúncia: % empresa(s) perderiam acesso às suas denúncias',
       v_empresas_sem_comite;
   END IF;
 
