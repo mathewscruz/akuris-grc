@@ -2,22 +2,32 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 interface AkurisSidebarIconProps extends React.SVGProps<SVGSVGElement> {
-  /** When true, the side rail is filled — signals "sidebar expanded". */
+  /** Aberta: a coluna lateral aparece cheia. Recolhida: fica vazia. */
   open?: boolean;
   size?: number;
 }
 
 /**
- * AkurisSidebarIcon
- * --------------------------------------------------------------------------
- * Ícone proprietário da Akuris para o toggle da sidebar.
+ * AkurisSidebarIcon — o botão que abre e fecha o menu lateral.
  *
- * Combina a metáfora de painel lateral (rail à esquerda) com um mini-escudo
- * GRC ao centro — referência sutil a Governança, Risco e Compliance, núcleo
- * do produto. O rail à esquerda alterna preenchimento conforme o estado da
- * sidebar (aberta vs. recolhida), reforçando o feedback visual.
+ * O desenho anterior era um painel com um mini-escudo GRC e um check lá dentro,
+ * mais um trilho de três pontos. Duas coisas estavam erradas:
  *
- * Usa `currentColor` para herdar a cor do header em qualquer tema.
+ *  1. **Não cabia.** O botão renderiza a 16px (`[&_svg]:size-4`). Seis formas
+ *     distintas — moldura, divisória, três pontos, escudo e o check dentro do
+ *     escudo — em 16 pixels não são um ícone, são uma mancha.
+ *
+ *  2. **Dizia a coisa errada.** Escudo e check são o vocabulário de
+ *     conformidade, que é o assunto do PRODUTO. Este botão não fala de
+ *     conformidade: abre e fecha o menu. Um ícone existe para identificar a
+ *     ação, e enfeitá-lo com a marca é o mesmo erro que já tinha sido corrigido
+ *     quando a estrela de IA decorava o produto inteiro.
+ *
+ * Ficam três formas e uma ideia: a moldura é o ecrã, a divisória é onde o menu
+ * encosta, e a coluna da esquerda enche-se quando o menu está aberto. O estado
+ * lê-se de relance, que é a única coisa que este botão precisa de comunicar.
+ *
+ * Usa `currentColor` para herdar a cor do cabeçalho em qualquer tema.
  */
 export const AkurisSidebarIcon = React.forwardRef<
   SVGSVGElement,
@@ -38,28 +48,26 @@ export const AkurisSidebarIcon = React.forwardRef<
       aria-hidden="true"
       {...props}
     >
-      {/* Moldura externa do painel */}
+      {/* O ecrã. */}
       <rect x="3" y="4" width="18" height="16" rx="3" />
 
-      {/* Rail vertical separador */}
-      <line x1="8.5" y1="4" x2="8.5" y2="20" />
+      {/*
+        A coluna do menu, cheia quando ele está aberto.
 
-      {/* Rail preenchido quando aberto (3 "itens" de menu) */}
-      {open ? (
-        <>
-          <line x1="5.75" y1="8" x2="5.75" y2="8.01" strokeWidth={2.25} />
-          <line x1="5.75" y1="12" x2="5.75" y2="12.01" strokeWidth={2.25} />
-          <line x1="5.75" y1="16" x2="5.75" y2="16.01" strokeWidth={2.25} />
-        </>
-      ) : (
-        <line x1="5.75" y1="12" x2="5.75" y2="12.01" strokeWidth={2.25} />
+        Preenchida em vez de tracejada de propósito: a 16px, um bloco cheio
+        contra um vazio distingue-se; três pontinhos dentro de um trilho não.
+        É a única forma cheia do ícone, e é ela que carrega o estado.
+      */}
+      {open && (
+        <path
+          d="M6 4h2.5v16H6a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3z"
+          fill="currentColor"
+          stroke="none"
+        />
       )}
 
-      {/* Mini escudo GRC ao centro-direita */}
-      <path d="M14.75 8.25 L17 7.5 L19.25 8.25 V11.5 C19.25 13.4 17.7 14.75 17 15.25 C16.3 14.75 14.75 13.4 14.75 11.5 Z" />
-
-      {/* Check sutil dentro do escudo (ponto de confiança) */}
-      <path d="M15.9 11.25 L16.7 12.05 L18.1 10.5" strokeWidth={1.5} />
+      {/* Onde o menu encosta ao conteúdo. */}
+      <line x1="8.5" y1="4" x2="8.5" y2="20" />
     </svg>
   );
 });
