@@ -8575,9 +8575,11 @@ export type Database = {
           pais_destino: string | null
           prazo_retencao: string
           responsavel_tratamento: string | null
-          risco_impacto: string | null
+          risco_impacto: number | null
           risco_nivel: string | null
-          risco_probabilidade: string | null
+          risco_probabilidade: number | null
+          risco_score: number | null
+          risco_severidade: string | null
           status: string
           transferencia_detalhes: string | null
           transferencia_internacional: boolean | null
@@ -8621,9 +8623,11 @@ export type Database = {
           pais_destino?: string | null
           prazo_retencao: string
           responsavel_tratamento?: string | null
-          risco_impacto?: string | null
+          risco_impacto?: number | null
           risco_nivel?: string | null
-          risco_probabilidade?: string | null
+          risco_probabilidade?: number | null
+          risco_score?: number | null
+          risco_severidade?: string | null
           status?: string
           transferencia_detalhes?: string | null
           transferencia_internacional?: boolean | null
@@ -8667,9 +8671,11 @@ export type Database = {
           pais_destino?: string | null
           prazo_retencao?: string
           responsavel_tratamento?: string | null
-          risco_impacto?: string | null
+          risco_impacto?: number | null
           risco_nivel?: string | null
-          risco_probabilidade?: string | null
+          risco_probabilidade?: number | null
+          risco_score?: number | null
+          risco_severidade?: string | null
           status?: string
           transferencia_detalhes?: string | null
           transferencia_internacional?: boolean | null
@@ -9539,6 +9545,7 @@ export type Database = {
       }
       ropa_chave_da_base_legal: { Args: { p_texto: string }; Returns: string }
       ropa_pertence_empresa: { Args: { ropa_id: string }; Returns: boolean }
+      severidade_canonica: { Args: { p_valor: string }; Returns: string }
       unaccent_immutable_fallback: { Args: { p_text: string }; Returns: string }
       validate_denuncia_token: { Args: { p_token: string }; Returns: string }
       verify_mfa_code_attempt: {

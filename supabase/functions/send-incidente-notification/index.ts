@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.52.0";
 import { Resend } from "npm:resend@2.0.0";
 
+import { severidadeCanonica, isSevero } from '../_shared/severidade.ts';
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -115,7 +116,7 @@ const handler = async (req: Request): Promise<Response> => {
     const successCount = results.filter(r => r.success).length;
 
     if (responsavel_id) {
-      await supabase.from("notifications").insert({ user_id: responsavel_id, type: gravidade === "critica" ? "error" : "warning", title: `Incidente ${config.text} Registrado`, message: `Novo incidente: ${titulo}`, link_to: `/incidentes?incidente=${incidente_id}`, read: false });
+      await supabase.from("notifications").insert({ user_id: responsavel_id, type: severidadeCanonica(gravidade) === "critico" ? "error" : "warning", title: `Incidente ${config.text} Registrado`, message: `Novo incidente: ${titulo}`, link_to: `/incidentes?incidente=${incidente_id}`, read: false });
     }
 
     return new Response(JSON.stringify({ success: true, sent: successCount, total: results.length }), { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } });

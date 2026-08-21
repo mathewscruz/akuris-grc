@@ -5,7 +5,7 @@
  * do Akuris, sem depender de Excel.
  */
 
-export type RopaFieldType = 'text' | 'textarea' | 'user' | 'boolean' | 'select';
+export type RopaFieldType = 'text' | 'textarea' | 'user' | 'boolean' | 'select' | 'escala' | 'derivado';
 
 export interface RopaFieldDef {
   key: string;
@@ -18,6 +18,11 @@ export interface RopaFieldDef {
   options?: string[];
   required?: boolean;
 }
+
+/**
+ * `escala` — nível da matriz de risco da empresa (1..N), com os rótulos que
+ * ela configurou. `derivado` — campo calculado, mostrado mas nunca editável.
+ */
 
 export type RopaSectionKey =
   | 'identificacao'
@@ -44,6 +49,10 @@ export const ROPA_SECTIONS: { key: RopaSectionKey; label: { pt: string; en: stri
   { key: 'evidencias', label: { pt: 'Evidências e documentação', en: 'Evidence and documentation' } },
 ];
 
+/**
+ * Vocabulário canónico de severidade — o mesmo de riscos, incidentes, ativos
+ * e controlos desde a migration `20260821110000_escala_de_severidade_unica`.
+ */
 export const RISCO_NIVEIS = ['baixo', 'medio', 'alto', 'critico'] as const;
 
 export const ROPA_FIELDS: RopaFieldDef[] = [
@@ -220,31 +229,37 @@ export const ROPA_FIELDS: RopaFieldDef[] = [
     hint: { pt: 'Como e quando os dados são eliminados ou anonimizados.', en: 'How and when data is deleted or anonymised.' },
     aliases: ['criterio de descarte', 'descarte', 'eliminacao', 'disposal criteria'],
   },
+  /*
+    Probabilidade e impacto passam a usar a escala da matriz da empresa — a
+    mesma do módulo de Riscos — e o nível deixa de ser escolhido à mão.
+
+    Eram três selects independentes de texto. Nos dados reais, os sete
+    registos existentes tinham todos `nivel = impacto`: a probabilidade estava
+    no formulário e não entrava em conta nenhuma. Era a nona regra de cálculo
+    de risco do produto.
+  */
   {
     key: 'risco_probabilidade',
     section: 'risco',
-    type: 'select',
-    options: [...RISCO_NIVEIS],
+    type: 'escala',
     label: { pt: 'Probabilidade', en: 'Likelihood' },
-    hint: { pt: 'Probabilidade de ocorrência do incidente.', en: 'Likelihood of an incident occurring.' },
+    hint: { pt: 'Probabilidade de ocorrência do incidente, na escala da matriz da empresa.', en: 'Likelihood of an incident occurring, on the company matrix scale.' },
     aliases: ['probabilidade', 'likelihood'],
   },
   {
     key: 'risco_impacto',
     section: 'risco',
-    type: 'select',
-    options: [...RISCO_NIVEIS],
+    type: 'escala',
     label: { pt: 'Impacto', en: 'Impact' },
-    hint: { pt: 'Impacto caso o incidente ocorra.', en: 'Impact should the incident occur.' },
+    hint: { pt: 'Impacto caso o incidente ocorra, na escala da matriz da empresa.', en: 'Impact should the incident occur, on the company matrix scale.' },
     aliases: ['impacto', 'impact'],
   },
   {
     key: 'risco_nivel',
     section: 'risco',
-    type: 'select',
-    options: [...RISCO_NIVEIS],
+    type: 'derivado',
     label: { pt: 'Nível de risco', en: 'Risk level' },
-    hint: { pt: 'Classificação do nível de risco.', en: 'Overall risk classification.' },
+    hint: { pt: 'Calculado a partir da probabilidade e do impacto, pela matriz vigente.', en: 'Derived from likelihood and impact using the active matrix.' },
     aliases: ['nivel de risco', 'risco', 'risk level'],
   },
   {

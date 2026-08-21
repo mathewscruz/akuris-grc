@@ -63,10 +63,10 @@ const statusOptions = (t: (k: string) => string) => [
 ];
 
 const criticidades = (t: (k: string) => string) => [
-  { value: 'baixa', label: t('contratosAtivos.manutencaoDialog.critBaixa'), color: 'secondary' },
-  { value: 'media', label: t('contratosAtivos.manutencaoDialog.critMedia'), color: 'default' },
-  { value: 'alta', label: t('contratosAtivos.manutencaoDialog.critAlta'), color: 'warning' },
-  { value: 'critica', label: t('contratosAtivos.manutencaoDialog.critCritica'), color: 'destructive' },
+  { value: 'baixo', label: t('contratosAtivos.manutencaoDialog.critBaixa'), color: 'secondary' },
+  { value: 'medio', label: t('contratosAtivos.manutencaoDialog.critMedia'), color: 'default' },
+  { value: 'alto', label: t('contratosAtivos.manutencaoDialog.critAlta'), color: 'warning' },
+  { value: 'critico', label: t('contratosAtivos.manutencaoDialog.critCritica'), color: 'destructive' },
 ];
 
 const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome, open, onOpenChange }) => {
@@ -93,7 +93,7 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
     status: 'agendada',
     observacoes: '',
     proxima_manutencao: '',
-    criticidade: 'media',
+    criticidade: 'medio',
   });
 
   useEffect(() => {
@@ -255,7 +255,7 @@ const ManutencaoDialog: React.FC<ManutencaoDialogProps> = ({ ativoId, ativoNome,
       status: 'agendada',
       observacoes: '',
       proxima_manutencao: '',
-      criticidade: 'media',
+      criticidade: 'medio',
     });
   };
 

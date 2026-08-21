@@ -60,7 +60,7 @@ export default function SistemaDialog({ open, onClose, sistema }: SistemaDialogP
     defaultValues: {
       nome_sistema: sistema?.nome_sistema || '',
       tipo_sistema: sistema?.tipo_sistema || 'aplicacao',
-      criticidade: sistema?.criticidade || 'media',
+      criticidade: sistema?.criticidade || 'medio',
       responsavel_sistema: sistema?.responsavel_sistema || '',
       url_sistema: sistema?.url_sistema || '',
       categoria: sistema?.categoria || '',
@@ -77,7 +77,7 @@ export default function SistemaDialog({ open, onClose, sistema }: SistemaDialogP
       form.reset({
         nome_sistema: sistema?.nome_sistema || '',
         tipo_sistema: sistema?.tipo_sistema || 'aplicacao',
-        criticidade: sistema?.criticidade || 'media',
+        criticidade: sistema?.criticidade || 'medio',
         responsavel_sistema: sistema?.responsavel_sistema || '',
         url_sistema: sistema?.url_sistema || '',
         categoria: sistema?.categoria || '',
@@ -385,10 +385,10 @@ export default function SistemaDialog({ open, onClose, sistema }: SistemaDialogP
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="critica">{t('contasPrivilegiadasComp.sistemaDialog.criticidadeCritica')}</SelectItem>
-                        <SelectItem value="alta">{t('contasPrivilegiadasComp.sistemaDialog.criticidadeAlta')}</SelectItem>
-                        <SelectItem value="media">{t('contasPrivilegiadasComp.sistemaDialog.criticidadeMedia')}</SelectItem>
-                        <SelectItem value="baixa">{t('contasPrivilegiadasComp.sistemaDialog.criticidadeBaixa')}</SelectItem>
+                        <SelectItem value="critico">{t('contasPrivilegiadasComp.sistemaDialog.criticidadeCritica')}</SelectItem>
+                        <SelectItem value="alto">{t('contasPrivilegiadasComp.sistemaDialog.criticidadeAlta')}</SelectItem>
+                        <SelectItem value="medio">{t('contasPrivilegiadasComp.sistemaDialog.criticidadeMedia')}</SelectItem>
+                        <SelectItem value="baixo">{t('contasPrivilegiadasComp.sistemaDialog.criticidadeBaixa')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />

@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+import { severidadeCanonica, isSevero } from '../_shared/severidade.ts';
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
@@ -181,13 +182,13 @@ async function buildContextSummary(
 
   if (can('incidentes')) blocks.push(`\nINCIDENTES (${incidentes.length} total):
 - ${incidentes.filter(i => ['aberto', 'investigacao', 'em_investigacao', 'em_andamento'].includes(i.status || '')).length} abertos/em andamento
-- ${incidentes.filter(i => i.criticidade === 'critica').length} críticos
+- ${incidentes.filter(i => severidadeCanonica(i.criticidade) === 'critico').length} críticos
 - ${incidentes.filter(i => i.status === 'resolvido').length} resolvidos
 - Itens: ${listItems(incidentes, 'titulo')}`);
 
   if (can('denuncia')) blocks.push(`\nDENÚNCIAS (${denuncias.length} total):
 - ${denuncias.filter(d => ['nova', 'em_investigacao', 'em_analise'].includes(d.status || '')).length} pendentes
-- ${denuncias.filter(d => d.gravidade === 'alta' || d.gravidade === 'critica').length} graves
+- ${denuncias.filter(d => isSevero(d.gravidade)).length} graves
 - ${denuncias.filter(d => d.anonima === true).length} anônimas
 - Itens: ${listItems(denuncias, 'titulo')}`);
 

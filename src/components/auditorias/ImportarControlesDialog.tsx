@@ -122,9 +122,9 @@ export function ImportarControlesDialog({
         titulo: controle.nome,
         descricao: controle.descricao || null,
         controle_vinculado_id: controle.id,
-        // A criticidade vem do banco em género feminino ("alta"/"media") e a
-        // comparação directa com "alto"/"medio" caía sempre no ramo final:
-        // um controlo crítico entrava na auditoria como prioridade baixa.
+        // `criticidadeControle` devolve o vocabulário canónico de severidade
+        // ('critico'/'alto'/'medio'/'baixo'); a prioridade da auditoria tem o
+        // seu próprio ('alta'/'media'/'baixa'). A tradução é aqui, explícita.
         prioridade: (() => {
           switch (criticidadeControle(controle)) {
             case "critico":

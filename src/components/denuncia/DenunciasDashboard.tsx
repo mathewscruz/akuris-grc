@@ -251,10 +251,10 @@ export function DenunciasDashboard({ itemIdToOpen, refreshKey }: DenunciasDashbo
       onChange: setGravidadeFilter,
       options: [
         { value: 'todos', label: t('denunciasAdmin.dashboard.filterGravidadeAll') },
-        { value: 'baixa', label: t('denunciasAdmin.dashboard.gravidadeBaixa') },
-        { value: 'media', label: t('denunciasAdmin.dashboard.gravidadeMedia') },
-        { value: 'alta', label: t('denunciasAdmin.dashboard.gravidadeAlta') },
-        { value: 'critica', label: t('denunciasAdmin.dashboard.gravidadeCritica') },
+        { value: 'baixo', label: t('denunciasAdmin.dashboard.gravidadeBaixa') },
+        { value: 'medio', label: t('denunciasAdmin.dashboard.gravidadeMedia') },
+        { value: 'alto', label: t('denunciasAdmin.dashboard.gravidadeAlta') },
+        { value: 'critico', label: t('denunciasAdmin.dashboard.gravidadeCritica') },
       ]
     }
   ];

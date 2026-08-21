@@ -51,7 +51,7 @@ export function ChaveDialog({ open, onOpenChange, chave }: ChaveDialogProps) {
       data_proxima_rotacao: "",
       periodicidade_rotacao: "trimestral",
       rotacao_automatica: false,
-      criticidade: "media",
+      criticidade: "medio",
       status: "ativa",
       algoritmo: "",
       observacoes: "",
@@ -317,10 +317,10 @@ export function ChaveDialog({ open, onOpenChange, chave }: ChaveDialogProps) {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="baixa">{t('contratosAtivos.chaveDialog.critBaixa')}</SelectItem>
-                        <SelectItem value="media">{t('contratosAtivos.chaveDialog.critMedia')}</SelectItem>
-                        <SelectItem value="alta">{t('contratosAtivos.chaveDialog.critAlta')}</SelectItem>
-                        <SelectItem value="critica">{t('contratosAtivos.chaveDialog.critCritica')}</SelectItem>
+                        <SelectItem value="baixo">{t('contratosAtivos.chaveDialog.critBaixa')}</SelectItem>
+                        <SelectItem value="medio">{t('contratosAtivos.chaveDialog.critMedia')}</SelectItem>
+                        <SelectItem value="alto">{t('contratosAtivos.chaveDialog.critAlta')}</SelectItem>
+                        <SelectItem value="critico">{t('contratosAtivos.chaveDialog.critCritica')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />

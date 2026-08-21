@@ -120,6 +120,9 @@ export function RopaDossie({ registo, onEditar }: Props) {
     }
     if (typeof v === 'boolean') return t(v ? 'common.yes' : 'common.no');
     if (campo.type === 'select') return formatStatus(String(v));
+    // Um valor de escala é uma posição na matriz: mostra-se com o rótulo que
+    // a empresa deu a esse nível, não como se fosse um estado.
+    if (campo.type === 'escala') return String(v);
     return String(v);
   };
 

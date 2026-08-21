@@ -10,7 +10,7 @@ interface Props {
 }
 
 const tiposLicenca = ['software', 'servico', 'certificacao', 'outro'];
-const criticidades = ['critica', 'alta', 'media', 'baixa'];
+const criticidades = ['critico', 'alto', 'medio', 'baixo'];
 const statusOptions = ['ativa', 'vencida', 'a_vencer', 'em_renovacao', 'cancelada'];
 
 const ImportLicencasDialog: React.FC<Props> = ({ open, onOpenChange, onSuccess }) => {
@@ -23,7 +23,7 @@ const ImportLicencasDialog: React.FC<Props> = ({ open, onOpenChange, onSuccess }
     { key: 'quantidade_licencas', label: t('p3Import.licencas.colQtd'), type: 'number', defaultValue: '1' },
     { key: 'data_inicio', label: t('p3Import.licencas.colDataInicio'), required: true, type: 'date' },
     { key: 'data_vencimento', label: t('p3Import.licencas.colDataVencimento'), required: true, type: 'date' },
-    { key: 'criticidade', label: t('p3Import.licencas.colCriticidade'), enumValues: criticidades, defaultValue: 'media' },
+    { key: 'criticidade', label: t('p3Import.licencas.colCriticidade'), enumValues: criticidades, defaultValue: 'medio' },
     { key: 'status', label: t('p3Import.licencas.colStatus'), enumValues: statusOptions, defaultValue: 'ativa' },
     { key: 'valor_renovacao', label: t('p3Import.licencas.colValorRenovacao'), type: 'number' },
     { key: 'numero_licenca', label: t('p3Import.licencas.colNumeroLicenca') },
@@ -80,7 +80,7 @@ const ImportLicencasDialog: React.FC<Props> = ({ open, onOpenChange, onSuccess }
       tableName="ativos_licencas"
       templateFileName={t('p3Import.licencas.templateFile')}
       templateSample={[
-        ['Microsoft 365 E3', 'software', 'Microsoft', '50', '2024-01-01', '2025-01-01', 'alta', 'ativa', '15000', 'LIC-001', ''],
+        ['Microsoft 365 E3', 'software', 'Microsoft', '50', '2024-01-01', '2025-01-01', 'alto', 'ativa', '15000', 'LIC-001', ''],
       ]}
       previewColumns={[
         { key: 'nome', label: t('p3Import.licencas.colNome') },
@@ -94,7 +94,7 @@ const ImportLicencasDialog: React.FC<Props> = ({ open, onOpenChange, onSuccess }
         quantidade_licencas: row.quantidade_licencas || 1,
         data_inicio: row.data_inicio,
         data_vencimento: row.data_vencimento,
-        criticidade: row.criticidade || 'media',
+        criticidade: row.criticidade || 'medio',
         status: row.status || 'ativa',
         valor_renovacao: row.valor_renovacao || null,
         numero_licenca: row.numero_licenca || null,

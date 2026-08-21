@@ -35,7 +35,7 @@ function getPayloadExemplo(exampleTitle: string): string {
   "dados": {
     "id": "uuid",
     "titulo": "${exampleTitle}",
-    "gravidade": "alta",
+    "gravidade": "alto",
     "status": "aberto"
   },
   "empresa_id": "uuid"

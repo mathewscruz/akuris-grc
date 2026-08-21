@@ -166,10 +166,10 @@ export function RelatoriosDenuncia() {
 
       // Agrupar por gravidade
       const gravidadeMap = {
-        baixa: t('denunciasAdmin.relatorios.gravidadeBaixa'),
-        media: t('denunciasAdmin.relatorios.gravidadeMedia'),
-        alta: t('denunciasAdmin.relatorios.gravidadeAlta'),
-        critica: t('denunciasAdmin.relatorios.gravidadeCritica')
+        baixo: t('denunciasAdmin.relatorios.gravidadeBaixa'),
+        medio: t('denunciasAdmin.relatorios.gravidadeMedia'),
+        alto: t('denunciasAdmin.relatorios.gravidadeAlta'),
+        critico: t('denunciasAdmin.relatorios.gravidadeCritica')
       };
 
       const denuncias_por_gravidade = Object.entries(gravidadeMap).map(([gravidade, label]) => ({
@@ -436,9 +436,9 @@ export function RelatoriosDenuncia() {
                         <div 
                           className="w-4 h-4 rounded"
                           style={{ backgroundColor: CHART_SEVERITY[
-                            item.gravidade === 'critica' ? 'critical' :
-                            item.gravidade === 'alta' ? 'high' :
-                            item.gravidade === 'media' ? 'medium' : 'low'
+                            item.gravidade === 'critico' ? 'critical' :
+                            item.gravidade === 'alto' ? 'high' :
+                            item.gravidade === 'medio' ? 'medium' : 'low'
                           ] }}
                         />
                         <span className="text-sm">{item.label}</span>

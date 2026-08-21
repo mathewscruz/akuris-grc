@@ -458,7 +458,8 @@ export const finalI18n = {
           vazio: 'Nenhum histórico de reavaliação encontrado.',
         },
         matrizDialog: {
-          desc: 'Visualize e configure a matriz de risco da sua organização.',
+          desc: 'Escolha a escala, o método de cálculo e o limite de apetite da sua organização.',
+          heading: 'Matriz de Riscos',
           title: 'Configuração de Riscos',
         },
         matrizForm: {
@@ -1076,7 +1077,8 @@ export const finalI18n = {
           vazio: 'No reassessment history found.',
         },
         matrizDialog: {
-          desc: 'View and configure your organisation risk matrix.',
+          desc: 'Choose your organisation scale, calculation method and appetite limit.',
+          heading: 'Risk Matrix',
           title: 'Risk configuration',
         },
         matrizForm: {

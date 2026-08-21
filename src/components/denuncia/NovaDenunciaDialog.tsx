@@ -39,7 +39,7 @@ function buildSchema(t: (key: string) => string) {
     categoria_id: z.string().min(1, t('publicPortal.denunciaForm.validation.category')),
     titulo: z.string().min(5, t('publicPortal.denunciaForm.validation.title')),
     descricao: z.string().min(20, t('publicPortal.denunciaForm.validation.description')),
-    gravidade: z.enum(['baixa', 'media', 'alta', 'critica']),
+    gravidade: z.enum(['baixo', 'medio', 'alto', 'critico']),
     status: z.enum(['nova', 'em_analise', 'em_investigacao', 'resolvida', 'arquivada']),
     local_ocorrencia: z.string().optional(),
     data_ocorrencia: z.string().optional(),
@@ -68,7 +68,7 @@ export function NovaDenunciaDialog({ onDenunciaCriada }: NovaDenunciaDialogProps
       categoria_id: '',
       titulo: '',
       descricao: '',
-      gravidade: 'media',
+      gravidade: 'medio',
       status: 'nova',
       local_ocorrencia: '',
       data_ocorrencia: '',
@@ -171,10 +171,10 @@ export function NovaDenunciaDialog({ onDenunciaCriada }: NovaDenunciaDialogProps
   ];
 
   const gravidadeOptions = [
-    { value: 'baixa', label: t('denunciasAdmin.dialog.gravidadeBaixa') },
-    { value: 'media', label: t('denunciasAdmin.dialog.gravidadeMedia') },
-    { value: 'alta', label: t('denunciasAdmin.dialog.gravidadeAlta') },
-    { value: 'critica', label: t('denunciasAdmin.dialog.gravidadeCritica') },
+    { value: 'baixo', label: t('denunciasAdmin.dialog.gravidadeBaixa') },
+    { value: 'medio', label: t('denunciasAdmin.dialog.gravidadeMedia') },
+    { value: 'alto', label: t('denunciasAdmin.dialog.gravidadeAlta') },
+    { value: 'critico', label: t('denunciasAdmin.dialog.gravidadeCritica') },
   ];
 
   return (

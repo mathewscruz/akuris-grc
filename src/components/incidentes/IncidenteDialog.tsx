@@ -75,7 +75,7 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
       descricao: '',
       tipo_incidente: 'seguranca',
       categoria: '',
-      criticidade: 'media',
+      criticidade: 'medio',
       origem_deteccao: '',
       responsavel_deteccao: '',
       responsavel_tratamento: '',
@@ -182,15 +182,18 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
         const { error } = await supabase.from('incidentes').insert([incidenteData]);
         if (error) throw error;
 
+        // A criticidade do incidente é canónica ('baixo'...'critico'); o
+        // evento de integração usa o seu próprio vocabulário. A tradução é
+        // aqui, e não uma coincidência de grafia entre os dois.
         const gravidadeMap: Record<string, 'baixa' | 'media' | 'alta' | 'critica'> = {
-          baixa: 'baixa',
-          media: 'media',
-          alta: 'alta',
-          critica: 'critica',
+          baixo: 'baixa',
+          medio: 'media',
+          alto: 'alta',
+          critico: 'critica',
         };
 
         await notify(
-          data.criticidade === 'critica' ? 'incidente_critico' : 'incidente_criado',
+          data.criticidade === 'critico' ? 'incidente_critico' : 'incidente_criado',
           {
             titulo: t('sweepRiscos.incidentes.notifyNovoIncidente', { titulo: data.titulo }),
             descricao: data.descricao || t('sweepRiscos.incidentes.notifyDescricaoDefault', { tipo: data.tipo_incidente }),
@@ -302,10 +305,10 @@ export function IncidenteDialog({ incidente, onSuccess, trigger, externalOpen, o
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="baixa">{t('incidentesComp.incidente.criticidadeBaixa')}</SelectItem>
-                        <SelectItem value="media">{t('incidentesComp.incidente.criticidadeMedia')}</SelectItem>
-                        <SelectItem value="alta">{t('incidentesComp.incidente.criticidadeAlta')}</SelectItem>
-                        <SelectItem value="critica">{t('incidentesComp.incidente.criticidadeCritica')}</SelectItem>
+                        <SelectItem value="baixo">{t('incidentesComp.incidente.criticidadeBaixa')}</SelectItem>
+                        <SelectItem value="medio">{t('incidentesComp.incidente.criticidadeMedia')}</SelectItem>
+                        <SelectItem value="alto">{t('incidentesComp.incidente.criticidadeAlta')}</SelectItem>
+                        <SelectItem value="critico">{t('incidentesComp.incidente.criticidadeCritica')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />

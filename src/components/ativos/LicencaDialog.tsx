@@ -57,7 +57,7 @@ export function LicencaDialog({ open, onOpenChange, licenca }: LicencaDialogProp
       renovacao_automatica: false,
       responsavel: "",
       departamento: "",
-      criticidade: "media",
+      criticidade: "medio",
       status: "ativa",
       observacoes: "",
     },
@@ -80,7 +80,7 @@ export function LicencaDialog({ open, onOpenChange, licenca }: LicencaDialogProp
         renovacao_automatica: licenca.renovacao_automatica || false,
         responsavel: licenca.responsavel || "",
         departamento: licenca.departamento || "",
-        criticidade: licenca.criticidade || "media",
+        criticidade: licenca.criticidade || "medio",
         status: licenca.status || "ativa",
         observacoes: licenca.observacoes || "",
       });
@@ -327,10 +327,10 @@ export function LicencaDialog({ open, onOpenChange, licenca }: LicencaDialogProp
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="baixa">{t('contratosAtivos.licencaDialog.critBaixa')}</SelectItem>
-                        <SelectItem value="media">{t('contratosAtivos.licencaDialog.critMedia')}</SelectItem>
-                        <SelectItem value="alta">{t('contratosAtivos.licencaDialog.critAlta')}</SelectItem>
-                        <SelectItem value="critica">{t('contratosAtivos.licencaDialog.critCritica')}</SelectItem>
+                        <SelectItem value="baixo">{t('contratosAtivos.licencaDialog.critBaixa')}</SelectItem>
+                        <SelectItem value="medio">{t('contratosAtivos.licencaDialog.critMedia')}</SelectItem>
+                        <SelectItem value="alto">{t('contratosAtivos.licencaDialog.critAlta')}</SelectItem>
+                        <SelectItem value="critico">{t('contratosAtivos.licencaDialog.critCritica')}</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />

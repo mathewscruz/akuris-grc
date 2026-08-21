@@ -220,7 +220,7 @@ curl -H "X-API-Key: gai_sua_chave_aqui" \\
 # Criar incidente
 curl -X POST -H "X-API-Key: gai_sua_chave_aqui" \\
   -H "Content-Type: application/json" \\
-  -d '{"titulo":"Teste","tipo":"seguranca","gravidade":"media"}' \\
+  -d '{"titulo":"Teste","tipo":"seguranca","gravidade":"medio"}' \\
   "${API_BASE}/api-public/incidentes"`}</div>
             <p>{t('configPlanos.apiKeys.docModulos').split('{modulos}')[0]}<code className="bg-muted px-1 rounded">riscos</code>, <code className="bg-muted px-1 rounded">controles</code>, <code className="bg-muted px-1 rounded">incidentes</code>, <code className="bg-muted px-1 rounded">auditorias</code>, <code className="bg-muted px-1 rounded">documentos</code>, <code className="bg-muted px-1 rounded">ativos</code></p>
             <p>{t('configPlanos.apiKeys.docPaginacao').split('{exemplo}')[0]}<code className="bg-muted px-1 rounded">?page=1&limit=50</code>{t('configPlanos.apiKeys.docPaginacao').split('{exemplo}')[1]}</p>

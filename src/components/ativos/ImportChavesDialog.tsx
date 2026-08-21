@@ -11,7 +11,7 @@ interface Props {
 
 const tiposChave = ['api_key', 'certificado_ssl', 'ssh_key', 'token_acesso', 'secret_key', 'outro'];
 const ambientes = ['producao', 'homologacao', 'desenvolvimento', 'qa'];
-const criticidades = ['critica', 'alta', 'media', 'baixa'];
+const criticidades = ['critico', 'alto', 'medio', 'baixo'];
 const statusOptions = ['ativa', 'expirada', 'revogada', 'em_rotacao'];
 
 const ImportChavesDialog: React.FC<Props> = ({ open, onOpenChange, onSuccess }) => {
@@ -24,7 +24,7 @@ const ImportChavesDialog: React.FC<Props> = ({ open, onOpenChange, onSuccess }) 
     { key: 'localizacao', label: t('p3Import.chaves.colLocalizacao'), required: true },
     { key: 'data_criacao', label: t('p3Import.chaves.colDataCriacao'), required: true, type: 'date' },
     { key: 'data_proxima_rotacao', label: t('p3Import.chaves.colDataProximaRotacao'), required: true, type: 'date' },
-    { key: 'criticidade', label: t('p3Import.chaves.colCriticidade'), enumValues: criticidades, defaultValue: 'media' },
+    { key: 'criticidade', label: t('p3Import.chaves.colCriticidade'), enumValues: criticidades, defaultValue: 'medio' },
     { key: 'status', label: t('p3Import.chaves.colStatus'), enumValues: statusOptions, defaultValue: 'ativa' },
     { key: 'algoritmo', label: t('p3Import.chaves.colAlgoritmo') },
     { key: 'sistema_aplicacao', label: t('p3Import.chaves.colSistemaAplicacao') },
@@ -81,7 +81,7 @@ const ImportChavesDialog: React.FC<Props> = ({ open, onOpenChange, onSuccess }) 
       tableName="ativos_chaves_criptograficas"
       templateFileName={t('p3Import.chaves.templateFile')}
       templateSample={[
-        ['API Gateway Key', 'api_key', 'producao', 'AWS Secrets Manager', '2024-01-01', '2025-01-01', 'alta', 'ativa', 'AES-256', 'API Gateway', ''],
+        ['API Gateway Key', 'api_key', 'producao', 'AWS Secrets Manager', '2024-01-01', '2025-01-01', 'alto', 'ativa', 'AES-256', 'API Gateway', ''],
       ]}
       previewColumns={[
         { key: 'nome', label: t('p3Import.chaves.colNome') },
@@ -96,7 +96,7 @@ const ImportChavesDialog: React.FC<Props> = ({ open, onOpenChange, onSuccess }) 
         localizacao: row.localizacao,
         data_criacao: row.data_criacao,
         data_proxima_rotacao: row.data_proxima_rotacao,
-        criticidade: row.criticidade || 'media',
+        criticidade: row.criticidade || 'medio',
         status: row.status || 'ativa',
         algoritmo: row.algoritmo || null,
         sistema_aplicacao: row.sistema_aplicacao || null,

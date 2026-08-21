@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 import { Resend } from "npm:resend@2.0.0";
 
+import { severidadeCanonica, isSevero } from '../_shared/severidade.ts';
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -57,7 +58,12 @@ const handler = async (req: Request): Promise<Response> => {
     if (config.emails_notificacao?.length > 0) config.emails_notificacao.forEach((email: string) => { if (email?.includes('@')) emailList.add(email.trim()); });
     if (emailList.size === 0) return new Response(JSON.stringify({ success: true, message: 'Nenhum e-mail válido' }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
-    const gravidadeMap: Record<string, string> = { baixa: 'Baixa', media: 'Média', alta: 'Alta', critica: 'Crítica' };
+    // O mapa de rótulos tem de aceitar o vocabulário gravado hoje (masculino)
+    // sem perder os registos antigos que ainda cheguem no feminino.
+    const gravidadeMap: Record<string, string> = {
+      baixo: 'Baixa', medio: 'Média', alto: 'Alta', critico: 'Crítica',
+      baixa: 'Baixa', media: 'Média', alta: 'Alta', critica: 'Crítica',
+    };
     const companyName = denuncia.empresa?.nome || 'Akuris';
 
     const emailHtml = `
@@ -66,7 +72,7 @@ const handler = async (req: Request): Promise<Response> => {
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #0a1628; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f7fa;">
   <div style="background-color: #ffffff; border-radius: 12px; padding: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow: hidden;">
-    <div style="background-color: ${denuncia.gravidade === 'critica' ? '#dc2626' : denuncia.gravidade === 'alta' ? '#f97316' : '#f59e0b'}; padding: 16px 32px; text-align: center;">
+    <div style="background-color: ${severidadeCanonica(denuncia.gravidade) === 'critico' ? '#dc2626' : severidadeCanonica(denuncia.gravidade) === 'alto' ? '#f97316' : '#f59e0b'}; padding: 16px 32px; text-align: center;">
       <span style="color: #ffffff; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">🚨 Nova Denúncia - ${gravidadeMap[denuncia.gravidade] || denuncia.gravidade}</span>
     </div>
     <div style="text-align: center; padding: 24px 32px 16px;">
@@ -85,7 +91,7 @@ const handler = async (req: Request): Promise<Response> => {
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
           <div><p style="font-size: 12px; color: #64748b; margin: 0 0 4px;">Gravidade</p>
-            <span style="display: inline-block; padding: 4px 12px; background-color: ${denuncia.gravidade === 'critica' ? '#fee2e2' : denuncia.gravidade === 'alta' ? '#ffedd5' : '#fef3c7'}; color: ${denuncia.gravidade === 'critica' ? '#991b1b' : denuncia.gravidade === 'alta' ? '#9a3412' : '#92400e'}; border-radius: 4px; font-size: 12px; font-weight: 600;">${gravidadeMap[denuncia.gravidade] || denuncia.gravidade}</span></div>
+            <span style="display: inline-block; padding: 4px 12px; background-color: ${severidadeCanonica(denuncia.gravidade) === 'critico' ? '#fee2e2' : severidadeCanonica(denuncia.gravidade) === 'alto' ? '#ffedd5' : '#fef3c7'}; color: ${severidadeCanonica(denuncia.gravidade) === 'critico' ? '#991b1b' : severidadeCanonica(denuncia.gravidade) === 'alto' ? '#9a3412' : '#92400e'}; border-radius: 4px; font-size: 12px; font-weight: 600;">${gravidadeMap[denuncia.gravidade] || denuncia.gravidade}</span></div>
           <div><p style="font-size: 12px; color: #64748b; margin: 0 0 4px;">Tipo</p><p style="font-size: 14px; color: #0a1628; margin: 0;">${denuncia.anonima ? 'Anônima' : 'Identificada'}</p></div>
         </div>
         ${denuncia.categoria ? `<div style="margin-bottom: 12px;"><p style="font-size: 12px; color: #64748b; margin: 0 0 4px;">Categoria</p><p style="font-size: 14px; color: #0a1628; margin: 0;">${denuncia.categoria.nome}</p></div>` : ''}
