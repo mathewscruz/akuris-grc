@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   AreaChart,
@@ -111,12 +111,36 @@ export function RiskScoreTimeline() {
   const riscos = base?.riscos;
   const historico = base?.historico;
 
-  const periods: { value: TimeRange; label: string }[] = [
-    { value: 'daily', label: t('dashWidgets.timeline.day') },
-    { value: 'weekly', label: t('dashWidgets.timeline.week') },
-    { value: 'monthly', label: t('dashWidgets.timeline.month') },
-    { value: 'yearly', label: t('dashWidgets.timeline.year') },
-  ];
+  /**
+   * Só os períodos que a empresa tem histórico para preencher.
+   *
+   * Eram sempre quatro. Numa empresa com quatro meses de vida, "Ano" desenhava
+   * cinco pontos anuais com quatro vazios, e "Dia" sete dias em que nada
+   * aconteceu — dois gráficos em branco a um clique de distância do painel
+   * principal, oferecidos como se tivessem conteúdo. Um selector que leva a
+   * um ecrã vazio ensina a não clicar em selectores.
+   */
+  const idadeEmDias = useMemo(() => {
+    if (!riscos || riscos.length === 0) return 0;
+    const maisAntigo = Math.min(...riscos.map((r) => new Date(r.created_at).getTime()));
+    return Math.floor((Date.now() - maisAntigo) / 86400000);
+  }, [riscos]);
+
+  const periods = useMemo(() => {
+    const todos: { value: TimeRange; label: string; minDias: number }[] = [
+      { value: 'daily', label: t('dashWidgets.timeline.day'), minDias: 7 },
+      { value: 'weekly', label: t('dashWidgets.timeline.week'), minDias: 21 },
+      { value: 'monthly', label: t('dashWidgets.timeline.month'), minDias: 0 },
+      { value: 'yearly', label: t('dashWidgets.timeline.year'), minDias: 365 },
+    ];
+    // O mês fica sempre: é o padrão e tem de haver para onde voltar.
+    return todos.filter((p) => p.value === 'monthly' || idadeEmDias >= p.minDias);
+  }, [idadeEmDias, t]);
+
+  // Se o período escolhido deixar de estar disponível, volta ao mês.
+  useEffect(() => {
+    if (!periods.some((p) => p.value === period)) setPeriod('monthly');
+  }, [periods, period]);
 
   const intlLocale = getAppLocale() === 'en' ? 'en-US' : 'pt-BR';
 
@@ -205,6 +229,42 @@ export function RiskScoreTimeline() {
       totalAtual: last.total,
     };
   }, [riscos, historico, period, intlLocale, t]);
+
+  /**
+   * Intervalo do eixo Y colado aos dados, com a meta sempre dentro.
+   *
+   * Arredonda para múltiplos de 10 e garante pelo menos 30 pontos de altura —
+   * senão uma variação de 2 pontos ocuparia o cartão inteiro e pareceria um
+   * desastre.
+   */
+  const escalaY = useMemo(() => {
+    const valores = displayData
+      .map((p) => p.score)
+      .filter((v): v is number => v !== null);
+    if (valores.length === 0) return { dominio: [0, 100] as [number, number], marcas: [0, 25, 50, 75, 100] };
+
+    const menor = Math.min(...valores, GOAL_VALUE);
+    const maior = Math.max(...valores, GOAL_VALUE);
+    let baixo = Math.max(0, Math.floor((menor - 5) / 10) * 10);
+    let alto = Math.min(100, Math.ceil((maior + 5) / 10) * 10);
+    if (alto - baixo < 30) {
+      const falta = 30 - (alto - baixo);
+      baixo = Math.max(0, baixo - Math.ceil(falta / 2));
+      alto = Math.min(100, alto + Math.floor(falta / 2));
+    }
+    /*
+      O topo tem de cair numa marca inteira.
+
+      Com passo de 20 entre 10 e 80 saía 10-30-50-70-80: o último salto pela
+      metade, que se lê como falha de desenho. Esticar o topo até ao próximo
+      múltiplo do passo custa uns pixels de folga e mantém a escala regular.
+    */
+    const passo = Math.ceil((alto - baixo) / 4 / 5) * 5;
+    alto = baixo + Math.ceil((alto - baixo) / passo) * passo;
+    const marcas: number[] = [];
+    for (let v = baixo; v <= alto; v += passo) marcas.push(v);
+    return { dominio: [baixo, alto] as [number, number], marcas };
+  }, [displayData]);
 
   if (isLoading) {
     return (
@@ -307,9 +367,18 @@ export function RiskScoreTimeline() {
                   axisLine={{ stroke: CHART_GRID }}
                   tickLine={false}
                 />
+                {/*
+                  O eixo acompanha os dados, não o intervalo teórico.
+
+                  Estava fixo em 0–100 com marcas de 25 em 25. Com a exposição
+                  entre 50 e 75 — que é o caso comum — metade da área do
+                  gráfico ficava vazia e a variação real espremia-se em dois
+                  centímetros. A meta continua sempre visível, senão deixava de
+                  se poder ver a distância até ela.
+                */}
                 <YAxis
-                  domain={[0, 100]}
-                  ticks={[0, 25, 50, 75, 100]}
+                  domain={escalaY.dominio}
+                  ticks={escalaY.marcas}
                   tick={{ fill: CHART_AXIS, fontSize: CHART_FONT.axis }}
                   tickFormatter={(v) => `${v}`}
                   axisLine={false}
@@ -322,7 +391,12 @@ export function RiskScoreTimeline() {
                   strokeDasharray="4 4"
                   label={{
                     value: t('dashWidgets.timeline.goal', { value: GOAL_VALUE }),
-                    position: 'right',
+                    /*
+                      `position: 'right'` punha o rótulo FORA da área de
+                      desenho: "Meta ≤ 20" saía cortado no "M" contra a borda
+                      direita do cartão. Dentro, alinhado à direita, cabe.
+                    */
+                    position: 'insideTopRight',
                     fill: CHART_AXIS,
                     fontSize: CHART_FONT.axis,
                   }}

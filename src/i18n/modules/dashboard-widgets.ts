@@ -116,6 +116,7 @@ const ptDict = {
   radar: {
     title: 'Saúde do GRC',
     maturitySuffix: '/ 100 · maturidade',
+    piorDominio: 'pior domínio: {nome}',
     modulesWithData: '{withData} de {total} módulos com dados',
     modulesShort: '{withData}/{total} módulos',
     trendUp: '+{delta} pts vs. 30 dias',
@@ -371,6 +372,7 @@ const enDict = {
   radar: {
     title: 'GRC health',
     maturitySuffix: '/ 100 · maturity',
+    piorDominio: 'weakest area: {nome}',
     modulesWithData: '{withData} of {total} modules with data',
     modulesShort: '{withData}/{total} modules',
     trendUp: '+{delta} pts vs. 30 days',
