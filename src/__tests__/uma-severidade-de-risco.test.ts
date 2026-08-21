@@ -74,6 +74,18 @@ describe('uma severidade de risco', () => {
         // decisão de severidade — quem decide é o `render` ao lado.
         if (/^\s*nivel_risco_inicial\??\s*:/.test(linha)) return;
         if (/\bkey:\s*'nivel_risco_inicial'/.test(linha)) return;
+        /*
+          Série temporal é outra pergunta.
+
+          Esta regra existe para a severidade APRESENTADA: o que o utilizador vê
+          hoje é `residual || inicial`. Numa curva histórica, porém, a pergunta é
+          "qual era o nível NAQUELE mês", e a resposta é a avaliação vigente na
+          data; o `nivel_risco_inicial` entra como LINHA DE BASE, para o período
+          anterior à primeira reavaliação. Usar `residual` aqui seria voltar a
+          pintar o passado com o presente — exactamente o defeito que fazia a
+          curva do painel nunca poder descer (ver tendencia-le-o-historico).
+        */
+        if (/vigente\?\.nivel_risco\s*\?\?/.test(linha)) return;
         if (!CITA_INERENTE.test(linha)) return;
         // Janela de três linhas: numa lista de colunas partida por linhas o
         // residual aparece na linha seguinte, e a leitura por linha não o via.

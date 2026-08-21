@@ -19,6 +19,12 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { getAppLocale } from '@/lib/i18n-locale';
 import { chartSeries, CHART_GRID, CHART_AXIS, CHART_AREA_OPACITY, CHART_TOOLTIP_STYLE, CHART_FONT } from '@/lib/chart-tokens';
 import { IconTrendUp, IconTrendDown, IconMinus, IconChartLine } from '@/components/icons';
+import {
+  avaliacoesPorRisco,
+  avaliacaoVigente,
+  jaExistiaEm,
+  type AvaliacaoNoTempo,
+} from '@/lib/risco-vigente';
 
 type TimeRange = 'daily' | 'weekly' | 'monthly' | 'yearly';
 
@@ -68,20 +74,42 @@ export function RiskScoreTimeline() {
   const { t } = useLanguage();
   const [period, setPeriod] = useState<TimeRange>('monthly');
 
-  const { data: riscos, isLoading } = useQuery({
+  const { data: base, isLoading } = useQuery({
     queryKey: ['riscos-timeline', profile?.empresa_id],
     queryFn: async () => {
-      if (!profile?.empresa_id) return [];
-      const { data, error } = await supabase
+      if (!profile?.empresa_id) return { riscos: [], historico: [] };
+      const { data: riscos, error } = await supabase
         .from('riscos')
         .select('id, nivel_risco_residual, nivel_risco_inicial, created_at')
         .eq('empresa_id', profile.empresa_id);
       if (error) throw error;
-      return data || [];
+
+      /*
+        O histórico é o que faz a curva poder DESCER.
+
+        Sem ele, a série aplicava a severidade de hoje a todos os meses desde a
+        criação do risco: tratar um risco de Crítico para Baixo não movia o
+        gráfico nenhum — só cadastrar riscos novos movia. Ver `risco-vigente.ts`.
+      */
+      const ids = (riscos || []).map((r) => r.id);
+      let historico: AvaliacaoNoTempo[] = [];
+      if (ids.length > 0) {
+        const { data: hist, error: histErr } = await supabase
+          .from('riscos_historico_avaliacoes')
+          .select('risco_id, created_at, nivel_risco, tipo')
+          .in('risco_id', ids)
+          .order('created_at', { ascending: true });
+        if (histErr) throw histErr;
+        historico = (hist || []) as AvaliacaoNoTempo[];
+      }
+      return { riscos: riscos || [], historico };
     },
     enabled: !!profile?.empresa_id,
     staleTime: 5 * 60 * 1000,
   });
+
+  const riscos = base?.riscos;
+  const historico = base?.historico;
 
   const periods: { value: TimeRange; label: string }[] = [
     { value: 'daily', label: t('dashWidgets.timeline.day') },
@@ -130,17 +158,29 @@ export function RiskScoreTimeline() {
       }
     }
 
+    /*
+      A severidade de cada risco é a que VIGORAVA no fim daquele período — a
+      última reavaliação registada até lá, ou o nível inicial se ainda não
+      tinha sido reavaliado. Antes usava-se `nivel_risco_residual` de hoje para
+      todos os meses passados, e por isso a linha nunca podia cair.
+    */
+    const porRisco = avaliacoesPorRisco(historico ?? []);
+
     const points: PointData[] = buckets.map(({ end, label }) => {
-      const slice = riscos.filter((r) => new Date(r.created_at) <= end);
       const counts = { critico: 0, alto: 0, medio: 0, baixo: 0 };
-      for (const r of slice) {
-        const b = bucketOf(r.nivel_risco_residual || r.nivel_risco_inicial);
+      let existentes = 0;
+      for (const r of riscos) {
+        if (!jaExistiaEm(r.created_at, end)) continue;
+        existentes += 1;
+        const vigente = avaliacaoVigente(porRisco.get(r.id), end);
+        const nivel = vigente?.nivel_risco ?? r.nivel_risco_inicial;
+        const b = bucketOf(nivel);
         if (b) counts[b] += 1;
       }
       return {
         date: label,
         score: computeExposure(counts),
-        total: slice.length,
+        total: existentes,
         criticos: counts.critico,
         altos: counts.alto,
       };
@@ -164,7 +204,7 @@ export function RiskScoreTimeline() {
         : { value: diff, dir: diff < 0 ? ('down' as const) : ('up' as const) },
       totalAtual: last.total,
     };
-  }, [riscos, period, intlLocale, t]);
+  }, [riscos, historico, period, intlLocale, t]);
 
   if (isLoading) {
     return (

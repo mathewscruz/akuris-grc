@@ -400,6 +400,24 @@ export function Riscos() {
     }
   }, [searchParams]);
 
+  /*
+    `?risco=<id>` abre a gaveta de detalhe directamente.
+
+    Quem clica num risco no feed de "Atividades Recentes" do painel clicou
+    naquele risco, não na lista — e caía na lista inteira para o reencontrar à
+    mão. A gaveta já existia e já era aberta pela tabela, pela watchlist e pelo
+    mapa de calor; só faltava a URL poder abri-la. O parâmetro é consumido uma
+    vez e limpo, para que voltar atrás não a reabra.
+  */
+  useEffect(() => {
+    const alvo = searchParams.get('risco');
+    if (!alvo || riscos.length === 0) return;
+    if (riscos.some((r) => r.id === alvo)) setDrawerRiscoId(alvo);
+    const proximo = new URLSearchParams(searchParams);
+    proximo.delete('risco');
+    setSearchParams(proximo, { replace: true });
+  }, [searchParams, setSearchParams, riscos]);
+
   const filteredRiscos = riscos.filter(risco => {
     const matchesSearch = risco.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          risco.responsavel?.toLowerCase().includes(searchTerm.toLowerCase());

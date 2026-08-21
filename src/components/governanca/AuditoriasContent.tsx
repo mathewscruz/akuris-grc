@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { IconAdd, IconDownload, IconMore, IconSuccess, IconWarning, IconTime, IconFile } from '@/components/icons';
 import { createPortal } from "react-dom";
-import { useLocation } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
 import { useEmpresaId } from "@/hooks/useEmpresaId";
 ;
 import { Button } from "@/components/ui/button";
@@ -48,6 +48,7 @@ export default function AuditoriasContent({ actionsSlot }: { actionsSlot?: HTMLE
   const [statusFilter, setStatusFilter] = useState<string>("todos");
   const [tipoFilter, setTipoFilter] = useState<string>("todos");
   const [selectedAuditoria, setSelectedAuditoria] = useState<any>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
   const [showAuditoriaDialog, setShowAuditoriaDialog] = useState(false);
   const [showControlesDialog, setShowControlesDialog] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; id: string; nome?: string }>({ open: false, id: '' });
@@ -211,6 +212,28 @@ export default function AuditoriasContent({ actionsSlot }: { actionsSlot?: HTMLE
     setSelectedAuditoria(auditoria);
     setShowControlesDialog(true);
   };
+
+  /*
+    `?focus=<id>` abre a auditoria directamente.
+
+    O feed de "Atividades Recentes" do painel navegava para a lista e deixava a
+    pessoa a reencontrar à mão a auditoria em que tinha acabado de clicar. Aqui
+    já existia o caminho por `location.state`, que só funciona quando a
+    navegação é feita em JS na mesma sessão; o parâmetro no endereço funciona
+    também em link colado e em recarregamento. Mesma grafia que ControlesContent.
+  */
+  useEffect(() => {
+    const alvo = searchParams.get('focus');
+    if (!alvo || !auditorias || auditorias.length === 0) return;
+    const auditoria = auditorias.find((a) => a.id === alvo);
+    if (auditoria) {
+      setSelectedAuditoria(auditoria);
+      setShowAuditoriaDialog(true);
+    }
+    const proximo = new URLSearchParams(searchParams);
+    proximo.delete('focus');
+    setSearchParams(proximo, { replace: true });
+  }, [searchParams, auditorias, setSearchParams]);
 
   // Detectar se veio com itemId do dashboard
   useEffect(() => {
