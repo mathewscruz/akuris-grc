@@ -2,9 +2,11 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { logger } from "@/lib/logger";
+import { useMatrizConfigEmpresa } from "@/hooks/useMatrizConfigEmpresa";
+import { apetiteScoreDaConfig } from "@/components/riscos/matriz-config";
 import {
   contarRiscosPorSeveridade,
-  severidadeRisco,
+  isAcimaDoApetite,
   isRiscoCritico,
   isRevisaoVencida,
   isRevisaoProxima,
@@ -30,7 +32,10 @@ export interface RiscosStats {
   tratamentos_concluidos: number;
   aceitos: number;
   tratados: number;
-  scoreAtual: number;
+  /** Riscos acima do apetite da matriz vigente. Menor é melhor. */
+  acimaApetite: number;
+  /** Riscos avaliados — o denominador de `acimaApetite`. */
+  avaliados: number;
   variacao7dias: number | null;
   revisoes_vencidas: number;
   revisoes_proximas: number;
@@ -41,22 +46,23 @@ export interface RiscosStats {
   aceitos_7d_atras: number | null;
 }
 
-// Score derivado da severidade canónica (camada única de métricas).
-const SCORE_SEVERIDADE: Record<Severidade, number> = {
-  critico: 100,
-  alto: 75,
-  medio: 50,
-  baixo: 25,
-  indefinido: 0,
-};
-const calcularScore = (r: any): number => SCORE_SEVERIDADE[severidadeRisco(r)];
+/*
+  `scoreAtual` era a MÉDIA de 100/75/50/25 por severidade — a mesma métrica
+  que o painel tinha e que se eliminou de lá: sendo média, cadastrar riscos
+  baixos melhorava o número, e o PDF exportado desenhava uma barra de
+  progresso a subir enquanto a carteira piorava.
+
+  Passa a ser a contagem de riscos acima do apetite, como em todo o resto.
+*/
 
 export const useRiscosStats = () => {
   const { profile } = useAuth();
   const empresaId = profile?.empresa_id;
+  const { data: matriz } = useMatrizConfigEmpresa();
+  const apetite = apetiteScoreDaConfig(matriz);
 
   return useQuery({
-    queryKey: ['riscos-stats', empresaId],
+    queryKey: ['riscos-stats', empresaId, apetite],
     queryFn: async (): Promise<RiscosStats> => {
       const hoje = new Date();
       const seteDiasAtras = new Date(hoje);
@@ -69,6 +75,8 @@ export const useRiscosStats = () => {
           id,
           nivel_risco_inicial,
           nivel_risco_residual,
+          severidade_efetiva,
+          score_efetivo,
           aceito,
           created_at,
           updated_at,
@@ -81,7 +89,7 @@ export const useRiscosStats = () => {
       // Buscar riscos que existiam há 7 dias
       const { data: riscosAntigos, error: riscosAntigosError } = await supabase
         .from('riscos')
-        .select('nivel_risco_inicial, nivel_risco_residual')
+        .select('nivel_risco_inicial, nivel_risco_residual, severidade_efetiva, score_efetivo')
         .eq('empresa_id', empresaId!)
         .lte('created_at', seteDiasAtras.toISOString());
 
@@ -103,7 +111,8 @@ export const useRiscosStats = () => {
         tratamentos_concluidos: 0,
         aceitos: (riscos || []).filter(r => estadoRisco(r as any) === 'aceito').length,
         tratados: (riscos || []).filter(r => estadoRisco(r as any) === 'tratado').length,
-        scoreAtual: 0,
+        acimaApetite: 0,
+        avaliados: 0,
         variacao7dias: null,
         revisoes_vencidas: 0,
         revisoes_proximas: 0,
@@ -117,16 +126,16 @@ export const useRiscosStats = () => {
       newStats.revisoes_vencidas = (riscos || []).filter(r => isRevisaoVencida(r as any, hoje)).length;
       newStats.revisoes_proximas = (riscos || []).filter(r => isRevisaoProxima(r as any, hoje)).length;
 
-      // Calcular score atual
+      // Exposição da carteira: quantos riscos excedem o apetite
       if (riscos && riscos.length > 0) {
-        const somaScores = riscos.reduce((acc, r) => acc + calcularScore(r), 0);
-        newStats.scoreAtual = Math.round(somaScores / riscos.length);
+        const avaliados = riscos.filter((r) => r.score_efetivo !== null);
+        newStats.avaliados = avaliados.length;
+        newStats.acimaApetite = avaliados.filter((r) => isAcimaDoApetite(r, apetite)).length;
 
         if (riscosAntigos && riscosAntigos.length > 0) {
-          const somaScoresAntigos = riscosAntigos.reduce((acc, r) => acc + calcularScore(r), 0);
-          const scoreAntigo = somaScoresAntigos / riscosAntigos.length;
-          const variacao = scoreAntigo > 0 ? ((scoreAntigo - newStats.scoreAtual) / scoreAntigo) * 100 : 0;
-          newStats.variacao7dias = Math.round(variacao);
+          const acimaAntes = riscosAntigos.filter((r) => isAcimaDoApetite(r, apetite)).length;
+          // Variação em riscos, não em pontos percentuais de uma média.
+          newStats.variacao7dias = newStats.acimaApetite - acimaAntes;
         }
       }
 

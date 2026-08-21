@@ -1,6 +1,6 @@
 import { jsPDF } from 'jspdf';
 import { RiscosStats } from '@/hooks/useRiscosStats';
-import { loadAkurisLogo, addAkurisHeader, addAkurisFooter, addSectionTitle, drawProgressBar, drawTableHeader, formatLabel, AKURIS_COLORS } from '@/lib/pdf-utils';
+import { loadAkurisLogo, addAkurisHeader, addAkurisFooter, addSectionTitle, drawTableHeader, formatLabel, AKURIS_COLORS } from '@/lib/pdf-utils';
 import { riscosDialogs } from '@/i18n/modules/riscos-dialogs';
 import type { Locale } from '@/contexts/LanguageContext';
 import { intlLocale, formatarDiaParaDB} from '@/lib/date-utils';
@@ -52,17 +52,22 @@ export async function exportRiscosPDF(riscos: RiscoExport[], stats: RiscosStats 
       t.kpiNiveis.replace('{criticos}', String(stats.criticos)).replace('{altos}', String(stats.altos)).replace('{medios}', String(stats.medios)).replace('{baixos}', String(stats.baixos)),
       t.kpiAceitosTratados.replace('{aceitos}', String(stats.aceitos)).replace('{tratados}', String(stats.tratados)),
       t.kpiTratamentos.replace('{concluidos}', String(stats.tratamentos_concluidos)).replace('{andamento}', String(stats.tratamentos_andamento)).replace('{pendentes}', String(stats.tratamentos_pendentes)),
-      t.kpiScore.replace('{score}', String(stats.scoreAtual)),
+      t.kpiApetite.replace('{acima}', String(stats.acimaApetite)).replace('{total}', String(stats.avaliados)),
     ];
     kpis.forEach(kpi => {
       doc.text(kpi, margin + 8, y);
       y += 6;
     });
 
-    // Score bar
-    y += 2;
-    drawProgressBar(doc, margin + 8, y, contentWidth - 16, 5, stats.scoreAtual, AKURIS_COLORS.primary);
-    y += 12;
+    /*
+      A barra saiu com o score.
+
+      Desenhava uma média de severidades numa escala 0–100 e chamava-lhe
+      progresso: a barra subia quando se cadastravam riscos baixos. Uma
+      contagem de excedentes não é uma percentagem de nada — a linha de texto
+      acima já diz "N de M acima do apetite", que é o número inteiro.
+    */
+    y += 4;
   }
 
   // Table
