@@ -4,11 +4,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { isGapCritico } from "@/lib/gap-criticality";
 
-interface AlertDetail {
+/**
+ * Um item que soma para `criticalAlerts`.
+ *
+ * Os quatro tipos são exatamente as quatro parcelas de `criticalBreakdown` —
+ * é isso que garante que o diálogo lista o mesmo conjunto que o número conta.
+ * `prazo` junta planos de ação atrasados e reavaliações de controlo vencidas,
+ * porque é assim que a parcela `prazosVencidos` os soma.
+ */
+export interface AlertDetail {
   id: string;
   title: string;
   description?: string;
-  type: 'risco' | 'denuncia' | 'controle' | 'incidente';
+  type: 'risco' | 'gap' | 'incidente' | 'prazo';
 }
 
 interface DashboardStats {
@@ -104,8 +112,10 @@ export const useDashboardStats = () => {
           .in('status', ['aberto', 'em_investigacao', 'contido']),
 
         supabase
+          // `titulo` para o plano poder APARECER no diálogo: entrava no total
+          // do banner e não tinha como ser listado.
           .from('planos_acao')
-          .select('id')
+          .select('id, titulo')
           .eq('empresa_id', empresaId!)
           .not('status', 'in', '("concluido","cancelado")')
           .lt('prazo', hojeIso.slice(0, 10)),
@@ -126,40 +136,43 @@ export const useDashboardStats = () => {
       // à mão aqui conhecia três palavras e não convertia separadores: uma
       // empresa com faixas "Extremo"/"Elevado" — e há uma nos dados reais, com
       // 9 e 6 riscos — não tinha um único risco alto ou crítico no dashboard.
+      /*
+        `alertDetails` é a EXPLICAÇÃO de `criticalAlerts`, e não uma segunda
+        lista de coisas interessantes.
+
+        Estavam a responder a perguntas diferentes, e dava-se por isso ao
+        clicar: o banner somava riscos críticos + não conformidades críticas +
+        incidentes críticos + prazos vencidos, enquanto o diálogo listava
+        riscos ALTOS, denúncias e controlos a vencer. Numa base com 35 no
+        banner, o diálogo mostrava 10 itens — e desses, um só estava contado.
+        As não conformidades (30) e os planos atrasados (4) não tinham sequer
+        um tipo onde caber.
+
+        A regra passa a ser: tudo o que soma entra na lista, e nada que não
+        some entra na lista. Denúncias e controlos a vencer continuam
+        contados nos seus próprios campos, para os cartões que os mostram —
+        só deixam de fingir que explicam este número.
+      */
       const riscosAltosCriticos = (riscosResult.data || []).filter((r) => {
         const sev = severidadeRiscoEfetiva(r);
         return sev === 'alto' || sev === 'critico';
       });
       const riscosAltos = riscosAltosCriticos.length;
-      const riscosCriticos = riscosAltosCriticos.filter(
+      const riscosCriticosLista = riscosAltosCriticos.filter(
         (r) => severidadeRiscoEfetiva(r) === 'critico',
-      ).length;
-      riscosAltosCriticos.forEach(r => {
+      );
+      const riscosCriticos = riscosCriticosLista.length;
+      riscosCriticosLista.forEach((r) => {
         alertDetails.push({ id: r.id, title: r.nome, description: r.descricao || undefined, type: 'risco' });
       });
 
       const denunciasPendentes = denunciasResult.data?.length || 0;
-      denunciasResult.data?.forEach(d => {
-        alertDetails.push({ id: d.id, title: d.titulo, description: d.descricao || undefined, type: 'denuncia' });
-      });
-
       const controlesVencendo = controlesResult.data?.length || 0;
-      controlesResult.data?.forEach(c => {
-        alertDetails.push({ id: c.id, title: c.nome, description: c.descricao || undefined, type: 'controle' });
-      });
-      const controlesVencidos = controlesVencidosResult.data?.length || 0;
-      // Entram no total do banner (93) mas não entravam em `alertDetails`: o
-      // diálogo que explica o banner listava 13 e ficava a dever 80.
-      controlesVencidosResult.data?.forEach((c: any) => {
-        alertDetails.push({ id: c.id, title: c.nome, description: c.descricao || undefined, type: 'controle' });
-      });
 
       const incidentesCriticos = incidentesResult.data?.length || 0;
       incidentesResult.data?.forEach(i => {
         alertDetails.push({ id: i.id, title: i.titulo, description: i.descricao || undefined, type: 'incidente' });
       });
-
-      const planosAtrasados = planosResult.data?.length || 0;
 
       // Não conformidades críticas — mesma definição usada no Gap Analysis.
       let naoConformidadesCriticas = 0;
@@ -169,21 +182,49 @@ export const useDashboardStats = () => {
           new Set(avaliacoes.map(a => a.requirement_id).filter(Boolean) as string[]),
         );
         const pesos = new Map<string, number>();
+        // `codigo`/`titulo` para o requisito poder aparecer no diálogo com um
+        // nome: sem eles, a maior fatia do banner era uma lista de UUIDs.
+        const nomes = new Map<string, { codigo: string | null; titulo: string | null }>();
         if (requirementIds.length > 0) {
           const { data: reqs } = await supabase
             .from('gap_analysis_requirements')
-            .select('id, peso')
+            .select('id, peso, codigo, titulo')
             .in('id', requirementIds);
-          (reqs || []).forEach(r => pesos.set(r.id, Number(r.peso ?? 3)));
+          (reqs || []).forEach(r => {
+            pesos.set(r.id, Number(r.peso ?? 3));
+            nomes.set(r.id, { codigo: r.codigo ?? null, titulo: r.titulo ?? null });
+          });
         }
-        naoConformidadesCriticas = avaliacoes.filter(a =>
+        const criticas = avaliacoes.filter(a =>
           isGapCritico({
             conformity_status: a.conformity_status,
             peso: a.requirement_id ? pesos.get(a.requirement_id) : undefined,
             prazo_implementacao: a.prazo_implementacao,
           }),
-        ).length;
+        );
+        naoConformidadesCriticas = criticas.length;
+        criticas.forEach((a) => {
+          const req = a.requirement_id ? nomes.get(a.requirement_id) : undefined;
+          const titulo = [req?.codigo, req?.titulo].filter(Boolean).join(' — ');
+          alertDetails.push({
+            id: a.requirement_id ?? `gap-${alertDetails.length}`,
+            // Sem código nem título fica o id: é feio, mas é rastreável — e só
+            // acontece se o requisito tiver sido apagado sob a avaliação.
+            title: titulo || (a.requirement_id ?? ''),
+            type: 'gap',
+          });
+        });
       }
+
+      const planosAtrasados = planosResult.data?.length || 0;
+      planosResult.data?.forEach((p) => {
+        alertDetails.push({ id: p.id, title: p.titulo, type: 'prazo' });
+      });
+
+      const controlesVencidos = controlesVencidosResult.data?.length || 0;
+      controlesVencidosResult.data?.forEach((c) => {
+        alertDetails.push({ id: c.id, title: c.nome, description: c.descricao || undefined, type: 'prazo' });
+      });
 
       const prazosVencidos = planosAtrasados + controlesVencidos;
       const criticalAlerts =

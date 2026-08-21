@@ -127,10 +127,17 @@ const NotificationCenter: React.FC = () => {
         .not('proxima_avaliacao', 'is', null)
         .eq('status', 'ativo');
 
+      /*
+        O produto grava `em_investigacao`; `investigacao` não existe numa
+        única linha. Com o valor errado no filtro, um incidente CRÍTICO em
+        investigação nunca gerava notificação — e é precisamente o estado em
+        que um incidente crítico passa mais tempo. É o mesmo defeito que já
+        tinha sido corrigido em `useDashboardStats` e ficou por corrigir aqui.
+      */
       const { data: incidentes } = await supabase
         .from('incidentes')
         .select('id, titulo, criticidade, status')
-        .in('status', ['aberto', 'investigacao'])
+        .in('status', ['aberto', 'em_investigacao', 'contido'])
         .eq('criticidade', 'critica');
 
       const { data: ativos } = await supabase

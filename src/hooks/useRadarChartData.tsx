@@ -191,7 +191,15 @@ export const useRadarChartData = () => {
       },
       {
         subject: 'Incidentes', score: Math.round(scoreIncidentes), fullMark: 100, hasData: incidentesData.total > 0, icon: 'Zap',
-        details: { total: incidentesData.total, status: getStatus(scoreIncidentes), metrics: [m('open', incidentesData.abertos), m('critical', incidentesData.criticos), m('inMonth', incidentesData.mes)] },
+        /*
+          `open` conta só `status = aberto`; a ação conta aberto + em
+          investigação, que é o conjunto sobre o qual há decisão a tomar. Com
+          os dois na frente um do outro, o cartão dizia "0 abertos" na linha
+          de apoio e "1 incidente em aberto" no rodapé. A linha de apoio passa
+          a levar a composição — crítico e do mês — e a contagem fica só no
+          rodapé, uma vez. (`open` fica em terceiro: o cartão mostra dois.)
+        */
+        details: { total: incidentesData.total, status: getStatus(scoreIncidentes), metrics: [m('critical', incidentesData.criticos), m('inMonth', incidentesData.mes), m('open', incidentesData.abertos)] },
         acao: acao('incidentesAbertos', incidentesData.abertos + incidentesData.investigacao),
         link: '/incidentes'
       },

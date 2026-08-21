@@ -776,27 +776,28 @@ export const pt = {
     criticalStatus: 'Crítico',
     noData: 'Sem dados',
   },
+  /*
+    Os quatro grupos são as quatro parcelas de `criticalBreakdown`. Saíram
+    "Riscos Altos", "Denúncias Pendentes" e "Controles Vencendo": nenhum dos
+    três somava para o número que o diálogo diz explicar.
+  */
   alertsDialog: {
     title: 'Detalhamento de Alertas Críticos',
-    highRisks: 'Riscos Altos',
-    complaints: 'Denúncias',
-    controls: 'Controles',
-    incidents: 'Incidentes',
-    highCriticalRisks: 'Riscos Altos/Críticos',
-    pendingComplaints: 'Denúncias Pendentes',
-    expiringControls: 'Controles Vencendo (30 dias)',
-    criticalIncidents: 'Incidentes Críticos',
+    criticalRisks: 'Riscos críticos',
+    criticalGaps: 'Não conformidades críticas',
+    criticalIncidents: 'Incidentes críticos',
+    overdueDeadlines: 'Prazos vencidos',
+    risksShort: 'Riscos',
+    gapsShort: 'Não conformidades',
+    incidentsShort: 'Incidentes',
+    deadlinesShort: 'Prazos',
     viewAll: 'Ver todos',
     noAlerts: 'Nenhum alerta crítico no momento.',
     allGood: 'Todos os indicadores estão dentro do esperado.',
     additionalRisks: 'riscos adicionais',
-    additionalComplaints: 'denúncias adicionais',
-    additionalControls: 'controles adicionais',
+    additionalGaps: 'não conformidades adicionais',
     additionalIncidents: 'incidentes adicionais',
-    risk: 'Risco',
-    complaint: 'Denúncia',
-    control: 'Controle',
-    incident: 'Incidente',
+    additionalDeadlines: 'prazos adicionais',
   },
   kpi: {
     /*

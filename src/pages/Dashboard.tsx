@@ -216,14 +216,20 @@ export default function Dashboard() {
 
         <RecentActivities />
 
+        {/* O diálogo recebe a MESMA estrutura que produz o número do banner —
+            é o que garante que a lista e a contagem não voltam a divergir. */}
         <AlertsDetailDialog
           open={alertsDialogOpen}
           onOpenChange={setAlertsDialogOpen}
           alertDetails={dashboardData?.alertDetails || []}
-          riscosAltos={dashboardData?.riscosAltos || 0}
-          denunciasPendentes={dashboardData?.denunciasPendentes || 0}
-          controlesVencendo={dashboardData?.controlesVencendo || 0}
-          incidentesCriticos={dashboardData?.incidentesCriticos || 0}
+          breakdown={
+            dashboardData?.criticalBreakdown ?? {
+              riscosCriticos: 0,
+              naoConformidadesCriticas: 0,
+              incidentesCriticos: 0,
+              prazosVencidos: 0,
+            }
+          }
         />
       </div>
     </TooltipProvider>
