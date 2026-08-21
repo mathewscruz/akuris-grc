@@ -9393,66 +9393,6 @@ export type Database = {
         }
         Relationships: []
       }
-      denuncias_configuracoes_publicas: {
-        Row: {
-          ativo: boolean | null
-          cor_destaque: string | null
-          empresa_id: string | null
-          id: string | null
-          idioma_padrao: string | null
-          nome_exibicao: string | null
-          orgao_externo_nome: string | null
-          orgao_externo_url: string | null
-          permitir_anonimas: boolean | null
-          permitir_reuniao: boolean | null
-          politica_privacidade: string | null
-          prazo_acusacao_dias: number | null
-          prazo_retorno_dias: number | null
-          requerer_email: boolean | null
-          retencao_meses: number | null
-          texto_apresentacao: string | null
-          texto_retaliacao: string | null
-        }
-        Insert: {
-          ativo?: boolean | null
-          cor_destaque?: string | null
-          empresa_id?: string | null
-          id?: string | null
-          idioma_padrao?: string | null
-          nome_exibicao?: string | null
-          orgao_externo_nome?: string | null
-          orgao_externo_url?: string | null
-          permitir_anonimas?: boolean | null
-          permitir_reuniao?: boolean | null
-          politica_privacidade?: string | null
-          prazo_acusacao_dias?: number | null
-          prazo_retorno_dias?: number | null
-          requerer_email?: boolean | null
-          retencao_meses?: number | null
-          texto_apresentacao?: string | null
-          texto_retaliacao?: string | null
-        }
-        Update: {
-          ativo?: boolean | null
-          cor_destaque?: string | null
-          empresa_id?: string | null
-          id?: string | null
-          idioma_padrao?: string | null
-          nome_exibicao?: string | null
-          orgao_externo_nome?: string | null
-          orgao_externo_url?: string | null
-          permitir_anonimas?: boolean | null
-          permitir_reuniao?: boolean | null
-          politica_privacidade?: string | null
-          prazo_acusacao_dias?: number | null
-          prazo_retorno_dias?: number | null
-          requerer_email?: boolean | null
-          retencao_meses?: number | null
-          texto_apresentacao?: string | null
-          texto_retaliacao?: string | null
-        }
-        Relationships: []
-      }
     }
     Functions: {
       activate_mfa_code_issue: {
@@ -9748,6 +9688,26 @@ export type Database = {
           empresa_id: string
           empresa_logo_url: string
           empresa_nome: string
+        }[]
+      }
+      get_canal_config_publica: {
+        Args: { p_empresa_id: string }
+        Returns: {
+          cor_destaque: string
+          id: string
+          idioma_padrao: string
+          nome_exibicao: string
+          orgao_externo_nome: string
+          orgao_externo_url: string
+          permitir_anonimas: boolean
+          permitir_reuniao: boolean
+          politica_privacidade: string
+          prazo_acusacao_dias: number
+          prazo_retorno_dias: number
+          requerer_email: boolean
+          retencao_meses: number
+          texto_apresentacao: string
+          texto_retaliacao: string
         }[]
       }
       get_denuncia_config_publica: {
