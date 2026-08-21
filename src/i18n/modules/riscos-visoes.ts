@@ -91,7 +91,7 @@ export const riscosVisoes = {
       },
       overview: {
         appetiteBanner: {
-          titulo: 'Evolução do score de risco',
+          titulo: 'Riscos acima do apetite',
           descricaoSingular: 'risco exige decisão de tratamento ou aceitação formal esta semana.',
           descricaoPlural: 'riscos exigem decisão de tratamento ou aceitação formal esta semana.',
           verNaMatriz: 'Ver na matriz',
@@ -230,7 +230,7 @@ export const riscosVisoes = {
       },
       overview: {
         appetiteBanner: {
-          titulo: 'Risk score evolution',
+          titulo: 'Risks above appetite',
           descricaoSingular: 'risk requires a treatment or formal acceptance decision this week.',
           descricaoPlural: 'risks require a treatment or formal acceptance decision this week.',
           verNaMatriz: 'View on matrix',
