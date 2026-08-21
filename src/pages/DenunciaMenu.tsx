@@ -48,7 +48,7 @@ export default function DenunciaMenu() {
     supabase
       .rpc('get_denuncias_categorias_publicas' as never, { p_empresa_id: empresa.id } as never)
       .then(({ data }) =>
-        setCategorias((((data ?? []) as { nome: string }[]) ?? []).map((c) => c.nome)),
+        setCategorias(((data ?? []) as { nome: string }[]).map((c) => c.nome)),
       );
   }, [empresa?.id]);
 
