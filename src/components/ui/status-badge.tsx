@@ -39,6 +39,8 @@ interface StatusBadgeProps {
   intensity?: StatusIntensity;
   /** Letra curta redundante à cor (WCAG 1.4.1): C/A/M/B na severidade. */
   mark?: string;
+  /** `type` = taxonomia: sai da pílula e vira texto. Vem dos resolvers. */
+  family?: 'type';
 }
 
 const SEVERITY_FROM_TONE: Record<StatusTone, SeverityLevel> = {
@@ -67,8 +69,9 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
   icon,
   className,
   mark,
+  family: familyProp,
 }) => {
-  const family: ChipFamily = mark ? 'severity' : 'state';
+  const family: ChipFamily = familyProp ?? (mark ? 'severity' : 'state');
   const chipTone: ChipTone = mark ? SEVERITY_FROM_TONE[tone] : STATE_FROM_TONE[tone];
 
   return (

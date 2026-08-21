@@ -14,8 +14,12 @@ import { cn } from '@/lib/utils';
  *  - state     → estados de processo (Ativo, Rascunho, Em andamento…).
  *                Família NEUTRA; só o estado terminal positivo recebe um
  *                acento discreto (teal), nunca o verde da severidade.
- *  - type      → tipo/classificação. Sem alarme, tinta neutra.
- *  - category  → categorias livres. Sem alarme, tinta neutra.
+ *  - type      → tipo/classificação. NÃO é pílula: é texto.
+ *  - category  → categorias livres. NÃO é pílula: é texto.
+ *
+ * As duas últimas descrevem o que a coisa É, e ninguém age sobre um tipo.
+ * Desenhá-las como pílula punha quatro caixas por linha de tabela e gastava
+ * em taxonomia a atenção que devia sobrar para o estado.
  *
  * O roxo da marca não é usado aqui: fica reservado a ação e navegação ativa.
  */
@@ -119,6 +123,21 @@ export const Chip: React.FC<ChipProps> = ({
   className,
   ...props
 }) => {
+
+  /*
+    Taxonomia sai da caixa.
+
+    Devolve-se texto simples — sem fundo, sem borda, sem altura fixa —, o que
+    liberta a cor e a forma para o que exige decisão. Continua a ser o mesmo
+    componente e a mesma chamada: quem escreve o ecrã não muda nada.
+  */
+  if (family === 'type' || family === 'category') {
+    return (
+      <span className={cn('text-xs text-muted-foreground', className)} {...props}>
+        {children}
+      </span>
+    );
+  }
 
   let chipClass = NEUTRAL_CHIP;
   let leading: React.ReactNode = null;

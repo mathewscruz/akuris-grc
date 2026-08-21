@@ -16,10 +16,20 @@ export function SparklineCell({ points = [] }: Props) {
   const { t } = useLanguage();
 
   if (points.length < 2) {
+    /*
+      Um traço, e o texto vai para o `title`.
+
+      "Sem histórico" escrito por extenso aparecia em quase todas as linhas —
+      dez repetições da mesma frase numa coluna de 90px, a competir com os
+      dados que variam. A ausência de tendência mostra-se ausente.
+    */
     return (
-      <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-        <span aria-hidden="true" className="h-px w-4 bg-border" />
-        <span className="text-micro">{t('riscosVisoes.table.trend.semHistorico')}</span>
+      <span
+        className="inline-flex items-center text-muted-foreground"
+        title={t('riscosVisoes.table.trend.semHistorico')}
+      >
+        <span aria-hidden="true" className="h-px w-5 bg-border" />
+        <span className="sr-only">{t('riscosVisoes.table.trend.semHistorico')}</span>
       </span>
     );
   }

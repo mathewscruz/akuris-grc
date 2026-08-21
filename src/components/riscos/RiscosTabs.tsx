@@ -1,12 +1,15 @@
 /**
- * RiscosTabs — controla as 3 visões (Visão geral · Matriz · Tabela) via ?view= URL param.
- * Lembra última escolha em localStorage para próxima visita.
+ * RiscosTabs — controla as 4 visões (Visão geral · Matriz · Tabela · Aceite)
+ * via `?view=`. Lembra a última escolha em localStorage.
+ *
+ * Sem ícones nos separadores: os rótulos já dizem o que são, e "Visão geral" e
+ * "Matriz" partilhavam o MESMO glifo — o ícone não estava a distinguir nada,
+ * estava a sugerir que as duas abas eram a mesma coisa.
  */
 import { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { IconGrid, IconShieldCheck, IconTable } from '@/components/icons';
 
 export type RiscosView = 'overview' | 'matrix' | 'table' | 'aceite';
 const STORAGE_KEY = 'akuris.riscos.view';
@@ -49,30 +52,26 @@ export function RiscosTabs({ overview, matrix, table, aceite }: Props) {
       <TabsList>
         <TabsTrigger
           value="overview"
-          className="text-xs gap-1.5"
+          className="text-xs"
         >
-          <IconGrid className="h-3.5 w-3.5" strokeWidth={1.5} />
           {t('riscosDetalhe.tabs.overview')}
         </TabsTrigger>
         <TabsTrigger
           value="matrix"
-          className="text-xs gap-1.5"
+          className="text-xs"
         >
-          <IconGrid className="h-3.5 w-3.5" strokeWidth={1.5} />
           {t('riscosDetalhe.tabs.matrix')}
         </TabsTrigger>
         <TabsTrigger
           value="table"
-          className="text-xs gap-1.5"
+          className="text-xs"
         >
-          <IconTable className="h-3.5 w-3.5" strokeWidth={1.5} />
           {t('riscosDetalhe.tabs.table')}
         </TabsTrigger>
         <TabsTrigger
           value="aceite"
-          className="text-xs gap-1.5"
+          className="text-xs"
         >
-          <IconShieldCheck className="h-3.5 w-3.5" strokeWidth={1.5} />
           {t('riscosDetalhe.tabs.aceite')}
         </TabsTrigger>
       </TabsList>

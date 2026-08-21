@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { IconWarning, IconCalendar, IconFile, IconShield, IconUsers, IconOrg, IconMessage, IconActivity } from '@/components/icons';
+import { IconWarning, IconCalendar, IconFile, IconShield, IconUsers, IconOrg, IconMessage } from '@/components/icons';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
@@ -337,7 +337,7 @@ export function RecentActivities({ className }: { className?: string }) {
       <CornerAccent />
       <CardHeader className="pb-3">
         <CardTitle className="text-base font-semibold flex items-center gap-2">
-          <IconActivity className="h-4 w-4 text-muted-foreground" /> {t('dashboard.recentActivities')}
+          {t('dashboard.recentActivities')}
         </CardTitle>
       </CardHeader>
       <CardContent className="max-h-[400px] overflow-y-auto pt-0 pb-4">

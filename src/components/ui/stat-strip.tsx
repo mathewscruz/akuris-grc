@@ -80,7 +80,6 @@ export function StatStrip({ items, loading = false, className, ...props }: StatS
         const positive = Number.isFinite(numeric) && numeric > 0
         const tone: StatStripTone = item.tone && positive ? item.tone : "neutral"
         const interactive = !!item.onClick || !!item.drillDown
-        const Icon = item.icon
 
         const activate = () => {
           if (item.onClick) return item.onClick()
@@ -97,9 +96,20 @@ export function StatStrip({ items, loading = false, className, ...props }: StatS
             >
               {item.value}
             </span>
-            <span className="mt-1.5 flex min-w-0 items-center gap-1.5 text-xs font-medium text-muted-foreground">
-              {Icon && <Icon className="h-3.5 w-3.5 shrink-0 opacity-70" strokeWidth={1.5} aria-hidden />}
-              <span className="truncate">{item.label}</span>
+            {/*
+              O ícone saiu do rótulo.
+
+              Havia um glifo ao lado de cada KPI — 47 ícones só no painel — e
+              nenhum deles acrescentava nada ao texto que estava ao lado: um
+              cadeado ao lado de "Controles Ativos" não diz mais do que
+              "Controles Ativos". Ícone fica para onde SUBSTITUI texto (ações,
+              navegação) ou identifica um módulo.
+
+              A prop `icon` continua aceite para não obrigar a mexer nas 30
+              telas que a passam; deixou é de ser desenhada.
+            */}
+            <span className="mt-1.5 block min-w-0 truncate text-xs font-medium text-muted-foreground">
+              {item.label}
             </span>
           </>
         )

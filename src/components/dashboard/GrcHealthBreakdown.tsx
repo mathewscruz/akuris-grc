@@ -95,7 +95,6 @@ export function GrcHealthBreakdown() {
   const Header = (
     <CardHeader className="pb-3">
       <CardTitle className="text-base font-semibold flex items-center gap-2">
-        <IconTarget className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
         {t('dashWidgets.radar.title')}
       </CardTitle>
       <div className="flex items-baseline gap-2 mt-1.5 flex-wrap">

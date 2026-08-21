@@ -599,14 +599,12 @@ export function Riscos() {
       label: t('riscos.page.columns.name'),
       sortable: true,
       render: (value: any, risco: Risco) => {
-        const sev = severidadeRisco(risco);
-        const dot =
-          sev === 'critico' ? 'bg-destructive' :
-          sev === 'alto' ? 'bg-warning' :
-          sev === 'medio' ? 'bg-warning/60' : 'bg-success';
+        // Sem o ponto colorido antes do nome: a severidade já tem uma coluna
+        // com badge e letra, e o ponto repetia a MESMA informação a três
+        // centímetros de distância. Duas marcas para o mesmo dado ensinam a
+        // ignorar as duas.
         return (
           <div className="flex items-center gap-2 min-w-0">
-            <span className={`h-1.5 w-1.5 rounded-full flex-shrink-0 ${dot}`} />
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); setDrawerRiscoId(risco.id); }}

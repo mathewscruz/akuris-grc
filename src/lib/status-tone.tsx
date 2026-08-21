@@ -18,7 +18,20 @@ export interface ToneResult {
   intensity?: StatusIntensity;
   /** Letra redundante à cor (WCAG 1.4.1): C/A/M/B na escala de severidade. */
   mark?: string;
+  /**
+   * `type` marca TAXONOMIA — o que a coisa é, e não em que estado está.
+   *
+   * O chip dessa família é texto, não pílula. Um "Preventivo" ou um
+   * "Procedimento" não pedem decisão nenhuma a quem lê a lista, e gastavam
+   * cor e forma que fazem falta ao estado e à severidade.
+   */
+  family?: 'type';
 }
+
+/** Envolve um resolver existente para o marcar como taxonomia. */
+const comoTaxonomia =
+  (resolver: (raw?: string | null) => ToneResult) =>
+  (raw?: string | null): ToneResult => ({ ...resolver(raw), family: 'type' });
 
 /** Normaliza string (remove acentos + lowercase + trim). */
 const norm = (raw?: string | null): string =>
@@ -95,7 +108,7 @@ export const resolveContratoStatusTone = (raw?: string | null): ToneResult => {
 // ─────────────────────────────────────────────────────────────────────────────
 // Controles: tipo (preventivo, detectivo, corretivo) — categoria, sem alarme
 // ─────────────────────────────────────────────────────────────────────────────
-export const resolveControleTipoTone = (raw?: string | null): ToneResult => {
+const _resolveControleTipoTone = (raw?: string | null): ToneResult => {
   const v = norm(raw);
   switch (v) {
     case 'preventivo':
@@ -112,6 +125,14 @@ export const resolveControleTipoTone = (raw?: string | null): ToneResult => {
 // ─────────────────────────────────────────────────────────────────────────────
 // Documentos: classificação (confidencial, restrita, interna, publica)
 // ─────────────────────────────────────────────────────────────────────────────
+/**
+ * Classificação de confidencialidade.
+ *
+ * Só o que impõe cuidado no manuseio fica em pílula: `confidencial` e
+ * `restrita`. "Interna" e "pública" passam a texto — eram a classificação da
+ * esmagadora maioria dos documentos, e pintá-las gastava o alarme na
+ * normalidade: quando tudo tem cor, o confidencial não salta.
+ */
 export const resolveClassificacaoTone = (raw?: string | null): ToneResult => {
   const v = norm(raw);
   switch (v) {
@@ -119,12 +140,8 @@ export const resolveClassificacaoTone = (raw?: string | null): ToneResult => {
       return { tone: 'destructive', intensity: 'high' };
     case 'restrita':
       return { tone: 'warning' };
-    case 'interna':
-      return { tone: 'info' };
-    case 'publica':
-      return { tone: 'success' };
     default:
-      return { tone: 'neutral' };
+      return { tone: 'neutral', family: 'type' };
   }
 };
 
@@ -218,7 +235,7 @@ export const resolveWorkflowStatusTone = (raw?: string | null): ToneResult => {
 // Documentos: tipo (documento, politica, procedimento, instrucao, formulario,
 // certificado, contrato, relatorio) — categoria neutra com tons rotativos
 // ─────────────────────────────────────────────────────────────────────────────
-export const resolveTipoDocumentoTone = (raw?: string | null): ToneResult => {
+const _resolveTipoDocumentoTone = (raw?: string | null): ToneResult => {
   const v = norm(raw);
   switch (v) {
     case 'documento':
@@ -285,7 +302,7 @@ export const resolveAuditoriaStatusTone = (raw?: string | null): ToneResult => {
   }
 };
 
-export const resolveAuditoriaTipoTone = (raw?: string | null): ToneResult => {
+const _resolveAuditoriaTipoTone = (raw?: string | null): ToneResult => {
   const v = norm(raw);
   switch (v) {
     case 'interna':
@@ -334,7 +351,7 @@ export const resolveNivelRiscoTone = resolveSeverityTone;
 // ─────────────────────────────────────────────────────────────────────────────
 // Tratamentos: tipo (categoria funcional)
 // ─────────────────────────────────────────────────────────────────────────────
-export const resolveTratamentoTipoTone = (raw?: string | null): ToneResult => {
+const _resolveTratamentoTipoTone = (raw?: string | null): ToneResult => {
   const v = norm(raw);
   switch (v) {
     case 'mitigar':
@@ -483,7 +500,7 @@ export const resolveGravidadeTone = resolveCriticidadeTone;
 // Categoria (seguranca, privacidade, compliance, financeiro, operacional,
 // qualidade, governanca, esg, geral) — categorias semânticas para badges
 // ─────────────────────────────────────────────────────────────────────────────
-export const resolveCategoriaTone = (raw?: string | null): ToneResult => {
+const _resolveCategoriaTone = (raw?: string | null): ToneResult => {
   const v = norm(raw);
   switch (v) {
     case 'seguranca':
@@ -521,7 +538,7 @@ export const resolveCategoriaTone = (raw?: string | null): ToneResult => {
 // ─────────────────────────────────────────────────────────────────────────────
 // Tipo de pergunta (text, textarea, select, radio, checkbox, file, score, date)
 // ─────────────────────────────────────────────────────────────────────────────
-export const resolveQuestionTypeTone = (raw?: string | null): ToneResult => {
+const _resolveQuestionTypeTone = (raw?: string | null): ToneResult => {
   const v = norm(raw);
   switch (v) {
     case 'text':
@@ -565,7 +582,7 @@ export const resolveMarcoStatusTone = (raw?: string | null): ToneResult => {
 // ─────────────────────────────────────────────────────────────────────────────
 // Contratos: tipo de marco (categoria — tons distintos sem alarme)
 // ─────────────────────────────────────────────────────────────────────────────
-export const resolveMarcoTipoTone = (raw?: string | null): ToneResult => {
+const _resolveMarcoTipoTone = (raw?: string | null): ToneResult => {
   const v = norm(raw);
   switch (v) {
     case 'vencimento':
@@ -618,7 +635,7 @@ export const resolveAtivoTone = (ativo?: boolean | null): ToneResult => {
 // ─────────────────────────────────────────────────────────────────────────────
 // Acessos privilegiados: tipo de acesso (leitura, escrita, admin, completo)
 // ─────────────────────────────────────────────────────────────────────────────
-export const resolveTipoAcessoTone = (raw?: string | null): ToneResult => {
+const _resolveTipoAcessoTone = (raw?: string | null): ToneResult => {
   const v = norm(raw);
   switch (v) {
     case 'leitura':
@@ -637,7 +654,7 @@ export const resolveTipoAcessoTone = (raw?: string | null): ToneResult => {
 // ─────────────────────────────────────────────────────────────────────────────
 // Documentos: tipo de vinculação (categoria semântica)
 // ─────────────────────────────────────────────────────────────────────────────
-export const resolveTipoVinculacaoTone = (raw?: string | null): ToneResult => {
+const _resolveTipoVinculacaoTone = (raw?: string | null): ToneResult => {
   const v = norm(raw);
   switch (v) {
     case 'relacionado':
@@ -660,7 +677,7 @@ export const resolveTipoVinculacaoTone = (raw?: string | null): ToneResult => {
 // ─────────────────────────────────────────────────────────────────────────────
 // Genérico (fallback heurístico para qualquer status snake_case)
 // ─────────────────────────────────────────────────────────────────────────────
-export const resolveGenericTone = (raw?: string | null): ToneResult => {
+const _resolveGenericTone = (raw?: string | null): ToneResult => {
   const v = norm(raw);
   if (!v) return { tone: 'neutral' };
 
@@ -689,3 +706,21 @@ export const resolveGenericTone = (raw?: string | null): ToneResult => {
 
   return { tone: 'neutral' };
 };
+
+
+/*
+  Taxonomia: o que a coisa é, não o estado em que está.
+
+  Estes resolvers continuam a calcular o mesmo tom — a família é que diz ao
+  `Chip` para o desenhar como texto em vez de pílula.
+*/
+export const resolveControleTipoTone = comoTaxonomia(_resolveControleTipoTone);
+export const resolveTipoDocumentoTone = comoTaxonomia(_resolveTipoDocumentoTone);
+export const resolveAuditoriaTipoTone = comoTaxonomia(_resolveAuditoriaTipoTone);
+export const resolveTratamentoTipoTone = comoTaxonomia(_resolveTratamentoTipoTone);
+export const resolveCategoriaTone = comoTaxonomia(_resolveCategoriaTone);
+export const resolveQuestionTypeTone = comoTaxonomia(_resolveQuestionTypeTone);
+export const resolveMarcoTipoTone = comoTaxonomia(_resolveMarcoTipoTone);
+export const resolveTipoAcessoTone = comoTaxonomia(_resolveTipoAcessoTone);
+export const resolveTipoVinculacaoTone = comoTaxonomia(_resolveTipoVinculacaoTone);
+export const resolveGenericTone = comoTaxonomia(_resolveGenericTone);

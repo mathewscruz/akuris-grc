@@ -101,7 +101,11 @@ const TableHead = React.forwardRef<
       ref={ref}
       className={cn(
         sizing,
-        "text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0",
+        /* O cabeçalho é uma etiqueta, não conteúdo: corpo mais pequeno que a
+           célula, caixa alta e cor apagada. Antes tinha o MESMO tamanho do
+           conteúdo e a tabela não tinha estrutura visível. */
+        "text-left align-middle text-micro font-medium uppercase tracking-wide",
+        "text-muted-foreground/75 [&:has([role=checkbox])]:pr-0",
         /* Cada coluna realça-se a si própria, incluindo a de Ações. */
         "transition-colors hover:bg-accent",
         className
@@ -117,13 +121,15 @@ const TableCell = React.forwardRef<
   React.TdHTMLAttributes<HTMLTableCellElement>
 >(({ className, ...props }, ref) => {
   const density = React.useContext(DensityCtx)
-  const sizing = density === "compact" ? "py-2 px-3" : "p-4"
+  const sizing = density === "compact" ? "py-2.5 px-3" : "p-4"
   return (
     <td
       ref={ref}
       className={cn(
         sizing,
-        "align-middle [&:has([role=checkbox])]:pr-0",
+        /* O conteúdo secundário recua para cinzento: o que fica preto é o
+           nome do registo (ver `PRIMARY_CELL` no DataTable) e os estados. */
+        "align-middle text-xs text-muted-foreground [&:has([role=checkbox])]:pr-0",
         className
       )}
       {...props}

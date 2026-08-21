@@ -3,7 +3,7 @@ import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { CornerAccent } from '@/components/identity/CornerAccent';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { GapAnalysisIcon, IconSuccess, IconChevron, IconTarget } from '@/components/icons';
+import { GapAnalysisIcon, IconSuccess, IconChevron } from '@/components/icons';
 import { FrameworkBadge } from '@/components/frameworks/FrameworkBadge';
 import { useNavigate } from 'react-router-dom';
 import { useFrameworksOverview, type FrameworkOverview } from '@/hooks/useFrameworksOverview';
@@ -125,7 +125,7 @@ export const FrameworksOverviewCard = () => {
         <CornerAccent />
         <CardHeader className="pb-3">
           <CardTitle className="text-base font-semibold flex items-center gap-2">
-            <IconTarget className="h-4 w-4 text-muted-foreground" /> {t('dashWidgets.frameworks.title')}
+            {t('dashWidgets.frameworks.title')}
           </CardTitle>
         </CardHeader>
         <CardContent className="flex-1 pt-0 flex items-center justify-center">
@@ -142,7 +142,7 @@ export const FrameworksOverviewCard = () => {
         <div className="flex items-start justify-between gap-2">
           <div>
             <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <IconTarget className="h-4 w-4 text-muted-foreground" /> {t('dashWidgets.frameworks.title')}
+              {t('dashWidgets.frameworks.title')}
             </CardTitle>
             {(ativos > 0 || concluidos > 0) && (
               <p className="text-micro text-muted-foreground mt-1">

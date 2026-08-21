@@ -1,17 +1,11 @@
 import { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  ReferenceLine,
 } from 'recharts';
 import { useScoreHistory, ScoreHistoryPeriod } from '@/hooks/useScoreHistory';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
+import { TrendAreaChart } from '@/components/ui/trend-area-chart';
+import { PeriodoSelect, type OpcaoPeriodo } from '@/components/ui/periodo-select';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { chartSeries, CHART_GRID, CHART_AXIS, CHART_AREA_OPACITY, CHART_TOOLTIP_STYLE, CHART_FONT } from '@/lib/chart-tokens';
 import { IconTrendUp, IconTrendDown, IconMinus, IconChartLine } from '@/components/icons';
@@ -82,56 +76,27 @@ export const ScoreEvolutionChart = ({ frameworkId }: ScoreEvolutionChartProps) =
     );
   }
 
-  return (
-    <Card>
-      <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 pb-2">
-        <div className="space-y-1 min-w-0">
+  const opcoesPeriodo: OpcaoPeriodo<string>[] = periods.map((p) => ({
+    value: String(p.value),
+    label: p.label,
+  }));
+
+  // Sem parâmetro de tipo no JSX — ver a nota em `PeriodoSelect`.
+  const seletorPeriodo = (
+    <PeriodoSelect
+      valor={String(period)}
+      onChange={(v: string) => setPeriod(v as typeof period)}
+      opcoes={opcoesPeriodo}
+    />
+  );
+
+  if (history.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
           <CardTitle className="text-base">{t('residuos.score.evolucao')}</CardTitle>
-          {latestScore !== null && (
-            <div className="flex items-center gap-2 text-sm flex-wrap">
-              <span className="font-bold text-foreground">{formatValue(latestScore)}</span>
-              {delta && (
-                <span
-                  className={`inline-flex items-center gap-1 text-xs font-medium ${
-                    delta.dir === 'up' ? 'text-success' :
-                    delta.dir === 'down' ? 'text-destructive' :
-                    'text-muted-foreground'
-                  }`}
-                >
-                  {delta.dir === 'up' && <IconTrendUp className="h-3 w-3" strokeWidth={1.5} />}
-                  {delta.dir === 'down' && <IconTrendDown className="h-3 w-3" strokeWidth={1.5} />}
-                  {delta.dir === 'flat' && <IconMinus className="h-3 w-3" strokeWidth={1.5} />}
-                  {delta.value > 0 ? '+' : ''}{delta.value.toFixed(1)}%
-                  <span className="text-muted-foreground font-normal">{t('cardsKpi.sweep.gap.vsAnterior')}</span>
-                </span>
-              )}
-              {!delta && history.length === 1 && (
-                <span className="inline-flex items-center text-micro px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                  {t('sweepRiscos.gap.scoreChart.primeiroRegistro')}
-                </span>
-              )}
-            </div>
-          )}
-        </div>
-        <div className="flex gap-0.5 rounded-md border border-border p-0.5 bg-muted/30 shrink-0">
-          {periods.map(p => (
-            <button
-              key={p.value}
-              type="button"
-              onClick={() => setPeriod(p.value)}
-              className={`px-2.5 py-1 text-xs rounded transition-colors ${
-                period === p.value
-                  ? 'bg-background text-foreground shadow-sm font-medium'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {p.label}
-            </button>
-          ))}
-        </div>
-      </CardHeader>
-      <CardContent className="pt-3">
-        {history.length === 0 ? (
+        </CardHeader>
+        <CardContent>
           <div className="flex flex-col items-center justify-center h-[260px] gap-3 rounded-lg border border-dashed border-border bg-muted/20">
             <IconChartLine className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
             <div className="text-center space-y-1 max-w-[280px]">
@@ -141,88 +106,22 @@ export const ScoreEvolutionChart = ({ frameworkId }: ScoreEvolutionChartProps) =
               </p>
             </div>
           </div>
-        ) : (
-          <div className="relative">
-            <ResponsiveContainer width="100%" height={260}>
-              <AreaChart data={displayData} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="scoreEvolutionFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={chartSeries(0)} stopOpacity={1} />
-                    <stop offset="100%" stopColor={chartSeries(0)} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke={CHART_GRID}
-                  vertical={false}
-                />
-                <XAxis
-                  dataKey="date"
-                  tick={{ fill: CHART_AXIS, fontSize: CHART_FONT.axis }}
-                  axisLine={{ stroke: CHART_GRID }}
-                  tickLine={false}
-                />
-                <YAxis
-                  domain={domain}
-                  ticks={ticks}
-                  tick={{ fill: CHART_AXIS, fontSize: CHART_FONT.axis }}
-                  tickFormatter={(v) => `${v}%`}
-                  axisLine={false}
-                  tickLine={false}
-                  width={42}
-                />
-                <ReferenceLine
-                  y={goalValue}
-                  stroke={CHART_AXIS}
-                  strokeDasharray="4 4"
-                  label={{
-                    value: t('sweepRiscos.gap.scoreChart.meta'),
-                    position: 'right',
-                    fill: CHART_AXIS,
-                    fontSize: CHART_FONT.axis,
-                  }}
-                />
-                <Tooltip
-                  cursor={{ stroke: chartSeries(0), strokeWidth: 1, strokeDasharray: '3 3' }}
-                  contentStyle={CHART_TOOLTIP_STYLE}
-                  labelStyle={{
-                    color: 'hsl(var(--muted-foreground))',
-                    fontSize: CHART_FONT.axis,
-                    marginBottom: 4,
-                  }}
-                  itemStyle={{ color: 'hsl(var(--popover-foreground))', fontSize: CHART_FONT.label }}
-                  formatter={(value: number) => [formatValue(value), t('sweepRiscos.gap.scoreChart.score')]}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="score"
-                  stroke={chartSeries(0)}
-                  strokeWidth={2.5}
-                  fill="url(#scoreEvolutionFill)"
-                  fillOpacity={CHART_AREA_OPACITY}
-                  dot={
-                    history.length === 1
-                      ? { fill: chartSeries(0), stroke: 'hsl(var(--background))', strokeWidth: 2, r: 5 }
-                      : { fill: chartSeries(0), r: 3 }
-                  }
-                  activeDot={{
-                    r: 6,
-                    fill: chartSeries(0),
-                    stroke: 'hsl(var(--background))',
-                    strokeWidth: 2,
-                  }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+        </CardContent>
+      </Card>
+    );
+  }
 
-            {history.length === 1 && (
-              <div className="absolute top-2 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-md bg-muted/80 backdrop-blur-sm border border-border text-micro text-muted-foreground pointer-events-none">
-                {t('sweepRiscos.gap.scoreChart.registreMais')}
-              </div>
-            )}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+  return (
+    <TrendAreaChart
+      eyebrow={t('residuos.score.evolucao')}
+      valor={latestScore !== null ? formatValue(latestScore) : '—'}
+      delta={delta ? Math.round(delta.value * 10) / 10 : null}
+      // Aqui, ao contrário do risco, SUBIR é bom: mais conformidade.
+      menorEMelhor={false}
+      pontos={displayData.map((d) => ({ label: d.date, valor: d.score }))}
+      tooltipLabel={t('residuos.score.evolucao')}
+      altura={260}
+      seletor={seletorPeriodo}
+    />
   );
-};
+}

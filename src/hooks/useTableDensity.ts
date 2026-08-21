@@ -4,10 +4,18 @@ export type TableDensity = 'compact' | 'comfortable';
 
 const STORAGE_KEY = 'akuris.tableDensity';
 
+/**
+ * O padrão é DENSO.
+ *
+ * `comfortable` dava 83px por linha e sete registos no ecrã. Uma tabela existe
+ * para comparar, e não se compara aquilo que obriga a rolar. Quem preferir o
+ * espaçamento largo continua a tê-lo no selector — a preferência é que muda,
+ * não a possibilidade.
+ */
 const getInitialDensity = (): TableDensity => {
-  if (typeof window === 'undefined') return 'comfortable';
+  if (typeof window === 'undefined') return 'compact';
   const stored = window.localStorage.getItem(STORAGE_KEY) as TableDensity | null;
-  return stored === 'compact' || stored === 'comfortable' ? stored : 'comfortable';
+  return stored === 'compact' || stored === 'comfortable' ? stored : 'compact';
 };
 
 /**

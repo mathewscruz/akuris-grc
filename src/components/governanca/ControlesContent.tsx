@@ -447,14 +447,20 @@ export default function ControlesContent({ actionsSlot }: { actionsSlot?: HTMLEl
       key: 'categoria' as keyof Controle,
       label: t("governancaComp.controles.columnCategoria"),
       sortable: true,
-      render: (value: any, controle: Controle) => controle.categoria ? (
-        <Badge 
-          variant="outline" 
-          style={{ borderColor: controle.categoria.cor, color: controle.categoria.cor }}
-        >
-          {controle.categoria.nome}
-        </Badge>
-      ) : <span className="text-muted-foreground">-</span>
+      /*
+        Categoria é taxonomia: texto, não pílula — e sem a cor livre que a
+        categoria traz consigo.
+
+        Como quase todos os controlos partilham a mesma categoria, isto
+        desenhava a MESMA pílula colorida em todas as linhas: o maior bloco de
+        cor do ecrã, a dizer aquilo que a coluna já diz no cabeçalho.
+      */
+      render: (value: any, controle: Controle) =>
+        controle.categoria ? (
+          <span className="text-xs text-muted-foreground">{controle.categoria.nome}</span>
+        ) : (
+          <span className="text-muted-foreground">-</span>
+        )
     },
     {
       key: 'tipo' as keyof Controle,
