@@ -100,6 +100,8 @@ export default function DenunciaFormulario() {
   const [codigoAcompanhamento, setCodigoAcompanhamento] = useState('');
   const [protocolo, setProtocolo] = useState<string>('');
   const [anexos, setAnexos] = useState<File[]>([]);
+  /** Ficheiros que NÃO chegaram. A tela final tem de os nomear. */
+  const [anexosFalhados, setAnexosFalhados] = useState<string[]>([]);
   const [showSuccess, setShowSuccess] = useState(false);
 
   /** Com denúncias anónimas desligadas, identificar-se deixa de ser opcional. */
@@ -234,7 +236,21 @@ export default function DenunciaFormulario() {
           anonima: !data.denunciante_nome,
           politica_aceita: data.politica_aceita === true,
           denunciante_email: data.denunciante_email || null,
-          denunciante_nome: data.denunciante_nome || null
+          denunciante_nome: data.denunciante_nome || null,
+          /*
+            Estes cinco eram recolhidos e deitados fora.
+
+            O formulário pergunta onde, quando, com que testemunhas e que
+            provas existem; a função de borda sempre soube recebê-los; e o
+            envio passava só quatro campos. O investigador ficava sem o
+            essencial de qualquer apuração — e ninguém percebia, porque a
+            pessoa tinha mesmo preenchido.
+          */
+          denunciante_telefone: data.denunciante_telefone || null,
+          local_ocorrencia: data.local_ocorrencia || null,
+          data_ocorrencia: data.data_ocorrencia || null,
+          testemunhas: data.testemunhas || null,
+          evidencias_descricao: data.evidencias_descricao || null,
         }
       });
 
@@ -250,24 +266,66 @@ export default function DenunciaFormulario() {
         return;
       }
 
+      const codigo = denunciaData.codigo_acompanhamento ?? '';
       setProtocolo(denunciaData.protocolo);
-      setCodigoAcompanhamento(denunciaData.codigo_acompanhamento ?? '');
+      setCodigoAcompanhamento(codigo);
 
-      // Upload de anexos se houver
-      if (anexos.length > 0) {
+      /*
+        A evidência, agora por URL assinada — e com o resultado à vista.
+
+        Antes: o ficheiro ia direto para um bucket que não existia, o erro era
+        só registado no log e a tela dizia "denúncia registrada" à mesma. A
+        pessoa juntava a prova, via sucesso, e a prova nunca existiu. Num canal
+        de denúncia a evidência É o caso.
+
+        O denunciante é anónimo e não pode escrever no armazenamento com a
+        chave pública; a função de borda valida o código, regista a linha e
+        assina a URL daquele ficheiro. O que falhar sai nomeado na tela final.
+      */
+      const falharam: string[] = [];
+      if (anexos.length > 0 && denunciaData.id) {
         for (const file of anexos) {
-          const fileExt = file.name.split('.').pop();
-          const fileName = `${denunciaData.id}/${Date.now()}.${fileExt}`;
-          
-          const { error: uploadError } = await supabase.storage
-            .from('denuncias-anexos')
-            .upload(fileName, file);
+          try {
+            const { data: pedido, error: erroPedido } = await supabase.functions.invoke(
+              'create-denuncia',
+              {
+                body: {
+                  action: 'anexo_url',
+                  denuncia_id: denunciaData.id,
+                  codigo,
+                  nome: file.name,
+                  tipo: file.type,
+                  tamanho: file.size,
+                },
+              },
+            );
+            if (erroPedido || pedido?.error || !pedido?.token) {
+              throw new Error(String(erroPedido ?? pedido?.error ?? 'sem_url'));
+            }
 
-          if (uploadError) {
-            logger.error('Erro ao fazer upload', { module: 'DenunciaFormulario', error: String(uploadError) });
+            const { error: erroUpload } = await supabase.storage
+              .from('denuncias-anexos')
+              .uploadToSignedUrl(pedido.caminho, pedido.token, file);
+            if (erroUpload) throw erroUpload;
+
+            await supabase.functions.invoke('create-denuncia', {
+              body: {
+                action: 'anexo_confirmar',
+                denuncia_id: denunciaData.id,
+                codigo,
+                anexo_id: pedido.anexo_id,
+              },
+            });
+          } catch (erro) {
+            logger.error('Falha ao anexar evidência', {
+              module: 'DenunciaFormulario',
+              error: String(erro),
+            });
+            falharam.push(file.name);
           }
         }
       }
+      setAnexosFalhados(falharam);
 
       setShowSuccess(true);
       form.reset();
@@ -336,7 +394,35 @@ export default function DenunciaFormulario() {
               <p className="text-success mb-6">
                 {t('publicPortal.denunciaForm.successDescription')}
               </p>
-              
+
+              {/*
+                O que NÃO chegou é dito aqui, nomeando o ficheiro.
+
+                Antes, uma evidência que falhava a subir era registada no log e
+                a tela dizia sucesso na mesma — a pessoa saía convencida de que
+                a prova estava entregue. Se o canal não conseguiu guardar o
+                ficheiro, quem o tem ainda é ela: tem de saber a tempo.
+              */}
+              {anexosFalhados.length > 0 && (
+                <div className="mb-6 rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-left">
+                  <p className="text-sm font-semibold text-destructive">
+                    {t('publicPortal.denunciaForm.anexosFalharamTitulo', {
+                      count: anexosFalhados.length,
+                    })}
+                  </p>
+                  <ul className="mt-2 space-y-1">
+                    {anexosFalhados.map((nome) => (
+                      <li key={nome} className="text-xs text-muted-foreground break-all">
+                        {nome}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {t('publicPortal.denunciaForm.anexosFalharamAjuda')}
+                  </p>
+                </div>
+              )}
+
               <div className="space-y-3">
                 <Link to={`/${empresaSlug}/denuncia/consulta`}>
                   <Button className="w-full">

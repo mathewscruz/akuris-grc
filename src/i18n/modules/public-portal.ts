@@ -60,6 +60,12 @@ const ptDict = {
     yourProtocol: 'Seu protocolo de acompanhamento:',
     yourTrackingCode: 'Seu código de acompanhamento:',
     trackingCodeHint: 'Guarde este código: ele é necessário, junto com o protocolo, para consultar o andamento.',
+    /* Falha de anexo dita em voz alta — antes era só log e a tela dizia sucesso. */
+    anexosFalharamTitulo: {
+      one: '1 arquivo não pôde ser anexado',
+      other: '{count} arquivos não puderam ser anexados',
+    },
+    anexosFalharamAjuda: 'Guarde esses arquivos. Você pode enviá-los depois pela consulta do protocolo, usando o código acima.',
     successDescription:
       'Guarde este número para acompanhar o status da sua denúncia. Você receberá atualizações sobre o andamento do caso.',
     checkStatus: 'Consultar Status da Denúncia',
@@ -304,6 +310,11 @@ const enDict: typeof ptDict = {
     yourProtocol: 'Your tracking protocol number:',
     yourTrackingCode: 'Your tracking code:',
     trackingCodeHint: 'Keep this code: it is required together with the protocol number to check progress.',
+    anexosFalharamTitulo: {
+      one: '1 file could not be attached',
+      other: '{count} files could not be attached',
+    },
+    anexosFalharamAjuda: 'Keep those files. You can send them later from the protocol lookup, using the code above.',
     successDescription:
       'Save this number to track the status of your report. You will receive updates on the progress of the case.',
     checkStatus: 'Check Report Status',
