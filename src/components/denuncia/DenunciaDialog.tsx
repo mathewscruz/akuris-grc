@@ -51,6 +51,7 @@ import { DenunciaRelogio } from './DenunciaRelogio';
 import { DenunciaApuracao } from './DenunciaApuracao';
 import { DenunciaReunioes } from './DenunciaReunioes';
 import { DenunciaAnexos } from './DenunciaAnexos';
+import { DenunciaConverter } from './DenunciaConverter';
 
 interface DenunciaDialogProps {
   denuncia: any;
@@ -91,12 +92,20 @@ export function DenunciaDialog({
     medidas_adotadas: denuncia.medidas_adotadas || '',
   });
 
+  /*
+    `empresaId` chega depois do primeiro render.
+
+    Sem ele na lista de dependências, o efeito corria uma vez com `undefined`,
+    o bloco do comité era saltado, e a ficha dizia «nenhum membro no comité» a
+    uma empresa que tem comité — mandando quem apura configurar o que já
+    estava configurado.
+  */
   useEffect(() => {
-    if (open && denuncia) {
+    if (open && denuncia && empresaId) {
       carregarDados();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, denuncia?.id]);
+  }, [open, denuncia?.id, empresaId]);
 
   const carregarDados = async () => {
     try {
@@ -569,6 +578,10 @@ export function DenunciaDialog({
                 {t('denunciasAdmin.dialog.parecerInterno')}
               </p>
             </div>
+
+            {/* O que a denúncia gera no resto do GRC. Fica depois do desfecho
+                porque é dele que decorre: converte-se o que ficou provado. */}
+            <DenunciaConverter denuncia={denuncia} onAtualizado={onDenunciaAtualizada} />
 
             <div className="flex justify-end">
               <Button onClick={handleSalvar} disabled={saving}>

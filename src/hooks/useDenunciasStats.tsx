@@ -19,9 +19,10 @@ interface DenunciasStats {
   prazo_vencido: number;
 }
 
-export const useDenunciasStats = () => {
+export const useDenunciasStats = (empresaSelecionada?: string | null) => {
   const { profile } = useAuth();
-  const empresaId = profile?.empresa_id;
+  /* Numa consultoria, os números são os do canal que se está a ver. */
+  const empresaId = empresaSelecionada || profile?.empresa_id;
 
   return useQuery({
     queryKey: ['denuncias-stats', empresaId],

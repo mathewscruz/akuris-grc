@@ -3558,6 +3558,41 @@ export type Database = {
         }
         Relationships: []
       }
+      denuncias_consultoria: {
+        Row: {
+          concedido_por: string | null
+          created_at: string
+          empresa_id: string
+          id: string
+          papel: string
+          user_id: string
+        }
+        Insert: {
+          concedido_por?: string | null
+          created_at?: string
+          empresa_id: string
+          id?: string
+          papel?: string
+          user_id: string
+        }
+        Update: {
+          concedido_por?: string | null
+          created_at?: string
+          empresa_id?: string
+          id?: string
+          papel?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "denuncias_consultoria_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       denuncias_ficheiros_por_apagar: {
         Row: {
           apagado_em: string | null
@@ -9647,6 +9682,14 @@ export type Database = {
         Returns: boolean
       }
       e_do_comite_denuncias: { Args: never; Returns: boolean }
+      empresas_do_canal: {
+        Args: never
+        Returns: {
+          empresa_id: string
+          nome: string
+          propria: boolean
+        }[]
+      }
       estornar_ai_credit: {
         Args: { p_empresa_id: string; p_idempotency_key: string }
         Returns: boolean

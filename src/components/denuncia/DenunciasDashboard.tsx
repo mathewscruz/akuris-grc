@@ -50,9 +50,17 @@ function diasAte(data?: string | null): number | null {
 interface DenunciasDashboardProps {
   itemIdToOpen?: string | null;
   refreshKey?: number | string;
+  /**
+   * Qual canal se está a ver.
+   *
+   * Vazio significa «o da minha empresa», que é o caso de quase toda a gente.
+   * Numa consultoria que gere o canal de vários clientes, é o cliente
+   * escolhido no seletor — a RLS decide se pode, esta prop só diz qual.
+   */
+  empresaSelecionada?: string | null;
 }
 
-export function DenunciasDashboard({ itemIdToOpen, refreshKey }: DenunciasDashboardProps) {
+export function DenunciasDashboard({ itemIdToOpen, refreshKey, empresaSelecionada }: DenunciasDashboardProps) {
   const { t } = useLanguage();
   const [denuncias, setDenuncias] = useState<Denuncia[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,7 +76,8 @@ export function DenunciasDashboard({ itemIdToOpen, refreshKey }: DenunciasDashbo
   const [sortField, setSortField] = useState('created_at');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const { toast } = useToast();
-  const { empresaId } = useEmpresaId();
+  const { empresaId: empresaPropria } = useEmpresaId();
+  const empresaId = empresaSelecionada || empresaPropria;
 
   useEffect(() => {
     if (empresaId) carregarDenuncias();
@@ -85,7 +94,15 @@ export function DenunciasDashboard({ itemIdToOpen, refreshKey }: DenunciasDashbo
     }
   }, [itemIdToOpen, denuncias]);
 
-  const carregarDenuncias = async () => {
+  /*
+    Recarregar a lista não chegava.
+
+    `selectedDenuncia` é um objeto capturado no clique: depois de uma ação
+    dentro da ficha — converter em risco, acusar recebimento — a lista voltava
+    atualizada e a FICHA ABERTA continuava a mostrar o estado antigo. Quem
+    convertia via o botão «Registrar risco» na mesma, e clicava outra vez.
+  */
+  const carregarDenuncias = async (): Promise<void> => {
     if (!empresaId) return;
     try {
       const { data, error } = await supabase
@@ -100,6 +117,9 @@ export function DenunciasDashboard({ itemIdToOpen, refreshKey }: DenunciasDashbo
       if (error) throw error;
 
       setDenuncias(data || []);
+      setSelectedDenuncia((atual) =>
+        atual ? ((data ?? []).find((d) => d.id === atual.id) ?? atual) : atual,
+      );
 
       /*
         Os nomes de quem está a apurar.

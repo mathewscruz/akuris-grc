@@ -105,4 +105,29 @@ describe('a deliberação da apuração não chega a quem denunciou', () => {
         'função de borda: sem sessão, a RLS devolve vazio sem erro.',
     ).toEqual([]);
   });
+
+  it('o impedimento continua a ganhar, inclusive à consultoria', () => {
+    /*
+      `pode_ver_denuncia` ganhou um ramo novo — a consultoria que gere o canal
+      de empresas clientes. O ramo é um OR, e um OR mal fechado é a forma mais
+      fácil de o conflito de interesse deixar de valer para quem vem de fora.
+      A cláusula de impedimento tem de ficar FORA do OR, a valer sobre tudo.
+    */
+    const { ficheiro, corpo } = ultimaDefinicao('pode_ver_denuncia');
+
+    expect(corpo).toContain('denuncias_impedimentos');
+    /* O impedimento vem depois do parêntese que fecha o OR dos acessos. */
+    const fimDoOr = corpo.lastIndexOf('denuncias_consultoria');
+    const impedimento = corpo.indexOf('denuncias_impedimentos');
+    expect(
+      impedimento > fimDoOr,
+      `${ficheiro}: a cláusula de impedimento deixou de vir depois dos ramos ` +
+        'de acesso — verifique se ainda se aplica a todos, incluindo a consultoria.',
+    ).toBe(true);
+
+    expect(
+      /AND NOT EXISTS/.test(corpo),
+      `${ficheiro}: pode_ver_denuncia deixou de excluir quem se declarou impedido.`,
+    ).toBe(true);
+  });
 });

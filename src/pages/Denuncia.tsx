@@ -8,7 +8,9 @@ import { NovaDenunciaDialog } from '@/components/denuncia/NovaDenunciaDialog';
 import { useDenunciasStats } from '@/hooks/useDenunciasStats';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { IconChart } from '@/components/icons';
+import { IconChart, IconOrg } from '@/components/icons';
+import { useEmpresasDoCanal } from '@/hooks/useEmpresasDoCanal';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function Denuncia() {
   const { t } = useLanguage();
@@ -17,7 +19,18 @@ export default function Denuncia() {
   const [denunciaIdToOpen, setDenunciaIdToOpen] = useState<string | null>(null);
   const [relatoriosOpen, setRelatoriosOpen] = useState(false);
   const [dashboardRefreshKey, setDashboardRefreshKey] = useState(0);
-  const { data: stats, isLoading: statsLoading } = useDenunciasStats();
+  /*
+    A consola multi-cliente.
+
+    Uma consultoria que licencia o canal de várias empresas trata do canal de
+    todas — é o modelo de receita de quem vende só canal. Para quem gere uma
+    empresa só, o seletor não aparece e nada muda.
+  */
+  const { empresas, ehConsultoria } = useEmpresasDoCanal();
+  const [empresaSelecionada, setEmpresaSelecionada] = useState<string | null>(null);
+  const empresaAtiva = empresaSelecionada ?? empresas[0]?.empresa_id ?? null;
+  const ehCliente = empresas.find((e) => e.empresa_id === empresaAtiva)?.propria === false;
+  const { data: stats, isLoading: statsLoading } = useDenunciasStats(empresaAtiva);
 
   // Detectar se veio com itemId do dashboard
   useEffect(() => {
@@ -36,7 +49,9 @@ export default function Denuncia() {
       <PageHeader
         title={t('modules.denuncia.title')}
         description={t('modules.denuncia.description')}
-        actions={<NovaDenunciaDialog onDenunciaCriada={handleDenunciaCriada} />}
+        /* Registar denúncia é acto de quem trabalha na empresa. Uma
+           consultoria a ver o canal de um cliente não regista por ele. */
+        actions={ehCliente ? undefined : <NovaDenunciaDialog onDenunciaCriada={handleDenunciaCriada} />}
         secondaryActions={[
           {
             label: t('cardsKpi.denuncias.abrirRelatorios'),
@@ -45,6 +60,31 @@ export default function Denuncia() {
           },
         ]}
       />
+
+      {ehConsultoria && (
+        <div className="flex flex-wrap items-center gap-2">
+          <IconOrg className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
+          <span className="text-xs text-muted-foreground">
+            {t('denunciasAdmin.consultoria.aVer')}
+          </span>
+          <Select
+            value={empresaAtiva ?? ''}
+            onValueChange={(v) => setEmpresaSelecionada(v)}
+          >
+            <SelectTrigger className="h-8 w-auto min-w-[14rem]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {empresas.map((e) => (
+                <SelectItem key={e.empresa_id} value={e.empresa_id}>
+                  {e.nome}
+                  {e.propria ? '' : ` — ${t('denunciasAdmin.consultoria.cliente')}`}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
       <StatStrip
         loading={statsLoading}
@@ -59,7 +99,11 @@ export default function Denuncia() {
         ]}
       />
 
-      <DenunciasDashboard itemIdToOpen={denunciaIdToOpen} refreshKey={dashboardRefreshKey} />
+      <DenunciasDashboard
+        itemIdToOpen={denunciaIdToOpen}
+        refreshKey={dashboardRefreshKey}
+        empresaSelecionada={empresaAtiva}
+      />
 
       {/* Relatórios Dialog */}
       <Dialog open={relatoriosOpen} onOpenChange={setRelatoriosOpen}>

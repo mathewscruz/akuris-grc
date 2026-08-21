@@ -101,6 +101,9 @@ export const denunciasAdmin = {
           impedimento_declarado: 'Impedimento declarado',
           evidencia_anexada: 'Evidência anexada',
           evidencia_removida: 'Evidência removida',
+          convertida_incidente: 'Convertida em incidente',
+          convertida_risco: 'Convertida em risco',
+          convertida_plano_acao: 'Convertida em plano de ação',
         },
       },
       /* A reunião do art. 9.º/2, e a ata que o art. 18.º/2 exige. */
@@ -150,6 +153,53 @@ export const denunciasAdmin = {
         via o que chegava pelo canal e não tinha por onde juntar o que a
         apuração recolhia.
       */
+      /*
+        As três colunas de ligação existiam desde a onda 2 e nenhuma tela as
+        usava: o canal ficava ao lado do GRC em vez de fazer parte dele.
+      */
+      /* A consultoria que gere o canal de vários clientes — o modelo de
+         receita de quem vende só canal. A porta abre-se de dentro. */
+      consultoria: {
+        titulo: 'Acesso de consultoria',
+        descricao:
+          'Dê a uma consultoria externa acesso ao canal desta empresa. Ela passa a ver e tratar as denúncias — e mais nada.',
+        vazio: 'Nenhuma consultoria com acesso.',
+        email: 'E-mail de quem vai gerir',
+        conceder: 'Conceder',
+        concedido: 'Acesso concedido',
+        erroConceder: 'Não foi possível conceder o acesso',
+        semConta: 'Não há conta no Akuris com esse e-mail. Peça para se cadastrar primeiro.',
+        revogado: 'Acesso revogado',
+        erroRevogar: 'Não foi possível revogar',
+        desde: 'desde {data}',
+        alcance:
+          'O acesso vale só para o canal de denúncia: riscos, contratos, documentos e o resto do GRC continuam fora do alcance.',
+        aVer: 'Vendo o canal de',
+        cliente: 'cliente',
+      },
+      converter: {
+        titulo: 'Desdobramentos',
+        explicacao:
+          'O que ficou provado vira trabalho nos outros módulos. Só segue o título e o protocolo — o relato pode identificar quem denunciou.',
+        origem: 'Origem: denúncia {protocolo}',
+        criar: {
+          incidente: 'Abrir incidente',
+          risco: 'Registrar risco',
+          plano_acao: 'Criar plano de ação',
+        },
+        ver: {
+          incidente: 'Ver incidente',
+          risco: 'Ver risco',
+          plano_acao: 'Ver plano de ação',
+        },
+        criado: {
+          incidente: 'Incidente aberto',
+          risco: 'Risco registrado',
+          plano_acao: 'Plano de ação criado',
+        },
+        criando: 'Criando…',
+        erro: 'Não foi possível criar',
+      },
       anexos: {
         doCanal: 'Enviado por quem denunciou',
         doCanalAjuda: 'Chegou com o relato. Não se apaga daqui: é prova de quem denunciou.',
@@ -556,6 +606,9 @@ export const denunciasAdmin = {
           impedimento_declarado: 'Conflict of interest declared',
           evidencia_anexada: 'Evidence attached',
           evidencia_removida: 'Evidence removed',
+          convertida_incidente: 'Turned into an incident',
+          convertida_risco: 'Turned into a risk',
+          convertida_plano_acao: 'Turned into an action plan',
         },
       },
       reuniao: {
@@ -598,6 +651,47 @@ export const denunciasAdmin = {
           videochamada: 'Video call',
           telefone: 'Phone',
         },
+      },
+      consultoria: {
+        titulo: 'Consultancy access',
+        descricao:
+          'Give an outside consultancy access to this company’s channel. They can see and handle the reports — and nothing else.',
+        vazio: 'No consultancy has access.',
+        email: 'Email of the person who will manage it',
+        conceder: 'Grant',
+        concedido: 'Access granted',
+        erroConceder: 'Could not grant access',
+        semConta: 'No Akuris account with that email. Ask them to sign up first.',
+        revogado: 'Access revoked',
+        erroRevogar: 'Could not revoke',
+        desde: 'since {data}',
+        alcance:
+          'Access covers the whistleblowing channel only: risks, contracts, documents and the rest of the GRC stay out of reach.',
+        aVer: 'Viewing the channel of',
+        cliente: 'client',
+      },
+      converter: {
+        titulo: 'Follow-ups',
+        explicacao:
+          'What was substantiated becomes work in the other modules. Only the title and protocol carry over — the report itself may identify the reporter.',
+        origem: 'From report {protocolo}',
+        criar: {
+          incidente: 'Open incident',
+          risco: 'Register risk',
+          plano_acao: 'Create action plan',
+        },
+        ver: {
+          incidente: 'View incident',
+          risco: 'View risk',
+          plano_acao: 'View action plan',
+        },
+        criado: {
+          incidente: 'Incident opened',
+          risco: 'Risk registered',
+          plano_acao: 'Action plan created',
+        },
+        criando: 'Creating…',
+        erro: 'Could not create',
       },
       anexos: {
         doCanal: 'Sent by the reporter',

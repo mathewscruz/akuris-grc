@@ -10,6 +10,7 @@ import { IntegrationHub } from '@/components/configuracoes/IntegrationHub';
 import { ConfiguracoesDenuncia } from '@/components/denuncia/ConfiguracoesDenuncia';
 import { CategoriasDenuncia } from '@/components/denuncia/CategoriasDenuncia';
 import { CanalMarcaEComite } from '@/components/denuncia/CanalMarcaEComite';
+import { CanalConsultoria } from '@/components/denuncia/CanalConsultoria';
 import { AssinaturaTab } from '@/components/configuracoes/AssinaturaTab';
 import { CreditosIAManager } from '@/components/configuracoes/CreditosIAManager';
 import { UsersAccessTab } from '@/components/configuracoes/UsersAccessTab';
@@ -193,6 +194,7 @@ const Configuracoes = () => {
               {/* Marca, prazos legais, QR e comité de ética: o que faz do
                   canal um produto que se revende. */}
               <CanalMarcaEComite />
+              <CanalConsultoria />
               <CategoriasDenuncia />
             </div>
           </TabsContent>
