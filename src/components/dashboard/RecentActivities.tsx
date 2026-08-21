@@ -384,7 +384,7 @@ export function RecentActivities({ className }: { className?: string }) {
                     key={activity.id}
                     type="button"
                     onClick={() => handleActivityClick(activity)}
-                    className="group flex w-full items-start gap-3 border-b border-border/60 py-2.5 text-left transition-ui hover:bg-accent"
+                    className="realce-linha group flex w-full items-start gap-3 border-b border-border/60 py-2.5 text-left transition-ui"
                   >
                     <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center">
                       {getIcon(activity.module)}

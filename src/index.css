@@ -527,6 +527,52 @@ input:-webkit-autofill:focus {
 
 /* Component Utilities */
 @layer utilities {
+  /**
+   * Realce de linha de lista — nasce e morre em transparência.
+   *
+   * Um `hover:bg-accent` numa linha de largura total é um rectângulo de canto
+   * recto: encosta ao branco em duas arestas verticais duras, uma de cada
+   * ponta. Clareamos a cor e a aresta continuou lá, porque o problema nunca
+   * foi a cor — era a FORMA como ela acaba.
+   *
+   * Aqui o realce vai a zero nos primeiros e nos últimos 2rem, e as pontas são
+   * arredondadas. Onde havia um corte, há uma passagem.
+   *
+   * Fica em CSS e não em classes utilitárias porque o gradiente tem quatro
+   * paragens e repete-se em várias listas: escrito à mão em cada uma, era
+   * garantido divergirem.
+   */
+  .realce-linha {
+    border-radius: 0.375rem;
+    transition: background-image 0.15s ease-out;
+  }
+
+  .realce-linha:hover,
+  .realce-linha:focus-visible {
+    background-image: linear-gradient(
+      90deg,
+      hsl(var(--accent) / 0) 0,
+      hsl(var(--accent)) 2rem,
+      hsl(var(--accent)) calc(100% - 2rem),
+      hsl(var(--accent) / 0) 100%
+    );
+  }
+
+  /* Numa lista estreita não há 4rem para gastar em desvanecimento: o realce
+     ficaria só bordas. Aí a passagem é mais curta. */
+  @media (max-width: 640px) {
+    .realce-linha:hover,
+    .realce-linha:focus-visible {
+      background-image: linear-gradient(
+        90deg,
+        hsl(var(--accent) / 0) 0,
+        hsl(var(--accent)) 0.75rem,
+        hsl(var(--accent)) calc(100% - 0.75rem),
+        hsl(var(--accent) / 0) 100%
+      );
+    }
+  }
+
   /* Akuris Accent Bar - Signature Element */
   .governaii-accent-bar {
     position: relative;

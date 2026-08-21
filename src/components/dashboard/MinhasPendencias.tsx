@@ -79,7 +79,7 @@ export function MinhasPendencias() {
               <button
                 type="button"
                 onClick={() => navigate(p.href)}
-                className="group flex w-full items-center gap-2 border-b border-border/60 py-2 text-left transition-ui last:border-0 hover:bg-accent"
+                className="realce-linha group flex w-full items-center gap-2 border-b border-border/60 py-2 text-left transition-ui last:border-0"
               >
                 {/*
                   O ponto diz só uma coisa: passou do prazo, ou não. A
