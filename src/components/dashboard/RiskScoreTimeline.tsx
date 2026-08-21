@@ -19,6 +19,8 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { getAppLocale } from '@/lib/i18n-locale';
 import { chartSeries, CHART_GRID, CHART_AXIS, CHART_AREA_OPACITY, CHART_TOOLTIP_STYLE, CHART_FONT } from '@/lib/chart-tokens';
 import { IconTrendUp, IconTrendDown, IconMinus, IconChartLine } from '@/components/icons';
+import { useMatrizConfigEmpresa } from '@/hooks/useMatrizConfigEmpresa';
+import { apetiteScoreDaConfig } from '@/components/riscos/matriz-config';
 import {
   avaliacoesPorRisco,
   avaliacaoVigente,
@@ -30,49 +32,34 @@ type TimeRange = 'daily' | 'weekly' | 'monthly' | 'yearly';
 
 interface PointData {
   date: string;
-  /** Índice de exposição 0-100 (menor = melhor). null quando o período não tem riscos cadastrados ainda. */
+  /** Riscos acima do apetite (menor = melhor). null quando não havia riscos avaliados. */
   score: number | null;
   total: number;
   criticos: number;
   altos: number;
 }
 
-const SEVERITY_WEIGHT = { critico: 4, alto: 3, medio: 2, baixo: 1 } as const;
-/** Meta máxima recomendada de exposição (quanto menor, melhor). */
-const GOAL_VALUE = 20;
-
-const bucketOf = (nivel?: string | null): keyof typeof SEVERITY_WEIGHT | null => {
-  if (!nivel) return null;
-  const v = nivel.toLowerCase();
-  if (v.includes('crit')) return 'critico';
-  if (v.includes('alt')) return 'alto';
-  if (v.includes('med') || v.includes('méd') || v.includes('moder')) return 'medio';
-  if (v.includes('baix')) return 'baixo';
-  return null;
-};
-
 /**
- * Índice de exposição 0–100 (MENOR = MELHOR).
- * 0% = sem riscos / sem exposição. 100% = totalmente vulnerável.
- * Quando o período não tem nenhum risco classificado, retorna null (base zero — não plota).
+ * A meta de riscos acima do apetite é zero — não há outro número defensável.
+ *
+ * O que estava aqui era um índice 0–100: a média das severidades ponderada
+ * (crítico 4, alto 3, médio 2, baixo 1), normalizada pelo pior caso, com meta
+ * fixa em 20. Sendo uma média, cadastrar riscos BAIXOS melhorava o número — o
+ * painel premiava aumentar a carteira sem tratar nada. E `bucketOf`
+ * classificava por `nivel.includes('alt')`, a quarta leitura de rótulo do
+ * produto, cega a qualquer faixa renomeada.
+ *
+ * Passa a ser a mesma contagem da aba Visão geral: riscos cujo score excede o
+ * apetite da matriz vigente.
  */
-const computeExposure = (counts: Record<keyof typeof SEVERITY_WEIGHT, number>): number | null => {
-  const total = counts.critico + counts.alto + counts.medio + counts.baixo;
-  if (total === 0) return null;
-  const peso =
-    counts.critico * SEVERITY_WEIGHT.critico +
-    counts.alto * SEVERITY_WEIGHT.alto +
-    counts.medio * SEVERITY_WEIGHT.medio +
-    counts.baixo * SEVERITY_WEIGHT.baixo;
-  // peso máximo seria total*4 (todos críticos) → normalizar para 0–100.
-  const exposure = (peso / (total * 4)) * 100;
-  return Math.round(Math.min(100, Math.max(0, exposure)));
-};
+const GOAL_VALUE = 0;
 
 export function RiskScoreTimeline() {
   const { profile } = useAuth();
   const { t } = useLanguage();
   const [period, setPeriod] = useState<TimeRange>('monthly');
+  const { data: matriz } = useMatrizConfigEmpresa();
+  const apetite = apetiteScoreDaConfig(matriz);
 
   const { data: base, isLoading } = useQuery({
     queryKey: ['riscos-timeline', profile?.empresa_id],
@@ -80,7 +67,7 @@ export function RiskScoreTimeline() {
       if (!profile?.empresa_id) return { riscos: [], historico: [] };
       const { data: riscos, error } = await supabase
         .from('riscos')
-        .select('id, nivel_risco_residual, nivel_risco_inicial, created_at')
+        .select('id, score_inicial, severidade_inicial, created_at')
         .eq('empresa_id', profile.empresa_id);
       if (error) throw error;
 
@@ -96,7 +83,7 @@ export function RiskScoreTimeline() {
       if (ids.length > 0) {
         const { data: hist, error: histErr } = await supabase
           .from('riscos_historico_avaliacoes')
-          .select('risco_id, created_at, nivel_risco, tipo')
+          .select('risco_id, created_at, score, severidade, tipo')
           .in('risco_id', ids)
           .order('created_at', { ascending: true });
         if (histErr) throw histErr;
@@ -191,22 +178,27 @@ export function RiskScoreTimeline() {
     const porRisco = avaliacoesPorRisco(historico ?? []);
 
     const points: PointData[] = buckets.map(({ end, label }) => {
-      const counts = { critico: 0, alto: 0, medio: 0, baixo: 0 };
+      let acima = 0;
+      let criticos = 0;
+      let altos = 0;
       let existentes = 0;
       for (const r of riscos) {
         if (!jaExistiaEm(r.created_at, end)) continue;
-        existentes += 1;
         const vigente = avaliacaoVigente(porRisco.get(r.id), end);
-        const nivel = vigente?.nivel_risco ?? r.nivel_risco_inicial;
-        const b = bucketOf(nivel);
-        if (b) counts[b] += 1;
+        const score = vigente?.score ?? r.score_inicial;
+        const sev = vigente?.severidade ?? r.severidade_inicial;
+        if (score === null || score === undefined) continue; // ainda por avaliar
+        existentes += 1;
+        if (apetite !== null && score > apetite) acima += 1;
+        if (sev === 'critico') criticos += 1;
+        if (sev === 'alto') altos += 1;
       }
       return {
         date: label,
-        score: computeExposure(counts),
+        score: existentes === 0 ? null : acima,
         total: existentes,
-        criticos: counts.critico,
-        altos: counts.alto,
+        criticos,
+        altos,
       };
     });
 
@@ -228,42 +220,21 @@ export function RiskScoreTimeline() {
         : { value: diff, dir: diff < 0 ? ('down' as const) : ('up' as const) },
       totalAtual: last.total,
     };
-  }, [riscos, historico, period, intlLocale, t]);
+  }, [riscos, historico, period, intlLocale, t, apetite]);
 
   /**
-   * Intervalo do eixo Y colado aos dados, com a meta sempre dentro.
-   *
-   * Arredonda para múltiplos de 10 e garante pelo menos 30 pontos de altura —
-   * senão uma variação de 2 pontos ocuparia o cartão inteiro e pareceria um
-   * desastre.
+   * Escala em contagem: começa sempre no zero, porque zero é a meta e a
+   * distância até lá é a leitura do gráfico. Marcas inteiras — meio risco
+   * acima do apetite não existe.
    */
   const escalaY = useMemo(() => {
-    const valores = displayData
-      .map((p) => p.score)
-      .filter((v): v is number => v !== null);
-    if (valores.length === 0) return { dominio: [0, 100] as [number, number], marcas: [0, 25, 50, 75, 100] };
-
-    const menor = Math.min(...valores, GOAL_VALUE);
-    const maior = Math.max(...valores, GOAL_VALUE);
-    let baixo = Math.max(0, Math.floor((menor - 5) / 10) * 10);
-    let alto = Math.min(100, Math.ceil((maior + 5) / 10) * 10);
-    if (alto - baixo < 30) {
-      const falta = 30 - (alto - baixo);
-      baixo = Math.max(0, baixo - Math.ceil(falta / 2));
-      alto = Math.min(100, alto + Math.floor(falta / 2));
-    }
-    /*
-      O topo tem de cair numa marca inteira.
-
-      Com passo de 20 entre 10 e 80 saía 10-30-50-70-80: o último salto pela
-      metade, que se lê como falha de desenho. Esticar o topo até ao próximo
-      múltiplo do passo custa uns pixels de folga e mantém a escala regular.
-    */
-    const passo = Math.ceil((alto - baixo) / 4 / 5) * 5;
-    alto = baixo + Math.ceil((alto - baixo) / passo) * passo;
+    const valores = displayData.map((p) => p.score).filter((v): v is number => v !== null);
+    const maior = Math.max(1, ...valores);
+    const passo = Math.max(1, Math.ceil(maior / 4));
+    const alto = passo * 4;
     const marcas: number[] = [];
-    for (let v = baixo; v <= alto; v += passo) marcas.push(v);
-    return { dominio: [baixo, alto] as [number, number], marcas };
+    for (let v = 0; v <= alto; v += passo) marcas.push(v);
+    return { dominio: [0, alto] as [number, number], marcas };
   }, [displayData]);
 
   if (isLoading) {
@@ -293,7 +264,9 @@ export function RiskScoreTimeline() {
           {latestScore !== null && (
             <div className="flex items-center gap-2 text-sm flex-wrap">
               <span className="font-bold text-foreground tabular-nums">{latestScore}</span>
-              <span className="text-xs text-muted-foreground">/ 100</span>
+              <span className="text-xs text-muted-foreground">
+                {t('dashWidgets.timeline.aboveAppetite')}
+              </span>
               {delta && (
                 <span
                   className={`inline-flex items-center gap-1 text-xs font-medium ${
@@ -390,7 +363,7 @@ export function RiskScoreTimeline() {
                   stroke={CHART_AXIS}
                   strokeDasharray="4 4"
                   label={{
-                    value: t('dashWidgets.timeline.goal', { value: GOAL_VALUE }),
+                    value: t('dashWidgets.timeline.goalZero'),
                     /*
                       `position: 'right'` punha o rótulo FORA da área de
                       desenho: "Meta ≤ 20" saía cortado no "M" contra a borda
@@ -417,7 +390,7 @@ export function RiskScoreTimeline() {
                     const extra = p
                       ? t('dashWidgets.timeline.tooltipExtra', { crit: p.criticos, high: p.altos })
                       : '';
-                    return [`${value}${extra}`, t('dashWidgets.timeline.exposureIndex')];
+                    return [`${value}${extra}`, t('dashWidgets.timeline.aboveAppetiteLabel')];
                   }}
                 />
                 <Area

@@ -29,8 +29,11 @@ export interface AvaliacaoNoTempo {
    */
   tipo?: string | null;
   nivel_risco?: string | null;
-  probabilidade?: string | null;
-  impacto?: string | null;
+  probabilidade?: number | null;
+  impacto?: number | null;
+  /** Calculados no banco: score e severidade canónica da avaliação. */
+  score?: number | null;
+  severidade?: string | null;
 }
 
 /** Entre duas avaliações do mesmo instante, a residual é a que vigora. */

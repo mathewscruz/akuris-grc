@@ -7,8 +7,10 @@ import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DateField } from '@/components/ui/date-field';
-import { financialExposure } from './risk-utils';
-import { nivelRiscoFromConfig, type MatrizConfiguracao } from './matriz-config';
+import { financialExposure, scoreFromMatriz } from './risk-utils';
+import { severidadeDeFaixas } from '@/lib/metrics/riscos';
+import { nivelRiscoFromConfig, apetiteScoreDaConfig, type MatrizConfiguracao } from './matriz-config';
+import { useMatrizConfigEmpresa } from '@/hooks/useMatrizConfigEmpresa';
 import { useEmpresaMoeda } from '@/hooks/useEmpresaMoeda';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -37,7 +39,6 @@ const makeRiscoSchema = (t: (k: string) => string) => z.object({
   codigo: z.string().trim().max(20).regex(/^$|^[A-Za-z0-9][A-Za-z0-9._-]*$/, t('fin.validacao.codigoInvalido')).optional(),
   categoria_id: z.string().optional(),
   descricao: z.string().optional(),
-  matriz_id: z.string().min(1, t('fin.validacao.matrizObrigatoria')),
   responsavel: z.string().optional(),
   probabilidade_inicial: z.string().min(1, t('fin.validacao.probabilidadeObrigatoria')),
   impacto_inicial: z.string().min(1, t('fin.validacao.impactoObrigatorio')),
@@ -88,29 +89,29 @@ interface Props {
 
 export function RiscoFormWizard({ risco, onSuccess }: Props) {
   const { t } = useLanguage();
+  // A matriz é a vigente da empresa. Era um campo obrigatório do formulário
+  // com uma única opção para escolher, e o utilizador tinha de a seleccionar
+  // antes de conseguir avaliar seja o que for.
+  const { data: matrizVigente } = useMatrizConfigEmpresa();
   const { format: formatMoedaEmpresa, simbolo: simboloMoeda } = useEmpresaMoeda();
   const { profile } = useAuth();
   const { notify } = useIntegrationNotify();
   const [loading, setLoading] = useState(false);
-  const [matrizes, setMatrizes] = useState<Matriz[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [ativos, setAtivos] = useState<Ativo[]>([]);
-  const [selectedMatriz, setSelectedMatriz] = useState<Matriz | null>(null);
   const [anexosAceite, setAnexosAceite] = useState<any[]>([]);
   const [invalidarAceiteOpen, setInvalidarAceiteOpen] = useState(false);
   const [pendingData, setPendingData] = useState<RiscoForm | null>(null);
   
-  const TABS = ['identificacao', 'avaliacao', 'detalhes', 'residual', 'aceite'] as const;
+  const TABS = ['identificacao', 'avaliacao', 'acompanhamento'] as const;
   type TabKey = typeof TABS[number];
   const [activeTab, setActiveTab] = useState<TabKey>('identificacao');
 
   /** DEFECT 5 — campos obrigatórios por etapa (validação inline via RHF/zod). */
   const REQUIRED_FIELDS_BY_TAB: Record<TabKey, (keyof RiscoForm)[]> = {
-    identificacao: ['nome', 'matriz_id'],
+    identificacao: ['nome'],
     avaliacao: ['probabilidade_inicial', 'impacto_inicial'],
-    detalhes: [],
-    residual: [],
-    aceite: [],
+    acompanhamento: [],
   };
 
   const goToTab = async (direction: 'prev' | 'next') => {
@@ -130,11 +131,19 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
 
   const form = useForm<RiscoForm>({
     resolver: zodResolver(riscoSchema),
+    /*
+      "Nome é obrigatório" ficava em vermelho depois de o nome estar
+      preenchido. A navegação entre etapas valida com `form.trigger()`, que
+      escreve o erro sem marcar o formulário como submetido — e a revalidação
+      automática do RHF só arranca depois do primeiro submit. O utilizador
+      corrigia o campo e o ecrã continuava a acusá-lo.
+    */
+    mode: 'onChange',
+    reValidateMode: 'onChange',
     defaultValues: {
       nome: '',
       codigo: '',
       descricao: '',
-      matriz_id: '',
       categoria_id: '',
       responsavel: '',
       probabilidade_inicial: '',
@@ -155,7 +164,6 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
     }
   });
 
-  const watchMatrizId = form.watch('matriz_id');
   const watchProbabilidade = form.watch('probabilidade_inicial');
   const watchImpacto = form.watch('impacto_inicial');
   const watchProbabilidadeResidual = form.watch('probabilidade_residual');
@@ -167,14 +175,13 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
   }, []);
 
   useEffect(() => {
-    if (risco && matrizes.length > 0) {
+    if (risco) {
       logger.debug('📝 Carregando dados do risco para edição:', { data: risco });
       
       form.reset({
         nome: risco.nome || '',
         codigo: (risco as any).codigo || '',
         descricao: risco.descricao || '',
-        matriz_id: risco.matriz_id || '',
         categoria_id: risco.categoria_id || '',
         responsavel: risco.responsavel || '',
         probabilidade_inicial: risco.probabilidade_inicial?.toString() || '',
@@ -194,65 +201,20 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
         data_proxima_revisao: risco.data_proxima_revisao || ''
       });
 
-      // Forçar seleção da matriz após reset do form
-      if (risco.matriz_id) {
-        const matriz = matrizes.find(m => m.id === risco.matriz_id);
-        if (matriz && matriz.configuracao && matriz.configuracao[0]) {
-          logger.debug('Matriz carregada automaticamente', { data: matriz.nome });
-          setSelectedMatriz({
-            ...matriz,
-            configuracao: {
-              ...matriz.configuracao[0],
-              metodo_calculo: matriz.configuracao[0].metodo_calculo || 'multiplicacao'
-            }
-          } as any);
-        }
-      }
-
       if (risco.id) {
         fetchAnexosAceite(risco.id);
         fetchAtivosVinculados(risco.id);
       }
     }
-  }, [risco, matrizes]);
-
-  useEffect(() => {
-    if (watchMatrizId) {
-      const matriz = matrizes.find(m => m.id === watchMatrizId);
-      if (matriz && matriz.configuracao && matriz.configuracao[0]) {
-        setSelectedMatriz({
-          ...matriz,
-          configuracao: {
-            ...matriz.configuracao[0],
-            metodo_calculo: matriz.configuracao[0].metodo_calculo || 'multiplicacao'
-          }
-        } as any);
-      } else {
-        setSelectedMatriz(matriz || null);
-      }
-    }
-  }, [watchMatrizId, matrizes]);
+  }, [risco]);
 
   const fetchData = async () => {
     if (!profile?.empresa_id) return;
     try {
-      const [matrizesRes, categoriasRes, ativosRes] = await Promise.all([
-        supabase.from('riscos_matrizes').select(`
-          id,
-          nome,
-          configuracao:riscos_matriz_configuracao(
-            escala_probabilidade,
-            escala_impacto,
-            niveis_risco,
-            metodo_calculo
-          )
-        `).eq('empresa_id', profile.empresa_id),
+      const [categoriasRes, ativosRes] = await Promise.all([
         supabase.from('riscos_categorias').select('id, nome, cor').eq('empresa_id', profile.empresa_id),
         supabase.from('ativos').select('id, nome, tipo').eq('empresa_id', profile.empresa_id)
       ]);
-
-      // Só matrizes com configuração: sem escalas/faixas o nível não é calculável.
-      if (matrizesRes.data) setMatrizes(matrizesRes.data.filter(m => m.configuracao?.[0]));
 
       if (categoriasRes.data) setCategorias(categoriasRes.data);
       if (ativosRes.data) setAtivos(ativosRes.data);
@@ -308,13 +270,23 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
    * banco vinha desta cópia. Hoje o valor gravado é sempre o do trigger
    * `trg_risco_calcular`; isto aqui só mostra.
    */
-  const configMatriz = (selectedMatriz?.configuracao ?? null) as MatrizConfiguracao | null;
+  const configMatriz: MatrizConfiguracao | null = matrizVigente ?? null;
+  const apetiteScore = apetiteScoreDaConfig(configMatriz);
 
   const nivelInicialCalculado =
     nivelRiscoFromConfig(watchProbabilidade, watchImpacto, configMatriz) || '';
 
   const nivelResidualCalculado =
     nivelRiscoFromConfig(watchProbabilidadeResidual, watchImpactoResidual, configMatriz) || '';
+
+  const scoreDe = (pRaw?: string | null, iRaw?: string | null): number | null => {
+    const pn = Number(pRaw);
+    const inum = Number(iRaw);
+    if (!Number.isFinite(pn) || !Number.isFinite(inum) || !pRaw || !iRaw) return null;
+    return scoreFromMatriz(pn, inum, configMatriz?.metodo_calculo);
+  };
+  const scoreInicial = scoreDe(watchProbabilidade, watchImpacto);
+  const scoreResidual = scoreDe(watchProbabilidadeResidual, watchImpactoResidual);
 
   /**
    * Reavaliar (probabilidade, impacto ou controlos) invalida o aceite vigente.
@@ -348,16 +320,11 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
     }
     
     // Validar campos obrigatórios
-    if (!data.matriz_id) {
+    if (!configMatriz) {
       toast.error(t('fin.riscos.wizard.erroMatriz'));
       return;
     }
     
-    if (!selectedMatriz) {
-      toast.error(t('fin.riscos.wizard.erroConfigMatriz'));
-      return;
-    }
-
     // QA-065: criação não pode começar como Tratado; em edição, a evidência
     // persistida precisa conter >= 1 tratamento requerido e todos concluídos.
     if (data.status === STATUS_TRATADO) {
@@ -622,20 +589,19 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
 
   // Status visual da aba (preenchido / com erro)
   const watchNome = form.watch('nome');
-  const watchMatriz = form.watch('matriz_id');
   const watchStatus = form.watch('status');
   const errors = form.formState.errors;
 
   const tabState = (key: TabKey): 'completed' | 'error' | 'pending' => {
     if (key === 'identificacao') {
-      if (errors.nome || errors.matriz_id) return 'error';
-      return watchNome && watchMatriz ? 'completed' : 'pending';
+      if (errors.nome) return 'error';
+      return watchNome ? 'completed' : 'pending';
     }
     if (key === 'avaliacao') {
       if (errors.probabilidade_inicial || errors.impacto_inicial) return 'error';
       return watchProbabilidade && watchImpacto ? 'completed' : 'pending';
     }
-    if (key === 'detalhes') {
+    if (key === 'acompanhamento') {
       // status tem default 'identificado' — exigir pelo menos um campo livre preenchido.
       const causas = form.getValues('causas');
       const consequencias = form.getValues('consequencias');
@@ -643,30 +609,29 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
       const ativos = form.getValues('ativos_vinculados');
       return (causas?.trim() || consequencias?.trim() || controles?.trim() || (ativos && ativos.length > 0)) ? 'completed' : 'pending';
     }
-    if (key === 'residual') {
-      return watchProbabilidadeResidual && watchImpactoResidual ? 'completed' : 'pending';
-    }
-    if (key === 'aceite') {
-      return watchAceito ? 'completed' : 'pending';
-    }
     return 'pending';
   };
 
+  /**
+   * Cor da faixa pela POSIÇÃO na matriz, não pelo nome.
+   *
+   * Isto comparava `nivel.includes('alto')` — a quinta leitura de rótulo do
+   * produto. Numa matriz com faixas "Tolerável / Moderado / Sério /
+   * Intolerável" nenhuma delas batia, e o nível calculado saía sempre cinzento.
+   */
   const nivelCorClass = (nivel: string) => {
-    const n = nivel?.toLowerCase() || '';
-    if (n.includes('crít') || n.includes('crit')) return 'bg-destructive text-destructive-foreground border-destructive';
-    if (n.includes('alto')) return 'bg-destructive/85 text-destructive-foreground border-destructive/85';
-    if (n.includes('médio') || n.includes('medio')) return 'bg-warning text-warning-foreground border-warning';
-    if (n.includes('baixo')) return 'bg-success text-success-foreground border-success';
+    const sev = severidadeDeFaixas(nivel, configMatriz?.niveis_risco);
+    if (sev === 'critico') return 'bg-destructive text-destructive-foreground border-destructive';
+    if (sev === 'alto') return 'bg-destructive/85 text-destructive-foreground border-destructive/85';
+    if (sev === 'medio') return 'bg-warning text-warning-foreground border-warning';
+    if (sev === 'baixo') return 'bg-success text-success-foreground border-success';
     return 'bg-muted text-foreground border-border';
   };
 
   const tabsMeta: Array<{ key: TabKey; label: string; icon: any; description: string }> = [
     { key: 'identificacao', label: t('fin.riscos.wizard.stepIdentificacao'), icon: IconFile, description: t('fin.riscos.wizard.stepIdentificacaoDesc') },
-    { key: 'avaliacao', label: t('fin.riscos.wizard.stepAvaliacao'), icon: IconGauge, description: t('campos.risco.avaliacaoInicialDescShort') },
-    { key: 'detalhes', label: 'Detalhes', icon: IconSettings, description: 'Status, controles, ativos' },
-    { key: 'residual', label: t('fin.riscos.wizard.stepResidual'), icon: IconLink, description: t('fin.riscos.wizard.stepResidualDesc') },
-    { key: 'aceite', label: t('fin.riscos.wizard.stepAceite'), icon: IconShieldCheck, description: t('fin.riscos.wizard.stepAceiteDesc') },
+    { key: 'avaliacao', label: t('fin.riscos.wizard.stepAvaliacao'), icon: IconGauge, description: t('fin.riscos.wizard.stepAvaliacaoDesc') },
+    { key: 'acompanhamento', label: t('fin.riscos.wizard.stepAcompanhamento'), icon: IconShieldCheck, description: t('fin.riscos.wizard.stepAcompanhamentoDesc') },
   ];
 
   const TabIndicator = ({ state }: { state: 'completed' | 'error' | 'pending' }) => {
@@ -923,48 +888,42 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="matriz_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t('campos.risco.matriz')}</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder={t('fin.riscos.wizard.selecioneMatriz')} />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {matrizes.map((matriz) => {
-                          const cfg = matriz.configuracao?.[0];
-                          const apetite = (cfg?.niveis_risco as any[] | undefined)?.find((n: any) => n?.apetite);
-                          const resumo = cfg
-                            ? [
-                                `${(cfg.escala_probabilidade as any[])?.length || 0}x${(cfg.escala_impacto as any[])?.length || 0}`,
-                                cfg.metodo_calculo === 'soma' ? 'P + I' : 'P × I',
-                                apetite ? `apetite ≤${apetite.max}` : null,
-                              ].filter(Boolean).join(' · ')
-                            : null;
-                          return (
-                            <SelectItem key={matriz.id} value={matriz.id}>
-                              <span className="flex items-center gap-2">
-                                <span>{matriz.nome}</span>
-                                {resumo && (
-                                  <span className="text-xs text-muted-foreground">{resumo}</span>
-                                )}
-                              </span>
-                            </SelectItem>
-                          );
-                        })}
 
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>{t('fin.riscos.wizard.matrizHint')}</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {/*
+                Causas e consequências descrevem o risco — estavam na etapa de
+                avaliação, entre o impacto financeiro e a matriz residual, como
+                se fossem parte da conta.
+              */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="causas"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('campos.risco.causas')}</FormLabel>
+                      <FormControl>
+                        <Textarea placeholder={t('campos.risco.causasPlaceholder')} className="min-h-[80px]" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="consequencias"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('fin.riscos.wizard.consequencias')}</FormLabel>
+                      <FormControl>
+                        <Textarea placeholder={t('campos.risco.consequenciasPlaceholder')} className="min-h-[80px]" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
             </TabsContent>
 
             {/* AVALIAÇÃO INICIAL */}
@@ -988,8 +947,8 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {(selectedMatriz?.configuracao as any)?.escala_probabilidade?.length > 0
-                            ? ((selectedMatriz?.configuracao as any)?.escala_probabilidade || []).map((item: any) => (
+                          {(configMatriz?.escala_probabilidade?.length ?? 0) > 0
+                            ? (configMatriz?.escala_probabilidade || []).map((item: any) => (
                                 <SelectItem key={item.valor} value={item.valor.toString()}>
                                   {item.valor} - {item.descricao}
                                 </SelectItem>
@@ -1019,8 +978,8 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {(selectedMatriz?.configuracao as any)?.escala_impacto?.length > 0
-                            ? ((selectedMatriz?.configuracao as any)?.escala_impacto || []).map((item: any) => (
+                          {(configMatriz?.escala_impacto?.length ?? 0) > 0
+                            ? (configMatriz?.escala_impacto || []).map((item: any) => (
                                 <SelectItem key={item.valor} value={item.valor.toString()}>
                                   {item.valor} - {item.descricao}
                                 </SelectItem>
@@ -1040,13 +999,26 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
 
               {nivelInicialCalculado && (
                 <Card className={cn("border-2", nivelCorClass(nivelInicialCalculado).split(' ').filter(c => c.startsWith('border-')).join(' '))}>
-                  <CardContent className="p-4 flex items-center justify-between">
-                    <div>
+                  <CardContent className="p-4 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
                       <div className="text-xs text-muted-foreground">{t('fin.riscos.wizard.nivelCalculado')}</div>
                       <div className="text-2xl font-bold mt-1">{nivelInicialCalculado}</div>
+                      {/* Saber o nível sem saber se ele cabe no apetite obriga
+                          a ir procurar a resposta noutro ecrã. */}
+                      {scoreInicial !== null && apetiteScore !== null && (
+                        <div className={cn(
+                          'text-xs mt-1 font-medium',
+                          scoreInicial > apetiteScore ? 'text-destructive' : 'text-success',
+                        )}>
+                          {scoreInicial > apetiteScore
+                            ? t('fin.riscos.wizard.acimaDoApetite', { apetite: apetiteScore })
+                            : t('fin.riscos.wizard.dentroDoApetite', { apetite: apetiteScore })}
+                        </div>
+                      )}
                     </div>
-                    <Badge className={cn("text-base px-3 py-1.5 border", nivelCorClass(nivelInicialCalculado))}>
+                    <Badge className={cn("text-base px-3 py-1.5 border shrink-0", nivelCorClass(nivelInicialCalculado))}>
                       P{watchProbabilidade} × I{watchImpacto}
+                      {scoreInicial !== null ? ` = ${scoreInicial}` : ''}
                     </Badge>
                   </CardContent>
                 </Card>
@@ -1083,16 +1055,64 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                 }}
               />
 
+              {/*
+                Os controlos que já existem ficam entre o inerente e o
+                residual, que é a ordem em que se pensa: isto é o risco bruto,
+                isto é o que já fazemos, e por isso o residual é este.
+              */}
+              <FormField
+                control={form.control}
+                name="controles_existentes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('campos.risco.controlesExistentes')}</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder={t('fin.riscos.wizard.controlesPlaceholder')} className="min-h-[80px]" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/*
+                Inerente e residual na mesma etapa, por baixo um do outro.
+                Eram duas etapas separadas por uma terceira ("Detalhes"), e o
+                utilizador tinha de sair da avaliação para escrever quais são
+                os controlos que justificam justamente a descida do residual.
+              */}
+              <div className="pt-2 mt-2 border-t border-border/60">
+              <div>
+                <h2 className="text-lg font-semibold flex items-center gap-2"><IconLink className="h-5 w-5" />{t('fin.riscos.wizard.avaliacaoResidualTitle')}</h2>
+                <p className="text-sm text-muted-foreground">{t('fin.riscos.wizard.avaliacaoResidualDesc')}</p>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
-                  name="causas"
+                  name="probabilidade_residual"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('campos.risco.causas')}</FormLabel>
-                      <FormControl>
-                        <Textarea placeholder={t('campos.risco.causasPlaceholder')} className="min-h-[80px]" {...field} />
-                      </FormControl>
+                      <FormLabel>{t('campos.risco.probabilidadeResidual')}</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder={t('fin.comum.selecione')} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {(configMatriz?.escala_probabilidade?.length ?? 0) > 0
+                            ? (configMatriz?.escala_probabilidade || []).map((item: any) => (
+                                <SelectItem key={item.valor} value={item.valor.toString()}>
+                                  {item.valor} - {item.descricao}
+                                </SelectItem>
+                              ))
+                            : [1, 2, 3, 4, 5].map((value) => (
+                                <SelectItem key={value} value={value.toString()}>
+                                  {value}
+                                </SelectItem>
+                              ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -1100,22 +1120,54 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
 
                 <FormField
                   control={form.control}
-                  name="consequencias"
+                  name="impacto_residual"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{t('fin.riscos.wizard.consequencias')}</FormLabel>
-                      <FormControl>
-                        <Textarea placeholder={t('campos.risco.consequenciasPlaceholder')} className="min-h-[80px]" {...field} />
-                      </FormControl>
+                      <FormLabel>{t('campos.risco.impactoResidual')}</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder={t('fin.comum.selecione')} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {(configMatriz?.escala_impacto?.length ?? 0) > 0
+                            ? (configMatriz?.escala_impacto || []).map((item: any) => (
+                                <SelectItem key={item.valor} value={item.valor.toString()}>
+                                  {item.valor} - {item.descricao}
+                                </SelectItem>
+                              ))
+                            : [1, 2, 3, 4, 5].map((value) => (
+                                <SelectItem key={value} value={value.toString()}>
+                                  {value}
+                                </SelectItem>
+                              ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
               </div>
+
+              {nivelResidualCalculado && (
+                <Card className={cn("border-2", nivelCorClass(nivelResidualCalculado).split(' ').filter(c => c.startsWith('border-')).join(' '))}>
+                  <CardContent className="p-4 flex items-center justify-between">
+                    <div>
+                      <div className="text-xs text-muted-foreground">{t('fin.riscos.wizard.nivelResidualCalculado')}</div>
+                      <div className="text-2xl font-bold mt-1">{nivelResidualCalculado}</div>
+                    </div>
+                    <Badge className={cn("text-base px-3 py-1.5 border", nivelCorClass(nivelResidualCalculado))}>
+                      P{watchProbabilidadeResidual} × I{watchImpactoResidual}
+                    </Badge>
+                  </CardContent>
+                </Card>
+              )}
+              </div>
             </TabsContent>
 
             {/* DETALHES */}
-            <TabsContent value="detalhes" className="space-y-4 max-w-3xl mx-auto">
+            <TabsContent value="acompanhamento" className="space-y-4 max-w-3xl mx-auto">
               <div>
                 <h2 className="text-lg font-semibold flex items-center gap-2"><IconSettings className="h-5 w-5" /> {t('cardsKpi.sweep.riscos.detalhesAdicionais')}</h2>
                 <p className="text-sm text-muted-foreground">{t('cardsKpi.sweep.riscos.detalhesAdicionaisDesc')}</p>
@@ -1136,6 +1188,10 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                       <SelectContent>
                         <SelectItem value="identificado">{t('campos.enums.riscoStatus.identificado')}</SelectItem>
                         <SelectItem value="analisado">{t('campos.enums.riscoStatus.analisado')}</SelectItem>
+                        {/* `em_tratamento` existia na gaveta do risco e no
+                            filtro da tabela, mas não aqui: não havia como
+                            colocar um risco nesse estado pelo formulário. */}
+                        <SelectItem value="em_tratamento">{t('sweepRiscos.riscos.detail.emTratamento')}</SelectItem>
                         <SelectItem value="tratado">{t('campos.enums.riscoStatus.tratado')}</SelectItem>
                         <SelectItem value="monitorado">{t('campos.enums.riscoStatus.monitorado')}</SelectItem>
                         <SelectItem value="aceito">{t('campos.enums.riscoStatus.aceito')}</SelectItem>
@@ -1156,20 +1212,6 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                       <DateField value={field.value || null} onChange={(v) => field.onChange(v || '')} />
                     </FormControl>
                     <FormDescription>{t('campos.risco.proxRevisaoDesc')}</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="controles_existentes"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t('campos.risco.controlesExistentes')}</FormLabel>
-                    <FormControl>
-                      <Textarea placeholder={t('fin.riscos.wizard.controlesPlaceholder')} className="min-h-[80px]" {...field} />
-                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -1208,96 +1250,8 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                   )}
                 />
               </div>
-            </TabsContent>
 
-            {/* RESIDUAL */}
-            <TabsContent value="residual" className="space-y-4 max-w-3xl mx-auto">
-              <div>
-                <h2 className="text-lg font-semibold flex items-center gap-2"><IconLink className="h-5 w-5" />{t('fin.riscos.wizard.avaliacaoResidualTitle')}</h2>
-                <p className="text-sm text-muted-foreground">{t('fin.riscos.wizard.avaliacaoResidualDesc')}</p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="probabilidade_residual"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('campos.risco.probabilidadeResidual')}</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder={t('fin.comum.selecione')} />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {(selectedMatriz?.configuracao as any)?.escala_probabilidade?.length > 0
-                            ? ((selectedMatriz?.configuracao as any)?.escala_probabilidade || []).map((item: any) => (
-                                <SelectItem key={item.valor} value={item.valor.toString()}>
-                                  {item.valor} - {item.descricao}
-                                </SelectItem>
-                              ))
-                            : [1, 2, 3, 4, 5].map((value) => (
-                                <SelectItem key={value} value={value.toString()}>
-                                  {value}
-                                </SelectItem>
-                              ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="impacto_residual"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('campos.risco.impactoResidual')}</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder={t('fin.comum.selecione')} />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {(selectedMatriz?.configuracao as any)?.escala_impacto?.length > 0
-                            ? ((selectedMatriz?.configuracao as any)?.escala_impacto || []).map((item: any) => (
-                                <SelectItem key={item.valor} value={item.valor.toString()}>
-                                  {item.valor} - {item.descricao}
-                                </SelectItem>
-                              ))
-                            : [1, 2, 3, 4, 5].map((value) => (
-                                <SelectItem key={value} value={value.toString()}>
-                                  {value}
-                                </SelectItem>
-                              ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              {nivelResidualCalculado && (
-                <Card className={cn("border-2", nivelCorClass(nivelResidualCalculado).split(' ').filter(c => c.startsWith('border-')).join(' '))}>
-                  <CardContent className="p-4 flex items-center justify-between">
-                    <div>
-                      <div className="text-xs text-muted-foreground">{t('fin.riscos.wizard.nivelResidualCalculado')}</div>
-                      <div className="text-2xl font-bold mt-1">{nivelResidualCalculado}</div>
-                    </div>
-                    <Badge className={cn("text-base px-3 py-1.5 border", nivelCorClass(nivelResidualCalculado))}>
-                      P{watchProbabilidadeResidual} × I{watchImpactoResidual}
-                    </Badge>
-                  </CardContent>
-                </Card>
-              )}
-            </TabsContent>
-
-            {/* ACEITE */}
-            <TabsContent value="aceite" className="space-y-4 max-w-3xl mx-auto">
+              <div className="pt-2 mt-2 border-t border-border/60">
               <div>
                 <h2 className="text-lg font-semibold flex items-center gap-2"><IconShieldCheck className="h-5 w-5" />{t('residuos.risco.aceiteRisco')}</h2>
                 <p className="text-sm text-muted-foreground">{t('fin.riscos.wizard.aceiteDesc')}</p>
@@ -1448,6 +1402,7 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
                   )}
                 </>
               )}
+              </div>
             </TabsContent>
           </div>
         </Tabs>
@@ -1477,7 +1432,6 @@ export function RiscoFormWizard({ risco, onSuccess }: Props) {
             {(() => {
               const missing: string[] = [];
               if (!watchNome?.trim()) missing.push(t('p7Wizard.riscos.missingFieldName'));
-              if (!watchMatriz) missing.push(t('p7Wizard.riscos.missingFieldMatriz'));
               if (!watchProbabilidade) missing.push(t('p7Wizard.riscos.missingFieldProbabilidade'));
               if (!watchImpacto) missing.push(t('p7Wizard.riscos.missingFieldImpacto'));
               const reason = missing.length > 0 ? `${t('p7Wizard.missingFieldsPrefix')}: ${missing.join(', ')}` : undefined;
