@@ -27,6 +27,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { IconDownload, IconDelete, IconAdd } from '@/components/icons';
@@ -40,6 +41,10 @@ interface Config {
   idioma_padrao: string;
   prazo_acusacao_dias: number;
   prazo_retorno_dias: number;
+  orgao_externo_nome: string | null;
+  orgao_externo_url: string | null;
+  texto_retaliacao: string | null;
+  retencao_meses: number;
 }
 
 interface Membro {
@@ -72,7 +77,7 @@ export function CanalMarcaEComite() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('denuncias_configuracoes')
-        .select('id, cor_destaque, nome_exibicao, idioma_padrao, prazo_acusacao_dias, prazo_retorno_dias')
+        .select('id, cor_destaque, nome_exibicao, idioma_padrao, prazo_acusacao_dias, prazo_retorno_dias, orgao_externo_nome, orgao_externo_url, texto_retaliacao, retencao_meses')
         .eq('empresa_id', empresaId!)
         .maybeSingle();
       if (error) throw error;
@@ -132,6 +137,10 @@ export function CanalMarcaEComite() {
           idioma_padrao: valor('idioma_padrao') ?? 'pt',
           prazo_acusacao_dias: Number(valor('prazo_acusacao_dias') ?? 7),
           prazo_retorno_dias: Number(valor('prazo_retorno_dias') ?? 90),
+          orgao_externo_nome: valor('orgao_externo_nome') || null,
+          orgao_externo_url: valor('orgao_externo_url') || null,
+          texto_retaliacao: valor('texto_retaliacao') || null,
+          retencao_meses: Number(valor('retencao_meses') ?? 60),
         })
         .eq('id', config.id);
       if (error) throw error;
@@ -258,6 +267,63 @@ export function CanalMarcaEComite() {
                 onChange={(e) => setRascunho({ ...rascunho, prazo_retorno_dias: Number(e.target.value) })}
               />
               <p className="text-micro text-muted-foreground">{t('denunciasAdmin.marca.prazoRetornoAjuda')}</p>
+            </div>
+          </div>
+
+          {/*
+            O que a Diretiva (UE) 2019/1937 obriga a INFORMAR — e que aparece
+            no rodapé das três telas públicas. Não é aviso legal: é o que faz
+            alguém decidir falar.
+          */}
+          <div className="space-y-4 rounded-lg border border-border bg-muted/20 p-4">
+            <p className="text-micro font-semibold uppercase tracking-wide text-muted-foreground">
+              {t('denunciasAdmin.marca.tituloDireitos')}
+            </p>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="orgao_nome">{t('denunciasAdmin.marca.orgaoNome')}</Label>
+                <Input
+                  id="orgao_nome"
+                  value={valor('orgao_externo_nome') ?? ''}
+                  onChange={(e) => setRascunho({ ...rascunho, orgao_externo_nome: e.target.value })}
+                  placeholder={t('denunciasAdmin.marca.orgaoNomePlaceholder')}
+                />
+                <p className="text-micro text-muted-foreground">{t('denunciasAdmin.marca.orgaoAjuda')}</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="orgao_url">{t('denunciasAdmin.marca.orgaoUrl')}</Label>
+                <Input
+                  id="orgao_url"
+                  value={valor('orgao_externo_url') ?? ''}
+                  onChange={(e) => setRascunho({ ...rascunho, orgao_externo_url: e.target.value })}
+                  placeholder="https://"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="retaliacao">{t('denunciasAdmin.marca.retaliacao')}</Label>
+              <Textarea
+                id="retaliacao"
+                rows={3}
+                value={valor('texto_retaliacao') ?? ''}
+                onChange={(e) => setRascunho({ ...rascunho, texto_retaliacao: e.target.value })}
+                placeholder={t('denunciasAdmin.marca.retaliacaoPlaceholder')}
+              />
+              <p className="text-micro text-muted-foreground">{t('denunciasAdmin.marca.retaliacaoAjuda')}</p>
+            </div>
+
+            <div className="max-w-[16rem] space-y-2">
+              <Label htmlFor="retencao">{t('denunciasAdmin.marca.retencao')}</Label>
+              <Input
+                id="retencao"
+                type="number"
+                min={1}
+                value={valor('retencao_meses') ?? 60}
+                onChange={(e) => setRascunho({ ...rascunho, retencao_meses: Number(e.target.value) })}
+              />
+              <p className="text-micro text-muted-foreground">{t('denunciasAdmin.marca.retencaoAjuda')}</p>
             </div>
           </div>
 

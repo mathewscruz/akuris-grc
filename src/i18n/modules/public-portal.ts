@@ -4,6 +4,22 @@
  */
 
 const ptDict = {
+  /* A casca do canal público: identidade da empresa e os direitos que a
+     Diretiva (UE) 2019/1937 obriga a informar. */
+  canal: {
+    titulo: 'Canal de Denúncias',
+    voltar: 'Voltar',
+    direitoSigilo: 'Sigilo',
+    direitoSigiloAnonimo: 'Você pode denunciar sem se identificar. Só o comitê designado tem acesso ao relato.',
+    direitoSigiloIdentificado: 'Sua identidade fica restrita ao comitê designado e não é revelada a mais ninguém.',
+    direitoPrazo: 'Prazos',
+    direitoPrazoTexto: 'Confirmação do recebimento em até {acusacao} dias e retorno sobre a apuração em até {retorno} dias.',
+    direitoExterno: 'Via externa',
+    direitoExternoTexto: 'Você também pode levar o caso diretamente à {orgao}, sem passar por aqui.',
+    direitoExternoSemOrgao: 'Você também pode levar o caso diretamente à autoridade competente, sem passar por aqui.',
+    retaliacaoTitulo: 'Proteção contra retaliação:',
+    retencao: 'Os registros são conservados por {meses} meses.',
+  },
   common: {
     loading: 'Carregando...',
     redirecting: 'Redirecionando...',
@@ -34,6 +50,8 @@ const ptDict = {
     registerDescription: 'Reportar uma irregularidade ou violação',
     consultTitle: 'Consultar Denúncia',
     consultDescription: 'Acompanhar o status de um protocolo',
+    oQueRelatar: 'O que pode ser relatado',
+    oQueRelatarAjuda: 'Na dúvida, relate. A triagem é feita por quem recebe.',
     confidentialityTitle: 'Confidencialidade Garantida',
     confidentialityDescription:
       'Todas as denúncias são tratadas com total confidencialidade e seriedade. Sua identidade será protegida conforme nossa política de privacidade.',
@@ -56,6 +74,14 @@ const ptDict = {
     headerTitle: 'Canal de Denúncias - Registrar Nova Denúncia',
     backToMenu: 'Voltar ao menu inicial',
     cardTitle: 'Registrar Denúncia',
+    /* Registo guiado: os campos são os mesmos, muda quantos se veem de vez. */
+    etapa1: 'O que aconteceu',
+    etapa2: 'Quem é você',
+    etapa3: 'Provas e testemunhas',
+    etapa4: 'Revisão e envio',
+    etapaDe: 'Etapa {atual} de {total}',
+    avancarEtapa: 'Continuar',
+    voltarEtapa: 'Voltar',
     successTitle: 'Denúncia Registrada com Sucesso!',
     yourProtocol: 'Seu protocolo de acompanhamento:',
     yourTrackingCode: 'Seu código de acompanhamento:',
@@ -222,6 +248,7 @@ const ptDict = {
     notFoundDescription: 'Verifique se o número do protocolo está correto',
     searchError: 'Erro ao buscar denúncia. Tente novamente.',
     /* A via de resposta: sem ela, o "direito ao retorno" era só leitura. */
+    acompanhar: 'Acompanhar denúncia',
     conversaTitulo: 'Conversa com o comitê',
     conversaDescricao: 'Acrescente informação ou responda ao comitê sem se identificar.',
     conversaVazia: 'Ainda não há mensagens. Você pode escrever abaixo.',
@@ -264,6 +291,20 @@ const ptDict = {
 };
 
 const enDict: typeof ptDict = {
+  canal: {
+    titulo: 'Whistleblowing Channel',
+    voltar: 'Back',
+    direitoSigilo: 'Confidentiality',
+    direitoSigiloAnonimo: 'You can report without identifying yourself. Only the designated committee sees the report.',
+    direitoSigiloIdentificado: 'Your identity stays with the designated committee and is disclosed to no one else.',
+    direitoPrazo: 'Deadlines',
+    direitoPrazoTexto: 'Receipt acknowledged within {acusacao} days and feedback on the investigation within {retorno} days.',
+    direitoExterno: 'External route',
+    direitoExternoTexto: 'You may also take the case directly to {orgao}, without going through this channel.',
+    direitoExternoSemOrgao: 'You may also take the case directly to the competent authority, without going through this channel.',
+    retaliacaoTitulo: 'Protection against retaliation:',
+    retencao: 'Records are kept for {meses} months.',
+  },
   common: {
     loading: 'Loading...',
     redirecting: 'Redirecting...',
@@ -285,6 +326,8 @@ const enDict: typeof ptDict = {
     deadline: 'Deadline:',
   },
   denunciaMenu: {
+    oQueRelatar: 'What can be reported',
+    oQueRelatarAjuda: 'When in doubt, report it. Triage is done by whoever receives it.',
     channel: 'Whistleblower Channel',
     companyNotFound: 'Company not found',
     companyNotFoundDescription: 'The requested whistleblower channel is unavailable or has been deactivated.',
@@ -316,6 +359,13 @@ const enDict: typeof ptDict = {
     headerTitle: 'Whistleblower Channel - Submit a New Report',
     backToMenu: 'Back to main menu',
     cardTitle: 'Submit a Report',
+    etapa1: 'What happened',
+    etapa2: 'About you',
+    etapa3: 'Evidence and witnesses',
+    etapa4: 'Review and submit',
+    etapaDe: 'Step {atual} of {total}',
+    avancarEtapa: 'Continue',
+    voltarEtapa: 'Back',
     successTitle: 'Report Submitted Successfully!',
     yourProtocol: 'Your tracking protocol number:',
     yourTrackingCode: 'Your tracking code:',
@@ -480,6 +530,7 @@ const enDict: typeof ptDict = {
     notFoundTitle: 'Protocol not found',
     notFoundDescription: 'Check whether the protocol number is correct',
     searchError: 'Error searching for the report. Please try again.',
+    acompanhar: 'Track a report',
     conversaTitulo: 'Conversation with the committee',
     conversaDescricao: 'Add information or reply to the committee without identifying yourself.',
     conversaVazia: 'No messages yet. You can write below.',

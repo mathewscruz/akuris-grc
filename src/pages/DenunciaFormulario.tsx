@@ -19,6 +19,8 @@ import { fetchEmpresaPublicaPorSlug } from '@/lib/denuncia-publica';
 import { logger } from '@/lib/logger';
 import { getCompanyLogo, AKURIS_DEFAULT_LOGO } from '@/lib/brand-logo';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useCanalDenuncia } from '@/hooks/useCanalDenuncia';
+import { CanalLayout } from '@/components/denuncia/CanalLayout';
 import { useMemo } from 'react';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
@@ -88,6 +90,15 @@ const buildDenunciaSchema = (
 
 type DenunciaFormData = z.infer<ReturnType<typeof buildDenunciaSchema>>;
 
+/** Que campos cada etapa tem de validar antes de deixar avançar. */
+const CAMPOS_POR_ETAPA: Record<number, (keyof DenunciaFormData)[]> = {
+  1: ['categoria_id', 'titulo', 'descricao'],
+  2: ['denunciante_nome', 'denunciante_email'],
+  3: [],
+  4: ['politica_aceita'],
+};
+const TOTAL_ETAPAS = 4;
+
 export default function DenunciaFormulario() {
   const { empresa: empresaSlug } = useParams();
   const { t } = useLanguage();
@@ -103,6 +114,17 @@ export default function DenunciaFormulario() {
   /** Ficheiros que NÃO chegaram. A tela final tem de os nomear. */
   const [anexosFalhados, setAnexosFalhados] = useState<string[]>([]);
   const [showSuccess, setShowSuccess] = useState(false);
+  /*
+    O registo passa a ser guiado.
+
+    Era uma página única com onze campos, categoria a anexos. Quem chega aqui
+    costuma estar a hesitar, e uma parede de campos é o momento em que desiste
+    — é por isso que o concorrente anuncia "4 passos" como se fosse recurso.
+    Os campos e a validação são os mesmos; muda quantos se veem de cada vez.
+  */
+  const [etapa, setEtapa] = useState(1);
+  /* Identidade e direitos do canal — a mesma fonte das outras duas telas. */
+  const canal = useCanalDenuncia(empresaSlug);
 
   /** Com denúncias anónimas desligadas, identificar-se deixa de ser opcional. */
   const identificacaoObrigatoria = config ? !config.permitir_anonimas : false;
@@ -452,53 +474,49 @@ export default function DenunciaFormulario() {
   }
 
   return (
-    <div className="min-h-screen bg-[hsl(215,35%,12%)] py-8">
-      <div className="container max-w-2xl mx-auto px-4">
-        {/* Breadcrumb */}
-        <div className="mb-6">
-          <Link 
-            to={`/${empresaSlug}/denuncia`}
-            className="inline-flex items-center text-sm text-sidebar-foreground hover:text-primary transition-colors"
-          >
-            <IconArrowLeft className="w-4 h-4 mr-1" />
-            {t('publicPortal.denunciaForm.backToMenu')}
-          </Link>
-        </div>
-
-        {/* Header com logotipo */}
-        <div className="text-center mb-6">
-          {/* Logotipo da empresa */}
-          <div className="mb-6">
-            <img
-              src={logoUrl}
-              alt={`Logo ${empresa?.nome ?? 'Akuris'}`}
-              className="mx-auto h-20 w-auto object-contain"
-              onError={() => setLogoUrl(AKURIS_DEFAULT_LOGO)}
-            />
-          </div>
-          
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <IconShield className="w-6 h-6 text-primary" />
-            <h2 className="text-xl text-sidebar-foreground">{t('publicPortal.denunciaForm.headerTitle')}</h2>
-          </div>
-        </div>
-
-        {/* Texto de apresentação */}
-        {config.texto_apresentacao && (
-          <Alert className="mb-6 bg-white">
-            <IconShield className="h-4 w-4" />
-            <AlertDescription>{config.texto_apresentacao}</AlertDescription>
-          </Alert>
-        )}
-
+    <CanalLayout
+      empresa={canal.empresa}
+      config={canal.config}
+      nomeDoCanal={canal.nomeDoCanal}
+      estiloDaMarca={canal.estiloDaMarca}
+      etapa={t('publicPortal.denunciaForm.cardTitle')}
+      voltarPara={`/${empresaSlug}/denuncia`}
+    >
+      <div>
         {/* Formulário */}
         <Card className="bg-white">
           <CardHeader>
             <CardTitle>{t('publicPortal.denunciaForm.cardTitle')}</CardTitle>
           </CardHeader>
           <CardContent>
+            {/* Onde estou, e quanto falta. */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between">
+                <p className="text-micro font-semibold uppercase tracking-wide text-muted-foreground">
+                  {t(`publicPortal.denunciaForm.etapa${etapa}`)}
+                </p>
+                <p className="text-micro tabular-nums text-muted-foreground">
+                  {t('publicPortal.denunciaForm.etapaDe', { atual: etapa, total: TOTAL_ETAPAS })}
+                </p>
+              </div>
+              <div className="mt-2 flex gap-1">
+                {[1, 2, 3, 4].map((n) => (
+                  <span
+                    key={n}
+                    className={
+                      n <= etapa
+                        ? 'h-1 flex-1 rounded-full bg-primary'
+                        : 'h-1 flex-1 rounded-full bg-muted'
+                    }
+                  />
+                ))}
+              </div>
+            </div>
+
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                {etapa === 1 && (
+                  <div className="space-y-4">
                 {/* Categoria */}
                 <FormField
                   control={form.control}
@@ -593,6 +611,10 @@ export default function DenunciaFormulario() {
                     denúncias anónimas os campos são opcionais e deixá-los em
                     branco envia a denúncia como anónima; quando não permite, o
                     nome é obrigatório. */}
+                  </div>
+                )}
+                {etapa === 2 && (
+                  <div className="space-y-4">
                 {(
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold">{t(identificacaoObrigatoria ? 'publicPortal.denunciaForm.identificationRequired' : 'publicPortal.denunciaForm.identification')}</h3>
@@ -641,6 +663,10 @@ export default function DenunciaFormulario() {
                   </div>
                 )}
 
+                  </div>
+                )}
+                {etapa === 3 && (
+                  <div className="space-y-4">
                 {/* Testemunhas */}
                 <FormField
                   control={form.control}
@@ -726,6 +752,10 @@ export default function DenunciaFormulario() {
                   </div>
                 )}
 
+                  </div>
+                )}
+                {etapa === 4 && (
+                  <div className="space-y-4">
                 {config.politica_privacidade && (
                   <FormField
                     control={form.control}
@@ -753,22 +783,51 @@ export default function DenunciaFormulario() {
                   />
                 )}
 
+                  </div>
+                )}
                 {/* Botões de ação */}
-                <div className="flex gap-4 pt-4">
-                  <Link to={`/${empresaSlug}/denuncia`} className="flex-1">
-                    <Button type="button" variant="outline" className="w-full">
-                      {t('publicPortal.denunciaForm.cancel')}
+                {/* Avançar só depois de a etapa estar válida: o erro aparece
+                    onde o campo está, e não três telas à frente. */}
+                <div className="flex gap-3 pt-4">
+                  {etapa === 1 ? (
+                    <Link to={`/${empresaSlug}/denuncia`} className="flex-1">
+                      <Button type="button" variant="outline" className="w-full">
+                        {t('publicPortal.denunciaForm.cancel')}
+                      </Button>
+                    </Link>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => setEtapa((e) => e - 1)}
+                    >
+                      {t('publicPortal.denunciaForm.voltarEtapa')}
                     </Button>
-                  </Link>
-                  <Button type="submit" disabled={submitting} className="flex-1">
-                    {submitting ? t('publicPortal.denunciaForm.submitting') : t('publicPortal.denunciaForm.submit')}
-                  </Button>
+                  )}
+
+                  {etapa < TOTAL_ETAPAS ? (
+                    <Button
+                      type="button"
+                      className="flex-1"
+                      onClick={async () => {
+                        const ok = await form.trigger(CAMPOS_POR_ETAPA[etapa]);
+                        if (ok) setEtapa((e) => e + 1);
+                      }}
+                    >
+                      {t('publicPortal.denunciaForm.avancarEtapa')}
+                    </Button>
+                  ) : (
+                    <Button type="submit" disabled={submitting} className="flex-1">
+                      {submitting ? t('publicPortal.denunciaForm.submitting') : t('publicPortal.denunciaForm.submit')}
+                    </Button>
+                  )}
                 </div>
               </form>
             </Form>
           </CardContent>
         </Card>
       </div>
-    </div>
+    </CanalLayout>
   );
 }

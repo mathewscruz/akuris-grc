@@ -1,82 +1,68 @@
-import { useState, useEffect } from 'react';
-import { IconSearch, IconFile, IconShield } from '@/components/icons';
+/**
+ * DenunciaMenu — a porta do canal.
+ *
+ * Estava assim: dois cartões iguais, lado a lado, "Registrar" e "Consultar",
+ * e um terceiro cartão a prometer "Confidencialidade Garantida" sem dizer o
+ * que isso significa. Três problemas:
+ *
+ *  · **Peso igual para coisas de peso diferente.** Quase toda a gente que abre
+ *    esta página vem denunciar; consultar um protocolo é o caso raro, e de
+ *    quem já esteve aqui antes. Dar-lhes o mesmo tamanho faz a decisão parecer
+ *    50/50 e atrasa quem já sabe ao que vem.
+ *
+ *  · **Uma promessa sem conteúdo.** "Sua identidade será protegida conforme
+ *    nossa política de privacidade" não responde ao que a pessoa quer saber:
+ *    quem vai ler, em quanto tempo respondem, e o que acontece se houver
+ *    retaliação. Isso passou para o rodapé de direitos, no `CanalLayout`.
+ *
+ *  · **Nada dizia o que se pode denunciar.** Quem hesita, hesita por não saber
+ *    se "aquilo" cabe aqui. As categorias configuradas pela empresa respondem
+ *    a isso melhor do que qualquer texto.
+ */
+import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
-import { fetchEmpresaPublicaPorSlug } from '@/lib/denuncia-publica';
-import { logger } from '@/lib/logger';
-import { getCompanyLogo, AKURIS_DEFAULT_LOGO } from '@/lib/brand-logo';
-import { useLanguage } from '@/contexts/LanguageContext';
-
+import { useCanalDenuncia } from '@/hooks/useCanalDenuncia';
+import { CanalLayout } from '@/components/denuncia/CanalLayout';
+import { Card, CardContent } from '@/components/ui/card';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
-interface Empresa {
-  id: string;
-  nome: string;
-  slug: string;
-  logo_url?: string;
-}
+import { IconFile, IconSearch, IconChevron } from '@/components/icons';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function DenunciaMenu() {
   const { empresa: empresaSlug } = useParams();
   const { t } = useLanguage();
-  const [empresa, setEmpresa] = useState<Empresa | null>(null);
-  const [logoUrl, setLogoUrl] = useState<string>(AKURIS_DEFAULT_LOGO);
-  const [loading, setLoading] = useState(true);
+  const { empresa, config, carregando, estiloDaMarca, nomeDoCanal } = useCanalDenuncia(empresaSlug);
+  const [categorias, setCategorias] = useState<string[]>([]);
 
+  /* O que se pode denunciar, nas palavras da própria empresa. */
   useEffect(() => {
-    const loadEmpresaData = async () => {
-      if (!empresaSlug) {
-        logger.debug('Slug da empresa não fornecido', { module: 'DenunciaMenu' });
-        setLoading(false);
-        return;
-      }
+    if (!empresa?.id) return;
+    supabase
+      .from('denuncias_categorias')
+      .select('nome')
+      .eq('empresa_id', empresa.id)
+      .eq('ativo', true)
+      .then(({ data }) => setCategorias((data ?? []).map((c) => c.nome)));
+  }, [empresa?.id]);
 
-      try {
-        logger.debug('Carregando dados para empresa slug', { module: 'DenunciaMenu', action: empresaSlug });
-        
-        const empresaData = await fetchEmpresaPublicaPorSlug(empresaSlug);
-
-        if (!empresaData) {
-          logger.error('Empresa não encontrada para slug', { module: 'DenunciaMenu', action: empresaSlug });
-          setLoading(false);
-          return;
-        }
-
-        logger.debug('Empresa encontrada', { module: 'DenunciaMenu' });
-        setEmpresa(empresaData);
-
-        // Usar logo_url da empresa, com fallback automático para o logo Akuris
-        setLogoUrl(getCompanyLogo(empresaData.logo_url));
-      } catch (error) {
-        logger.error('Erro geral ao carregar configuração', { module: 'DenunciaMenu', error: String(error) });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadEmpresaData();
-  }, [empresaSlug]);
-
-  if (loading) {
+  if (carregando) {
     return (
-      <div className="min-h-screen bg-muted/20 flex items-center justify-center">
-        <div className="text-center">
-          <AkurisPulse size={32} />
-          <p className="mt-2 text-muted-foreground">{t('publicPortal.common.loading')}</p>
-        </div>
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <AkurisPulse size={32} />
       </div>
     );
   }
 
-  if (!empresa) {
+  if (!empresa || !config) {
     return (
-      <div className="min-h-screen bg-muted/20 flex items-center justify-center">
-        <Card className="max-w-md mx-auto">
-          <CardContent className="text-center py-8">
-            <IconShield className="w-12 h-12 text-destructive mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">{t('publicPortal.denunciaMenu.companyNotFound')}</h2>
-            <p className="text-muted-foreground">
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
+        <Card className="max-w-md">
+          <CardContent className="py-10 text-center">
+            <p className="text-sm font-medium text-foreground">
+              {t('publicPortal.denunciaMenu.companyNotFound')}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
               {t('publicPortal.denunciaMenu.companyNotFoundDescription')}
             </p>
           </CardContent>
@@ -86,85 +72,77 @@ export default function DenunciaMenu() {
   }
 
   return (
-    <div className="min-h-screen bg-[hsl(215,35%,12%)] py-8">
-      <div className="container max-w-2xl mx-auto px-4">
-        {/* Header com logotipo */}
-        <div className="text-center mb-8">
-          {/* Logotipo da empresa */}
-          <div className="mb-6">
-            <img
-              src={logoUrl}
-              alt={`Logo ${empresa.nome}`}
-              className="mx-auto h-20 w-auto object-contain"
-              onError={() => setLogoUrl(AKURIS_DEFAULT_LOGO)}
+    <CanalLayout
+      empresa={empresa}
+      config={config}
+      nomeDoCanal={nomeDoCanal}
+      estiloDaMarca={estiloDaMarca}
+    >
+      {config.texto_apresentacao && (
+        <p className="mx-auto mb-6 max-w-xl text-center text-sm leading-relaxed text-muted-foreground">
+          {config.texto_apresentacao}
+        </p>
+      )}
+
+      {/* A ação principal ocupa o espaço de uma ação principal. */}
+      <Link to={`/${empresaSlug}/denuncia/registrar`} className="group block">
+        <div className="rounded-lg border border-primary/30 bg-primary/5 p-6 transition-ui hover:border-primary/50 hover:bg-primary/10">
+          <div className="flex items-center gap-4">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+              <IconFile className="h-5 w-5 text-primary" strokeWidth={1.5} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-base font-semibold text-foreground">
+                {t('publicPortal.denunciaMenu.registerTitle')}
+              </span>
+              <span className="mt-0.5 block text-xs text-muted-foreground">
+                {t('publicPortal.denunciaMenu.registerDescription')}
+              </span>
+            </span>
+            <IconChevron
+              className="h-5 w-5 shrink-0 text-primary transition-transform group-hover:translate-x-0.5"
+              strokeWidth={1.5}
             />
           </div>
-          
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <IconShield className="w-6 h-6 text-primary" />
-            <h2 className="text-xl text-sidebar-foreground">{t('publicPortal.denunciaMenu.channel')}</h2>
-          </div>
         </div>
+      </Link>
 
-        {/* Card principal com opções */}
-        <Card className="mb-8 bg-white">
-          <CardContent className="p-8">
-            <div className="text-center mb-8">
-              <h3 className="text-2xl font-semibold mb-2">{t('publicPortal.denunciaMenu.howCanWeHelp')}</h3>
-              <p className="text-muted-foreground">
-                {t('publicPortal.denunciaMenu.chooseOption')}
-              </p>
-            </div>
+      {/* Quem vem consultar já esteve aqui: reconhece a linha sem precisar de tamanho. */}
+      <Link to={`/${empresaSlug}/denuncia/consulta`} className="group mt-3 block">
+        <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-5 py-4 transition-ui hover:bg-accent">
+          <IconSearch className="h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={1.5} />
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-medium text-foreground">
+              {t('publicPortal.denunciaMenu.consultTitle')}
+            </span>
+            <span className="block text-micro text-muted-foreground">
+              {t('publicPortal.denunciaMenu.consultDescription')}
+            </span>
+          </span>
+          <IconChevron className="h-4 w-4 shrink-0 text-muted-foreground" strokeWidth={1.5} />
+        </div>
+      </Link>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              {/* Registrar Nova Denúncia */}
-              <Link to={`/${empresaSlug}/denuncia/registrar`}>
-                <Button
-                  variant="outline"
-                  className="w-full h-auto p-6 border-2 hover:border-primary transition-colors"
-                >
-                  <div className="text-center">
-                    <IconFile className="w-12 h-12 mx-auto mb-3 text-primary" />
-                    <h4 className="text-lg font-semibold mb-2">{t('publicPortal.denunciaMenu.registerTitle')}</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {t('publicPortal.denunciaMenu.registerDescription')}
-                    </p>
-                  </div>
-                </Button>
-              </Link>
-
-              {/* Consultar Denúncia */}
-              <Link to={`/${empresaSlug}/denuncia/consulta`}>
-                <Button
-                  variant="outline"
-                  className="w-full h-auto p-6 border-2 hover:border-primary transition-colors"
-                >
-                  <div className="text-center">
-                    <IconSearch className="w-12 h-12 mx-auto mb-3 text-primary" />
-                    <h4 className="text-lg font-semibold mb-2">{t('publicPortal.denunciaMenu.consultTitle')}</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {t('publicPortal.denunciaMenu.consultDescription')}
-                    </p>
-                  </div>
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Informações complementares */}
-        <Card className="bg-white border-primary/20">
-          <CardContent className="p-6">
-            <div className="text-center">
-              <IconShield className="w-8 h-8 text-primary mx-auto mb-3" />
-              <h4 className="font-semibold mb-2">{t('publicPortal.denunciaMenu.confidentialityTitle')}</h4>
-              <p className="text-sm text-muted-foreground">
-                {t('publicPortal.denunciaMenu.confidentialityDescription')}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+      {categorias.length > 0 && (
+        <div className="mt-8">
+          <p className="text-micro font-semibold uppercase tracking-wide text-muted-foreground">
+            {t('publicPortal.denunciaMenu.oQueRelatar')}
+          </p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {categorias.map((c) => (
+              <span
+                key={c}
+                className="rounded-md border border-border bg-card px-2.5 py-1 text-micro text-muted-foreground"
+              >
+                {c}
+              </span>
+            ))}
+          </div>
+          <p className="mt-2 text-micro text-muted-foreground">
+            {t('publicPortal.denunciaMenu.oQueRelatarAjuda')}
+          </p>
+        </div>
+      )}
+    </CanalLayout>
   );
 }

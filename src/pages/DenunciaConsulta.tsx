@@ -16,6 +16,8 @@ import { StatusBadge } from '@/components/ui/status-badge';
 import { resolveDenunciaStatusTone, resolveGravidadeTone } from '@/lib/status-tone';
 import { useToast } from '@/hooks/use-toast';
 import { getCompanyLogo } from '@/lib/brand-logo';
+import { useCanalDenuncia } from '@/hooks/useCanalDenuncia';
+import { CanalLayout } from '@/components/denuncia/CanalLayout';
 
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 interface Empresa {
@@ -77,6 +79,8 @@ export default function DenunciaConsulta() {
   const [mensagens, setMensagens] = useState<{ id: string; autor_tipo: string; mensagem: string; created_at: string }[]>([]);
   const [novaMensagem, setNovaMensagem] = useState('');
   const [enviandoMensagem, setEnviandoMensagem] = useState(false);
+  /* A mesma identidade e os mesmos direitos das outras duas telas. */
+  const canal = useCanalDenuncia(empresaSlug);
 
   useEffect(() => {
     if (empresaSlug) {
@@ -251,35 +255,15 @@ export default function DenunciaConsulta() {
   }
 
   return (
-    <div className="min-h-screen bg-[hsl(215,35%,12%)] py-8">
-      <div className="container max-w-4xl mx-auto px-4">
-        {/* Breadcrumb */}
-        <div className="mb-6">
-          <Link 
-            to={`/${empresaSlug}/denuncia`}
-            className="inline-flex items-center text-sm text-sidebar-foreground hover:text-primary transition-colors"
-          >
-            <IconArrowLeft className="w-4 h-4 mr-1" />
-            {t('publicPortal.denunciaConsulta.backToMenu')}
-          </Link>
-        </div>
-
-        {/* Header com logotipo */}
-        <div className="text-center mb-8">
-          <div className="mb-6">
-            <img
-              src={getCompanyLogo(empresa?.logo_url)}
-              alt={`Logo ${empresa?.nome ?? 'Akuris'}`}
-              className="mx-auto h-20 w-auto object-contain"
-            />
-          </div>
-          
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <IconShield className="w-6 h-6 text-primary" />
-            <h2 className="text-xl text-sidebar-foreground">{t('publicPortal.denunciaConsulta.headerTitle')}</h2>
-          </div>
-        </div>
-
+    <CanalLayout
+      empresa={canal.empresa}
+      config={canal.config}
+      nomeDoCanal={canal.nomeDoCanal}
+      estiloDaMarca={canal.estiloDaMarca}
+      etapa={t('publicPortal.denunciaConsulta.acompanhar')}
+      voltarPara={`/${empresaSlug}/denuncia`}
+    >
+      <div>
         {/* Formulário de busca */}
         <Card className="mb-6 bg-white">
           <CardHeader>
@@ -534,6 +518,6 @@ export default function DenunciaConsulta() {
           </div>
         )}
       </div>
-    </div>
+    </CanalLayout>
   );
 }

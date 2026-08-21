@@ -3489,12 +3489,17 @@ export type Database = {
           logo_url: string | null
           nome_exibicao: string | null
           notificar_administradores: boolean | null
+          orgao_externo_nome: string | null
+          orgao_externo_url: string | null
           permitir_anonimas: boolean | null
+          permitir_reuniao: boolean
           politica_privacidade: string | null
           prazo_acusacao_dias: number
           prazo_retorno_dias: number
           requerer_email: boolean | null
+          retencao_meses: number
           texto_apresentacao: string | null
+          texto_retaliacao: string | null
           token_publico: string
           updated_at: string | null
         }
@@ -3509,12 +3514,17 @@ export type Database = {
           logo_url?: string | null
           nome_exibicao?: string | null
           notificar_administradores?: boolean | null
+          orgao_externo_nome?: string | null
+          orgao_externo_url?: string | null
           permitir_anonimas?: boolean | null
+          permitir_reuniao?: boolean
           politica_privacidade?: string | null
           prazo_acusacao_dias?: number
           prazo_retorno_dias?: number
           requerer_email?: boolean | null
+          retencao_meses?: number
           texto_apresentacao?: string | null
+          texto_retaliacao?: string | null
           token_publico: string
           updated_at?: string | null
         }
@@ -3529,12 +3539,17 @@ export type Database = {
           logo_url?: string | null
           nome_exibicao?: string | null
           notificar_administradores?: boolean | null
+          orgao_externo_nome?: string | null
+          orgao_externo_url?: string | null
           permitir_anonimas?: boolean | null
+          permitir_reuniao?: boolean
           politica_privacidade?: string | null
           prazo_acusacao_dias?: number
           prazo_retorno_dias?: number
           requerer_email?: boolean | null
+          retencao_meses?: number
           texto_apresentacao?: string | null
+          texto_retaliacao?: string | null
           token_publico?: string
           updated_at?: string | null
         }
@@ -9246,30 +9261,60 @@ export type Database = {
       denuncias_configuracoes_publicas: {
         Row: {
           ativo: boolean | null
+          cor_destaque: string | null
           empresa_id: string | null
           id: string | null
+          idioma_padrao: string | null
+          nome_exibicao: string | null
+          orgao_externo_nome: string | null
+          orgao_externo_url: string | null
           permitir_anonimas: boolean | null
+          permitir_reuniao: boolean | null
           politica_privacidade: string | null
+          prazo_acusacao_dias: number | null
+          prazo_retorno_dias: number | null
           requerer_email: boolean | null
+          retencao_meses: number | null
           texto_apresentacao: string | null
+          texto_retaliacao: string | null
         }
         Insert: {
           ativo?: boolean | null
+          cor_destaque?: string | null
           empresa_id?: string | null
           id?: string | null
+          idioma_padrao?: string | null
+          nome_exibicao?: string | null
+          orgao_externo_nome?: string | null
+          orgao_externo_url?: string | null
           permitir_anonimas?: boolean | null
+          permitir_reuniao?: boolean | null
           politica_privacidade?: string | null
+          prazo_acusacao_dias?: number | null
+          prazo_retorno_dias?: number | null
           requerer_email?: boolean | null
+          retencao_meses?: number | null
           texto_apresentacao?: string | null
+          texto_retaliacao?: string | null
         }
         Update: {
           ativo?: boolean | null
+          cor_destaque?: string | null
           empresa_id?: string | null
           id?: string | null
+          idioma_padrao?: string | null
+          nome_exibicao?: string | null
+          orgao_externo_nome?: string | null
+          orgao_externo_url?: string | null
           permitir_anonimas?: boolean | null
+          permitir_reuniao?: boolean | null
           politica_privacidade?: string | null
+          prazo_acusacao_dias?: number | null
+          prazo_retorno_dias?: number | null
           requerer_email?: boolean | null
+          retencao_meses?: number | null
           texto_apresentacao?: string | null
+          texto_retaliacao?: string | null
         }
         Relationships: []
       }
