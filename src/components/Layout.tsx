@@ -212,10 +212,22 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </div>
           </header>
 
-          <main className="min-w-0 flex-1 p-4 md:p-6 overflow-auto overflow-x-hidden w-full max-w-full pb-28 md:pb-24">
+          {/*
+            Coluna flex, para uma página poder esticar o seu último bloco até
+            ao fim do ecrã. Sem esta cadeia, `flex-1` numa página não tem
+            contra o que crescer e o conteúdo curto deixa uma faixa de fundo
+            vazia por baixo. Páginas que não pedem nada continuam a ter a
+            altura do seu conteúdo.
+          */}
+          {/* No telemóvel a barra inferior fixa come 56px, e por isso o `pb-28`
+              fica. No desktop essa barra não existe: os 96px reservados eram
+              para o botão flutuante do assistente, que é `fixed` e passa por
+              cima do conteúdo a rolar de qualquer maneira — só protegiam os
+              últimos 96px da página, à custa de uma faixa vazia em todas. */}
+          <main className="min-w-0 flex-1 flex flex-col p-4 md:p-6 overflow-auto overflow-x-hidden w-full max-w-full pb-28 md:pb-10">
             <ErrorBoundary>
               <React.Suspense fallback={<ModuleLoadingSkeleton />}>
-                <div className="min-w-0 max-w-full">
+                <div className="min-w-0 max-w-full flex flex-1 flex-col">
                   <PageTransition routeKey={location.pathname}>
                   {children}
                   </PageTransition>

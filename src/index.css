@@ -140,12 +140,23 @@
     --border-strong: 200 18% 80%;
     --brand-ink: 0 0% 100%;
 
-    /* ── Severidade (Envio 9): exclusiva de risco/criticidade ─────────────
-       Sempre acompanhada da letra C/A/M/B, por isso pode ser discreta. */
-    --severity-critical: 0 62% 52%;
-    --severity-high: 24 85% 40%;
-    --severity-medium: 35 85% 34%;
-    --severity-low: 152 40% 34%;
+    /* ── Severidade: exclusiva de risco/criticidade ───────────────────────
+       Sempre acompanhada da letra C/A/M/B, por isso pode ser discreta.
+
+       A escala vai do roxo escuro ao verde, com o vermelho reservado ao
+       ALTO. O crítico deixa de ser vermelho por uma razão prática: quando o
+       topo da escala é vermelho, o degrau abaixo tem de ser laranja, e
+       laranja e âmbar são quase indistinguíveis num ponto de 6px — a escala
+       perdia o degrau justamente onde ele decide o trabalho de amanhã.
+
+       O roxo do crítico NÃO é o roxo da marca (252 100% 66%): é muito mais
+       escuro e ligeiramente mais magenta, para não se confundir com ação e
+       navegação. Todos passam AA como cor de texto sobre branco — medido:
+       crítico 11,5:1 · alto 6,0:1 · médio 4,9:1 · baixo 5,3:1. */
+    --severity-critical: 272 58% 30%;
+    --severity-high: 0 65% 45%;
+    --severity-medium: 45 92% 29%;
+    --severity-low: 145 60% 30%;
     --severity-none: 200 12% 46%;
 
     /* ── Estado (Envio 9): família neutra, nunca compete com severidade ──
@@ -333,11 +344,14 @@
     --border-strong: 216 20% 34%;
     --brand-ink: 0 0% 100%;
 
-    /* ── Severidade — dark ─────────────────────────────────────────────── */
-    --severity-critical: 0 60% 62%;
-    --severity-high: 24 78% 60%;
-    --severity-medium: 38 70% 58%;
-    --severity-low: 152 40% 58%;
+    /* ── Severidade — dark ───────────────────────────────────────────────
+       Mesmas matizes do tema claro, subidas em luminosidade para lerem
+       sobre o fundo escuro. O crítico não pode escurecer aqui: no escuro,
+       "mais escuro" é menos visível, e a escala inverteria de sentido. */
+    --severity-critical: 272 70% 72%;
+    --severity-high: 0 72% 63%;
+    --severity-medium: 45 80% 60%;
+    --severity-low: 145 50% 58%;
     --severity-none: 200 12% 62%;
 
     /* ── Estado — dark ─────────────────────────────────────────────────── */

@@ -132,7 +132,7 @@ export default function Dashboard() {
 
   return (
     <TooltipProvider>
-      <div className="space-y-5 animate-fade-in w-full max-w-full overflow-x-hidden">
+      <div className="space-y-5 animate-fade-in w-full max-w-full overflow-x-hidden flex flex-1 flex-col">
         <DashboardHeader
           userName={profile?.nome || 'Usuário'}
           criticalCount={criticalAlerts}
@@ -214,7 +214,9 @@ export default function Dashboard() {
         {/* Como está cada domínio, do pior para o melhor */}
         <GrcHealthBreakdown />
 
-        <RecentActivities />
+        {/* O último bloco come o espaço que sobra, em vez de deixar uma faixa
+            de fundo vazia por baixo. */}
+        <RecentActivities className="flex-1 min-h-[16rem]" />
 
         {/* O diálogo recebe a MESMA estrutura que produz o número do banner —
             é o que garante que a lista e a contagem não voltam a divergir. */}

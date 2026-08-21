@@ -60,11 +60,19 @@ export const DEFAULT_ESCALA_IMPACTO: EscalaItem[] = [
  * "Médio" carrega `apetite: true`: é o limite de apetite padrão já assumido
  * pelo fallback da página de Riscos.
  */
+/*
+  As cores são as mesmas da escala de severidade do produto
+  (`--severity-*` em index.css), em hex porque ficam gravadas na
+  configuração da empresa e têm de sobreviver fora do CSS.
+
+  Uma empresa pode trocá-las no formulário da matriz; estes são só os
+  valores de partida.
+*/
 export const DEFAULT_NIVEIS_RISCO: NivelRisco[] = [
-  { min: 1, max: 4, nivel: 'Baixo', cor: '#22c55e' },
-  { min: 5, max: 9, nivel: 'Médio', cor: '#eab308', apetite: true },
-  { min: 10, max: 16, nivel: 'Alto', cor: '#f97316' },
-  { min: 17, max: 25, nivel: 'Crítico', cor: '#dc2626' },
+  { min: 1, max: 4, nivel: 'Baixo', cor: '#1F7A45' },
+  { min: 5, max: 9, nivel: 'Médio', cor: '#8E6C06', apetite: true },
+  { min: 10, max: 16, nivel: 'Alto', cor: '#BD2828' },
+  { min: 17, max: 25, nivel: 'Crítico', cor: '#4F2079' },
 ];
 
 /**
@@ -125,7 +133,7 @@ export function apetiteLabelDaConfig(config?: MatrizConfiguracao | null): string
 }
 
 /** Cores por omissão das faixas, do menos para o mais grave. */
-const CORES_FAIXA = ['#22c55e', '#eab308', '#f97316', '#dc2626'];
+const CORES_FAIXA = ['#1F7A45', '#8E6C06', '#BD2828', '#4F2079'];
 const NOMES_FAIXA = ['Baixo', 'Médio', 'Alto', 'Crítico'];
 
 /**

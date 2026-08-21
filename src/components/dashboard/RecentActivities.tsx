@@ -333,14 +333,22 @@ export function RecentActivities({ className }: { className?: string }) {
   };
 
   return (
-    <Card className={`relative w-full min-w-0 overflow-hidden ${className || ''}`}>
+    <Card className={`relative flex w-full min-w-0 flex-col overflow-hidden ${className || ''}`}>
 
       <CardHeader className="pb-3">
-        <CardTitle className="text-base font-semibold flex items-center gap-2">
+        <CardTitle className="text-micro font-semibold uppercase tracking-wide text-muted-foreground">
           {t('dashboard.recentActivities')}
         </CardTitle>
       </CardHeader>
-      <CardContent className="max-h-[400px] overflow-y-auto pt-0 pb-4">
+      {/*
+        A lista ocupa o que o cartão lhe der e rola por dentro.
+
+        Era `max-h-[400px]`: com o cartão esticado até ao fim do ecrã, um teto
+        fixo deixava o resto do cartão em branco — e num ecrã baixo cortava a
+        lista antes do fim do cartão. `min-h-0` é obrigatório, senão o item
+        flex recusa encolher abaixo do conteúdo e o scroll nunca aparece.
+      */}
+      <CardContent className="flex-1 min-h-0 overflow-y-auto pt-0 pb-4">
         {isLoading ? (
           <div className="space-y-3">
             {[...Array(5)].map((_, i) => (

@@ -117,7 +117,7 @@ export function GrcHealthBreakdown() {
               {t('dashWidgets.radar.prontos', { count: prontos })}
             </span>
             <span className="flex items-center gap-1.5 text-micro text-muted-foreground">
-              <span className="h-1.5 w-1.5 rounded-full bg-severity-high" />
+              <span className="h-1.5 w-1.5 rounded-full bg-warning" />
               {t('dashWidgets.radar.porFazer', { count: porFazer })}
             </span>
           </div>
@@ -130,6 +130,22 @@ export function GrcHealthBreakdown() {
         </span>
         <span className="text-xs text-muted-foreground">
           {t('dashWidgets.radar.maturitySuffix')}
+          {/*
+            A média é dos módulos QUE TÊM DADOS — um módulo vazio não é uma
+            nota baixa, é uma pergunta por responder. Mas então o número não é
+            a média dos oito cartões que estão à frente, e isso tem de ser
+            dito: sem esta linha, "50 / 100" parece a média de tudo o que se
+            vê, e não é.
+          */}
+          {maturity.modulesWithData < maturity.totalModules && (
+            <>
+              {' · '}
+              {t('dashWidgets.radar.modulesWithData', {
+                withData: maturity.modulesWithData,
+                total: maturity.totalModules,
+              })}
+            </>
+          )}
           {pior && (
             <>
               {' · '}
@@ -175,7 +191,7 @@ export function GrcHealthBreakdown() {
                             ? 'text-muted-foreground'
                             : pronto
                               ? 'text-foreground'
-                              : 'text-severity-high',
+                              : 'text-warning',
                         )}
                       >
                         {/* Sem dados diz "sem dados" — a confusão que o radar
@@ -187,14 +203,14 @@ export function GrcHealthBreakdown() {
                     <span
                       className={cn(
                         'mt-2.5 block h-1.5 overflow-hidden rounded-full',
-                        !l.hasData ? 'bg-muted' : pronto ? 'bg-primary/15' : 'bg-severity-high/15',
+                        !l.hasData ? 'bg-muted' : pronto ? 'bg-primary/15' : 'bg-warning/15',
                       )}
                     >
                       {l.hasData && (
                         <span
                           className={cn(
                             'block h-full rounded-full',
-                            pronto ? 'bg-primary' : 'bg-severity-high',
+                            pronto ? 'bg-primary' : 'bg-warning',
                           )}
                           style={{ width: `${Math.max(2, l.score)}%` }}
                         />

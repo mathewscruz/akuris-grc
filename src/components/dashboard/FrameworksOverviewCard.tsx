@@ -27,8 +27,8 @@ const statusToTone = (s: FrameworkOverview['status']) => {
  * `getStatus` do produto já usava para separar "bom" de "atenção".
  */
 const PRONTO = 60;
-const barColor = (pct: number) => (pct >= PRONTO ? 'bg-primary' : 'bg-severity-high');
-const trackColor = (pct: number) => (pct >= PRONTO ? 'bg-primary/15' : 'bg-severity-high/15');
+const barColor = (pct: number) => (pct >= PRONTO ? 'bg-primary' : 'bg-warning');
+const trackColor = (pct: number) => (pct >= PRONTO ? 'bg-primary/15' : 'bg-warning/15');
 
 const FrameworkRow = ({
   item,
