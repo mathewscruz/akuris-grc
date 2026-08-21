@@ -23,6 +23,17 @@ import { formatDateShort, formatDateOnly, formatarDiaParaDB } from '@/lib/date-u
 import { formatStatus } from '@/lib/text-utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 
+
+import { severidadeDeFaixas } from '@/lib/metrics/riscos';
+
+/**
+ * Alto ou crítico — o par que merece destaque visual.
+ *
+ * Cada linha comparava `criticidade === 'alta'` com o texto cru. Depois da
+ * normalização de vocabulário isso nunca é verdade, e todos os itens do
+ * drill-down passariam a sair com o mesmo tom neutro.
+ */
+const severo = (v?: string | null) => ['alto', 'critico'].includes(severidadeDeFaixas(v));
 /**
  * Limite superior da janela, em `YYYY-MM-DD`, para os recortes de "vencendo".
  * Formatado a partir dos componentes LOCAIS: `toISOString()` converte para UTC
@@ -616,7 +627,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             title: a.nome,
             subtitle: formatStatus(a.tipo || ''),
             status: formatStatus(a.criticidade || ''),
-            tone: a.criticidade === 'alta' ? 'warning' : 'neutral',
+            tone: severo(a.criticidade) ? 'warning' : 'neutral',
             date: fmtDate(a.updated_at),
           }));
         },
@@ -809,7 +820,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
               title: c.nome,
               subtitle: c.tipo_chave,
               status: overdue ? d('rotationOverdue') : c.criticidade,
-              tone: (overdue ? 'destructive' : c.criticidade === 'alta' ? 'warning' : 'neutral') as DrillItem['tone'],
+              tone: (overdue ? 'destructive' : severo(c.criticidade) ? 'warning' : 'neutral') as DrillItem['tone'],
               date: fmtDate(c.data_proxima_rotacao),
             };
           });
@@ -837,7 +848,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
               title: l.nome,
               subtitle: l.tipo_licenca,
               status: expired ? d('expiredFem') : l.criticidade,
-              tone: (expired ? 'destructive' : l.criticidade === 'alta' ? 'warning' : 'info') as DrillItem['tone'],
+              tone: (expired ? 'destructive' : severo(l.criticidade) ? 'warning' : 'info') as DrillItem['tone'],
               date: fmtDate(l.data_vencimento),
             };
           });
@@ -1313,7 +1324,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             title: i.titulo,
             subtitle: formatStatus(i.status),
             status: formatStatus(i.criticidade),
-            tone: (i.criticidade === 'critica' ? 'destructive' : 'warning') as DrillItem['tone'],
+            tone: (severidadeDeFaixas(i.criticidade) === 'critico' ? 'destructive' : 'warning') as DrillItem['tone'],
             date: fmtDate(i.created_at),
           }));
         },
@@ -1436,7 +1447,7 @@ const buildConfig = (key: DrillDownKey, t: TFunc): DrillConfig => {
             title: s.nome_sistema,
             subtitle: formatStatus(s.tipo_sistema || ''),
             status: formatStatus(s.criticidade || ''),
-            tone: (s.criticidade === 'alta' ? 'warning' : 'info') as DrillItem['tone'],
+            tone: (severo(s.criticidade) ? 'warning' : 'info') as DrillItem['tone'],
             date: fmtDate(s.updated_at),
           }));
         },

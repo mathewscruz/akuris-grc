@@ -28,6 +28,21 @@ import { formatDateOnly, intlLocale, parseDataLocal, formatarDiaParaDB} from '@/
 import { differenceInDays } from 'date-fns';
 import { useLanguage } from '@/contexts/LanguageContext';
 
+
+import { severidadeDeFaixas } from '@/lib/metrics/riscos';
+
+/**
+ * Severidade (escala de risco) → prioridade (escala de execução).
+ *
+ * São dois vocabulários diferentes e é bom que sejam: um controlo crítico não
+ * é uma tarefa "crítica", é uma tarefa urgente. O que não pode é a tradução
+ * acontecer por coincidência de grafia — era `criticidade === 'critica'`, e
+ * desde a normalização isso nunca acontece: tudo saía como prioridade média.
+ */
+const prioridadeDaSeveridade = (v?: string | null): string =>
+  ({ critico: 'critica', alto: 'alta', medio: 'media', baixo: 'baixa' } as Record<string, string>)[
+    severidadeDeFaixas(v)
+  ] ?? 'media';
 function buildStatusConfig(t: (key: string) => string): Record<string, { label: string; tone: any; icon: any }> {
   return {
     pendente: { label: t('planosAcao.statusPendente'), tone: 'warning', icon: IconTime },
@@ -186,7 +201,7 @@ export default function PlanosAcao() {
         titulo: c.nome,
         status: c.status,
         _displayStatus: mapExternalStatus('controles', c.status, c.proxima_avaliacao),
-        prioridade: c.criticidade === 'critica' ? 'critica' : c.criticidade === 'alta' ? 'alta' : 'media',
+        prioridade: prioridadeDaSeveridade(c.criticidade),
         prazo: c.proxima_avaliacao,
         modulo_origem: 'controles',
         responsavel_id: c.responsavel_id,
@@ -250,7 +265,7 @@ export default function PlanosAcao() {
         titulo: i.titulo,
         status: i.status,
         _displayStatus: mapExternalStatus('incidentes', i.status),
-        prioridade: i.criticidade === 'critica' ? 'critica' : i.criticidade === 'alta' ? 'alta' : 'media',
+        prioridade: prioridadeDaSeveridade(i.criticidade),
         prazo: null,
         modulo_origem: 'incidentes',
         responsavel_id: i.responsavel_tratamento,

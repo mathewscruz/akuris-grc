@@ -5,6 +5,7 @@ import { getAppLocale } from '@/lib/i18n-locale';
 import { contarRiscosPorSeveridade, severidadeRisco } from '@/lib/metrics';
 import { intlLocale } from '@/lib/date-utils';
 
+import { severidadeDeFaixas } from '@/lib/metrics/riscos';
 const PDF_LABELS: Record<string, string> = {
   "Altos": "High",
   "Anonimas": "Anonymous",
@@ -266,8 +267,8 @@ async function fetchRiscosData(empresaId: string) {
 async function fetchIncidentesData(empresaId: string) {
   const { data: inc } = await supabase.from('incidentes').select('*').eq('empresa_id', empresaId).order('data_deteccao', { ascending: false });
   const i = inc || [];
-  const critica = i.filter(x => x.criticidade === 'critica').length;
-  const alta = i.filter(x => x.criticidade === 'alta').length;
+  const critica = i.filter(x => severidadeDeFaixas(x.criticidade) === 'critico').length;
+  const alta = i.filter(x => severidadeDeFaixas(x.criticidade) === 'alto').length;
   const resolvidos = i.filter(x => x.status === 'resolvido').length;
   return {
     sections: [
@@ -453,7 +454,7 @@ async function fetchAtivosData(empresaId: string) {
   const a = ativos || []; const l = licencas || []; const k = chaves || [];
   const tipos: Record<string, number> = {};
   a.forEach((x: any) => { tipos[x.tipo] = (tipos[x.tipo] || 0) + 1; });
-  const criticos = a.filter((x: any) => x.criticidade === 'critica' || x.criticidade === 'alta').length;
+  const criticos = a.filter((x: any) => ['critico', 'alto'].includes(severidadeDeFaixas(x.criticidade))).length;
   const hoje = new Date();
   const licencasVencendo = l.filter((x: any) => x.data_vencimento && new Date(x.data_vencimento) > hoje && new Date(x.data_vencimento) < new Date(hoje.getTime() + 90 * 86400000)).length;
   return {

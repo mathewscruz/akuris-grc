@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
 import { IconAdd, IconEdit, IconDelete, IconChecklist } from '@/components/icons';
 
+import { severidadeDeFaixas } from '@/lib/metrics/riscos';
 interface Props {
   auditoriaId: string;
   itemId?: string | null;
@@ -72,7 +73,11 @@ export function ConstatacoesPanel({ auditoriaId, itemId, itemTitulo }: Props) {
         titulo: achado.titulo,
         descricao: achado.descricao || achado.evidencia_objetiva || null,
         status: 'pendente',
-        prioridade: achado.criticidade === 'alta' ? 'alta' : achado.criticidade === 'media' ? 'media' : 'baixa',
+        // Severidade canónica -> prioridade de execução: dois vocabulários
+        // distintos, com a tradução explícita entre eles.
+        prioridade: ({ critico: 'critica', alto: 'alta', medio: 'media', baixo: 'baixa' } as const)[
+          severidadeDeFaixas(achado.criticidade) as 'critico' | 'alto' | 'medio' | 'baixo'
+        ] ?? 'media',
         modulo_origem: 'auditoria_achado',
         registro_origem_id: achado.id,
         registro_origem_titulo: itemTitulo || achado.titulo,
