@@ -8,6 +8,7 @@
  */
 import { render, screen, cleanup, fireEvent, act } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 
@@ -15,12 +16,20 @@ afterEach(() => cleanup());
 
 const ATUALIZADO_EM = new Date(2026, 7, 5, 21, 18).getTime();
 
+// O cabeçalho passou a ter a acção primária da página ("Relatório executivo"),
+// e com ela navegação — daí o Router. Sem ele, `useNavigate` rebenta.
+function envolver(no: React.ReactNode) {
+  return (
+    <MemoryRouter>
+      <TooltipProvider>{no}</TooltipProvider>
+    </MemoryRouter>
+  );
+}
+
 function renderHeader(props: Partial<React.ComponentProps<typeof DashboardHeader>> = {}) {
   const onRefresh = vi.fn();
   const utils = render(
-    <TooltipProvider>
-      <DashboardHeader dataUpdatedAt={ATUALIZADO_EM} onRefresh={onRefresh} {...props} />
-    </TooltipProvider>
+    envolver(<DashboardHeader dataUpdatedAt={ATUALIZADO_EM} onRefresh={onRefresh} {...props} />)
   );
   return { ...utils, onRefresh };
 }
@@ -82,9 +91,7 @@ describe('DashboardHeader — feedback de atualização (AKURIS QA-016)', () => 
     expect(screen.getByRole('status')).toHaveTextContent('Atualizando…');
 
     rerender(
-      <TooltipProvider>
-        <DashboardHeader dataUpdatedAt={ATUALIZADO_EM + 60_000} onRefresh={vi.fn()} />
-      </TooltipProvider>
+      envolver(<DashboardHeader dataUpdatedAt={ATUALIZADO_EM + 60_000} onRefresh={vi.fn()} />)
     );
 
     expect(screen.getByRole('status')).toHaveTextContent('Atualizado');

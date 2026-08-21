@@ -105,6 +105,9 @@ const ptDict = {
     statusNotStarted: 'Não iniciado',
     doneWithReqs: 'Concluído · {total} req.',
     progress: '{done}/{total} requisitos · {pct}% avaliado',
+    /* Legenda binária da linha do framework, com o mesmo corte da Saúde do GRC. */
+    avaliados: { one: '1 avaliado', other: '{count} avaliados' },
+    porAvaliar: { one: '1 por avaliar', other: '{count} por avaliar' },
     avgCompliance: 'Conformidade média:',
     evaluatedOf: '{done} de {total} requisitos avaliados',
     lastActivity: 'Última atividade:',
@@ -129,6 +132,28 @@ const ptDict = {
     statusWarning: 'Atenção',
     statusCritical: 'Crítico',
     statusNoData: 'Sem dados',
+    /* Legenda binária do corte único (60): dispensa ler oito barras uma a uma. */
+    prontos: { one: '1 pronto', other: '{count} prontos' },
+    porFazer: { one: '1 precisa de trabalho', other: '{count} precisam de trabalho' },
+    /*
+      O próximo passo de cada domínio. O score diz como está; estas frases
+      dizem o que fazer — e quando não há nada, dizem isso também, em vez de
+      mostrarem um zero indistinguível de "nada registado".
+    */
+    acoes: {
+      tudoEmDia: 'Tudo em dia',
+      tratarRiscos: { one: '1 risco a tratar', other: '{count} riscos a tratar' },
+      avaliarControles: { one: '1 avaliação a fazer', other: '{count} avaliações a fazer' },
+      ativosCriticos: { one: '1 ativo crítico', other: '{count} ativos críticos' },
+      incidentesAbertos: { one: '1 incidente em aberto', other: '{count} incidentes em aberto' },
+      requisitosPorAvaliar: { one: '1 requisito por avaliar', other: '{count} requisitos por avaliar' },
+      evidenciasPendentes: { one: '1 evidência pendente', other: '{count} evidências pendentes' },
+      iniciarDueDiligence: 'Iniciar avaliação',
+      ddVencidas: { one: '1 avaliação vencida', other: '{count} avaliações vencidas' },
+      documentosVencidos: { one: '1 documento vencido', other: '{count} documentos vencidos' },
+      documentosPorAprovar: { one: '1 documento por aprovar', other: '{count} documentos por aprovar' },
+      denunciasAbertas: { one: '1 denúncia em aberto', other: '{count} denúncias em aberto' },
+    },
     subjects: {
       Riscos: 'Riscos',
       Controles: 'Controles',
@@ -139,25 +164,31 @@ const ptDict = {
       Documentos: 'Documentos',
       Denúncias: 'Denúncias',
     },
+    /*
+      Linhas de apoio do cartão de domínio. Usam o plural nativo do `t()`
+      (`{ one, other }` escolhido por `count`) — escritas em plural fixo,
+      diziam "1 críticos" e "1 avaliações" no cartão que fica logo por baixo
+      do número em destaque.
+    */
     metrics: {
-      critical: '{n} críticos',
-      high: '{n} altos',
-      treated: '{n} tratados',
-      active: '{n} ativos',
-      dueAssessment: '{n} vencendo avaliação',
+      critical: { one: '1 crítico', other: '{count} críticos' },
+      high: { one: '1 alto', other: '{count} altos' },
+      treated: { one: '1 tratado', other: '{count} tratados' },
+      active: { one: '1 ativo', other: '{count} ativos' },
+      dueAssessment: { one: '1 vencendo avaliação', other: '{count} vencendo avaliação' },
       highValue: '{n}% alto valor',
-      open: '{n} abertos',
+      open: { one: '1 aberto', other: '{count} abertos' },
       inMonth: '{n} no mês',
-      frameworks: '{n} frameworks',
+      frameworks: { one: '1 framework', other: '{count} frameworks' },
       inProgress: '{n} em progresso',
-      pendingItems: '{n} itens pendentes',
-      completed: '{n} completos',
+      pendingItems: { one: '1 item pendente', other: '{count} itens pendentes' },
+      completed: { one: '1 completo', other: '{count} completos' },
       avgScore: 'Score médio: {n}',
-      expired: '{n} expirados',
-      expiredDocs: '{n} vencidos',
-      approved: '{n} aprovados',
-      resolved: '{n} resolvidas',
-      newOnes: '{n} novas',
+      expired: { one: '1 expirado', other: '{count} expirados' },
+      expiredDocs: { one: '1 vencido', other: '{count} vencidos' },
+      approved: { one: '1 aprovado', other: '{count} aprovados' },
+      resolved: { one: '1 resolvida', other: '{count} resolvidas' },
+      newOnes: { one: '1 nova', other: '{count} novas' },
       ongoing: '{n} em andamento',
     },
     shortSubjects: {
@@ -170,6 +201,14 @@ const ptDict = {
       Documentos: 'Docs',
       Denúncias: 'Denún.',
     },
+  },
+  /** O bloco do painel que fala de quem está a olhar, e não da empresa. */
+  pendencias: {
+    title: 'Minhas pendências',
+    empty: 'Nada atribuído a você.',
+    atrasadas: { one: '1 fora do prazo', other: '{count} fora do prazo' },
+    semPrazo: 'sem prazo',
+    verTodas: { one: 'Ver a pendência', other: 'Ver as {count} pendências' },
   },
   timeline: {
     subtitle: 'Score médio da carteira · quanto menor, melhor',
@@ -187,6 +226,18 @@ const ptDict = {
     aboveAppetiteLabel: 'Acima do apetite',
     withinAppetite: 'dentro do apetite',
     sufixoScore: 'score médio · {acima} acima do apetite',
+    /*
+      O "acima do apetite" saiu do sufixo e desceu para o rodapé, onde vira
+      acção. No cabeçalho ficava um segundo número colado ao herói, sem nada
+      que se pudesse fazer com ele.
+    */
+    sufixoScoreMedio: 'score médio da carteira',
+    acimaDoApetiteAcao: { one: '1 risco acima do apetite', other: '{count} riscos acima do apetite' },
+    dentroDoApetite: 'Toda a carteira dentro do apetite',
+    sevCritico: 'Crítico',
+    sevAlto: 'Alto',
+    sevOutros: 'Médio e baixo',
+    resumoComposicao: '{total} riscos: {criticos} críticos, {altos} altos',
     tooltipTotal: 'riscos avaliados',
     noData: 'Sem dados',
     exposure: 'Exposição',
@@ -367,6 +418,8 @@ const enDict = {
     statusNotStarted: 'Not started',
     doneWithReqs: 'Completed · {total} req.',
     progress: '{done}/{total} requirements · {pct}% assessed',
+    avaliados: { one: '1 assessed', other: '{count} assessed' },
+    porAvaliar: { one: '1 to assess', other: '{count} to assess' },
     avgCompliance: 'Average compliance:',
     evaluatedOf: '{done} of {total} requirements assessed',
     lastActivity: 'Last activity:',
@@ -391,6 +444,22 @@ const enDict = {
     statusWarning: 'Attention',
     statusCritical: 'Critical',
     statusNoData: 'No data',
+    prontos: { one: '1 on track', other: '{count} on track' },
+    porFazer: { one: '1 needs work', other: '{count} need work' },
+    acoes: {
+      tudoEmDia: 'All clear',
+      tratarRiscos: { one: '1 risk to treat', other: '{count} risks to treat' },
+      avaliarControles: { one: '1 assessment to run', other: '{count} assessments to run' },
+      ativosCriticos: { one: '1 critical asset', other: '{count} critical assets' },
+      incidentesAbertos: { one: '1 open incident', other: '{count} open incidents' },
+      requisitosPorAvaliar: { one: '1 requirement to assess', other: '{count} requirements to assess' },
+      evidenciasPendentes: { one: '1 pending evidence', other: '{count} pending evidence items' },
+      iniciarDueDiligence: 'Start an assessment',
+      ddVencidas: { one: '1 expired assessment', other: '{count} expired assessments' },
+      documentosVencidos: { one: '1 expired document', other: '{count} expired documents' },
+      documentosPorAprovar: { one: '1 document to approve', other: '{count} documents to approve' },
+      denunciasAbertas: { one: '1 open report', other: '{count} open reports' },
+    },
     subjects: {
       Riscos: 'Risks',
       Controles: 'Controls',
@@ -401,25 +470,31 @@ const enDict = {
       Documentos: 'Documents',
       Denúncias: 'Whistleblowing',
     },
+    /*
+      A forma tem de espelhar a do PT, chave a chave: a guarda de paridade
+      compara CAMINHOS de folha, e um `{ one, other }` de um lado com uma
+      string plana do outro é uma chave em falta. Em inglês as duas variantes
+      são quase sempre iguais — o que muda é só o "1" contra o "{count}".
+    */
     metrics: {
-      critical: '{n} critical',
-      high: '{n} high',
-      treated: '{n} treated',
-      active: '{n} active',
-      dueAssessment: '{n} assessments due',
+      critical: { one: '1 critical', other: '{count} critical' },
+      high: { one: '1 high', other: '{count} high' },
+      treated: { one: '1 treated', other: '{count} treated' },
+      active: { one: '1 active', other: '{count} active' },
+      dueAssessment: { one: '1 assessment due', other: '{count} assessments due' },
       highValue: '{n}% high value',
-      open: '{n} open',
+      open: { one: '1 open', other: '{count} open' },
       inMonth: '{n} this month',
-      frameworks: '{n} frameworks',
+      frameworks: { one: '1 framework', other: '{count} frameworks' },
       inProgress: '{n} in progress',
-      pendingItems: '{n} pending items',
-      completed: '{n} completed',
+      pendingItems: { one: '1 pending item', other: '{count} pending items' },
+      completed: { one: '1 completed', other: '{count} completed' },
       avgScore: 'Average score: {n}',
-      expired: '{n} expired',
-      expiredDocs: '{n} expired',
-      approved: '{n} approved',
-      resolved: '{n} resolved',
-      newOnes: '{n} new',
+      expired: { one: '1 expired', other: '{count} expired' },
+      expiredDocs: { one: '1 expired', other: '{count} expired' },
+      approved: { one: '1 approved', other: '{count} approved' },
+      resolved: { one: '1 resolved', other: '{count} resolved' },
+      newOnes: { one: '1 new', other: '{count} new' },
       ongoing: '{n} ongoing',
     },
     shortSubjects: {
@@ -432,6 +507,13 @@ const enDict = {
       Documentos: 'Docs',
       Denúncias: 'Reports',
     },
+  },
+  pendencias: {
+    title: 'My open items',
+    empty: 'Nothing assigned to you.',
+    atrasadas: { one: '1 past due', other: '{count} past due' },
+    semPrazo: 'no due date',
+    verTodas: { one: 'See the open item', other: 'See all {count} items' },
   },
   timeline: {
     subtitle: 'Portfolio average score · lower is better',
@@ -449,6 +531,13 @@ const enDict = {
     aboveAppetiteLabel: 'Above appetite',
     withinAppetite: 'within appetite',
     sufixoScore: 'average score · {acima} above appetite',
+    sufixoScoreMedio: 'average portfolio score',
+    acimaDoApetiteAcao: { one: '1 risk above appetite', other: '{count} risks above appetite' },
+    dentroDoApetite: 'Whole portfolio within appetite',
+    sevCritico: 'Critical',
+    sevAlto: 'High',
+    sevOutros: 'Medium and low',
+    resumoComposicao: '{total} risks: {criticos} critical, {altos} high',
     tooltipTotal: 'risks assessed',
     noData: 'No data',
     exposure: 'Exposure',

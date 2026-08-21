@@ -12,7 +12,7 @@ import { formatStatus } from '@/lib/text-utils';
 import { intlLocale } from '@/lib/date-utils';
 import { getEnumLabel } from '@/lib/enum-labels';
 import { useQuery } from '@tanstack/react-query';
-import { CornerAccent } from '@/components/identity/CornerAccent';
+
 import { dateFnsLocale } from '@/lib/date-utils';
 
 interface Activity {
@@ -334,7 +334,7 @@ export function RecentActivities({ className }: { className?: string }) {
 
   return (
     <Card className={`relative w-full min-w-0 overflow-hidden ${className || ''}`}>
-      <CornerAccent />
+
       <CardHeader className="pb-3">
         <CardTitle className="text-base font-semibold flex items-center gap-2">
           {t('dashboard.recentActivities')}

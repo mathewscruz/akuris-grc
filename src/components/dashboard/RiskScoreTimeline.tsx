@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { TrendAreaChart, type TrendBreakdown } from '@/components/ui/trend-area-chart';
 import { PeriodoSelect, type OpcaoPeriodo } from '@/components/ui/periodo-select';
-import { CornerAccent } from '@/components/identity/CornerAccent';
+import { SegmentedBar, type Segmento } from '@/components/ui/segmented-bar';
+import { PanelAction } from '@/components/ui/panel-action';
+import { useRiscosStats } from '@/hooks/useRiscosStats';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/AuthProvider';
 import { useQuery } from '@tanstack/react-query';
@@ -50,9 +53,12 @@ const GOAL_VALUE = 0;
 export function RiskScoreTimeline() {
   const { profile } = useAuth();
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const [period, setPeriod] = useState<TimeRange>('monthly');
   const { data: matriz } = useMatrizConfigEmpresa();
   const apetite = apetiteScoreDaConfig(matriz);
+  // Mesma chave de query do painel: a composição não custa um pedido extra.
+  const { data: stats } = useRiscosStats();
 
   const { data: base, isLoading } = useQuery({
     queryKey: ['riscos-timeline', profile?.empresa_id],
@@ -240,7 +246,6 @@ export function RiskScoreTimeline() {
   if (isLoading) {
     return (
       <Card className="relative h-full w-full flex flex-col overflow-hidden">
-        <CornerAccent />
         <CardHeader>
           <CardTitle className="text-base">{t('dashboard.riskEvolution')}</CardTitle>
         </CardHeader>
@@ -255,7 +260,6 @@ export function RiskScoreTimeline() {
   if (displayData.length === 0 || latestScore === null) {
     return (
       <Card className="relative h-full w-full flex flex-col overflow-hidden">
-        <CornerAccent />
         <CardHeader>
           <CardTitle className="text-base">{t('dashboard.riskEvolution')}</CardTitle>
         </CardHeader>
@@ -289,18 +293,77 @@ export function RiskScoreTimeline() {
     <PeriodoSelect valor={period} onChange={(v: TimeRange) => setPeriod(v)} opcoes={opcoesPeriodo} />
   );
 
+  /*
+    A composição da carteira, numa barra só.
+
+    A curva diz para onde a carteira vai; isto diz de que é feita hoje. Antes
+    os mesmos números só existiam como texto no tooltip do gráfico e como
+    linha de apoio noutro cartão — em nenhum dos dois sítios se via a
+    proporção, que é o que decide se "7 altos" é muito.
+
+    Só a severidade tem escala semântica: o resto do conjunto vai a cinzento.
+  */
+  const outros = Math.max((stats?.medios ?? 0) + (stats?.baixos ?? 0), 0);
+  const segmentos: Segmento[] = [
+    {
+      id: 'critico',
+      label: t('dashWidgets.timeline.sevCritico'),
+      valor: stats?.criticos ?? 0,
+      cor: 'bg-severity-critical',
+      onClick: () => navigate('/riscos?nivel=critico'),
+    },
+    {
+      id: 'alto',
+      label: t('dashWidgets.timeline.sevAlto'),
+      valor: stats?.altos ?? 0,
+      cor: 'bg-severity-high',
+      onClick: () => navigate('/riscos?nivel=alto'),
+    },
+    {
+      // Médio e baixo juntos: não há um valor de nível que os cubra aos dois,
+      // e prometer um filtro que não existe é pior do que não o oferecer.
+      id: 'outros',
+      label: t('dashWidgets.timeline.sevOutros'),
+      valor: outros,
+      cor: 'bg-muted-foreground/30',
+    },
+  ];
+
+  const composicao =
+    stats && stats.total > 0 ? (
+      <SegmentedBar
+        segmentos={segmentos}
+        resumo={t('dashWidgets.timeline.resumoComposicao', {
+          total: stats.total,
+          criticos: stats.criticos,
+          altos: stats.altos,
+        })}
+      />
+    ) : null;
+
   return (
     <TrendAreaChart
       className="h-full w-full"
       eyebrow={t('dashboard.riskEvolution')}
       valor={latestScore}
-      sufixo={t('dashWidgets.timeline.sufixoScore', { acima: acimaAtual })}
+      sufixo={t('dashWidgets.timeline.sufixoScoreMedio')}
       delta={delta ? delta.value : null}
       pontos={displayData.map((p) => ({ label: p.date, valor: p.score }))}
       tooltipLabel={t('dashWidgets.timeline.tooltipTotal')}
       divisao={divisaoDoPonto}
       tooltipValor={totalDoPonto}
       seletor={seletorPeriodo}
+      resumo={composicao}
+      rodape={
+        <PanelAction
+          limpo={acimaAtual === 0}
+          onClick={() => navigate('/riscos')}
+        >
+          {acimaAtual === 0
+            ? t('dashWidgets.timeline.dentroDoApetite')
+            : t('dashWidgets.timeline.acimaDoApetiteAcao', { count: acimaAtual })}
+        </PanelAction>
+      }
     />
   );
 }

@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { IconTime, IconRefresh } from '@/components/icons';
 ;
 import { Button } from '@/components/ui/button';
@@ -34,6 +35,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 }) => {
   const { t, locale } = useLanguage();
   const dateLocale = dateFnsLocale();
+  const navigate = useNavigate();
 
   const timeStr = dataUpdatedAt ? format(new Date(dataUpdatedAt), 'HH:mm', { locale: dateLocale }) : '--:--';
 
@@ -116,6 +118,18 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
           </TooltipTrigger>
           <TooltipContent>{statusLabel ?? refreshLabel}</TooltipContent>
         </Tooltip>
+
+        {/*
+          A acção primária da página.
+
+          O painel não tinha nenhuma: era a única superfície do produto onde o
+          canto superior direito estava vazio. Levar daqui um relatório é o que
+          se faz depois de olhar para estes números — e é a acção que o resto
+          do produto não oferece a partir de mais lado nenhum.
+        */}
+        <Button size="sm" className="h-8" onClick={() => navigate('/relatorios')}>
+          {t('dashboard_v3.executiveReport')}
+        </Button>
       </div>
 
       <span role="status" aria-live="polite" className="sr-only">

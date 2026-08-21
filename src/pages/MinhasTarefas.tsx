@@ -54,10 +54,19 @@ export default function MinhasTarefas() {
     queryKey: ['minhas-tarefas-projeto', userId, empresaId],
     enabled: !!userId && !!empresaId,
     queryFn: async () => {
+      /*
+        O inquilino vem pelo PROJETO, não pela tarefa.
+
+        `projeto_tarefas` não tem `empresa_id`: o filtro devolvia 400 —
+        "column projeto_tarefas.empresa_id does not exist" — e esta página
+        mostrava apenas os planos de ação, com a lista de tarefas de projeto
+        silenciosamente vazia. Com `!inner`, filtrar no embed é um INNER JOIN e
+        isola o inquilino do mesmo modo.
+      */
       const { data, error } = await supabase
         .from('projeto_tarefas' as any)
         .select('*, projetos!inner(nome, empresa_id)')
-        .eq('empresa_id', empresaId!)
+        .eq('projetos.empresa_id', empresaId!)
         .eq('responsavel_id', userId!)
         .order('prazo', { ascending: true, nullsFirst: false });
       if (error) throw error;

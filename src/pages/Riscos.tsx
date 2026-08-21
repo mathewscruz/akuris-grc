@@ -354,6 +354,19 @@ export function Riscos() {
   }, [searchParams]);
 
   /*
+    `?nivel=critico` chega já filtrado por severidade.
+
+    A legenda da barra de composição do painel promete abrir o subconjunto que
+    representa — clicar em "Alto" tem de mostrar os altos, não a lista inteira
+    para o utilizador refiltrar à mão. O filtro já existia na barra de
+    ferramentas; só faltava a URL poder semeá-lo.
+  */
+  useEffect(() => {
+    const nivel = searchParams.get('nivel');
+    if (nivel) setNivelFilter(nivel);
+  }, [searchParams]);
+
+  /*
     `?risco=<id>` abre a gaveta de detalhe directamente.
 
     Quem clica num risco no feed de "Atividades Recentes" do painel clicou

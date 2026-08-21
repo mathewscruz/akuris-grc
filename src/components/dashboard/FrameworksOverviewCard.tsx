@@ -1,9 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
-import { CornerAccent } from '@/components/identity/CornerAccent';
+import { PanelAction } from '@/components/ui/panel-action';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { GapAnalysisIcon, IconSuccess, IconChevron } from '@/components/icons';
+import { GapAnalysisIcon, IconChevron } from '@/components/icons';
 import { FrameworkBadge } from '@/components/frameworks/FrameworkBadge';
 import { useNavigate } from 'react-router-dom';
 import { useFrameworksOverview, type FrameworkOverview } from '@/hooks/useFrameworksOverview';
@@ -18,12 +18,17 @@ const statusToTone = (s: FrameworkOverview['status']) => {
   return { tone: 'neutral' as const, key: 'statusNotStarted' };
 };
 
-const barColor = (pct: number) => {
-  if (pct >= 80) return 'bg-success';
-  if (pct >= 60) return 'bg-primary';
-  if (pct >= 40) return 'bg-warning';
-  return 'bg-destructive/70';
-};
+/**
+ * Uma escala de progresso, com um corte só.
+ *
+ * Eram quatro faixas aqui e três em `GrcHealthBreakdown`, e as duas
+ * discordavam: um framework a 65% saía roxo e um domínio a 65% saía verde —
+ * mesmo número, cores opostas, no mesmo ecrã. O corte é 60, o mesmo que o
+ * `getStatus` do produto já usava para separar "bom" de "atenção".
+ */
+const PRONTO = 60;
+const barColor = (pct: number) => (pct >= PRONTO ? 'bg-primary' : 'bg-severity-high');
+const trackColor = (pct: number) => (pct >= PRONTO ? 'bg-primary/15' : 'bg-severity-high/15');
 
 const FrameworkRow = ({
   item,
@@ -35,10 +40,7 @@ const FrameworkRow = ({
   const { t } = useLanguage();
   const st = statusToTone(item.status);
   const pct = item.mediaConformidade;
-  const progress =
-    item.totalRequisitos > 0
-      ? Math.round((item.requisitosAvaliados / item.totalRequisitos) * 100)
-      : 0;
+  const porAvaliar = Math.max(item.totalRequisitos - item.requisitosAvaliados, 0);
 
   return (
     <Tooltip>
@@ -63,28 +65,39 @@ const FrameworkRow = ({
                 {pct}%
               </span>
             </div>
-            <div className="w-full h-1 bg-muted/60 rounded-full overflow-hidden">
+            <div className={`w-full h-1 rounded-full overflow-hidden ${trackColor(pct)}`}>
               <div
                 className={`h-full rounded-full transition-ui duration-700 ease-out ${barColor(pct)}`}
                 style={{ width: `${Math.max(pct, 2)}%` }}
               />
             </div>
+            {/*
+              Legenda binária, como a da Saúde do GRC: avaliados e por avaliar,
+              cada um com o seu ponto. Era "114/121 requisitos · 94% avaliado",
+              três números para dizer duas coisas.
+
+              O crachá de estado saiu de todas as linhas menos das concluídas.
+              "Em andamento" estava em 100% delas — pintar o que nunca varia
+              gasta a cor que faz falta à excepção.
+            */}
             <div className="flex items-center justify-between mt-1.5 gap-2">
-              <span className="text-micro text-muted-foreground">
-                {item.status === 'concluido' ? (
-                  <span className="inline-flex items-center gap-1">
-                    <IconSuccess className="h-2.5 w-2.5 text-success" />
-                    {t('dashWidgets.frameworks.doneWithReqs', { total: item.totalRequisitos })}
+              <span className="flex items-center gap-3 text-micro text-muted-foreground min-w-0">
+                <span className="inline-flex items-center gap-1.5 shrink-0">
+                  <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${barColor(pct)}`} />
+                  {t('dashWidgets.frameworks.avaliados', { count: item.requisitosAvaliados })}
+                </span>
+                {porAvaliar > 0 && (
+                  <span className="inline-flex items-center gap-1.5 shrink-0">
+                    <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/35 shrink-0" />
+                    {t('dashWidgets.frameworks.porAvaliar', { count: porAvaliar })}
                   </span>
-                ) : (
-                  <>
-                    {t('dashWidgets.frameworks.progress', { done: item.requisitosAvaliados, total: item.totalRequisitos, pct: progress })}
-                  </>
                 )}
               </span>
-              <StatusBadge tone={st.tone}>
-                {t(`dashWidgets.frameworks.${st.key}`)}
-              </StatusBadge>
+              {item.status === 'concluido' && (
+                <StatusBadge tone={st.tone}>
+                  {t(`dashWidgets.frameworks.${st.key}`)}
+                </StatusBadge>
+              )}
             </div>
           </div>
 
@@ -118,11 +131,15 @@ export const FrameworksOverviewCard = () => {
   const concluidos = (data || []).filter((d) => d.status === 'concluido').length;
   const visible = (data || []).slice(0, MAX_VISIBLE);
   const remaining = (data?.length || 0) - visible.length;
+  /* O que falta fazer no módulo inteiro, não só nos frameworks visíveis. */
+  const porAvaliarTotal = (data || []).reduce(
+    (s, d) => s + Math.max(d.totalRequisitos - d.requisitosAvaliados, 0),
+    0,
+  );
 
   if (isLoading) {
     return (
       <Card className="relative h-full w-full flex flex-col overflow-hidden min-w-0">
-        <CornerAccent />
         <CardHeader className="pb-3">
           <CardTitle className="text-base font-semibold flex items-center gap-2">
             {t('dashWidgets.frameworks.title')}
@@ -137,27 +154,17 @@ export const FrameworksOverviewCard = () => {
 
   return (
     <Card className="relative h-full w-full flex flex-col overflow-hidden min-w-0">
-      <CornerAccent />
       <CardHeader className="pb-3">
-        <div className="flex items-start justify-between gap-2">
-          <div>
-            <CardTitle className="text-base font-semibold flex items-center gap-2">
-              {t('dashWidgets.frameworks.title')}
-            </CardTitle>
-            {(ativos > 0 || concluidos > 0) && (
-              <p className="text-micro text-muted-foreground mt-1">
-                {t('dashWidgets.frameworks.summary', { active: ativos, done: concluidos })}
-              </p>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={() => navigate('/gap-analysis')}
-            className="text-micro text-primary hover:underline shrink-0"
-          >
-            {t('dashWidgets.frameworks.viewAll')}
-          </button>
-        </div>
+        {/* O "Ver todos" do canto saiu: a acção do rodapé leva ao mesmo sítio,
+            e dizer para onde vai com o número que o justifica. */}
+        <CardTitle className="text-micro font-semibold uppercase tracking-wide text-muted-foreground">
+          {t('dashWidgets.frameworks.title')}
+        </CardTitle>
+        {(ativos > 0 || concluidos > 0) && (
+          <p className="text-micro text-muted-foreground mt-1">
+            {t('dashWidgets.frameworks.summary', { active: ativos, done: concluidos })}
+          </p>
+        )}
       </CardHeader>
       <CardContent className="flex-1 pt-0 pb-4">
         {visible.length === 0 ? (
@@ -200,6 +207,17 @@ export const FrameworksOverviewCard = () => {
           </div>
         )}
       </CardContent>
+
+      {visible.length > 0 && (
+        <PanelAction
+          limpo={porAvaliarTotal === 0}
+          onClick={() => navigate('/gap-analysis')}
+        >
+          {porAvaliarTotal === 0
+            ? t('dashWidgets.radar.acoes.tudoEmDia')
+            : t('dashWidgets.radar.acoes.requisitosPorAvaliar', { count: porAvaliarTotal })}
+        </PanelAction>
+      )}
     </Card>
   );
 };

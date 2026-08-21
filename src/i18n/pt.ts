@@ -220,6 +220,15 @@ export const pt = {
     refresh: 'Atualizar indicadores',
     refreshing: 'Atualizando…',
     refreshed: 'Atualizado',
+    /* A acção primária da página: o painel não tinha nenhuma. */
+    executiveReport: 'Relatório executivo',
+    hello: 'Olá, {name}',
+    /** O único agregado que atravessa todos os módulos, e a porta do detalhe. */
+    criticalAction: {
+      one: '1 alerta crítico por decidir',
+      other: '{count} alertas críticos por decidir',
+    },
+    noCritical: 'Nenhum alerta crítico',
   },
   userProfile: {
     myProfile: 'Meu perfil',
@@ -790,6 +799,41 @@ export const pt = {
     incident: 'Incidente',
   },
   kpi: {
+    /*
+      Singular e plural, decididos pelo número.
+
+      Os rótulos abaixo (`incidentsOpen` e companhia) são string fixa no
+      plural, e por isso a linha de contexto escrevia "1 Incidentes abertos".
+      Quem conta usa `rotulo`; os antigos ficam para os títulos de secção,
+      onde não há número à frente.
+    */
+    rotulo: {
+      risks: { one: 'risco', other: 'riscos' },
+      actionPlansOpen: { one: 'plano em aberto', other: 'planos em aberto' },
+      incidentsOpen: { one: 'incidente aberto', other: 'incidentes abertos' },
+      assets: { one: 'ativo', other: 'ativos' },
+      documents: { one: 'documento', other: 'documentos' },
+      contractsActive: { one: 'contrato ativo', other: 'contratos ativos' },
+      dueDiligenceActive: { one: 'due diligence ativa', other: 'due diligence ativas' },
+      reportsOpen: { one: 'denúncia aberta', other: 'denúncias abertas' },
+    },
+    /**
+     * O número que dá referência à contagem: "11 riscos, 1 crítico".
+     *
+     * Há variantes femininas porque o qualificador concorda com o substantivo
+     * que qualifica: contratos ficam "vencidos", avaliações ficam "vencidas".
+     */
+    qualificador: {
+      critical: { one: '{count} crítico', other: '{count} críticos' },
+      high: { one: '{count} alto', other: '{count} altos' },
+      overdue: { one: '{count} atrasado', other: '{count} atrasados' },
+      expired: { one: '{count} vencido', other: '{count} vencidos' },
+      expiredFem: { one: '{count} vencida', other: '{count} vencidas' },
+      expiring: '{count} vencendo',
+      pending: { one: '{count} pendente', other: '{count} pendentes' },
+      new: { one: '{count} nova', other: '{count} novas' },
+      month: '{count} no mês',
+    },
     incidentsOpen: 'Incidentes abertos',
     actionPlansOpen: 'Planos em aberto',
     contractsActive: 'Contratos ativos',

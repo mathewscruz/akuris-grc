@@ -1,6 +1,6 @@
-import { Skeleton } from '@/components/ui/skeleton';
 import { AkurisPulse } from '@/components/ui/AkurisPulse';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { PanelAction } from '@/components/ui/panel-action';
 import { useAuth } from '@/components/AuthProvider';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { FrameworksOverviewCard } from '@/components/dashboard/FrameworksOverviewCard';
@@ -8,11 +8,8 @@ import { RecentActivities } from '@/components/dashboard/RecentActivities';
 import { RiskScoreTimeline } from '@/components/dashboard/RiskScoreTimeline';
 import AlertsDetailDialog from '@/components/dashboard/AlertsDetailDialog';
 import { GrcHealthBreakdown } from '@/components/dashboard/GrcHealthBreakdown';
-
-
-import { useTrendData } from '@/components/dashboard/TrendIndicators';
-import { HeroScoreBanner } from '@/components/dashboard/HeroScoreBanner';
-import { KPIPills, type KpiKey } from '@/components/dashboard/KPIPills';
+import { MinhasPendencias } from '@/components/dashboard/MinhasPendencias';
+import { DashboardMeta, type KpiKey } from '@/components/dashboard/DashboardMeta';
 import { KpiDrillDownDrawer, type DrillDownKey } from '@/components/dashboard/KpiDrillDownDrawer';
 import { useAtivosStats } from '@/hooks/useAtivosStats';
 import { useControlesStats } from '@/hooks/useControlesStats';
@@ -26,9 +23,32 @@ import { useDueDiligenceStats } from '@/hooks/useDueDiligenceStats';
 import { useDenunciasStats } from '@/hooks/useDenunciasStats';
 import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useGrcMaturityScore } from '@/hooks/useGrcMaturityScore';
 import { useQueryClient } from '@tanstack/react-query';
 
+/**
+ * Painel — o estado do GRC, e o que fazer a seguir.
+ *
+ * A página foi remontada sobre três regras, todas medidas no que estava no ar:
+ *
+ *  1. **Nada decorativo.** O banner de topo tinha gradiente, padrão de marca,
+ *     dois glows desfocados e um chevron de canto — quatro camadas para
+ *     mostrar dois números, ocupando 246px (27% do ecrã) antes do primeiro
+ *     dado accionável. O próprio `index.css` já mandava o contrário: "os
+ *     planos são todos brancos e separados por fio de borda".
+ *
+ *  2. **Um número herói por painel.** O 50 da maturidade aparecia no gauge E
+ *     como título da Saúde do GRC, a 200px de distância. Passa a aparecer uma
+ *     vez, à frente dos oito domínios que o explicam.
+ *
+ *  3. **Toda métrica termina num verbo.** A página inteira tinha UMA frase
+ *     accionável ("Ver todos"). Os números que exigem decisão existiam, mas
+ *     viviam em `title` — ou seja, num tooltip, que não se vê, não se navega
+ *     por teclado e não existe no telemóvel.
+ *
+ * A ordem responde a três perguntas, por esta ordem: o que arde agora
+ * (alertas), para onde vai a carteira e o que está atribuído a mim, e como
+ * está cada domínio.
+ */
 export default function Dashboard() {
   const { profile } = useAuth();
   const { t } = useLanguage();
@@ -39,7 +59,7 @@ export default function Dashboard() {
   // de volta para o dashboard a partir de outras páginas.
   const [drillKey, setDrillKey] = useState<DrillDownKey | null>(null);
   const queryClient = useQueryClient();
-  
+
   const ativosStats = useAtivosStats();
   const controlesStats = useControlesStats();
   const incidentesStats = useIncidentesStats();
@@ -50,8 +70,6 @@ export default function Dashboard() {
   const ddStats = useDueDiligenceStats();
   const denunciasStats = useDenunciasStats();
   const { data: dashboardData, isLoading: dashboardLoading, dataUpdatedAt } = useDashboardStats();
-  const { data: trends } = useTrendData();
-  const maturity = useGrcMaturityScore();
 
   // Todos os indicadores exibidos têm de entrar no estado de carregamento —
   // caso contrário a página renderiza `|| 0` para os que ainda não chegaram e
@@ -82,14 +100,15 @@ export default function Dashboard() {
     'due-diligence-stats',
     'denuncias-stats',
     'gap-analysis-stats',
-    // Era 'trend-data', chave que não existe — o `TrendIndicators` usa
-    // 'trend-indicators'. E faltavam as dos cartões de frameworks e
-    // maturidade: o botão "atualizar" mostrava dados antigos sem aviso.
-    // (o radar deriva destes hooks, não tem chave própria.)
-    'trend-indicators',
+    // Faltavam as dos cartões de frameworks e maturidade: o botão "atualizar"
+    // mostrava dados antigos sem qualquer aviso.
     'frameworks-overview',
     'maturity-trend',
     'recent-activities',
+    // O bloco "minhas pendências" tem chave própria; sem ela, o refresh
+    // atualizava a empresa inteira e deixava a minha lista para trás.
+    'minhas-pendencias-projeto',
+    'minhas-pendencias-planos',
   ] as const;
 
   const handleRefreshAll = () => {
@@ -107,32 +126,35 @@ export default function Dashboard() {
     );
   }
 
-  const activeIncidents = (incidentesStats.data?.abertos || 0) + (incidentesStats.data?.investigacao || 0);
+  const activeIncidents =
+    (incidentesStats.data?.abertos || 0) + (incidentesStats.data?.investigacao || 0);
+  const criticalAlerts = dashboardData?.criticalAlerts || 0;
 
   return (
     <TooltipProvider>
       <div className="space-y-5 animate-fade-in w-full max-w-full overflow-x-hidden">
-        {/* Header contextual com título, refresh e timestamp */}
         <DashboardHeader
           userName={profile?.nome || 'Usuário'}
-          criticalCount={dashboardData?.criticalAlerts || 0}
+          criticalCount={criticalAlerts}
           dataUpdatedAt={dataUpdatedAt}
           onRefresh={handleRefreshAll}
         />
 
-        {/* Hero Score Banner */}
-        <HeroScoreBanner
-          maturity={maturity}
-          criticalAlerts={dashboardData?.criticalAlerts || 0}
-          criticalBreakdown={dashboardData?.criticalBreakdown}
-          activeControls={controlesStats.data?.ativos || 0}
-          userName={profile?.nome || 'Usuário'}
-          onAlertsClick={() => setAlertsDialogOpen(true)}
-        />
+        {/*
+          Saudação e contexto, em texto corrido.
 
-        {/* KPI Pills */}
-        <KPIPills
-          ativos={ativosStats.data?.total || 0}
+          Era uma faixa de oito pílulas com moldura, rolável, ocupando uma banda
+          inteira da página para dizer o tamanho do parque. A forma prometia
+          decisão e o conteúdo não tinha nenhuma — ninguém age sobre "8
+          documentos". Continua clicável; muda o peso, não a função.
+        */}
+        <div className="space-y-2">
+          <p className="text-sm text-muted-foreground">
+            {t('dashboard_v3.hello', { name: profile?.nome || 'Usuário' })}
+          </p>
+
+          <DashboardMeta
+            ativos={ativosStats.data?.total || 0}
             activeIncidents={activeIncidents}
             incidentsThisMonth={incidentesStats.data?.mes || 0}
             activeContracts={contratosStats.data?.ativos || 0}
@@ -149,10 +171,28 @@ export default function Dashboard() {
             planosAtrasados={planosStats.data?.atrasados || 0}
             ddAtivos={ddStats.data?.activeAssessments || 0}
             ddExpirados={ddStats.data?.expiredAssessments || 0}
-            denunciasAbertas={(denunciasStats.data?.novas || 0) + (denunciasStats.data?.em_andamento || 0)}
+            denunciasAbertas={
+              (denunciasStats.data?.novas || 0) + (denunciasStats.data?.em_andamento || 0)
+            }
             denunciasNovas={denunciasStats.data?.novas || 0}
             onPillClick={(key: KpiKey) => setDrillKey(key as DrillDownKey)}
           />
+        </div>
+
+        {/*
+          O único agregado da página que atravessa todos os módulos, e a porta
+          para o detalhe. Estava dentro do banner decorado, como caixa
+          informativa; agora é uma linha e uma acção.
+        */}
+        <PanelAction
+          limpo={criticalAlerts === 0}
+          onClick={() => setAlertsDialogOpen(true)}
+          className="rounded-lg border border-border bg-card"
+        >
+          {criticalAlerts === 0
+            ? t('dashboard_v3.noCritical')
+            : t('dashboard_v3.criticalAction', { count: criticalAlerts })}
+        </PanelAction>
 
         <KpiDrillDownDrawer
           open={!!drillKey}
@@ -160,18 +200,22 @@ export default function Dashboard() {
           kpiKey={drillKey}
         />
 
-
-        {/* Saúde do GRC (radar) + Frameworks + Evolução dos Riscos */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-5 w-full">
-          <div className="min-w-0"><GrcHealthBreakdown /></div>
-          <div className="min-w-0"><FrameworksOverviewCard /></div>
-          <div className="min-w-0 md:col-span-2 xl:col-span-1"><RiskScoreTimeline /></div>
+        {/* Para onde vai a carteira · o que está por avaliar · o que é meu */}
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-3 lg:gap-5 w-full">
+          <div className="min-w-0 xl:col-span-2">
+            <RiskScoreTimeline />
+          </div>
+          <div className="flex min-w-0 flex-col gap-4 lg:gap-5">
+            <FrameworksOverviewCard />
+            <MinhasPendencias />
+          </div>
         </div>
 
-        {/* Atividades Recentes full width */}
+        {/* Como está cada domínio, do pior para o melhor */}
+        <GrcHealthBreakdown />
+
         <RecentActivities />
 
-        {/* Dialog de alertas */}
         <AlertsDetailDialog
           open={alertsDialogOpen}
           onOpenChange={setAlertsDialogOpen}

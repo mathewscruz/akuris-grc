@@ -220,6 +220,13 @@ export const en = {
     refresh: 'Refresh indicators',
     refreshing: 'Refreshing…',
     refreshed: 'Updated',
+    executiveReport: 'Executive report',
+    hello: 'Hello, {name}',
+    criticalAction: {
+      one: '1 critical alert to decide on',
+      other: '{count} critical alerts to decide on',
+    },
+    noCritical: 'No critical alerts',
   },
   userProfile: {
     myProfile: 'My profile',
@@ -786,6 +793,31 @@ export const en = {
     incident: 'Incident',
   },
   kpi: {
+    rotulo: {
+      risks: { one: 'risk', other: 'risks' },
+      actionPlansOpen: { one: 'open action plan', other: 'open action plans' },
+      incidentsOpen: { one: 'open incident', other: 'open incidents' },
+      assets: { one: 'asset', other: 'assets' },
+      documents: { one: 'document', other: 'documents' },
+      contractsActive: { one: 'active contract', other: 'active contracts' },
+      dueDiligenceActive: { one: 'active due diligence', other: 'active due diligence' },
+      reportsOpen: { one: 'open report', other: 'open reports' },
+    },
+    // Em inglês o adjectivo não flexiona, mas a FORMA da chave tem de espelhar
+    // a do português — a guarda de paridade compara caminhos de folha, e um
+    // `{ one, other }` contra uma string plana conta como chave em falta.
+    // `expiredFem` existe pela mesma razão.
+    qualificador: {
+      critical: { one: '{count} critical', other: '{count} critical' },
+      high: { one: '{count} high', other: '{count} high' },
+      overdue: { one: '{count} overdue', other: '{count} overdue' },
+      expired: { one: '{count} expired', other: '{count} expired' },
+      expiredFem: { one: '{count} expired', other: '{count} expired' },
+      expiring: '{count} expiring',
+      pending: { one: '{count} pending', other: '{count} pending' },
+      new: { one: '{count} new', other: '{count} new' },
+      month: '{count} this month',
+    },
     incidentsOpen: 'Open incidents',
     actionPlansOpen: 'Open action plans',
     contractsActive: 'Active contracts',

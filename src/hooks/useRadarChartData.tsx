@@ -9,6 +9,19 @@ import { useDocumentosStats } from "./useDocumentosStats";
 import { useDenunciasStats } from "./useDenunciasStats";
 import { useLanguage } from "@/contexts/LanguageContext";
 
+/**
+ * O próximo passo naquele domínio, com o número que o justifica.
+ *
+ * `null` significa "nada por fazer" — e o cartão diz isso, em vez de mostrar
+ * um zero indistinguível de qualquer outro número. Zero pendências e zero
+ * registos desenhavam-se igual, e são o oposto um do outro.
+ */
+export interface AcaoDoDominio {
+  /** Chave em `dashWidgets.radar.acoes.*`. */
+  chave: string;
+  n: number;
+}
+
 export interface RadarDataPoint {
   subject: string;
   score: number;
@@ -19,6 +32,8 @@ export interface RadarDataPoint {
     status: 'excellent' | 'good' | 'warning' | 'critical';
     metrics: string[];
   };
+  /** O que falta fazer aqui. Alimenta o rodapé do cartão do domínio. */
+  acao: AcaoDoDominio | null;
   link: string;
   icon: string;
 }
@@ -30,9 +45,18 @@ const getStatus = (score: number): 'excellent' | 'good' | 'warning' | 'critical'
   return 'critical';
 };
 
+/** Só há ação quando há número. Zero devolve `null` e o cartão fica limpo. */
+const acao = (chave: string, n: number): AcaoDoDominio | null => (n > 0 ? { chave, n } : null);
+
 export const useRadarChartData = () => {
   const { t } = useLanguage();
-  const m = (key: string, n: number | string) => t(`dashWidgets.radar.metrics.${key}`, { n });
+  /*
+    `count` liga o plural nativo do `t()` (`{ one, other }`); `n` mantém os
+    textos que não são contagem, como "Score médio: {n}". Passar os dois deixa
+    cada string escolher o placeholder que lhe serve.
+  */
+  const m = (key: string, n: number | string) =>
+    t(`dashWidgets.radar.metrics.${key}`, { count: n, n });
   const ativos = useAtivosStats();
   const controles = useControlesStats();
   const riscos = useRiscosStats();
@@ -149,41 +173,66 @@ export const useRadarChartData = () => {
       {
         subject: 'Riscos', score: Math.round(scoreRiscos), fullMark: 100, hasData: riscosData.total > 0, icon: 'AlertTriangle',
         details: { total: riscosData.total, status: getStatus(scoreRiscos), metrics: [m('critical', riscosData.criticos), m('high', riscosData.altos), m('treated', riscosData.tratados)] },
+        acao: acao('tratarRiscos', riscosData.criticos + riscosData.altos),
         link: '/riscos'
       },
       {
         subject: 'Controles', score: Math.round(scoreControles), fullMark: 100, hasData: controlesData.total > 0, icon: 'Shield',
         details: { total: controlesData.total, status: getStatus(scoreControles), metrics: [m('active', controlesData.ativos), m('dueAssessment', controlesData.vencendoAvaliacao), m('critical', controlesData.criticos)] },
+        // Vencidas e a vencer contam para a mesma decisão: reavaliar.
+        acao: acao('avaliarControles', controlesData.vencidos + controlesData.vencendoAvaliacao),
         link: '/controles'
       },
       {
         subject: 'Ativos', score: Math.round(scoreAtivos), fullMark: 100, hasData: ativosData.total > 0, icon: 'Monitor',
         details: { total: ativosData.total, status: getStatus(scoreAtivos), metrics: [m('active', ativosData.ativos), m('critical', ativosData.criticos), m('highValue', ativosData.percentualAltoValor)] },
+        acao: acao('ativosCriticos', ativosData.criticos),
         link: '/ativos'
       },
       {
         subject: 'Incidentes', score: Math.round(scoreIncidentes), fullMark: 100, hasData: incidentesData.total > 0, icon: 'Zap',
         details: { total: incidentesData.total, status: getStatus(scoreIncidentes), metrics: [m('open', incidentesData.abertos), m('critical', incidentesData.criticos), m('inMonth', incidentesData.mes)] },
+        acao: acao('incidentesAbertos', incidentesData.abertos + incidentesData.investigacao),
         link: '/incidentes'
       },
       {
         subject: 'Gap Analysis', score: Math.round(scoreGapAnalysis), fullMark: 100, hasData: (gapData.totalFrameworks || 0) > 0, icon: 'Target',
         details: { total: gapData.totalFrameworks || 0, status: getStatus(scoreGapAnalysis), metrics: [m('frameworks', gapData.totalFrameworks), m('inProgress', gapData.assessmentsInProgress), m('pendingItems', gapData.pendingItems)] },
+        /*
+          `pendingItems` conta avaliações com evidência PENDENTE — não são
+          requisitos por avaliar. Chamar-lhes isso punha dois números
+          diferentes com a mesma frase no mesmo ecrã: 127 aqui e 58 no cartão
+          de frameworks, que conta o que ainda não foi avaliado.
+        */
+        acao: acao('evidenciasPendentes', gapData.pendingItems || 0),
         link: '/gap-analysis'
       },
       {
         subject: 'Due Diligence', score: Math.round(scoreDueDiligence), fullMark: 100, hasData: dueDiligenceData.totalAssessments > 0, icon: 'ClipboardCheck',
         details: { total: dueDiligenceData.totalAssessments, status: getStatus(scoreDueDiligence), metrics: [m('completed', dueDiligenceData.completedAssessments), m('avgScore', Math.round(dueDiligenceData.averageScore)), m('expired', dueDiligenceData.expiredAssessments)] },
+        /*
+          Sem nenhuma avaliação, o próximo passo é começar — e não "0 vencidas",
+          que soaria a estado limpo num domínio onde nunca se fez nada.
+        */
+        acao:
+          dueDiligenceData.totalAssessments === 0
+            ? { chave: 'iniciarDueDiligence', n: 0 }
+            : acao('ddVencidas', dueDiligenceData.expiredAssessments),
         link: '/due-diligence'
       },
       {
         subject: 'Documentos', score: Math.round(scoreDocumentos), fullMark: 100, hasData: documentosData.total > 0, icon: 'FileText',
         details: { total: documentosData.total, status: getStatus(scoreDocumentos), metrics: [m('active', documentosData.ativos), m('expiredDocs', documentosData.vencidos), m('approved', documentosData.aprovados)] },
+        // Vencido aperta mais do que por aprovar: só um dos dois é mostrado.
+        acao:
+          acao('documentosVencidos', documentosData.vencidos) ??
+          acao('documentosPorAprovar', documentosData.pendentesAprovacao),
         link: '/documentos'
       },
       {
         subject: 'Denúncias', score: Math.round(scoreDenuncias), fullMark: 100, hasData: denunciasData.total > 0, icon: 'MessageSquareWarning',
         details: { total: denunciasData.total, status: getStatus(scoreDenuncias), metrics: [m('resolved', denunciasData.resolvidas), m('newOnes', denunciasData.novas), m('ongoing', denunciasData.em_andamento)] },
+        acao: acao('denunciasAbertas', denunciasData.novas + denunciasData.em_andamento),
         link: '/denuncia'
       }
     ];

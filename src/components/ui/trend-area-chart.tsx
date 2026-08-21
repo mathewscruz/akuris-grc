@@ -87,6 +87,17 @@ interface Props {
    * 260px no meio de um cartão de 560 e deixava metade em branco.
    */
   altura?: number;
+  /**
+   * Bloco entre o cabeçalho e a curva — tipicamente a composição do conjunto
+   * (`SegmentedBar`). A curva diz para onde vai; a composição diz do que é
+   * feito o número de hoje.
+   *
+   * Sem acento no nome, como `divisao`: o plugin SWC do Lovable rebenta a
+   * analisar um identificador acentuado em JSX.
+   */
+  resumo?: ReactNode;
+  /** Rodapé do painel — o `PanelAction` com o próximo passo. */
+  rodape?: ReactNode;
   className?: string;
 }
 
@@ -109,6 +120,8 @@ export function TrendAreaChart({
   tooltipLabel,
   tooltipValor,
   altura,
+  resumo,
+  rodape,
   className,
 }: Props) {
   const data = useMemo(
@@ -148,6 +161,8 @@ export function TrendAreaChart({
         </div>
         {seletor && <div className="shrink-0">{seletor}</div>}
       </div>
+
+      {resumo && <div className="px-5 pb-1 pt-2">{resumo}</div>}
 
       <div
         style={altura !== undefined ? { height: altura } : undefined}
@@ -250,6 +265,8 @@ export function TrendAreaChart({
           </ComposedChart>
         </ResponsiveContainer>
       </div>
+
+      {rodape}
     </div>
   );
 }
