@@ -110,6 +110,7 @@ export const finalI18n = {
         atualizar: 'Atualizar',
         camposObrigatorios: '* Campos obrigatórios',
         cancelar: 'Cancelar',
+        carregando: 'Carregando…',
         comparacao: 'Comparação',
         concluidaF: 'Concluída',
         concluidas: 'Concluídas',
@@ -461,6 +462,8 @@ export const finalI18n = {
           title: 'Configuração de Riscos',
         },
         matrizForm: {
+          calculo: 'Cálculo',
+
           atualizarMatriz: 'Atualizar matriz',
           calculoEyebrow: 'Cálculo',
           categoriaExcluida: 'Categoria excluída com sucesso!',
@@ -725,6 +728,7 @@ export const finalI18n = {
         atualizar: 'Update',
         camposObrigatorios: '* Required fields',
         cancelar: 'Cancel',
+        carregando: 'Loading…',
         comparacao: 'Comparison',
         concluidaF: 'Completed',
         concluidas: 'Completed',
@@ -1076,6 +1080,8 @@ export const finalI18n = {
           title: 'Risk configuration',
         },
         matrizForm: {
+          calculo: 'Calculation',
+
           atualizarMatriz: 'Update matrix',
           calculoEyebrow: 'Calculation',
           categoriaExcluida: 'Category deleted successfully!',

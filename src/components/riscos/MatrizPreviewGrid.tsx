@@ -12,7 +12,7 @@ export interface PreviewNivelRisco {
   min: number;
   max: number;
   nivel: string;
-  cor: string;
+  cor?: string;
   apetite?: boolean;
 }
 
@@ -21,6 +21,8 @@ interface Props {
   escalaImpacto: PreviewEscalaItem[];
   niveisRisco: PreviewNivelRisco[];
   metodoCalculo: 'multiplicacao' | 'soma';
+  /** Limite de apetite em score. Vem da coluna, não de uma flag no JSON. */
+  apetiteScore?: number | null;
   titulo?: string;
   legendaApetite?: string;
   eixoProbabilidade?: string;
@@ -45,6 +47,7 @@ export function MatrizPreviewGrid({
   escalaImpacto,
   niveisRisco,
   metodoCalculo,
+  apetiteScore,
   titulo = 'Pré-visualização ao vivo',
   legendaApetite = 'Limite de apetite',
   eixoProbabilidade = 'Probabilidade',
@@ -62,9 +65,10 @@ export function MatrizPreviewGrid({
   );
 
   const apetiteMax = useMemo(() => {
+    if (typeof apetiteScore === 'number') return apetiteScore;
     const marcado = niveisRisco.find((n) => n.apetite);
     return marcado ? marcado.max : null;
-  }, [niveisRisco]);
+  }, [niveisRisco, apetiteScore]);
 
   const linhas = [...probs].sort((a, b) => b.num - a.num); // maior probabilidade em cima
   const colunas = [...impactos].sort((a, b) => a.num - b.num);

@@ -42,6 +42,7 @@ export const campos = {
         prazo: 'Prazo',
       },
       matriz: {
+        nome: 'Nome da matriz',
         nomePlaceholder: 'Ex.: Matriz Corporativa 5x5',
         escala: 'Escala',
         probabilidade: 'Probabilidade',
@@ -159,6 +160,7 @@ export const campos = {
         prazo: 'Due date',
       },
       matriz: {
+        nome: 'Matrix name',
         nomePlaceholder: 'E.g.: Corporate 5x5 matrix',
         escala: 'Scale',
         probabilidade: 'Probability',
