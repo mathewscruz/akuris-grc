@@ -22,6 +22,7 @@ import { AceiteDetalheDialog } from '@/components/riscos/AceiteDetalheDialog';
 import { AprovacaoRiscoDialog } from '@/components/riscos/AprovacaoRiscoDialog';
 import { useLanguage } from '@/contexts/LanguageContext';
 
+import { useMatrizConfigEmpresa } from '@/hooks/useMatrizConfigEmpresa';
 interface RiscoAceito {
   id: string;
   nome: string;
@@ -40,13 +41,18 @@ interface RiscoAceito {
   responsavel_nome?: string;
 }
 
+/** Comparação de rótulo insensível a acento e caixa. */
+const rotuloNivel = (v?: string | null) =>
+  (v ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+
 const SELECT_ACEITE = `
-  id, nome, nivel_risco_inicial, nivel_risco_residual,
+  id, nome, nivel_risco_inicial, nivel_risco_residual, severidade_efetiva, score_efetivo,
   justificativa_aceite, data_aceite, aprovador_aceite, aceite_valido_ate,
   data_proxima_revisao, responsavel, created_at, created_by, status_aceite
 `;
 
 export default function RiscosAceite({ embedded = false }: { embedded?: boolean } = {}) {
+  const { data: matriz } = useMatrizConfigEmpresa();
   const { profile } = useAuth();
   const { t } = useLanguage();
   const { toast } = useToast();
@@ -163,7 +169,7 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
     // residual para a expressão dar verdadeiro, e o filtro nunca filtrava nada.
     const matchesNivel =
       !nivelFilter || nivelFilter === 'all' ||
-      (r.nivel_risco_residual || r.nivel_risco_inicial) === nivelFilter;
+      rotuloNivel(r.nivel_risco_residual || r.nivel_risco_inicial) === rotuloNivel(nivelFilter);
     const matchesRevisao = !revisaoFilter || revisaoFilter === 'all' || getRevisaoStatus(r.data_proxima_revisao) === revisaoFilter;
     return matchesSearch && matchesNivel && matchesRevisao;
   });
@@ -331,10 +337,13 @@ export default function RiscosAceite({ embedded = false }: { embedded?: boolean 
     },
     {
       key: 'nivel', label: t('riscos.aceite.columns.level'), type: 'select' as const,
+      // As faixas da matriz vigente, como na aba Tabela. A lista fixa
+      // comparava com o texto gravado e não devolvia nada.
       options: [
-        { value: 'all', label: t('riscos.aceite.filters.all') }, { value: 'Crítico', label: t('riscos.page.level.critico') },
-        { value: 'Muito Alto', label: t('riscos.page.level.muitoAlto') }, { value: 'Alto', label: t('riscos.page.level.alto') },
-        { value: 'Médio', label: t('riscos.page.level.medio') }, { value: 'Baixo', label: t('riscos.page.level.baixo') },
+        { value: 'all', label: t('riscos.aceite.filters.all') },
+        ...[...(matriz?.niveis_risco ?? [])]
+          .sort((a, b) => b.min - a.min)
+          .map((n) => ({ value: n.nivel, label: n.nivel })),
       ],
       value: nivelFilter, onChange: (value: string) => setNivelFilter(value === 'all' ? '' : value),
     },
