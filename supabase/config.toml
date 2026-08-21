@@ -69,6 +69,21 @@ enable_signup = true
 double_confirm_changes = true
 enable_confirmations = false
 
+# Segundo fator: TOTP (app autenticadora) e WebAuthn (chave/biometria).
+# Em projeto hospedado isto exige `supabase config push` ou activacao no painel
+# em Authentication > Multi-Factor Authentication.
+[auth.mfa]
+max_enrolled_factors = 10
+
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
+
+[auth.mfa.web_authn]
+enroll_enabled = true
+verify_enabled = true
+
+
 [edge-functions]
 enabled = true
 

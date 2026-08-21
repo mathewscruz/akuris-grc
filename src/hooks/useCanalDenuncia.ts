@@ -97,12 +97,12 @@ export function useCanalDenuncia(slug: string | undefined) {
         setEmpresa(emp);
         if (!emp) return;
 
-        const { data } = await supabase
-          .from('denuncias_configuracoes_publicas')
-          .select('*')
-          .eq('empresa_id', emp.id)
-          .maybeSingle();
-        if (vivo) setConfig((data as ConfigCanal) ?? null);
+        const { data } = await supabase.rpc(
+          'get_canal_config_publica' as never,
+          { p_empresa_id: emp.id } as never,
+        );
+        const linhas = (data ?? []) as ConfigCanal[];
+        if (vivo) setConfig(linhas[0] ?? null);
       } catch (erro) {
         logger.error('Erro ao carregar o canal', { module: 'useCanalDenuncia', error: String(erro) });
       } finally {
