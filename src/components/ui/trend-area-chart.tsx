@@ -166,7 +166,10 @@ export function TrendAreaChart({
 
       <div
         style={altura !== undefined ? { height: altura } : undefined}
-        className={cn('px-1 pb-1', altura === undefined && 'flex-1 min-h-[180px]')}
+        /* A legenda da composição passou a horizontal e devolveu ~26px de
+           altura. O piso da curva sobe com eles: num painel curto, 180px
+           deixavam o gráfico como uma faixa fina no meio de espaço vazio. */
+        className={cn('px-1 pb-1', altura === undefined && 'flex-1 min-h-[220px]')}
       >
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={data} margin={{ top: 8, right: 16, left: 16, bottom: 4 }}>

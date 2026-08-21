@@ -17,6 +17,11 @@
  *  3. **A cor fica onde significa.** Só a severidade tem escala semântica; o
  *     resto do conjunto vai a cinzento. É o mesmo corte que o `Chip` faz.
  *
+ * A legenda fica NA HORIZONTAL, cada entrada debaixo da sua fatia. Empilhada,
+ * ocupava três linhas e 66px de altura para dizer três números, e obrigava o
+ * olho a saltar da cor na barra para a cor na lista. Debaixo da fatia, a
+ * ligação entre o número e a cor não precisa de ser procurada.
+ *
  * A barra é decorativa para quem lê com leitor de ecrã: o `aria-label` resume
  * o conjunto e a legenda por baixo carrega os números em texto.
  */
@@ -34,7 +39,7 @@ export interface Segmento {
    * `bg-muted-foreground/30`); nunca uma cor de catálogo do Tailwind.
    */
   cor: string;
-  /** Quando definido, a linha da legenda vira o filtro para este subconjunto. */
+  /** Quando definido, a entrada da legenda vira o filtro para este subconjunto. */
   onClick?: () => void;
 }
 
@@ -50,11 +55,21 @@ interface Props {
   className?: string;
 }
 
+/**
+ * Largura mínima de uma entrada da legenda.
+ *
+ * Sem ela, uma fatia de 1 em 100 daria uma coluna de 6px e o rótulo ficava
+ * ilegível. Com `flex-basis` na proporção real e este mínimo, o alinhamento é
+ * exacto enquanto houver espaço, e degrada para legível quando não houver.
+ */
+const LARGURA_MINIMA = '3.5rem';
+
 export function SegmentedBar({ segmentos, resumo, semLegenda, className }: Props) {
   const total = segmentos.reduce((s, seg) => s + seg.valor, 0);
+  const fatia = (valor: number) => (total === 0 ? 0 : (valor / total) * 100);
 
   return (
-    <div className={cn('space-y-2.5', className)}>
+    <div className={cn('space-y-2', className)}>
       {/*
         Sem total não há proporção — desenhar um trilho vazio diria "zero de
         tudo", que é diferente de "nada registado". Quem chama trata do vazio.
@@ -69,34 +84,46 @@ export function SegmentedBar({ segmentos, resumo, semLegenda, className }: Props
               <span
                 key={s.id}
                 className={cn('rounded-sm', s.cor)}
-                style={{ width: `${(s.valor / total) * 100}%` }}
+                style={{ width: `${fatia(s.valor)}%` }}
               />
             ))
         )}
       </div>
 
       {!semLegenda && (
-        <ul className="space-y-1">
+        /* O mesmo `gap` da barra: as colunas caem debaixo das fatias. */
+        <ul className="flex gap-0.5">
           {segmentos.map((s) => {
             const conteudo = (
               <>
-                <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', s.cor)} />
-                <span className="min-w-0 truncate">{s.label}</span>
-                <span className="ml-auto font-medium tabular-nums text-foreground">{s.valor}</span>
+                <span className="flex items-center gap-1.5">
+                  <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', s.cor)} />
+                  <span className="text-sm font-medium tabular-nums text-foreground">
+                    {s.valor}
+                  </span>
+                </span>
+                <span className="mt-0.5 block truncate text-micro text-muted-foreground">
+                  {s.label}
+                </span>
               </>
             );
             return (
-              <li key={s.id}>
+              <li
+                key={s.id}
+                className="min-w-0"
+                style={{ flex: `1 1 ${fatia(s.valor)}%`, minWidth: LARGURA_MINIMA }}
+              >
                 {s.onClick ? (
                   <button
                     type="button"
                     onClick={s.onClick}
-                    className="flex w-full items-center gap-2 rounded-md px-1 py-0.5 text-xs text-muted-foreground transition-ui hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    title={s.label}
+                    className="block w-full min-w-0 rounded-md py-0.5 pr-1 text-left transition-ui hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     {conteudo}
                   </button>
                 ) : (
-                  <span className="flex w-full items-center gap-2 px-1 py-0.5 text-xs text-muted-foreground">
+                  <span className="block w-full min-w-0 py-0.5 pr-1" title={s.label}>
                     {conteudo}
                   </span>
                 )}
